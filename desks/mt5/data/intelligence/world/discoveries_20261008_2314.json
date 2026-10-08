@@ -1,0 +1,1788 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NVIDIA Corporation stocks CFD (NVDA) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NVDA/",
+  "published": "2026-10-08T23:12:54+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "95cb169568b921de77aa",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "01 The time of trading session 16:31-22:59 Term currency USD 3-days swap Friday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "02da1e95eba4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Caterpillar Inc. stocks CFD (CAT) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CAT/",
+  "published": "2026-10-08T23:12:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fc3d8b460c7c8fa15810",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cisco Systems, Inc. stocks CFD (CSCO) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CSCO/",
+  "published": "2026-10-08T23:12:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "68b046b907b3ebb1620e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "3M Company stocks CFD (MMM) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/MMM/",
+  "published": "2026-10-08T23:12:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "49346bf0aa596c8a734b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Adobe Systems Incorporated stocks CFD (ADBE) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/ADBE/",
+  "published": "2026-10-08T23:13:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f0bb8b9e2653ce3ae8ea",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "General Electric Company stocks CFD (GE) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GE/",
+  "published": "2026-10-08T23:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f006e4da64e14ddfe329",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tesla, Inc. stocks CFD (TSLA) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/TSLA/",
+  "published": "2026-10-08T23:13:05+00:00",
+  "symbols": [
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "11a97c6bb8c2ca221aad",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "01 The time of trading session 16:31-22:59 Term currency USD 3-days swap Friday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "Tesla"
+     ],
+     "mentioned": [
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "02da1e95eba4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "International Business Machines Corp. stocks CFD (IBM) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/IBM/",
+  "published": "2026-10-08T23:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1be6089719e333e850a2",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Verizon Communications Inc. stocks CFD (VZ) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/VZ/",
+  "published": "2026-10-08T23:13:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "347b657a081f36e96bc8",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Intel Corporation stocks CFD (INTC) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/INTC/",
+  "published": "2026-10-08T23:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "305edd7d14cf97695b15",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Eli Lilly and Company stocks CFD (LLY) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/LLY/",
+  "published": "2026-10-08T23:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4d099fbbcce82f924604",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hewlett Packard Enterprise Company stocks CFD (HPE) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/HPE/",
+  "published": "2026-10-08T23:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "924724b907b29bf12f62",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Pfizer Inc. stocks CFD (PFE) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/PFE/",
+  "published": "2026-10-08T23:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a7b3a73af613a841329c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Johnson &amp; Johnson stocks CFD (JNJ) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/JNJ/",
+  "published": "2026-10-08T23:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "488ed66010577f067165",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.nl.html",
+  "published": "2026-10-08T23:13:18+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "da30c45a44e428db56fc",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.pl.html",
+  "published": "2026-10-08T23:13:20+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1b993c87d7be72d5806c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.pt.html",
+  "published": "2026-10-08T23:13:22+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5b2da6f639158fffb892",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.ro.html",
+  "published": "2026-10-08T23:13:24+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d9a8f01a1a2cd316520f",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.sk.html",
+  "published": "2026-10-08T23:13:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a2c9deddfd3c1c803cbb",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.sl.html",
+  "published": "2026-10-08T23:13:28+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "31d9760e96b1f703b063",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.sv.html",
+  "published": "2026-10-08T23:13:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "72eb178aadce14f2299c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53ef\u8f6c\u503a\u6307\u6570\u6210\u5206\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_cbond_index_components",
+  "published": "2026-10-08T23:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "22c193e59d0726b346df",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e2d\u56fd\u6307\u65701\u5206\u949f\u884c\u60c5\u6570\u636e-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_bar1m",
+  "published": "2026-10-08T23:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "680f6d7ebf05318793f7",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7533\u4e07\u4e00\u7ea7\u884c\u4e1a\u6307\u6570\u65e5\u884c\u60c5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_sw_bar1d",
+  "published": "2026-10-08T23:13:37+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "77820399175412ec03fb",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "``` \u8868\u7ed3\u6784 \u5b57\u6bb5 \u5b57\u6bb5\u7c7b\u578b \u5b57\u6bb5\u63cf\u8ff0 low double \u6700\u4f4e\u4ef7 high double \u6700\u9ad8\u4ef7 volume double \u6210\u4ea4\u91cf date timestamp[ns] - open double \u5f00\u76d8\u4ef7 turn double \u6362\u624b\u7387 change_ratio double \u6da8\u8dcc\u5e45 close double \u6536\u76d8\u4ef7 pre_close double \u6628\u6536\u76d8\u4ef7 instrument string \u884c\u4e1a\u6307\u6570\u4ee3\u7801 amount double \u6210\u4ea4\u989d \u8868\u540d\uff1acn_stock_industry_sw_bar1d \u8d77\u59cb\u65f6\u95f4\uff1a 2023-11-08T18:22:56.",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u5f00\u76d8",
+     "\u6536\u76d8",
+     "volume"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6052\u751f",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d6d105236555"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u4e1a\u65e5\u7ebf\u6570\u636e-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_bar1d",
+  "published": "2026-10-08T23:13:39+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "19a9f1cf4d1ada571022",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "\u8be5\u8868\u8be6\u7ec6\u8bb0\u5f55\u4e86\u4e0d\u540c\u884c\u4e1a\u7684\u65e5\u7ebf\u884c\u60c5\u6570\u636e\uff0c\u5305\u62ec\u6839\u636e\u4e0d\u540c\u8ba1\u7b97\u65b9\u5f0f\uff08\u7b97\u672f\u5e73\u5747\u3001\u603b\u80a1\u672c\u52a0\u6743\u5e73\u5747\u3001\u6d41\u901a\u80a1\u672c\u52a0\u6743\u5e73\u5747\uff09\u5f97\u51fa\u7684\u6628\u6536\u76d8\u4ef7\u3001\u5f00\u9ad8\u4f4e\u6536\uff08\u5747\u4e3a\u540e\u590d\u6743\u5904\u7406\u4ee5\u6d88\u9664\u5206\u7ea2\u3001\u914d\u80a1\u7b49\u5bf9\u4ef7\u683c\u7684\u5f71\u54cd\uff09\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u7b14\u6570\u3001\u6210\u4ea4\u91d1\u989d\u3001\u6da8\u8dcc\u5e45\u4ee5\u53ca\u6362\u624b\u7387\u7b49\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u7ebf"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f98c53a1f86c"
+   },
+   {
+    "claim": "3-\u6d41\u901a\u80a1\u672c\u52a0\u6743\u5e73\u5747) turn double \u6362\u624b\u7387 __PARTITION__ int64 - change_ratio double \u6da8\u8dcc\u5e45(\u540e\u590d\u6743) close double \u6536\u76d8\u4ef7(\u540e\u590d\u6743) pre_close double \u6628\u6536\u76d8\u4ef7(\u540e\u590d\u6743) instrument string \u884c\u4e1a\u4ee3\u7801 amount double \u6210\u4ea4\u91d1\u989d \u8868\u540d\uff1acn_stock_industry_bar1d \u8d77\u59cb\u65f6\u95f4\uff1a 2023-11-21T18:47:32.",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "close"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "close",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a473a24b7b49"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u4e1a\u672a\u590d\u6743\u65e5\u884c\u60c5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_real_bar1d",
+  "published": "2026-10-08T23:13:41+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5013442774562cb478f9",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "``` \u8868\u7ed3\u6784 \u5b57\u6bb5 \u5b57\u6bb5\u7c7b\u578b \u5b57\u6bb5\u63cf\u8ff0 pre_close double \u6628\u6536\u76d8\u4ef7 change_ratio double \u6da8\u8dcc\u5e45 date timestamp[ns] - instrument string \u884c\u4e1a\u4ee3\u7801 close double \u6536\u76d8\u4ef7 method int8 \u8ba1\u7b97\u65b9\u5f0f(1-\u7b97\u672f\u5e73\u5747;",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "close"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1d8c0161e5f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u884c\u4e1a\u6210\u5206\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_component",
+  "published": "2026-10-08T23:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "04adcef789230745e289",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u4e1a\u4f30\u503c\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_valuation",
+  "published": "2026-10-08T23:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b86da294aa080887bfba",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Congress Trades API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/congress-trades",
+  "published": "2026-10-08T23:14:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "e4efe8e0cf5500bc7c38",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Congress Stock Holdings API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/congress-stock-holdings",
+  "published": "2026-10-08T23:14:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "d0ae66e2aca26bdf1412",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Insider Trades API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/insider-trades",
+  "published": "2026-10-08T23:14:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "a8d8adb7daa992d48217",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Politician Net Worth API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/politician-net-worth",
+  "published": "2026-10-08T23:14:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "27a54b04249cf4cea48a",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Government Contracts API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/government-contracts",
+  "published": "2026-10-08T23:14:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "0a241e487b42dcb36c9e",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Corporate Lobbying API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/corporate-lobbying",
+  "published": "2026-10-08T23:14:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "1b4856d6ac93d3b72bc6",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Corporate Donors API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/corporate-donors",
+  "published": "2026-10-08T23:14:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "ba343c64ef512aed4ad6",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical Compressed | CFTC",
+  "url": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm",
+  "published": "2026-10-08T23:14:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2026.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2026.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2025.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2025.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2024.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2024.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2023.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2023.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2022.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2022.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2021.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2021.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2020.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2020.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2019.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2019.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2018.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2018.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2017.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2017.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2016.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2016.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2015.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2015.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2014.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2014.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2013.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2013.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2012.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2012.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2011.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2011.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_2010.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_2010.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_txt_hist_2006_2016.zip",
+   "https://www.cftc.gov/files/dea/history/fut_disagg_xls_hist_2006_2016.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2026.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2026.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2025.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2025.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2024.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2024.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2023.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2023.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2022.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2022.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2021.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2021.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2020.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2020.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2019.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2019.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2018.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2018.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2017.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2017.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2016.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2016.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2015.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2015.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2014.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2014.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2013.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2013.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2012.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2012.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2011.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2011.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_2010.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_2010.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_txt_hist_2006_2016.zip",
+   "https://www.cftc.gov/files/dea/history/com_disagg_xls_hist_2006_2016.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2026.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2026.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2025.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2025.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2024.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2024.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2023.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2023.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2022.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2022.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2021.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2021.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2020.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2020.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2019.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2019.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2018.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2018.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2017.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2017.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2016.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2016.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2015.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2015.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2014.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2014.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2013.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2013.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2012.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2012.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2011.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2011.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_txt_2010.zip",
+   "https://www.cftc.gov/files/dea/history/fut_fin_xls_2010.zip",
+   "https://www.cftc.gov/files/dea/history/fin_fut_txt_2006_2016.zip",
+   "https://www.cftc.gov/files/dea/history/fin_fut_xls_2006_2016.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2026.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2026.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2025.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2025.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2024.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2024.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2023.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2023.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2022.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2022.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2021.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2021.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2020.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2020.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2019.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2019.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2018.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2018.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2017.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2017.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2016.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2016.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2015.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2015.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2014.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2014.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2013.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2013.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2012.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2012.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2011.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2011.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_txt_2010.zip",
+   "https://www.cftc.gov/files/dea/history/com_fin_xls_2010.zip",
+   "https://www.cftc.gov/files/dea/history/fin_com_txt_2006_2016.zip",
+   "https://www.cftc.gov/files/dea/history/fin_com_xls_2006_2016.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2026.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2026.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2025.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2025.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2024.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2024.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2023.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2023.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2022.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2022.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2021.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2021.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2020.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2020.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2019.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2019.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2018.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2018.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2017.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2017.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2016.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2016.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2015.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2015.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2014.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2014.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2013.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2013.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2012.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2012.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2011.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2011.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2010.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2010.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2009.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2009.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2008.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2008.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2007.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2007.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2006.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2006.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2005.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2005.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2004.zip",
+   "https://www.cftc.gov/files/dea/history/dea_fut_xls_2004.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2003.zip",
+   "https://www.cftc.gov/files/dea/history/deafut_xls_2003.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2002.zip",
+   "https://www.cftc.gov/files/dea/history/deafut_xls_2002.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2001.zip",
+   "https://www.cftc.gov/files/dea/history/deafut_xls_2001.zip",
+   "https://www.cftc.gov/files/dea/history/deacot2000.zip",
+   "https://www.cftc.gov/files/dea/history/deafut_xls_2000.zip",
+   "https://www.cftc.gov/files/dea/history/deacot1999.zip",
+   "https://www.cftc.gov/files/dea/history/deafut_xls_1999.zip"
+  ],
+  "n_endpoints": 200,
+  "vault_sha": "b1e4e82fa1206042cb3b",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Organizations | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/index.htm",
+  "published": "2026-10-08T23:14:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b858c2f24a14745c7989",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Designated Contract Markets (DCMs) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/DCMs/index.htm",
+  "published": "2026-10-08T23:14:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "153dc69bf79815b72049",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swaps Execution Facilities (SEFs) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/SEF2/index.htm",
+  "published": "2026-10-08T23:14:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "384cb422ab265828e898",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Designated Contract Markets (DCMs) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/DCMs/dcmruleenf.html",
+  "published": "2026-10-08T23:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4be9f49033208f10104a",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Frequently Asked Questions Regarding the Post-Trade Name Give-Up Rule in Commission Regulation 37.9(d) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/TradingOrganizations/PTNGUfaqs",
+  "published": "2026-10-08T23:14:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "53c5a5c3d4994c934d53",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations",
+  "published": "2026-10-08T23:14:24+00:00",
+  "symbols": [
+   "XTIUSD",
+   "XNGUSD",
+   "NAS100",
+   "COTTON"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d91af0411df78f1a9a2",
+  "host": "www.cftc.gov",
+  "claims": [
+   {
+    "claim": "Effective as of February 28, 2012 there is no remaining open interest in contracts at CCFE and all contracts have been delisted.",
+    "lang": "en",
+    "quantities": [
+     "open interest"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "COTTON"
+     ],
+     "mentioned": [
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "cotton"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "XAUUSD",
+      "EURUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "be01c96d67b4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/",
+  "published": "2026-10-08T23:14:42+00:00",
+  "symbols": [
+   "HK50",
+   "NAS100",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "143d6bf44624911d744c",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\ufeff \u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6570\u636e\u4e2d\u5fc3 \u624b\u673a\u7ad9 \u5ba2\u6237\u7aef \u5916\u6c47\u9891\u9053 \u5916\u6c47\u8981\u95fb \u5916\u6c47\u8bc4\u8bba \u592e\u884c\u52a8\u6001 \u5916\u6c47\u884c\u60c5 \u4eba\u6c11\u5e01\u4e2d\u95f4\u4ef7 \u5916\u6c47\u5427 \u5e01\u79cd \u7f8e\u5143 \u4eba\u6c11\u5e01 \u6b27\u5143 \u82f1\u9551 \u65e5\u5143 \u6fb3\u5143 \u52a0\u5143 \u745e\u90ce \u7ebd\u5143 \u6570\u636e \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u5168\u7403\u65f6\u95f4\uff1a \u5317\u4eac 08\u670814\u65e5 09:48:35 \u4f26\u6566 08\u670814\u65e5 02:48:35 \u7ebd\u7ea6 08\u670813\u65e5 21:48:35 \u6089\u5c3c 08\u670814\u65e5 11:48:35 \u5916\u6c47\u5bfc\u8bfb \u5916\u6c47\u5feb\u8baf \u592e\u884c\u660e\u786e\u4eba\u6c11\u5e01\u6c47\u7387\u653f\u7b56\u7acb\u573a \u5168\u7403\u6c47\u7387 \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u5e02\u573a\uff1a\u7eb3\u6307\u8dcc\u8d851% \u5b58\u50a8\u3001\u534a\u5bfc\u4f53\u677f\u5757\u4e0b\u632b \u56fd\u9645\u6cb9\u4ef7\u6da8\u903e3 10\u670809\u65e5 06:15 \u201cAI\u9b3c\u6545\u4e8b\u201d\u518d\u73b0\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u5229\u7387",
+     "\u5916\u6c47",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7eb3\u6307",
+      "\u7f8e\u80a1",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e314b8a959c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/",
+  "published": "2026-10-08T23:14:44+00:00",
+  "symbols": [
+   "HK50",
+   "NAS100",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9a301cd9bbdcf75474a6",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\ufeff \u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6570\u636e\u4e2d\u5fc3 \u624b\u673a\u7ad9 \u5ba2\u6237\u7aef \u5916\u6c47\u9891\u9053 \u5916\u6c47\u8981\u95fb \u5916\u6c47\u8bc4\u8bba \u592e\u884c\u52a8\u6001 \u5916\u6c47\u884c\u60c5 \u4eba\u6c11\u5e01\u4e2d\u95f4\u4ef7 \u5916\u6c47\u5427 \u5e01\u79cd \u7f8e\u5143 \u4eba\u6c11\u5e01 \u6b27\u5143 \u82f1\u9551 \u65e5\u5143 \u6fb3\u5143 \u52a0\u5143 \u745e\u90ce \u7ebd\u5143 \u6570\u636e \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u5168\u7403\u65f6\u95f4\uff1a \u5317\u4eac 08\u670814\u65e5 09:48:35 \u4f26\u6566 08\u670814\u65e5 02:48:35 \u7ebd\u7ea6 08\u670813\u65e5 21:48:35 \u6089\u5c3c 08\u670814\u65e5 11:48:35 \u5916\u6c47\u5bfc\u8bfb \u5916\u6c47\u5feb\u8baf \u592e\u884c\u660e\u786e\u4eba\u6c11\u5e01\u6c47\u7387\u653f\u7b56\u7acb\u573a \u5168\u7403\u6c47\u7387 \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u5e02\u573a\uff1a\u7eb3\u6307\u8dcc\u8d851% \u5b58\u50a8\u3001\u534a\u5bfc\u4f53\u677f\u5757\u4e0b\u632b \u56fd\u9645\u6cb9\u4ef7\u6da8\u903e3 10\u670809\u65e5 06:15 \u201cAI\u9b3c\u6545\u4e8b\u201d\u518d\u73b0\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u5229\u7387",
+     "\u5916\u6c47",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7eb3\u6307",
+      "\u7f8e\u80a1",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e314b8a959c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com",
+  "published": "2026-10-08T23:14:46+00:00",
+  "symbols": [
+   "HK50",
+   "NAS100",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "293d517907bf5e06704c",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\ufeff \u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6570\u636e\u4e2d\u5fc3 \u624b\u673a\u7ad9 \u5ba2\u6237\u7aef \u5916\u6c47\u9891\u9053 \u5916\u6c47\u8981\u95fb \u5916\u6c47\u8bc4\u8bba \u592e\u884c\u52a8\u6001 \u5916\u6c47\u884c\u60c5 \u4eba\u6c11\u5e01\u4e2d\u95f4\u4ef7 \u5916\u6c47\u5427 \u5e01\u79cd \u7f8e\u5143 \u4eba\u6c11\u5e01 \u6b27\u5143 \u82f1\u9551 \u65e5\u5143 \u6fb3\u5143 \u52a0\u5143 \u745e\u90ce \u7ebd\u5143 \u6570\u636e \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u5168\u7403\u65f6\u95f4\uff1a \u5317\u4eac 08\u670814\u65e5 09:48:35 \u4f26\u6566 08\u670814\u65e5 02:48:35 \u7ebd\u7ea6 08\u670813\u65e5 21:48:35 \u6089\u5c3c 08\u670814\u65e5 11:48:35 \u5916\u6c47\u5bfc\u8bfb \u5916\u6c47\u5feb\u8baf \u592e\u884c\u660e\u786e\u4eba\u6c11\u5e01\u6c47\u7387\u653f\u7b56\u7acb\u573a \u5168\u7403\u6c47\u7387 \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u5e02\u573a\uff1a\u7eb3\u6307\u8dcc\u8d851% \u5b58\u50a8\u3001\u534a\u5bfc\u4f53\u677f\u5757\u4e0b\u632b \u56fd\u9645\u6cb9\u4ef7\u6da8\u903e3 10\u670809\u65e5 06:15 \u201cAI\u9b3c\u6545\u4e8b\u201d\u518d\u73b0\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u5229\u7387",
+     "\u5916\u6c47",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7eb3\u6307",
+      "\u7f8e\u80a1",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e314b8a959c"
+   }
+  ],
+  "n_claims": 1
+ }
+]
