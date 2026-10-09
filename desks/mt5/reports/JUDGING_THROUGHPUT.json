@@ -86,8 +86,30 @@
  },
  "applied": {
   "env_file": "C:\\opt\\quant\\desks\\mt5\\data\\judging_throughput.env.json",
-  "machine_env": "PENDING",
-  "cadence": "PENDING",
+  "machine_env": {
+   "status": "APPLIED",
+   "set": {
+    "GAUNTLET_WORKERS": "9",
+    "GAUNTLET_MEMORY_BUDGET_MB": "7679",
+    "GAUNTLET_HEADROOM_CAP_MB": "7679"
+   },
+   "unchanged": {
+    "GAUNTLET_SHARDS": "9",
+    "GAUNTLET_PER_WORKER_MB": "768",
+    "GAUNTLET_FRESH_BUDGET_SEC": "8640"
+   },
+   "failed": {},
+   "retired": {
+    "WARM_WORKERS": "ABSENT"
+   }
+  },
+  "cadence": {
+   "status": "FAILED",
+   "minutes": 5,
+   "task": "MT5-Gauntlet",
+   "next_run_before": "10/9/2026 1:51:00 AM",
+   "why": "TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '5', '/DU', '9999:59']' timed out after 20.0 seconds"
+  },
   "process_env": {
    "GAUNTLET_SHARDS": "9"
   }
@@ -152,5 +174,6 @@
   "workers_last_sweep": 18,
   "cores_basis": "fixed_reservation"
  },
- "measure_seconds": 42.2
+ "measure_seconds": 42.2,
+ "seconds": 63.4
 }
