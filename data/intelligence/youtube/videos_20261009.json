@@ -94,5 +94,21 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCBc1EqknL4xzwJsUP9w7asg",
+  "channel": "Unbiased Trading",
+  "video_id": "AmaHLCixkSc",
+  "published": "2026-10-09T11:02:53Z",
+  "title": "The Taxi Driver Who Made 50x Copying Bill Ackman",
+  "description": "Build your first live trading algorithm \ud83d\udc49https://cryptomomentumgroup.com/\n\nA NYC taxi driver heard Bill Ackman on CNBC, put his entire $50,000 into General Growth at 60 cents, and retired on a 50x return. Ackman tells the story himself. One all-in bet that worked is luck you can't repeat, and for every story like this there are thousands that ended in zero. Systematic trading is how you compound without needing the lottery ticket.\n\n\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\n\nThis channel shares educational content about systematic and algorithmic trading. Nothing here is financial advice, and I am not a registered investment adviser. Trading involves risk of loss. Always do your own research and consult a licensed financial professional before making investment decisions.",
+  "links": [
+   "https://cryptomomentumgroup.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
