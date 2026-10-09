@@ -1,19 +1,17 @@
 {
- "generated_utc": "2026-10-02T23:17:53.389831+00:00",
+ "generated_utc": "2026-10-09T00:19:35.859814+00:00",
  "controller_variant": "A",
  "shares": {
-  "new_mechanism": 0.0833,
-  "mutate_survivor": 0.0938,
-  "combine_survivors": 0.0829,
-  "conditional_state_edge": 0.0968,
-  "execution_improvement": 0.0918,
-  "exit_improvement": 0.0882,
-  "cross_asset_signal": 0.169,
-  "alt_data_hypothesis": 0.0885,
-  "failure_derived": 0.1002,
-  "model_architecture": 0.0873,
+  "new_mechanism": 0.0828,
+  "mutate_survivor": 0.0996,
+  "combine_survivors": 0.0974,
+  "conditional_state_edge": 0.102,
+  "execution_improvement": 0.0935,
+  "exit_improvement": 0.108,
+  "cross_asset_signal": 0.1722,
+  "alt_data_hypothesis": 0.0182,
+  "failure_derived": 0.1073,
+  "model_architecture": 0.1008,
   "external_screen": 0.0182
- },
- "authoritative": true,
- "authority_evidence": "1 leg(s) spent by the controller's prices this hour (world_model); the hourly cycle spent by the bandit's shares: alpha_evolution=480s (x2.0), deepen=0s (x1.596)"
+ }
 }

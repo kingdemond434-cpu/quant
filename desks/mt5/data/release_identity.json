@@ -1,9 +1,9 @@
 {
  "ok": true,
- "running_sha": "a7a4f095080ce1304f9080a319d12ffd3e1ba9d4",
+ "running_sha": "07278de043413a677ae9a9afe6714a5dda522a3a",
  "release_sha": "cb341efee62c08f363123d0a002334da90769b4b",
- "reason": "running a7a4f095080c is the sealed code cb341efee62c plus seal/state commits only (917 path(s))",
- "age_h": 10.891,
+ "reason": "running 07278de04341 is the sealed code cb341efee62c plus seal/state commits only (967 path(s))",
+ "age_h": 11.141,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -14,10 +14,10 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-10-09T00:05:03+00:00",
+ "at": "2026-10-09T00:20:03+00:00",
  "tested_sha": "a7a4f095080ce1304f9080a319d12ffd3e1ba9d4",
  "tested_gates": "fast",
- "allocator_certificate": "f332a6d38c38db40@2026-10-08T23:49:00.856730+00:00 proof=FAILED book=equal_weight",
+ "allocator_certificate": "bca1253094eb1203@2026-10-09T00:19:21.680719+00:00 proof=FAILED book=equal_weight",
  "ci_run_id": "UNMEASURED",
  "allows_new_risk": true,
  "verdict": "OK"
