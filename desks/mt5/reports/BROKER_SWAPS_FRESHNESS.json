@@ -1,10 +1,10 @@
 {
  "schema": "broker_swaps_freshness/2",
- "generated_at": "2026-10-09T01:00:16+00:00",
+ "generated_at": "2026-10-09T01:39:55+00:00",
  "source": "mt5.symbol_info swap_long/swap_short via mt5desk.tape --terms-only (MT5-ContractTerms, hourly), counted only with live terminal evidence",
  "status": "FRESH",
- "last_capture_at": "2026-10-09T01:00:15+00:00",
- "last_evidence_at": "2026-10-09T01:00:15+00:00",
+ "last_capture_at": "2026-10-09T01:39:54+00:00",
+ "last_evidence_at": "2026-10-09T01:39:54+00:00",
  "capture_age_h": 0.0,
  "stale_after_h": 26.0,
  "n_symbols": 243,
@@ -17,7 +17,7 @@
   "failures": 3,
   "why_no_capture": null
  },
- "last_panel_at": "2026-10-08T05:38:44+00:00",
- "last_panel_file": "discoveries_20261008_0538_terminal.json",
+ "last_panel_at": "2026-10-09T01:39:55+00:00",
+ "last_panel_file": "discoveries_20261009_0139_terminal.json",
  "rule": "readers recompute age from last_capture_at against their own clock and refuse STALE, UNMEASURED or a missing file (research.carry_state.swap_feed); this file is rewritten only when the task runs"
 }
