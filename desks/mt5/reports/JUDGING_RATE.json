@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T23:49:33+00:00",
+ "at": "2026-10-09T01:04:16+00:00",
  "verdicts": {
   "status": "MEASURED",
   "rows_total": 833310,
@@ -32,11 +32,11 @@
   "status": "MEASURED",
   "counts": {
    "24h": 27914,
-   "7d": 193307
+   "7d": 189867
   },
   "per_hour": {
    "24h": 1163.083,
-   "7d": 1150.637
+   "7d": 1130.161
   }
  },
  "verdicts_per_hour": 3242.375,
@@ -52,7 +52,7 @@
   "status": "UNMEASURED",
   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
  },
- "workers_planned": 9,
+ "workers_planned": 15,
  "workers_last_sweep": 18,
  "cores_basis": "fixed_reservation"
 }

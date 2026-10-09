@@ -1,23 +1,23 @@
 {
   "schema": "box_state_freshness/1",
-  "measured_at": "2026-10-08T19:43:38+00:00",
+  "measured_at": "2026-10-09T01:04:17+00:00",
   "threshold_h": 6.0,
   "box_author": "Contabo",
-  "age_h": 368.89,
-  "box_state_age_hours": 368.89,
+  "age_h": 374.24,
+  "box_state_age_hours": 374.24,
   "box_state_flow": null,
   "alerts": null,
   "box_state_flow_local": {
     "verdict": "FLOWING",
     "why": "origin carries box state 0.0h old",
-    "measured_at": "2026-10-08T14:52:17+00:00",
+    "measured_at": "2026-10-08T22:20:39+00:00",
     "published_age_h": 0.0,
     "alerts_armed": 0,
     "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
   },
   "stall_watch_alerts": {
     "status": "MEASURED",
-    "checked_at": "2026-10-08T19:22:37.6364589Z",
+    "checked_at": "2026-10-09T00:50:40.1612265Z",
     "state_flow": "FLOWING",
     "state_flow_watch": "METER_SILENT",
     "alerts_armed": 0,
@@ -83,6 +83,6 @@
   "newest_stamp_inside_state": null,
   "basis": "box_commit_date",
   "verdict": "STALE",
-  "why": "the box's newest state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 368.9h old (threshold 6h): every reader off the box is measuring a frozen copy. On the box: BOX_STATE_FLOW.json and desks\\mt5\\logs\\sync_shadow_to_git.log name why.",
+  "why": "the box's newest state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 374.2h old (threshold 6h): every reader off the box is measuring a frozen copy. On the box: BOX_STATE_FLOW.json and desks\\mt5\\logs\\sync_shadow_to_git.log name why.",
   "alerts_line": "ALERTS NOT ARMED: STALLED pages reach no one"
 }
