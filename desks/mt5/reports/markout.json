@@ -1,14 +1,14 @@
 {
-  "at": "2026-10-08T18:15:35+00:00",
+  "at": "2026-10-09T15:11:53+00:00",
   "usable": true,
-  "n_matched": 224,
+  "n_matched": 227,
   "n_unfilled_intents": 42,
   "n_unmatched_deals": 28,
-  "n_deals": 252,
-  "attributed_deals": 224,
-  "attributed_share": 0.8888888888888888,
-  "mean_slip_quote": 0.293145803571437,
-  "mean_slip_r": -0.20689180002987784,
-  "edge_share": -1.301206289496087,
+  "n_deals": 255,
+  "attributed_deals": 227,
+  "attributed_share": 0.8901960784313725,
+  "mean_slip_quote": 0.2933685462555122,
+  "mean_slip_r": -0.20404577577185926,
+  "edge_share": -1.28330676586075,
   "why": "matched on the position id (entry order == intent ticket), and legacy key-less deals on the exact stop/target echo; slip against the ENTRY fill, signed by the intent's side (the ledger's `side` is the closing deal's) so a bad buy and a bad sell do not cancel"
 }

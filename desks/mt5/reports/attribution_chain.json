@@ -1,8 +1,8 @@
 {
- "at": "2026-10-08T18:15:35+00:00",
- "deals": 252,
- "attributed": 224,
- "share": 0.8888888888888888,
+ "at": "2026-10-09T15:11:53+00:00",
+ "deals": 255,
+ "attributed": 227,
+ "share": 0.8901960784313725,
  "target": 1.0,
  "unmatched_deals": 28,
  "chain": [
@@ -3813,6 +3813,57 @@
    "realized_r": -0.9505,
    "pl_quote": -32.95,
    "slip_quote": 0.3400000000001455
+  },
+  {
+   "sleeve": "gold_asia",
+   "symbol": "XAUUSD",
+   "intent_time": "2026-10-08T04:00:26+00:00",
+   "release_id": "6bb85820b78e",
+   "state_vector_id": "e13916b87e9d5367",
+   "ticket": 233203619,
+   "position_id": 233203619,
+   "entry_deal": 209450045,
+   "close_deal": 209452555,
+   "closed_at": "2026-10-08T20:20:41+00:00",
+   "intended": 4143.25,
+   "entry": 4144.15,
+   "realized_r": -0.0565,
+   "pl_quote": -2.06,
+   "slip_quote": 0.8999999999996362
+  },
+  {
+   "sleeve": "audchf_overnight_gap_decay_",
+   "symbol": "AUDCHF",
+   "intent_time": "2026-10-08T22:03:53+00:00",
+   "release_id": "416ccb3d215b",
+   "state_vector_id": "24e6d21f3c39e155",
+   "ticket": 233700226,
+   "position_id": 233700226,
+   "entry_deal": 209520348,
+   "close_deal": 209521615,
+   "closed_at": "2026-10-09T01:12:12+00:00",
+   "intended": 0.57865,
+   "entry": 0.57865,
+   "realized_r": 0.0249,
+   "pl_quote": 1.76,
+   "slip_quote": 0.0
+  },
+  {
+   "sleeve": "gold_asia",
+   "symbol": "XAUUSD",
+   "intent_time": "2026-10-09T04:00:33+00:00",
+   "release_id": "416ccb3d215b",
+   "state_vector_id": "7b3ac5e6415252e0",
+   "ticket": 233796519,
+   "position_id": 233796519,
+   "entry_deal": 209602291,
+   "close_deal": 209675004,
+   "closed_at": "2026-10-09T11:03:06+00:00",
+   "intended": 4180.18,
+   "entry": 4180.21,
+   "realized_r": 0.2815,
+   "pl_quote": 12.39,
+   "slip_quote": 0.02999999999974534
   }
  ]
 }
