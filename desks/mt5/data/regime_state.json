@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-09T16:45:08.666188+00:00",
+  "swept_at": "2026-10-09T17:00:09.553395+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -251,7 +251,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0618,
+      "shadow_exp_r": 0.0645,
       "woke_on_shadow": false
     },
     "AUDSGD|pca_residual_asia": {
@@ -768,7 +768,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2156,
+      "shadow_exp_r": -0.2046,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -812,7 +812,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0679,
+      "shadow_exp_r": -0.2611,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -2164,8 +2164,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 3,
-      "shadow_exp_r": 1.5689,
+      "shadow_n": 2,
+      "shadow_exp_r": 2.649,
       "woke_on_shadow": false
     },
     "GBPMXN|spread_state_asia": {
@@ -2186,8 +2186,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.0544,
+      "shadow_n": 63,
+      "shadow_exp_r": 0.7122,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_continuous": {
@@ -2242,7 +2242,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.734,
+      "shadow_exp_r": -0.7182,
       "woke_on_shadow": false
     },
     "GBPNOK|overnight_gap_decay_asia": {
@@ -2385,7 +2385,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2524,
+      "shadow_exp_r": -0.3336,
       "woke_on_shadow": false
     },
     "GBPSEK|overnight_gap_decay_asia": {
@@ -4596,7 +4596,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0769,
+      "shadow_exp_r": -0.0785,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
