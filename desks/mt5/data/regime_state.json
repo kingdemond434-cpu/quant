@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-09T09:00:27.834468+00:00",
+  "swept_at": "2026-10-09T09:15:06.537404+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -53,7 +53,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.5352,
+      "shadow_exp_r": 0.5437,
       "woke_on_shadow": false
     },
     "AUDCHF|overnight_gap_decay_asia": {
@@ -207,7 +207,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.134,
+      "shadow_exp_r": -0.0995,
       "woke_on_shadow": false
     },
     "AUDSGD|clock_transition_asia": {
@@ -251,7 +251,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0076,
+      "shadow_exp_r": 0.0835,
       "woke_on_shadow": false
     },
     "AUDSGD|pca_residual_asia": {
@@ -261,8 +261,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 43,
-      "shadow_exp_r": -0.2957,
+      "shadow_n": 31,
+      "shadow_exp_r": 0.4219,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {
@@ -526,7 +526,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.4648,
+      "shadow_exp_r": 0.4675,
       "woke_on_shadow": false
     },
     "CADCHF|overnight_gap_decay_asia": {
@@ -570,7 +570,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3959,
+      "shadow_exp_r": -0.3898,
       "woke_on_shadow": false
     },
     "CHFDKK|carry_continuous": {
@@ -614,7 +614,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.1954,
+      "shadow_exp_r": 0.1908,
       "woke_on_shadow": false
     },
     "CHFDKK|formula_continuous": {
@@ -636,7 +636,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4177,
+      "shadow_exp_r": -0.4123,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -1131,7 +1131,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.3382,
+      "shadow_exp_r": 0.3439,
       "woke_on_shadow": false
     },
     "EURCHF|formula_continuous": {
@@ -1658,8 +1658,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.1113,
+      "shadow_n": 43,
+      "shadow_exp_r": 0.5369,
       "woke_on_shadow": false
     },
     "EURZAR|formula_asia": {
@@ -1670,7 +1670,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 38,
-      "shadow_exp_r": 0.4602,
+      "shadow_exp_r": 0.4651,
       "woke_on_shadow": false
     },
     "EURZAR|formula_continuous": {
@@ -2044,7 +2044,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0271,
+      "shadow_exp_r": -0.0172,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_continuous": {
@@ -2187,7 +2187,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0684,
+      "shadow_exp_r": -0.0653,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_continuous": {
@@ -2220,7 +2220,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.7255,
+      "shadow_exp_r": 0.7219,
       "woke_on_shadow": false
     },
     "GBPNOK|formula_continuous": {
@@ -2242,7 +2242,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -1.1617,
+      "shadow_exp_r": -1.1635,
       "woke_on_shadow": false
     },
     "GBPNOK|overnight_gap_decay_asia": {
@@ -2374,7 +2374,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.6738,
+      "shadow_exp_r": 0.6689,
       "woke_on_shadow": false
     },
     "GBPSEK|macro_conditional_asia": {
@@ -2385,7 +2385,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2227,
+      "shadow_exp_r": -0.2289,
       "woke_on_shadow": false
     },
     "GBPSEK|overnight_gap_decay_asia": {
@@ -2462,7 +2462,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3114,
+      "shadow_exp_r": -0.2993,
       "woke_on_shadow": false
     },
     "GBPSGD|overnight_gap_decay_continuous": {
@@ -2550,7 +2550,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3669,
+      "shadow_exp_r": -0.3801,
       "woke_on_shadow": false
     },
     "GBPZAR|clock_transition_asia": {
@@ -2572,7 +2572,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 28,
-      "shadow_exp_r": 0.6185,
+      "shadow_exp_r": 0.6239,
       "woke_on_shadow": false
     },
     "GBPZAR|macro_conditional_asia": {
@@ -2583,7 +2583,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3446,
+      "shadow_exp_r": -0.3309,
       "woke_on_shadow": false
     },
     "GBPZAR|overnight_gap_decay_asia": {
@@ -2770,7 +2770,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3544,
+      "shadow_exp_r": -0.3596,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
@@ -2825,7 +2825,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 51,
-      "shadow_exp_r": 0.0278,
+      "shadow_exp_r": 0.0381,
       "woke_on_shadow": false
     },
     "NAS100|pca_residual_continuous": {
@@ -2957,7 +2957,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3172,
+      "shadow_exp_r": -0.3165,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3023,7 +3023,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5552,
+      "shadow_exp_r": -0.5481,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3100,7 +3100,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0323,
+      "shadow_exp_r": -0.0283,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -3155,7 +3155,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1981,
+      "shadow_exp_r": -0.1994,
       "woke_on_shadow": false
     },
     "NZDSGD|overnight_gap_decay_continuous": {
@@ -3243,7 +3243,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2504,
+      "shadow_exp_r": -0.2496,
       "woke_on_shadow": false
     },
     "SGDJPY|overnight_gap_decay_continuous": {
@@ -3639,7 +3639,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4805,
+      "shadow_exp_r": -0.4721,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -3649,8 +3649,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 38,
-      "shadow_exp_r": 0.3697,
+      "shadow_n": 39,
+      "shadow_exp_r": 0.3606,
       "woke_on_shadow": false
     },
     "USDJPY|macro_conditional_continuous": {
@@ -3716,7 +3716,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3709,
+      "shadow_exp_r": -0.391,
       "woke_on_shadow": false
     },
     "USDMXN|formula_asia": {
@@ -3727,7 +3727,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 34,
-      "shadow_exp_r": 0.5944,
+      "shadow_exp_r": 0.5943,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_asia": {
@@ -3738,7 +3738,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2264,
+      "shadow_exp_r": -0.2041,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_continuous": {
@@ -3771,7 +3771,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1255,
+      "shadow_exp_r": -0.1491,
       "woke_on_shadow": false
     },
     "USDNOK|carry_continuous": {
@@ -3815,7 +3815,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 34,
-      "shadow_exp_r": 0.3991,
+      "shadow_exp_r": 0.3972,
       "woke_on_shadow": false
     },
     "USDNOK|overnight_gap_decay_continuous": {
@@ -3859,7 +3859,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.3582,
+      "shadow_exp_r": 0.3537,
       "woke_on_shadow": false
     },
     "USDPLN|macro_conditional_asia": {
@@ -3870,7 +3870,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1991,
+      "shadow_exp_r": -0.2437,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
@@ -3947,7 +3947,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2503,
+      "shadow_exp_r": -0.3018,
       "woke_on_shadow": false
     },
     "USDSEK|overnight_gap_decay_asia": {
@@ -4101,7 +4101,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1963,
+      "shadow_exp_r": -0.2101,
       "woke_on_shadow": false
     },
     "USDZAR|cross_asset_residual_asia": {
@@ -4123,7 +4123,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 39,
-      "shadow_exp_r": 0.3698,
+      "shadow_exp_r": 0.3722,
       "woke_on_shadow": false
     },
     "USDZAR|macro_conditional_asia": {
@@ -4134,7 +4134,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.244,
+      "shadow_exp_r": -0.2336,
       "woke_on_shadow": false
     },
     "USDZAR|overnight_gap_decay_asia": {
@@ -4827,7 +4827,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1213,
+      "shadow_exp_r": -0.1228,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
@@ -5036,7 +5036,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0617,
+      "shadow_exp_r": -0.0629,
       "woke_on_shadow": false
     },
     "XAUUSD|macro_conditional_continuous": {
