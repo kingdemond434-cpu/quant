@@ -390,6 +390,9 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
     daily.attrs["geometry_rejections"] = getattr(res, "geometry_rejections", [])
     daily.attrs["geometry_rejection_count"] = len(daily.attrs["geometry_rejections"])
     daily.attrs["signal_count"] = getattr(res, "signal_count", len(sigs))
+    # A shard retains thousands of series. Keep the full count and digest, with
+    # bounded examples, rather than retaining every unfilled signal in memory.
+    daily.attrs = _cache_series_metadata(daily)
     return daily
 
 
@@ -1943,8 +1946,10 @@ def cache_save(key: str, ds1, ds3) -> None:
                                  dates=pd.to_datetime(common).astype("int64").to_numpy(),
                                  v1=ds1.reindex(common).to_numpy(float),
                                  v3=ds3.reindex(common).to_numpy(float),
-                                 attrs1=_np.array(json.dumps(_cache_series_metadata(ds1))),
-                                 attrs3=_np.array(json.dumps(_cache_series_metadata(ds3))))
+                                 attrs1=_np.array(json.dumps(_cache_series_metadata(ds1),
+                                                           default=str)),
+                                 attrs3=_np.array(json.dumps(_cache_series_metadata(ds3),
+                                                           default=str)))
         os.replace(tmp, final)
     except Exception as exc:
         if not _CACHE_SAVE_WARNED[0]:

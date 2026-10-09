@@ -209,6 +209,27 @@ def test_superseded_replay_cache_remains_preserved_but_cannot_be_loaded(tmp_path
     assert all(p.read_bytes() == content for p, content in old_files.items())
 
 
+def test_many_unfilled_signals_keep_full_counts_without_retained_receipt_growth(tmp_path,
+                                                                             monkeypatch):
+    import numpy as np
+    from mt5desk.engine import Costs, Signal
+
+    idx = pd.date_range("2026-06-01", periods=105, freq="15min", tz="UTC")
+    bars = pd.DataFrame({"open":1.0,"high":1.1,"low":0.9,"close":1.0}, index=idx)
+    signals = [Signal(time=t,side=np.int64(1),stop=1.0,target=1.05,
+                      ttl_bars=2,tag="retained") for t in idx[:100]]
+    series = external_gauntlet.daily_series(bars,signals,Costs())
+    assert len(series)==0 and series.attrs["signal_count"]==100
+    assert series.attrs["geometry_rejection_count"]==100
+    assert len(series.attrs["geometry_rejections"])==3
+    assert len(series.attrs["geometry_receipt_sha256"])==64
+    monkeypatch.setattr(external_gauntlet,"CACHE_DIR",tmp_path)
+    external_gauntlet.cache_save("bounded",series,series)
+    loaded = external_gauntlet.cache_load("bounded")
+    assert loaded is not None and loaded[0].attrs["geometry_rejection_count"]==100
+    assert loaded[0].attrs["geometry_receipt_sha256"]==series.attrs["geometry_receipt_sha256"]
+
+
 def test_the_forward_clock_key_and_frozen_identity_carry_the_chart() -> None:
     h1_key = shadow_forward.sleeve_key(SYM, "asia", dict(PARAMS_H1), FAM)
     m5_key = shadow_forward.sleeve_key(SYM, "asia", dict(PARAMS_M5), FAM)

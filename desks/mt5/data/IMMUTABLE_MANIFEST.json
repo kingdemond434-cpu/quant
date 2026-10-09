@@ -1,8 +1,8 @@
 {
- "signed_utc": "2026-10-08T07:03:47.656678+00:00",
- "signed_by": "owner-approved-codex-2026-10-08",
+ "signed_utc": "2026-10-09T02:55:39.260092+00:00",
+ "signed_by": "Codex, principal-authorized repair",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "d0919bfc921dac2c",
+  "desks/mt5/scripts/external_gauntlet.py": "71a0ac74cf367871",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",

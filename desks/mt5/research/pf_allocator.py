@@ -376,7 +376,11 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             ser = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
             rejections = ser.attrs.get("geometry_rejections") if ser is not None else None
             if rejections:
-                acct.setdefault("unfilled_geometry", {})[name] = rejections
+                acct.setdefault("unfilled_geometry", {})[name] = {
+                    "count": ser.attrs.get("geometry_rejection_count", len(rejections)),
+                    "receipt_sha256": ser.attrs.get("geometry_receipt_sha256"),
+                    "examples": rejections,
+                }
             if ser is None or len(ser) < 2:
                 acct["refused"][name] = f"replay produced {0 if ser is None else len(ser)} days"
                 continue
