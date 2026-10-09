@@ -1,6 +1,6 @@
 {
  "schema": "gate_verdict_digest/1",
- "generated_at": "2026-10-09T14:53:58+00:00",
+ "generated_at": "2026-10-09T21:20:32+00:00",
  "status": "MEASURED",
  "producer": "desks/mt5/research/gate_verdict_digest.py (hourly, publish_state leg)",
  "ledger": {
