@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts import run_sharded_gauntlet as runner  # noqa: E402
+from scripts import run_sharded_gauntlet as runner
 
 
 def test_shard_count_falls_closed_and_honours_measurement(monkeypatch) -> None:
@@ -106,3 +106,28 @@ def test_dispatch_propagates_a_failed_shard(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(runner, "run", fake_run)
     with pytest.raises(RuntimeError, match="shard 2 failed after 3 attempt"):
         runner.dispatch(tmp_path, 4, "rule")
+
+
+def test_actual_child_stderr_survives_retries_and_shard_cleanup(monkeypatch, tmp_path):
+    from libs.ops.proctree import run as child_run
+
+    shard_dir = tmp_path / "shards"
+    shard_dir.mkdir()
+    attempts = []
+
+    def child(argv, **kwargs):
+        attempts.append(int(argv[-2]))
+        return child_run([sys.executable, "-c",
+                          "import sys; print('real child error', file=sys.stderr); sys.exit(7)"],
+                         **kwargs)
+
+    monkeypatch.setenv("GAUNTLET_SHARD_RETRIES", "1")
+    monkeypatch.setattr(runner, "run", child)
+    with pytest.raises(RuntimeError, match="refusing partial merge") as failed:
+        runner.dispatch(shard_dir, 1, "build")
+    shard_dir.rmdir()
+    receipts = list((tmp_path / "shards-logs").glob("*.log"))
+    assert len(receipts) == 2
+    assert attempts == [0, 0]
+    assert all("real child error" in p.read_text() for p in receipts)
+    assert "child log=" in str(failed.value.__cause__)

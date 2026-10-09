@@ -12,6 +12,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -74,9 +75,25 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
         "shard_worker(sys.argv[1],int(sys.argv[2]),sys.argv[3])"
     )
 
-    def one(k: int) -> None:
-        run([sys.executable, "-u", "-c", code, str(shard_dir), str(k), phase],
-            cwd=DESK, env=os.environ.copy(), timeout=None, capture_output=False, check=True)
+    # Python's reassignment of sys.stderr does not redirect a child's OS stderr handle.
+    # Keep errors outside the judge's disposable shard directory, without buffering them
+    # in the parent's memory. Every retry gets its own receipt.
+    logs = shard_dir.parent / f"{shard_dir.name}-logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    invocation = uuid4().hex
+
+    def one(k: int, attempt: int = 0) -> None:
+        receipt = logs / f"{invocation}-{phase}-{k}-attempt-{attempt}.log"
+        with receipt.open("wb") as output:
+            output.write(f"{datetime.now(UTC).isoformat()} {phase} shard={k} "
+                         f"attempt={attempt}\n".encode())
+            output.flush()
+            try:
+                run([sys.executable, "-u", "-c", code, str(shard_dir), str(k), phase],
+                    cwd=DESK, env=os.environ.copy(), timeout=None, capture_output=False,
+                    stdout=output, stderr=output, check=True)
+            except Exception as exc:
+                raise RuntimeError(f"{phase} shard {k} failed; child log={receipt}") from exc
 
     def attempted(k: int) -> tuple[int, Exception | None]:
         try:
@@ -99,7 +116,7 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
         last_exc = first_exc
         for attempt in range(1, _retry_attempts() + 1):
             try:
-                one(k)
+                one(k, attempt)
                 print(f"SHARD RECOVERY: {phase} shard {k} recovered on retry {attempt}",
                       flush=True)
                 break

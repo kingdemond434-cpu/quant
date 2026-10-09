@@ -240,6 +240,47 @@ def test_no_gate_ledger_is_unmeasured_not_clean(tmp_path: Path, graph: hg.Graph)
     assert str(out["status"]).startswith("UNMEASURED")
 
 
+def test_judged_id_join_streams_history_and_preserves_prior_fates(tmp_path, graph, monkeypatch):
+    node = hg.Node("EURUSD", "carry", {"k": 1}, fate=hg.FAILED, at=T0)
+    graph.append(node)
+    graph.append(hg.Node("EURUSD", "carry", {"k": 1}, fate=hg.BORN, at=T1))
+    other = hg.Node("USDJPY", "carry", {"k": 2}, fate=hg.JUDGED, at=T0)
+    graph.append(other)
+    monkeypatch.setattr(graph, "rows", lambda: pytest.fail("materialized full graph"))
+    assert pj.judged_spec_ids(graph, gate_ledger=tmp_path / "absent") == {node.id, other.id}
+
+
+def test_already_recorded_gate_rows_do_not_load_graph_or_cards(tmp_path, graph, monkeypatch):
+    gate = tmp_path / "gate.jsonl"
+    gate.write_text(json.dumps({"prereg_status": pr.POST_HOC, "cell": "old"}) + "\n")
+    cursor = tmp_path / "cursor.json"
+    monkeypatch.setattr(graph, "current", lambda: pytest.fail("loaded graph for zero new verdicts"))
+    monkeypatch.setattr(pr, "spec_index", lambda *args: pytest.fail("loaded cards for zero work"))
+    result = pj.record_gate_ledger(graph=graph, gate_ledger=gate, cursor=cursor)
+    assert result["stamped_by_judge"] == 1
+    assert result["recorded"] == result["verdicts"] == 0
+    assert result["join_rate"] is None
+    assert json.loads(cursor.read_text())["offset"] == gate.stat().st_size
+
+
+def test_streamed_judged_ids_preserve_frozen_snapshot(tmp_path, graph):
+    first = hg.Node("EURUSD", "carry", {"k": 1}, fate=hg.FAILED)
+    graph.append(first)
+    frozen = graph.snapshot()
+    later = hg.Node("USDJPY", "carry", {"k": 2}, fate=hg.JUDGED)
+    graph.append(later)
+    assert pj.judged_spec_ids(frozen, gate_ledger=tmp_path / "absent") == {first.id}
+
+
+def test_malformed_graph_keeps_only_independent_gate_evidence(tmp_path, graph):
+    graph.append(hg.Node("EURUSD", "carry", {"k": 1}, fate=hg.FAILED))
+    with graph.path.open("a") as output:
+        output.write("broken json\n")
+    gate = tmp_path / "gate.jsonl"
+    gate.write_text(json.dumps({"graph_id": "independent"}) + "\n")
+    assert pj.judged_spec_ids(graph, gate_ledger=gate) == {"independent"}
+
+
 def test_the_docket_writer_counts_first_seen_cells_as_judged(
         tmp_path: Path, graph: hg.Graph, ledger: Path) -> None:
     row = _row(k=11)
