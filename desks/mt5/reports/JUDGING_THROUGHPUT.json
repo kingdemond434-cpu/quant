@@ -1,21 +1,21 @@
 {
- "at": "2026-10-09T14:01:48+00:00",
+ "at": "2026-10-09T14:45:05+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 54357,
+  "free_phys_mb": 65571,
   "commit_limit_mb": 251854,
-  "commit_free_mb": 109403,
+  "commit_free_mb": 134775,
   "cpu_source": "psutil",
-  "busy_other_cores": 12.9,
+  "busy_other_cores": 15.81,
   "busy_judge_cores": 0.0,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": false,
-  "n_python": 86,
+  "n_python": 72,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -62,7 +62,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "judge_value_at_risk",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 35, commit 71 at 768MB a worker; the binding one is judge_value_at_risk",
+  "why": "cores 15 (reserved 3), memory 42, commit 87 at 768MB a worker; the binding one is judge_value_at_risk",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -116,7 +116,7 @@
  "limiting_resource": "judge_value_at_risk",
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-09T14:01:48+00:00",
+  "at": "2026-10-09T14:45:05+00:00",
   "verdicts": {
    "status": "MEASURED",
    "rows_total": 837690,
@@ -148,12 +148,12 @@
   "created": {
    "status": "MEASURED",
    "counts": {
-    "24h": 13110,
-    "7d": 175690
+    "24h": 13179,
+    "7d": 175757
    },
    "per_hour": {
-    "24h": 546.25,
-    "7d": 1045.774
+    "24h": 549.125,
+    "7d": 1046.173
    }
   },
   "verdicts_per_hour": 1156.417,
@@ -162,7 +162,7 @@
   "first_judged_per_day": 9468.0,
   "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
   "coverage_backlog_fresh": false,
-  "created_per_day": 13110.0,
+  "created_per_day": 13179.0,
   "backlog": "UNMEASURED",
   "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
   "eta_to_drain": {
@@ -173,6 +173,6 @@
   "workers_last_sweep": 18,
   "cores_basis": "fixed_reservation"
  },
- "measure_seconds": 208.9,
- "seconds": 257.0
+ "measure_seconds": 61.9,
+ "seconds": 105.4
 }

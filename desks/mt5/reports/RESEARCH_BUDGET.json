@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T13:50:55+00:00",
+ "at": "2026-10-09T14:42:54+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,17 +9,17 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-09T13:50:08+00:00",
+   "at": "2026-10-09T14:42:46+00:00",
    "bandit_at": "2026-10-09T00:19:35.859814+00:00",
-   "hour": "2026-10-09T13",
-   "arm": "control",
+   "hour": "2026-10-09T14",
+   "arm": "treated",
    "wanted_s": 480,
    "floor_s": 240,
    "extra_wanted_s": 240,
    "extra_due_s": 240,
-   "extra_s": 0,
-   "surplus_s": 1321.9,
-   "surplus_why": "department 'discovery' measured spare 1322s/hour",
+   "extra_s": 240,
+   "surplus_s": 1352.2,
+   "surplus_why": "department 'discovery' measured spare 1352s/hour",
    "contract": {
     "n_treated": 10,
     "n_control": 0,
@@ -29,7 +29,7 @@
    },
    "trial": true,
    "authoritative": false,
-   "governed_why": "held-out hour (control arm): the floor runs so the uplift's gain can be measured; +240s was due",
+   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1352s/hour); contract UNMEASURED: this hour is the trial that measures it",
    "share": 0.2798,
    "baseline": 0.2727,
    "ladder_factor": 0.866,
@@ -38,7 +38,7 @@
    "department_why": "exchange not authoritative: sample binds but the desk measures no per-department denominator for it (None); reported, never spent; x compute policy (compute policy MEASURED from compute_policy.json: split {'exploitation': 0.8236, 'exploration': 0.1176, 'frontier': 0.0588} learned from survivors per hour, two-sided)",
    "archive_factor": 1.0,
    "auction_factor": 2.0,
-   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-09T04",
+   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-09T14",
    "engine_factor": 1.0,
    "engine_why": "engine registry: no share for leg 'alpha_evolution'; par",
    "meta_factor": 2.0,
@@ -48,10 +48,10 @@
    "paradigm_factor": 1.0,
    "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0174 vs equal share 0.0667 = x0.26 -> x1.00 (one-sided)",
    "factor": 2.0,
-   "applied_s": 240,
+   "applied_s": 480,
    "applied": true,
-   "granted": false,
-   "why": "share 0.280 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); held-out hour (control arm): the floor runs so the uplift's gain can be measured; +240s was due"
+   "granted": true,
+   "why": "share 0.280 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1352s/hour); contract UNMEASURED: this hour is the trial that measures it"
   },
   "deepen": {
    "leg": "deepen",
@@ -108,7 +108,7 @@
   }
  },
  "authoritative": false,
- "authority_why": "not authoritative -- alpha_evolution: held-out hour (control arm): the floor runs so the uplift's gain can be measured; +240s was due; deepen: the base is the leg's unlimited sentinel; nothing to govern",
+ "authority_why": "not authoritative -- alpha_evolution: uplift ran as the trial, contract UNMEASURED (fewer than 3 units in an arm); deepen: the base is the leg's unlimited sentinel; nothing to govern",
  "contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
