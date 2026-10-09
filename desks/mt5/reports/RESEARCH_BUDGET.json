@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T11:43:30+00:00",
+ "at": "2026-10-09T11:56:48+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -62,9 +62,9 @@
     "alt_data_hypothesis",
     "failure_derived"
    ],
-   "at": "2026-10-09T03:14:12+00:00",
+   "at": "2026-10-09T11:56:48+00:00",
    "bandit_at": "2026-10-09T00:19:35.859814+00:00",
-   "hour": "2026-10-09T03",
+   "hour": "2026-10-09T11",
    "arm": "none",
    "wanted_s": 0,
    "floor_s": 0,
@@ -91,7 +91,7 @@
    "department_why": "exchange not authoritative: sample binds but the desk measures no per-department denominator for it (None); reported, never spent; x compute policy (compute policy MEASURED from compute_policy.json: split {'exploitation': 0.8236, 'exploration': 0.1176, 'frontier': 0.0588} learned from survivors per hour, two-sided)",
    "archive_factor": 1.0,
    "auction_factor": 2.0,
-   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-08T21",
+   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-09T04",
    "engine_factor": 1.0,
    "engine_why": "engine registry: leg share 0.0000 vs equal share 0.1250 = x0.00 -> x1.00 (one-sided: this factor may fund a leg above par and may never take one below it)",
    "meta_factor": 1.0,
