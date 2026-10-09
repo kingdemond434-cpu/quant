@@ -160,5 +160,19 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCa8rgzIMKFx2uJHVsf0oqjg",
+  "channel": "IQCapital",
+  "video_id": "rSQyhsp8vNY",
+  "published": "2026-10-09T14:23:04Z",
+  "title": "Watch Pro Trader Andrea Cimi Trade LIVE",
+  "description": "Watch Pro Trader Andrea Cimi Trade LIVE",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
