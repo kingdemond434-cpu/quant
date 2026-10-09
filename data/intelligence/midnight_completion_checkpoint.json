@@ -9,7 +9,7 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-09T15:51:49.780436+00:00",
+   "finished_at": "2026-10-09T21:42:46.671695+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -27,7 +27,7 @@
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-09T15:51:36.234325+00:00",
+   "finished_at": "2026-10-09T21:42:37.045524+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -57,10 +57,15 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-09T16:06:58.081361+00:00",
-   "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-desk-pull.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-09T21:42:48.986735+00:00",
+   "status": "RUNNING"
   },
   "mechanism_independence": {
    "finished_at": "2026-10-09T16:07:20.617012+00:00",
@@ -81,5 +86,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-09T19:55:13.535304+00:00"
+ "updated_at": "2026-10-09T21:42:48.986735+00:00"
 }
