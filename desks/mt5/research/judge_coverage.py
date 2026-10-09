@@ -124,6 +124,19 @@ CAPACITY_LOOKBACK_H = 168.0
 #: trap `external_gauntlet._stamped_but_unjudged` documents: it starved 1,544 cells forever.
 NOT_JUDGED_PREFIX = "NOT_RUN"
 
+#: NOT TESTABLE, NOT UNJUDGED (2026-10-07). A cell parked in the unrunnable bank for one of these
+#: reasons WAS put through the judge and came back with fewer than the 60 daily observations CPCV
+#: and walk-forward need. It is not work the judge owes this hour, and counting it as backlog
+#: forever is what made a box with 1.39M "unjudged" cells read GROWING while the judge ran: the
+#: count could only ever rise. It is now its own named class -- `not_testable` per family and per
+#: reason -- and it RE-ENTERS the backlog the moment `readmit_due` re-admits it (its history grew
+#: enough to reach 60 observations, or READMIT_MAX_DAYS passed). Nothing is deleted, no gate
+#: moves, and every cell stays in the docket and the bank. The fixable classes (`series_exception`,
+#: `missing_identity_input`) are NOT here: those are defects the desk owes a fix for, so they stay
+#: in the backlog until fixed.
+NOT_TESTABLE_REASONS: frozenset[str] = frozenset({
+    "never_fires", "too_rare", "lockbox_consumed_history", "short_history_after_cut"})
+
 
 def _read(path: Path) -> Any:
     try:
@@ -209,36 +222,51 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
     total: dict[str, int] = {}
     in_window: dict[str, int] = {}
     cutoff = (now or datetime.now(tz=UTC)).timestamp() - window_h * 3600.0
+    # STREAMED, never `readlines()` (2026-10-07): the ledger holds every changed verdict the desk
+    # has written, and loading it whole on each hourly pass is how this report went 56 h stale.
     try:
         with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+                    continue
+                if row.get("passed") is not True and str(
+                        row.get("terminal_gate") or "") in ("", "UNKNOWN"):
+                    continue
+                fam = str(row.get("family") or "")
+                cell = str(row.get("cell") or "")
+                if cell:
+                    seen.add(cell)
+                if not fam:
+                    continue
+                total[fam] = total.get(fam, 0) + 1
+                at = _ts(row.get("at"))
+                if at is not None and at.timestamp() >= cutoff:
+                    in_window[fam] = in_window.get(fam, 0) + 1
     except OSError:
-        return seen, total, in_window
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(row, dict):
-            continue
-        if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-            continue
-        if row.get("passed") is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
-            continue
-        fam = str(row.get("family") or "")
-        cell = str(row.get("cell") or "")
-        if cell:
-            seen.add(cell)
-        if not fam:
-            continue
-        total[fam] = total.get(fam, 0) + 1
-        at = _ts(row.get("at"))
-        if at is not None and at.timestamp() >= cutoff:
-            in_window[fam] = in_window.get(fam, 0) + 1
+        pass
     return seen, total, in_window
+
+
+def not_testable_index(bank: dict[str, dict[str, Any]] | None = None
+                       ) -> dict[str, str]:
+    """cell id -> reason, for every cell the unrunnable bank holds as NOT TESTABLE right now.
+
+    Read from the bank as it stands BEFORE this pass parks or re-admits anything, so a cell
+    re-admitted this pass is backlog again on the next reading -- never held out longer than the
+    bank's own re-admission rule says. An unreadable bank reads as empty: every cell is then
+    counted as backlog, exactly as before this class existed."""
+    rows = unrunnable_bank() if bank is None else bank
+    return {str(c): str(r.get("reason")) for c, r in rows.items()
+            if isinstance(r, dict) and r.get("reason") in NOT_TESTABLE_REASONS}
 
 
 def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
@@ -1448,12 +1476,15 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
 
     prior = _read(ratchet or RATCHET) or {}
     judged_cells, judged_total, judged_window = judged_index(ledger, now=at)
+    not_testable_ids = not_testable_index()
     for row in rows:
         row["_cell"] = _cell_id(row)
 
     mined = _mined(rows)
     banned = banned_from_capital()
     study_only: dict[str, int] = {}
+    not_testable: dict[str, int] = {}
+    not_testable_by_reason: dict[str, int] = {}
     backlog: dict[str, int] = {}
     oldest: dict[str, float | None] = {}
     unjudged_ids: set[str] = set()
@@ -1466,6 +1497,13 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             # NOT backlog: a cell that cannot reach the book is not work the judge owes. It is
             # counted, named and kept -- it is simply not something the hour is allocated to.
             study_only[fam] = study_only.get(fam, 0) + 1
+            continue
+        if cid and cid in not_testable_ids:
+            # JUDGED TO THE LIMIT OF ITS DATA: named, counted, kept, and back in the backlog when
+            # the bank re-admits it (`NOT_TESTABLE_REASONS`).
+            not_testable[fam] = not_testable.get(fam, 0) + 1
+            _r = not_testable_ids[cid]
+            not_testable_by_reason[_r] = not_testable_by_reason.get(_r, 0) + 1
             continue
         backlog[fam] = backlog.get(fam, 0) + 1
         if cid:
@@ -1530,6 +1568,8 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                 continue
             if str(row.get("family") or "") in banned:
                 continue
+            if cid and cid in not_testable_ids:
+                continue
             seen = _ts(row.get("first_seen"))
             if seen is not None and seen.timestamp() <= prior_at.timestamp():
                 fam = str(row.get("family") or "")
@@ -1554,6 +1594,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             "judged_window": judged_window.get(fam, 0),
             "judged_total": judged_total.get(fam, 0),
             "unjudged": back,
+            "not_testable": not_testable.get(fam, 0),
             "oldest_unjudged_age_h": (round(float(oldest[fam] or 0.0), 2)
                                       if oldest.get(fam) is not None else None),
             "quota": q,
@@ -1688,6 +1729,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                                      if isinstance(prior, dict) else None),
         "prior_drain_status": (prior.get("drain_status") if isinstance(prior, dict) else None),
         "unrunnable_parked": unrunnable.get("parked_this_pass"),
+        # OUT OF THE BACKLOG, NOT OUT OF THE RECORD: cells the judge ruled NOT TESTABLE (under 60
+        # daily observations), per reason, until the bank re-admits them.
+        "not_testable_total": sum(not_testable.values()),
+        "not_testable_by_reason": not_testable_by_reason,
         "unrunnable_bank": unrunnable.get("bank_size"),
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
