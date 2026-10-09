@@ -13,5 +13,16 @@
   "failure_derived": 0.1073,
   "model_architecture": 0.1008,
   "external_screen": 0.0182
+ },
+ "authoritative": false,
+ "authority_evidence": "not authoritative -- alpha_evolution: held-out hour (control arm): the floor runs so the uplift's gain can be measured; +240s was due; deepen: the base is the leg's unlimited sentinel; nothing to govern; cycle_pricing: every leg ran on its base budget (no price moved a leg's seconds)",
+ "research_budget_authoritative": false,
+ "research_budget_why": "not authoritative -- alpha_evolution: held-out hour (control arm): the floor runs so the uplift's gain can be measured; +240s was due; deepen: the base is the leg's unlimited sentinel; nothing to govern",
+ "research_budget_contract": {
+  "gain": "INFO_PER_COMPUTE",
+  "metric": "control_arm.admitted",
+  "better": "up",
+  "bar": 1.0,
+  "organ": "report:RESEARCH_BUDGET.json"
  }
 }
