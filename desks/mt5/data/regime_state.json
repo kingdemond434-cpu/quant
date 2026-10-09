@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-09T04:30:14.553391+00:00",
+  "swept_at": "2026-10-09T04:45:09.052416+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1933,8 +1933,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 55,
-      "shadow_exp_r": -0.7052,
+      "shadow_n": 90,
+      "shadow_exp_r": -2.99,
       "woke_on_shadow": false
     },
     "GBPDKK|macro_conditional_asia": {
@@ -1945,7 +1945,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0678,
+      "shadow_exp_r": -0.0662,
       "woke_on_shadow": false
     },
     "GBPDKK|overnight_gap_decay_continuous": {
