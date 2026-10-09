@@ -1019,7 +1019,8 @@ def test_entry_cost_is_collected_from_all_opening_fills():
     assert ctx["entry_deal"] == 1 and ctx["entry_cost_measured"]
 
 
-def test_partial_closes_allocate_entry_cost_once_proportionally(tmp_path):
+@pytest.mark.parametrize("cost_measured", [True, False])
+def test_partial_closes_allocate_entry_cost_once_proportionally(tmp_path, cost_measured):
     common = {"entry":1, "magic":341953, "position_id":7, "comment":"DWtest",
               "symbol":"AUDCHF", "profit":2, "commission":-0.5, "swap":0, "fee":-0.1,
               "type":1, "price":1.21, "time":100, "order":8}
@@ -1035,14 +1036,20 @@ def test_partial_closes_allocate_entry_cost_once_proportionally(tmp_path):
         "_position_entry":lambda _:{"entry_price":1.2,"sl":1.19,"tp":1.22,
             "comment":"DWtest","entry_side":0,"entry_time":None,
             "entry_order":7,"entry_deal":1,"entry_volume":0.5,
-            "entry_cost":-1.25,"entry_cost_measured":True}})
+            "entry_cost":-1.25,"entry_cost_measured":cost_measured}})
     ns["record_trades"]({"armed":True},[])
     original=ledger.read_bytes()
     ns["record_trades"]({"armed":True},[])
     assert ledger.read_bytes()==original
     rows=[json.loads(line) for line in original.splitlines()]
-    assert sum(r["entry_cost_allocated"] for r in rows)==pytest.approx(-1.25)
-    assert sum(r["pl_quote"] for r in rows)==pytest.approx(1.55)
+    if cost_measured:
+        assert sum(r["entry_cost_allocated"] for r in rows)==pytest.approx(-1.25)
+        assert sum(r["pl_quote"] for r in rows)==pytest.approx(1.55)
+        assert all(not r["r_unreconstructible"] for r in rows)
+    else:
+        assert all(r["entry_cost_allocated"] is None for r in rows)
+        assert all(r["net_cost_status"] == "UNMEASURED_ENTRY_COST" for r in rows)
+        assert all(r["r_unreconstructible"] for r in rows)
 
 
 def test_market_book_exit_requires_complete_broker_evidence_and_survives_restart(tmp_path):

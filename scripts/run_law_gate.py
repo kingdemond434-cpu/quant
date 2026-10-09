@@ -805,7 +805,9 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     otherwise be wrong: CI and a fresh clone are untouched and cost nothing extra.
     """
     dirt = _dirty(root)
-    if not dirt:
+    sparse = subprocess.run(["git", "config", "--bool", "core.sparseCheckout"],
+                            cwd=root, capture_output=True, text=True, timeout=10)
+    if not dirt and sparse.stdout.strip() != "true":
         return root, "cwd==HEAD (tree clean)", []
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))

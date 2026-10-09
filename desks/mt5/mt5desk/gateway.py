@@ -2206,7 +2206,10 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                # be converted to account currency without a second lookup at analysis time.
                "fill_price": float(d.price), "entry_price": float(entry_price),
                "sl": float(sl_price), "tp": float(tp_price),
-               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0),
+               # Existing R consumers honor this flag. An exit-only return with
+               # unknown opening costs is not reconstructed net evidence either.
+               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0
+                                           or not entry_cost_measured),
                "order": getattr(d, "order", None),
                # THE KEY CHAIN (2026-09-08): intent.ticket == entry_order == position_id for a
                # pending stop; entry_deal and this closing deal hang off position_id. With these
