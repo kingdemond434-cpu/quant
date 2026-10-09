@@ -57,10 +57,11 @@
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
+      "promotion_authority": false,
       "note": "Fusion-native forward shadow.",
       "canonical_identity": "xauusd|anti_donchian_breakout|overlap",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join",
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m5_anti_momentum_ny": {
       "forward_start": "2026-08-22T18:00:00+00:00",
