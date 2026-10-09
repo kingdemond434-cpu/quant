@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-09T02:01:40.446772+00:00",
+  "swept_at": "2026-10-09T02:16:47.155137+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -217,8 +217,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 38,
-      "shadow_exp_r": 0.7051,
+      "shadow_n": 39,
+      "shadow_exp_r": 0.6955,
       "woke_on_shadow": false
     },
     "AUDSGD|cross_asset_residual_asia": {
@@ -228,8 +228,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.595,
+      "shadow_n": 29,
+      "shadow_exp_r": 0.5367,
       "woke_on_shadow": false
     },
     "AUDSGD|cross_asset_residual_continuous": {
@@ -261,8 +261,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 31,
-      "shadow_exp_r": 0.4219,
+      "shadow_n": 43,
+      "shadow_exp_r": -0.2957,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {
@@ -4541,7 +4541,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0907,
+      "shadow_exp_r": 0.06,
       "woke_on_shadow": false
     },
     "XAUAUD|cross_asset_residual_continuous": {
@@ -4596,7 +4596,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1109,
+      "shadow_exp_r": -0.1185,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
