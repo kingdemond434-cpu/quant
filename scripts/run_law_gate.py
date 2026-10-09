@@ -830,6 +830,15 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
                           cwd=root, capture_output=True, text=True, timeout=300)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
+        # Individually skipped files (for example a seal added with --sparse)
+        # can retain that index bit after sparsity is disabled. Restore every
+        # committed path explicitly; this checkout has no operator changes.
+        r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
+                           "restore", "--source=HEAD", "--worktree",
+                           "--ignore-skip-worktree-bits", "--", "."],
+                          cwd=root, capture_output=True, text=True, timeout=300)
+        if r.returncode != 0:
+            raise OSError((r.stderr or r.stdout).strip()[:200])
     except (OSError, subprocess.SubprocessError) as exc:
         # NEVER silently fall back to the dirty tree: the whole point is that the verdict names
         # its own subject. Judging in place is still better than no verdict, but it is REPORTED.
