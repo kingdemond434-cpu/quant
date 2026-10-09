@@ -28,14 +28,14 @@
       "type": 0,
       "volume": 0.01,
       "price_open": 4180.21,
-      "sl": 4149.6,
+      "sl": 4152.3,
       "tp": 4278.4,
-      "profit": 17.54,
+      "profit": 14.79,
       "symbol": "XAUUSD"
     }
   ],
   "last_bracket_date": "2026-10-09",
-  "last_reconcile": "2026-10-09T05:50:10+00:00",
+  "last_reconcile": "2026-10-09T06:04:35+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -79,7 +79,7 @@
     }
   },
   "lot": 0.06,
-  "equity": 566.5,
+  "equity": 564.25,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-09T04:00:34+00:00",
@@ -103,7 +103,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-09T08:50:02+00:00",
+  "placement_pass": "2026-10-09T09:04:51+00:00",
   "netting_booked": {
     "233796519": {
       "sleeve": "gold_asia",
@@ -321,15 +321,15 @@
       "last_signal_bar": "2026-09-30 10:00:00+00:00"
     },
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-09 07:00:00+00:00",
+      "last_signal_bar": "2026-10-09 08:00:00+00:00",
       "open_ttl_until": "2026-10-09T09:00:00+00:00",
       "trail_k": 0.0
     },
     "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-09 07:00:00+00:00"
+      "last_signal_bar": "2026-10-09 08:00:00+00:00"
     },
     "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-09 07:00:00+00:00"
+      "last_signal_bar": "2026-10-09 08:00:00+00:00"
     }
   },
   "orig_stop_dist": {
@@ -507,7 +507,7 @@
     "233796519": 49.340000000000146
   },
   "restart_reconcile": {
-    "at": "2026-10-09T05:50:03+00:00",
+    "at": "2026-10-09T06:05:04+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
@@ -518,7 +518,7 @@
         "symbol": "XAUUSD",
         "comment": "DWgold_asia",
         "volume": 0.01,
-        "sl": 4149.6
+        "sl": 4152.3
       }
     ],
     "orders": [],
