@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-09T18:30:05.051569+00:00",
+  "swept_at": "2026-10-09T18:45:04.939576+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -636,7 +636,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3124,
+      "shadow_exp_r": -0.4504,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -767,8 +767,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.1836,
+      "shadow_n": 64,
+      "shadow_exp_r": 0.6793,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -966,7 +966,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.3004,
+      "shadow_exp_r": 0.3126,
       "woke_on_shadow": false
     },
     "CHFSGD|overnight_gap_decay_continuous": {
@@ -1109,7 +1109,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1881,
+      "shadow_exp_r": -0.19,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -1307,7 +1307,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.2555,
+      "shadow_exp_r": 0.2566,
       "woke_on_shadow": false
     },
     "EURILS|formula_asia": {
@@ -1329,7 +1329,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0289,
+      "shadow_exp_r": -0.0273,
       "woke_on_shadow": false
     },
     "EURILS|macro_conditional_continuous": {
@@ -1428,7 +1428,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2414,
+      "shadow_exp_r": -0.2211,
       "woke_on_shadow": false
     },
     "EURMXN|macro_conditional_continuous": {
@@ -1494,7 +1494,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.137,
+      "shadow_exp_r": 0.1781,
       "woke_on_shadow": false
     },
     "EURNOK|carry_continuous": {
@@ -1516,7 +1516,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5627,
+      "shadow_exp_r": -0.5756,
       "woke_on_shadow": false
     },
     "EURNOK|overnight_gap_decay_asia": {
@@ -1615,7 +1615,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4554,
+      "shadow_exp_r": -0.4714,
       "woke_on_shadow": false
     },
     "EURSEK|spread_state_continuous": {
@@ -1735,8 +1735,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 43,
-      "shadow_exp_r": -2.5186,
+      "shadow_n": 44,
+      "shadow_exp_r": -2.4579,
       "woke_on_shadow": false
     },
     "FRA40|cross_asset_residual_continuous": {
@@ -1824,7 +1824,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2552,
+      "shadow_exp_r": -0.2629,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
@@ -1868,7 +1868,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1723,
+      "shadow_exp_r": -0.1745,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -1945,7 +1945,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0904,
+      "shadow_exp_r": -0.0841,
       "woke_on_shadow": false
     },
     "GBPDKK|overnight_gap_decay_continuous": {
@@ -2088,7 +2088,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.43,
+      "shadow_exp_r": -0.4116,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -2164,8 +2164,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 2,
-      "shadow_exp_r": 2.649,
+      "shadow_n": 6,
+      "shadow_exp_r": 0.3998,
       "woke_on_shadow": false
     },
     "GBPMXN|spread_state_asia": {
@@ -4013,7 +4013,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2762,
+      "shadow_exp_r": -0.2795,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
