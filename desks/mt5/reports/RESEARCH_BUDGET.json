@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T11:13:08+00:00",
+ "at": "2026-10-09T11:43:30+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-09T11:12:57+00:00",
+   "at": "2026-10-09T11:43:11+00:00",
    "bandit_at": "2026-10-09T00:19:35.859814+00:00",
    "hour": "2026-10-09T11",
    "arm": "control",
@@ -18,8 +18,8 @@
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 0,
-   "surplus_s": 1320.2,
-   "surplus_why": "department 'discovery' measured spare 1320s/hour",
+   "surplus_s": 1273.4,
+   "surplus_why": "department 'discovery' measured spare 1273s/hour",
    "contract": {
     "n_treated": 10,
     "n_control": 0,
