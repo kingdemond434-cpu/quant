@@ -17,6 +17,7 @@ import sys
 import time
 from collections import OrderedDict
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -385,7 +386,11 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
     trades = list(res.trades)
     s = pd.Series([float(t.r_multiple) for t in trades],
                   index=[pd.Timestamp(t.entry_time).date() for t in trades], dtype=float)
-    return s.groupby(level=0).sum()
+    daily = s.groupby(level=0).sum()
+    daily.attrs["geometry_rejections"] = getattr(res, "geometry_rejections", [])
+    daily.attrs["geometry_rejection_count"] = len(daily.attrs["geometry_rejections"])
+    daily.attrs["signal_count"] = getattr(res, "signal_count", len(sigs))
+    return daily
 
 
 #: One H1 frame per SYMBOL, shared by every cell on it. Each cell used to carry its own
@@ -1826,6 +1831,16 @@ def _save_build_cursor(cursor: dict[str, str], built: set[str]) -> None:
         print(f"  build cursor NOT saved ({exc}); the next sweep repeats this rotation")
 
 
+@lru_cache(maxsize=1)
+def _replay_code_identity() -> str:
+    """Loaded-process replay semantics; a release starts a new process and identity."""
+    digest = hashlib.sha256()
+    for name in ("engine.py", "families.py", "cell_modifiers.py"):
+        path = BASE / "desks" / "mt5" / "mt5desk" / name
+        digest.update(name.encode("utf-8") + b"\0" + path.read_bytes() + b"\0")
+    return digest.hexdigest()
+
+
 def _cache_key(sym: str, family: str, params: dict, last_day: str,
                timeframe: str | None = None) -> str:
     """The content address of one cell's daily series.
@@ -1838,12 +1853,13 @@ def _cache_key(sym: str, family: str, params: dict, last_day: str,
     (`lvc_asia_london`) carries no `timeframe` in params at all and would collide with an H1 cell
     of the same name on exactly this path. Naming the field costs one key and removes the class.
 
-    `timeframe=None` resolves through `timeframe_of`, so the H1 digest is byte-identical to what
-    it has always been and yesterday's cache stays warm.
+    `timeframe=None` resolves through `timeframe_of`. Replay-code identity prevents a repaired
+    engine or family from judging cached returns produced by its superseded implementation.
     """
     import hashlib
     tf = timeframe_of(params, family) if timeframe is None else str(timeframe).upper()
-    payload = {"s": sym, "f": family, "p": params, "d": last_day}
+    payload = {"s": sym, "f": family, "p": params, "d": last_day,
+               "replay_code": _replay_code_identity()}
     if tf != "H1":
         payload["tf"] = tf
     blob = json.dumps(payload, sort_keys=True, default=str)
@@ -1875,12 +1891,30 @@ def cache_load(key: str):
         import numpy as _np
         z = _np.load(f, allow_pickle=False)
         idx = pd.to_datetime(z["dates"])
-        return (pd.Series(z["v1"], index=idx), pd.Series(z["v3"], index=idx))
+        pair = (pd.Series(z["v1"], index=idx), pd.Series(z["v3"], index=idx))
+        for series, name in zip(pair, ("attrs1", "attrs3"), strict=True):
+            if name in z:
+                series.attrs.update(json.loads(str(z[name].item())))
+        return pair
     except Exception:
         return None
 
 
 _CACHE_SAVE_WARNED = [False]
+
+
+def _cache_series_metadata(series) -> dict:
+    """Bounded receipts with total count and full digest; raw replay remains reproducible."""
+    attrs = series.attrs
+    rejected = attrs.get("geometry_rejections") or []
+    count = int(attrs.get("geometry_rejection_count", len(rejected)))
+    digest = attrs.get("geometry_receipt_sha256")
+    if count and not digest:
+        digest = hashlib.sha256(json.dumps(rejected, sort_keys=True,
+                                          default=str).encode("utf-8")).hexdigest()
+    return {"signal_count": attrs.get("signal_count"),
+            "geometry_rejection_count": count, "geometry_receipt_sha256": digest,
+            "geometry_rejections": rejected[:3]}
 
 
 def cache_save(key: str, ds1, ds3) -> None:
@@ -1908,7 +1942,9 @@ def cache_save(key: str, ds1, ds3) -> None:
             _np.savez_compressed(fh,
                                  dates=pd.to_datetime(common).astype("int64").to_numpy(),
                                  v1=ds1.reindex(common).to_numpy(float),
-                                 v3=ds3.reindex(common).to_numpy(float))
+                                 v3=ds3.reindex(common).to_numpy(float),
+                                 attrs1=_np.array(json.dumps(_cache_series_metadata(ds1))),
+                                 attrs3=_np.array(json.dumps(_cache_series_metadata(ds3))))
         os.replace(tmp, final)
     except Exception as exc:
         if not _CACHE_SAVE_WARNED[0]:

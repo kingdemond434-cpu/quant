@@ -35,6 +35,7 @@ run every 15 minutes and move the book twice a day.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -42,6 +43,7 @@ import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
+from dataclasses import fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -372,6 +374,9 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
                 acct["refused"][name] = "build_cell returned no signals"
                 continue
             ser = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
+            rejections = ser.attrs.get("geometry_rejections") if ser is not None else None
+            if rejections:
+                acct.setdefault("unfilled_geometry", {})[name] = rejections
             if ser is None or len(ser) < 2:
                 acct["refused"][name] = f"replay produced {0 if ser is None else len(ser)} days"
                 continue
@@ -3321,6 +3326,24 @@ def kelly_fraction(ev: list[SleeveEvidence], cfg: WorldConfig, *,
     return out
 
 
+def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -> str:
+    """Bind cached worlds to every supplied return, posterior input and draw setting."""
+    digest = hashlib.sha256(b"quant-world-decision-state-v1")
+    for obj in (cfg, *ev):
+        for field in fields(obj):
+            value = getattr(obj, field.name)
+            digest.update(field.name.encode("utf-8") + b"\0")
+            if isinstance(value, np.ndarray):
+                arr = np.ascontiguousarray(value)
+                digest.update(str((arr.dtype.str, arr.shape)).encode("ascii") + b"\0")
+                digest.update(arr.tobytes())
+            else:
+                digest.update(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                         default=str).encode("utf-8"))
+            digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -3515,11 +3538,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                       **(cov_cal.as_overrides() if cov_cal else {}))
 
     cachef = CACHE / "worlds.npz"
+    fingerprint = decision_state_fingerprint(ev, cfg)
     worlds: Worlds | None = None
     if mode == "fast" and cachef.exists() and time.time() - cachef.stat().st_mtime < 3600:
         try:
             z = np.load(cachef, allow_pickle=False)
-            if tuple(z["names"]) == tuple(e.name for e in ev):
+            if (tuple(z["names"]) == tuple(e.name for e in ev)
+                    and "fingerprint" in z and str(z["fingerprint"].item()) == fingerprint):
                 worlds = Worlds(r=z["r"], names=tuple(str(x) for x in z["names"]),
                                 crisis=z["crisis"], mu_draws=z["mu"],
                                 note="reused cached world population")
@@ -3532,7 +3557,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         try:
             CACHE.mkdir(parents=True, exist_ok=True)
             np.savez_compressed(cachef, r=worlds.r, names=np.array(worlds.names),
-                                crisis=worlds.crisis, mu=worlds.mu_draws)
+                                crisis=worlds.crisis, mu=worlds.mu_draws,
+                                fingerprint=np.array(fingerprint))
         except OSError as exc:
             _log(f"world cache not written ({exc}); next fast pass will resample")
 
