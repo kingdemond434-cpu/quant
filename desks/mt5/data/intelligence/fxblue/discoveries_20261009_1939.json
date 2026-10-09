@@ -1,0 +1,362 @@
+[
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user traxxonea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=traxxonea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user treasure-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=treasure-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user treidg26-strategy",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=treidg26-strategy&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trekbomber",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trekbomber&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trekbombercg",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trekbombercg&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trekbombergk",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trekbombergk&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trend--detector",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trend--detector&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trend-detector",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trend-detector&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trend-hedge-ea-live",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trend-hedge-ea-live&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trend-hunter-robot",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trend-hunter-robot&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trend-navigator",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trend-navigator&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trend_detector",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trend_detector&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trend_hunter",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trend_hunter&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trendcollector",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trendcollector&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trendfast",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trendfast&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trendhunter-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trendhunter-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trendkings",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trendkings&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trendplus",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trendplus&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trendscalper-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trendscalper-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trident_finfx299263",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trident_finfx299263&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tristar",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tristar&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tristartrader",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tristartrader&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tristartrader-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tristartrader-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tron_forex_robot",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tron_forex_robot&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user trsi15m2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=trsi15m2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tsfx",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tsfx&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tsfx-real",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tsfx-real&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tsfx-usdjpy",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tsfx-usdjpy&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tsreapro",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tsreapro&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user ttodaycopyfxsmall",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=ttodaycopyfxsmall&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user ttp245",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=ttp245&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user tubervoice",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=tubervoice&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user turbo101",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=turbo101&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user turbod",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=turbod&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user turnkeyeuro",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=turnkeyeuro&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user turnkeyforexbroker",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=turnkeyforexbroker&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user twentypipper",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=twentypipper&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user twentypipper-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=twentypipper-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user twister-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=twister-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user twrfx",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=twrfx&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-09T19:51:38+00:00"
+ }
+]
