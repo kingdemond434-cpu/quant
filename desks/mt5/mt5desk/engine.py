@@ -6,11 +6,41 @@ All times UTC. No lookahead: signals computed on closed bars only, entries at ne
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, replace
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
+
+#: MT5 ENUM_SYMBOL_SWAP_MODE, all nine values. THE UNIT OF `swap_long`/`swap_short` LIVES IN THIS
+#: FIELD, NOT IN THE NUMBER (found 2026-10-07). `from_symbol` read every registry swap as POINTS;
+#: 138 of the 248 swap-carrying symbols are mode 5, where the broker quotes an ANNUAL PERCENT of
+#: notional -- a dimension error, not a factor, on 55% of the universe and on every LIVE symbol
+#: that is an index, a share or a metal CFD. Mode 0 is DISABLED, not points.
+SWAP_MODE_DISABLED = 0
+SWAP_MODE_POINTS = 1
+SWAP_MODE_CURRENCY_SYMBOL = 2      # money in the symbol's BASE currency
+SWAP_MODE_CURRENCY_MARGIN = 3      # money in the symbol's MARGIN currency
+SWAP_MODE_CURRENCY_DEPOSIT = 4     # money in the ACCOUNT's currency
+SWAP_MODE_INTEREST_CURRENT = 5     # annual % of notional at the CURRENT price
+SWAP_MODE_INTEREST_OPEN = 6        # annual % of notional at the position's OPEN price
+SWAP_MODE_REOPEN_CURRENT = 7       # position re-opened at the close price +/- N points
+SWAP_MODE_REOPEN_BID = 8           # position re-opened at the bid +/- N points
+SWAP_MODES: dict[int, str] = {
+    0: "DISABLED", 1: "POINTS", 2: "CURRENCY_SYMBOL", 3: "CURRENCY_MARGIN",
+    4: "CURRENCY_DEPOSIT", 5: "INTEREST_CURRENT", 6: "INTEREST_OPEN", 7: "REOPEN_CURRENT",
+    8: "REOPEN_BID"}
+#: Day-count basis for the interest modes. THE SAME DECLARED CONVENTION as
+#: `research/carry_state.DAY_COUNT` (a test pins the two equal): a broker convention this desk has
+#: not read from the terminal, and the earlier of the two candidates is the one that charges more.
+SWAP_DAY_COUNT = 360.0
+#: The swap_mode of each symbol as the venue's contract-terms tape recorded it, resolved per
+#: symbol by `research/carry_state.py`. Read ONLY when the registry row carries no `swap_mode` of
+#: its own; `universe_registry.cost_fields_from_symbol_info` now writes the field on the box.
+_SWAP_MODE_SOURCE = Path(__file__).resolve().parent.parent / "data" / "carry_state.json"
 
 
 @dataclass(frozen=True)
@@ -81,6 +111,21 @@ class Costs:
     #: silently -- the same discipline `quote_per_account` and `spread_pts` document above, and
     #: for the same reason: this class is on the money path.
     swap_per_lot_per_night: float = 0.0
+    #: THE PRICE-LINKED PART OF THE NIGHTLY CHARGE, per lot per UNIT OF PRICE, in the same
+    #: convention as `swap_per_lot_per_night`. A night costs
+    #: `swap_per_lot_per_night + swap_per_lot_per_price * price`. Set for swap_mode 5 and 6
+    #: (`contract * pct / 100 / SWAP_DAY_COUNT`) and for a base/margin-currency amount that has to
+    #: be carried into the quote currency at the price (modes 2/3 on a pair). None for every other
+    #: mode -- and None is not a number, so `sleeve_registry.cost_hash` (numeric fields only) is
+    #: unchanged for every symbol whose charge did not change.
+    swap_per_lot_per_price: float | None = None
+    #: Which price a price-linked night is charged at: "rollover" (the close of the last bar
+    #: before each rollover instant -- modes 5, 2, 3) or "open" (the entry price -- mode 6).
+    swap_price_basis: str | None = None
+    #: WHY THE FINANCING COULD NOT BE PRICED, by name, or None. When set both swap fields are
+    #: zero and this string is the verdict: UNMEASURED, never a clean zero (L1.28a), and never a
+    #: points reading of a number whose unit is unknown.
+    swap_unmeasured: str | None = None
 
     def per_oz_roundtrip(self) -> float:
         """Round-trip cost per lot, in the convention the engine divides by `contract_oz`.
@@ -96,9 +141,26 @@ class Costs:
         return (self.spread_per_lot
                 + self.commission_per_lot * 2.0 * float(self.quote_per_account))
 
-    def financing(self, nights: float) -> float:
-        """Overnight financing for `nights` rollovers, in the `per_oz_roundtrip` convention."""
-        return float(self.swap_per_lot_per_night) * float(nights)
+    def financing(self, nights: float, price_nights: float | None = None) -> float:
+        """Overnight financing for `nights` rollovers, in the `per_oz_roundtrip` convention.
+
+        `price_nights` is the sum, over the rollovers charged, of the price each one is charged
+        at (a triple night counting its price three times) -- see `rollover_price_nights`. It is
+        REQUIRED when the cost model is price-linked (swap_mode 5/6, or 2/3 on a pair): a mode-5
+        rate without a price is an annual percent of nothing, and charging zero for it is the
+        silent-zero this field exists to end, so it raises instead.
+        """
+        fixed = float(self.swap_per_lot_per_night) * float(nights)
+        if not self.swap_per_lot_per_price:
+            return fixed
+        if price_nights is None:
+            raise ValueError("price-linked swap (swap_per_lot_per_price set) needs price_nights")
+        return fixed + float(self.swap_per_lot_per_price) * float(price_nights)
+
+    @property
+    def charges_swap(self) -> bool:
+        """True when any overnight financing is priced into this cost model."""
+        return bool(self.swap_per_lot_per_night) or bool(self.swap_per_lot_per_price)
 
     def stressed(self, spread_mult: float) -> Costs:
         """A cost-stress variant of THIS cost model -- widen the spread, keep everything else.
@@ -167,18 +229,157 @@ class Costs:
         # 1.0 and is REPORTED rather than assumed away: see scripts/check_universe_registry.py.
         tv = float(meta.get("tick_value", 0.0) or 0.0)
         qpa = (cs * ts / tv) if (tv > 0 and cs > 0 and ts > 0) else 1.0
-        # FINANCING, FROM THE REGISTRY THE DESK ALREADY KEEPS. swap_long/swap_short are quoted in
-        # POINTS per lot per night, so `pts * tick_size * contract_size` lands them in exactly the
-        # convention `spread_per_lot` uses and the engine divides back out. The worse side is
-        # charged; see `swap_per_lot_per_night`. A symbol with no swap fields charges zero, which
-        # is today's arithmetic and is REPORTED as unpriced rather than assumed free --
-        # `scripts/check_swap_pricing.py` is what stops that silence becoming a clean verdict.
-        swap_pts = max(abs(float(meta.get("swap_long", 0.0) or 0.0)),
-                       abs(float(meta.get("swap_short", 0.0) or 0.0)))
+        # FINANCING, FROM THE REGISTRY THE DESK ALREADY KEEPS, IN THE UNIT ITS swap_mode NAMES.
+        # Until 2026-10-07 every swap was read as POINTS (`pts * tick_size * contract_size`),
+        # which is right for mode 1 and a dimension error for the 138 mode-5 symbols, whose
+        # number is an annual percent of notional. `swap_model` converts every MT5 mode into the
+        # convention `spread_per_lot` uses; the worse side is charged, see
+        # `swap_per_lot_per_night`. A symbol with no swap fields charges zero (it has no rate);
+        # a symbol whose MODE cannot be established is UNMEASURED by name, never points.
+        fixed, per_price, basis, why = swap_model(meta, cs=cs, ts=ts, qpa=qpa, tv=tv)
         return cls(spread_per_lot=max(spread * mult, 0.05),
                    commission_per_lot=commission_per_lot, contract_oz=cs,
                    quote_per_account=qpa,
-                   swap_per_lot_per_night=swap_pts * ts * cs)
+                   swap_per_lot_per_night=fixed,
+                   swap_per_lot_per_price=per_price,
+                   swap_price_basis=basis,
+                   swap_unmeasured=why)
+
+
+def swap_night_quote(meta: dict[str, Any], raw: float,
+                     price: float | None = None) -> tuple[float | None, str | None]:
+    """ONE signed swap value (MT5 sign: positive is a credit) as QUOTE CURRENCY PER LOT for one
+    night, in the unit its swap_mode names, at `price` where the mode is price-linked.
+
+    (value, None) when priced; (None, why) when it cannot be -- an unknown mode, or a mode-5/6
+    rate with no price. Never a points reading of a number whose unit is unknown, never 0.0 for
+    "could not price". The one conversion every reader of `swap_long`/`swap_short` goes through.
+    """
+    try:
+        r = float(raw)
+    except (TypeError, ValueError):
+        return None, f"swap value {raw!r} is not a number"
+    if r == 0.0:
+        return 0.0, None
+    c = Costs.from_symbol({**meta, "swap_long": abs(r), "swap_short": 0.0})
+    if c.swap_unmeasured:
+        return None, c.swap_unmeasured
+    px = float(price) if price is not None else None
+    if c.swap_per_lot_per_price and not (px is not None and px > 0):
+        mode, _src = swap_mode_of(meta)
+        return None, (f"UNMEASURED: swap_mode {mode} is a rate on notional and no price was "
+                      "available to charge it at")
+    q = c.financing(1.0, px if c.swap_per_lot_per_price else None)
+    return (q if r > 0 else -q), None
+
+
+def swap_night_points(meta: dict[str, Any], raw: float,
+                      price: float | None = None) -> tuple[float | None, str | None]:
+    """`swap_night_quote` in POINTS of this symbol (quote / (tick_size x contract)): identical
+    to the raw number on a mode-1 symbol, and the points-equivalent of a percent on mode 5."""
+    q, why = swap_night_quote(meta, raw, price)
+    if q is None:
+        return None, why
+    ts = float(meta.get("tick_size", 0.0) or 0.0)
+    cs = float(meta.get("contract_size", 0.0) or 0.0)
+    if not (ts > 0 and cs > 0):
+        return None, "UNMEASURED: tick_size/contract_size missing, no point to express it in"
+    return q / (ts * cs), None
+
+
+@lru_cache(maxsize=1)
+def _recorded_swap_modes() -> dict[str, int]:
+    """symbol -> swap_mode from the contract-terms reading `carry_state.json` resolved. {} if absent."""
+    try:
+        data = json.loads(_SWAP_MODE_SOURCE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = data.get("symbols") if isinstance(data, dict) else None
+    out: dict[str, int] = {}
+    if isinstance(rows, dict):
+        for sym, row in rows.items():
+            if isinstance(row, dict) and row.get("swap_mode") is not None:
+                try:
+                    out[str(sym).upper()] = int(row["swap_mode"])
+                except (TypeError, ValueError):
+                    continue
+    return out
+
+
+def swap_mode_of(meta: dict[str, Any]) -> tuple[int | None, str]:
+    """(swap_mode, where it came from). The registry row's own field wins; then the venue's
+    recorded contract terms for that symbol; otherwise (None, why) -- the unit is UNKNOWN."""
+    raw = meta.get("swap_mode")
+    if raw is not None:
+        try:
+            return int(raw), "registry"
+        except (TypeError, ValueError):
+            return None, f"registry swap_mode {raw!r} is not an integer"
+    sym = str(meta.get("symbol") or "").upper()
+    if sym:
+        mode = _recorded_swap_modes().get(sym)
+        if mode is not None:
+            return mode, "contract_terms (carry_state.json)"
+    return None, "no swap_mode on the registry row or in the recorded contract terms"
+
+
+def swap_model(meta: dict[str, Any], *, cs: float, ts: float, qpa: float,
+               tv: float) -> tuple[float, float | None, str | None, str | None]:
+    """(fixed, per_price, basis, unmeasured) for one symbol's WORSE swap side, per lot per night.
+
+    Every amount is in the convention `spread_per_lot` uses -- quote (profit) currency per lot, so
+    `/ contract_size` lands on price units -- and a night costs `fixed + per_price * price`:
+
+        0 DISABLED          0
+        1 POINTS            swap * point * contract                       (point == tick_size)
+        2 CURRENCY_SYMBOL   base-currency money -> quote: x1 when base == profit, x price on a pair
+        3 CURRENCY_MARGIN   margin-currency money -> quote: x1 if margin == profit, x price if
+                            margin == base on a pair
+        4 CURRENCY_DEPOSIT  account money * quote_per_account (needs tick_value)
+        5 INTEREST_CURRENT  price * contract * pct / 100 / SWAP_DAY_COUNT, at each night's price
+        6 INTEREST_OPEN     the same rate at the position's OPEN price
+        7 REOPEN_CURRENT    re-opened at the close +/- N points: N points of price per night, so
+        8 REOPEN_BID        the money is the POINTS formula (the re-open price move IS the charge)
+
+    The mode comes from `swap_mode_of`. An unknown or unresolvable mode returns
+    (0.0, None, None, reason) -- UNMEASURED by name, never read as points.
+    """
+    lo = float(meta.get("swap_long", 0.0) or 0.0)
+    sh = float(meta.get("swap_short", 0.0) or 0.0)
+    worse = max(abs(lo), abs(sh))
+    if worse == 0.0:
+        return 0.0, None, None, None
+    mode, src = swap_mode_of(meta)
+    if mode is None:
+        return 0.0, None, None, f"UNMEASURED: swap unit unknown ({src})"
+    if mode == SWAP_MODE_DISABLED:
+        return 0.0, None, None, None
+    if mode in (SWAP_MODE_POINTS, SWAP_MODE_REOPEN_CURRENT, SWAP_MODE_REOPEN_BID):
+        if ts <= 0 or cs <= 0:
+            return 0.0, None, None, f"UNMEASURED: mode {mode} needs tick_size and contract_size"
+        return worse * ts * cs, None, None, None
+    if mode in (SWAP_MODE_INTEREST_CURRENT, SWAP_MODE_INTEREST_OPEN):
+        if cs <= 0:
+            return 0.0, None, None, f"UNMEASURED: mode {mode} needs contract_size"
+        basis = "rollover" if mode == SWAP_MODE_INTEREST_CURRENT else "open"
+        return 0.0, cs * worse / 100.0 / SWAP_DAY_COUNT, basis, None
+    if mode == SWAP_MODE_CURRENCY_DEPOSIT:
+        if not (tv > 0 and ts > 0 and cs > 0):
+            return 0.0, None, None, "UNMEASURED: mode 4 needs tick_value to leave account currency"
+        return worse * qpa, None, None, None
+    if mode in (SWAP_MODE_CURRENCY_SYMBOL, SWAP_MODE_CURRENCY_MARGIN):
+        profit = str(meta.get("currency_profit") or "").upper()
+        base = str(meta.get("currency_base") or "").upper()
+        ccy = base if mode == SWAP_MODE_CURRENCY_SYMBOL else str(
+            meta.get("currency_margin") or "").upper()
+        if ccy and profit and ccy == profit:
+            return worse, None, None, None
+        if ccy and base and profit and ccy == base and base != profit:
+            return 0.0, worse, "rollover", None
+        return 0.0, None, None, (f"UNMEASURED: mode {mode} money is in {ccy or '?'}, which is "
+                                 f"neither the profit ({profit or '?'}) nor the base currency "
+                                 "of a pair, so there is no price to carry it into quote")
+    return 0.0, None, None, f"UNMEASURED: swap_mode {mode} is not an MT5 swap mode"
 
 
 @dataclass
@@ -325,6 +526,39 @@ def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
     return float(k + 2 * triples)
 
 
+def rollover_price_nights(idx_ns: np.ndarray, px: np.ndarray, first_bar: int, last_bar: int,
+                          t0: pd.Timestamp, t1: pd.Timestamp) -> float:
+    """Sum of the price each rollover between `t0` and `t1` is charged at, triples counting three.
+
+    THE PRICE OF A NIGHT IS THE PRICE AT THAT NIGHT. A mode-5 rate is an annual percent of the
+    position's CURRENT notional, so each rollover is charged at the close of the last bar that
+    opened strictly before the rollover instant, held inside [first_bar, last_bar]. The instants
+    and their weights are exactly the ones `rollovers_between` counts, so with a constant price
+    this returns `rollovers_between(t0, t1) * price`.
+    """
+    if t0 is None or t1 is None:
+        return 0.0
+    a, b = pd.Timestamp(t0), pd.Timestamp(t1)
+    if a.tzinfo is not None:
+        a = a.tz_convert("UTC").tz_localize(None)
+    if b.tzinfo is not None:
+        b = b.tz_convert("UTC").tz_localize(None)
+    if not (b > a):
+        return 0.0
+    cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
+    if cur <= a:
+        cur = cur + pd.Timedelta(days=1)
+    if cur > b:
+        return 0.0
+    k = int((b - cur) // pd.Timedelta(days=1)) + 1
+    inst = cur.value + np.arange(k, dtype="int64") * (86_400 * 10**9)
+    weekday = (cur.weekday() + np.arange(k)) % 7
+    w = np.where(weekday == TRIPLE_SWAP_WEEKDAY, 3.0, 1.0)
+    pos = np.searchsorted(idx_ns, inst, side="left") - 1
+    pos = np.clip(pos, first_bar, last_bar)
+    return float(np.sum(w * px[pos].astype(float)))
+
+
 def run_backtest(
     df: pd.DataFrame,
     signals: list[Signal],
@@ -340,6 +574,8 @@ def run_backtest(
     o = df["open"].to_numpy()
     h = df["high"].to_numpy()
     lows = df["low"].to_numpy()
+    # The price a rollover is charged at (price-linked swap modes only): the bar's close.
+    close_px = df["close"].to_numpy() if "close" in df.columns else o
     # KEEP THE PANDAS INDEX. `df.index.to_numpy()` on a tz-AWARE index returns an object array
     # of Timestamps and warns "no explicit representation of timezones available for
     # np.datetime64" -- benign in production, but under `filterwarnings = error` it turns the
@@ -547,10 +783,21 @@ def run_backtest(
         # trade record (it was boxed twice each); a Timestamp is immutable, so sharing it is free.
         entry_ts = pd.Timestamp(idx[fill_bar])
         exit_ts = pd.Timestamp(idx[min(fill_bar + bars_held - 1, len(idx) - 1)])
-        if costs.swap_per_lot_per_night:
+        # PRICE-AWARE for the interest modes (5/6) and a pair's base/margin money (2/3): those
+        # nights are charged at the price of THAT night, or at the entry for mode 6.
+        if costs.charges_swap:
             nights = rollovers_between(entry_ts, exit_ts)
             if nights:
-                r -= (costs.financing(nights) / costs.contract_oz) * units / stop_dist
+                price_nights = None
+                if costs.swap_per_lot_per_price:
+                    if costs.swap_price_basis == "open":
+                        price_nights = nights * entry
+                    else:
+                        price_nights = rollover_price_nights(
+                            idx_ns, close_px, fill_bar,
+                            min(fill_bar + bars_held - 1, len(idx) - 1), entry_ts, exit_ts)
+                r -= (costs.financing(nights, price_nights) / costs.contract_oz) \
+                    * units / stop_dist
         trades.append(
             Trade(
                 entry_time=entry_ts,

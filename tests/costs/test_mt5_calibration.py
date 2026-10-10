@@ -25,7 +25,7 @@ class FakeInfo:
 
 
 def _eurusd() -> FakeInfo:
-    # FusionMarkets-Demo EURUSD snapshot: 6 points, 1e-5 point, 100k contract, swap in money.
+    # FusionMarkets-Demo EURUSD: 6 points, 1e-5 point, 100k contract, swap in POINTS (mode 1).
     return FakeInfo(spread=6, point=1e-5, trade_contract_size=100_000.0,
                     swap_long=-6.55, swap_short=2.76, swap_mode=1)
 
@@ -65,7 +65,7 @@ def test_per_symbol_cost_differentiates() -> None:
 
 def test_points_mode_swap_converts_to_money() -> None:
     info = FakeInfo(spread=30, point=0.01, trade_contract_size=1.0,
-                    swap_long=-12.0, swap_short=-8.0, swap_mode=0)  # points mode
+                    swap_long=-12.0, swap_short=-8.0, swap_mode=1)  # points mode (MT5: 1)
     p = calibrate("US500", info, asset_class=AssetClass.INDEX)
     assert p.commission_per_lot == 0.0                      # index = spread-only prior
     # money = -swap * point * contract_size
