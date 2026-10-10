@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-10T13:06:36+00:00",
+  "generated": "2026-10-10T15:47:47+00:00",
   "root": "C:\\opt\\quant",
   "thresholds": {
     "trailing_refusals_max": 30,
@@ -12,14 +12,14 @@
     "UNMEASURED on the trading host (vmi3571445; identity UNMEASURED: no trading-box id is recorded in config/trading_host.json -- hostname fallback: vmi3571445 matches vmi3571445, reported, never taken as the identity): the gateway has stopped writing placement evidence here, and silence on the box that places orders is not a pass (L1.28a)"
   ],
   "notes": [
-    "desks/mt5/data/decision_ledger.jsonl's newest row is 2026-10-09T04:00:34+00:00 (33.1h old), past the 24h live window: this is a published copy, not a live ledger, so whether a sleeve is halted NOW is UNMEASURED on this host"
+    "desks/mt5/data/decision_ledger.jsonl's newest row is 2026-10-09T04:00:34+00:00 (35.8h old), past the 24h live window: this is a published copy, not a live ledger, so whether a sleeve is halted NOW is UNMEASURED on this host"
   ],
   "runs": {},
   "ok": false,
   "verdict": "UNMEASURED",
   "applicable": true,
   "ledger_newest_at": "2026-10-09T04:00:34+00:00",
-  "ledger_age_h": 33.101,
+  "ledger_age_h": 35.787,
   "rows_scanned": 3204,
   "host": {
     "verdict": "UNMEASURED",
