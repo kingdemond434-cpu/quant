@@ -1,5 +1,5 @@
 {
- "at": "2026-10-10T09:15:59+00:00",
+ "at": "2026-10-10T09:43:15+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-10T09:15:49+00:00",
+   "at": "2026-10-10T09:38:52+00:00",
    "bandit_at": "2026-10-10T00:34:35.049148+00:00",
    "hour": "2026-10-10T09",
    "arm": "treated",
@@ -18,8 +18,8 @@
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 240,
-   "surplus_s": 1075.6,
-   "surplus_why": "department 'discovery' measured spare 1076s/hour",
+   "surplus_s": 1018.8,
+   "surplus_why": "department 'discovery' measured spare 1019s/hour",
    "contract": {
     "n_treated": 13,
     "n_control": 0,
@@ -29,7 +29,7 @@
    },
    "trial": true,
    "authoritative": false,
-   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1076s/hour); contract UNMEASURED: this hour is the trial that measures it",
+   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1019s/hour); contract UNMEASURED: this hour is the trial that measures it",
    "share": 0.2798,
    "baseline": 0.2727,
    "ladder_factor": 0.866,
@@ -46,12 +46,12 @@
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: no survival row for source 'alpha_evolution'; par",
    "paradigm_factor": 1.0,
-   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0181 vs equal share 0.0667 = x0.27 -> x1.00 (one-sided)",
+   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0172 vs equal share 0.0667 = x0.26 -> x1.00 (one-sided)",
    "factor": 2.0,
    "applied_s": 480,
    "applied": true,
    "granted": true,
-   "why": "share 0.280 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1076s/hour); contract UNMEASURED: this hour is the trial that measures it"
+   "why": "share 0.280 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1019s/hour); contract UNMEASURED: this hour is the trial that measures it"
   },
   "deepen": {
    "leg": "deepen",
@@ -62,9 +62,9 @@
     "alt_data_hypothesis",
     "failure_derived"
    ],
-   "at": "2026-10-10T02:44:01+00:00",
+   "at": "2026-10-10T09:43:15+00:00",
    "bandit_at": "2026-10-10T00:34:35.049148+00:00",
-   "hour": "2026-10-10T02",
+   "hour": "2026-10-10T09",
    "arm": "none",
    "wanted_s": 0,
    "floor_s": 0,
@@ -89,22 +89,22 @@
    "department_factor": 1.5,
    "department_authoritative": false,
    "department_why": "exchange not authoritative: sample binds but the desk measures no per-department denominator for it (None); reported, never spent; x compute policy (compute policy MEASURED from compute_policy.json: split {'exploitation': 0.8236, 'exploration': 0.1176, 'frontier': 0.0588} learned from survivors per hour, two-sided)",
-   "archive_factor": 1.148,
+   "archive_factor": 1.0,
    "auction_factor": 2.0,
-   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-09T19",
+   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-10T03",
    "engine_factor": 1.0,
    "engine_why": "engine registry: leg share 0.0000 vs equal share 0.1111 = x0.00 -> x1.00 (one-sided: this factor may fund a leg above par and may never take one below it)",
    "meta_factor": 1.0,
-   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.001537 on the info_per_cell board vs median 0.04933 = x0.03 -> x1.00 (one-sided: it may fund above par and never below it)",
+   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.001537 on the info_per_cell board vs median 0.04932 = x0.03 -> x1.00 (one-sided: it may fund above par and never below it)",
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: no survival row for source 'deepen'; par",
    "paradigm_factor": 1.0,
    "paradigm_why": "paradigm census: leg 'deepen' belongs to no paradigm; par",
-   "factor": 1.857,
+   "factor": 1.618,
    "applied_s": 0,
    "applied": true,
    "granted": false,
-   "why": "share 0.227 of arms ['new_mechanism', 'external_screen', 'alt_data_hypothesis', 'failure_derived'] vs equal-share baseline 0.364 -> x1.86, clipped to [1.0, 2.0]; department factor x1.50 (reported only); the base is the leg's unlimited sentinel; nothing to govern"
+   "why": "share 0.227 of arms ['new_mechanism', 'external_screen', 'alt_data_hypothesis', 'failure_derived'] vs equal-share baseline 0.364 -> x1.62, clipped to [1.0, 2.0]; department factor x1.50 (reported only); the base is the leg's unlimited sentinel; nothing to govern"
   }
  },
  "authoritative": false,
