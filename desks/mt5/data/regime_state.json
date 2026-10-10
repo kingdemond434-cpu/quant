@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-10T17:00:08.444261+00:00",
+  "swept_at": "2026-10-10T17:15:05.949997+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1493,8 +1493,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": 0.1968,
+      "shadow_n": 73,
+      "shadow_exp_r": 0.539,
       "woke_on_shadow": false
     },
     "EURNOK|carry_continuous": {
@@ -2033,7 +2033,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2503,
+      "shadow_exp_r": -0.251,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_asia": {
@@ -3848,7 +3848,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7878,
+      "shadow_exp_r": -0.7388,
       "woke_on_shadow": false
     },
     "USDPLN|formula_asia": {
