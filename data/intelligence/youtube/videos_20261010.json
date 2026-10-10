@@ -40,5 +40,19 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCa8rgzIMKFx2uJHVsf0oqjg",
+  "channel": "IQCapital",
+  "video_id": "yYHruCG-64Y",
+  "published": "2026-10-10T15:14:06Z",
+  "title": "This Trading Session Went TERRIBLY Wrong",
+  "description": "This Trading Session Went TERRIBLY Wrong",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
