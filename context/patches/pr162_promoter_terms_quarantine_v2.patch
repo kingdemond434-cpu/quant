@@ -1,0 +1,173 @@
+diff --git a/desks/mt5/research/promoter.py b/desks/mt5/research/promoter.py
+index 6fc6ea7aa..6694561a8 100644
+--- a/desks/mt5/research/promoter.py
++++ b/desks/mt5/research/promoter.py
+@@ -1687,6 +1687,64 @@ def tier_s_block(name: str) -> str | None:
+                 "withheld until it does")
+ 
+ 
++#: APPLY ONLY AFTER PR #162 (libs/data/terms_fence.py). These are the certificates #162 holds
++#: (terms_fence.QUARANTINED_CERTIFICATES), restated so that a fence which does not load fails
++#: closed on THESE keys alone and never on the rest of the book (audit v2, 2026-10-07).
++TERMS_QUARANTINE_FALLBACK: dict[str, str | None] = {
++    "external.USDJPY.session_range_breakout":
++        "usdjpy_session_range_breakout_asia_session_range_breakout",
++    "external.USDJPY.session_range_breakout.rr=1.5_wb=12":
++        "usdjpy_session_range_breakout_asia_5_wb_12",
++    "external.USDJPY.session_range_breakout.rr=2.0_wb=12":
++        "usdjpy_session_range_breakout_asia_0_wb_12",
++    "external.USDJPY.session_range_breakout.rr=2.5_wb=12": None,
++}
++#: Live names that carry a quarantined certificate whose fence row has no sleeve (sleeve=None):
++#: the forward clock's key and the explicit alias the live policy admits for rr=2.5 / wb=12.
++TERMS_QUARANTINE_ALIASES: dict[str, str] = {
++    "USDJPY.asia#rr=2.5": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
++    "usdjpy_session_range_breakout_asia_rr25_wb12":
++        "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
++}
++
++
++def _terms_fallback(key: str, sleeve: str) -> str | None:
++    k = TERMS_QUARANTINE_ALIASES.get(sleeve) or TERMS_QUARANTINE_ALIASES.get(key) or key
++    hit = next((ck for ck, sl in TERMS_QUARANTINE_FALLBACK.items()
++                if k in (ck, ck.split(".", 1)[1]) or (sleeve and sleeve == sl)), None)
++    return None if hit is None else (
++        f"DOOR_ERROR: terms fence did not load; {hit} is a known Reddit-lineage certificate and "
++        "is held (fail closed on the quarantined keys only)")
++
++
++def terms_quarantine(key: str, *, sleeve: str = "") -> str | None:
++    """The terms-fence refusal for a certificate judged under a fenced lineage (PR #162,
++    libs/data/terms_fence.py), or None once it is re-certified (gated after its requeue). Same
++    door as `tier_s_block`: withholds promotion and capital, never sizes. A fence that does not
++    load FAILS CLOSED ON THE QUARANTINED KEYS ONLY (`TERMS_QUARANTINE_FALLBACK`); every other
++    certificate passes this door. Billed by the `terms_lineage_quarantine` rail."""
++    alias = TERMS_QUARANTINE_ALIASES.get(sleeve) or TERMS_QUARANTINE_ALIASES.get(key)
++    try:
++        root = str(Path(__file__).resolve().parents[3])
++        if root not in sys.path:
++            sys.path.insert(0, root)
++        from libs.data import terms_fence
++    except Exception:
++        return _terms_fallback(key, sleeve)
++    try:
++        surv = json.loads((BASE / "reports" / "UNIVERSAL_SURVIVORS.json")
++                          .read_text("utf-8")).get("survivors") or {}
++    except (OSError, ValueError):
++        surv = {}
++    k = alias or key
++    cert = surv.get(k) or surv.get(f"external.{k}") or {}
++    try:
++        return terms_fence.quarantined_certificate(k, sleeve=sleeve,
++                                                   gated_at=cert.get("gated_at"))
++    except Exception:
++        return _terms_fallback(key, sleeve)
++
++
+ def _record_tier_s_block(name: str, why: str, lane: str, row: dict) -> None:
+     with suppress(Exception):
+         from libs.tiers import promotion_authority
+@@ -1926,6 +1984,13 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
+             # reason stands on it so the gap is visible rather than silent.
+             changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+             continue
++        _c = s.get("certificate")
++        _tq = terms_quarantine(str(_c.get("cell") if isinstance(_c, dict) else _c or ""),
++                               sleeve=str(s.get("name") or ""))
++        if _tq and cap["status"] == "LIVE":
++            # A FENCED-LINEAGE CERTIFICATE TAKES NO CAPITAL: STANDBY -> LIVE refused, LIVE demoted.
++            cap = {**cap, "status": "STANDBY", "risk_frac": 0.0, "why": _tq}
++            s["admission"] = cap
+         if cap["status"] == "LIVE" and status == "STANDBY":
+             s.update({"status": "LIVE", "risk_frac": cap["risk_frac"],
+                       "risk_frac_source": "allocator_marginal",
+@@ -2049,6 +2114,13 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
+             _record_tier_s_block(key, _ts, "qquant", row)
+             changed = True
+             continue
++        _tq = terms_quarantine(key)
++        if _tq:
++            row["status"] = "BLOCKED_TERMS_FENCE"
++            row["gate_reason"] = _tq
++            plog(f"{key}: candidate refused -- {_tq}")
++            changed = True
++            continue
+         tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
+                str(spec["family"]), spec.get("is_universe") is True)
+         row["certificate_drift"] = bool(gate_authority) and tup not in gate_authority
+@@ -2201,6 +2273,14 @@ def main() -> None:
+             _record_tier_s_block(key, _ts, "main", st)
+             changed = True
+             continue
++        _tq = terms_quarantine(key)
++        if _tq:
++            st["status"] = "BLOCKED_TERMS_FENCE"
++            st["promotion_authority"] = False
++            st["gate_reason"] = _tq
++            plog(f"{key}: live promotion refused -- {_tq}")
++            changed = True
++            continue
+         cap = capital_verdict(view, key, symbol=sym, family=family, selector=win)
+         row = {"name": key, "symbol": sym, "lot": PROMOTED_LOT, "risk_frac": cap["risk_frac"],
+                "risk_frac_source": "allocator_marginal" if cap["risk_frac"] else "none",
+diff --git a/desks/mt5/tests/test_promoter_terms_quarantine.py b/desks/mt5/tests/test_promoter_terms_quarantine.py
+new file mode 100644
+index 000000000..2513b3150
+--- /dev/null
++++ b/desks/mt5/tests/test_promoter_terms_quarantine.py
+@@ -0,0 +1,55 @@
++"""The promoter's terms door (PR #162 audit v2): a fence that does not load fails closed on the
++quarantined certificates ONLY, never on the whole book; the rr=2.5 live aliases resolve."""
++from __future__ import annotations
++
++import sys
++import types
++from pathlib import Path
++
++import pytest
++
++_DESK = Path(__file__).resolve().parents[1]
++for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++promoter = pytest.importorskip("promoter")
++
++
++@pytest.fixture()
++def no_fence(monkeypatch):
++    broken = types.ModuleType("libs.data")
++    monkeypatch.setitem(sys.modules, "libs.data", broken)      # `from libs.data import terms_fence`
++    monkeypatch.delitem(sys.modules, "libs.data.terms_fence", raising=False)
++
++
++def test_an_unloadable_fence_holds_only_the_quarantined_keys(no_fence):
++    held = promoter.terms_quarantine("external.USDJPY.session_range_breakout.rr=2.5_wb=12")
++    assert held and held.startswith("DOOR_ERROR") and "quarantined keys only" in held
++    assert promoter.terms_quarantine("USDJPY.session_range_breakout.rr=1.5_wb=12")
++    assert promoter.terms_quarantine("", sleeve="usdjpy_session_range_breakout_asia_0_wb_12")
++    assert promoter.terms_quarantine("external.XAUUSD.session_range_breakout.rr=2.5_wb=12") is None
++    assert promoter.terms_quarantine("gold_asia", sleeve="gold_asia") is None
++
++
++def test_the_rr25_live_aliases_resolve_to_the_quarantined_certificate(no_fence):
++    for alias in ("USDJPY.asia#rr=2.5", "usdjpy_session_range_breakout_asia_rr25_wb12"):
++        assert promoter.terms_quarantine("", sleeve=alias)
++        assert promoter.terms_quarantine(alias)
++
++
++def test_a_loaded_fence_is_asked_with_the_aliased_key(monkeypatch):
++    seen = {}
++    fence = types.ModuleType("libs.data.terms_fence")
++
++    def quarantined_certificate(key="", *, sleeve="", gated_at=None, spec=None):
++        seen["key"] = key
++        return "BLOCKED_TERMS" if "rr=2.5" in key else None
++    fence.quarantined_certificate = quarantined_certificate
++    pkg = types.ModuleType("libs.data")
++    pkg.terms_fence = fence
++    monkeypatch.setitem(sys.modules, "libs.data", pkg)
++    monkeypatch.setitem(sys.modules, "libs.data.terms_fence", fence)
++    assert promoter.terms_quarantine("", sleeve="USDJPY.asia#rr=2.5") == "BLOCKED_TERMS"
++    assert seen["key"] == "external.USDJPY.session_range_breakout.rr=2.5_wb=12"
++    assert promoter.terms_quarantine("EURZAR.overnight_gap_decay") is None

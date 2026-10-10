@@ -31,7 +31,10 @@ exception). Each value is risk per trade as a fraction of equity, keyed the allo
 | E8 | `gold_asia` | 0.010 |
 | E8 | `AUDCHF_overnight_gap_decay_asia` | 0.010 |
 
-No `USDJPY_session_range_breakout_*` key in either account (Reddit-only lineage, #162 quarantine).
+No `USDJPY_session_range_breakout_*` key in either account: its certificates were judged on a Reddit
+card and are lineage-quarantined (#162) until the cell is re-certified on its central_bank /
+forexfactory proposals. Apply `context/patches/pr162_usdjpy_lineage_quarantine_v3.patch` with the promoter and
+allocator v2 patches (after #162), NOT v2 or the superseded `USDJPY: []` patch; see `context/patches/README.md`.
 Every key NOT in this table keeps whatever the allocator set, including 0 (no order).
 
 - `mt5desk/kelly_sizing.py`: add `load_kelly_book(path, venue)`, mirroring `load_kelly_survival`.
@@ -77,8 +80,8 @@ Every key NOT in this table keeps whatever the allocator set, including 0 (no or
 - Check: the gateway logs "kelly book sets N sleeve(s)", and the first fills land at the solved fractions.
 
 ## Git-snapshot answer (certs 09-16, worlds 09-28), provisional
-Re-solved 10-06 21:30Z after the terms fence dropped USDJPY SRB (Reddit-only lineage, PR #162;
-`--book` now excludes such cells itself). Do NOT admit or promote USDJPY session_range_breakout
+Re-solved 10-06 21:30Z after the terms quarantine dropped USDJPY SRB (its certificates were judged on
+a Reddit card, PR #162; `--book` now holds such certificates itself). Do NOT admit or promote USDJPY session_range_breakout
 from this book.
 Fusion: EURZAR, AUDCHF and USDZAR overnight gap decay at about 10% each, gold_asia 8.2% (0.01 lot).
 Total heat 38.4%. P(<=20% equity in 60d) is 3.3% as estimated and 4.25% with edges halved.

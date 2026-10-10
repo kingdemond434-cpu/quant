@@ -377,9 +377,13 @@ BOOK_MARGIN = 0.04            # solve against 4% so an independent sample still 
 BOOK_STEPS = (0.04, 0.02, 0.01, 0.005, 0.0025)
 BOOK_STARTS = 6
 BOOK_PATHS = 2000
-#: Terms fence (PR #162): a cell only Reddit/StockTwits proposed never enters the book. The merge's
-#: published index wins; until it exists, the docket's own genealogy decides (every row naming the
-#: cell came from a fenced platform). USDJPY.session_range_breakout is the case that put this here.
+#: Terms LINEAGE quarantine (PR #162, audit v2 2026-10-07): a certificate JUDGED on a Reddit or
+#: StockTwits card takes no book heat until it is re-certified on a lawful lineage. It is the
+#: certificate's lineage, not the cell, that is held: USDJPY.session_range_breakout was also
+#: proposed by central_bank and forexfactory (hypotheses/external_20260825_2054.json), and #162
+#: queues that re-certification. Sources, in order: #162's `terms_fence.quarantined_certificate`
+#: per certificate; its published cell index (cells NO lawful source proposes); else the gauntlet
+#: cards' own genealogy (every card that carried the cell to its certificate is fenced).
 TERMS_FENCED_CELLS = BASE / "data" / "hypotheses" / "terms_fenced_cells.json"
 RESEARCH_QUEUE = BASE / "data" / "research_queue.json"
 FENCED_GENEALOGY = ("ext_reddit_", "ext_stocktwits_")
@@ -393,7 +397,7 @@ def _world_column(cell: str, sym: str, family: str, selector: str, names: list[s
 
 
 def terms_fenced_cells() -> tuple[set[str], str]:
-    """(fenced `SYM.family` cells, where the verdict came from)."""
+    """(`SYM.family` cells whose certificates are held, where the verdict came from)."""
     idx = _read_json(TERMS_FENCED_CELLS)
     if isinstance(idx, dict) and idx.get("cells") is not None:
         return {str(c) for c in idx["cells"]}, TERMS_FENCED_CELLS.name
@@ -427,6 +431,11 @@ def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]
     rows: list[dict[str, Any]] = []
     policy = str((doc.get("gate_policy") or {}).get("version") or "")
     fenced, fence_src = terms_fenced_cells()
+    try:
+        from libs.data import terms_fence as _tf
+        held_by_fence = _tf.quarantined_certificate
+    except Exception:
+        held_by_fence = None
     for key, c in (doc.get("survivors") or {}).items():
         spec = c.get("shadow_spec") or {}
         parts = str(key).split(".")
@@ -446,8 +455,12 @@ def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]
             row["excluded"] = "banned family"
         elif tf == "M15":
             row["excluded"] = "M15 banned"
-        elif f"{sym.upper()}.{fam}" in fenced:
-            row["excluded"] = f"TERMS_FENCED: proposed only by Reddit/StockTwits ({fence_src})"
+        elif held_by_fence is not None and held_by_fence(
+                str(key), gated_at=c.get("gated_at")):
+            row["excluded"] = "TERMS_QUARANTINE: judged on a fenced lineage (libs/data/terms_fence)"
+        elif held_by_fence is None and f"{sym.upper()}.{fam}" in fenced:
+            row["excluded"] = (f"TERMS_QUARANTINE: judged on a Reddit/StockTwits card, pending "
+                               f"re-certification on a lawful lineage ({fence_src})")
         else:
             col = _world_column(str(c.get("cell") or ""), sym, fam, sel, names)
             row["column"] = col
