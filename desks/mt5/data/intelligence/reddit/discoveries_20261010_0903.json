@@ -1,0 +1,303 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "I do not see the effects of leverage",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "When a win feels like a loss",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD Longs today",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPUSD Morning Bull Run Today (9-OCT-2026)",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "RSI"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPUSD Today (8-OCT-2026)",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "RSI"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Don't be like this guy - wants to go full time, never backtested or journaled, trades based on \"feelings\" lol",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPUSD flipped today from daily bears to Above the Top-Central Pivot Bulls There",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Damn EURUSD blew past 1.3500s weekly resistance level",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "resistance"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "EURUSD Daily: Pullback Setup into Premium FVG Zone \ud83d\udcc9",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "pullback"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD NY Session Short",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "My Setup on Monday for GOLD!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NFP trade fundamental analysis + technical execution",
+    "url": "",
+    "symbols": [
+      "DXY",
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "AUDCAD BUY",
+    "url": "",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "patterns": [
+      "order block"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Retired XAUUSD scalper here",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "scalp"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Missing out",
+    "url": "",
+    "symbols": [
+      "USDCAD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Seeking Help from a Trading Mentor in Mumbai \u2013 XAUUSD",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Why Strength/Weakness Works Best For Forex Trading",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "SMA",
+      "swing",
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Looking for a new MT5 broker after a bad fill on CPI",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "EURUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "What do you think of this trade?",
+    "url": "",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "patterns": [
+      "breakout",
+      "support",
+      "resistance"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "looking for shorts in AUDCAD",
+    "url": "",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "AUDUSD today: bounce inside a broader weak backdrop",
+    "url": "",
+    "symbols": [
+      "AUDUSD"
+    ],
+    "patterns": [
+      "support",
+      "resistance",
+      "EMA",
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "USDCAD today: bullish backdrop, but pullback risk near resistance",
+    "url": "",
+    "symbols": [
+      "USOIL",
+      "USDCAD"
+    ],
+    "patterns": [
+      "pullback",
+      "support",
+      "resistance",
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "I got a Sell Entry on XAUUSD (GOLD) using a Continuation Entry",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Je recherche des strat\u00e9gies Forex ou XAUUSD pour un bot de trading",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  }
+]
