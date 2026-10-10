@@ -1,0 +1,28 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "A Density Functional for Quark Matter with Screened Confinement Interactions",
+    "summary": "We derive a density functional for quark matter with linear confinement interaction, applying the principle of saturation of color interactions. For the saturation parameter $\u03bc$ the ansatz $\u03bc=k_F$ is ",
+    "url": "https://arxiv.org/abs/2610.12422v1",
+    "published": "2026-10-08T17:54:40Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Long Text to Predictive Features: LLM-Guided Blockwise Feature Engineering via Executable Program Search",
+    "summary": "Industrial risk-control systems typically rely on structured-data models for efficient prediction, yet substantial valuable information remains embedded in unstructured long text. Extracting this info",
+    "url": "https://arxiv.org/abs/2610.12390v1",
+    "published": "2026-10-08T17:39:11Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
