@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-10T00:49:44+00:00",
+  "generated": "2026-10-10T02:39:25+00:00",
   "root": "C:\\opt\\quant",
   "thresholds": {
     "trailing_refusals_max": 30,
@@ -21,7 +21,7 @@
       "first_at": "2026-09-28T14:49:57+00:00",
       "last_at": "2026-09-29T14:57:32+00:00",
       "span_h": 24.126,
-      "age_h": 249.87,
+      "age_h": 251.698,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-29T14:57:32+00:00 is older than 24h"
@@ -32,7 +32,7 @@
       "first_at": "2026-09-28T11:17:44+00:00",
       "last_at": "2026-09-28T11:17:44+00:00",
       "span_h": 0.0,
-      "age_h": 277.533,
+      "age_h": 279.362,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T11:17:44+00:00 is older than 24h"
@@ -43,7 +43,7 @@
       "first_at": "2026-09-11T10:26:59+00:00",
       "last_at": "2026-09-23T10:32:03+00:00",
       "span_h": 288.084,
-      "age_h": 398.295,
+      "age_h": 400.123,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-23T10:32:03+00:00 is older than 24h"
@@ -54,7 +54,7 @@
       "first_at": "2026-09-11T10:26:59+00:00",
       "last_at": "2026-09-11T10:38:46+00:00",
       "span_h": 0.196,
-      "age_h": 686.183,
+      "age_h": 688.011,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-11T10:38:46+00:00 is older than 24h"
@@ -65,7 +65,7 @@
       "first_at": "2026-09-28T06:41:57+00:00",
       "last_at": "2026-09-28T06:41:57+00:00",
       "span_h": 0.0,
-      "age_h": 282.13,
+      "age_h": 283.958,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
@@ -76,7 +76,7 @@
       "first_at": "2026-09-28T06:41:57+00:00",
       "last_at": "2026-09-28T06:41:57+00:00",
       "span_h": 0.0,
-      "age_h": 282.13,
+      "age_h": 283.958,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
@@ -87,7 +87,7 @@
       "first_at": "2026-09-23T04:00:04+00:00",
       "last_at": "2026-09-25T09:59:17+00:00",
       "span_h": 53.987,
-      "age_h": 350.841,
+      "age_h": 352.669,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-25T09:59:17+00:00 is older than 24h"
@@ -97,14 +97,14 @@
   "verdict": "OK",
   "applicable": true,
   "ledger_newest_at": "2026-10-09T04:00:34+00:00",
-  "ledger_age_h": 20.819,
+  "ledger_age_h": 22.648,
   "rows_scanned": 3204,
   "identity": {
     "verdict": "OK",
     "allows_new_risk": true,
-    "at": "2026-10-10T00:28:03+00:00",
-    "reason": "running 197fcb546888 is the sealed code cb341efee62c plus seal/state commits only (3411 path(s))",
-    "age_h": 0.361
+    "at": "2026-10-10T01:37:00+00:00",
+    "reason": "running 97c19d055f4a is the sealed code cb341efee62c plus seal/state commits only (3467 path(s))",
+    "age_h": 1.04
   },
   "host": {
     "verdict": "UNMEASURED",
