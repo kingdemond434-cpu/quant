@@ -1,0 +1,70 @@
+[
+  {
+    "source": "youtube",
+    "title": "Live Gold &amp; Bitcoin Scalping \u2013 Forex &amp; Crypto Trading Strategies",
+    "channel": "Trade With O.P.",
+    "url": "https://youtube.com/watch?v=FuYNKkaXeFE",
+    "published": "2026-10-10T17:30:12Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83c\udf89 \ud835\udc17\ud835\udc00\ud835\udc14\ud835\udc14\ud835\udc12\ud835\udc03 \u2013 \ud835\udc07\ud835\udfd2 | \ud835\udfcf\ud835\udfd0\u2013\ud835\udfcf\ud835\udfd4/\ud835\udfcf\ud835\udfce/\ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #technicalanalysis #smc #tradingplan #notfinancialadvice #xauusd",
+    "channel": "\ud835\udc13\ud835\udc21\ud835\udc1e \ud835\udc0a\ud835\udc28\ud835\udc27\ud835\udc20 \ud835\udc13\ud835\udc2b\ud835\udc1a\ud835\udc1d\ud835\udc1e\ud835\udc2b",
+    "url": "https://youtube.com/watch?v=Ggx0W1ssVVM",
+    "published": "2026-10-10T14:04:24Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [
+      "H4"
+    ],
+    "patterns": [
+      "FVG"
+    ],
+    "confidence": 0.44999999999999996
+  },
+  {
+    "source": "youtube",
+    "title": "USDJPY Technical Analysis and Intraday Trading Outlook",
+    "channel": "RobotFX: Automated Forex Trading & Expert Advisors",
+    "url": "https://youtube.com/watch?v=9BuJI2mkYz0",
+    "published": "2026-10-09T15:01:35Z",
+    "symbols": [
+      "USDJPY"
+    ],
+    "timeframes": [
+      "Intraday"
+    ],
+    "patterns": [],
+    "confidence": 0.30000000000000004
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD Gold Trading Strategy on TradingView | Price Action Buy &amp; Sell Signals (3M &amp; 15M)",
+    "channel": "Trade Predictor X",
+    "url": "https://youtube.com/watch?v=iDNp7AgT_W0",
+    "published": "2026-10-10T17:16:00Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [
+      [
+        "15",
+        "M"
+      ],
+      [
+        "3",
+        "M"
+      ]
+    ],
+    "patterns": [],
+    "confidence": 0.4
+  }
+]
