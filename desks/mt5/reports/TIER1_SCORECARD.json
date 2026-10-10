@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-10T03:49:48+00:00",
+ "generated_utc": "2026-10-10T14:39:33+00:00",
  "authority": "MEASUREMENT ONLY -- sizes nothing, gates nothing, certifies nothing. It reports where the fourteen Tier-1 dimensions stand, read from the artifacts that own them.",
  "n_rows": 14,
  "rows": [
@@ -22,7 +22,7 @@
    "max_solo_direction": "majority measured",
    "basis": "desks/mt5/reports/TIMEFRAME_COVERAGE.json + desks/mt5/reports/SESSION_CHART_EXPANSION.json + desks/mt5/data/sleeves.json + desks/mt5/reports/UNIVERSAL_SURVIVORS.json: distinct (timeframe, session) over certified rows; charts_hunted=7, cells_without_both_axes=1059",
    "verdict": "BELOW",
-   "measured_at": "2026-10-10T00:46:19+00:00",
+   "measured_at": "2026-10-10T14:25:42+00:00",
    "lower_is_better": false
   },
   {
@@ -44,7 +44,7 @@
    "max_solo_direction": "whole executable universe",
    "basis": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json survivors[*].shadow_spec.symbol -> universe_policy.asset_class_of (unclassified=0)",
    "verdict": "ABOVE",
-   "measured_at": "2026-10-10T02:14:11.659871+00:00",
+   "measured_at": "2026-10-10T09:04:35.048597+00:00",
    "lower_is_better": false
   },
   {
@@ -53,9 +53,9 @@
    "unit": "pct",
    "first_target": 100.0,
    "max_solo_direction": "100% and held",
-   "basis": "desks/mt5/reports/PIT_CENSUS.json canaries.green=True, census.stamped/sidecars + desks/mt5/reports/LAKE_PROMOTION.json silver_share; binding=lake silver_share",
+   "basis": "desks/mt5/reports/PIT_CENSUS.json canaries.green=None, census.stamped/sidecars + desks/mt5/reports/LAKE_PROMOTION.json silver_share; binding=lake silver_share",
    "verdict": "BELOW",
-   "measured_at": "2026-10-10T01:38:17+00:00",
+   "measured_at": "2026-10-10T14:15:14.959147+00:00",
    "lower_is_better": false
   },
   {
@@ -66,18 +66,18 @@
    "max_solo_direction": "100",
    "basis": "desks/mt5/reports/ATTRIBUTION_RECONCILE.json attributed_pct (206/255 by exact name, unique prefix or tp/sl geometry); the exact-name join alone reads 17.65%",
    "verdict": "BELOW",
-   "measured_at": "2026-10-10T01:48:10+00:00",
+   "measured_at": "2026-10-10T09:16:05+00:00",
    "lower_is_better": false
   },
   {
    "dimension": "silent_scheduled_failures",
-   "current": 8.0,
+   "current": 10.0,
    "unit": "organs",
    "first_target": 0.0,
    "max_solo_direction": "0",
    "basis": "desks/mt5/reports/process_health.json counts.FAILING+NOT_SCHEDULED + desks/mt5/data/sync_marker.json legs LEG_FAILED/TIMEOUT (legs=0)",
    "verdict": "BELOW",
-   "measured_at": "2026-10-10T03:45:08+00:00",
+   "measured_at": "2026-10-10T14:30:02+00:00",
    "lower_is_better": true
   },
   {
@@ -88,7 +88,7 @@
    "max_solo_direction": "100",
    "basis": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json survivors x desks/mt5/reports/shadow/shadow_state.json clock keys (symbol+selector, credit_assignment join): 849/849",
    "verdict": "AT",
-   "measured_at": "2026-10-10T02:14:11.659871+00:00",
+   "measured_at": "2026-10-10T09:04:35.048597+00:00",
    "lower_is_better": false
   },
   {
@@ -121,7 +121,7 @@
    "max_solo_direction": "3",
    "basis": "desks/mt5/data/macro_state.json series=22, per-country blocks=False (differentials=1), desks/mt5/data/state_vector.json sensitivities=True",
    "verdict": "BELOW",
-   "measured_at": "2026-10-10T02:58:42.557270+00:00",
+   "measured_at": "2026-10-10T13:58:36.158732+00:00",
    "lower_is_better": false
   },
   {
@@ -132,7 +132,7 @@
    "max_solo_direction": "3",
    "basis": "desks/mt5/reports/pf_allocation.json proof: passed=False, hysteresis=True, desks/mt5/reports/pf_allocation.json posterior fields=True",
    "verdict": "BELOW",
-   "measured_at": "2026-10-10T03:40:34.639692+00:00",
+   "measured_at": "2026-10-10T14:30:59.478410+00:00",
    "lower_is_better": false
   },
   {
@@ -141,9 +141,9 @@
    "unit": "days",
    "first_target": 365.0,
    "max_solo_direction": "years",
-   "basis": "desks/mt5/data/tape/ticks/*/YYYY-MM-DD.parquet distinct dates over 249 symbol dir(s); desks/mt5/data/moat_coverage.json newest_tape_write=2026-10-10T03:24:49+00:00, desks/mt5/reports/TAPE_RECORDER.json state=RECORDING",
+   "basis": "desks/mt5/data/tape/ticks/*/YYYY-MM-DD.parquet distinct dates over 249 symbol dir(s); desks/mt5/data/moat_coverage.json newest_tape_write=2026-10-10T14:24:51+00:00, desks/mt5/reports/TAPE_RECORDER.json state=RECORDING",
    "verdict": "BELOW",
-   "measured_at": "2026-10-10T03:35:06+00:00",
+   "measured_at": "2026-10-10T14:35:03+00:00",
    "lower_is_better": false
   },
   {
@@ -167,6 +167,6 @@
    "research_conversion_backlog",
    "silent_scheduled_failures"
   ],
-  "why": "3 of 14 dimensions are AT or ABOVE their first target, 11 are BELOW and 0 are UNMEASURED -- which would be a verdict and never a zero, and today there are none -- every row below was read from an artifact that exists. The three weakest MEASURED rows are pit_compliance_pct at 0.0 pct against a first target of 100.0; research_conversion_backlog at 668584.0 candidates against a first target of 0.0; silent_scheduled_failures at 8.0 organs against a first target of 0.0. Those buy the most next hour, because the rest of the board is read through them: breadth that is not point-in-time clean cannot be trusted, a live trade that cannot be attributed cannot feed credit assignment, and a backlog that does not shrink is a claim the desk cannot cash. Nothing here is asserted -- a number moves when an organ writes a better artifact, never when this file is edited."
+  "why": "3 of 14 dimensions are AT or ABOVE their first target, 11 are BELOW and 0 are UNMEASURED -- which would be a verdict and never a zero, and today there are none -- every row below was read from an artifact that exists. The three weakest MEASURED rows are pit_compliance_pct at 0.0 pct against a first target of 100.0; research_conversion_backlog at 668584.0 candidates against a first target of 0.0; silent_scheduled_failures at 10.0 organs against a first target of 0.0. Those buy the most next hour, because the rest of the board is read through them: breadth that is not point-in-time clean cannot be trusted, a live trade that cannot be attributed cannot feed credit assignment, and a backlog that does not shrink is a claim the desk cannot cash. Nothing here is asserted -- a number moves when an organ writes a better artifact, never when this file is edited."
  }
 }

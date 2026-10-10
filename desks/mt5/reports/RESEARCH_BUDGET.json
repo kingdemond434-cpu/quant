@@ -1,5 +1,5 @@
 {
- "at": "2026-10-10T13:47:18+00:00",
+ "at": "2026-10-10T14:49:14+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,19 +9,19 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-10T13:47:10+00:00",
+   "at": "2026-10-10T14:49:06+00:00",
    "bandit_at": "2026-10-10T00:34:35.049148+00:00",
-   "hour": "2026-10-10T13",
+   "hour": "2026-10-10T14",
    "arm": "treated",
    "wanted_s": 480,
    "floor_s": 240,
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 240,
-   "surplus_s": 1309.2,
-   "surplus_why": "department 'discovery' measured spare 1309s/hour",
+   "surplus_s": 1250.7,
+   "surplus_why": "department 'discovery' measured spare 1251s/hour",
    "contract": {
-    "n_treated": 13,
+    "n_treated": 14,
     "n_control": 0,
     "verdict": "UNMEASURED",
     "why": "fewer than 3 units in an arm",
@@ -29,7 +29,7 @@
    },
    "trial": true,
    "authoritative": false,
-   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1309s/hour); contract UNMEASURED: this hour is the trial that measures it",
+   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1251s/hour); contract UNMEASURED: this hour is the trial that measures it",
    "share": 0.2798,
    "baseline": 0.2727,
    "ladder_factor": 0.866,
@@ -51,7 +51,7 @@
    "applied_s": 480,
    "applied": true,
    "granted": true,
-   "why": "share 0.280 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1309s/hour); contract UNMEASURED: this hour is the trial that measures it"
+   "why": "share 0.280 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1251s/hour); contract UNMEASURED: this hour is the trial that measures it"
   },
   "deepen": {
    "leg": "deepen",
@@ -120,7 +120,7 @@
   "admitted": 0.0,
   "legs": {
    "alpha_evolution": {
-    "n_treated": 13,
+    "n_treated": 14,
     "n_control": 0,
     "verdict": "UNMEASURED",
     "why": "fewer than 3 units in an arm",
