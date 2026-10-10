@@ -1,21 +1,21 @@
 {
- "at": "2026-10-10T00:50:53+00:00",
+ "at": "2026-10-10T01:45:52+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": true,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 49960,
+  "free_phys_mb": 37819,
   "commit_limit_mb": 251854,
-  "commit_free_mb": 147290,
+  "commit_free_mb": 130774,
   "cpu_source": "psutil",
-  "busy_other_cores": 16.02,
+  "busy_other_cores": 16.45,
   "busy_judge_cores": 0.0,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": false,
-  "n_python": 65,
+  "n_python": 70,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -62,7 +62,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "judge_value_at_risk",
   "stood_down": false,
-  "why": "cores 18 (reserved 0), memory 32, commit 95 at 768MB a worker; the binding one is judge_value_at_risk",
+  "why": "cores 18 (reserved 0), memory 24, commit 85 at 768MB a worker; the binding one is judge_value_at_risk",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -106,7 +106,7 @@
    "status": "FAILED",
    "minutes": 5,
    "task": "MT5-Gauntlet",
-   "next_run_before": "10/10/2026 2:56:00 AM",
+   "next_run_before": "",
    "why": "TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '5', '/DU', '9999:59']' timed out after 20.0 seconds"
   },
   "process_env": {
@@ -116,7 +116,7 @@
  "limiting_resource": "judge_value_at_risk",
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-10T00:50:53+00:00",
+  "at": "2026-10-10T01:45:52+00:00",
   "verdicts": {
    "status": "MEASURED",
    "rows_total": 837690,
@@ -149,11 +149,11 @@
    "status": "MEASURED",
    "counts": {
     "24h": 17445,
-    "7d": 160234
+    "7d": 160188
    },
    "per_hour": {
     "24h": 726.875,
-    "7d": 953.774
+    "7d": 953.5
    }
   },
   "verdicts_per_hour": 182.5,
@@ -173,6 +173,6 @@
   "workers_last_sweep": 18,
   "cores_basis": "fixed_reservation"
  },
- "measure_seconds": 47.5,
- "seconds": 68.4
+ "measure_seconds": 183.4,
+ "seconds": 228.9
 }
