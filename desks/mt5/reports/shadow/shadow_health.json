@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-09T23:26:59+00:00",
+  "updated_at": "2026-10-10T00:43:39+00:00",
   "configured_sleeves": 840,
   "represented_sleeves": 840,
   "certified_sleeves_total": 849,
@@ -17,7 +17,7 @@
       "IDENTITY_BROKEN": 10
     },
     "age_measured": 103,
-    "median_age_days": 2.467,
+    "median_age_days": 2.521,
     "mature_14d_without_trade": 0,
     "fresh_attempts": 93,
     "naturally_inactive": 93,
@@ -41,7 +41,7 @@
     "3 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 1897.207,
+  "seconds": 2892.615,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
