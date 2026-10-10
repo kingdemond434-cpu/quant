@@ -1,12 +1,12 @@
 {
- "generated_utc": "2026-10-09T15:45:19+00:00",
+ "generated_utc": "2026-10-10T19:59:32+00:00",
  "status": "MEASURED",
  "inputs": {
   "sleeves": "desks/mt5/data/sleeves.json",
   "survivors": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
   "survivor_rows": 849,
   "registry_rows": 1708,
-  "docket_cells": 1622734
+  "docket_cells": 1622979
  },
  "fields": [
   "family",
