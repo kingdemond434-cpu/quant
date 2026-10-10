@@ -1,11 +1,11 @@
 {
   "schema": "desk_health/1",
-  "checked_at": "2026-10-09T09:10:04+00:00",
+  "checked_at": "2026-10-10T08:17:52+00:00",
   "desk_root": "C:\\opt\\quant\\desks\\mt5",
   "verdict": "PROBLEM",
   "counts": {
-    "OK": 8,
-    "PROBLEM": 10,
+    "OK": 7,
+    "PROBLEM": 11,
     "UNKNOWN": 0
   },
   "findings": [
@@ -17,22 +17,22 @@
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "OK",
-      "message": "MT5-Gateway: Enabled, last run 10/9/2026 11:10:01 AM, result 267009 -- places and manages orders -- the money path"
+      "message": "MT5-Gateway: Enabled, last run 10/10/2026 10:17:01 AM, result 0 -- places and manages orders -- the money path"
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "PROBLEM",
-      "message": "MT5-Hourly last run 10/9/2026 11:00:01 AM and returned -2147020576 (non-zero = it failed) -- the hourly chain: health, mining, sync"
+      "message": "MT5-Hourly last run 10/10/2026 10:00:01 AM and returned -2147020576 (non-zero = it failed) -- the hourly chain: health, mining, sync"
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "OK",
-      "message": "MT5-Shadow: Enabled, last run 10/9/2026 10:55:01 AM, result 267009 -- forward evidence for candidate sleeves"
+      "message": "MT5-Shadow: Enabled, last run 10/10/2026 9:55:01 AM, result 267009 -- forward evidence for candidate sleeves"
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "PROBLEM",
-      "message": "MT5-Gauntlet last run 10/9/2026 11:06:01 AM and returned -2147020576 (non-zero = it failed) -- judges the docket and mints certificates"
+      "message": "MT5-Gauntlet last run 10/10/2026 10:16:01 AM and returned -2147020576 (non-zero = it failed) -- judges the docket and mints certificates"
     },
     {
       "section": "RUNNING NOW",
@@ -57,32 +57,32 @@
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/hypotheses/edge_search_results.json is 125.3h old (expected under 3h) -- the SEARCH leg has stopped producing"
+      "message": "data/hypotheses/edge_search_results.json is 148.4h old (expected under 3h) -- the SEARCH leg has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/hypotheses/orthogonal_candidates.json is 14.8h old (expected under 3h) -- the SWEEP leg has stopped producing"
+      "message": "data/hypotheses/orthogonal_candidates.json is 5.8h old (expected under 3h) -- the SWEEP leg has stopped producing"
+    },
+    {
+      "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
+      "level": "PROBLEM",
+      "message": "reports/UNIVERSAL_SURVIVORS.json is 6.1h old (expected under 6h) -- the gauntlet's canon has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "OK",
-      "message": "reports/UNIVERSAL_SURVIVORS.json is 3.5h old -- the gauntlet's canon"
-    },
-    {
-      "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
-      "level": "OK",
-      "message": "reports/pf_allocation.json is 0.2h old -- the allocator"
+      "message": "reports/pf_allocation.json is 0.1h old -- the allocator"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "reports/BOX_STATE_FLOW.json is 2.3h old (expected under 2h) -- publish_state's delivery meter has stopped producing"
+      "message": "reports/BOX_STATE_FLOW.json is 3.5h old (expected under 2h) -- publish_state's delivery meter has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "reports/GATE_VERDICT_DIGEST.json is 2.3h old (expected under 2h) -- publish_state's gate verdict digest has stopped producing"
+      "message": "reports/GATE_VERDICT_DIGEST.json is 3.9h old (expected under 2h) -- publish_state's gate verdict digest has stopped producing"
     },
     {
       "section": "IS THE BOX'S STATE REACHING ORIGIN",
@@ -97,7 +97,7 @@
     {
       "section": "DOES A STALL PAGE ANYONE  (stall_watch.json, every ten minutes)",
       "level": "PROBLEM",
-      "message": "ALERTS NOT ARMED: STALLED pages reach no one (stall_watch 2026-10-09T08:50:31.4359732Z, watcher verdict FLOWING)"
+      "message": "ALERTS NOT ARMED: STALLED pages reach no one (stall_watch 2026-10-10T07:50:27.4579176Z, watcher verdict METER_SILENT)"
     }
   ]
 }
