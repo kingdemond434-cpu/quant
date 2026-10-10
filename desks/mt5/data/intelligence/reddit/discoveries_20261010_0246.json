@@ -1,0 +1,275 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "When a win feels like a loss",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD Longs today",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPUSD Morning Bull Run Today (9-OCT-2026)",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "RSI"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPUSD Today (8-OCT-2026)",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "RSI"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Don't be like this guy - wants to go full time, never backtested or journaled, trades based on \"feelings\" lol",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPUSD flipped today from daily bears to Above the Top-Central Pivot Bulls There",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Damn EURUSD blew past 1.3500s weekly resistance level",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "resistance"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "EURUSD Daily: Pullback Setup into Premium FVG Zone \ud83d\udcc9",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "pullback"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD NY Session Short",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "My Setup on Monday for GOLD!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NFP trade fundamental analysis + technical execution",
+    "url": "",
+    "symbols": [
+      "DXY",
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "AUDCAD BUY",
+    "url": "",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "patterns": [
+      "order block"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Retired XAUUSD scalper here",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "scalp"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Missing out",
+    "url": "",
+    "symbols": [
+      "USDCAD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP MONDAY!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "EMA",
+      "momentum"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Free playbooks",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Fase ruim",
+    "url": "",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Pre-Market Snapshot (Friday, Oct 9)",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [
+      "pullback",
+      "RSI"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Fxcm one click sl/tp doesnt work",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "scalp"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Need some help with transitioning to NQ - What to use for market analysis",
+    "url": "",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Market Intelligence 10/9",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "SPY algo trading",
+    "url": "",
+    "symbols": [
+      "US500"
+    ],
+    "patterns": [
+      "SMA",
+      "liquidity"
+    ],
+    "confidence": 0.3
+  }
+]
