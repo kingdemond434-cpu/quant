@@ -106,11 +106,13 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     #
     # Budgets are the task's own cadence plus one period of slack, so a single skipped run is not
     # an alarm and two are.
-    "E8-Executor":        ("desks/mt5/reports/E8_EXEC.json", 120,
-                           "guard and management of inherited E8 positions; legacy FX entry is "
-                           "retired"),
+    "E8-Executor":        ("desks/mt5/reports/E8_EXEC.json", 15,
+                           "five-minute certified FX evaluation, broker guard and position "
+                           "management"),
     "E8-Gold":            ("desks/mt5/reports/E8_GOLD.json", 15,
                            "the mirrored Fusion gold windows actually sent, or refused and why"),
+    "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 180,
+                           "hourly venue-listed, positive-risk certified sleeve selection"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
     # NO E8-Guard ROW, AND REMOVING IT IS THE POINT. I added one earlier tonight naming
