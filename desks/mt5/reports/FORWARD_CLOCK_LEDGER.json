@@ -1,5 +1,5 @@
 {
- "at": "2026-10-10T03:18:59+00:00",
+ "at": "2026-10-10T13:14:37+00:00",
  "status": "OK",
  "n_clocks": 845,
  "n_live": 845,
@@ -21,5 +21,5 @@
   "desks/mt5/research/quantbench.py case QB003 replays the monotonicity every hour"
  ],
  "boundary": "NOTHING IS CAPPED, REFUSED OR SLOWED. The only refusal this organ can make is of a LATER start, which destroys pre-registered days; an EARLIER start is always accepted. Enrolment is untouched: every sleeve that would have been enrolled is still enrolled, on a clock that can only be the same age or older.",
- "seconds": 0.076
+ "seconds": 0.082
 }
