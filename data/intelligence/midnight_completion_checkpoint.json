@@ -1,85 +1,42 @@
 {
- "cycle": "2026-10-09",
+ "cycle": "2026-10-10",
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-09T19:00:03.618925+00:00",
+   "finished_at": "2026-10-10T01:03:34.497312+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-09T21:42:46.671695+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "certificate_yield_fence": {
-   "finished_at": "2026-10-09T23:19:24.587673+00:00",
+   "finished_at": "2026-10-10T01:04:18.422057+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-09T19:55:13.535304+00:00",
+   "finished_at": "2026-10-10T01:03:50.086645+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-09T21:42:37.045524+00:00",
+   "finished_at": "2026-10-10T01:04:12.135345+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
-  },
-  "forward_clock_fence": {
-   "finished_at": "2026-10-09T23:19:33.933433+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "DONE"
-  },
-  "forward_clock_reconciliation": {
-   "finished_at": "2026-10-09T23:18:24.843705+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "forward_identity_reconciliation": {
-   "finished_at": "2026-10-09T23:18:11.629190+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "forward_lane_heal": {
-   "finished_at": "2026-10-09T23:18:38.651762+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-09T23:17:50.923146+00:00",
-   "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
-  },
-  "mechanism_independence": {
-   "finished_at": "2026-10-09T23:18:59.885312+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "same_day_fence": {
-   "finished_at": "2026-10-09T23:19:13.414315+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "DONE"
-  },
-  "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-09T23:18:49.833497+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-desk-pull.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-10T01:04:20.687665+00:00",
+   "status": "RUNNING"
   }
  },
- "updated_at": "2026-10-09T23:19:33.933433+00:00"
+ "updated_at": "2026-10-10T01:04:20.687665+00:00"
 }
