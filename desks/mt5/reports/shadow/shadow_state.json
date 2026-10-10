@@ -529,8 +529,8 @@
     }
   },
   "last_run": "2026-10-10",
-  "updated_at": "2026-10-10T22:26:53+00:00",
-  "configured_sleeves": 845,
+  "updated_at": "2026-10-10T22:43:55+00:00",
+  "configured_sleeves": 13,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
     "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1": {
@@ -9858,7 +9858,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:53:18+00:00"
+      "at": "2026-10-10T22:43:55+00:00"
     },
     "identity_drift": [
       "runtime_version"
@@ -15046,7 +15046,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:51:29+00:00"
+      "at": "2026-10-10T22:43:42+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96": {
@@ -15116,7 +15116,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:51:32+00:00"
+      "at": "2026-10-10T22:43:46+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96": {
@@ -34208,7 +34208,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:52:08+00:00"
+      "at": "2026-10-10T22:43:48+00:00"
     }
   },
   "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8": {
@@ -34278,7 +34278,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:52:10+00:00"
+      "at": "2026-10-10T22:43:49+00:00"
     }
   },
   "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8": {
@@ -34387,7 +34387,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:52:14+00:00"
+      "at": "2026-10-10T22:43:51+00:00"
     }
   },
   "XAUAUD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8": {
@@ -34535,7 +34535,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:52:18+00:00"
+      "at": "2026-10-10T22:43:52+00:00"
     }
   },
   "XAUAUD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8": {
@@ -41830,7 +41830,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:53:17+00:00"
+      "at": "2026-10-10T22:43:54+00:00"
     },
     "identity_drift": [
       "runtime_version"
@@ -46042,7 +46042,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:51:30+00:00"
+      "at": "2026-10-10T22:43:44+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=48": {
@@ -46112,7 +46112,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-10T21:51:31+00:00"
+      "at": "2026-10-10T22:43:45+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192": {
@@ -54684,7 +54684,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: direction, timeframe, cost_hash, data_venue changed after the clock froze",
-      "at": "2026-10-10T21:50:27+00:00"
+      "at": "2026-10-10T22:43:39+00:00"
     }
   },
   "GBPMXN.clock_transition.asia#label=tokyo_open_regime=low_vol_representation=price_only_side=1_stamp_hour=0": {
@@ -54713,7 +54713,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: direction, timeframe, cost_hash, data_venue changed after the clock froze",
-      "at": "2026-10-10T21:50:28+00:00"
+      "at": "2026-10-10T22:43:40+00:00"
     }
   },
   "GBPMXN.clock_transition.asia#label=tokyo_open_representation=price_only_side=1_stamp_hour=0": {
@@ -54742,15 +54742,15 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: direction, timeframe, cost_hash, data_venue changed after the clock froze",
-      "at": "2026-10-10T21:50:29+00:00"
+      "at": "2026-10-10T22:43:41+00:00"
     }
   },
   "engine_pass": {
-    "started_at": "2026-10-10T21:50:24+00:00",
-    "rows_reached": 845,
-    "rows": 845,
+    "started_at": "2026-10-10T22:43:35+00:00",
+    "rows_reached": 13,
+    "rows": 13,
     "complete": true,
-    "finished_at": "2026-10-10T22:26:53+00:00"
+    "finished_at": "2026-10-10T22:43:55+00:00"
   },
   "USDSGD.overnight_gap_decay.asia#representation=cross_asset": {
     "n": 1,
