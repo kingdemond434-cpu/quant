@@ -1,10 +1,6 @@
 {
- "generated_utc": "2026-10-10T04:37:08.248696+00:00",
+ "generated_utc": "2026-10-10T05:38:40.249384+00:00",
  "n_live": 3,
- "rows": {
-  "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": "DOOR_ERROR: the replication check raised DoorReadError: REPLICATION.json stale or undated (> 6h): its hourly verifier has stopped reporting; withheld until it runs clean",
-  "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": "DOOR_ERROR: the replication check raised DoorReadError: REPLICATION.json stale or undated (> 6h): its hourly verifier has stopped reporting; withheld until it runs clean",
-  "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": "DOOR_ERROR: the replication check raised DoorReadError: REPLICATION.json stale or undated (> 6h): its hourly verifier has stopped reporting; withheld until it runs clean"
- },
+ "rows": {},
  "consumer": "research/promoter.py automatic retirement (desktop batch: promoter.py is sealed)"
 }
