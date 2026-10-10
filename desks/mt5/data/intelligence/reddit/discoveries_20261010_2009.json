@@ -1,0 +1,559 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "I do not see the effects of leverage",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "When a win feels like a loss",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD Longs today",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Don't be like this guy - wants to go full time, never backtested or journaled, trades based on \"feelings\" lol",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Damn EURUSD blew past 1.3500s weekly resistance level",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "resistance"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "EURUSD Daily: Pullback Setup into Premium FVG Zone \ud83d\udcc9",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "pullback"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD NY Session Short",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "My Setup on Monday for GOLD!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NFP trade fundamental analysis + technical execution",
+    "url": "",
+    "symbols": [
+      "DXY",
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "AUDCAD BUY",
+    "url": "",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "patterns": [
+      "order block"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Retired XAUUSD scalper here",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "scalp"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Missing out",
+    "url": "",
+    "symbols": [
+      "USDCAD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Recent pick-up",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "First gold purchase, sadly not even for myself but a 30th B-Day gift.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "It's perfect",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Am I crazy if I think Gold may double in the coming 5 years?",
+    "url": "",
+    "symbols": [
+      "BTCUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Sunface Gold! - Central American Republic Escudos",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "My first gold coin",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "XAGUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Gold acquisition question",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "RSI",
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Bought the dip",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "How much should u aim to stack in 1 year",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Ring says 14-18k on a normal looking gold ring?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Korean Gold",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Ideal weight of thai Gold chain?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Recommendations For Fire Proof Container/Safe",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "XAGUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Something different.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "I built a free gold dashboard with price trends, central bank data, and institutional holdings",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "XAGUSD"
+    ],
+    "patterns": [
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "GOLD AT SPOT on APMEX!!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "What do we think?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "The original 5 pesos in gold or 1 argentino \u2013 8.06 grams, fineness 900, diameter 22.12mm (0.2334 oz). A witness to Argentina\u2019s \u201cGolden Age,\u201d 1888 was ...",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Wearable short stack",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "rant: APMEX requesting mortgage documents, bills, pic of my id, a selfie",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "National congress of parents and teachers",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "What could this black spot be on my 18K gold ring?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Is investing in gold right now a good choice ? Indian market hydq",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "France & Italy 1893 20 Franc LMU Gold",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "2 Gram gold pendant - Goddess Lakshmi Coin at ~31k with SBI CC",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "When to Buy Gold?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "950 $20 Gold Pieces",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "400 Years of Gold Mastery: Kanazawa\u2019s Gold Leaf Artisans",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Some stack bricks, some wear bricks",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Gold precipitate interests me.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Best online dealer to sell to?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Yesterdays Purchase",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Advice on upgrading Thai Gold chain in Bangkok",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "My Favorite (Now Retired) Version of the \"Ruyi Jingu Bang\" Ring in Ancient Chinese Matte Gold",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "RSI"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Russian chervonets gold coin 10 rouble",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "GOLD AT SPOT from Bullion Exchanges!!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  }
+]

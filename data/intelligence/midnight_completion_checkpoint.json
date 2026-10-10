@@ -9,7 +9,7 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-10T15:51:41.343736+00:00",
+   "finished_at": "2026-10-10T20:07:28.539640+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -21,16 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/promote_external_to_queue.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-10T19:06:07.607486+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-10T20:07:02.198484+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-10T15:51:30.603782+00:00",
+   "finished_at": "2026-10-10T20:07:24.426899+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -60,7 +57,7 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-10T16:35:56.523836+00:00",
+   "finished_at": "2026-10-10T20:30:12.521316+00:00",
    "passes_completed": 1,
    "returncode": 124,
    "status": "FAILED"
@@ -84,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-10T19:06:07.607486+00:00"
+ "updated_at": "2026-10-10T20:30:12.521316+00:00"
 }
