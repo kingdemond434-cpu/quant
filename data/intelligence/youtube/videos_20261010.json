@@ -122,5 +122,21 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCBc1EqknL4xzwJsUP9w7asg",
+  "channel": "Unbiased Trading",
+  "video_id": "ooe7oBSFR2A",
+  "published": "2026-10-10T23:21:11Z",
+  "title": "A $50 Billion Trader\u2019s First Move on a Losing Position",
+  "description": "Build your first live trading algorithm \ud83d\udc49https://cryptomomentumgroup.com/\n\nSteve Cohen runs $50 billion, and when a trade goes against him there's a sequence. First recheck your work and figure out what you might be missing, because you can't know everything. Only after all that work might he add to the position. Retail does it backwards, adding on emotion first and checking later, which is exactly the behavior rules-based systems remove.\n\n\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\n\nThis channel shares educational content about systematic and algorithmic trading. Nothing here is financial advice, and I am not a registered investment adviser. Trading involves risk of loss. Always do your own research and consult a licensed financial professional before making investment decisions.",
+  "links": [
+   "https://cryptomomentumgroup.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
