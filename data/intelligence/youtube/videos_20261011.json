@@ -57,5 +57,22 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCIZpqvFv_B9ktXvEzhaeELQ",
+  "channel": "Ryan Brown (ResponsibleForexTrading)",
+  "video_id": "6v9jWdh8lXo",
+  "published": "2026-10-11T15:09:04Z",
+  "title": "I Built an AI Trading Bot That Hasn\u2019t Lost a Month (Full Setup Guide)",
+  "description": "DOWNLOAD ARCHITECT (Sharpshooter AI Bot)\nhttps://responsibleforextrading.com/architect-2/\n\nVERIFY THE LIVE RESULTS\nhttps://showmytrades.com/dashboard/account/mt5-660706-27dcfffbcd864fd095434aadc4bde62e\n\nI Built an AI Trading Bot That Hasn\u2019t Lost a Month (Full Setup Guide)\nLearn how to install and run an AI trading bot in MetaTrader 5 using the Sharpshooter AI strategy inside Architect Algo. This full setup guide covers installation, your AI API key, strategy settings, risk controls and final checks in MT5.\nAt the time of recording, the live account had gained around 30% since January 2026, with approximately 7% drawdown and a 76% win rate across almost 600 trades.\n\nSharpshooter AI combines predefined trading rules with real-time AI trade confirmation using OpenAI or Claude. Before entering a trade, the strategy asks AI to evaluate the setup.\n\nI walk through setting up an MT5 demo account, selecting Sharpshooter AI, connecting your API key, configuring permissions and checking the installed charts. I also explain the default 30% account-equity stop loss, optional VPS hosting and why increasing risk requires caution.\n\nCHAPTERS\n0:00 Live Results & Strategy Overview\n1:17 How Sharpshooter Uses AI\n1:36 Download Architect & Get Started\n2:47 Set Up Your MT5 Demo Account\n3:47 Select Sharpshooter AI\n4:20 License & AI API Key\n5:10 Risk Settings & Equity Stop Loss\n6:24 Strategy Magic Numbers\n6:47 Install & Configure MT5 Permissions\n7:47 Check Your Charts\n8:16 Final Setup Checks\n8:38 Track Your Results\n\nDisclosure: I developed and sell Architect Algo. Some broker and VPS links discussed in this video are affiliate links, and I may earn a commission if you use them.\n\nFor educational purposes only, not personalized financial advice. Leveraged trading carries substantial risk. Past results do not guarantee future performance, and drawdown can exceed the level observed so far. Test on a demo account before considering live trading.\n\n#AITradingBot #MT5 #AutomatedTrading",
+  "links": [
+   "https://responsibleforextrading.com/architect-2/",
+   "https://showmytrades.com/dashboard/account/mt5-660706-27dcfffbcd864fd095434aadc4bde62e"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
