@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-11T02:45:12.339183+00:00",
+  "swept_at": "2026-10-11T03:00:06.759458+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2769,8 +2769,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.3596,
+      "shadow_n": 25,
+      "shadow_exp_r": 0.0466,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
