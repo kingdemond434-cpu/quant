@@ -1,12 +1,12 @@
 {
- "generated_utc": "2026-10-10T00:50:16.464718+00:00",
+ "generated_utc": "2026-10-11T05:47:59.337348+00:00",
  "gaps": {},
  "timestamp_overlap": {
   "name": "timestamp_overlap",
   "status": "MEASURED",
   "n_eff": 8.801,
   "n_nominal": 473,
-  "n_obs": 8465815,
+  "n_obs": 8465905,
   "informational": true,
   "in_headline": false,
   "why": "473 sleeves, 111628 pairs, 14950 never in the market at the same minute; 2191 of 17244 same-mechanism pairs fire in disjoint hours",
@@ -180,7 +180,7 @@
    {
     "name": "exposure_full_sample",
     "status": "MEASURED",
-    "n_eff": 137.873,
+    "n_eff": 132.157,
     "n_nominal": 453,
     "n_obs": 515,
     "why": "(sum|w|)^2 / x'Cx on 99 instruments over 515 observations",
@@ -293,7 +293,7 @@
    {
     "name": "exposure_systematic",
     "status": "MEASURED",
-    "n_eff": 186.88,
+    "n_eff": 181.274,
     "n_nominal": 453,
     "n_obs": 515,
     "why": "3-factor systematic correlation explaining 62.8% of panel variance; idiosyncratic risk excluded from the diversification claim",
@@ -305,7 +305,7 @@
    {
     "name": "exposure_stress",
     "status": "MEASURED",
-    "n_eff": 63.953,
+    "n_eff": 61.35,
     "n_nominal": 453,
     "n_obs": 95,
     "why": "correlation inside the top 20% of a LAGGED regime conditioner (95 observations); the conditioner is known before the returns it labels, so this selects a regime and not a realisation",
@@ -324,7 +324,7 @@
     "why": "17369 pair(s) cleared the 20-day overlap floor, thinnest overlap 20d; rho <= 0.397 at the 95% upper bound, not the point estimate",
     "detail": {
      "n_pairs": 17369,
-     "rho_upper": 0.3967
+     "rho_upper": 0.3968
     }
    }
   ],
@@ -412,7 +412,7 @@
   "USDKRW": -1.0,
   "USDMXN": -1.0,
   "USDNOK": 2.0,
-  "USDPLN": 1.0,
+  "USDPLN": -1.0,
   "USDRUB": 1.0,
   "USDSEK": 2.0,
   "USDSGD": 4.0,
@@ -486,7 +486,7 @@
   },
   "counts_certified": {
    "session_liquidity": 59,
-   "macro_rates": 294,
+   "macro_rates": 296,
    "relative_value": 363,
    "mean_reversion": 34,
    "UNCLASSIFIED": 97
