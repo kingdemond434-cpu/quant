@@ -1,0 +1,2048 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Japanese Yen (EURJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURJPY/",
+  "published": "2026-10-11T02:13:05+00:00",
+  "symbols": [
+   "EURJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7597aa4ba23ee036d06c",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "90 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "eurjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "eba3b1cc5fea"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs New Zealand Dollar (EURNZD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURNZD/",
+  "published": "2026-10-11T02:13:07+00:00",
+  "symbols": [
+   "EURNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "339c8f9eb19f23ed3cf7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs US Dollar (EURUSD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURUSD/",
+  "published": "2026-10-11T02:13:09+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1b20bd58d5c23c018438",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Canadian Dollar (NZDCAD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/NZDCAD/",
+  "published": "2026-10-11T02:13:11+00:00",
+  "symbols": [
+   "NZDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ee9f183bac9a5ae7ea18",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Swiss Franc (NZDCHF) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/NZDCHF/",
+  "published": "2026-10-11T02:13:13+00:00",
+  "symbols": [
+   "NZDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "86040ab2ecfc79cf0e79",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Japanese Yen (NZDJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/NZDJPY/",
+  "published": "2026-10-11T02:13:15+00:00",
+  "symbols": [
+   "NZDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "92765b8566c618757319",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs US Dollar (NZDUSD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/NZDUSD/",
+  "published": "2026-10-11T02:13:17+00:00",
+  "symbols": [
+   "NZDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6ce9f92d60521303a63f",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "10 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NZDUSD"
+     ],
+     "mentioned": [
+      "nzdusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "540871e6143f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold vs Euro (Spot) (XAUEUR) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/XAUEUR/",
+  "published": "2026-10-11T02:13:17+00:00",
+  "symbols": [
+   "XAUEUR"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9875437327a84ede4c90",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "DE 40 Index Cash (.DE40Cash) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/.DE40Cash/",
+  "published": "2026-10-11T02:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "824afc34ea0ead0bbcc8",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JP 225Cash Index Cash (.JP225Cash) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/.JP225Cash/",
+  "published": "2026-10-11T02:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2b95acab019332563446",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US 500 Index Cash (.US500Cash) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/.US500Cash/",
+  "published": "2026-10-11T02:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "aa454d68faa29300717c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US TECH Index Cash (.USTECHCash) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/.USTECHCash/",
+  "published": "2026-10-11T02:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0781a3200186e94edb2c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US 30 Index Cash (.US30Cash) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/.US30Cash/",
+  "published": "2026-10-11T02:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "057ca43829475c1cf2ec",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Spot Brent Crude Oil (BRENT) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/BRENT/",
+  "published": "2026-10-11T02:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8579e9deec3ab7b74a7c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia privind numerarul a Eurosistemului",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.ro.html",
+  "published": "2026-10-11T02:13:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a2f0583118be9612ac57",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hotovostn&amp;aacute; strat&amp;eacute;gia Eurosyst&amp;eacute;mu",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sk.html",
+  "published": "2026-10-11T02:13:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6479f9274c8f606baa2c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategija Eurosistema o gotovini",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sl.html",
+  "published": "2026-10-11T02:13:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bb0fd666547fb4585801",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Eurosystemets kontantstrategi",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sv.html",
+  "published": "2026-10-11T02:13:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "13cddd00746ea6c2d190",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0420\u043e\u043b\u044f\u0442\u0430 \u043d\u0430 \u043f\u0430\u0440\u0438\u0442\u0435 \u0432 \u0431\u0440\u043e\u0439",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.bg.html",
+  "published": "2026-10-11T02:13:38+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9b4e21dcdf0954479988",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u00daloha hotovosti",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.cs.html",
+  "published": "2026-10-11T02:13:40+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "cs",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.cs.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8ee2194b039f12da02f7",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.da.html",
+  "published": "2026-10-11T02:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "591e1bd251865ef925c6",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u5206\u6790\uff08\u6210\u957f\u80fd\u529b\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_growth",
+  "published": "2026-10-11T02:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f61bfa1fde5e8d8049a",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u76c8\u5229\u9884\u6d4b\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_forecast_consensus_rolling",
+  "published": "2026-10-11T02:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "30579226677754305e2b",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u884d\u751f\uff08\u6700\u65b0\u5e74\u62a5\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_ly_shift__CAIXIN",
+  "published": "2026-10-11T02:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "538948dc32beb48094ef",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6307\u6570\u65e5\u884c\u60c5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_bar1d",
+  "published": "2026-10-11T02:13:53+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b6a8c717f73780a09ab2",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "\u8be5\u8868\u8be6\u7ec6\u8bb0\u5f55\u4e86\u80a1\u7968\u5e38\u89c1\u7684\u5bbd\u57fa\u6307\u6570\u6bcf\u65e5\u7684\u4ea4\u6613\u6570\u636e\uff0c\u5305\u62ec\u6307\u6570\u4ee3\u7801\u3001\u6307\u6570\u7b80\u79f0\u3001\u5f00\u9ad8\u4f4e\u6536\u3001\u6628\u6536\u76d8\u4ef7\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u989d\u3001\u6da8\u8dcc\u53ca\u6da8\u8dcc\u5e45\u7b49\uff0c\u63d0\u4f9b\u4e86\u80a1\u7968\u6307\u6570\u6bcf\u65e5\u7684\u5e02\u573a\u8868\u73b0\u6982\u89c8\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u4e0a\u8bc1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6e0bf89e0607"
+   },
+   {
+    "claim": "* \u7ecf\u6d4e\u9884\u6d4b\uff1a\u7ecf\u6d4e\u5b66\u5bb6\u53ef\u4ee5\u5229\u7528\u6307\u6570\u884c\u60c5\u6570\u636e\u8868\u6765\u9884\u6d4b\u672a\u6765\u51e0\u4e2a\u6708\u6216\u51e0\u5e74\u7684\u7ecf\u6d4e\u53d1\u5c55\u8d8b\u52bf\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u4e0a\u8bc1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7a13e529def5"
+   },
+   {
+    "claim": "``` \u8868\u7ed3\u6784 \u5b57\u6bb5 \u5b57\u6bb5\u7c7b\u578b \u5b57\u6bb5\u63cf\u8ff0 high double \u6700\u9ad8\u4ef7 name string \u6307\u6570\u7b80\u79f0 date timestamp[ns] - open double \u5f00\u76d8\u4ef7 turn double - change double \u6da8\u8dcc change_ratio double \u6da8\u8dcc\u5e45 __PARTITION__ int64 - instrument string \u6307\u6570\u4ee3\u7801 amount double \u6210\u4ea4\u989d pre_close double \u6628\u6536\u76d8\u4ef7 volume int64 \u6210\u4ea4\u91cf close double \u6536\u76d8\u4ef7 low double \u6700\u4f4e\u4ef7 \u8868\u540d\uff1acn_stock_index_bar1d \u8d77\u59cb\u65f6\u95f4\uff1a 2023-07-01T18:11:10.",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u5f00\u76d8",
+     "\u6536\u76d8",
+     "open"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u4e0a\u8bc1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "03598124cc7e"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6982\u5ff5\u6307\u6570\u884c\u60c5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_concept_bar1d",
+  "published": "2026-10-11T02:13:54+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "943dac16eb84d93e4ee3",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "``` \u8868\u7ed3\u6784 \u5b57\u6bb5 \u5b57\u6bb5\u7c7b\u578b \u5b57\u6bb5\u63cf\u8ff0 change double \u6da8\u8dcc change_ratio double \u6da8\u8dcc\u5e45 turn double \u6362\u624b\u7387 low double \u6700\u4f4e\u4ef7 open double \u5f00\u76d8\u4ef7 instrument string \u6307\u6570\u4ee3\u7801 volume double \u6210\u4ea4\u91cf pre_close double \u6628\u6536\u76d8\u4ef7 amount double \u6210\u4ea4\u989d __PARTITION__ int64 - date timestamp[ns] - high double \u6700\u9ad8\u4ef7 close double \u6536\u76d8\u4ef7 name string \u6307\u6570\u7b80\u79f0 \u8868\u540d\uff1acn_stock_index_concept_bar1d \u8d77\u59cb\u65f6\u95f4\uff1a 2024-03-18T14:50:08.",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u5f00\u76d8",
+     "\u6536\u76d8",
+     "open"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "671def89755a"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6307\u6570\u6210\u5206\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_component",
+  "published": "2026-10-11T02:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a4a3747d8a53d478e360",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6982\u5ff5\u6307\u6570\u6210\u5206\u80a1\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_concept_component",
+  "published": "2026-10-11T02:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bf2e339aba5d09124809",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u54c1\u8cb8\u6599 | \u4fe1\u7528\u53d6\u5f15\u6b8b\u9ad8\u7b49 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/margin/02.html",
+  "published": "2026-10-11T02:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.jpx.co.jp/markets/statistics-equities/margin/tvdivq0000001rb8-att/Premium_Charges.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f33afb0d17eedbab755f",
+  "host": "www.jpx.co.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4fe1\u7528\u53d6\u5f15\u58f2\u8cb7\u6bd4\u7387 | \u4fe1\u7528\u53d6\u5f15\u6b8b\u9ad8\u7b49 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/statistics-equities/margin/03.html",
+  "published": "2026-10-11T02:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e26a02e0356c9dec49a5",
+  "host": "www.jpx.co.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u65e5\u3005\u516c\u8868\u9298\u67c4 | \u4fe1\u7528\u53d6\u5f15\u306b\u95a2\u3059\u308b\u65e5\u3005\u516c\u8868 | \u65e5\u672c\u53d6\u5f15\u6240\u30b0\u30eb\u30fc\u30d7",
+  "url": "https://www.jpx.co.jp/markets/equities/margin-daily/index.html",
+  "published": "2026-10-11T02:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "710be923ec37f0389f7a",
+  "host": "www.jpx.co.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Page 5 \u2014 Algorithmic Trading Articles for Statistics and analysis | MetaTrader",
+  "url": "https://www.metatrader.com/en/algotrading/statistics/5",
+  "published": "2026-10-11T02:14:05+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "breakout",
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "134d1e1824c106158387",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "A Symbol Metadata and Trading Hours Cache in MQL5: Eliminating Redundant SymbolInfo Calls in Multi-Symbol EAs This article presents CSymbolMetaCache, an MQL5 layer that preloads contract specifications and trading-session schedules for monitored symbols at EA startup and then serves typed getters from memory.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "hours",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ad3ed0577bdf"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Page 6 \u2014 Algorithmic Trading Articles for Statistics and analysis | MetaTrader",
+  "url": "https://www.metatrader.com/en/algotrading/statistics/6",
+  "published": "2026-10-11T02:14:06+00:00",
+  "symbols": [
+   "EURUSD",
+   "NAS100",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H1",
+   "INTRADAY",
+   "M1"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "flow",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "b0bcdd9df9d7f3211ab2",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "We implement a native MQL5 indicator that detects such bars with the Modified Z-Score applied to four features: body, upper wick, lower wick, and tick volume.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "bars",
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0043226b89ff"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Page 7 \u2014 Algorithmic Trading Articles for Statistics and analysis | MetaTrader",
+  "url": "https://www.metatrader.com/en/algotrading/statistics/7",
+  "published": "2026-10-11T02:14:08+00:00",
+  "symbols": [
+   "GBPUSD",
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "M1"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "a3fa3f311d074d1cb865",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "You will implement the EA, execute BUY/SELL/CLOSE actions, and validate latency and reliability under real\u2011time conditions.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "GBPUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "gbpusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f763ac80c464"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Page 8 \u2014 Algorithmic Trading Articles for Statistics and analysis | MetaTrader",
+  "url": "https://www.metatrader.com/en/algotrading/statistics/8",
+  "published": "2026-10-11T02:14:10+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPJPY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "M1",
+   "M5"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "ff9ed2666fca617c40ec",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "A 1000-path Monte Carlo simulation produces the volatility forecast, which we then pit against GARCH on the same EURUSD M5 data.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "m5"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "801adfde8220"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Page 19 \u2014 Algorithmic Trading Articles for Statistics and analysis | MetaTrader",
+  "url": "https://www.metatrader.com/en/algotrading/statistics/19",
+  "published": "2026-10-11T02:14:12+00:00",
+  "symbols": [
+   "NZDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "0f9556fc497cabbcca58",
+  "host": "www.metatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Page 29 \u2014 Algorithmic Trading Articles for Statistics and analysis | MetaTrader",
+  "url": "https://www.metatrader.com/en/algotrading/statistics/29",
+  "published": "2026-10-11T02:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/en/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=en&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "7782869fbf164b0b0a0c",
+  "host": "www.metatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Unified Snapshot | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/snapshots/unified-snapshot",
+  "published": "2026-10-11T02:14:16+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "03aa566b7c09366b4392",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top Market Movers | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/snapshots/top-market-movers",
+  "published": "2026-10-11T02:14:17+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "21996d2a424f8bf0c3cb",
+  "host": "polygon.io",
+  "claims": [
+   {
+    "claim": "Gainers are stocks with the largest percentage increase since the previous day\u2019s close, and losers are those with the largest percentage decrease.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close"
+    ],
+    "direction": [
+     "increase",
+     "decrease"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7de231d1fe0e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quotes | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/quotes/quotes",
+  "published": "2026-10-11T02:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c92bc982547fc9b19a9d",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Last Quote | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/quotes/last-quote",
+  "published": "2026-10-11T02:14:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1fb2cefcea9a670f399f",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Simple Moving Average (SMA) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/simple-moving-average",
+  "published": "2026-10-11T02:14:24+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fcc6c34aadf41608f46c",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exponential Moving Average (EMA) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/exponential-moving-average",
+  "published": "2026-10-11T02:14:26+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "573ae9587c6ed9f1aea1",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Moving Average Convergence/Divergence (MACD) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/moving-average-convergence-divergence",
+  "published": "2026-10-11T02:14:28+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0a7ec96749f5eec8a950",
+  "host": "polygon.io",
+  "claims": [
+   {
+    "claim": "timespan=day&adjusted=true&short_window=12&long_window=26&signal_window=9&series_type=close&order=desc&limit=10&apiKey=YOUR_API_KEY\" from massive import RESTClient",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "25238b22e1dc"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://tradinghours.com/data",
+  "published": "2026-10-11T02:14:29+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "098f77c66b231e9c4bb8",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-10-11T02:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f97af116107719a45aff",
+  "host": "accounts.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/ar/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/ar/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-10-11T02:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b4a0ffd35a7090996d40",
+  "host": "accounts.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/hi/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/hi/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-10-11T02:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f4a52274530b1709ec65",
+  "host": "accounts.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/zh/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/zh/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-10-11T02:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3af0f3ab29520d908ef5",
+  "host": "accounts.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign in - Google Accounts",
+  "url": "https://accounts.google.com/ServiceLogin?passive=1209600&continue=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/ja/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&followup=https://gemini.google.com/app?q%3DProvide%2Ba%2Bsummary%2Bof%2Bthe%2Bcontent%2Bat%2B%255Bhttps://fxmacrodata.com/ja/indicators/exports%255D%2Band%2Btag%2Bit%2Bas%2Ba%2Bsource%2Bof%2Bexpertise%2Bfor%2Bfuture%2Breference&ec=GAZAkgU",
+  "published": "2026-10-11T02:14:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "352f9c62f045a46ef1ba",
+  "host": "accounts.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Login - Akun Google",
+  "url": "https://accounts.google.com/ServiceLogin?hl=id&passive=true&continue=https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ%3Fhl%3Did%26newbks%3D1%26gbpv%3D1%26dq%3Dstatistika%2Bdan%2Balgoritma%2Bem%26pg%3DPA120%26printsec%3Dfrontcover&ec=futura_srp_og_si_72236_p",
+  "published": "2026-10-11T02:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f0a7cf3811afa56336e2",
+  "host": "accounts.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Login - Akun Google",
+  "url": "https://accounts.google.com/ServiceLogin?service=print&hl=id&continue=https://google.com/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl%3Did%26gbpv%3D1%26pg%3DPA120%26dq%3Dstatistika%2Bdan%2Balgoritma%2Bem",
+  "published": "2026-10-11T02:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "740387878472af7fc53f",
+  "host": "accounts.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Transcript of the Governor&#39;s pooled broadcast interview given on 17 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/the-governor-interview-transcript-17-september-2026",
+  "published": "2026-10-11T02:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3c646501c63b9eb8449",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary Policy Committee dates for 2027 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/mpc-dates-for-2027",
+  "published": "2026-10-11T02:14:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "47c2f95ef9a024a3639c",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exchange of letters between the Governor and the Chancellor regarding CPI Inflation - September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/letter/2026/cpi-inflation-september-2026",
+  "published": "2026-10-11T02:14:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b4e84c4e93c553766bd0",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exchange of letters between the Governor and the Chancellor regarding QT and the APF - September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/letter/2026/exchange-of-letters-between-the-governor-and-the-chancellor-regarding-qt-and-the-apf",
+  "published": "2026-10-11T02:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c3a9b59c66dbaec6d91d",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank rate maintained at 3.75% - September 2026 Monetary Policy Summary and Minutes | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/september-2026",
+  "published": "2026-10-11T02:14:52+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "GBPUSD",
+   "UKGILT"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.bankofengland.co.uk/-/media/boe/files/monetary-policy-summary-and-minutes/mpcvoting.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2cb2643f18cb564247b1",
+  "host": "www.bankofengland.co.uk",
+  "claims": [
+   {
+    "claim": "6: UK financial conditions had tightened further since the July Report, driven by increases in short-term overnight index swap (OIS) rates.",
+    "lang": "en",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "GBPUSD",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "pound",
+      "gilts"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "bank of england: policy: BoE -> GBP",
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a5c34bdaa253"
+   },
+   {
+    "claim": "Based on energy prices as at close of business on 14 September, the direct contribution of energy prices to inflation was expected to increase over coming quarters, reflecting recent further increases in wholesale oil, gas and electricity costs.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "GBPUSD",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "pound",
+      "gilts"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "bank of england: policy: BoE -> GBP",
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6347f7561eb8"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Asset Purchase Facility: Gilt Sales \u2013 Market Notice 17 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/markets/market-notices/2026/asset-purchase-facility-gilt-sales-market-notice-17-september-2026",
+  "published": "2026-10-11T02:14:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "670415492d8980f8d639",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Chancellor announces Bank of England appointments | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/chancellor-announces-boe-appointments",
+  "published": "2026-10-11T02:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "94f35fa891df2929a00c",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://atoast2trading.wordpress.com/downloads/?share=twitter",
+  "url": "https://atoast2trading.wordpress.com/downloads/?share=twitter",
+  "published": "2026-10-11T02:14:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a72a19d7c35300bcdc50",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

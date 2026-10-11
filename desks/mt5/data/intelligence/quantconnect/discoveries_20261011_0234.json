@@ -1,0 +1,142 @@
+[
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Live run Disconnection with IBKR",
+  "url": "https://www.quantconnect.com/forum/discussion/21513/live-run-disconnection-with-ibkr/",
+  "text": "All four IBKR live strategies shut down simultaneously, recurring after redeployment.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21513"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Charles Schwab live auth fails: callback rejects a valid code (&quot;log in is required before starting authorization&quot;)",
+  "url": "https://www.quantconnect.com/forum/discussion/21511/charles-schwab-live-auth-fails-callback-rejects-a-valid-code-quot-log-in-is-required-before-starting-authorization-quot/",
+  "text": "Schwab live re-auth fails: QuantConnect rejects valid callback code, leaving authorization waiting.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21511"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Possible historical Security Master\\/data-continuity issue: HPK \u2192 PNKZV, February 2000",
+  "url": "https://www.quantconnect.com/forum/discussion/21484/possible-historical-security-master-data-continuity-issue-hpk-pnkzv-february-2000/",
+  "text": "Possible HPK&rarr;PNKZV ticker-map\\/data continuity gap in Feb 2000.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21484"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Is Tick.SaleCondition populated for US Futures in live trading? (aggressor side)",
+  "url": "https://www.quantconnect.com/forum/discussion/21494/is-tick-salecondition-populated-for-us-futures-in-live-trading-aggressor-side/",
+  "text": "Does Tick.SaleCondition reliably provide US futures aggressor-side data in live trading?",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21494"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "OOS charts keeps displaying &quot;Loading&quot;",
+  "url": "https://www.quantconnect.com/forum/discussion/21485/oos-charts-keeps-displaying-quot-loading-quot/",
+  "text": "Published strategy charts stuck loading despite successful backtests.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21485"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Bug Report: GOSS 80-for-1 Reverse Split Not Reflected in QuantConnect Live Holdings",
+  "url": "https://www.quantconnect.com/forum/discussion/21380/bug-report-goss-80-for-1-reverse-split-not-reflected-in-quantconnect-live-holdings/",
+  "text": "GOSS reverse split not reflected in QuantConnect live holdings",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21380"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "IBKR on QC Cloud: supported reconciliation barrier after reconnect or restart?",
+  "url": "https://www.quantconnect.com/forum/discussion/21474/ibkr-on-qc-cloud-supported-reconciliation-barrier-after-reconnect-or-restart/",
+  "text": "Need supported IBKR reconciliation barrier after QC Cloud reconnect\\/restart",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21474"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "A consistent absolute-return metric for QuantConnect live algorithms",
+  "url": "https://www.quantconnect.com/forum/discussion/21290/a-consistent-absolute-return-metric-for-quantconnect-live-algorithms/",
+  "text": "Persistent AbsRet% tracks live performance from original capital across redeploys.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21290"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "A Frozen LLM Veto Failed Its Added-Value Gate \u2014 Then the Mechanical Control Failed Locked Final",
+  "url": "https://www.quantconnect.com/forum/discussion/21370/a-frozen-llm-veto-failed-its-added-value-gate-then-the-mechanical-control-failed-locked-final/",
+  "text": "LLM veto failed gate; mechanical residual-spread final also lost after costs.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21370"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Perturb Prices for Robustness Tests with a Data Filter",
+  "url": "https://www.quantconnect.com/forum/discussion/21206/perturb-prices-for-robustness-tests-with-a-data-filter/",
+  "text": "Use data filters to perturb prices and test strategy robustness across noisy paths.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21206"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "23,824 Doors: How We Turn Trading Ideas into Falsifiable Experiments",
+  "url": "https://www.quantconnect.com/forum/discussion/21291/23-824-doors-how-we-turn-trading-ideas-into-falsifiable-experiments/",
+  "text": "Turn trading ideas into falsifiable, evidence-based experiments.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21291"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Alpaca PAPER cancellation\\/fill reconciliation before replacement exits",
+  "url": "https://www.quantconnect.com/forum/discussion/21402/alpaca-paper-cancellation-fill-reconciliation-before-replacement-exits/",
+  "text": "Alpaca PAPER cancel\\/fill reconciliation for safe replacement exits",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21402"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Live Regional Deployment",
+  "url": "https://www.quantconnect.com/forum/discussion/21419/live-regional-deployment/",
+  "text": "Live restart asks for Europe node despite available USA\\/Canada live node.",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21419"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Paper Trading \u2013 BTCUSD Market Order stays indefinitely in Submitted status",
+  "url": "https://www.quantconnect.com/forum/discussion/21367/paper-trading-btcusd-market-order-stays-indefinitely-in-submitted-status/",
+  "text": "BTCUSD paper market order stuck Submitted despite fresh data",
+  "symbols": [],
+  "found_at": "2026-10-11T02:36:53+00:00",
+  "thread_id": "21367"
+ }
+]
