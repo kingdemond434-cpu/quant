@@ -1,0 +1,37 @@
+{
+  "schema": "box_state_flow/1",
+  "measured_at": "2026-10-11T00:14:21+00:00",
+  "stall_h": 3.0,
+  "flow_rel": "desks/mt5/reports/BOX_STATE_FLOW.json",
+  "published_paths": 56,
+  "branch": "claude/llm-auto-upgrade-verify-gcjac3",
+  "origin_ref": "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3",
+  "publisher_identity": "Codex",
+  "last_published_commit": "0c529717f9",
+  "last_published_at": "2026-10-11T00:14:09+00:00",
+  "newest_local_state_at": "2026-10-11T00:14:12+00:00",
+  "local_commits_not_on_origin": 1090,
+  "hooks_path": "ops/githooks",
+  "sync_log": {
+    "readable": true,
+    "last_success_line": "2026-10-11T02:14:21.6384651+02:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 51 path(s)",
+    "last_refusal_line": "2026-10-11T02:05:13.2488175+02:00 DEFER: origin/claude/llm-auto-upgrade-verify-gcjac3 requires canonical adoption (1 inbound commit(s)); publisher will not merge code or hold the git-writer lock through adoption",
+    "last_line": "2026-10-11T02:14:21.6384651+02:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 51 path(s)"
+  },
+  "published_age_h": 0.0,
+  "local_state_age_h": 0.0,
+  "verdict": "FLOWING",
+  "why": "origin carries box state 0.0h old",
+  "page": {
+    "sent": true,
+    "reason": "recovered from METER_SILENT",
+    "title": "BOX STATE FLOWING again",
+    "armed": 0,
+    "delivered": 0
+  },
+  "alerts": {
+    "armed": 0,
+    "kinds": [],
+    "line": "ALERTS NOT ARMED: STALLED pages reach no one"
+  }
+}

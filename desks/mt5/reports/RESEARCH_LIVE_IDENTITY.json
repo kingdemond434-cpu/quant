@@ -1,0 +1,111 @@
+{
+ "generated_utc": "2026-10-10T19:59:32+00:00",
+ "status": "MEASURED",
+ "inputs": {
+  "sleeves": "desks/mt5/data/sleeves.json",
+  "survivors": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+  "survivor_rows": 849,
+  "registry_rows": 1708,
+  "docket_cells": 1622979
+ },
+ "fields": [
+  "family",
+  "symbol",
+  "selector",
+  "params",
+  "code"
+ ],
+ "n_live": 3,
+ "counts": {
+  "MATCH": 3,
+  "MISMATCH": 0,
+  "UNMEASURED": 0
+ },
+ "mismatched": [],
+ "unmeasured": [],
+ "defects": [],
+ "rows": [
+  {
+   "name": "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "3abd00297dacc4f9",
+    "clock": "AUDCHF.overnight_gap_decay.asia",
+    "frozen": "dee21b8288689a59",
+    "frozen_behaviour": "3abd00297dacc4f9"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "AUDCHF",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "AUDCHF",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MATCH"
+  },
+  {
+   "name": "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+   "exec": "family_market",
+   "certificate_cell": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "3abd00297dacc4f9",
+    "clock": "EURZAR.overnight_gap_decay.asia",
+    "frozen": "dee21b8288689a59",
+    "frozen_behaviour": "3abd00297dacc4f9"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "EURZAR",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "EURZAR",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MATCH"
+  },
+  {
+   "name": "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+   "exec": "family_market",
+   "certificate_cell": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "3abd00297dacc4f9",
+    "clock": "USDZAR.overnight_gap_decay.asia",
+    "frozen": "dee21b8288689a59",
+    "frozen_behaviour": "3abd00297dacc4f9"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "USDZAR",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "USDZAR",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MATCH"
+  }
+ ],
+ "consumer": "libs/tiers/promotion_authority._identity_mismatches (via review_live, run by research/tier_s.py door -> data/tier_s/live_door.json; that file's reader, promoter.retire_tier_s_live, is the unapplied sealed patch T4)"
+}

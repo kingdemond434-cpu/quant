@@ -1,0 +1,530 @@
+{
+ "generated_utc": "2026-10-11T02:43:06+00:00",
+ "trees": [
+  "desks/mt5/research",
+  "desks/mt5/mt5desk",
+  "libs/research"
+ ],
+ "sources": [
+  "bis_eer",
+  "cme_gc",
+  "contract_terms",
+  "cot",
+  "cot_fx",
+  "cross_asset_anchors",
+  "eur_cot_blocked",
+  "event_calendar",
+  "fred_macro",
+  "gdelt",
+  "lbma_vaults",
+  "macro_state",
+  "microstructure_surface",
+  "mt5_h1_universe",
+  "sge_benchmark",
+  "shfe_gold",
+  "spdr_gld_holdings",
+  "swiss_customs_gold",
+  "tick_tape",
+  "wgc_goldhub",
+  "xauusd_scalp_bars"
+ ],
+ "readers": 66,
+ "routed": {
+  "desks/mt5/research/alt_proxies.py": [
+   "gdelt"
+  ],
+  "desks/mt5/research/dislocation_lab.py": [
+   "cot"
+  ],
+  "desks/mt5/research/edge_search.py": [
+   "cot",
+   "cot_fx",
+   "macro_state"
+  ],
+  "desks/mt5/research/event_response_atlas.py": [
+   "cot"
+  ],
+  "desks/mt5/research/exposure_decomposition.py": [
+   "fred_macro"
+  ],
+  "desks/mt5/research/free_shadows.py": [
+   "cot_fx",
+   "fred_macro"
+  ],
+  "desks/mt5/research/macro_state_engine.py": [
+   "lbma_vaults",
+   "sge_benchmark",
+   "shfe_gold",
+   "swiss_customs_gold"
+  ],
+  "desks/mt5/research/orthogonal_sweep.py": [
+   "cot",
+   "cot_fx",
+   "event_calendar",
+   "fred_macro",
+   "macro_state"
+  ],
+  "desks/mt5/research/run_edges_macro_fusion_sweep.py": [
+   "cross_asset_anchors"
+  ],
+  "desks/mt5/research/run_hunt17.py": [
+   "cross_asset_anchors"
+  ],
+  "desks/mt5/research/run_macro_conditioned_sweep.py": [
+   "cross_asset_anchors"
+  ],
+  "desks/mt5/research/world_dataset_hunter.py": [
+   "bis_eer",
+   "cme_gc",
+   "fred_macro",
+   "gdelt",
+   "lbma_vaults",
+   "sge_benchmark",
+   "shfe_gold",
+   "spdr_gld_holdings",
+   "swiss_customs_gold",
+   "wgc_goldhub"
+  ],
+  "desks/mt5/research/world_model.py": [
+   "fred_macro"
+  ],
+  "desks/mt5/mt5desk/families_orthogonal.py": [
+   "event_calendar",
+   "macro_state"
+  ],
+  "libs/research/country_lab.py": [
+   "cot"
+  ]
+ },
+ "offenders": {},
+ "no_join": {
+  "routed_in_code": {
+   "desks/mt5/research/asia_parser.py": [
+    "sge_benchmark"
+   ],
+   "desks/mt5/research/asia_plane.py": [
+    "sge_benchmark"
+   ],
+   "desks/mt5/research/countries/ar/pack.py": [
+    "cot"
+   ],
+   "desks/mt5/research/countries/br/pack.py": [
+    "cot"
+   ],
+   "desks/mt5/research/countries/caucasus_central_asia/pack.py": [
+    "wgc_goldhub"
+   ],
+   "desks/mt5/research/countries/cl/pack.py": [
+    "cot"
+   ],
+   "desks/mt5/research/countries/cn/pack.py": [
+    "shfe_gold"
+   ],
+   "desks/mt5/research/countries/co/pack.py": [
+    "cot"
+   ],
+   "desks/mt5/research/countries/eg/pack.py": [
+    "cot"
+   ],
+   "desks/mt5/research/countries/gh/pack.py": [
+    "cot"
+   ],
+   "desks/mt5/research/countries/mx/pack.py": [
+    "cot"
+   ],
+   "desks/mt5/research/countries/tr/pack.py": [
+    "wgc_goldhub"
+   ],
+   "desks/mt5/research/countries/za/pack.py": [
+    "cot"
+   ],
+   "desks/mt5/research/data_acquisition_scientist.py": [
+    "shfe_gold"
+   ],
+   "desks/mt5/research/data_axis_miner.py": [
+    "cot_fx"
+   ],
+   "desks/mt5/research/data_scout.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/research/evidence_router.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/research/feature_compiler.py": [
+    "fred_macro"
+   ],
+   "desks/mt5/research/feature_roi.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/research/fund_playbook.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/research/hourly_cycle.py": [
+    "cross_asset_anchors",
+    "fred_macro",
+    "sge_benchmark",
+    "spdr_gld_holdings"
+   ],
+   "desks/mt5/research/macro_desk.py": [
+    "cross_asset_anchors",
+    "macro_state"
+   ],
+   "desks/mt5/research/macro_intelligence.py": [
+    "macro_state"
+   ],
+   "desks/mt5/research/macro_region/intelligence.py": [
+    "cot"
+   ],
+   "desks/mt5/research/macro_region/mandate.py": [
+    "cot"
+   ],
+   "desks/mt5/research/miner_candidate_compiler.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/research/module_rent.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/research/news_event_stream.py": [
+    "cot",
+    "macro_state"
+   ],
+   "desks/mt5/research/pit_audit.py": [
+    "cot"
+   ],
+   "desks/mt5/research/regime_allocation_contract.py": [
+    "fred_macro"
+   ],
+   "desks/mt5/research/run_hunt23.py": [
+    "cross_asset_anchors"
+   ],
+   "desks/mt5/research/run_macro_swing_sweep.py": [
+    "cross_asset_anchors"
+   ],
+   "desks/mt5/research/scout_roster.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/research/source_registry.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/research/state_vector_build.py": [
+    "event_calendar"
+   ],
+   "desks/mt5/mt5desk/macro_regime.py": [
+    "cross_asset_anchors",
+    "macro_state"
+   ],
+   "libs/research/measurement_resolver.py": [
+    "event_calendar",
+    "macro_state"
+   ]
+  },
+  "declared": {
+   "desks/mt5/research/asia_collector.py": {
+    "sources": [
+     "sge_benchmark"
+    ],
+    "route": "mention",
+    "basis": "names the source id in its CLI usage; the collector writes, never joins",
+    "assumed": false
+   },
+   "desks/mt5/research/asia_transmission.py": {
+    "sources": [
+     "sge_benchmark"
+    ],
+    "route": "mention",
+    "basis": "names sge_benchmark as a not-yet-collected proxy; reads no values",
+    "assumed": false
+   },
+   "desks/mt5/research/breadth_sweep.py": {
+    "sources": [
+     "cot_fx",
+     "fred_macro"
+    ],
+    "route": "via_provider",
+    "basis": "reads COT and FRED only through orthogonal_sweep._cot_frame/_macro_series, which apply COT_RELEASE_LAG_DAYS and MACRO_PUBLICATION_LAG_D",
+    "assumed": false
+   },
+   "desks/mt5/research/counterfactual_attribution.py": {
+    "sources": [
+     "fred_macro",
+     "macro_state"
+    ],
+    "route": "live_read",
+    "basis": "reads the macro_state snapshot's current z per series with its own last_date/updated stamp carried as `last_at` on the row",
+    "assumed": false
+   },
+   "desks/mt5/research/research_gap_map.py": {
+    "sources": [
+     "cot_fx",
+     "macro_state"
+    ],
+    "route": "mention",
+    "basis": "maps families to data paths to test existence; reads no values",
+    "assumed": false
+   },
+   "desks/mt5/research/south_america_interaction.py": {
+    "sources": [
+     "cot"
+    ],
+    "route": "mention",
+    "basis": "lists axes/cot.json as a leg's evidence path; existence only",
+    "assumed": false
+   },
+   "desks/mt5/research/tier1_scorecard.py": {
+    "sources": [
+     "macro_state"
+    ],
+    "route": "live_read",
+    "basis": "counts series in the current snapshot for a coverage score; no bar join",
+    "assumed": false
+   },
+   "desks/mt5/mt5desk/macro_view.py": {
+    "sources": [
+     "fred_macro"
+    ],
+    "route": "live_read",
+    "basis": "assumed, conservative: live sizing reads the newest print in fred_macro.json at gateway time and ranks it against trailing prints only; a print present in the file when read has been published. A replay of it at a past time would need data_os.known_as_of and is flagged here for that reason",
+    "assumed": true
+   },
+   "libs/research/data_registry.py": {
+    "sources": [
+     "cot_fx"
+    ],
+    "route": "mention",
+    "basis": "moat prose naming the cache",
+    "assumed": false
+   },
+   "libs/research/equivalence_ontology.py": {
+    "sources": [
+     "bis_eer",
+     "cot_fx",
+     "shfe_gold"
+    ],
+    "route": "mention",
+    "basis": "the equivalence ontology names source ids as known equivalents of a data class (catalogue rows for the parity map); it reads no values and joins nothing to a bar",
+    "assumed": false
+   },
+   "libs/research/layers.py": {
+    "sources": [
+     "fred_macro"
+    ],
+    "route": "mention",
+    "basis": "maps the fred_macro leg name to a strategy layer",
+    "assumed": false
+   },
+   "libs/research/measurement.py": {
+    "sources": [
+     "cot_fx"
+    ],
+    "route": "mention",
+    "basis": "declares data/cot/*.parquet as a measurement's data_source label",
+    "assumed": false
+   }
+  },
+  "undeclared": {
+   "desks/mt5/research/labs/scientists.py": [
+    "fred_macro"
+   ],
+   "desks/mt5/research/science_labs.py": [
+    "fred_macro"
+   ]
+  },
+  "flagged_assumed": [
+   "desks/mt5/mt5desk/macro_view.py"
+  ]
+ },
+ "accounting": {
+  "readers": 66,
+  "joining": 15,
+  "joining_routed": 15,
+  "no_join_routed_in_code": 37,
+  "no_join_declared": 12,
+  "undeclared": 2,
+  "offenders": 0,
+  "routed_or_declared": 64
+ },
+ "floor": [],
+ "arrived": [],
+ "healed": [],
+ "certificate_inputs": {
+  "providers": {
+   "_bars": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "relative_value",
+     "correlation_regime",
+     "cross_asset_residual",
+     "pca_residual"
+    ],
+    "route": "closed broker bars",
+    "sources": {
+     "mt5_h1_universe": {
+      "lag_s": 3600.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [],
+    "verdict": "OK"
+   },
+   "_cot_frame": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "cot_positioning"
+    ],
+    "route": "orthogonal_sweep.COT_RELEASE_LAG_DAYS past the W-FRI label",
+    "sources": {
+     "cot_fx": {
+      "lag_s": 345600.0,
+      "assumed": false
+     },
+     "cot": {
+      "lag_s": 345600.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [],
+    "verdict": "OK"
+   },
+   "_event_index": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "event_reaction"
+    ],
+    "route": "scheduled event time (knowledge column `event_date`)",
+    "sources": {
+     "event_calendar": {
+      "lag_s": 0.0,
+      "assumed": true
+     }
+    },
+    "applies_lag": true,
+    "assumed": [
+     "event_calendar"
+    ],
+    "verdict": "OK"
+   },
+   "_macro_series": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "macro_conditional"
+    ],
+    "route": "orthogonal_sweep.MACRO_PUBLICATION_LAG_D shift before the ffill",
+    "sources": {
+     "fred_macro": {
+      "lag_s": 97200.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [],
+    "verdict": "OK"
+   },
+   "_surface_for": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "execution_state"
+    ],
+    "route": "the surface report as built; flagged `assumed`",
+    "sources": {
+     "microstructure_surface": {
+      "lag_s": 0.0,
+      "assumed": true
+     }
+    },
+    "applies_lag": true,
+    "assumed": [
+     "microstructure_surface"
+    ],
+    "verdict": "OK"
+   },
+   "_tape_series": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/orthogonal_sweep.py",
+    "families": [
+     "liquidity_regime",
+     "orderflow_imbalance"
+    ],
+    "route": "tick stamps are knowledge stamps",
+    "sources": {
+     "tick_tape": {
+      "lag_s": 0.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [],
+    "verdict": "OK"
+   },
+   "resolve_inputs": {
+    "called_by": [
+     "desks/mt5/scripts/external_gauntlet.py",
+     "desks/mt5/mt5desk/family_inputs.py"
+    ],
+    "module": "desks/mt5/research/edge_search.py",
+    "families": [
+     "discovered"
+    ],
+    "route": "edge_search.resolve_inputs: COT re-indexed through data_os.known_series; macro_state admitted from its `updated` stamp only; tape and swap terms on their receipt stamps",
+    "sources": {
+     "mt5_h1_universe": {
+      "lag_s": 3600.0,
+      "assumed": false
+     },
+     "tick_tape": {
+      "lag_s": 0.0,
+      "assumed": false
+     },
+     "contract_terms": {
+      "lag_s": 0.0,
+      "assumed": false
+     },
+     "macro_state": {
+      "lag_s": 0.0,
+      "assumed": true
+     },
+     "cot_fx": {
+      "lag_s": 345600.0,
+      "assumed": false
+     },
+     "cot": {
+      "lag_s": 345600.0,
+      "assumed": false
+     }
+    },
+    "applies_lag": true,
+    "assumed": [
+     "macro_state"
+    ],
+    "verdict": "OK"
+   }
+  },
+  "failures": [],
+  "verdict": "OK"
+ },
+ "verdict": "OK"
+}

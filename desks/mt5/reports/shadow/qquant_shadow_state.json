@@ -1,28 +1,19 @@
 {
-  "updated_at": "2026-09-16T16:37:32.726757+00:00",
+  "updated_at": "2026-10-11T04:25:15.539275+00:00",
   "source_gate_policy_valid": true,
-  "certified_qquant_sleeves": 1,
-  "processed_qquant_sleeves": 1,
-  "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
-    "certificate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
-    "cell": "AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
-    "forward_start": "2026-08-23T13:51:10.738675+00:00",
-    "last_attempt_at": "2026-09-16T16:37:32.726757+00:00",
-    "promotion_authority": true,
-    "order_authority": false,
-    "n": 3,
-    "bar_source": "MT5:FusionMarkets-Live",
-    "bars_freshest": "2026-09-16T16:00:00+00:00",
-    "why": "accruing: 3/50 closed trades; 24/14 days; 10 forward decision bars evaluated; 3 eligible signals",
-    "cum_r": -2.038989595570341,
-    "exp_r": -0.679663198523447,
-    "max_dd_r": -2.339116756742517,
-    "days_active": 24,
-    "forward_bars_evaluated": 425,
-    "forward_decision_bars": 10,
-    "forward_eligible_signals": 3,
-    "last_evaluated_bar": "2026-09-16T16:00:00+00:00",
-    "ledger": "reports\\shadow\\ledger_qquant.hunt16.json.AUDNZD_dav_range_filter_adx_SHORT_afternoon_NORMAL_DAY.json",
-    "status": "ACTIVE"
-  }
+  "certified_qquant_sleeves": 0,
+  "processed_qquant_sleeves": 0,
+  "identity_stamped_at": "2026-09-23T17:51:23+00:00",
+  "retired_clocks": {
+    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
+      "at": "2026-09-23T20:27:52+00:00",
+      "status": "RETIRED_UNRECONSTRUCTIBLE",
+      "reason": "running without a ten-gate certificate, and its exact parameters cannot be reconstructed from the cell name. Guessing them is forbidden -- a gauntlet run on guessed parameters certifies a strategy nobody is trading.",
+      "accrued_days": 19,
+      "accrued_trades": 3,
+      "ledger": "data/retired_clocks.jsonl"
+    }
+  },
+  "retired_clocks_moved_at": "2026-09-23T20:27:52+00:00",
+  "integrity_held": []
 }

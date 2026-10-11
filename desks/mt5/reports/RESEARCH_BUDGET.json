@@ -1,0 +1,142 @@
+{
+ "at": "2026-10-11T04:35:21+00:00",
+ "legs": {
+  "alpha_evolution": {
+   "leg": "alpha_evolution",
+   "base_s": 240.0,
+   "arms": [
+    "mutate_survivor",
+    "combine_survivors",
+    "new_mechanism"
+   ],
+   "at": "2026-10-11T04:35:09+00:00",
+   "bandit_at": "2026-10-10T23:16:58.055097+00:00",
+   "hour": "2026-10-11T04",
+   "arm": "treated",
+   "wanted_s": 480,
+   "floor_s": 240,
+   "extra_wanted_s": 240,
+   "extra_due_s": 240,
+   "extra_s": 240,
+   "surplus_s": 1179.0,
+   "surplus_why": "department 'discovery' measured spare 1179s/hour",
+   "contract": {
+    "n_treated": 16,
+    "n_control": 0,
+    "verdict": "UNMEASURED",
+    "why": "fewer than 3 units in an arm",
+    "window_d": 14.0
+   },
+   "trial": true,
+   "authoritative": false,
+   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1179s/hour); contract UNMEASURED: this hour is the trial that measures it",
+   "share": 0.2794,
+   "baseline": 0.2727,
+   "ladder_factor": 0.866,
+   "department_factor": 1.5,
+   "department_authoritative": false,
+   "department_why": "exchange not authoritative: sample binds but the desk measures no per-department denominator for it (None); reported, never spent; x delayed-credit ROI (delayed-credit ROI shares from research_allocation.json, 0.8h old, floored at 0.02); x compute policy (compute policy MEASURED from compute_policy.json: split {'exploitation': 0.8236, 'exploration': 0.1176, 'frontier': 0.0588} learned from survivors per hour, two-sided)",
+   "archive_factor": 1.0,
+   "auction_factor": 2.0,
+   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-10T23",
+   "engine_factor": 1.0,
+   "engine_why": "engine registry: no share for leg 'alpha_evolution'; par",
+   "meta_factor": 2.0,
+   "meta_why": "meta controller: leg 'alpha_evolution' serves kind(s) ['new_hypothesis', 'evolve_family'] priced 0.1931 on the info_per_cell board vs median 0.04932 = x3.92 -> x2.00 (one-sided: it may fund above par and never below it)",
+   "graveyard_factor": 1.0,
+   "graveyard_why": "graveyard: no survival row for source 'alpha_evolution'; par",
+   "paradigm_factor": 1.0,
+   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0174 vs equal share 0.0667 = x0.26 -> x1.00 (one-sided)",
+   "factor": 2.0,
+   "applied_s": 480,
+   "applied": true,
+   "granted": true,
+   "why": "share 0.279 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1179s/hour); contract UNMEASURED: this hour is the trial that measures it"
+  },
+  "deepen": {
+   "leg": "deepen",
+   "base_s": 0.0,
+   "arms": [
+    "new_mechanism",
+    "external_screen",
+    "alt_data_hypothesis",
+    "failure_derived"
+   ],
+   "at": "2026-10-10T16:25:27+00:00",
+   "bandit_at": "2026-10-10T00:34:35.049148+00:00",
+   "hour": "2026-10-10T16",
+   "arm": "none",
+   "wanted_s": 0,
+   "floor_s": 0,
+   "extra_wanted_s": 0,
+   "extra_due_s": 0,
+   "extra_s": 0,
+   "surplus_s": Infinity,
+   "surplus_why": "deepen's budget is a count, not seconds on a clock",
+   "contract": {
+    "n_treated": 0,
+    "n_control": 0,
+    "verdict": "UNMEASURED",
+    "why": "fewer than 3 units in an arm",
+    "window_d": 14.0
+   },
+   "trial": false,
+   "authoritative": false,
+   "governed_why": "the base is the leg's unlimited sentinel; nothing to govern",
+   "share": 0.2265,
+   "baseline": 0.3636,
+   "ladder_factor": 0.866,
+   "department_factor": 1.5,
+   "department_authoritative": false,
+   "department_why": "exchange not authoritative: sample binds but the desk measures no per-department denominator for it (None); reported, never spent; x delayed-credit ROI (delayed-credit ROI shares from research_allocation.json, 0.8h old, floored at 0.02); x compute policy (compute policy MEASURED from compute_policy.json: split {'exploitation': 0.8236, 'exploration': 0.1176, 'frontier': 0.0588} learned from survivors per hour, two-sided)",
+   "archive_factor": 1.0,
+   "auction_factor": 2.0,
+   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-10T10",
+   "engine_factor": 1.0,
+   "engine_why": "engine registry: leg share 0.0000 vs equal share 0.1111 = x0.00 -> x1.00 (one-sided: this factor may fund a leg above par and may never take one below it)",
+   "meta_factor": 1.0,
+   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.001537 on the info_per_cell board vs median 0.04932 = x0.03 -> x1.00 (one-sided: it may fund above par and never below it)",
+   "graveyard_factor": 1.0,
+   "graveyard_why": "graveyard: no survival row for source 'deepen'; par",
+   "paradigm_factor": 1.0,
+   "paradigm_why": "paradigm census: leg 'deepen' belongs to no paradigm; par",
+   "factor": 1.618,
+   "applied_s": 0,
+   "applied": true,
+   "granted": false,
+   "why": "share 0.227 of arms ['new_mechanism', 'external_screen', 'alt_data_hypothesis', 'failure_derived'] vs equal-share baseline 0.364 -> x1.62, clipped to [1.0, 2.0]; department factor x1.50 (reported only); the base is the leg's unlimited sentinel; nothing to govern"
+  }
+ },
+ "authoritative": false,
+ "authority_why": "not authoritative -- alpha_evolution: uplift ran as the trial, contract UNMEASURED (fewer than 3 units in an arm); deepen: the base is the leg's unlimited sentinel; nothing to govern",
+ "contract": {
+  "gain": "INFO_PER_COMPUTE",
+  "metric": "control_arm.admitted",
+  "better": "up",
+  "bar": 1.0,
+  "organ": "report:RESEARCH_BUDGET.json"
+ },
+ "control_arm": {
+  "admitted": 0.0,
+  "legs": {
+   "alpha_evolution": {
+    "n_treated": 16,
+    "n_control": 0,
+    "verdict": "UNMEASURED",
+    "why": "fewer than 3 units in an arm",
+    "window_d": 14.0
+   },
+   "deepen": {
+    "n_treated": 0,
+    "n_control": 0,
+    "verdict": "UNMEASURED",
+    "why": "fewer than 3 units in an arm",
+    "window_d": 14.0
+   }
+  },
+  "salt": "research_budget",
+  "trials": "research_budget_trials.jsonl"
+ },
+ "n_department_authoritative": 0,
+ "rule": "a leg's price is the bandit's share of its arms against an equal-share baseline, clipped to [1, 2]; the floor (x1.0, its base) always runs, and the uplift above it is granted only out of the department clock's measured spare, only in a treated hour, and not while the contract is REJECTED; `granted` false means the floor ran, and `department_authoritative` false means the resource exchange REPORTED its factor rather than deciding it"
+}

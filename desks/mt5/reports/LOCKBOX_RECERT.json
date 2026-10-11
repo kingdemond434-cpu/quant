@@ -1,0 +1,1910 @@
+{
+ "generated_utc": "2026-10-10T11:40:47+00:00",
+ "attestation_in_force": "mt5-original-universal-10-v3-reserved-lockbox",
+ "canon_attestation": "mt5-original-universal-10-v3-reserved-lockbox",
+ "report_attestation": "mt5-original-universal-10-v3-reserved-lockbox",
+ "baseline": {
+  "path": "docs\\research\\lockbox_v4_recert_baseline.json",
+  "source_commit": "28b0b49207fc04a56ee29a6cbe829a5143ff29c1",
+  "n": 52
+ },
+ "n_certificates": 52,
+ "counts": {
+  "REMINTED": 7,
+  "RETIRED": 32,
+  "PENDING": 0,
+  "RESTAMPED": 13,
+  "ABSENT": 0
+ },
+ "before_lockbox_equals_wf": 52,
+ "after_lockbox_equals_wf": 7,
+ "restamped": 13,
+ "done": false,
+ "done_rule": "every certificate REMINTED or RETIRED under the attestation in force, none RESTAMPED, and 0 REMINTED rows with lockbox Sharpe == WF Sharpe",
+ "status": "BREACH: re-stamped without a re-judge",
+ "certificates": {
+  "external.AUDCAD.discovered.p=7c996ac8456c8919": {
+   "before": {
+    "lockbox_sharpe": 0.4425,
+    "wf_sharpe": 0.4425,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T07:49:10.786443+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDCAD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "ext_resid_EURGBP_z",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 1,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.AUDCAD.discovered.p=8030fb339510dceb": {
+   "before": {
+    "lockbox_sharpe": 0.6376,
+    "wf_sharpe": 0.6376,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.719143+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDCAD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_24",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 3,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.AUDCAD.discovered.p=8030fb339510dceb",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.AUDCAD.discovered.p=a7324e7affe1f80a": {
+   "before": {
+    "lockbox_sharpe": 0.5509,
+    "wf_sharpe": 0.5509,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.719117+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDCAD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "ext_resid_EURDKK_z",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 1,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.6246,
+    "wf_sharpe": 0.6246,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-01T00:13:35.223752+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDCHF",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "REMINTED",
+    "store": "canon",
+    "key": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.6088,
+    "wf_sharpe": 0.6088,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-29T20:48:07.885338+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
+   }
+  },
+  "external.AUDNZD.discovered.p=c76b860ff91ee920": {
+   "before": {
+    "lockbox_sharpe": 0.5734,
+    "wf_sharpe": 0.5734,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.719330+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDNZD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "hour",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 6,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.AUDUSD.discovered.p=8e61ea22743f15b7": {
+   "before": {
+    "lockbox_sharpe": 0.5154,
+    "wf_sharpe": 0.5154,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.719422+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDUSD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_12",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 3,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.AUDUSD.discovered.p=8e61ea22743f15b7",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.AUDUSD.discovered.p=a5bbf78b5c8595c0": {
+   "before": {
+    "lockbox_sharpe": 0.48,
+    "wf_sharpe": 0.48,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.719441+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDUSD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_24",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 1,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.AUDUSD.discovered.p=cf0368e026d6b477": {
+   "before": {
+    "lockbox_sharpe": 0.6406,
+    "wf_sharpe": 0.6406,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.719403+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDUSD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_240",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 6,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.AUDUSD.discovered.p=de80ad4f2ef91116": {
+   "before": {
+    "lockbox_sharpe": 0.471,
+    "wf_sharpe": 0.471,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.719383+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "AUDUSD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_240",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 1,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.7452,
+    "wf_sharpe": 0.7452,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-30T23:50:19.808274+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "CADCHF",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "REMINTED",
+    "store": "canon",
+    "key": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.6847,
+    "wf_sharpe": 0.6847,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-24T23:59:27.788277+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
+   }
+  },
+  "external.CADJPY.session_range_breakout.rr=1.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1588,
+    "wf_sharpe": 0.1588,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109395+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "CADJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:20:28.100290+00:00",
+    "retired_reason": "in-sample Sharpe 0.1473 <= standing hurdle 0.3122, so the probabilistic Sharpe against that benchmark is at most 0.5, below the deflated_sharpe gate, for any skew and kurtosis",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.CADJPY.session_range_breakout.rr=2.0_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1602,
+    "wf_sharpe": 0.1602,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109400+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "CADJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:20:28.100290+00:00",
+    "retired_reason": "in-sample Sharpe 0.1575 <= standing hurdle 0.3122, so the probabilistic Sharpe against that benchmark is at most 0.5, below the deflated_sharpe gate, for any skew and kurtosis",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.CADJPY.session_range_breakout.rr=2.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1511,
+    "wf_sharpe": 0.1511,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109406+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "CADJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:20:28.100290+00:00",
+    "retired_reason": "in-sample Sharpe 0.1487 <= standing hurdle 0.3122, so the probabilistic Sharpe against that benchmark is at most 0.5, below the deflated_sharpe gate, for any skew and kurtosis",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.5643,
+    "wf_sharpe": 0.5643,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.828824+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "CHFDKK",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.5643,
+    "wf_sharpe": 0.5643,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.828824+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.CHFNOK.carry.p=98d776f3e210d3e2": {
+   "before": {
+    "lockbox_sharpe": 0.5931,
+    "wf_sharpe": 0.5931,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.828935+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "CHFNOK",
+     "selector": "asia",
+     "family": "carry",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "input_symbol": "CHFNOK"
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "REMINTED",
+    "store": "canon",
+    "key": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+    "lockbox_sharpe": 0.6191,
+    "wf_sharpe": 0.6191,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-27T02:15:47.082106+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
+   }
+  },
+  "external.EURCHF.discovered.p=16bd35526c7f3515": {
+   "before": {
+    "lockbox_sharpe": 0.6544,
+    "wf_sharpe": 0.6544,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T09:10:40.338306+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_24",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 6,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURCHF.discovered.p=16bd35526c7f3515",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURCHF.discovered.p=4cba1afa572a99cd": {
+   "before": {
+    "lockbox_sharpe": 0.5623,
+    "wf_sharpe": 0.5623,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T10:06:37.311456+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "hour",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 3,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURCHF.discovered.p=6c7943b997558157": {
+   "before": {
+    "lockbox_sharpe": 0.4352,
+    "wf_sharpe": 0.4352,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.719994+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_12",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 1,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURCHF.discovered.p=6c7943b997558157",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURCHF.discovered.p=9bc1f7c40f200e78": {
+   "before": {
+    "lockbox_sharpe": 0.5322,
+    "wf_sharpe": 0.5322,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T10:06:37.311547+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "hour",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 3,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURCHF.discovered.p=a5bbf78b5c8595c0": {
+   "before": {
+    "lockbox_sharpe": 0.5032,
+    "wf_sharpe": 0.5032,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.720010+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_24",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 1,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURCHF.discovered.p=c14e361e680e6d0b": {
+   "before": {
+    "lockbox_sharpe": 0.5066,
+    "wf_sharpe": 0.5066,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.720035+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "hour",
+      "band": [
+       0.0,
+       0.1
+      ],
+      "horizon": 6,
+      "side": 1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURCHF.discovered.p=c7d53510458ba32c": {
+   "before": {
+    "lockbox_sharpe": 0.4945,
+    "wf_sharpe": 0.4945,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.720049+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "ru_24",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 1,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURCHF.discovered.p=c7d53510458ba32c",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURCHF.discovered.p=e266baf78567bef3": {
+   "before": {
+    "lockbox_sharpe": 0.6075,
+    "wf_sharpe": 0.6075,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T09:10:40.338283+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_12",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 6,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURCHF.discovered.p=e266baf78567bef3",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURGBP.discovered.p=8e61ea22743f15b7": {
+   "before": {
+    "lockbox_sharpe": 0.4678,
+    "wf_sharpe": 0.4678,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T09:10:40.338614+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURGBP",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_12",
+      "band": [
+       0.75,
+       0.9
+      ],
+      "horizon": 3,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURGBP.discovered.p=f31f02aa2b9d79b1": {
+   "before": {
+    "lockbox_sharpe": 0.4102,
+    "wf_sharpe": 0.4102,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.720124+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURGBP",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "ru_24",
+      "band": [
+       0.1,
+       0.25
+      ],
+      "horizon": 3,
+      "side": 1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURJPY.session_range_breakout.rr=1.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1575,
+    "wf_sharpe": 0.1575,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109423+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:20:28.100290+00:00",
+    "retired_reason": "in-sample Sharpe 0.1405 <= standing hurdle 0.3122, so the probabilistic Sharpe against that benchmark is at most 0.5, below the deflated_sharpe gate, for any skew and kurtosis",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURJPY.session_range_breakout.rr=2.0_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1566,
+    "wf_sharpe": 0.1566,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109428+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:20:28.100290+00:00",
+    "retired_reason": "in-sample Sharpe 0.1409 <= standing hurdle 0.3122, so the probabilistic Sharpe against that benchmark is at most 0.5, below the deflated_sharpe gate, for any skew and kurtosis",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURJPY.session_range_breakout.rr=2.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1457,
+    "wf_sharpe": 0.1457,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109433+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:20:28.100290+00:00",
+    "retired_reason": "in-sample Sharpe 0.1319 <= standing hurdle 0.3122, so the probabilistic Sharpe against that benchmark is at most 0.5, below the deflated_sharpe gate, for any skew and kurtosis",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.5474,
+    "wf_sharpe": 0.5474,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.829569+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURNOK",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.5474,
+    "wf_sharpe": 0.5474,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.829569+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.EURUSD.discovered.p=6d034b421914e1a2": {
+   "before": {
+    "lockbox_sharpe": 0.5032,
+    "wf_sharpe": 0.5032,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.720286+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURUSD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_48",
+      "band": [
+       0.0,
+       0.1
+      ],
+      "horizon": 12,
+      "side": 1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURUSD.discovered.p=6d034b421914e1a2",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURUSD.discovered.p=f8bd412f38e33d20": {
+   "before": {
+    "lockbox_sharpe": 0.4731,
+    "wf_sharpe": 0.4731,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.720776+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURUSD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_96",
+      "band": [
+       0.0,
+       0.1
+      ],
+      "horizon": 6,
+      "side": 1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.7342,
+    "wf_sharpe": 0.7342,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.826633+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "EURZAR",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "REMINTED",
+    "store": "canon",
+    "key": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.4657,
+    "wf_sharpe": 0.4657,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-27T02:15:54.802508+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
+   }
+  },
+  "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.7771,
+    "wf_sharpe": 0.7771,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-30T23:50:19.808289+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "GBPCHF",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "REMINTED",
+    "store": "canon",
+    "key": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.7568,
+    "wf_sharpe": 0.7568,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-27T02:15:55.091142+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
+   }
+  },
+  "external.GBPJPY.session_range_breakout.rr=1.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1333,
+    "wf_sharpe": 0.1333,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109412+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "GBPJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:20:28.100290+00:00",
+    "retired_reason": "in-sample Sharpe 0.1171 <= standing hurdle 0.3122, so the probabilistic Sharpe against that benchmark is at most 0.5, below the deflated_sharpe gate, for any skew and kurtosis",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.GBPJPY.session_range_breakout.rr=2.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.124,
+    "wf_sharpe": 0.124,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109417+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "GBPJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:20:28.100290+00:00",
+    "retired_reason": "in-sample Sharpe 0.1152 <= standing hurdle 0.3122, so the probabilistic Sharpe against that benchmark is at most 0.5, below the deflated_sharpe gate, for any skew and kurtosis",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.6241,
+    "wf_sharpe": 0.6241,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T09:10:40.338674+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "GBPMXN",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "REMINTED",
+    "store": "canon",
+    "key": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.6402,
+    "wf_sharpe": 0.6402,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-27T02:15:49.378196+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
+   }
+  },
+  "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.5465,
+    "wf_sharpe": 0.5465,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.826945+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "GBPNOK",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.5465,
+    "wf_sharpe": 0.5465,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.826945+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.7142,
+    "wf_sharpe": 0.7142,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.826966+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "GBPSEK",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.7142,
+    "wf_sharpe": 0.7142,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.826966+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.6407,
+    "wf_sharpe": 0.6407,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.827067+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "GBPZAR",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.6407,
+    "wf_sharpe": 0.6407,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T23:37:32.827067+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.NZDCAD.discovered.p=0ffb1e19a04f260e": {
+   "before": {
+    "lockbox_sharpe": 0.6383,
+    "wf_sharpe": 0.6383,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-03T11:06:39.722089+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "NZDCAD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "dd_48",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 3,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.USDCAD.discovered.p=193aadf2caba3698": {
+   "before": {
+    "lockbox_sharpe": 0.4832,
+    "wf_sharpe": 0.4832,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T09:10:40.339434+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "USDCAD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "ru_240",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 6,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.USDCAD.discovered.p=193aadf2caba3698",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.USDCAD.discovered.p=56aadf0a3018c790": {
+   "before": {
+    "lockbox_sharpe": 0.495,
+    "wf_sharpe": 0.495,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T09:10:40.339404+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "USDCAD",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "ru_96",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 6,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.USDCAD.discovered.p=56aadf0a3018c790",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.USDCHF.discovered.p=19dd11ec392fa005": {
+   "before": {
+    "lockbox_sharpe": 0.5033,
+    "wf_sharpe": 0.5033,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-10T09:10:40.338374+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "USDCHF",
+     "selector": "asia",
+     "family": "discovered",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "feature": "ext_residz_AUDCAD",
+      "band": [
+       0.9,
+       1.0
+      ],
+      "horizon": 3,
+      "side": -1
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RETIRED",
+    "store": "canon",
+    "key": "external.USDCHF.discovered.p=19dd11ec392fa005",
+    "lockbox_sharpe": null,
+    "wf_sharpe": null,
+    "lockbox_passed": null,
+    "lockbox_equals_wf": false,
+    "retired_at": "2026-09-24T18:46:10.100212+00:00",
+    "retired_reason": "family 'discovered' PERMANENTLY banned since 2026-09-16 by principal: permanently banned by the principal: certificate discovery itself is banned and every discovery certificate, clock and candidate is discarded. 85 live closes across 24 sleeves at mean -0.24R, pooled t=-5.2, the account's whole for",
+    "rejudged_under_v4": false
+   }
+  },
+  "external.USDJPY.session_range_breakout.rr=1.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1669,
+    "wf_sharpe": 0.1669,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109378+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "USDJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+    "lockbox_sharpe": 0.1669,
+    "wf_sharpe": 0.1669,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109378+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.USDJPY.session_range_breakout.rr=2.0_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1755,
+    "wf_sharpe": 0.1755,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109383+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "USDJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+    "lockbox_sharpe": 0.1755,
+    "wf_sharpe": 0.1755,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109383+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.USDJPY.session_range_breakout.rr=2.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1729,
+    "wf_sharpe": 0.1729,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109388+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "USDJPY",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+    "lockbox_sharpe": 0.1729,
+    "wf_sharpe": 0.1729,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109388+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.6334,
+    "wf_sharpe": 0.6334,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T02:29:50.591182+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "USDMXN",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "REMINTED",
+    "store": "canon",
+    "key": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.5653,
+    "wf_sharpe": 0.5653,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-27T02:15:55.379539+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
+   }
+  },
+  "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": {
+   "before": {
+    "lockbox_sharpe": 0.7069,
+    "wf_sharpe": 0.7069,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T02:29:50.591219+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "USDZAR",
+     "selector": "asia",
+     "family": "overnight_gap_decay",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {}
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+    "lockbox_sharpe": 0.7069,
+    "wf_sharpe": 0.7069,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-09-02T02:29:50.591219+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1921,
+    "wf_sharpe": 0.1921,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109357+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "XAUUSD",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.XAUUSD.session_range_breakout.rr=1.5_wb=12",
+    "lockbox_sharpe": 0.1921,
+    "wf_sharpe": 0.1921,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109357+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": {
+   "before": {
+    "lockbox_sharpe": 0.1519,
+    "wf_sharpe": 0.1519,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109329+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "XAUUSD",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
+    "lockbox_sharpe": 0.1519,
+    "wf_sharpe": 0.1519,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109329+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.1929,
+    "wf_sharpe": 0.1929,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109366+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "XAUUSD",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.XAUUSD.session_range_breakout.rr=2.0_wb=12",
+    "lockbox_sharpe": 0.1929,
+    "wf_sharpe": 0.1929,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109366+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  },
+  "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": {
+   "before": {
+    "lockbox_sharpe": 0.2013,
+    "wf_sharpe": 0.2013,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109372+00:00",
+    "attestation": "mt5-original-universal-10-v2-calibrated-inputs",
+    "shadow_spec": {
+     "symbol": "XAUUSD",
+     "selector": "asia",
+     "family": "session_range_breakout",
+     "is_universe": true,
+     "hunt": "external_discoveries",
+     "condition": null,
+     "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+     }
+    },
+    "source": "baseline"
+   },
+   "after": {
+    "state": "RESTAMPED",
+    "store": "canon",
+    "key": "external.XAUUSD.session_range_breakout.rr=2.5_wb=12",
+    "lockbox_sharpe": 0.2013,
+    "wf_sharpe": 0.2013,
+    "lockbox_passed": true,
+    "lockbox_equals_wf": true,
+    "gated_at": "2026-08-26T01:44:33.109372+00:00",
+    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+   }
+  }
+ }
+}
