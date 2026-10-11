@@ -12,7 +12,7 @@
     "fast_gates": "PASS"
   },
   "capital_path": {
-    "fusion_account": 495044,
+    "fusion_account": "REDACTED_LIVE_IDENTIFIER",
     "e8_account": 2478877,
     "fusion_last_reconcile": "2026-10-09T02:28:20+00:00",
     "fusion_restart": {
@@ -131,7 +131,7 @@
       "snapshot": "C:\\opt\\quant\\desks\\mt5\\reports\\FUSION_DEAL_RECONCILIATION_20261009.json",
       "snapshot_at": "2026-10-08T22:44:36.536785+00:00",
       "snapshot_sha256": "c25583d0c050093371ec74ada772950856db43a5b858115082e0ade8990df573",
-      "account": 495044,
+      "account": "REDACTED_LIVE_IDENTIFIER",
       "server": "FusionMarkets-Live",
       "position": 233700226,
       "before": {
@@ -250,5 +250,9 @@
     "closure-fast-gates/",
     "closure-desk-full-junit.xml"
   ],
-  "next_action": "Complete failure classification and final source publication; delivery remains gated by exact external authority and full canonical CI."
+  "next_action": "Complete failure classification and final source publication; delivery remains gated by exact external authority and full canonical CI.",
+  "privacy_redaction": {
+    "original_sha256": "5a01a51a859b8a56afab1ffae5087ad9851ca03b7ea1dc7fbc7315e1b7992872",
+    "reason": "Public evidence must not publish live infrastructure identifiers; private broker receipts remain unchanged."
+  }
 }

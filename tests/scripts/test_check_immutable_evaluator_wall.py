@@ -467,3 +467,26 @@ def test_sign_files_leaves_the_record_seals_untouched(box: Path, capsys: pytest.
     assert after["append_only"] == before
     assert after["signed_by"] == "test"
     capsys.readouterr()
+
+
+@pytest.mark.parametrize("existing_signer", [None, "earlier-exact-rotation"])
+def test_file_resign_preserves_authority_only_for_unchanged_hashes(box, monkeypatch,
+                                                                existing_signer):
+    prior = {"files": {"stable.py": "stable", "changed.py": "old", "removed.py": "old",
+                       "phantom.py": None},
+             "signed_by": "previous-owner", "append_only": {"fixed-prefix": "evidence"},
+             "vintage": {"fixed-vintage": "evidence"}}
+    if existing_signer:
+        prior["rotation_signers"] = {"stable.py": existing_signer,
+                                     "changed.py": "stale-owner", "removed.py": "stale-owner"}
+    (box / "manifest.json").write_text(json.dumps(prior), encoding="utf-8")
+    monkeypatch.setattr(M, "_hashes", lambda: {"stable.py": "stable", "changed.py": "new"})
+    monkeypatch.setattr(sys, "argv", ["check", "--sign-files", "--by", "new-owner"])
+    assert M.main() == 0
+    after = json.loads((box / "manifest.json").read_text("utf-8"))
+    assert after["rotation_signers"]["stable.py"] == (existing_signer or "previous-owner")
+    assert "changed.py" not in after["rotation_signers"]
+    assert "removed.py" not in after["rotation_signers"]
+    assert "phantom.py" not in after["rotation_signers"]
+    assert after["append_only"] == prior["append_only"]
+    assert after["vintage"] == prior["vintage"]

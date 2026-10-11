@@ -1,8 +1,8 @@
 {
- "signed_utc": "2026-10-09T02:55:39.260092+00:00",
- "signed_by": "Codex, principal-authorized repair",
+ "signed_utc": "2026-10-11T12:14:41.137738+00:00",
+ "signed_by": "Codex, principal-authorized input wiring repair",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "71a0ac74cf367871",
+  "desks/mt5/scripts/external_gauntlet.py": "44505acc9652daf0",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
@@ -14,12 +14,12 @@
   "libs/portfolio/rails.py": "7a678df5ceb7a4b4",
   "libs/portfolio/capital_modifiers.py": "f73e125559423ec0",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
-  "libs/validation/replay2.py": "81abc1b46a04b694",
+  "libs/validation/replay2.py": "a002827611ea8079",
   "libs/validation/calibration.py": "ccd77ae2a28a7fbd",
   "libs/regime/state_admission.py": "1fc3e4878041db7a",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
-  "scripts/check_immutable_evaluator.py": "baa4c6b46cb2f3e5",
+  "scripts/check_immutable_evaluator.py": "05cdcc0a548b8a59",
   "scripts/run_deadman_switch.py": "799db26dadc9c8e3"
  },
  "rule": "these files judge hypotheses; a change must arrive with a re-signed manifest -- research organs may change the hypothesis, never the judge",
@@ -1393,6 +1393,23 @@
  "records_sealed_by": "tier1 W19 builder",
  "record_rule": "the ledgers, the live fills, the cost surface and the lineage chain are RECORDS: the sealed prefix may never change, only grow, and a measured cost surface may be rebuilt, never back-dated",
  "rotation_signers": {
-  "desks/mt5/research/promoter.py": "principal via Codex 2026-10-07 live sleeve repair"
+  "desks/mt5/research/promoter.py": "principal via Codex 2026-10-07 live sleeve repair",
+  "libs/portfolio/allocator_proof.py": "owner-approved-codex-2026-10-08",
+  "desks/mt5/research/universal_gate.py": "Codex, principal-authorized repair",
+  "desks/mt5/research/multiplicity.py": "Codex, principal-authorized repair",
+  "desks/mt5/research/gate_policy.py": "Codex, principal-authorized repair",
+  "desks/mt5/policy/gate_spec.yaml": "Codex, principal-authorized repair",
+  "desks/mt5/research/heat_policy.py": "Codex, principal-authorized repair",
+  "desks/mt5/mt5desk/gateway_config_fallback.py": "Codex, principal-authorized repair",
+  "libs/portfolio/rails.py": "Codex, principal-authorized repair",
+  "libs/portfolio/capital_modifiers.py": "Codex, principal-authorized repair",
+  "libs/validation/redteam.py": "Codex, principal-authorized repair",
+  "libs/validation/calibration.py": "Codex, principal-authorized repair",
+  "libs/regime/state_admission.py": "Codex, principal-authorized repair",
+  "scripts/check_growth_governance.py": "Codex, principal-authorized repair",
+  "scripts/check_heat_floor_wiring.py": "Codex, principal-authorized repair",
+  "scripts/run_deadman_switch.py": "Codex, principal-authorized repair",
+  "libs/validation/replay2.py": "Codex, principal-authorized repair",
+  "scripts/check_immutable_evaluator.py": "Codex, principal-authorized repair"
  }
 }

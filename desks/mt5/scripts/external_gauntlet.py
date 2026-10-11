@@ -529,6 +529,10 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     """
     global LAST_BUILD_FAILURE
     LAST_BUILD_FAILURE = None
+    from mt5desk.legacy_family_inputs import RAW_COT_FAMILIES, input_preflight, legacy_inputs
+    why = input_preflight(family, params)
+    if why:
+        return _build_failed(why)
     timeframe = timeframe_of(params, family)
     if h1_override is not None:
         # NEVER silently resample: `_frame_for` exists to keep an M5-native hypothesis off an H1
@@ -573,7 +577,15 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     try:
         from research import orthogonal_sweep as inputs
 
-        if family == "carry":
+        if family == "usd_session_shock" or family in RAW_COT_FAMILIES:
+            extra, why = legacy_inputs(sym, family, params, inputs._bars)
+            if extra is None:
+                return _build_failed(why)
+            call_params.pop("fx_symbol", None)
+            call_params.pop("input_symbol", None)
+            call_params.pop("input_source", None)
+            call_params.update(extra)
+        elif family == "carry":
             call_params.pop("input_symbol", None)
             call_params["symbol"] = sym
         elif family in {"relative_value", "correlation_regime"}:
@@ -1838,9 +1850,16 @@ def _save_build_cursor(cursor: dict[str, str], built: set[str]) -> None:
 def _replay_code_identity() -> str:
     """Loaded-process replay semantics; a release starts a new process and identity."""
     digest = hashlib.sha256()
-    for name in ("engine.py", "families.py", "cell_modifiers.py"):
-        path = BASE / "desks" / "mt5" / "mt5desk" / name
-        digest.update(name.encode("utf-8") + b"\0" + path.read_bytes() + b"\0")
+    desk = BASE / "desks" / "mt5"
+    paths = [desk / "scripts" / "external_gauntlet.py",
+             desk / "research" / "orthogonal_sweep.py"]
+    paths.extend(desk / "mt5desk" / name for name in
+                 ("engine.py", "cell_modifiers.py", "data.py", "legacy_family_inputs.py"))
+    paths.extend((desk / "mt5desk").glob("famil*.py"))
+    for path in sorted(set(paths)):
+        name = path.relative_to(BASE).as_posix()
+        digest.update(name.encode("utf-8") + b"\0"
+                      + path.read_bytes().replace(b"\r\n", b"\n") + b"\0")
     return digest.hexdigest()
 
 

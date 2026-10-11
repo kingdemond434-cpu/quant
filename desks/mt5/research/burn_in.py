@@ -94,6 +94,10 @@ def _ts(value) -> datetime | None:
 
 def _git_head(repo: Path) -> str | None:
     try:
+        root = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=str(repo),
+                              capture_output=True, text=True, timeout=10)
+        if root.returncode != 0 or Path(root.stdout.strip()).resolve() != repo.resolve():
+            return None  # a nested data directory must not inherit its parent's identity
         r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
                            text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):

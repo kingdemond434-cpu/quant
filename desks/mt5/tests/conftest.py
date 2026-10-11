@@ -93,7 +93,8 @@ def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
 
     def record(root: Path, rep: Any, ledger: str = blinding.RUNTIME_LEDGER) -> None:
         target = (Path(root) / ledger).resolve()
-        if target.is_relative_to(repo):
+        if (target.is_relative_to(repo)
+                and not target.is_relative_to(tmp_path_factory.getbasetemp().resolve())):
             root, ledger = sink, str(target.relative_to(repo))
         real_record(root, rep, ledger)
 

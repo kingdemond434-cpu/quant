@@ -1,0 +1,45 @@
+{
+  "same_input": [
+    {
+      "label": "before",
+      "cells": 1200,
+      "seconds": 6.4781,
+      "report": {
+        "n_raw": 1200,
+        "n_effective": 1198.97,
+        "inflation": 1.0,
+        "sr0_raw": 0.6339,
+        "sr0_effective": 0.6339,
+        "threshold_relief": 0.0,
+        "method": "null_calibrated_participation_ratio",
+        "why": "observed participation rank 88.09; fixed 8-permutation independent-null rank 88.17; calibrated to 1198.97 of 1200 trials",
+        "guard": "both counts are reported deliberately. Lowering N makes every threshold easier, so the correction must be visible and defensible, not silent."
+      }
+    },
+    {
+      "label": "after",
+      "cells": 1200,
+      "seconds": 0.2259,
+      "report": {
+        "n_raw": 1200,
+        "n_effective": 1198.97,
+        "inflation": 1.0,
+        "sr0_raw": 0.6339,
+        "sr0_effective": 0.6339,
+        "threshold_relief": 0.0,
+        "method": "null_calibrated_participation_ratio",
+        "why": "observed participation rank 88.09; fixed 8-permutation independent-null rank 88.17; calibrated to 1198.97 of 1200 trials",
+        "guard": "both counts are reported deliberately. Lowering N makes every threshold easier, so the correction must be visible and defensible, not silent."
+      }
+    }
+  ],
+  "public_reports_identical": true,
+  "wide": {
+    "cells": 20000,
+    "seconds": 4.6814,
+    "method": "null_calibrated_participation_ratio",
+    "n_raw": 20000,
+    "n_effective": 20000.0
+  },
+  "speedup": 28.68
+}

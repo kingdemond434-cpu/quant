@@ -11,6 +11,16 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mt5desk.engine import Costs, Signal, run_backtest
 
+from libs.validation import independent_replica, replay2
+
+
+def _independent_replays(bars, signal):
+    spec = independent_replica.Sig(signal.time, signal.side, signal.stop,
+                                   signal.target, signal.ttl_bars)
+    meta = {"tick_size": 0.0001, "median_spread_pts": 12, "contract_size": 1}
+    return (replay2.replay(bars, [signal], cost_price_units=0.001),
+            independent_replica.simulate(bars, [spec], meta))
+
 
 @pytest.mark.parametrize("side", [1, -1])
 @pytest.mark.parametrize("stop_case", ["equal", "roundoff", "crossed", "nan"])
@@ -28,6 +38,7 @@ def test_unexecutable_stop_keeps_signal_receipt_without_a_trade(side, stop_case)
     assert len(result.geometry_rejections) == 1
     assert result.geometry_rejections[0]["tag"] == "retained_trial"
     assert result.geometry_rejections[0]["fill_time"] == str(idx[1])
+    assert all(not fills for fills in _independent_replays(bars, sig))
 
 
 def test_finite_costly_tight_stop_is_not_clipped_or_silently_rejected():
@@ -39,6 +50,8 @@ def test_finite_costly_tight_stop_is_not_clipped_or_silently_rejected():
     result = run_backtest(bars, [sig], Costs())
     assert result.n == 1 and result.trades[0].r_multiple < -100
     assert result.geometry_rejections == []
+    for fills in _independent_replays(bars, sig):
+        assert len(fills) == 1 and np.isfinite(fills[0].r) and fills[0].r < -100
 
 
 @pytest.mark.parametrize("side", [1, -1])
@@ -51,3 +64,4 @@ def test_already_crossed_target_is_not_a_new_trade(side):
     result = run_backtest(bars, [sig], Costs())
     assert result.signal_count == 1 and result.n == 0
     assert len(result.geometry_rejections) == 1
+    assert all(not fills for fills in _independent_replays(bars, sig))

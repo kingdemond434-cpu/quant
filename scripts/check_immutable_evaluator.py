@@ -1115,6 +1115,20 @@ def main() -> int:
         if not isinstance(doc, dict):
             doc = {}
         files = _hashes()
+        # A file-only re-sign changes the global signer. Preserve the original
+        # authorization of unchanged hashes for exact-hash rotation consumers.
+        rotations = doc.get("rotation_signers")
+        rotations = dict(rotations) if isinstance(rotations, dict) else {}
+        prior_files = doc.get("files")
+        prior_by = doc.get("signed_by")
+        rotations = {path: signer for path, signer in rotations.items()
+                     if isinstance(prior_files, dict) and path in files
+                     and prior_files.get(path) == files[path]}
+        if isinstance(prior_files, dict) and isinstance(prior_by, str):
+            for path, digest in prior_files.items():
+                if path in files and files[path] == digest:
+                    rotations.setdefault(path, prior_by)
+        doc["rotation_signers"] = rotations
         doc["files"] = files
         doc["signed_utc"] = datetime.now(tz=UTC).isoformat()
         doc["signed_by"] = a.by

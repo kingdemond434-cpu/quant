@@ -72,6 +72,15 @@ ALLOCATOR_PROOF_SEAL_ROTATION = {
     "signed_by": "owner-approved-codex-2026-10-08",
 }
 
+# Authorized replay geometry/cache and input wiring repair; QB-002's historical pin
+# stays intact. Require the exact reviewed bytes and their file-only authorization.
+GAUNTLET_SEAL_ROTATION = {
+    "path": "desks/mt5/scripts/external_gauntlet.py",
+    "from": "d0919bfc921dac2c1bab40b821429d34e7fab056af4a66f02840da4877d1bc01",
+    "to": "44505acc9652daf074acc90702c279fac77e0dc8af51dfa1fd81093f5335922c",
+    "signed_by": "Codex, principal-authorized input wiring repair",
+}
+
 
 def _sha(path: Path) -> str | None:
     # LINE-ENDING NORMALISED: a Windows checkout (autocrlf) and a Linux one hold the same file
@@ -124,7 +133,8 @@ def probe_sealed_files(expect: dict[str, Any]) -> dict[str, Any]:
             encoding="utf-8"))
     except (OSError, ValueError):
         manifest = {}
-    for rotation in (PROMOTER_SEAL_ROTATION, ALLOCATOR_PROOF_SEAL_ROTATION):
+    for rotation in (PROMOTER_SEAL_ROTATION, ALLOCATOR_PROOF_SEAL_ROTATION,
+                     GAUNTLET_SEAL_ROTATION):
         path = rotation["path"]
         if pinned.get(path) != rotation["from"] or now.get(path) != rotation["to"]:
             continue

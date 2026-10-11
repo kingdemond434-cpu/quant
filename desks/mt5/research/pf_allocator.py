@@ -4152,7 +4152,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         prev_admission = _prev_art if isinstance(_prev_art, dict) else {}
     except (OSError, ValueError, AttributeError):
         prev_admission = {}
-    if heavy and funded:
+    # Cash is a valid incumbent. The scanner already compares an empty book with
+    # each candidate under the same cap; skipping it strands the first admission
+    # and keeps carrying an old measurement even on the heavy clock.
+    if heavy:
         admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
                                        total_heat=book.total_heat, order=free.marginal,
                                        # Whatever the last scan could not finish goes first, and
