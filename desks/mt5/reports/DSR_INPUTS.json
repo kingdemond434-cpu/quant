@@ -2,15 +2,15 @@
  "schema": "dsr_inputs/v1",
  "status": "MEASURED",
  "unmeasured_reason": null,
- "measured_at": "2026-10-10T10:44:58+00:00",
+ "measured_at": "2026-10-11T06:40:34+00:00",
  "max_age_s": 14400,
  "variance": {
   "units": "per-period (daily) Sharpe, not annualised: the units of libs.validation.dsr.expected_max_sharpe",
   "method": "sample variance (ddof=1) of the latest per-period Sharpe (libs.validation.dsr.sharpe_ratio on the development-window daily series, the units expected_max_sharpe takes; not annualised) of every distinct cell judged in the window; no winsorising, floor or shrinkage",
   "window": {
    "days": 30,
-   "start": "2026-09-10T10:44:58+00:00",
-   "end": "2026-10-10T10:44:58+00:00"
+   "start": "2026-09-11T06:40:34+00:00",
+   "end": "2026-10-11T06:40:34+00:00"
   },
   "min_family_n": 30,
   "min_pooled_n": 100,
@@ -582,14 +582,14 @@
   "n": 55034,
   "window": {
    "days": 30,
-   "start": "2026-09-10T10:44:58+00:00",
-   "end": "2026-10-10T10:44:58+00:00"
+   "start": "2026-09-11T06:40:34+00:00",
+   "end": "2026-10-11T06:40:34+00:00"
   },
   "method": {
    "variance": "sample variance (ddof=1) of the latest per-period Sharpe (libs.validation.dsr.sharpe_ratio on the development-window daily series, the units expected_max_sharpe takes; not annualised) of every distinct cell judged in the window; no winsorising, floor or shrinkage",
    "effective_trials": "lifetime per family: sum over distinct judged cells of rho = n_effective / n_raw of the judge's own correlation census (null-calibrated participation ratio of the eigenvalues of the sweep's daily-return correlation matrix) for the sweep that first judged the cell, 1.0 when that census was unmeasurable; ceil, floored at the family's distinct symbols, capped at its distinct cells"
   },
-  "timestamp": "2026-10-10T10:44:58+00:00"
+  "timestamp": "2026-10-11T06:40:34+00:00"
  },
- "content_sha256": "4c6290ac3301884add87ce2afe868f9ec6ef8b03a4b19cbeff698e4e46f696a3"
+ "content_sha256": "a3eca71d85d0c23a3469213eb6535048d4900455fe97f6813b5855adbd0fa7dc"
 }
