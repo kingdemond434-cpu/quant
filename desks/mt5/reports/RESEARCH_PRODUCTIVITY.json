@@ -1,10 +1,10 @@
 {
- "generated_utc": "2026-10-11T03:31:25.052368+00:00",
+ "generated_utc": "2026-10-11T09:17:43.351769+00:00",
  "stages": {
   "intake": {
-   "files": 40489,
-   "files_7d": 8251,
-   "rows_recent_files": 2832
+   "files": 40718,
+   "files_7d": 8425,
+   "rows_recent_files": 2885
   },
   "proposers": {
    "factor_residual": {
@@ -32,32 +32,32 @@
    "candidates": 30560
   },
   "deepening": {
-   "queued": 514,
-   "decided_total": 49211,
+   "queued": 696,
+   "decided_total": 49256,
    "backlog": 0
   },
   "judged": {
-   "cells": 962812,
-   "unmeasured": 8292
+   "cells": 963306,
+   "unmeasured": 6673
   },
   "certified": {
-   "cells": 849,
-   "last_certified": "2026-10-08",
-   "certified_last_30d": 836
+   "cells": 874,
+   "last_certified": "2026-10-11",
+   "certified_last_30d": 861
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 849,
+   "certificates": 874,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 849,
+   "forward_eligible_certificates": 874,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 851,
    "clocks_ticked_24h": 832,
    "clocks_ticked_7d": 842,
-   "last_tick": "2026-10-11T03:23:08+00:00",
-   "engine_silent_hours": 0.1,
-   "n_certificates": 849,
+   "last_tick": "2026-10-11T09:17:03+00:00",
+   "engine_silent_hours": 0.0,
+   "n_certificates": 874,
    "n_enrolled": 847,
    "n_accruing": 761,
    "n_blocked": 13,
@@ -67,7 +67,7 @@
    "blocked_by_status": {
     "IDENTITY_BROKEN": 13
    },
-   "census_at": "2026-10-11T02:36:06+00:00"
+   "census_at": "2026-10-11T09:09:08+00:00"
   },
   "recommendations": {
    "total": 784,
@@ -76,10 +76,10 @@
   }
  },
  "conversion": {
-  "intake_to_compiled": 10.791,
+  "intake_to_compiled": 10.5927,
   "judged_to_certified": 0.0009,
-  "certified_to_forward": 0.8963,
-  "certified_to_clock": 0.9976
+  "certified_to_forward": 0.8707,
+  "certified_to_clock": 0.9691
  },
  "bottleneck": "none obvious"
 }
