@@ -3,16 +3,40 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
+   "finished_at": "2026-10-11T04:29:26.079216+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
+  },
+  "certificate_projection": {
+   "finished_at": "2026-10-11T04:30:24.124531+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "external_queue_projection": {
+   "finished_at": "2026-10-11T04:29:44.369210+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "external_queue_reconciliation": {
+   "finished_at": "2026-10-11T04:30:14.288456+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "fusion_state_pull": {
    "command": [
     "systemctl",
     "--user",
     "start",
-    "quant-external-pipeline.service"
+    "quant-desk-pull.service"
    ],
    "passes_completed": 0,
-   "started_at": "2026-10-11T02:34:19.466297+00:00",
+   "started_at": "2026-10-11T04:30:29.415122+00:00",
    "status": "RUNNING"
   }
  },
- "updated_at": "2026-10-11T02:34:19.466297+00:00"
+ "updated_at": "2026-10-11T04:30:29.415122+00:00"
 }
