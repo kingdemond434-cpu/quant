@@ -1,5 +1,5 @@
 {
- "at": "2026-10-11T06:41:45+00:00",
+ "at": "2026-10-11T07:51:15+00:00",
  "verdicts": {
   "status": "MEASURED",
   "rows_total": 837690,
@@ -52,7 +52,7 @@
   "status": "UNMEASURED",
   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
  },
- "workers_planned": 18,
+ "workers_planned": 12,
  "workers_last_sweep": 18,
  "cores_basis": "fixed_reservation"
 }
