@@ -21,8 +21,8 @@
   "expected_orthogonality": 0.8000000000000002,
   "estimated_edge_bps": 13.0,
   "source_strategies": [
-    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
-    "external.EURJPY.session_range_breakout.rr=2.0_wb=12"
+    "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ],
   "recombination_type": "orthogonal",
   "falsifier": "participant none constraint changes OR information source universal_survivor becomes public",
