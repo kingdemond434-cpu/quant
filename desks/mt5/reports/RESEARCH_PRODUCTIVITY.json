@@ -1,10 +1,10 @@
 {
- "generated_utc": "2026-10-11T15:12:23.656783+00:00",
+ "generated_utc": "2026-10-11T22:36:50.048618+00:00",
  "stages": {
   "intake": {
-   "files": 40975,
-   "files_7d": 8632,
-   "rows_recent_files": 2975
+   "files": 41215,
+   "files_7d": 8764,
+   "rows_recent_files": 2914
   },
   "proposers": {
    "factor_residual": {
@@ -32,8 +32,8 @@
    "candidates": 30560
   },
   "deepening": {
-   "queued": 798,
-   "decided_total": 49328,
+   "queued": 827,
+   "decided_total": 49339,
    "backlog": 0
   },
   "judged": {
@@ -41,25 +41,25 @@
    "unmeasured": 6673
   },
   "certified": {
-   "cells": 874,
+   "cells": 872,
    "last_certified": "2026-10-11",
-   "certified_last_30d": 861
+   "certified_last_30d": 859
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 874,
+   "certificates": 872,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 874,
+   "forward_eligible_certificates": 872,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 851,
    "clocks_ticked_24h": 832,
    "clocks_ticked_7d": 842,
-   "last_tick": "2026-10-11T15:11:21+00:00",
-   "engine_silent_hours": 0.0,
+   "last_tick": "2026-10-11T22:10:37+00:00",
+   "engine_silent_hours": 0.4,
    "n_certificates": 874,
    "n_enrolled": 847,
-   "n_accruing": 761,
+   "n_accruing": 702,
    "n_blocked": 13,
    "n_missing": 0,
    "n_overdue": 0,
@@ -67,19 +67,19 @@
    "blocked_by_status": {
     "IDENTITY_BROKEN": 13
    },
-   "census_at": "2026-10-11T09:09:08+00:00"
+   "census_at": "2026-10-11T15:33:26+00:00"
   },
   "recommendations": {
    "total": 784,
    "open": 216,
-   "open_median_age_days": 45.0
+   "open_median_age_days": 46.0
   }
  },
  "conversion": {
-  "intake_to_compiled": 10.2723,
+  "intake_to_compiled": 10.4873,
   "judged_to_certified": 0.0009,
-  "certified_to_forward": 0.8707,
-  "certified_to_clock": 0.9691
+  "certified_to_forward": 0.805,
+  "certified_to_clock": 0.9713
  },
  "bottleneck": "none obvious"
 }
