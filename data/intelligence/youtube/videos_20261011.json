@@ -26,5 +26,36 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCa8rgzIMKFx2uJHVsf0oqjg",
+  "channel": "IQCapital",
+  "video_id": "K1_ojukzpYc",
+  "published": "2026-10-11T12:50:36Z",
+  "title": "Brandon Was NOT Happy During This Live Trading Session",
+  "description": "Brandon Was NOT Happy During This Live Trading Session",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCJ-KJeHzrnZkGX7qAM2V74Q",
+  "channel": "AI Pathways",
+  "video_id": "ib5R3Jib75A",
+  "published": "2026-10-11T13:00:36Z",
+  "title": "10 Ways To Actually Use Jev For Trading (Here's What Works)",
+  "description": "AI Trading Community: https://www.skool.com/aipathways\nWork With Me 1:1: https://www.aipathways.io\n\n10 ways to actually use the new Typesafe AI model, Jev for trading.\n\nI am not a financial advisor. This is not a guarantee for specific results! Your results may vary due to market conditions and other risks, which I do not discuss in this video. This video is for educational purposes only and is NOT financial advice!\n\n00:00 Overview\n00:51 How Jev Works\n04:17 Setup\n04:50 Use Cases\n\n#ai #jev #tradingbot #daytrading #education",
+  "links": [
+   "https://www.skool.com/aipathways",
+   "https://www.aipathways.io"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
