@@ -27,16 +27,11 @@
    "status": "DONE"
   },
   "fusion_state_pull": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-desk-pull.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-11T04:30:29.415122+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-11T05:10:06.842032+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   }
  },
- "updated_at": "2026-10-11T04:30:29.415122+00:00"
+ "updated_at": "2026-10-11T05:10:06.842032+00:00"
 }
