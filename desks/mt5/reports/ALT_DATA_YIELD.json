@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-11T16:41:06+00:00",
+ "generated_utc": "2026-10-11T17:17:44+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -7,8 +7,8 @@
   "vectors_attempted_this_week": 535,
   "vectors_never_attempted": 2,
   "vectors_by_outcome": {
-   "BLOCKED": 253,
-   "EMPTY": 272,
+   "BLOCKED": 256,
+   "EMPTY": 269,
    "YIELDED": 10,
    "NAMED_ONLY": 2
   }
@@ -258,8 +258,8 @@
  "vectors": {
   "named": 537,
   "by_outcome": {
-   "BLOCKED": 253,
-   "EMPTY": 272,
+   "BLOCKED": 256,
+   "EMPTY": 269,
    "YIELDED": 10,
    "NAMED_ONLY": 2
   },
@@ -425,13 +425,13 @@
    },
    "Activist short seller and forensic accounting research": {
     "outcome": "EMPTY",
-    "attempts": 145,
+    "attempts": 146,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (96898 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:25:34.760359+00:00",
+    "last_attempt": "2026-10-11T17:09:41.241062+00:00",
     "language": "en",
     "region": "global"
    },
@@ -1229,13 +1229,13 @@
    },
    "Broker execution and MT5 archaeology": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (99421 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:28:41.043431+00:00",
+    "last_error": "bing: bing returned no parseable results (96346 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-11T17:10:57.349311+00:00",
     "language": "en",
     "region": "global"
    },
@@ -1589,13 +1589,13 @@
    },
    "Central bank rate decision calendar": {
     "outcome": "EMPTY",
-    "attempts": 393,
+    "attempts": 394,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-10-11T12:22:42.344531+00:00",
+    "last_attempt": "2026-10-11T17:05:45.555344+00:00",
     "language": "en",
     "region": "global"
    },
@@ -1613,13 +1613,13 @@
    },
    "Citation strategy repo and dataset genealogy": {
     "outcome": "EMPTY",
-    "attempts": 145,
+    "attempts": 146,
     "successes": 3,
     "rows": 2,
     "findings_total": 2,
     "datasets": 9,
     "last_error": "bing: bing returned no parseable results (100727 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:31:47.642764+00:00",
+    "last_attempt": "2026-10-11T17:15:35.255409+00:00",
     "language": "en",
     "region": "global"
    },
@@ -1685,13 +1685,13 @@
    },
    "Crowding popularity and decay evidence": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (96781 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:30:57.642629+00:00",
+    "last_error": "bing: bing returned no parseable results (92698 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-11T17:11:59.346669+00:00",
     "language": "en",
     "region": "global"
    },
@@ -1841,13 +1841,13 @@
    },
    "Dead web magazines mailing lists and code archives": {
     "outcome": "BLOCKED",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "no capture in the Wayback Machine",
-    "last_attempt": "2026-10-11T12:22:43.257272+00:00",
+    "last_attempt": "2026-10-11T17:05:48.242845+00:00",
     "language": "en",
     "region": "global"
    },
@@ -1865,13 +1865,13 @@
    },
    "Digital exhaust consumer and procurement signals": {
     "outcome": "EMPTY",
-    "attempts": 145,
+    "attempts": 146,
     "successes": 1,
     "rows": 0,
     "findings_total": 0,
     "datasets": 3,
     "last_error": "bing: bing returned no parseable results (96793 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:27:27.642653+00:00",
+    "last_attempt": "2026-10-11T17:11:35.242876+00:00",
     "language": "en",
     "region": "global"
    },
@@ -2057,13 +2057,13 @@
    },
    "External strategy and fund graveyard": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (96564 bytes -- an anti-bot shell or a layout change, not an empty forest)",
-    "last_attempt": "2026-10-11T12:32:10.944339+00:00",
+    "last_attempt": "2026-10-11T17:16:17.240864+00:00",
     "language": "en",
     "region": "global"
    },
@@ -2321,13 +2321,13 @@
    },
    "GitHub topics algorithmic-trading": {
     "outcome": "EMPTY",
-    "attempts": 391,
-    "successes": 142,
+    "attempts": 392,
+    "successes": 143,
     "rows": 1,
     "findings_total": 1,
-    "datasets": 1869,
+    "datasets": 1883,
     "last_error": "",
-    "last_attempt": "2026-10-11T12:23:42.961421+00:00",
+    "last_attempt": "2026-10-11T17:06:48.144717+00:00",
     "language": "en",
     "region": "global"
    },
@@ -2464,14 +2464,14 @@
     "region": "ru"
    },
    "Hacker News finance threads": {
-    "outcome": "EMPTY",
-    "attempts": 392,
+    "outcome": "BLOCKED",
+    "attempts": 393,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (99066 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:25:38.845449+00:00",
+    "last_error": "bing: bing returned no parseable results (96289 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-11T17:07:33.642755+00:00",
     "language": "en",
     "region": "global"
    },
@@ -2753,13 +2753,13 @@
    },
    "Investing.com economic calendar": {
     "outcome": "BLOCKED",
-    "attempts": 393,
+    "attempts": 394,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-10-11T12:22:41.847902+00:00",
+    "last_attempt": "2026-10-11T17:05:42.256961+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3005,13 +3005,13 @@
    },
    "Local regulation tax settlement and participant ecology": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (97165 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:32:16.943240+00:00",
+    "last_attempt": "2026-10-11T17:16:55.255155+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3221,13 +3221,13 @@
    },
    "Meta-strategy allocation and research-process archaeology": {
     "outcome": "EMPTY",
-    "attempts": 145,
+    "attempts": 146,
     "successes": 1,
     "rows": 1,
     "findings_total": 1,
     "datasets": 2,
     "last_error": "bing: bing returned no parseable results (93532 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: HTTPError: HTTP Error 403: HTTP 403",
-    "last_attempt": "2026-10-11T12:34:11.642906+00:00",
+    "last_attempt": "2026-10-11T17:17:33.242582+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3509,13 +3509,13 @@
    },
    "Newsletters podcasts webinars and conference archives": {
     "outcome": "EMPTY",
-    "attempts": 145,
+    "attempts": 146,
     "successes": 2,
     "rows": 3,
     "findings_total": 3,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (97836 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:30:49.642060+00:00",
+    "last_attempt": "2026-10-11T17:12:51.342250+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3665,13 +3665,13 @@
    },
    "OpenReview finance": {
     "outcome": "EMPTY",
-    "attempts": 392,
+    "attempts": 393,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-10-11T12:22:42.436161+00:00",
+    "last_attempt": "2026-10-11T17:05:44.651105+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3689,13 +3689,13 @@
    },
    "Outage incident and operational postmortem ecology": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93143 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:30:53.642360+00:00",
+    "last_error": "bing: bing returned no parseable results (97815 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-11T17:11:37.341180+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3796,14 +3796,14 @@
     "region": "pe"
    },
    "Physical commodities power gas and emissions": {
-    "outcome": "EMPTY",
-    "attempts": 146,
+    "outcome": "BLOCKED",
+    "attempts": 147,
     "successes": 2,
     "rows": 0,
     "findings_total": 0,
     "datasets": 6,
-    "last_error": "bing: bing returned no parseable results (98202 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:31:07.643097+00:00",
+    "last_error": "bing: bing returned no parseable results (97181 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-11T17:11:28.656149+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3833,13 +3833,13 @@
    },
    "Platform-native strategy ecosystems": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 1,
     "rows": 0,
     "findings_total": 0,
     "datasets": 3,
-    "last_error": "bing: bing returned no parseable results (98440 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:28:37.739728+00:00",
+    "last_error": "bing: bing returned no parseable results (99561 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-11T17:10:00.656723+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3869,25 +3869,25 @@
    },
    "Prediction and betting market microstructure": {
     "outcome": "EMPTY",
-    "attempts": 145,
+    "attempts": 146,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (95185 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:34:09.642867+00:00",
+    "last_attempt": "2026-10-11T17:17:27.240004+00:00",
     "language": "en",
     "region": "global"
    },
    "Public messaging and regional trading communities": {
     "outcome": "EMPTY",
-    "attempts": 145,
+    "attempts": 146,
     "successes": 2,
     "rows": 3,
     "findings_total": 3,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (97550 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:26:31.642528+00:00",
+    "last_attempt": "2026-10-11T17:09:33.341477+00:00",
     "language": "en",
     "region": "global"
    },
@@ -3917,13 +3917,13 @@
    },
    "Quant and market-structure job postings": {
     "outcome": "EMPTY",
-    "attempts": 145,
+    "attempts": 146,
     "successes": 1,
     "rows": 0,
     "findings_total": 0,
     "datasets": 3,
-    "last_error": "bing: bing returned no parseable results (96655 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:26:03.645225+00:00",
+    "last_error": "bing: bing returned no parseable results (94640 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-11T17:08:28.543330+00:00",
     "language": "en",
     "region": "global"
    },
@@ -4217,13 +4217,13 @@
    },
    "Repository archaeology beyond README": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 1,
     "rows": 0,
     "findings_total": 0,
     "datasets": 3,
     "last_error": "bing: bing returned no parseable results (98131 bytes -- an anti-bot shell or a layout change, not an empty forest)",
-    "last_attempt": "2026-10-11T12:33:24.357894+00:00",
+    "last_attempt": "2026-10-11T17:17:03.345092+00:00",
     "language": "en",
     "region": "global"
    },
@@ -4541,13 +4541,13 @@
    },
    "SSRN financial economics": {
     "outcome": "EMPTY",
-    "attempts": 392,
+    "attempts": 393,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-10-11T12:22:37.245418+00:00",
+    "last_attempt": "2026-10-11T17:05:40.747714+00:00",
     "language": "en",
     "region": "global"
    },
@@ -4613,13 +4613,13 @@
    },
    "Shipping freight ports and supply-chain operations": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 1,
     "rows": 0,
     "findings_total": 0,
     "datasets": 1,
     "last_error": "bing: bing returned no parseable results (96606 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:31:19.742829+00:00",
+    "last_attempt": "2026-10-11T17:13:18.456497+00:00",
     "language": "en",
     "region": "global"
    },
@@ -4913,13 +4913,13 @@
    },
    "Trading Economics calendar and indicators": {
     "outcome": "YIELDED",
-    "attempts": 393,
-    "successes": 143,
-    "rows": 158,
-    "findings_total": 161,
-    "datasets": 997,
+    "attempts": 394,
+    "successes": 144,
+    "rows": 160,
+    "findings_total": 163,
+    "datasets": 1004,
     "last_error": "",
-    "last_attempt": "2026-10-11T12:22:58.439868+00:00",
+    "last_attempt": "2026-10-11T17:06:09.638625+00:00",
     "language": "en",
     "region": "global"
    },
@@ -4973,13 +4973,13 @@
    },
    "Twitter/X via nitter mirrors (search index)": {
     "outcome": "EMPTY",
-    "attempts": 391,
+    "attempts": 392,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (101557 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:25:07.745153+00:00",
+    "last_attempt": "2026-10-11T17:08:09.260317+00:00",
     "language": "en",
     "region": "global"
    },
@@ -5080,26 +5080,26 @@
     "region": "kr"
    },
    "Vendor scanner product and app reverse engineering": {
-    "outcome": "EMPTY",
-    "attempts": 145,
-    "successes": 0,
-    "rows": 0,
-    "findings_total": 0,
-    "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (99385 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:27:22.845013+00:00",
-    "language": "en",
-    "region": "global"
-   },
-   "Verified public performance and copy leaderboards": {
-    "outcome": "EMPTY",
+    "outcome": "BLOCKED",
     "attempts": 146,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
+    "last_error": "bing: bing returned no parseable results (97975 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-11T17:07:58.655957+00:00",
+    "language": "en",
+    "region": "global"
+   },
+   "Verified public performance and copy leaderboards": {
+    "outcome": "EMPTY",
+    "attempts": 147,
+    "successes": 0,
+    "rows": 0,
+    "findings_total": 0,
+    "datasets": 0,
     "last_error": "bing: bing returned no parseable results (99053 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-11T12:33:47.643656+00:00",
+    "last_attempt": "2026-10-11T17:17:13.243697+00:00",
     "language": "en",
     "region": "global"
    },
@@ -5153,13 +5153,13 @@
    },
    "Weather climate and public geospatial observations": {
     "outcome": "EMPTY",
-    "attempts": 146,
+    "attempts": 147,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (96422 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14259 bytes)",
-    "last_attempt": "2026-10-11T12:33:29.369853+00:00",
+    "last_attempt": "2026-10-11T17:17:05.242915+00:00",
     "language": "en",
     "region": "global"
    },
@@ -5525,25 +5525,25 @@
    },
    "arXiv q-fin": {
     "outcome": "EMPTY",
-    "attempts": 392,
+    "attempts": 393,
     "successes": 1,
     "rows": 3,
     "findings_total": 3,
     "datasets": 0,
     "last_error": "HTTPError: HTTP Error 429: Too Many Requests; HTTPError: HTTP Error 429: Unknown Error",
-    "last_attempt": "2026-10-11T12:23:33.746370+00:00",
+    "last_attempt": "2026-10-11T17:06:51.244039+00:00",
     "language": "en",
     "region": "global"
    },
    "arXiv q-fin RSS": {
     "outcome": "EMPTY",
-    "attempts": 392,
+    "attempts": 393,
     "successes": 0,
     "rows": 0,
     "findings_total": 1,
     "datasets": 0,
     "last_error": "https://rss.arxiv.org/rss/q-fin.TR: no items parsed (904 bytes); https://rss.arxiv.org/rss/q-fin.ST: no items parsed (904 bytes)",
-    "last_attempt": "2026-10-11T12:22:39.163247+00:00",
+    "last_attempt": "2026-10-11T17:05:43.542614+00:00",
     "language": "en",
     "region": "global"
    },
@@ -6766,8 +6766,8 @@
    "last_run": "2026-10-11T14:04:47+00:00",
    "fetches_per_s": 0.4189,
    "success_rate": 0.6188,
-   "wall_s_24h": 1966.7,
-   "cpu_s_24h": 1025.2
+   "wall_s_24h": 1794.5,
+   "cpu_s_24h": 917.3
   },
   "forest_china": {
    "runs": 23,
@@ -6780,20 +6780,20 @@
    "last_run": "2026-10-11T13:54:32+00:00",
    "fetches_per_s": 0.579,
    "success_rate": 0.7505,
-   "wall_s_24h": 2000.5,
-   "cpu_s_24h": 1258.6
+   "wall_s_24h": 1711.6,
+   "cpu_s_24h": 1075.2
   },
   "forest_europe": {
-   "runs": 25,
-   "fetches": 7836,
-   "ok": 5838,
-   "http_errors": 973,
+   "runs": 24,
+   "fetches": 7538,
+   "ok": 5582,
+   "http_errors": 931,
    "transport_errors": 1025,
-   "seconds": 14369.1,
-   "rows": 2424,
+   "seconds": 14110.7,
+   "rows": 2305,
    "last_run": "2026-10-11T16:11:55+00:00",
-   "fetches_per_s": 0.5453,
-   "success_rate": 0.745,
+   "fetches_per_s": 0.5342,
+   "success_rate": 0.7405,
    "wall_s_24h": 2548.4,
    "cpu_s_24h": 1702.6
   },
@@ -6808,8 +6808,8 @@
    "last_run": "2026-10-11T12:20:29+00:00",
    "fetches_per_s": 0.6292,
    "success_rate": 0.7637,
-   "wall_s_24h": 4329.4,
-   "cpu_s_24h": 739.7
+   "wall_s_24h": 3251.8,
+   "cpu_s_24h": 582.8
   },
   "forest_global_macro": {
    "runs": "UNMEASURED",
@@ -6847,18 +6847,18 @@
    "cpu_s_24h": 471.1
   },
   "forest_global_web": {
-   "runs": 26,
-   "fetches": 6297,
-   "ok": 5360,
-   "http_errors": 433,
-   "transport_errors": 504,
-   "seconds": 10949.8,
-   "rows": 628,
-   "last_run": "2026-10-11T12:02:07+00:00",
-   "fetches_per_s": 0.5751,
-   "success_rate": 0.8512,
-   "wall_s_24h": 4151.2,
-   "cpu_s_24h": 407.7
+   "runs": 27,
+   "fetches": 6713,
+   "ok": 5739,
+   "http_errors": 446,
+   "transport_errors": 528,
+   "seconds": 11695.0,
+   "rows": 651,
+   "last_run": "2026-10-11T17:17:44+00:00",
+   "fetches_per_s": 0.574,
+   "success_rate": 0.8549,
+   "wall_s_24h": 2837.7,
+   "cpu_s_24h": 335.8
   },
   "forest_japan": {
    "runs": "UNMEASURED",
@@ -6948,8 +6948,8 @@
    "last_run": "2026-10-11T13:58:22+00:00",
    "fetches_per_s": 0.3265,
    "success_rate": 0.5814,
-   "wall_s_24h": 1383.9,
-   "cpu_s_24h": 905.1
+   "wall_s_24h": 1206.6,
+   "cpu_s_24h": 758.8
   },
   "forest_south_asia": {
    "runs": 26,
