@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-11T22:00:18.942460+00:00",
+  "swept_at": "2026-10-11T22:15:08.346368+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -767,8 +767,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.1491,
+      "shadow_n": 64,
+      "shadow_exp_r": 0.6413,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -2088,7 +2088,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4017,
+      "shadow_exp_r": -0.4001,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -2770,7 +2770,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.475,
+      "shadow_exp_r": -0.3596,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
