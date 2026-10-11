@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-10-11T06:52:19.498952+00:00",
+   "finished_at": "2026-10-11T11:53:04.351011+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,28 +33,25 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-10-11T06:52:32.531876+00:00",
+   "finished_at": "2026-10-11T11:53:18.898612+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-11T06:50:49.087515+00:00",
+   "finished_at": "2026-10-11T11:51:45.323264+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "desks/mt5/research/forward_reconcile.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-11T11:17:40.448776+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-11T11:51:26.230712+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-11T06:51:07.561096+00:00",
+   "finished_at": "2026-10-11T11:52:05.525331+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -66,23 +63,23 @@
    "status": "FAILED"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-11T06:51:45.647115+00:00",
+   "finished_at": "2026-10-11T11:52:45.089209+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-11T06:52:00.635858+00:00",
+   "finished_at": "2026-10-11T11:52:54.921986+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-11T06:51:28.970167+00:00",
+   "finished_at": "2026-10-11T11:52:28.530545+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-11T11:17:40.448776+00:00"
+ "updated_at": "2026-10-11T11:53:18.898612+00:00"
 }
