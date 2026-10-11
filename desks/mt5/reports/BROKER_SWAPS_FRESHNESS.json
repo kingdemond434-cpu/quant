@@ -1,10 +1,10 @@
 {
  "schema": "broker_swaps_freshness/2",
- "generated_at": "2026-10-11T00:39:16+00:00",
+ "generated_at": "2026-10-11T01:00:17+00:00",
  "source": "mt5.symbol_info swap_long/swap_short via mt5desk.tape --terms-only (MT5-ContractTerms, hourly), counted only with live terminal evidence",
  "status": "FRESH",
- "last_capture_at": "2026-10-11T00:39:15+00:00",
- "last_evidence_at": "2026-10-11T00:39:15+00:00",
+ "last_capture_at": "2026-10-11T01:00:17+00:00",
+ "last_evidence_at": "2026-10-11T01:00:16+00:00",
  "capture_age_h": 0.0,
  "stale_after_h": 26.0,
  "n_symbols": 243,
