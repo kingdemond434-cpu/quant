@@ -3,18 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-10T21:45:06.067166+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-11T00:30:12.791588+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-10T20:07:28.539640+00:00",
+   "finished_at": "2026-10-11T00:31:03.434156+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -26,13 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-10T20:07:02.198484+00:00",
+   "finished_at": "2026-10-11T00:30:27.870814+00:00",
    "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
+   "returncode": 0,
+   "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-10T20:07:24.426899+00:00",
+   "finished_at": "2026-10-11T00:30:55.348341+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -50,10 +45,13 @@
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-10T21:36:33.391066+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-11T00:49:16.813665+00:00",
+   "status": "RUNNING"
   },
   "forward_lane_heal": {
    "finished_at": "2026-10-10T21:36:59.584724+00:00",
@@ -62,7 +60,7 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-10T20:30:12.521316+00:00",
+   "finished_at": "2026-10-11T00:49:04.154685+00:00",
    "passes_completed": 1,
    "returncode": 124,
    "status": "FAILED"
@@ -86,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-10T21:45:06.067166+00:00"
+ "updated_at": "2026-10-11T00:49:16.813665+00:00"
 }
