@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-11T23:45:07.855958+00:00",
+  "swept_at": "2026-10-12T00:01:05.441750+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -767,8 +767,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.1622,
+      "shadow_n": 89,
+      "shadow_exp_r": 0.2375,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -812,7 +812,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3241,
+      "shadow_exp_r": 0.0225,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -2109,8 +2109,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 40,
-      "shadow_exp_r": 0.6411,
+      "shadow_n": 43,
+      "shadow_exp_r": 0.6611,
       "woke_on_shadow": false
     },
     "GBPMXN|formula_asia": {
@@ -3100,7 +3100,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1836,
+      "shadow_exp_r": -0.0267,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -3155,7 +3155,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2066,
+      "shadow_exp_r": -0.1982,
       "woke_on_shadow": false
     },
     "NZDSGD|overnight_gap_decay_continuous": {
@@ -3176,8 +3176,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 23,
-      "shadow_exp_r": 0.253,
+      "shadow_n": 17,
+      "shadow_exp_r": 0.2934,
       "woke_on_shadow": false
     },
     "NZDSGD|pca_residual_continuous": {
@@ -3639,7 +3639,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5299,
+      "shadow_exp_r": -0.5115,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
