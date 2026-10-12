@@ -22,14 +22,25 @@
       "orders": []
     }
   },
-  "position": null,
+  "position": [
+    {
+      "ticket": 234810421,
+      "type": 0,
+      "volume": 0.79,
+      "price_open": 0.5808,
+      "sl": 0.57994,
+      "tp": 0.58148,
+      "profit": -16.12,
+      "symbol": "AUDCHF"
+    }
+  ],
   "last_bracket_date": "2026-10-13",
-  "last_reconcile": "2026-10-12T22:19:28+00:00",
+  "last_reconcile": "2026-10-12T22:50:15+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
   "lot": 0.06,
-  "equity": 561.26,
+  "equity": 552.02,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-09T04:00:34+00:00",
@@ -53,7 +64,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-13T01:04:31+00:00",
+  "placement_pass": "2026-10-13T01:41:46+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -265,14 +276,15 @@
       "last_signal_bar": "2026-09-30 10:00:00+00:00"
     },
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-12 23:00:00+00:00",
-      "trail_k": 0.0
+      "last_signal_bar": "2026-10-13 00:00:00+00:00",
+      "trail_k": 0.0,
+      "open_ttl_until": "2026-10-13T09:00:00+00:00"
     },
     "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-12 23:00:00+00:00"
+      "last_signal_bar": "2026-10-13 00:00:00+00:00"
     },
     "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-12 23:00:00+00:00"
+      "last_signal_bar": "2026-10-13 00:00:00+00:00"
     }
   },
   "orig_stop_dist": {
@@ -447,15 +459,24 @@
     "229292855": 8.490000000000691,
     "233203619": 40.8799999999992,
     "233700226": 0.0016500000000000403,
-    "233796519": 49.340000000000146
+    "233796519": 49.340000000000146,
+    "234810421": 0.0008599999999999719
   },
   "restart_reconcile": {
-    "at": "2026-10-12T22:04:31+00:00",
+    "at": "2026-10-12T22:41:47+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
-    "positions": [],
+    "positions": [
+      {
+        "ticket": 234810421,
+        "symbol": "AUDCHF",
+        "comment": "DWaudchf_overnight_gap_decay_",
+        "volume": 0.79,
+        "sl": 0.57994
+      }
+    ],
     "orders": [],
     "in_doubt": [],
     "stopless": [],
