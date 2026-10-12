@@ -82,7 +82,7 @@
           "latency_send_to_ack_ms": 207.991,
           "acked_at": "2026-10-09T04:00:33+00:00",
           "sent_at": "2026-10-09T04:00:32.792009+00:00",
-          "account": 495044,
+          "account": "ACCOUNT_REDACTED",
           "server": "FusionMarkets-Live",
           "account_kind": "live"
         }
@@ -158,7 +158,7 @@
     },
     "new_source_deployed": false,
     "account_identity": {
-      "Fusion": "FusionMarkets-Live/495044",
+      "Fusion": "FusionMarkets-Live/ACCOUNT_REDACTED",
       "E8": "E8TradeLockerPro/2478877 (previous authenticated snapshot)"
     },
     "live_book_or_arm_modified_by_assistant": false
@@ -4441,7 +4441,7 @@
       "snapshot": "C:\\opt\\quant\\desks\\mt5\\reports\\FUSION_DEAL_RECONCILIATION_20261009.json",
       "snapshot_at": "2026-10-08T22:44:36.536785+00:00",
       "snapshot_sha256": "c25583d0c050093371ec74ada772950856db43a5b858115082e0ade8990df573",
-      "account": 495044,
+      "account": "ACCOUNT_REDACTED",
       "server": "FusionMarkets-Live",
       "position": 233700226,
       "before": {

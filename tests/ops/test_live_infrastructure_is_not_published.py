@@ -24,6 +24,7 @@ operation (`git filter-repo`) that only the principal may authorise.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -86,6 +87,21 @@ def _tracked() -> list[str]:
     return [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
 
 
+def _contains_identifier(text: str, needle: str) -> bool:
+    # A measured decimal such as 7.495044 is not an account identifier.
+    # Keep integer tokens, quoted identifiers and prose identifiers detectable.
+    return re.search(r"(?<![\d.])" + re.escape(needle) + r"(?![\d.])", text) is not None
+
+
+def test_identifier_matching_preserves_real_identifiers():
+    needle = next(iter(LIVE))
+    assert _contains_identifier('account ' + needle, needle)
+    assert _contains_identifier('"account": ' + needle + ',', needle)
+    assert _contains_identifier('"account": "' + needle + '"', needle)
+    assert not _contains_identifier('"q99": 7.' + needle, needle)
+    assert not _contains_identifier('"sample": 1' + needle + '2', needle)
+
+
 def _hits(needle: str) -> list[str]:
     """Tracked files containing `needle`, via git grep so untracked scratch is never scanned."""
     out = subprocess.run(["git", "grep", "-l", "-F", needle], cwd=ROOT,
@@ -97,7 +113,8 @@ def _hits(needle: str) -> list[str]:
     # is committed, and the obvious "fix" is to delete the gate. Nothing else is excluded.
     me = Path(__file__).resolve().relative_to(ROOT).as_posix()
     return [q for q in (ln.strip().replace("\\", "/") for ln in out.stdout.splitlines())
-            if q and q != me]
+            if q and q != me and _contains_identifier(
+                (ROOT / q).read_text(encoding="utf-8", errors="replace"), needle)]
 
 
 def _offenders(table: dict[str, str]) -> list[str]:
@@ -143,7 +160,7 @@ def test_the_allowlist_entries_actually_still_need_the_exemption() -> None:
     unneeded = []
     for path in ALLOWED:
         text = (ROOT / path).read_text(encoding="utf-8", errors="replace")
-        if not any(n in text for n in FORBIDDEN):
+        if not any(_contains_identifier(text, n) for n in FORBIDDEN):
             unneeded.append(path)
     assert not unneeded, (
         f"these files no longer contain a forbidden identifier and their exemption is stale: "

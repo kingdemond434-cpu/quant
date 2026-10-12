@@ -431,7 +431,7 @@
     "authenticated_read_only_fusion": {
       "at": "2026-10-11T11:59:44.957850+00:00",
       "mode": "AUTHENTICATED_READ_ONLY_NO_ORDER_API",
-      "account": 495044,
+      "account": "ACCOUNT_REDACTED",
       "server": "FusionMarkets-Live",
       "currency": "EUR",
       "balance": 561.26,
