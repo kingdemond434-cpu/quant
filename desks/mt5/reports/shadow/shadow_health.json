@@ -1,27 +1,28 @@
 {
-  "updated_at": "2026-10-12T18:52:42+00:00",
-  "configured_sleeves": 708,
-  "represented_sleeves": 708,
+  "updated_at": "2026-10-12T19:17:13+00:00",
+  "configured_sleeves": 704,
+  "represented_sleeves": 704,
   "certified_sleeves_total": 974,
-  "forward_clocks_total": 708,
+  "forward_clocks_total": 704,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 217,
-  "n_mechanisms": 13,
-  "retired_shadow_sleeves": 138,
+  "n_mechanisms": 11,
+  "retired_shadow_sleeves": 142,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 605,
+  "sleeves_with_forward_trades": 604,
   "zero_trade_clocks": {
-    "count": 103,
+    "count": 100,
     "by_status": {
-      "BLOCKED_NO_BARS": 93,
+      "ACTIVE": 32,
+      "BLOCKED_NO_BARS": 58,
       "IDENTITY_BROKEN": 10
     },
-    "age_measured": 103,
-    "median_age_days": 5.277,
+    "age_measured": 100,
+    "median_age_days": 5.295,
     "mature_14d_without_trade": 21,
-    "fresh_attempts": 103,
-    "naturally_inactive": 0,
-    "suppressed_or_unproven": 103,
+    "fresh_attempts": 100,
+    "naturally_inactive": 32,
+    "suppressed_or_unproven": 68,
     "suppressed_examples": [
       "UNKNOWN",
       "UNKNOWN",
@@ -66,14 +67,12 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 686,
+  "evidence_blocked_sleeves": 293,
   "missing_sleeves": [
     "128 certified sleeve(s)"
   ],
-  "errors": {
-    "scalp_bar_refresh": "RuntimeError: no MT5 history source: C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe: initialize failed: (-10004, 'No IPC connection') | C:\\Program Files\\Fusion Markets MetaTrader 5\\terminal64.exe: initialize failed: (-10004, 'No IPC connection')"
-  },
-  "seconds": 132.7,
+  "errors": {},
+  "seconds": 1309.465,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -86,5 +85,5 @@
     "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
   ],
   "live_exposure_aliases": {},
-  "status": "FAILED"
+  "status": "ENROLMENT_GAP"
 }
