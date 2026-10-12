@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-12T19:15:31.051469+00:00",
+  "swept_at": "2026-10-12T19:30:25.253416+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1109,7 +1109,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1905,
+      "shadow_exp_r": -0.3092,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -3990,8 +3990,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 40,
-      "shadow_exp_r": 0.7341,
+      "shadow_n": 41,
+      "shadow_exp_r": 0.7484,
       "woke_on_shadow": false
     },
     "USDSGD|cross_asset_residual_asia": {
@@ -4013,7 +4013,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2975,
+      "shadow_exp_r": -0.2443,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
@@ -4025,6 +4025,17 @@
       "flag": "ok",
       "shadow_n": 32,
       "shadow_exp_r": 0.5856,
+      "woke_on_shadow": false
+    },
+    "USDSGD|overnight_gap_decay_asia": {
+      "n": 0,
+      "exp_r": 0.0,
+      "avg_win_r": 0.0,
+      "avg_loss_r": 0.0,
+      "max_dd_r": 0.0,
+      "flag": "ok",
+      "shadow_n": 22,
+      "shadow_exp_r": 0.4122,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_gap_decay_continuous": {
