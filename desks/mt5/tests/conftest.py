@@ -163,3 +163,44 @@ def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     evidence. Every test that drives a lane through a fake venue goes through that door."""
     monkeypatch.setenv("MT5_ORDER_DOOR_DIR", str(tmp_path_factory.mktemp("order_door")))
     yield
+
+
+@pytest.fixture
+def portable_gateway(monkeypatch, tmp_path):
+    """Import the entire venue adapter on every OS; no SDK operation is permitted.
+
+    The contract was captured from SDK 5.0.6180 without initializing a terminal.
+    Constants are exact; unknown names raise AttributeError and all callable SDK
+    names raise AssertionError. Tests explicitly replace any operation they need.
+    This tests production code, including its imports, rather than AST fragments.
+    """
+    import importlib.util
+    import sys
+    from types import ModuleType
+    from mt5desk import config
+
+    contract = json.loads((Path(__file__).parent / 'fixtures' /
+                           'mt5_sdk_contract.json').read_text('utf-8'))
+    sdk = ModuleType('MetaTrader5')
+    sdk.__version__ = contract['sdk_version']
+    sdk._test_calls = []
+    for name, value in contract['constants'].items():
+        setattr(sdk, name, value)
+    def forbidden(name):
+        def call(*args, **kwargs):
+            sdk._test_calls.append(name)
+            raise AssertionError(f'Unmocked SDK operation in portable test: {name}')
+        return call
+    for name in contract['methods']:
+        setattr(sdk, name, forbidden(name))
+    monkeypatch.setitem(sys.modules, 'MetaTrader5', sdk)
+    monkeypatch.setattr(config, 'desk_root', lambda: tmp_path)
+    monkeypatch.setattr(config, 'terminal_path', lambda: 'test-terminal-only')
+    source = Path(__file__).parents[1] / 'mt5desk' / 'gateway.py'
+    spec = importlib.util.spec_from_file_location('_quant_portable_gateway', source)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert sdk._test_calls == [], 'Import must not contact or initialize a broker'
+    module._test_sdk = sdk
+    return module

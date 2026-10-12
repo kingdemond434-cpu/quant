@@ -519,6 +519,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # law half above runs in a detached worktree where every detector artifact is gitignored, so
     # it can only judge the structural half (a detector, a repair, a fence in the tree).
     ("check_self_repair.py", ("--require-state",)),
+    ("check_birth_obligations.py", ("--require-state",)),
     # the live half of REGIONAL PARITY (LAWS 5n): on the box the registry IS open and the forest
     # reports DO exist, so "no resident", "no discovery in the trailing window" and "no candidate
     # in the lattice" are measured absences and the law calls each one a defect. It still caps no
@@ -872,7 +873,8 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
                 # unknown --in-place makes an older copy die in argparse with empty stdout (this
                 # bug, hit on the first run); an unknown env var is ignored, and an older copy
                 # then does exactly what it always did -- judge in place, no recursion possible.
-                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1"}
+                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1",
+                       "QUANT_LAWGATE_SOURCE_VIEW": "1"}
                 r = subprocess.run([sys.executable, str(where / "scripts/run_law_gate.py"),
                                     "--laws-only", "--json"], cwd=where, env=env,
                                    capture_output=True, text=True, timeout=1800)

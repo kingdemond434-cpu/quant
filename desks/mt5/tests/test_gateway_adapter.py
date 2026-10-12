@@ -93,7 +93,11 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)
+    # These are unchanged production AST nodes, including their source line numbers.
+    # Credit actual exercised branches to their source, rather than an anonymous <gw>
+    # file that coverage cannot join back to the money-path report.
+    exec(compile(ast.Module(body=keep, type_ignores=[]),
+                 str(_DESK / "mt5desk" / "gateway.py"), "exec"), seed)
     return seed
 
 
