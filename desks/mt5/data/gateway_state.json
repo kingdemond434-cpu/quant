@@ -30,17 +30,17 @@
       "price_open": 0.5808,
       "sl": 0.57994,
       "tp": 0.58148,
-      "profit": -16.12,
+      "profit": -24.61,
       "symbol": "AUDCHF"
     }
   ],
   "last_bracket_date": "2026-10-13",
-  "last_reconcile": "2026-10-12T22:50:15+00:00",
+  "last_reconcile": "2026-10-12T22:58:16+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
   "lot": 0.06,
-  "equity": 552.02,
+  "equity": 535.05,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-09T04:00:34+00:00",
@@ -64,7 +64,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-13T01:41:46+00:00",
+  "placement_pass": "2026-10-13T01:58:21+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -463,7 +463,7 @@
     "234810421": 0.0008599999999999719
   },
   "restart_reconcile": {
-    "at": "2026-10-12T22:41:47+00:00",
+    "at": "2026-10-12T22:58:29+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,

@@ -1,9 +1,9 @@
 {
  "ok": false,
- "running_sha": "52ad081596ba0229a843bec9c51ea55ff3a40d0f",
+ "running_sha": "9060c52e2ed4897d5554585a85480bd531528a9c",
  "release_sha": "cb341efee62c08f363123d0a002334da90769b4b",
- "reason": "running 52ad081596ba != sealed cb341efee62c and the diff cannot be taken (git absent, or the sealed commit is not in this clone)",
- "age_h": 105.503,
+ "reason": "running 9060c52e2ed4 != sealed cb341efee62c and the diff cannot be taken (git absent, or the sealed commit is not in this clone)",
+ "age_h": 105.65,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -14,7 +14,7 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-10-12T22:41:47+00:00",
+ "at": "2026-10-12T22:50:34+00:00",
  "tested_sha": "UNMEASURED",
  "tested_gates": "UNMEASURED",
  "allocator_certificate": "e448754e405f1b7a@2026-10-12T21:05:45.355089+00:00 proof=FAILED book=posterior",
