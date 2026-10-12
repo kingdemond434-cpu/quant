@@ -1,0 +1,422 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "How do you cap risk across trades that share a currency?",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "I do not see the effects of leverage",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "When a win feels like a loss",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD Longs today",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Don't be like this guy - wants to go full time, never backtested or journaled, trades based on \"feelings\" lol",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Damn EURUSD blew past 1.3500s weekly resistance level",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "resistance"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "EURUSD Daily: Pullback Setup into Premium FVG Zone \ud83d\udcc9",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "pullback"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD NY Session Short",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "My Setup on Monday for GOLD!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NFP trade fundamental analysis + technical execution",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "DXY"
+    ],
+    "patterns": [
+      "support"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "AUDCAD BUY",
+    "url": "",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "patterns": [
+      "order block"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Retired XAUUSD scalper here",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "scalp"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "After years of being a stocks / gold guy. I got my first silver ounces at melt value. How\u2019d I do with these?",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "My stack after a year; it's not much, but it's honest work.",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "The stack.",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Enjoying this cool cloudy day with my first 1921 peace dollar",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "I\u2019m looking to commission a silver piece in honor of my 10 years of sobriety from painkillers.",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Just starting out",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "New to silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Ever any luck at yard sales finding silverware way below melt value?",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Hard to get back in",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Added a little over 17 grams for the low price of 80 cents. 1945 war nickel not pictured.",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Coin Show Haul",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Making a pause",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Tips for hunting for sterling at thrift stores?",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Trip to Vienna",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Keep on Truckin', Don't Give Up!",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Experiments with Toning Methods (Liver of Sulfur and Bleach)",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "1990 Mexico Pope John Paul .999 1 and 5 oz Silver Proof Medal",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Mail Call",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Silver art born from the myth of Medusa Handmade in 925 Sterling Silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "Did I get scammed? (Monument Metals)",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "3 weeks in. I'm hooked.",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "New Piece: (Costco) Sunshine Minting America 250 Buffalo Silver Round",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "First 10oz of silver",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "silverbugs",
+    "title": "80085",
+    "url": "",
+    "symbols": [
+      "XAGUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  }
+]
