@@ -21,16 +21,16 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-12T04:33:10.815177+00:00",
+   "finished_at": "2026-10-12T07:51:48.340450+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-12T04:33:45.637523+00:00",
+   "finished_at": "2026-10-12T08:26:49.813060+00:00",
    "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "returncode": 124,
+   "status": "FAILED"
   },
   "forward_clock_fence": {
    "finished_at": "2026-10-12T04:58:20.774993+00:00",
@@ -81,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-12T07:29:14.729667+00:00"
+ "updated_at": "2026-10-12T08:26:49.813060+00:00"
 }
