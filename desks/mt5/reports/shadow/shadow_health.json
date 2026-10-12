@@ -1,8 +1,8 @@
 {
-  "updated_at": "2026-10-12T06:55:56+00:00",
+  "updated_at": "2026-10-12T07:22:05+00:00",
   "configured_sleeves": 708,
   "represented_sleeves": 708,
-  "certified_sleeves_total": 874,
+  "certified_sleeves_total": 974,
   "forward_clocks_total": 708,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 217,
@@ -13,16 +13,15 @@
   "zero_trade_clocks": {
     "count": 103,
     "by_status": {
-      "ACTIVE": 2,
-      "BLOCKED_NO_BARS": 91,
+      "BLOCKED_NO_BARS": 93,
       "IDENTITY_BROKEN": 10
     },
     "age_measured": 103,
-    "median_age_days": 4.779,
+    "median_age_days": 4.797,
     "mature_14d_without_trade": 21,
     "fresh_attempts": 103,
-    "naturally_inactive": 2,
-    "suppressed_or_unproven": 101,
+    "naturally_inactive": 0,
+    "suppressed_or_unproven": 103,
     "suppressed_examples": [
       "UNKNOWN",
       "UNKNOWN",
@@ -67,14 +66,14 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 652,
+  "evidence_blocked_sleeves": 686,
   "missing_sleeves": [
-    "28 certified sleeve(s)"
+    "128 certified sleeve(s)"
   ],
   "errors": {
     "scalp_bar_refresh": "RuntimeError: no MT5 history source: C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe: initialize failed: (-10004, 'No IPC connection') | C:\\Program Files\\Fusion Markets MetaTrader 5\\terminal64.exe: initialize failed: (-10004, 'No IPC connection')"
   },
-  "seconds": 330.612,
+  "seconds": 107.894,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
