@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-12T05:45:04.547354+00:00",
+  "swept_at": "2026-10-12T06:00:33.147082+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -4056,8 +4056,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 6,
-      "shadow_exp_r": 0.0196,
+      "shadow_n": 45,
+      "shadow_exp_r": -0.5071,
       "woke_on_shadow": false
     },
     "USDTHB|macro_conditional_asia": {
@@ -4089,8 +4089,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 32,
-      "shadow_exp_r": -0.304,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.0133,
       "woke_on_shadow": false
     },
     "USDZAR|carry_asia": {

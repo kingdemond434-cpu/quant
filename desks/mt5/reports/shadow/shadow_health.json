@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-12T05:02:43+00:00",
+  "updated_at": "2026-10-12T05:57:04+00:00",
   "configured_sleeves": 708,
   "represented_sleeves": 708,
   "certified_sleeves_total": 874,
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 10
     },
     "age_measured": 103,
-    "median_age_days": 4.7,
+    "median_age_days": 4.738,
     "mature_14d_without_trade": 21,
     "fresh_attempts": 103,
     "naturally_inactive": 10,
@@ -74,7 +74,7 @@
   "errors": {
     "scalp_bar_refresh": "RuntimeError: no MT5 history source: C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe: initialize failed: (-10004, 'No IPC connection') | C:\\Program Files\\Fusion Markets MetaTrader 5\\terminal64.exe: initialize failed: (-10004, 'No IPC connection')"
   },
-  "seconds": 450.003,
+  "seconds": 404.091,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
