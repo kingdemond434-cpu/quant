@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-12T05:57:04+00:00",
+  "updated_at": "2026-10-12T06:25:06+00:00",
   "configured_sleeves": 708,
   "represented_sleeves": 708,
   "certified_sleeves_total": 874,
@@ -13,16 +13,16 @@
   "zero_trade_clocks": {
     "count": 103,
     "by_status": {
-      "ACTIVE": 10,
-      "BLOCKED_NO_BARS": 83,
+      "ACTIVE": 2,
+      "BLOCKED_NO_BARS": 91,
       "IDENTITY_BROKEN": 10
     },
     "age_measured": 103,
-    "median_age_days": 4.738,
+    "median_age_days": 4.758,
     "mature_14d_without_trade": 21,
     "fresh_attempts": 103,
-    "naturally_inactive": 10,
-    "suppressed_or_unproven": 93,
+    "naturally_inactive": 2,
+    "suppressed_or_unproven": 101,
     "suppressed_examples": [
       "UNKNOWN",
       "UNKNOWN",
@@ -67,14 +67,14 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 613,
+  "evidence_blocked_sleeves": 652,
   "missing_sleeves": [
     "28 certified sleeve(s)"
   ],
   "errors": {
     "scalp_bar_refresh": "RuntimeError: no MT5 history source: C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe: initialize failed: (-10004, 'No IPC connection') | C:\\Program Files\\Fusion Markets MetaTrader 5\\terminal64.exe: initialize failed: (-10004, 'No IPC connection')"
   },
-  "seconds": 404.091,
+  "seconds": 286.987,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
