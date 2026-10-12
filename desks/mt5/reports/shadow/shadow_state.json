@@ -529,7 +529,7 @@
     }
   },
   "last_run": "2026-10-12",
-  "updated_at": "2026-10-12T23:03:29+00:00",
+  "updated_at": "2026-10-12T23:19:14+00:00",
   "configured_sleeves": 845,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -14377,8 +14377,8 @@
   },
   "CHFNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96": {
     "n": 7,
-    "cum_r": 2.109561918608064,
-    "max_dd_r": -1.2306870198409943,
+    "cum_r": 1.579809629970443,
+    "max_dd_r": -1.560732388715535,
     "first_entry": "2026-10-07 14:15:00+00:00",
     "last_entry": "2026-10-12 19:00:00+00:00",
     "status": "ACTIVE",
@@ -14388,15 +14388,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:00:24+00:00",
     "sleeve_id": "ac4d92eefbf46f673407",
-    "last_attempt_at": "2026-10-12T20:58:03+00:00",
+    "last_attempt_at": "2026-10-12T23:03:44+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.3013659883725806,
+    "exp_r": 0.22568708999577755,
     "days_active": 5,
-    "forward_t": 0.53,
+    "forward_t": 0.392,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -14450,12 +14450,12 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:03+00:00"
+      "at": "2026-10-12T23:03:44+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M15": {
     "n": 53,
-    "cum_r": 3.68361337822731,
+    "cum_r": 4.20936660155553,
     "max_dd_r": -6.096273552523603,
     "first_entry": "2026-09-28 00:15:00+00:00",
     "last_entry": "2026-10-12 17:30:00+00:00",
@@ -14466,16 +14466,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:28:08.987676+00:00",
     "sleeve_id": "5eacd792333fc40c3473",
-    "last_attempt_at": "2026-10-12T20:58:06+00:00",
+    "last_attempt_at": "2026-10-12T23:05:30+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.06950213921183604,
-    "days_active": 15,
-    "forward_t": 0.314,
-    "e_value": 0.4153,
+    "exp_r": 0.07942201135010434,
+    "days_active": 16,
+    "forward_t": 0.358,
+    "e_value": 0.4035,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 53,
@@ -14489,13 +14489,13 @@
     "last_error_cleared": "no M15 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:06+00:00"
+      "at": "2026-10-12T23:05:30+00:00"
     }
   },
   "CHFNOK.carry.asia@M30#input_symbol=CHFNOK_session=ny": {
     "n": 7,
-    "cum_r": 0.17642751691086345,
-    "max_dd_r": -1.7100231972821667,
+    "cum_r": -0.4064648139484882,
+    "max_dd_r": -2.0688206041343644,
     "first_entry": "2026-10-07 14:30:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
     "status": "ACTIVE",
@@ -14505,15 +14505,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:00:29+00:00",
     "sleeve_id": "9cabd3e09830a2de2caa",
-    "last_attempt_at": "2026-10-12T20:58:07+00:00",
+    "last_attempt_at": "2026-10-12T23:06:05+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.025203930987266206,
+    "exp_r": -0.058066401992641174,
     "days_active": 5,
-    "forward_t": 0.053,
+    "forward_t": -0.115,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -14568,12 +14568,12 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:08+00:00"
+      "at": "2026-10-12T23:06:05+00:00"
     }
   },
   "CHFNOK.carry.asia@M30#input_symbol=CHFNOK": {
     "n": 28,
-    "cum_r": -1.9073196026245842,
+    "cum_r": -2.3832795897171306,
     "max_dd_r": -6.468820851310944,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -14584,16 +14584,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:29:11.581281+00:00",
     "sleeve_id": "4410827f413e0ef21e35",
-    "last_attempt_at": "2026-10-12T20:58:09+00:00",
+    "last_attempt_at": "2026-10-12T23:06:17+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.0681185572365923,
-    "days_active": 15,
-    "forward_t": -0.295,
-    "e_value": 0.6232,
+    "exp_r": -0.08511712820418324,
+    "days_active": 16,
+    "forward_t": -0.366,
+    "e_value": 0.6648,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -14607,12 +14607,12 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:09+00:00"
+      "at": "2026-10-12T23:06:25+00:00"
     }
   },
   "CHFNOK.carry.asia@M30#session=ny_symbol=CHFNOK": {
     "n": 7,
-    "cum_r": 2.5827551191301445,
+    "cum_r": 2.1067951320375977,
     "max_dd_r": -1.1652305851954636,
     "first_entry": "2026-10-07 14:30:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -14623,15 +14623,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:00:31+00:00",
     "sleeve_id": "6cbd6f346126cc669f93",
-    "last_attempt_at": "2026-10-12T20:58:11+00:00",
+    "last_attempt_at": "2026-10-12T23:06:41+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.3689650170185921,
+    "exp_r": 0.30097073314822825,
     "days_active": 5,
-    "forward_t": 0.792,
+    "forward_t": 0.614,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -14685,12 +14685,12 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:11+00:00"
+      "at": "2026-10-12T23:06:41+00:00"
     }
   },
   "CHFNOK.carry.asia@M30#session=ny": {
     "n": 7,
-    "cum_r": 2.5827551191301445,
+    "cum_r": 2.1067951320375977,
     "max_dd_r": -1.1652305851954636,
     "first_entry": "2026-10-07 14:30:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -14701,15 +14701,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:00:34+00:00",
     "sleeve_id": "17ba255880ffa7df81e2",
-    "last_attempt_at": "2026-10-12T20:58:12+00:00",
+    "last_attempt_at": "2026-10-12T23:07:17+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.3689650170185921,
+    "exp_r": 0.30097073314822825,
     "days_active": 5,
-    "forward_t": 0.792,
+    "forward_t": 0.614,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -14763,12 +14763,12 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:12+00:00"
+      "at": "2026-10-12T23:07:17+00:00"
     }
   },
   "CHFNOK.carry.asia@M30#symbol=CHFNOK": {
     "n": 28,
-    "cum_r": -1.9073196026245842,
+    "cum_r": -2.3832795897171306,
     "max_dd_r": -6.468820851310944,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -14779,16 +14779,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:29:35.908046+00:00",
     "sleeve_id": "b673fb4ae1311220a55c",
-    "last_attempt_at": "2026-10-12T20:58:13+00:00",
+    "last_attempt_at": "2026-10-12T23:08:19+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.0681185572365923,
-    "days_active": 15,
-    "forward_t": -0.295,
-    "e_value": 0.6232,
+    "exp_r": -0.08511712820418324,
+    "days_active": 16,
+    "forward_t": -0.366,
+    "e_value": 0.6648,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -14802,12 +14802,12 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:13+00:00"
+      "at": "2026-10-12T23:08:19+00:00"
     }
   },
   "CHFNOK.carry.asia@M30": {
     "n": 28,
-    "cum_r": -1.9073196026245842,
+    "cum_r": -2.3832795897171306,
     "max_dd_r": -6.468820851310944,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -14818,16 +14818,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:29:42.500295+00:00",
     "sleeve_id": "6b88a56e84ef37b1cee6",
-    "last_attempt_at": "2026-10-12T20:58:14+00:00",
+    "last_attempt_at": "2026-10-12T23:09:18+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.0681185572365923,
-    "days_active": 15,
-    "forward_t": -0.295,
-    "e_value": 0.6232,
+    "exp_r": -0.08511712820418324,
+    "days_active": 16,
+    "forward_t": -0.366,
+    "e_value": 0.6648,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -14841,7 +14841,7 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:14+00:00"
+      "at": "2026-10-12T23:09:18+00:00"
     }
   },
   "CHFNOK.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0": {
@@ -14857,14 +14857,14 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:29:44.690502+00:00",
     "sleeve_id": "ff98a5d934f9d0e293f2",
-    "last_attempt_at": "2026-10-12T20:58:15+00:00",
+    "last_attempt_at": "2026-10-12T23:09:19+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": 0.7296742161359207,
-    "days_active": 15,
+    "days_active": 16,
     "forward_t": 3.01,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
@@ -14880,12 +14880,12 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:15+00:00"
+      "at": "2026-10-12T23:09:19+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=96": {
     "n": 6,
-    "cum_r": -5.741844817097675,
+    "cum_r": -5.25381128891862,
     "max_dd_r": -4.6789849730887765,
     "first_entry": "2026-10-07 14:30:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -14896,15 +14896,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:00:44+00:00",
     "sleeve_id": "79c05d2f5a2a3088d3ca",
-    "last_attempt_at": "2026-10-12T20:58:19+00:00",
+    "last_attempt_at": "2026-10-12T23:11:21+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.9569741361829459,
+    "exp_r": -0.87563521481977,
     "days_active": 5,
-    "forward_t": -4.574,
+    "forward_t": -3.014,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -14958,12 +14958,12 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:19+00:00"
+      "at": "2026-10-12T23:11:25+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96": {
     "n": 30,
-    "cum_r": -1.7065727774478103,
+    "cum_r": -1.2185392492687557,
     "max_dd_r": -4.745083018285213,
     "first_entry": "2026-09-28 15:30:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -14974,16 +14974,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:29:55.995117+00:00",
     "sleeve_id": "0899b7a8bbe483c2a013",
-    "last_attempt_at": "2026-10-12T20:58:23+00:00",
+    "last_attempt_at": "2026-10-12T23:14:16+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.056885759248260344,
-    "days_active": 15,
-    "forward_t": -0.222,
-    "e_value": 0.5439,
+    "exp_r": -0.040617974975625186,
+    "days_active": 16,
+    "forward_t": -0.158,
+    "e_value": 0.5165,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 30,
@@ -14997,7 +14997,7 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:23+00:00"
+      "at": "2026-10-12T23:14:16+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_session=london_side_in_high=1_ttl_bars=96": {
@@ -15067,7 +15067,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-12T20:58:27+00:00"
+      "at": "2026-10-12T23:14:17+00:00"
     },
     "last_error": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16"
   },
@@ -15138,7 +15138,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-12T20:58:33+00:00"
+      "at": "2026-10-12T23:17:09+00:00"
     },
     "last_error": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16"
   },
@@ -45834,7 +45834,7 @@
   },
   "CHFNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96": {
     "n": 64,
-    "cum_r": -9.03186118290803,
+    "cum_r": -9.561613471545652,
     "max_dd_r": -17.0969407635541,
     "first_entry": "2026-09-28 00:15:00+00:00",
     "last_entry": "2026-10-12 19:00:00+00:00",
@@ -45845,16 +45845,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:28:05.985326+00:00",
     "sleeve_id": "7aeb031f477cb4f4cfb7",
-    "last_attempt_at": "2026-10-12T20:58:05+00:00",
+    "last_attempt_at": "2026-10-12T23:04:19+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.14112283098293796,
+    "exp_r": -0.1494002104929008,
     "days_active": 15,
-    "forward_t": -0.8,
-    "e_value": 0.6739,
+    "forward_t": -0.847,
+    "e_value": 0.7099,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 64,
@@ -45868,13 +45868,13 @@
     "last_error_cleared": "no M15 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:05+00:00"
+      "at": "2026-10-12T23:04:22+00:00"
     },
     "last_error": "no M15 bars from any source for CHFNOK covering SHADOW_START 2026-08-16"
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=192": {
     "n": 6,
-    "cum_r": -5.741844817097675,
+    "cum_r": -5.25381128891862,
     "max_dd_r": -4.6789849730887765,
     "first_entry": "2026-10-07 14:30:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -45885,15 +45885,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:00:39+00:00",
     "sleeve_id": "a65596e1b4e244d6892a",
-    "last_attempt_at": "2026-10-12T20:58:16+00:00",
+    "last_attempt_at": "2026-10-12T23:09:20+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.9569741361829459,
+    "exp_r": -0.87563521481977,
     "days_active": 5,
-    "forward_t": -4.574,
+    "forward_t": -3.014,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -45947,13 +45947,13 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:16+00:00"
+      "at": "2026-10-12T23:09:35+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=48": {
     "n": 6,
-    "cum_r": -7.780185437842355,
-    "max_dd_r": -6.131665932576025,
+    "cum_r": -7.401796775660875,
+    "max_dd_r": -5.920798236535473,
     "first_entry": "2026-10-07 14:30:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
     "status": "ACTIVE",
@@ -45963,15 +45963,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:00:41+00:00",
     "sleeve_id": "d6b020b30ba828500258",
-    "last_attempt_at": "2026-10-12T20:58:18+00:00",
+    "last_attempt_at": "2026-10-12T23:10:34+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -1.2966975729737258,
+    "exp_r": -1.2336327959434792,
     "days_active": 5,
-    "forward_t": -5.907,
+    "forward_t": -4.374,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -46026,12 +46026,12 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:18+00:00"
+      "at": "2026-10-12T23:10:34+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=192": {
     "n": 30,
-    "cum_r": -2.7698116847711596,
+    "cum_r": -2.2817781565921047,
     "max_dd_r": -4.745083018285213,
     "first_entry": "2026-09-29 00:30:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -46042,16 +46042,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:29:47.086500+00:00",
     "sleeve_id": "f67cd0c673fa8ab506e8",
-    "last_attempt_at": "2026-10-12T20:58:20+00:00",
+    "last_attempt_at": "2026-10-12T23:11:59+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.09232705615903865,
+    "exp_r": -0.07605927188640349,
     "days_active": 15,
-    "forward_t": -0.357,
-    "e_value": 0.6119,
+    "forward_t": -0.293,
+    "e_value": 0.5799,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 30,
@@ -46065,12 +46065,12 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:20+00:00"
+      "at": "2026-10-12T23:11:59+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=48": {
     "n": 37,
-    "cum_r": -2.4391527163687665,
+    "cum_r": -1.9511191881897119,
     "max_dd_r": -4.905858497600841,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-10-12 17:00:00+00:00",
@@ -46081,16 +46081,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:29:55.479932+00:00",
     "sleeve_id": "ff7ffacadc355e435518",
-    "last_attempt_at": "2026-10-12T20:58:21+00:00",
+    "last_attempt_at": "2026-10-12T23:13:27+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.06592304638834504,
+    "exp_r": -0.052732951032154377,
     "days_active": 15,
-    "forward_t": -0.289,
-    "e_value": 0.5212,
+    "forward_t": -0.23,
+    "e_value": 0.4961,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 37,
@@ -46104,7 +46104,7 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:22+00:00"
+      "at": "2026-10-12T23:13:27+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=192": {
@@ -46174,7 +46174,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-12T20:58:29+00:00"
+      "at": "2026-10-12T23:14:19+00:00"
     },
     "last_error": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16"
   },
@@ -46245,13 +46245,13 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "IDENTITY_BROKEN: runtime_version changed after the clock froze",
-      "at": "2026-10-12T20:58:31+00:00"
+      "at": "2026-10-12T23:14:55+00:00"
     },
     "last_error": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16"
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192": {
     "n": 33,
-    "cum_r": -0.5624071773816399,
+    "cum_r": -1.0005043012863404,
     "max_dd_r": -4.928982023429107,
     "first_entry": "2026-09-29 00:30:00+00:00",
     "last_entry": "2026-10-12 18:00:00+00:00",
@@ -46262,16 +46262,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:30:32.896429+00:00",
     "sleeve_id": "a3f17d8378fb1ea20973",
-    "last_attempt_at": "2026-10-12T20:58:35+00:00",
+    "last_attempt_at": "2026-10-12T23:18:33+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.01704264173883757,
+    "exp_r": -0.030318312160192134,
     "days_active": 15,
-    "forward_t": -0.068,
-    "e_value": 0.4585,
+    "forward_t": -0.12,
+    "e_value": 0.4788,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 33,
@@ -46285,12 +46285,12 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:35+00:00"
+      "at": "2026-10-12T23:18:35+00:00"
     }
   },
   "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=48": {
     "n": 36,
-    "cum_r": -0.1876879689849692,
+    "cum_r": -0.6257850928896697,
     "max_dd_r": -5.331852785523543,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-10-12 18:00:00+00:00",
@@ -46301,16 +46301,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:30:41.976669+00:00",
     "sleeve_id": "8709d7a4f6f400623466",
-    "last_attempt_at": "2026-10-12T20:58:36+00:00",
+    "last_attempt_at": "2026-10-12T23:19:13+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.005213554694026922,
+    "exp_r": -0.017382919246935268,
     "days_active": 15,
-    "forward_t": -0.022,
-    "e_value": 0.4225,
+    "forward_t": -0.072,
+    "e_value": 0.4405,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 36,
@@ -46324,7 +46324,7 @@
     "last_error_cleared": "no M30 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-12T20:58:36+00:00"
+      "at": "2026-10-12T23:19:14+00:00"
     }
   },
   "CHFNOK.carry.asia@M5#input_symbol=eBay_session=ny": {
@@ -54912,7 +54912,7 @@
   },
   "engine_pass": {
     "started_at": "2026-10-12T22:22:02+00:00",
-    "rows_reached": 37,
+    "rows_reached": 59,
     "rows": 845,
     "complete": false
   },
