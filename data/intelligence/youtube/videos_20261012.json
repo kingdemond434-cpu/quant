@@ -29,5 +29,36 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "OVdXmVTJsFU",
+  "published": "2026-10-12T12:02:25Z",
+  "title": "Stop Loss Hit? Do NOT Take It Again!",
+  "description": "If your invalidation is hit, your idea was wrong, and chasing it again only makes it worse.",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCmrU1HFPpy5DfUySK6okqEA",
+  "channel": "Lewis Jackson",
+  "video_id": "TBNSrGg-To0",
+  "published": "2026-10-12T12:33:13Z",
+  "title": "Machine learning in finance book code, 2,678 stars",
+  "description": "This repo holds the Python code that goes with a textbook on machine learning in finance. Each chapter has notebooks, which are pages where you run code step by step.\n\n#1 AI trading repo of the day on GitHub: +0 stars in the last 24 hours.\nRepo: https://github.com/mfrdixon/ML_Finance_Codes\n\nSave this to vote for the full breakdown.\n\nBuild your own AI trading agent: https://www.skool.com/part-time-quant-academy\nNot financial advice. I haven't tested this repo yet.\n\n#shorts #aitrading #github",
+  "links": [
+   "https://github.com/mfrdixon/ML_Finance_Codes",
+   "https://www.skool.com/part-time-quant-academy"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
