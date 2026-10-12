@@ -65,6 +65,10 @@ MAX_RETIRED_SITES = 46
 #: provenance check, which is a real safety property. The right fix is that these paths stop being
 #: tracked at all, which is a state-path change and is queued rather than done here.
 ALLOWED: dict[str, str] = {
+    "desks/mt5/data/order_intents.jsonl":
+        "per-intent account/server provenance joins decisions to broker acknowledgements; "
+        "removing it breaks account reconciliation. Migrate to a private raw ledger "
+        "and public projection.",
     "desks/mt5/data/live_ledger.jsonl":
         "per-fill account stamp; removing it breaks ledger provenance. Untrack this path.",
     "desks/mt5/data/universe/broker_info.json":
@@ -73,9 +77,6 @@ ALLOWED: dict[str, str] = {
     # (libs/ops/release.py STATE_PREFIXES), so the WRITER was fixed instead and the stale copy
     # clears itself. Delete each entry once the box has rewritten the file -- the
     # stale-exemption test below fails until you do.
-    "desks/mt5/data/account_state.json":
-        "box-written state; writer fixed in ops/publish_account_state.py, clears on the box's "
-        "next write",
     "desks/mt5/data/cost_truth_quotes.json":
         "box-written state; writer fixed in desks/mt5/research/cost_truth.py, clears on the "
         "box's next write",

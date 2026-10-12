@@ -444,6 +444,30 @@ function Publish-StateOnto {
         Write-SyncLog "publish: batch hash of allowlisted state failed rc=$hashRc ($($blobs.Count)/$($Paths.Count) blobs); nothing published"
         return $false
     }
+    # Public prose must not republish a brokerage login. Sanitize the blob only:
+    # the live sleeve file and every execution field remain untouched.
+    for ($i = 0; $i -lt $Paths.Count; $i++) {
+        if ($Paths[$i] -ne "desks/mt5/data/sleeves.json") { continue }
+        $raw = [System.IO.File]::ReadAllText((Join-Path $RepoRoot $Paths[$i]))
+        $public = [regex]::Replace($raw, '("honest_note"\s*:\s*")((?:\\.|[^"\\])*)(")', {
+            param($m)
+            $m.Groups[1].Value + [regex]::Replace($m.Groups[2].Value, '\baccount\s+\d+\b', 'the authenticated account') + $m.Groups[3].Value
+        })
+        if ($public -eq $raw) { continue }
+        $pubPath = [System.IO.Path]::GetTempFileName()
+        try {
+            [System.IO.File]::WriteAllText($pubPath, $public, [System.Text.UTF8Encoding]::new($false))
+            $pubBlob = @(& git -C $RepoRoot hash-object -w -- $pubPath 2>$null)
+            $pubRc = $LASTEXITCODE
+        } finally {
+            Remove-Item -LiteralPath $pubPath -ErrorAction SilentlyContinue
+        }
+        if ($pubRc -ne 0 -or $pubBlob.Count -ne 1 -or "$($pubBlob[0])" -notmatch '^[0-9a-f]{40}$') {
+            Write-SyncLog "publish: public-note blob failed; nothing published"
+            return $false
+        }
+        $blobs[$i] = $pubBlob[0]
+    }
     $entries = for ($i = 0; $i -lt $Paths.Count; $i++) {
         "100644 blob $($blobs[$i])`t$($Paths[$i])"
     }
