@@ -1,19 +1,19 @@
 {
- "generated_utc": "2026-10-11T05:47:59.337348+00:00",
+ "generated_utc": "2026-10-12T04:51:22.850118+00:00",
  "gaps": {},
  "timestamp_overlap": {
   "name": "timestamp_overlap",
   "status": "MEASURED",
-  "n_eff": 8.801,
+  "n_eff": 8.814,
   "n_nominal": 473,
-  "n_obs": 8465905,
+  "n_obs": 8479260,
   "informational": true,
   "in_headline": false,
-  "why": "473 sleeves, 111628 pairs, 14950 never in the market at the same minute; 2191 of 17244 same-mechanism pairs fire in disjoint hours",
+  "why": "473 sleeves, 111628 pairs, 14972 never in the market at the same minute; 2198 of 17244 same-mechanism pairs fire in disjoint hours",
   "rule": "Jaccard of the calendar minutes each pair of sleeves held a position, from the shadow ledgers' entry/exit stamps; n_eff = n^2 / sum_ij J_ij with J_ii = 1. INFORMATIONAL: published beside the readings and excluded from the headline minimum until the allocator consumes it. It can only raise measured breadth where same-mechanism sleeves fire in different hours; it never lowers the headline",
   "n_pairs": 111628,
-  "mean_jaccard": 0.1117,
-  "n_disjoint_pairs": 14950,
+  "mean_jaccard": 0.1116,
+  "n_disjoint_pairs": 14972,
   "most_overlapping": [
    [
     "AUDCAD_clock_transition_asia",
@@ -58,8 +58,8 @@
   ],
   "same_mechanism": {
    "n_pairs": 17244,
-   "mean_jaccard": 0.2293,
-   "n_disjoint_pairs": 2191,
+   "mean_jaccard": 0.2288,
+   "n_disjoint_pairs": 2198,
    "disjoint_pairs": [
     [
      "AUDCAD_clock_transition_asia",
@@ -124,7 +124,7 @@
    ]
   },
   "headline_unchanged": true,
-  "would_raise_headline_to": 8.801
+  "would_raise_headline_to": 8.814
  },
  "factor_rank": {
   "name": "exposure_notional_rank",
@@ -171,7 +171,7 @@
  },
  "effective": {
   "n_nominal": 453,
-  "effective_breadth": 2.512,
+  "effective_breadth": 2.513,
   "binding_reading": "realised_returns",
   "breadth_ratio": 0.0055,
   "sharpe_multiplier_vs_one_bet": 1.585,
@@ -318,13 +318,13 @@
    {
     "name": "realised_returns",
     "status": "MEASURED",
-    "n_eff": 2.512,
+    "n_eff": 2.513,
     "n_nominal": 473,
     "n_obs": 20,
     "why": "17369 pair(s) cleared the 20-day overlap floor, thinnest overlap 20d; rho <= 0.397 at the 95% upper bound, not the point estimate",
     "detail": {
      "n_pairs": 17369,
-     "rho_upper": 0.3968
+     "rho_upper": 0.3967
     }
    }
   ],
@@ -485,9 +485,9 @@
    "UNCLASSIFIED": 76
   },
   "counts_certified": {
-   "session_liquidity": 59,
+   "session_liquidity": 68,
    "macro_rates": 296,
-   "relative_value": 363,
+   "relative_value": 379,
    "mean_reversion": 34,
    "UNCLASSIFIED": 97
   },
