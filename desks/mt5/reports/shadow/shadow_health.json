@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-10-11T23:48:33+00:00",
-  "configured_sleeves": 721,
-  "represented_sleeves": 721,
+  "updated_at": "2026-10-12T00:39:43+00:00",
+  "configured_sleeves": 723,
+  "represented_sleeves": 723,
   "certified_sleeves_total": 874,
-  "forward_clocks_total": 721,
+  "forward_clocks_total": 723,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 221,
-  "n_mechanisms": 12,
-  "retired_shadow_sleeves": 125,
+  "n_mechanisms": 13,
+  "retired_shadow_sleeves": 123,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 618,
+  "sleeves_with_forward_trades": 620,
   "zero_trade_clocks": {
     "count": 103,
     "by_status": {
@@ -17,7 +17,7 @@
       "IDENTITY_BROKEN": 10
     },
     "age_measured": 103,
-    "median_age_days": 4.482,
+    "median_age_days": 4.518,
     "mature_14d_without_trade": 8,
     "fresh_attempts": 93,
     "naturally_inactive": 93,
@@ -40,8 +40,10 @@
   "missing_sleeves": [
     "28 certified sleeve(s)"
   ],
-  "errors": {},
-  "seconds": 3465.386,
+  "errors": {
+    "scalp_bar_refresh": "RuntimeError: no MT5 history source: C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe: initialize failed: (-10004, 'No IPC connection') | C:\\Program Files\\Fusion Markets MetaTrader 5\\terminal64.exe: initialize failed: (-10004, 'No IPC connection')"
+  },
+  "seconds": 2663.909,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -54,5 +56,5 @@
     "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
   ],
   "live_exposure_aliases": {},
-  "status": "ENROLMENT_GAP"
+  "status": "FAILED"
 }
