@@ -38,6 +38,24 @@ def _retry_attempts() -> int:
         return 2
 
 
+def _parallelism(n: int) -> int:
+    """Bound the first wave so judge children do not exhaust committed memory.
+
+    Two concurrent shards is the production-safe default measured after a 15-wide wave caused
+    fourteen child failures.  Operators may raise the cap after measuring peak committed memory;
+    malformed configuration falls closed to one child.
+    """
+    raw = os.environ.get("GAUNTLET_SHARD_CONCURRENCY")
+    if raw is None:
+        configured = 2
+    else:
+        try:
+            configured = int(raw)
+        except (TypeError, ValueError):
+            configured = 1
+    return max(1, min(n, configured))
+
+
 def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     """Run every judge-owned shard, retrying only failed children at low concurrency.
 
@@ -67,7 +85,8 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
             return k, exc
         return k, None
 
-    with ThreadPoolExecutor(max_workers=n, thread_name_prefix=f"judge-{phase}") as pool:
+    with ThreadPoolExecutor(max_workers=_parallelism(n),
+                            thread_name_prefix=f"judge-{phase}") as pool:
         # Consume every result even when one child fails, so successful shard artifacts survive.
         first = list(pool.map(attempted, range(n)))
 
@@ -107,7 +126,8 @@ def main() -> int:
         try:
             print(
                 f"{datetime.now(UTC).isoformat()} canonical sharded judge "
-                f"runtime={sys.executable} shards={_shards()}",
+                f"runtime={sys.executable} shards={_shards()} "
+                f"shard_concurrency={_parallelism(_shards())}",
                 flush=True,
             )
             from scripts import external_gauntlet as judge
