@@ -294,29 +294,24 @@ def test_the_scorer_rewards_disagreement_and_leaves_a_lone_task_where_it_was() -
         "one source multiplies by 1.0: an uncontested task sits exactly where it sat"
 
 
-def test_reddit_rows_mint_nothing_and_are_counted_by_name(tmp_path, monkeypatch) -> None:
-    """THE REDDIT TERMS FENCE (2026-09-30): rows from data/intelligence/reddit/, and a row from
-    any other directory whose url is on Reddit, are VALID REFUSALS counted under `terms_fenced`
-    and the top-level `terms_fence` -- no candidate, no deepening task, never a silent skip."""
+def test_reddit_idea_rows_compile_and_only_live_input_is_refused(tmp_path, monkeypatch) -> None:
+    """RULE 4 (principal ruling 2026-10-13): rows from data/intelligence/reddit/ and rows whose
+    url is on Reddit are IDEAS and compile like any other; only a row DECLARING live input data
+    from an IDEAS_ONLY source is a valid refusal, counted under `terms_fenced`."""
     res = _run_main(tmp_path, monkeypatch, {
         "reddit": [{"kind": "hypothesis", "family": "overnight_gap_decay",
-                    "symbols": ["XAUUSD"], "title": "c"},
-                   {"title": "vague EURUSD idea", "text": "EURUSD something happens"}],
+                    "symbols": ["XAUUSD"], "title": "c"}],
         "forumx": [{"kind": "hypothesis", "family": "overnight_gap_decay",
-                          "symbols": ["EURUSD"], "title": "cross-post",
-                          "url": "https://old.reddit.com/r/Forex/comments/x"},
-                         {"kind": "hypothesis", "family": "overnight_gap_decay",
-                          "symbols": ["XAUUSD"], "title": "own"}]})
+                    "symbols": ["EURUSD"], "title": "cross-post",
+                    "url": "https://old.reddit.com/r/Forex/comments/x"},
+                   {"kind": "hypothesis", "family": "overnight_gap_decay",
+                    "symbols": ["GBPUSD"], "title": "live input",
+                    "input_data": "https://www.reddit.com/r/Forex/new.json"}]})
     out = res["out"]
-    assert out["terms_fence"]["refused_rows"] == {"reddit": 3}
-    assert out["per_source"]["reddit"]["terms_fenced"] == 2
-    assert out["per_source"]["reddit"]["valid_refusals"] == 2
-    assert out["per_source"]["reddit"]["candidates"] == 0
+    assert out["terms_fence"]["refused_rows"] == {"reddit": 1}
     assert out["per_source"]["forumx"]["terms_fenced"] == 1
-    assert {h["symbol"] for h in out["hypotheses"]} == {"XAUUSD"}
-    assert {h["source"] for h in out["hypotheses"]} == {"miner:forumx"}
-    assert res["deepen"]["tasks"] == []
-    assert "agreement" in out["terms_fence"]["reasons"]["reddit"]
+    assert not out["per_source"]["reddit"].get("terms_fenced")
+    assert {h["symbol"] for h in out["hypotheses"]} == {"XAUUSD", "EURUSD"}
 
 
 def test_prior_family_sample_gap_cannot_veto_complete_source_recipes(tmp_path, monkeypatch):

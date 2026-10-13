@@ -613,11 +613,11 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
-    # FENCED 2026-09-30 (Reddit terms): the ground is never scheduled and never fetched; the
-    # run names it under `terms_fenced` instead of a status row.
-    # FENCED 2026-10-07 (audit of #162): a nitter mirror is X; the ground is refused the same way.
-    assert "reddit" not in st and "nitter" not in st
-    assert doc["terms_fenced"] == ["nitter", "reddit"]
+    # PER-SOURCE POLICY (ruling 2026-10-13): reddit is IDEAS_ONLY and mined; nitter is HELD
+    # (METHOD_BLOCKED, a login-wall workaround) and named under `terms_fenced`, never fetched.
+    assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
+    assert "nitter" not in st
+    assert doc["terms_fenced"] == ["nitter"]
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
     assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]

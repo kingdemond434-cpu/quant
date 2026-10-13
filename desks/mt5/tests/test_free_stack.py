@@ -358,7 +358,8 @@ def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tm
     cols = {"gtrends": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}},
             "reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
     grid, skipped = P.build_grid(cols, P.roster_rows())
-    assert skipped == {"reddit": "terms-fenced: reddit"}      # terms fence, 2026-09-30
+    # The free stack builds LIVE INPUT; Reddit's pages are IDEAS_ONLY (per-source policy).
+    assert skipped == {"reddit": "not live input (IDEAS_ONLY): reddit"}
     fams = {c["family"] for c in grid}
     assert fams == {"exogenous_conditioner", "alt_series_momentum", "alt_conditioned"}
     assert len(grid) == len(P.CHARTS) * (8 + 8 + len(P.BASES) * len(P.REGIMES))
