@@ -86,9 +86,18 @@ def test_the_heartbeat_report_is_published_off_the_box() -> None:
     from mt5desk import release_identity
 
     from libs.ops import release
-    rel = "desks/mt5/reports/BOX_HEARTBEAT.json"
-    assert hb.OUT.as_posix().endswith(rel)
-    assert f"!{rel}" in (ROOT / ".gitignore").read_text("utf-8").splitlines()
+    assert hb.OUT.as_posix().endswith("desks/mt5/reports/BOX_HEARTBEAT.json")
+    ignore = (ROOT / ".gitignore").read_text("utf-8").splitlines()
     sync = (ROOT / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8", errors="ignore")
-    assert f'"{rel}"' in sync.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
-    assert rel in release.NON_CODE and rel in release_identity.NON_CODE
+    block = sync.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
+    # the same hour's sweep (2026-10-13): reports a reader off the box was told to use and could
+    # not see -- the adoption gate's decision, judging burndown and the LLM lab's inputs
+    for rel in ("desks/mt5/reports/BOX_HEARTBEAT.json", "desks/mt5/reports/JUDGING_BURNDOWN.json",
+                "desks/mt5/reports/WORLD_LAB.json", "desks/mt5/reports/EXPRESSION_FACTORY.json",
+                "desks/mt5/reports/RELEASE_GATE.json",
+                "desks/mt5/reports/ADOPTION_HEARTBEAT.json",
+                "desks/mt5/reports/ADOPTION_STATE.json", "desks/mt5/data/stall_watch.json",
+                "desks/mt5/data/world_causal_graph.json"):
+        assert rel.startswith("desks/mt5/data/") or f"!{rel}" in ignore, rel
+        assert f'"{rel}"' in block, rel
+        assert rel in release.NON_CODE and rel in release_identity.NON_CODE, rel
