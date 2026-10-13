@@ -38,7 +38,6 @@ TRIPLE_WEEKDAYS: tuple[int, ...] = (2, 4)            # Wednesday and Friday
 #: Server midnight (the bars are broker stamps): the night ending on day d. Was 21, three hours
 #: early in the bars' own clock; the stress keeps its Wednesday-and-Friday triple on day d.
 ROLLOVER_HOUR_SERVER = 24
-ROLLOVER_HOUR_UTC = ROLLOVER_HOUR_SERVER   # kept for importers; never a UTC hour
 #: The two server-clock bars that straddle the rollover: the hour before it and the hour after.
 ROLLOVER_BAR_HOURS: tuple[int, ...] = (23, 0)
 ROLLOVER_SPREAD_MULT = 6.0
@@ -55,7 +54,7 @@ def _utc_naive(t: Any) -> pd.Timestamp:
     return ts
 
 
-def stressed_nights(entry: Any, exit_at: Any, *, hour: int = ROLLOVER_HOUR_UTC,
+def stressed_nights(entry: Any, exit_at: Any, *, hour: int = ROLLOVER_HOUR_SERVER,
                     triple_weekdays: Sequence[int] = TRIPLE_WEEKDAYS) -> int:
     """Rollover stamps charged between entry and exit, walked day by day (half-open: a stamp at
     the entry instant is not charged, one at the exit instant is -- the engine's convention)."""
@@ -66,7 +65,7 @@ def stressed_nights(entry: Any, exit_at: Any, *, hour: int = ROLLOVER_HOUR_UTC,
     total = 0
     while day <= b:
         stamp = day + timedelta(hours=hour)
-        if a < stamp <= b:
+        if a < stamp <= b and day.weekday() < 5:          # no stamp ends a weekend day
             total += 3 if day.weekday() in triple_weekdays else 1
         day += timedelta(days=1)
     return total

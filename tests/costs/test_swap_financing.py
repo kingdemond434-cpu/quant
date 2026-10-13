@@ -19,7 +19,7 @@ if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
 from mt5desk.engine import (  # noqa: E402
-    ROLLOVER_HOUR_UTC,
+    ROLLOVER_HOUR_SERVER,
     TRIPLE_SWAP_WEEKDAY,
     Costs,
     rollovers_between,
@@ -63,8 +63,8 @@ def test_wednesday_rollover_carries_three_nights():
     """43% of a week's financing lands on one instant, and a family that holds pays it weekly."""
     wed = pd.Timestamp("2026-09-16")
     assert wed.weekday() == TRIPLE_SWAP_WEEKDAY
-    crossing = rollovers_between(wed + pd.Timedelta(hours=ROLLOVER_HOUR_UTC - 1),
-                                 wed + pd.Timedelta(hours=ROLLOVER_HOUR_UTC + 1))
+    crossing = rollovers_between(wed + pd.Timedelta(hours=ROLLOVER_HOUR_SERVER - 1),
+                                 wed + pd.Timedelta(hours=ROLLOVER_HOUR_SERVER + 1))
     assert crossing == 3.0
     # A full week is seven rollovers with Wednesday counting three: 6 + 3 = 9, not 7.
     assert rollovers_between(pd.Timestamp("2026-09-14 10:00"),

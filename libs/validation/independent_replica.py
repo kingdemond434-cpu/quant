@@ -329,7 +329,9 @@ def rollovers(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
     n = 0.0
     cur = first
     while cur <= b:
-        n += 3.0 if (cur - off).weekday() == TRIPLE_WEEKDAY else 1.0
+        wd = (cur - off).weekday()
+        # Monday-Friday server days end in a rollover; the weekend is inside the triple.
+        n += 0.0 if wd >= 5 else 3.0 if wd == TRIPLE_WEEKDAY else 1.0
         cur += pd.Timedelta(days=1)
     return n
 

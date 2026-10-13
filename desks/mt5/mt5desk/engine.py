@@ -488,11 +488,25 @@ class BacktestResult:
 #: that window skipped the night it did hold. A rollover instant is the END of server day d,
 #: `d + ROLLOVER_HOUR_SERVER`; the triple weekday names that day d (Wednesday night).
 ROLLOVER_HOUR_SERVER = 24
-#: Kept for importers; it was never a UTC hour, which is the defect above.
-ROLLOVER_HOUR_UTC = ROLLOVER_HOUR_SERVER
 #: Weekday whose rollover carries three days' financing, because its value date spans the
 #: weekend. Monday=0, so 2 is Wednesday -- the standard FX convention on every retail venue.
 TRIPLE_SWAP_WEEKDAY = 2
+#: The server days that END in a rollover: Monday to Friday. The venue is shut from Friday's
+#: close to Sunday's open, so Saturday and Sunday server days carry no stamp -- the weekend is
+#: paid once, inside Wednesday's triple. Charging all seven days billed 9 nights a week, not 7.
+ROLLOVER_WEEKDAYS = frozenset(range(5))
+
+
+def night_weight(weekday: int) -> int:
+    """Nights charged at the rollover ending a server day of this weekday: 3 on the triple day,
+    1 on another weekday, 0 at the weekend."""
+    if weekday not in ROLLOVER_WEEKDAYS:
+        return 0
+    return 3 if weekday == TRIPLE_SWAP_WEEKDAY else 1
+
+
+#: Nights charged by seven consecutive server days, whichever day the run starts on.
+_WEEK_NIGHTS = sum(night_weight(d) for d in range(7))
 
 
 def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
@@ -531,9 +545,9 @@ def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
     # gauntlet's build path it cost more than the bar loop it sits under; the count below is the
     # same integer (so the same float), with no loop.
     k = int((b - cur) // pd.Timedelta(days=1)) + 1
-    first_triple = (TRIPLE_SWAP_WEEKDAY - (cur - off).weekday()) % 7   # the server day it ends
-    triples = 0 if first_triple >= k else 1 + (k - 1 - first_triple) // 7
-    return float(k + 2 * triples)
+    wd0 = (cur - off).weekday()                                       # the server day it ends
+    full, rest = divmod(k, 7)
+    return float(full * _WEEK_NIGHTS + sum(night_weight((wd0 + i) % 7) for i in range(rest)))
 
 
 def rollover_price_nights(idx_ns: np.ndarray, px: np.ndarray, first_bar: int, last_bar: int,
@@ -564,7 +578,7 @@ def rollover_price_nights(idx_ns: np.ndarray, px: np.ndarray, first_bar: int, la
     k = int((b - cur) // pd.Timedelta(days=1)) + 1
     inst = cur.value + np.arange(k, dtype="int64") * (86_400 * 10**9)
     weekday = ((cur - off).weekday() + np.arange(k)) % 7
-    w = np.where(weekday == TRIPLE_SWAP_WEEKDAY, 3.0, 1.0)
+    w = np.array([float(night_weight(d)) for d in range(7)])[weekday]
     pos = np.searchsorted(idx_ns, inst, side="left") - 1
     pos = np.clip(pos, first_bar, last_bar)
     return float(np.sum(w * px[pos].astype(float)))

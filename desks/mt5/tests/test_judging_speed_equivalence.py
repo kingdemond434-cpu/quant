@@ -421,13 +421,15 @@ def _old_rollovers_between(t0, t1) -> float:
         return 0.0
     nights = 0.0
     # walked at server midnight (the bars' broker clock, 2026-10-13), the night of day d triple
-    # when d is a Wednesday -- the same instants the counted engine charges
+    # when d is a Wednesday and NONE when d is a Saturday or Sunday -- the same instants the
+    # counted engine charges
     off = pd.Timedelta(hours=24)
     cur = a.normalize() + off
     if cur <= a:
         cur = cur + pd.Timedelta(days=1)
     while cur <= b:
-        nights += 3.0 if (cur - off).weekday() == 2 else 1.0
+        wd = (cur - off).weekday()
+        nights += 0.0 if wd >= 5 else 3.0 if wd == 2 else 1.0
         cur = cur + pd.Timedelta(days=1)
     return nights
 
