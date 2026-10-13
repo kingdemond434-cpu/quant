@@ -130,6 +130,17 @@ def test_a_codex_code_commit_is_not_a_box_write(tmp_path: Path) -> None:
         "desks/mt5/reports/shadow/shadow_health.json": "Codex"}
 
 
+@needs_git
+def test_a_body_line_quoting_the_subject_is_not_a_box_commit(tmp_path: Path) -> None:
+    """git --grep anchors ^ on every line: a code commit whose BODY starts with the publisher's
+    subject must not lend the fence its commit date."""
+    now = datetime.now(UTC)
+    doc = fence.measure(_repo(tmp_path, None, now, author="Codex",
+                              subject=f"Fix the publisher\n\n{BOX_MSG}"), ref="HEAD")
+    assert doc["verdict"] == "UNMEASURED", doc
+    assert "newest_box_commit" not in doc
+
+
 @pytest.mark.parametrize(("author", "subject", "box"), [
     ("Codex", BOX_MSG, True),
     ("Contabo MT5 Desk", "anything", True),

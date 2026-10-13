@@ -109,15 +109,22 @@ def _newest_box_commit(root: Path, use: str, paths: list[str],
     """(commit time, short sha, author) of the newest box write touching `paths` at `use`."""
     best: tuple[int, str, str] | None = None
     for sel in (["-E", f"--grep={BOX_SUBJECT_GREP}"], ["-F", f"--author={box_author}"]):
-        rc, out = _git(root, "log", "-1", *sel, "--format=%ct%x09%h%x09%an", use, "--", *paths)
-        if rc != 0 or not out.strip():
+        # git's ^ anchors on EVERY message line, so a code commit whose body quotes the subject
+        # also matches the grep; the subject itself is re-checked here before it counts.
+        rc, out = _git(root, "log", "-n", "50", *sel, "--format=%ct%x09%h%x09%an%x09%s", use,
+                       "--", *paths)
+        if rc != 0:
             continue
-        ct, sha, who = [*out.strip().split("\t"), "", ""][:3]
-        try:
-            row = (int(ct), sha, who)
-        except ValueError:
-            continue
-        best = row if best is None or row[0] > best[0] else best
+        for line in out.splitlines():
+            ct, sha, who, subject = [*line.split("\t", 3), "", "", ""][:4]
+            if not is_box_commit(who, subject, box_author):
+                continue
+            try:
+                row = (int(ct), sha, who)
+            except ValueError:
+                continue
+            best = row if best is None or row[0] > best[0] else best
+            break
     return best
 
 
