@@ -233,6 +233,7 @@ def _markout() -> None:
         "n_deals": m.n_deals, "attributed_deals": m.attributed_deals,
         "attributed_share": m.attributed_share,
         "mean_slip_quote": m.mean_slip_quote, "mean_slip_r": m.mean_slip_r,
+        "median_slip_r": m.median_slip_r,
         "edge_share": m.edge_share, "why": m.why,
     }, indent=2), encoding="utf-8")
     # THE CHAIN, MATERIALISED (2026-09-08). One row per deal the desk can walk back to its

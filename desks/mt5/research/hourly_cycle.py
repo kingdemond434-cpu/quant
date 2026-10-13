@@ -1345,6 +1345,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "excursions", "exit_accounts",
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
+                     "execution_feedback",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
@@ -4736,6 +4737,11 @@ def main() -> None:
     exa = _costed("execution_alpha", lambda: _producer("execution_alpha",
                                                         "research/execution_alpha_miner.py",
                                                         "--budget-s", "240"))
+    # EXECUTION FEEDBACK (principal 2026-10-13): per-sleeve cost in R on the initial risk (slip,
+    # half spread, commission, swap), fill rate and latency, and the tape discoveries above priced
+    # per sleeve in R and E[log W]. Proposes; never places, sizes or vetoes. Execution.
+    exf = _costed("execution_feedback", lambda: _producer("execution_feedback",
+                                                           "research/execution_feedback.py"))
     # THE PARADIGM ROUTER (M14): every lead meets every discovery paradigm; disagreement recorded.
     prr = _costed("paradigm_router", lambda: _producer("paradigm_router",
                                                         "research/paradigm_router.py",
@@ -6155,6 +6161,7 @@ def main() -> None:
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
                     "actor_atlas": aat, "understanding_seat": usd,
                     "netting_report": ntr, "execution_alpha": exa,
+                    "execution_feedback": exf,
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
