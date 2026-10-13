@@ -106,10 +106,28 @@ def stats(rs: list[float]) -> dict[str, Any]:
 
 def ratio_of(surface: dict[str, Any] | None, meta: dict[str, Any], sym: str,
              hour: int | None) -> tuple[float | None, float | None, float | None]:
-    """(fill-hour spread, pooled spread, ratio) in points; None where either side is unknown."""
-    from research.cost_surface import spread_pts
-    fill = spread_pts(surface or {}, sym, hour) if surface else None
-    pooled = float((meta.get(sym) or {}).get("median_spread_pts") or 0) or None
+    """(fill-hour spread, pooled spread, ratio) in points; None where either side is unknown.
+
+    ONE COST SOURCE (judge thread, #389): when `research.entry_hour_cost` is present the hour
+    charge is its `hour_spread_pts` (recency-preferred, thin hours shrunk) and the pooled side is
+    the surface's own `pooled_median_spread_pts` (the median of its measured hourly p50s), never
+    the registry scalar, which #389 measured as >2x off on 45 symbols. Before #389 lands this
+    reads the surface cell and the registry, as it always did."""
+    if hour is None:
+        return None, None, None
+    pooled = None
+    try:
+        from research.entry_hour_cost import hour_spread_pts
+    except ImportError:
+        from research.cost_surface import spread_pts
+        fill = spread_pts(surface or {}, sym, hour) if surface else None
+    else:
+        fill = hour_spread_pts(surface, sym, int(hour))[0] if surface else None
+        own = (((surface or {}).get("symbols") or {}).get(sym) or {}).get(
+            "pooled_median_spread_pts")
+        pooled = float(own) if isinstance(own, (int, float)) and own > 0 else None
+    if pooled is None:
+        pooled = float((meta.get(sym) or {}).get("median_spread_pts") or 0) or None
     r = (fill / pooled) if fill and pooled else None
     return fill, pooled, (round(r, 3) if r is not None else None)
 
