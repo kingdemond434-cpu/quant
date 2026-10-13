@@ -1350,7 +1350,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
-    **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
+    **dict.fromkeys(("enrol_clocks", "near_miss_farm", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "portfolio_bounty",
@@ -2018,6 +2018,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER_YIELD read the seat DEAD for 3 days on 2026-10-13. Three full waves fit here.
     "kimi_hunt": 1_020,
     "enrol_clocks": 2_700,
+    # The near-miss farm checkpoints every 60 s and runs stalest symbols first, so a cut pass
+    # resumes where it stopped rather than replaying the same prefix.
+    "near_miss_farm": 1_800,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
@@ -5401,6 +5404,12 @@ def main() -> None:
     # enrolment logic was never the defect -- only its cadence.
     ecl = _costed("enrol_clocks", lambda: _producer(
         "shadow_forward", "research/shadow_forward.py"))
+    # THE NEAR-MISS FARM (principal 2026-10-13): every validity-pass, power-deficient cell on the
+    # cure roster paper-forwarded through the SAME engine into its OWN ledger
+    # (reports/shadow/farm/), promotion_authority False, outside every clock store the promoter
+    # and allocator read. Untouched forward evidence accrues while the judge works.
+    nmf = _costed("near_miss_farm", lambda: _producer(
+        "near_miss_farm", "research/near_miss_farm.py"))
     # THE GROWTH-MAXIMISING SIZER, WHICH HAS NEVER RUN. `pf_allocator` solves posterior E[log W]
     # for PER-SLEEVE heat -- the fraction of equity each sleeve should risk to maximise compound
     # growth, which is the only principled answer to "how big should this trade be". Everything
@@ -6279,7 +6288,7 @@ def main() -> None:
                     "box_state_freshness": bsf, "desk_health": dhl,
                     "bars_state": bst,
                     "publish_state": pub,
-                    "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
+                    "enrol_clocks": ecl, "near_miss_farm": nmf, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,
