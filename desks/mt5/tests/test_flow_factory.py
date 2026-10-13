@@ -127,7 +127,7 @@ def test_on_bars_is_left_labelled_and_never_reads_a_later_bucket() -> None:
 ])
 def test_families_fire_on_the_series_and_have_no_lookahead(fam: Any, kw: dict) -> None:
     bars, s = _bars_and_series()
-    sig = fam(bars, series=s, **kw)
+    sig = fam(bars, source="", series=s, **kw)
     assert sig, "the injected bursts must fire the family"
     cut = bars.index[300]
     s2 = s.copy()
@@ -135,15 +135,16 @@ def test_families_fire_on_the_series_and_have_no_lookahead(fam: Any, kw: dict) -
     bars2 = bars.copy()
     bars2.loc[bars2.index >= cut, ["open", "high", "low", "close"]] *= 3
     early = [(x.time, x.side) for x in sig if x.time < cut]
-    early2 = [(x.time, x.side) for x in fam(bars2, series=s2, **kw) if x.time < cut]
+    early2 = [(x.time, x.side) for x in fam(bars2, source="", series=s2, **kw) if x.time < cut]
     assert early == early2
 
 
 def test_families_refuse_rather_than_fall_back_to_price(tmp_path: Path) -> None:
     bars, s = _bars_and_series()
     assert tfam.family_tick_flow(bars, source="tf_NOPE") == []
-    assert tfam.family_tick_flow(bars, series=s, feature="spread_bp", mode="follow") == []
-    assert tfam.family_flow_residual(bars, series=s, feature="quote_rate") == []
+    assert tfam.family_tick_flow(bars, source="", series=s, feature="spread_bp",
+                                 mode="follow") == []
+    assert tfam.family_flow_residual(bars, source="", series=s, feature="quote_rate") == []
     assert tfam.series_path("../etc/passwd") is None
     assert tfam.series_path("tf_A/B") is None
 

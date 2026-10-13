@@ -33,6 +33,10 @@ on every symbol probed) and no trade side, so `quote_ofi` is OFI at UNIT depth -
 sign(dAsk) per revision -- and `tick_rule` is the tick test applied to the MID. Both are named
 proxies for aggressor flow, never sold as it.
 
+`source` IS REQUIRED: it names the series on the recipe (the factory names it and the judge
+charges its own grid), so a sweep with no source classifies both families as needing source
+evidence instead of calling them blind.
+
 NOTHING HERE PROMOTES. Both refuse -- return [] -- without the series, the column, or enough
 buckets; they never fall back to price.
 """
@@ -136,7 +140,7 @@ def _signal(d: pd.DataFrame, i: int, side: int, atr: np.ndarray, stop_atr: float
 def family_tick_flow(
     df: pd.DataFrame,
     *,
-    source: str = "",
+    source: str,
     feature: str = "tick_rule",
     mode: str = "follow",
     lookback: int = 48,
@@ -182,7 +186,7 @@ def family_tick_flow(
 def family_flow_residual(
     df: pd.DataFrame,
     *,
-    source: str = "",
+    source: str,
     feature: str = "tick_rule",
     mode: str = "unabsorbed",
     lookback: int = 96,
