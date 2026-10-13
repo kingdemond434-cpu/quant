@@ -1,0 +1,7 @@
+20260929003000-1	20260929003000	1	example.com	https://example.com/1			ECON_OILPRICE;ENV_OIL;TAX_FNCACT;								-4.0,2.0,3.0,5.0,20.0,0.0,300											
+20260929003000-2	20260929003000	1	example.com	https://example.com/2			MARITIME_INCIDENT;BLOCKADE;								-6.0,2.0,3.0,5.0,20.0,0.0,300											
+20260929003000-3	20260929003000	1	example.com	https://example.com/3			ENV_MINING;WB_1699_METAL_ORE_MINING;								-1.0,2.0,3.0,5.0,20.0,0.0,300											
+20260929003000-4	20260929003000	1	example.com	https://example.com/4			ARMEDCONFLICT;MILITARY;								-8.0,2.0,3.0,5.0,20.0,0.0,300											
+20260929003000-5	20260929003000	1	example.com	https://example.com/5			FOOD_SECURITY;NATURAL_DISASTER_DROUGHT;								-3.0,2.0,3.0,5.0,20.0,0.0,300											
+20260929003000-6	20260929003000	1	example.com	https://example.com/6			SPORTS;								2.0,2.0,3.0,5.0,20.0,0.0,300											
+20260929003000-7	20260929003000	1	example.com	https://example.com/7			WB_2433_CONFLICT_AND_VIOLENCE;KILL;								-7.0,2.0,3.0,5.0,20.0,0.0,300											

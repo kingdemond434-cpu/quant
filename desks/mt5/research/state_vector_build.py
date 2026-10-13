@@ -604,11 +604,39 @@ def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVec
     conditioning, why = world_conditioning(book)
     if why:
         gaps["conditioning"] = why
+    positioning = positioning_block(now, gaps)
+    fresh.update(state_freshness({
+        f"positioning:{slug}": ("cot", float(row["age_days"]) * 86400.0)
+        for slug, row in (positioning.get("contracts") or {}).items()}))
 
     cache.flush()
     return StateVector(at=now.isoformat(), global_state=global_state, assets=assets,
                        factors=factors, session=session, event=event, liquidity=liquidity,
-                       gaps=gaps, freshness=fresh, conditioning=conditioning)
+                       gaps=gaps, freshness=fresh, conditioning=conditioning,
+                       positioning=positioning)
+
+
+def positioning_block(now: datetime, gaps: dict[str, str]) -> dict:
+    """CFTC COT positioning as a CROSS-ASSET STATE on the vector (2026-10-13).
+
+    The contract files are refreshed by the hourly leg `cot_refresh` (`mt5desk/fetch_cot.py
+    --if-due`); this reads them point in time through `fetch_cot.positioning_state`. A missing
+    module or file is a named gap, never an empty block that reads as "no positioning"."""
+    try:
+        from mt5desk.fetch_cot import positioning_state
+    except Exception as exc:
+        gaps["positioning"] = f"UNMEASURED: mt5desk.fetch_cot unavailable ({type(exc).__name__})"
+        return {}
+    try:
+        pos = positioning_state(now)
+    except Exception as exc:
+        gaps["positioning"] = f"UNMEASURED: positioning_state raised {type(exc).__name__}: {exc}"
+        return {}
+    for slug, why in (pos.get("gaps") or {}).items():
+        gaps[f"positioning:{slug}"] = why
+    if pos.get("status") != "MEASURED":
+        gaps["positioning"] = "UNMEASURED: no COT contract file yielded a public report"
+    return pos
 
 
 def load(max_age_s: float = 7200.0) -> tuple[StateVector | None, str]:
@@ -645,6 +673,9 @@ def main() -> int:
     for key, st in sorted(sv.assets.items()):
         print(f"  ASSET    {key:18s} {st.top:14s} age={st.age_bars} "
               f"conf={st.engine_confidence:.2f}")
+    for slug, row in sorted((sv.positioning.get("contracts") or {}).items()):
+        print(f"  COT      {slug:9s} net/OI={row['spec_net_pct_oi']:+.3f} "
+              f"rank3y={row['rank_3y']:.2f} {row['crowding']} (report {row['report_date']})")
     print(f"  SESSION  {sv.session.get('phase')}   EVENT {sv.event.get('phase')}   "
           f"LIQUIDITY {sv.liquidity.get('state')}")
     stale = sorted(k for k, v in sv.freshness.items() if v["stale"])

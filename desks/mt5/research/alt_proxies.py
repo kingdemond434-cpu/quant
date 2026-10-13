@@ -751,6 +751,151 @@ def gdelt_complete_days(acc: dict[str, Any]) -> tuple[list[Obs], list[str]]:
     return out, dropped
 
 
+# ---------------------------------------------------------------------------- GDELT GKG 2.1
+# THE EVENTS PANEL ABOVE COUNTS WHAT HAPPENED IN A COUNTRY; IT CANNOT SAY WHAT KIND OF SUPPLY IT
+# TOUCHED. The Global Knowledge Graph tags every article with themes (`ECON_OILPRICE`,
+# `MARITIME_INCIDENT`, `ENV_MINING`, `FOOD_SECURITY` ...) and a document tone, so the same
+# 15-minute slots fold into a GLOBAL day x supply-bucket panel: how much of the world's coverage
+# was about an energy, logistics, metals, food or conflict disruption, and how dark it read.
+# Mapped to the MT5 instruments whose supply it describes (energy, metals, grains, the
+# commodity FX and the havens). Same terms, same host, same slot cursor as the events panel.
+GDELT_GKG_URL = "http://data.gdeltproject.org/gdeltv2/{slot}.gkg.csv.zip"
+#: Supply buckets -> GKG theme prefixes. A theme counts for a bucket when it STARTS WITH one of
+#: these (GKG themes are upper-case tokens; `WB_`/`TAX_` taxonomies carry the topic after an id,
+#: so those are matched by the `*`-marked infixes instead, each anchored on its underscore so
+#: `_PORTS` never matches `SPORTS`). One article counts once per bucket.
+GKG_BUCKETS: dict[str, tuple[str, ...]] = {
+    "energy": ("ECON_OILPRICE", "ENV_OIL", "ENV_NATURALGAS", "ENV_COAL", "FUELPRICES",
+               "*_OIL_AND_GAS", "*_PIPELINE", "*_REFINER"),
+    "logistics": ("MARITIME_", "BLOCKADE", "*_SUPPLY_CHAIN", "*_SHIPPING", "*_PORTS",
+                  "*_FREIGHT", "*_TRANSPORT_INFRASTRUCTURE"),
+    "metals": ("ENV_MINING", "ENV_METALS", "*_MINING", "*_METALS", "*_COPPER"),
+    "food": ("FOOD_SECURITY", "*_DROUGHT", "*_CROP", "*_FAMINE", "*_AGRICULTURE",
+             "*_FOOD_SUPPLY"),
+    "conflict": ("ARMEDCONFLICT", "MILITARY", "SANCTION", "TERROR", "WMD", "KILL",
+                 "*_CONFLICT_AND_VIOLENCE"),
+    "strike": ("STRIKE", "*_LABOR_STRIKE", "PROTEST"),
+}
+#: A GKG day is emitted only on this many tagged documents (world coverage runs to six figures a
+#: day; a few hundred means the day was mostly gaps).
+GKG_MIN_DOCS = 500
+#: Slots per pass. Each is ~4.5 MB zipped; 6 forward keeps ahead of the 4 an hour publishes.
+GKG_FWD_PER_PASS = 6
+GKG_BACK_PER_PASS = 2
+GKG_BACK_DEPTH_D = 365
+#: Prior instrument legs per bucket: more disruption coverage = the supplied commodity up, its
+#: consumers' FX and equity down, the havens up. Tone takes the OPPOSITE leg (darker coverage =
+#: more disruption). A passing gain test's measured IC sign replaces the prior wherever used.
+GKG_LEGS: dict[str, dict[str, int]] = {
+    "energy": {"XBRUSD": 1, "XTIUSD": 1, "XNGUSD": 1, "USDCAD": -1, "USDNOK": -1},
+    "logistics": {"XBRUSD": 1, "XCUUSD": 1, "US500": -1, "GER40": -1},
+    "metals": {"XCUUSD": 1, "XALUSD": 1, "XNIUSD": 1, "XZNUSD": 1, "XAGUSD": 1},
+    "food": {"WHEAT": 1, "CORN": 1, "SOYBEAN": 1, "SUGAR": 1, "COFARA": 1},
+    "conflict": {"XAUUSD": 1, "USDJPY": -1, "USDCHF": -1, "US500": -1, "XBRUSD": 1},
+    "strike": {"XCUUSD": 1, "XBRUSD": 1, "EURUSD": -1},
+}
+
+
+def _gkg_series_map() -> dict[str, dict[str, int]]:
+    out: dict[str, dict[str, int]] = {}
+    for b, m in GKG_LEGS.items():
+        out[f"{b}_tone"] = {k: -v for k, v in m.items()}     # first match wins: tone before b_
+        out[f"{b}_"] = m
+    return out
+
+
+def _gkg_bucket_of(theme: str) -> list[str]:
+    out = []
+    for b, toks in GKG_BUCKETS.items():
+        for t in toks:
+            if (t[1:] in theme) if t.startswith("*") else theme.startswith(t):
+                out.append(b)
+                break
+    return out
+
+
+def parse_gdelt_gkg(body: bytes, ctx: Ctx) -> list[Obs]:
+    """ONE GKG 2.1 file (15 minutes) -> GLOBAL per-day PARTIAL SUMS: documents, documents per
+    supply bucket and the tone sum over each bucket's documents. Columns (0-based): 1 DATE
+    (YYYYMMDDHHMMSS, when GDELT processed the article), 7 V1Themes (`;`-separated), 15 V2Tone
+    (`tone,pos,neg,...`; the first field is the document tone). Series are `GLOBAL|<sum>`."""
+    import zipfile
+    raw = body
+    if body[:2] == b"PK":
+        try:
+            with zipfile.ZipFile(io.BytesIO(body)) as zf:
+                names = zf.namelist()
+                if not names:
+                    return []
+                raw = zf.read(names[0])
+        except (zipfile.BadZipFile, OSError):
+            return []
+    sums: dict[tuple[str, date], float] = {}
+    for line in raw.decode("utf-8", errors="replace").splitlines():
+        c = line.split("\t")
+        if len(c) < 16 or len(c[1]) < 8 or not c[1][:8].isdigit():
+            continue
+        try:
+            d = date(int(c[1][:4]), int(c[1][4:6]), int(c[1][6:8]))
+        except ValueError:
+            continue
+        tone = _num(c[15].split(",", 1)[0])
+        if tone is None:
+            continue
+
+        def add(k: str, v: float, d: date = d) -> None:
+            sums[(f"GLOBAL|{k}", d)] = sums.get((f"GLOBAL|{k}", d), 0.0) + v
+
+        add("docs", 1.0)
+        hit: set[str] = set()
+        for theme in c[7].split(";"):
+            if theme:
+                hit.update(_gkg_bucket_of(theme.strip().upper()))
+        for b in hit:
+            add(f"{b}_docs", 1.0)
+            add(f"{b}_tone_sum", tone)
+    return [Obs(k, d, v) for (k, d), v in sums.items()]
+
+
+def gkg_complete_days(acc: dict[str, Any]) -> tuple[list[Obs], list[str]]:
+    """The GKG twin of `gdelt_complete_days`: a day whose 96 slots are read becomes, per bucket,
+    `<b>_docs`, `<b>_share` (of the day's documents) and `<b>_tone` (mean document tone)."""
+    out: list[Obs] = []
+    dropped: list[str] = []
+    for day in sorted(acc):
+        e = acc[day]
+        if len(e["slots"]) + len(e["missing"]) < 96:
+            continue
+        del acc[day]
+        if len(e["missing"]) > GDELT_MAX_MISSING_SLOTS:
+            dropped.append(day)
+            continue
+        s = {k.partition("|")[2]: v for k, v in e["sums"].items()}
+        total = s.get("docs", 0.0)
+        if total < GKG_MIN_DOCS:
+            continue
+        d = date.fromisoformat(day)
+        for b in GKG_BUCKETS:
+            n = s.get(f"{b}_docs", 0.0)
+            out.append(Obs(f"{b}_docs", d, n))
+            out.append(Obs(f"{b}_share", d, round(n / total, 8)))
+            if n > 0:
+                out.append(Obs(f"{b}_tone", d, round(s.get(f"{b}_tone_sum", 0.0) / n, 6)))
+    return out, dropped
+
+
+#: The 15-minute GDELT panels this organ folds, by source id: (slot parser, day completer,
+#: forward slots per pass, backward slots per pass, backfill depth in days).
+GDELT_PANELS: dict[str, tuple[Callable[[bytes, Ctx], list[Obs]],
+                              Callable[[dict[str, Any]], tuple[list[Obs], list[str]]],
+                              int, int, int]] = {
+    "gdelt_events_country": (parse_gdelt_events, gdelt_complete_days, GDELT_FWD_PER_PASS,
+                             GDELT_BACK_PER_PASS, GDELT_BACK_DEPTH_D),
+    "gdelt_gkg_supply": (parse_gdelt_gkg, gkg_complete_days, GKG_FWD_PER_PASS,
+                         GKG_BACK_PER_PASS, GKG_BACK_DEPTH_D),
+}
+
+
 #: Asian-language articles read for local attention: (label, project, exact title). The English
 #: macro list stays with `scripts/ingest_axes.py` (VPS bronze); these are different articles for a
 #: consumer on the trading box, so nothing is fetched twice.
@@ -1949,6 +2094,30 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id="gdelt_gkg_supply",
+        name="GDELT GKG 2.1: global day x supply-bucket theme share and tone",
+        url=GDELT_GKG_URL, region="GLOBAL", language="multi", cadence="daily",
+        parse=parse_gdelt_gkg, rule=_lag_rule(1, 1), transform="level_dev",
+        instruments={"XAUUSD": 1}, series_instruments=_gkg_series_map(),
+        signal_series=tuple(f"{b}_{s}" for b in GKG_BUCKETS for s in ("share", "tone")),
+        mechanism=("every article the world's press publishes is theme-tagged within 15 "
+                   "minutes; the share of coverage about an oil, shipping, mining, crop or "
+                   "conflict disruption is a supply-shock state that reaches the commodity and "
+                   "commodity-FX tape through physical buyers before analysts restate it"),
+        payer=("commodity and commodity-FX holders who reprice on the one headline they read "
+               "rather than on the world's aggregate disruption coverage"),
+        constraint=("no desk reads the GKG's millions of tagged documents by hand; the "
+                    "aggregate state is not in the price by inspection"),
+        licence="GDELT Project open data (unrestricted use with citation); no key",
+        source_culture="GLOBAL/multi",
+        participant_structure=("institutional", "physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails when one story (a war, an election) saturates every "
+                                 "bucket at once, and when GDELT's source list or theme "
+                                 "taxonomy changes under the series"),
+        crowding_prior="medium",
+        note=("same host, terms and 15-minute slot cursor as gdelt_events_country; "
+              f"{GKG_FWD_PER_PASS}+{GKG_BACK_PER_PASS} slots/pass")),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2600,6 +2769,8 @@ TERMS: dict[str, tuple[str, str]] = {
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
+    "gdelt_gkg_supply": ("confirmed", "GDELT: unrestricted use with citation (same terms page "
+                         "and raw-file host as gdelt_events_country; re-read 2026-10-13)"),
     "wiki_asia_attention": ("confirmed", "Wikimedia pageviews API, CC0"),
     "us_oi_card_spend": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
     "kr_bok_card_spend": ("confirmed", "BOK ECOS documented Open API"),
@@ -2934,6 +3105,20 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                         "of any kind without fee."),
         "robots": "data.gdeltproject.org is the documented raw-file host",
         "credit": "The GDELT Project, https://www.gdeltproject.org/",
+        "checked_at": _CHK},
+    # The GKG is the same project's dataset on the same host under the same about page; the
+    # quote was reviewed with the events panel on 2026-09-30 and RE-READ verbatim on 2026-10-13
+    # (with the citation clause the credit line below satisfies).
+    "gdelt_gkg_supply": {
+        "terms_url": "https://gdeltproject.org/about.html",
+        "terms_quote": ("all datasets released by the GDELT Project are available for unlimited "
+                        "and unrestricted use for any academic, commercial, or governmental use "
+                        "of any kind without fee."),
+        "citation_quote": ("any use or redistribution of the data must include a citation to the "
+                           "GDELT Project ... a link to this website"),
+        "robots": "data.gdeltproject.org is the documented raw-file host",
+        "credit": "The GDELT Project, https://www.gdeltproject.org/",
+        "reread_at": "2026-10-13",
         "checked_at": _CHK},
     "wiki_asia_attention": {
         "terms_url": "https://dumps.wikimedia.org/other/pageviews/readme.html",
@@ -3298,7 +3483,7 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                 "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
             reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
         return reqs
-    if src.id == "gdelt_events_country":
+    if src.id in GDELT_PANELS:
         return _gdelt_requests(src, now, state)
     if src.id in DATED_SOURCES:
         recent, lag, back = DATED_SOURCES[src.id]
@@ -3353,15 +3538,16 @@ def _dated_requests(src: Source, key: str, now: datetime, state: dict[str, Any],
 def _gdelt_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
     """Forward from `fwd` (next unread slot) to 30 minutes ago, then back from `back`, a fixed
     number of slots each way per pass. Cursors move in `collect_gdelt`, only over slots read."""
+    _p, _c, n_fwd, n_back, depth_d = GDELT_PANELS[src.id]
     last = now - timedelta(minutes=30)
     day0 = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     fwd = _t(state.get("fwd")) or day0
-    fwd_slots = gdelt_slots(fwd, last)[:GDELT_FWD_PER_PASS]
+    fwd_slots = gdelt_slots(fwd, last)[:n_fwd]
     back_to = _t(state.get("back")) or (day0 - timedelta(minutes=15))
-    floor = now - timedelta(days=GDELT_BACK_DEPTH_D)
+    floor = now - timedelta(days=depth_d)
     back_slots: list[str] = []
     t = back_to
-    while len(back_slots) < GDELT_BACK_PER_PASS and t > floor:
+    while len(back_slots) < n_back and t > floor:
         back_slots.append(t.strftime("%Y%m%d%H%M%S"))
         t -= timedelta(minutes=15)
     return ([Request(src.url.replace("{slot}", s), Ctx(part=f"fwd:{s}", fetched_at=now))
@@ -4064,7 +4250,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
-    if src.id == "gdelt_events_country":
+    if src.id in GDELT_PANELS:
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
         _atomic(store_p, store)
@@ -4123,12 +4309,13 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
     A 404 is a slot GDELT does not have (read, empty); any other error stops that direction for
     this pass so its cursor never skips an unread slot. With fixtures, the fixture files are the
     slots (`gdelt_events_country[.N].csv`) and no cursor moves."""
+    parse, complete = GDELT_PANELS[src.id][:2]
     acc: dict[str, Any] = sst.setdefault("acc", {})
     errors: list[str] = []
     fetched = parsed = 0
     if fixtures is not None:
         for fp in sorted(fixtures.glob(f"{src.id}*.csv")):
-            obs = parse_gdelt_events(fp.read_bytes(), Ctx(fetched_at=now))
+            obs = parse(fp.read_bytes(), Ctx(fetched_at=now))
             parsed += len(obs)
             for day in sorted({o.period for o in obs}):
                 for k in range(96):                      # a fixture file stands for its day
@@ -4150,7 +4337,7 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
             body, ctype = getter(req.url)
             fetched += 1
             vault(paths, src, body, req.url, ctype, now)
-            obs2: list[Obs] | None = parse_gdelt_events(body, req.ctx)
+            obs2: list[Obs] | None = parse(body, req.ctx)
             parsed += len(obs2 or [])
         except Exception as exc:
             try:
@@ -4167,7 +4354,7 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
             sst["fwd"] = (_slot_time(slot) + timedelta(minutes=15)).isoformat()
         else:
             sst["back"] = (_slot_time(slot) - timedelta(minutes=15)).isoformat()
-    done, dropped = gdelt_complete_days(acc)
+    done, dropped = complete(acc)
     m = merge_vintages(store, src, done, now)
     return {"requests": len(reqs), "fetched": fetched, "parsed": parsed, "merge": m,
             "days_published": sorted({o.period.isoformat() for o in done}),
@@ -4488,9 +4675,10 @@ def _cursor(s: Source) -> str:
         return "firms_backfill_to (10 days/cluster/pass, archive product)"
     if s.id.startswith("imf_portwatch"):
         return "resultOffset paging; 800-day window"
-    if s.id == "gdelt_events_country":
-        return (f"fwd/back 15-minute slot cursors ({GDELT_FWD_PER_PASS}+{GDELT_BACK_PER_PASS} "
-                f"slots/pass, {GDELT_BACK_DEPTH_D}d deep); open days held in state.acc")
+    if s.id in GDELT_PANELS:
+        _p, _c, n_fwd, n_back, depth_d = GDELT_PANELS[s.id]
+        return (f"fwd/back 15-minute slot cursors ({n_fwd}+{n_back} "
+                f"slots/pass, {depth_d}d deep); open days held in state.acc")
     if s.id in DATED_SOURCES:
         r, lag, b = DATED_SOURCES[s.id]
         return (f"last {r} days (lag {lag}d) re-read each pass + backfill_to walking back "

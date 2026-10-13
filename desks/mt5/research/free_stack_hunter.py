@@ -482,7 +482,7 @@ def run_source(row: dict[str, Any], store: Store, fetch: fs.Fetch, cstate: dict[
         return h, {}
     cur = dict(cstate.get("cursor") or {})
     try:
-        if kind == "coinpaprika":
+        if kind in ("coinpaprika", "onchain_explorer"):
             h = fn(fetch, row, cur, now, crypto_cfds=crypto_cfds(store))
         elif kind == "jp_patents":
             h = fn(fetch, row, cur, now, inbox=store.inbox / "jp_patents")
@@ -566,7 +566,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
             break
         acc = access(row)
         st["access"] = acc
-        if not acc["mined"]:
+        # An access record makes no request, so the classifier has nothing to refuse: its own
+        # recorded state (NEEDS_KEY / METHOD_BLOCKED / IDEAS_ONLY / HELD) is the verdict shown.
+        if not acc["mined"] and row.get("kind") != "access_record":
             st.update({"last_status": "REFUSED_HARD_BOUNDARY", "last_error": acc["reason"],
                        "last_attempt": _iso(now)})
             continue

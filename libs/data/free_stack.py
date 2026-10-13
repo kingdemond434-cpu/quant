@@ -1220,6 +1220,237 @@ def fetch_coinpaprika(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str,
     return h
 
 
+# ============================================================ 5c'. on-chain explorer (BTC)
+#: mempool.space's public REST API (keyless, rate-limited: "Note that we enforce rate limits. If
+#: you exceed these limits, you will get an HTTP 429 error."). A BLOCKCHAIN EXPLORER, not a
+#: trading venue: nothing here reads an order book, a funding rate or an exchange universe. The
+#: columns condition the broker's own crypto CFDs (BTCUSD, and ETHUSD as a cross-crypto state)
+#: and nothing else; orders go to MT5 only.
+MEMPOOL_API = "https://mempool.space/api"
+#: Targets, each kept only when the broker registry lists it as a Crypto CFD.
+ONCHAIN_TARGETS: tuple[str, ...] = ("BTCUSD", "ETHUSD")
+#: Blocks summarised per pass. ~6 arrive an hour, so this keeps ahead of the chain with room to
+#: catch up; anything beyond it is owed to the next pass from the height cursor, never skipped.
+ONCHAIN_BLOCKS_PER_PASS = 10
+#: A backlog deeper than this (a box that was off for a day) restarts the cursor near the tip:
+#: the gap is NAMED in the cursor (`skipped_heights`), never filled with a guess.
+ONCHAIN_MAX_BACKLOG = 144
+#: An hour is closed (and emitted) only once a processed block is stamped this long after its
+#: end -- miners' timestamps may run up to two hours fast, so an earlier close would emit an hour
+#: whose later blocks had not been read.
+ONCHAIN_CLOSE_LAG_S = 2 * 3600
+SATS = 1e8
+LARGE_TX_SATS: tuple[tuple[str, float], ...] = (("100", 100 * SATS), ("1000", 1000 * SATS))
+#: What a keyless explorer CANNOT give, said once so a reader never mistakes absence for zero:
+#: exchange in/out flow needs a labelled exchange-address set, which no permitted keyless source
+#: on file publishes. The column is not emitted; it is UNMEASURED by name.
+ONCHAIN_EXCHANGE_FLOW = ("UNMEASURED: exchange in/out flow needs a labelled exchange-wallet set; "
+                         "no permitted keyless source on file publishes one, so no proxy is "
+                         "emitted rather than a guessed one")
+
+
+def parse_mempool_fees(raw: bytes | None) -> dict[str, float]:
+    doc = _json(raw)
+    out: dict[str, float] = {}
+    if isinstance(doc, dict):
+        for src, col in (("fastestFee", "btc_fee_fastest"), ("halfHourFee", "btc_fee_halfhour"),
+                         ("hourFee", "btc_fee_hour"), ("economyFee", "btc_fee_economy")):
+            if isinstance(doc.get(src), (int, float)):
+                out[col] = float(doc[src])
+    return out
+
+
+def parse_mempool_backlog(raw: bytes | None) -> dict[str, float]:
+    doc = _json(raw)
+    out: dict[str, float] = {}
+    if isinstance(doc, dict):
+        if isinstance(doc.get("count"), (int, float)):
+            out["btc_mempool_tx"] = float(doc["count"])
+        if isinstance(doc.get("vsize"), (int, float)):
+            out["btc_mempool_vmb"] = round(float(doc["vsize"]) / 1e6, 6)
+        if isinstance(doc.get("total_fee"), (int, float)):
+            out["btc_mempool_fee_btc"] = round(float(doc["total_fee"]) / SATS, 8)
+    return out
+
+
+def parse_mempool_blocks(raw: bytes | None) -> list[dict[str, Any]]:
+    """`/v1/blocks[/:height]` -> [{id, height, timestamp, tx_count, fees_btc, median_fee,
+    output_btc}], oldest first. A row missing its id, height or timestamp is dropped."""
+    doc = _json(raw)
+    out: list[dict[str, Any]] = []
+    for b in doc if isinstance(doc, list) else []:
+        if not isinstance(b, dict):
+            continue
+        bid, h, ts = b.get("id"), b.get("height"), b.get("timestamp")
+        if not isinstance(bid, str) or not isinstance(h, int) or not isinstance(ts, (int, float)):
+            continue
+        ext = b.get("extras")
+        ex: dict[str, Any] = ext if isinstance(ext, dict) else {}
+        fees, outs = _num(ex.get("totalFees")), _num(ex.get("totalOutputAmt"))
+        out.append({"id": bid, "height": h, "timestamp": int(ts),
+                    "tx_count": _num(b.get("tx_count")),
+                    "fees_btc": None if fees is None else fees / SATS,
+                    "median_fee": _num(ex.get("medianFee")),
+                    "output_btc": None if outs is None else outs / SATS})
+    return sorted(out, key=lambda r: r["height"])
+
+
+def parse_block_summary(raw: bytes | None) -> dict[str, float] | None:
+    """`/v1/block/:hash/summary` -> large-transaction counts and value. The coinbase (fee 0, no
+    inputs) is not a transfer and is excluded. None when the body is not a transaction list."""
+    doc = _json(raw)
+    if not isinstance(doc, list):
+        return None
+    out = {f"large_{k}": 0.0 for k, _ in LARGE_TX_SATS}
+    out["large_value_btc"] = 0.0
+    n = 0
+    for i, t in enumerate(doc):
+        if not isinstance(t, dict):
+            continue
+        v = _num(t.get("value"))
+        if v is None:
+            continue
+        n += 1
+        if i == 0 and not t.get("fee"):
+            continue                                                 # the coinbase
+        for k, floor in LARGE_TX_SATS:
+            if v >= floor:
+                out[f"large_{k}"] += 1
+        if v >= LARGE_TX_SATS[0][1]:
+            out["large_value_btc"] += v / SATS
+    return out if n else None
+
+
+def _hour_start(ts: float) -> datetime:
+    return datetime.fromtimestamp(ts, tz=UTC).replace(minute=0, second=0, microsecond=0)
+
+
+def fetch_onchain_explorer(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
+                           now: datetime, *, crypto_cfds: Sequence[str] = ()) -> Harvest:
+    """One pass of BTC on-chain state: a fee / backlog SNAPSHOT stamped at this instant, and
+    closed HOURS of large-transaction counts, value and block fees folded from every block read.
+
+    POINT IN TIME. Every observation carries `publication_time` = the instant this pass read it,
+    so nothing is knowable before the box saw it; an hour is emitted only after a processed block
+    is stamped `ONCHAIN_CLOSE_LAG_S` past its end, and the hour's accumulator lives in the cursor
+    until then. The height cursor moves only over blocks actually summarised."""
+    h = Harvest(str(row["id"]))
+    base = str(row.get("api") or MEMPOOL_API).rstrip("/")
+    targets = [s for s in ONCHAIN_TARGETS if not crypto_cfds or s in crypto_cfds]
+    stamp = now.replace(microsecond=0).isoformat()
+    why = {"btc_fee_": "next-block fee pressure (sat/vB) on the BTC chain",
+           "btc_mempool_": "unconfirmed BTC backlog: congestion and pending transfer demand",
+           "btc_large_": "count / BTC value of on-chain transfers >= 100 BTC (whale flow proxy)",
+           "btc_block_": "block fees and throughput: realised settlement demand",
+           "btc_tx_": "confirmed transaction count", "btc_output_": "BTC moved on-chain",
+           "btc_blocks": "blocks mined in the hour", "btc_median_": "median block fee rate"}
+
+    def put(col: str, period_end: str, v: float) -> None:
+        note = next((w for p, w in why.items() if col.startswith(p)), "BTC on-chain state")
+        h.columns[col] = {"hypothesis": list(targets), "event": [],
+                          "why": f"{note}; ETHUSD reads it as a cross-crypto state"}
+        h.obs.append({"key": col, "period_end": period_end, "value": float(v),
+                      "publication_time": stamp, "source_id": h.source_id,
+                      "asset_domain": "crypto_onchain", "licence": str(row.get("licence", ""))})
+
+    snap = {**parse_mempool_fees(_get(fetch, h, f"{base}/v1/fees/recommended")),
+            **parse_mempool_backlog(_get(fetch, h, f"{base}/mempool"))}
+    for col, v in snap.items():
+        put(col, stamp, v)
+
+    cur = dict(cursor)
+    acc: dict[str, dict[str, float]] = {k: dict(v) for k, v in
+                                        (cur.get("acc") or {}).items() if isinstance(v, dict)}
+    last = cur.get("last_height")
+    tip_blocks = parse_mempool_blocks(_get(fetch, h, f"{base}/v1/blocks"))
+    tip = tip_blocks[-1]["height"] if tip_blocks else None
+    blocks: list[dict[str, Any]] = []
+    if tip is not None:
+        if not isinstance(last, int):
+            last = tip - 7                                  # first pass: about the last hour
+        if tip - last > ONCHAIN_MAX_BACKLOG:
+            cur["skipped_heights"] = [last + 1, tip - ONCHAIN_BLOCKS_PER_PASS]
+            h.notes.append(f"backlog {tip - last} > {ONCHAIN_MAX_BACKLOG}: heights "
+                           f"{last + 1}..{tip - ONCHAIN_BLOCKS_PER_PASS} named, not read")
+            last = tip - ONCHAIN_BLOCKS_PER_PASS
+        want_to = min(tip, last + ONCHAIN_BLOCKS_PER_PASS)
+        pool = {b["height"]: b for b in tip_blocks}
+        if want_to not in pool or last + 1 not in pool:
+            pool.update({b["height"]: b for b in parse_mempool_blocks(
+                _get(fetch, h, f"{base}/v1/blocks/{want_to}"))})
+        blocks = [pool[x] for x in range(last + 1, want_to + 1) if x in pool]
+    done_to = last
+    max_ts = float(cur.get("max_ts") or 0)
+    for b in blocks:
+        if b["height"] != (done_to or 0) + 1:
+            break                                 # never step over an unread height
+        summ = parse_block_summary(_get(fetch, h, f"{base}/v1/block/{b['id']}/summary"))
+        if summ is None:
+            break
+        hk = _hour_start(b["timestamp"]).isoformat()
+        a = acc.setdefault(hk, {})
+        a["blocks"] = a.get("blocks", 0.0) + 1
+        for k, v in (("tx", b["tx_count"]), ("fees_btc", b["fees_btc"]),
+                     ("median_fee_sum", b["median_fee"]), ("output_btc", b["output_btc"]),
+                     *((k2, summ[k2]) for k2 in summ)):
+            if v is not None:
+                a[k] = a.get(k, 0.0) + float(v)
+        if b["median_fee"] is not None:
+            a["median_fee_n"] = a.get("median_fee_n", 0.0) + 1
+        done_to = b["height"]
+        max_ts = max(max_ts, float(b["timestamp"]))
+    for hk in sorted(acc):
+        start = datetime.fromisoformat(hk)
+        end = start + timedelta(hours=1)
+        if max_ts < end.timestamp() + ONCHAIN_CLOSE_LAG_S:
+            continue
+        a = acc.pop(hk)
+        pe = end.isoformat()
+        put("btc_blocks", pe, a.get("blocks", 0.0))
+        for k, col in (("tx", "btc_tx_count"), ("fees_btc", "btc_block_fees_btc"),
+                       ("output_btc", "btc_output_btc"), ("large_100", "btc_large_tx_100"),
+                       ("large_1000", "btc_large_tx_1000"),
+                       ("large_value_btc", "btc_large_value_btc")):
+            if k in a:
+                put(col, pe, round(a[k], 8))
+        if a.get("median_fee_n"):
+            put("btc_median_fee_rate", pe, round(a["median_fee_sum"] / a["median_fee_n"], 6))
+    # an hour the chain never closes (a stale accumulator) is dropped after three days, named
+    for hk in [k for k in acc if datetime.fromisoformat(k) < now - timedelta(days=3)]:
+        acc.pop(hk)
+        h.notes.append(f"open hour {hk} dropped unclosed after 3 days")
+    h.cursor = {"acc": acc, "max_ts": max_ts,
+                **({"last_height": done_to} if isinstance(done_to, int) else {}),
+                **({"skipped_heights": cur["skipped_heights"]}
+                   if "skipped_heights" in cur else {})}
+    h.notes.append(ONCHAIN_EXCHANGE_FLOW)
+    if not h.obs:
+        h.status = "BLOCKED" if h.failures else "EMPTY"
+        h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "no on-chain state"
+    return h
+
+
+# ====================================================== 5c''. access records (never fetched)
+#: A source the desk has READ THE TERMS OF and will not fetch -- it needs a key the desk cannot
+#: obtain, its only machine route is blocked by method, or its terms forbid automated access.
+#: The row stays in the registry so the gap is visible and the evidence is kept verbatim; this
+#: fetcher makes NO request and reports the recorded state, never a zero.
+ACCESS_STATES: tuple[str, ...] = ("NEEDS_KEY", "METHOD_BLOCKED", "IDEAS_ONLY", "HELD")
+
+
+def fetch_access_record(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
+                        now: datetime) -> Harvest:
+    state = str(row.get("access_state") or "")
+    evd = row.get("access_evidence")
+    ev: Mapping[str, Any] = evd if isinstance(evd, dict) else {}
+    if state not in ACCESS_STATES:
+        return Harvest(str(row["id"]), status="ERROR",
+                       detail=f"access_record row without a known access_state ({state!r})")
+    return Harvest(str(row["id"]), status=state,
+                   detail=str(ev.get("judgement") or "")[:200],
+                   notes=[f"no request made: {state} (terms read {ev.get('checked_at')})"])
+
+
 # ================================================================= 5d. Reddit / Telegram
 #: instrument words scanned in English posts -> (column, hypothesis targets, event CFDs)
 EN_TOPICS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
@@ -1644,6 +1875,7 @@ FETCHERS: dict[str, Callable[..., Harvest]] = {
     "app_rank_apple": fetch_app_rank_apple, "cn_forum": fetch_cn_forum, "jp_ir": fetch_jp_ir,
     "jp_patents": fetch_jp_patents, "gtrends": fetch_gtrends, "congress": fetch_congress,
     "coinpaprika": fetch_coinpaprika, "reddit": fetch_reddit, "telegram": fetch_telegram,
+    "onchain_explorer": fetch_onchain_explorer, "access_record": fetch_access_record,
     "akshare": fetch_akshare_package, "tushare": fetch_tushare,
     "package": fetch_package_route, "catalogue": fetch_catalogue,
     "cn_exchange": fetch_cn_exchange,

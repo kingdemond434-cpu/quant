@@ -65,6 +65,12 @@ class StateVector:
     #: INFORMATION, NOT AUTHORITY -- as with every state here, conditioning capital on it
     #: requires the admission gauntlet to have judged it first.
     conditioning: dict[str, Any] = field(default_factory=dict)
+    #: CROSS-ASSET POSITIONING (CFTC COT, `mt5desk.fetch_cot.positioning_state`): per futures
+    #: contract the speculators' net share of open interest, its trailing three-year percentile
+    #: rank and z, its weekly change, and the MT5 instruments it reads on with a sign. Point in
+    #: time by the release lag (a Tuesday report is known from Saturday). INFORMATION, NOT
+    #: AUTHORITY, like `conditioning`: the allocator may read it; nothing here sizes anything.
+    positioning: dict[str, Any] = field(default_factory=dict)
 
     @property
     def id(self) -> str:
@@ -142,6 +148,7 @@ class StateVector:
             "factors": {k: v.to_dict() for k, v in sorted(self.factors.items())},
             "session": self.session, "event": self.event, "liquidity": self.liquidity,
             "gaps": self.gaps, "freshness": self.freshness, "conditioning": self.conditioning,
+            "positioning": self.positioning,
         }
 
     @classmethod
@@ -155,6 +162,7 @@ class StateVector:
             liquidity=dict(d.get("liquidity") or {}), gaps=dict(d.get("gaps") or {}),
             freshness=dict(d.get("freshness") or {}),
             conditioning=dict(d.get("conditioning") or {}),
+            positioning=dict(d.get("positioning") or {}),
         )
 
     def age_seconds(self, now: datetime | None = None) -> float:

@@ -1079,6 +1079,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # CFTC COT contract files + the positioning state the vector carries
+                     "cot_refresh",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1936,6 +1938,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # cot_refresh: a no-op read of 12 parquets most hours; ~12 Socrata pages once a week.
+    "cot_refresh": 240,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -3734,6 +3738,12 @@ def main() -> None:
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
     t = _costed("record_tape", record_tape)
+    # CFTC COT ON A CLOCK (2026-10-13). `mt5desk/fetch_cot.py` had no caller anywhere, so the
+    # contract files the search, sweep and gauntlet read stopped at the 2026-08-11 report. It
+    # fetches only when a newer Friday release is public and always writes the positioning
+    # state; it runs BEFORE the state vector, which carries that state for the allocator.
+    cot = _costed("cot_refresh", lambda: _producer(
+        "cot_refresh", "mt5desk/fetch_cot.py", "--if-due"))
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)
     d = _costed("daily", daily)
@@ -5863,6 +5873,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "cot_refresh": cot,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
