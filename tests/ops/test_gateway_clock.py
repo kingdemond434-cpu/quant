@@ -52,6 +52,11 @@ def test_a_stamp_marked_utc_is_taken_as_written() -> None:
     assert gc.placement_pass_utc(doc) == UTC_NOW
 
 
+def test_a_stamp_with_a_real_offset_is_not_shifted_twice() -> None:
+    # audit of #328: "+03:00" is already an honest instant; only the "+00:00" label is suspect
+    assert gc.placement_pass_utc({"placement_pass": "2026-10-13T18:20:00+03:00"}) == UTC_NOW
+
+
 @pytest.mark.parametrize("doc", [None, {}, {"placement_pass": "not a time"}, []])
 def test_absent_or_unreadable_is_none(doc: object) -> None:
     assert gc.placement_pass_utc(doc) is None

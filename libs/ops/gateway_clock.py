@@ -25,7 +25,7 @@ calendar rule measured on the desk's own bars, so it needs no live terminal to a
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 UTC_MARK = "utc"
@@ -54,5 +54,9 @@ def placement_pass_utc(state: Any) -> datetime | None:
     if ts is None:
         return None
     if str(state.get("placement_pass_clock") or "").lower() == UTC_MARK:
+        return ts.astimezone(UTC)
+    # Only a "+00:00" (or naive) label is the broker clock in disguise. A stamp that carries a real
+    # non-zero offset already says which instant it is; shifting it again would move it twice.
+    if ts.utcoffset() not in (None, timedelta(0)):
         return ts.astimezone(UTC)
     return broker_stamp_to_utc(ts)
