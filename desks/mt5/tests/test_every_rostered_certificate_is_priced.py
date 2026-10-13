@@ -99,3 +99,17 @@ def test_a_priced_standby_sleeve_the_solve_zeroes_gets_a_recorded_zero(tmp_path,
     monkeypatch.setattr(pa, "BASE", tmp_path)
     ev = [types.SimpleNamespace(name=n) for n in ("s_live", "s_standby", "s_retired")]
     assert set(pa.zeroed_live(ev, {})) == {"s_live", "s_standby"}
+
+
+def test_a_versioned_gold_bracket_records_zero_as_a_copy_of_its_base(tmp_path,
+                                                                     monkeypatch) -> None:
+    """gold_asia_v2..v4 trade identically to gold_asia (the roster carries no rr): one bet,
+    priced once. The copy gets a recorded zero instead of 'never priced'."""
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "sleeves.json").write_text(json.dumps({"sleeves": [
+        {"name": "gold_asia", "status": "LIVE"}, {"name": "gold_asia_v2", "status": "STANDBY"},
+        {"name": "gold_london_am_v3", "status": "STANDBY"}]}), "utf-8")
+    monkeypatch.setattr(pa, "BASE", tmp_path)
+    ev = [types.SimpleNamespace(name="gold_asia")]
+    z = pa.zeroed_live(ev, {"gold_asia": 0.08})
+    assert set(z) == {"gold_asia_v2"} and "same signal as gold_asia" in z["gold_asia_v2"]

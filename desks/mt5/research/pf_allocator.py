@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import math
 import os
 import sys
@@ -3137,6 +3138,15 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
     rostered |= {str(k) for k in (extra or {})}
     out: dict[str, str] = {}
     for name in sorted(rostered):
+        base = re.sub(r"_v\d+$", "", name) if name.startswith("gold_") else name
+        if base != name and name not in priced and base in priced:
+            # A versioned gold bracket (gold_asia_v2..) carries the SAME signal as its base
+            # window: decision_core's roster has no rr field, so it trades identically. It is the
+            # same bet, priced once under the base name; its recorded answer is zero.
+            out[name] = (f"same signal as {base} (a second copy of one bet, not a variant): the "
+                         f"allocator prices and funds {base}; this copy earns 0% so the bet is "
+                         f"never bought twice. NOT retired.")
+            continue
         if name in funded or name not in priced:
             continue
         out[name] = ("the current solve gives this sleeve no heat: its posterior edge, "
