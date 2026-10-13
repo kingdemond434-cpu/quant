@@ -183,6 +183,9 @@ FAMILY_CLUSTER: dict[str, str] = {
     "liquidity_regime": "session_liquidity",
     "orderflow_imbalance": "session_liquidity",
     "spread_state": "session_liquidity",
+    # the flow factory's tick-tape families (2026-10-13), the same phenomenon as the two above
+    "tick_flow": "session_liquidity",
+    "flow_residual": "session_liquidity",
     "clock_transition": "session_liquidity",
     # -- cross-asset lead / lag
     "cross_asset_lead_lag": "cross_asset_lead_lag",

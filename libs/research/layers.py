@@ -286,6 +286,9 @@ LEG_LAYER: dict[str, str] = {
     # allocator's own evidence work, one rung above a prediction.
     "residual_gate": "portfolio",
     "representation_forge": "information",
+    # THE FLOW FACTORY (2026-10-13): it collects tape series AND mints cells whose every claim is
+    # about forward return given a flow state -- billed to prediction, like `options_implied`.
+    "flow_factory": "prediction",
     # THE MATHEMATICS CIVILIZATION (2026-09-17): every object it invents is a claim about the
     # residual -- E[eps | f(x)] -- which is a claim about returns, so the hour is billed to
     # prediction like `world_model` and `discovery_compiler`. The representations it mints are a

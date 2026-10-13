@@ -1086,6 +1086,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
+                     # tick tape -> PIT flow series + judged cells, per-family source status
+                     "flow_factory",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "orthogonality_yield", "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
@@ -1796,6 +1798,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
     "world_dataset_hunt": 1_020,
+    # THE FLOW FACTORY stops collecting at --budget-s 900 (a per-symbol cursor, stalest series
+    # first) and then writes the cells and FLOW_FACTORY.json; the cap sits above that bound.
+    "flow_factory": 1_020,
     # ITS CONSUMER mints world_macro_state cells from the hunter's exposure and stops itself at
     # --budget-s 900; a symbol cursor carries the sweep across hours.
     "world_macro_proposer": 1_020,
@@ -3337,6 +3342,28 @@ def tape_features() -> dict:
     return _producer("tape_features", "recorders/tape_features.py", ("--days", "10"))
 
 
+def flow_factory() -> dict:
+    """THE MICROSTRUCTURE AND OPTIONS-FLOW FACTORY (principal 2026-10-11): one leg that turns the
+    tick tape into point-in-time flow series and judged cells, and reports every family.
+
+    It runs AFTER `tape_features` so it reads the hour's tape. Per tape symbol it folds every
+    completed five-minute bucket -- tick rule on the mid, unit-depth OFI from bid/ask revisions,
+    relative spread, quote rate -- into data/lake/series/tf_<SYMBOL>.parquet (written once,
+    never rewritten), mints the declared `tick_flow` / `flow_residual` grid on every symbol with
+    enough history, and donates each identity once to the one gauntlet with `tests_run: 0`.
+    It also runs `research/sec_ftd.py`: the SEC's half-month fails-to-deliver files, fetched with
+    the declared User-Agent in QUANT_EDGAR_UA (NEEDS_KEY without it; <= 2 requests/s), stored once
+    with a publication-lag stamp and folded into data/lake/series/ftd_<CFD>.parquet, whose cells
+    compile to `exogenous_conditioner` / `alt_series_momentum`. Every other external source is
+    judged per source (2026-10-13 ruling) and reported with its access state and verbatim terms;
+    UNREAD terms pages are re-read once a day into data/lake/flow_factory/terms_reads.json. COT is
+    counted under its owner organ. The unknown-unknown miner classifies new symbols, tick fields and
+    flags, asset classes, order types, retcodes and expiry conventions in the same pass.
+    Writes reports/FLOW_FACTORY.json. Never promotes.
+    """
+    return _producer("flow_factory", "research/flow_factory.py", "--once", "--budget-s", "900")
+
+
 def futures_lead_lag() -> dict:
     """THE CLOCK THE DESK'S BARS ARE ON, measured against a venue whose clock cannot be wrong.
 
@@ -3770,6 +3797,7 @@ def main() -> None:
     mx = _costed("microstructure_census", microstructure_census)
     sp = _costed("spread_provenance", spread_provenance)
     tf = _costed("tape_features", tape_features)
+    flf = _costed("flow_factory", flow_factory)
     fll = _costed("futures_lead_lag", futures_lead_lag)
     tj = _costed("time_joins", time_joins)
     aj = _costed("allocator_join", allocator_join)
@@ -5934,7 +5962,7 @@ def main() -> None:
                     "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
-                    "spread_provenance": sp, "tape_features": tf,
+                    "spread_provenance": sp, "tape_features": tf, "flow_factory": flf,
                     "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
                     "fred_macro": fm,
                     "fusion_cost": fzc, "cost_construction": cxc,
