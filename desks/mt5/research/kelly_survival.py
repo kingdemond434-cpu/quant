@@ -416,15 +416,17 @@ def terms_fenced_cells() -> tuple[set[str], str]:
 #: THE M15 BAN IS ONE SLEEVE (principal 2026-10-13 17:15Z): xau_m15_anti_breakout, i.e. XAUUSD
 #: anti_donchian_breakout on M15 (scalp_shadow.py spec; "anti_breakout" is its short name). Every
 #: other M15 certificate, xau_m15_anti_momentum included, is eligible for the growth solve.
-M15_BANNED_CELLS: frozenset[tuple[str, str]] = frozenset({
-    ("XAUUSD", "anti_donchian_breakout"), ("XAUUSD", "anti_breakout")})
+M15_BANNED_CELLS: frozenset[tuple[str, str, str]] = frozenset({
+    ("XAUUSD", "anti_donchian_breakout", "all"), ("XAUUSD", "anti_breakout", "all")})
 
 
-def m15_banned(sym: str, fam: str, tf: str) -> bool:
-    """True only for the one banned M15 sleeve, never for a timeframe as a whole."""
+def m15_banned(sym: str, fam: str, tf: str, selector: str = "all") -> bool:
+    """True only for the one banned M15 sleeve (symbol, family AND selector, scalp_shadow.py:43),
+    never for a timeframe as a whole nor for a different-selector variant of the same family."""
     if str(tf).upper() != "M15":
         return False
-    return (str(sym).upper(), str(fam).lower()) in M15_BANNED_CELLS
+    sel = str(selector or "all").lower()
+    return (str(sym).upper(), str(fam).lower(), sel) in M15_BANNED_CELLS
 
 
 def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]:
@@ -459,7 +461,7 @@ def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]
                "dsr": (g.get("deflated_sharpe") or {}).get("dsr")}
         if family_banned(fam):
             row["excluded"] = "banned family"
-        elif m15_banned(sym, fam, tf):
+        elif m15_banned(sym, fam, tf, sel or "all"):
             row["excluded"] = "M15 banned (xau_m15_anti_breakout only)"
         elif f"{sym.upper()}.{fam}" in fenced:
             row["excluded"] = f"TERMS_FENCED: proposed only by Reddit/StockTwits ({fence_src})"
