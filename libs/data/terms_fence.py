@@ -85,7 +85,13 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                         "vxtwitter.com", "fixupx.com", "fixvx.com"),
               "status": IDEAS_ONLY, "sources": ("twitter", "x_twitter", "miner:twitter"),
               "source_prefixes": ("twitter_",), "routes": ("twitter",),
-              "why": "public X posts may be read for ideas; never live input data"},
+              "why": ("public X posts may be read for ideas; never live input data: X's terms "
+                      "page refused the reader (robots) on 2026-10-13, so its terms are UNREAD "
+                      "and UNREAD terms never permit automated live input; data goes through "
+                      "x_api"),
+              "terms": {"url": "https://x.com/en/tos", "checked_at": "2026-10-13",
+                        "unread": {"https://x.com/en/tos":
+                                   "ROBOTS_DISALLOWED to the reader on 2026-10-13: UNREAD"}}},
     "nitter": {"hosts": ("xcancel.com", "twiiit.com", "twstalker.com", "sotwe.com"),
                "host_labels": ("nitter",), "routes": ("nitter",),
                "sources": ("nitter", "xcancel"), "source_prefixes": ("nitter_",),
@@ -103,7 +109,7 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                          "reddituploads.com", "redditblog.com", "pushshift.io", "pullpush.io",
                          "photon-reddit.com", "reveddit.com", "unddit.com", "libredd.it",
                          "safereddit.com", "troddit.com", "removeddit.com", "ceddit.com",
-                         "resavr.com"),
+                         "resavr.com", "redditsearch.io", "reddit.app.link"),
                "host_labels": ("redlib", "libreddit", "teddit", "reveddit", "unddit"),
                "sources": ("reddit", "miner:reddit", "pushshift", "pullpush", "photon_reddit",
                            "redlib", "libreddit", "teddit", "reveddit", "unddit"),
@@ -147,11 +153,11 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                                "use": ("Access to user-generated content for any purpose other "
                                        "than ordinary, legitimate, and intended use of the "
                                        "Telegram platform as its user is prohibited.")},
-                           "reading": ("PUBLIC_PAGE on the coordinator's 2026-10-13 ruling: the "
-                                       "t.me/s preview is the platform's own public web view. "
-                                       "The 'use' clause is restrictive and is kept verbatim so "
-                                       "the principal can overrule; the AI/ML clause is why the "
-                                       "series is a count, never a training corpus.")}},
+                           "reading": ("IDEAS_ONLY on the auditor's 2026-10-13 ruling: the "
+                                       "'llm_ai' and 'use' clauses bar scraping and aggregation, "
+                                       "so a t.me/s preview is read for ideas, never live input. "
+                                       "Both clauses are kept verbatim so the principal can "
+                                       "overrule.")}},
     "discord_bot": {"hosts": ("discord.com", "discordapp.com", "discord.gg"),
                     "status": API_PERMITTED, "key_env": ("DISCORD_BOT_TOKEN",),
                     "url_level": False,
@@ -189,8 +195,9 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                       "why": "a proxy whose purpose is to get around paywalls"},
 }
 #: A redirect INTO one of these paths is a login / CAPTCHA wall; it is refused, never followed.
-LOGIN_WALL = re.compile(r"(?i)/(?:i/flow/)?(?:log-?in|sign-?in|signin|accounts?/login|"
-                        r"session/new|oauth/authorize|captcha|cdn-cgi/challenge-platform)"
+LOGIN_WALL = re.compile(r"(?i)/(?:i/flow/)?(?:log[-_]?in|sign[-_]?in|signin|accounts?/login|"
+                        r"session/new|oauth2?/authorize|authorize|sso|captcha|"
+                        r"cdn-cgi/challenge-platform)"
                         r"(?:[/?#.]|$)")
 #: The method rows a refusal can name that are not sources.
 METHOD_ROWS: dict[str, dict[str, Any]] = {
@@ -286,6 +293,12 @@ _GOOGLE_TRANSLATE = ("translate.google.com", "translate.googleusercontent.com")
 #: Google Translate's proxy encodes the target host into ONE label of `*.translate.goog`:
 #: every "." becomes "-" and every original "-" is doubled (www-reddit-com.translate.goog).
 _TRANSLATE_GOOG = "translate.goog"
+#: News hosts behind a subscription paywall: an archive.today copy of one of their pages is the
+#: paywall route (`paywall_proxy`, METHOD_BLOCKED). The host itself stays a PUBLIC_PAGE.
+PAYWALLED_HOSTS = ("ft.com", "wsj.com", "bloomberg.com", "economist.com", "nytimes.com",
+                   "barrons.com", "nikkei.com", "washingtonpost.com", "thetimes.co.uk",
+                   "telegraph.co.uk", "theinformation.com", "caixin.com", "handelsblatt.com",
+                   "lesechos.fr", "risk.net")
 #: Full stops that IDNA treats as label separators (ideographic, fullwidth, halfwidth).
 _DOTS = ("\u3002", "\uff0e", "\uff61")
 
@@ -415,8 +428,11 @@ def _wrapped_url(url: str) -> str | None:
         q = unquote((qs.get("q") or [""])[0])
         if q.lower().startswith("cache:"):
             q = q[len("cache:"):]
+            # `cache:<id>:<url>`: strip the id when what follows is a URL (`https://...`) or a
+            # bare host (`reddit.com/...`); a bare `host:port` is left alone.
             m = re.match(r"^[A-Za-z0-9_-]{6,}:(?!//)(.+)$", q)
-            if m and "." in m.group(1).split("/")[0]:
+            if m and (re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:/", m.group(1))
+                      or "." in m.group(1).split("/")[0]):
                 q = m.group(1)
             return q or None
         return None
@@ -450,6 +466,10 @@ def source_of_url(url: str, _depth: int = 0) -> str | None:
     if k and status(k) in HOLDING:
         return k
     inner = _wrapped_url(url) if _depth < 4 else None
+    if inner and _on(h, _ARCHIVE_TODAY) and _on(_host(inner), PAYWALLED_HOSTS):
+        # archive.today is the common route around a paywall: an archive.today copy of a
+        # paywalled page is the paywall proxy (METHOD_BLOCKED), exactly as 12ft.io is.
+        return "paywall_proxy"
     if inner:
         k2 = source_of_url(inner, _depth + 1)
         # A wrapper reads as what it wraps: always when the target is held, and whenever the

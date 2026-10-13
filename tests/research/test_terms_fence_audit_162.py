@@ -436,3 +436,64 @@ def test_a_substitutes_run_that_raises_still_publishes_its_artifact(
 class _P:
     def __init__(self, root: Path) -> None:
         self.report = root / "reports" / "ATTENTION_SUBSTITUTES.json"
+
+
+# ------------------------------------------- PR162_gd MF1 pin, S1, S2, S5; PR162_v3 should-fix 4
+_CITES = ("Terms", "terms", "ToU", "clause", "login", "paywall", "CAPTCHA", "rate limit",
+          "self-bot", "UNREAD")
+
+
+@pytest.mark.parametrize("key", [k for k in tf.SOURCE_POLICY
+                                 if tf.SOURCE_POLICY[k]["status"] in (tf.IDEAS_ONLY,
+                                                                      tf.METHOD_BLOCKED)])
+def test_every_ideas_only_or_method_blocked_row_names_its_clause_or_method(key: str) -> None:
+    row = tf.SOURCE_POLICY[key]
+    assert any(c in row["why"] for c in _CITES) or (row.get("terms") or {}).get("clauses"), (
+        f"{key}: an IDEAS_ONLY / METHOD_BLOCKED row must cite a terms clause or a method")
+
+
+@pytest.mark.parametrize("url", [
+    "https://gitlab.com/users/sign_in", "https://example.org/log_in",
+    "https://example.org/sso", "https://example.org/sso/start",
+    "https://example.org/oauth2/authorize?client_id=x", "https://example.org/authorize",
+])
+def test_common_login_paths_are_login_walls(url: str) -> None:
+    assert tf.login_wall(url)
+
+
+@pytest.mark.parametrize("url", ["https://example.org/ssource", "https://example.org/signals",
+                                 "https://example.org/authorized-dealers"])
+def test_ordinary_paths_are_not_login_walls(url: str) -> None:
+    assert not tf.login_wall(url)
+
+
+@pytest.mark.parametrize("url", [
+    "https://archive.ph/https://www.ft.com/content/abc",
+    "https://archive.ph/newest/https://www.wsj.com/articles/x",
+    "https://archive.today/2024/https://www.bloomberg.com/news/x",
+])
+def test_an_archive_today_copy_of_a_paywalled_page_is_the_paywall_proxy(url: str) -> None:
+    assert tf.source_of_url(url) == "paywall_proxy"
+    assert tf.policy_of_url(url)["status"] == tf.METHOD_BLOCKED
+
+
+def test_the_paywalled_host_itself_and_a_clean_archive_stay_public() -> None:
+    assert tf.policy_of_url("https://www.ft.com/content/abc")["status"] == tf.PUBLIC_PAGE
+    assert tf.policy_of_url("https://archive.ph/https://example.org/x")["status"] == tf.PUBLIC_PAGE
+
+
+def test_a_google_cache_id_before_a_full_url_is_stripped() -> None:
+    url = ("https://webcache.googleusercontent.com/search?q=cache:AbCdEf12:"
+           "https://www.reddit.com/r/forex/")
+    assert tf.source_of_url(url) == "reddit"
+
+
+@pytest.mark.parametrize("url", ["https://redditsearch.io/?term=gold",
+                                 "https://reddit.app.link/abc"])
+def test_more_reddit_front_ends_read_the_reddit_row(url: str) -> None:
+    assert tf.source_of_url(url) == "reddit"
+
+
+def test_x_web_terms_read_unread_never_permitted() -> None:
+    assert tf.terms_state("x_web") == tf.UNREAD
+    assert tf.input_source("x_web", "https://x.com/someone/status/1") is not None

@@ -1,7 +1,7 @@
 """#162 audit, MF1 and the #262 should-fix: the live feeds a source's own terms permit keep running.
 
 MF1: the per-source policy refused every IDEAS_ONLY source as live input, which also killed the
-free stack's Telegram and Reddit feeds. Telegram's public channel previews are PUBLIC_PAGE; the
+free stack's Telegram and Reddit feeds. Telegram is IDEAS_ONLY (auditor ruling 2026-10-13); the
 Reddit, Yahoo, mql5 and Telegram rows carry their own terms page and the verbatim clause that puts
 them in their state; Reddit's live route is its official Data API (OAuth), NEEDS_KEY until the
 keys exist, and the free stack's fetcher uses that route -- never the public .json pages.
