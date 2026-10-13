@@ -22,17 +22,67 @@
       "orders": []
     }
   },
-  "position": null,
+  "position": [
+    {
+      "ticket": 234917497,
+      "type": 0,
+      "volume": 0.01,
+      "price_open": 4189.58,
+      "sl": 4150.55,
+      "tp": 4266.88,
+      "profit": 1.46,
+      "symbol": "XAUUSD"
+    }
+  ],
   "last_bracket_date": "2026-10-13",
-  "last_reconcile": "2026-10-13T03:19:44+00:00",
+  "last_reconcile": "2026-10-13T04:26:23+00:00",
   "bracket_cancelled": true,
   "pending": null,
-  "brackets": {},
+  "brackets": {
+    "gold_asia": {
+      "date": "2026-10-13",
+      "hi": 4189.46,
+      "lo": 4150.75,
+      "lot": 0.01,
+      "spec": {
+        "buy_stop": {
+          "price": 4189.46,
+          "sl": 4150.55,
+          "tp": 4266.88
+        },
+        "sell_stop": {
+          "price": 4150.75,
+          "sl": 4189.66,
+          "tp": 4073.33
+        }
+      },
+      "placed_at": "2026-10-13T04:00:13+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10009,
+            "comment": "Request executed",
+            "door_refused": false,
+            "door_reason": null
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10009,
+            "comment": "Request executed",
+            "door_refused": false,
+            "door_reason": null
+          }
+        ]
+      }
+    }
+  },
   "lot": 0.06,
-  "equity": 485.08,
+  "equity": 487.14,
   "placement_health": {
     "consecutive_total_rejections": 0,
-    "last_ok": "2026-10-09T04:00:34+00:00",
+    "last_ok": "2026-10-13T04:00:13+00:00",
     "last_error": {
       "time": "2026-08-25T04:00:03+00:00",
       "sleeve": "gold_asia",
@@ -53,8 +103,14 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-13T06:20:03+00:00",
-  "netting_booked": {},
+  "placement_pass": "2026-10-13T07:26:07+00:00",
+  "netting_booked": {
+    "234917497": {
+      "sleeve": "gold_asia",
+      "symbol": "XAUUSD",
+      "lots": 0.01
+    }
+  },
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
       "last_signal_bar": "2026-09-17 08:00:00+00:00"
@@ -265,15 +321,15 @@
       "last_signal_bar": "2026-09-30 10:00:00+00:00"
     },
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-13 05:00:00+00:00",
+      "last_signal_bar": "2026-10-13 06:00:00+00:00",
       "trail_k": 0.0,
       "open_ttl_until": "2026-10-13T09:00:00+00:00"
     },
     "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-13 05:00:00+00:00"
+      "last_signal_bar": "2026-10-13 06:00:00+00:00"
     },
     "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-13 05:00:00+00:00"
+      "last_signal_bar": "2026-10-13 06:00:00+00:00"
     }
   },
   "orig_stop_dist": {
@@ -449,15 +505,24 @@
     "233203619": 40.8799999999992,
     "233700226": 0.0016500000000000403,
     "233796519": 49.340000000000146,
-    "234810421": 0.0008599999999999719
+    "234810421": 0.0008599999999999719,
+    "234917497": 39.029999999999745
   },
   "restart_reconcile": {
-    "at": "2026-10-13T03:20:03+00:00",
+    "at": "2026-10-13T04:26:07+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
-    "positions": [],
+    "positions": [
+      {
+        "ticket": 234917497,
+        "symbol": "XAUUSD",
+        "comment": "DWgold_asia",
+        "volume": 0.01,
+        "sl": 4150.55
+      }
+    ],
     "orders": [],
     "in_doubt": [],
     "stopless": [],
