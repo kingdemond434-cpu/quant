@@ -1280,6 +1280,226 @@
      "note": "cnx_cffex latest point-in-time z and regime per mapped instrument"
     }
    }
+  },
+  {
+   "id": "em_connect_flows",
+   "kind": "cn_public_state",
+   "route": "em_connect",
+   "name": "Eastmoney Stock Connect daily deal history (northbound 005, southbound 006, SH/SZ southbound 002/004)",
+   "url": "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_MUTUAL_DEAL_HISTORY",
+   "cadence": "daily",
+   "licence": "Eastmoney app licence (emuserh5.eastmoney.com/useragreement) 3.2.3 restricts copying/compiling product content without written consent; no clause names automated access. Fetched under the principal's ruling of 2026-10-13 (Eastmoney allowed; public pages, polite, robots respected); derived states only, never redistributed",
+   "cursor": "none: last 60 trading days re-read, first vintage kept",
+   "lag_hours": 10,
+   "mechanism": "cross-border Connect flows are the marginal price-setter for A50 heavyweights and HK large caps; a southbound surge is mainland money absorbing HK supply",
+   "participant_structure": "settlement_constrained",
+   "failure_mode_hypothesis": "Connect runs under daily quotas and closes on mainland/HK holidays independently, so its flow signal breaks on quota days and mismatched holiday calendars, not on US data",
+   "blocker_prior": "second source for Connect (HKEX's own series is built by the breadth-engines lane); northbound daily net buying has not been published since Aug 2024, so northbound net days read UNMEASURED; build session could not reach the host (proxy CONNECT 403; WebFetch read a malformed-URL JSON at /robots.txt); first reading is the box's",
+   "source_tag": "eastmoney",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "region": "cn",
+   "language": "zh",
+   "source_culture": "CN",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "em_connect_flows columns as their own direct cells on CN50/CHINAH/HK50/USDCNH: level/delta extremes and state momentum"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "em_connect_flows China-stress regime (lagged z high/low) gating price-only base families on the same instruments"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "em_connect_flows latest point-in-time z and regime per mapped instrument; per-source access state in reports/CN_RETAIL_POSTS.json"
+    }
+   }
+  },
+  {
+   "id": "em_limit_pools",
+   "kind": "cn_public_state",
+   "route": "em_limit_pools",
+   "name": "Eastmoney A-share limit-up (getTopicZTPool) and limit-down (getTopicDTPool) pools",
+   "url": "https://push2ex.eastmoney.com/getTopicZTPool",
+   "cadence": "4h",
+   "licence": "Eastmoney app licence (emuserh5.eastmoney.com/useragreement) 3.2.3 restricts copying/compiling product content without written consent; no clause names automated access. Fetched under the principal's ruling of 2026-10-13 (Eastmoney allowed; public pages, polite, robots respected); derived states only, never redistributed",
+   "cursor": "dates_done: closed trading days already read (the pools keep ~30 days)",
+   "dates_per_pass": 8,
+   "lag_hours": 8,
+   "mechanism": "limit-up/limit-down breadth is the cleanest read of A-share retail stress and euphoria; a limit-down cluster precedes state-fund support and CNH pressure",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "limit counts are mechanical under 10%/20% bands and spike on policy days and IPO-heavy weeks, so they fail as a stress read when the band regime or the board mix changes",
+   "blocker_prior": "build session could not reach push2ex.eastmoney.com (WebFetch fetch error); a day with no pool in the answer is UNMEASURED, never zero",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "region": "cn",
+   "language": "zh",
+   "source_culture": "CN",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "em_limit_pools columns as their own direct cells on CN50/CHINAH/HK50/USDCNH: level/delta extremes and state momentum"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "em_limit_pools China-stress regime (lagged z high/low) gating price-only base families on the same instruments"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "em_limit_pools latest point-in-time z and regime per mapped instrument; per-source access state in reports/CN_RETAIL_POSTS.json"
+    }
+   }
+  },
+  {
+   "id": "em_institution_hold",
+   "kind": "cn_public_state",
+   "route": "em_orghold",
+   "name": "Eastmoney institutional holdings (data centre RPT_MAIN_ORGHOLD) for the A50 leaders",
+   "url": "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_MAIN_ORGHOLD",
+   "cadence": "daily",
+   "licence": "Eastmoney app licence (emuserh5.eastmoney.com/useragreement) 3.2.3 restricts copying/compiling product content without written consent; no clause names automated access. Fetched under the principal's ruling of 2026-10-13 (Eastmoney allowed; public pages, polite, robots respected); derived states only, never redistributed",
+   "cursor": "none: per-quarter totals re-read, first vintage kept",
+   "codes": [
+    "600519",
+    "601318",
+    "600036",
+    "300750",
+    "601899",
+    "000333"
+   ],
+   "lag_hours": 24,
+   "mechanism": "institutional ownership of the A50 heavyweights rises into national-team support and falls into de-risking; its quarter-on-quarter change is a slow China positioning state",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "holdings are disclosed quarterly with a lag, so the state is stale between filings and fails as a timing signal around fast policy shocks",
+   "blocker_prior": "ROUTE UNVERIFIED: the report name was not confirmed from the build session (the host was unreachable); a box pass with no rows reads EMPTY with that note",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "region": "cn",
+   "language": "zh",
+   "source_culture": "CN",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "em_institution_hold columns as their own direct cells on CN50/CHINAH/HK50/USDCNH: level/delta extremes and state momentum"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "em_institution_hold China-stress regime (lagged z high/low) gating price-only base families on the same instruments"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "em_institution_hold latest point-in-time z and regime per mapped instrument; per-source access state in reports/CN_RETAIL_POSTS.json"
+    }
+   }
+  },
+  {
+   "id": "jsl_cb_index",
+   "kind": "cn_public_state",
+   "route": "jsl_cb_index",
+   "name": "JiSiLu convertible-bond equal-weight index history (premium / YTM)",
+   "url": "https://www.jisilu.cn/webapi/cb/index_history/",
+   "cadence": "daily",
+   "licence": "JiSiLu public page; terms page unreadable from the build session (its robots.txt refused the fetch agent); robots.txt re-read live by the fetcher and honoured; derived states only",
+   "cursor": "none: full history re-read, first vintage kept",
+   "lag_hours": 10,
+   "mechanism": "the median convertible conversion premium and YTM are China's retail-risk-appetite and credit-stress gauge: premia compress and YTMs blow out in A-share stress",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "the CB market is a small retail-dominated pool whose premia also move with redemption-clause waves and new-issue supply, so it fails as a stress read in issuance or forced-redemption seasons",
+   "blocker_prior": "WebFetch from the build session was refused by jisilu.cn/robots.txt (ROBOTS_DISALLOWED for that agent); the fetcher re-reads robots for its own agent and fetches nothing it disallows",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "region": "cn",
+   "language": "zh",
+   "source_culture": "CN",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jsl_cb_index columns as their own direct cells on CN50/CHINAH/HK50/USDCNH: level/delta extremes and state momentum"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jsl_cb_index China-stress regime (lagged z high/low) gating price-only base families on the same instruments"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "jsl_cb_index latest point-in-time z and regime per mapped instrument; per-source access state in reports/CN_RETAIL_POSTS.json"
+    }
+   }
+  },
+  {
+   "id": "jsl_cb_list",
+   "kind": "cn_public_state",
+   "route": "jsl_cb_list",
+   "name": "JiSiLu convertible-bond list (cross-section: premium, YTM, share below par)",
+   "url": "https://www.jisilu.cn/data/cbnew/cb_list_new/",
+   "cadence": "daily",
+   "licence": "JiSiLu public page; guest view only; a login or guest-truncated answer is recorded METHOD_BLOCKED and never worked around",
+   "cursor": "none: one cross-section per day",
+   "lag_hours": 10,
+   "mechanism": "the share of convertibles below par and the cross-sectional median premium are an arbitrage-table read of credit and equity stress",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "the guest list may be truncated or reordered; a cross-section of a subset fails as a stress read when the subset is not representative",
+   "blocker_prior": "the full list has required a login since 2021 in AKShare's account; expected METHOD_BLOCKED (guest-limited) -- recorded with evidence, never solved with a cookie",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "region": "cn",
+   "language": "zh",
+   "source_culture": "CN",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jsl_cb_list columns as their own direct cells on CN50/CHINAH/HK50/USDCNH: level/delta extremes and state momentum"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jsl_cb_list China-stress regime (lagged z high/low) gating price-only base families on the same instruments"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "jsl_cb_list latest point-in-time z and regime per mapped instrument; per-source access state in reports/CN_RETAIL_POSTS.json"
+    }
+   }
   }
  ]
 }

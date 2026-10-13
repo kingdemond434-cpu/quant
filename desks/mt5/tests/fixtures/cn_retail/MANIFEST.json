@@ -1,0 +1,3 @@
+{
+ "note": "Fixtures for desks/mt5/tests/test_cn_retail_posts.py. *.recorded.txt are robots.txt rules as read on 2026-10-13 (xueqiu.com via the build session's WebFetch; www.eastmoney.com likewise -- guba's own file could not be read). *.synthetic.* are hand-built in the response shapes AKShare's source (MIT, read 2026-10-13) and the 2026-10-13 probes describe: the build session could not obtain a live Guba list or Xueqiu post page (Guba served a 身份核实 interstitial, Xueqiu an Alibaba Cloud WAF challenge), so no live body was recorded."
+}

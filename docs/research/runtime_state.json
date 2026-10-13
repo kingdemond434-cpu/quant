@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 776,
-  "UNMEASURED": 37
+  "UNMEASURED": 38
  },
  "scope": {
-  "attested": 994,
+  "attested": 995,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -333,6 +333,16 @@
     "organs": [
      "battery:desks/mt5/research/limits_census.py",
      "battery:scripts/run_desk_economics.py"
+    ]
+   },
+   {
+    "at": "2026-10-13T17:27:50+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:cn_retail_posts"
     ]
    }
   ]
@@ -25711,6 +25721,34 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-13T15:22:10+00:00"
+  },
+  {
+   "organ": "leg:cn_retail_posts",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/cn_retail_posts.py"
+   ],
+   "clock": "hourly_cycle:cn_retail_posts",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CN_RETAIL_POSTS.json",
+   "artifact_declared": "desks/mt5/reports/CN_RETAIL_POSTS.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 6,
+   "artifact_bytes": 23002,
+   "artifact_sha256": "f58ed7eca3b408729b7af8b54e53232efd516fa426e001e2d0e92892d2fd908c",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-13T17:27:50+00:00"
   }
  ],
  "ratchet": {
