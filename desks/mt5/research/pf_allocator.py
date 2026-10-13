@@ -410,6 +410,49 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
     return specs, zero, unmeasured
 
 
+#: Per-certificate replay cache (audit #346 should-fix): a replay is a pure function of the cell
+#: spec and the bars it reads, so it is keyed by both and rebuilt only when the bars move.
+def _replay_dir() -> Path:
+    return BASE / "data" / "pf_allocator_cache" / "cert_replays"
+
+
+def _replay_key(sym: str, fam: str, params: Any) -> str:
+    """sha of (symbol, family, params, newest bars mtime for the symbol)."""
+    try:
+        mt = max((p.stat().st_mtime for p in (BASE / "data" / "universe").glob(f"{sym}_*.parquet")),
+                 default=0.0)
+    except OSError:
+        mt = 0.0
+    blob = json.dumps([sym, fam, params or {}, round(mt, 3)], sort_keys=True, default=str)
+    return hashlib.sha256(blob.encode()).hexdigest()[:24]
+
+
+def _replay_cache_get(key: str) -> tuple[pd.Series, str] | None:
+    path = _replay_dir() / f"{key}.parquet"
+    try:
+        df = pd.read_parquet(path)
+    except Exception:  # absent or unreadable cache is a miss
+        return None
+    if df.empty or "r" not in df.columns:
+        return None
+    ser = pd.Series(df["r"].to_numpy(dtype=float), index=pd.to_datetime(df.index).date)
+    basis = str(df.attrs.get("basis") or (df["basis"].iloc[0] if "basis" in df.columns else ""))
+    return ser, basis
+
+
+def _replay_cache_put(key: str, ser: pd.Series, basis: str) -> None:
+    try:
+        rdir = _replay_dir()
+        rdir.mkdir(parents=True, exist_ok=True)
+        df = pd.DataFrame({"r": ser.to_numpy(dtype=float), "basis": basis},
+                          index=pd.to_datetime(pd.Index(ser.index)))
+        tmp = rdir / f"{key}.tmp.parquet"
+        df.to_parquet(tmp)
+        os.replace(tmp, rdir / f"{key}.parquet")
+    except Exception:  # an unwritable cache costs time, not truth
+        pass
+
+
 def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     """Daily-R series for every sleeve that has cleared the ten gates, replayed the gauntlet's way.
 
@@ -451,9 +494,20 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             # THE CERTIFICATE'S OWN PARAMS, not defaults. Replaying `{}` runs a different
             # strategy under the certified strategy's name -- the same substitution that put an
             # unconditioned +0.163R behind a conditioned sleeve's +0.276R promotion.
+            ckey = _replay_key(sym, fam, params)
+            cached = _replay_cache_get(ckey)
+            if cached is not None:
+                ser_c, basis = cached
+                if basis:
+                    acct.setdefault("cost_basis", {})[name] = basis
+                out[name] = ser_c
+                acct["priced"] += 1
+                acct["replay_cache_hits"] = acct.get("replay_cache_hits", 0) + 1
+                return
             cell = eg.build_cell(sym, fam, dict(params or {}), meta)
             if not cell or cell.get("sigs") is None:
-                acct["refused"][name] = "build_cell returned no signals"
+                why = getattr(eg, "LAST_BUILD_FAILURE", None) or "no reason recorded"
+                acct["refused"][name] = f"build_cell returned no signals: {why}"
                 return
             ser = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
             rejections = ser.attrs.get("geometry_rejections") if ser is not None else None
@@ -474,6 +528,10 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             ser.index = pd.to_datetime(pd.Index(ser.index)).date
             out[name] = ser.groupby(level=0).sum()
             acct["priced"] += 1
+            basis = str(cell.get("_cost_basis") or "")
+            if basis:
+                acct.setdefault("cost_basis", {})[name] = basis
+            _replay_cache_put(ckey, out[name], basis)
         except Exception as exc:
             acct["refused"][name] = f"{type(exc).__name__}: {exc}"
 
@@ -932,7 +990,8 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     trades_by_sleeve: dict[str, list[dict]] | None = None,
                     broker_utc_offset_h: int = 0,
                     forward_only_days: dict[str, int] | None = None,
-                    identity: dict[str, tuple[str, str]] | None = None) -> list[SleeveEvidence]:
+                    identity: dict[str, tuple[str, str]] | None = None,
+                    cost_basis: dict[str, str] | None = None) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -984,7 +1043,11 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
         # Both are empty when unmeasured, which the posterior and the covariance read as "no
         # claim" (see `_MacroContext`).
         macro_w = mctx.weights(dates)
-        fl = mctx.loadings(hist, dates, parts[0])
+        # THE INSTRUMENT, not the lowercase roster token (audit #346): a STANDBY certificate
+        # priced under its roster name carries its certificate's symbol in `identity`. The
+        # loadings, the input key and the evidence all read this one value.
+        sym_of = identity[name][0] if identity and name in identity else parts[0]
+        fl = mctx.loadings(hist, dates, sym_of)
         # FAMILY IS THE MECHANISM, NOT THE SYMBOL. The hierarchical posterior pools a sleeve
         # toward its family mean, and pooling by SYMBOL pools EURJPY_asia_TREND with
         # EURJPY_london_NORMAL -- two different mechanisms that happen to share an instrument --
@@ -1005,7 +1068,6 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
         # A STANDBY certificate priced under its roster name carries its certificate's own
         # symbol and family: parsed from a lowercase roster name they would read as a new
         # instrument and a family of one, past the family cap and the structured floor.
-        sym_of = parts[0]
         if identity and name in identity:
             sym_of, fam = identity[name]
         out.append(SleeveEvidence(
@@ -1031,7 +1093,11 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             # spread it was charged at). Zero where the desk cannot price the sleeve, which is
             # exactly the behaviour that existed before -- unpriced is not cheap.
             cost_r=float((costs.get(name) or {}).get("cost_r", 0.05)),
-            cost_bias_r=float((costs.get(name) or {}).get("cost_bias_r", 0.0)),
+            # NO DOUBLE CHARGE: a certified replay whose cell was priced at its own fill-hour
+            # spread (`_cost_basis` fill_hour_XX_spread) already carries the under-charge
+            # `cost_bias_r` measures; adding it again charged those sleeves twice.
+            cost_bias_r=(0.0 if str((cost_basis or {}).get(name, "")).startswith("fill_hour_")
+                         else float((costs.get(name) or {}).get("cost_bias_r", 0.0))),
             # THE HOUR, AS THE NARROWEST LEVEL OF A SHRINKAGE THAT ALREADY EXISTED. Empty unless
             # a phase and this sleeve's own trades were supplied, and empty means the posterior
             # behaves exactly as it did before -- a caller that does not know the hour is not
@@ -1048,7 +1114,7 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             # entered in, and the mechanism it declares. `_structured_corr` charges a pair that
             # shares them -- and CREDITS a same-instrument pair whose entry hours are disjoint,
             # which is how the same heat comes to hold more independent bets rather than fewer.
-            inputs=_input_keys(name, parts[0], fam),
+            inputs=_input_keys(name, sym_of, fam),
             trade_hours=_trade_hours(name, trades_by_sleeve, broker_utc_offset_h),
             mechanism=_mechanism_of(name, fam),
         ))
@@ -3220,8 +3286,11 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
         rostered = {str(r.get("name")) for r in rows
                     if isinstance(r, dict)
                     and str(r.get("status") or "").upper() in ("LIVE", "STANDBY")}
+        standby = {str(r.get("name")) for r in rows
+                   if isinstance(r, dict) and str(r.get("status") or "").upper() == "STANDBY"}
     except (OSError, ValueError, AttributeError):
         rostered = set()
+        standby = set()
     rostered |= {str(k) for k in (extra or {})}
     # Zeros decided before the solve (a forward clock's KILL), each with its reason.
     out: dict[str, str] = {str(k): str(v) for k, v in (recorded or {}).items()}
@@ -3229,7 +3298,9 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
         if name in out:
             continue
         base = re.sub(r"_v\d+$", "", name) if name.startswith("gold_") else name
-        if base != name and name not in priced and base in priced:
+        # STANDBY copies only (audit #346): a LIVE versioned row is the gateway's own decision
+        # and is never zeroed here by a name rule.
+        if base != name and name in standby and name not in priced and base in priced:
             # A versioned gold bracket (gold_asia_v2..) carries the SAME signal as its base
             # window: decision_core's roster has no rr field, so it trades identically. It is the
             # same bet, priced once under the base name; its recorded answer is zero.
@@ -3528,7 +3599,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                          # count is the forward day count. `join_forward` never sees these
                          # names -- they are not in `forward` -- so nothing else supplies it.
                          forward_only_days={n: len(sr) for n, sr in scalp.items()},
-                         identity=cert_acct.get("identity"))
+                         identity=cert_acct.get("identity"),
+                         cost_basis=cert_acct.get("cost_basis"))
     # CROSS-CULTURE ORTHOGONALITY: merge groups share one cap family and one mechanism, proven-
     # divergent cultures get their own. Labels only -- heat-neutral (see apply_culture_labels).
     culture_family, culture_meta = apply_culture_labels(ev)
@@ -4762,6 +4834,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # which carries them into the sizing book AT ZERO so the gateway can size them at zero
         # instead of falling back to the 3% base fraction. Nothing here is retired.
         "book_zeroed": zeroed,
+        # ROSTERED CERTIFICATES THIS PASS COULD NOT PRICE (BLOCKED_NO_BARS, unrecoverable spec,
+        # replay failure), each with its reason: UNMEASURED, never a zero and never silent.
+        # Read by the promoter's admission view and the PROMOTION_LAG fence.
+        "book_unmeasured": dict(cert_acct.get("rostered_unmeasured") or {}),
+        "cost_basis": dict(cert_acct.get("cost_basis") or {}),
         # THE EXCHANGE'S ZEROS, AND WHERE THEIR HEAT WENT (see `exchange_zero`).
         "exchange_zero": exchange_zero_meta,
         # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns

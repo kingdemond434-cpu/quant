@@ -158,3 +158,47 @@ def test_a_versioned_gold_bracket_records_zero_as_a_copy_of_its_base(tmp_path,
     ev = [types.SimpleNamespace(name="gold_asia")]
     z = pa.zeroed_live(ev, {"gold_asia": 0.08})
     assert set(z) == {"gold_asia_v2"} and "same signal as gold_asia" in z["gold_asia_v2"]
+
+
+# ------------------------------------------------------------- audit #346 follow-ups (10-13)
+def test_a_live_versioned_gold_row_is_never_zeroed_by_the_name_rule(tmp_path,
+                                                                     monkeypatch) -> None:
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "sleeves.json").write_text(json.dumps({"sleeves": [
+        {"name": "gold_asia", "status": "LIVE"}, {"name": "gold_asia_v2", "status": "LIVE"}]}),
+        "utf-8")
+    monkeypatch.setattr(pa, "BASE", tmp_path)
+    ev = [types.SimpleNamespace(name="gold_asia")]
+    assert "gold_asia_v2" not in pa.zeroed_live(ev, {"gold_asia": 0.08})
+
+
+def test_a_replay_is_cached_per_spec_and_rebuilt_when_the_bars_move(tmp_path,
+                                                                    monkeypatch) -> None:
+    monkeypatch.setattr(pa, "BASE", tmp_path)
+    (tmp_path / "data" / "universe").mkdir(parents=True)
+    bars = tmp_path / "data" / "universe" / "EURUSD_H1.parquet"
+    bars.write_bytes(b"x")
+    k1 = pa._replay_key("EURUSD", "fam", {"a": 1})
+    ser = pd.Series([0.1, -0.2], index=pd.date_range("2026-01-01", periods=2).date)
+    pa._replay_cache_put(k1, ser, "fill_hour_01_spread")
+    got = pa._replay_cache_get(k1)
+    assert got is not None and list(got[0]) == [0.1, -0.2] and got[1] == "fill_hour_01_spread"
+    import os
+    os.utime(bars, (1, 1))
+    assert pa._replay_key("EURUSD", "fam", {"a": 1}) != k1
+    assert pa._replay_key("EURUSD", "fam", {"a": 2}) != k1
+
+
+def test_a_fill_hour_replay_is_not_charged_the_cost_bias_again(monkeypatch) -> None:
+    import numpy as np
+    idx = pd.date_range("2025-01-01", periods=60)
+    daily = pd.DataFrame({"EURZAR_x_asia": np.random.default_rng(0).normal(0, 1, 60)},
+                         index=idx)
+    monkeypatch.setattr(pa, "_execution_costs", lambda names: {
+        "sleeves": {"EURZAR_x_asia": {"cost_bias_r": 0.18, "cost_r": 0.05}},
+        "summary": {"n_measured": 1, "n_sleeves": 1, "n_undercharged": 1,
+                    "worst_undercharge": None}})
+    charged = pa.sleeve_evidence(daily, {}, {})
+    once = pa.sleeve_evidence(daily, {}, {},
+                              cost_basis={"EURZAR_x_asia": "fill_hour_01_spread"})
+    assert charged[0].cost_bias_r == 0.18 and once[0].cost_bias_r == 0.0
