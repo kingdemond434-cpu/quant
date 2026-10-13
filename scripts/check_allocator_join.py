@@ -34,6 +34,9 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+for _source in (ROOT, ROOT / "desks" / "mt5"):
+    if str(_source) not in sys.path:
+        sys.path.insert(0, str(_source))
 DESK = ROOT / "desks" / "mt5"
 ALLOC = DESK / "reports" / "pf_allocation.json"
 SLEEVES = DESK / "data" / "sleeves.json"
@@ -97,6 +100,11 @@ def measure() -> dict[str, Any]:
     books = {"dynamic": art.get("book") or {},
              "fallback": (art.get("book_fallback") or {}).get("book") or {}}
 
+    from mt5desk.kelly_sizing import load_cert_book
+    cert = load_cert_book(SLEEVES.parent / "CERT_BOOK_LIVE.json", "fusion") or {}
+    raw_books = books
+    books = {label: {**book, **cert} for label, book in books.items()}
+
     out: dict[str, Any] = {"n_live": len(live), "books": {}, "status": "OK",
                            "why": ""}
     broken = []
@@ -105,7 +113,11 @@ def measure() -> dict[str, Any]:
         joined = [r for r in live if _book_key(r, bk) is not None]
         raw = [r for r in live if str(r.get("name") or "") in bk]
         out["books"][label] = {"entries": len(bk), "joined": len(joined),
-                               "joined_by_raw_name": len(raw)}
+                               "joined_by_raw_name": len(raw),
+                               "raw_allocator_joined": sum(
+                                   _book_key(row, raw_books[label]) is not None
+                                   for row in live),
+                               "principal_override_entries": len(cert)}
         # An EMPTY book is not a broken join -- it is the allocator declining to allocate, which
         # `book_from_allocation` already reports as its own refusal. Only a book that funds
         # something and reaches nothing is a defect.
