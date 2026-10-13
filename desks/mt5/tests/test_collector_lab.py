@@ -226,7 +226,7 @@ def test_transient_failures_never_drop_a_source(tmp_lab: Path) -> None:
 
 
 def test_a_reading_is_never_available_before_this_organ_saw_it() -> None:
-    """M6: post-birth readings and revisions wait for first sight; the birth history keeps
+    """M6: post-birth readings wait for first sight, revisions stay in the store; the birth history keeps
     D + lag as warm-up, and evidence starts the day after birth."""
     born = "2026-10-13T12:00:00+00:00"
     store: dict[str, list[list[Any]]] = {}
@@ -237,7 +237,7 @@ def test_a_reading_is_never_available_before_this_organ_saw_it() -> None:
     rows = cl.series_rows(store, "col_x", 2.0, born)
     by = {(r["value"]): r for r in rows}
     assert by[1.0]["available_time"] == "2026-10-03T00:00:00+00:00"          # warm-up
-    assert by[2.5]["vintage_id"] == "v2" and by[2.5]["available_time"] >= later[:19]
+    assert 2.5 not in by and store["2026-10-12"][1][0] == 2.5     # revision kept, not served
     assert by[3.0]["available_time"] >= later[:19]                           # max(D+lag, seen)
     assert by[2.0]["vintage_id"] == "v1"
     import llm_lab as _lab
