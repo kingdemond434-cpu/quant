@@ -53,7 +53,7 @@ RETIRED: dict[str, str] = {
 FORBIDDEN: dict[str, str] = {**LIVE, **RETIRED}
 
 #: Tracked files carrying a retired identifier, measured 2026-09-11. MAY ONLY GO DOWN.
-MAX_RETIRED_SITES = 46
+MAX_RETIRED_SITES = 44
 
 #: Files that legitimately carry a live identifier and cannot simply drop it, each with the reason
 #: and the plan. AN ENTRY HERE IS A DEBT, NOT A PARDON: it is the list a reader checks first.
