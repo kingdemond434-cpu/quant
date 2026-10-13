@@ -611,6 +611,7 @@ LEG_LAYER: dict[str, str] = {
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
+    "breadth_frontier": "information",
     "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",
