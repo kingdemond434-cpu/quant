@@ -8,6 +8,12 @@
    "returncode": 1,
    "status": "FAILED"
   },
+  "certificate_projection": {
+   "finished_at": "2026-10-13T02:53:07.937403+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
   "external_queue_projection": {
    "finished_at": "2026-10-13T01:55:27.771393+00:00",
    "passes_completed": 1,
@@ -19,7 +25,22 @@
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
+  },
+  "forward_identity_reconciliation": {
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-13T03:43:39.177697+00:00",
+   "status": "RUNNING"
+  },
+  "fusion_state_pull": {
+   "finished_at": "2026-10-13T03:39:21.974959+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   }
  },
- "updated_at": "2026-10-13T02:50:22.137817+00:00"
+ "updated_at": "2026-10-13T03:43:39.177697+00:00"
 }
