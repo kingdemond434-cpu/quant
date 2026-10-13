@@ -22,7 +22,6 @@ registry's old "blocked" note was the website host, not api.stlouisfed.org).
 from __future__ import annotations
 
 import json
-import os
 import sys
 import urllib.parse
 import urllib.request
@@ -51,13 +50,10 @@ _ARCHIVE_LONG = Path("data/fred_macro_long.json")
 
 
 def _key() -> str | None:
-    k = os.environ.get("FRED_API_KEY")
-    if k:
-        return k
-    try:
-        return str(json.loads(_KEYFILE.read_text("utf-8"))["key"])
-    except (OSError, json.JSONDecodeError, KeyError):
-        return None
+    """Process env, then the machine/user registry environment (`setx /M` never reaches a
+    resident started before it), then data/secrets/fred.json."""
+    from libs.ops.env_secret import lookup
+    return lookup(("FRED_API_KEY", "FRED_KEY", "ALFRED_API_KEY"), (_KEYFILE,))[0]
 
 
 def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
