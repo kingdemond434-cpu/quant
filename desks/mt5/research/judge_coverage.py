@@ -1698,24 +1698,51 @@ def judging_failures(path: Path | None = None,
     return out
 
 
+#: The handoff's contract with Breadth's converter. Bump on any field change.
+CONVERSION_HANDOFF_SCHEMA = 1
+#: The clock the universe bars are stamped on (CLAUDE.md: broker clock is NY+7).
+BAR_CLOCK = "broker NY+7"
+
+
+def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
+    """What a no_bars / no_series cell lacks, so the converter can backfill or proxy it."""
+    sym, tf = str(row.get("sym") or ""), str(row.get("tf") or "H1")
+    if cls == "no_bars":
+        return {"kind": "bars", "symbol": sym, "timeframe": tf,
+                "file": f"universe/{sym}_{tf}.parquet", "clock": BAR_CLOCK}
+    if cls == "no_series":
+        return {"kind": "series", "symbol": sym, "timeframe": tf, "clock": BAR_CLOCK,
+                "why": str(row.get("why") or "")[:200]}
+    return None
+
+
 def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                              path: Path | None = None) -> int:
-    """Hand every parked cell the converter owns to the converter, with its class and axes."""
+    """Hand every parked cell the converter owns to the converter, with its class and axes.
+
+    Written every pass, EMPTY included, so absence never reads as zero. `trial_family` is the
+    family the sealed judge charges the cell's trials to: a conversion stays inside it and is
+    never charged a second family. Attempts are the converter's own sidecar
+    (`conversion_attempts.jsonl`); this writer never touches it.
+    """
     rows = []
     for cell, row in sorted(bank.items()):
         cls = failure_class(row.get("reason")) or "unnamed"
         route = FAILURE_ROUTES.get(cls, {})
         if route.get("owner") != "converter":
             continue
-        rows.append({"cell": cell, "family": row.get("family"), "sym": row.get("sym"),
-                     "tf": row.get("tf"), "reason": row.get("reason"), "class": cls,
-                     "axes": route.get("axes"), "why": row.get("why"),
+        fam = row.get("family")
+        rows.append({"cell": cell, "family": fam, "trial_family": fam,
+                     "symbol": row.get("sym"), "timeframe": row.get("tf") or "H1",
+                     "reason": row.get("reason"), "class": cls, "axes": route.get("axes"),
+                     "missing_input": _missing_input(cls, row), "why": row.get("why"),
                      "first_parked_utc": row.get("parked_at")})
     target = path or CONVERSION_HANDOFF
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps({"at": at, "n": len(rows), "rows": rows}, indent=1,
-                                     default=str), "utf-8")
+        target.write_text(json.dumps({"schema_version": CONVERSION_HANDOFF_SCHEMA,
+                                      "generated_utc": at, "n": len(rows), "rows": rows},
+                                     indent=1, default=str), "utf-8")
     except OSError:
         return -1
     return len(rows)

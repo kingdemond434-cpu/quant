@@ -461,7 +461,7 @@ def awaiting_conversion(path: Path | None = None) -> dict[str, Any]:
     doc = _read(p)
     if not isinstance(doc, dict) or not isinstance(doc.get("n"), int) or doc["n"] < 0:
         return {"status": UNMEASURED, "why": f"{p.name} is absent or unreadable"}
-    return {"status": "MEASURED", "cells": doc["n"], "at": doc.get("at")}
+    return {"status": "MEASURED", "cells": doc["n"], "at": doc.get("generated_utc")}
 
 
 def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],

@@ -588,7 +588,15 @@ def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
     out = tmp_path / "handoff.json"
     assert jc.write_conversion_handoff(bank, at="2026-10-13T17:00:00+00:00", path=out) == 2
     doc = json.loads(out.read_text("utf-8"))
+    assert doc["schema_version"] == jc.CONVERSION_HANDOFF_SCHEMA
     assert doc["n"] == 2 and {r["cell"] for r in doc["rows"]} == {"x", "y"}
     x = next(r for r in doc["rows"] if r["cell"] == "x")
     assert x["class"] == "untestable_as_specified" and "event_study" in x["axes"]
     assert x["first_parked_utc"] == "2026-10-01T00:00:00+00:00"
+    assert x["trial_family"] == "carry" and x["missing_input"] is None
+    y = next(r for r in doc["rows"] if r["cell"] == "y")
+    assert y["missing_input"] == {"kind": "bars", "symbol": "XAGUSD", "timeframe": "M15",
+                                  "file": "universe/XAGUSD_M15.parquet", "clock": jc.BAR_CLOCK}
+    # EMPTY IS WRITTEN: absence must never read as zero cells awaiting conversion.
+    assert jc.write_conversion_handoff({}, at="t", path=out) == 0
+    assert json.loads(out.read_text("utf-8"))["rows"] == []
