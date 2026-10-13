@@ -127,14 +127,16 @@ def test_seeder_donates_cost_clearing_cells_with_culture(monkeypatch, tmp_path):
         return tmp_path / "donated.json"
     monkeypatch.setattr(pc, "donate", _donate)
     monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(got.get("rows", []))})
-    rep = eb.seed(budget_s=120)
+    # no wall-clock budget (audit PR166_v4 MF2): a slow host must screen the whole grid too,
+    # or the second pass finds cells the first one never reached
+    rep = eb.seed(budget_s=float("inf"))
     assert rep["status"] == "OK" and rep["donation"]["status"] == "DONATED"
     rows = got["rows"]
     assert rows and {r["family"] for r in rows} <= set(eb.FAMILIES)
     assert all(r["culture_derivation"]["source_culture"] == "declared" for r in rows)
     # a second pass the same day donates nothing new
     got.clear()
-    assert eb.seed(budget_s=120)["candidates_this_pass"] == 0
+    assert eb.seed(budget_s=float("inf"))["candidates_this_pass"] == 0
 
 
 # ------------------------------------------------ the CN futures CTA canon (thuquant list) ---

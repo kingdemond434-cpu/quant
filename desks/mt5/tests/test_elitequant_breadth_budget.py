@@ -1,4 +1,4 @@
-"""The elitequant leg: one trial per entry behaviour, a per-cell budget, the report written first."""
+"""The elitequant leg: one trial per cell identity, a per-cell budget, the report written first."""
 from __future__ import annotations
 
 import json
@@ -60,13 +60,17 @@ def _world(monkeypatch, tmp_path, families, grid):
     return charged
 
 
-def test_two_holding_windows_with_one_set_of_entries_are_one_trial(monkeypatch, tmp_path):
-    charged = _world(monkeypatch, tmp_path, {"f": _entries}, {"f": {"hold": [5, 20]}})
-    rep = eb.seed(budget_s=60)
-    assert charged[0][0] == 2                    # one per symbol, not one per params
-    assert rep["cells_by_family"]["f"]["same_behaviour_not_recharged"] == 2
-    # the behaviour ledger persists, so a later pass never recharges it
-    assert len(json.loads((tmp_path / "state.json").read_text())["charged_behaviours"]) == 2
+def test_each_cell_identity_is_charged_once_never_deduplicated(monkeypatch, tmp_path):
+    """Audit PR166_v4 MF1: two holding windows with the same entries are two looks, and so are
+    two zero-signal cells; each identity is charged once, and a later pass never recharges it."""
+    none = {"f": _entries, "z": lambda d, **k: []}
+    charged = _world(monkeypatch, tmp_path, none, {"f": {"hold": [5, 20]}, "z": {"k": [1, 2]}})
+    eb.seed(budget_s=60)
+    assert charged[0][0] == 8                    # 2 symbols x (2 holds + 2 zero-signal cells)
+    assert charged[0][1] == {"f": 4, "z": 4}
+    assert "charged_behaviours" not in json.loads((tmp_path / "state.json").read_text())
+    eb.seed(budget_s=60)
+    assert len(charged) == 1, "a re-screen of the same identities is not a new trial"
 
 
 def test_the_budget_is_checked_per_cell(monkeypatch, tmp_path):

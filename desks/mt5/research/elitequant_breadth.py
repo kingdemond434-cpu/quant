@@ -131,16 +131,6 @@ def identity(symbol: str, family: str, params: dict[str, Any]) -> str:
                                      default=str).encode()).hexdigest()[:20]
 
 
-def behaviour(symbol: str, family: str, signals: list[Any]) -> str:
-    """The cell's ENTRIES (time, side, stop, target), hashed: two parameterisations that enter
-    the same trades on the same symbol are one trial however their holding windows differ
-    (audit PR166_v3 M3), so a look is charged once per behaviour, not once per params."""
-    rows = sorted((str(getattr(x, "time", "")), int(getattr(x, "side", 0)),
-                   round(float(getattr(x, "stop", 0.0)), 10),
-                   round(float(getattr(x, "target", 0.0)), 10)) for x in signals or [])
-    return hashlib.sha256(json.dumps([symbol, family, rows]).encode()).hexdigest()[:20]
-
-
 def grid(family: str) -> list[dict[str, Any]]:
     spec = PARAM_GRID.get(family) or {}
     keys = sorted(spec)
@@ -214,7 +204,6 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
     meta = pc.universe_meta()
     state = _load_state()
     cells: dict[str, Any] = state["cells"]
-    charged_behaviours: set[str] = set(state.get("charged_behaviours") or [])
     by_family: dict[str, Counter] = {f: Counter() for f in FAMILIES}
     cands: list[dict[str, Any]] = []
     no_bars: list[str] = []
@@ -263,7 +252,6 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                 try:
                     sigs = FAMILIES[fam](d, **params)
                     r = pc.screen(d, sigs, cost) or {}
-                    bh = behaviour(sym, fam, sigs)
                 except Exception as exc:
                     errors[f"{fam}: {type(exc).__name__}"] += 1
                     continue
@@ -273,14 +261,11 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                 # EACH LOOK IS CHARGED ONCE, BY IDENTITY (audit PR166_v2, 2026-10-06). A cell
                 # first screened on this pass is a new trial whether or not anything donates; a
                 # daily re-screen of the same identity is not a new one. A legacy cell already
-                # donated was charged on that discovery file.
-                prior["behaviour"] = bh
+                # donated was charged on that discovery file. Never deduplicated by behaviour
+                # (audit PR166_v4 MF1): a zero-signal cell and a holding-window variant are
+                # each their own look, so each identity is charged once, and only once.
                 if not prior.get("charged_at") and not prior.get("donated_at"):
-                    if bh in charged_behaviours:
-                        by_family[fam]["same_behaviour_not_recharged"] += 1
-                    else:
-                        new_looks[fam] += 1
-                        charged_behaviours.add(bh)
+                    new_looks[fam] += 1
                 prior["charged_at"] = prior.get("charged_at") or today
                 cells[ident] = prior
                 by_family[fam]["measured_this_pass"] += 1
@@ -331,7 +316,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
         charged = pc.donate_or_charge(SOURCE, [], sum(new_looks.values()), dict(new_looks))
         donation = {"status": "NOTHING_NEW", "charged_on": charged["charged_on"]}
     if not dry_run:
-        state["charged_behaviours"] = sorted(charged_behaviours)
+        state.pop("charged_behaviours", None)
         _save_state(state)
 
     contract: dict[str, Any] = {}
