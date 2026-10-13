@@ -323,7 +323,7 @@ def suboptimal(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *, sle
     entry, fill = _f(deal.get("entry_price")), _f(deal.get("fill_price"))
     pending = str(intent.get("order_type") or "").startswith("pending")
     dist = abs(want - isl) if want is not None and isl is not None else 0.0
-    if dist > 0 and not pending and entry is not None:
+    if dist > 0 and not pending and entry is not None and want is not None:
         slip = side * (want - entry) / dist
         if -SLIP_R <= slip < -COST_SLIP_R:
             out.append({"finding": "slippage_cost", "why": f"filled {abs(slip):.2f}R worse "
@@ -533,11 +533,11 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
     by_ticket: dict[int, dict[str, Any]] = {}
     for i in intents:
         try:
-            t = int(i.get("ticket") or 0)
+            ticket = int(i.get("ticket") or 0)
         except (TypeError, ValueError):
             continue
-        if t and int(_f(i.get("retcode")) or 0) == 10009:
-            by_ticket[t] = i
+        if ticket and int(_f(i.get("retcode")) or 0) == 10009:
+            by_ticket[ticket] = i
     eq = equity_before(deals, _f(account.get("balance")))
     fusion_book = (cert.get("fusion") or {}) if cert.get("enabled") is True else {}
     since = now - timedelta(days=WINDOW_DAYS)
@@ -603,7 +603,8 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
         [r for p in _E8_JOURNALS for r in _jsonl(p)]
     blocked = blocked if blocked is not None else _jsonl(BLOCKED)
     missed = missed_sends(intents, e8_journal_rows, max(since, FIX_SINCE), blocked)
-    missed_res = res_map.get("missed") if isinstance(res_map.get("missed"), dict) else {}
+    _missed = res_map.get("missed")
+    missed_res: dict[str, Any] = _missed if isinstance(_missed, dict) else {}
     fix_rows += [{"fix_id": f"missed:{m['venue']}:{m['id']}", "venue": m["venue"],
                   "class": SUBOPTIMAL, "deal": None, "sleeve": m["sleeve"],
                   "symbol": m["symbol"], "defect": "missed_send", "why": m["why"],
@@ -626,10 +627,10 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
         fix_rows.append({"fix_id": "loss:e8:no_close_ledger", "venue": "e8", "deal": None,
                          "sleeve": None, "symbol": None, "defect": "untraced",
                          "why": e8["why"], "pl": None, "time": None})
-    counts = defaultdict(int)
-    for r in rows:
-        counts[r["verdict"]] += 1
-    open_n = sum(1 for r in rows if r["open"])
+    counts: dict[str, int] = defaultdict(int)
+    for row in rows:
+        counts[row["verdict"]] += 1
+    open_n = sum(1 for row in rows if row["open"])
     return {"at": now.isoformat(timespec="seconds"), "window_days": WINDOW_DAYS,
             "verdict": "FAIL" if fix_rows else "PASS",
             "trades": len(rows), "losses": sum(1 for r in rows if r["r"] < LOSS_R),

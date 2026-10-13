@@ -184,7 +184,8 @@ def test_a_clock_entry_the_live_sleeve_never_sent_is_a_missed_trade() -> None:
         "quote_spread"]
     assert got["EURZAR"]["kind"] == "unclocked"
     assert {f["fix_id"] for f in doc["fix_queue"]} == {
-        f"clock:{zar}|2026-10-13 01:00:00+00:00", f"clock:unclocked:{NAME.replace('audchf', 'eurzar')}"}
+        f"clock:{zar}|2026-10-13 01:00:00+00:00",
+        f"clock:unclocked:{NAME.replace('audchf', 'eurzar')}"}
     early = la.build(datetime(2026, 10, 12, 23, 0, tzinfo=UTC), deals=[], intents=[],
                      sleeves_doc=roster, cert=CERT, account={}, drift={}, resolved={},
                      e8_ledger=[], e8_journals=[], blocked=[], shadow=shadow)
