@@ -57,6 +57,7 @@ discounted, and the Tier S bar is the same bar for every row that reaches it.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
 import sys
@@ -103,10 +104,16 @@ TEXTBOOK = frozenset({"breakout", "trend", "reversion", "carry", "calendar", "vo
 ADJACENT = frozenset({"residual", "microstructure", "plumbing", "positioning", "macro", "event",
                       "regime", "ensemble"})
 NOVEL_CLASSES = frozenset({"discovered", "generic"})
-#: The learned miners' families (research/learned_miners.MINERS), declared here so a missing
-#: import cannot silently re-score them as unclassified.
-LEARNED_FAMILIES = frozenset({"gnn_propagation", "attention_ts", "rocket_ts", "ae_latent",
-                              "sig_path"})
+#: The learned miners' families, DERIVED from research/learned_miners.MINERS so the set names
+#: exactly the families that exist on this tree (audit of #377 v2). Empty when it cannot import:
+#: the families then score as whatever MECHANISM_CLASS declares, never as novel by default.
+@functools.lru_cache(maxsize=1)
+def _learned_families() -> frozenset[str]:
+    try:
+        from research.learned_miners import MINERS
+        return frozenset(str(m["family"]) for m in MINERS.values() if m.get("family"))
+    except Exception:
+        return frozenset()
 
 
 def _now() -> str:
@@ -135,7 +142,7 @@ def genealogy(family: str, classes: Mapping[str, str] | None = None) -> tuple[fl
     Only a DECLARED novel class scores 1.0 (discovered, generic, a learned miner's family). A
     family the registry does not classify is UNMEASURED and scores the neutral 0.0: a gap in
     MECHANISM_CLASS must never buy the largest tilt (L1.28a, audit of #377)."""
-    if family in LEARNED_FAMILIES:
+    if family in _learned_families():
         return 1.0, "learned"
     cls = (classes if classes is not None else _mechanism_classes()).get(family)
     if cls is None:
@@ -177,6 +184,7 @@ def style_matrix(close: np.ndarray, index: Any, signals: Sequence[Any],
                                                        ("250d", 250))}
     logc = np.log(np.asarray(close, dtype=float))
     logo = np.log(np.asarray(open_ if open_ is not None else close, dtype=float))
+    last_exit = -1                       # the engine's single-position discipline
     hi_a = None if high is None else np.asarray(high, dtype=float)
     lo_a = None if low is None else np.asarray(low, dtype=float)
     ys: list[float] = []
@@ -192,7 +200,7 @@ def style_matrix(close: np.ndarray, index: Any, signals: Sequence[Any],
         except Exception:
             continue
         i = i0 + 1
-        if side == 0 or i >= n - 1 or i0 < lb["250d"]:
+        if side == 0 or i >= n - 1 or i0 < lb["250d"] or i <= last_exit:
             continue
         trig = getattr(s, "trigger", None)
         fill, e_log = i, float(logo[i])
@@ -209,6 +217,7 @@ def style_matrix(close: np.ndarray, index: Any, signals: Sequence[Any],
         x = fill + ttl
         if x > n - 1:
             continue
+        last_exit = x
         w = float(logo[x] - e_log)
         if not math.isfinite(w):
             continue
@@ -324,7 +333,8 @@ def per_family(per: Mapping[str, Mapping[str, Any]]) -> dict[str, dict[str, Any]
     """The SATURATION SIGNAL, per family (principal 2026-10-13: "saturated mechanisms families we
     have as certis dont get hunted"). A family is SATURATED when it already holds a certificate and
     none of its measured certificates is novel: another cell of it re-buys a style the desk owns.
-    Breadth's enforcer reads this block; this organ only publishes it."""
+    Nothing reads this block yet; this organ only publishes it. Breadth's enforcer is its intended
+    reader, and when it lands it owes a missed-growth line and a floor for saturated families."""
     fams: dict[str, dict[str, Any]] = {}
     for e in per.values():
         if not isinstance(e, dict) or not e.get("family"):
@@ -389,7 +399,8 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
         age = clock - datetime.fromisoformat(str(old.get("generated_utc"))).timestamp()
     except (TypeError, ValueError):
         pass
-    if not force and old.get("complete") is True and age < REFRESH_S:
+    # A stamp in the future is not fresh: it would hold measurement off until that date.
+    if not force and old.get("complete") is True and 0.0 <= age < REFRESH_S:
         return {"status": "FRESH", "age_h": round(age / 3600.0, 1), "report": str(report_path)}
     deadline = t0 + float(budget_s)
     certs: dict[str, dict[str, Any]] = {}

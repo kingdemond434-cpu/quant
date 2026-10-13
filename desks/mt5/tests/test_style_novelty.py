@@ -94,7 +94,7 @@ def test_a_family_without_certificates_carries_its_genealogy() -> None:
     assert sn.family_novelty("pca_residual", {}, classes) == 0.5
     assert sn.family_novelty("never_heard_of_it", {}, classes) == 0.0   # a registry gap: neutral
     assert sn.genealogy("never_heard_of_it", classes) == (0.0, "UNMEASURED")
-    assert sn.family_novelty("gnn_propagation", {}, classes) == 1.0
+    assert sn.family_novelty("gnn_propagation", {}, classes) == 1.0      # derived from MINERS
     assert sn.family_novelty("carry", {"carry": 0.7}, classes) == 0.7
 
 
@@ -134,7 +134,9 @@ def test_the_docket_fallback_judges_a_novel_family_first_at_equal_spend(monkeypa
                                       "gnn_propagation": 8})
     assert ordered[0]["family"] == "gnn_propagation"
     assert len(ordered) == len(rows)
-    assert len(ordered) == len(rows)
+    # An unclassified family gets no lift: it ties with the textbook family on spend, so the
+    # family name breaks the tie exactly as it did before the tilt.
+    assert [r["family"] for r in ordered[4:]] == ["carry"] * 4 + ["zz_unclassified_style"] * 4
 
 
 def test_a_family_with_certificates_and_nothing_novel_is_saturated() -> None:
@@ -175,3 +177,23 @@ def test_a_partial_run_is_never_fresh_and_the_stalest_certificate_goes_first(tmp
     assert again["status"] != "FRESH" and again["complete"] is True
     order = list(again["per_certificate"])
     assert order[0] == "c" and order.index("b") < order.index("a"), order
+
+
+def test_a_report_stamped_in_the_future_is_never_fresh(tmp_path) -> None:
+    rep = tmp_path / "r.json"
+    rep.write_text(json.dumps({"complete": True, "generated_utc": "2030-01-01T00:00:00+00:00"}),
+                   "utf-8")
+    certs = tmp_path / "c.json"
+    certs.write_text(json.dumps({"survivors": {}}), "utf-8")
+    doc = sn.run(certs_path=certs, fallback=tmp_path / "x.json", report_path=rep,
+                 weekly_path=tmp_path / "w.json", build=lambda *a, **k: None)
+    assert doc["status"] != "FRESH"
+
+
+def test_overlapping_signals_follow_the_engines_single_position_rule() -> None:
+    df = _bars(seed=5)
+    t = df.index[400 * 24]
+    sigs = [_Sig(t, 1, ttl_bars=24), _Sig(df.index[400 * 24 + 5], 1, ttl_bars=24),
+            _Sig(df.index[400 * 24 + 30], 1, ttl_bars=24)]
+    y, _X = sn.style_matrix(df["close"].to_numpy(), df.index, sigs)
+    assert len(y) == 2                    # the second opens inside the first's window

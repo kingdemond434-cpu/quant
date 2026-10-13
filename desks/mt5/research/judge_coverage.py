@@ -1292,11 +1292,20 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
 
         def novelty_factor(fam: str) -> float:
             return 1.0 + max(0.0, min(1.0, _sn.family_novelty(fam, _nov_measured)))
+
+        def _nov_source(fam: str) -> str:
+            if fam in _nov_measured:
+                return "MEASURED"
+            cls = _sn.genealogy(fam)[1]
+            return "UNMEASURED" if cls.startswith("UNMEASURED") else "GENEALOGY"
     except Exception:
         _nov_measured = {}
 
         def novelty_factor(fam: str) -> float:
             return 1.0
+
+        def _nov_source(fam: str) -> str:
+            return "UNMEASURED"
     per_cell_s = judge_seconds_per_cell(capacity)
     cost_units: dict[str, list[float]] = {}
     for row in rows:
@@ -1353,7 +1362,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
             "orthogonality_factor": round(ortho_f, 4), "certificate_factor": round(cert_f, 4),
             "keff_factor": round(kf, 4),
             "novelty_factor": round(nov_f, 4),
-            "novelty_source": "MEASURED" if fam in _nov_measured else "GENEALOGY",
+            "novelty_source": _nov_source(fam),
             "marginal_rank": sig.get("marginal_rank"),
             "certs_per_judge_hour": sig.get("certs_per_judge_hour"),
             # BANNED / UNMEASURED / UNDER_JUDGED / MEASURED_ZERO / CERTIFYING -- a zero pass rate
