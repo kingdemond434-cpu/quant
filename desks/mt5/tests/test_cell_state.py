@@ -7,6 +7,7 @@ UNMEASURED path, the ledger's transitions and KPIs, and the refresh_bars hand-of
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -223,6 +224,7 @@ def test_refresh_bars_prefers_the_queue_and_falls_back(tmp_path: Path) -> None:
 
 HANDOFF_FIELDS = {"cell", "family", "trial_family", "symbol", "timeframe", "reason", "class",
                   "axes", "missing_input", "why", "first_parked_utc", "source"}
+assert set(cs.HANDOFF_FIELDS) | {"source"} == HANDOFF_FIELDS
 
 
 def test_gate_minus2_rows_use_the_one_handoff_schema(host: Path, tmp_path: Path) -> None:
@@ -235,11 +237,12 @@ def test_gate_minus2_rows_use_the_one_handoff_schema(host: Path, tmp_path: Path)
     lp, rp = tmp_path / "cell_state_ledger.json", tmp_path / "CELL_STATE.json"
     k = cs.publish(rows, ledger_path=lp, report_path=rp, bank=bank, now=NOW)
     assert k["convert"] == 5, "four Gate -2 conversions and one parked bank cell"
-    q = json.loads((tmp_path / cs.CONVERT_QUEUE.name).read_text("utf-8"))
+    q = json.loads((tmp_path / cs.CONVERSION_HANDOFF.name).read_text("utf-8"))
     assert q["schema_version"] == 1 and q["n"] == len(q["rows"]) == 4
     assert set(q) == {"schema_version", "generated_utc", "n", "rows"}
     for r in q["rows"]:
-        assert HANDOFF_FIELDS <= set(r) and r["source"] == "cell_state"
+        assert set(r) >= HANDOFF_FIELDS
+        assert r["source"] == "cell_state"
         assert r["trial_family"] == r["family"]
         assert r["axes"] == cs.HANDOFF_ROUTES[r["class"]]["axes"]
     by_sym = {r["symbol"]: r for r in q["rows"]}
@@ -260,7 +263,7 @@ def test_queue_is_written_empty_and_consumption_reads_the_sidecar(host: Path,
                                                                   tmp_path: Path) -> None:
     lp, rp = tmp_path / "cell_state_ledger.json", tmp_path / "CELL_STATE.json"
     cs.publish([], ledger_path=lp, report_path=rp, bank={}, now=NOW)
-    q = json.loads((tmp_path / cs.CONVERT_QUEUE.name).read_text("utf-8"))
+    q = json.loads((tmp_path / cs.CONVERSION_HANDOFF.name).read_text("utf-8"))
     assert q["n"] == 0 and q["rows"] == []
     rows, _ = cs.stamp([_row("WTI"), _row("NOPE")], _ctx(host))
     cell = rows[0]["cell_state"]["cell"]
@@ -298,3 +301,92 @@ def test_gate_ledger_is_read_incrementally(tmp_path: Path) -> None:
     assert cs.judged_outcomes(led, cur) == {"a": True, "b": True}, "half line waits a pass"
     led.write_text(json.dumps({"cell": "z", "passed": True}) + "\n", "utf-8")
     assert cs.judged_outcomes(led, cur) == {"z": True}, "a shorter ledger is re-read from 0"
+
+
+# ------------------------------------------------------------------------------------- audit MF1
+def test_a_flag_clears_when_its_cause_is_gone(host: Path) -> None:
+    """Two passes: flagged for missing M15 bars, then the chart lands -- the next pass strips
+    last pass's flag and the cell is READY and unflagged, while another organ's flag stays."""
+    row = _row(tf="M15")
+    row["prejudge"] = {"flags": ["redqueen:x"], "rules_hash": "h"}
+    rows, _ = cs.stamp([row], _ctx(host))
+    assert rows[0]["cell_state"]["state"] == cs.BLOCKED
+    assert "gate_minus2:bars" in rows[0]["prejudge"]["flags"]
+    banked = json.loads(json.dumps(rows))                    # what the docket bank hands back
+    (host / "EURUSD_M15.parquet").write_bytes((host / "EURUSD_H1.parquet").read_bytes())
+    assert cs.strip_stale(banked) == 1
+    assert "cell_state" not in banked[0]
+    assert banked[0]["prejudge"]["flags"] == ["redqueen:x"]
+    again, _ = cs.stamp(banked, _ctx(host))
+    assert again[0]["cell_state"]["state"] == cs.READY
+    assert again[0]["prejudge"]["flags"] == ["redqueen:x"]
+
+
+def test_a_flag_only_gate_minus2_made_leaves_no_prejudge_behind(host: Path) -> None:
+    rows, _ = cs.stamp([_row(tf="M15")], _ctx(host))
+    banked = json.loads(json.dumps(rows))
+    (host / "EURUSD_M15.parquet").write_bytes((host / "EURUSD_H1.parquet").read_bytes())
+    again, summ = cs.stamp(banked, _ctx(host))             # stamp re-derives even unstripped
+    assert "prejudge" not in again[0] and summ["flagged"] == 0
+    out, _ = pj.demote_flagged(again, {})
+    assert out[0]["cell_state"]["state"] == cs.READY
+
+
+# ------------------------------------------------------------------------------------- audit MF2
+def _ledger(path: Path, rows: list[dict]) -> None:
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+
+
+def test_a_rotated_shorter_ledger_is_read_from_zero(tmp_path: Path) -> None:
+    led, cur = tmp_path / "gate_verdict_ledger.jsonl", tmp_path / "cursor.json"
+    _ledger(led, [{"cell": f"c{i}", "terminal_gate": "G3", "passed": False} for i in range(50)])
+    assert len(cs.judged_outcomes(led, cur)) == 50
+    led.rename(tmp_path / "gate_verdict_ledger.jsonl.1")    # rotate: a NEW file at the path
+    _ledger(led, [{"cell": "n1", "passed": True}, {"cell": "n2", "terminal_gate": "G5"}])
+    assert cs.judged_outcomes(led, cur) == {"n1": True, "n2": False}
+
+
+def test_a_same_size_rewrite_is_detected_by_its_head(tmp_path: Path) -> None:
+    led, cur = tmp_path / "gate_verdict_ledger.jsonl", tmp_path / "cursor.json"
+    _ledger(led, [{"cell": "aaa", "passed": True}])
+    cs.judged_outcomes(led, cur)
+    with led.open("r+b") as fh:                             # same inode, same size, new content
+        fh.write(json.dumps({"cell": "bbb", "passed": True}).encode() + b"\n")
+    _ledger_more = {"cell": "ccc", "terminal_gate": "G1"}
+    with led.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(_ledger_more) + "\n")
+    assert cs.judged_outcomes(led, cur) == {"bbb": True, "ccc": False}
+
+
+def test_an_unchanged_ledger_does_not_rewrite_the_cursor(tmp_path: Path) -> None:
+    led, cur = tmp_path / "gate_verdict_ledger.jsonl", tmp_path / "cursor.json"
+    _ledger(led, [{"cell": "a", "passed": True}])
+    cs.judged_outcomes(led, cur)
+    before = cur.stat().st_mtime_ns
+    cur.write_text(cur.read_text("utf-8"), "utf-8")
+    os.utime(cur, ns=(before, before))
+    assert cs.judged_outcomes(led, cur) == {"a": True}
+    assert cur.stat().st_mtime_ns == before
+
+
+# ------------------------------------------------------------------------------------- audit MF3
+def test_handoff_is_one_file_one_row_per_cell(tmp_path: Path) -> None:
+    hand = tmp_path / cs.CONVERSION_HANDOFF.name
+    hand.write_text(json.dumps({"schema_version": 1, "generated_utc": "t", "n": 3, "rows": [
+        {"cell": "BANK.a", "family": "f", "reason": "never_fires", "class": "x",
+         "first_parked_utc": "2026-10-10T00:00:00+00:00"},
+        {"cell": "BOTH.b", "family": "f", "reason": "too_rare", "class": "x",
+         "first_parked_utc": "2026-10-12T00:00:00+00:00"},
+        {"cell": "OLD.c", "source": "cell_state", "first_parked_utc": "2026-10-01T00:00:00+00:00"},
+    ]}), "utf-8")
+    mine = [{"cell": "BOTH.b", "first_parked_utc": "2026-10-11T00:00:00+00:00", "class": "y"},
+            {"cell": "NEW.d", "first_parked_utc": "2026-10-13T00:00:00+00:00", "class": "y"}]
+    doc, info = cs.fold_handoff(json.loads(hand.read_text("utf-8")), mine, at="now")
+    cells = [r["cell"] for r in doc["rows"]]
+    assert sorted(cells) == ["BANK.a", "BOTH.b", "NEW.d"], "last pass's own rows are replaced"
+    assert len(cells) == len(set(cells)) == doc["n"]
+    both = next(r for r in doc["rows"] if r["cell"] == "BOTH.b")
+    assert both["first_parked_utc"] == "2026-10-11T00:00:00+00:00", "earliest is kept"
+    assert info["deduped_by_cell"] == 1 and info["from_other_writer"] == 2
+    empty, _ = cs.fold_handoff(None, [], at="now")
+    assert empty == {"schema_version": 1, "generated_utc": "now", "n": 0, "rows": []}

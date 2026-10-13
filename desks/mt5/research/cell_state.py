@@ -51,11 +51,12 @@ DATA_SOURCE_PERMANENTLY_UNAVAILABLE, or a parked never-fires / too-rare bank cel
 `convert_from`, and the cell enters CONVERT under the ONE converter contract: the handoff row
 schema of `judge_coverage.write_conversion_handoff` (`conversion_handoff.json`), with a failure
 `class` from its FAILURE_ROUTES and that route's `axes`. This module writes its Gate -2 rows to
-`data/hypotheses/cell_convert_queue.json` (same schema, `source: "cell_state"`), which is folded
-into the one handoff file Breadth reads; parked bank cells are handed off by the bank's own
-writer, never twice. Breadth owns the converter, its attempts sidecar
-(`data/conversion_attempts.jsonl`) and its staleness fence. A queued cell counts as consumed
-when that sidecar holds a row for it; an absent or unreadable sidecar is UNMEASURED.
+`data/hypotheses/conversion_handoff.json` -- the ONE file Breadth reads -- folded beside the
+parked bank's rows (`source: "cell_state"`, one row per cell, earliest first_parked_utc kept);
+parked bank cells are handed off by the bank's own writer, never twice. Breadth owns the
+converter, its attempts sidecar (`data/conversion_attempts.jsonl`) and its staleness fence. A
+handed-off cell counts as consumed when that sidecar holds a row for it; an absent or
+unreadable sidecar is UNMEASURED.
 
 THE FENCE PUBLISHED HERE is the no-limbo one only: a waiting cell that names no dependency or
 repair owner fails it. Its verdict is written into CELL_STATE.json on every merge pass.
@@ -99,8 +100,13 @@ SKIP_LEDGERS = (UNIVERSE / "bar_coverage_skips.json", UNIVERSE / "bar_coverage_t
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
 LEDGER = HYP / "cell_state_ledger.json"
 REPORT = BASE / "reports" / "CELL_STATE.json"
-#: THE HAND-OFF TO THE BREADTH CONVERTER, in the one contract (judge_coverage's handoff schema).
-CONVERT_QUEUE = HYP / "cell_convert_queue.json"
+#: THE HAND-OFF TO THE BREADTH CONVERTER: ONE file, judge_coverage's `conversion_handoff.json`.
+#: Gate -2's rows are folded into it (deduped by cell, earliest first_parked_utc kept), so the
+#: converter reads one input and a parent is never handed over twice.
+CONVERSION_HANDOFF = HYP / "conversion_handoff.json"
+HANDOFF_FIELDS: tuple[str, ...] = ("cell", "family", "trial_family", "symbol", "timeframe",
+                                   "reason", "class", "axes", "missing_input", "why",
+                                   "first_parked_utc")
 HANDOFF_SCHEMA_VERSION = 1
 CONVERT_QUEUE_MAX = 20000
 #: Breadth's own sidecar: one row per conversion attempt. Read only, never written here.
@@ -117,7 +123,7 @@ JUDGED_PASS, JUDGED_FAIL = "JUDGED_PASS", "JUDGED_FAIL"
 #: NO CELL EVER ENDS UNTESTABLE (principal's standing rule, 2026-10-13 16:45Z). What would have
 #: been a terminal "cannot be judged" verdict is recorded as the cell's `convert_from` and the
 #: cell enters CONVERT: a conversion reason is named and the cell is handed to the Breadth
-#: converter (`CONVERT_QUEUE`), whose converted child re-enters the judge queue ranked by
+#: converter (`conversion_handoff.json`), whose converted child re-enters the judge queue ranked by
 #: UnlockValue. The only absorbing states are the two JUDGED verdicts.
 IMPOSSIBLE = "IMPOSSIBLE_TO_BUILD"
 NO_HISTORY = "INSUFFICIENT_PUBLIC_HISTORY"
@@ -138,7 +144,8 @@ HANDOFF_ROUTES: dict[str, dict[str, Any]] = {
                                          "cross_asset_transplant"]},
     "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
 }
-CONVERTER_OWNER = "breadth_converter"
+#: The converter's owner, by the name the desk gives it; the converter sets its own row owners.
+CONVERTER_OWNER = "Breadth and tier assessment"
 TERMINALS: tuple[str, ...] = (JUDGED_PASS, JUDGED_FAIL)
 WAITING: tuple[str, ...] = (BLOCKED, REPAIRING, CONVERT)
 STATES: tuple[str, ...] = (CREATED, PREFLIGHT, READY, JUDGING, BLOCKED, REPAIRING, CONVERT,
@@ -187,8 +194,8 @@ OWNERS: dict[str, str] = {
     "universe_registry": "fetch_universe (the registry gains the symbol)",
     "family_registry": "mt5desk.families (the family resolves)",
     "judge": "the sealed judge's next sweep (names the reason; ranked by UnlockValue)",
-    "breadth_converter": "the Breadth converter (owned by the Breadth session): consumes "
-                         "data/hypotheses/cell_convert_queue.json and mints the converted child",
+    CONVERTER_OWNER: "the Breadth converter (owned by the Breadth session): consumes "
+                         "data/hypotheses/conversion_handoff.json and mints the converted child",
 }
 
 
@@ -370,15 +377,15 @@ def judged_outcomes(path: Path, cursor: Path | None = None) -> dict[str, bool]:
     """
     out: dict[str, bool] = {}
     start = 0
+    ident: dict[str, Any] | None = None
+    prior_offset = -1
     if cursor is not None:
-        doc = _read(cursor)
-        try:
-            size = path.stat().st_size
-        except OSError:
+        ident = file_identity(path)
+        if ident is None:
             return out
-        if isinstance(doc, dict) and str(doc.get("path")) == str(path) \
-                and isinstance(doc.get("offset"), int) and 0 <= doc["offset"] <= size:
-            start = int(doc["offset"])
+        doc = _read(cursor)
+        if isinstance(doc, dict) and cursor_resumes(doc, path, ident):
+            start = prior_offset = int(doc["offset"])
             out.update(dict.fromkeys(doc.get("passed") or [], True))
             out.update(dict.fromkeys(doc.get("failed") or [], False))
     try:
@@ -407,9 +414,10 @@ def judged_outcomes(path: Path, cursor: Path | None = None) -> dict[str, bool]:
             if not passed and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
                 continue
             out[str(row["cell"])] = passed
-    if cursor is not None:
+    if cursor is not None and offset != prior_offset:
+        # nothing appended: the cursor (tens of MB on the box) is left exactly as it is
         try:
-            body = {"path": str(path), "offset": offset,
+            body = {"path": str(path), "offset": offset, **(ident or {}),
                     "passed": sorted(c for c, v in out.items() if v),
                     "failed": sorted(c for c, v in out.items() if not v)}
             tmp = cursor.with_suffix(cursor.suffix + ".tmp")
@@ -418,6 +426,50 @@ def judged_outcomes(path: Path, cursor: Path | None = None) -> dict[str, bool]:
         except OSError:
             pass
     return out
+
+
+#: Bytes hashed from the head of a ledger to recognise it after a rotation or a rewrite.
+HEAD_BYTES = 4096
+
+
+def file_identity(path: Path) -> dict[str, Any] | None:
+    """What makes a ledger THE SAME FILE across passes: its device and inode, and a hash of its
+    first HEAD_BYTES (an append-only file never changes its head; a rotated, truncated or
+    rewritten one does, even when a filesystem reuses the inode). None when unreadable."""
+    try:
+        st = path.stat()
+        with path.open("rb") as fh:
+            head = fh.read(HEAD_BYTES)
+    except OSError:
+        return None
+    import hashlib
+    return {"dev": int(st.st_dev), "inode": int(st.st_ino), "size": int(st.st_size),
+            "head_len": len(head), "head_sha": hashlib.sha256(head).hexdigest()}
+
+
+def cursor_resumes(doc: Mapping[str, Any], path: Path, ident: Mapping[str, Any]) -> bool:
+    """True only when the cursor describes THIS file and it has only grown since: same path,
+    device and inode, offset within the current size, and the head hashed at the cursor's
+    recorded length unchanged. Anything else re-reads from byte 0 (duplicates are idempotent:
+    the last verdict per cell wins)."""
+    off = doc.get("offset")
+    if str(doc.get("path")) != str(path) or not isinstance(off, int) or off < 0:
+        return False
+    if off > int(ident["size"]):
+        return False                                   # truncated or replaced by a shorter file
+    if doc.get("dev") != ident["dev"] or doc.get("inode") != ident["inode"]:
+        return False                                   # rotated: a different file at this path
+    n = int(doc.get("head_len") or 0)
+    if not doc.get("head_sha") or n > int(ident["size"]):
+        return False
+    if n == ident["head_len"]:
+        return bool(doc["head_sha"] == ident["head_sha"])
+    try:
+        import hashlib
+        with path.open("rb") as fh:
+            return hashlib.sha256(fh.read(n)).hexdigest() == doc["head_sha"]
+    except OSError:
+        return False
 
 
 def attempted_cells(path: Path) -> set[str] | None:
@@ -634,6 +686,39 @@ def _required_input(fam: str) -> str | None:
         return None
 
 
+def _without_own_flags(pj: Any) -> dict[str, Any] | None:
+    """A copy of a row's `prejudge` with every Gate -2 flag taken out; None when nothing else
+    is left in it (Gate -2 created that dict). Never mutates the input."""
+    if not isinstance(pj, Mapping):
+        return None
+    flags = [f for f in (pj.get("flags") or []) if not str(f).startswith(FLAG_PREFIX)]
+    new = {**pj, "flags": flags}
+    return None if not flags and set(new) <= {"flags"} else new
+
+
+def strip_stale(rows: list[dict[str, Any]]) -> int:
+    """LAST PASS'S GATE -2 VERDICT NEVER CARRIES OVER. Banked rows come back with their
+    `prejudge` flags and `cell_state` stamp; every `gate_minus2:*` flag is taken off (other
+    organs' flags stay) and the stamp dropped, so this pass re-derives both from current
+    evidence -- a cell whose bars landed, whose family now resolves or whose PIT stamp is
+    repaired is judgeable again. Call it BEFORE anything reads `prejudge.flags`. Returns the
+    number of rows whose flags changed."""
+    n = 0
+    for r in rows:
+        pj = r.get("prejudge")
+        if isinstance(pj, Mapping) and any(str(f).startswith(FLAG_PREFIX)
+                                           for f in pj.get("flags") or []):
+            new = _without_own_flags(pj)
+            if new is None:
+                del r["prejudge"]
+            else:
+                r["prejudge"] = new
+            n += 1
+        if "cell_state" in r:
+            del r["cell_state"]
+    return n
+
+
 def stamp(rows: list[dict[str, Any]], ctx: Context | None = None
           ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Stamp every row with its Gate -2 state and flag the HOLDs and terminals. Same rows, same
@@ -647,6 +732,13 @@ def stamp(rows: list[dict[str, Any]], ctx: Context | None = None
     by_state: Counter[str] = Counter()
     flagged = 0
     for row in rows:
+        # re-derived every pass: last pass's own flags never survive into this one
+        if isinstance(row.get("prejudge"), Mapping):
+            _clean = _without_own_flags(row["prejudge"])
+            if _clean is None:
+                del row["prejudge"]
+            else:
+                row["prejudge"] = _clean
         cell = cell_of(row)
         verdicts = gate_minus2(row, ctx, seen=seen, genomes=genomes, cell=cell)
         judged = ctx.judged.get(cell) if cell else None
@@ -709,7 +801,7 @@ def unmeasured_checks(ctx: Context) -> list[str]:
 #: missing inputs are repairable HOLDs with their own owners, not conversions.
 #: Classes are judge_coverage.FAILURE_CLASS's for the same reasons. These cells are handed to the
 #: converter by the bank's own writer (`write_conversion_handoff`), so they are COUNTED here and
-#: never written to CONVERT_QUEUE a second time.
+#: never folded into the handoff a second time.
 BANK_CONVERSION: dict[str, str] = {"never_fires": "untestable_as_specified",
                                    "too_rare": "untestable_as_specified",
                                    "lockbox_consumed_history": "short_history",
@@ -914,7 +1006,7 @@ def build(rows: list[dict[str, Any]], *, bank: Mapping[str, Mapping[str, Any]],
             "by_source": dict(Counter(str(e.get("source")) for _, e in converting).most_common()),
             "rule": ("no cell ends untestable: every would-be terminal is CONVERT with a failure "
                      "class and axes from the one route table; Gate -2 rows go to "
-                     "cell_convert_queue.json, bank rows to the bank's own handoff writer, and "
+                     "conversion_handoff.json, folded beside the bank's own rows, and "
                      "Breadth owns the converter and its staleness fence"),
         },
         "transitions_last_pass": dict(transitions.most_common(40)),
@@ -950,7 +1042,7 @@ def publish(rows: list[dict[str, Any]], *, ledger_path: Path | None = None,
     ledger, report = build(rows, bank=bank, prior=prior if isinstance(prior, dict) else None,
                            capacity=capacity, readmit=readmit, now=t)
     qrows = report.pop("_convert_queue", [])
-    qp = lp.parent / CONVERT_QUEUE.name
+    qp = lp.parent / CONVERSION_HANDOFF.name
     ap_ = attempts_path or (CONVERSION_ATTEMPTS if lp == LEDGER
                             else lp.parent / CONVERSION_ATTEMPTS.name)
     attempted = attempted_cells(ap_)
@@ -961,8 +1053,8 @@ def publish(rows: list[dict[str, Any]], *, ledger_path: Path | None = None,
         consumer=("MEASURED" if attempted is not None else "UNMEASURED"),
         consumer_why=(None if attempted is not None else
                       f"{ap_.name} is absent or unreadable: consumption is unmeasured, not zero"))
-    queue_doc = {"schema_version": HANDOFF_SCHEMA_VERSION, "generated_utc": report["at"],
-                 "n": len(qrows[:CONVERT_QUEUE_MAX]), "rows": qrows[:CONVERT_QUEUE_MAX]}
+    queue_doc, folded = fold_handoff(_read(qp), qrows[:CONVERT_QUEUE_MAX], at=report["at"])
+    report["convert"].update(handoff=folded)
     problems = fence(report)
     report["fence"] = {"verdict": "FAIL" if problems else "PASS", "problems": problems,
                        "rule": "every waiting cell names its dependency and repair owner"}
@@ -974,6 +1066,51 @@ def publish(rows: list[dict[str, Any]], *, ledger_path: Path | None = None,
         tmp.write_text(json.dumps(doc, indent=indent, default=str), "utf-8")
         os.replace(tmp, path)
     return dict(report["kpi"])
+
+
+def _earlier(a: Any, b: Any) -> bool:
+    """True when stamp `a` is strictly earlier than `b`; an unparseable stamp is never earlier."""
+    ta, tb = _ts(a), _ts(b)
+    return ta is not None and (tb is None or ta < tb)
+
+
+def fold_handoff(existing: Any, rows: list[dict[str, Any]], *, at: str
+                 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Fold Gate -2's handoff rows into the one `conversion_handoff.json`.
+
+    The other writer's rows (judge_coverage.write_conversion_handoff, the parked bank) are kept;
+    this module's own rows from the last pass (`source: "cell_state"`) are replaced by this
+    pass's, so a cell whose cause is gone leaves the handoff. ONE ROW PER CELL: a cell in both
+    keeps the earliest `first_parked_utc`, so a parent is never handed over -- or charged its
+    trials -- twice. The file is written even when empty."""
+    keep: dict[str, dict[str, Any]] = {}
+    other = 0
+    if isinstance(existing, dict):
+        for r in existing.get("rows") or []:
+            if not isinstance(r, dict) or not r.get("cell") or r.get("source") == "cell_state":
+                continue
+            keep[str(r["cell"])] = r
+            other += 1
+    deduped = 0
+    for r in rows:
+        row = {k: r.get(k) for k in HANDOFF_FIELDS}
+        row["source"] = "cell_state"
+        row["unlock_value"] = r.get("unlock_value")
+        c = str(row["cell"])
+        prior = keep.get(c)
+        if prior is not None:
+            deduped += 1
+            if _earlier(row["first_parked_utc"], prior.get("first_parked_utc")):
+                prior = {**prior, "first_parked_utc": row["first_parked_utc"]}
+            keep[c] = prior
+            continue
+        keep[c] = row
+    out_rows = list(keep.values())
+    doc = {"schema_version": HANDOFF_SCHEMA_VERSION, "generated_utc": at, "n": len(out_rows),
+           "rows": out_rows}
+    return doc, {"file": CONVERSION_HANDOFF.name, "rows_total": len(out_rows),
+                 "from_other_writer": other, "from_cell_state": len(rows) - deduped,
+                 "deduped_by_cell": deduped}
 
 
 def _bank_with_readmit(now: datetime) -> tuple[dict[str, dict[str, Any]], dict[str, bool]]:

@@ -961,6 +961,17 @@ def main() -> int:
     # family-balanced. Whatever slice the judge's budget reaches, that slice holds every family
     # with backlog. Nothing is dropped; `breadth_order` remains the fallback, and a failure in
     # the allocator can only cost the ORDER, never a row.
+    # LAST PASS'S GATE -2 FLAGS NEVER CARRY OVER (research/cell_state.strip_stale): banked rows
+    # come back with their `gate_minus2:*` flags and `cell_state` stamp, so both are taken off
+    # BEFORE anything reads `prejudge.flags`, and re-derived below from this pass's evidence.
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research import cell_state as _cst0
+        _cst0.strip_stale(rows_out)
+    except Exception as exc:
+        print(f"   gate -2 strip unavailable ({type(exc).__name__}: {exc})")
     judged = judged_by_family()
     _rl_fam, _rl_why = alpha_rl_family_values()
     print(f"   alpha_rl family values: {_rl_why}")
