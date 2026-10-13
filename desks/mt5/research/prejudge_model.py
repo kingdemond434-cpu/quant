@@ -45,6 +45,7 @@ nothing.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import math
@@ -83,6 +84,12 @@ PERCENTILE = float(os.environ.get("PREJUDGE_PERCENTILE", "50"))
 EXPLORATION_QUOTA = float(os.environ.get("PREJUDGE_EXPLORATION_QUOTA", "0.10"))
 #: A family with fewer never-judged rows than this is left alone -- a median of three is noise.
 MIN_FAMILY_ROWS = 4
+#: NO FLAG OUTLIVES THIS (audit of #330). A flagged row sorts behind every clean row of its
+#: family, so under a backlog that never empties it would never be reached: the audit's sim at
+#: 100/h inflow against 60/h capacity left two symbols with cells waiting the whole 336h while
+#: FIFO kept every symbol under 135h. A row first seen longer ago than this is never flagged, so it
+#: sorts as clean (oldest first) and its wait is bounded. Unknown age is treated as old.
+FLAG_MAX_AGE_H = float(os.environ.get("PREJUDGE_FLAG_MAX_AGE_H", "72"))
 #: Training sample cap (stratified by family x label, inverse-inclusion weighted).
 MAX_TRAIN_ROWS = int(os.environ.get("PREJUDGE_MAX_TRAIN_ROWS", "200000"))
 PER_KEY_CAP = max(500, MAX_TRAIN_ROWS // 50)
@@ -331,11 +338,23 @@ def _matrix(sample: list[tuple[str, str, str, str, int, float]], tables: Tables
     return xs, ys, ws
 
 
+def _one_thread() -> Any:
+    """ONE OpenMP THREAD (audit of #330): unpinned, the booster took 170.5s on 50k rows against
+    5.5s pinned, and 536s on 300k against the 600s leg budget with the box at 98.7% CPU -- the
+    judge never takes CPU from the miners."""
+    try:
+        from threadpoolctl import threadpool_limits
+        return threadpool_limits(limits=1)
+    except Exception:
+        return contextlib.nullcontext()
+
+
 def _fit(xs: list[list[float]], ys: list[int], ws: list[float]) -> Any:
     from sklearn.ensemble import HistGradientBoostingClassifier
     clf = HistGradientBoostingClassifier(max_iter=150, learning_rate=0.1, max_leaf_nodes=31,
                                          l2_regularization=1.0, random_state=0)
-    clf.fit(xs, ys, sample_weight=ws)
+    with _one_thread():
+        clf.fit(xs, ys, sample_weight=ws)
     return clf
 
 
@@ -429,6 +448,11 @@ class Scorer:
         if want:
             try:
                 blob = (mdir / MODEL_PATH.name).read_bytes()
+                auc = schema.get("auc_holdout")
+                # A MODEL THAT NEVER BEAT A COIN ON HELD-OUT CELLS ORDERS NOTHING (audit of #330):
+                # UNMEASURED or <= 0.5 holdout AUC leaves the rate tables to answer.
+                if not isinstance(auc, (int, float)) or float(auc) <= 0.5:
+                    return cls(schema, None)
                 if hashlib.sha256(blob).hexdigest() == want:
                     import sklearn  # noqa: F401 -- unpickling needs it; absent -> tables
                     model = pickle.loads(blob)  # noqa: S301 -- our artifact, hash-verified
@@ -442,7 +466,9 @@ class Scorer:
         if self.model is not None and cells:
             try:
                 xs = [self.tables.features(k, fp) for k, fp in zip(keys, priors, strict=True)]
-                return [float(v) for v in self.model.predict_proba(xs)[:, 1]]
+                with _one_thread():
+                    probs = self.model.predict_proba(xs)[:, 1]
+                return [float(v) for v in probs]
             except Exception:
                 self.status = "PRIOR_FALLBACK (model predict failed)"
         return [self.tables.fallback_p(k, fp) for k, fp in zip(keys, priors, strict=True)]
@@ -515,6 +541,17 @@ def _seen_cells(path: Path) -> set[str] | None:
     return set(doc) if isinstance(doc, dict) else None
 
 
+def _age_h(first_seen: Any, now: datetime) -> float:
+    """Hours since the row was first seen; unknown or unparseable age is infinitely old."""
+    try:
+        seen = datetime.fromisoformat(str(first_seen).replace("Z", "+00:00"))
+    except ValueError:
+        return math.inf
+    if seen.tzinfo is None:
+        seen = seen.replace(tzinfo=UTC)
+    return max(0.0, (now - seen).total_seconds() / 3600.0)
+
+
 def _flag(r: dict[str, Any], p: float) -> None:
     pj = r.get("prejudge")
     if isinstance(pj, dict):
@@ -553,6 +590,7 @@ def apply(rows: list[dict[str, Any]], *, now: datetime | None = None,
         "rows": len(rows), "stale_flags_removed": stale, "scorer": sc.status,
         "percentile": pct, "exploration_quota": q, "flagged": 0, "explored": 0,
         "candidates": 0, "judged_skipped": 0, "moved": 0, "families": {},
+        "flag_max_age_h": FLAG_MAX_AGE_H, "aged_unflaggable": 0,
     }
     if judged is None:
         summary["status"] = "NOT_APPLIED: seen-cell index unreadable, never-judged unknown"
@@ -565,6 +603,9 @@ def apply(rows: list[dict[str, Any]], *, now: datetime | None = None,
             continue
         if cid in judged:
             summary["judged_skipped"] += 1
+            continue
+        if _age_h(r.get("first_seen"), when) > FLAG_MAX_AGE_H:
+            summary["aged_unflaggable"] += 1          # waits as a clean row: no starvation
             continue
         by_fam.setdefault(str(r.get("family") or ""), []).append((i, cid))
     vt, term_status = value_terms(sc.tables)
@@ -582,7 +623,8 @@ def apply(rows: list[dict[str, Any]], *, now: datetime | None = None,
         low = sorted((c, i, p) for p, v, (i, c) in zip(ps, pr, members, strict=True) if v < cut)
         if not low:
             continue
-        n_explore = min(len(low), int(len(low) * q + 0.5))
+        # CEIL, never round (audit of #330): a family with four flagged rows still explores one.
+        n_explore = min(len(low), math.ceil(len(low) * q)) if q > 0 else 0
         seed = int(hashlib.sha256(f"{summary['data_day']}|{fam}".encode()).hexdigest()[:16], 16)
         rng = random.Random(seed)  # noqa: S311 -- reproducible exploration, never a secret
         explore = set(rng.sample(range(len(low)), n_explore))

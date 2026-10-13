@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -23,8 +23,9 @@ NOW = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
 SYMS = ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "XAUUSD")
 
 
-def _row(sym: str, fam: str, i: int) -> dict[str, Any]:
-    return {"symbol": sym, "family": fam, "params": {"k": i}, "source": "test"}
+def _row(sym: str, fam: str, i: int, seen_h: float = 1.0) -> dict[str, Any]:
+    return {"symbol": sym, "family": fam, "params": {"k": i}, "source": "test",
+            "first_seen": (NOW - timedelta(hours=seen_h)).isoformat()}
 
 
 def _docket(n_per_fam: int = 40, fams: tuple[str, ...] = ("good", "bad")) -> list[dict]:
@@ -193,3 +194,67 @@ def test_report_names_unmeasured_terms(tmp_path: Path) -> None:
     assert doc["apply"]["terms"]["compute_cost"].startswith(pm.UNMEASURED)
     assert doc["feature_terms"]["session"].startswith(pm.UNMEASURED)
     assert doc["model"]["auc_holdout"] == pm.UNMEASURED
+
+
+def test_a_row_older_than_the_flag_bound_is_never_flagged() -> None:
+    """Audit of #330: no flag outlives FLAG_MAX_AGE_H, and an unknown age counts as old."""
+    rows = _docket()
+    for r in rows[:20]:
+        r["first_seen"] = (NOW - timedelta(hours=pm.FLAG_MAX_AGE_H + 1)).isoformat()
+    for r in rows[20:30]:
+        del r["first_seen"]
+    out, doc = pm.apply(rows, now=NOW, scorer=_fixed(rows), seen=set(), report=None)
+    aged = {docket_cell_id(r) for r in rows[:30]}
+    assert not (_flagged(out) & aged) and doc["aged_unflaggable"] == 30
+
+
+def test_a_family_with_few_low_rows_still_explores_one() -> None:
+    rows = _docket(n_per_fam=8, fams=("good",))
+    _, doc = pm.apply(rows, now=NOW, scorer=_fixed(rows), seen=set(), report=None,
+                      percentile=50, quota=0.10)
+    assert doc["families"]["good"]["explored"] == 1
+
+
+def test_a_model_no_better_than_a_coin_orders_nothing(tmp_path: Path) -> None:
+    pytest.importorskip("sklearn")
+    pm.train(ledger=_ledger(tmp_path / "ledger.jsonl"), model_dir=tmp_path / "m", force=True)
+    schema = tmp_path / "m" / "model.json"
+    for auc in (0.5, pm.UNMEASURED):
+        doc = json.loads(schema.read_text("utf-8"))
+        doc["auc_holdout"] = auc
+        schema.write_text(json.dumps(doc), "utf-8")
+        sc = pm.Scorer.load(tmp_path / "m")
+        assert sc.model is None and sc.status == "PRIOR_FALLBACK", auc
+
+
+def test_no_symbol_starves_under_a_backlog_that_never_empties() -> None:
+    """The audit's starvation case: inflow 100/h against capacity 60/h, two symbols the scorer
+    ranks last. With the age bound their oldest wait stays within FIFO's plus the bound."""
+    def run(bound: float) -> float:
+        old = pm.FLAG_MAX_AGE_H
+        pm.FLAG_MAX_AGE_H = bound
+        try:
+            queue: list[dict] = []
+            worst = 0.0
+            for hour in range(150):
+                now = NOW + timedelta(hours=hour)
+                for i in range(100):
+                    sym = SYMS[i % len(SYMS)]
+                    r = {"symbol": sym, "family": "f", "params": {"k": hour * 100 + i},
+                         "source": "sim", "first_seen": now.isoformat()}
+                    queue.append(r)
+                sc = FixedScorer()
+                sc.by_cell = {docket_cell_id(r): (0.01 if r["symbol"] in SYMS[3:] else 0.5)
+                              for r in queue}
+                queue, _ = pm.apply(queue, now=now, scorer=sc, seen=set(), report=None)
+                queue = queue[60:]
+                for r in queue:
+                    seen = datetime.fromisoformat(r["first_seen"])
+                    worst = max(worst, (now - seen).total_seconds() / 3600.0)
+            return worst
+        finally:
+            pm.FLAG_MAX_AGE_H = old
+
+    fifo = run(-1.0)                      # nothing is ever young enough to flag: pure FIFO
+    bounded = run(pm.FLAG_MAX_AGE_H)
+    assert bounded <= fifo + pm.FLAG_MAX_AGE_H + 1.0, (bounded, fifo)
