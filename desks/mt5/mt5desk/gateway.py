@@ -3641,7 +3641,27 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
             continue
         tag = order_comment(str(name))
         if tag in roster_tags:
-            log(f"[{name}] OFF-ROSTER TTL skipped: its tag {tag!r} is shared with a roster sleeve")
+            # The tag cannot tell this sleeve's position from the live twin's, but the intent
+            # ledger can: it recorded the ticket this name was sent under. Close by that ticket;
+            # with no ticket to go on, skip THIS pass and keep the deadline, so the position is
+            # retried every pass and never silently loses its time exit (audit of #325).
+            mine = _intent_tickets(str(name))
+            held = [p for p in (mt5.positions_get() or [])
+                    if str(getattr(p, "comment", "") or "") == tag
+                    and (int(getattr(p, "ticket", 0) or 0) in mine
+                         or int(getattr(p, "identifier", 0) or 0) in mine)]
+            if not held:
+                log(f"[{name}] OFF-ROSTER TTL deferred: its tag {tag!r} is shared with a roster "
+                    "sleeve and no recorded ticket of its own is open; deadline kept")
+                continue
+            for p in held:
+                _book_target(str(name), str(p.symbol), 0.0, "ttl")
+                if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
+                    log(f"[{name}] OFF-ROSTER TTL: closing its own ticket {p.ticket} "
+                        f"on {p.symbol} (tag shared with a roster sleeve)")
+                    _close_position(str(name), p)
+                else:
+                    log(f"[{name}] SHADOW would TTL-close ticket {p.ticket} on {p.symbol}")
             srec.pop("open_ttl_until", None)
             continue
         held = [p for p in (mt5.positions_get() or [])
@@ -3654,6 +3674,42 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
             else:
                 log(f"[{name}] SHADOW would TTL-close off-roster position(s) on {symbol}")
         srec.pop("open_ttl_until", None)
+
+
+def _intent_tickets(name: str, path: Path | None = None) -> set[int]:
+    """Every ticket the intent ledger recorded for `name`. Read-only; unreadable is empty."""
+    out: set[int] = set()
+    try:
+        lines = (path or INTENTS).read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return out
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and str(row.get("sleeve") or "") == name:
+            with contextlib.suppress(TypeError, ValueError):
+                if row.get("ticket"):
+                    out.add(int(row["ticket"]))
+    return out
+
+
+def _close_position(name: str, p) -> None:  # noqa: ANN001 -- an MT5 TradePosition
+    """Close exactly one position by its ticket -- never a symbol's book, never a tag's."""
+    tick = mt5.symbol_info_tick(str(p.symbol))
+    if tick is None:
+        log(f"[{name}] CLOSE ticket {p.ticket} deferred: no tick")
+        return
+    res = mt5.order_send({
+        "action": mt5.TRADE_ACTION_DEAL, "symbol": str(p.symbol), "volume": p.volume,
+        "type": (mt5.ORDER_TYPE_SELL if p.type == mt5.POSITION_TYPE_BUY
+                 else mt5.ORDER_TYPE_BUY),
+        "position": p.ticket,
+        "price": tick.bid if p.type == mt5.POSITION_TYPE_BUY else tick.ask,
+        "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+    })
+    log(f"[{name}] CLOSE ticket {p.ticket} -> retcode={res.retcode if res else None}")
 
 
 def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
