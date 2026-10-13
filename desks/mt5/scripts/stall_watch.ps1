@@ -86,10 +86,17 @@ foreach ($pat in $patterns) {
            Where-Object { $_.CommandLine -match $pat } | Sort-Object CreationDate
   if (-not $procs) { continue }
 
-  # STACKED: keep the oldest parent; kill the rest UNLESS they are its own children
+  # STACKED: keep the oldest parent; kill the rest UNLESS they are its own children OR its
+  # SIBLINGS (2026-10-13). The sharded judge launches its shard children side by side from one
+  # launcher, and each child's command line names external_gauntlet, so every shard after the
+  # oldest read as a duplicate and was killed -- a parallel wave collapsed to one shard plus
+  # serial retries. A true duplicate is a second sweep from a different launcher.
+  # NOTE: two runs launched DIRECTLY by Task Scheduler share its svchost as parent and both
+  # survive this rule; MultipleInstances IgnoreNew and the judge's certification_lane lock
+  # (rc 75) are what serialise those, not STACKED.
   $keeper = $procs[0]
   foreach ($p in ($procs | Select-Object -Skip 1)) {
-    if ($p.ParentProcessId -ne $keeper.ProcessId) {
+    if ($p.ParentProcessId -ne $keeper.ProcessId -and $p.ParentProcessId -ne $keeper.ParentProcessId) {
       Stop-Process -Id $p.ProcessId -Force
       $actions += "STACKED ${pat}: killed duplicate pid $($p.ProcessId) (kept oldest $($keeper.ProcessId))"
     }
