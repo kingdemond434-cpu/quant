@@ -1272,5 +1272,21 @@ def main() -> int:
     return 0
 
 
+def run_cli() -> int:
+    """All runtime entry points share one writer and the canonical memory admission."""
+    import sys
+
+    for path in (BASE, BASE.parents[1]):
+        if str(path) not in sys.path:
+            sys.path.insert(0, str(path))
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("merge_hypotheses", need_mb=14000) as acquired:
+        if not acquired:
+            print("merge_hypotheses: DEFERRED -- canonical writer or memory admission unavailable")
+            return 75  # transient deferral must not read as a completed publication
+        return main()
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(run_cli())

@@ -1,0 +1,20 @@
+{
+  "integration_rows": 255,
+  "projection_matches_integration": true,
+  "sealed_prefix_sha256": "889d4da1d61ba909f1de59a1fba4949acaf6aa89834a5581840310458929c084",
+  "raw_live_records_modified": false,
+  "consumer_regression_tests_passed": 139,
+  "negative_and_io_tests_passed": 6,
+  "new_module_lint": "PASS",
+  "released": false,
+  "adopted": false,
+  "remaining": [
+    "Full canonical checks and independent review",
+    "Commit, push, green CI and signed release",
+    "Canonical adoption with downstream consumption proof"
+  ],
+  "shared_consumers_wired": 6,
+  "correction_stream_sealed": true,
+  "immutable_fence": "PASS",
+  "original_seals_preserved": 194
+}

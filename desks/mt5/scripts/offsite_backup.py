@@ -14,8 +14,13 @@ protects against nothing that takes the box. `ops_redundancy` has reported the g
 HOW. restic: client-side AES-256 encryption (the destination only ever holds ciphertext),
 content-addressed deduplication (a 6-hourly run uploads only new ticks) and versioned snapshots
 with a retention policy. One run: `backup` every time; `forget --prune` with the retention below
-once a day; `check --read-data-subset` once a week, which downloads and decrypts a sample and is
-the restore evidence (a backup nobody has read back is a claim, L1.49).
+once a day; `check --read-data-subset` once a week, which downloads and decrypts a sample; and a
+RESTORE DRILL once a week, which is the restore evidence (a backup nobody has read back is a
+claim, L1.49). `check` proves the packs decrypt; it never writes a file back to disk or compares
+one with the original, so on its own it is not a restore. The drill restores a bounded sample of
+files from the latest snapshot into a temporary directory and compares each with the box's copy:
+byte-identical when the source is unchanged since the snapshot, otherwise readable as its format
+(JSON parses, Parquet carries its magic, any other file is non-empty). Recovery drills, 2026-10-06.
 
 WHAT NEVER LEAVES THE BOX, encrypted or not: `data/secrets/**` (standing law) and the terminal's
 `accounts.dat` (the broker login). Both are hard exclusions below, not configuration.
@@ -37,10 +42,12 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
 import os
 import shutil
 import subprocess
+import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -50,7 +57,8 @@ ROOT = BASE.parent.parent
 CONFIG = ROOT / "data" / "secrets" / "offsite_backup.json"
 OUT = BASE / "reports" / "OFFSITE_BACKUP.json"
 RESTIC_CANDIDATES = (r"C:\opt\restic\restic.exe", r"C:\ProgramData\chocolatey\bin\restic.exe")
-#: Box-only data, in priority order. A path that does not exist is listed as missing, never an error.
+#: Box-only data, in priority order. A path that does not exist is listed as missing, never an
+#: error.
 SOURCES: tuple[str, ...] = (
     r"C:\moat\bronze",
     str(ROOT / "data" / "tape"),
@@ -64,6 +72,11 @@ RETENTION = ("--keep-hourly", "24", "--keep-daily", "30", "--keep-weekly", "12",
 PRUNE_EVERY = timedelta(hours=20)
 CHECK_EVERY = timedelta(days=7)
 CHECK_SUBSET = "2%"
+RESTORE_EVERY = timedelta(days=7)
+#: The drill's sample: at most this many files, none larger than this, so a weekly drill costs
+#: minutes and megabytes rather than a full download of the tick archive.
+RESTORE_FILES = 24
+RESTORE_MAX_BYTES = 32 * 1024 * 1024
 TIMEOUT_S = 5 * 3600
 
 
@@ -106,6 +119,120 @@ def _summary(stdout: str) -> dict[str, Any]:
     return {}
 
 
+def _sha256(p: Path) -> str:
+    h = hashlib.sha256()
+    with p.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _readable(p: Path) -> bool:
+    """Is a restored file usable as its format? JSON parses, Parquet has its magic both ends,
+    anything else is non-empty."""
+    try:
+        if p.suffix.lower() == ".json":
+            json.loads(p.read_text("utf-8"))
+            return True
+        if p.suffix.lower() == ".parquet":
+            with p.open("rb") as f:
+                head = f.read(4)
+                f.seek(-4, os.SEEK_END)
+                return head == b"PAR1" and f.read(4) == b"PAR1"
+        return p.stat().st_size > 0
+    except (OSError, ValueError):
+        return False
+
+
+def _sample(nodes: list[dict[str, Any]], k: int = RESTORE_FILES) -> list[dict[str, Any]]:
+    """Up to k restorable files, spread across the snapshot: every n-th of the size-bounded files
+    in path order, so the drill touches every source rather than one directory."""
+    files = sorted((n for n in nodes if n.get("type") == "file"
+                    and 0 < int(n.get("size") or 0) <= RESTORE_MAX_BYTES),
+                   key=lambda n: str(n.get("path")))
+    step = max(1, len(files) // k) if files else 1
+    return files[::step][:k]
+
+
+def _restored_at(target: Path, snap_path: str) -> Path | None:
+    """Where restic wrote `snap_path` under `target`, matched on the FULL path below the drive.
+
+    restic keeps a Windows drive as a leading component (`/C/opt/...`), so the direct join can
+    miss; the fallback matches every component after the drive, never the bare file name -- tick
+    archives reuse one name across symbol directories, and a name match would grade one symbol's
+    file against another's source."""
+    parts = [p for p in snap_path.replace("\\", "/").split("/") if p and p != "."]
+    if not parts:
+        return None
+    rel = "/".join(parts[1:] if len(parts) > 1 and parts[0].rstrip(":").isalpha()
+                   and len(parts[0].rstrip(":")) == 1 else parts)
+    for cand in target.rglob(parts[-1]):
+        if cand.is_file() and cand.relative_to(target).as_posix().endswith(rel):
+            return cand
+    return None
+
+
+def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
+                  now: datetime | None = None) -> dict[str, Any]:
+    """Restore a sample of the latest snapshot to a temp directory and compare it with the box.
+
+    PASS needs at least one file restored and every restored file either byte-identical to its
+    unchanged source or readable as its format; a file the snapshot lists but the restore did not
+    write is a failure. Never touches the sources: the target is a fresh temporary directory."""
+    now = now or datetime.now(tz=UTC)
+    rep: dict[str, Any] = {"at": now.isoformat(timespec="seconds")}
+    ls = runner([exe, "ls", "--json", "latest", "--tag", "quant-box"], env)
+    if ls.returncode != 0:
+        rep.update(verdict="FAIL", why=f"restic ls latest exit {ls.returncode}")
+        return rep
+    nodes = []
+    for line in ls.stdout.splitlines():
+        with contextlib.suppress(ValueError):
+            d = json.loads(line)
+            if isinstance(d, dict) and d.get("struct_type") == "node":
+                nodes.append(d)
+    pick = _sample(nodes)
+    if not pick:
+        rep.update(verdict="FAIL", why="the latest snapshot lists no restorable file")
+        return rep
+    with tempfile.TemporaryDirectory(prefix="restore_drill_") as tmp:
+        inc = [a for n in pick for a in ("--include", str(n["path"]))]
+        r = runner([exe, "restore", "latest", "--tag", "quant-box", "--target", tmp, *inc], env)
+        rep["restore_exit"] = r.returncode
+        files: list[dict[str, Any]] = []
+        for n in pick:
+            snap_path = str(n["path"])
+            got = Path(tmp) / snap_path.lstrip("/").replace(":", "")
+            if not got.exists():
+                got = _restored_at(Path(tmp), snap_path) or got
+            row: dict[str, Any] = {"path": snap_path, "size": n.get("size")}
+            if not got.exists():
+                row["result"] = "MISSING"
+            else:
+                src = Path(snap_path[1] + ":" + snap_path[2:]) if (
+                    os.name == "nt" and len(snap_path) > 2 and snap_path[0] == "/"
+                    and snap_path[2] == "/") else Path(snap_path)
+                same = False
+                # CONTENT, NEVER TIMESTAMPS: restic reports mtime in the box's local zone, so a
+                # string compare against a UTC stamp never matched off-UTC and IDENTICAL could not
+                # occur. Same size and same SHA-256 is identical; a source edited since the
+                # snapshot differs and falls through to the format check, as it should.
+                with contextlib.suppress(OSError):
+                    same = (src.stat().st_size == got.stat().st_size
+                            and _sha256(src) == _sha256(got))
+                row["result"] = ("IDENTICAL" if same else
+                                 "READABLE" if _readable(got) else "CORRUPT")
+            files.append(row)
+    rep["files"] = files
+    bad = [f for f in files if f["result"] in ("MISSING", "CORRUPT")]
+    rep["counts"] = {k: sum(1 for f in files if f["result"] == k)
+                     for k in ("IDENTICAL", "READABLE", "MISSING", "CORRUPT")}
+    rep["verdict"] = "FAIL" if bad or r.returncode != 0 else "PASS"
+    rep["why"] = (f"{len(files) - len(bad)}/{len(files)} sampled files restored and verified"
+                  if not bad else f"{len(bad)} sampled file(s) missing or corrupt after restore")
+    return rep
+
+
 def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         sources: tuple[str, ...] = SOURCES, runner: Any = _run,
         restic: str | None = None, now: datetime | None = None) -> dict[str, Any]:
@@ -119,6 +246,7 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         "retention": " ".join(RETENTION), "encryption": "restic AES-256 (client side)",
         "last_success_at": prev.get("last_success_at"), "last_prune_at": prev.get("last_prune_at"),
         "last_check_at": prev.get("last_check_at"), "last_check_ok": prev.get("last_check_ok"),
+        "restore_drill": prev.get("restore_drill"),
         "key_escrowed_off_box": bool(cfg.get("key_escrowed_off_box")),
     }
     exe = restic if restic is not None else restic_bin()
@@ -158,6 +286,13 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
             if _due(prev, "last_check_at", CHECK_EVERY, now):
                 c = runner([exe, "check", f"--read-data-subset={CHECK_SUBSET}"], env)
                 doc["last_check_at"], doc["last_check_ok"] = doc["at"], c.returncode == 0
+            last_drill = _ts((doc.get("restore_drill") or {}).get("at"))
+            if last_drill is None or now - last_drill >= RESTORE_EVERY:
+                try:
+                    doc["restore_drill"] = restore_drill(exe, env, runner, now)
+                except Exception as exc:   # a drill that cannot run is a failed drill
+                    doc["restore_drill"] = {"at": doc["at"], "verdict": "FAIL",
+                                            "why": f"{type(exc).__name__}: {exc}"[:300]}
         doc["status"] = "OK" if ok else "FAIL"
         if not ok:
             doc["why"] = (b.stderr or "").strip().splitlines()[-1][:300] if b.stderr else \
@@ -180,10 +315,16 @@ def verdict(doc: dict[str, Any], now: datetime | None = None) -> tuple[str, str]
         return "STALE", f"last encrypted off-site snapshot {doc.get('last_success_at')}"
     if chk is None or now - chk > timedelta(days=8) or not doc.get("last_check_ok"):
         return "UNVERIFIED", "snapshots exist but no passing read-back check in 8 days"
+    rd = doc.get("restore_drill") or {}
+    rd_at = _ts(rd.get("at"))
+    if rd_at is None or now - rd_at > timedelta(days=8) or rd.get("verdict") != "PASS":
+        return "UNVERIFIED", ("snapshots decrypt, but no passing RESTORE drill in 8 days: "
+                              f"{rd.get('why') or 'never restored'}")
     if not doc.get("key_escrowed_off_box"):
         return "KEY_NOT_ESCROWED", ("encrypted and verified, but the repository password is not "
                                     "attested as held off the box: a dead box takes the key")
-    return "PASS", f"encrypted off-site snapshot {doc.get('last_success_at')}, read back OK"
+    return "PASS", (f"encrypted off-site snapshot {doc.get('last_success_at')}, read back OK, "
+                    f"restore drill {rd.get('why')}")
 
 
 def main(argv: list[str] | None = None) -> int:

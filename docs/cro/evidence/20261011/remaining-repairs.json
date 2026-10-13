@@ -1,0 +1,617 @@
+{
+  "at": "2026-10-11T12:18:07.643681+00:00",
+  "status": "OWNED_IMPLEMENTATION_VERIFIED_RELEASE_BLOCKED",
+  "repair_checkout": "C:\\opt\\quant-codex-closure",
+  "branch": "codex/repair-closure-20261009",
+  "head": "fd950f32657fb9c7d36be3bbafae56dd3d900086",
+  "git_ownership": "RESTORED: exact owner repair verified; normal Git reads work",
+  "source_write_access": "RESTORED",
+  "implemented": [
+    "Shared literal raw-COT and exact-named H1 FX input reconstruction",
+    "Malformed candidate identity preflight before expensive primary bar loads",
+    "Timezone/unit-safe COT entry lookup preserving existing release lag",
+    "Malformed params refused before conversion in forward/live resolver",
+    "QuantBench exact reviewed gauntlet byte pin and authorization updated",
+    "Heavy-clock marginal admission measured against cash even when book is empty",
+    "Future failed builds retain frozen received inputs, SHA256 and a result-collection clock; missing historical specifications are counted explicitly",
+    "Replay cache identity covers builder, input loaders and all family modules so a repair cannot reuse superseded input reconstruction"
+  ],
+  "tests": {
+    "input-final-regression-20261011-v2.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "37",
+        "time": "13.403",
+        "timestamp": "2026-10-11T13:52:10.052224+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "admission-final-regression-20261011-v2.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "59",
+        "time": "37.586",
+        "timestamp": "2026-10-11T13:55:26.754737+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "deferral-final-regression-20261011.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "51",
+        "time": "15.094",
+        "timestamp": "2026-10-11T14:10:45.747982+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "cache-final-regression-20261011.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "43",
+        "time": "15.403",
+        "timestamp": "2026-10-11T14:13:47.137120+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "input-seal-final-regression-20261011.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "37",
+        "time": "11.718",
+        "timestamp": "2026-10-11T14:14:42.937013+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "deferral-clock-final-regression-20261011.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "14",
+        "time": "4.519",
+        "timestamp": "2026-10-11T14:17:17.446455+02:00",
+        "hostname": "vmi3571445"
+      }
+    ]
+  },
+  "unique_tests_passed_this_turn": 147,
+  "canonical_fast_gate": {
+    "at": "2026-10-11T12:16:48+00:00",
+    "tested_sha": "fd950f32657fb9c7d36be3bbafae56dd3d900086",
+    "tested_code_hash": "f0bd5b986939e82d6240a493a3f93c79564510ce66b47c846a91053c7a3b023b",
+    "gates": "fast",
+    "result": "pass",
+    "tree_clean": false,
+    "dirty_paths": 21,
+    "note": "tested_sha is HEAD when the run finished. tree_clean considers CODE paths only -- a modified ledger cannot change what the interpreter executed, while a modified .py voids the claim and still sets this false"
+  },
+  "canonical_head_law_gate": {
+    "mode": "laws",
+    "ok": true,
+    "n_fences": 41,
+    "subject": "HEAD in a detached worktree (50 file(s) dirty in cwd, excluded)",
+    "n_failed": 0,
+    "failures": [],
+    "results": [
+      {
+        "fence": "check_constitution_core.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "constitution core intact (5 clauses + sealed 218-section master + 27-line injected doctrine block verified)"
+      },
+      {
+        "fence": "check_autostash.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "check_autostash: OK -- no implicit stash is reachable and no stash entry exists"
+      },
+      {
+        "fence": "build_enforcement_matrix.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "-> data\\enforcement_matrix.json"
+      },
+      {
+        "fence": "check_law_families.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "-> C:\\Users\\Administrator\\.cache\\quant-lawgate\\lawgate-head-snrvtl3w\\t\\data\\law_families.json"
+      },
+      {
+        "fence": "check_enforcement_execution.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "-> data\\enforcement_execution.json"
+      },
+      {
+        "fence": "check_timidity_language.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "-> data\\timidity_audit.json"
+      },
+      {
+        "fence": "check_scheduler_manifest.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "scheduler-manifest: OK"
+      },
+      {
+        "fence": "check_build_standard.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "build standard (L1.41): OK -- 54/54 organs meet the build standard"
+      },
+      {
+        "fence": "check_sizing_derivation.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "sizing derivation (L1.41): OK -- 67 money-path constants across 7 modules, 0 without a cited derivation"
+      },
+      {
+        "fence": "check_return_targeting.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "return targeting (L1.23/handoff): OK -- 5 governed surfaces scanned; no return number bound to goal language"
+      },
+      {
+        "fence": "check_extractor_invariants.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  next: declare an invariant on libs/autodiscovery/reports.py (set EXTRACTOR_INVARIANT, or check the parse with libs.research.conservation); 35 extractors carry none"
+      },
+      {
+        "fence": "check_strategy_breadth.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "strategy breadth (L1.32): OK -- all 14 hunting surfaces carry the mandate; surfaces-only mode: the breadth measurement reads live state that a clean checkout does not have, so it runs in the b"
+      },
+      {
+        "fence": "check_birth_properties.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "-> C:\\Users\\Administrator\\.cache\\quant-lawgate\\lawgate-head-snrvtl3w\\t\\data\\birth_properties.json"
+      },
+      {
+        "fence": "check_birth_obligations.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "birth certificate_birth    52 object(s),   32 incomplete,   0 healed -- 20/52 certificates carry a birth record (20 name a producer by exact identity, 0 record why none could be reached)"
+      },
+      {
+        "fence": "check_self_repair.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "self-repair: 12 defect class(es) -- AUTOMATED 0, DETECTED 0, MANUAL 0 (floor 0), UNMEASURED 12 -- not the trading host, so detector silence here is UNMEASURED, not a defect"
+      },
+      {
+        "fence": "check_growth_governance.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "growth governance: OK"
+      },
+      {
+        "fence": "check_forward_enrolment.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "forward enrolment: OK"
+      },
+      {
+        "fence": "check_tier5_audit.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  FINAL MAXIMUM-AGGRESSIVE 1-170: DUPLICATIVE 1, EXISTS+WIRED+LIVE 136, PARTIAL 32, REFUSED_CONSERVATIVE 1"
+      },
+      {
+        "fence": "check_tier_s_program.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "tier S programme: 46 layers; BLOCKED_ON_USER 2; BUILT 43; PARTIAL 1"
+      },
+      {
+        "fence": "check_experiment_contracts.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  OBLIGATION: leg world_macro_proposer: registered with no experiment contract -- declare one in experiment_contracts.json"
+      },
+      {
+        "fence": "check_plumbing_invariants.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "plumbing invariants: EXAMPLE 1, PROPERTY 4, PROOF 2 (7 total); 69 enforcing node(s) collected"
+      },
+      {
+        "fence": "check_immutable_evaluator.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  frozen files 19  records 4 (absent=2, rebuilt=1, verified=1)  generators scanned 60  rewrite scan 82 module(s), 1 declared rewriter(s)"
+      },
+      {
+        "fence": "check_immutable_rails.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "immutable rails: OK -- 68 rails, 45 evolvable paths; seal HELD, lineage UNMEASURED, head MEASURED"
+      },
+      {
+        "fence": "check_external_federation.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  note desks/mt5/data/external_federation.json is absent or empty: the federation organ has not written state here (portable mode: UNMEASURED, not a breach)"
+      },
+      {
+        "fence": "check_component_registry.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "component registry: 1383 spec(s) over 1037 executable(s); coverage 1.0; 1 with no clock (ratchet 2); 0 registry problem(s), 0 drift row(s)"
+      },
+      {
+        "fence": "check_productivity_census.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "PRODUCTIVITY CENSUS FENCE: UNMEASURED -- no census artifact on this host (desks\\mt5\\reports\\PRODUCTIVITY_CENSUS.json): the census cannot be judged here, which is a verdict and not a pass. Run with --r"
+      },
+      {
+        "fence": "check_producer_yield.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  -> C:\\Users\\Administrator\\.cache\\quant-lawgate\\lawgate-head-snrvtl3w\\t\\desks\\mt5\\reports\\PRODUCER_YIELD.json"
+      },
+      {
+        "fence": "check_family_evaluability.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  -> C:\\Users\\Administrator\\.cache\\quant-lawgate\\lawgate-head-snrvtl3w\\t\\desks\\mt5\\reports\\FAMILY_EVALUABILITY.json"
+      },
+      {
+        "fence": "check_exemption_falsifiers.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  UNMEASURED: desks/mt5/reports/MODULE_RENT_RESEARCH.json absent or unreadable (FileNotFoundError): which exemptions have expired is UNMEASURED on this host, which is a verdict and not a pass (L1.28a)"
+      },
+      {
+        "fence": "check_grid_occupancy.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  UNMEASURED: no INDEPENDENCE_INTAKE.json on this host. The organ publishes it on its own clock; a host that does not run it has nothing to judge, which is a verdict and never a pass on the merits (L1"
+      },
+      {
+        "fence": "check_certificate_truth.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "   SNAPSHOT: these divergences are in the committed copy of the box's state; the box gate (--require-state) judges the live stores. Migrate on the box: python desks/mt5/research/certificate_truth.py -"
+      },
+      {
+        "fence": "check_runtime_attestation.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "   ratchet: UNMEASURED: no floor recorded for vm -- the next attestation pass on that host sets one"
+      },
+      {
+        "fence": "check_no_retirement_on_absence.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "check_no_retirement_on_absence: OK"
+      },
+      {
+        "fence": "check_regional_parity.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  countries: 135/135 answered by a pack"
+      },
+      {
+        "fence": "check_region_ratchet.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  UNMEASURED: REGION_RATCHET.json is absent or unreadable -- desks/mt5/research/attribution_census.py has not run on this host"
+      },
+      {
+        "fence": "check_recommendation_flow.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  -> C:\\Users\\Administrator\\.cache\\quant-lawgate\\lawgate-head-snrvtl3w\\t\\desks\\mt5\\reports\\RECOMMENDATION_FLOW.json"
+      },
+      {
+        "fence": "check_coverage_drain.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "coverage drain: UNMEASURED -- C:\\Users\\Administrator\\.cache\\quant-lawgate\\lawgate-head-snrvtl3w\\t\\desks\\mt5\\reports\\COVERAGE_DRAIN.json is absent or unreadable: the coverage drain has not run on this "
+      },
+      {
+        "fence": "check_judge_coverage.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "judge coverage: UNMEASURED -- JUDGE_COVERAGE.json is absent or carries no family table; this tree holds no judge-coverage state (L1.28a)"
+      },
+      {
+        "fence": "check_write_or_explain.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "write-or-explain wiring: WIRED -- the write-or-explain contract is called at the cycle's leg boundary"
+      },
+      {
+        "fence": "check_bare_excepts.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "  ... and 3 more (--fix-list for all)"
+      },
+      {
+        "fence": "check_known_by_date.py",
+        "ok": true,
+        "rc": 0,
+        "detail": "known-by-date: 64 reader(s) of 21 declared source(s); 15 routed through a lag, 0 offender(s) (floor 0), 0 healed; no-join: 37 routed in code, 12 declared, 0 undeclared; certificate inputs OK (7 provid"
+      }
+    ],
+    "generated": "2026-10-11T12:12:46.136698+00:00"
+  },
+  "record_seals_unchanged": true,
+  "historical_record_seals_preserved": 194,
+  "source_sha256": {
+    "desks/mt5/data/IMMUTABLE_MANIFEST.json": "44216c1a44d4444304cd2edf8f229772c908f2861f36627d39acc1c60904f6e8",
+    "desks/mt5/mt5desk/families.py": "181cadefb47f11c76d2313872208d764d3220215a0e87085f763f6fbfe2781e6",
+    "desks/mt5/mt5desk/family_inputs.py": "2c8b2afebe9b8bcf609c88a745df7d73cbe7c3d787eceb50062881916a63d0ea",
+    "desks/mt5/research/burn_in.py": "6b91b5eff50af092f75a25190962f473e6e81acdfe0714bcf636b3aef423c2a5",
+    "desks/mt5/research/pf_allocator.py": "0f2c64e556bedbea31c22b5912cf7157b45a477a28682700555267f868404f2c",
+    "desks/mt5/research/quantbench.py": "05cfc69d4f4a0bb52e08a936121fe1c2e05d1a11c29a4004aa866f0510abba3c",
+    "desks/mt5/research/research_artifacts.py": "a51e2cd77e41ff1fb6fd79e8d0f7e0f7f59019ea5f4df4582be60a03735e30c6",
+    "desks/mt5/scripts/external_gauntlet.py": "44505acc9652daf074acc90702c279fac77e0dc8af51dfa1fd81093f5335922c",
+    "desks/mt5/scripts/warm_gauntlet_cache.py": "e62dc31dcd8b4b9853efa26dfb0825339acfab440c97d4a795e3d5c1dc2c5259",
+    "desks/mt5/tests/conftest.py": "d0166d4ef014020a439d83e703c15a2ca625e575f6811be824f804c72728a723",
+    "desks/mt5/tests/test_entry_geometry_integrity.py": "db646f4dba6c512a47df27139303f42e98d21b63ec782249c7f9f6b95ac16d6c",
+    "desks/mt5/tests/test_quantbench.py": "d8f937e51be8c1eaee56105535cec78dab7dbb2b6debc9a479d65adb41e597d7",
+    "desks/mt5/tests/test_release_identity.py": "0cbf3804696aa303dc3e5f4e5a56fd8ef954b33a9c277e6489520d251dcb33c2",
+    "desks/mt5/tests/test_research_artifacts.py": "823a147904ad20a14a7667511d98ba860797d81326ac9ec1d4d655f08a6c6d12",
+    "desks/mt5/tests/test_warm_gauntlet_defers_never_drops.py": "9bd7fccb74fd7cae12aa8d4df7be9efa3374475ad3f33b3a28673dbb68fdfc02",
+    "libs/validation/independent_replica.py": "5664408209c650589c14f004f8ea938c68ab8109058b4f31b8f2b5e34ffa1472",
+    "libs/validation/replay2.py": "a002827611ea80799fae3e800e52d214774ffe620ca9c4fd683f9e528c606714",
+    "scripts/check_immutable_evaluator.py": "05cdcc0a548b8a59c09e81a667a76917bce71d9a4abafdea846d89fc7230cf1d",
+    "tests/conftest.py": "cc19a5fede4eaa7d2e89af8271815e0dc1bb2b4ca44cd3c3d968069758f8095c",
+    "tests/scripts/test_check_credentials.py": "f9e362a3c41b6694f9114d95f3c2b31806733c77cc5e30892ff83bb79efb2e13",
+    "tests/scripts/test_check_immutable_evaluator_wall.py": "d26997c8646c90a048d41e3f3f76f50dd10b16a46f28fb2a4563036925174e98",
+    "desks/mt5/mt5desk/legacy_family_inputs.py": "769486bc358813cad39da42b5881f9820cf9c0e4cf51b497eedf053482099617",
+    "desks/mt5/tests/test_legacy_family_inputs.py": "8e5dee658ac2f611cdc871704ba37059efdfd65ffbea3bd455adc818be375a1e",
+    "desks/mt5/tests/test_empty_book_admission_clock.py": "75afc1be1d4792a5e18fdafc12a072ec66d6ac293de3aefc07e71a1702554bfc",
+    "desks/mt5/tests/test_replay_input_cache_identity.py": "39b7927db9f8cf56aedb2497f914ddda22d3df5cfce7439a91840e482cd4f0d2"
+  },
+  "review_patch": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\remaining-repairs-complete-20261011.patch",
+  "review_patch_sha256": "2ca808e2f9d4e246cf99bd13b14e9c15be1f3859fe3fa88d06ed61c9a4cadf9d",
+  "excluded_private_fixture_state": [
+    "desks/mt5/data/broker_clock.json",
+    "desks/mt5/data/compute_ledger.jsonl",
+    "desks/mt5/data/coverage_high_water.json",
+    "desks/mt5/data/events.jsonl",
+    "desks/mt5/data/release_identity.json"
+  ],
+  "preserved_uncommitted_journal": "context/decision_journal.jsonl",
+  "index_changed": false,
+  "code_committed_this_turn": false,
+  "full_required_validation_complete": false,
+  "published": false,
+  "production_deployed": false,
+  "production_consumer_receipt": false,
+  "release_identity": {
+    "ok": true,
+    "running_sha": "2b1a96b1736147cd86dc3d5b24d8b726000b653c",
+    "release_sha": "cb341efee62c08f363123d0a002334da90769b4b",
+    "reason": "running 2b1a96b17361 is the sealed code cb341efee62c plus seal/state commits only (6357 path(s))",
+    "age_h": 65.436,
+    "stale": false,
+    "measured": true,
+    "stale_refuses": false,
+    "source": "git",
+    "release_id": "416ccb3d215b",
+    "changed_paths": [],
+    "drift": [],
+    "report": [
+      "survivor canon on disk differs from the sealed one (reported only)"
+    ],
+    "at": "2026-10-11T06:37:45+00:00",
+    "tested_sha": "UNMEASURED",
+    "tested_gates": "UNMEASURED",
+    "allocator_certificate": "529f2c15e493ed1e@2026-10-11T06:37:49.053593+00:00 proof=FAILED book=equal_weight",
+    "ci_run_id": "UNMEASURED",
+    "allows_new_risk": true,
+    "verdict": "OK"
+  },
+  "capital": {
+    "authenticated_read_only_fusion": {
+      "at": "2026-10-11T11:59:44.957850+00:00",
+      "mode": "AUTHENTICATED_READ_ONLY_NO_ORDER_API",
+      "account": "ACCOUNT_REDACTED",
+      "server": "FusionMarkets-Live",
+      "currency": "EUR",
+      "balance": 561.26,
+      "equity": 561.26,
+      "positions": [],
+      "orders": [],
+      "closed_positions": [
+        {
+          "position": 233203619,
+          "symbol": "XAUUSD",
+          "net_pnl": -2.08,
+          "deal_ids": [
+            209450045,
+            209452555
+          ],
+          "contains_entry": true,
+          "contains_exit": true
+        },
+        {
+          "position": 233700226,
+          "symbol": "AUDCHF",
+          "net_pnl": 0.95,
+          "deal_ids": [
+            209520348,
+            209521615
+          ],
+          "contains_entry": true,
+          "contains_exit": true
+        },
+        {
+          "position": 233796519,
+          "symbol": "XAUUSD",
+          "net_pnl": 12.37,
+          "deal_ids": [
+            209602291,
+            209675004
+          ],
+          "contains_entry": true,
+          "contains_exit": true
+        }
+      ],
+      "e8_authenticated_snapshot": "BLOCKED: e8_tradelocker.json PermissionError; no alternate credential route attempted"
+    },
+    "arm_or_order_or_allocation_changed": false,
+    "E8": "Prior native credential PermissionError unresolved; no alternate credential route"
+  },
+  "judging": {
+    "at": "2026-10-11T12:16:19+00:00",
+    "verdicts": {
+      "status": "MEASURED",
+      "rows_total": 844310,
+      "rows_unstamped": 0,
+      "last_verdict_at": "2026-10-11T08:19:58+00:00",
+      "counts": {
+        "1h": 0,
+        "24h": 6620,
+        "7d": 423810
+      },
+      "count_basis": "changed verdict events; unchanged retests do not append",
+      "first_terminal_counts": {
+        "1h": 0,
+        "24h": 3508,
+        "7d": 138015
+      },
+      "first_terminal_cells": 278395,
+      "first_terminal_per_hour": {
+        "1h": 0.0,
+        "24h": 146.167,
+        "7d": 821.518
+      },
+      "per_hour": {
+        "1h": 0.0,
+        "24h": 275.833,
+        "7d": 2522.679
+      }
+    },
+    "created": {
+      "status": "MEASURED",
+      "counts": {
+        "24h": 59254,
+        "7d": 194650
+      },
+      "per_hour": {
+        "24h": 2468.917,
+        "7d": 1158.631
+      }
+    },
+    "verdicts_per_hour": 275.833,
+    "verdicts_per_day": 6620.0,
+    "verdict_rate_basis": "changed verdict events, not total completed tests",
+    "first_judged_per_day": 3508.0,
+    "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
+    "coverage_backlog_fresh": false,
+    "created_per_day": 59254.0,
+    "backlog": "UNMEASURED",
+    "backlog_source": "No fresh full-docket coverage",
+    "eta_to_drain": {
+      "status": "UNMEASURED",
+      "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
+    },
+    "workers_planned": 15,
+    "workers_last_sweep": "UNMEASURED",
+    "cores_basis": "UNMEASURED",
+    "owner": "quant-codex-midnight-cro",
+    "mode": "MEASUREMENT_ONLY_NO_APPLY",
+    "reconciliation": {
+      "canonical_creation_source": "research_candidates.created_at in read-only SQLite snapshot",
+      "burndown_creation_source": "external_survivors.json.first_seen older exported docket",
+      "burndown_24h_created": 108,
+      "coverage_content_at": "2026-10-07T20:54:44+00:00",
+      "burndown_eta_accepted": false,
+      "why": "A stale denominator and different intake clocks cannot support current queue ETA."
+    }
+  },
+  "judging_target_achieved": false,
+  "deferral_identity_measurement": {
+    "at": "2026-10-11T12:11:51.846505+00:00",
+    "source": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\warm_deferrals.json",
+    "source_content_at": "2026-10-11T08:58:40Z",
+    "deferred": 142660,
+    "with_frozen_spec": 0,
+    "without_frozen_spec": 142660,
+    "existing_records_changed": false
+  },
+  "live_allocator_before_deployment": {
+    "at": "2026-10-11T12:15:44.553417+00:00",
+    "mode": "heavy",
+    "book": {},
+    "admission_at": "2026-10-05T18:52:27.964428+00:00",
+    "proof_passed": false
+  },
+  "previous_material_changes": {
+    "prior_frozen_source_unchanged_except_intentional_quantbench_rotation": true,
+    "bounded_dispatch_and_geometry_and_net_cost_repairs": "Preserved in the review package; not deployed",
+    "previous_full_gate": "RED/incomplete retained; targeted/fast gates never substitute for full coverage gates"
+  },
+  "remaining_work": [
+    {
+      "item": "Full validation and library commit",
+      "state": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+      "owner": "canonical validation/approval lane",
+      "reason": "Prior full-root recovery launch rejected: CreateProcess blocked by policy. No detailed reason supplied. Ownership repair does not establish clearance of that separate refusal.",
+      "unblock": "Legitimate clearance for the exact original validation action; complete root/desk suites and coverage ratchets before committing library changes."
+    },
+    {
+      "item": "Canonical publication and deployment",
+      "state": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+      "owner": "canonical release/integration lane",
+      "reason": "Prior combined publication launch blocked by policy; GitHub PR creation returned 403 Resource not accessible by integration.",
+      "unblock": "Clear the original publication refusal and restore intended integration PR write capability; then canonical integration, release, adoption and consumer receipts."
+    },
+    {
+      "item": "100000 unique first terminal verdicts/day",
+      "state": "NOT_ACHIEVED",
+      "owner": "canonical judging/conversion lanes",
+      "reason": "Latest native ledger measurement is 3508 first terminal cells/24h; prepared repairs are not deployed.",
+      "unblock": "Validated deployment and real consumer measurements >=4166.67 unique first terminal cells/hour; never count repeat rows/build refusals as first verdicts."
+    },
+    {
+      "item": "Missing source identities and raw-COT freshness",
+      "state": "BLOCKED_DATA_AND_RULES",
+      "owner": "canonical intake/conversion/data materialization lanes",
+      "reason": "Legacy malformed inputs lack source-supported clock/peer/factor/driver identities; raw legacy COT snapshot is stale despite fresh canonical provider intake.",
+      "unblock": "Recover exact frozen identities from original lineage and version point-in-time raw observations for a future pass; preserve snapshots in use and explicit untestable dispositions."
+    },
+    {
+      "item": "Independent E8 capital verification",
+      "state": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+      "owner": "E8 credential access owner",
+      "reason": "Prior PermissionError reading C:\\opt\\quant\\data\\secrets\\e8_tradelocker.json",
+      "unblock": "Restore intended read permission for the existing native credential path; no alternate credentials or unverified flat-account claim."
+    }
+  ],
+  "remaining_work_complete": false,
+  "next_action": "Clear original full-validation/publication refusals, complete required gates, integrate/release/adopt and measure actual terminal verdict and allocator consumers; preserve the existing production judge.",
+  "review_patch_check": {
+    "returncode": 0,
+    "stderr": "",
+    "line_endings": "LF",
+    "operation": "CHECK_ONLY_REVERSE_NO_APPLY",
+    "evidence": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\review-patch-check-20261011.json"
+  }
+}

@@ -253,6 +253,29 @@ def test_a_discovered_endpoint_without_quoted_terms_takes_no_seat(tmp_path, monk
     assert A._ENDPOINT_FENCED["TERMS_UNVERIFIED"] == 5
 
 
+def test_the_terms_evidence_gate_binds_catalog_route_rows_only(tmp_path, monkeypatch):
+    """Crawler and deep-forest discoveries keep their seats; their terms law holds per fetch."""
+    monkeypatch.setattr(A, "REGISTRY", tmp_path / "missing.json")
+    monkeypatch.setattr(A, "WORLD", tmp_path / "world")
+    monkeypatch.setattr(A, "_SEED_ENDPOINTS", ())
+    monkeypatch.setattr(A, "_TERMS_PERMITTED", frozenset())
+    (tmp_path / "world").mkdir()
+    (tmp_path / "world" / "discoveries_crawl_20261006.json").write_text(json.dumps(
+        [{"host": "crawl.test", "endpoints": ["https://crawl.test/a.csv"]},
+         {"host": "cat.test", "source": "catalog_routes",
+          "endpoints": ["https://cat.test/b.csv"]}]))
+    out = A._endpoints(40, now=datetime(2026, 10, 6, tzinfo=UTC))
+    assert ("https://crawl.test/a.csv", "crawl.test") in out
+    assert not any(h == "cat.test" for _u, h in out)
+
+
+def test_a_multi_member_gzip_is_inflated_whole():
+    import gzip
+    body = gzip.compress(b"date,v\n") + gzip.compress(b"2026-01-01,1\n")
+    assert A._gunzip(body, limit=1024) == b"date,v\n2026-01-01,1\n"
+    assert A._gunzip(body, limit=10) is None
+
+
 def test_a_gzip_bomb_is_refused_without_inflating_it_whole():
     import gzip
     bomb = gzip.compress(b"0" * (4 * 1024 * 1024))

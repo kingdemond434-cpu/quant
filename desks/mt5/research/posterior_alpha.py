@@ -90,7 +90,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 SLEEVES = BASE / "data" / "sleeves.json"
-LIVE_LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_STATE = SHADOW_DIR / "shadow_state.json"
 HAZARD = BASE / "reports" / "ALPHA_HAZARD.json"

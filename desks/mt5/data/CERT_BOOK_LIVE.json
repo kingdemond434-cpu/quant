@@ -1,0 +1,21 @@
+{
+ "enabled": true,
+ "at": "2026-10-07T00:00:00+00:00",
+ "by": "principal 2026-10-06 21:10Z, confirmed 2026-10-07: put the max-growth certified sleeve book live on both accounts (one-time exception), sizes as risk per trade (fraction of equity)",
+ "source": "context/CERT_BOOK_PROMOTION_DESKTOP_SPEC.md (final sizes table); solver research/kelly_survival.py --book, PR #216",
+ "rule": "gateway.allocator_book() lays the fusion block over the allocator's book; prop/e8_gold.window_risk and prop/e8_executor size the e8 keys from the e8 block. A key not named here keeps the allocator's fraction (or the venue's RISK_FRAC). enabled=false, a missing file or any invalid value leaves today's sizing untouched. Every value must lie in [0, sizing.MAX_RISK_FRAC].",
+ "fusion": {
+  "EURZAR_overnight_gap_decay_asia": 0.098,
+  "USDZAR_overnight_gap_decay_asia": 0.1,
+  "AUDCHF_overnight_gap_decay_asia": 0.1,
+  "gold_asia": 0.082
+ },
+ "e8": {
+  "gold_asia": 0.01,
+  "AUDCHF_overnight_gap_decay_asia": 0.01
+ },
+ "excluded": {
+  "USDJPY_session_range_breakout_asia": "Reddit-only lineage (PR #162); quarantined in live_sleeve_policy.json until re-certified from a clean lineage",
+  "CHFNOK_carry_asia": "carry lookahead, pending re-judge (PR #269); quarantined in live_sleeve_policy.json"
+ }
+}

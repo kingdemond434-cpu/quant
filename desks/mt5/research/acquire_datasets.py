@@ -386,14 +386,22 @@ def _gunzip(raw: bytes, limit: int = MAX_BYTES) -> bytes | None:
     stops at the limit, the same rule `_read_member` applies to zip members.
     """
     import zlib
-    d = zlib.decompressobj(wbits=31)
-    try:
-        out = d.decompress(raw, limit + 1)
-    except zlib.error:
-        return None
-    if len(out) > limit or d.unconsumed_tail:
-        return None
-    return out
+    parts: list[bytes] = []
+    total, rest = 0, raw
+    while rest:                 # a multi-member file (concatenated gzips) is inflated whole
+        d = zlib.decompressobj(wbits=31)
+        try:
+            chunk = d.decompress(rest, limit + 1 - total)
+        except zlib.error:
+            return None
+        total += len(chunk)
+        if total > limit or d.unconsumed_tail:
+            return None
+        parts.append(chunk)
+        if not d.eof:
+            return None         # truncated member: never a silently partial body
+        rest = d.unused_data
+    return b"".join(parts)
 
 
 #: Terms evidence for catalogue-discovered endpoints (catalog_routes/terms_evidence.json): a
@@ -443,6 +451,42 @@ def _fenced_pick(url: str) -> bool:
 _HEALTHY = frozenset({"SUCCESS", "PARTIAL", "UNCHANGED"})
 
 
+#: Extra seats per pass for regional-parity discoveries (rows marked `lane: regional_parity`).
+PARITY_LANE = "regional_parity"
+PARITY_LANE_MAX = 6
+
+
+def _parity_lane(fresh: set[str], cap: int = PARITY_LANE_MAX) -> list[tuple[str, str]]:
+    """The known public equivalents no country pack declares, newest file first, as a priority
+    lane. Behind ~2.5k queued URLs at 40 a pass they would never be reached; this lane is ADDED
+    to the pass, never carved out of it. Fails closed on terms: a URL is taken only when the
+    ontology's TERMS_EVIDENCE quotes a permitting clause for it, whatever the row says."""
+    try:
+        from libs.research.equivalence_ontology import PERMITTED, terms_verdict
+    except Exception:
+        return []
+    out: list[tuple[str, str]] = []
+    taken: set[str] = set()
+    for f in sorted(glob.glob(str(WORLD / "discoveries_parity_*.json")), reverse=True):
+        try:
+            rows = json.loads(Path(f).read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict) or r.get("lane") != PARITY_LANE:
+                continue
+            for u in r.get("endpoints") or []:
+                u = str(u)
+                if (u in taken or u in fresh or _KEYED.search(u)
+                        or terms_verdict(u) != PERMITTED):
+                    continue
+                taken.add(u)
+                out.append((u, str(r.get("host") or urllib.parse.urlparse(u).netloc)))
+                if len(out) >= cap:
+                    return out
+    return out
+
+
 def _endpoints(limit: int, *, now: datetime | None = None,
                keyed: list[tuple[str, str]] | None = None) -> list[tuple[str, str]]:
     """(url, host) from seeds/crawls, excluding only URLs refreshed within this hour.
@@ -481,7 +525,11 @@ def _endpoints(limit: int, *, now: datetime | None = None,
                     continue
         except (OSError, ValueError):
             fresh, resume = set(), []
-    seen: set[str] = set()
+    # THE PARITY LANE IS ADDITIVE: up to PARITY_LANE_MAX seats ON TOP of `limit`, so no seed,
+    # pack or crawler endpoint loses a seat to it. Its URLs are claimed first so no other lane
+    # fetches them twice in one pass.
+    lane = _parity_lane(fresh)
+    seen: set[str] = {u for u, _ in lane}
     out: list[tuple[str, str]] = []
     for u, h in sorted(resume):
         seen.add(u)
@@ -489,7 +537,7 @@ def _endpoints(limit: int, *, now: datetime | None = None,
             continue
         out.append((u, h or urllib.parse.urlparse(u).netloc))
         if len(out) >= limit:
-            return out
+            return out + lane
     # Seeds first: they are known to be dated, keyless and relevant, so a run never spends its
     # whole budget on discovered pages that turn out to be markup.
     for u in _SEED_ENDPOINTS:
@@ -500,7 +548,7 @@ def _endpoints(limit: int, *, now: datetime | None = None,
             continue
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
         if len(out) >= limit:
-            return out
+            return out + lane
     # EVERY COUNTRY PACK, FAIRLY BY REGION. Declaring sources in 170+ native-market packs while
     # the acquirer reads only crawler output is declaration theatre: none of those sources can
     # ever reach a parser. Interleave regions so alphabetical country order cannot spend every
@@ -539,15 +587,23 @@ def _endpoints(limit: int, *, now: datetime | None = None,
     # `discoveries_*.json`; read only after ~170 country packs, they almost never reached a seat
     # in a 40-endpoint pass. A quarter of the pass is theirs whenever they have work; packs keep
     # the rest, and either side's unused share flows to the other.
+    # The terms-evidence gate binds CATALOG-ROUTE rows only: catalog_routes quotes permitting
+    # terms per portal, so a row it wrote without them is unverified. Crawler and deep-forest
+    # rows carry no such evidence by construction (3 of 11,632 passed when it bound them all,
+    # which shut a running raw-mining lane); their terms law holds per fetch in polite_fetch.
     found: list[tuple[str, str]] = []
     for f in sorted(glob.glob(str(WORLD / "discoveries_*.json")), reverse=True):
         try:
             rows = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
             continue
+        # Parity files are #192's own terms-evidence producer too, so they stay gated; their
+        # lane-marked rows ride only the parity lane, which applies its own fail-closed check.
+        catalog_file = Path(f).name.startswith(("discoveries_catalog_", "discoveries_parity_"))
         for r in rows if isinstance(rows, list) else []:
-            if not isinstance(r, dict):
+            if not isinstance(r, dict) or r.get("lane") == PARITY_LANE:
                 continue
+            catalog_row = catalog_file or r.get("source") == "catalog_routes"
             for u in (r.get("endpoints") or []):
                 if _KEYED.search(str(u)):
                     if keyed is not None:
@@ -556,7 +612,7 @@ def _endpoints(limit: int, *, now: datetime | None = None,
                 if u in seen or u in fresh:
                     continue
                 seen.add(u)
-                if _fenced_pick(u) or _terms_unverified(str(u)):
+                if _fenced_pick(u) or (catalog_row and _terms_unverified(str(u))):
                     continue
                 found.append((u, str(r.get("host") or "")))
     room = limit - len(out)
@@ -576,7 +632,7 @@ def _endpoints(limit: int, *, now: datetime | None = None,
         out.append(buckets[region].popleft())
         if buckets[region]:
             active.append(region)
-    return out
+    return out + lane
 
 ASIA_SOURCES = DESK / "data" / "asia_sources.json"
 
