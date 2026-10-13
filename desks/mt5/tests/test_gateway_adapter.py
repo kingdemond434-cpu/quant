@@ -1610,6 +1610,30 @@ def test_an_off_roster_name_sharing_a_live_rows_tag_is_never_ttl_closed(tmp_path
     ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
     assert sent == [] and booked == []
     assert any("shared with a roster sleeve" in x for x in logs)
+    # The deadline is KEPT, and a second pass does not log again.
+    assert st["generic"][retired]["open_ttl_until"]
+    n = len(logs)
+    ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
+    assert len(logs) == n and sent == []
+
+
+def test_a_refused_sleeve_whose_close_did_not_land_keeps_its_deadline(tmp_path) -> None:
+    """Market closed (10018) on a weekend TTL: the position stays open, so the deadline stays
+    and the next pass tries again; once the venue holds none of the tag, it is dropped."""
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    book = [SimpleNamespace(ticket=908, type=0, volume=0.02, symbol="CHFNOK",
+                            comment=f"DW{_NAME}")]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    ns["mt5"].order_send = lambda req: (sent.append(req) or SimpleNamespace(retcode=10018))
+    st = {"armed": True, "generic": {_NAME: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [])
+    assert len(sent) == 1 and st["generic"][_NAME]["open_ttl_until"]
+    assert any("deadline kept for the next pass" in x for x in logs)
+    book.clear()                                    # the next pass: the close has landed
+    ns["close_refused_sleeve_ttls"](st, [])
+    assert "open_ttl_until" not in st["generic"][_NAME]
 
 
 def test_a_refused_sleeve_before_its_deadline_or_unarmed_is_left_alone(tmp_path) -> None:
