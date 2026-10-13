@@ -1818,9 +1818,15 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
         _fixed_tags.setdefault(order_comment(str(_gname)), str(_gname))
     _exit_only_syms = {str(p.symbol) for p in (mt5.positions_get() or [])
                        if str(getattr(p, "comment", "") or "") in _fixed_tags}
-    symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"} | _exit_only_syms)
+    _roster_syms = {s["symbol"] for s in sleeves} | {"XAUUSD"}
+    symbols = list(_roster_syms | _exit_only_syms)
     for symbol in symbols:
         positions = mt5.positions_get(symbol=symbol) or []
+        if symbol not in _roster_syms:
+            # A symbol managed only for a refused sleeve's exits: its tagged positions, never an
+            # untagged or manual position that happens to sit on it.
+            positions = [p for p in positions
+                         if str(getattr(p, "comment", "") or "") in _fixed_tags]
         if not positions:
             continue
         info = mt5.symbol_info(symbol)
@@ -3622,6 +3628,10 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
     every other close here; the roster's own sleeves are left to their own loop.
     """
     on_roster = {str(s.get("name") or "") for s in sleeves}
+    # order_comment cuts a tag to COMMENT_MAX, so an off-roster name can share its tag with a
+    # LIVE row (the *_principal_20261007 gap-decay rows did). Closing by that tag would take the
+    # live sleeve's position on the retired name's deadline: a shared tag is never closed here.
+    roster_tags = {order_comment(n) for n in on_roster if n}
     gstate = st.get("generic") or {}
     now_iso = datetime.now(tz=UTC).isoformat()
     for name, srec in list(gstate.items()):
@@ -3630,6 +3640,10 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
         if not ttl_expired(srec.get("open_ttl_until"), now_iso):
             continue
         tag = order_comment(str(name))
+        if tag in roster_tags:
+            log(f"[{name}] OFF-ROSTER TTL skipped: its tag {tag!r} is shared with a roster sleeve")
+            srec.pop("open_ttl_until", None)
+            continue
         held = [p for p in (mt5.positions_get() or [])
                 if str(getattr(p, "comment", "") or "") == tag]
         for symbol in sorted({str(p.symbol) for p in held}):
