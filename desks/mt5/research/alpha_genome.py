@@ -65,6 +65,25 @@ MECHANISM_CLASS: dict[str, str] = {
     "regime_transition": "regime", "drawdown_conditional": "regime", "ensemble": "ensemble",
     "discovered": "discovered", "generic": "generic", "fair_value_gap": "reversion",
     "dav_range_filter_adx": "breakout",
+    # THE 35 FAMILIES THE REGISTRY CARRIED UNCLASSIFIED (2026-10-13, principal: "all certs never
+    # unmeasured excuse"). Each read from its own family function, declared by its cause. A
+    # family built ON another (exit_operated, joint_genome) is an ensemble of its base.
+    "adx_channel_hybrid": "breakout", "lvc_asia_london": "breakout",
+    "opening_range": "breakout", "volatility_squeeze": "breakout",
+    "htf_anchor_trend": "trend", "pullback_entry": "trend", "trend_ma_cross": "trend",
+    "session_handoff": "trend", "style_premia": "trend",
+    "engulfing_reversal": "reversion", "pin_bar_reversal": "reversion",
+    "mean_reversion_bollinger": "reversion", "mean_reversion_rsi": "reversion",
+    "range_reversion": "reversion", "retail_overlap_reversal": "reversion",
+    "liquidity_gamma_reversal": "reversion", "ict_fvg": "reversion",
+    "overnight_drift": "calendar", "jump": "volatility",
+    "cot_change_fade": "positioning", "cot_change_momentum": "positioning",
+    "cot_comm_follow": "positioning", "cot_net_fade": "positioning",
+    "comex_settlement": "plumbing", "fx_fixing_reversal": "plumbing",
+    "forced_flow": "plumbing", "hedging_demand_close": "plumbing",
+    "execution_state": "microstructure", "volume_spike": "microstructure",
+    "lead_lag": "residual", "triangle": "residual", "usd_session_shock": "event",
+    "exit_operated": "ensemble", "joint_genome": "ensemble", "formula": "discovered",
 }
 
 DIRECTION_BIAS = {"trend": "with", "breakout": "with", "reversion": "against",

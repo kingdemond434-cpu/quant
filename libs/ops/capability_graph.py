@@ -846,6 +846,8 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/UNKNOWN_UNKNOWNS.json",)),
     Node("falsifier_run", "desks/mt5/research/falsifier_run.py",
          writes=("desks/mt5/reports/FALSIFIER_VERDICTS.json",)),
+    Node("measurability", "scripts/check_measurability.py",
+         writes=("desks/mt5/reports/MEASURABILITY.json",)),
     Node("fill_attribution", "desks/mt5/research/fill_attribution.py",
          writes=("desks/mt5/reports/FILL_ATTRIBUTION.json",)),
     Node("forward_reconcile", "desks/mt5/research/forward_reconcile.py",
