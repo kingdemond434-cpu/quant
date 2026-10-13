@@ -56,7 +56,7 @@ def _roster_row(sid: str) -> dict[str, Any]:
     ("reddit_api", tf.NEEDS_KEY, "Reddit requires OAuth for authentication"),
     ("yahoo", tf.IDEAS_ONLY, "using any automated means"),
     ("mql5", tf.IDEAS_ONLY, "through any automated means, including use of scripts"),
-    ("telegram", tf.PUBLIC_PAGE, "Telegram firmly prohibits the scraping"),
+    ("telegram", tf.IDEAS_ONLY, "Telegram firmly prohibits the scraping"),
 ])
 def test_each_row_carries_its_own_terms_page_and_verbatim_clause(key: str, status: str,
                                                                  needle: str) -> None:
@@ -74,25 +74,23 @@ def test_a_row_without_a_terms_record_reads_unread_never_permitted() -> None:
     assert tf.input_source("stocktwits") == "stocktwits"
 
 
-def test_telegram_public_previews_are_live_input_again() -> None:
-    assert tf.policy_of_url("https://t.me/s/markettwits")["status"] == tf.PUBLIC_PAGE
-    assert tf.input_source("telegram", "https://t.me/s/") is None
-    assert tf.platform_of_url("https://t.me/s/markettwits") is None
+def test_telegram_previews_are_ideas_only_never_live_input() -> None:
+    # Auditor ruling 2026-10-13: the content-licensing terms bar AI/ML use and aggregation.
+    assert tf.policy_of_url("https://t.me/s/markettwits")["status"] == tf.IDEAS_ONLY
+    assert tf.input_source("telegram", "https://t.me/s/") == "telegram"
 
 
-def test_the_free_stack_telegram_feed_runs(tmp_path: Path) -> None:
+def test_the_free_stack_telegram_feed_is_held_as_ideas_only(tmp_path: Path) -> None:
     from research import free_stack_hunter as H
-    page = (DESK / "tests" / "fixtures" / "free_stack" / "telegram_preview.synthetic.html")
     asked: list[str] = []
 
     def fetch(url: str, hd: Any = None, body: Any = None) -> bytes:
         asked.append(url)
-        return page.read_bytes()
+        return b""
 
     h, _ = H.run_source(_roster_row("telegram"), H.Store(tmp_path), fetch, {}, NOW)
-    assert asked and all(u.startswith("https://t.me/s/") for u in asked)
-    assert h.status not in (tf.IDEAS_ONLY, tf.NEEDS_KEY, tf.METHOD_BLOCKED), h.detail
-    assert h.raw, "the telegram feed archived its posts"
+    assert h.status == tf.IDEAS_ONLY, h.detail
+    assert not asked, "an IDEAS_ONLY source is never fetched as live input"
 
 
 def test_reddit_live_input_is_the_data_api_route_only(monkeypatch: pytest.MonkeyPatch) -> None:
