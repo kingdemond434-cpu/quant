@@ -7,6 +7,13 @@ organ turns a qualitative event into a declared scale, from a DECLARED, VERSIONE
 (`data/physical/capacity_table.json`) whose every row names its public source and carries status
 VERIFY until a session checks the cited edition.
 
+A VERIFY FIGURE IS UNMEASURED (2026-10-13). Only a row whose status is VERIFIED (the cited edition
+was read and the printed figure recorded) contributes a number. A matched facility or country row
+still marked VERIFY makes the event UNMEASURED with the row named; a commodity whose global supply
+is VERIFY leaves the share and the scale UNMEASURED; its declared spare capacity is unknown, not
+zero; a regional supply holding any VERIFY row is UNMEASURED. An explicit crude quantity in the
+text still gives lost output, because that number is the event's own, not the table's.
+
 PER EVENT (kinds in SCALE_KINDS, read from the news stream's event log):
 
     match           a facility whose alias appears in the text (most specific), else a country
@@ -29,8 +36,9 @@ PER EVENT (kinds in SCALE_KINDS, read from the news stream's event log):
                     SIGNED supply shock (-share for a loss, +share for a restoration). A supply
                     shock is a state; no side, size or weight is written here
 
-OPEC+ COMPLIANCE (`data/physical/opec_quotas.json`, every row VERIFY): required production per
-country from the decision in force, against a production estimate on this host
+OPEC+ COMPLIANCE (`data/physical/opec_quotas.json`): required production per country from the
+decision in force -- used only when that decision is VERIFIED; a VERIFY decision is UNMEASURED --
+against a production estimate on this host
 (`data/physical/production_estimates.json`, {country: [[month, kb/d], ...]}) when one exists.
 No estimate -> UNMEASURED for that country with the reason. Exempt members say so.
 """
@@ -47,6 +55,7 @@ from typing import Any
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
 UNMEASURED = "UNMEASURED"
+VERIFIED = "VERIFIED"
 ENGINE = "supply_scale"
 CAPACITY = DESK / "data" / "physical" / "capacity_table.json"
 QUOTAS = DESK / "data" / "physical" / "opec_quotas.json"
@@ -85,6 +94,11 @@ def _read_json(path: Path) -> Any:
         return None
 
 
+def verified(row: Any) -> bool:
+    """A table row whose figure was checked against its cited edition; anything else is VERIFY."""
+    return isinstance(row, Mapping) and row.get("status") == VERIFIED
+
+
 def per_day(value: float, unit: str) -> tuple[float, str]:
     """An annual figure as a daily rate; a daily one unchanged."""
     if unit.endswith("/y"):
@@ -112,7 +126,8 @@ def coverage(table: Mapping[str, Any]) -> dict[str, Any]:
             "facilities": len(fac), "facility_types": dict(sorted(types.items())),
             "country_rows": len(table.get("country_production") or []),
             "verify_rows": sum(1 for r in rows if r.get("status") == "VERIFY"),
-            "verified_rows": sum(1 for r in rows if r.get("status") == "VERIFIED")}
+            "verified_rows": sum(1 for r in rows if verified(r)),
+            "rule": "a VERIFY row's figure is UNMEASURED and is never used for scale"}
 
 
 def _text(event: Mapping[str, Any]) -> str:
@@ -223,22 +238,37 @@ def scale_event(event: Mapping[str, Any], table: Mapping[str, Any], *,
     restore = bool(RESTORE.search(str(event.get("title") or "") or text))
     verb = OUTAGE.search(text)
     frac, frac_basis = fraction(text)
+    row_ok = verified(m)
+    comm_ok = verified(comm)
     cap_d, unit_d = per_day(m["capacity"], unit)
-    lost = cap_d * frac
-    lost_basis = f"capacity x fraction ({frac_basis})"
-    if m["commodity"] == "crude_oil" and (q := quantity_kbd(text)) is not None:
-        lost, lost_basis = min(q, cap_d) if m["basis"] == "facility" else q, "explicit quantity"
+    q = quantity_kbd(text) if m["commodity"] == "crude_oil" else None
+    lost: float | None
+    if q is not None:
+        lost = min(q, cap_d) if m["basis"] == "facility" and row_ok else q
+        lost_basis = "explicit quantity"
+    elif row_ok:
+        lost, lost_basis = cap_d * frac, f"capacity x fraction ({frac_basis})"
+    else:
+        lost, lost_basis = None, "UNMEASURED"
+    if lost is None:
+        return {**base, "status": UNMEASURED, "match": m, "table_status": m.get("status"),
+                "why": f"capacity row {m['id']} is {m.get('status')}: its figure was not checked "
+                       "against the cited edition and is never used for scale"}
     days, dur_basis = duration(text, kind)
-    glob_d = per_day(float(comm.get("global_supply") or 0.0), unit)[0]
-    spare_d = per_day(float(comm.get("spare_capacity") or 0.0), unit)[0]
+    glob_d = per_day(float(comm.get("global_supply") or 0.0), unit)[0] if comm_ok else 0.0
+    spare_d = per_day(float(comm.get("spare_capacity") or 0.0), unit)[0] if comm_ok else 0.0
     share = lost / glob_d if glob_d > 0 else None
     region = (table.get("regions") or {}).get(m["country"])
-    reg_supply = sum(per_day(float(r["capacity"]), unit)[0]
-                     for r in table.get("country_production") or []
-                     if r.get("commodity") == m["commodity"]
-                     and (table.get("regions") or {}).get(r.get("country")) == region) \
-        if region else 0.0
-    cushion: dict[str, Any] = {"spare_capacity_per_day": round(spare_d, 4)}
+    reg_rows = [r for r in table.get("country_production") or []
+                if r.get("commodity") == m["commodity"]
+                and (table.get("regions") or {}).get(r.get("country")) == region] \
+        if region else []
+    reg_supply = (sum(per_day(float(r["capacity"]), unit)[0] for r in reg_rows)
+                  if reg_rows and all(verified(r) for r in reg_rows) else 0.0)
+    cushion: dict[str, Any] = {"spare_capacity_per_day": round(spare_d, 4) if comm_ok else None}
+    if not comm_ok:
+        cushion["spare"] = _un(f"commodity row {m['commodity']} is {comm.get('status')}: "
+                               "declared spare capacity unknown, not zero")
     inv = inventory_excess_kbbl(physical) if m["commodity"] == "crude_oil" else None
     if inv is not None and lost > 0:
         cushion["us_inventory_vs_norm_kbbl"] = round(inv, 1)
@@ -256,6 +286,13 @@ def scale_event(event: Mapping[str, Any], table: Mapping[str, Any], *,
         cushion["status"] = "MEASURED"
         uncovered = lost / (lost + spare_d) if lost + spare_d > 0 else 1.0
     sign = 1.0 if restore else -1.0
+    unmeasured: list[str] = []
+    if share is None:
+        unmeasured.append(f"share_global: commodity row {m['commodity']} is "
+                          f"{comm.get('status')}, its global supply is not used")
+    if not row_ok:
+        unmeasured.append(f"capacity row {m['id']} is {m.get('status')}: lost output is the "
+                          "event's explicit quantity, unbounded by the unverified capacity")
     score = (share * 100.0 * math.sqrt(min(days, DURATION_CAP) / 30.0) * uncovered
              if share is not None else None)
     return {**base, "status": "SCALED", "match": m, "unit": unit_d,
@@ -270,6 +307,7 @@ def scale_event(event: Mapping[str, Any], table: Mapping[str, Any], *,
             "uncovered": round(uncovered, 4),
             "scale": round(score, 4) if score is not None else None,
             "table_status": m.get("status"), "commodity_status": comm.get("status"),
+            "unmeasured": unmeasured,
             "mapping": {"commodity": m["commodity"],
                         "instruments": resolve(comm.get("instruments") or [], universe),
                         "supply_shock_share": (round(sign * share, 6)
@@ -291,6 +329,10 @@ def opec_compliance(now: datetime, quotas: Any, production: Any) -> dict[str, An
     if not live:
         return _un(f"no quota decision in force on {day}")
     dec = live[-1]
+    if not verified(dec):
+        return {**_un(f"quota decision {dec.get('id')} is {dec.get('status')}: its required levels "
+                      "were not checked against the cited statement and are never used"),
+                "decision": dec.get("id"), "status_of_table": dec.get("status")}
     prod = production if isinstance(production, dict) else {}
     out: dict[str, Any] = {"decision": dec.get("id"), "source": dec.get("source"),
                            "status_of_table": dec.get("status"), "unit": quotas.get("unit"),
@@ -381,6 +423,7 @@ def build(*, now: datetime, events: Iterable[Mapping[str, Any]] | None = None,
                          "read": len(evs),
                          "scaled": sum(1 for r in scaled if r["status"] == "SCALED"),
                          "unmatched": sum(1 for r in scaled if r["status"] == "UNMATCHED"),
+                         "unmeasured": sum(1 for r in scaled if r["status"] == UNMEASURED),
                          "rows": scaled[:50]}
         if not evs:
             out["events"]["why"] = (f"no {'/'.join(SCALE_KINDS)} event knowable in the last "
