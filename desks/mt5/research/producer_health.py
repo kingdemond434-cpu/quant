@@ -273,7 +273,8 @@ def build(now: datetime | None = None, *, previous: Mapping[str, Any] | None = N
         if p.get("wired") == WIRED and ln["wired"] == UNWIRED:
             regressions.append({"lane": ln["lane"], "went": "WIRED->UNWIRED",
                                 "because": ln["unwired_because"]})
-    pr = prev.get("ratchet") if isinstance(prev.get("ratchet"), dict) else {}
+    _pr = prev.get("ratchet")
+    pr: dict[str, Any] = _pr if isinstance(_pr, dict) else {}
     ratchet = {k: min(int(pr.get(k, counts[k])), counts[k])
                for k in ("clocked_stale", "clocked_unwired")}
     doc.update({
