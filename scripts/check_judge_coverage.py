@@ -103,6 +103,53 @@ def _age_h(stamp: object, now: datetime) -> float | None:
     return max(0.0, (now.timestamp() - at.timestamp()) / 3600.0)
 
 
+PREWARM_DEFECT_MAX_DAYS = 14.0
+
+
+def _sticky_checks(out: dict[str, Any], failures: list[str], tot: dict[str, Any],
+                   pw_now: Any, at: datetime) -> None:
+    best, base = tot.get("prewarm_fail_best"), tot.get("prewarm_fail_baseline")
+    defect = tot.get("prewarm_fail_defect")
+    defect = defect if isinstance(defect, dict) and defect.get("row") else None
+    if pw_now is None or not isinstance(best, (int, float)):
+        out["checks"].append({"metric": "prewarm_fail_sticky", "state": "UNMEASURED",
+                              "why": f"pre-warm share {pw_now}, best {best}: no sticky reading"})
+        return
+    now, tol = float(pw_now), PREWARM_TOLERANCE
+    named = (f"now {now:.1%}, best {float(best):.1%}, baseline "
+             f"{'-' if base is None else f'{float(base):.1%}'}")
+    if isinstance(base, (int, float)) and now > float(base) + tol:
+        failures.append("prewarm_fail_baseline")
+        out["checks"].append({"metric": "prewarm_fail_baseline", "state": "FAIL",
+                              "why": f"rose again over the open regression's baseline: {named}"})
+    if now > float(best) + tol and defect is None:
+        failures.append("prewarm_fail_unowned")
+        out["checks"].append({
+            "metric": "prewarm_fail_unowned", "state": "FAIL",
+            "why": (f"pre-warm failures are above the best on record with NO open register row "
+                    f"owning them ({named}): open a GAP_REGISTER row marked "
+                    f"metric:prewarm_fail_share")})
+        return
+    if defect is None:
+        out["checks"].append({"metric": "prewarm_fail_sticky", "state": "OK", "why": named})
+        return
+    age_d = _age_h(defect.get("opened_utc"), at)
+    age_d = None if age_d is None else age_d / 24.0
+    opened = defect.get("opened_share")
+    if age_d is not None and age_d > PREWARM_DEFECT_MAX_DAYS and (
+            not isinstance(opened, (int, float)) or now >= float(opened)):
+        failures.append("prewarm_fail_defect_aged")
+        out["checks"].append({
+            "metric": "prewarm_fail_defect_aged", "state": "FAIL",
+            "why": (f"GAP row #{defect['row']} open {age_d:.0f}d (over "
+                    f"{PREWARM_DEFECT_MAX_DAYS:.0f}d) and not below where it opened ({named})")})
+        return
+    out["checks"].append({
+        "metric": "prewarm_fail_sticky", "state": "WARN",
+        "why": (f"OPEN regression owned by GAP row #{defect['row']} since "
+                f"{defect.get('opened_utc')}: {named}")})
+
+
 def judge(report: Path | None = None, *, require_state: bool = False,
           now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
@@ -355,6 +402,11 @@ def judge(report: Path | None = None, *, require_state: bool = False,
         out["checks"].append({"metric": "prewarm_fail_ratchet", "state": "OK",
                               "why": f"pre-warm failures {float(pw_was):.1%} -> "
                                      f"{float(pw_now):.1%}"})
+
+    # 7b. THE STICKY PRIOR (audit, 2026-10-13). The check above compares with the LAST reading,
+    #     so a regression that persists for one reading becomes the next one's baseline. These
+    #     only tighten: nothing that fails above stops failing.
+    _sticky_checks(out, failures, tot, pw_now, at)
 
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (

@@ -823,6 +823,71 @@ def _prewarm_share(path: Path | None = None) -> float | None:
     return round(bad / sub, 6) if sub else None
 
 
+#: The best pre-warm failure share on record before the sticky prior existed: the box's reading
+#: of 2026-10-07 (JUDGE_COVERAGE totals.prewarm_fail_share = 0.163262, box commit c28d32bcd^).
+#: `best` only ever moves DOWN from here, so a ratchet file that lost it cannot re-baseline.
+PREWARM_FAIL_BEST_SEED = 0.163262
+PREWARM_STICKY_TOL = 0.02
+#: The GAP_REGISTER marker that names an OPEN row as the owner of a pre-warm regression.
+PREWARM_DEFECT_MARKER = "metric:prewarm_fail_share"
+GAP_REGISTER = BASE.parent.parent / "docs" / "GAP_REGISTER.md"
+PREWARM_STICKY_KEYS = ("prewarm_fail_best", "prewarm_fail_baseline", "prewarm_fail_defect")
+
+
+def open_defect_row(path: Path | None = None) -> str | None:
+    """The id of the OPEN GAP_REGISTER row that owns a pre-warm regression, or None.
+
+    A row OPENS ownership; it never closes it. Closure is the measured share coming back under
+    best + tolerance (prewarm_sticky), so a hand edit to the row cannot clear a regression."""
+    try:
+        text = (path or GAP_REGISTER).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        if PREWARM_DEFECT_MARKER not in line or not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[-1].lower().startswith("open") and cells[0].isdigit():
+            return cells[0]
+    return None
+
+
+def prewarm_sticky(prior: dict[str, Any], now: float | None, row: str | None,
+                   at: str) -> dict[str, Any]:
+    """Best ever, baseline since the defect opened, and the defect itself (audit, 2026-10-13).
+
+    `best` only falls. A share above best + tolerance with an OPEN register row opens the
+    defect, with `baseline` starting at the lowest regressed reading (the previous one included)
+    and only falling; the defect closes ONLY when a reading comes back to best + tolerance. The
+    fence reads all three: a further rise over baseline FAILs, a rise with no owner FAILs, an
+    owned one WARNs on every run, and one open 14 days without falling below where it opened
+    FAILs."""
+    last = prior.get("prewarm_fail_share")
+    cand = [v for v in (prior.get("prewarm_fail_best"), last, PREWARM_FAIL_BEST_SEED, now)
+            if isinstance(v, (int, float)) and math.isfinite(float(v))]
+    best = min(float(v) for v in cand) if cand else None
+    defect = prior.get("prewarm_fail_defect")
+    defect = dict(defect) if isinstance(defect, dict) and defect.get("row") else None
+    baseline = prior.get("prewarm_fail_baseline")
+    baseline = float(baseline) if isinstance(baseline, (int, float)) else None
+    if now is None or best is None:
+        return {"prewarm_fail_best": best, "prewarm_fail_baseline": baseline,
+                "prewarm_fail_defect": defect}
+    regressed = now > best + PREWARM_STICKY_TOL
+    if not regressed:
+        return {"prewarm_fail_best": best, "prewarm_fail_baseline": None,
+                "prewarm_fail_defect": None}
+    if defect is None and row is not None:
+        prev = [float(v) for v in (last, now) if isinstance(v, (int, float))
+                and float(v) > best + PREWARM_STICKY_TOL]
+        baseline = min(prev)
+        defect = {"row": row, "opened_utc": at, "opened_share": baseline}
+    elif defect is not None:
+        baseline = now if baseline is None else min(baseline, now)
+    return {"prewarm_fail_best": best, "prewarm_fail_baseline": baseline,
+            "prewarm_fail_defect": defect}
+
+
 def name_not_run(path: Path | None = None) -> dict[str, dict[str, Any]]:
     """Every cell the judge could not build, with its named reason and the bars it needs."""
     doc = _read(path or GATES_REPORT)
@@ -2002,6 +2067,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     covered = sum(1 for f, r in table.items() if r["unjudged"] > 0 and r["queued"] > 0)
     starved = sorted((f for f, r in table.items() if r["unjudged"] > 0 and r["queued"] == 0),
                      key=lambda f: -table[f]["unjudged"])
+    _pw_share = _prewarm_share()
     totals = {
         "docket_rows": len(rows),
         "mined": sum(mined.values()),
@@ -2051,9 +2117,11 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                                - int(unknown.get("named_cells") or 0)),
         "not_run_named": len(not_run),
         "not_run_by_reason": dict(Counter(str(r.get("reason")) for r in not_run.values())),
-        "prewarm_fail_share": _prewarm_share(),
+        "prewarm_fail_share": _pw_share,
         "prior_prewarm_fail_share": (prior.get("prewarm_fail_share")
                                      if isinstance(prior, dict) else None),
+        **prewarm_sticky(prior if isinstance(prior, dict) else {}, _pw_share,
+                         open_defect_row(), at.isoformat(timespec="seconds")),
         "prior_drain_status": (prior.get("drain_status") if isinstance(prior, dict) else None),
         "unrunnable_parked": unrunnable.get("parked_this_pass"),
         # THE BACKLOG'S UNIT and the non-judging moves, each its own figure, never drain.
@@ -2309,6 +2377,9 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
         "unknown_share_basis": (doc.get("totals") or {}).get("unknown_share_basis"),
         "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
+        # THE STICKY PRIOR (audit, 2026-10-13): kept beside the last reading so a regression can
+        # never become the next reading's baseline just by persisting.
+        **{k: (doc.get("totals") or {}).get(k) for k in PREWARM_STICKY_KEYS},
         "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
