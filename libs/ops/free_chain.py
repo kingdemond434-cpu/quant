@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import ssl
 import threading
 import time
@@ -63,7 +64,15 @@ TIMEOUT_S = 120.0
 
 @dataclass(frozen=True)
 class Provider:
-    """One OpenAI-compatible endpoint. `key_env` empty means no key (a local server)."""
+    """One OpenAI-compatible endpoint. `key_env` empty means no key (a local server).
+
+    `base_url` may carry `{ENV_VAR}` placeholders (Cloudflare puts the account id in the path);
+    an unset placeholder makes the provider unusable, never a request to a half-built URL.
+
+    `terms` is the desk's terms gate for the provider, and it FAILS CLOSED: only "confirmed" is
+    used. `terms_url` is the provider's own published free-tier terms, so whoever flips a row
+    in `providers.json` can read what they are confirming.
+    """
 
     name: str
     base_url: str
@@ -72,30 +81,87 @@ class Provider:
     models: tuple[str, ...] = ()                #: pinned ids; empty -> discovered
     free_pattern: tuple[str, ...] = ()          #: substrings a model id must carry (model_free)
     daily_cap: int = 0                          #: requests/day for account_free; 0 = no cap
+    terms: str = "confirmed"                    #: confirmed | to_confirm | refused
+    terms_url: str = ""
+    open_weights: bool = True                   #: serves open-weight models (Llama, Qwen, ...)
 
     def key(self) -> str:
         return os.environ.get(self.key_env, "").strip() if self.key_env else ""
 
+    def url(self) -> str:
+        """The base URL with its `{ENV}` placeholders filled, or "" when one is unset."""
+        out = self.base_url
+        for var in re.findall(r"\{([A-Z0-9_]+)\}", self.base_url):
+            val = os.environ.get(var, "").strip()
+            if not val:
+                return ""
+            out = out.replace("{" + var + "}", val)
+        return out.rstrip("/")
+
     def usable(self) -> bool:
+        if self.terms != "confirmed" or not self.url():
+            return False
         return self.tier == "local" or bool(self.key())
 
 
 #: The defaults. Endpoints are each provider's own documented OpenAI-compatible base URL. The
 #: config file and QUANT_LOCAL_LLM_URLS extend or override this list; they never have to edit code.
+#: Daily caps sit UNDER each provider's published free quota and are config, not science: quotas
+#: move, and a row in providers.json overrides any of them.
+#:
+#: OPEN WEIGHTS FIRST (principal 2026-10-13: "will it also use llama or something open source
+#: has good free tiers too to broaden it"). Every hosted rung but Gemini serves open-weight
+#: families -- Llama, Qwen, DeepSeek, Mistral, Gemma, GLM, gpt-oss, Phi -- and the local rung runs
+#: them on the box itself. Pinned ids are where a provider has no usable /models listing; a pin
+#: that rots answers 404, cools for half an hour, and the rotation moves on.
 DEFAULTS: tuple[Provider, ...] = (
     Provider("openrouter_free", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY",
-             "model_free", free_pattern=(":free",)),
+             "model_free", free_pattern=(":free",),
+             terms_url="https://openrouter.ai/terms"),
     Provider("groq", "https://api.groq.com/openai/v1", "GROQ_API_KEY", "account_free",
-             daily_cap=900),
-    Provider("gemini", "https://generativelanguage.googleapis.com/v1beta/openai",
-             "GEMINI_API_KEY", "account_free", daily_cap=200),
+             daily_cap=900, terms_url="https://groq.com/terms-of-use"),
     Provider("cerebras", "https://api.cerebras.ai/v1", "CEREBRAS_API_KEY", "account_free",
-             daily_cap=900),
-    Provider("zai_flash", "https://api.z.ai/api/paas/v4", "ZAI_API_KEY", "model_free",
-             models=("glm-4.5-flash",), free_pattern=("flash",)),
+             daily_cap=900, terms_url="https://www.cerebras.ai/terms-of-service"),
+    Provider("cloudflare_ai",
+             "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+             "CLOUDFLARE_API_TOKEN", "account_free", daily_cap=300,
+             models=("@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwq-32b",
+                     "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+                     "@cf/mistralai/mistral-small-3.1-24b-instruct", "@cf/google/gemma-3-12b-it",
+                     "@cf/openai/gpt-oss-120b"),
+             terms_url="https://developers.cloudflare.com/workers-ai/platform/pricing/"),
+    Provider("huggingface", "https://router.huggingface.co/v1", "HF_TOKEN", "account_free",
+             daily_cap=300, terms_url="https://huggingface.co/docs/inference-providers/pricing"),
     Provider("mistral_free", "https://api.mistral.ai/v1", "MISTRAL_API_KEY", "account_free",
-             daily_cap=500),
+             daily_cap=500, terms_url="https://mistral.ai/terms"),
+    Provider("zai_flash", "https://api.z.ai/api/paas/v4", "ZAI_API_KEY", "model_free",
+             models=("glm-4.5-flash",), free_pattern=("flash",),
+             terms_url="https://docs.z.ai/legal-agreement/terms-of-use"),
+    # GITHUB MODELS' FREE TIER IS DOCUMENTED FOR PROTOTYPING AND EXPERIMENTATION. Whether a
+    # scheduled hourly research loop fits that is a reading of their terms the desk has not
+    # made, so the rung ships CLOSED: set "terms": "confirmed" for it in providers.json to open
+    # it. GITHUB_TOKEN alone is not consent.
+    Provider("github_models", "https://models.github.ai/inference", "GITHUB_TOKEN",
+             "account_free", daily_cap=150, terms="to_confirm",
+             models=("meta/Llama-3.3-70B-Instruct", "deepseek/DeepSeek-V3-0324",
+                     "mistral-ai/mistral-small-2503", "microsoft/Phi-4"),
+             terms_url="https://docs.github.com/en/github-models/use-github-models/"
+                       "prototyping-with-ai-models"),
+    Provider("gemini", "https://generativelanguage.googleapis.com/v1beta/openai",
+             "GEMINI_API_KEY", "account_free", daily_cap=200, open_weights=False,
+             terms_url="https://ai.google.dev/gemini-api/terms"),
 )
+
+#: OPEN-WEIGHT MODELS FOR THE LOCAL RUNG, by the RAM they need quantised (Q4). `status()` reads
+#: this box's memory with psutil and names the ones that FIT; nothing is pulled automatically --
+#: installing software on the trading box is the principal's act. Ollama tags.
+LOCAL_RECOMMENDED: tuple[tuple[str, float], ...] = (
+    ("qwen3:8b", 6.0), ("llama3.1:8b", 6.0), ("gemma3:12b", 9.0), ("mistral-nemo:12b", 9.0),
+    ("deepseek-r1:14b", 11.0), ("phi4:14b", 11.0), ("qwen3:30b-a3b", 20.0),
+    ("gemma3:27b", 19.0), ("qwen2.5:32b", 22.0), ("deepseek-r1:32b", 22.0),
+    ("llama3.3:70b", 45.0), ("gpt-oss:120b", 66.0),
+)
+
 
 #: Local servers tried when QUANT_LOCAL_LLM_URLS is unset: Ollama, then llama.cpp's server.
 LOCAL_DEFAULT_URLS = ("http://127.0.0.1:11434/v1", "http://127.0.0.1:8080/v1")
@@ -133,7 +199,8 @@ def _write_json(path: Path, doc: Any) -> None:
 def _local_providers() -> list[Provider]:
     raw = os.environ.get("QUANT_LOCAL_LLM_URLS")
     urls = [u.strip().rstrip("/") for u in raw.split(",")] if raw else list(LOCAL_DEFAULT_URLS)
-    return [Provider(f"local{i}", u, "", "local") for i, u in enumerate(urls) if u]
+    return [Provider(f"local{i}", u, "", "local", terms_url="local server, no third party")
+            for i, u in enumerate(urls) if u]
 
 
 def providers() -> list[Provider]:
@@ -154,14 +221,30 @@ def providers() -> list[Provider]:
         if row.get("disabled"):
             by_name.pop(name, None)
             continue
-        tier = str(row.get("tier") or "")
-        if tier not in ("local", "model_free", "account_free") or not row.get("base_url"):
+        tier = str(row.get("tier") or (by_name[name].tier if name in by_name else ""))
+        if tier not in ("local", "model_free", "account_free"):
+            continue
+        if not row.get("base_url") and name not in by_name:
+            continue
+        prior = by_name.get(name)
+        if not row.get("base_url") and prior is not None:
+            # A row naming a known provider without a URL EDITS it: the usual case is
+            # {"name": "github_models", "terms": "confirmed"} or a new daily cap.
+            by_name[name] = Provider(
+                name, prior.base_url, prior.key_env, prior.tier,
+                tuple(str(m) for m in row.get("models") or prior.models), prior.free_pattern,
+                int(row.get("daily_cap") or prior.daily_cap),
+                str(row.get("terms") or prior.terms), prior.terms_url, prior.open_weights)
             continue
         by_name[name] = Provider(name, str(row["base_url"]).rstrip("/"),
                                  str(row.get("key_env") or ""), tier,
                                  tuple(str(m) for m in row.get("models") or ()),
                                  tuple(str(m) for m in row.get("free_pattern") or ()),
-                                 int(row.get("daily_cap") or 0))
+                                 int(row.get("daily_cap") or 0),
+                                 str(row.get("terms") or
+                                     ("confirmed" if tier == "local" else "to_confirm")),
+                                 str(row.get("terms_url") or ""),
+                                 bool(row.get("open_weights", True)))
         if name not in order:
             order.append(name)
     cloud = [by_name[n] for n in order if n in by_name]
@@ -191,7 +274,8 @@ class _State:
         day = self.doc.get("calls") or {}
         return int((day.get(_today()) or {}).get(provider, 0))
 
-    def count(self, provider: str, model: str, ok: bool) -> None:
+    def count(self, provider: str, model: str, ok: bool,
+              latency_s: float | None = None) -> None:
         calls = self.doc.setdefault("calls", {})
         for stale in [d for d in calls if d != _today()]:
             calls.pop(stale, None)
@@ -201,6 +285,22 @@ class _State:
         m["calls"] = int(m.get("calls", 0)) + 1
         m["ok"] = int(m.get("ok", 0)) + int(ok)
         m["last"] = datetime.now(UTC).isoformat(timespec="seconds")
+        if latency_s is not None and ok:
+            prev = m.get("latency_s")
+            m["latency_s"] = round(latency_s if prev is None else 0.8 * float(prev)
+                                   + 0.2 * latency_s, 2)
+
+    def success(self, key: str) -> float:
+        """Posterior mean answer rate, Beta(1,1) prior: an untried model reads 0.5, not 0."""
+        m = (self.doc.get("models") or {}).get(key) or {}
+        return (1.0 + float(m.get("ok", 0))) / (2.0 + float(m.get("calls", 0)))
+
+    def provider_success(self, provider: str) -> float:
+        rows = [v for k, v in (self.doc.get("models") or {}).items()
+                if k.startswith(provider + ":")]
+        ok = sum(float(r.get("ok", 0)) for r in rows)
+        calls = sum(float(r.get("calls", 0)) for r in rows)
+        return (1.0 + ok) / (2.0 + calls)
 
 
 # ------------------------------------------------------------------------------ transport
@@ -240,7 +340,7 @@ def list_models(p: Provider, *, timeout: float = 10.0) -> tuple[list[str], str |
         return list(p.models), None
     if not p.usable():
         return [], "no key in env"
-    doc, err = _request(f"{p.base_url}/models", p.key(), None, timeout)
+    doc, err = _request(f"{p.url()}/models", p.key(), None, timeout)
     if err:
         return [], err
     rows = doc.get("data") if isinstance(doc, dict) else None
@@ -278,6 +378,31 @@ class ChainExhausted(RuntimeError):
     pass
 
 
+#: How long a provider's model catalogue is trusted before it is listed again, seconds.
+MODEL_LIST_TTL_S = 6 * 3600
+
+
+def _cached_models(st: _State, p: Provider) -> tuple[list[str], str | None]:
+    cache = st.doc.setdefault("model_lists", {}).get(p.name) or {}
+    if cache.get("models") and _now() - float(cache.get("at", 0)) < MODEL_LIST_TTL_S:
+        return list(cache["models"]), None
+    models, err = list_models(p)
+    if models:
+        st.doc["model_lists"][p.name] = {"models": models[:200], "at": _now()}
+    return models, err
+
+
+def rank(st: _State, provs: list[Provider]) -> list[Provider]:
+    """THE ROTATION. Cloud rungs ordered by measured answer rate times remaining daily quota, so
+    load spreads across every free tier instead of draining the first one; local rungs last,
+    always, because they are the floor that never runs out -- not the first resort."""
+    def score(p: Provider) -> float:
+        used = st.calls_today(p.name) / p.daily_cap if p.daily_cap else 0.0
+        return st.provider_success(p.name) * max(0.0, 1.0 - used)
+    cloud = sorted((p for p in provs if p.tier != "local"), key=score, reverse=True)
+    return cloud + [p for p in provs if p.tier == "local"]
+
+
 def chat(system: str, user: str, *, max_tokens: int = 1600, temperature: float = 0.9,
          timeout: float = TIMEOUT_S, model_hint: str = "",
          skip: tuple[str, ...] = ()) -> Reply:
@@ -291,7 +416,7 @@ def chat(system: str, user: str, *, max_tokens: int = 1600, temperature: float =
     deadline = _now() + max(1.0, float(timeout))
     tried: list[str] = []
     plan: list[tuple[Provider, str]] = []
-    provs = [p for p in providers() if p.name not in skip and p.usable()]
+    provs = rank(st, [p for p in providers() if p.name not in skip and p.usable()])
     hint_p, _, hint_m = model_hint.partition(":")
     for p in provs:
         if (p.name == hint_p and hint_m and not st.cooled(p.name)
@@ -304,12 +429,14 @@ def chat(system: str, user: str, *, max_tokens: int = 1600, temperature: float =
         if st.cooled(p.name):
             tried.append(f"{p.name}: cooling")
             continue
-        models, err = list_models(p)
+        models, err = _cached_models(st, p)
         if err and not models:
             st.cool(p.name, FAIL_COOLDOWN_S if p.tier != "local" else 120)
             tried.append(f"{p.name}: {err}")
             continue
-        for m in _cheapest_capable(models)[:4]:
+        capable = _cheapest_capable(models)
+        capable.sort(key=lambda m: -st.success(f"{p.name}:{m}"))
+        for m in capable[:4]:
             plan.append((p, m))
     for p, m in plan:
         key = f"{p.name}:{m}"
@@ -322,7 +449,9 @@ def chat(system: str, user: str, *, max_tokens: int = 1600, temperature: float =
         body = {"model": m, "max_tokens": max_tokens, "temperature": temperature,
                 "messages": [{"role": "system", "content": system},
                              {"role": "user", "content": user}]}
-        doc, err = _request(f"{p.base_url}/chat/completions", p.key(), body, left)
+        t0 = time.time()
+        doc, err = _request(f"{p.url()}/chat/completions", p.key(), body, left)
+        took = time.time() - t0
         if err:
             st.count(p.name, m, False)
             st.cool(key, COOLDOWN_S if err == "HTTP 429" else FAIL_COOLDOWN_S)
@@ -335,7 +464,7 @@ def chat(system: str, user: str, *, max_tokens: int = 1600, temperature: float =
             text = str(msg.get("content") or "").strip()
         except (KeyError, IndexError, TypeError, AttributeError):
             text = ""
-        st.count(p.name, m, bool(text))
+        st.count(p.name, m, bool(text), took)
         if not text:
             tried.append(f"{key}: empty completion")
             continue
@@ -352,10 +481,15 @@ def status() -> dict[str, Any]:
     for p in providers():
         rows.append({"name": p.name, "tier": p.tier, "usable": p.usable(),
                      "key_present": bool(p.key()) if p.key_env else None,
+                     "terms": p.terms, "terms_url": p.terms_url,
+                     "open_weights": p.open_weights,
+                     "answer_rate": round(st.provider_success(p.name), 3),
                      "calls_today": st.calls_today(p.name), "daily_cap": p.daily_cap,
                      "cooling": st.cooled(p.name)})
     usable = [r for r in rows if r["usable"] and r["tier"] != "local"]
     return {"providers": rows, "cloud_usable": len(usable),
+            "terms_closed": [r["name"] for r in rows if r["terms"] != "confirmed"],
+            "local_models_that_fit": local_fit(),
             "verdict": "RAN" if usable else UNMEASURED,
             "why": ("" if usable else "no free cloud key in env; local servers are probed on call")}
 
@@ -363,3 +497,19 @@ def status() -> dict[str, Any]:
 def model_stats() -> dict[str, dict[str, Any]]:
     """Per provider:model call/ok counts the chain has recorded, for the lab's model registry."""
     return dict(_State.load().doc.get("models") or {})
+
+
+def local_fit() -> dict[str, Any]:
+    """Which recommended open-weight models fit THIS machine's free RAM, measured, never assumed."""
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        vm = psutil.virtual_memory()
+        total, free = vm.total / 1024**3, vm.available / 1024**3
+    except Exception:
+        return {"verdict": UNMEASURED, "why": "psutil unavailable"}
+    budget = free * 0.6                      # leave the terminal and the gateway their headroom
+    return {"total_gb": round(total, 1), "available_gb": round(free, 1),
+            "budget_gb": round(budget, 1),
+            "fit": [m for m, gb in LOCAL_RECOMMENDED if gb <= budget],
+            "pull_hint": "ollama pull <tag>, then QUANT_LOCAL_LLM_URLS=http://127.0.0.1:11434/v1"}
+

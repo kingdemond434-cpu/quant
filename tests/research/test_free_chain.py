@@ -127,3 +127,59 @@ def test_a_declared_local_server_turns_the_seat_on(monkeypatch: pytest.MonkeyPat
     assert ps.enabled()
     monkeypatch.setenv("QUANT_PROPOSER_SEAT", "0")
     assert not ps.enabled()
+
+
+# --------------------------------------------------------------- open-weight breadth (2026-10-13)
+def test_the_open_weight_hosted_tiers_are_all_on_the_chain() -> None:
+    names = {p.name for p in fc.DEFAULTS}
+    assert {"groq", "cerebras", "cloudflare_ai", "huggingface", "openrouter_free",
+            "mistral_free", "github_models", "gemini"} <= names
+    assert [p.name for p in fc.DEFAULTS if not p.open_weights] == ["gemini"]
+    assert all(p.terms_url for p in fc.DEFAULTS), "every rung names its own published terms"
+
+
+def test_a_missing_url_variable_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "cf-test-not-real")
+    monkeypatch.delenv("CLOUDFLARE_ACCOUNT_ID", raising=False)
+    cf = next(p for p in fc.providers() if p.name == "cloudflare_ai")
+    assert not cf.usable() and cf.url() == ""
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct123")
+    cf = next(p for p in fc.providers() if p.name == "cloudflare_ai")
+    assert cf.usable() and "/accounts/acct123/ai/v1" in cf.url()
+
+
+def test_the_terms_gate_holds_a_rung_shut_until_confirmed(monkeypatch: pytest.MonkeyPatch,
+                                                          _isolated: Path) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp-test-not-real")
+    gh = next(p for p in fc.providers() if p.name == "github_models")
+    assert gh.terms == "to_confirm" and not gh.usable(), "a token alone is not consent"
+    fc.CONFIG.write_text(json.dumps({"providers": [{"name": "github_models",
+                                                    "terms": "confirmed"}]}))
+    gh = next(p for p in fc.providers() if p.name == "github_models")
+    assert gh.usable() and gh.base_url == "https://models.github.ai/inference"
+    fc.CONFIG.write_text(json.dumps({"providers": [{"name": "new_cloud", "tier": "account_free",
+                                                    "base_url": "https://x.example/v1",
+                                                    "key_env": "GROQ_API_KEY"}]}))
+    monkeypatch.setenv("GROQ_API_KEY", "k")
+    new = next(p for p in fc.providers() if p.name == "new_cloud")
+    assert new.terms == "to_confirm" and not new.usable(), "a new cloud row starts closed"
+
+
+def test_the_rotation_spreads_load_and_keeps_local_last() -> None:
+    st = fc._State({})
+    a = fc.Provider("a", "https://a/v1", "K", "account_free", daily_cap=100)
+    b = fc.Provider("b", "https://b/v1", "K", "account_free", daily_cap=100)
+    loc = fc.Provider("local0", "http://127.0.0.1:11434/v1")
+    for _ in range(90):
+        st.count("a", "m", True, 1.0)
+    order = [p.name for p in fc.rank(st, [loc, a, b])]
+    assert order == ["b", "a", "local0"], "a nearly-drained quota yields to a fresh one"
+    for _ in range(30):
+        st.count("b", "m", False)
+    st.doc["calls"] = {}
+    assert fc.rank(st, [loc, a, b])[0].name == "a", "answer rate is benchmarked"
+
+
+def test_local_fit_is_measured_on_this_machine() -> None:
+    doc = fc.local_fit()
+    assert doc.get("verdict") == fc.UNMEASURED or {"total_gb", "fit"} <= set(doc)

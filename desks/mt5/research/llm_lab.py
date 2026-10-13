@@ -880,7 +880,7 @@ def hunt_models(registry: dict[str, Any], *, budget_s: float = 30.0) -> list[str
                                             "novel": 0})
             if row["status"] == "DISCOVERED":
                 if p.tier == "local":
-                    lic = _local_license(p.base_url, m)
+                    lic = _local_license(p.url(), m)
                     row["license"] = (lic[:120] if lic else UNMEASURED)
                     row["status"] = "REGISTERED" if lic and LICENSE_OK.search(lic) \
                         else "REVIEW_PENDING"
