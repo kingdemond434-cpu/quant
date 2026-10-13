@@ -7,11 +7,15 @@ and merged by the judge before any authority artifact is written.
 """
 from __future__ import annotations
 
+import contextlib
+import json
 import os
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 DESK = Path(__file__).resolve().parents[1]
@@ -39,22 +43,89 @@ def _retry_attempts() -> int:
         return 2
 
 
-def _parallelism(n: int) -> int:
+#: Where each shard child records its own peak memory, per phase, so the next wave is sized from
+#: what a shard MEASURED on this machine and never from a claim (CLAUDE.md: measure the box).
+SHARD_PEAKS = DESK / "data" / "judge_shard_peaks.json"
+#: The share of available memory a wave may plan to hold at its children's measured peaks. Half,
+#: as `judging_throughput.HEADROOM_SHARE` and the sealed judge's own headroom share.
+SHARD_HEADROOM_SHARE = 0.5
+#: Peaks kept per phase; the wave is sized at the largest of them, never an average.
+SHARD_PEAK_HISTORY = 30
+
+
+def _shard_peak_mb(phase: str | None) -> float | None:
+    """The largest recorded shard peak (MB) for this phase, or None when never measured."""
+    try:
+        doc = json.loads(SHARD_PEAKS.read_text("utf-8"))
+        rows = [float(v) for v in (doc.get(str(phase)) or []) if float(v) > 0]
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+    return max(rows) if rows else None
+
+
+def _available_mb() -> float | None:
+    try:
+        import psutil
+        return float(psutil.virtual_memory().available) / (1024.0 * 1024.0)
+    except Exception:
+        return None
+
+
+def _parallelism(n: int, phase: str | None = None) -> int:
     """Bound the first wave so judge children do not exhaust committed memory.
 
     Two concurrent shards is the production-safe default measured after a 15-wide wave caused
     fourteen child failures.  Operators may raise the cap after measuring peak committed memory;
     malformed configuration falls closed to one child.
+
+    THE CAP IS NOW MEASURED WHEN NOBODY SET IT (2026-10-13). Two shards of fifteen meant the rule
+    phase -- loading every cached pair, both cost arms, CPCV, walk-forward -- ran on two cores of
+    an 18-core box for most of every sweep: the "1-2 effective cores" the box reported. Each shard
+    child now records its own peak (`SHARD_PEAKS`), and an unset cap becomes
+    floor(available x SHARD_HEADROOM_SHARE / largest recorded peak for the phase), clamped to
+    [1, n]. Nothing measured yet, or psutil absent: the historic 2, exactly as before. An explicit
+    GAUNTLET_SHARD_CONCURRENCY still wins, so an operator cap is never overridden.
     """
     raw = os.environ.get("GAUNTLET_SHARD_CONCURRENCY")
     if raw is None:
         configured = 2
+        peak, avail = _shard_peak_mb(phase), _available_mb()
+        if peak and avail:
+            configured = max(1, int((avail * SHARD_HEADROOM_SHARE) // peak))
     else:
         try:
             configured = int(raw)
         except (TypeError, ValueError):
             configured = 1
     return max(1, min(n, configured))
+
+
+def _record_peaks(logs: Path, invocation: str, phase: str) -> None:
+    """Fold this wave's per-child peak receipts into `SHARD_PEAKS` (bounded history per phase)."""
+    peaks: list[float] = []
+    for f in logs.glob(f"{invocation}-{phase}-*.peak.json"):
+        try:
+            peaks.append(float(json.loads(f.read_text("utf-8"))["peak_mb"]))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    if not peaks:
+        return
+    try:
+        doc = json.loads(SHARD_PEAKS.read_text("utf-8"))
+        if not isinstance(doc, dict):
+            doc = {}
+    except (OSError, ValueError):
+        doc = {}
+    rows = [*(doc.get(phase) or []), *peaks][-SHARD_PEAK_HISTORY:]
+    doc[phase] = [round(v, 1) for v in rows]
+    doc["updated_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
+    try:
+        SHARD_PEAKS.parent.mkdir(parents=True, exist_ok=True)
+        tmp = SHARD_PEAKS.with_name(f"{SHARD_PEAKS.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, SHARD_PEAKS)
+    except OSError:
+        pass  # a missed receipt costs one wave at the old cap, never a verdict
 
 
 def dispatch(shard_dir: Path, n: int, phase: str) -> None:
@@ -71,6 +142,9 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     code = (
         "import sys;"
         f"sys.path[:0]=[{str(ROOT)!r},{str(DESK)!r}];"
+        "from scripts.run_sharded_gauntlet import record_own_peak;"
+        "import atexit,os;"
+        "atexit.register(record_own_peak,os.environ.get('GAUNTLET_PEAK_RECEIPT',''));"
         "from scripts.external_gauntlet import shard_worker;"
         "shard_worker(sys.argv[1],int(sys.argv[2]),sys.argv[3])"
     )
@@ -89,8 +163,10 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
                          f"attempt={attempt}\n".encode())
             output.flush()
             try:
+                child_env = {**os.environ, "GAUNTLET_PEAK_RECEIPT": str(
+                    logs / f"{invocation}-{phase}-{k}-attempt-{attempt}.peak.json")}
                 run([sys.executable, "-u", "-c", code, str(shard_dir), str(k), phase],
-                    cwd=DESK, env=os.environ.copy(), timeout=None, capture_output=False,
+                    cwd=DESK, env=child_env, timeout=None, capture_output=False,
                     stdout=output, stderr=output, check=True)
             except Exception as exc:
                 # A native child can fail without writing a traceback (termination, allocation
@@ -116,10 +192,13 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
             return k, exc
         return k, None
 
-    with ThreadPoolExecutor(max_workers=_parallelism(n),
-                            thread_name_prefix=f"judge-{phase}") as pool:
+    width = _parallelism(n, phase)
+    print(f"SHARD WAVE: {phase} x{n} at concurrency {width} (recorded peak "
+          f"{_shard_peak_mb(phase)} MB, available {_available_mb()} MB)", flush=True)
+    with ThreadPoolExecutor(max_workers=width, thread_name_prefix=f"judge-{phase}") as pool:
         # Consume every result even when one child fails, so successful shard artifacts survive.
         first = list(pool.map(attempted, range(n)))
+    _record_peaks(logs, invocation, phase)
 
     failed = [(k, exc) for k, exc in first if exc is not None]
     if failed:
@@ -145,7 +224,212 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
             ) from last_exc
 
 
-def main() -> int:
+def record_own_peak(path: str) -> None:
+    """atexit hook in a shard child: write this process's peak memory (MB) to `path`."""
+    if not path:
+        return
+    peak: float | None = None
+    try:
+        import psutil
+        mi = psutil.Process().memory_info()
+        peak = float(getattr(mi, "peak_wset", 0) or getattr(mi, "rss", 0)) / (1024.0 * 1024.0)
+    except Exception:
+        try:
+            import resource
+            peak = float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1024.0
+        except Exception:
+            peak = None
+    if not peak:
+        return
+    with contextlib.suppress(OSError):
+        Path(path).write_text(json.dumps({"peak_mb": round(peak, 1)}), encoding="utf-8")
+
+
+# ------------------------------------------------------------------------- the resident judge
+#: THE JUDGE NEVER WAITS FOR A CLOCK (principal, 2026-10-10: "judging must be 24 7 uninterrupted,
+#: 0 cadences, no 5 min cadences"). Every trigger used to be ONE sweep: it published, exited, and
+#: the box idled until the next repetition fired -- 5 or 10 minutes when `judging_throughput`'s
+#: cadence apply worked, an hour when it timed out (it FAILED on 2026-10-13). The resident judge
+#: starts the next sweep the moment the last one ends, each in a fresh child process (fresh
+#: memory, and the release's code identity). The scheduled trigger becomes a RESPAWNER: with
+#: `MultipleInstances IgnoreNew` it does nothing while the resident runs, and restarts it within
+#: one interval if it ever dies.
+#:
+#: It stops for exactly three things, each recorded in `JUDGE_RESIDENT.json`:
+#:   * `RESIDENT_STOP` exists (an operator stop; delete it to resume);
+#:   * the task's own ExecutionTimeLimit would kill the next sweep -- it does not start one it
+#:     cannot finish, and exits so the trigger starts a fresh resident (PT0S = no limit);
+#:   * it is not the canonical certifier (the lane is held) -- it waits and retries.
+#: A failed sweep is retried after a short, growing pause (`RESIDENT_BACKOFF_S`), never abandoned.
+RESIDENT_STATE = DESK / "reports" / "JUDGE_RESIDENT.json"
+RESIDENT_STOP = DESK / "data" / "RESIDENT_STOP"
+RESIDENT_BACKOFF_S = (15, 30, 60, 120, 300)
+#: Seconds kept clear of the task's time limit, and the shortest sweep assumed before one is
+#: measured, when deciding whether another sweep fits inside it.
+RESIDENT_LIMIT_MARGIN_S = 300.0
+RESIDENT_MIN_SWEEP_S = 600.0
+#: Exit code a sweep returns when another certifier owns the lane (`run_sharded`).
+LANE_HELD_RC = 75
+
+
+def _resident_enabled(argv: list[str]) -> bool:
+    if "--once" in argv:
+        return False
+    if "--resident" in argv:
+        return True
+    return os.environ.get("GAUNTLET_RESIDENT", "1").strip().lower() not in ("0", "false", "no")
+
+
+def _task_limit_s() -> float | None:
+    """The scheduled task's ExecutionTimeLimit in seconds; 0 = unlimited; None = unreadable."""
+    try:
+        from research.judging_throughput import OUT, task_time_limit_s
+    except Exception:
+        return None
+    limit = task_time_limit_s()
+    if limit is not None:
+        return float(limit)
+    try:
+        prev = (json.loads(Path(OUT).read_text("utf-8")).get("decision") or {}).get(
+            "task_time_limit_s")
+        return float(prev) if isinstance(prev, (int, float)) else None
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+
+
+def _fits(elapsed: float, limit: float | None, last_sweep_s: float | None) -> bool:
+    """Another sweep fits before the task's limit. Unlimited (0) and unreadable (None) fit:
+    an unreadable limit is UNMEASURED and the sweep is resumable, so it is never a reason to
+    stop judging."""
+    if not limit:
+        return True
+    need = max(float(last_sweep_s or 0.0), RESIDENT_MIN_SWEEP_S) + RESIDENT_LIMIT_MARGIN_S
+    return elapsed + need <= limit
+
+
+def _write_state(doc: dict[str, Any]) -> None:
+    try:
+        RESIDENT_STATE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = RESIDENT_STATE.with_name(f"{RESIDENT_STATE.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        os.replace(tmp, RESIDENT_STATE)
+    except OSError:
+        pass  # the heartbeat is a report; judging never stops for it
+
+
+def _published_env() -> dict[str, str]:
+    """judging_throughput's measured env as it stands now ({} when unreadable or refused)."""
+    try:
+        from research.judging_throughput import apply_env
+    except Exception:
+        return {}
+    probe: dict[str, str] = {}
+    try:
+        apply_env(env=probe)
+    except Exception:
+        return {}
+    return probe
+
+
+#: The measured env as the resident found it at launch, and the process env at that moment.
+_LAUNCH: dict[str, dict[str, str]] = {}
+
+
+def _sweep_env() -> dict[str, str]:
+    """The env for the next sweep: the launch env with judging_throughput's LATEST numbers.
+
+    The launcher exported the measured env once, but a resident outlives many hourly
+    re-measurements. A key that came from that file is refreshed from it every sweep; a key an
+    operator exported by hand (it differed from the file at launch) still outranks the organ.
+    """
+    if not _LAUNCH:
+        _LAUNCH["file"] = _published_env()
+        _LAUNCH["proc"] = {k: os.environ[k] for k in _LAUNCH["file"] if k in os.environ}
+    env = os.environ.copy()
+    for k, v in _published_env().items():
+        launched = _LAUNCH["proc"].get(k)
+        if launched is None or launched == _LAUNCH["file"].get(k):
+            env[k] = v
+    return env
+
+
+def _one_sweep_child() -> int:
+    """One sweep in a fresh process, at the priority the scheduler gives the judge today."""
+    flags = 0
+    if sys.platform == "win32":
+        import subprocess
+        # BELOW_NORMAL is the Task Scheduler's default priority (7) for MT5-Gauntlet, so the
+        # child keeps exactly the standing the judge has now: miners are never displaced by it.
+        flags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
+    done = run([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
+               cwd=DESK, env=_sweep_env(), timeout=None, capture_output=False,
+               creationflags=flags)
+    return int(done.returncode)
+
+
+def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
+             limit_s: float | None = None, max_sweeps: int | None = None) -> int:
+    """Run sweeps back to back until stopped; return the last sweep's exit code."""
+    sweep = sweep or _one_sweep_child
+    started, failures, n, last_rc = clock(), 0, 0, 0
+    last_sweep_s: float | None = None
+    state: dict[str, Any] = {"pid": os.getpid(), "started_utc": datetime.now(UTC).isoformat(
+        timespec="seconds"), "task_limit_s": limit_s, "sweeps": 0, "failures": 0,
+        "lane_held": 0, "busy_seconds": 0.0, "status": "RUNNING"}
+    while True:
+        if RESIDENT_STOP.exists():
+            state["status"], state["why"] = "STOPPED", f"{RESIDENT_STOP.name} present"
+            break
+        if not _fits(clock() - started, limit_s, last_sweep_s):
+            state["status"] = "RESPAWN"
+            state["why"] = ("the next sweep would not finish inside the task's ExecutionTimeLimit;"
+                            " exiting so the trigger starts a fresh resident")
+            break
+        if max_sweeps is not None and n >= max_sweeps:
+            state["status"], state["why"] = "DONE", f"max_sweeps={max_sweeps}"
+            break
+        t0 = clock()
+        state.update(status="SWEEPING", sweep_started_utc=datetime.now(UTC).isoformat(
+            timespec="seconds"))
+        _write_state(state)
+        try:
+            last_rc = int(sweep())
+        except Exception as exc:  # a launcher-level crash is a failed sweep, retried below
+            last_rc, state["last_error"] = 1, f"{type(exc).__name__}: {exc}"[:300]
+        dt = clock() - t0
+        n += 1
+        state["sweeps"], state["busy_seconds"] = n, round(state["busy_seconds"] + dt, 1)
+        state.update(last_rc=last_rc, last_sweep_s=round(dt, 1), uptime_s=round(
+            clock() - started, 1), last_sweep_ended_utc=datetime.now(UTC).isoformat(
+            timespec="seconds"))
+        if last_rc == 0:
+            failures, last_sweep_s = 0, dt
+            state["status"] = "RUNNING"
+            _write_state(state)
+            continue                       # ZERO CADENCE: the next sweep starts now
+        if last_rc == LANE_HELD_RC:
+            state["lane_held"] += 1
+            pause = RESIDENT_BACKOFF_S[0]
+        else:
+            failures += 1
+            state["failures"] += 1
+            pause = RESIDENT_BACKOFF_S[min(failures, len(RESIDENT_BACKOFF_S)) - 1]
+        state.update(status="BACKOFF", backoff_s=pause)
+        _write_state(state)
+        sleep(pause)
+    state["uptime_s"] = round(clock() - started, 1)
+    _write_state(state)
+    return last_rc
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if _resident_enabled(argv):
+        return resident(limit_s=_task_limit_s())
+    return _sweep_once()
+
+
+def _sweep_once() -> int:
     from research.judging_throughput import apply_env
 
     apply_env()

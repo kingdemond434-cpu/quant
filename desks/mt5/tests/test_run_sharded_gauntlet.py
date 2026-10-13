@@ -27,6 +27,14 @@ def test_retry_count_falls_closed_and_honours_measurement(monkeypatch) -> None:
     assert runner._retry_attempts() == 2
 
 
+@pytest.fixture(autouse=True)
+def _isolated_state(monkeypatch, tmp_path):
+    """No test reads or writes the desk's real peak or resident files."""
+    monkeypatch.setattr(runner, "SHARD_PEAKS", tmp_path / "judge_shard_peaks.json")
+    monkeypatch.setattr(runner, "RESIDENT_STATE", tmp_path / "JUDGE_RESIDENT.json")
+    monkeypatch.setattr(runner, "RESIDENT_STOP", tmp_path / "RESIDENT_STOP")
+
+
 def test_parallelism_is_bounded_and_configurable(monkeypatch) -> None:
     monkeypatch.delenv("GAUNTLET_SHARD_CONCURRENCY", raising=False)
     assert runner._parallelism(15) == 2
@@ -149,3 +157,134 @@ def test_silent_native_failure_has_exit_evidence(monkeypatch, tmp_path):
     assert len(receipts) == 1
     assert "CHILD_FAILED type=CalledProcessError returncode=3221225477" in receipts[0].read_text()
     assert "CHILD_EXIT_OK" not in receipts[0].read_text()
+
+
+# --------------------------------------------------------------- measured shard concurrency
+def test_unset_cap_is_sized_from_the_recorded_peak(monkeypatch, tmp_path) -> None:
+    import json
+    monkeypatch.delenv("GAUNTLET_SHARD_CONCURRENCY", raising=False)
+    monkeypatch.setattr(runner, "_available_mb", lambda: 40_000.0)
+    assert runner._parallelism(15, "rule") == 2            # never measured: the historic 2
+    runner.SHARD_PEAKS.write_text(json.dumps({"rule": [1500.0, 4000.0], "build": [9000.0]}))
+    assert runner._parallelism(15, "rule") == 5            # 40,000 x 0.5 // 4,000 (largest)
+    assert runner._parallelism(15, "build") == 2           # 20,000 // 9,000
+    assert runner._parallelism(3, "rule") == 3             # never wider than the shard count
+    monkeypatch.setattr(runner, "_available_mb", lambda: 1_000.0)
+    assert runner._parallelism(15, "rule") == 1            # never below one
+    monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "3")
+    assert runner._parallelism(15, "rule") == 3            # an operator cap always wins
+
+
+def test_child_peaks_are_folded_with_bounded_history(tmp_path) -> None:
+    import json
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    for k, mb in enumerate((1000.0, 2500.0)):
+        (logs / f"inv-rule-{k}-attempt-0.peak.json").write_text(json.dumps({"peak_mb": mb}))
+    (logs / "inv-rule-9-attempt-0.peak.json").write_text("{broken")
+    runner._record_peaks(logs, "inv", "rule")
+    assert runner._shard_peak_mb("rule") == 2500.0
+    for i in range(runner.SHARD_PEAK_HISTORY + 5):
+        (logs / f"inv2-rule-{i}-attempt-0.peak.json").write_text(json.dumps({"peak_mb": 100.0}))
+    runner._record_peaks(logs, "inv2", "rule")
+    rows = json.loads(runner.SHARD_PEAKS.read_text())["rule"]
+    assert len(rows) == runner.SHARD_PEAK_HISTORY and max(rows) == 100.0
+
+
+def test_record_own_peak_writes_a_receipt(tmp_path) -> None:
+    import json
+    out = tmp_path / "p.json"
+    runner.record_own_peak(str(out))
+    assert json.loads(out.read_text())["peak_mb"] > 0
+
+
+# -------------------------------------------------------------------------- resident judge
+class _Clock:
+    def __init__(self) -> None:
+        self.t = 0.0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+def test_resident_starts_the_next_sweep_with_no_gap(tmp_path) -> None:
+    clock, slept, rcs = _Clock(), [], []
+
+    def sweep() -> int:
+        clock.t += 900.0
+        rcs.append(0)
+        return 0
+
+    rc = runner.resident(sweep=sweep, sleep=slept.append, clock=clock, limit_s=0.0,
+                         max_sweeps=4)
+    assert rc == 0 and len(rcs) == 4 and slept == []      # zero cadence: never sleeps
+    import json
+    st = json.loads(runner.RESIDENT_STATE.read_text())
+    assert st["sweeps"] == 4 and st["status"] == "DONE" and st["busy_seconds"] == 3600.0
+
+
+def test_resident_retries_failures_with_growing_backoff(tmp_path) -> None:
+    clock, slept = _Clock(), []
+    seq = iter([1, 1, 75, 0])
+    runner.resident(sweep=lambda: next(seq), sleep=slept.append, clock=clock, limit_s=None,
+                    max_sweeps=4)
+    assert slept == [runner.RESIDENT_BACKOFF_S[0], runner.RESIDENT_BACKOFF_S[1],
+                     runner.RESIDENT_BACKOFF_S[0]]
+
+
+def test_a_crashing_sweep_is_a_failure_not_an_exit(tmp_path) -> None:
+    clock, slept, calls = _Clock(), [], []
+
+    def sweep() -> int:
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("boom")
+        return 0
+
+    runner.resident(sweep=sweep, sleep=slept.append, clock=clock, limit_s=None, max_sweeps=2)
+    assert len(calls) == 2 and slept == [runner.RESIDENT_BACKOFF_S[0]]
+
+
+def test_resident_never_starts_a_sweep_the_time_limit_would_kill(tmp_path) -> None:
+    clock = _Clock()
+
+    def sweep() -> int:
+        clock.t += 3000.0
+        return 0
+
+    runner.resident(sweep=sweep, sleep=lambda s: None, clock=clock, limit_s=4 * 3600.0)
+    import json
+    st = json.loads(runner.RESIDENT_STATE.read_text())
+    # 3,000 s sweeps + 300 s margin in 14,400 s: four fit, the fifth would be killed.
+    assert st["sweeps"] == 4 and st["status"] == "RESPAWN"
+
+
+def test_the_stop_file_stops_it(tmp_path) -> None:
+    runner.RESIDENT_STOP.write_text("")
+    calls: list = []
+    runner.resident(sweep=lambda: calls.append(1) or 0, sleep=lambda s: None,
+                    clock=_Clock(), limit_s=None)
+    assert calls == []
+
+
+def test_resident_is_the_default_and_once_opts_out(monkeypatch) -> None:
+    monkeypatch.delenv("GAUNTLET_RESIDENT", raising=False)
+    assert runner._resident_enabled([]) is True
+    assert runner._resident_enabled(["--once"]) is False
+    monkeypatch.setenv("GAUNTLET_RESIDENT", "0")
+    assert runner._resident_enabled([]) is False
+    assert runner._resident_enabled(["--resident"]) is True
+
+
+def test_each_sweep_takes_the_latest_measured_env(monkeypatch) -> None:
+    published = {"GAUNTLET_WORKERS": "10", "GAUNTLET_SHARDS": "10"}
+    monkeypatch.setattr(runner, "_published_env", lambda: dict(published))
+    monkeypatch.setattr(runner, "_LAUNCH", {})
+    monkeypatch.setenv("GAUNTLET_WORKERS", "10")      # exported by the launcher from the file
+    monkeypatch.setenv("GAUNTLET_SHARDS", "4")        # exported by hand: outranks the organ
+    assert runner._sweep_env()["GAUNTLET_WORKERS"] == "10"
+    published.update(GAUNTLET_WORKERS="15", GAUNTLET_SHARDS="15", GAUNTLET_PER_WORKER_MB="768")
+    env = runner._sweep_env()
+    assert env["GAUNTLET_WORKERS"] == "15"
+    assert env["GAUNTLET_SHARDS"] == "4"
+    assert env["GAUNTLET_PER_WORKER_MB"] == "768"

@@ -109,9 +109,15 @@ HEADROOM_SHARE = 0.5
 #: The scheduled task the launcher drives, and the cadence band. The gauntlet's cache is
 #: content-addressed and cumulative, so a shorter period is strictly more judging: a pass that
 #: overlaps costs a kill (MT5-StallWatch keeps the oldest parent), never a corrupt cache.
+#:
+#: THE TRIGGER IS NOW A RESPAWNER (principal, 2026-10-10: "0 cadences, no 5 min cadences").
+#: `run_sharded_gauntlet.py` is resident by default: it runs sweeps back to back and never exits
+#: while it can judge, so with `MultipleInstances IgnoreNew` a repetition does nothing while it
+#: lives. The interval is therefore only how fast a DEAD judge comes back, and one minute is the
+#: shortest repetition the scheduler accepts. Both bands are one minute: there is no slow clock.
 GAUNTLET_TASK = "MT5-Gauntlet"
-CADENCE_FAST_MIN = 5
-CADENCE_BASE_MIN = 10
+CADENCE_FAST_MIN = 1
+CADENCE_BASE_MIN = 1
 
 #: A box is the JUDGING box when it measures at least this much. Derived, never a hostname: the
 #: build box has 8 GB and its tasks are disabled, and nothing here may be sized from it.
