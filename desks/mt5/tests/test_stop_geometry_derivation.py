@@ -259,3 +259,29 @@ def test_the_daily_missed_growth_run_publishes_the_gate(tmp_path, monkeypatch) -
     monkeypatch.setattr(mg, "STOP_GEOMETRY", tmp_path / "absent.json")
     doc = mg.run(write=False)
     assert "stop_geometry_robustness_gate" in doc["published_gate_lines"]
+
+
+def test_an_unmeasured_solve_writes_unmeasured_lines_never_a_zero(monkeypatch) -> None:
+    """L1.28a: on LIVE state both constants are UNMEASURED; the line is None, not NOT_BINDING."""
+    gone = {"status": "UNMEASURED: no LIVE scalp_market sleeve in sleeves.json"}
+    monkeypatch.setattr(sgd, "derive_min_stop_spread_mult", lambda deals, **k: dict(gone))
+    monkeypatch.setattr(sgd, "derive_entry_drift_tol_frac", lambda deals, **k: dict(gone))
+    doc = sgd.derive()
+    assert doc["status"] == "UNMEASURED"
+    for line in doc["missed_growth"]:
+        assert line["verdict"] == "UNMEASURED" and line["value"] is None
+
+
+def test_the_missed_growth_reader_honours_an_unmeasured_report(tmp_path, monkeypatch) -> None:
+    import json
+    from datetime import UTC, datetime
+
+    import missed_growth as mg
+
+    path = tmp_path / "STOP_GEOMETRY_DERIVATION.json"
+    monkeypatch.setattr(mg, "STOP_GEOMETRY", path)
+    at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    kept = sgd.robustness_gate(_solved(3.0, 3.0, n=0, mean=None, sd=None), 3.0, 3.0)
+    path.write_text(json.dumps({"generated_at": at, "status": "UNMEASURED", "missed_growth": [
+        sgd.gate_missed_growth_line("MIN_STOP_SPREAD_MULT", kept["gate"], at)]}), "utf-8")
+    assert mg.published_gate_lines()["verdict"] == mg.UNMEASURED

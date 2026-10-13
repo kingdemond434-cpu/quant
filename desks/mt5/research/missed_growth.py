@@ -622,6 +622,11 @@ def published_gate_lines() -> dict[str, Any]:
                 "age_h": None if math.isinf(age_h) else round(age_h, 2),
                 "why": f"the stop-geometry report is older than {STOP_GEOMETRY_MAX_AGE_H:g}h or "
                        f"unstamped: the gate's state today is unknown"}
+    if str(doc.get("status") or "").startswith("UNMEASURED"):
+        return {"verdict": UNMEASURED, "lines": doc.get("missed_growth") or [],
+                "age_h": round(age_h, 2),
+                "why": "the stop-geometry solve measured neither constant (report status "
+                       "UNMEASURED): no cost is known, so none is claimed"}
     lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
     if not lines:
         return {"verdict": UNMEASURED, "lines": [],

@@ -414,7 +414,8 @@ def robustness_gate(res: dict[str, Any], prior_value: float | None,
 GATE_RAIL = "stop_geometry_robustness_gate"
 
 
-def gate_missed_growth_line(constant: str, gate: dict[str, Any], at: str) -> dict[str, Any]:
+def gate_missed_growth_line(constant: str, gate: dict[str, Any], at: str,
+                            status: str | None = None) -> dict[str, Any]:
     """One missed-growth line per constant, every pass: a hold is billed at the solve's claimed
     gain (negative value = growth forgone), a non-hold is a measured NOT_BINDING zero -- silence
     is not a measurement. The claim is made on the evidence the gate found too thin, so it is an
@@ -426,6 +427,10 @@ def gate_missed_growth_line(constant: str, gate: dict[str, Any], at: str) -> dic
         "why": "the claimed gain of a re-solved stop-geometry value the robustness gate held; "
                "PUBLISHED, never appended to data/missed_growth.jsonl and never executed -- "
                "the gate registers no rail (libs/portfolio/rails.py is sealed)"}
+    # L1.28a: a solve that never measured the constant has no cost to report, zero or otherwise.
+    if str(status or "").startswith("UNMEASURED"):
+        line.update(value=None, verdict="UNMEASURED", unmeasured=status)
+        return line
     if not gate.get("held"):
         line.update(value=0.0, verdict="NOT_BINDING")
         return line
@@ -669,13 +674,16 @@ def derive() -> dict[str, Any]:
         doc[k].update(robustness_gate(doc[k], alt.get("derived"), TODAY[k]))
     doc["adopted"] = {k: doc[k]["adopted_value"] for k in TODAY}
     doc["held"] = sorted(k for k in TODAY if doc[k]["gate"]["held"])
-    doc["missed_growth"] = [gate_missed_growth_line(k, doc[k]["gate"], doc["generated_at"])
-                            for k in TODAY]
     states = [doc[k].get("status", "") for k in ("MIN_STOP_SPREAD_MULT", "ENTRY_DRIFT_TOL_FRAC")]
     # SOLVED covers "today's value is optimal within noise": the solve ran and answered.
     solved = {"OK", "TODAY_OPTIMAL_WITHIN_NOISE"}
     doc["status"] = "OK" if all(s in solved for s in states) else (
         "PARTIAL" if any(s in solved for s in states) else "UNMEASURED")
+    doc["missed_growth"] = [
+        gate_missed_growth_line(k, doc[k]["gate"], doc["generated_at"],
+                                "UNMEASURED" if doc["status"] == "UNMEASURED"
+                                else doc[k].get("status"))
+        for k in TODAY]
     return doc
 
 
