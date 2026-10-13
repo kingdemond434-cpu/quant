@@ -261,6 +261,26 @@ def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
                                                      -res.get(f, 0.0), f)))}
     return sorted(rows, key=lambda r: order.get(str(r.get("family") or ""), len(order)))
 
+def _priority_within_family(rows: list[dict]) -> list[dict]:
+    """The fallback path's copy of `judge_coverage.priority_within_family` (that module is what
+    failed to load here): each family keeps its slots; inside them, rows the compiler ranked 0
+    come before 1, 2, ...; ties keep their order. Only compiler-expanded rows (`axis`) rank."""
+    def prio(r: dict) -> int:
+        if not isinstance(r.get("axis"), dict):
+            return 0
+        try:
+            return max(int(r.get("priority") or 0), 0)
+        except (TypeError, ValueError):
+            return 0
+    slots: dict[str, list[int]] = {}
+    for i, r in enumerate(rows):
+        slots.setdefault(str(r.get("family") or ""), []).append(i)
+    out = list(rows)
+    for idxs in slots.values():
+        for slot, src in zip(idxs, sorted(idxs, key=lambda i: (prio(rows[i]), i)), strict=True):
+            out[slot] = rows[src]
+    return out
+
 #: Every producer, and how to reach the rows inside it. Adding a producer means adding a line
 #: here -- and the job manifest will report the target STALE if this stops running, so a new
 #: source cannot go quietly unconsumed the way these two did.
@@ -978,6 +998,8 @@ def main() -> int:
               f"least-judged-family order")
         if judged:
             rows_out = breadth_order(rows_out, judged)
+        # The compiler's priority still decides inside each family's own slots on this path.
+        rows_out = _priority_within_family(rows_out)
     # TIER S PRE-JUDGE SCREEN (layers 9 and 21): a row the adopted Red Queen defenders or the
     # machine-ratified invented tests FLAGGED (run_external_backtest tags it) moves behind the
     # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
