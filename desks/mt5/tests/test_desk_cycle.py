@@ -291,6 +291,8 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
     assert "Limitation record (ARCH-29)" in step
     assert "`judging_sweep`" in step and "`pass_questions`" in step
     assert "trial counts are never inflated" in step
+    assert "producers are only ever wired or kept, never retired" in step
+    assert "`reports/WARM_GAUNTLET.json` (`warmed`" in step
     assert "STEP 4B" in LAUNCHER.read_text("utf-8")
     assert "D15-D44" in LAUNCHER.read_text("utf-8")
     assert "check_cro_duties.py" in LAUNCHER.read_text("utf-8")

@@ -277,13 +277,13 @@ Baseline (2026-09-30, `/mnt/project-files/reports/tier1_breadth_gap_2026-09-30.m
 |---|---|---|---|
 | a | First real rulings per hour against cells created per hour | `reports/JUDGING_BURNDOWN.json` on the box, never a stale `reports/JUDGE_COVERAGE.json` (a burndown older than 2h is itself a gap) | rulings/h above created/h |
 | b | Share of the backlog that is UNKNOWN never-fire or too-rare cells, and whether they are re-queued forever | `reports/JUDGING_BURNDOWN.json`, docket dispositions | every such cell gets a terminal recorded verdict; no endless requeue, no deletion |
-| c | Prewarm warm rate, cold-build seconds per cell, failed builds by cause | `reports/JUDGING_THROUGHPUT.json` | warm rate near 100%; failures falling by cause |
+| c | Prewarm warm rate, cold-build seconds per cell, failed builds by cause | `reports/WARM_GAUNTLET.json` (`warmed`, `failed`, `missing`, `seconds`, `cells_per_min`, `warm_share_before`, `deferral_census`) and `data/hypotheses/warm_deferrals.json` for each failure's cause and age | warm rate near 100%; failures falling by cause |
 | d | Busy judge cores against planned workers, and what uses the rest of the CPU and RAM | box process table, `stall_watch.json` | every planned worker busy; capacity added and waste cut, never mining cut |
 | e | Judge fences `coverage_drain` and `judge_coverage` | their artifacts' age and source | fresh, and reading the live judge |
 | f | Failed `schtasks /Change` cadence changes | box task history | each one re-applied, or BLOCKED with the refusal |
 | g | `swap_cost` failing closed | judge logs | judging proceeds with the correct cost, never by skipping the cost |
 
-Baseline (box, 2026-10-07 01:40Z): 1,389,434 unjudged, +90k a day, 0 first rulings per hour over 24h, about 1-2 effective judge cores, 0 cells warmed in 3,662s. Each item is reported against this baseline and against the previous pass, under `judging_sweep` in the review and the ledger row.
+Baseline (box, 2026-10-07 01:40Z): 1,389,434 unjudged and +90k a day (`reports/JUDGE_COVERAGE.json`), 0 first rulings per hour over 24h (`reports/JUDGING_BURNDOWN.json`), about 1-2 effective judge cores (box process table), 0 cells warmed in 3,662s (`reports/WARM_GAUNTLET.json` `warmed` and `seconds`). Each item is reported against this baseline and against the previous pass, under `judging_sweep` in the review and the ledger row.
 
 **Pass questions (ARCH-30).** Every pass answers seven questions from box data, each answer naming the artifact or number it rests on. UNMEASURED is an allowed answer, but it counts as MISSED and is fixed under NEVER JUST NOTICE.
 
@@ -294,7 +294,7 @@ Baseline (box, 2026-10-07 01:40Z): 1,389,434 unjudged, +90k a day, 0 first rulin
 | Q3 | Missed opportunities since the last pass and why: passing cells not certified, certified cells not clocked, signals that fired with no live sleeve, datasets or sources not used |
 | Q4 | The live allocator's realised and replayed E[log W] against equal-risk, inverse-volatility and best-single-sleeve baselines on the same executable book, after lot rounding and costs. A loss to any baseline is a gap, routed under D43 |
 | Q5 | Losses from stale information, costs or defects since the last pass (stale inputs or artifacts, mispriced costs or swaps, failed jobs, code defects), each with its size and its fix |
-| Q6 | Removable components: no consumer, no weight or no measured contribution, each with its evidence and a disposition of retire, wire, or keep at zero weight |
+| Q6 | Removable components: no consumer, no weight or no measured contribution, each with its evidence and a disposition of retire, wire, or keep at zero weight. A producer, miner or crawler whose cells are not yet judged is UNMEASURED, not zero-contribution, and producers are only ever wired or kept, never retired (mining is never cut) |
 | Q7 | Most valuable new capability: the one that would raise robust forward E[log W] most, why, and whether this pass built it |
 
 **Limitation record (ARCH-29).** For each material limitation the pass names, it records what limits capability, the improvement tested, the measured result with its uncertainty, the resources needed and the next experiment, and it keeps the best-supported incumbent until a challenger beats it on the same evidence. These go under `limitations` in the review.
