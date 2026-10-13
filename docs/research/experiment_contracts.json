@@ -161,6 +161,21 @@
     "after": "7 days with deals on the ledger and no intent matched to a fill: the markout measures nothing"
    }
   },
+  "scalp_markout_rerank": {
+   "hypothesis": "Charging each scalp certificate its own measured fill slip re-orders the scalp lane by what it actually earns, so a cert whose edge is eaten by execution is visible before it is sized.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_measured",
+    "better": "up",
+    "organ": "report:scalp_markout_rerank.json"
+   },
+   "falsifier": {
+    "metric": "n_measured",
+    "op": "<",
+    "threshold": 1,
+    "after": "14 days with scalp fills on the ledger and no cert measured: the prefix join is not reaching the certificates"
+   }
+  },
   "kelly_survival": {
    "hypothesis": "Solving each gold window's size for maximum ruin-counted E[log W] subject to P(death) <= eps grows the book faster than today's floor book at no more ruin, so survival takes size away only where that raises growth.",
    "metric": {
