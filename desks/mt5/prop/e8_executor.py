@@ -498,6 +498,18 @@ def lot_for_risk(venue: Any, symbol: str, stop_dist: float, risk_usd: float) -> 
 
 
 # ------------------------------------------------------------------ the pass
+def charged_risk_usd(budget_usd: float, base_lot: float, lot: float) -> float:
+    """What `lot` risks when `base_lot` was sized to risk `budget_usd` at the same stop.
+
+    Risk is linear in volume at a fixed stop distance, so a lot the leg-balance or macro lean
+    scaled to 1.3x carries 1.3x the budget, and that is what the daily floor must be charged.
+    An unmeasurable ratio (either lot not positive) charges the budget as it was.
+    """
+    if not (base_lot > 0 and lot > 0):
+        return float(budget_usd)
+    return float(budget_usd) * float(lot) / float(base_lot)
+
+
 def _quantise(lot: float, venue: Any, symbol: str) -> float:
     """Floor `lot` to the venue's lot step, exactly, and never below its minimum.
 
@@ -1248,9 +1260,17 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                                                  ttl_bars=getattr(g, "ttl_bars", None))
             except Exception as _exc:
                 _mm, _mw = 1.0, f"macro UNMEASURED ({type(_exc).__name__})"
+            _base_lot = lot
             lot = _quantise(lot * _lm * _mm, venue, sym)
             row["leg_mult"], row["leg_why"] = float(_lm), _lw
             row["macro_mult"], row["macro_why"] = float(_mm), _mw
+            # THE FLOOR IS CHARGED WHAT IS SENT (2026-10-13). Risk is linear in lot at a fixed
+            # stop, so a multiplied lot carries the multiplied risk; the daily-floor check and
+            # `committed_usd` below read `row_risk_usd`, and charging them the pre-multiplier
+            # budget let a 1.3x macro lean put 30% more on the account than the floor counted --
+            # the same shape as the Fusion family lane's 13%-on-a-10% AUDCHF order of 10-12.
+            row_risk_usd = charged_risk_usd(row_risk_usd, _base_lot, lot)
+            row["risk_usd"] = round(row_risk_usd, 2)
         except Exception as exc:
             # UNMEASURED IS 1.0. A decomposition that cannot be trusted must never become a
             # silent reason to trade smaller.

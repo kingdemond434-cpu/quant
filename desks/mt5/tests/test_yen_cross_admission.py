@@ -103,16 +103,18 @@ def test_an_unreadable_policy_still_falls_back_to_gold_only(tmp_path: Path) -> N
     assert lp.refuse({"symbol": "USDJPY", "name": CHOSEN_MT5}, pol) is not None
 
 
-def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
+def test_the_shipped_policy_file_opens_the_universe_and_keeps_the_quarantines() -> None:
     """The artifact itself, as it will be read on the box. Principal 2026-10-07: EURZAR, USDZAR
-    and AUDCHF joined gold for the certified sleeve book; USDJPY stays a live symbol but its
-    rr2.5 sleeve is Reddit-lineage quarantined (`live_sleeves.USDJPY == []`) until re-certified,
-    and the CHFNOK carry rows are quarantined for lookahead."""
+    and AUDCHF joined gold for the certified sleeve book; USDJPY's rr2.5 sleeve is Reddit-lineage
+    quarantined (`live_sleeves.USDJPY == []`) until re-certified, and the CHFNOK carry rows are
+    quarantined for lookahead. Principal 2026-10-05 and 2026-10-13: no symbol allowlist, every
+    eligible sleeve available to the allocator -- `live_symbols` is '*', the quarantines and the
+    family ban stand."""
     f = DESK / "data" / "live_sleeve_policy.json"
     if not f.exists():                      # the box writes its own; absent on a fresh clone
         pytest.skip("no live_sleeve_policy.json in this checkout")
     pol = lp.policy(f)
-    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY", "EURZAR", "USDZAR", "AUDCHF"})
+    assert pol.live_symbols == frozenset({"*"})
     assert "discovered" in pol.banned_families
     for name in (CHOSEN_MT5, "USDJPY.asia#rr=2.5"):
         assert lp.refuse({"symbol": "USDJPY", "name": name}, pol) is not None
@@ -121,7 +123,7 @@ def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
     for sym in ("EURZAR", "USDZAR", "AUDCHF"):
         assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay"}, pol) is None
     assert lp.refuse({"symbol": "EURJPY", "name": "eurjpy_session_range_breakout_asia_0_wb_12"},
-                     pol) is not None
+                     pol) is None
     assert lp.refuse({"symbol": "EURJPY", "family": "discovered"}, pol) is not None
 
 

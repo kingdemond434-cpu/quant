@@ -192,7 +192,7 @@ def _blocked(root: Path, inp: Inputs, reentry: dict[str, set[str]]) -> list[dict
             if scope == "roster_admission":
                 by = str(data.get("by") or "")
                 live = data.get("live_symbols")
-                if isinstance(live, list) and live:
+                if isinstance(live, list) and live and "*" not in live:
                     entries.append(("every symbol outside " + ",".join(str(s) for s in live),
                                     str(data.get("rule") or "roster admission"), by))
                 banned_tf = data.get("banned_timeframes")

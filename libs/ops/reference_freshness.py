@@ -1050,6 +1050,19 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "`pol` before the loop.",
     ),
     DestructivePath(
+        path_id="promoter.restore_lifted_policy_retirements",
+        module="desks/mt5/research/promoter.py",
+        function="restore_lifted_policy_retirements",
+        removes="the retirement stamp of a row a since-lifted live policy retired (RETIRED -> "
+                "STANDBY at 0% risk; the stamp is kept on the row as `policy_retirement`)",
+        reference="mt5desk.live_policy.policy() + reports/UNIVERSAL_SURVIVORS.json (exact policy, "
+                  "all ten gates)",
+        status="positive",
+        note="Acts only on a POSITIVE reading: the row's own `retired_by` is a policy stamp, the "
+             "policy in force no longer refuses it, and its certificate is in the survivors now. "
+             "An unreadable or empty survivors file restores nothing; no row is ever retired here.",
+    ),
+    DestructivePath(
         path_id="state_admission.graveyard",
         module="libs/regime/state_admission.py",
         function="admitted",
