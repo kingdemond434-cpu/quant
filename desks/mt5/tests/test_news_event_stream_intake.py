@@ -366,3 +366,114 @@ def test_file_grounds_are_read_in_bounded_slices(desk: Path,
     sizes = [len([x for x in nes.collect_items(cursor=cur) if x.origin == "moat_normalized"])
              for _ in range(4)]
     assert sizes == [3, 3, 1, 0]
+
+
+# ---------------------------------------------------------- audit #204 v3: seat files are PAGED
+def _seat_rows(lo: int, hi: int) -> list[dict[str, Any]]:
+    return [{"source": "cb", "title": f"Seat row {i} on rates",
+             "fetched_utc": (NOW - timedelta(minutes=5)).isoformat()} for i in range(lo, hi)]
+
+
+def _seat_cursor() -> dict[str, Any]:
+    cur = nes.load_cursor(nes.CURSOR)
+    cur["files"][f"seat:{nes.NEWS_SEATS[0]}"] = {}       # not first sight: every file is new
+    return cur
+
+
+def _seat_titles(cur: dict[str, Any]) -> list[str]:
+    return [x.title for x in nes.collect_items(cursor=cur) if x.origin.startswith("intelligence:")]
+
+
+def test_a_big_seat_file_is_paged_to_its_last_row_and_only_then_marked_read(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit #204 v3 (2026-10-07): a seat file over 20,000 rows kept its newest 20,000 and was
+    marked read, so every older row was lost. 25 rows at a page of 7 must ALL arrive, oldest
+    first, none twice, and the file is marked read only on the pass that takes the last row."""
+    monkeypatch.setattr(nes, "MAX_ROWS_PER_READ", 7)
+    seat = nes.INTEL / nes.NEWS_SEATS[0]
+    seat.mkdir(parents=True)
+    path = seat / "discoveries_big.jsonl"
+    _write_captures(_seat_rows(0, 25), path)
+    cur = _seat_cursor()
+    key = f"seat:{nes.NEWS_SEATS[0]}"
+    pages, marked = [], []
+    for _ in range(5):
+        pages.append(_seat_titles(cur))
+        marked.append(str(path) in cur["files"][key])
+    assert [len(p) for p in pages] == [7, 7, 7, 4, 0]
+    taken = [t for p in pages for t in p]
+    assert len(taken) == len(set(taken)) == 25                     # none lost, none twice
+    assert sorted(taken) == sorted(r["title"] for r in _seat_rows(0, 25))
+    assert pages[0] == [f"Seat row {i} on rates" for i in range(7)]  # oldest rows first
+    assert marked == [False, False, False, True, True]
+
+
+def test_a_json_seat_document_is_paged_the_same_way(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nes, "MAX_ROWS_PER_READ", 6)
+    seat = nes.INTEL / nes.NEWS_SEATS[0]
+    seat.mkdir(parents=True)
+    path = seat / "discoveries_doc.json"
+    path.write_text(json.dumps({"discoveries": _seat_rows(0, 14)}))
+    cur = _seat_cursor()
+    taken = [t for _ in range(4) for t in _seat_titles(cur)]
+    assert sorted(taken) == sorted(r["title"] for r in _seat_rows(0, 14))
+    assert len(taken) == 14
+    assert str(path) in cur["files"][f"seat:{nes.NEWS_SEATS[0]}"]
+
+
+def test_a_seat_file_rewritten_mid_consumption_loses_nothing_and_counts_nothing_twice(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nes, "MAX_ROWS_PER_READ", 5)
+    seat = nes.INTEL / nes.NEWS_SEATS[0]
+    seat.mkdir(parents=True)
+    path = seat / "discoveries_live.json"
+    path.write_text(json.dumps(_seat_rows(0, 12)))
+    cur = _seat_cursor()
+    taken = _seat_titles(cur)
+    assert len(taken) == 5
+    # the seat rewrites its file: rows reordered, three new ones inserted at the FRONT
+    path.write_text(json.dumps(_seat_rows(100, 103) + list(reversed(_seat_rows(0, 12)))))
+    for _ in range(4):
+        taken += _seat_titles(cur)
+    want = {r["title"] for r in _seat_rows(0, 12) + _seat_rows(100, 103)}
+    assert len(taken) == len(set(taken)) == 15 and set(taken) == want
+
+
+def test_a_finished_seat_file_that_grows_is_read_from_where_it_ended(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nes, "MAX_ROWS_PER_READ", 4)
+    seat = nes.INTEL / nes.NEWS_SEATS[0]
+    seat.mkdir(parents=True)
+    path = seat / "discoveries_grow.jsonl"
+    _write_captures(_seat_rows(0, 6), path)
+    cur = _seat_cursor()
+    first = _seat_titles(cur) + _seat_titles(cur)
+    assert len(first) == 6
+    _write_captures(_seat_rows(6, 9), path)
+    again = _seat_titles(cur) + _seat_titles(cur)
+    assert again == [f"Seat row {i} on rates" for i in range(6, 9)]
+
+
+def test_the_gdelt_backlog_is_worked_oldest_slot_first(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit #204 v3: the backlog was ordered by content hash, a random walk through time."""
+    monkeypatch.setattr(nes, "MAX_GDELT_BLOBS_PER_READ", 1)
+    seen: list[str] = []
+    real = nes.gdelt_items
+
+    def spy(body: bytes, slot: str, ground: str, fetched_utc: str) -> Any:
+        seen.append(slot)
+        return real(body, slot, ground, fetched_utc)
+
+    monkeypatch.setattr(nes, "gdelt_items", spy)
+    base = (NOW - timedelta(hours=3)).replace(minute=0, second=0)
+    slots = [(base + timedelta(minutes=15 * k)).strftime("%Y%m%d%H%M%S") for k in range(3)]
+    folder = nes.GDELT_VAULTS[0][1]
+    # digests in REVERSE time order, so hash order and time order disagree
+    for digest, slot in zip(("cccc", "bbbb", "aaaa"), slots, strict=True):
+        _vault(folder, digest, _gdelt_blob("190", "19", "IR", 3, slot), slot)
+    cur = nes.load_cursor(nes.CURSOR)
+    for _ in range(3):
+        nes.collect_items(cursor=cur)
+    assert seen == slots

@@ -45,31 +45,42 @@ def test_a_third_party_clearance_never_lifts_the_fred_hold(tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize("sid", ["DGS10", "DFII10", "T10YIE", "WCESTUS1", "CPIAUCSL", "PCEPI",
-                                 "DTWEXBGS", "M2SL"])
-def test_the_display_register_fetches_federal_series(sid: str, none: Path) -> None:
-    ok, why = th.fred_display_terms(sid, none)
-    assert ok is True and why.startswith("public domain")
-
-
-@pytest.mark.parametrize("sid", ["VIXCLS", "VXVCLS", "GVZCLS", "BAMLH0A0HYM2", "SP500", "DJIA",
-                                 "NASDAQCOM", "NIKKEI225", "WILL5000IND", "SOMETHINGNEW", ""])
-def test_the_display_register_fails_closed(sid: str, none: Path) -> None:
-    ok, why = th.fred_display_terms(sid, none)
+                                 "DTWEXBGS", "M2SL", "VIXCLS", "SP500", "SOMETHINGNEW", ""])
+def test_no_fred_series_is_fetched_without_a_recorded_label(sid: str, none: Path) -> None:
+    """Coordinator 2026-10-07: FRED's labels are VERBATIM_PENDING, so the register is empty and
+    every series is held for display too."""
+    ok, why = th.fred_display_terms(sid, none, labels=none)
     assert ok is False and why.startswith("HELD_TERMS")
 
 
-@pytest.mark.parametrize("sid", ["", "calendar", "fred:", "mt5:ticks", "polymarket:prices",
-                                 "prediction_markets:forecast_store", "some_new_source"])
-def test_unknown_sources_fail_closed(sid: str, none: Path) -> None:
-    ok, why = th.gauntlet_terms(sid, none)
-    assert ok is False and why.startswith("HELD_TERMS")
+def test_the_label_register_admits_only_a_recorded_admitted_label(tmp_path: Path,
+                                                                    none: Path) -> None:
+    labels = tmp_path / "labels.json"
+    row = {"url": "https://fred.stlouisfed.org/series/DGS10", "captured_at": "2026-10-08"}
+    labels.write_text(json.dumps({
+        "DGS10": {**row, "label": "Public Domain: Citation Requested"},
+        "DFII10": {"label": "Public Domain: Citation Requested"},          # no url / capture
+        "M2SL": {**row, "label": "Copyrighted: Pre-approval Required"},    # not admitted
+        "VIXCLS": {**row, "label": "Copyrighted: Citation Required"},
+        "SP500": {**row, "label": "Copyrighted: Citation Required"}}), "utf-8")
+    assert th.fred_display_terms("DGS10", none, labels)[0] is True
+    assert th.fred_display_terms("DFII10", none, labels)[0] is False
+    assert th.fred_display_terms("M2SL", none, labels)[0] is False
+    assert th.fred_display_terms("T10YIE", none, labels)[0] is False
+    # a label never lifts a third party's own copyright
+    assert th.fred_display_terms("VIXCLS", none, labels)[0] is False
+    assert th.fred_display_terms("SP500", none, labels)[0] is False
+    clear = tmp_path / "c.json"
+    clear.write_text(json.dumps({"cboe": QUOTED}), "utf-8")
+    assert th.fred_display_terms("VIXCLS", clear, labels)[0] is True
+    # and a label is never a licence for a fitted model
+    assert th.gauntlet_terms("fred:DGS10", none)[0] is False
 
 
-@pytest.mark.parametrize("sid", ["fred:VIXCLS", "alfred:VXNCLS", "fred:GVZCLS",
-                                 "fred:BAMLH0A0HYM2", "yahoo:cboe_indices",
-                                 "cboe_delayed:options", "taifex:pc_ratio", "ff_calendar_vintage"])
-def test_named_and_third_party_holds(sid: str, none: Path) -> None:
-    assert th.gauntlet_terms(sid, none)[0] is False
+def test_fred_is_cited_never_quoted() -> None:
+    assert th.FRED_TERMS_CITATION["verbatim"] == "VERBATIM_PENDING"
+    assert "terms_quote" not in th.FRED_TERMS_CITATION
+    assert not th.FRED_LABELS.exists() or json.loads(th.FRED_LABELS.read_text("utf-8")) == {}
 
 
 def test_a_pair_passes_only_when_every_part_does(none: Path) -> None:

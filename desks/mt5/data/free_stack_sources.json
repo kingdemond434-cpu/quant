@@ -885,6 +885,401 @@
      "note": "acquisition ranking, the allocation of research compute to data"
     }
    }
+  },
+  {
+   "id": "cnx_shfe",
+   "exchange": "shfe",
+   "name": "SHFE dated daily files: kx quotes, pm member rankings, dailystock warrants, weeklystock inventory",
+   "url": "https://www.shfe.com.cn/data/dailydata/kx/pm{ymd}.dat",
+   "licence": "SHFE site statement: NON-COMMERCIAL browse/download only; commercial (trading) use not granted; resale barred -- REFUSED",
+   "terms_evidence": {
+    "terms_url": "https://www.shfe.com.cn/disclaimer/",
+    "checked_at": "2026-10-06",
+    "terms_quote": "在遵守中国有关法律与本声明的前提下，任何机构或者个人可基于非商业目的浏览、下载本网站的内容。 / 未经上海期货交易所书面许可，任何机构或者个人不得以向他人出售牟利为目的，使用本网站的任何内容，此种使用包括但不限于拷贝、下载、存贮、通过硬拷贝或电子抓取系统、发送、转换、出租、演示、转载、复制、修改、销售、传播、出版或任何其它形式的散发。",
+    "reading": "the grant is NON-COMMERCIAL browse/download only (基于非商业目的浏览、下载); a trading desk's use of the data to trade is commercial use, which the statement does not grant, so terms are REFUSED (fail closed; audit of PR #224, 2026-10-06). A flip needs SHFE's written permission (书面许可) recorded here"
+   },
+   "mechanism": "SHFE top-20 member crowding, state-broker net positioning, warehouse-receipt draws and curve shape are physical-and-positioning states of China's metal demand that price-only families on XAU/XAG/XCU/XAL/XZN/XNI/AUD cannot see",
+   "failure_mode_hypothesis": "member rankings mix hedgers and speculators under one broker name and warrants move with delivery logistics and bonded-zone arbitrage, so the signal should fail around delivery months and import-window openings rather than on Western macro days",
+   "kind": "cn_exchange",
+   "cadence": "daily",
+   "auth": "none",
+   "machine_use_allowed": false,
+   "cursor": "newest / oldest trading day held + retry list; forward from newest, then backfill walk to backfill_days weekdays; a per-day file is a vintage, never an overwrite",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 0,
+   "release_bjt": "20:00",
+   "days_per_pass": 40,
+   "backfill_days": 800,
+   "max_seconds": 150,
+   "terms": "refused",
+   "substitute_status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=cftc_cot",
+   "substituted_by": [],
+   "substitute_candidates": [
+    {
+     "substitute": "cftc_cot",
+     "name": "CFTC Commitments of Traders, legacy futures-only (deafut.txt + deacot{year}.zip annual history)",
+     "ingested_by": "desks/mt5/research/axis_ingest.py (COT_URL / COT_HISTORY_URL; axis artifact desks/mt5/data/axes/cot.json)",
+     "terms": "confirmed",
+     "terms_basis": "US federal government publication (cftc.gov), public domain; already ingested by the desk",
+     "verdict": "UNVERIFIED",
+     "corr": "UNMEASURED",
+     "n": "UNMEASURED",
+     "why_unmeasured": "no SHFE/INE positioning series exists on disk (the rows are terms-refused, so none was ever fetched); the #152 law counts a substitute COVERED only at a MEASURED corr >= 0.5 with n reported, so this is a NAMED substitute, not coverage",
+     "covers": "COMEX gold, silver and copper positioning (GOLD->XAUUSD, SILVER->XAGUSD, COPPER->XCUUSD); no CFTC market for SHFE al/zn/ni/pb, so those products stay unsubstituted"
+    }
+   ],
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "blocker_prior": "BLOCKED_ON_TERMS: terms refused (non-commercial grant only); never fetched. The parsers stay proven on fixtures in the documented formats (desks/mt5/tests/fixtures/free_stack/cnx/README.md); the positioning read is served by the named substitute cftc_cot (coverage UNMEASURED)",
+   "targets": {
+    "hypothesis": "per product, libs.data.free_stack_cnx.PRODUCT_TARGETS filtered by the broker registry and universe_policy.may_hypothesise",
+    "event": []
+   },
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_shfe positioning / inventory / curve / divergence columns as direct cells on the mapped MT5 instruments"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_shfe regime (lagged z high/low) gating price-only base families on the same instrument"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cnx_shfe latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cnx_ine",
+   "exchange": "ine",
+   "name": "INE dated daily files: crude (sc), bc copper, lu, nr -- quotes, member rankings, warrants",
+   "url": "https://www.ine.cn/data/dailydata/kx/pm{ymd}.dat",
+   "licence": "INE is SHFE's subsidiary on SHFE's site platform; its own page is unreadable from the build sandbox and the parent's statement grants non-commercial use only -- REFUSED",
+   "terms_evidence": {
+    "terms_url": "https://www.ine.cn/disclaimer/",
+    "checked_at": "2026-10-06",
+    "terms_quote": "(not readable from the build sandbox: the host serves a slider-captcha WAF page to the sandbox)",
+    "reading": "INE's own disclaimer could not be read (slider-captcha WAF); the parent exchange's statement (cnx_shfe terms_evidence) grants NON-COMMERCIAL use only, and nothing read grants more, so terms are REFUSED (fail closed; audit of PR #224, 2026-10-06). A flip needs INE's written permission recorded here"
+   },
+   "mechanism": "INE crude positioning and the sc curve carry China's import-and-refinery demand into Brent/WTI",
+   "failure_mode_hypothesis": "sc is priced off Middle East grades with a quota-constrained participant base, so it should decouple from Brent when import quotas or freight bind",
+   "kind": "cn_exchange",
+   "cadence": "daily",
+   "auth": "none",
+   "machine_use_allowed": false,
+   "cursor": "newest / oldest trading day held + retry list; forward from newest, then backfill walk to backfill_days weekdays; a per-day file is a vintage, never an overwrite",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 0,
+   "release_bjt": "20:00",
+   "days_per_pass": 40,
+   "backfill_days": 800,
+   "max_seconds": 150,
+   "terms": "refused",
+   "substitute_status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=cftc_cot",
+   "substituted_by": [],
+   "substitute_candidates": [
+    {
+     "substitute": "cftc_cot",
+     "name": "CFTC Commitments of Traders, legacy futures-only (deafut.txt + deacot{year}.zip annual history)",
+     "ingested_by": "desks/mt5/research/axis_ingest.py (COT_URL / COT_HISTORY_URL; axis artifact desks/mt5/data/axes/cot.json)",
+     "terms": "confirmed",
+     "terms_basis": "US federal government publication (cftc.gov), public domain; already ingested by the desk",
+     "verdict": "UNVERIFIED",
+     "corr": "UNMEASURED",
+     "n": "UNMEASURED",
+     "why_unmeasured": "no SHFE/INE positioning series exists on disk (the rows are terms-refused, so none was ever fetched); the #152 law counts a substitute COVERED only at a MEASURED corr >= 0.5 with n reported, so this is a NAMED substitute, not coverage",
+     "covers": "NYMEX light sweet crude positioning (CRUDE OIL, LIGHT SWEET / WTI-PHYSICAL -> XTIUSD) for INE sc/fu/lu; no CFTC market for INE bc copper beyond COMEX copper (XCUUSD), nr unsubstituted"
+    }
+   ],
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "blocker_prior": "BLOCKED_ON_TERMS: terms refused (non-commercial grant only); never fetched. The parsers stay proven on fixtures in the documented formats (desks/mt5/tests/fixtures/free_stack/cnx/README.md); the positioning read is served by the named substitute cftc_cot (coverage UNMEASURED)",
+   "targets": {
+    "hypothesis": "per product, libs.data.free_stack_cnx.PRODUCT_TARGETS filtered by the broker registry and universe_policy.may_hypothesise",
+    "event": []
+   },
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_ine positioning / inventory / curve / divergence columns as direct cells on the mapped MT5 instruments"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_ine regime (lagged z high/low) gating price-only base families on the same instrument"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cnx_ine latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cnx_dce",
+   "exchange": "dce",
+   "name": "DCE day quotes + member rankings (iron ore, coke, coking coal, soy complex, corn)",
+   "url": "http://www.dce.com.cn/publicweb/quotesdata/memberDealPosiQuotes.html",
+   "licence": "DCE site terms unread; derived features only",
+   "varieties": [
+    "i",
+    "j",
+    "jm",
+    "m",
+    "a",
+    "c"
+   ],
+   "terms_evidence": {
+    "terms_url": "http://www.dce.com.cn/",
+    "checked_at": "2026-10-06",
+    "terms_quote": "(not readable from the build sandbox: robots.txt fetch timed out from the sandbox)",
+    "reading": "no terms read, so to_confirm (fail closed); the box or the principal reads the page and flips `terms`"
+   },
+   "mechanism": "iron-ore / coking-coal crowding and curve state transmit China's steel demand to AUD; the soy/corn curves transmit import demand to the US grain CFDs",
+   "failure_mode_hypothesis": "DCE iron ore is dominated by retail and policy jawboning (exchange margin hikes), so its crowding should fail on regulator-intervention days",
+   "kind": "cn_exchange",
+   "cadence": "daily",
+   "auth": "none",
+   "machine_use_allowed": false,
+   "cursor": "newest / oldest trading day held + retry list; forward from newest, then backfill walk to backfill_days weekdays; a per-day file is a vintage, never an overwrite",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 0,
+   "release_bjt": "20:00",
+   "days_per_pass": 40,
+   "backfill_days": 800,
+   "max_seconds": 150,
+   "terms": "to_confirm",
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "blocker_prior": "BLOCKED_ON_TERMS until `terms` is confirmed; the build sandbox's proxy refuses every exchange host, so the parsers are proven on fixtures in the documented formats (desks/mt5/tests/fixtures/free_stack/cnx/README.md) and the live yield is UNMEASURED until the box runs it",
+   "targets": {
+    "hypothesis": "per product, libs.data.free_stack_cnx.PRODUCT_TARGETS filtered by the broker registry and universe_policy.may_hypothesise",
+    "event": []
+   },
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_dce positioning / inventory / curve / divergence columns as direct cells on the mapped MT5 instruments"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_dce regime (lagged z high/low) gating price-only base families on the same instrument"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cnx_dce latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cnx_czce",
+   "exchange": "czce",
+   "name": "CZCE FutureDataDaily / FutureDataHolding (cotton, sugar, PTA, methanol, glass)",
+   "url": "http://www.czce.com.cn/cn/DFSStaticFiles/Future/{y}/{ymd}/FutureDataHolding.txt",
+   "licence": "CZCE site terms unread; derived features only",
+   "terms_evidence": {
+    "terms_url": "http://www.czce.com.cn/",
+    "checked_at": "2026-10-06",
+    "terms_quote": "(not readable from the build sandbox: the legal-statement link returned HTTP 412 to the sandbox)",
+    "reading": "no terms read, so to_confirm (fail closed); the box or the principal reads the page and flips `terms`"
+   },
+   "mechanism": "CZCE cotton and sugar crowding and curve shape reflect China's import demand into the ICE-referenced COTTON / SUGAR CFDs",
+   "failure_mode_hypothesis": "Chinese cotton and sugar are set under state reserve auctions and import quotas, so the transmission should break when reserve policy moves",
+   "kind": "cn_exchange",
+   "cadence": "daily",
+   "auth": "none",
+   "machine_use_allowed": false,
+   "cursor": "newest / oldest trading day held + retry list; forward from newest, then backfill walk to backfill_days weekdays; a per-day file is a vintage, never an overwrite",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 0,
+   "release_bjt": "20:00",
+   "days_per_pass": 40,
+   "backfill_days": 800,
+   "max_seconds": 150,
+   "terms": "to_confirm",
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "blocker_prior": "BLOCKED_ON_TERMS until `terms` is confirmed; the build sandbox's proxy refuses every exchange host, so the parsers are proven on fixtures in the documented formats (desks/mt5/tests/fixtures/free_stack/cnx/README.md) and the live yield is UNMEASURED until the box runs it",
+   "targets": {
+    "hypothesis": "per product, libs.data.free_stack_cnx.PRODUCT_TARGETS filtered by the broker registry and universe_policy.may_hypothesise",
+    "event": []
+   },
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_czce positioning / inventory / curve / divergence columns as direct cells on the mapped MT5 instruments"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_czce regime (lagged z high/low) gating price-only base families on the same instrument"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cnx_czce latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cnx_gfex",
+   "exchange": "gfex",
+   "name": "GFEX day quotes + dominant-contract member rankings (lithium carbonate, industrial silicon, polysilicon)",
+   "url": "http://www.gfex.com.cn/u/interfacesWebTiMemberDealPosiQuotes/loadList",
+   "licence": "GFEX site terms unread; derived features only",
+   "varieties": [
+    "lc",
+    "si",
+    "ps"
+   ],
+   "terms_evidence": {
+    "terms_url": "http://www.gfex.com.cn/",
+    "checked_at": "2026-10-06",
+    "terms_quote": "(not readable from the build sandbox: TLS hostname mismatch on the sandbox's robots.txt fetch)",
+    "reading": "no terms read, so to_confirm (fail closed); the box or the principal reads the page and flips `terms`"
+   },
+   "mechanism": "lithium-carbonate positioning and curve are China's battery-chain demand state, transmitted to AUD through Australian spodumene exports",
+   "failure_mode_hypothesis": "GFEX contracts are young with exchange-imposed position limits, so concentration may reflect limit mechanics rather than conviction",
+   "kind": "cn_exchange",
+   "cadence": "daily",
+   "auth": "none",
+   "machine_use_allowed": false,
+   "cursor": "newest / oldest trading day held + retry list; forward from newest, then backfill walk to backfill_days weekdays; a per-day file is a vintage, never an overwrite",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 0,
+   "release_bjt": "20:00",
+   "days_per_pass": 40,
+   "backfill_days": 800,
+   "max_seconds": 150,
+   "terms": "to_confirm",
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "blocker_prior": "BLOCKED_ON_TERMS until `terms` is confirmed; the build sandbox's proxy refuses every exchange host, so the parsers are proven on fixtures in the documented formats (desks/mt5/tests/fixtures/free_stack/cnx/README.md) and the live yield is UNMEASURED until the box runs it",
+   "targets": {
+    "hypothesis": "per product, libs.data.free_stack_cnx.PRODUCT_TARGETS filtered by the broker registry and universe_policy.may_hypothesise",
+    "event": []
+   },
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_gfex positioning / inventory / curve / divergence columns as direct cells on the mapped MT5 instruments"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_gfex regime (lagged z high/low) gating price-only base families on the same instrument"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cnx_gfex latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cnx_cffex",
+   "exchange": "cffex",
+   "name": "CFFEX rtj daily XML + ccpm member rankings (IF / IH / IC / IM index futures, T / TF bond futures)",
+   "url": "http://www.cffex.com.cn/sj/ccpm/{ym}/{dd}/IF.xml",
+   "licence": "CFFEX site terms unread; derived features only",
+   "varieties": [
+    "IF",
+    "IH",
+    "IC",
+    "IM",
+    "T",
+    "TF"
+   ],
+   "terms_evidence": {
+    "terms_url": "http://www.cffex.com.cn/",
+    "checked_at": "2026-10-06",
+    "terms_quote": "(not readable from the build sandbox: robots.txt could not be fetched or parsed from the sandbox)",
+    "reading": "no terms read, so to_confirm (fail closed); the box or the principal reads the page and flips `terms`"
+   },
+   "mechanism": "top-20 net short on IF/IH/IC/IM (the CITIC-led hedge book) is a known China equity-risk state transmitted to CHINAH / HK50 / USDCNH; bond-futures positioning carries the onshore rates state to USDCNH",
+   "failure_mode_hypothesis": "the index-futures net short is largely structural hedging of quant and snowball books, so it should fail when hedging demand, not view, moves (snowball knock-ins, quant de-grossing)",
+   "kind": "cn_exchange",
+   "cadence": "daily",
+   "auth": "none",
+   "machine_use_allowed": false,
+   "cursor": "newest / oldest trading day held + retry list; forward from newest, then backfill walk to backfill_days weekdays; a per-day file is a vintage, never an overwrite",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 0,
+   "release_bjt": "20:00",
+   "days_per_pass": 40,
+   "backfill_days": 800,
+   "max_seconds": 150,
+   "terms": "to_confirm",
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "blocker_prior": "BLOCKED_ON_TERMS until `terms` is confirmed; the build sandbox's proxy refuses every exchange host, so the parsers are proven on fixtures in the documented formats (desks/mt5/tests/fixtures/free_stack/cnx/README.md) and the live yield is UNMEASURED until the box runs it",
+   "targets": {
+    "hypothesis": "per product, libs.data.free_stack_cnx.PRODUCT_TARGETS filtered by the broker registry and universe_policy.may_hypothesise",
+    "event": []
+   },
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_cffex positioning / inventory / curve / divergence columns as direct cells on the mapped MT5 instruments"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cnx_cffex regime (lagged z high/low) gating price-only base families on the same instrument"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cnx_cffex latest point-in-time z and regime per mapped instrument"
+    }
+   }
   }
  ]
 }

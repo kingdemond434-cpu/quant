@@ -32,6 +32,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.data.terms_hold import fred_display_terms  # noqa: E402
+from libs.ops.keyed_fetch import open_keyed  # noqa: E402
 from libs.research.vintage import record  # noqa: E402
 
 _KEYFILE = Path("data/secrets/fred.json")
@@ -47,8 +48,8 @@ _SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL", "DFII10")
 #:   EIA weekly petroleum: WCESTUS1 (crude ex SPR) WCSSTUS1 (SPR) WGTSTUS1 (gasoline)
 #:                         WDISTUS1 (distillate) WPULEUS3 (refinery utilisation %)
 #:   CBOE implied vol as FRED republishes it: VIX, VIX3M, VXN, VXD, OVX, GVZ, EVZ, RVX, VXFXI,
-#:   VXEEM. HELD ON TERMS (2026-10-07): each carries CBOE's copyright notice and FRED's ToU FAQ
-#:   Q3 says FRED cannot license it, so `fred_display_terms` refuses them and they are NOT
+#:   VXEEM. HELD ON TERMS (2026-10-07): each carries CBOE's copyright notice (FRED ToU section
+#:   III, VERBATIM_PENDING), so `fred_display_terms` refuses them and they are NOT
 #:   FETCHED until a quoted CBOE clearance exists (named in the archive's `held` block, so the
 #:   allocator's macro_state reads their absence as a decision); the permitted risk level is
 #:   `libs.data.own_risk` (OWN_VIX, from our own bars)
@@ -83,7 +84,8 @@ def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
     q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
                                 "observation_start": start})
     req = urllib.request.Request(f"{_BASE}?{q}", headers={"User-Agent": "quant-fred/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:
+    # the key rides in the query, so a redirect may never take it to another host
+    with open_keyed(req, timeout=30) as r:
         obs = json.loads(r.read()).get("observations", [])
     out: list[tuple[str, float]] = []
     for o in obs:
@@ -98,9 +100,11 @@ def main() -> None:
     if not key:
         print("fred-macro: no key (data/secrets/fred.json or FRED_API_KEY) -- skipped")
         return
-    # THE TERMS GATE BEFORE THE NETWORK (audit #211 v3). A series off the display register (a
-    # CBOE close, a third-party index, anything not owned by a US federal agency) is never
-    # fetched; it is named in the archive's `held` block so its absence reads as a decision.
+    # THE TERMS GATE BEFORE THE NETWORK (audit #211 v3; coordinator 2026-10-07). A series is
+    # fetched only once its FRED per-series label is recorded and admitted
+    # (terms_hold.FRED_LABELS, captured outside the cloud); until then EVERY series is held and
+    # named in the archive's `held` block, so its absence reads as a decision. The fitted inputs
+    # come from the owners' own feeds instead (Treasury, BLS, EIA).
     held: dict[str, str] = {}
     for sid in dict.fromkeys(_SERIES + _STATE_SERIES):
         ok, why = fred_display_terms(sid)
@@ -116,7 +120,7 @@ def main() -> None:
             series[sid] = _fetch(key, sid)
         except Exception as e:                           # one dead series never kills the rest
             print(f"fred-macro: {sid} FAILED {e!r}"[:120])
-    if not series:
+    if not series and len(held) < len(_SERIES):
         raise SystemExit("fred-macro: zero series fetched -- check the key")
     ts = datetime.now(tz=UTC).isoformat()
     state: dict[str, list[tuple[str, float]]] = {}
@@ -130,7 +134,9 @@ def main() -> None:
     for sid, rows in state.items():
         if sid not in series:
             record(_ROOT, sid, dict(rows), vintage=ts)
-    if state:
+    # written even when empty: a held series must leave the archive, never linger from an
+    # earlier fetch for a consumer to read
+    if state or held:
         _STATE_ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
         _STATE_ARCHIVE.write_text(json.dumps({"updated": ts, "series": state, "held": held}),
                                   "utf-8")

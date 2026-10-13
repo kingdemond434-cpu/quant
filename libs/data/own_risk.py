@@ -1,8 +1,9 @@
 """THE PERMITTED RISK STATE -- a drop-in for VIXCLS built only from the desk's own data.
 
-WHY (coordinator, 2026-10-07). FRED's ToU FAQ Q3: "Series with a copyright notice are owned by
-third parties ... the Federal Reserve Bank of St. Louis cannot give you such permission." VIXCLS
-carries CBOE's notice and BAMLH0A0HYM2 carries ICE's, so both are held by the terms gate
+WHY (coordinator, 2026-10-07). FRED's terms (https://fred.stlouisfed.org/legal/terms/, section
+III, Use of Data with Copyright Restrictions; VERBATIM_PENDING, never quoted from a summary) leave
+third-party copyrighted series to their owners. VIXCLS carries CBOE's notice and BAMLH0A0HYM2
+carries ICE's, so both are held by the terms gate
 (`libs.data.terms_hold`), and VIXCLS fed the live capital path three ways: the allocator's regime
 kernel `risk` dimension, the `d_vix` factor in the factor covariance, and the gateway macro lean.
 This module is the stable name and the point-in-time reader those consumers switch to. The
