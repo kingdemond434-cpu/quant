@@ -178,7 +178,7 @@ def test_constraints_are_compiled_for_the_gateway_door_and_the_campaign_runner(d
     assert core.stamp_market_constraints(rows, desk / "data" / "market_constraints.json") == 2
     got = rows[0]["constraints"]
     assert got["session_state"] == "CONTINUOUS" and got["input_not_cap"] is True
-    assert got["rollover_hour_utc"] == 21 and got["desk_close_utc"] == "19:30"
+    assert got["rollover_hour_server"] == 24 and got["desk_close_utc"] == "19:30"
     assert got["margin"] == "UNMEASURED" and got["status"] == "UNMEASURED"
     assert got["at"] == doc["generated_at"] and got["rule_version"] == gold["rule_version"]
     assert rows[1]["constraints"]["instrument_class"] == "equities"   # case-folded lookup

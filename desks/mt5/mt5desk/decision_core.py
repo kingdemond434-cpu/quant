@@ -1573,7 +1573,7 @@ def stamp_market_constraints(sleeves: list[dict[str, Any]], path: Path) -> int:
             "closed_today": sess.get("closed_today"),
             "next_closed_day": sess.get("next_closed_day"),
             "desk_close_utc": halts.get("desk_close_utc"), "price_band": halts.get("price_band"),
-            "rollover_hour_utc": settle.get("rollover_hour_utc"),
+            "rollover_hour_server": settle.get("rollover_hour_server"),
             "triple_swap_weekday": settle.get("triple_swap_weekday"),
             "swap_long": settle.get("swap_long"), "swap_short": settle.get("swap_short"),
             "margin": margin.get("status"), "unmeasured": list(row.get("unmeasured") or []),
