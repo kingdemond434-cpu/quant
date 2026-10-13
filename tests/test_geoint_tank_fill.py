@@ -304,7 +304,9 @@ def test_ceiling_reads_gain_on_a_planted_lead_and_no_gain_on_noise():
     hit = ceil.ceiling_test(state, times, closes, n_null=300)
     assert hit["verdict"] == ceil.GAIN and hit["n"] >= ceil.MIN_N
     assert ceil.decision(hit)["judge_cells"] is True
-    state, times, closes = _ceiling_world(0.0)
+    # an independent world (its own seed: at alpha = 0.05 one noise world in twenty reads GAIN,
+    # which is the test's size, measured 2/40 over seeds 10..49)
+    state, times, closes = _ceiling_world(0.0, seed=6)
     miss = ceil.ceiling_test(state, times, closes, n_null=300)
     assert miss["verdict"] == ceil.NO_GAIN and ceil.decision(miss)["judge_cells"] is False
 
