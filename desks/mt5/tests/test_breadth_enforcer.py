@@ -136,7 +136,11 @@ def test_judge_allocate_holds_saturated_at_the_floor_when_others_can_fill() -> N
     ranking = _ranking(["cross_asset_residual", "carry", "explored_fam", "newfam"])
     q = jc.allocate(backlog, 4000, ranking=ranking, steer=st)
     assert sum(q.values()) == 4000
-    assert (q["cross_asset_residual"] + q["carry"]) / 4000 <= be.SAT_EXPLORE_SHARE + 1e-9
+    # the exploration share on top of the two saturated families' own (untouched) floors
+    floors = 2 * max(1, int(4000 * jc.FLOOR_SHARE) // 4)
+    assert q["cross_asset_residual"] + q["carry"] <= max(floors, 4000 * be.SAT_EXPLORE_SHARE)
+    b = be.judge_bounds(backlog, 4000, st, jc.FLOOR_SHARE)
+    assert (q["cross_asset_residual"] + q["carry"]) / 4000 <= b["saturated_max"]
     walk = be.steer_walk(ranking, backlog, st)
     assert walk[0] == "newfam" and walk[-2:] == ["cross_asset_residual", "carry"]
 
@@ -215,7 +219,7 @@ def test_build_writes_the_report_on_fixtures(tmp_path: Path, monkeypatch: pytest
         "at": "2026-10-13T00:00:00+00:00", "quota": {"carry": 300, "newfam": 100},
         "totals": {"capacity_measured": 400},
         "families": {"carry": {"mined": 9000, "unjudged": 9000, "judged_total": 900},
-                     "newfam": {"mined": 100, "unjudged": 100, "judged_total": 0}},
+                     "newfam": {"mined": 9000, "unjudged": 9000, "judged_total": 0}},
         "value_ranking": _ranking(["carry", "newfam"])}))
     monkeypatch.setattr(be, "JUDGE_COVERAGE", tmp_path / "jc.json")
     monkeypatch.setattr(jc, "GATE_LEDGER", tmp_path / "ledger.jsonl")

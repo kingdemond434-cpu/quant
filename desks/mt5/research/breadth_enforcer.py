@@ -464,20 +464,33 @@ def shares(counts: Mapping[str, int], steer: Mapping[str, Any] | None) -> dict[s
 
 
 def judge_bounds(live: Mapping[str, int], capacity: int,
-                 steer: Mapping[str, Any]) -> dict[str, float]:
+                 steer: Mapping[str, Any], floor_share: float = 0.0) -> dict[str, float]:
     """The bounds a budget of `capacity` cells must keep, given what the pool `live` (cells per
     family available to it) can actually supply. Work-conserving: when non-saturated cells
     cannot fill the budget, saturated cells fill it, and that is mining kept whole, not drift;
-    a frontier or unknown target the pool cannot fill is a MINTING debt, not a judge failure."""
+    a frontier or unknown target the pool cannot fill is a MINTING debt, not a judge failure.
+    `floor_share` is judge_coverage's equal per-family floor: the saturated families' own floors
+    are never cut, so their sum is part of the bound."""
     if capacity <= 0:
         return {"saturated_max": 1.0, "frontier_min": 0.0, "unknown_min": 0.0}
     nonsat = sum(n for f, n in live.items() if class_of(f, steer) != SATURATED)
     front = sum(n for f, n in live.items() if class_of(f, steer) in FRONTIER)
     unk = sum(n for f, n in live.items() if class_of(f, steer) == UNKNOWN)
-    sat_max = max(SAT_EXPLORE_SHARE, 1.0 - nonsat / capacity)
+    n_live = sum(1 for n in live.values() if n > 0)
+    n_sat = sum(1 for f, n in live.items() if n > 0 and class_of(f, steer) == SATURATED)
+    floors = floor_share * n_sat / n_live if n_live else 0.0
+    sat_max = max(SAT_EXPLORE_SHARE + floors, 1.0 - nonsat / capacity)
     return {"saturated_max": round(min(1.0, sat_max), 4),
             "frontier_min": round(min(FRONTIER_TARGET_SHARE, front / capacity), 4),
             "unknown_min": round(min(UNKNOWN_TARGET_SHARE, unk / capacity), 4)}
+
+
+def _floor_share() -> float:
+    try:
+        from research.judge_coverage import FLOOR_SHARE
+        return float(FLOOR_SHARE)
+    except Exception:
+        return 0.0
 
 
 def judge_lens(jc: Mapping[str, Any] | None, steer: Mapping[str, Any]) -> dict[str, Any]:
@@ -490,8 +503,8 @@ def judge_lens(jc: Mapping[str, Any] | None, steer: Mapping[str, Any]) -> dict[s
     capacity = int((jc.get("totals") or {}).get("capacity_measured") or sum(quota.values()))
     out: dict[str, Any] = {"status": "MEASURED", "at": jc.get("at"), "capacity": capacity,
                            "shipped": shares(quota, steer),
-                           "steer_in_force": bool(jc.get("breadth_steer")),
-                           "bounds": judge_bounds(live, capacity, steer)}
+                           "steer_in_force": bool((jc.get("breadth_steer") or {}).get("in_force")),
+                           "bounds": judge_bounds(live, capacity, steer, _floor_share())}
     # THE REPLAY: the same backlog, capacity and value ranking, allocated under the steer.
     try:
         from research import judge_coverage as jcm
