@@ -369,6 +369,19 @@ if ($adoptExit -ne 0) {
     Done $adoptExit "adopt-release-partial"
 }
 
+# The released reader requires an explicit state handoff: ordinary adoption preserves box state.
+$ledgerMigration = Join-Path $RepoRoot "scripts\migrate_live_ledger_view.py"
+if (Test-Path -LiteralPath $ledgerMigration) {
+    $migrationOut = @(& $py @pyArgs $ledgerMigration --target $gateTarget --apply 2>&1 |
+                     ForEach-Object { "$_" })
+    $migrationExit = $LASTEXITCODE
+    foreach ($line in $migrationOut) { Log ("ledger handoff: " + $line) }
+    if ($migrationExit -ne 0) {
+        Log "ledger handoff failed; refusing to seal an incomplete adoption"
+        Done $migrationExit "ledger-handoff-failed"
+    }
+}
+
 # ------------------------------------- 1b. TASKS THE ADOPTED TREE DECLARES BUT THE BOX LACKS
 # A task with an installer in the repo and no registration on the box is code that runs nowhere
 # (III.16). MT5-FrontierAudit was exactly that: declared daily in box_tasks.manifest, installer
