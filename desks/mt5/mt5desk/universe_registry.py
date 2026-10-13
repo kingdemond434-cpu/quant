@@ -324,11 +324,7 @@ def _degenerate(field: str, value: Any) -> bool:
     """True when `value` is a stub for `field` rather than a measurement."""
     if value is None:
         return True
-    # A ZERO SPREAD IS NEVER A MEASUREMENT THAT MAY REPLACE ONE (2026-10-13): fourteen rows
-    # (USDJPY, EURUSD, GBPUSD, ...) read 0.0 because a collector took the median of a window in
-    # which this commission account quotes bid == ask, and every clock on them ran on the
-    # engine's 0.05 floor -- free. A zero may not overwrite a positive value in `merge`.
-    if field in ("median_spread_pts",) or field in ZERO_IS_A_STUB:
+    if field in ZERO_IS_A_STUB:
         try:
             return float(value) <= 0
         except (TypeError, ValueError):

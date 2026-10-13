@@ -242,7 +242,10 @@ def _median_spread_write(prev: dict, h1_rates, info, now) -> dict:
         # bars since 2026-08-17, so the median of the window lands on 0 and every clock on the
         # symbol ran on the engine's 0.05 floor. The replacement is the cost surface's own
         # priced-book level for the symbol; with no surface row nothing is written and the held
-        # value (and its stamp) stand -- `merge` refuses a zero over a positive regardless.
+        # value (and its stamp) stand. (`merge` still preserves a zero another producer writes --
+        # test_universe_registry pins that -- so the PRICING side is what refuses it:
+        # `entry_hour_cost.field_status` reads a zero as UNMEASURED and the surface table, not
+        # this field, is what every clock is charged.)
         value, source = _surface_symbol_p50(str(getattr(info, "name", "") or ""))
         if value is None:
             return {}
