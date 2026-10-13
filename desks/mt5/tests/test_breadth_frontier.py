@@ -158,6 +158,19 @@ def test_indirect_reads_unmeasured_without_the_breadth_report(monkeypatch, tmp_p
     assert all(t["new_indirect_families"] == bf.UNMEASURED for t in cm["top_gaps"])
 
 
+def test_requested_probe_cells_are_ranked_or_say_why_not(monkeypatch, tmp_path) -> None:
+    """CV imagery and Stock Connect cells are reported by rank, never silently dropped."""
+    _point(monkeypatch, tmp_path)
+    _forest(tmp_path, [{"name": "g", "region": "jp", "language": "ja", "kind": "forum"}])
+    cm = bf.run()["coverage_map"]
+    items = {p["item"] for p in cm["probes"]}
+    assert items == {i for i, _ in bf.PROBES}
+    for p in cm["probes"]:
+        assert p["rank_among_gaps"] is not None or p["state"] in ("FILLED", "OUTSIDE_FRAME")
+        if p["rank_among_gaps"] is not None:
+            assert {"new_independent_families", "new_indirect_families"} <= set(p)
+
+
 def test_registered_rows_are_verified_and_reach_the_acquirer() -> None:
     sys.path.insert(0, str(REPO))
     from libs.research.equivalence_ontology import PERMITTED, terms_verdict
@@ -207,7 +220,7 @@ def test_live_access_requires_a_read_quote_and_stage_is_derived(monkeypatch, tmp
 def test_the_real_fringe_registry_uses_the_access_statuses() -> None:
     doc = json.loads((DESK / "data" / "fringe_families.json").read_text("utf-8"))
     fams = doc["families"]
-    assert len(fams) == 10 and len({f["id"] for f in fams}) == 10
+    assert len(fams) >= 10 and len({f["id"] for f in fams}) == len(fams)
     universe = json.loads((DESK / "data" / "universe" / "universe.json").read_text("utf-8"))
     for f in fams:
         assert f["id"].startswith("fringe_")

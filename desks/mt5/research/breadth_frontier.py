@@ -506,6 +506,18 @@ SOURCE_FEEDS: dict[str, tuple[str, ...]] = {
 #: Options-implied state needs a listed options market on the asset class.
 OPTIONED = frozenset({"fx", "metals", "energy", "indices", "bonds"})
 TOP_GAPS = 25
+#: Cells the principal named directly (2026-10-13): ranked in the same table, by the same
+#: measure, so a named item cannot jump the queue or be lost in it.
+PROBES: tuple[tuple[str, tuple[str, str, str, str, str]], ...] = (
+    ("cv_ship_queues_port_congestion",
+     ("physical_sensor", "global", "en", "physical_economy", "metals")),
+    ("cv_ship_queues_port_congestion",
+     ("physical_sensor", "global", "en", "physical_economy", "fx")),
+    ("cv_industrial_activity_oil_flaring",
+     ("physical_sensor", "global", "en", "physical_economy", "energy")),
+    ("hkex_stock_connect_flows", ("exchange_venue", "hk", "zh-Hant", "institutional", "indices")),
+    ("hkex_stock_connect_flows", ("exchange_venue", "hk", "zh-Hant", "institutional", "fx")),
+)
 MAX_PER_ASSET = 5
 
 
@@ -609,6 +621,7 @@ def next_actions(top: list[dict[str, Any]], fringe_doc: Mapping[str, Any] | None
         c = t["cell"]
         src, geo, lang, asset = c["source"], c["geography"], c["language"], c["asset"]
         cands: list[dict[str, Any]] = []
+        blocked: list[dict[str, Any]] = []
         for r in REGISTERED:
             rc = r["cell"]
             if (rc["source"], rc["geography"], rc["asset"]) == (src, geo, asset):
@@ -616,7 +629,13 @@ def next_actions(top: list[dict[str, Any]], fringe_doc: Mapping[str, Any] | None
                               "route": r["route"], "registered": True})
         for f, s, assets, st in fringe:
             if (f.get("source_kind") == src and s.get("geo") in (geo, "global")
-                    and asset in assets and st.get("access") != "IDEAS_ONLY"):
+                    and asset in assets and st.get("access") == "METHOD_BLOCKED"):
+                blocked.append({"candidate": s.get("name"), "url": s.get("url"),
+                                "access": "METHOD_BLOCKED", "fringe_family": f.get("id"),
+                                "route": f"none: {st.get('reason')}"})
+            if (f.get("source_kind") == src and s.get("geo") in (geo, "global")
+                    and asset in assets and st.get("access") in ("API_PERMITTED",
+                                                                 "PUBLIC_PAGE", "NEEDS_KEY")):
                 cands.append({"candidate": s.get("name"), "url": s.get("url"),
                               "access": st.get("access"), "fringe_family": f.get("id"),
                               "route": (f"collector {s['owner']}" if st.get("stage") in
@@ -652,6 +671,8 @@ def next_actions(top: list[dict[str, Any]], fringe_doc: Mapping[str, Any] | None
                                 f"{asset} {geo}' in {lang}")})
         t["next_action"] = cands[0]
         t["alternatives"] = cands[1:4]
+        if blocked:
+            t["blocked_sources"] = blocked
 
 
 # ------------------------------------------------------------------------- the coverage map
@@ -782,6 +803,15 @@ def build_map(rows: list[dict[str, Any]], regions: Mapping[str, Any],
                                                  -_num(kv[1]["new_indirect_families"]),
                                                  kv[1]["state"] != "EMPTY",
                                                  -kv[1]["score"], kv[0]))
+    rank_of = {k: i + 1 for i, (k, _) in enumerate(order)}
+    probes = []
+    for item, pkey in PROBES:
+        g = gaps.get(pkey)
+        probes.append({"item": item, "cell": dict(zip(axes[:5], pkey, strict=True)),
+                       "rank_among_gaps": rank_of.get(pkey),
+                       **({**g, "clusters": [{"cluster": c, "new": occupancy.get(c, 1.0)}
+                                             for c in g["clusters"]]} if g else
+                          {"state": "FILLED" if pkey[1] in frame else "OUTSIDE_FRAME"})})
     per_sg: Counter[tuple[str, ...]] = Counter()
     per_s: Counter[str] = Counter()
     per_a: Counter[str] = Counter()
@@ -806,7 +836,8 @@ def build_map(rows: list[dict[str, Any]], regions: Mapping[str, Any],
             "gap_groups": len(gaps),
             "gap_groups_opening_a_new_family": sum(1 for g in gaps.values()
                                                    if g["new_independent_families"] > 0),
-            "top_gaps": top, "top_empty": [t for t in top if t["state"] == "EMPTY"],
+            "top_gaps": top, "probes": probes,
+            "top_empty": [t for t in top if t["state"] == "EMPTY"],
             "marginals": marginals,
             "rank": ("new_independent_families desc (empty alpha cluster 1.0, traded but "
                      "uncertified 0.5, certified 0), then new_indirect_families desc (regime/"
@@ -1178,6 +1209,9 @@ def run(*, out: Path | None = None, state_path: Path | None = None,
     fringe = fringe_status(docs["fringe_families"])
     if cmap.get("status") == "measured":
         next_actions(cmap["top_gaps"], docs["fringe_families"], fringe, docs["free_stack"],
+                     docs["deep_forest"])
+        next_actions([p for p in cmap["probes"] if "state" in p and p["state"] in
+                      ("EMPTY", "THIN")], docs["fringe_families"], fringe, docs["free_stack"],
                      docs["deep_forest"])
         cmap["top_empty"] = [t for t in cmap["top_gaps"] if t["state"] == "EMPTY"]
     cmap["registered_this_organ"] = [dict(r, clusters=list(r["clusters"])) for r in REGISTERED]

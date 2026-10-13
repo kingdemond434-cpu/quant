@@ -51,8 +51,25 @@
      "geo": "global"
     },
     {
+     "id": "nasa_firms_oil_flaring",
+     "name": "NASA FIRMS VIIRS thermal detections over oil fields and refineries (industrial-activity proxy)",
+     "url": "https://firms.modaps.eosdis.nasa.gov/api/area/",
+     "terms_url": "https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-use-fully-and-without-restrictions",
+     "terms_read": "READ",
+     "read_by": "the desk's TERMS evidence in research/alt_proxies.py (checked 2026-09-30)",
+     "quote": [
+      "NASA's data policy ensures that all NASA data are available fully, openly, and without restrictions."
+     ],
+     "access_status": "NEEDS_KEY",
+     "key_env": "FIRMS_MAP_KEY",
+     "conditions": "documented keyed area API, within its transaction limits",
+     "owner": "desks/mt5/research/alt_proxies.py",
+     "evidence_globs": [],
+     "geo": "global"
+    },
+    {
      "id": "copernicus_sentinel1_sar",
-     "name": "Copernicus Data Space Sentinel-1 SAR",
+     "name": "Copernicus Data Space Sentinel-1 SAR / Sentinel-2 imagery (ship queues, port congestion by computer vision)",
      "url": "https://dataspace.copernicus.eu/",
      "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
      "terms_read": "READ",
@@ -60,7 +77,7 @@
      "quote": [
       "The access and use of Copernicus Sentinel data is available on a free, full and open basis"
      ],
-     "conditions": "the operator's own terms grant free, full and open access; its official APIs are used within their published limits (ruling 2026-10-13)",
+     "conditions": "the operator's own terms grant free, full and open access; its official APIs are used within their published limits (ruling 2026-10-13); no computer-vision collector exists yet: a new route, not an extension",
      "owner": null,
      "evidence_globs": [],
      "geo": "global"
@@ -327,6 +344,22 @@
      "geo": "us"
     },
     {
+     "id": "imf_portwatch_ports",
+     "name": "IMF PortWatch daily port calls and chokepoint transits (AIS-derived ship counts)",
+     "url": "https://portwatch.imf.org/",
+     "terms_url": "https://www.imf.org/external/terms.htm",
+     "terms_read": "READ",
+     "read_by": "the desk's TERMS evidence in research/alt_proxies.py (checked 2026-09-30)",
+     "quote": [
+      "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes"
+     ],
+     "access_status": "API_PERMITTED",
+     "conditions": "documented ArcGIS API",
+     "owner": "desks/mt5/research/alt_proxies.py",
+     "evidence_globs": [],
+     "geo": "global"
+    },
+    {
      "id": "entsoe_transparency",
      "name": "ENTSO-E Transparency Platform",
      "url": "https://transparency.entsoe.eu/",
@@ -566,6 +599,36 @@
     }
    ],
    "source_kind": "regulator_filing"
+  },
+  {
+   "id": "fringe_cross_border_flows",
+   "name": "Cross-border portfolio flow exhaust (Stock Connect northbound / southbound)",
+   "information_type": "positioning",
+   "source_kind": "exchange_venue",
+   "mt5_mapping": {
+    "instruments": [
+     "USDCNH",
+     "HK50",
+     "CHINAH"
+    ],
+    "channel": "a large northbound day is offshore CNH demand (T+1 cash settlement) and mainland buying of A-shares; southbound is mainland money into Hong Kong: USDCNH, HK50 and CHINAH carry it. CN50 is not in this broker's registry, so CHINAH stands in."
+   },
+   "sources": [
+    {
+     "id": "hkex_stock_connect_daily",
+     "name": "HKEX Stock Connect daily northbound/southbound turnover",
+     "url": "https://www.hkex.com.hk/Mutual-Market/Stock-Connect/Statistics/Historical-Daily",
+     "terms_url": "https://www.hkex.com.hk/Global/Exchange/Terms-of-Use?sc_lang=en",
+     "terms_read": "READ",
+     "quote": [
+      "(iii) use any programmatic, scripted or other mechanical means to access this Website or any Information;",
+      "You are not permitted to conduct, facilitate, enable, authorise or permit any text or data mining or web scraping in relation to this Website"
+     ],
+     "access_status": "METHOD_BLOCKED",
+     "status_reason": "HKEX's own terms forbid programmatic, scripted or mechanical access and data mining without HKEX's express written permission (read 2026-10-13); no collector is built, the series is read for ideas only",
+     "geo": "hk"
+    }
+   ]
   }
  ],
  "access_statuses": [

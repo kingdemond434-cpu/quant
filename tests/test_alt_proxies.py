@@ -97,6 +97,26 @@ def test_firms_counts_nominal_and_high_only_and_emits_measured_zero_days() -> No
     assert got[("tangshan_steel_frp", date(2026, 9, 20))].value == pytest.approx(42.5)
 
 
+def test_oil_flaring_uses_the_firms_route_per_declared_footprint(monkeypatch) -> None:
+    """The second FIRMS source rides the same keyed area route and parser, one area query per
+    footprint (plus the resumable archive backfill), each footprint mapped to its own symbols."""
+    monkeypatch.setenv("FIRMS_MAP_KEY", "testkey")
+    src = A.BY_ID["oil_firms_flaring"]
+    assert src.terms == "confirmed" and src.parse is A.parse_firms
+    reqs = A.requests_for(src, NOW, {})
+    n = len(A.OIL_FLARING_CLUSTERS)
+    assert len(reqs) == 2 * n
+    assert {r.ctx.part for r in reqs} == set(A.OIL_FLARING_CLUSTERS)
+    assert all("/VIIRS_SNPP_" in r.url for r in reqs)
+    assert src.instruments_for("alberta_oil_sands_count") == {"XTIUSD": 1, "USDCAD": -1}
+    ctx = A.Ctx(part="permian_basin", start=date(2026, 9, 20), end=date(2026, 9, 22))
+    got = _by(src.parse((FIX / "cn_firms_industrial.csv").read_bytes(), ctx))
+    assert got[("permian_basin_count", date(2026, 9, 21))].value == 0
+    for box in A.OIL_FLARING_CLUSTERS.values():
+        w, s_, e, n_ = box
+        assert -180 <= w < e <= 180 and -90 <= s_ < n_ <= 90
+
+
 def test_portwatch_ports_and_chokepoints_handle_epoch_and_iso_dates() -> None:
     ports = _by(_parse("imf_portwatch_ports", "imf_portwatch_ports.json"))
     assert ports[("port_hedland_portcalls", date(2026, 9, 1))].value == 14
