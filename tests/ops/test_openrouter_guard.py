@@ -190,6 +190,10 @@ def test_default_deny_covers_every_openrouter_post() -> None:
                      {"model": "openai/gpt-image-2"})
     assert g.refusal("https://openrouter.ai/api/v1/auth/keys", {"name": "new"})
     assert g.refusal("https://openrouter.ai/api/v1/models", b"{}"), "a body is never a read"
+    # A billable path is never a read, even bodiless and even under /models/ (audit MF3 on
+    # #332: .../models/x/chat/completions passed here and was refused on live).
+    assert g.refusal("https://openrouter.ai/api/v1/models/x/chat/completions", None)
+    assert g.refusal("https://openrouter.ai/api/v1/chat/completions", None)
     for read in ("/models", "/key", "/credits", "/models/qwen/qwen3:free/endpoints"):
         assert g.refusal("https://openrouter.ai/api/v1" + read, None) is None
 

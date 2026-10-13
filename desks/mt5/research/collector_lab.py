@@ -158,51 +158,106 @@ def same_site(url: str, source_url: str) -> bool:
     b = (urllib.parse.urlsplit(source_url).hostname or "").lower().rstrip(".")
     if not a or not b:
         return False
-    base = b[4:] if b.startswith("www.") and b.count(".") >= 2 else b
+    base = b[4:] if b.startswith("www.") and not _shared_suffix(b[4:]) else b
     return a in (b, base) or a.endswith("." + b) or a.endswith("." + base)
 
 
-def _pinned_get(ip: str) -> Getter:
-    """A GET that connects to the address the SSRF check approved and to nothing else (audit M1:
-    a second DNS resolution at connect time landed on 127.0.0.1). http.client reads no ~/.netrc,
-    no proxy and no environment (M2); no redirects are followed; the whole request, body
-    included, is bounded by REQUEST_S and MAX_BYTES; no compression is accepted, so the byte cap
-    is the cap on what is parsed."""
+#: Second-level labels that are registries, not publishers (co.uk, or.jp, com.au ...), and the
+#: multi-tenant hosts where every subdomain is a different owner (audit S1 on #332). Without the
+#: public suffix list on the box this is the conservative stand-in: a `www.` under one of these
+#: never climbs.
+_REGISTRY_LABELS = frozenset({"co", "com", "net", "org", "gov", "ac", "edu", "or", "ne", "go",
+                              "gob", "gouv", "govt", "mil", "nic", "ltd", "plc", "sch"})
+_MULTI_TENANT = ("github.io", "githubusercontent.com", "s3.amazonaws.com", "amazonaws.com",
+                 "cloudfront.net", "herokuapp.com", "appspot.com", "azurewebsites.net",
+                 "blogspot.com", "pages.dev", "netlify.app", "vercel.app", "web.app",
+                 "firebaseapp.com", "workers.dev", "gitlab.io", "readthedocs.io")
+
+
+def _shared_suffix(host: str) -> bool:
+    labels = host.split(".")
+    if len(labels) < 2 or (len(labels) == 2 and labels[0] in _REGISTRY_LABELS):
+        return True
+    return any(host == t or host.endswith("." + t) for t in _MULTI_TENANT)
+
+
+def _pinned_get(addrs: Sequence[str]) -> Getter:
+    """A GET that connects only to the addresses the SSRF check approved (audit M1: a second DNS
+    resolution at connect time landed on 127.0.0.1), IPv4 first and each in turn (S3: a box with
+    no IPv6 route must not fail every dual-stack source). http.client reads no ~/.netrc, no proxy
+    and no environment (M2); no redirects are followed; no compression is accepted, so the byte
+    cap is the cap on what is parsed.
+
+    THE DEADLINE IS A WATCHDOG, NOT A CHECK BETWEEN READS (audit MF1): a timer closes the socket
+    at REQUEST_S, so a server trickling one byte a second -- in the headers, a chunked body or a
+    declared length -- cannot hold the call past it."""
     import http.client
     import socket
     import ssl
+    import threading
+
+    order = sorted(addrs, key=lambda a: (":" in a, a))
+
+    def _dial(port: int, timeout: float | None) -> socket.socket:
+        last: OSError | None = None
+        for ip in order:
+            try:
+                return socket.create_connection((ip, port), timeout)
+            except OSError as exc:
+                last = exc
+        raise last or OSError("no approved address")
 
     class _HTTP(http.client.HTTPConnection):
         def connect(self) -> None:
-            self.sock = socket.create_connection((ip, self.port), self.timeout)
+            self.sock = _dial(self.port, self.timeout)
 
     class _HTTPS(http.client.HTTPSConnection):
         def connect(self) -> None:
-            raw = socket.create_connection((ip, self.port), self.timeout)
+            raw = _dial(self.port, self.timeout)
             self.sock = ssl.create_default_context().wrap_socket(raw, server_hostname=self.host)
 
     def get(url: str) -> tuple[int, bytes]:
         parts = urllib.parse.urlsplit(url)
-        start = time.monotonic()
-        cls = _HTTPS if parts.scheme == "https" else _HTTP
-        conn = cls(parts.hostname or "", parts.port, timeout=10.0)
+        https = parts.scheme == "https"
+        port = parts.port or (443 if https else 80)          # S2: explicit for IPv6 literals
+        cls = _HTTPS if https else _HTTP
+        conn = cls(parts.hostname or "", port, timeout=10.0)
+        expired = threading.Event()
+
+        def _kill() -> None:
+            expired.set()
+            sock = conn.sock
+            if sock is not None:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
+                sock.close()
+        timer = threading.Timer(REQUEST_S, _kill)
+        timer.daemon = True
+        timer.start()
         try:
             path = urllib.parse.urlunsplit(("", "", parts.path or "/", parts.query, ""))
             conn.request("GET", path, headers={"User-Agent": AGENT, "Accept": "*/*",
                                                "Accept-Encoding": "identity"})
             r = conn.getresponse()
             body = b""
-            while True:
-                if time.monotonic() - start > REQUEST_S:
-                    raise TimeoutError("request exceeded its total budget")
-                chunk = r.read(65536)
+            while not expired.is_set():
+                chunk = r.read1(65536)
                 if not chunk:
                     break
                 body += chunk
                 if len(body) > MAX_BYTES:
                     return 413, b""
+            if expired.is_set():
+                raise TimeoutError("request exceeded its total budget")
             return int(r.status), body
+        except (OSError, ValueError, http.client.HTTPException) as exc:
+            if expired.is_set():
+                raise TimeoutError("request exceeded its total budget") from exc
+            raise
         finally:
+            timer.cancel()
             conn.close()
     return get
 
@@ -238,7 +293,7 @@ def fetch(url: str, source_url: str, *, get: Getter | None = None,
     now = time.time()
     if _cooling(host, now):
         return b"", "COOLDOWN: the host answered 429/5xx recently"
-    g = get or _pinned_get(addrs[0])
+    g = get or _pinned_get(addrs)
     try:
         code, robots = g(f"{parts.scheme}://{parts.netloc}/robots.txt")
         if code >= 500:
@@ -278,6 +333,8 @@ def parse_date(raw: Any, fmt: str = "") -> str | None:
     if isinstance(raw, int | float):
         x = float(raw)
         if not math.isfinite(x):
+            return None
+        if x > 1e19:                    # past nanoseconds: not a timestamp (audit S7)
             return None
         while x > 1e11:                 # milli-, micro- and nanosecond epochs (audit M4)
             x /= 1000.0
@@ -319,7 +376,7 @@ def parse_value(raw: Any) -> float | None:
     try:
         x = float(str(raw).replace(",", "").strip()) if not isinstance(raw, int | float) \
             else float(raw)
-    except ValueError:
+    except (ValueError, OverflowError):         # 10**400 skips one reading, not the spec (S7)
         return None
     return x if math.isfinite(x) else None
 
@@ -420,7 +477,13 @@ def merge_vintages(store: dict[str, list[list[Any]]], series: dict[str, float], 
         if not hist or abs(float(hist[-1][0]) - v) > 1e-12 * max(1.0, abs(v)):
             hist.append([v, seen])
             new += 1
+            if len(hist) > MAX_VINTAGES:            # S4: first sight + the latest revisions
+                del hist[1:len(hist) - MAX_VINTAGES + 1]
     return new
+
+
+#: Readings kept per date: the first one (the PIT value) and the most recent revisions.
+MAX_VINTAGES = 8
 
 
 def series_rows(store: dict[str, list[list[Any]]], source_id: str, lag_days: float, born: str
@@ -428,7 +491,7 @@ def series_rows(store: dict[str, list[list[Any]]], source_id: str, lag_days: flo
     """One row per (date, vintage). POINT IN TIME AGAINST THIS ORGAN'S OWN CLOCK:
 
       * a reading first seen AFTER the spec was born is available at max(D + lag, first seen);
-      * a revision is available only from when it was seen;
+      * a revision never enters the series (it stays in the vintage store);
       * the history fetched at birth keeps D + lag. It is warm-up for the conditioner's z-score,
         never evidence: the cells' look-ahead stamp starts evidence the day AFTER birth, the
         gauntlet trims every bar before that, and every bar after it sees only readings this
@@ -438,13 +501,16 @@ def series_rows(store: dict[str, list[list[Any]]], source_id: str, lag_days: flo
     rows = []
     for d in sorted(store):
         base = datetime.fromisoformat(d).replace(tzinfo=UTC) + lag
-        for i, (v, seen) in enumerate(store[d]):
-            at = base
-            if i > 0 or str(seen) > born:
-                at = max(base, datetime.fromisoformat(str(seen)))
-            rows.append({"available_time": at.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-                         "published_time": "", "retrieval_time": seen, "source_id": source_id,
-                         "vintage_id": f"v{i + 1}", "value": v})
+        # THE FIRST READING ONLY (audit S5): a revision of an older date, stamped when seen,
+        # would become the conditioner's CURRENT value and mask the newest date's. Revisions are
+        # kept in the vintage store for research; the series carries what was known when.
+        v, seen = store[d][0]
+        at = base
+        if str(seen) > born:
+            at = max(base, datetime.fromisoformat(str(seen)))
+        rows.append({"available_time": at.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
+                     "published_time": "", "retrieval_time": seen, "source_id": source_id,
+                     "vintage_id": "v1", "value": v})
     rows.sort(key=lambda r: (r["available_time"], r["vintage_id"]))
     return rows
 
@@ -733,6 +799,10 @@ def run(*, budget_s: float = 120.0, max_llm: int = 4, chat: Any = None, get: Get
     known = set(_read_json(STATE_DIR / "donated.json", []) or [])
     fresh = [r for r in donate if r["cell_id"] not in known]
     if fresh:
+        # The evidence map first (audit S6), as the main lab pass does: the compiler may read a
+        # donation the moment it lands, and a dropped stamp must still find its start date.
+        import llm_lab_roles
+        llm_lab_roles.record_evidence_start(fresh, llm_lab.STATE_DIR / "evidence_start.json")
         target = llm_lab.donation_target(DONATE_DIR)
         target.mkdir(parents=True, exist_ok=True)
         stamp = _now().replace(":", "").replace("-", "")[:15]
@@ -746,13 +816,14 @@ def run(*, budget_s: float = 120.0, max_llm: int = 4, chat: Any = None, get: Get
     # THE STATE IS WHAT HAPPENED, NEVER WHAT IT LOOKED LIKE (audit M5): sources owed with no
     # answer is DARK; working specs that all failed to refresh are STALE; NOTHING_OWED only when
     # nothing was owed at all.
+    definite = [r for r in new if not transient(r)]
     if outcome["refreshed"] or any(r.get("status") == "WORKS" for r in new):
         state = "RAN"
-    elif specs and outcome["failed"] and not outcome["refreshed"]:
-        state = "STALE"
-    elif todo and (dark or not new):
-        state = "DARK"
-    elif new:
+    elif specs and (outcome["failed"] or outcome["skipped_budget"]):
+        state = "STALE"                 # working collectors exist and none was refreshed
+    elif todo and (dark or not definite):
+        state = "DARK"                  # owed sources, and nothing definite came back (MF2)
+    elif definite:
         state = "RAN"
     else:
         state = "NOTHING_OWED"

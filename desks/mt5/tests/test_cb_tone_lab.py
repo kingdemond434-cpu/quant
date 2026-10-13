@@ -51,6 +51,7 @@ def tone(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lab, "universe", lambda: dict(UNI))
     monkeypatch.setattr(cb, "_robots_ok", lambda url, timeout: True)
     monkeypatch.setattr(lab, "gauntlet_trims", lambda: True)
+    monkeypatch.setattr(lab, "STATE_DIR", tmp_path / "lab_state")
     return tmp_path
 
 

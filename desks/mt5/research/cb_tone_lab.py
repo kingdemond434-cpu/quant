@@ -837,6 +837,8 @@ def run(*, budget_s: float = 120.0, max_llm: int = 8, max_fetch: int | None = No
     fresh = [r for r in donate if r["cell_id"] not in known]
     if fresh:
         import llm_lab
+        import llm_lab_roles
+        llm_lab_roles.record_evidence_start(fresh, llm_lab.STATE_DIR / "evidence_start.json")
         target = llm_lab.donation_target(DONATE_DIR)
         target.mkdir(parents=True, exist_ok=True)
         stamp = _now().replace(":", "").replace("-", "")[:15]

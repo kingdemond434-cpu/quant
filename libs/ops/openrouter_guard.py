@@ -82,7 +82,8 @@ def refusal(url: str, body: Any) -> str | None:
     if not is_openrouter(url) or paid_allowed():
         return None
     path = (urlparse(url).path or "").rstrip("/")
-    if body is None and (path.endswith(READ_PATHS) or "/models/" in path):
+    billable = path.endswith(("completions", "responses", "embeddings"))
+    if body is None and not billable and (path.endswith(READ_PATHS) or "/models/" in path):
         return None
     bad = [m for m in _models(body) if not m.lower().endswith(FREE_SUFFIX)]
     if not bad:

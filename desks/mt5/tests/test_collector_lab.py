@@ -60,6 +60,7 @@ def tmp_lab(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(cl, "SERIES_DIR", tmp_path / "series")
     monkeypatch.setattr(cl, "DONATE_DIR", tmp_path / "donate")
     monkeypatch.setattr(lab, "MODEL_CUTOFFS", tmp_path / "cutoffs.json")
+    monkeypatch.setattr(lab, "STATE_DIR", tmp_path / "lab_state")
     monkeypatch.setattr(lab, "_lane_ok", lambda s, f: True)
     monkeypatch.setattr(lab, "gauntlet_trims", lambda: True)
     feed = tmp_path / "feed.jsonl"
@@ -249,3 +250,99 @@ def test_nat64_and_mapped_loopback_are_private() -> None:
     for a in ("64:ff9b::7f00:1", "::ffff:127.0.0.1", "2002:7f00:1::1", "64:ff9b:1::1"):
         assert public_url("https://x.org/", resolve=lambda h, a=a: [a]), a
     assert public_url("https://x.org/", resolve=lambda h: ["64:ff9b::5db8:d822"]) == ""
+
+
+
+# ============================================================================ audit v4 on #332
+@pytest.mark.parametrize("mode", ["headers", "body"])
+def test_a_trickling_server_cannot_hold_the_call(monkeypatch: pytest.MonkeyPatch,
+                                                 mode: str) -> None:
+    """MF1: the deadline is a watchdog on the socket, not a check between reads."""
+    import socket
+    import threading
+    import time as _t
+    monkeypatch.setattr(cl, "REQUEST_S", 1.0)
+    srv = socket.socket()
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    port = srv.getsockname()[1]
+    stop = threading.Event()
+
+    def serve() -> None:
+        c, _ = srv.accept()
+        c.recv(4096)
+        if mode == "body":
+            c.sendall(b"HTTP/1.1 200 OK\r\nContent-Length: 100000\r\n\r\n")
+        else:
+            c.sendall(b"HTTP/1.1 200 OK\r\n")
+        while not stop.is_set():
+            try:
+                c.sendall(b"X" if mode == "body" else b"X-A: b\r\n")
+            except OSError:
+                break
+            _t.sleep(0.05)
+        c.close()
+    th = threading.Thread(target=serve, daemon=True)
+    th.start()
+    t0 = _t.monotonic()
+    with pytest.raises(TimeoutError):
+        cl._pinned_get(["127.0.0.1"])(f"http://127.0.0.1:{port}/x")
+    stop.set()
+    srv.close()
+    assert _t.monotonic() - t0 < 3.0
+
+
+def test_all_transient_or_skipped_never_reads_green(tmp_lab: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """MF2: an outage on every owed source is DARK; working specs all skipped are STALE."""
+    out = cl.run(chat=lambda *a, **k: pytest.fail("asked"), get=lambda u: (503, b""),
+                 resolve=_public, feed=tmp_lab / "feed.jsonl", uni=UNI)
+    assert out["state"] == "DARK"
+    (tmp_lab / "collector" / "hosts.json").unlink(missing_ok=True)
+    cl.run(chat=lambda *a, **k: _Reply(SPEC), get=_get([]), resolve=_public,
+           feed=tmp_lab / "feed.jsonl", uni=UNI)
+    specs = json.loads(cl.SPECS.read_text())
+    counts, outcome = cl.refresh(specs, get=_get([]), deadline=0.0, resolve=_public)
+    assert outcome == {"refreshed": 0, "failed": 0, "skipped_budget": 1}
+    monkeypatch.setattr(cl, "refresh", lambda *a, **k: (counts, outcome))
+    out = cl.run(chat=lambda *a, **k: pytest.fail("asked"), get=_get([]), resolve=_public,
+                 feed=tmp_lab / "feed.jsonl", uni=UNI)
+    assert out["state"] == "STALE"
+
+
+def test_www_never_climbs_to_a_shared_suffix() -> None:
+    """S1."""
+    for src, other in (("https://www.co.uk/", "https://evil.co.uk/"),
+                       ("https://www.github.io/", "https://x.github.io/"),
+                       ("https://www.s3.amazonaws.com/", "https://b.s3.amazonaws.com/")):
+        assert not cl.same_site(other, src)
+    assert cl.same_site("https://api.example.org/", "https://www.example.org/")
+
+
+def test_a_revision_never_becomes_the_current_reading() -> None:
+    """S5/S4: only the first reading of a date enters the series; the store is bounded."""
+    born = "2026-10-13T12:00:00+00:00"
+    store: dict[str, list[list[Any]]] = {}
+    cl.merge_vintages(store, {"2026-10-01": 1.0, "2026-10-12": 2.0}, born)
+    for i in range(30):
+        cl.merge_vintages(store, {"2026-10-01": float(i % 2) + 5}, f"2026-10-{14 + i % 9}T00:00")
+    assert len(store["2026-10-01"]) <= cl.MAX_VINTAGES and store["2026-10-01"][0][0] == 1.0
+    rows = cl.series_rows(store, "col_x", 2.0, born)
+    assert [r["value"] for r in rows] == [1.0, 2.0]
+
+
+def test_collector_cells_reach_the_evidence_map(tmp_lab: Path) -> None:
+    """S6: the start date is on disk before the donation, as for the main pass."""
+    cl.run(chat=lambda *a, **k: _Reply(SPEC), get=_get([]), resolve=_public,
+           feed=tmp_lab / "feed.jsonl", uni=UNI)
+    ev = json.loads((tmp_lab / "lab_state" / "evidence_start.json").read_text())
+    assert len(ev) == 2 and all(v["from"] > "2026-01-01" for v in ev.values())
+
+
+def test_implausible_numbers_skip_a_reading_not_the_spec() -> None:
+    """S7."""
+    assert cl.parse_date(1e300) is None
+    body = ('{"r": [{"d": "2025-01-01", "v": ' + "1" + "0" * 400 + '}, '
+            '{"d": "2025-01-02", "v": 3}]}').encode()
+    series, why = cl.parse(body, {"format": "json", "records": "r", "date": "d", "value": "v"})
+    assert why == "" and series == {"2025-01-02": 3.0}
