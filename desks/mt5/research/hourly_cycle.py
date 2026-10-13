@@ -3351,9 +3351,13 @@ def flow_factory() -> dict:
     relative spread, quote rate -- into data/lake/series/tf_<SYMBOL>.parquet (written once,
     never rewritten), mints the declared `tick_flow` / `flow_residual` grid on every symbol with
     enough history, and donates each identity once to the one gauntlet with `tests_run: 0`.
-    Every external source (options tape, vol surface, dealer positioning, auctions, futures,
-    off-exchange) is reported HELD with the verbatim terms clause that holds it; COT is counted
-    under its owner organ. The unknown-unknown miner classifies new symbols, tick fields and
+    It also runs `research/sec_ftd.py`: the SEC's half-month fails-to-deliver files, fetched with
+    the declared User-Agent in QUANT_EDGAR_UA (NEEDS_KEY without it; <= 2 requests/s), stored once
+    with a publication-lag stamp and folded into data/lake/series/ftd_<CFD>.parquet, whose cells
+    compile to `exogenous_conditioner` / `alt_series_momentum`. Every other external source is
+    judged per source (2026-10-13 ruling) and reported with its access state and verbatim terms;
+    UNREAD terms pages are re-read once a day into data/lake/flow_factory/terms_reads.json. COT is
+    counted under its owner organ. The unknown-unknown miner classifies new symbols, tick fields and
     flags, asset classes, order types, retcodes and expiry conventions in the same pass.
     Writes reports/FLOW_FACTORY.json. Never promotes.
     """

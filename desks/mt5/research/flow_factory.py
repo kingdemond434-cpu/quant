@@ -19,6 +19,15 @@ WHAT IS BUILT AND JUDGED NOW -- first-party data, which is always allowed:
   rewritten: the series is a vintage. `mt5desk/family_tick_flow.py` reads it by `source` and
   `feature`, so the sealed gauntlet rebuilds the cells through its ordinary `fn(h1, **params)`.
 
+  SEC FAILS-TO-DELIVER. `research/sec_ftd.py` (a step of this pass) reads the SEC's listing,
+  fetches the half-month files with the declared User-Agent in QUANT_EDGAR_UA (NEEDS_KEY when
+  absent; at most two requests a second), stores each once with its publication-lag stamp, and
+  folds them into data/lake/series/ftd_<CFD>.parquet (ETFs -> index/metal/energy CFDs, single
+  names -> share CFDs). Cells compile to the registered `exogenous_conditioner` and
+  `alt_series_momentum` families, which read the series on its own `available_time` clock behind
+  a publication-day lag; share-CFD cells are refused by the two-lane policy and the series stays
+  for the event lane.
+
   OWN EXECUTION. data/fill_corpus.jsonl (fill_recorder) -- slippage and reject states per
   symbol and session, measured and published. No family conditions on them yet and the corpus is
   tens of rows, so its cell count is 0 with that reason, never a silent zero.
@@ -37,7 +46,14 @@ Each source carries an `access` state from ACCESS_STATES (API_PERMITTED / NEEDS_
 / IDEAS_ONLY / METHOD_BLOCKED / UNREAD) and a `verdict`: PERMITTED or FIRST_PARTY when this desk
 may ingest it now, else HELD with the reason by name. `SOURCES` carries the verbatim clause read
 from each source's OWN page on the date given; UNREAD is never a permission. This organ fetches
-nothing at all; collection runs in the owner organs.
+nothing except through its declared collectors (`research/sec_ftd.py`) and the terms-read step;
+all other collection runs in the owner organs.
+
+THE TERMS-READ STEP. Once a day per URL, every source whose access is UNREAD and that names a
+terms page has that page fetched (a public page) and its clauses on data use, automation, robots,
+scraping, databases and licences kept VERBATIM in data/lake/flow_factory/terms_reads.json. A read
+never changes a verdict by itself: UNREAD stays UNREAD until a session records the clause in
+SOURCES. A page this host cannot reach is recorded with the error, which is evidence too.
 
 THE UNKNOWN-UNKNOWN MICROSTRUCTURE MINER runs in the same pass. It classifies anything the
 grammar does not yet name -- a tape symbol the registry does not list, a tick field or tick flag
@@ -87,6 +103,13 @@ ORDER_INTENTS = DATA / "order_intents.jsonl"
 COT_DIR = DATA / "cot"
 UNIVERSE_JSON = DATA / "universe" / "universe.json"
 DEPTH_PROBE = DATA / "tape" / "depth_probe.json"
+TERMS_READS = STATE_DIR / "terms_reads.json"
+#: Hours between two reads of one terms page.
+TERMS_READ_EVERY_H = 24
+#: Half-month FTD periods a CFD's series needs before cells are minted on it (two years).
+MIN_FTD_PERIODS = 48
+#: Seconds of the pass the FTD collector may spend fetching.
+FTD_BUDGET_S = 240.0
 
 BUCKET_MS = tfam.BUCKET_MIN * 60_000
 #: Completed buckets a symbol needs before cells are minted on it (about ten trading days).
@@ -196,14 +219,20 @@ SOURCES: dict[str, dict[str, Any]] = {
         "terms_quote": ("We allow scripted access to sec.gov content [...] Please declare your "
                         "user agent in request headers [...] Note that our current maximum "
                         "access rate is 10 requests per second."),
-        "conditions": "declared User-Agent naming the desk and a contact; at most 10 requests/s",
-        "checked_at": "2026-10-13", "collector": None,
-        "pit": "twice-monthly files, roughly two weeks after the settlement dates they cover",
-        "publication_lag": "~14 days (not collected)"},
+        "conditions": ("declared User-Agent from QUANT_EDGAR_UA (NEEDS_KEY when absent); this "
+                       "desk stays at <= 2 requests/s"),
+        "checked_at": "2026-10-13", "collector": "research/sec_ftd.py",
+        "pit": ("half-month files; available at max(5th of next month for the first half, 20th "
+                "for the second, 00:00 UTC; a plausible Last-Modified), then a publication-day "
+                "lag in the family"),
+        "publication_lag": "~3-5 weeks after the settlement dates a file covers"},
     "occ_daily_stats": {
         "publisher": "The Options Clearing Corporation", "verdict": HELD,
         "terms_url": "https://www.theocc.com/terms-of-use",
-        "terms_quote": "(not readable: the terms page returned a fetch error on 2026-10-13)",
+        "terms_quote": ("(not readable, 2026-10-13, three routes: WebFetch \"There was an error "
+                        "while fetching.\"; the build container's egress proxy \"CONNECT "
+                        "tunnel failed, response 403\" (connect_rejected); the web archive's "
+                        "copy \"Access to this website has been blocked\")"),
         "checked_at": "2026-10-13", "collector": None,
         "pit": "daily volume/OI statistics, D+1 (not collected)",
         "publication_lag": "1 day (not collected)",
@@ -224,7 +253,10 @@ SOURCES: dict[str, dict[str, Any]] = {
     "cme_volume_oi_bulletin": {
         "publisher": "CME Group", "verdict": HELD,
         "terms_url": "https://www.cmegroup.com/terms-of-use.html",
-        "terms_quote": "(not readable: the terms page returned a fetch error on 2026-10-13)",
+        "terms_quote": ("(not readable, 2026-10-13, three routes: WebFetch \"There was an error "
+                        "while fetching.\"; the build container's egress proxy \"CONNECT "
+                        "tunnel failed, response 403\" (connect_rejected); the web archive's "
+                        "copy \"Access to this website has been blocked\")"),
         "checked_at": "2026-10-13", "collector": None,
         "pit": "daily volume and open interest bulletin, D+1 morning CT (not collected)",
         "publication_lag": "1 day (not collected)",
@@ -258,7 +290,8 @@ SOURCES: dict[str, dict[str, Any]] = {
     "external_futures_tape": {
         "publisher": "CME/COMEX/NYMEX futures prints", "verdict": HELD,
         "terms_url": "https://www.cmegroup.com/terms-of-use.html",
-        "terms_quote": "(not readable: the terms page returned a fetch error on 2026-10-13)",
+        "terms_quote": ("(not readable, 2026-10-13: same three failed routes as "
+                        "cme_volume_oi_bulletin)"),
         "checked_at": "2026-10-13", "collector": None, "pit": "n/a", "publication_lag": "n/a",
         "access": "UNREAD",
         "why_held": ("no CME clause could be read; the existing futures_lead_lag leg reads a "
@@ -344,9 +377,11 @@ FAMILIES: tuple[dict[str, Any], ...] = (
      "axes": ["venue", "feed_type", "instrument"], "derivations": ["level", "surprise"],
      "mt5_mapping": "SPY/QQQ/DIA/GLD/USO -> US500/NAS100/US30/XAUUSD/XTIUSD"},
     {"key": "fails_and_borrow", "title": "Fails-to-deliver and borrow",
-     "sources": ["sec_fails_to_deliver"], "judge_families": [], "owner": SEAT,
+     "sources": ["sec_fails_to_deliver"],
+     "judge_families": ["exogenous_conditioner", "alt_series_momentum"], "owner": SEAT,
      "axes": ["positioning", "instrument"], "derivations": ["level", "change"],
-     "mt5_mapping": "ETF fails -> index/metal CFDs; single names are event-lane only"},
+     "mt5_mapping": ("ETF fails -> index/metal/energy CFDs (sec_ftd.ETF_CFD); single names -> "
+                     "share CFDs (free_stack.TICKER_CFD), series only: event lane")},
     {"key": "futures_flow_minus_cfd_response", "priority_residual": True,
      "title": "FuturesFlow - CFDResponse", "sources": ["external_futures_tape"],
      "judge_families": [], "owner": SEAT, "axes": ["cross_asset", "mt5_target", "horizon"],
@@ -377,6 +412,19 @@ TICK_GRID: tuple[tuple[str, str, str], ...] = tuple(
     + [("flow_residual", f, m) for f in ("tick_rule", "quote_ofi")
        for m in ("unabsorbed", "exhaustion")])
 CHARTS: tuple[str, ...] = ("M15", "H1")
+#: The FTD cell grid on each CFD's half-month series: (family, transform-or-lookback, side).
+FTD_GRID: tuple[tuple[str, str, int], ...] = tuple(
+    [("exogenous_conditioner", t, side) for t in ("level_z", "delta_z") for side in (1, -1)]
+    + [("alt_series_momentum", "1", side) for side in (1, -1)])
+FTD_SIGNAL = "ftd_value_log"
+#: z-window in half-month periods (one year) -- the families' 250-row default would need a decade.
+FTD_Z_WINDOW = 24
+FTD_PAYER: dict[int, str] = {
+    1: "fails pile up when shorts cannot borrow or deliver; the forced buy-in that follows "
+       "lifts the instrument the ETF tracks",
+    -1: "heavy fails mark crowded shorting of the ETF's basket; the positioning is informed "
+        "and the instrument the ETF tracks drifts down",
+}
 GRID_FAMILY: dict[str, str] = {"tick_flow": "orderflow_ticks",
                                "flow_residual": "orderflow_minus_price_response"}
 
@@ -776,11 +824,129 @@ def judge_reach(families: list[str]) -> dict[str, Any]:
                      "miner_candidate_compiler (EXACT_RECIPE) -> docket -> external_gauntlet")}
 
 
+def build_ftd_cells(ftd: dict[str, dict[str, Any]]) -> tuple[list[dict[str, Any]],
+                                                                dict[str, str]]:
+    """The FTD grid on every CFD whose series holds MIN_FTD_PERIODS half-month periods.
+
+    `ftd` is sec_ftd.build_series's summary. A share CFD is set aside by the two-lane policy,
+    by name: its series stays for the event lane."""
+    from proposer_common import candidate
+    out: list[dict[str, Any]] = []
+    skipped: dict[str, str] = {}
+    for sym in sorted(ftd):
+        n = int(ftd[sym].get("periods") or 0)
+        if n < MIN_FTD_PERIODS:
+            skipped[sym] = f"{n} FTD periods < {MIN_FTD_PERIODS}: history too short to judge"
+            continue
+        src = f"ftd_{sym}"
+        for fam, knob, side in FTD_GRID:
+            if not _may_hypothesise(sym, fam):
+                skipped[sym] = ("two-lane mandate: share CFD, the series is kept for the event "
+                                "lane and no statistical cell is minted")
+                break
+            params: dict[str, Any] = {"source": src, "signal": FTD_SIGNAL,
+                                      "z_window": FTD_Z_WINDOW, "threshold": 1.0}
+            if fam == "exogenous_conditioner":
+                params.update({"transform": knob, "side_when_high": side})
+                what = f"{knob} of {FTD_SIGNAL}, side {side:+d} when high"
+            else:
+                params.update({"lookback": int(knob), "side_when_up": side})
+                what = f"{knob}-period change of {FTD_SIGNAL}, side {side:+d} when rising"
+            c = candidate(SEAT, sym, fam, params,
+                          f"{fam} on SEC fails-to-deliver -> {sym}: {FTD_PAYER[side]}",
+                          f"{fam} sec_ftd {what} -> {sym} H1",
+                          {"series": src, "periods": n, "first": ftd[sym].get("first"),
+                           "last": ftd[sym].get("last"), "tickers": ftd[sym].get("tickers"),
+                           "pit": ("available_time = max(schedule bound, plausible "
+                                   "Last-Modified); the family adds a publication-day lag")})
+            c["chart"] = "H1"
+            c["flow_family"] = "fails_and_borrow"
+            c["required_data"] = [f"desks/mt5/data/lake/series/{src}.parquet"]
+            c["falsifier"] = (f"{sym} forward returns at H1 are unrelated to the SEC fails "
+                              f"series {src} ({what}) out of sample, net of this broker's round "
+                              "trip")
+            out.append(c)
+    return out, skipped
+
+
+TermsFetch = Any        # Callable[[str], tuple[int, str]]: (http status, page text)
+TERMS_KEYWORDS = re.compile(r"(robot|scrap|crawl|automat|data ?min|database|harvest|licen[cs]|"
+                            r"commercial|redistribut|permission|prohibit|non-commercial|"
+                            r"personal use|internal use|market data)", re.IGNORECASE)
+
+
+def _terms_fetch(url: str) -> tuple[int, str]:
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": "quant-desk terms reader",
+                                               "Accept": "text/html"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return int(r.status), r.read(4 * 1024 * 1024).decode("utf-8", errors="replace")
+
+
+def _clauses(html: str, limit: int = 12) -> list[str]:
+    """Sentences of the page that mention use, automation or licensing -- VERBATIM text."""
+    text = re.sub(r"<(script|style)\b.*?</\1>", " ", html, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    out: list[str] = []
+    for sent in re.split(r"(?<=[.;:])\s+", text):
+        if TERMS_KEYWORDS.search(sent) and 20 <= len(sent) <= 600 and sent not in out:
+            out.append(sent.strip())
+        if len(out) >= limit:
+            break
+    return out
+
+
+def read_terms(*, state: Path | None = None, fetch: TermsFetch | None = None,
+               now: datetime | None = None, write: bool = True,
+               offline: bool = False) -> dict[str, Any]:
+    """Read each UNREAD source's terms page at most once a day and keep what it says verbatim.
+
+    It never changes a verdict: the record is the evidence a session promotes into SOURCES."""
+    import hashlib
+    now = now or datetime.now(tz=UTC)
+    state = state or TERMS_READS
+    reads = _read(state, {})
+    reads = reads if isinstance(reads, dict) else {}
+    fetch = fetch or _terms_fetch
+    urls = sorted({str(v["terms_url"]) for v in SOURCES.values()
+                   if v.get("access") == "UNREAD"
+                   and str(v.get("terms_url") or "").startswith("https://")})
+    attempted = 0
+    for url in ([] if offline else urls):
+        prev = reads.get(url) if isinstance(reads.get(url), dict) else None
+        if prev:
+            try:
+                age_h = (now - datetime.fromisoformat(str(prev["at"]))).total_seconds() / 3600
+            except (KeyError, ValueError, TypeError):
+                age_h = 1e9
+            if age_h < TERMS_READ_EVERY_H:
+                continue
+        attempted += 1
+        rec: dict[str, Any] = {"at": now.isoformat(timespec="seconds")}
+        try:
+            status, html = fetch(url)
+            rec.update({"read": 200 <= status < 300, "http_status": status,
+                        "sha256": hashlib.sha256(html.encode("utf-8", "replace")).hexdigest(),
+                        "clauses_verbatim": _clauses(html)})
+        except Exception as exc:
+            rec.update({"read": False, "error": f"{type(exc).__name__}: {str(exc)[:200]}"})
+        reads[url] = rec
+    if write and attempted:
+        _atomic_bytes(state, json.dumps(reads, indent=1, sort_keys=True).encode())
+    return {"urls": urls, "attempted": attempted, "reads": reads,
+            "rule": ("a read is evidence, never a verdict: UNREAD stays UNREAD until a session "
+                     "records the permitting clause in SOURCES")}
+
+
 # ----------------------------------------------------------------------------- the pass
 def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path | None = None,
-        out: Path | None = None, budget_s: float = 900.0) -> dict[str, Any]:
+        out: Path | None = None, budget_s: float = 900.0, ftd_store: Path | None = None,
+        ftd_fetch: Any = None, terms_fetch: TermsFetch | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
-    deadline = t0 + budget_s
+    # the tape fold stops early enough to leave the FTD step its share of the same budget
+    deadline = t0 + max(60.0, budget_s - FTD_BUDGET_S)
+    end = t0 + budget_s
     tape_dir = tape_dir or TAPE
     series_dir = series_dir or SERIES_DIR
     tape = tape_index(tape_dir) if tape_dir.is_dir() else {}
@@ -813,6 +979,35 @@ def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path
         collect[sym] = info
         del f, existing
 
+    # 1b. SEC FAILS-TO-DELIVER: the permitted public files, collected and folded point-in-time.
+    import sec_ftd
+    ftd_store = ftd_store or sec_ftd.STORE
+    if dry_run:
+        ftd_collect: dict[str, Any] = (
+            {"status": "NEEDS_KEY", "why": f"no {sec_ftd.UA_ENV} in this environment"}
+            if sec_ftd.user_agent() is None and ftd_fetch is None else
+            {"status": "DRY_RUN", "why": "dry run: the listing and files are not fetched"})
+    else:
+        ftd_collect = sec_ftd.collect(
+            store=ftd_store, fetch=ftd_fetch,
+            deadline=max(end, time.monotonic() + 30.0))
+    ftd_series = sec_ftd.build_series(store=ftd_store, series_dir=series_dir, registry=registry,
+                                      write=not dry_run)
+    if ftd_series:
+        ftd_status: dict[str, Any] = {
+            "status": "COLLECTING", "cfds": len(ftd_series),
+            "periods_max": max(v["periods"] for v in ftd_series.values()),
+            "first": min(v["first"] for v in ftd_series.values()),
+            "last": max(v["last"] for v in ftd_series.values()),
+            "collect": ftd_collect}
+    elif ftd_collect.get("status") == "NEEDS_KEY":
+        ftd_status = {"status": "NEEDS_KEY", "why": ftd_collect.get("why"),
+                      "collect": ftd_collect}
+    else:
+        ftd_status = {"status": "UNMEASURED",
+                      "why": "no FTD vintage held on this host yet", "collect": ftd_collect}
+    terms = read_terms(fetch=terms_fetch, offline=dry_run, write=not dry_run)
+
     # 2. MINE the unknown unknowns and extend the open grammar.
     miner = mine_unknowns(tape=tape, registry=registry, fills=fills, intents=intents)
     grammar = extend_grammar(miner, None if dry_run else GRAMMAR_STATE, write=not dry_run)
@@ -822,6 +1017,8 @@ def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path
 
     # 3. CELLS from the tape, donated once each to the one judge. No trial is charged here.
     cells, skipped = build_cells(series)
+    ftd_cells, ftd_skipped = build_ftd_cells(ftd_series)
+    cells = cells + ftd_cells
     from proposer_common import identity
     done = set(_read(DONATED, {}).get("identities") or [])
     fresh = [c for c in cells if identity(c["symbol"], c["family"], c["params"]) not in done]
@@ -890,6 +1087,12 @@ def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path
             row["status"] = own["status"]
             row["history"] = {k: own.get(k) for k in ("rows", "first", "last", "with_slippage",
                                                        "states_measured", "why") if k in own}
+        elif spec["sources"] == ["sec_fails_to_deliver"]:
+            row["status"] = ftd_status["status"]
+            row["history"] = {**{k: v for k, v in ftd_status.items() if k != "collect"},
+                              "series": ftd_series}
+            if ftd_status.get("why"):
+                row["why"] = ftd_status["why"]
         elif spec["sources"] == ["cftc_cot"]:
             row["status"] = cot["status"]
             row["history"] = cot
@@ -901,6 +1104,10 @@ def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path
                 row["why"] = (f"permitted, no collector built yet: {', '.join(uncollected)} "
                               "(UNWIRED, not blocked)")
         row["access"] = {s: SOURCES[s].get("access", "UNREAD") for s in spec["sources"]}
+        row["terms_read"] = {s: terms["reads"].get(str(SOURCES[s].get("terms_url")))
+                             for s in spec["sources"]
+                             if SOURCES[s].get("access") == "UNREAD"
+                             and terms["reads"].get(str(SOURCES[s].get("terms_url")))}
         row["terms"] = [{"source": s, "verdict": v["verdict"], "access": v.get("access"),
                          "terms_url": v["terms_url"],
                          "quote": v["terms_quote"], "checked_at": v["checked_at"]}
@@ -931,10 +1138,13 @@ def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path
                     "open": "every axis is open; the miner appends discovered values"},
         "families": fams, "status_counts": status_counts,
         "sources": SOURCES, "tape": tape_status, "collect": collect,
-        "own_execution": own, "cot": cot,
+        "own_execution": own, "cot": cot, "sec_ftd": ftd_status,
+        "terms_reads": {"attempted": terms["attempted"], "urls": terms["urls"],
+                        "rule": terms["rule"]},
         "unknown_unknown_miner": miner,
         "grid": {"total": len(cells), "per_symbol": len(TICK_GRID) * len(CHARTS),
-                 "by_flow_family": by_ff, "skipped": skipped,
+                 "by_flow_family": by_ff, "skipped": skipped, "ftd_skipped": ftd_skipped,
+                 "ftd_per_symbol": len(FTD_GRID),
                  "min_buckets": MIN_BUCKETS},
         "donated": {"fresh": len(fresh), "contract": str(contract) if contract else None,
                     "minted": counts.get("donated", 0),

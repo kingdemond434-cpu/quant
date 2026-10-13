@@ -6,13 +6,18 @@ Pinned here, on fixtures with no network:
   * the series is a vintage: a later pass never rewrites a bucket it already wrote;
   * the families fold buckets onto bars left-labelled and never read a bucket from the future;
   * both families are registered where the sealed gauntlet looks, so the cells reach the judge;
-  * a full pass donates with tests_run 0, fetches nothing, reports every family with a status,
-    HELD sources carry their terms quote, and the unknown-unknown miner classifies new things.
+  * a full pass donates with tests_run 0, fetches nothing beyond its declared collector and the
+    terms-read step (both injected here), reports every family with a status, HELD sources carry
+    their terms quote, and the unknown-unknown miner classifies new things;
+  * the SEC fails-to-deliver series reaches the judge as exogenous_conditioner /
+    alt_series_momentum cells on index and metal CFDs, and share CFDs are set aside by lane;
+  * the terms-read step keeps what a page says verbatim, once a day, and never sets a verdict.
 """
 from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -171,7 +176,8 @@ def isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     (data / "universe").mkdir()
     (data / "universe" / "universe.json").write_text(json.dumps({
         "EURUSD": {"asset_class": "Forex"}, "XAUUSD": {"asset_class": "Commodities"},
-        "UKOIL_Z26": {"asset_class": "Energy"}, "WEIRD": {"asset_class": "Weather Futures"}}))
+        "UKOIL_Z26": {"asset_class": "Energy"}, "WEIRD": {"asset_class": "Weather Futures"},
+        "US500": {"asset_class": "Indices"}, "Apple": {"asset_class": "Equities"}}))
     (data / "fill_corpus.jsonl").write_text("\n".join(json.dumps(r) for r in [
         {"symbol": "XAUUSD", "session": "asia", "slip_frac": 0.0001, "order_type": "market",
          "decided_at": "2026-09-01T04:00:00+00:00", "retcode": 10009},
@@ -187,6 +193,16 @@ def isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
                       "REPORT": tmp_path / "FLOW_FACTORY.json"}.items():
         monkeypatch.setattr(ff, name, val)
     monkeypatch.setattr(ff, "MIN_BUCKETS", 500)
+    import sec_ftd
+    monkeypatch.setattr(sec_ftd, "STORE", data / "lake" / "sec_ftd")
+    monkeypatch.setattr(ff, "TERMS_READS", data / "ff" / "terms_reads.json")
+    monkeypatch.delenv(sec_ftd.UA_ENV, raising=False)
+    terms_asked: list[str] = []
+
+    def fake_terms(url: str) -> tuple[int, str]:
+        terms_asked.append(url)
+        return 200, "<html><p>You may not use robots to scrape this site.</p></html>"
+    monkeypatch.setattr(ff, "_terms_fetch", fake_terms)
     calls: list[dict[str, Any]] = []
     import proposer_common
 
@@ -206,7 +222,8 @@ def isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     _tape(tape, "EURUSD", days=3)
     _tape(tape, "XAUUSD", days=3, seed=2)
     _tape(tape, "NEWCFD", days=1, seed=4, flags=True)
-    return {"tmp": tmp_path, "tape": tape, "series": tmp_path / "series", "calls": calls}
+    return {"tmp": tmp_path, "tape": tape, "series": tmp_path / "series", "calls": calls,
+            "terms_asked": terms_asked, "ftd_store": data / "lake" / "sec_ftd"}
 
 
 def test_a_pass_collects_mints_and_reports_every_family(isolated: dict[str, Any]) -> None:
@@ -242,8 +259,9 @@ def test_a_pass_collects_mints_and_reports_every_family(isolated: dict[str, Any]
     assert "mt5_purity fence; principal ruling pending" in fams["crypto_reference_options"]["why"]
     assert "banned" not in json.dumps(doc["families"]).lower()
     assert fams["off_exchange_short_volume"]["status"] == "NEEDS_KEY"
-    assert fams["fails_and_borrow"]["status"] == "UNMEASURED"
-    assert "no collector built" in fams["fails_and_borrow"]["why"]
+    # no QUANT_EDGAR_UA in this environment: the FTD collector fetched nothing and says why
+    assert fams["fails_and_borrow"]["status"] == "NEEDS_KEY"
+    assert "QUANT_EDGAR_UA" in fams["fails_and_borrow"]["why"]
     for r in fams.values():
         assert set(r["access"].values()) <= set(ff.ACCESS_STATES)
     for r in fams.values():
@@ -312,3 +330,56 @@ def test_the_leg_is_wired_into_the_hourly_cycle() -> None:
     assert hc.LEG_BUDGET_SEC["flow_factory"] > 900
     assert hc.LEG_DEPARTMENT["flow_factory"] == "data"
     assert LEG_LAYER["flow_factory"] == "prediction"
+
+
+def test_sec_ftd_cells_reach_the_judge_and_shares_stay_in_the_event_lane(
+        isolated: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from test_sec_ftd import FakeSEC, periods
+    monkeypatch.setattr(ff, "MIN_FTD_PERIODS", 30)
+    sec = FakeSEC(periods(36))
+    doc = ff.run(tape_dir=isolated["tape"], series_dir=isolated["series"], ftd_fetch=sec)
+    fams = {r["key"]: r for r in doc["families"]}
+    fb = fams["fails_and_borrow"]
+    assert fb["status"] == "COLLECTING"
+    assert fb["judge"]["reaches_judge"] is True
+    assert fb["history"]["series"]["US500"]["periods"] == 24          # DEFAULT_MAX_FILES a pass
+    # 24 < 30 periods: too short this pass, by name; the next pass completes the history
+    assert "too short" in doc["grid"]["ftd_skipped"]["US500"]
+    doc = ff.run(tape_dir=isolated["tape"], series_dir=isolated["series"], ftd_fetch=sec)
+    fams = {r["key"]: r for r in doc["families"]}
+    fb = fams["fails_and_borrow"]
+    assert fb["history"]["series"]["US500"]["periods"] == 36
+    assert fb["cells_generated"] == 2 * len(ff.FTD_GRID)                 # US500 and XAUUSD
+    assert "two-lane" in doc["grid"]["ftd_skipped"]["Apple"]
+    minted = [c for call in isolated["calls"] for c in call["candidates"]
+              if c.get("flow_family") == "fails_and_borrow"]
+    assert {c["symbol"] for c in minted} == {"US500", "XAUUSD"}
+    assert {c["family"] for c in minted} == {"exogenous_conditioner", "alt_series_momentum"}
+    assert all(call["tests_run"] == 0 for call in isolated["calls"])
+    assert all(c["params"]["source"] == f"ftd_{c['symbol']}" for c in minted)
+    assert (isolated["series"] / "ftd_US500.parquet").exists()
+
+
+def test_terms_read_keeps_the_page_verbatim_once_a_day_and_sets_no_verdict(
+        isolated: dict[str, Any]) -> None:
+    before = {k: (v["verdict"], v["access"]) for k, v in ff.SOURCES.items()}
+    ff.run(tape_dir=isolated["tape"], series_dir=isolated["series"])
+    asked = list(isolated["terms_asked"])
+    assert "https://www.theocc.com/terms-of-use" in asked
+    assert "https://www.cmegroup.com/terms-of-use.html" in asked
+    assert len(asked) == len(set(asked))
+    reads = json.loads(ff.TERMS_READS.read_text())
+    occ = reads["https://www.theocc.com/terms-of-use"]
+    assert occ["read"] is True
+    assert occ["clauses_verbatim"] == ["You may not use robots to scrape this site."]
+    # within the day nothing is re-read; and a read never changes a verdict
+    ff.run(tape_dir=isolated["tape"], series_dir=isolated["series"])
+    assert isolated["terms_asked"] == asked
+    assert {k: (v["verdict"], v["access"]) for k, v in ff.SOURCES.items()} == before
+    # an unreachable page is recorded with its error, which is evidence too
+    def down(url: str) -> tuple[int, str]:
+        raise OSError("CONNECT tunnel failed, response 403")
+    out = ff.read_terms(fetch=down, state=isolated["tmp"] / "t.json",
+                        now=datetime(2030, 1, 1, tzinfo=UTC))
+    assert all(not r["read"] and "403" in r["error"] for r in out["reads"].values())
