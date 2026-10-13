@@ -1,241 +1,79 @@
 {
- "at": "2026-09-24T21:47:44+00:00",
+ "at": "2026-10-13T15:17:28+00:00",
  "law": "EVERY CERTIFICATE NAMES THE PRODUCER THAT EARNED IT, joined by the desk's one cell identity and never by a symbol/family fallback that several hundred candidates share. A certificate no exact route reaches is UNMEASURED with its reason -- a wrong attribution is worse than none, because it misdirects compute (L1.28a).",
  "rule": "producer = the organ named by an EXACT cell-identity join into the registry's birth stamp, the judge's own docket, the verdict ledger's graph edge, or the hypothesis graph; several claimants resolve to the strictly earliest by recorded creation time and are listed in full; a tie is AMBIGUOUS and no route is a name match",
  "identity": "desks/mt5/research/frontier_identity.cell_id",
- "n_certificates": 174,
+ "n_certificates": 52,
  "coverage": {
-  "n": 174,
-  "named": 174,
+  "n": 52,
+  "named": 52,
   "unnamed": 0,
   "coverage": 1.0,
-  "recorded": 174,
+  "recorded": 52,
   "missing_record": 0,
   "by_verdict": {
-   "ATTRIBUTED": 111,
-   "FIRST_CLAIM": 63
+   "ATTRIBUTED": 37,
+   "FIRST_CLAIM": 15
   },
   "by_producer": {
-   "miner:discovery_compiler": 68,
-   "breadth_sweep": 21,
-   "miner:descendants:cross_market": 17,
-   "alpha_registry": 15,
-   "miner:descendants:instrument": 11,
-   "external": 8,
-   "miner:broker_swaps": 6,
-   "miner:descendants:session": 5,
-   "miner:paradigm_router": 4,
-   "miner:fund_playbook": 4,
-   "alpha_evolution": 3,
-   "expression_factory": 3,
-   "alpha_recombination": 2,
-   "descendants": 2,
-   "miner:asia:nationalbanken_dkk": 1,
-   "fund_playbook:aqr:a": 1,
-   "card_explosion:regime": 1,
-   "miner:anomalies": 1,
-   "miner:standing_questions:q3": 1
+   "external": 40,
+   "alpha_registry": 12
   }
  },
- "routes": {
-  "registry_identity": {
-   "available": true,
-   "rows": 68620,
-   "hits": 377,
-   "basis": "research_candidates.symbol/family/params_json -> frontier_identity.cell_id"
-  },
-  "docket": {
-   "available": true,
-   "rows": 561308,
-   "hits": 46,
-   "truncated": false,
-   "basis": "data/hypotheses/external_survivors.json -> frontier_identity.cell_id"
-  },
-  "graph": {
-   "available": true,
-   "verdict_rows": 216058,
-   "graph_rows": 4208349,
-   "graph_parsed": 1844358,
-   "wanted_graph_ids": 161,
-   "hits": 2975,
-   "truncated": false
-  }
- },
+ "routes": {},
  "keys": {
+  "external.AUDCAD.discovered.p=7c996ac8456c8919": "AUDCAD.discovered.p=7c996ac8456c8919",
+  "external.AUDCAD.discovered.p=8030fb339510dceb": "AUDCAD.discovered.p=8030fb339510dceb",
+  "external.AUDCAD.discovered.p=a7324e7affe1f80a": "AUDCAD.discovered.p=a7324e7affe1f80a",
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
-  "external.AUDCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": "AUDCHF.overnight_gap_decay.p=4e3e7963cfc9ce12",
-  "external.AUDNZD@M15.cross_asset_residual.p=cd305328d4d3f7f5": "AUDNZD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed": "AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed",
-  "external.AUDNZD@M5.macro_conditional.p=2bbd8688b514a45b": "AUDNZD@M5.macro_conditional.p=2bbd8688b514a45b",
-  "external.AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6": "AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6",
-  "external.AUDNZD@M5.macro_conditional.p=f83412948ea922b5": "AUDNZD@M5.macro_conditional.p=f83412948ea922b5",
-  "external.AUDNZD@M5.macro_conditional.p=ff35bb7c8427d66f": "AUDNZD@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.AUDSGD@M5.cross_asset_residual.p=aa8934bebbf9ed69": "AUDSGD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
-  "external.AUDSGD@M5.macro_conditional.p=2bbd8688b514a45b": "AUDSGD@M5.macro_conditional.p=2bbd8688b514a45b",
-  "external.AUDSGD@M5.macro_conditional.p=f684da6d387d6ea6": "AUDSGD@M5.macro_conditional.p=f684da6d387d6ea6",
-  "external.AUDSGD@M5.macro_conditional.p=f83412948ea922b5": "AUDSGD@M5.macro_conditional.p=f83412948ea922b5",
-  "external.AUDSGD@M5.macro_conditional.p=ff35bb7c8427d66f": "AUDSGD@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.AUDSGD@M5.pca_residual.p=be3d516727ee10f4": "AUDSGD@M5.pca_residual.p=be3d516727ee10f4",
-  "external.BTCUSD@M15.cross_asset_residual.p=5740a1a3a11c0f48": "BTCUSD@M15.cross_asset_residual.p=5740a1a3a11c0f48",
-  "external.BTCUSD@M15.cross_asset_residual.p=79b3c4425ab84031": "BTCUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
-  "external.BTCUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5": "BTCUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.BTCUSD@M15.cross_asset_residual.p=e95ea804f8e3f059": "BTCUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.BTCUSD@M15.cross_asset_residual.p=f70151cf16fd1230": "BTCUSD@M15.cross_asset_residual.p=f70151cf16fd1230",
-  "external.BTCUSD@M5.cross_asset_residual.p=2479d0d883199a4b": "BTCUSD@M5.cross_asset_residual.p=2479d0d883199a4b",
+  "external.AUDNZD.discovered.p=c76b860ff91ee920": "AUDNZD.discovered.p=c76b860ff91ee920",
+  "external.AUDUSD.discovered.p=8e61ea22743f15b7": "AUDUSD.discovered.p=8e61ea22743f15b7",
+  "external.AUDUSD.discovered.p=a5bbf78b5c8595c0": "AUDUSD.discovered.p=a5bbf78b5c8595c0",
+  "external.AUDUSD.discovered.p=cf0368e026d6b477": "AUDUSD.discovered.p=cf0368e026d6b477",
+  "external.AUDUSD.discovered.p=de80ad4f2ef91116": "AUDUSD.discovered.p=de80ad4f2ef91116",
   "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": "CADCHF.overnight_gap_decay.p=44136fa355b3678a",
-  "external.CADCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": "CADCHF.overnight_gap_decay.p=4e3e7963cfc9ce12",
-  "external.CHFDKK.formula.p=1438f41876142275": "CHFDKK.formula.p=1438f41876142275",
-  "external.CHFDKK.formula.p=f5b697dc3ae02496": "CHFDKK.formula.p=f5b697dc3ae02496",
+  "external.CADJPY.session_range_breakout.rr=1.5_wb=12": "CADJPY.session_range_breakout.rr=1.5_wb=12",
+  "external.CADJPY.session_range_breakout.rr=2.0_wb=12": "CADJPY.session_range_breakout.rr=2.0_wb=12",
+  "external.CADJPY.session_range_breakout.rr=2.5_wb=12": "CADJPY.session_range_breakout.rr=2.5_wb=12",
   "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": "CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
-  "external.CHFDKK.overnight_gap_decay.p=4d96b1ebe6d26711": "CHFDKK.overnight_gap_decay.p=4d96b1ebe6d26711",
-  "external.CHFDKK.overnight_gap_decay.p=4e3e7963cfc9ce12": "CHFDKK.overnight_gap_decay.p=4e3e7963cfc9ce12",
-  "external.CHFDKK@M15.carry.p=5a8cbfcbd19ad741": "CHFDKK@M15.carry.p=5a8cbfcbd19ad741",
-  "external.CHFDKK@M15.carry.p=80284fafabf56558": "CHFDKK@M15.carry.p=80284fafabf56558",
-  "external.CHFDKK@M5.carry.p=b827b4496d5716d2": "CHFDKK@M5.carry.p=b827b4496d5716d2",
-  "external.CHFDKK@M5.macro_conditional.p=2bbd8688b514a45b": "CHFDKK@M5.macro_conditional.p=2bbd8688b514a45b",
-  "external.CHFDKK@M5.macro_conditional.p=f684da6d387d6ea6": "CHFDKK@M5.macro_conditional.p=f684da6d387d6ea6",
-  "external.CHFNOK.carry.p=44136fa355b3678a": "CHFNOK.carry.p=44136fa355b3678a",
-  "external.CHFNOK.carry.p=653b0343f68f1b35": "CHFNOK.carry.p=653b0343f68f1b35",
-  "external.CHFNOK.carry.p=7d92ffa25956efab": "CHFNOK.carry.p=7d92ffa25956efab",
-  "external.CHFNOK.carry.p=8d7bbcb0d75e3dd5": "CHFNOK.carry.p=8d7bbcb0d75e3dd5",
-  "external.CHFNOK.carry.p=9887b09394cff192": "CHFNOK.carry.p=9887b09394cff192",
   "external.CHFNOK.carry.p=98d776f3e210d3e2": "CHFNOK.carry.p=98d776f3e210d3e2",
-  "external.CHFNOK.carry.p=9c407e793a1d61c0": "CHFNOK.carry.p=9c407e793a1d61c0",
-  "external.CHFNOK.carry.p=aaddfb6581d7e7e9": "CHFNOK.carry.p=aaddfb6581d7e7e9",
-  "external.CHFNOK.carry.p=b56bcfef9a4a010c": "CHFNOK.carry.p=b56bcfef9a4a010c",
-  "external.CHFNOK.carry.p=b624041f5c3da575": "CHFNOK.carry.p=b624041f5c3da575",
-  "external.CHFNOK.carry.p=eb5fbdec7f05fb2d": "CHFNOK.carry.p=eb5fbdec7f05fb2d",
-  "external.CHFNOK.carry.p=f130c0182563fd56": "CHFNOK.carry.p=f130c0182563fd56",
-  "external.CHFNOK@M15.carry.p=3411bcff02687f5a": "CHFNOK@M15.carry.p=3411bcff02687f5a",
-  "external.CHFNOK@M15.carry.p=b08b20cf131510a7": "CHFNOK@M15.carry.p=b08b20cf131510a7",
-  "external.CHFNOK@M15.carry.p=d2a07eec617b8f5e": "CHFNOK@M15.carry.p=d2a07eec617b8f5e",
-  "external.CHFNOK@M30.macro_conditional.p=1c239674d3cfa388": "CHFNOK@M30.macro_conditional.p=1c239674d3cfa388",
-  "external.CHFNOK@M30.macro_conditional.p=9463a1f0b0c83ca4": "CHFNOK@M30.macro_conditional.p=9463a1f0b0c83ca4",
-  "external.CHFNOK@M30.macro_conditional.p=fc3f6193651eb19e": "CHFNOK@M30.macro_conditional.p=fc3f6193651eb19e",
-  "external.CHFNOK@M30.macro_conditional.p=fd7e46354c14b3f6": "CHFNOK@M30.macro_conditional.p=fd7e46354c14b3f6",
-  "external.CHFNOK@M5.macro_conditional.p=f83412948ea922b5": "CHFNOK@M5.macro_conditional.p=f83412948ea922b5",
-  "external.CHFSGD@M15.cross_asset_residual.p=e95ea804f8e3f059": "CHFSGD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.CHFSGD@M5.cross_asset_residual.p=0052fbfc522a4c69": "CHFSGD@M5.cross_asset_residual.p=0052fbfc522a4c69",
-  "external.CHFSGD@M5.cross_asset_residual.p=2479d0d883199a4b": "CHFSGD@M5.cross_asset_residual.p=2479d0d883199a4b",
-  "external.CHFSGD@M5.macro_conditional.p=f684da6d387d6ea6": "CHFSGD@M5.macro_conditional.p=f684da6d387d6ea6",
-  "external.CHFSGD@M5.macro_conditional.p=ff35bb7c8427d66f": "CHFSGD@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.EURCAD@M5.macro_conditional.p=f83412948ea922b5": "EURCAD@M5.macro_conditional.p=f83412948ea922b5",
-  "external.EURCHF.formula.p=1438f41876142275": "EURCHF.formula.p=1438f41876142275",
-  "external.EURMXN@M5.macro_conditional.p=f83412948ea922b5": "EURMXN@M5.macro_conditional.p=f83412948ea922b5",
+  "external.EURCHF.discovered.p=16bd35526c7f3515": "EURCHF.discovered.p=16bd35526c7f3515",
+  "external.EURCHF.discovered.p=4cba1afa572a99cd": "EURCHF.discovered.p=4cba1afa572a99cd",
+  "external.EURCHF.discovered.p=6c7943b997558157": "EURCHF.discovered.p=6c7943b997558157",
+  "external.EURCHF.discovered.p=9bc1f7c40f200e78": "EURCHF.discovered.p=9bc1f7c40f200e78",
+  "external.EURCHF.discovered.p=a5bbf78b5c8595c0": "EURCHF.discovered.p=a5bbf78b5c8595c0",
+  "external.EURCHF.discovered.p=c14e361e680e6d0b": "EURCHF.discovered.p=c14e361e680e6d0b",
+  "external.EURCHF.discovered.p=c7d53510458ba32c": "EURCHF.discovered.p=c7d53510458ba32c",
+  "external.EURCHF.discovered.p=e266baf78567bef3": "EURCHF.discovered.p=e266baf78567bef3",
+  "external.EURGBP.discovered.p=8e61ea22743f15b7": "EURGBP.discovered.p=8e61ea22743f15b7",
+  "external.EURGBP.discovered.p=f31f02aa2b9d79b1": "EURGBP.discovered.p=f31f02aa2b9d79b1",
+  "external.EURJPY.session_range_breakout.rr=1.5_wb=12": "EURJPY.session_range_breakout.rr=1.5_wb=12",
+  "external.EURJPY.session_range_breakout.rr=2.0_wb=12": "EURJPY.session_range_breakout.rr=2.0_wb=12",
+  "external.EURJPY.session_range_breakout.rr=2.5_wb=12": "EURJPY.session_range_breakout.rr=2.5_wb=12",
   "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
-  "external.EURNOK@M5.macro_conditional.p=f83412948ea922b5": "EURNOK@M5.macro_conditional.p=f83412948ea922b5",
-  "external.EURSEK@M5.macro_conditional.p=f83412948ea922b5": "EURSEK@M5.macro_conditional.p=f83412948ea922b5",
-  "external.EURSEK@M5.macro_conditional.p=ff35bb7c8427d66f": "EURSEK@M5.macro_conditional.p=ff35bb7c8427d66f",
+  "external.EURUSD.discovered.p=6d034b421914e1a2": "EURUSD.discovered.p=6d034b421914e1a2",
+  "external.EURUSD.discovered.p=f8bd412f38e33d20": "EURUSD.discovered.p=f8bd412f38e33d20",
   "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
-  "external.GBPAUD@M5.macro_conditional.p=f83412948ea922b5": "GBPAUD@M5.macro_conditional.p=f83412948ea922b5",
-  "external.GBPCAD@M5.macro_conditional.p=f83412948ea922b5": "GBPCAD@M5.macro_conditional.p=f83412948ea922b5",
-  "external.GBPCHF.formula.p=1438f41876142275": "GBPCHF.formula.p=1438f41876142275",
-  "external.GBPCHF.formula.p=23bfd695203b99b4": "GBPCHF.formula.p=23bfd695203b99b4",
-  "external.GBPCHF.formula.p=98222c4efafe0748": "GBPCHF.formula.p=98222c4efafe0748",
   "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": "GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
-  "external.GBPCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": "GBPCHF.overnight_gap_decay.p=4e3e7963cfc9ce12",
-  "external.GBPDKK@M5.cross_asset_residual.p=0052fbfc522a4c69": "GBPDKK@M5.cross_asset_residual.p=0052fbfc522a4c69",
-  "external.GBPDKK@M5.macro_conditional.p=f83412948ea922b5": "GBPDKK@M5.macro_conditional.p=f83412948ea922b5",
-  "external.GBPJPY@M15.cross_asset_residual.p=6403309d7977b134": "GBPJPY@M15.cross_asset_residual.p=6403309d7977b134",
-  "external.GBPJPY@M5.cross_asset_residual.p=2479d0d883199a4b": "GBPJPY@M5.cross_asset_residual.p=2479d0d883199a4b",
-  "external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed": "GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed",
-  "external.GBPJPY@M5.macro_conditional.p=f83412948ea922b5": "GBPJPY@M5.macro_conditional.p=f83412948ea922b5",
+  "external.GBPJPY.session_range_breakout.rr=1.5_wb=12": "GBPJPY.session_range_breakout.rr=1.5_wb=12",
+  "external.GBPJPY.session_range_breakout.rr=2.5_wb=12": "GBPJPY.session_range_breakout.rr=2.5_wb=12",
   "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
   "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
-  "external.GBPNOK@M5.macro_conditional.p=f83412948ea922b5": "GBPNOK@M5.macro_conditional.p=f83412948ea922b5",
   "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
-  "external.GBPSEK@M15.cross_asset_residual.p=a6647b93f33e35d0": "GBPSEK@M15.cross_asset_residual.p=a6647b93f33e35d0",
-  "external.GBPSEK@M5.macro_conditional.p=f83412948ea922b5": "GBPSEK@M5.macro_conditional.p=f83412948ea922b5",
-  "external.GBPSEK@M5.macro_conditional.p=ff35bb7c8427d66f": "GBPSEK@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.GBPSGD@M5.macro_conditional.p=f83412948ea922b5": "GBPSGD@M5.macro_conditional.p=f83412948ea922b5",
   "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": "GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
-  "external.GBPZAR@M5.macro_conditional.p=f83412948ea922b5": "GBPZAR@M5.macro_conditional.p=f83412948ea922b5",
-  "external.NAS100@M15.cross_asset_residual.p=6403309d7977b134": "NAS100@M15.cross_asset_residual.p=6403309d7977b134",
-  "external.NAS100@M15.cross_asset_residual.p=79b3c4425ab84031": "NAS100@M15.cross_asset_residual.p=79b3c4425ab84031",
-  "external.NAS100@M15.cross_asset_residual.p=cd305328d4d3f7f5": "NAS100@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.NAS100@M15.cross_asset_residual.p=e95ea804f8e3f059": "NAS100@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.NAS100@M15.cross_asset_residual.p=f70151cf16fd1230": "NAS100@M15.cross_asset_residual.p=f70151cf16fd1230",
-  "external.NZDCAD@M15.cross_asset_residual.p=6403309d7977b134": "NZDCAD@M15.cross_asset_residual.p=6403309d7977b134",
-  "external.NZDCAD@M5.macro_conditional.p=f83412948ea922b5": "NZDCAD@M5.macro_conditional.p=f83412948ea922b5",
-  "external.NZDCAD@M5.macro_conditional.p=ff35bb7c8427d66f": "NZDCAD@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.NZDJPY@M15.cross_asset_residual.p=6403309d7977b134": "NZDJPY@M15.cross_asset_residual.p=6403309d7977b134",
-  "external.NZDJPY@M15.cross_asset_residual.p=cd305328d4d3f7f5": "NZDJPY@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.NZDJPY@M5.macro_conditional.p=f83412948ea922b5": "NZDJPY@M5.macro_conditional.p=f83412948ea922b5",
-  "external.NZDJPY@M5.macro_conditional.p=ff35bb7c8427d66f": "NZDJPY@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.NZDSGD@M15.cross_asset_residual.p=5740a1a3a11c0f48": "NZDSGD@M15.cross_asset_residual.p=5740a1a3a11c0f48",
-  "external.NZDSGD@M15.cross_asset_residual.p=cd305328d4d3f7f5": "NZDSGD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.NZDSGD@M5.macro_conditional.p=f83412948ea922b5": "NZDSGD@M5.macro_conditional.p=f83412948ea922b5",
-  "external.NZDSGD@M5.macro_conditional.p=ff35bb7c8427d66f": "NZDSGD@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.SGDJPY@M5.macro_conditional.p=f83412948ea922b5": "SGDJPY@M5.macro_conditional.p=f83412948ea922b5",
-  "external.USCOCOA@M15.cross_asset_residual.p=cd305328d4d3f7f5": "USCOCOA@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.USCOCOA@M15.cross_asset_residual.p=e95ea804f8e3f059": "USCOCOA@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.USDILS@M5.macro_conditional.p=f83412948ea922b5": "USDILS@M5.macro_conditional.p=f83412948ea922b5",
+  "external.NZDCAD.discovered.p=0ffb1e19a04f260e": "NZDCAD.discovered.p=0ffb1e19a04f260e",
+  "external.USDCAD.discovered.p=193aadf2caba3698": "USDCAD.discovered.p=193aadf2caba3698",
+  "external.USDCAD.discovered.p=56aadf0a3018c790": "USDCAD.discovered.p=56aadf0a3018c790",
+  "external.USDCHF.discovered.p=19dd11ec392fa005": "USDCHF.discovered.p=19dd11ec392fa005",
   "external.USDJPY.session_range_breakout.rr=1.5_wb=12": "USDJPY.session_range_breakout.rr=1.5_wb=12",
   "external.USDJPY.session_range_breakout.rr=2.0_wb=12": "USDJPY.session_range_breakout.rr=2.0_wb=12",
   "external.USDJPY.session_range_breakout.rr=2.5_wb=12": "USDJPY.session_range_breakout.rr=2.5_wb=12",
   "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
-  "external.USDMXN@M5.macro_conditional.p=15cd1e1d3ea4ca2e": "USDMXN@M5.macro_conditional.p=15cd1e1d3ea4ca2e",
-  "external.USDMXN@M5.macro_conditional.p=1d7d88be4b8940fa": "USDMXN@M5.macro_conditional.p=1d7d88be4b8940fa",
-  "external.USDMXN@M5.macro_conditional.p=f83412948ea922b5": "USDMXN@M5.macro_conditional.p=f83412948ea922b5",
-  "external.USDPLN@M5.macro_conditional.p=f83412948ea922b5": "USDPLN@M5.macro_conditional.p=f83412948ea922b5",
-  "external.USDPLN@M5.macro_conditional.p=ff35bb7c8427d66f": "USDPLN@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.USDSEK@M5.macro_conditional.p=f83412948ea922b5": "USDSEK@M5.macro_conditional.p=f83412948ea922b5",
-  "external.USDSGD.overnight_gap_decay.p=44136fa355b3678a": "USDSGD.overnight_gap_decay.p=44136fa355b3678a",
-  "external.USDSGD.overnight_gap_decay.p=4d96b1ebe6d26711": "USDSGD.overnight_gap_decay.p=4d96b1ebe6d26711",
-  "external.USDSGD.overnight_gap_decay.p=4e3e7963cfc9ce12": "USDSGD.overnight_gap_decay.p=4e3e7963cfc9ce12",
-  "external.USDSGD@M5.macro_conditional.p=2bbd8688b514a45b": "USDSGD@M5.macro_conditional.p=2bbd8688b514a45b",
-  "external.USDSGD@M5.macro_conditional.p=f83412948ea922b5": "USDSGD@M5.macro_conditional.p=f83412948ea922b5",
-  "external.USDTHB@M15.cross_asset_residual.p=cd305328d4d3f7f5": "USDTHB@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.USDTHB@M15.cross_asset_residual.p=e95ea804f8e3f059": "USDTHB@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.USDTHB@M15.cross_asset_residual.p=f70151cf16fd1230": "USDTHB@M15.cross_asset_residual.p=f70151cf16fd1230",
-  "external.USDTHB@M5.macro_conditional.p=ff35bb7c8427d66f": "USDTHB@M5.macro_conditional.p=ff35bb7c8427d66f",
   "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": "USDZAR.overnight_gap_decay.p=44136fa355b3678a",
-  "external.USDZAR@M15.cross_asset_residual.p=5740a1a3a11c0f48": "USDZAR@M15.cross_asset_residual.p=5740a1a3a11c0f48",
-  "external.USDZAR@M5.cross_asset_residual.p=0052fbfc522a4c69": "USDZAR@M5.cross_asset_residual.p=0052fbfc522a4c69",
-  "external.USDZAR@M5.cross_asset_residual.p=2479d0d883199a4b": "USDZAR@M5.cross_asset_residual.p=2479d0d883199a4b",
-  "external.USDZAR@M5.cross_asset_residual.p=2c37ecd8fd162964": "USDZAR@M5.cross_asset_residual.p=2c37ecd8fd162964",
-  "external.USDZAR@M5.macro_conditional.p=15cd1e1d3ea4ca2e": "USDZAR@M5.macro_conditional.p=15cd1e1d3ea4ca2e",
-  "external.USDZAR@M5.macro_conditional.p=1d7d88be4b8940fa": "USDZAR@M5.macro_conditional.p=1d7d88be4b8940fa",
-  "external.USDZAR@M5.macro_conditional.p=f83412948ea922b5": "USDZAR@M5.macro_conditional.p=f83412948ea922b5",
-  "external.USDZAR@M5.macro_conditional.p=ff35bb7c8427d66f": "USDZAR@M5.macro_conditional.p=ff35bb7c8427d66f",
-  "external.XAGEUR@M15.cross_asset_residual.p=5740a1a3a11c0f48": "XAGEUR@M15.cross_asset_residual.p=5740a1a3a11c0f48",
-  "external.XAGEUR@M15.cross_asset_residual.p=6403309d7977b134": "XAGEUR@M15.cross_asset_residual.p=6403309d7977b134",
-  "external.XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031": "XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
-  "external.XAGEUR@M15.cross_asset_residual.p=e95ea804f8e3f059": "XAGEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.XAGEUR@M15.cross_asset_residual.p=f70151cf16fd1230": "XAGEUR@M15.cross_asset_residual.p=f70151cf16fd1230",
-  "external.XAGEUR@M15.pca_residual.p=1d4eb3af830df777": "XAGEUR@M15.pca_residual.p=1d4eb3af830df777",
-  "external.XAGEUR@M5.cross_asset_residual.p=77a8cb89acb75677": "XAGEUR@M5.cross_asset_residual.p=77a8cb89acb75677",
-  "external.XAGEUR@M5.pca_residual.p=81e3b49046ec1b67": "XAGEUR@M5.pca_residual.p=81e3b49046ec1b67",
-  "external.XAGEUR@M5.pca_residual.p=be3d516727ee10f4": "XAGEUR@M5.pca_residual.p=be3d516727ee10f4",
-  "external.XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031": "XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
-  "external.XAGUSD@M15.cross_asset_residual.p=e95ea804f8e3f059": "XAGUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.XAGUSD@M5.cross_asset_residual.p=171d202d8328458d": "XAGUSD@M5.cross_asset_residual.p=171d202d8328458d",
-  "external.XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031": "XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031",
-  "external.XAUAUD@M15.cross_asset_residual.p=cd305328d4d3f7f5": "XAUAUD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.XAUAUD@M15.cross_asset_residual.p=e95ea804f8e3f059": "XAUAUD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.XAUAUD@M5.cross_asset_residual.p=171d202d8328458d": "XAUAUD@M5.cross_asset_residual.p=171d202d8328458d",
-  "external.XAUAUD@M5.cross_asset_residual.p=428518b71bf7faed": "XAUAUD@M5.cross_asset_residual.p=428518b71bf7faed",
-  "external.XAUAUD@M5.macro_conditional.p=5fa26e224170b851": "XAUAUD@M5.macro_conditional.p=5fa26e224170b851",
-  "external.XAUAUD@M5.macro_conditional.p=b5c19268694ada21": "XAUAUD@M5.macro_conditional.p=b5c19268694ada21",
-  "external.XAUAUD@M5.macro_conditional.p=c4d0f0303a0c9cb4": "XAUAUD@M5.macro_conditional.p=c4d0f0303a0c9cb4",
-  "external.XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031": "XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
-  "external.XAUEUR@M15.cross_asset_residual.p=cd305328d4d3f7f5": "XAUEUR@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.XAUEUR@M15.cross_asset_residual.p=e95ea804f8e3f059": "XAUEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.XAUEUR@M5.cross_asset_residual.p=171d202d8328458d": "XAUEUR@M5.cross_asset_residual.p=171d202d8328458d",
-  "external.XAUEUR@M5.cross_asset_residual.p=1d7341dd7c11b9dd": "XAUEUR@M5.cross_asset_residual.p=1d7341dd7c11b9dd",
-  "external.XAUEUR@M5.cross_asset_residual.p=428518b71bf7faed": "XAUEUR@M5.cross_asset_residual.p=428518b71bf7faed",
-  "external.XAUEUR@M5.macro_conditional.p=b5c19268694ada21": "XAUEUR@M5.macro_conditional.p=b5c19268694ada21",
-  "external.XAUEUR@M5.macro_conditional.p=b80628b50742ad6e": "XAUEUR@M5.macro_conditional.p=b80628b50742ad6e",
-  "external.XAUEUR@M5.macro_conditional.p=fe355d4759ed4898": "XAUEUR@M5.macro_conditional.p=fe355d4759ed4898",
   "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": "XAUUSD.session_range_breakout.rr=1.5_wb=12",
   "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": "XAUUSD.session_range_breakout.rr=1.5_wb=8",
   "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": "XAUUSD.session_range_breakout.rr=2.0_wb=12",
-  "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": "XAUUSD.session_range_breakout.rr=2.5_wb=12",
-  "external.XAUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059": "XAUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.XCUUSD@M15.cross_asset_residual.p=79b3c4425ab84031": "XCUUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
-  "external.XCUUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5": "XCUUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
-  "external.XCUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059": "XCUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-  "external.XTIUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5": "XTIUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5"
+  "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": "XAUUSD.session_range_breakout.rr=2.5_wb=12"
  },
  "records": {
   "AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
@@ -1369,7 +1207,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-08-28T01:22:06.723767+00:00",
    "why": "5 producers name this cell; alpha_registry proposed it first at 2026-08-28T01:22:06.723767+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK.overnight_gap_decay.p=4d96b1ebe6d26711": {
    "cell": "CHFDKK.overnight_gap_decay.p=4d96b1ebe6d26711",
@@ -1426,7 +1264,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-17T07:57:59+00:00",
    "why": "4 producers name this cell; alpha_recombination proposed it first at 2026-09-17T07:57:59+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "USDSGD.overnight_gap_decay.p=4d96b1ebe6d26711": {
    "cell": "USDSGD.overnight_gap_decay.p=4d96b1ebe6d26711",
@@ -1491,7 +1329,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-17T03:09:26+00:00",
    "why": "5 producers name this cell; alpha_recombination proposed it first at 2026-09-17T03:09:26+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": {
    "cell": "AUDCHF.overnight_gap_decay.p=4e3e7963cfc9ce12",
@@ -1558,7 +1396,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:55:33.774988+00:00",
    "why": "5 producers name this cell; miner:paradigm_router proposed it first at 2026-09-18T08:55:33.774988+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CADCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": {
    "cell": "CADCHF.overnight_gap_decay.p=4e3e7963cfc9ce12",
@@ -1625,7 +1463,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:54:49.873959+00:00",
    "why": "5 producers name this cell; miner:paradigm_router proposed it first at 2026-09-18T08:54:49.873959+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
    "cell": "CHFDKK.overnight_gap_decay.p=4e3e7963cfc9ce12",
@@ -1716,7 +1554,7 @@
    "region": "Europe",
    "first_claim_at": "2026-09-17T02:48:04.293810+00:00",
    "why": "8 producers name this cell; miner:asia:nationalbanken_dkk proposed it first at 2026-09-17T02:48:04.293810+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": {
    "cell": "GBPCHF.overnight_gap_decay.p=4e3e7963cfc9ce12",
@@ -1803,7 +1641,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-17T07:42:34+00:00",
    "why": "8 producers name this cell; descendants proposed it first at 2026-09-17T07:42:34+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "USDSGD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
    "cell": "USDSGD.overnight_gap_decay.p=4e3e7963cfc9ce12",
@@ -1894,7 +1732,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-17T02:48:04.879072+00:00",
    "why": "8 producers name this cell; miner:descendants:instrument proposed it first at 2026-09-17T02:48:04.879072+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=44136fa355b3678a": {
    "cell": "CHFNOK.carry.p=44136fa355b3678a",
@@ -1937,7 +1775,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-17T02:48:04.876863+00:00",
    "why": "2 producers name this cell; miner:descendants:session proposed it first at 2026-09-17T02:48:04.876863+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK@M15.carry.p=5a8cbfcbd19ad741": {
    "cell": "CHFDKK@M15.carry.p=5a8cbfcbd19ad741",
@@ -1971,7 +1809,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK@M15.carry.p=3411bcff02687f5a": {
    "cell": "CHFNOK@M15.carry.p=3411bcff02687f5a",
@@ -2005,7 +1843,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK@M15.carry.p=d2a07eec617b8f5e": {
    "cell": "CHFNOK@M15.carry.p=d2a07eec617b8f5e",
@@ -2039,7 +1877,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK@M15.carry.p=b08b20cf131510a7": {
    "cell": "CHFNOK@M15.carry.p=b08b20cf131510a7",
@@ -2090,7 +1928,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-16T21:01:30.192577+00:00",
    "why": "3 producers name this cell; miner:broker_swaps proposed it first at 2026-09-16T21:01:30.192577+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK@M5.carry.p=b827b4496d5716d2": {
    "cell": "CHFDKK@M5.carry.p=b827b4496d5716d2",
@@ -2124,7 +1962,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK@M15.carry.p=80284fafabf56558": {
    "cell": "CHFDKK@M15.carry.p=80284fafabf56558",
@@ -2158,7 +1996,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=7d92ffa25956efab": {
    "cell": "CHFNOK.carry.p=7d92ffa25956efab",
@@ -2217,7 +2055,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-17T02:48:04.877719+00:00",
    "why": "4 producers name this cell; miner:descendants:session proposed it first at 2026-09-17T02:48:04.877719+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=8d7bbcb0d75e3dd5": {
    "cell": "CHFNOK.carry.p=8d7bbcb0d75e3dd5",
@@ -2260,7 +2098,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:55:24.561368+00:00",
    "why": "2 producers name this cell; miner:descendants:session proposed it first at 2026-09-18T08:55:24.561368+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=f130c0182563fd56": {
    "cell": "CHFNOK.carry.p=f130c0182563fd56",
@@ -2307,7 +2145,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T00:02:37+00:00",
    "why": "3 producers name this cell; miner:broker_swaps proposed it first at 2026-09-24T00:02:37+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=653b0343f68f1b35": {
    "cell": "CHFNOK.carry.p=653b0343f68f1b35",
@@ -2354,7 +2192,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T00:03:02+00:00",
    "why": "3 producers name this cell; miner:fund_playbook proposed it first at 2026-09-24T00:03:02+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=b624041f5c3da575": {
    "cell": "CHFNOK.carry.p=b624041f5c3da575",
@@ -2405,7 +2243,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-16T21:01:30.196761+00:00",
    "why": "3 producers name this cell; miner:broker_swaps proposed it first at 2026-09-16T21:01:30.196761+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=b56bcfef9a4a010c": {
    "cell": "CHFNOK.carry.p=b56bcfef9a4a010c",
@@ -2444,7 +2282,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-23T05:50:03+00:00",
    "why": "2 producers name this cell; alpha_registry proposed it first at 2026-09-23T05:50:03+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=9887b09394cff192": {
    "cell": "CHFNOK.carry.p=9887b09394cff192",
@@ -2483,7 +2321,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-23T05:50:03+00:00",
    "why": "2 producers name this cell; alpha_registry proposed it first at 2026-09-23T05:50:03+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=aaddfb6581d7e7e9": {
    "cell": "CHFNOK.carry.p=aaddfb6581d7e7e9",
@@ -2530,7 +2368,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-17T09:01:14+00:00",
    "why": "3 producers name this cell; descendants proposed it first at 2026-09-17T09:01:14+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=9c407e793a1d61c0": {
    "cell": "CHFNOK.carry.p=9c407e793a1d61c0",
@@ -2577,7 +2415,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-24T00:03:00+00:00",
    "why": "3 producers name this cell; fund_playbook:aqr:a proposed it first at 2026-09-24T00:03:00+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK.carry.p=eb5fbdec7f05fb2d": {
    "cell": "CHFNOK.carry.p=eb5fbdec7f05fb2d",
@@ -2624,7 +2462,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-24T06:55:50+00:00",
    "why": "3 producers name this cell; card_explosion:regime proposed it first at 2026-09-24T06:55:50+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDSGD@M5.pca_residual.p=be3d516727ee10f4": {
    "cell": "AUDSGD@M5.pca_residual.p=be3d516727ee10f4",
@@ -2658,7 +2496,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M5.pca_residual.p=be3d516727ee10f4": {
    "cell": "XAGEUR@M5.pca_residual.p=be3d516727ee10f4",
@@ -2692,7 +2530,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M15.pca_residual.p=1d4eb3af830df777": {
    "cell": "XAGEUR@M15.pca_residual.p=1d4eb3af830df777",
@@ -2726,7 +2564,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M5.pca_residual.p=81e3b49046ec1b67": {
    "cell": "XAGEUR@M5.pca_residual.p=81e3b49046ec1b67",
@@ -2760,7 +2598,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed": {
    "cell": "AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed",
@@ -2794,7 +2632,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed": {
    "cell": "GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed",
@@ -2828,7 +2666,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M5.cross_asset_residual.p=77a8cb89acb75677": {
    "cell": "XAGEUR@M5.cross_asset_residual.p=77a8cb89acb75677",
@@ -2862,7 +2700,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGUSD@M5.cross_asset_residual.p=171d202d8328458d": {
    "cell": "XAGUSD@M5.cross_asset_residual.p=171d202d8328458d",
@@ -2896,7 +2734,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUAUD@M5.cross_asset_residual.p=428518b71bf7faed": {
    "cell": "XAUAUD@M5.cross_asset_residual.p=428518b71bf7faed",
@@ -2930,7 +2768,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUAUD@M5.cross_asset_residual.p=171d202d8328458d": {
    "cell": "XAUAUD@M5.cross_asset_residual.p=171d202d8328458d",
@@ -2964,7 +2802,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M5.cross_asset_residual.p=428518b71bf7faed": {
    "cell": "XAUEUR@M5.cross_asset_residual.p=428518b71bf7faed",
@@ -2998,7 +2836,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M5.cross_asset_residual.p=171d202d8328458d": {
    "cell": "XAUEUR@M5.cross_asset_residual.p=171d202d8328458d",
@@ -3032,7 +2870,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M5.cross_asset_residual.p=1d7341dd7c11b9dd": {
    "cell": "XAUEUR@M5.cross_asset_residual.p=1d7341dd7c11b9dd",
@@ -3066,7 +2904,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDZAR@M15.cross_asset_residual.p=5740a1a3a11c0f48": {
    "cell": "USDZAR@M15.cross_asset_residual.p=5740a1a3a11c0f48",
@@ -3100,7 +2938,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDNZD@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "AUDNZD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -3134,7 +2972,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "BTCUSD@M15.cross_asset_residual.p=f70151cf16fd1230": {
    "cell": "BTCUSD@M15.cross_asset_residual.p=f70151cf16fd1230",
@@ -3168,7 +3006,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "BTCUSD@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "BTCUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -3202,7 +3040,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "BTCUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "BTCUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -3236,7 +3074,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "BTCUSD@M15.cross_asset_residual.p=5740a1a3a11c0f48": {
    "cell": "BTCUSD@M15.cross_asset_residual.p=5740a1a3a11c0f48",
@@ -3270,7 +3108,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "BTCUSD@M15.cross_asset_residual.p=79b3c4425ab84031": {
    "cell": "BTCUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
@@ -3304,7 +3142,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFSGD@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "CHFSGD@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -3338,7 +3176,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPJPY@M15.cross_asset_residual.p=6403309d7977b134": {
    "cell": "GBPJPY@M15.cross_asset_residual.p=6403309d7977b134",
@@ -3372,7 +3210,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPSEK@M15.cross_asset_residual.p=a6647b93f33e35d0": {
    "cell": "GBPSEK@M15.cross_asset_residual.p=a6647b93f33e35d0",
@@ -3406,7 +3244,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NAS100@M15.cross_asset_residual.p=f70151cf16fd1230": {
    "cell": "NAS100@M15.cross_asset_residual.p=f70151cf16fd1230",
@@ -3440,7 +3278,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NAS100@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "NAS100@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -3474,7 +3312,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NAS100@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "NAS100@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -3508,7 +3346,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NAS100@M15.cross_asset_residual.p=6403309d7977b134": {
    "cell": "NAS100@M15.cross_asset_residual.p=6403309d7977b134",
@@ -3542,7 +3380,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NAS100@M15.cross_asset_residual.p=79b3c4425ab84031": {
    "cell": "NAS100@M15.cross_asset_residual.p=79b3c4425ab84031",
@@ -3576,7 +3414,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDCAD@M15.cross_asset_residual.p=6403309d7977b134": {
    "cell": "NZDCAD@M15.cross_asset_residual.p=6403309d7977b134",
@@ -3610,7 +3448,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDJPY@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "NZDJPY@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -3644,7 +3482,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDJPY@M15.cross_asset_residual.p=6403309d7977b134": {
    "cell": "NZDJPY@M15.cross_asset_residual.p=6403309d7977b134",
@@ -3678,7 +3516,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDSGD@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "NZDSGD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -3712,7 +3550,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDSGD@M15.cross_asset_residual.p=5740a1a3a11c0f48": {
    "cell": "NZDSGD@M15.cross_asset_residual.p=5740a1a3a11c0f48",
@@ -3746,7 +3584,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USCOCOA@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "USCOCOA@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -3780,7 +3618,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USCOCOA@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "USCOCOA@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -3814,7 +3652,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDTHB@M15.cross_asset_residual.p=f70151cf16fd1230": {
    "cell": "USDTHB@M15.cross_asset_residual.p=f70151cf16fd1230",
@@ -3848,7 +3686,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDTHB@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "USDTHB@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -3882,7 +3720,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDTHB@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "USDTHB@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -3916,7 +3754,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M15.cross_asset_residual.p=f70151cf16fd1230": {
    "cell": "XAGEUR@M15.cross_asset_residual.p=f70151cf16fd1230",
@@ -3950,7 +3788,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "XAGEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -3984,7 +3822,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M15.cross_asset_residual.p=5740a1a3a11c0f48": {
    "cell": "XAGEUR@M15.cross_asset_residual.p=5740a1a3a11c0f48",
@@ -4018,7 +3856,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M15.cross_asset_residual.p=6403309d7977b134": {
    "cell": "XAGEUR@M15.cross_asset_residual.p=6403309d7977b134",
@@ -4052,7 +3890,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031": {
    "cell": "XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
@@ -4086,7 +3924,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031": {
    "cell": "XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
@@ -4120,7 +3958,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAGUSD@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "XAGUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -4154,7 +3992,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUAUD@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "XAUAUD@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -4188,7 +4026,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUAUD@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "XAUAUD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -4222,7 +4060,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031": {
    "cell": "XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031",
@@ -4256,7 +4094,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "XAUEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -4290,7 +4128,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "XAUEUR@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -4324,7 +4162,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031": {
    "cell": "XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
@@ -4358,7 +4196,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "XAUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -4392,7 +4230,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XCUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059": {
    "cell": "XCUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
@@ -4426,7 +4264,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XCUUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "XCUUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -4460,7 +4298,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XCUUSD@M15.cross_asset_residual.p=79b3c4425ab84031": {
    "cell": "XCUUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
@@ -4494,7 +4332,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XTIUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5": {
    "cell": "XTIUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
@@ -4528,7 +4366,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDZAR@M5.cross_asset_residual.p=2c37ecd8fd162964": {
    "cell": "USDZAR@M5.cross_asset_residual.p=2c37ecd8fd162964",
@@ -4562,7 +4400,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDZAR@M5.cross_asset_residual.p=2479d0d883199a4b": {
    "cell": "USDZAR@M5.cross_asset_residual.p=2479d0d883199a4b",
@@ -4596,7 +4434,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDZAR@M5.cross_asset_residual.p=0052fbfc522a4c69": {
    "cell": "USDZAR@M5.cross_asset_residual.p=0052fbfc522a4c69",
@@ -4630,7 +4468,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDSGD@M5.cross_asset_residual.p=aa8934bebbf9ed69": {
    "cell": "AUDSGD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
@@ -4664,7 +4502,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "BTCUSD@M5.cross_asset_residual.p=2479d0d883199a4b": {
    "cell": "BTCUSD@M5.cross_asset_residual.p=2479d0d883199a4b",
@@ -4698,7 +4536,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFSGD@M5.cross_asset_residual.p=2479d0d883199a4b": {
    "cell": "CHFSGD@M5.cross_asset_residual.p=2479d0d883199a4b",
@@ -4732,7 +4570,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFSGD@M5.cross_asset_residual.p=0052fbfc522a4c69": {
    "cell": "CHFSGD@M5.cross_asset_residual.p=0052fbfc522a4c69",
@@ -4766,7 +4604,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPDKK@M5.cross_asset_residual.p=0052fbfc522a4c69": {
    "cell": "GBPDKK@M5.cross_asset_residual.p=0052fbfc522a4c69",
@@ -4800,7 +4638,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPJPY@M5.cross_asset_residual.p=2479d0d883199a4b": {
    "cell": "GBPJPY@M5.cross_asset_residual.p=2479d0d883199a4b",
@@ -4834,7 +4672,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDPLN@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "USDPLN@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -4868,7 +4706,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDZAR@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "USDZAR@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -4902,7 +4740,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6": {
    "cell": "AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6",
@@ -4932,7 +4770,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDNZD@M5.macro_conditional.p=2bbd8688b514a45b": {
    "cell": "AUDNZD@M5.macro_conditional.p=2bbd8688b514a45b",
@@ -4962,7 +4800,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDNZD@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "AUDNZD@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -4996,7 +4834,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDSGD@M5.macro_conditional.p=f684da6d387d6ea6": {
    "cell": "AUDSGD@M5.macro_conditional.p=f684da6d387d6ea6",
@@ -5026,7 +4864,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDSGD@M5.macro_conditional.p=2bbd8688b514a45b": {
    "cell": "AUDSGD@M5.macro_conditional.p=2bbd8688b514a45b",
@@ -5056,7 +4894,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDSGD@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "AUDSGD@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -5090,7 +4928,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK@M5.macro_conditional.p=f684da6d387d6ea6": {
    "cell": "CHFDKK@M5.macro_conditional.p=f684da6d387d6ea6",
@@ -5120,7 +4958,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK@M5.macro_conditional.p=2bbd8688b514a45b": {
    "cell": "CHFDKK@M5.macro_conditional.p=2bbd8688b514a45b",
@@ -5150,7 +4988,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFSGD@M5.macro_conditional.p=f684da6d387d6ea6": {
    "cell": "CHFSGD@M5.macro_conditional.p=f684da6d387d6ea6",
@@ -5180,7 +5018,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFSGD@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "CHFSGD@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -5214,7 +5052,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "EURSEK@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "EURSEK@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -5248,7 +5086,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPSEK@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "GBPSEK@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -5282,7 +5120,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDCAD@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "NZDCAD@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -5316,7 +5154,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDJPY@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "NZDJPY@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -5350,7 +5188,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDSGD@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "NZDSGD@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -5384,7 +5222,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDSGD@M5.macro_conditional.p=2bbd8688b514a45b": {
    "cell": "USDSGD@M5.macro_conditional.p=2bbd8688b514a45b",
@@ -5414,7 +5252,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "USDTHB@M5.macro_conditional.p=ff35bb7c8427d66f": {
    "cell": "USDTHB@M5.macro_conditional.p=ff35bb7c8427d66f",
@@ -5448,7 +5286,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUAUD@M5.macro_conditional.p=b5c19268694ada21": {
    "cell": "XAUAUD@M5.macro_conditional.p=b5c19268694ada21",
@@ -5478,7 +5316,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M5.macro_conditional.p=b80628b50742ad6e": {
    "cell": "XAUEUR@M5.macro_conditional.p=b80628b50742ad6e",
@@ -5508,7 +5346,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M5.macro_conditional.p=b5c19268694ada21": {
    "cell": "XAUEUR@M5.macro_conditional.p=b5c19268694ada21",
@@ -5538,7 +5376,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK@M30.macro_conditional.p=9463a1f0b0c83ca4": {
    "cell": "CHFNOK@M30.macro_conditional.p=9463a1f0b0c83ca4",
@@ -5568,7 +5406,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK@M30.macro_conditional.p=fd7e46354c14b3f6": {
    "cell": "CHFNOK@M30.macro_conditional.p=fd7e46354c14b3f6",
@@ -5598,7 +5436,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK@M30.macro_conditional.p=fc3f6193651eb19e": {
    "cell": "CHFNOK@M30.macro_conditional.p=fc3f6193651eb19e",
@@ -5628,7 +5466,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK@M30.macro_conditional.p=1c239674d3cfa388": {
    "cell": "CHFNOK@M30.macro_conditional.p=1c239674d3cfa388",
@@ -5658,7 +5496,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "USDPLN@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "USDPLN@M5.macro_conditional.p=f83412948ea922b5",
@@ -5692,7 +5530,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "USDSEK@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "USDSEK@M5.macro_conditional.p=f83412948ea922b5",
@@ -5740,7 +5578,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-19T07:03:33.835734+00:00",
    "why": "3 producers name this cell; miner:descendants:instrument proposed it first at 2026-09-19T07:03:33.835734+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "USDZAR@M5.macro_conditional.p=15cd1e1d3ea4ca2e": {
    "cell": "USDZAR@M5.macro_conditional.p=15cd1e1d3ea4ca2e",
@@ -5770,7 +5608,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "USDZAR@M5.macro_conditional.p=1d7d88be4b8940fa": {
    "cell": "USDZAR@M5.macro_conditional.p=1d7d88be4b8940fa",
@@ -5800,7 +5638,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "USDZAR@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "USDZAR@M5.macro_conditional.p=f83412948ea922b5",
@@ -5834,7 +5672,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDNZD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "AUDNZD@M5.macro_conditional.p=f83412948ea922b5",
@@ -5868,7 +5706,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "AUDSGD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "AUDSGD@M5.macro_conditional.p=f83412948ea922b5",
@@ -5911,7 +5749,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:55:30.481463+00:00",
    "why": "2 producers name this cell; miner:discovery_compiler proposed it first at 2026-09-18T08:55:30.481463+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFNOK@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "CHFNOK@M5.macro_conditional.p=f83412948ea922b5",
@@ -5950,7 +5788,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:09+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T04:03:09+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "EURCAD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "EURCAD@M5.macro_conditional.p=f83412948ea922b5",
@@ -5989,7 +5827,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:09+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T04:03:09+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "EURMXN@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "EURMXN@M5.macro_conditional.p=f83412948ea922b5",
@@ -6028,7 +5866,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:09+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T04:03:09+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "EURNOK@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "EURNOK@M5.macro_conditional.p=f83412948ea922b5",
@@ -6067,7 +5905,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T09:26:46+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T09:26:46+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "EURSEK@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "EURSEK@M5.macro_conditional.p=f83412948ea922b5",
@@ -6110,7 +5948,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-17T02:48:04.984651+00:00",
    "why": "2 producers name this cell; miner:descendants:instrument proposed it first at 2026-09-17T02:48:04.984651+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPAUD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "GBPAUD@M5.macro_conditional.p=f83412948ea922b5",
@@ -6161,7 +5999,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-17T02:48:05.035572+00:00",
    "why": "3 producers name this cell; miner:descendants:instrument proposed it first at 2026-09-17T02:48:05.035572+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPCAD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "GBPCAD@M5.macro_conditional.p=f83412948ea922b5",
@@ -6200,7 +6038,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:10+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T04:03:10+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPDKK@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "GBPDKK@M5.macro_conditional.p=f83412948ea922b5",
@@ -6239,7 +6077,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:41+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T04:03:41+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPJPY@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "GBPJPY@M5.macro_conditional.p=f83412948ea922b5",
@@ -6282,7 +6120,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:55:30.349856+00:00",
    "why": "2 producers name this cell; miner:discovery_compiler proposed it first at 2026-09-18T08:55:30.349856+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPNOK@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "GBPNOK@M5.macro_conditional.p=f83412948ea922b5",
@@ -6321,7 +6159,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:11+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T04:03:11+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPSEK@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "GBPSEK@M5.macro_conditional.p=f83412948ea922b5",
@@ -6364,7 +6202,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:54:44.158444+00:00",
    "why": "2 producers name this cell; miner:descendants:instrument proposed it first at 2026-09-18T08:54:44.158444+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPSGD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "GBPSGD@M5.macro_conditional.p=f83412948ea922b5",
@@ -6403,7 +6241,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:11+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T04:03:11+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPZAR@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "GBPZAR@M5.macro_conditional.p=f83412948ea922b5",
@@ -6442,7 +6280,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T06:37:41+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T06:37:41+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDCAD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "NZDCAD@M5.macro_conditional.p=f83412948ea922b5",
@@ -6485,7 +6323,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:55:50.006917+00:00",
    "why": "2 producers name this cell; miner:paradigm_router proposed it first at 2026-09-18T08:55:50.006917+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDJPY@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "NZDJPY@M5.macro_conditional.p=f83412948ea922b5",
@@ -6528,7 +6366,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:55:30.510992+00:00",
    "why": "2 producers name this cell; miner:discovery_compiler proposed it first at 2026-09-18T08:55:30.510992+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "NZDSGD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "NZDSGD@M5.macro_conditional.p=f83412948ea922b5",
@@ -6562,7 +6400,7 @@
    ],
    "region": "NOT_REGIONAL",
    "why": "exactly one producer names this cell, by graph_identity, registry_identity, verdict_graph",
-   "in_canon": true
+   "in_canon": false
   },
   "SGDJPY@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "SGDJPY@M5.macro_conditional.p=f83412948ea922b5",
@@ -6601,7 +6439,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T06:37:41+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T06:37:41+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "USDILS@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "USDILS@M5.macro_conditional.p=f83412948ea922b5",
@@ -6640,7 +6478,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:11+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T04:03:11+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "USDMXN@M5.macro_conditional.p=15cd1e1d3ea4ca2e": {
    "cell": "USDMXN@M5.macro_conditional.p=15cd1e1d3ea4ca2e",
@@ -6670,7 +6508,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "USDMXN@M5.macro_conditional.p=1d7d88be4b8940fa": {
    "cell": "USDMXN@M5.macro_conditional.p=1d7d88be4b8940fa",
@@ -6700,7 +6538,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "USDMXN@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "USDMXN@M5.macro_conditional.p=f83412948ea922b5",
@@ -6739,7 +6577,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T08:05:07+00:00",
    "why": "2 producers name this cell; miner:descendants:cross_market proposed it first at 2026-09-24T08:05:07+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "USDSGD@M5.macro_conditional.p=f83412948ea922b5": {
    "cell": "USDSGD@M5.macro_conditional.p=f83412948ea922b5",
@@ -6782,7 +6620,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-18T08:56:22.840454+00:00",
    "why": "2 producers name this cell; miner:descendants:instrument proposed it first at 2026-09-18T08:56:22.840454+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUAUD@M5.macro_conditional.p=5fa26e224170b851": {
    "cell": "XAUAUD@M5.macro_conditional.p=5fa26e224170b851",
@@ -6812,7 +6650,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUAUD@M5.macro_conditional.p=c4d0f0303a0c9cb4": {
    "cell": "XAUAUD@M5.macro_conditional.p=c4d0f0303a0c9cb4",
@@ -6842,7 +6680,7 @@
    ],
    "region": "UNATTRIBUTABLE",
    "why": "exactly one producer names this cell, by registry_identity",
-   "in_canon": true
+   "in_canon": false
   },
   "XAUEUR@M5.macro_conditional.p=fe355d4759ed4898": {
    "cell": "XAUEUR@M5.macro_conditional.p=fe355d4759ed4898",
@@ -6881,7 +6719,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:03:11+00:00",
    "why": "2 producers name this cell; miner:standing_questions:q3 proposed it first at 2026-09-24T04:03:11+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK.formula.p=f5b697dc3ae02496": {
    "cell": "CHFDKK.formula.p=f5b697dc3ae02496",
@@ -6921,7 +6759,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T00:14:30+00:00",
    "why": "2 producers name this cell; alpha_evolution proposed it first at 2026-09-24T00:14:30+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "CHFDKK.formula.p=1438f41876142275": {
    "cell": "CHFDKK.formula.p=1438f41876142275",
@@ -6968,7 +6806,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:02:57+00:00",
    "why": "3 producers name this cell; alpha_evolution proposed it first at 2026-09-24T04:02:57+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "EURCHF.formula.p=1438f41876142275": {
    "cell": "EURCHF.formula.p=1438f41876142275",
@@ -7015,7 +6853,7 @@
    "region": "NOT_REGIONAL",
    "first_claim_at": "2026-09-24T04:02:57+00:00",
    "why": "3 producers name this cell; alpha_evolution proposed it first at 2026-09-24T04:02:57+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPCHF.formula.p=1438f41876142275": {
    "cell": "GBPCHF.formula.p=1438f41876142275",
@@ -7063,7 +6901,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-23T23:52:18+00:00",
    "why": "3 producers name this cell; expression_factory proposed it first at 2026-09-23T23:52:18+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPCHF.formula.p=98222c4efafe0748": {
    "cell": "GBPCHF.formula.p=98222c4efafe0748",
@@ -7103,7 +6941,7 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-23T23:52:18+00:00",
    "why": "2 producers name this cell; expression_factory proposed it first at 2026-09-23T23:52:18+00:00 -- co-discovery, credited to the first claim",
-   "in_canon": true
+   "in_canon": false
   },
   "GBPCHF.formula.p=23bfd695203b99b4": {
    "cell": "GBPCHF.formula.p=23bfd695203b99b4",
@@ -7143,6 +6981,934 @@
    "region": "UNATTRIBUTABLE",
    "first_claim_at": "2026-09-23T23:52:18+00:00",
    "why": "2 producers name this cell; expression_factory proposed it first at 2026-09-23T23:52:18+00:00 -- co-discovery, credited to the first claim",
+   "in_canon": false
+  },
+  "CADJPY.session_range_breakout.rr=2.0_wb=12": {
+   "cell": "CADJPY.session_range_breakout.rr=2.0_wb=12",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "a56d39ab47041c41"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "CADJPY.session_range_breakout.rr=2.5_wb=12": {
+   "cell": "CADJPY.session_range_breakout.rr=2.5_wb=12",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "97ce27ab56502054"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "CADJPY.session_range_breakout.rr=1.5_wb=12": {
+   "cell": "CADJPY.session_range_breakout.rr=1.5_wb=12",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "024e2462737c7ab5"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "GBPJPY.session_range_breakout.rr=1.5_wb=12": {
+   "cell": "GBPJPY.session_range_breakout.rr=1.5_wb=12",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "fa03fff0b2cd26b8"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "GBPJPY.session_range_breakout.rr=2.5_wb=12": {
+   "cell": "GBPJPY.session_range_breakout.rr=2.5_wb=12",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "d5ca8c64748da055"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURJPY.session_range_breakout.rr=1.5_wb=12": {
+   "cell": "EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "70ad2457ed1b4e41"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURJPY.session_range_breakout.rr=2.0_wb=12": {
+   "cell": "EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "116b4cff9ed709d0"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURJPY.session_range_breakout.rr=2.5_wb=12": {
+   "cell": "EURJPY.session_range_breakout.rr=2.5_wb=12",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "4a4b1526446c0442"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURCHF.discovered.p=6c7943b997558157": {
+   "cell": "EURCHF.discovered.p=6c7943b997558157",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "c250d7bdd4005f1f"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURCHF.discovered.p=a5bbf78b5c8595c0": {
+   "cell": "EURCHF.discovered.p=a5bbf78b5c8595c0",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "13cb6678c72d5dfd"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURCHF.discovered.p=9bc1f7c40f200e78": {
+   "cell": "EURCHF.discovered.p=9bc1f7c40f200e78",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "11c60c7deaa86c06"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURCHF.discovered.p=c14e361e680e6d0b": {
+   "cell": "EURCHF.discovered.p=c14e361e680e6d0b",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "9ff7025084aab6d0"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURCHF.discovered.p=c7d53510458ba32c": {
+   "cell": "EURCHF.discovered.p=c7d53510458ba32c",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "14823c967e4e9463"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURCHF.discovered.p=e266baf78567bef3": {
+   "cell": "EURCHF.discovered.p=e266baf78567bef3",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "0c1b09bf1719c80a"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURCHF.discovered.p=16bd35526c7f3515": {
+   "cell": "EURCHF.discovered.p=16bd35526c7f3515",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "cbf8a536693ae096"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURGBP.discovered.p=8e61ea22743f15b7": {
+   "cell": "EURGBP.discovered.p=8e61ea22743f15b7",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "00f326fd2b3ea982"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURCHF.discovered.p=4cba1afa572a99cd": {
+   "cell": "EURCHF.discovered.p=4cba1afa572a99cd",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "bb9bd65fe7977c5d"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURGBP.discovered.p=f31f02aa2b9d79b1": {
+   "cell": "EURGBP.discovered.p=f31f02aa2b9d79b1",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "8aa69772dd3e329b"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "AUDCAD.discovered.p=7c996ac8456c8919": {
+   "cell": "AUDCAD.discovered.p=7c996ac8456c8919",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "9054d4e913fe4d62"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "AUDCAD.discovered.p=8030fb339510dceb": {
+   "cell": "AUDCAD.discovered.p=8030fb339510dceb",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "d62dad8fde270bb6"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "AUDNZD.discovered.p=c76b860ff91ee920": {
+   "cell": "AUDNZD.discovered.p=c76b860ff91ee920",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "36ee81c358348f6d"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "AUDUSD.discovered.p=de80ad4f2ef91116": {
+   "cell": "AUDUSD.discovered.p=de80ad4f2ef91116",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "60cbf115db369b99"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "AUDUSD.discovered.p=cf0368e026d6b477": {
+   "cell": "AUDUSD.discovered.p=cf0368e026d6b477",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "6c785e62779688bc"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "AUDUSD.discovered.p=8e61ea22743f15b7": {
+   "cell": "AUDUSD.discovered.p=8e61ea22743f15b7",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "33ae957e91574148"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "AUDUSD.discovered.p=a5bbf78b5c8595c0": {
+   "cell": "AUDUSD.discovered.p=a5bbf78b5c8595c0",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "5dbc23bc69ac0a3b"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURUSD.discovered.p=6d034b421914e1a2": {
+   "cell": "EURUSD.discovered.p=6d034b421914e1a2",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "3a2d542518aaceaa"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "EURUSD.discovered.p=f8bd412f38e33d20": {
+   "cell": "EURUSD.discovered.p=f8bd412f38e33d20",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "b75176f25dd794b4"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "AUDCAD.discovered.p=a7324e7affe1f80a": {
+   "cell": "AUDCAD.discovered.p=a7324e7affe1f80a",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-30T05:10:12.165368+00:00",
+     "graph_id": "b02f85b16006132a"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "USDCHF.discovered.p=19dd11ec392fa005": {
+   "cell": "USDCHF.discovered.p=19dd11ec392fa005",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "57e4ef7fde68e428"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "USDCAD.discovered.p=56aadf0a3018c790": {
+   "cell": "USDCAD.discovered.p=56aadf0a3018c790",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-09-01T22:01:33.958355+00:00",
+     "graph_id": "e3a1c9533dbaa2b6"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "USDCAD.discovered.p=193aadf2caba3698": {
+   "cell": "USDCAD.discovered.p=193aadf2caba3698",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "dd47cf5b97e8f9a4"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
+   "in_canon": true
+  },
+  "NZDCAD.discovered.p=0ffb1e19a04f260e": {
+   "cell": "NZDCAD.discovered.p=0ffb1e19a04f260e",
+   "routes_ran": [
+    "registry_identity",
+    "docket",
+    "verdict_graph",
+    "graph_identity"
+   ],
+   "at": "2026-10-13T15:17:27+00:00",
+   "claimants": {
+    "external": {
+     "routes": [
+      "graph_identity"
+     ],
+     "first_seen": "2026-08-29T23:00:25.720685+00:00",
+     "graph_id": "14b0e27d95de4473"
+    }
+   },
+   "n_claimants": 1,
+   "verdict": "ATTRIBUTED",
+   "producer": "external",
+   "final": true,
+   "routes": [
+    "graph_identity"
+   ],
+   "region": "UNATTRIBUTABLE",
+   "why": "exactly one producer names this cell, by graph_identity",
    "in_canon": true
   }
  }

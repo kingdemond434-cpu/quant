@@ -1,0 +1,340 @@
+{
+ "schema": 1,
+ "dimensions": [
+  "information_source",
+  "economic_mechanism",
+  "time_structure",
+  "behavior",
+  "portfolio_relationship",
+  "evidence_state"
+ ],
+ "items": {
+  "exp_disc_ad6d0ae0ec0944e99e56e7040e1eaeae": {
+   "item_id": "exp_disc_ad6d0ae0ec0944e99e56e7040e1eaeae",
+   "descriptor": {
+    "information_source": "deep_forest_miner",
+    "economic_mechanism": "carry_unwind on JPY crosses -> fade",
+    "time_structure": "asia",
+    "behavior": "deep_forest_miner",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "UNTESTED"
+   },
+   "quality": [
+    0,
+    0.0,
+    0.0
+   ],
+   "source": "deep_forest_miner",
+   "lineage": [],
+   "blockers": [],
+   "verdict": "UNJUDGED",
+   "status": "QUEUED",
+   "falsifier": "later bars stop clearing the gates",
+   "authority": "archive only; universal gauntlet and forward evidence judge",
+   "history": []
+  },
+  "exp_41aa8b258e816f5bb305a083": {
+   "item_id": "exp_41aa8b258e816f5bb305a083",
+   "descriptor": {
+    "information_source": "miner_candidate_compiler",
+    "economic_mechanism": "retail_overlap_reversal",
+    "time_structure": "UNCLASSIFIED",
+    "behavior": "miner_candidate_compiler",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "UNTESTED"
+   },
+   "quality": [
+    0,
+    0.0,
+    0.0
+   ],
+   "source": "miner_candidate_compiler",
+   "lineage": [],
+   "blockers": [],
+   "verdict": "UNJUDGED",
+   "status": "QUEUED",
+   "falsifier": "the exact retail_overlap_reversal rule on AUDJPY re-judged on bars after the snapshot no longer clears the ten gates",
+   "authority": "archive only; universal gauntlet and forward evidence judge",
+   "history": []
+  },
+  "exp_9ef5c6023562d1cf8ec1bdf8": {
+   "item_id": "exp_9ef5c6023562d1cf8ec1bdf8",
+   "descriptor": {
+    "information_source": "jp_lab",
+    "economic_mechanism": "tokyo range",
+    "time_structure": "H1",
+    "behavior": "global_research_os",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "UNTESTED"
+   },
+   "quality": [
+    0,
+    0.0,
+    0.0
+   ],
+   "source": "jp_lab",
+   "lineage": [],
+   "blockers": [],
+   "verdict": "UNJUDGED",
+   "status": "QUEUED",
+   "falsifier": "the exact session_range_breakout rule on AUDJPY re-judged on bars after the snapshot no longer clears the ten gates",
+   "authority": "archive only; universal gauntlet and forward evidence judge",
+   "history": []
+  },
+  "exp_disc_d3a959c87dec4192a9472577674331a4": {
+   "item_id": "exp_disc_d3a959c87dec4192a9472577674331a4",
+   "descriptor": {
+    "information_source": "deep_forest_miner",
+    "economic_mechanism": "carry_unwind on JPY crosses -> fade",
+    "time_structure": "asia",
+    "behavior": "deep_forest_miner",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "UNTESTED"
+   },
+   "quality": [
+    0,
+    0.0,
+    0.0
+   ],
+   "source": "deep_forest_miner",
+   "lineage": [],
+   "blockers": [],
+   "verdict": "UNJUDGED",
+   "status": "QUEUED",
+   "falsifier": "later bars stop clearing the gates",
+   "authority": "archive only; universal gauntlet and forward evidence judge",
+   "history": [
+    {
+     "quality": [
+      0,
+      0.0,
+      0.0
+     ],
+     "verdict": "UNJUDGED",
+     "status": "QUEUED",
+     "blockers": []
+    }
+   ]
+  },
+  "exp_disc_6759889183194d08b701e16990b84198": {
+   "item_id": "exp_disc_6759889183194d08b701e16990b84198",
+   "descriptor": {
+    "information_source": "deep_forest_miner",
+    "economic_mechanism": "carry_unwind on JPY crosses -> fade",
+    "time_structure": "asia",
+    "behavior": "deep_forest_miner",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "CERTIFIED"
+   },
+   "quality": [
+    4,
+    0.0,
+    0.0
+   ],
+   "source": "deep_forest_miner",
+   "lineage": [],
+   "blockers": [],
+   "verdict": "SURVIVED",
+   "status": "SURVIVED",
+   "falsifier": "later bars stop clearing the gates",
+   "authority": "archive only; universal gauntlet and forward evidence judge",
+   "history": [
+    {
+     "quality": [
+      0,
+      0.0,
+      0.0
+     ],
+     "verdict": "UNJUDGED",
+     "status": "QUEUED",
+     "blockers": []
+    }
+   ]
+  },
+  "exp_disc_c5a22cbba01a497cbfbfaf0e0cb39a34": {
+   "item_id": "exp_disc_c5a22cbba01a497cbfbfaf0e0cb39a34",
+   "descriptor": {
+    "information_source": "deep_forest_miner",
+    "economic_mechanism": "carry_unwind on JPY crosses -> fade",
+    "time_structure": "asia",
+    "behavior": "deep_forest_miner",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "CERTIFIED"
+   },
+   "quality": [
+    4,
+    0.0,
+    0.0
+   ],
+   "source": "deep_forest_miner",
+   "lineage": [],
+   "blockers": [],
+   "verdict": "SURVIVED",
+   "status": "SURVIVED",
+   "falsifier": "later bars stop clearing the gates",
+   "authority": "archive only; universal gauntlet and forward evidence judge",
+   "history": [
+    {
+     "quality": [
+      0,
+      0.0,
+      0.0
+     ],
+     "verdict": "UNJUDGED",
+     "status": "QUEUED",
+     "blockers": []
+    },
+    {
+     "quality": [
+      4,
+      0.0,
+      0.0
+     ],
+     "verdict": "SURVIVED",
+     "status": "SURVIVED",
+     "blockers": []
+    }
+   ]
+  },
+  "exp_disc_970956ad6bed4d0283724b4d1fad0fb3": {
+   "item_id": "exp_disc_970956ad6bed4d0283724b4d1fad0fb3",
+   "descriptor": {
+    "information_source": "deep_forest_miner",
+    "economic_mechanism": "carry_unwind on JPY crosses -> fade",
+    "time_structure": "asia",
+    "behavior": "deep_forest_miner",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "CERTIFIED"
+   },
+   "quality": [
+    4,
+    0.0,
+    0.0
+   ],
+   "source": "deep_forest_miner",
+   "lineage": [],
+   "blockers": [],
+   "verdict": "SURVIVED",
+   "status": "SURVIVED",
+   "falsifier": "later bars stop clearing the gates",
+   "authority": "archive only; universal gauntlet and forward evidence judge",
+   "history": [
+    {
+     "quality": [
+      0,
+      0.0,
+      0.0
+     ],
+     "verdict": "UNJUDGED",
+     "status": "QUEUED",
+     "blockers": []
+    }
+   ]
+  },
+  "exp_disc_8196d500ae434fa39c8e085b6e6be8ee": {
+   "item_id": "exp_disc_8196d500ae434fa39c8e085b6e6be8ee",
+   "descriptor": {
+    "information_source": "deep_forest_miner",
+    "economic_mechanism": "carry_unwind on JPY crosses -> fade",
+    "time_structure": "asia",
+    "behavior": "deep_forest_miner",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "CERTIFIED"
+   },
+   "quality": [
+    4,
+    0.0,
+    0.0
+   ],
+   "source": "deep_forest_miner",
+   "lineage": [],
+   "blockers": [],
+   "verdict": "SURVIVED",
+   "status": "SURVIVED",
+   "falsifier": "later bars stop clearing the gates",
+   "authority": "archive only; universal gauntlet and forward evidence judge",
+   "history": [
+    {
+     "quality": [
+      0,
+      0.0,
+      0.0
+     ],
+     "verdict": "UNJUDGED",
+     "status": "QUEUED",
+     "blockers": []
+    }
+   ]
+  }
+ },
+ "niches": {
+  "deep_forest_miner|carry_unwind on JPY crosses -> fade|asia|deep_forest_miner|UNCLASSIFIED|UNTESTED": {
+   "descriptor": {
+    "information_source": "deep_forest_miner",
+    "economic_mechanism": "carry_unwind on JPY crosses -> fade",
+    "time_structure": "asia",
+    "behavior": "deep_forest_miner",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "UNTESTED"
+   },
+   "members": [
+    "exp_disc_ad6d0ae0ec0944e99e56e7040e1eaeae",
+    "exp_disc_d3a959c87dec4192a9472577674331a4"
+   ],
+   "champion": "exp_disc_ad6d0ae0ec0944e99e56e7040e1eaeae"
+  },
+  "miner_candidate_compiler|retail_overlap_reversal|UNCLASSIFIED|miner_candidate_compiler|UNCLASSIFIED|UNTESTED": {
+   "descriptor": {
+    "information_source": "miner_candidate_compiler",
+    "economic_mechanism": "retail_overlap_reversal",
+    "time_structure": "UNCLASSIFIED",
+    "behavior": "miner_candidate_compiler",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "UNTESTED"
+   },
+   "members": [
+    "exp_41aa8b258e816f5bb305a083"
+   ],
+   "champion": "exp_41aa8b258e816f5bb305a083"
+  },
+  "jp_lab|tokyo range|H1|global_research_os|UNCLASSIFIED|UNTESTED": {
+   "descriptor": {
+    "information_source": "jp_lab",
+    "economic_mechanism": "tokyo range",
+    "time_structure": "H1",
+    "behavior": "global_research_os",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "UNTESTED"
+   },
+   "members": [
+    "exp_9ef5c6023562d1cf8ec1bdf8"
+   ],
+   "champion": "exp_9ef5c6023562d1cf8ec1bdf8"
+  },
+  "deep_forest_miner|carry_unwind on JPY crosses -> fade|asia|deep_forest_miner|UNCLASSIFIED|CERTIFIED": {
+   "descriptor": {
+    "information_source": "deep_forest_miner",
+    "economic_mechanism": "carry_unwind on JPY crosses -> fade",
+    "time_structure": "asia",
+    "behavior": "deep_forest_miner",
+    "portfolio_relationship": "UNCLASSIFIED",
+    "evidence_state": "CERTIFIED"
+   },
+   "members": [
+    "exp_disc_6759889183194d08b701e16990b84198",
+    "exp_disc_8196d500ae434fa39c8e085b6e6be8ee",
+    "exp_disc_970956ad6bed4d0283724b4d1fad0fb3",
+    "exp_disc_c5a22cbba01a497cbfbfaf0e0cb39a34"
+   ],
+   "champion": "exp_disc_6759889183194d08b701e16990b84198"
+  }
+ },
+ "counts": {
+  "items": 8,
+  "occupied_niches": 4,
+  "failed_preserved": 0,
+  "blocked_preserved": 0
+ },
+ "rule": "preserve research diversity; never convert archive membership into admission",
+ "at": "2026-10-13T15:27:36+00:00"
+}

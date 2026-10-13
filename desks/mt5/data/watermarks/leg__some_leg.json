@@ -1,0 +1,13 @@
+{
+ "component_id": "leg:some_leg",
+ "metric": "leg_completions",
+ "value": 2,
+ "at": "2026-10-13T15:27:31+00:00",
+ "run_id": "hourly_cycle@2026-10-13T15:27:31+00:00",
+ "epoch_id": null,
+ "updates": 2,
+ "first_seen": "2026-10-13T15:27:31+00:00",
+ "last_write_at": "2026-10-13T15:27:31+00:00",
+ "regressions": 0,
+ "last_regression": null
+}

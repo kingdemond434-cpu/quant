@@ -1,0 +1,33 @@
+{
+ "consumer": "macro_state_engine.latent",
+ "datasets": {
+  "axis:alt_kr_exports_early": {
+   "first_read_at": "2026-09-30T12:00:00+00:00",
+   "last_read_at": "2026-10-01T18:00:00+00:00",
+   "reads": 3,
+   "uses": {
+    "regime_state": "2026-10-01T18:00:00+00:00"
+   },
+   "version": "2026-09-21T02:00:00+00:00"
+  },
+  "axis:alt_sg_port_throughput": {
+   "first_read_at": "2026-09-30T12:00:00+00:00",
+   "last_read_at": "2026-09-30T12:00:00+00:00",
+   "reads": 1,
+   "uses": {
+    "regime_state": "2026-09-30T12:00:00+00:00"
+   },
+   "version": "2026-09-15T05:00:00+00:00"
+  },
+  "axis:bis": {
+   "first_read_at": "2026-09-30T12:00:00+00:00",
+   "last_read_at": "2026-09-30T12:00:00+00:00",
+   "reads": 1,
+   "uses": {
+    "regime_state": "2026-09-30T12:00:00+00:00"
+   },
+   "version": "2026-09-29T00:00:00+00:00"
+  }
+ },
+ "updated_at": "2026-10-01T18:00:00+00:00"
+}

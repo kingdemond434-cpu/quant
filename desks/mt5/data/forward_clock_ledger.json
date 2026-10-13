@@ -1,0 +1,34 @@
+{
+ "clocks": {
+  "CADJPY.asia|": {
+   "key": "CADJPY.asia",
+   "identity": "",
+   "start": "2026-10-13T15:28:05.552983+00:00",
+   "opened_at": "2026-10-13T15:28:05+00:00",
+   "writes": 2,
+   "refused_moves": [],
+   "supersedes": [],
+   "last_seen": "2026-10-13T15:28:05+00:00"
+  },
+  "EURJPY.asia|": {
+   "key": "EURJPY.asia",
+   "identity": "",
+   "start": "2026-10-13T15:28:05.556958+00:00",
+   "opened_at": "2026-10-13T15:28:05+00:00",
+   "writes": 2,
+   "refused_moves": [],
+   "supersedes": [],
+   "last_seen": "2026-10-13T15:28:05+00:00"
+  },
+  "EURZAR.overnight_gap_decay.asia|": {
+   "key": "EURZAR.overnight_gap_decay.asia",
+   "identity": "",
+   "start": "2026-10-13T15:28:05.628381+00:00",
+   "opened_at": "2026-10-13T15:28:05+00:00",
+   "writes": 2,
+   "refused_moves": [],
+   "supersedes": [],
+   "last_seen": "2026-10-13T15:28:05+00:00"
+  }
+ }
+}

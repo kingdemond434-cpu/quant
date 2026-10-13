@@ -1,0 +1,151 @@
+{
+ "generation": 0,
+ "genomes": [
+  {
+   "id": "d000",
+   "base": "cost_surface",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.485,
+    "block_len": 8,
+    "cost_mult": 1.0
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d001",
+   "base": "cost_surface",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.329,
+    "block_len": 16,
+    "cost_mult": 1.5
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d002",
+   "base": "cost_surface",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.729,
+    "block_len": 4,
+    "cost_mult": 2.0
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d003",
+   "base": "half_stability",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.475,
+    "block_len": 8,
+    "cost_mult": 1.0
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d004",
+   "base": "half_stability",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.349,
+    "block_len": 16,
+    "cost_mult": 1.5
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d005",
+   "base": "half_stability",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.653,
+    "block_len": 4,
+    "cost_mult": 2.0
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d006",
+   "base": "truncation",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.514,
+    "block_len": 8,
+    "cost_mult": 1.0
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d007",
+   "base": "truncation",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.352,
+    "block_len": 16,
+    "cost_mult": 1.5
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d008",
+   "base": "truncation",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.73,
+    "block_len": 4,
+    "cost_mult": 2.0
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d009",
+   "base": "tail_worst_decile",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.502,
+    "block_len": 8,
+    "cost_mult": 1.0
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d010",
+   "base": "tail_worst_decile",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.306,
+    "block_len": 16,
+    "cost_mult": 1.5
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  },
+  {
+   "id": "d011",
+   "base": "tail_worst_decile",
+   "gen": 0,
+   "parent": null,
+   "view": {
+    "block_frac": 0.716,
+    "block_len": 4,
+    "cost_mult": 2.0
+   },
+   "born_at": "2026-10-13T15:25:37+00:00"
+  }
+ ],
+ "prey": {},
+ "records": {}
+}

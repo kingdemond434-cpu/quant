@@ -1,0 +1,27 @@
+[
+ {
+  "symbol": "EURUSD",
+  "family": "discovered",
+  "params": {
+   "feature": "ret_24"
+  },
+  "producer": "external_backtest_results.json",
+  "available_time": "2026-10-13T15:25:31+00:00",
+  "ingested_time": "2026-10-13T15:25:31+00:00",
+  "intake_stamp": {
+   "at": "2026-10-13T15:25:31+00:00",
+   "source_artifact": "external_backtest_results.json",
+   "availability_policy": "fresh artifact availability floored to canonical merge time"
+  },
+  "source": "external_backtest_results.json",
+  "event_time": null,
+  "source_version": "223c9e16f",
+  "payload_hash": "e0983506637c275b231559fc",
+  "mechanism_status": "STATISTICAL_ONLY",
+  "mechanism_note": "no economic cause is encoded by this price-shape primitive",
+  "first_seen": "2026-10-13T15:25:31+00:00",
+  "judging_status": "STUDY_ONLY",
+  "judging_reason": "family 'discovered' is banned from live capital by the principal's order and refused at both live doors (mt5desk/live_policy.py DEFAULT_BANNED_FAMILIES); it cannot reach the book even if it passes, so the scarce judge is not spent on it. Mining is unrestricted and the rows stay here for study",
+  "routed_to_study_at": "2026-10-13T15:25:31+00:00"
+ }
+]

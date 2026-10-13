@@ -1,0 +1,17 @@
+{
+ "component_id": "resident:dept_intel",
+ "metric": "passes",
+ "value": 1,
+ "at": "2026-10-13T15:27:40+00:00",
+ "run_id": "pid:2908",
+ "epoch_id": null,
+ "updates": 1,
+ "first_seen": "2026-10-13T15:27:40+00:00",
+ "last_write_at": "2026-10-13T15:27:40+00:00",
+ "regressions": 0,
+ "last_regression": null,
+ "extra": {
+  "status": "running",
+  "local_pass": 1
+ }
+}

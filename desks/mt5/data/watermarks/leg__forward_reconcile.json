@@ -1,0 +1,16 @@
+{
+ "component_id": "leg:forward_reconcile",
+ "metric": "forward_observations",
+ "value": 0,
+ "at": "2026-10-13T15:25:19+00:00",
+ "run_id": null,
+ "epoch_id": null,
+ "updates": 10,
+ "first_seen": "2026-10-13T15:25:18+00:00",
+ "last_write_at": "2026-10-13T15:25:19+00:00",
+ "regressions": 0,
+ "last_regression": null,
+ "extra": {
+  "enrolled": 1
+ }
+}
