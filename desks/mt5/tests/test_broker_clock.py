@@ -57,4 +57,5 @@ def test_a_scalp_deadline_converts_the_forming_bar_then_adds() -> None:
     ft = pd.Timestamp("2026-03-08 08:45", tz="UTC")           # broker stamp after spring-forward
     got = pd.Timestamp(sx.ttl_deadline(broker_to_utc(ft), "M15", 6))
     assert got == broker_to_utc(ft) + pd.Timedelta(minutes=15 * 7)
-    assert got == pd.Timestamp("2026-03-08 05:45", tz="UTC") + pd.Timedelta(minutes=105)
+    # 01:45 New York wall time is still EST (UTC-5): the clocks jump at 02:00.
+    assert got == pd.Timestamp("2026-03-08 06:45", tz="UTC") + pd.Timedelta(minutes=105)
