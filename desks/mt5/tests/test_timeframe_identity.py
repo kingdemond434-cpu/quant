@@ -189,6 +189,47 @@ def test_a_family_pinned_to_a_chart_cannot_collide_with_its_hourly_twin() -> Non
     assert external_gauntlet.timeframe_of({}, "vol_transition") == "H1"
 
 
+def test_superseded_replay_cache_remains_preserved_but_cannot_be_loaded(tmp_path, monkeypatch):
+    import numpy as np
+
+    monkeypatch.setattr(external_gauntlet, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(external_gauntlet, "_replay_code_identity", lambda: "old-engine")
+    old_key = external_gauntlet._cache_key(SYM, FAM, PARAMS_H1, "2026-09-04")
+    series = pd.Series(np.arange(5, dtype=float))
+    series.attrs["geometry_rejections"] = [{"reason": "unexecutable bracket at fill"}]
+    external_gauntlet.cache_save(old_key, series, series)
+    old_files = {p: p.read_bytes() for p in tmp_path.iterdir() if p.is_file()}
+    monkeypatch.setattr(external_gauntlet, "_replay_code_identity", lambda: "repaired-engine")
+    new_key = external_gauntlet._cache_key(SYM, FAM, PARAMS_H1, "2026-09-04")
+    assert new_key != old_key and external_gauntlet.cache_load(new_key) is None
+    loaded = external_gauntlet.cache_load(old_key)
+    assert loaded is not None
+    assert loaded[0].attrs["geometry_rejections"] == series.attrs["geometry_rejections"]
+    assert loaded[0].attrs["geometry_rejection_count"] == 1
+    assert all(p.read_bytes() == content for p, content in old_files.items())
+
+
+def test_many_unfilled_signals_keep_full_counts_without_retained_receipt_growth(tmp_path,
+                                                                             monkeypatch):
+    import numpy as np
+    from mt5desk.engine import Costs, Signal
+
+    idx = pd.date_range("2026-06-01", periods=105, freq="15min", tz="UTC")
+    bars = pd.DataFrame({"open":1.0,"high":1.1,"low":0.9,"close":1.0}, index=idx)
+    signals = [Signal(time=t,side=np.int64(1),stop=1.0,target=1.05,
+                      ttl_bars=2,tag="retained") for t in idx[:100]]
+    series = external_gauntlet.daily_series(bars,signals,Costs())
+    assert len(series)==0 and series.attrs["signal_count"]==100
+    assert series.attrs["geometry_rejection_count"]==100
+    assert len(series.attrs["geometry_rejections"])==3
+    assert len(series.attrs["geometry_receipt_sha256"])==64
+    monkeypatch.setattr(external_gauntlet,"CACHE_DIR",tmp_path)
+    external_gauntlet.cache_save("bounded",series,series)
+    loaded = external_gauntlet.cache_load("bounded")
+    assert loaded is not None and loaded[0].attrs["geometry_rejection_count"]==100
+    assert loaded[0].attrs["geometry_receipt_sha256"]==series.attrs["geometry_receipt_sha256"]
+
+
 def test_the_forward_clock_key_and_frozen_identity_carry_the_chart() -> None:
     h1_key = shadow_forward.sleeve_key(SYM, "asia", dict(PARAMS_H1), FAM)
     m5_key = shadow_forward.sleeve_key(SYM, "asia", dict(PARAMS_M5), FAM)
