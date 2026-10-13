@@ -73,7 +73,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 UNIVERSE = DESK / "data" / "universe"
 AXES = DESK / "data" / "axes"
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 SLEEVES = DESK / "data" / "sleeves.json"
 FORCED_FLOW = DESK / "data" / "forced_flow_calendar.json"
 REPORT = DESK / "reports" / "STANDING_QUESTIONS.json"

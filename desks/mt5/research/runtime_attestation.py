@@ -41,8 +41,10 @@ IT ATTESTS TO ONE HOST AND REFUSES TO DESCRIBE ANOTHER. The document stamps the 
 platform and git SHA it was measured on, and every row carries that same host. A checkout on
 another machine reads the file as a report ABOUT the box, never as a claim about itself, and
 `scripts/check_runtime_attestation.py` fails on a document that mixes hosts everywhere, and on one
-that goes stale only on the trading box it names (off the box its age reads UNMEASURED). The role is measured too, not assumed: a host with no fresh gateway state says
-so in its first line, so a build box attesting to itself can never read as the trading box.
+that goes stale only on the trading box it names (off the box its age reads UNMEASURED, and a
+document stamped `desk_host: false` is not a desk attestation at all). The role is measured too,
+not assumed: a host with no fresh gateway state says so in its first line, so a build box
+attesting to itself can never read as the trading box.
 
 Clock: `hourly_cycle:runtime_attestation` (department `meta`, layer `meta`).
 Artifact: `docs/research/runtime_state.json` + `docs/research/RUNTIME_STATE.md` -- both COMMITTED,
@@ -252,6 +254,24 @@ def attesting_identity(doc: dict[str, Any]) -> tuple[bool, str]:
         return False, (f"off-host: {me['hostname']} is not a declared desk host "
                        f"{list(DESK_HOSTS)}, so it cannot attest the desk's runtime")
     return True, f"on the attesting desk host {name}"
+
+
+def desk_stamp(doc: dict[str, Any]) -> bool | None:
+    """Is `doc` a DESK attestation, by its own host stamp? True / False, or None for legacy.
+
+    `host.desk_host` is written on every full pass (`host_identity`): True only on a declared desk
+    host (`DESK_HOSTS`). False means the document was measured on some other machine -- a cloud
+    container, a laptop -- and so is not an attestation of the desk's runtime at all: its age
+    and its census say nothing about whether the box's hourly leg is running, and
+    `scripts/check_runtime_attestation.py` reads it as UNMEASURED rather than judging it. None is
+    a stamp written before the field existed (no `desk_host` key), which keeps the older rule.
+    A present value that is not a bool is returned as-is for the fence to fail on.
+    """
+    _h = doc.get("host")
+    h: dict[str, Any] = _h if isinstance(_h, dict) else {}
+    if "desk_host" not in h:
+        return None
+    return h["desk_host"]  # type: ignore[no-any-return]
 
 
 def host_identity(paths: Paths) -> dict[str, Any]:
@@ -860,9 +880,18 @@ def main(argv: list[str] | None = None) -> int:
               + (f": {names}" if names else " -- every registry organ already has a row"))
         return 0
     doc = attest(paths, budget_s=float(a.budget_s))
-    rat = ratchet_update(paths, doc["attests_to_host"], doc["census"],
-                         str(doc["host"].get("git_sha") or UNMEASURED))
-    doc["ratchet"] = rat["floor"]
+    rat: dict[str, Any] | None = None
+    if desk_stamp(doc) is False:
+        # A NON-DESK ATTESTATION SETS NO FLOOR. The ratchet is the best a desk host has ever
+        # achieved; a cloud container's census (every box-only organ NEVER or MISSING) is not
+        # that, and recording it would hand the fence a floor about a machine that trades nothing.
+        doc["ratchet"] = {"status": UNMEASURED,
+                          "why": f"not a desk attestation (desk_host: false on "
+                                 f"{doc['attests_to_host']}): no ratchet floor is set from it"}
+    else:
+        rat = ratchet_update(paths, doc["attests_to_host"], doc["census"],
+                             str(doc["host"].get("git_sha") or UNMEASURED))
+        doc["ratchet"] = rat["floor"]
     try:
         _atomic(paths.out_json, json.dumps(doc, indent=1, default=str, sort_keys=False))
         _atomic(paths.out_md, render(doc))
@@ -885,10 +914,13 @@ def main(argv: list[str] | None = None) -> int:
               f"{doc['scope']['attested']} organ(s): LIVE {c['LIVE']}, STALE {c['STALE']}, "
               f"MISSING {c['MISSING']}, NEVER {c['NEVER']}, {UNMEASURED} {c[UNMEASURED]}; "
               f"{doc['scope']['wall_s']}s -> {paths.out_json.name} + {paths.out_md.name}")
-        f = rat["floor"]
-        print(f"   ratchet floor for {doc['attests_to_host']}: STALE {f['STALE']}, "
-              f"MISSING {f['MISSING']}, NEVER {f['NEVER']}"
-              + (f" (lowered: {', '.join(rat['lowered'])})" if rat["lowered"] else ""))
+        if rat is None:
+            print(f"   ratchet: {doc['ratchet']['why']}")
+        else:
+            f = rat["floor"]
+            print(f"   ratchet floor for {doc['attests_to_host']}: STALE {f['STALE']}, "
+                  f"MISSING {f['MISSING']}, NEVER {f['NEVER']}"
+                  + (f" (lowered: {', '.join(rat['lowered'])})" if rat["lowered"] else ""))
     return 0
 
 

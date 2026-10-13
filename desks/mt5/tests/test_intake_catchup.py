@@ -53,3 +53,18 @@ def test_merge_failure_is_not_reported_as_success(monkeypatch):
     monkeypatch.setattr(hourly_cycle, "compile_candidates", lambda: {"exit_code": 0})
     monkeypatch.setattr(hourly_cycle, "_producer", lambda *args: {"exit_code": 1})
     assert hourly_cycle.catch_up_intake()["status"] == "FAILED"
+
+
+def test_catchup_leaves_merger_lock_to_its_child(monkeypatch):
+    locks = []
+
+    @contextmanager
+    def acquire(name, **kwargs):
+        locks.append(name)
+        yield True
+
+    monkeypatch.setattr(job_lock, "exclusive_job", acquire)
+    monkeypatch.setattr(hourly_cycle, "compile_candidates", lambda: {"exit_code": 0})
+    monkeypatch.setattr(hourly_cycle, "_producer", lambda *args: {"exit_code": 75})
+    assert hourly_cycle.catch_up_intake()["status"] == "FAILED"
+    assert locks == ["miner_candidate_compiler"]
