@@ -429,13 +429,59 @@ def row_class(row: Any, steer: Mapping[str, Any] | None) -> str:
     return base
 
 
+# ------------------------------------------------------ forced-first slot (GAP_MAP rows 24-27)
+#: The participant-structure tags mined AHEAD of everything else (principal's yes, 2026-10-13).
+#: Selected by the axis layer's tag (`axis_registry.participant_structure`), never by a symbol
+#: list here: which markets carry the tag is the axis layer's to say.
+FORCED_FIRST_TAGS = ("retail_heavy",)
+#: The slot at the front of every capped head the tagged rows are owed, bounded by what the
+#: producer holds of them. Rows past the slot keep their own class's place -- nothing is dropped.
+FORCED_FIRST_SHARE = 0.25
+_FORCED_CACHE: dict[tuple[str, str], bool] = {}
+
+
+def forced_first(row: Any) -> bool:
+    """True when the row's market, in the row's session, carries a FORCED_FIRST_TAGS tag."""
+    if not isinstance(row, Mapping):
+        return False
+    p = row.get("params") if isinstance(row.get("params"), Mapping) else None
+    sess = (p or {}).get("session") or row.get("session") or row.get("selector")
+    key = (str(row.get("symbol") or row.get("sym") or ""), str(sess or ""))
+    if key not in _FORCED_CACHE:
+        try:
+            from research.axis_registry import participant_structure
+            tags = participant_structure(key[0], key[1] or None)
+        except Exception:
+            tags = ()
+        _FORCED_CACHE[key] = any(t in tags for t in FORCED_FIRST_TAGS)
+    return _FORCED_CACHE[key]
+
+
+def forced_first_policy() -> list[str]:
+    """The axis layer's own rules for the forced tags, as plain lines for a seat brief."""
+    try:
+        from research.axis_registry import PARTICIPANT_STRUCTURE_RULES
+    except Exception:
+        return []
+    out = []
+    for r in PARTICIPANT_STRUCTURE_RULES:
+        if r.get("tag") in FORCED_FIRST_TAGS:
+            where = (f"asset class {r['asset_class']}" if r.get("asset_class")
+                     else ", ".join(r.get("symbols") or ()))
+            out.append(f"{r['tag']}: {where} ({'/'.join(r.get('sessions') or ('all',))} "
+                       f"session) -- {r.get('why')}")
+    return out
+
+
 # ------------------------------------------------------------------------------ the primitive
 def apportion(rows: list[Any], budget: int, steer: Mapping[str, Any] | None = None, *,
               family: Callable[[Any], str] | None = None) -> list[Any]:
     """Reorder `rows` so the first `budget` hold the frontier first and the saturated set at its
     exploration floor -- WORK-CONSERVING and lossless.
 
-    Returns every row (same multiset). Inside the head: frontier rows (producer's own order kept),
+    Returns every row (same multiset). Inside the head: the forced-first slot (rows whose market
+    carries a FORCED_FIRST_TAGS participant-structure tag, up to FORCED_FIRST_SHARE), then
+    frontier rows (producer's own order kept),
     then explored rows, with saturated rows interleaved evenly at what the producer's own head
     held, capped at `SAT_EXPLORE_SHARE` of the budget -- or more, only when the non-saturated rows
     cannot fill it. Saturated rows beyond that go
@@ -455,7 +501,14 @@ def apportion(rows: list[Any], budget: int, steer: Mapping[str, Any] | None = No
     for r in rows:
         c = cls_of(r)
         (sa if c == SATURATED else fr if c in FRONTIER else ex).append(r)
-    nonsat = fr + ex
+    # THE FORCED-FIRST SLOT: tagged rows from outside the saturated set lead the head, up to
+    # FORCED_FIRST_SHARE of the budget; a tagged saturated row leads the saturated floor. The
+    # producer's own order is kept inside every group, and no row leaves the list.
+    lead_n = math.ceil(FORCED_FIRST_SHARE * budget)
+    lead = [r for r in fr + ex if forced_first(r)][:lead_n]
+    lead_ids = {id(r) for r in lead}
+    nonsat = lead + [r for r in fr + ex if id(r) not in lead_ids]
+    sa = sorted(sa, key=lambda r: 0 if forced_first(r) else 1)
     # A FLOOR THAT IS ALSO A CEILING, NEVER A QUOTA: the saturated set keeps what the producer's
     # own head already gave it, up to SAT_EXPLORE_SHARE -- the steer never ADDS saturated cells
     # to a head that had fewer -- and more only when nothing else can fill the budget.
@@ -463,7 +516,7 @@ def apportion(rows: list[Any], budget: int, steer: Mapping[str, Any] | None = No
     n_sat = min(len(sa), max(min(natural, math.ceil(SAT_EXPLORE_SHARE * budget)),
                              budget - len(nonsat)))
     head_ns = nonsat[:max(0, budget - n_sat)]
-    head = _interleave(head_ns, sa[:n_sat])
+    head = lead[:len(head_ns)] + _interleave(head_ns[len(lead):], sa[:n_sat])
     return head + nonsat[len(head_ns):] + sa[n_sat:]
 
 
@@ -800,12 +853,19 @@ def baskets_lens(steer: Mapping[str, Any], *, docket: Path | None = None,
         return {"n": sum(c.values()), "saturated_share": round(c[SATURATED] / n, 4),
                 "frontier_share": round(sum(c[k] for k in FRONTIER) / n, 4),
                 "cross_class_share": round(c[CROSS_CLASS] / n, 4),
+                "forced_first_share": round(sum(1 for r in order[:budget] if forced_first(r))
+                                            / n, 4),
                 "residual_rv_baskets": dict(rrv)}
 
     out["docket"] = {
         "status": "MEASURED", "rows": len(rows), "docket_mtime": _mtime(path),
         "composition": {f: dict(c) for f, c in sorted(comp.items())},
         "same_class": sum(c[SAME_CLASS] for c in comp.values()),
+        "forced_first_tags": list(FORCED_FIRST_TAGS),
+        "forced_first_rows": sum(1 for r in rows if forced_first(r)),
+        "forced_first_owed_share": round(min(FORCED_FIRST_SHARE, sum(
+            1 for r in rows if forced_first(r) and row_class(r, steer) != SATURATED)
+            / max(1, min(budget, len(rows)))), 4),
         "cross_class": sum(c[CROSS_CLASS] for c in comp.values()),
         f"head_{budget}_before": _head(rows),
         f"head_{budget}_after": _head(apportion(rows, budget, steer)),
@@ -839,6 +899,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     doc["verdicts"]["steer_in_force"] = bool((doc["gauntlet"] or {}).get("steer_in_force"))
     doc["mint"] = mint_lens(steer)
     doc["steer"]["basket_policy"] = BASKET_POLICY
+    doc["steer"]["forced_first"] = {"tags": list(FORCED_FIRST_TAGS),
+                                    "share": FORCED_FIRST_SHARE, "rules": forced_first_policy()}
     doc["baskets"] = baskets_lens(steer)
     doc["missed_growth_lines"] = (doc["judge"].get("missed_growth_lines") or [])
     doc["verdict"] = "MEASURED"
@@ -891,7 +953,8 @@ def render(doc: dict[str, Any]) -> list[str]:
         for k in sorted(k for k in d if k.startswith("head_")):
             h = d[k]
             lines.append(f"  {k:18s} saturated {h['saturated_share']:.3f}  frontier "
-                         f"{h['frontier_share']:.3f}  cross-class {h['cross_class_share']:.3f}")
+                         f"{h['frontier_share']:.3f}  cross-class {h['cross_class_share']:.3f}"
+                         f"  forced-first {h['forced_first_share']:.3f}")
     return lines
 
 

@@ -163,6 +163,12 @@ def judge(report: Path | None = None, *, require_state: bool = False,
         if sa_ > max(floor, sb) + tol:
             fail.append(f"baskets {ka}: saturated share {sa_:.3f} > max(floor {floor:.2f}, "
                         f"before {sb:.3f}) + {tol:.2f} -- same-class residual/RV ground grew")
+        owed = float(bd.get("forced_first_owed_share") or 0.0)
+        got = float(ha.get("forced_first_share") or 0.0)
+        if owed and got < owed - tol:
+            fail.append(f"baskets {ka}: forced-first share {got:.3f} < owed {owed:.3f} - "
+                        f"{tol:.2f} -- {', '.join(bd.get('forced_first_tags') or [])} markets "
+                        "not mined first")
     if bd.get("status") == "MEASURED":
         checks.append({"metric": "residual_rv_baskets", "state": "OK",
                        "same_class": bd.get("same_class"), "cross_class": bd.get("cross_class"),

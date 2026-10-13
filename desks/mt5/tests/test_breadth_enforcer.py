@@ -202,6 +202,77 @@ def test_fence_fails_when_same_class_ground_grows_in_the_head(tmp_path: Path) ->
     assert any("same-class residual/RV ground grew" in f for f in out["failures"])
 
 
+# ------------------------------------------------------ forced-first slot (GAP_MAP rows 24-27)
+def test_participant_structure_is_an_axis_tag_routed_by_class_and_session(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import axis_registry as ax
+    from research import universe_policy as up
+    monkeypatch.setattr(up, "asset_class_of",
+                        lambda s: {"NEWCOIN": "crypto", "XAUUSD": "commodities"}.get(s, ""))
+    assert ax.participant_structure("NEWCOIN") == ("retail_heavy",)     # by class, no list edit
+    assert ax.participant_structure("XAUUSD", "tokyo") == ("retail_heavy",)
+    assert ax.participant_structure("XAUUSD", "london") == ()
+    assert ax.participant_structure("XAUUSD") == ()                     # asia-only rule
+    assert ax.participant_structure("HK50") == ("retail_heavy",)
+    assert ax.participant_structure("EURUSD", "asia") == ()
+    assert ax.participant_structure("") == ()
+
+
+@pytest.fixture()
+def tagged(monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import axis_registry as ax
+    monkeypatch.setattr(ax, "PARTICIPANT_STRUCTURE_RULES", (
+        {"tag": "retail_heavy", "symbols": ("HK50",), "sessions": ("all",), "why": "t"},
+        {"tag": "retail_heavy", "symbols": ("XAUUSD",), "sessions": ("asia",), "why": "t"}))
+    monkeypatch.setattr(be, "_FORCED_CACHE", {})
+
+
+def test_forced_first_rows_lead_the_head_ahead_of_saturated_and_frontier(tagged: None) -> None:
+    st = _steer()
+    rows = ([{"symbol": "EURUSD", "family": "newfam"} for _ in range(300)]
+            + [{"symbol": "EURUSD", "family": "carry"} for _ in range(300)]
+            + [{"symbol": "XAUUSD", "family": "explored_fam", "params": {"session": "london"}}
+               for _ in range(50)]
+            + [{"symbol": "XAUUSD", "family": "explored_fam", "params": {"session": "asia"}}
+               for _ in range(30)]
+            + [{"symbol": "HK50", "family": "carry"} for _ in range(10)])
+    out = be.apportion(rows, 200, st)
+    assert sorted(map(id, out)) == sorted(map(id, rows))                # lossless
+    assert all(be.forced_first(r) for r in out[:30])                    # the slot leads
+    assert out[0]["symbol"] == "XAUUSD" and out[0]["params"]["session"] == "asia"
+    sat_head = [r for r in out[:200] if r["family"] == "carry"]
+    assert len(sat_head) == 20                                          # floor unchanged
+    assert all(r["symbol"] == "HK50" for r in sat_head[:10])            # tagged lead the floor
+    assert be.forced_first_policy() and "HK50" in be.forced_first_policy()[0]
+
+
+def test_forced_first_slot_is_bounded_and_the_rest_keep_their_place(tagged: None) -> None:
+    st = _steer()
+    rows = ([{"symbol": "HK50", "family": "explored_fam"} for _ in range(500)]
+            + [{"symbol": "EURUSD", "family": "newfam"} for _ in range(500)])
+    out = be.apportion(rows, 200, st)
+    head = Counter(r["symbol"] for r in out[:50])
+    assert head["HK50"] == 50                                           # ceil(25% x 200)
+    assert Counter(r["family"] for r in out[50:200])["newfam"] == 150   # frontier after it
+
+
+def test_fence_fails_when_the_forced_first_markets_are_not_mined_first(tmp_path: Path) -> None:
+    p = _report(tmp_path, shipped_sat=0.08, frontier=0.6, unknown=0.3)
+    doc = json.loads(p.read_text())
+    doc["baskets"] = {"docket": {"status": "MEASURED", "forced_first_tags": ["retail_heavy"],
+                                 "forced_first_owed_share": 0.2,
+                                 "head_9_before": {"saturated_share": 0.1},
+                                 "head_9_after": {"saturated_share": 0.1,
+                                                  "forced_first_share": 0.21}}}
+    p.write_text(json.dumps(doc))
+    assert fence.judge(p)["verdict"] == "OK"
+    doc["baskets"]["docket"]["head_9_after"]["forced_first_share"] = 0.05
+    p.write_text(json.dumps(doc))
+    out = fence.judge(p)
+    assert out["verdict"] == "FAIL"
+    assert any("retail_heavy markets not mined first" in f for f in out["failures"])
+
+
 # ------------------------------------------------------------------------------ judge hour
 def _ranking(fams: list[str]) -> list[dict[str, Any]]:
     return [{"family": f, "rank": i + 1, "ev_per_cell": 1.0, "p": 0.01}
@@ -357,6 +428,9 @@ def test_seat_brief_names_saturated_and_frontier_only_when_fresh(tmp_path: Path)
     p.write_text(json.dumps({"generated_utc": datetime.now(UTC).isoformat(),
                              "steer": {**st, "basket_policy": be.BASKET_POLICY}}))
     assert ps.breadth_steer_lines(p)[-1].startswith("BASKETS: residual")
+    p.write_text(json.dumps({"generated_utc": datetime.now(UTC).isoformat(), "steer": {
+        **st, "forced_first": {"rules": ["retail_heavy: HK50 (all session) -- t"]}}}))
+    assert ps.breadth_steer_lines(p)[-1].startswith("FORCED FIRST")
     p.write_text(json.dumps({"generated_utc": (datetime.now(UTC) - timedelta(hours=9))
                              .isoformat(), "steer": st}))
     assert ps.breadth_steer_lines(p) == []

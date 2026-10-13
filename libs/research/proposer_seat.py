@@ -431,6 +431,11 @@ def breadth_steer_lines(path: Path | None = None) -> list[str]:
                    + ", ".join(front))
     if isinstance(st.get("basket_policy"), str) and st["basket_policy"]:
         out.append("BASKETS: " + st["basket_policy"])
+    _ff = st.get("forced_first")
+    ff: dict[str, Any] = _ff if isinstance(_ff, dict) else {}
+    if ff.get("rules"):
+        out.append("FORCED FIRST (mine these markets ahead of every saturated family): "
+                   + "; ".join(str(r) for r in ff["rules"]))
     return out
 
 
