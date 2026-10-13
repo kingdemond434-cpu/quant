@@ -321,6 +321,23 @@ def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict
     return daily, forward
 
 
+def _rostered_certificates() -> dict[str, str]:
+    """certificate cell -> roster name, for every STANDBY or LIVE row of sleeves.json."""
+    try:
+        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError):
+        return {}
+    out: dict[str, str] = {}
+    for r in rows:
+        if not isinstance(r, dict) or str(r.get("status") or "").upper() not in ("LIVE",
+                                                                                    "STANDBY"):
+            continue
+        cell = str((r.get("certificate") or {}).get("cell") or "")
+        if cell and r.get("name"):
+            out.setdefault(cell, str(r["name"]))
+    return out
+
+
 def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     """Daily-R series for every sleeve that has cleared the ten gates, replayed the gauntlet's way.
 
@@ -355,24 +372,17 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
         acct["refused"]["universe"] = str(exc)
         return {}, acct
 
-    seen: set[tuple[str, str, str]] = set()
     out: dict[str, pd.Series] = {}
-    survivors = load_survivors()
-    acct["certificates"] = len(survivors)
-    for sv in survivors:
-        sym, fam, win = sv.get("symbol", ""), sv.get("family", ""), sv.get("window", "")
-        if not sym or not fam or (sym, fam, win) in seen:
-            continue
-        seen.add((sym, fam, win))
-        name = f"{sym}_{fam}_{win}" if win else f"{sym}_{fam}"
+
+    def _price(name: str, sym: str, fam: str, params: dict) -> None:
         try:
             # THE CERTIFICATE'S OWN PARAMS, not defaults. Replaying `{}` runs a different
             # strategy under the certified strategy's name -- the same substitution that put an
             # unconditioned +0.163R behind a conditioned sleeve's +0.276R promotion.
-            cell = eg.build_cell(sym, fam, dict(sv.get("params") or {}), meta)
+            cell = eg.build_cell(sym, fam, dict(params or {}), meta)
             if not cell or cell.get("sigs") is None:
                 acct["refused"][name] = "build_cell returned no signals"
-                continue
+                return
             ser = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
             rejections = ser.attrs.get("geometry_rejections") if ser is not None else None
             if rejections:
@@ -383,7 +393,7 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
                 }
             if ser is None or len(ser) < 2:
                 acct["refused"][name] = f"replay produced {0 if ser is None else len(ser)} days"
-                continue
+                return
             # DATE-INDEXED, and that is not cosmetic. `sample_worlds` stacks sleeves by
             # POSITION, so handing it two series on different clocks pairs unrelated days and
             # destroys every correlation in the book. Measured 2026-09-02: unaligned certified
@@ -394,7 +404,37 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             acct["priced"] += 1
         except Exception as exc:
             acct["refused"][name] = f"{type(exc).__name__}: {exc}"
-    _log(f"certified library: {acct['priced']}/{len(seen)} sleeves priced "
+
+    seen: set[tuple[str, str, str]] = set()
+    survivors = load_survivors()
+    acct["certificates"] = len(survivors)
+    for sv in survivors:
+        sym, fam, win = sv.get("symbol", ""), sv.get("family", ""), sv.get("window", "")
+        if not sym or not fam or (sym, fam, win) in seen:
+            continue
+        seen.add((sym, fam, win))
+        _price(f"{sym}_{fam}_{win}" if win else f"{sym}_{fam}", sym, fam,
+               dict(sv.get("params") or {}))
+    # EVERY ROSTERED CERTIFICATE IS PRICED UNDER ITS OWN NAME (2026-10-13). The loop above prices
+    # ONE certificate per (symbol, family, window) -- the first one -- under the cell's name, so a
+    # rostered variant (another timeframe or parameter set of the same cell) either borrowed that
+    # first certificate's reading through the promoter's `sym|family|selector` join, or, when the
+    # first replay was refused, joined nothing and sat at STANDBY unpriced: measured, 14 certified
+    # XAUUSD sleeves (M5 macro_conditional and range_reversion, M15/M30 cross_asset_residual,
+    # the SRB rr/wb variants) for ~13 days. Each STANDBY or LIVE row whose certificate is in the
+    # survivors file is replayed on that certificate's params under the row's own name, which the
+    # promoter's raw-name join reaches first. A replay that fails is named in `refused`.
+    rostered = _rostered_certificates()
+    for sv in survivors:
+        name = rostered.get(str(sv.get("cell") or ""))
+        sym, fam = sv.get("symbol", ""), sv.get("family", "")
+        if not name or name in out or name in acct["refused"] or not sym or not fam:
+            continue
+        _price(name, sym, fam, dict(sv.get("params") or {}))
+    acct["rostered_certificates"] = len(rostered)
+    acct["rostered_unpriced"] = sorted(n for n in rostered.values() if n not in out)
+    _log(f"certified library: {acct['priced']} sleeves priced ({len(seen)} cells, "
+         f"{len(rostered)} rostered certificates) "
          f"({acct['certificates']} certificates), {len(acct['refused'])} refused")
     return out, acct
 
@@ -3087,8 +3127,11 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
     rostered: set[str] = set()
     try:
         rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        # STANDBY rows too (2026-10-13): a priced STANDBY certificate the solve gives nothing
+        # gets the same recorded zero, so the promoter reads a refusal, not "never priced".
         rostered = {str(r.get("name")) for r in rows
-                    if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE"}
+                    if isinstance(r, dict)
+                    and str(r.get("status") or "").upper() in ("LIVE", "STANDBY")}
     except (OSError, ValueError, AttributeError):
         rostered = set()
     rostered |= {str(k) for k in (extra or {})}

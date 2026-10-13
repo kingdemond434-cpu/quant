@@ -154,6 +154,7 @@ def load_survivors() -> list[dict[str, Any]]:
             }
         if not axes:
             continue
+        axes["cell"] = str(r.get("cell") or "")
         axes["hunt"] = str(r.get("hunt") or "")
         axes["days"] = str(r.get("days") or "")
         out.append(axes)
