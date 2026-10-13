@@ -786,6 +786,8 @@ def test_a_page_dropped_for_its_form_lands_raw_and_is_not_a_yield(monkeypatch,
             return _CSV.decode()
         if "bot.test" in url:
             return "<html><title>Just a moment...</title>Checking your browser</html>"
+        if "bare.test" in url:                 # long enough to read, and no endpoint in it
+            return "<html><body><p>" + "Monthly reserves, table below. " * 80 + "</p></html>"
         return _BARE_PAGE
 
     monkeypatch.setattr(dfm, "_http", fake)
