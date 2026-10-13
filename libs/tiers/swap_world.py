@@ -35,12 +35,16 @@ import pandas as pd
 NAME = "swap_rollover_stress"
 SWAP_MULT = 3.0
 TRIPLE_WEEKDAYS: tuple[int, ...] = (2, 4)            # Wednesday and Friday
-ROLLOVER_HOUR_UTC = 21
-ROLLOVER_BAR_HOURS: tuple[int, ...] = (21, 22)
+#: Server midnight (the bars are broker stamps): the night ending on day d. Was 21, three hours
+#: early in the bars' own clock; the stress keeps its Wednesday-and-Friday triple on day d.
+ROLLOVER_HOUR_SERVER = 24
+ROLLOVER_HOUR_UTC = ROLLOVER_HOUR_SERVER   # kept for importers; never a UTC hour
+#: The two server-clock bars that straddle the rollover: the last hour before it and the first after.
+ROLLOVER_BAR_HOURS: tuple[int, ...] = (23, 0)
 ROLLOVER_SPREAD_MULT = 6.0
 WHAT = ("per-bar swap/rollover stress: each rollover stamp a trade holds through charged at 3x the "
-        "worse-side swap with BOTH Wednesday and Friday triple, and a leg filled on a 21:00/22:00 "
-        "UTC rollover bar pays the spread x6; the engine's baseline financing is subtracted first")
+        "worse-side swap with BOTH Wednesday and Friday triple, and a leg filled on a 23:00/00:00 "
+        "server-clock rollover bar pays the spread x6; the engine's baseline financing is subtracted first")
 
 
 def _utc_naive(t: Any) -> pd.Timestamp:
@@ -62,13 +66,13 @@ def stressed_nights(entry: Any, exit_at: Any, *, hour: int = ROLLOVER_HOUR_UTC,
     while day <= b:
         stamp = day + timedelta(hours=hour)
         if a < stamp <= b:
-            total += 3 if stamp.weekday() in triple_weekdays else 1
+            total += 3 if day.weekday() in triple_weekdays else 1
         day += timedelta(days=1)
     return total
 
 
 def baseline_nights(entry: Any, exit_at: Any) -> float:
-    """The engine's own count (Wednesday triple, 21:00 UTC), or this module's Wednesday-only walk
+    """The engine's own count (Wednesday-night triple, server midnight), or this module's Wednesday-only walk
     when the engine is not importable."""
     try:
         from mt5desk.engine import rollovers_between

@@ -177,8 +177,8 @@ def cost_model(meta: dict[str, Any]) -> dict[str, Any]:
 def nights_between(a_ns: np.ndarray, b_ns: np.ndarray) -> np.ndarray:
     """`engine.rollovers_between`, vectorised: rollover instants strictly after a and at or
     before b, the triple-swap weekday counting three."""
-    from mt5desk.engine import ROLLOVER_HOUR_UTC, TRIPLE_SWAP_WEEKDAY
-    off = ROLLOVER_HOUR_UTC * 3600 * 10**9
+    from mt5desk.engine import ROLLOVER_HOUR_SERVER, TRIPLE_SWAP_WEEKDAY
+    off = ROLLOVER_HOUR_SERVER * 3600 * 10**9
     da = np.floor_divide(a_ns - off, NS_DAY)
     db = np.floor_divide(b_ns - off, NS_DAY)
     k = np.maximum(db - da, 0)
