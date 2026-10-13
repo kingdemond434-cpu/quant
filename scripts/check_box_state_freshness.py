@@ -99,8 +99,9 @@ def _git(root: Path, *args: str) -> tuple[int, str]:
 
 def is_box_commit(author: str, subject: str, box_author: str = BOX_AUTHOR) -> bool:
     """A box write: the publisher's subject, or (older commits) the box's own author name."""
-    return bool(BOX_SUBJECT_RE.match(subject.strip())) or \
-        bool(box_author) and box_author.lower() in author.strip().lower()
+    if BOX_SUBJECT_RE.match(subject.strip()):
+        return True
+    return bool(box_author) and box_author.lower() in author.strip().lower()
 
 
 def _newest_box_commit(root: Path, use: str, paths: list[str],
@@ -111,7 +112,7 @@ def _newest_box_commit(root: Path, use: str, paths: list[str],
         rc, out = _git(root, "log", "-1", *sel, "--format=%ct%x09%h%x09%an", use, "--", *paths)
         if rc != 0 or not out.strip():
             continue
-        ct, sha, who = (out.strip().split("\t") + ["", ""])[:3]
+        ct, sha, who = [*out.strip().split("\t"), "", ""][:3]
         try:
             row = (int(ct), sha, who)
         except ValueError:

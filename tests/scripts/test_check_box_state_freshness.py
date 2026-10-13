@@ -104,7 +104,8 @@ def test_no_box_evidence_is_unmeasured_and_fails(tmp_path: Path) -> None:
     assert doc["verdict"] == "UNMEASURED", doc
 
 
-BOX_MSG = "mt5 box state 2026-10-13_1635 (published onto origin; inbound code left to MT5-AdoptRelease)"
+BOX_MSG = ("mt5 box state 2026-10-13_1635 (published onto origin; inbound code left to "
+           "MT5-AdoptRelease)")
 
 
 @needs_git
