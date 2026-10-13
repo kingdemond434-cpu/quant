@@ -127,11 +127,11 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                    "why": ("its Terms s.5 bar automated extraction of its pages, so public "
                            "posts are read for ideas only; data goes through its API")},
     "telegram": {"hosts": ("t.me", "telegram.me"), "routes": ("telegram",),
-                 "sources": ("telegram",), "status": PUBLIC_PAGE,
-                 "why": ("public channel web previews (t.me/s/<channel>) are served to anyone "
-                         "with no account, login, CAPTCHA or region lock; fetched politely at "
-                         "the free stack's 4h cadence, aggregated to daily counts, no content "
-                         "reproduced and nothing used for model training"),
+                 "sources": ("telegram",), "status": IDEAS_ONLY,
+                 "why": ("auditor ruling 2026-10-13: the content-licensing terms bar scraping, "
+                         "aggregation or AI/ML use of platform data (llm_ai clause below), so "
+                         "public t.me/s previews are read for ideas only, never live input. "
+                         "One-line revert: status -> PUBLIC_PAGE if the licence changes"),
                  "terms": {"url": "https://telegram.org/tos/content-licensing",
                            "checked_at": "2026-10-13",
                            "clauses": {

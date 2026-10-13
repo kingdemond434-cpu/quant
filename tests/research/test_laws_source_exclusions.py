@@ -59,7 +59,7 @@ POLICY = (
     ("https://nitter.net/x", "nitter", tf.METHOD_BLOCKED),
     ("https://nitter.some-new-instance.example/x", "nitter", tf.METHOD_BLOCKED),
     ("https://xcancel.com/L1vsun/rss", "nitter", tf.METHOD_BLOCKED),
-    ("https://t.me/s/forexsignals", "telegram", tf.PUBLIC_PAGE),
+    ("https://t.me/s/forexsignals", "telegram", tf.IDEAS_ONLY),
     ("https://www.mql5.com/en/code", "mql5", tf.IDEAS_ONLY),
     ("https://finance.yahoo.com/quote/GC=F", "yahoo", tf.IDEAS_ONLY),
     ("https://12ft.io/https://www.ft.com/x", "paywall_proxy", tf.METHOD_BLOCKED),
