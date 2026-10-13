@@ -354,7 +354,7 @@ def test_a_short_span_macro_column_is_unmeasured_with_its_span_named() -> None:
     assert "covers 20 of" in fs.unmeasured["d_vix"]
 
 
-def test_instrument_returns_are_rebuilt_from_the_two_legs() -> None:
+def test_instrument_returns_are_rebuilt_from_the_two_legs(tmp_path: Path) -> None:
     frame = _factor_frame()
     fs = leg_factors.factor_set(frame)
     assert fs is not None
@@ -362,4 +362,4 @@ def test_instrument_returns_are_rebuilt_from_the_two_legs() -> None:
     assert r is not None
     want = frame["EUR"].fillna(0).to_numpy() - frame["CHF"].fillna(0).to_numpy()
     assert np.allclose(r, want)
-    assert leg_factors.instrument_returns(fs, "XAUUSD") is None
+    assert leg_factors.instrument_returns(fs, "XAUUSD", universe=tmp_path) is None

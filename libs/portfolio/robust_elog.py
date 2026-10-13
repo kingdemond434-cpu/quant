@@ -1129,6 +1129,7 @@ def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
         if x.std() <= 0 or y.std() <= 0:
             continue
         fb = float(min(1.0, abs(np.corrcoef(x, y)[0, 1])))
+        c[i, j] = c[j, i] = fb                 # the blend's realised half reads the same days
         if fb > target[i, j]:
             target[i, j] = target[j, i] = fb
     if not np.any(target - np.eye(n)):
