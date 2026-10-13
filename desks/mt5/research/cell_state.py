@@ -48,11 +48,17 @@ THE LEDGER (`publish`). One state per cell, durable across passes:
 NO CELL EVER ENDS UNTESTABLE (principal, 2026-10-13). What used to be a terminal --
 IMPOSSIBLE_TO_BUILD, INSUFFICIENT_PUBLIC_HISTORY, PIT_UNVERIFIABLE, NOT_MT5_EXPRESSIBLE,
 DATA_SOURCE_PERMANENTLY_UNAVAILABLE, or a parked never-fires / too-rare bank cell -- is kept as
-`convert_from`, and the cell enters CONVERT with a named `conversion_reason` (proxy_series,
-coarser_timeframe, event_study_form, regime_child, cross_asset_transplant). The cells are
-handed to the Breadth converter through `data/hypotheses/cell_convert_queue.json` (Breadth owns
-the converter; nothing here converts), UNMEASURED_UNTIL_CONSUMED until the consumer acks in
-`cell_convert_acks.json`. `--fence` fails when a cell sits in CONVERT past CONVERT_STALE_H.
+`convert_from`, and the cell enters CONVERT under the ONE converter contract: the handoff row
+schema of `judge_coverage.write_conversion_handoff` (`conversion_handoff.json`), with a failure
+`class` from its FAILURE_ROUTES and that route's `axes`. This module writes its Gate -2 rows to
+`data/hypotheses/cell_convert_queue.json` (same schema, `source: "cell_state"`), which is folded
+into the one handoff file Breadth reads; parked bank cells are handed off by the bank's own
+writer, never twice. Breadth owns the converter, its attempts sidecar
+(`data/conversion_attempts.jsonl`) and its staleness fence. A queued cell counts as consumed
+when that sidecar holds a row for it; an absent or unreadable sidecar is UNMEASURED.
+
+THE FENCE PUBLISHED HERE is the no-limbo one only: a waiting cell that names no dependency or
+repair owner fails it. Its verdict is written into CELL_STATE.json on every merge pass.
 
 Sources: the shipped docket (stamped above), the unrunnable bank (`judge_coverage`'s parked
 cells, which never reach the docket while parked) and the gate ledger. JUDGING is the READY
@@ -93,12 +99,14 @@ SKIP_LEDGERS = (UNIVERSE / "bar_coverage_skips.json", UNIVERSE / "bar_coverage_t
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
 LEDGER = HYP / "cell_state_ledger.json"
 REPORT = BASE / "reports" / "CELL_STATE.json"
-#: THE HAND-OFF TO THE BREADTH CONVERTER. Breadth owns the converter and its fence; this ledger
-#: only emits the queue. Until a consumer writes CONVERT_ACKS, the queue is
-#: UNMEASURED_UNTIL_CONSUMED -- a list nobody has read is not a conversion.
+#: THE HAND-OFF TO THE BREADTH CONVERTER, in the one contract (judge_coverage's handoff schema).
 CONVERT_QUEUE = HYP / "cell_convert_queue.json"
-CONVERT_ACKS = HYP / "cell_convert_acks.json"
+HANDOFF_SCHEMA_VERSION = 1
 CONVERT_QUEUE_MAX = 20000
+#: Breadth's own sidecar: one row per conversion attempt. Read only, never written here.
+CONVERSION_ATTEMPTS = BASE / "data" / "conversion_attempts.jsonl"
+#: The incremental byte-offset cursor over the gate ledger (pass/fail per judged cell).
+JUDGED_CURSOR = HYP / "cell_state_judged_cursor.json"
 
 SCHEMA = "cell-state/1"
 FLAG_PREFIX = "gate_minus2:"
@@ -119,9 +127,17 @@ NO_SOURCE = "DATA_SOURCE_PERMANENTLY_UNAVAILABLE"
 CONVERT_FROM: tuple[str, ...] = (IMPOSSIBLE, NO_HISTORY, PIT_BAD, NOT_MT5, NO_SOURCE,
                                  "PARKED_UNRUNNABLE")
 CONVERT = "CONVERT"
-#: the converter's vocabulary: how an untestable-as-specified cell becomes a testable one
-CONVERSIONS: tuple[str, ...] = ("proxy_series", "coarser_timeframe", "event_study_form",
-                                "regime_child", "cross_asset_transplant")
+#: THE ONE ROUTE TABLE: the failure classes of judge_coverage.FAILURE_ROUTES (#290) that a Gate -2
+#: or bank conversion lands in, with their owner and conversion axes, spelled the same way.
+HANDOFF_ROUTES: dict[str, dict[str, Any]] = {
+    "untradeable_symbol": {"owner": "converter", "axes": ["cross_asset_transplant"]},
+    "short_history": {"owner": "converter",
+                      "axes": ["proxy_series", "cross_asset_transplant", "coarser_timeframe"]},
+    "untestable_as_specified": {"owner": "converter",
+                                "axes": ["event_study", "coarser_timeframe", "regime_child",
+                                         "cross_asset_transplant"]},
+    "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
+}
 CONVERTER_OWNER = "breadth_converter"
 TERMINALS: tuple[str, ...] = (JUDGED_PASS, JUDGED_FAIL)
 WAITING: tuple[str, ...] = (BLOCKED, REPAIRING, CONVERT)
@@ -138,8 +154,6 @@ TRANSITIONS: dict[str, frozenset[str]] = {
     CONVERT: frozenset({READY, PREFLIGHT, BLOCKED}),      # the converted child re-enters
     **{t: frozenset({JUDGED_PASS, JUDGED_FAIL}) for t in TERMINALS},   # absorbing: re-verdict only
 }
-#: A cell in CONVERT longer than this with no consumer acting on it fails the fence.
-CONVERT_STALE_H = 72.0
 
 #: Same constant as judge_coverage.CPCV_MIN_DAYS (a test pins them together).
 CPCV_MIN_DAYS = 60
@@ -172,6 +186,7 @@ OWNERS: dict[str, str] = {
     "clock": "the cell becomes usable when its available_time passes",
     "universe_registry": "fetch_universe (the registry gains the symbol)",
     "family_registry": "mt5desk.families (the family resolves)",
+    "judge": "the sealed judge's next sweep (names the reason; ranked by UnlockValue)",
     "breadth_converter": "the Breadth converter (owned by the Breadth session): consumes "
                          "data/hypotheses/cell_convert_queue.json and mints the converted child",
 }
@@ -260,7 +275,8 @@ class Context:
 
     def __init__(self, *, now: datetime | None = None, universe: Path | None = None,
                  gate_ledger: Path | None = None, live_families: Iterable[str] | None = None,
-                 judged: Mapping[str, bool] | None = None) -> None:
+                 judged: Mapping[str, bool] | None = None,
+                 judged_cursor: Path | None = None) -> None:
         self.now = now or datetime.now(tz=UTC)
         self.universe = universe or UNIVERSE
         reg = _read(self.universe / REGISTRY.name)
@@ -286,7 +302,8 @@ class Context:
         self.families = (frozenset(live_families) if live_families is not None
                          else _live_families())
         self.judged: dict[str, bool] = (dict(judged) if judged is not None
-                                        else judged_outcomes(gate_ledger or GATE_LEDGER))
+                                        else judged_outcomes(gate_ledger or GATE_LEDGER,
+                                                             judged_cursor))
         self._days: dict[tuple[str, str], int | None] = {}
         self.measured = {
             "registry": bool(self.registry), "bar_lake": self.lake,
@@ -342,18 +359,42 @@ def _live_families() -> frozenset[str]:
         return frozenset()
 
 
-def judged_outcomes(path: Path) -> dict[str, bool]:
+def judged_outcomes(path: Path, cursor: Path | None = None) -> dict[str, bool]:
     """cell -> passed, over the gate ledger, with judge_coverage.judged_index's own filter: a
-    NOT_RUN deferral or an UNKNOWN without a pass is not a verdict. The LAST verdict wins."""
+    NOT_RUN deferral or an UNKNOWN without a pass is not a verdict. The LAST verdict wins.
+
+    BOUNDED BY A BYTE-OFFSET CURSOR: with `cursor`, only the bytes appended since the last pass
+    are parsed and the outcomes are carried in the cursor file. A ledger SHORTER than the
+    cursor's offset (rotated or rewritten) is re-read from byte 0; an unreadable cursor is a full
+    read, never an empty answer.
+    """
     out: dict[str, bool] = {}
+    start = 0
+    if cursor is not None:
+        doc = _read(cursor)
+        try:
+            size = path.stat().st_size
+        except OSError:
+            return out
+        if isinstance(doc, dict) and str(doc.get("path")) == str(path) \
+                and isinstance(doc.get("offset"), int) and 0 <= doc["offset"] <= size:
+            start = int(doc["offset"])
+            out.update(dict.fromkeys(doc.get("passed") or [], True))
+            out.update(dict.fromkeys(doc.get("failed") or [], False))
     try:
-        fh = path.open("r", encoding="utf-8", errors="replace")
+        fh = path.open("rb")
     except OSError:
         return out
+    offset = start
     with fh:
-        for line in fh:
-            if '"cell"' not in line:
+        fh.seek(start)
+        for raw in fh:
+            if not raw.endswith(b"\n"):
+                break                                  # a half-written last line: next pass
+            offset += len(raw)
+            if b'"cell"' not in raw:
                 continue
+            line = raw.decode("utf-8", errors="replace")
             try:
                 row = json.loads(line)
             except ValueError:
@@ -366,6 +407,34 @@ def judged_outcomes(path: Path) -> dict[str, bool]:
             if not passed and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
                 continue
             out[str(row["cell"])] = passed
+    if cursor is not None:
+        try:
+            body = {"path": str(path), "offset": offset,
+                    "passed": sorted(c for c, v in out.items() if v),
+                    "failed": sorted(c for c, v in out.items() if not v)}
+            tmp = cursor.with_suffix(cursor.suffix + ".tmp")
+            tmp.write_text(json.dumps(body), "utf-8")
+            os.replace(tmp, cursor)
+        except OSError:
+            pass
+    return out
+
+
+def attempted_cells(path: Path) -> set[str] | None:
+    """Cells Breadth's converter has attempted (its sidecar), or None when UNMEASURED."""
+    try:
+        fh = path.open("r", encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    out: set[str] = set()
+    with fh:
+        for line in fh:
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict) and row.get("cell"):
+                out.add(str(row["cell"]))
     return out
 
 
@@ -380,36 +449,46 @@ def _hold(check: str, reason: str, dep: str, owner: str, action: str,
             "reopen_conditions": reopen}
 
 
-def _terminal(check: str, convert_from: str, conversion: str, reason: str, owner: str,
-              action: str, reopen: list[str]) -> dict[str, Any]:
+def _terminal(check: str, convert_from: str, cls: str, reason: str, owner: str,
+              action: str, reopen: list[str],
+              missing_input: dict[str, Any] | None = None) -> dict[str, Any]:
     """What used to be a terminal: now CONVERT, with the would-be terminal kept as
-    `convert_from`, a named conversion, and the Breadth converter as the owner. The organ that
+    `convert_from` and the failure `class` + `axes` of the one route table. The organ that
     would have reopened it (`origin_owner`) and its reopen conditions are kept beside."""
+    route = HANDOFF_ROUTES[cls]
+    who = CONVERTER_OWNER if route["owner"] == "converter" else "judge"
     return {"check": check, "verdict": CONVERT, "state": CONVERT, "reason": reason,
-            "convert_from": convert_from, "conversion_reason": conversion,
-            "dependency": f"convert:{conversion}", "owner": CONVERTER_OWNER,
-            "origin_owner": owner,
-            "next_action": f"convert by {conversion} (Breadth converter queue); {action}",
+            "convert_from": convert_from, "class": cls, "axes": list(route["axes"]),
+            "missing_input": missing_input,
+            "dependency": f"convert:{cls}", "owner": who, "origin_owner": owner,
+            "next_action": f"{route['owner']} resolves class {cls} by {route['axes']}; {action}",
             "reopen_conditions": [*reopen, "the converted child is judged"]}
+
+
+def _bars_input(sym: str, tf: str) -> dict[str, Any]:
+    """judge_coverage._missing_input's `no_bars` shape, so the converter reads one form."""
+    return {"kind": "bars", "symbol": sym, "timeframe": tf,
+            "file": f"universe/{sym}_{tf}.parquet", "clock": "broker NY+7"}
 
 
 def _bars_missing(sym: str, tf: str, ctx: Context, *, peer: bool) -> dict[str, Any]:
     who = "peer " if peer else ""
     skip = ctx.skips.get(sym.upper())
     if skip == "NOT_OFFERED":
-        return _terminal("bars", NO_SOURCE, "cross_asset_transplant",
+        return _terminal("bars", NO_SOURCE, "untradeable_symbol",
                          f"{who}{sym} has no {tf} bars and the broker does not quote it "
                          "(fetch_universe skip ledger: NOT_OFFERED)", "universe_registry",
                          "none until the broker lists the symbol",
                          [f"{sym} leaves the NOT_OFFERED skip ledger",
-                          f"{sym}_{tf}.parquet appears on this host"])
+                          f"{sym}_{tf}.parquet appears on this host"], _bars_input(sym, tf))
     if skip == "INSUFFICIENT_HISTORY":
-        return _terminal("bars", NO_HISTORY, "proxy_series",
+        return _terminal("bars", NO_HISTORY, "short_history",
                          f"{who}{sym} has no {tf} bars: the broker's history is below the "
                          "walk-forward minimum (skip ledger: INSUFFICIENT_HISTORY)",
                          "refresh_bars", "re-fetched as the symbol ages",
                          [f"{sym}_{tf}.parquet appears on this host",
-                          f"{sym} leaves the INSUFFICIENT_HISTORY skip ledger"])
+                          f"{sym} leaves the INSUFFICIENT_HISTORY skip ledger"],
+                         _bars_input(sym, tf))
     return _hold("bars", f"{who}{sym} has no {tf} bar file on this host", f"bars:{sym}_{tf}",
                  "refresh_bars", f"fetch {sym} (fetch_universe --symbols {sym})",
                  [f"{sym}_{tf}.parquet appears on this host"])
@@ -428,7 +507,7 @@ def gate_minus2(row: Mapping[str, Any], ctx: Context, *,
     sym, tf, fam = _sym(row), _tf(row), str(row.get("family") or "")
     # family: the implementation must resolve, or the judge can only fail to build it
     if ctx.families and fam not in ctx.families:
-        out.append(_terminal("family", IMPOSSIBLE, "event_study_form",
+        out.append(_terminal("family", IMPOSSIBLE, "untestable_as_specified",
                              f"family {fam!r} does not resolve in mt5desk.families on this host",
                              "family_registry", "implement or register the family",
                              [f"{fam} appears in live_family_names()"]))
@@ -437,7 +516,7 @@ def gate_minus2(row: Mapping[str, Any], ctx: Context, *,
         for s in [sym, *_peers(row)]:
             if s and not ctx.expressible(s):
                 out.append(_terminal("asset_mapping", NOT_MT5,
-                                     "cross_asset_transplant",
+                                     "untradeable_symbol",
                                      f"{s} is not in the MT5 universe registry and has no bar "
                                      "file here", "universe_registry",
                                      "map the instrument to an MT5 symbol or re-mint the cell",
@@ -455,7 +534,7 @@ def gate_minus2(row: Mapping[str, Any], ctx: Context, *,
         else:
             avail = _ts(row.get("available_time"))
             if avail is None:
-                out.append(_terminal("pit", PIT_BAD, "proxy_series",
+                out.append(_terminal("pit", PIT_BAD, "unnamed",
                                      "available_time does not parse, so when this row became "
                                      "knowable cannot be verified", "merge_hypotheses",
                                      "the producer re-emits the row with a valid stamp",
@@ -502,7 +581,7 @@ def gate_minus2(row: Mapping[str, Any], ctx: Context, *,
             days = ctx.possible_days(sym, tf)
             if days is not None and days < CPCV_MIN_DAYS:
                 out.append(_terminal("observations", NO_HISTORY,
-                                     "proxy_series",
+                                     "short_history",
                                      f"{sym}_{tf} spans at most {days} day(s); CPCV needs "
                                      f"{CPCV_MIN_DAYS} daily observations",
                                      "refresh_bars", "re-judged as the history grows",
@@ -574,7 +653,8 @@ def stamp(rows: list[dict[str, Any]], ctx: Context | None = None
         if verdicts:
             top = verdicts[0]
             keep = ("state", "reason", "dependency", "owner", "next_action",
-                    "reopen_conditions", "convert_from", "conversion_reason", "origin_owner")
+                    "reopen_conditions", "convert_from", "class", "axes", "missing_input",
+                    "origin_owner")
             stamp_: dict[str, Any] = {k: top[k] for k in keep if k in top}
             stamp_["check"] = top["check"]
             stamp_["checks"] = sorted({v["check"] for v in verdicts})
@@ -627,10 +707,13 @@ def unmeasured_checks(ctx: Context) -> list[str]:
 #: A parked cell untestable AS SPECIFIED is converted, never left parked; readmit_due still
 #: re-admits the original on history growth in parallel. Build faults, missing charts and
 #: missing inputs are repairable HOLDs with their own owners, not conversions.
-BANK_CONVERSION: dict[str, str] = {"never_fires": "coarser_timeframe",
-                                   "too_rare": "event_study_form",
-                                   "lockbox_consumed_history": "proxy_series",
-                                   "short_history_after_cut": "proxy_series"}
+#: Classes are judge_coverage.FAILURE_CLASS's for the same reasons. These cells are handed to the
+#: converter by the bank's own writer (`write_conversion_handoff`), so they are COUNTED here and
+#: never written to CONVERT_QUEUE a second time.
+BANK_CONVERSION: dict[str, str] = {"never_fires": "untestable_as_specified",
+                                   "too_rare": "untestable_as_specified",
+                                   "lockbox_consumed_history": "short_history",
+                                   "short_history_after_cut": "short_history"}
 
 
 def _bank_entry(cell: str, row: Mapping[str, Any]) -> dict[str, Any]:
@@ -647,9 +730,9 @@ def _bank_entry(cell: str, row: Mapping[str, Any]) -> dict[str, Any]:
         return {"state": CONVERT, "reason": f"unrunnable bank: {reason}",
                 "dependency": f"convert:{conv}", "owner": CONVERTER_OWNER,
                 "origin_owner": "readmit", "convert_from": "PARKED_UNRUNNABLE",
-                "conversion_reason": conv, "priority": 1.0,
+                "class": conv, "axes": list(HANDOFF_ROUTES[conv]["axes"]), "priority": 1.0,
                 "since": str(row.get("parked_at") or ""), "source": "unrunnable_bank",
-                "check": reason, "sym": sym, "tf": tf, "family": fam}
+                "check": reason, "sym": sym, "tf": tf, "family": fam, "cls": conv}
     elif reason == "missing_identity_input":
         dep, owner = f"input:{fam}", "complete_inputs"
     else:
@@ -708,10 +791,9 @@ def build(rows: list[dict[str, Any]], *, bank: Mapping[str, Mapping[str, Any]],
                          "check": cs.get("check") or (
                              "already_tested" if state in (JUDGED_PASS, JUDGED_FAIL) else "")}
         if state == CONVERT:
-            entries[cell].update(convert_from=cs.get("convert_from"),
-                                 conversion_reason=cs.get("conversion_reason"),
-                                 sym=_sym(row), tf=_tf(row), family=row.get("family"),
-                                 params=row.get("params"))
+            entries[cell].update(convert_from=cs.get("convert_from"), cls=cs.get("class"),
+                                 axes=cs.get("axes"), missing_input=cs.get("missing_input"),
+                                 sym=_sym(row), tf=_tf(row), family=row.get("family"))
     for cell, brow in bank.items():
         if cell in entries or not isinstance(brow, Mapping):
             continue
@@ -758,7 +840,7 @@ def build(rows: list[dict[str, Any]], *, bank: Mapping[str, Mapping[str, Any]],
         if e["state"] in (READY, JUDGING, JUDGED_PASS, JUDGED_FAIL):
             continue                                  # not persisted: the docket/ledger hold it
         # BLOCKED <-> REPAIRING keeps its clock; CONVERT starts its own at the hand-off, so the
-        # staleness fence measures the converter's latency, not the cell's parked history
+        # hand-off time is the cell's first_parked_utc in the converter's queue
         same_family = b_state is not None and (
             b_state == e["state"] or ({b_state, e["state"]} <= {BLOCKED, REPAIRING}))
         if same_family and isinstance(before, list) and len(before) > 1:
@@ -786,18 +868,19 @@ def build(rows: list[dict[str, Any]], *, bank: Mapping[str, Mapping[str, Any]],
                       "reason": oldest[1].get("reason")}
     states = Counter(e["state"] for e in entries.values())
     converting = [(c, e) for c, e in entries.items() if e["state"] == CONVERT]
-    stale = []
-    for c, e in converting:
-        s_at = _ts(e.get("since"))
-        if s_at is not None and (t - s_at).total_seconds() > CONVERT_STALE_H * 3600:
-            stale.append(c)
-    convert_rows = sorted(
-        ({"cell": c, "symbol": e.get("sym"), "family": e.get("family"), "timeframe": e.get("tf"),
-          "params": e.get("params"), "convert_from": e.get("convert_from"),
-          "conversion_reason": e.get("conversion_reason"), "reason": e.get("reason"),
-          "unlock_value": round(float(e.get("priority") or 1.0), 4), "since": e.get("since"),
-          "source": e.get("source")} for c, e in converting),
-        key=lambda r: (-float(r["unlock_value"] or 0.0), str(r["since"] or ""), str(r["cell"])))
+    # THE HANDOFF ROWS: Gate -2's own conversions only (bank cells go through the bank's writer),
+    # in judge_coverage.write_conversion_handoff's row schema, ranked by UnlockValue.
+    docket_conv = sorted(((c, e) for c, e in converting if e.get("source") == "docket"),
+                         key=lambda ce: (-float(ce[1].get("priority") or 1.0),
+                                         str(ce[1].get("since") or ""), ce[0]))
+    convert_rows = [{"cell": c, "family": e.get("family"), "trial_family": e.get("family"),
+                     "symbol": e.get("sym"), "timeframe": e.get("tf") or "H1",
+                     "reason": e.get("convert_from"), "class": e.get("cls"),
+                     "axes": e.get("axes"), "missing_input": e.get("missing_input"),
+                     "why": e.get("reason"), "first_parked_utc": e.get("since"),
+                     "source": "cell_state",
+                     "unlock_value": round(float(e.get("priority") or 1.0), 4)}
+                    for c, e in docket_conv]
     blocked_by_reason = Counter(str(e.get("check") or "unnamed") for _, e in waiting)
     rate = round(unlocked / hours, 4) if hours and hours > 0 and prior_cells else None
     history = list((prior or {}).get("history") or [])[-(HISTORY_KEEP - 1):]
@@ -819,23 +902,20 @@ def build(rows: list[dict[str, Any]], *, bank: Mapping[str, Mapping[str, Any]],
             "hours_since_prior_pass": round(hours, 3) if hours is not None else None,
             "converted_last_pass": converted if prior_cells else None,
             "convert": states.get(CONVERT, 0),
-            "convert_stale": len(stale),
-            "convert_stale_bound_h": CONVERT_STALE_H,
             "left_without_verdict_last_pass": left if prior_cells else None,
             "target": "unexplained_waiting_cells == 0",
         },
         "states": {s: states.get(s, 0) for s in STATES},
         "terminals_by_state": {s: states.get(s, 0) for s in TERMINALS},
         "convert": {
-            "by_conversion": dict(Counter(str(e.get("conversion_reason"))
-                                          for _, e in converting).most_common()),
+            "by_class": dict(Counter(str(e.get("cls")) for _, e in converting).most_common()),
             "by_convert_from": dict(Counter(str(e.get("convert_from"))
                                             for _, e in converting).most_common()),
-            "stale_examples": stale[:10],
-            "fence": "FAIL" if stale else ("PASS" if converting else "PASS_EMPTY"),
-            "rule": ("no cell ends untestable: every would-be terminal is CONVERT with a named "
-                     "conversion, handed to the Breadth converter; a cell in CONVERT longer "
-                     f"than {CONVERT_STALE_H:.0f}h fails the fence"),
+            "by_source": dict(Counter(str(e.get("source")) for _, e in converting).most_common()),
+            "rule": ("no cell ends untestable: every would-be terminal is CONVERT with a failure "
+                     "class and axes from the one route table; Gate -2 rows go to "
+                     "cell_convert_queue.json, bank rows to the bank's own handoff writer, and "
+                     "Breadth owns the converter and its staleness fence"),
         },
         "transitions_last_pass": dict(transitions.most_common(40)),
         "dependency_queue": ranked[:QUEUE_TOP],
@@ -857,9 +937,10 @@ def build(rows: list[dict[str, Any]], *, bank: Mapping[str, Mapping[str, Any]],
 def publish(rows: list[dict[str, Any]], *, ledger_path: Path | None = None,
             report_path: Path | None = None, capacity: int = 0,
             bank: Mapping[str, Mapping[str, Any]] | None = None,
-            now: datetime | None = None, gate2: Mapping[str, Any] | None = None
-            ) -> dict[str, Any]:
-    """Read the prior ledger and the unrunnable bank, build, write both. Returns the KPIs."""
+            now: datetime | None = None, gate2: Mapping[str, Any] | None = None,
+            attempts_path: Path | None = None) -> dict[str, Any]:
+    """Read the prior ledger and the unrunnable bank, build, write the ledger, the handoff
+    queue and the report. Returns the KPIs."""
     lp, rp = ledger_path or LEDGER, report_path or REPORT
     t = now or datetime.now(tz=UTC)
     readmit: dict[str, bool] = {}
@@ -870,27 +951,21 @@ def publish(rows: list[dict[str, Any]], *, ledger_path: Path | None = None,
                            capacity=capacity, readmit=readmit, now=t)
     qrows = report.pop("_convert_queue", [])
     qp = lp.parent / CONVERT_QUEUE.name
-    acks = _read(lp.parent / CONVERT_ACKS.name)
-    consumed_at = _ts(acks.get("consumed_at")) if isinstance(acks, dict) else None
-    consumer = ("CONSUMING" if consumed_at is not None
-                and (t - consumed_at).total_seconds() <= CONVERT_STALE_H * 3600
-                else "UNMEASURED_UNTIL_CONSUMED")
-    report["convert"].update(queue=str(qp.name), queue_rows=len(qrows), consumer=consumer,
-                             consumer_last_ack=consumed_at.isoformat() if consumed_at else None)
-    queue_doc = {
-        "schema": "cell-convert-queue/1", "at": report["at"], "status": consumer,
-        "rows_total": len(qrows), "rows": qrows[:CONVERT_QUEUE_MAX],
-        "producer": "desks/mt5/research/cell_state.py (Gate -2 / no-limbo ledger)",
-        "consumer": "the Breadth converter (Breadth session owns it and its fence)",
-        "contract": ("each row is a cell untestable AS SPECIFIED, with `convert_from` (the "
-                     "terminal it would have been) and `conversion_reason` (one of "
-                     f"{list(CONVERSIONS)}). The consumer mints the converted child into the "
-                     "docket, where it is judged ranked by `unlock_value`, and writes "
-                     f"{CONVERT_ACKS.name} = {{\"consumed_at\": <iso>, \"cells\": [...]}}. "
-                     "Rows are rewritten every pass and never deleted from the ledger"),
-        "conversions": list(CONVERSIONS),
-    }
-    report.pop("_convert_queue", None)
+    ap_ = attempts_path or (CONVERSION_ATTEMPTS if lp == LEDGER
+                            else lp.parent / CONVERSION_ATTEMPTS.name)
+    attempted = attempted_cells(ap_)
+    queued = {str(r["cell"]) for r in qrows}
+    report["convert"].update(
+        queue=qp.name, queue_rows=len(qrows), attempts_sidecar=str(ap_.name),
+        consumed=(len(queued & attempted) if attempted is not None else None),
+        consumer=("MEASURED" if attempted is not None else "UNMEASURED"),
+        consumer_why=(None if attempted is not None else
+                      f"{ap_.name} is absent or unreadable: consumption is unmeasured, not zero"))
+    queue_doc = {"schema_version": HANDOFF_SCHEMA_VERSION, "generated_utc": report["at"],
+                 "n": len(qrows[:CONVERT_QUEUE_MAX]), "rows": qrows[:CONVERT_QUEUE_MAX]}
+    problems = fence(report)
+    report["fence"] = {"verdict": "FAIL" if problems else "PASS", "problems": problems,
+                       "rule": "every waiting cell names its dependency and repair owner"}
     if gate2 is not None:
         report["gate_minus2"] = dict(gate2)
     for path, doc, indent in ((lp, ledger, None), (qp, queue_doc, None), (rp, report, 1)):
@@ -915,19 +990,13 @@ def _bank_with_readmit(now: datetime) -> tuple[dict[str, dict[str, Any]], dict[s
 
 
 def fence(doc: Mapping[str, Any] | None) -> list[str]:
-    """THE CONVERSION STALENESS FENCE: a problem per breach, [] when clean. A cell sitting in
-    CONVERT past CONVERT_STALE_H fails; so does a waiting cell with no dependency or owner.
-    An absent report is UNMEASURED and is returned as no problem (the caller says so)."""
+    """THE NO-LIMBO FENCE: a problem per breach, [] when clean. A waiting cell that names no
+    dependency or repair owner fails it. (Conversion staleness is Breadth's fence, not this
+    one.) An absent report is UNMEASURED and is returned as no problem (the caller says so)."""
     if not isinstance(doc, Mapping):
         return []
     kpi = doc.get("kpi") if isinstance(doc.get("kpi"), Mapping) else {}
     out = []
-    stale = int((kpi or {}).get("convert_stale") or 0)
-    if stale:
-        ex = ((doc.get("convert") or {}).get("stale_examples") or [])[:3]
-        out.append(f"{stale} cell(s) in CONVERT longer than {CONVERT_STALE_H:.0f}h with no "
-                   f"converted child judged (e.g. {ex}); consumer status "
-                   f"{(doc.get('convert') or {}).get('consumer')}")
     unexplained = int((kpi or {}).get("unexplained_waiting_cells") or 0)
     if unexplained:
         out.append(f"{unexplained} waiting cell(s) name no dependency or repair owner")
@@ -938,7 +1007,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--show", action="store_true", help="print the last pass's KPIs")
     ap.add_argument("--fence", action="store_true",
-                    help="exit 1 when a cell sits in CONVERT past the staleness bound")
+                    help="exit 1 when a waiting cell names no dependency or repair owner")
     args = ap.parse_args(argv)
     doc = _read(REPORT)
     if args.fence:

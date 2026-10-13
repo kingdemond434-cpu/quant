@@ -119,8 +119,9 @@ def test_each_check_routes_with_a_named_owner(host: Path, row: dict, check: str,
     assert st["dependency"], "every waiting cell names its dependency"
     assert st.get("convert_from") == convert_from
     if state == cs.CONVERT:
-        assert st["conversion_reason"] in cs.CONVERSIONS
-        assert st["owner"] == cs.CONVERTER_OWNER
+        assert st["class"] in cs.HANDOFF_ROUTES
+        assert st["axes"] == cs.HANDOFF_ROUTES[st["class"]]["axes"]
+        assert st["owner"] == (cs.CONVERTER_OWNER if st["class"] != "unnamed" else "judge")
     assert f"{cs.FLAG_PREFIX}{st['check']}" in rows[0]["prejudge"]["flags"]
 
 
@@ -220,40 +221,80 @@ def test_refresh_bars_prefers_the_queue_and_falls_back(tmp_path: Path) -> None:
     assert hc.bars_wanted_symbols(cov) == ["AUDCAD"], "a stale ledger steers nothing"
 
 
-def test_parked_cells_convert_and_the_queue_is_handed_off(host: Path, tmp_path: Path) -> None:
-    rows, _ = cs.stamp([_row("WTI"), _row()], _ctx(host))
+HANDOFF_FIELDS = {"cell", "family", "trial_family", "symbol", "timeframe", "reason", "class",
+                  "axes", "missing_input", "why", "first_parked_utc", "source"}
+
+
+def test_gate_minus2_rows_use_the_one_handoff_schema(host: Path, tmp_path: Path) -> None:
+    rows, _ = cs.stamp([_row("WTI"), _row("NOPE"), _row(fam="ghost"), _row("SHORTY"), _row()],
+                       _ctx(host))
     bank = {"EURUSD.trend.p=9": {"reason": "never_fires", "sym": "EURUSD", "tf": "H1",
                                  "family": "trend", "parked_at": "2026-01-01T00:00:00+00:00"},
             "EURUSD.trend.p=8": {"reason": "build_failed", "sym": "EURUSD", "tf": "H1",
                                  "family": "trend"}}
     lp, rp = tmp_path / "cell_state_ledger.json", tmp_path / "CELL_STATE.json"
     k = cs.publish(rows, ledger_path=lp, report_path=rp, bank=bank, now=NOW)
-    assert k["convert"] == 2 and k["convert_stale"] == 0, "the convert clock starts at hand-off"
+    assert k["convert"] == 5, "four Gate -2 conversions and one parked bank cell"
     q = json.loads((tmp_path / cs.CONVERT_QUEUE.name).read_text("utf-8"))
-    assert q["status"] == "UNMEASURED_UNTIL_CONSUMED" and q["rows_total"] == 2
-    by_cell = {r["cell"]: r for r in q["rows"]}
-    assert by_cell["EURUSD.trend.p=9"]["conversion_reason"] == "coarser_timeframe"
-    assert by_cell["EURUSD.trend.p=9"]["convert_from"] == "PARKED_UNRUNNABLE"
-    assert all(r["conversion_reason"] in cs.CONVERSIONS for r in q["rows"])
+    assert q["schema_version"] == 1 and q["n"] == len(q["rows"]) == 4
+    assert set(q) == {"schema_version", "generated_utc", "n", "rows"}
+    for r in q["rows"]:
+        assert HANDOFF_FIELDS <= set(r) and r["source"] == "cell_state"
+        assert r["trial_family"] == r["family"]
+        assert r["axes"] == cs.HANDOFF_ROUTES[r["class"]]["axes"]
+    by_sym = {r["symbol"]: r for r in q["rows"]}
+    assert by_sym["WTI"]["class"] == "untradeable_symbol"
+    assert by_sym["WTI"]["missing_input"]["kind"] == "bars"
+    assert by_sym["NOPE"]["class"] == "untradeable_symbol"
+    assert by_sym["SHORTY"]["class"] == "short_history"
+    assert {r["class"] for r in q["rows"] if r["family"] == "ghost"} == {"untestable_as_specified"}
+    assert "EURUSD.trend.p=9" not in {r["cell"] for r in q["rows"]}, \
+        "bank cells are handed off by the bank's own writer, never twice"
     doc = json.loads(rp.read_text("utf-8"))
     assert doc["states"][cs.BLOCKED] == 1, "a build fault stays a repairable HOLD"
-    assert cs.fence(doc) == []
-    # the consumer acks: status flips
-    (tmp_path / cs.CONVERT_ACKS.name).write_text(json.dumps(
-        {"consumed_at": (NOW + timedelta(hours=1)).isoformat(), "cells": []}), "utf-8")
-    cs.publish(rows, ledger_path=lp, report_path=rp, bank=bank, now=NOW + timedelta(hours=2))
-    assert json.loads(rp.read_text("utf-8"))["convert"]["consumer"] == "CONSUMING"
+    assert doc["convert"]["consumer"] == "UNMEASURED" and doc["convert"]["consumed"] is None
+    assert doc["fence"]["verdict"] == "PASS"
 
 
-def test_the_fence_fails_on_a_stale_conversion(host: Path, tmp_path: Path) -> None:
-    rows, _ = cs.stamp([_row("WTI")], _ctx(host))
+def test_queue_is_written_empty_and_consumption_reads_the_sidecar(host: Path,
+                                                                  tmp_path: Path) -> None:
     lp, rp = tmp_path / "cell_state_ledger.json", tmp_path / "CELL_STATE.json"
+    cs.publish([], ledger_path=lp, report_path=rp, bank={}, now=NOW)
+    q = json.loads((tmp_path / cs.CONVERT_QUEUE.name).read_text("utf-8"))
+    assert q["n"] == 0 and q["rows"] == []
+    rows, _ = cs.stamp([_row("WTI"), _row("NOPE")], _ctx(host))
+    cell = rows[0]["cell_state"]["cell"]
+    (tmp_path / cs.CONVERSION_ATTEMPTS.name).write_text(
+        json.dumps({"cell": cell, "axis": "cross_asset_transplant"}) + "\nnot json\n", "utf-8")
     cs.publish(rows, ledger_path=lp, report_path=rp, bank={}, now=NOW)
-    later = NOW + timedelta(hours=cs.CONVERT_STALE_H + 1)
-    k = cs.publish(rows, ledger_path=lp, report_path=rp, bank={}, now=later)
-    assert k["convert_stale"] == 1
     doc = json.loads(rp.read_text("utf-8"))
-    assert doc["convert"]["fence"] == "FAIL"
-    problems = cs.fence(doc)
-    assert problems and "CONVERT" in problems[0]
+    assert doc["convert"]["consumer"] == "MEASURED" and doc["convert"]["consumed"] == 1
+
+
+def test_the_fence_is_published_and_names_unexplained_waiting(tmp_path: Path) -> None:
+    lp, rp = tmp_path / "cell_state_ledger.json", tmp_path / "CELL_STATE.json"
+    cs.publish([], ledger_path=lp, report_path=rp, bank={"X.y.p=1": {"reason": "mystery"}},
+               now=NOW)
+    doc = json.loads(rp.read_text("utf-8"))
+    assert doc["fence"]["verdict"] == "FAIL"
+    assert "no dependency or repair owner" in doc["fence"]["problems"][0]
+    assert cs.fence(doc) == doc["fence"]["problems"]
     assert cs.fence(None) == [], "an absent report is UNMEASURED, not a breach"
+    assert not any("CONVERT" in p for p in cs.fence(doc)), "conversion staleness is Breadth's"
+
+
+def test_gate_ledger_is_read_incrementally(tmp_path: Path) -> None:
+    led, cur = tmp_path / "gate_verdict_ledger.jsonl", tmp_path / "cursor.json"
+    led.write_text("".join(json.dumps(r) + "\n" for r in (
+        {"cell": "a", "terminal_gate": "G3", "passed": False},
+        {"cell": "b", "passed": True},
+        {"cell": "c", "terminal_gate": "UNKNOWN", "passed": False},
+        {"cell": "d", "downstream_status": "NOT_RUN_DATA_MISSING"})), "utf-8")
+    assert cs.judged_outcomes(led, cur) == {"a": False, "b": True}
+    off = json.loads(cur.read_text("utf-8"))["offset"]
+    assert off == led.stat().st_size
+    with led.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"cell": "a", "passed": True}) + "\n" + '{"cell": "e", "pass')
+    assert cs.judged_outcomes(led, cur) == {"a": True, "b": True}, "half line waits a pass"
+    led.write_text(json.dumps({"cell": "z", "passed": True}) + "\n", "utf-8")
+    assert cs.judged_outcomes(led, cur) == {"z": True}, "a shorter ledger is re-read from 0"

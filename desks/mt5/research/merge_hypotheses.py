@@ -1015,7 +1015,10 @@ def main() -> int:
         from research import cell_state as _cst
         _n = len(rows_out)
         # SHALLOW COPIES are stamped, so a fault leaves `rows_out` exactly as it was.
-        _stamped, gate_minus2 = _cst.stamp([dict(r) for r in rows_out])
+        # the gate ledger is read INCREMENTALLY (byte-offset cursor beside it), never in full
+        _ctx2 = _cst.Context(gate_ledger=TARGET.parent / _cst.GATE_LEDGER.name,
+                             judged_cursor=TARGET.parent / _cst.JUDGED_CURSOR.name)
+        _stamped, gate_minus2 = _cst.stamp([dict(r) for r in rows_out], _ctx2)
         _ordered, _dm = _pj2.demote_flagged(_stamped, {})
         if len(_ordered) != _n:
             raise ValueError(f"row count changed {_n} -> {len(_ordered)}")
