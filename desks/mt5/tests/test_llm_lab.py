@@ -301,7 +301,7 @@ def test_a_pass_donates_exact_rows_the_compiler_admits(state: Path, reg: dict[st
     assert doc["cb_tone"]["state"] == "TEST_STUB", "the central-bank tone role runs in the pass"
     assert set(doc["roles"]) >= {"R", "S", "T"}, "the roles run inside the pass"
     credit = json.loads((state / "llm_lab" / "verdict_credit.json").read_text())
-    assert credit["labs"] and doc["verdict_loop"]["ranking_rule"].startswith("certified")
+    assert credit["labs"] and doc["verdict_loop"]["ranking_rule"].startswith("NOVEL certified")
     row = json.loads(files[0].read_text())["discoveries"][0]
     assert row["gauntlet_bypass"] is False and row["credibility_inherited"] is False
     import miner_candidate_compiler as mc
