@@ -597,9 +597,11 @@ def _endpoints(limit: int, *, now: datetime | None = None,
             rows = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
             continue
-        catalog_file = Path(f).name.startswith("discoveries_catalog_")
+        # Parity files are #192's own terms-evidence producer too, so they stay gated; their
+        # lane-marked rows ride only the parity lane, which applies its own fail-closed check.
+        catalog_file = Path(f).name.startswith(("discoveries_catalog_", "discoveries_parity_"))
         for r in rows if isinstance(rows, list) else []:
-            if not isinstance(r, dict):
+            if not isinstance(r, dict) or r.get("lane") == PARITY_LANE:
                 continue
             catalog_row = catalog_file or r.get("source") == "catalog_routes"
             for u in (r.get("endpoints") or []):
