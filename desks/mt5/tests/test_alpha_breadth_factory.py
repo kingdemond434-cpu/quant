@@ -650,3 +650,32 @@ def test_a_book_with_only_floor_overlap_says_it_is_evidence_limited() -> None:
     assert r.detail["evidence_limited"] is True
     assert "EVIDENCE-LIMITED" in r.why
     assert r.n_eff is not None and r.n_eff < 3.0     # 50 independent sleeves, ~2.6 bets: the box figure
+
+
+def test_sleeves_outside_every_cleared_pair_are_not_counted_as_bets() -> None:
+    """Audit probe on #349: 40 never-overlapping sleeves plus one rho=-0.95 pair read 40 bets."""
+    rng = np.random.default_rng(31)
+    series: dict[str, dict[str, float]] = {}
+    for i in range(40):
+        d = _days(2000)[i * 30:i * 30 + 15]                 # 15 days each, never overlapping
+        series[f"lone{i}"] = {x: float(v) for x, v in zip(d, rng.normal(size=15), strict=True)}
+    days = _days(60)
+    a = rng.normal(size=60)
+    series["p"] = {x: float(v) for x, v in zip(days, a, strict=True)}
+    series["q"] = {x: float(-0.95 * v + 0.1 * e) for x, v, e in
+                   zip(days, a, rng.normal(size=60), strict=True)}
+    r = eb.realised_breadth(series)
+    assert r.measured and r.n_eff is not None and r.n_eff <= 2.0
+    assert r.n_nominal == 2 and r.detail is not None and r.detail["n_sleeves_with_returns"] == 42
+
+
+def test_thin_pair_coverage_reads_unmeasured() -> None:
+    rng = np.random.default_rng(32)
+    long_days = _days(100)
+    series = {f"s{i}": {} for i in range(6)}
+    # Chain s0-s1, s1-s2 ... overlap 30 days; non-neighbours never overlap.
+    for i in range(6):
+        d = long_days[i * 15:i * 15 + 45]
+        series[f"s{i}"] = {x: float(v) for x, v in zip(d, rng.normal(size=len(d)), strict=True)}
+    r = eb.realised_breadth(series)
+    assert not r.measured and "coverage" in r.why

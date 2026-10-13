@@ -68,6 +68,7 @@ from libs.research.cohort_independence import effective_bets
 
 __all__ = [
     "MEASURED",
+    "MIN_PAIR_COVERAGE",
     "MIN_PAIR_OVERLAP",
     "MIN_PANEL_OBS",
     "MIN_REGIME_OBS",
@@ -90,6 +91,11 @@ MEASURED, UNMEASURED = "MEASURED", "UNMEASURED"
 #: depend on the desk package; a noisy correlation near zero is indistinguishable from genuine
 #: independence, which is the error that raises leverage.
 MIN_PAIR_OVERLAP = 20
+
+#: Share of the possible pairs among the sleeves in the reading that must clear the overlap
+#: floor. The mean correlation of the cleared pairs is extrapolated to every pair of those
+#: sleeves; below half, most of the book's pairwise structure is assumed, not measured.
+MIN_PAIR_COVERAGE = 0.5
 
 #: Observations a price panel needs before its correlation matrix is read as a measurement. Below
 #: this the off-diagonals are dominated by estimation noise in BOTH directions and the resulting
@@ -405,6 +411,7 @@ def realised_breadth(series: Mapping[str, Mapping[str, float]], *,
                            n_nominal=n)
     zs: list[float] = []
     ses: list[float] = []
+    used: set[str] = set()
     smallest = 0
     for i, a in enumerate(names):
         for b in names[i + 1:]:
@@ -421,18 +428,31 @@ def realised_breadth(series: Mapping[str, Mapping[str, float]], *,
             r = max(min(r, 0.999999), -0.999999)
             zs.append(math.atanh(r))
             ses.append(1.0 / math.sqrt(max(len(common) - 3, 1)))
+            used.update((a, b))
             smallest = len(common) if smallest == 0 else min(smallest, len(common))
     if not zs:
         return _unmeasured(
             name, f"no sleeve pair has {min_overlap} overlapping trading days ({n} sleeves); the "
                   "floor is not lowered to produce a number", n_nominal=n)
+    # ONLY SLEEVES THAT APPEAR IN A CLEARED PAIR ARE COUNTED. A sleeve with returns but no pair
+    # over the floor contributes no correlation; counting it in N credits it as independent of
+    # everything, so 40 never-overlapping sleeves plus one measured pair would read 40 bets.
+    n_used = len(used)
+    possible = n_used * (n_used - 1) // 2
+    coverage = len(zs) / possible if possible else 0.0
+    if coverage < MIN_PAIR_COVERAGE:
+        return _unmeasured(
+            name, f"{len(zs)} of {possible} pairs among the {n_used} sleeves in cleared pairs "
+                  f"reach the {min_overlap}-day floor (coverage {coverage:.2f} < "
+                  f"{MIN_PAIR_COVERAGE}); the rest of the book's correlation would be assumed",
+            n_nominal=n_used, n_obs=smallest)
     z_bar = sum(zs) / len(zs)
     se = sum(ses) / len(ses)
     rho_upper = math.tanh(z_bar + 1.645 * se)
-    k = effective_bets(n, rho_upper)
-    ceiling = effective_bets(n, math.tanh(1.645 * se))
+    k = effective_bets(n_used, rho_upper)
+    ceiling = effective_bets(n_used, math.tanh(1.645 * se))
     limited = k >= 0.9 * ceiling
-    return Reading(name, MEASURED, k, n, smallest,
+    return Reading(name, MEASURED, k, n_used, smallest,
                    f"{len(zs)} pair(s) cleared the {min_overlap}-day overlap floor, thinnest "
                    f"overlap {smallest}d; rho <= {rho_upper:.3f} at the 95% upper bound (point "
                    f"{math.tanh(z_bar):.3f}), not the point estimate"
@@ -441,6 +461,8 @@ def realised_breadth(series: Mapping[str, Mapping[str, float]], *,
                    {"n_pairs": len(zs), "rho_upper": round(rho_upper, 4),
                     "rho_point": round(math.tanh(z_bar), 4), "se_z": round(se, 4),
                     "se_rule": "mean_of_pair_se", "evidence_ceiling": round(ceiling, 3),
+                    "n_sleeves_with_returns": n, "n_in_cleared_pairs": n_used,
+                    "pair_coverage": round(coverage, 4),
                     "evidence_limited": bool(limited)})
 
 
