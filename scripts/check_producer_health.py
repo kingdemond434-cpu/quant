@@ -32,6 +32,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from libs.ops.fence_exit import fence_exit
+
+_PASSING = frozenset({"OK", "UNMEASURED"})
+
 ROOT = Path(__file__).resolve().parent.parent
 REPORT = ROOT / "desks" / "mt5" / "reports" / "PRODUCER_HEALTH.json"
 STALE_H = 6.0
@@ -99,7 +104,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  FAIL  {r}")
         for r in doc["warnings"]:
             print(f"  WARN  {r}")
-    return 1 if doc["verdict"] == "FAIL" else 0
+    # R0237: the PASSING set is named, everything else fails. UNMEASURED passes only in the
+    # portable mode, where an absent report is the documented UNMEASURED-and-pass; the box mode
+    # (--require-state) already turns it into FAIL inside judge().
+    return fence_exit(doc["verdict"], _PASSING, fail=1)
 
 
 if __name__ == "__main__":                                              # pragma: no cover
