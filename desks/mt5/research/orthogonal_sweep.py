@@ -937,9 +937,10 @@ def sweep(budget_s: float | None = None) -> dict:
                 gaps[key] = gaps.get(key, 0) + 1
                 continue
             # CARRY IS POINT-IN-TIME, SO ITS HISTORY IS ONLY AS LONG AS THE SWAP TAPE (2026-10-07).
-            # Below the lockbox floor the cell is named PENDING_HISTORY and not proposed: a
-            # candidate whose honest history its own lockbox could not hold spends a trial and
-            # can never pass.
+            # Until the honest weekday count is strictly above the gauntlet's judgeable floor
+            # (families_carry.judgeable_floor: 60 development days plus the held-out tail) the
+            # cell is named PENDING_HISTORY and not proposed: the judge could only call it
+            # UNMEASURED, and that spends a trial without judging anything.
             if fam == "carry":
                 if sym not in carry_status:
                     carry_status[sym] = carry_history_status(sym)

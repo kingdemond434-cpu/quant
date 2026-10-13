@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SEED THE FAMILIES ABSORBED FROM THE ELITEQUANT AND THUQUANT LISTS, SCREENED, AND SAY WHAT LANDED.
 
-    python desks/mt5/research/elitequant_breadth.py --once --budget-s 600
+    python desks/mt5/research/elitequant_breadth.py --once --budget-s 780
     python desks/mt5/research/elitequant_breadth.py --once --dry-run   # measure only
 
 WHY. `mt5desk/families_elitequant.py` adds five price-only mechanisms the desk could not express
@@ -100,7 +100,7 @@ SYMBOL_KEYED = frozenset({"commodity_fx_residual", *cm.CLASS_MOMENT_FAMILIES,
 #: Families whose claim names one peer class (`universe_policy.peer_class`): the index calendar
 #: anomalies. Screened only there, so no trial is spent on a mechanism nobody proposed elsewhere.
 CLASS_ONLY = {**qr.CLASS_ONLY, **cm.CLASS_ONLY, **cy.CLASS_ONLY}
-#: Families that wait for their own input history to reach the gauntlet's lockbox floor: seeded
+#: Families that wait for their own input history to be judgeable by the gauntlet: seeded
 #: (and charged) only from the pass on which the gate reads ready, reported until then.
 HISTORY_GATED = dict(cy.GATES)
 #: Families that read a partner leg named by `pair_symbol`: screened only on the symbols the
@@ -113,6 +113,11 @@ STATE = BASE / "data" / "elitequant_breadth_state.json"
 UNMEASURED = "UNMEASURED"
 #: Independent trades a cell needs before its screen mean is a number (proposer_common's floor).
 MIN_TRADES = 30
+#: The add-on reports' fixed shares of the leg budget (the cross-excitation fits and the
+#: total-expectation decomposition); the seeder gets --budget-s minus their sum.
+CROSS_EXCITATION_S = 120.0
+TOTAL_EXPECTATION_S = 60.0
+ADDON_BUDGET_S = CROSS_EXCITATION_S + TOTAL_EXPECTATION_S
 #: Shortest H1 history worth screening: the slowest family needs ~370 trading days of warm-up.
 MIN_BARS = 5_000
 
@@ -124,6 +129,16 @@ def _now() -> str:
 def identity(symbol: str, family: str, params: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps({"s": symbol, "f": family, "p": params}, sort_keys=True,
                                      default=str).encode()).hexdigest()[:20]
+
+
+def behaviour(symbol: str, family: str, signals: list[Any]) -> str:
+    """The cell's ENTRIES (time, side, stop, target), hashed: two parameterisations that enter
+    the same trades on the same symbol are one trial however their holding windows differ
+    (audit PR166_v3 M3), so a look is charged once per behaviour, not once per params."""
+    rows = sorted((str(getattr(x, "time", "")), int(getattr(x, "side", 0)),
+                   round(float(getattr(x, "stop", 0.0)), 10),
+                   round(float(getattr(x, "target", 0.0)), 10)) for x in signals or [])
+    return hashlib.sha256(json.dumps([symbol, family, rows]).encode()).hexdigest()[:20]
 
 
 def grid(family: str) -> list[dict[str, Any]]:
@@ -199,6 +214,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
     meta = pc.universe_meta()
     state = _load_state()
     cells: dict[str, Any] = state["cells"]
+    charged_behaviours: set[str] = set(state.get("charged_behaviours") or [])
     by_family: dict[str, Counter] = {f: Counter() for f in FAMILIES}
     cands: list[dict[str, Any]] = []
     no_bars: list[str] = []
@@ -214,7 +230,8 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
     waiting = {f for f, g in gates.items() if not g.get("ready")}
     for sym in syms:
         if time.monotonic() - started > budget_s:
-            stopped = f"time budget {budget_s:g}s reached; resumes next pass"
+            if not stopped.startswith("time budget"):
+                stopped = f"time budget {budget_s:g}s reached; resumes next pass"
             break
         klass = up.peer_class(sym)
         plan = [(f, {**p, "symbol": sym} if f in SYMBOL_KEYED
@@ -237,8 +254,16 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                 if cost is None:
                     by_family[fam]["held_back_no_cost_model"] += 1
                     continue
+                # THE BUDGET IS CHECKED PER CELL (audit PR166_v3 M2): a symbol with many slow
+                # cells (Hawkes refits) must not carry the pass past its budget; the rest of
+                # the symbol resumes next pass from the state file.
+                if time.monotonic() - started > budget_s:
+                    stopped = f"time budget {budget_s:g}s reached mid-symbol; resumes next pass"
+                    break
                 try:
-                    r = pc.screen(d, FAMILIES[fam](d, **params), cost) or {}
+                    sigs = FAMILIES[fam](d, **params)
+                    r = pc.screen(d, sigs, cost) or {}
+                    bh = behaviour(sym, fam, sigs)
                 except Exception as exc:
                     errors[f"{fam}: {type(exc).__name__}"] += 1
                     continue
@@ -249,8 +274,13 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                 # first screened on this pass is a new trial whether or not anything donates; a
                 # daily re-screen of the same identity is not a new one. A legacy cell already
                 # donated was charged on that discovery file.
+                prior["behaviour"] = bh
                 if not prior.get("charged_at") and not prior.get("donated_at"):
-                    new_looks[fam] += 1
+                    if bh in charged_behaviours:
+                        by_family[fam]["same_behaviour_not_recharged"] += 1
+                    else:
+                        new_looks[fam] += 1
+                        charged_behaviours.add(bh)
                 prior["charged_at"] = prior.get("charged_at") or today
                 cells[ident] = prior
                 by_family[fam]["measured_this_pass"] += 1
@@ -301,6 +331,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
         charged = pc.donate_or_charge(SOURCE, [], sum(new_looks.values()), dict(new_looks))
         donation = {"status": "NOTHING_NEW", "charged_on": charged["charged_on"]}
     if not dry_run:
+        state["charged_behaviours"] = sorted(charged_behaviours)
         _save_state(state)
 
     contract: dict[str, Any] = {}
@@ -333,20 +364,32 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
     }
 
 
+def _write(rep: dict[str, Any]) -> None:
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    tmp = OUT.with_suffix(".tmp")
+    tmp.write_text(json.dumps(rep, indent=1, sort_keys=True, default=str), "utf-8")
+    tmp.replace(OUT)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--once", action="store_true")
-    ap.add_argument("--budget-s", type=float, default=600.0)
+    ap.add_argument("--budget-s", type=float, default=780.0)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--symbols", nargs="*")
     a = ap.parse_args(argv)
-    rep = {"generated_at": _now(), "source": SOURCE,
-           **seed(budget_s=a.budget_s, dry_run=a.dry_run, only=a.symbols)}
+    # THE LEG'S BUDGET IS CARVED (audit PR166_v3 M2): --budget-s is the whole leg; the two
+    # add-on reports take their fixed shares and the seeder gets the rest, so the parts sum to
+    # the budget and the hourly cap above it holds.
+    seed_s = max(60.0, float(a.budget_s) - ADDON_BUDGET_S)
+    rep = {"generated_at": _now(), "source": SOURCE, "seed_budget_s": seed_s,
+           **seed(budget_s=seed_s, dry_run=a.dry_run, only=a.symbols)}
     if not a.dry_run:
+        _write(rep)          # the seeder's verdict lands even if an add-on overruns the cap
         # ROMAN-0832: the cross-event excitation matrix rides this leg's clock in its own budget.
         try:
             from research import cross_excitation
-            ce = cross_excitation.run(budget_s=120.0)
+            ce = cross_excitation.run(budget_s=CROSS_EXCITATION_S)
             rep["cross_excitation"] = {"status": ce["status"], "ran": ce["ran"],
                                        "path": str(cross_excitation.OUT)}
         except Exception as exc:
@@ -354,16 +397,13 @@ def main(argv: list[str] | None = None) -> int:
         # ROMAN-0997: the total-expectation decomposition by bar state, same clock, own budget.
         try:
             from research import total_expectation
-            te = total_expectation.run(budget_s=60.0)
+            te = total_expectation.run(budget_s=TOTAL_EXPECTATION_S)
             rep["total_expectation"] = {"status": te["status"], "ran": te["ran"],
                                         "path": str(total_expectation.OUT)}
         except Exception as exc:
             rep["total_expectation"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
     if not a.dry_run:
-        OUT.parent.mkdir(parents=True, exist_ok=True)
-        tmp = OUT.with_suffix(".tmp")
-        tmp.write_text(json.dumps(rep, indent=1, sort_keys=True, default=str), "utf-8")
-        tmp.replace(OUT)
+        _write(rep)
     print(f"elitequant_breadth: {rep.get('status')} symbols={rep.get('symbols_seen')} "
           f"candidates={rep.get('candidates_this_pass')} "
           f"donation={(rep.get('donation') or {}).get('status')}")

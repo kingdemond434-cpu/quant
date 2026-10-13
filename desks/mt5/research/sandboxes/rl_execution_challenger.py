@@ -139,8 +139,10 @@ def q_learning(cases: list[dict[str, Any]], *, seed: int) -> dict[str, Any]:
                           for p in policy.values()]))
     return {"status": "MEASURED", "states": len(states), "episodes": EPISODES, "policy": policy,
             "mean_cost_reduction_frac": gain, "n_cases": sum(len(v) for v in baseline.values()),
+            # the ratio is var(adjusted pool) / var(pool): the dispersion of ONE draw, not the
+            # variance of a mean estimate (audit PR166_v3)
             "control_variate": {"control": "spread_frac", "pools": len(ratios),
-                                "mean_variance_ratio": float(np.mean(ratios)) if ratios
+                                "mean_draw_dispersion_ratio": float(np.mean(ratios)) if ratios
                                 else None}}
 
 

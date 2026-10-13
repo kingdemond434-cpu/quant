@@ -2713,7 +2713,9 @@ def run_pass(*, dry_run: bool = False, budget_s: float = 300.0,
         "targets": list(TARGETS),
         "mandate": "every family is a SENSOR or MECHANISM for an MT5 instrument; no "
                    "crypto-exchange universe is hunted, scouted, ranked or queued",
-        "no_author_monitored": True,
+        # True only while the exception register is empty: one scoped exception means an author
+        # IS monitored, so the flag reads False and the register names who and why.
+        "no_author_monitored": not MONITORED_AUTHOR_EXCEPTIONS,
         "author_monitoring_exceptions": sorted(MONITORED_AUTHOR_EXCEPTIONS),
         "access_policy": {
             "pipeline": list(SOURCE_PIPELINE),

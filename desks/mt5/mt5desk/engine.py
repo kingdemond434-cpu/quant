@@ -6,7 +6,7 @@ All times UTC. No lookahead: signals computed on closed bars only, entries at ne
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 import numpy as np
@@ -278,6 +278,7 @@ class BacktestResult:
     swap_honest_days: int = 0
     #: Unmeasured nights for which NO stand-in existed (no registry swap, no row ever on disk).
     swap_nights_unpriced: float = 0.0
+    geometry_rejections: list[dict[str, Any]] = field(default_factory=list)
 
     def swap_report(self) -> dict[str, Any]:
         """Whether this run's swap cost was MEASURED, by name. Never a clean verdict by default.
@@ -557,6 +558,7 @@ def run_backtest(
     )
     locs = np.searchsorted(idx_ns, sig_ns)
     trades: list[Trade] = []
+    geometry_rejections: list[dict[str, Any]] = []
     filled = 0
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
     last_exit_idx = -1  # single-position discipline: no overlapping trades
@@ -599,6 +601,22 @@ def run_backtest(
         side = sig.side
         stop = sig.stop
         target = sig.target
+        # A next-open fill may have crossed a closed-bar bracket. Such an order
+        # cannot be opened with this stop/target; it is an unfilled signal, not a
+        # trade with a floating-point-sized risk unit. Keep its receipt and trial.
+        levels = np.asarray([entry, stop, target], dtype=float)
+        tolerance = (8.0 * np.spacing(max(abs(float(v)) for v in levels))
+                     if np.isfinite(levels).all() else 0.0)
+        if (not np.isfinite(levels).all() or side not in (-1, 1)
+                or side * (entry - stop) <= tolerance
+                or side * (target - entry) <= tolerance):
+            geometry_rejections.append({
+                "signal_time": str(sig.time), "fill_time": str(idx[fill_bar]),
+                "tag": sig.tag, "side": side, "entry": entry,
+                "stop": stop, "target": target,
+                "reason": "unexecutable bracket at fill",
+            })
+            continue
         ttl = sig.ttl_bars
         bank_frac = sig.bank_frac
         bank_protect_k = sig.bank_protect_k
@@ -793,7 +811,8 @@ def run_backtest(
                           swap_nights_unmeasured=nights_unmeasured,
                           swap_symbol=tape.symbol if tape is not None else "",
                           swap_honest_days=tape.days if tape is not None else 0,
-                          swap_nights_unpriced=nights_unpriced)
+                          swap_nights_unpriced=nights_unpriced,
+                          geometry_rejections=geometry_rejections)
 
 
 def walk_forward_splits(n_bars: int, folds: int = 4) -> list[tuple[int, int, int, int, int]]:

@@ -102,24 +102,57 @@ def test_a_row_is_usable_only_three_hours_after_its_own_observed_at(tape) -> Non
     assert first == FIRST_OBS + pd.Timedelta(hours=3)
 
 
-def test_below_the_lockbox_floor_the_cell_reads_pending_history(tape) -> None:
+def _weekdays(n_rows: int) -> int:
+    """Honest weekdays for a daily tape of `n_rows` rows from FIRST_OBS: each weekday after the
+    first (partial) date whose opening instant already has a fresh, knowable row."""
+    last = FIRST_OBS + pd.Timedelta(days=n_rows - 1)
+    return len(pd.bdate_range(FIRST_OBS + pd.Timedelta(days=1), last))
+
+
+def test_below_the_judgeable_floor_the_cell_reads_pending_history(tape) -> None:
     for d in range(5):
         tape(d, 5.0, -5.0)
-    st = fo.carry_history_status(SYM, floor_days=40)
+    st = fo.carry_history_status(SYM, floor_days=10)
     assert st["status"] == "PENDING_HISTORY" and st["ready"] is False
-    assert st["honest_days"] == 5 and st["floor_days"] == 40
+    assert st["honest_days"] == _weekdays(5) == 4 and st["floor_days"] == 10
     for d in range(5, 40):
         tape(d, 5.0, -5.0)
-    st = fo.carry_history_status(SYM, floor_days=40)
-    assert st["status"] == "READY" and st["ready"] is True and st["honest_days"] == 40
+    st = fo.carry_history_status(SYM, floor_days=10)
+    assert st["status"] == "READY" and st["ready"] is True and st["honest_days"] == _weekdays(40)
 
 
-def test_the_default_floor_is_the_gauntlets_own_lockbox(tape) -> None:
-    from research.gate_policy import LOCKBOX_MIN_DAYS
+def test_the_boundary_is_strict_exactly_at_the_floor_still_waits(tape) -> None:
+    for d in range(40):
+        tape(d, 5.0, -5.0)
+    n = _weekdays(40)
+    assert fo.carry_history_status(SYM, floor_days=n)["status"] == "PENDING_HISTORY"
+    assert fo.carry_history_status(SYM, floor_days=n - 1)["status"] == "READY"
+
+
+def test_weekends_and_stale_stretches_are_not_honest_days(tape) -> None:
+    for d in range(10):
+        tape(d, 5.0, -5.0)
+    for d in range(20, 30):                    # a ten-day hole in the tape: stale, not history
+        tape(d, 5.0, -5.0)
+    st = fo.carry_history_status(SYM, floor_days=1)
+    hole = pd.bdate_range(FIRST_OBS + pd.Timedelta(days=13), FIRST_OBS + pd.Timedelta(days=20))
+    assert st["honest_days"] == _weekdays(30) - len(hole)
+
+
+def test_the_default_floor_is_the_gauntlets_judgeable_minimum(tape) -> None:
     tape(0, 5.0, -5.0)
     st = fo.carry_history_status(SYM)
-    assert st["floor_days"] == int(LOCKBOX_MIN_DAYS)
+    assert st["floor_days"] == fc.judgeable_floor() == 100
     assert st["status"] == "PENDING_HISTORY"
+
+
+def test_a_stale_swap_emits_nothing(tape) -> None:
+    for d in range(N_DAYS):
+        tape(d, 5.0, -5.0)
+    last = FIRST_OBS + pd.Timedelta(days=N_DAYS - 1, hours=3)
+    sigs = _carry(_bars(end="2026-05-30"))
+    assert sigs and max(_decision(s.time) for s in sigs) <= last + pd.Timedelta(
+        hours=fo.MAX_SWAP_AGE_H)
 
 
 def test_a_symbol_never_observed_is_pending_and_emits_nothing(tape) -> None:

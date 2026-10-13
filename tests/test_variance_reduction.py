@@ -6,15 +6,9 @@ import numpy as np
 from libs.research import variance_reduction as vr
 
 
-def test_control_variate_is_unbiased_and_tighter_on_a_planted_mean():
-    def est(rng, cv):
-        c = rng.normal(0.0, 1.0, 200)
-        y = 1.0 + 2.0 * c + rng.normal(0.0, 0.5, 200)
-        return vr.control_variate(y, c, 0.0).mean if cv else float(y.mean())
-
-    plain = vr.planted_truth(lambda r: est(r, False), 1.0)
-    cv = vr.planted_truth(lambda r: est(r, True), 1.0)
-    assert abs(cv["bias"]) < 0.01 and cv["rmse"] < plain["rmse"] / 3
+def test_planted_truth_reports_the_bias_of_a_biased_estimator():
+    rep = vr.planted_truth(lambda r: float(r.normal(1.0, 1.0, 50).mean()) + 0.5, 1.0, reps=100)
+    assert abs(rep["bias"] - 0.5) < 0.1 and rep["rmse"] > 0.5
 
 
 def test_adjusted_pool_keeps_the_pool_mean_and_cuts_variance():

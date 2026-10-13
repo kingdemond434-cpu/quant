@@ -891,9 +891,12 @@ NODES: tuple[Node, ...] = (
     # Queues look-ahead carry certificates for the judge's re-mint (carry_pit, 2026-10-07). Every
     # re-judge it causes is an ordinary gauntlet cell, so the gauntlet's own rent line prices it.
     Node("carry_rejudge", "desks/mt5/scripts/queue_carry_rejudge.py",
-         writes=("desks/mt5/data/hypotheses/priority_remint.json",),
+         # the adoption stamp is its own state, written once and read back every pass
+         writes=("desks/mt5/data/hypotheses/priority_remint.json",
+                 "desks/mt5/data/hypotheses/carry_pit_adoption.json"),
          reads=("desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
-                "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"),
+                "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json", "desks/mt5/data/sleeves.json",
+                "desks/mt5/data/hypotheses/carry_pit_adoption.json"),
          billed_as=("external_gauntlet",)),
     Node("weak_signals", "desks/mt5/research/weak_signal_compiler.py",
          writes=("desks/mt5/reports/weak_signal_compiler.json",)),
@@ -1039,6 +1042,10 @@ EXTERNAL_READERS = {
     "desks/mt5/data/missed_growth.jsonl": "missed_growth (its own append-only memory)",
     "desks/mt5/data/action_counterfactuals.jsonl": "action_counterfactuals (its own memory)",
     "desks/mt5/data/deep_forest_claims.jsonl": "deep_forest_miner (its own append-only memory)",
+    # carry_rejudge's adoption instant: stamped once on the first --write pass and read back by
+    # carry_rejudge on every later one to tell a look-ahead certificate from a post-adoption one.
+    "desks/mt5/data/hypotheses/carry_pit_adoption.json": ("carry_rejudge (its own adoption "
+                                                          "stamp, read back every pass)"),
     # THE MACRO LAYER'S MEMORY. Each of these is read back by `macro_intel` on its next pass and
     # by nothing else, which is precisely what makes the layer LEARN rather than restate: the
     # taxonomy's centroids move with the instances assigned to them, the credibility posteriors

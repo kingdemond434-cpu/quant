@@ -17,6 +17,7 @@ import sys
 import time
 from collections import OrderedDict
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -385,7 +386,14 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
     trades = list(res.trades)
     s = pd.Series([float(t.r_multiple) for t in trades],
                   index=[pd.Timestamp(t.entry_time).date() for t in trades], dtype=float)
-    return s.groupby(level=0).sum()
+    daily = s.groupby(level=0).sum()
+    daily.attrs["geometry_rejections"] = getattr(res, "geometry_rejections", [])
+    daily.attrs["geometry_rejection_count"] = len(daily.attrs["geometry_rejections"])
+    daily.attrs["signal_count"] = getattr(res, "signal_count", len(sigs))
+    # A shard retains thousands of series. Keep the full count and digest, with
+    # bounded examples, rather than retaining every unfilled signal in memory.
+    daily.attrs = _cache_series_metadata(daily)
+    return daily
 
 
 #: One H1 frame per SYMBOL, shared by every cell on it. Each cell used to carry its own
@@ -521,6 +529,10 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     """
     global LAST_BUILD_FAILURE
     LAST_BUILD_FAILURE = None
+    from mt5desk.legacy_family_inputs import RAW_COT_FAMILIES, input_preflight, legacy_inputs
+    why = input_preflight(family, params)
+    if why:
+        return _build_failed(why)
     timeframe = timeframe_of(params, family)
     if h1_override is not None:
         # NEVER silently resample: `_frame_for` exists to keep an M5-native hypothesis off an H1
@@ -565,7 +577,15 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     try:
         from research import orthogonal_sweep as inputs
 
-        if family == "carry":
+        if family == "usd_session_shock" or family in RAW_COT_FAMILIES:
+            extra, why = legacy_inputs(sym, family, params, inputs._bars)
+            if extra is None:
+                return _build_failed(why)
+            call_params.pop("fx_symbol", None)
+            call_params.pop("input_symbol", None)
+            call_params.pop("input_source", None)
+            call_params.update(extra)
+        elif family == "carry":
             call_params.pop("input_symbol", None)
             call_params["symbol"] = sym
         elif family in {"relative_value", "correlation_regime"}:
@@ -829,6 +849,11 @@ def _live_frame(sym: str, timeframe: str = "H1"):
 def modifier_preflight(spec: dict) -> str | None:
     """Name a deterministic modifier refusal without loading bars or runtime inputs."""
     family = str(spec.get("family") or "")
+    from mt5desk.legacy_family_inputs import input_preflight
+
+    required_inputs = input_preflight(family, spec.get("params"))
+    if required_inputs:
+        return required_inputs
     fn = getattr(families, f"family_{family}", None)
     if fn is None:
         try:
@@ -837,7 +862,8 @@ def modifier_preflight(spec: dict) -> str | None:
         except ImportError:
             fn = None
     if fn is None:
-        return None
+        return (f"BLOCKED_EXECUTOR: no implementation of family {family!r} in families "
+                "or families_orthogonal")
     params = dict(spec.get("params") or {})
     try:
         from mt5desk.family_inputs import strip_identity_keys
@@ -1826,6 +1852,23 @@ def _save_build_cursor(cursor: dict[str, str], built: set[str]) -> None:
         print(f"  build cursor NOT saved ({exc}); the next sweep repeats this rotation")
 
 
+@lru_cache(maxsize=1)
+def _replay_code_identity() -> str:
+    """Loaded-process replay semantics; a release starts a new process and identity."""
+    digest = hashlib.sha256()
+    desk = BASE / "desks" / "mt5"
+    paths = [desk / "scripts" / "external_gauntlet.py",
+             desk / "research" / "orthogonal_sweep.py"]
+    paths.extend(desk / "mt5desk" / name for name in
+                 ("engine.py", "cell_modifiers.py", "data.py", "legacy_family_inputs.py"))
+    paths.extend((desk / "mt5desk").glob("famil*.py"))
+    for path in sorted(set(paths)):
+        name = path.relative_to(BASE).as_posix()
+        digest.update(name.encode("utf-8") + b"\0"
+                      + path.read_bytes().replace(b"\r\n", b"\n") + b"\0")
+    return digest.hexdigest()
+
+
 def _cache_key(sym: str, family: str, params: dict, last_day: str,
                timeframe: str | None = None) -> str:
     """The content address of one cell's daily series.
@@ -1838,12 +1881,13 @@ def _cache_key(sym: str, family: str, params: dict, last_day: str,
     (`lvc_asia_london`) carries no `timeframe` in params at all and would collide with an H1 cell
     of the same name on exactly this path. Naming the field costs one key and removes the class.
 
-    `timeframe=None` resolves through `timeframe_of`, so the H1 digest is byte-identical to what
-    it has always been and yesterday's cache stays warm.
+    `timeframe=None` resolves through `timeframe_of`. Replay-code identity prevents a repaired
+    engine or family from judging cached returns produced by its superseded implementation.
     """
     import hashlib
     tf = timeframe_of(params, family) if timeframe is None else str(timeframe).upper()
-    payload = {"s": sym, "f": family, "p": params, "d": last_day}
+    payload = {"s": sym, "f": family, "p": params, "d": last_day,
+               "replay_code": _replay_code_identity()}
     if tf != "H1":
         payload["tf"] = tf
     blob = json.dumps(payload, sort_keys=True, default=str)
@@ -1875,12 +1919,30 @@ def cache_load(key: str):
         import numpy as _np
         z = _np.load(f, allow_pickle=False)
         idx = pd.to_datetime(z["dates"])
-        return (pd.Series(z["v1"], index=idx), pd.Series(z["v3"], index=idx))
+        pair = (pd.Series(z["v1"], index=idx), pd.Series(z["v3"], index=idx))
+        for series, name in zip(pair, ("attrs1", "attrs3"), strict=True):
+            if name in z:
+                series.attrs.update(json.loads(str(z[name].item())))
+        return pair
     except Exception:
         return None
 
 
 _CACHE_SAVE_WARNED = [False]
+
+
+def _cache_series_metadata(series) -> dict:
+    """Bounded receipts with total count and full digest; raw replay remains reproducible."""
+    attrs = series.attrs
+    rejected = attrs.get("geometry_rejections") or []
+    count = int(attrs.get("geometry_rejection_count", len(rejected)))
+    digest = attrs.get("geometry_receipt_sha256")
+    if count and not digest:
+        digest = hashlib.sha256(json.dumps(rejected, sort_keys=True,
+                                          default=str).encode("utf-8")).hexdigest()
+    return {"signal_count": attrs.get("signal_count"),
+            "geometry_rejection_count": count, "geometry_receipt_sha256": digest,
+            "geometry_rejections": rejected[:3]}
 
 
 def cache_save(key: str, ds1, ds3) -> None:
@@ -1908,7 +1970,11 @@ def cache_save(key: str, ds1, ds3) -> None:
             _np.savez_compressed(fh,
                                  dates=pd.to_datetime(common).astype("int64").to_numpy(),
                                  v1=ds1.reindex(common).to_numpy(float),
-                                 v3=ds3.reindex(common).to_numpy(float))
+                                 v3=ds3.reindex(common).to_numpy(float),
+                                 attrs1=_np.array(json.dumps(_cache_series_metadata(ds1),
+                                                           default=str)),
+                                 attrs3=_np.array(json.dumps(_cache_series_metadata(ds3),
+                                                           default=str)))
         os.replace(tmp, final)
     except Exception as exc:
         if not _CACHE_SAVE_WARNED[0]:
@@ -1948,6 +2014,7 @@ def _warm_one(spec: dict, meta: dict) -> dict:
         obj = build_cell(sym, family, params, meta)
         if not obj:
             out["status"] = "NOT_RUN_BUILD_FAILED"
+            out["why"] = LAST_BUILD_FAILURE or "UNMEASURED: build_cell returned no cell"
             return out
         ds1 = _series_trim_partial(daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
         try:
@@ -1992,7 +2059,8 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     # every hour and never reach the tail") and guards the pool's ORDER, which was never the
     # problem: the pool built in the right order and nothing recorded that it had.
     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
-               "unreached": 0, "seconds": 0.0, "failures": {}, "built_symbols": set()}
+               "unreached": 0, "seconds": 0.0, "failures": {}, "failure_reasons": {},
+               "built_symbols": set()}
     t0 = time.time()
     it = iter(specs)
     pending: dict = {}
@@ -2044,6 +2112,9 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                 else:
                     summary["failed"] += 1
                     summary["failures"][st] = summary["failures"].get(st, 0) + 1
+                    reason = str(r.get("why") or f"UNMEASURED: {st}")[:300]
+                    reasons = summary["failure_reasons"]
+                    reasons[reason] = reasons.get(reason, 0) + 1
                 if time.time() <= deadline:
                     _submit_next()
     summary["unreached"] += sum(1 for _ in it)
@@ -2052,6 +2123,8 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
           f"{summary['seconds']:.0f}s ({summary['hit']} already cached, {summary['failed']} "
           f"failed, {summary['unreached']} not reached before the build budget)"
           + (f"; failures by kind {summary['failures']}" if summary["failures"] else ""))
+    if summary["failure_reasons"]:
+        print(f"PRE-WARM failure reasons: {summary['failure_reasons']}", flush=True)
     return summary
 
 
@@ -3509,13 +3582,16 @@ def main():
         _why = modifier_preflight(_spec)
         if _why:
             _modifier_blocked.append({**_spec,
-                                      "downstream_status": "NOT_RUN_MODIFIER",
-                                      "why": f"NOT_RUN_MODIFIER: {_why}"})
+                                      "downstream_status": ("NOT_RUN_BUILD_FAILED"
+                                          if _why.startswith("BLOCKED_") else "NOT_RUN_MODIFIER"),
+                                      "why": (f"NOT_RUN_BUILD_FAILED: {_why}"
+                                          if _why.startswith("BLOCKED_")
+                                          else f"NOT_RUN_MODIFIER: {_why}")})
         else:
             _modifier_ready.append(_spec)
     eligible_specs = _modifier_ready
     if _modifier_blocked:
-        print(f"Modifier preflight: {len(_modifier_blocked)} impossible variant(s) conserved "
+        print(f"Build preflight: {len(_modifier_blocked)} incomplete input/variant(s) conserved "
               f"without spending build/gate compute; {len(eligible_specs)} executable cell(s) "
               "remain")
 

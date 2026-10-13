@@ -214,9 +214,9 @@ def _region_frame(root: Path) -> dict[str, pd.DataFrame]:
         days = _load(root / f"{rid}.json")["days"]
         if not days:
             continue
-        idx = pd.DatetimeIndex(sorted(days), tz="UTC")
+        idx = pd.DatetimeIndex(sorted(days), tz="UTC").as_unit("ns")
         rows = [days[d.date().isoformat()] for d in idx]
-        seen = pd.to_datetime([r[3] for r in rows], utc=True)
+        seen = pd.to_datetime([r[3] for r in rows], utc=True).as_unit("ns")
         f = pd.DataFrame([r[:3] for r in rows], index=idx, columns=["tmin", "tmax", "prcp"])
         avail = np.maximum(idx + LAG, np.minimum(seen, idx + SETTLE))
         f["avail"] = pd.DatetimeIndex(avail)

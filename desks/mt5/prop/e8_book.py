@@ -41,6 +41,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
+CERT_BOOK = DESK / "data" / "CERT_BOOK_LIVE.json"
 
 
 def _family_banned(family: str) -> bool:
@@ -169,6 +170,7 @@ def _load_survivors() -> list[dict[str, Any]]:
         rows.append({
             "key": key, "symbol": sym, "family": fam,
             "selector": spec.get("selector") or "asia",
+            "fingerprint": _spec_fingerprint(spec),
             "params": {k: v for k, v in spec.items()
                        if k not in ("symbol", "family", "selector", "is_universe", "hunt")},
             "ev": ((val.get("gates") or {}).get("expected_value") or {}).get("ev"),
@@ -183,6 +185,51 @@ def _load_survivors() -> list[dict[str, Any]]:
             "n_trials": ((val.get("gates") or {}).get("deflated_sharpe") or {}).get("n_trials"),
         })
     return rows
+
+
+def _spec_fingerprint(spec: dict[str, Any]) -> str:
+    from admission_integrity import spec_fingerprint
+    return spec_fingerprint(spec.get("symbol"), spec.get("family"),
+                            spec.get("selector"), spec.get("side"), spec.get("params"))
+
+
+def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    """Apply the existing replication and principal exclusion doors before ranking E8 risk."""
+    from admission_integrity import IntegrityGate, REPLICATED
+    from kelly_survival import terms_fenced_cells
+
+    config = json.loads(CERT_BOOK.read_text(encoding="utf-8"))
+    excluded = config.get("excluded") if isinstance(config, dict) else None
+    if not isinstance(excluded, dict):
+        raise ValueError("CERT_BOOK_LIVE.json has no principal exclusion map")
+    from mt5desk.kelly_sizing import load_cert_book
+    authorized_book = load_cert_book(CERT_BOOK, "e8") or {}
+    fenced, source = terms_fenced_cells()
+    gate = IntegrityGate.load()
+    accepted: list[dict[str, Any]] = []
+    blocked: list[dict[str, str]] = []
+    for row in rows:
+        key = str(row["key"])
+        sym, fam, selector = str(row["symbol"]), str(row["family"]), str(row["selector"])
+        book_key = f"{sym}_{fam}_{selector}"
+        reason = ""
+        if not (authorized_book.get(book_key, 0) > 0):
+            reason = "not named with positive risk in the E8 principal book"
+        elif book_key in excluded:
+            reason = f"principal exclusion: {excluded[book_key]}"
+        elif f"{sym}.{fam}" in fenced:
+            reason = f"terms-fenced proposer lineage ({source})"
+        elif gate.alarm.get("blocks"):
+            reason = str(gate.alarm.get("why") or "placebo gate alarm")
+        else:
+            verdict, why = gate.replication(key, str(row.get("fingerprint") or ""))
+            if verdict != REPLICATED:
+                reason = f"replication {verdict}: {why}"
+        if reason:
+            blocked.append({"certificate": key, "why": reason})
+        else:
+            accepted.append(row)
+    return accepted, blocked
 
 
 #: Instruments that share a leg move together, so they are one bet wearing several names.
@@ -294,9 +341,10 @@ def growth_score(row: Mapping[str, Any], risk_frac: float = 0.0) -> float | None
     return p * math.log(1.0 + f * mean_win) + (1.0 - p) * math.log(1.0 - f * mean_loss)
 
 
-def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) -> dict[str, Any]:
+def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
+           rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """The book, plus everything refused and why. An absence here is always named (L1.28a)."""
-    rows = _load_survivors()
+    rows = _load_survivors() if rows is None else rows
     blocked = []
     live = []
     for r in rows:
@@ -520,7 +568,14 @@ def main(argv: list[str] | None = None) -> int:
               "stands.")
         return 1
 
-    doc = select(tradeable)
+    try:
+        eligible, integrity_blocked = live_admissible(_load_survivors())
+    except (OSError, ValueError, ImportError) as exc:
+        print(f"REFUSING to write E8 book: integrity authority unavailable ({type(exc).__name__}: {exc})")
+        return 1
+    doc = select(tradeable, rows=eligible)
+    doc["blocked_by_integrity"] = integrity_blocked
+    doc["n_blocked_by_integrity"] = len(integrity_blocked)
     doc["catalogue_source"] = source
     write(doc)
     print(f"E8 book: {doc['n_selected']} sleeve(s) at {RISK_FRAC:.2%} "

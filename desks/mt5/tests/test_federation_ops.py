@@ -359,6 +359,8 @@ def test_an_account_upstream_watches_the_authors_activity_feed() -> None:
     assert fo.surfaces_for("github:romanmichaelpaolucci") == {
         "commits": "https://github.com/romanmichaelpaolucci.atom"}
     assert fed.SEED_BY_ID["paolucci_github_account"].upstream == "github:romanmichaelpaolucci"
+    # an account outside the exception register is never watched
+    assert fo.surfaces_for("github:someoneelse") == {}
 
 
 def test_a_cell_two_packets_share_is_one_trial_and_one_row(tmp_path, monkeypatch) -> None:

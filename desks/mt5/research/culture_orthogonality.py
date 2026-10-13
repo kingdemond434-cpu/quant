@@ -82,7 +82,8 @@ SHADOW = REPORTS / "shadow"
 CANON = DATA / "UNIVERSAL_SURVIVORS.canon.json"
 SLEEVES = DATA / "sleeves.json"
 SHADOW_STATE = SHADOW / "shadow_state.json"
-LIVE_LEDGER = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 DOCKET = DATA / "hypotheses" / "external_survivors.json"
 ASIA_SOURCES = DATA / "asia_sources.json"
 FOREST_SOURCES = DATA / "deep_forest_sources.json"

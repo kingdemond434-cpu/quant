@@ -5,51 +5,26 @@ variance, and every simulator here (the execution challenger's sampled fills, a 
 bootstrap, a stress draw) has been paying for precision with draws. These are the standard
 remedies (Glasserman, "Monte Carlo Methods in Financial Engineering", ch. 4), re-derived:
 
-  control_variate     y - b (c - E[c]) with the variance-minimising b = cov(y, c) / var(c). It is
-                      unbiased only when E[c] is KNOWN; pass it, never the sample mean of the same
-                      draws (that silently returns the plain mean with a narrower, wrong error).
-  adjusted_pool       the same adjustment applied to a finite pool sampled with replacement, where
-                      E[c] under the pool IS known exactly: sampling the adjusted values has the
-                      pool's mean and a smaller variance. This is how an execution simulation that
-                      draws measured outcomes uses a correlated measured covariate.
+  adjusted_pool       the control-variate adjustment y - b (c - E[c]) applied to a finite pool
+                      sampled with replacement, where E[c] under the pool IS known exactly:
+                      sampling the adjusted values has the pool's mean and a smaller variance.
+                      This is how an execution simulation that draws measured outcomes uses a
+                      correlated measured covariate.
   antithetic_mean     the mean of f over paired draws u and 1 - u (or z and -z).
   inverse_transform   draws from an empirical distribution through its quantile function.
   planted_truth       runs an estimator on draws with a known answer and reports its bias and
                       error, so a variance reduction is proven on a planted number before it is
                       trusted on a real one.
+
+A general control-variate MEAN estimator is not here: `control_variates.control_variate_mean`
+(#245) owns it, with b fitted cross-fold. An in-sample b on the same draws biases the estimate,
+which is why this module keeps only the pool form, where E[c] and b are exact for the pool.
 """
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
 
 import numpy as np
-
-
-@dataclass(frozen=True)
-class CVResult:
-    mean: float
-    stderr: float
-    plain_stderr: float
-    b: float
-    variance_ratio: float      # var(adjusted) / var(plain); < 1 is the gain
-
-
-def control_variate(y: np.ndarray, c: np.ndarray, c_mean: float) -> CVResult:
-    """The control-variate estimate of E[y] from paired draws (y, c) and the KNOWN E[c]."""
-    y, c = np.asarray(y, dtype=float), np.asarray(c, dtype=float)
-    ok = np.isfinite(y) & np.isfinite(c)
-    y, c = y[ok], c[ok]
-    n = y.size
-    if n < 3:
-        return CVResult(float("nan"), float("nan"), float("nan"), 0.0, float("nan"))
-    vc = float(c.var(ddof=1))
-    b = float(np.cov(y, c, ddof=1)[0, 1] / vc) if vc > 0 else 0.0
-    adj = y - b * (c - c_mean)
-    vy = float(y.var(ddof=1))
-    va = float(adj.var(ddof=1))
-    return CVResult(float(adj.mean()), (va / n) ** 0.5, (vy / n) ** 0.5, b,
-                    va / vy if vy > 0 else float("nan"))
 
 
 def adjusted_pool(y: np.ndarray, c: np.ndarray) -> tuple[np.ndarray, float]:
