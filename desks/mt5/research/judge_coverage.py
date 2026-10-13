@@ -1575,6 +1575,152 @@ def _mined(docket: list[dict[str, Any]]) -> dict[str, int]:
     return mined
 
 
+#: NO CELL ENDS UNTESTABLE (principal, 2026-10-13 16:45Z: "all must always be converted to
+#: testible cells ... or no bars all must self resovle"). Every way the judge can fail to rule on a
+#: cell maps to ONE failure class here, and every class names its way out -- who resolves it and
+#: by which conversion. Nothing in this table is terminal: a class with no route is the defect, and
+#: a raw status no class recognises is published as `unrouted` so the hourly pass hunts it the day
+#: it appears. Only a real verdict (pass or fail) ends a cell.
+FAILURE_CLASS: dict[str, str] = {
+    # the sweep's own NOT_RUN statuses and pre-warm failure kinds
+    "NOT_RUN_DATA_MISSING": "no_bars",
+    "NOT_RUN_BUILD_FAILED": "build_fail",
+    "NOT_RUN_BUILD_BUDGET_DEFERRED": "budget_deferred",
+    "NOT_RUN_MODIFIER": "modifier_refused",
+    "NOT_RUN_UNTRADEABLE_SYMBOL": "untradeable_symbol",
+    "FAIL_3X": "fail_3x",
+    "ERROR": "build_fail",
+    "SAVE_FAILED": "save_fail",
+    # the bank's named reasons (`name_not_run`, `name_unknowns`)
+    "data_missing": "no_bars",
+    "missing_bars": "no_bars",
+    "build_failed": "build_fail",
+    "no_series": "no_series",
+    "series_exception": "no_series",
+    "observations_under_60_days": "short_history",
+    "short_history_after_cut": "short_history",
+    "lockbox_consumed_history": "short_history",
+    "no_signals": "untestable_as_specified",
+    "signals_no_trades": "untestable_as_specified",
+    "no_trades": "untestable_as_specified",
+    "too_rare": "untestable_as_specified",
+    "never_fires": "untestable_as_specified",
+    "missing_identity_input": "unnamed",
+    "no_terminal_gate_recorded": "unnamed",
+    "unnamed": "unnamed",
+}
+
+#: WHO RESOLVES EACH CLASS, AND HOW. `converter` is Breadth's conversion organ: the cell is handed
+#: over with these axes and comes back as a testable cell in the judge's queue. `judge` is work
+#: the judge itself still owes on its next sweep (ranked by UnlockValue), never a parking place.
+FAILURE_ROUTES: dict[str, dict[str, Any]] = {
+    "no_bars": {"owner": "converter",
+                "axes": ["backfill_bars", "proxy_series", "coarser_timeframe"]},
+    "no_series": {"owner": "converter",
+                  "axes": ["proxy_series", "coarser_timeframe", "event_study"]},
+    "build_fail": {"owner": "converter",
+                   "axes": ["regime_child", "coarser_timeframe", "family_defect_report"]},
+    "fail_3x": {"owner": "converter", "axes": ["coarser_timeframe", "regime_child"]},
+    "modifier_refused": {"owner": "converter", "axes": ["base_spec_without_modifier"]},
+    "untradeable_symbol": {"owner": "converter", "axes": ["cross_asset_transplant"]},
+    "short_history": {"owner": "converter",
+                      "axes": ["proxy_series", "cross_asset_transplant", "coarser_timeframe"]},
+    "untestable_as_specified": {"owner": "converter",
+                                "axes": ["event_study", "coarser_timeframe", "regime_child",
+                                         "cross_asset_transplant"]},
+    "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
+    "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
+    "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
+}
+
+#: Where cells for the converter are handed over, rewritten every pass from the bank (the bank
+#: stays the record; this file is the queue the converter consumes).
+CONVERSION_HANDOFF = HYP / "conversion_handoff.json"
+
+
+def failure_class(raw: Any) -> str | None:
+    """The failure class for one raw status or bank reason; None means UNROUTED (a defect)."""
+    return FAILURE_CLASS.get(str(raw or ""))
+
+
+def judging_failures(path: Path | None = None,
+                     bank: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Per-class counts of every way the judge failed to rule, last sweep and parked stock.
+
+    `last_sweep` reads the sealed judge's own report (verdict rows that never reached the gates,
+    UNKNOWN verdicts by named reason, and the pre-warm's failure kinds); `parked` reads the bank.
+    An absent report is UNMEASURED for the sweep half -- never zero failures.
+    """
+    out: dict[str, Any] = {"routes": FAILURE_ROUTES, "terminal_classes": []}
+    sweep: dict[str, int] = {}
+    unrouted: dict[str, int] = {}
+
+    def _book(raw: str, into: dict[str, int], n: int = 1) -> None:
+        cls = failure_class(raw)
+        if cls is None:
+            unrouted[raw] = unrouted.get(raw, 0) + n
+        else:
+            into[cls] = into.get(cls, 0) + n
+
+    doc = _read(path or GATES_REPORT)
+    verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
+    if isinstance(verdicts, list):
+        for v in verdicts:
+            if not isinstance(v, dict):
+                continue
+            st = str(v.get("downstream_status") or "")
+            if st.startswith(NOT_JUDGED_PREFIX) and st not in (
+                    "NOT_RUN_TERMINAL_GATE_1_REJECT", "NOT_RUN_NO_GATE_1_ELIGIBLE_CELLS"):
+                _book(st, sweep)
+        for row in name_unknowns(path).values():
+            _book(str(row.get("reason") or "unnamed"), sweep)
+        pw = doc.get("prewarm") if isinstance(doc, dict) else None
+        fails = pw.get("failures") if isinstance(pw, dict) else None
+        if isinstance(fails, dict):
+            for k, n in fails.items():
+                # NOT_RUN_* kinds are already booked once from the verdict rows.
+                if not str(k).startswith(NOT_JUDGED_PREFIX):
+                    _book(str(k), sweep, int(n or 0))
+        out["last_sweep"] = dict(sorted(sweep.items()))
+        out["last_sweep_status"] = "MEASURED"
+    else:
+        out["last_sweep"] = None
+        out["last_sweep_status"] = "UNMEASURED"
+        out["last_sweep_why"] = "the sealed judge has written no verdicts here"
+    parked: dict[str, int] = {}
+    for row in (unrunnable_bank() if bank is None else bank).values():
+        _book(str(row.get("reason") or "unnamed"), parked)
+    out["parked"] = dict(sorted(parked.items()))
+    out["parked_to_converter"] = sum(n for c, n in parked.items()
+                                     if FAILURE_ROUTES.get(c, {}).get("owner") == "converter")
+    out["unrouted"] = dict(sorted(unrouted.items()))
+    out["verdict"] = "UNROUTED" if unrouted else "ALL_ROUTED"
+    return out
+
+
+def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
+                             path: Path | None = None) -> int:
+    """Hand every parked cell the converter owns to the converter, with its class and axes."""
+    rows = []
+    for cell, row in sorted(bank.items()):
+        cls = failure_class(row.get("reason")) or "unnamed"
+        route = FAILURE_ROUTES.get(cls, {})
+        if route.get("owner") != "converter":
+            continue
+        rows.append({"cell": cell, "family": row.get("family"), "sym": row.get("sym"),
+                     "tf": row.get("tf"), "reason": row.get("reason"), "class": cls,
+                     "axes": route.get("axes"), "why": row.get("why"),
+                     "first_parked_utc": row.get("parked_at")})
+    target = path or CONVERSION_HANDOFF
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps({"at": at, "n": len(rows), "rows": rows}, indent=1,
+                                     default=str), "utf-8")
+    except OSError:
+        return -1
+    return len(rows)
+
+
 def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
           ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     """The per-family coverage table, the quotas, and the carried-cohort ratchet."""
@@ -1639,6 +1785,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     not_run = name_not_run()
     unrunnable = update_unrunnable_bank({**named_unknowns, **not_run},
                                         at=at.isoformat(timespec="seconds"))
+    _bank_now = unrunnable_bank()
+    failures = judging_failures(bank=_bank_now)
+    failures["handed_to_converter"] = write_conversion_handoff(
+        _bank_now, at=at.isoformat(timespec="seconds"))
     bars_wanted: dict[str, int] = {}
     for _r in not_run.values():
         if _r.get("reason") == "data_missing":
@@ -1889,6 +2039,9 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "not_testable_total": sum(not_testable.values()),
         "not_testable_by_reason": not_testable_by_reason,
         "unrunnable_bank": unrunnable.get("bank_size"),
+        # EVERY WAY THE JUDGE FAILED TO RULE, per class, each with its route out (no terminal
+        # class exists): what the hourly pass reads to hunt judging's own unoptimalities.
+        "judging_failures": failures,
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
     }

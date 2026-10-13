@@ -84,15 +84,16 @@ def _read(path: Path) -> dict[str, Any]:
 #: there -- `series_exception`, `no_series`, an unnamed or unlisted reason -- stays `unknown`:
 #: a defect, never data scarcity, and never drain.
 try:
+    from judge_coverage import CONVERSION_HANDOFF, READMISSION_LOG, UNRUNNABLE_BANK
     from judge_coverage import NOT_TESTABLE_REASONS as NOT_TESTABLE_UNKNOWN
-    from judge_coverage import READMISSION_LOG, UNRUNNABLE_BANK
 except ImportError:                                            # pragma: no cover - import context
     from research.judge_coverage import (  # type: ignore[no-redef]
-        NOT_TESTABLE_REASONS as NOT_TESTABLE_UNKNOWN,
-    )
-    from research.judge_coverage import (  # type: ignore[no-redef]
+        CONVERSION_HANDOFF,
         READMISSION_LOG,
         UNRUNNABLE_BANK,
+    )
+    from research.judge_coverage import (  # type: ignore[no-redef]
+        NOT_TESTABLE_REASONS as NOT_TESTABLE_UNKNOWN,
     )
 
 
@@ -450,8 +451,21 @@ def capacity(d: dict[str, Any], w: dict[str, Any], s: dict[str, Any]) -> dict[st
             "binding_stage": s.get("binding_stage", UNMEASURED)}
 
 
+def awaiting_conversion(path: Path | None = None) -> dict[str, Any]:
+    """Parked cells handed to the converter and not yet back (`judge_coverage.CONVERSION_HANDOFF`).
+
+    NO CELL ENDS UNTESTABLE (principal, 2026-10-13): a parked cell left the judge's backlog but is
+    still owed a ruling once converted, so the backlog is never DRAINED while any wait here.
+    """
+    p = CONVERSION_HANDOFF if path is None else path
+    doc = _read(p)
+    if not isinstance(doc, dict) or not isinstance(doc.get("n"), int) or doc["n"] < 0:
+        return {"status": UNMEASURED, "why": f"{p.name} is absent or unreadable"}
+    return {"status": "MEASURED", "cells": doc["n"], "at": doc.get("at")}
+
+
 def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
-            window: str = "7d") -> dict[str, Any]:
+            window: str = "7d", conv: dict[str, Any] | None = None) -> dict[str, Any]:
     """Net drain per day, days to zero (or GROWING) and the rate that would clear it."""
     if b.get("status") != "MEASURED" or d.get("status") != "MEASURED" \
             or i.get("status") != "MEASURED":
@@ -483,7 +497,17 @@ def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
                                                         else None),
                            "target_days": TARGET_DAYS}
     readm = i.get("readmitted") if isinstance(i.get("readmitted"), dict) else {}
-    if n == 0:
+    if not isinstance(conv, dict):
+        conv = {"status": UNMEASURED, "why": "not read"}
+    doc["awaiting_conversion"] = conv.get("cells") if conv.get("status") == "MEASURED" else None
+    if n == 0 and conv.get("status") != "MEASURED":
+        doc.update(status=UNMEASURED, days_to_zero=None,
+                   why=f"cells awaiting conversion unknown: {conv.get('why')}")
+    elif n == 0 and int(conv.get("cells") or 0) > 0:
+        doc.update(status="AWAITING_CONVERSION", days_to_zero=None,
+                   why=(f"{conv.get('cells')} parked cell(s) are with the converter and still "
+                        "owed a ruling; no cell ends untestable"))
+    elif n == 0:
         doc.update(status="DRAINED", days_to_zero=0.0)
     elif net_day > 0 and readm.get("status") != "MEASURED":
         # The inflow above is a LOWER bound (re-admissions unknown), so "draining" is not shown.
@@ -504,10 +528,12 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     t = now or datetime.now(tz=UTC)
     b, d, i, w = backlog(), drain(t), inflow(t), warm_side()
     s = sweep_anatomy()
+    c = awaiting_conversion()
     return {"at": t.isoformat(timespec="seconds"), "backlog": b, "drain": d, "inflow": i,
             "warm_side": w, "sweep": s, "capacity": capacity(d, w, s),
-            "burn_down": verdict(b, d, i, "7d"),
-            "burn_down_24h": verdict(b, d, i, "24h"),
+            "awaiting_conversion": c,
+            "burn_down": verdict(b, d, i, "7d", c),
+            "burn_down_24h": verdict(b, d, i, "24h", c),
             "rule": ("outflow = cells SETTLED for the first time in the window: a first real "
                      "verdict, or a first NOT_TESTABLE reading (judge_coverage."
                      "UNKNOWN_REASON_CLASS), each also published on its own; other UNKNOWN and "

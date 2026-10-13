@@ -30,6 +30,7 @@ def _desk_state_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(jc, "UNRUNNABLE_BANK", tmp_path / "unrunnable_specs.json")
     monkeypatch.setattr(jc, "RATCHET", tmp_path / "judge_backlog_ratchet.json")
     monkeypatch.setattr(jc, "REPORT", tmp_path / "JUDGE_COVERAGE.json")
+    monkeypatch.setattr(jc, "CONVERSION_HANDOFF", tmp_path / "conversion_handoff.json")
     monkeypatch.setattr(research_priors, "STATE_DIR", tmp_path / "research_priors")
 
 
@@ -541,3 +542,53 @@ def test_a_family_the_posterior_never_learned_is_backfilled(tmp_path: Path) -> N
     out = jc.learn_priors(ledger, since="2026-09-23T11:35:40+00:00", state_dir=tmp_path)
     assert out["backfilled_families"] == 1
     assert out["recorded"] == 1
+
+
+def test_every_judging_failure_has_a_route_out_and_none_is_terminal() -> None:
+    """NO CELL ENDS UNTESTABLE (principal, 2026-10-13): every reason the judge can name, and every
+    NOT_RUN kind it parks, maps to a failure class, and every class names who resolves it."""
+    named = set(jc.UNKNOWN_REASON_CLASS) | set(jc.PARKED_NOT_RUN) | set(jc.PARKED_NOT_RUN.values())
+    assert not {r for r in named if jc.failure_class(r) is None}, "a reason with no way out"
+    for cls in set(jc.FAILURE_CLASS.values()):
+        route = jc.FAILURE_ROUTES.get(cls) or {}
+        assert route.get("owner") in ("converter", "judge") and route.get("axes"), cls
+    for raw in ("missing_bars", "NOT_RUN_DATA_MISSING", "no_series", "FAIL_3X",
+                "NOT_RUN_BUILD_FAILED", "never_fires"):
+        assert jc.FAILURE_ROUTES[jc.failure_class(raw) or ""]["owner"] == "converter", raw
+
+
+def test_judging_failures_counts_per_class_and_names_the_unrouted(tmp_path: Path) -> None:
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({
+        "verdicts": [
+            {"cell": "a", "downstream_status": "NOT_RUN_DATA_MISSING"},
+            {"cell": "b", "downstream_status": "NOT_RUN_DATA_MISSING"},
+            {"cell": "c", "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED"},
+            {"cell": "d", "downstream_status": "NOT_RUN_SOMETHING_NEW"},
+            {"cell": "e", "downstream_status": "NOT_RUN_TERMINAL_GATE_1_REJECT"},
+            {"cell": "f", "passed": False, "terminal_gate": "cpcv"}],
+        "prewarm": {"failures": {"FAIL_3X": 4, "NOT_RUN_DATA_MISSING": 9}}}), "utf-8")
+    bank = {"x": {"reason": "never_fires"}, "y": {"reason": "data_missing"},
+            "z": {"reason": "build_failed"}}
+    f = jc.judging_failures(rep, bank=bank)
+    assert f["last_sweep_status"] == "MEASURED"
+    assert f["last_sweep"] == {"budget_deferred": 1, "fail_3x": 4, "no_bars": 2}
+    assert f["unrouted"] == {"NOT_RUN_SOMETHING_NEW": 1} and f["verdict"] == "UNROUTED"
+    assert f["parked"] == {"build_fail": 1, "no_bars": 1, "untestable_as_specified": 1}
+    assert f["parked_to_converter"] == 3 and f["terminal_classes"] == []
+    absent = jc.judging_failures(tmp_path / "absent.json", bank={})
+    assert absent["last_sweep_status"] == "UNMEASURED" and absent["last_sweep"] is None
+
+
+def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
+    bank = {"x": {"reason": "never_fires", "sym": "EURUSD", "family": "carry", "tf": "H1",
+                  "parked_at": "2026-10-01T00:00:00+00:00"},
+            "y": {"reason": "data_missing", "sym": "XAGUSD", "tf": "M15"},
+            "w": {"reason": "unnamed"}}
+    out = tmp_path / "handoff.json"
+    assert jc.write_conversion_handoff(bank, at="2026-10-13T17:00:00+00:00", path=out) == 2
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["n"] == 2 and {r["cell"] for r in doc["rows"]} == {"x", "y"}
+    x = next(r for r in doc["rows"] if r["cell"] == "x")
+    assert x["class"] == "untestable_as_specified" and "event_study" in x["axes"]
+    assert x["first_parked_utc"] == "2026-10-01T00:00:00+00:00"

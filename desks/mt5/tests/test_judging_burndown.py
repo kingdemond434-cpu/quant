@@ -73,6 +73,23 @@ def test_the_verdict_is_growing_when_creation_outruns_first_rulings() -> None:
     assert JB.verdict({"status": "UNMEASURED", "why": "x"}, d, i)["status"] == "UNMEASURED"
 
 
+
+def test_an_empty_backlog_is_not_drained_while_cells_await_conversion(tmp_path: Path) -> None:
+    """NO CELL ENDS UNTESTABLE: parked cells with the converter are still owed a ruling."""
+    b = {"status": "MEASURED", "unjudged": 0}
+    d = {"status": "MEASURED", "first_rulings_per_hour": {"7d": 10.0, "24h": 10.0}}
+    i = {"status": "MEASURED", "created_per_hour": {"7d": 0.0, "24h": 0.0},
+         "readmitted": {"status": "MEASURED", "readmitted": {"7d": 0, "24h": 0}}}
+    h = tmp_path / "conversion_handoff.json"
+    h.write_text(json.dumps({"at": "x", "n": 12, "rows": []}), encoding="utf-8")
+    v = JB.verdict(b, d, i, conv=JB.awaiting_conversion(h))
+    assert v["status"] == "AWAITING_CONVERSION" and v["awaiting_conversion"] == 12
+    assert JB.verdict(b, d, i, conv=JB.awaiting_conversion(tmp_path / "no.json"))["status"] \
+        == "UNMEASURED"
+    h.write_text(json.dumps({"at": "x", "n": 0, "rows": []}), encoding="utf-8")
+    assert JB.verdict(b, d, i, conv=JB.awaiting_conversion(h))["status"] == "DRAINED"
+
+
 def _plant_sweep(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, order_at: str,
                  swept_at: str, deferred: int) -> None:
     rep = tmp_path / "universal_gates_external.json"
