@@ -915,6 +915,15 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
         head_note, head_why = ("cwd (in-place: the working tree as it sits)"
                                if laws_only else "cwd (full gate judges LIVE state)"), []
     battery = _LAW_FENCES if laws_only else _LAW_FENCES + _STATE_FENCES
+    # A LAWS-ONLY RUN IS A SOURCE VIEW WHETHER OR NOT THE TREE WAS CLEAN (2026-10-13). The HEAD
+    # re-exec above already sets QUANT_LAWGATE_SOURCE_VIEW; a clean tree skipped that branch and
+    # judged in place WITHOUT it, so one commit read two ways. Since the box publishes
+    # gateway_state.json and JUDGE_COVERAGE.json to origin every 15 minutes, a clean CI or cloud
+    # checkout read those copies as its own runtime: check_self_repair took the copied gateway
+    # stamps for a live trading host (manual 0 -> 11) and check_birth_obligations judged a
+    # six-day-old judge report as fresh (60 families "arrived"). Host state is judged by the
+    # state battery (`--require-state`, full mode) on the host that writes it, never here.
+    fence_env = {**os.environ, "QUANT_LAWGATE_SOURCE_VIEW": "1"} if laws_only else None
     results, failures = [], []
     for script, extra in battery:
         p = root / "scripts" / script
@@ -924,7 +933,7 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
             continue
         try:
             r = subprocess.run([sys.executable, str(p), *extra], capture_output=True,
-                               text=True, timeout=600, cwd=root)
+                               text=True, timeout=600, cwd=root, env=fence_env)
             ok = r.returncode == 0
             tail = (r.stdout or r.stderr or "").strip().splitlines()
             results.append({"fence": script, "ok": ok, "rc": r.returncode,

@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 777,
-  "UNMEASURED": 38
+  "UNMEASURED": 40
  },
  "scope": {
-  "attested": 996,
+  "attested": 998,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -325,24 +325,26 @@
     ]
    },
    {
-    "at": "2026-10-13T16:24:25+00:00",
+    "at": "2026-10-13T15:22:10+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "battery:desks/mt5/research/limits_census.py",
+     "battery:scripts/run_desk_economics.py"
+    ]
+   },
+   {
+    "at": "2026-10-13T17:12:25+00:00",
     "host": "vm",
     "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "fence:check_breadth_enforcer",
-     "leg:breadth_enforcer"
-    ]
-   },
-   {
-    "at": "2026-10-13T16:34:34+00:00",
-    "host": "vm",
-    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-    "on_attesting_host": false,
-    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
-    "organs": [
      "fence:check_producer_health",
+     "leg:breadth_enforcer",
      "leg:producer_health"
     ]
    }
@@ -25668,6 +25670,62 @@
    "measured_at": "2026-10-12T21:51:05+00:00"
   },
   {
+   "organ": "battery:desks/mt5/research/limits_census.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/limits_census.py"
+   ],
+   "clock": "hourly_cycle:organ_battery",
+   "cadence_s": 61200,
+   "max_silence_s": 122400,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_declared": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "battery_rotation_runs",
+   "consumer": "desks/mt5/research/wiring_ceo.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-13T15:22:10+00:00"
+  },
+  {
+   "organ": "battery:scripts/run_desk_economics.py",
+   "kind": "executable",
+   "code": [
+    "scripts/run_desk_economics.py"
+   ],
+   "clock": "hourly_cycle:organ_battery",
+   "cadence_s": 61200,
+   "max_silence_s": 122400,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_declared": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "battery_rotation_runs",
+   "consumer": "desks/mt5/research/wiring_ceo.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-13T15:22:10+00:00"
+  },
+  {
    "organ": "fence:check_breadth_enforcer",
    "kind": "task",
    "code": [
@@ -25676,52 +25734,26 @@
    "clock": "run_law_gate.py",
    "cadence_s": 3600,
    "max_silence_s": 7200,
-   "state": "NEVER",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
    "artifact": "data/law_gate.json",
    "artifact_declared": "data/law_gate.json",
-   "artifact_resolved_by": "absent",
+   "artifact_resolved_by": "declared",
    "artifact_declared_n": 1,
-   "artifact_age_s": null,
-   "artifact_bytes": 0,
-   "artifact_sha256": "UNMEASURED",
-   "summary": {},
+   "artifact_age_s": 1041,
+   "artifact_bytes": 9432,
+   "artifact_sha256": "ff00244236f2f2604da827a8e605078f7d3ffe618f12ba3b057a26b185d620c3",
+   "summary": {
+    "ok": true
+   },
    "progress_metric": "gate_runs",
    "consumer": "desks/mt5/research/plumbing_watchdog.py",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-13T16:24:25+00:00"
-  },
-  {
-   "organ": "leg:breadth_enforcer",
-   "kind": "leg",
-   "code": [
-    "desks/mt5/research/breadth_enforcer.py"
-   ],
-   "clock": "hourly_cycle:breadth_enforcer",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "NEVER",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/BREADTH_ENFORCER.json",
-   "artifact_declared": "desks/mt5/reports/BREADTH_ENFORCER.json",
-   "artifact_resolved_by": "absent",
-   "artifact_declared_n": 1,
-   "artifact_age_s": null,
-   "artifact_bytes": 0,
-   "artifact_sha256": "UNMEASURED",
-   "summary": {},
-   "progress_metric": "leg_completions",
-   "consumer": "UNMEASURED",
-   "measured_on": "vm",
-   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-13T16:24:25+00:00"
+   "measured_at": "2026-10-13T17:12:25+00:00"
   },
   {
    "organ": "fence:check_producer_health",
@@ -25741,9 +25773,9 @@
    "artifact_declared": "data/law_gate.json",
    "artifact_resolved_by": "declared",
    "artifact_declared_n": 1,
-   "artifact_age_s": 353,
-   "artifact_bytes": 9275,
-   "artifact_sha256": "2234c5143c736d30583bd781ce6ea54dae3e645396f346fb08005f38002ef5f9",
+   "artifact_age_s": 1041,
+   "artifact_bytes": 9432,
+   "artifact_sha256": "ff00244236f2f2604da827a8e605078f7d3ffe618f12ba3b057a26b185d620c3",
    "summary": {
     "ok": true
    },
@@ -25751,7 +25783,37 @@
    "consumer": "desks/mt5/research/plumbing_watchdog.py",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-13T16:34:34+00:00"
+   "measured_at": "2026-10-13T17:12:25+00:00"
+  },
+  {
+   "organ": "leg:breadth_enforcer",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/breadth_enforcer.py"
+   ],
+   "clock": "hourly_cycle:breadth_enforcer",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BREADTH_ENFORCER.json",
+   "artifact_declared": "desks/mt5/reports/BREADTH_ENFORCER.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 81,
+   "artifact_bytes": 54150,
+   "artifact_sha256": "1f1aed7fa9db4a2cc8a03abfea5c00ecd2399e095fde59f8eea369594b740385",
+   "summary": {
+    "verdict": "MEASURED"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-13T17:12:25+00:00"
   },
   {
    "organ": "leg:producer_health",
@@ -25779,7 +25841,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-10-13T16:34:34+00:00"
+   "measured_at": "2026-10-13T17:12:25+00:00"
   }
  ],
  "ratchet": {
