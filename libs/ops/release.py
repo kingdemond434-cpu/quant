@@ -163,6 +163,7 @@ NON_CODE: frozenset[str] = frozenset({
     # publish_state leg and published on the same wire. Reports about the code, never inputs to it.
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
+    "desks/mt5/reports/BOX_HEARTBEAT.json",
     # The freshness fence's report and the desk health report (2026-09-30), written by the hourly
     # `box_state_freshness` and `desk_health` legs and published on the same wire.
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
