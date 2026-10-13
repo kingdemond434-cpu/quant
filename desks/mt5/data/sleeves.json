@@ -199,13 +199,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": -2.43899e-05,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia'",
-        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 2.16 at correlation +0.12 to the held book"
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-04T04:54:50+00:00",
       "restored_by": "heal_silent_demotions",
@@ -239,13 +239,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": -2.43899e-05,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia'",
-        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 2.16 at correlation +0.12 to the held book"
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-04T04:54:50+00:00",
       "restored_by": "heal_silent_demotions",
@@ -279,13 +279,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": -2.43899e-05,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia'",
-        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 2.16 at correlation +0.12 to the held book"
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-04T04:54:50+00:00",
       "restored_by": "heal_silent_demotions",
@@ -325,7 +325,7 @@
         "why": "no allocator row answers to any of ['gold_london_am_v2', 'xauusd|london_am']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "76d3294f692f48aa",
         "ok": false,
@@ -360,7 +360,7 @@
         "why": "no allocator row answers to any of ['gold_london_am_v3', 'xauusd|london_am']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "2a9076c595eee423",
         "ok": false,
@@ -395,7 +395,7 @@
         "why": "no allocator row answers to any of ['gold_london_am_v4', 'xauusd|london_am']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "105ec4ce38c2d40c",
         "ok": false,
@@ -430,7 +430,7 @@
         "why": "no allocator row answers to any of ['gold_afternoon_v2', 'xauusd|afternoon']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "0c5648f41c8dd935",
         "ok": false,
@@ -465,7 +465,7 @@
         "why": "no allocator row answers to any of ['gold_afternoon_v3', 'xauusd|afternoon']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "46f8d1fa8e5ea5ea",
         "ok": false,
@@ -500,7 +500,7 @@
         "why": "no allocator row answers to any of ['gold_afternoon_v4', 'xauusd|afternoon']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "18107538babc5487",
         "ok": false,
@@ -2169,13 +2169,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": -2.43899e-05,
+        "delta_elogw_per_day": null,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 2.16 at correlation +0.12 to the held book"
+        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'session_range_breakout'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-05T01:40:13+00:00",
       "restored_by": "heal_silent_demotions",
@@ -2232,13 +2232,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": -2.43899e-05,
+        "delta_elogw_per_day": null,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 2.16 at correlation +0.12 to the held book"
+        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'session_range_breakout'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-05T01:40:13+00:00",
       "restored_by": "heal_silent_demotions",
@@ -2295,13 +2295,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": -2.43899e-05,
+        "delta_elogw_per_day": null,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|session_range_breakout|asia'",
-        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 2.16 at correlation +0.12 to the held book"
+        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'session_range_breakout'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-05T01:40:13+00:00",
       "restored_by": "heal_silent_demotions",
@@ -12729,13 +12729,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "demoted_at": "2026-09-30T14:18:56+00:00",
       "demote_reason": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's",
       "restored_from": "STANDBY",
@@ -25947,13 +25947,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "10ddca4a838028b6",
         "ok": false,
@@ -26013,13 +26013,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "4ccaddeee1d96c6b",
         "ok": false,
@@ -26079,13 +26079,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "cf4655e7c5c2f174",
         "ok": false,
@@ -26145,13 +26145,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "272ea9dffad18748",
         "ok": false,
@@ -31569,13 +31569,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "e1a43d9731ef313d",
         "ok": false,
@@ -31635,13 +31635,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_at": "2026-09-30T08:48:07+00:00",
       "restore_reason": "already funded by the allocator at 0.00% heat; the allocator's current solve gives this sleeve 0.00% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))",
       "artifact": {
@@ -31702,13 +31702,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_at": "2026-09-30T08:48:07+00:00",
       "restore_reason": "already funded by the allocator at 0.00% heat; the allocator's current solve gives this sleeve 0.00% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))",
       "artifact": {
@@ -31769,13 +31769,13 @@
         "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
+        "delta_elogw_per_day": -0.0002685996,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.16 at correlation -0.03 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_at": "2026-09-30T08:48:07+00:00",
       "restore_reason": "already funded by the allocator at 0.00% heat; the allocator's current solve gives this sleeve 0.00% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))",
       "artifact": {
@@ -31839,10 +31839,10 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'macro_conditional'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'macro_conditional'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "bf9bba56d0d4909b",
         "ok": false,
@@ -31906,10 +31906,10 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'macro_conditional'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'macro_conditional'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "d281063eedf6cf32",
         "ok": false,
@@ -31973,10 +31973,10 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'macro_conditional'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'macro_conditional'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "ae323f59dc720724",
         "ok": false,
@@ -32040,10 +32040,10 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "artifact": {
         "version_hash": "c6e347a40b773415",
         "ok": false,
@@ -34213,10 +34213,10 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T13:34:23.849079+00:00",
+      "admit_scan": "2026-10-13T15:04:02.260144+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-04T15:46:15+00:00",
       "restored_by": "heal_silent_demotions",
@@ -51098,6 +51098,48 @@
       "retired_by": "live_policy",
       "canonical_identity": "btcusd|cross_asset_residual|asia",
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "US30.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8",
+      "symbol": "US30",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of [\"us30.cross_asset_residual.asia@m5#beta_win=240_entry_z=2.5_factor_symbols=['usdzar', 'usdjpy']_lookback=240_side_mode=revert_ttl_bars=8\", 'us30|cross_asset_residual|asia', 'us30|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of [\"us30.cross_asset_residual.asia@m5#beta_win=240_entry_z=2.5_factor_symbols=['usdzar', 'usdjpy']_lookback=240_side_mode=revert_ttl_bars=8\", 'us30|cross_asset_residual|asia', 'us30|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-13T15:51:22+00:00",
+      "shadow_exp": 0.11700132510809863,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "US30.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8",
+      "sleeve_id": "82500bdf3084e09f67ac",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "beta_win": 240,
+        "entry_z": 2.5,
+        "factor_symbols": [
+          "USDZAR",
+          "USDJPY"
+        ],
+        "lookback": 240,
+        "side_mode": "revert",
+        "timeframe": "M5",
+        "ttl_bars": 8
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-13T15:51:24+00:00",
+      "retire_reason": "US30 is outside the live sleeve universe ['AUDCHF', 'EURZAR', 'USDJPY', 'USDZAR', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
