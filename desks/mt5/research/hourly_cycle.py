@@ -1350,7 +1350,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
-    **dict.fromkeys(("enrol_clocks", "near_miss_farm", "state_admission", "pf_allocator",
+    **dict.fromkeys(("enrol_clocks", "near_miss_farm", "forward_lane_fence",
+                     "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "portfolio_bounty",
@@ -2021,6 +2022,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The near-miss farm checkpoints every 60 s and runs stalest symbols first, so a cut pass
     # resumes where it stopped rather than replaying the same prefix.
     "near_miss_farm": 1_800,
+    # The lane fence stops itself at --budget-s 900 (restarts included) and writes its artifact.
+    "forward_lane_fence": 1_200,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
@@ -5410,6 +5413,12 @@ def main() -> None:
     # and allocator read. Untouched forward evidence accrues while the judge works.
     nmf = _costed("near_miss_farm", lambda: _producer(
         "near_miss_farm", "research/near_miss_farm.py"))
+    # THE FORWARD LANE FENCE (principal 2026-10-13: "all forward lanes must be running actively
+    # not stale ever n all certis must always be put in forward lanes"). Red when a lane's file
+    # or any active clock in it stops moving, or a certificate sits in no lane past one cycle;
+    # it re-runs the stale lane's own engine (or the farm) and proves it by the stamp moving.
+    flf = _costed("forward_lane_fence", lambda: _producer(
+        "forward_lane_fence", "research/forward_lane_fence.py", "--budget-s", "900"))
     # THE GROWTH-MAXIMISING SIZER, WHICH HAS NEVER RUN. `pf_allocator` solves posterior E[log W]
     # for PER-SLEEVE heat -- the fraction of equity each sleeve should risk to maximise compound
     # growth, which is the only principled answer to "how big should this trade be". Everything
@@ -6288,7 +6297,8 @@ def main() -> None:
                     "box_state_freshness": bsf, "desk_health": dhl,
                     "bars_state": bst,
                     "publish_state": pub,
-                    "enrol_clocks": ecl, "near_miss_farm": nmf, "requeue_unrunnable": rq, "reclaim_disk": dd,
+                    "enrol_clocks": ecl, "near_miss_farm": nmf,
+                    "forward_lane_fence": flf, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,

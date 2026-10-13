@@ -102,6 +102,7 @@ LEG_LAYER: dict[str, str] = {
     "alpha_rank": "meta", "factory_contracts": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "near_miss_farm": "timing", "heal_clocks": "timing",
+    "forward_lane_fence": "timing",
     "promoter": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
     # WHICH HOURS the desk has an edge in is a TIMING question, not a sizing one -- this leg
