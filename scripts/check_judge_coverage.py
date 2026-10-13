@@ -346,25 +346,11 @@ def judge(report: Path | None = None, *, require_state: bool = False,
         out["checks"].append({"metric": "prewarm_fail_ratchet", "state": "UNMEASURED",
                               "why": f"pre-warm failure share {pw_now} (previous {pw_was})"})
     elif float(pw_now) > float(pw_was) + PREWARM_TOLERANCE:
-        # A BOX READING, judged where the box owes it. Like `freshness` above, the ratchet is
-        # FAIL on the box (--require-state, run_law_gate's box leg) and WARN in a fresh checkout:
-        # a clone did not run the sweep and no code change in a PR can move the number, so one
-        # box write turned every PR's CI red at once (2026-10-13, 16.3% -> 55.6%). The box gate
-        # still fails until the share comes back down.
-        _pw = (((tot.get("judging_failures") or {}).get("prewarm") or {})
-               if isinstance(tot.get("judging_failures"), dict) else {})
-        _kinds = _pw.get("failures") or {}
-        _top = (_pw.get("top_reasons") or [{}])[0].get("why") if _pw.get("top_reasons") else None
-        if require_state:
-            failures.append("prewarm_fail_share")
+        failures.append("prewarm_fail_share")
         out["checks"].append({
-            "metric": "prewarm_fail_ratchet", "state": "FAIL" if require_state else "WARN",
+            "metric": "prewarm_fail_ratchet", "state": "FAIL",
             "why": (f"pre-warm build/data failure share rose {float(pw_was):.1%} -> "
-                    f"{float(pw_now):.1%}: failing cells are reaching the judge again"
-                    + (f"; kinds {_kinds}" if _kinds else "; kinds UNMEASURED on this reading")
-                    + (f"; top reason: {_top}" if _top else "")
-                    + ("" if require_state else
-                       " (a box reading: FAIL under --require-state on the box)"))})
+                    f"{float(pw_now):.1%}: failing cells are reaching the judge again")})
     else:
         out["checks"].append({"metric": "prewarm_fail_ratchet", "state": "OK",
                               "why": f"pre-warm failures {float(pw_was):.1%} -> "
