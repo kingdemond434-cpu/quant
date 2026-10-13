@@ -698,7 +698,7 @@ def test_allocator_history_reading_is_informational_and_long(tmp_path: Path) -> 
     assert missing["status"] == eb.UNMEASURED and missing["n_eff"] is None
 
 
-def test_allocator_history_compounds_rows_sharing_a_date_and_stamps_the_source(
+def test_allocator_history_sums_rows_sharing_a_date_and_stamps_the_source(
         tmp_path: Path) -> None:
     import pandas as pd
 
@@ -718,7 +718,7 @@ def test_allocator_history_compounds_rows_sharing_a_date_and_stamps_the_source(
         row = ab.allocator_history_reading(p)
     finally:
         ab.realised_breadth = real  # type: ignore[assignment]
-    assert seen["a"]["2024-01-01"] == pytest.approx(1.01 * 1.02 - 1.0)
+    assert seen["a"]["2024-01-01"] == pytest.approx(0.03)          # R is additive: summed
     assert seen["b"]["2024-01-01"] == pytest.approx(0.03)
-    assert row["rows_compounded_into_a_day"] == 1
+    assert row["rows_summed_into_a_day"] == 1 and row["unit"].startswith("R")
     assert row["source_mtime"] and row["source_mtime"].startswith("20")

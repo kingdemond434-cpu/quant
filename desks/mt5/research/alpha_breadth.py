@@ -467,26 +467,30 @@ def allocator_history_reading(path: Path = ALLOCATOR_DAILY) -> dict[str, Any]:
         mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat()
     except OSError:
         mtime = None
-    # Several rows on one date are COMPOUNDED into that date, never last-row-wins: a date key
-    # cut from a sub-daily index would otherwise keep one bar and drop the rest of the day.
+    # THE UNIT IS R, NOT A RETURN (checked 2026-10-13): `portfolio_projection.build_daily` fills
+    # the matrix with each sleeve's per-trade R multiples SUMMED per date, so the values are
+    # additive risk units (a 1.5R day is common), neither simple nor log returns. Several rows
+    # on one date are therefore SUMMED into that date, exactly as build_daily does, never
+    # compounded and never last-row-wins (a date key cut from a sub-daily index kept one row).
     series: dict[str, dict[str, float]] = {}
     collapsed = 0
     for col in df.columns:
-        growth: dict[str, float] = {}
+        total: dict[str, float] = {}
         rows: dict[str, int] = {}
         for k, v in df[col].items():
             if not (isinstance(v, (int, float)) and np.isfinite(v) and v != 0.0):
                 continue
             day = str(k)[:10]
-            growth[day] = growth.get(day, 1.0) * (1.0 + float(v))
+            total[day] = total.get(day, 0.0) + float(v)
             rows[day] = rows.get(day, 0) + 1
         collapsed += sum(c - 1 for c in rows.values())
-        out = {d: g - 1.0 for d, g in growth.items() if g != 1.0}
+        out = {d: t for d, t in total.items() if t != 0.0}
         if out:
             series[str(col)] = out
     r = realised_breadth(series, name="allocator_history_returns")
     return {**base, **r.as_dict(), "n_sleeves": len(series), "source_mtime": mtime,
-            "rows_compounded_into_a_day": collapsed}
+            "unit": "R (per-trade R multiples summed per date, as build_daily writes them)",
+            "rows_summed_into_a_day": collapsed}
 
 
 def run(write_queue: bool = True) -> dict[str, Any]:
