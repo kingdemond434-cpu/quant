@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-13T09:27:42+00:00",
+  "updated_at": "2026-10-13T11:22:24+00:00",
   "certificate_lookup_error": null,
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
@@ -53,15 +53,13 @@
       },
       "forward_t": 1.4712742154793856,
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-10-13T11:25:00+00:00",
+      "last_source_bar": "2026-10-13T13:25:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
       "promotion_authority": false,
       "note": "Fusion-native forward shadow.",
-      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134).",
-      "canonical_identity": "xauusd|anti_donchian_breakout|overlap",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m5_anti_momentum_ny": {
       "forward_start": "2026-08-22T18:00:00+00:00",
@@ -97,14 +95,12 @@
       },
       "forward_t": 0.24049146721760514,
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-10-13T11:25:00+00:00",
+      "last_source_bar": "2026-10-13T13:25:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
       "promotion_authority": true,
-      "note": "Fusion-native forward shadow.",
-      "canonical_identity": "xauusd|anti_three_bar_momentum|new_york",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "note": "Fusion-native forward shadow."
     },
     "xau_m15_anti_breakout": {
       "forward_start": "2026-08-22T18:00:00+00:00",
@@ -118,36 +114,34 @@
         "target_atr": 1.5,
         "max_hold": 6
       },
-      "n": 288,
+      "n": 289,
       "n_historical": 0,
       "days": 52,
       "days_active": 52,
       "forward_empty_reason": "",
-      "expectancy_r": 0.032812097011844475,
+      "expectancy_r": 0.03263161679321782,
       "max_drawdown_r": -9.634757849854104,
       "forward_verdict": {
-        "n_eff": 285.44,
+        "n_eff": 286.82,
         "n_eff_basis": "acf_adjusted(rho_sum=0.004)",
-        "seq_lower_bound": -0.481986,
+        "seq_lower_bound": -0.481313,
         "significant": false,
         "independent": true,
-        "reason": "288 trades (n_eff 285.4), 52d, always-valid lower bound -0.4820R > 0",
-        "e_value": 0.2391,
+        "reason": "289 trades (n_eff 286.8), 52d, always-valid lower bound -0.4813R > 0",
+        "e_value": 0.2388,
         "e_crossed_at": null,
-        "e_n": 288,
+        "e_n": 289,
         "e_kill_supported": false,
         "e_status": "MEASURED"
       },
-      "forward_t": 1.122220827502763,
+      "forward_t": 1.1199085793577341,
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-10-13T11:15:00+00:00",
+      "last_source_bar": "2026-10-13T13:15:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
       "promotion_authority": true,
-      "note": "Fusion-native forward shadow.",
-      "canonical_identity": "xauusd|anti_donchian_breakout|all",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "note": "Fusion-native forward shadow."
     },
     "xau_m15_anti_momentum": {
       "forward_start": "2026-08-22T18:00:00+00:00",
@@ -161,40 +155,36 @@
         "target_atr": 1.5,
         "max_hold": 6
       },
-      "n": 474,
+      "n": 475,
       "n_historical": 0,
       "days": 52,
       "days_active": 52,
       "forward_empty_reason": "",
-      "expectancy_r": -0.007867884684057429,
+      "expectancy_r": -0.007068754842756992,
       "max_drawdown_r": -10.164960846518262,
       "forward_verdict": {
-        "n_eff": 474.0,
+        "n_eff": 475.0,
         "n_eff_basis": "acf_adjusted(rho_sum=0.000)",
-        "seq_lower_bound": -0.199927,
+        "seq_lower_bound": -0.198938,
         "significant": false,
         "independent": true,
-        "reason": "matured and independent but mean R -0.0079 is not positive",
-        "e_value": 0.3455,
+        "reason": "matured and independent but mean R -0.0071 is not positive",
+        "e_value": 0.3293,
         "e_crossed_at": null,
-        "e_n": 474,
+        "e_n": 475,
         "e_kill_supported": false,
         "e_status": "MEASURED"
       },
-      "forward_t": -0.429292759517841,
+      "forward_t": -0.3861362219934911,
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-10-13T11:15:00+00:00",
+      "last_source_bar": "2026-10-13T13:15:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
       "promotion_authority": true,
-      "note": "Fusion-native forward shadow.",
-      "canonical_identity": "UNIDENTIFIABLE",
-      "canonical_identity_why": "row declares no symbol or family, its key has no shape this desk writes, and no other store declares one for its name; recorded so it is auditable later and excluded from the join denominator by declaration rather than by silence",
-      "canonical_identity_declared_at": "2026-10-13T10:23:51+00:00"
+      "note": "Fusion-native forward shadow."
     }
   },
   "quarantined_candidates": {},
-  "represented_sleeves": 4,
-  "identity_stamped_at": "2026-10-13T10:23:51+00:00"
+  "represented_sleeves": 4
 }
