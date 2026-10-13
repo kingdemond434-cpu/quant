@@ -451,7 +451,8 @@ def capacity(d: dict[str, Any], w: dict[str, Any], s: dict[str, Any]) -> dict[st
             "binding_stage": s.get("binding_stage", UNMEASURED)}
 
 
-def awaiting_conversion(path: Path | None = None) -> dict[str, Any]:
+def awaiting_conversion(path: Path | None = None,
+                        now: datetime | None = None) -> dict[str, Any]:
     """Parked cells handed to the converter and not yet back (`judge_coverage.CONVERSION_HANDOFF`).
 
     NO CELL ENDS UNTESTABLE (principal, 2026-10-13): a parked cell left the judge's backlog but is
@@ -461,6 +462,14 @@ def awaiting_conversion(path: Path | None = None) -> dict[str, Any]:
     doc = _read(p)
     if not isinstance(doc, dict) or not isinstance(doc.get("n"), int) or doc["n"] < 0:
         return {"status": UNMEASURED, "why": f"{p.name} is absent or unreadable"}
+    # A handoff the coverage pass stopped rewriting is not today's count (audit of PR #290).
+    gen = _ts(doc.get("generated_utc"))
+    age_h = None if gen is None else ((now or datetime.now(tz=UTC)).timestamp() - gen) / 3600.0
+    if age_h is None or age_h > READMISSION_LOG_STALE_H:
+        return {"status": UNMEASURED,
+                "why": (f"{p.name} is {'undated' if age_h is None else f'{age_h:.1f}h old'} "
+                        f"(over {READMISSION_LOG_STALE_H:.0f}h): the coverage pass stopped "
+                        "handing cells over")}
     return {"status": "MEASURED", "cells": doc["n"], "at": doc.get("generated_utc")}
 
 
@@ -528,7 +537,7 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     t = now or datetime.now(tz=UTC)
     b, d, i, w = backlog(), drain(t), inflow(t), warm_side()
     s = sweep_anatomy()
-    c = awaiting_conversion()
+    c = awaiting_conversion(now=t)
     return {"at": t.isoformat(timespec="seconds"), "backlog": b, "drain": d, "inflow": i,
             "warm_side": w, "sweep": s, "capacity": capacity(d, w, s),
             "awaiting_conversion": c,

@@ -83,6 +83,7 @@ it first appears in the docket, with no edit to this file.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import sys
@@ -1744,6 +1745,9 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                                       "generated_utc": at, "n": len(rows), "rows": rows},
                                      indent=1, default=str), "utf-8")
     except OSError:
+        # Never leave the previous pass's file to read as this pass's count.
+        with contextlib.suppress(OSError):
+            target.unlink()
         return -1
     return len(rows)
 

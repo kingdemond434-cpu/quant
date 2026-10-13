@@ -81,13 +81,16 @@ def test_an_empty_backlog_is_not_drained_while_cells_await_conversion(tmp_path: 
     i = {"status": "MEASURED", "created_per_hour": {"7d": 0.0, "24h": 0.0},
          "readmitted": {"status": "MEASURED", "readmitted": {"7d": 0, "24h": 0}}}
     h = tmp_path / "conversion_handoff.json"
-    h.write_text(json.dumps({"generated_utc": "x", "n": 12, "rows": []}), encoding="utf-8")
-    v = JB.verdict(b, d, i, conv=JB.awaiting_conversion(h))
+    h.write_text(json.dumps({"generated_utc": _at(1.0), "n": 12, "rows": []}), encoding="utf-8")
+    v = JB.verdict(b, d, i, conv=JB.awaiting_conversion(h, NOW))
     assert v["status"] == "AWAITING_CONVERSION" and v["awaiting_conversion"] == 12
-    assert JB.verdict(b, d, i, conv=JB.awaiting_conversion(tmp_path / "no.json"))["status"] \
-        == "UNMEASURED"
-    h.write_text(json.dumps({"generated_utc": "x", "n": 0, "rows": []}), encoding="utf-8")
-    assert JB.verdict(b, d, i, conv=JB.awaiting_conversion(h))["status"] == "DRAINED"
+    assert JB.verdict(b, d, i, conv=JB.awaiting_conversion(tmp_path / "no.json", NOW))[
+        "status"] == "UNMEASURED"
+    h.write_text(json.dumps({"generated_utc": _at(1.0), "n": 0, "rows": []}), encoding="utf-8")
+    assert JB.verdict(b, d, i, conv=JB.awaiting_conversion(h, NOW))["status"] == "DRAINED"
+    # A handoff the coverage pass stopped rewriting is no reading at all.
+    h.write_text(json.dumps({"generated_utc": _at(7.0), "n": 0, "rows": []}), encoding="utf-8")
+    assert JB.awaiting_conversion(h, NOW)["status"] == "UNMEASURED"
 
 
 def _plant_sweep(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, order_at: str,
