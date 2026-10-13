@@ -77,3 +77,37 @@ def test_url_is_read_but_never_written(tmp_path: Path, monkeypatch: pytest.Monke
                                              "verdict": "OK"})
     assert calls == [("https://hc-ping.com/secret-uuid", False)]
     assert "secret-uuid" not in out.read_text()
+
+
+def test_the_report_is_written_whole_and_survives_a_read_only_destination(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    out = tmp_path / "BOX_HEARTBEAT.json"
+    out.write_text('{"old": true}')
+    calls: list[int] = []
+    real = os.replace
+
+    def replace_once_refused(src: object, dst: object) -> None:
+        calls.append(1)
+        if len(calls) == 1:          # what Windows does onto a read-only file (WinError 5)
+            raise PermissionError(13, "Access is denied")
+        real(src, dst)              # type: ignore[arg-type]
+
+    monkeypatch.setattr(hb.os, "replace", replace_once_refused)
+    hb._write_atomic(out, json.dumps({"verdict": "OK"}))
+    assert json.loads(out.read_text()) == {"verdict": "OK"}
+    assert len(calls) == 2 and not (tmp_path / "BOX_HEARTBEAT.json.tmp").exists()
+
+
+def test_a_second_refusal_raises_and_leaves_no_temp_file(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    out = tmp_path / "BOX_HEARTBEAT.json"
+    out.write_text('{"old": true}')
+
+    def refuse(src: object, dst: object) -> None:
+        raise PermissionError(13, "Access is denied")
+
+    monkeypatch.setattr(hb.os, "replace", refuse)
+    with pytest.raises(PermissionError):
+        hb._write_atomic(out, "{}")
+    assert json.loads(out.read_text()) == {"old": True}
+    assert not (tmp_path / "BOX_HEARTBEAT.json.tmp").exists()
