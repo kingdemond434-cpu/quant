@@ -998,6 +998,11 @@ def feed_lines(lab: Lab, extra: dict[str, list[str]]) -> list[str]:
                            if fams else "book: UNMEASURED on this host")
             except Exception:                          # pragma: no cover
                 out.append("book: UNMEASURED")
+            try:
+                import lab_style
+                out.append(lab_style.prompt_line())
+            except Exception:                          # pragma: no cover
+                out.append("styles the book owns: UNMEASURED")
         else:
             out.extend(extra.get(f, [])[:8])
     return out
@@ -1510,6 +1515,39 @@ def release_held(dest: Path | None = None) -> dict[str, Any]:
     return {"state": "DONATING", "released": moved}
 
 
+def style_screened(rows: list[dict[str, Any]], *, deadline: float | None = None
+                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """`lab_style.screen`: rows to donate (each stamped `style_screen`) and a summary. A cell
+    whose style the book already owns is held in `style_held.json`, never dropped. A crashing
+    screen donates every row unchanged: the screen can only hold, never lose."""
+    if not rows:
+        return rows, {"screened": 0}
+    try:
+        import lab_style
+        return lab_style.screen(rows, deadline=deadline)
+    except Exception as exc:                           # pragma: no cover - defensive
+        return rows, {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
+
+
+def release_restyled() -> dict[str, Any]:
+    """Donate held cells whose style the book no longer owns (to the seat dir or the hold)."""
+    try:
+        import lab_style
+        rows, still = lab_style.release()
+    except Exception as exc:                           # pragma: no cover - defensive
+        return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
+    if rows:
+        import llm_lab_roles as roles
+        roles.record_evidence_start(rows, STATE_DIR / "evidence_start.json")
+        target = donation_target(DONATE_DIR)
+        target.mkdir(parents=True, exist_ok=True)
+        stamp = _now().replace(":", "").replace("-", "")[:15]
+        _write_json(target / f"discoveries_restyled_{stamp}.json",
+                    {"source": ORGAN, "generated_at": _now(), "rule": RULE,
+                     "discoveries": rows})
+    return {"released": len(rows), "still_held": still}
+
+
 def _collector_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
     """collector_author's replacement (`collector_lab`): declarative specs, fixed fetcher."""
     try:
@@ -1525,6 +1563,8 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     if os.environ.get("QUANT_LLM_LAB_PAID", "0") != "1":
         os.environ["QUANT_FREE_TIER"] = "1"
     donations = release_held() if not dry_run else {"state": "dry run"}
+    if not dry_run:
+        donations["restyled"] = release_restyled()
     max_calls = int(max_calls if max_calls is not None else
                     os.environ.get("QUANT_LLM_LAB_MAX_CALLS", "24"))
     # The provider's own quota (a 429 cools the rung) is the binding daily limit; this cap only
@@ -1802,6 +1842,9 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         _append_jsonl(JEV_JOBS, [j for j in outputs["jev"] if j["series"] not in known_q])
         # THE EVIDENCE MAP FIRST (audit must-fix 4): the compiler may read a donation the moment
         # it lands, so the guard's start dates are on disk before any donation is.
+        outputs["donate"], style = style_screened(outputs["donate"],
+                                                  deadline=time.time() + 60.0)
+        donations["style_screen"] = style
         roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
         if outputs["donate"]:
             target = donation_target(DONATE_DIR)

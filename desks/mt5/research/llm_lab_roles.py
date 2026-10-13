@@ -203,17 +203,25 @@ def record_evidence_start(rows: Iterable[dict[str, Any]], path: Path | None = No
 
 
 # ============================================================================ verdict loop
-def _donations(donate_dir: Path) -> dict[str, dict[str, str]]:
-    """cell id -> {lab, model} from every donation the lab and its roles have written."""
-    out: dict[str, dict[str, str]] = {}
+def _donations(donate_dir: Path) -> dict[str, dict[str, Any]]:
+    """cell id -> {lab, model, style} from every donation the lab and its roles have written."""
+    try:
+        import lab_style
+        weigh: Callable[[dict[str, Any]], tuple[float, str]] = lab_style.credit_weight
+    except Exception:                                  # pragma: no cover - defensive
+        def weigh(_r: dict[str, Any]) -> tuple[float, str]:
+            return 0.5, UNMEASURED
+    out: dict[str, dict[str, Any]] = {}
     for f in sorted(donate_dir.glob("discoveries_*.json")):
         doc = _read_json(f, {}) or {}
         for r in doc.get("discoveries") or []:
             if isinstance(r, dict) and r.get("cell_id"):
+                w, style = weigh(r)
                 out[str(r["cell_id"])] = {"lab": str(r.get("lab") or "?"),
                                           "model": str(r.get("model") or "lexicon"),
                                           "symbol": str(r.get("symbol") or ""),
-                                          "family": str(r.get("family") or "")}
+                                          "family": str(r.get("family") or ""),
+                                          "style": style, "novel_weight": w}
     return out
 
 
@@ -260,7 +268,8 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
     keff, basis = _keff(certified)
     for table in (labs, models):
         for row in table.values():
-            row.update({"judged": 0, "certified": 0, "keff": 0.0, "gates": {}})
+            row.update({"judged": 0, "certified": 0, "keff": 0.0, "novel_keff": 0.0,
+                        "styles": {}, "gates": {}})
     feedback: dict[str, list[str]] = {}
     for cid, r in latest.items():
         own = owners[cid]
@@ -269,12 +278,17 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
         why = str(r.get("reason") or r.get("why") or "")[:90]
         for table, key in ((labs, own["lab"]), (models, own["model"])):
             row = table.setdefault(key, {"calls": 0, "judged": 0, "certified": 0, "keff": 0.0,
-                                         "gates": {}})
+                                         "novel_keff": 0.0, "styles": {}, "gates": {}})
             row["judged"] += 1
             row["gates"][gate] = row["gates"].get(gate, 0) + 1
             if r.get("passed"):
                 row["certified"] += 1
                 row["keff"] = round(row["keff"] + keff.get(cid, 0.0), 4)
+                # NOVEL CERTIFIED k_eff (2026-10-13): a certificate that re-buys a style the
+                # book owns earns no novelty credit; an unmeasured one earns half, labelled.
+                row["novel_keff"] = round(row.get("novel_keff", 0.0)
+                                          + keff.get(cid, 0.0) * float(own["novel_weight"]), 4)
+                row["styles"][own["style"]] = row["styles"].get(own["style"], 0) + 1
         if not r.get("passed") and held_out(gate, why):
             continue                      # audit must-fix 7: a held-out death is never told
         line = (f"verdict on your cell {cid[:60]} ({own['family']} on {own['symbol']}): "
@@ -285,21 +299,25 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
         for row in table.values():
             calls = max(1, int(row.get("calls", 0)))
             row["keff_per_call"] = round(float(row.get("keff", 0.0)) / calls, 6)
+            row["novel_keff_per_call"] = round(float(row.get("novel_keff", 0.0)) / calls, 6)
     doc.update({"generated_at": _now(), "keff_basis": basis, "judged_cells": len(latest),
                 "certified_cells": len(certified),
-                "ranking_rule": "certified incremental k_eff per call; novelty counts are NOT "
-                                "a ranking input",
+                "ranking_rule": "NOVEL certified incremental k_eff per call: each certificate's "
+                                "k_eff times its style screen weight (NOVEL 1, KNOWN_STYLE 0, "
+                                "UNMEASURED 0.5); novelty counts are NOT a ranking input",
                 "feedback": {k: v[-8:] for k, v in feedback.items()}})
     _write_json(path, doc)
     return doc
 
 
 def thompson(rows: dict[str, dict[str, Any]], keys: Sequence[str], rng: random.Random) -> list[str]:
-    """Order `keys` by a Beta draw on certified k_eff per call: successes are effective bets
-    certified, trials are calls. An unseen key draws from the flat prior, so it is explored."""
+    """Order `keys` by a Beta draw on NOVEL certified k_eff per call: successes are effective
+    bets certified in styles the book does not already own, trials are calls. An unseen key
+    draws from the flat prior, so it is explored. A row written before the style screen existed
+    has no `novel_keff` and is read on its plain k_eff."""
     def draw(k: str) -> float:
         r = rows.get(k) or {}
-        s = max(0.0, float(r.get("keff", 0.0)))
+        s = max(0.0, float(r.get("novel_keff", r.get("keff", 0.0))))
         n = max(float(r.get("calls", 0)), s)
         return rng.betavariate(1.0 + s, 1.0 + n - s)
     return sorted(keys, key=draw, reverse=True)

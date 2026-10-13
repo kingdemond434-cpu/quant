@@ -838,20 +838,23 @@ def run(*, budget_s: float = 120.0, max_llm: int = 8, max_fetch: int | None = No
     if fresh:
         import llm_lab
         import llm_lab_roles
-        llm_lab_roles.record_evidence_start(fresh, llm_lab.STATE_DIR / "evidence_start.json")
+        screened, out["style_screen"] = llm_lab.style_screened(fresh,
+                                                               deadline=time.time() + 30.0)
+        llm_lab_roles.record_evidence_start(screened, llm_lab.STATE_DIR / "evidence_start.json")
         target = llm_lab.donation_target(DONATE_DIR)
         target.mkdir(parents=True, exist_ok=True)
         stamp = _now().replace(":", "").replace("-", "")[:15]
         _write_json(target / f"discoveries_cbtone_{stamp}.json",
                     {"source": "llm_lab", "role": ROLE, "generated_at": _now(),
-                     "rule": "THE LAB PROPOSES, THE DESK JUDGES", "discoveries": fresh})
+                     "rule": "THE LAB PROPOSES, THE DESK JUDGES", "discoveries": screened})
         _write_json(STATE_DIR / "donated.json", sorted(known | {r["cell_id"] for r in fresh}))
     blockers: dict[str, int] = {}
     for d in rows:
         if d.get("blocker"):
             k = str(d["blocker"]).split(":")[0]
             blockers[k] = blockers.get(k, 0) + 1
-    out.update({"docs": len(rows), "series": counts, "cells_donated": len(fresh),
+    out.update({"docs": len(rows), "series": counts,
+                "cells_donated": len(screened) if fresh else 0,
                 "cells_total": len(donate), "owed": owed, "doc_blockers": blockers,
                 "seconds": round(time.time() - started, 1)})
     return out

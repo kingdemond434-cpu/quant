@@ -822,13 +822,14 @@ def run(*, budget_s: float = 120.0, max_llm: int = 4, chat: Any = None, get: Get
         # The evidence map first (audit S6), as the main lab pass does: the compiler may read a
         # donation the moment it lands, and a dropped stamp must still find its start date.
         import llm_lab_roles
-        llm_lab_roles.record_evidence_start(fresh, llm_lab.STATE_DIR / "evidence_start.json")
+        screened, out["style_screen"] = llm_lab.style_screened(fresh, deadline=deadline + 30.0)
+        llm_lab_roles.record_evidence_start(screened, llm_lab.STATE_DIR / "evidence_start.json")
         target = llm_lab.donation_target(DONATE_DIR)
         target.mkdir(parents=True, exist_ok=True)
         stamp = _now().replace(":", "").replace("-", "")[:15]
         _write_json(target / f"discoveries_collector_{stamp}.json",
                     {"source": "llm_lab", "role": ROLE, "generated_at": _now(),
-                     "rule": "THE LAB PROPOSES, THE DESK JUDGES", "discoveries": fresh})
+                     "rule": "THE LAB PROPOSES, THE DESK JUDGES", "discoveries": screened})
         _write_json(STATE_DIR / "donated.json", sorted(known | {r["cell_id"] for r in fresh}))
     status: dict[str, int] = {}
     for r in new:
@@ -849,7 +850,8 @@ def run(*, budget_s: float = 120.0, max_llm: int = 4, chat: Any = None, get: Get
         state = "NOTHING_OWED"
     out.update({"asked": len(new), "attempts": status, "collectors": len(specs),
                 "refresh": outcome, "series_refreshed": outcome["refreshed"],
-                "cells_donated": len(fresh), "cells_total": len(donate), "owed": owed[:20],
+                "cells_donated": len(screened) if fresh else 0, "cells_total": len(donate),
+                "owed": owed[:20],
                 "chain": dark or "ok", "state": state,
                 "seconds": round(time.time() - started, 1)})
     return out
