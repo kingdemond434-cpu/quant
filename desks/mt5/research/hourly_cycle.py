@@ -1828,6 +1828,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The six committees stop themselves at --budget-s 300 (traps and writes included).
     "committee_ensembles": 420,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
+    # THE KIMI HUNT is three waves, each one ask of up to 240 s that may walk the free chain; on
+    # the default 720 s a slow Wave 3 was cut and (before it donated per wave) lost every finding.
+    # PRODUCER_YIELD read the seat DEAD for 3 days on 2026-10-13. Three full waves fit here.
+    "kimi_hunt": 1_020,
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
