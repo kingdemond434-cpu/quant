@@ -45,6 +45,9 @@ RECORD_STATES: tuple[str, ...] = (
     "FEED_PUBLISHED",      # a broker/prop fact record published to the mechanics feed
     "REJECTED",            # killed with a reason code in the rejection ledger
     "DUPLICATE_CONTENT",   # byte-identical to a record already stored (same source)
+    "ROUTED",              # a civilization record whose ontology outcomes went to a non-gauntlet
+                           # consumer, or whose alpha rules wait in the PARKED queue
+                           # (libs/civilizations/resident.py)
 )
 
 #: Slack for clock skew before a publication time counts as "in the future".
@@ -248,6 +251,21 @@ class PitStore:
                           (state, reason, stage, iso(now or utcnow()), int(n_cells),
                            record_id))
 
+    def expire_bodies(self, source_id: str, older_than: datetime, *,
+                      now: datetime | None = None) -> int:
+        """Blank the title and body of `source_id`'s records acquired before `older_than` (a
+        source whose terms bound how long its raw text may be stored, e.g. the YouTube API's 30
+        days). The row, its URI, clocks, content hash and state stay, so provenance, dedup and
+        the cells already built from it survive; only the stored text goes. Returns the count."""
+        with self._conn() as c:
+            cur = c.execute(
+                "UPDATE records SET title='', body='', "
+                "flags=CASE WHEN flags='' THEN ? ELSE flags || ',' || ? END "
+                "WHERE source_id=? AND acquisition_time < ? AND (body != '' OR title != '')",
+                (f"text_expired_by_terms@{iso(now or utcnow())}",
+                 f"text_expired_by_terms@{iso(now or utcnow())}", source_id, iso(older_than)))
+            return int(cur.rowcount or 0)
+
     def log_run(self, source_id: str, outcome: str, fetched: int, new: int, detail: str = "",
                 now: datetime | None = None) -> None:
         with self._conn() as c:
@@ -330,6 +348,22 @@ class PitStore:
                                  "acquisition_time >= ? GROUP BY source_id",
                                  (iso(since),)).fetchall()
         return {str(r["source_id"]): int(r["n"]) for r in rows}
+
+
+    def vintages(self, decision_time: datetime, *, source_id: str) -> list[dict[str, Any]]:
+        """EVERY vintage of a source knowable at `decision_time`, oldest first (the forward
+        laboratory needs the series, not just the latest page). Same PIT filter as `as_of`."""
+        with self._conn() as c:
+            rows = c.execute("SELECT * FROM records WHERE available_for_decision_at <= ? AND "
+                             "source_id = ? ORDER BY available_for_decision_at, revision_n",
+                             (iso(decision_time), source_id)).fetchall()
+        return [_row(r) for r in rows]
+
+    def first_seen_by_source(self) -> dict[str, str]:
+        with self._conn() as c:
+            rows = c.execute("SELECT source_id, MIN(acquisition_time) AS t FROM records "
+                             "GROUP BY source_id").fetchall()
+        return {str(r["source_id"]): str(r["t"]) for r in rows}
 
 
 def _row(r: sqlite3.Row) -> dict[str, Any]:

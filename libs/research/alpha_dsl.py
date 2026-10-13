@@ -897,8 +897,18 @@ class _Transpiler:
         if gate.b != 0:
             return self.miss(f"constant_threshold:{_fmt(-gate.b / gate.a)}")
         g = self._sgn(gate)
+        # a comparison's gate is sign(b - a): exactly +1 where true and -1 where false, so
+        # `c ? k1 : k2` is the affine map of the gate and two live branches are `if_pos`
+        # (alpha_grammar's regime switch, 2026-09-30) -- both exact, neither approximated.
+        signed = isinstance(g, list) and (
+            g[:1] == ["sign"]
+            or (g[:1] == ["neg"] and isinstance(g[1], list) and g[1][:1] == ["sign"]))
         if ta.const and tb.const:
-            return self.miss("op:conditional(constant branches)")
+            if not signed or ta.b == tb.b:
+                return self.miss("op:conditional(constant branches)")
+            self.transforms.add("conditional")
+            self.note(f"c ? {_fmt(ta.b)} : {_fmt(tb.b)} -> the gate's sign, scaled (exact)")
+            return _Aff(g, (ta.b - tb.b) / 2.0, (ta.b + tb.b) / 2.0)
         self.transforms.add("conditional")
         if tb.const:
             self.note(f"else-branch constant {_fmt(tb.b)} replaced by HOLD (trade_when keeps "
@@ -912,6 +922,15 @@ class _Transpiler:
                 and canonical(ta.tree) == canonical(tb.tree):
             self.note("cond ? x : -x -> sign(cond) * x (exact for a +/-1 gate)")
             return _Aff(["mul", g, ta.tree], ta.a, 0.0)
+        if signed and not ta.const and not tb.const and ta.b == tb.b:
+            if ta.a == tb.a:
+                self.transforms.add("conditional")
+                self.note("c ? x : y -> if_pos(gate, x, y) (exact)")
+                return _Aff(["if_pos", g, ta.tree, tb.tree], ta.a, ta.b)
+            if ta.a == -tb.a:
+                self.transforms.add("conditional")
+                self.note("c ? x : -y -> if_pos(gate, x, neg y) (exact)")
+                return _Aff(["if_pos", g, ta.tree, ["neg", tb.tree]], ta.a, ta.b)
         return self.miss("op:conditional(two live branches)")
 
     def windowed(self, op: str, x: _Aff, w: int, name: str) -> Any:
@@ -1557,6 +1576,9 @@ def _catalogue() -> dict[str, OpSpec]:
     cat["div"] = OpSpec("div", "math", 2, False, "(x: T[u], y: S[v]) -> [u / v]; T/T -> RATIO")
     cat["trade_when"] = OpSpec("trade_when", "logic", 2, False,
                                "(gate: bool|Z[1], x: T[u]) -> T[u] held where gate <= 0")
+    cat["if_pos"] = OpSpec("if_pos", "logic", 3, False,
+                           "(gate: Z[1], x: T[u], y: T[u]) -> T[u]  x where gate > 0, else y "
+                           "(the paper's cond ? x : y; a literal 0 branch is unit-free)")
     for op in ("gt", "lt", "and", "or"):
         cat[op] = OpSpec(op, "logic", 2, False, "(a: T[u], b: T[u]) -> bool",
                          ag.to_str(_LOGIC_MACROS[op](["a", "b"])))

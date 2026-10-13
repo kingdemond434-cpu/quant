@@ -440,6 +440,10 @@ desks/mt5/data/import_stems_cache.json
 # cursors and sealed preregistrations live on the box; the dated metrics under
 # desks/mt5/reports/mining/ are the published artifact.
 desks/mt5/data/mining/
+# RESEARCH CIVILIZATIONS working state (libs/civilizations, #161): git mirrors of public repos,
+# licence notices, outcome ledgers, parked queue, formula parents. Third-party text lives only on
+# the box that mined it; the published artifacts are the reports.
+desks/mt5/data/civilizations/
 # THE GATE VERDICT DIGEST AND THE STATE-FLOW METER (2026-09-30), published by
 # sync_shadow_to_git.ps1's $relPaths. `**/reports/*` above ignores both; the digest is the small
 # committed summary of the gitignored gate_verdict_ledger.jsonl and universal_gates_external.json.

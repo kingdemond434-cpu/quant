@@ -60,6 +60,12 @@ REPORT = DESK / "reports" / "KNOWLEDGE_GRAPH.json"
 INTEL_ROOTS = (DESK / "data" / "intelligence", ROOT / "data" / "intelligence")
 HYPOTHESIS_GRAPH = DESK / "data" / "hypothesis_graph.jsonl"
 FRONTIER_QUEUE = DESK / "frontier_intel" / "data" / "frontier_queue.jsonl"
+#: The research civilizations' ten non-alpha outcome ledgers (libs/civilizations/ontology.py):
+#: FEATURE_PRIMITIVE .. INFRASTRUCTURE_PATTERN. ALPHA_MECHANISM already reaches the gauntlet and
+#: NO_VALUE is a closed verdict, so neither is read here. This organ is those ledgers' reader:
+#: each row becomes a lead node with its source, URL and outcome kind as provenance.
+CIV_OUTCOMES = DESK / "data" / "civilizations" / "outcomes"
+CIV_SKIP = frozenset({"ALPHA_MECHANISM", "NO_VALUE"})
 SOURCE_REGISTRY = DESK / "data" / "source_registry.json"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
 
@@ -241,12 +247,20 @@ def _rows_of(doc: Any) -> list[dict[str, Any]]:
 
 
 def intake_paths(roots: Sequence[Path] | None = None,
-                 frontier: Path | None = None) -> list[Path]:
-    """Every intelligence artifact, NEWEST FIRST, plus the frontier queue. Operational state at a
-    tree's root is excluded by name; everything else is read, at any depth."""
+                 frontier: Path | None = None,
+                 civ_outcomes: Path | None = None) -> list[Path]:
+    """Every intelligence artifact, NEWEST FIRST, plus the frontier queue and the civilization
+    outcome ledgers. Operational state at a tree's root is excluded by name; everything else is
+    read, at any depth. The civilization ledgers are read from the desk's own directory only when
+    the roots are the desk's own too (a test that redirects the roots never reads live ledgers)."""
+    if civ_outcomes is None and roots is None:
+        civ_outcomes = CIV_OUTCOMES
     roots = roots if roots is not None else INTEL_ROOTS
     frontier = frontier or FRONTIER_QUEUE
     paths: list[Path] = []
+    if civ_outcomes is not None and civ_outcomes.is_dir():
+        paths.extend(p for p in civ_outcomes.glob("*.jsonl")
+                     if p.is_file() and p.stem not in CIV_SKIP)
     for root in roots:
         if not root.exists():
             continue
