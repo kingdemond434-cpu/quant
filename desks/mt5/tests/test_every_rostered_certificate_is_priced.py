@@ -219,7 +219,7 @@ def test_the_cost_basis_is_dropped_where_the_backtest_series_wins_alignment() ->
         "EURZAR_x_asia": "fill_hour_01_spread"}
 
 
-def test_gold_names_resolve_to_xauusd_with_no_identity_and_no_legs() -> None:
+def test_gold_names_resolve_to_the_gold_bars_with_no_identity_and_no_legs() -> None:
     daily = _cost_frame("gold_asia")
     ev = pa.sleeve_evidence(daily, {}, {})
     # Unchanged by the identity change: no identity row, so the name's own token stands.
@@ -230,3 +230,12 @@ def test_an_early_library_failure_publishes_unmeasured_not_an_empty_map() -> Non
     v = pa._book_unmeasured({"refused": {"import": "ModuleNotFoundError: eg"}})
     assert v["verdict"] == "UNMEASURED" and "import" in v["why"]
     assert pa._book_unmeasured({"rostered_unmeasured": {}}) == {}
+
+
+def test_cost_basis_is_unmeasured_when_the_roster_was_never_walked() -> None:
+    """Audit #370 v2: an early exit publishes UNMEASURED, never a clean {}."""
+    v = pa._cost_basis_published({"refused": {"universe": "unreadable"}})
+    assert v["verdict"] == "UNMEASURED" and "universe" in v["why"]
+    walked = {"rostered_unmeasured": {}, "cost_basis": {"a": "fill_hour_01_spread"}}
+    assert pa._cost_basis_published(walked) == {"a": "fill_hour_01_spread"}
+    assert pa._cost_basis_published({"rostered_unmeasured": {}}) == {}

@@ -532,6 +532,14 @@ def _book_unmeasured(cert_acct: dict[str, Any]) -> dict[str, Any]:
             "why": why or "the certified library returned before walking the roster"}
 
 
+def _cost_basis_published(cert_acct: dict[str, Any]) -> dict[str, Any]:
+    """The per-sleeve cost basis, or an UNMEASURED verdict when the roster was never walked
+    (audit #370 v2): an early exit must not publish a clean empty map."""
+    if "rostered_unmeasured" not in cert_acct:
+        return _book_unmeasured(cert_acct)
+    return dict(cert_acct.get("cost_basis") or {})
+
+
 #: The scalp lane's per-trade forward ledgers, one file per clock, written by `scalp_shadow`.
 SCALP_LEDGERS = "ledger_*.json"
 
@@ -3558,8 +3566,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     scalp, scalp_acct = scalp_evidence()
     # THE BASIS GOES WITH THE SERIES (audit S6): where the backtest column wins `align`, the
     # sleeve is not priced on its fill-hour certified replay, so its cost_bias_r stands.
-    cert_acct["cost_basis"] = cost_basis_after_align(daily, certified,
-                                                     cert_acct.get("cost_basis"))
+    if "rostered_unmeasured" in cert_acct:
+        cert_acct["cost_basis"] = cost_basis_after_align(daily, certified,
+                                                         cert_acct.get("cost_basis"))
     daily = align(align(daily, certified), scalp)
     _log(f"aligned universe: {daily.shape[1]} sleeves on {daily.shape[0]} trading days "
          f"({len(scalp)} of them scalp clocks priced on forward ledgers)")
@@ -4822,7 +4831,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # roster was walked (import / universe unreadable), the map was never measured, so the
         # artifact says UNMEASURED with the reason rather than an empty map that reads as clean.
         "book_unmeasured": _book_unmeasured(cert_acct),
-        "cost_basis": dict(cert_acct.get("cost_basis") or {}),
+        "cost_basis": _cost_basis_published(cert_acct),
         # THE EXCHANGE'S ZEROS, AND WHERE THEIR HEAT WENT (see `exchange_zero`).
         "exchange_zero": exchange_zero_meta,
         # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
