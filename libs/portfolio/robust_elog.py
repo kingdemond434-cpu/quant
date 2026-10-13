@@ -161,6 +161,8 @@ class SleeveEvidence:
     #: two VIX-driven sleeves read |corr| 0.921 with the archive and 0.002 without it.
     #: `_structured_corr` floors such pairs at the measured co-movement of their instruments
     #: (`inst_r`); `_corr_abs` falls back to their own realised |corr| where that is unavailable.
+    #: A pair with neither (no instrument series and fewer than MIN_REALISED_DAYS common days)
+    #: stays at zero and is reported in `unresolved_pairs` -- the floor is not total.
     factor_unmeasured: tuple[str, ...] = ()
     #: The instrument's daily log return on the factor calendar (one common calendar for every
     #: sleeve), from `leg_factors.instrument_returns`. Empty when unknown.
@@ -1036,8 +1038,12 @@ def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str
                 else:
                     # SLEEVE co-movement, not instrument co-movement (audit #363 MF1): the
                     # pair's |corr| passes through each sleeve's own |corr| with its instrument.
-                    floors.append(float(ri) * ci * float(rj))
-                    n_unm += 1
+                    fu = float(ri) * ci * float(rj)
+                    floors.append(fu)
+                    # Counted only where it BINDS (audit #363 MF-B): above the factor target
+                    # and above every other structural floor on the pair.
+                    if fu > t[i, j] and fu >= max(floors):
+                        n_unm += 1
             if floors:
                 s = max(floors)
                 if s > t[i, j]:

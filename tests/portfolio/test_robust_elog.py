@@ -219,13 +219,17 @@ def test_an_unmeasured_macro_pair_is_floored_at_its_instruments_co_movement() ->
     vix = rng.normal(0, 1, 500)
     a = tuple(0.95 * vix + 0.3 * rng.normal(0, 1, 500))
     b = tuple(0.95 * vix + 0.3 * rng.normal(0, 1, 500))
-    dark = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a, inst_rho=0.95,
+    # rho MEASURED, not asserted (audit #363 MF-B): a sleeve that is its instrument plus noise.
+    sa = np.asarray(a) + 0.3 * rng.normal(0, 1, 500)
+    rho = float(abs(np.corrcoef(sa, np.asarray(a))[0, 1]))
+    assert 0.9 < rho < 0.99
+    dark = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a, inst_rho=rho,
                         factor_unmeasured=("d_vix",)),
-            _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b, inst_rho=0.95,
+            _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b, inst_rho=rho,
                         factor_unmeasured=("d_vix",))]
     assert _corr_abs(dark)[0, 1] > 0.75            # the archive went dark; the prices did not
-    lit = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a, inst_rho=0.95),
-           _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b, inst_rho=0.95)]
+    lit = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a, inst_rho=rho),
+           _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b, inst_rho=rho)]
     assert _corr_abs(lit)[0, 1] < 0.05             # measured macro: nothing changes
 
 
@@ -259,3 +263,17 @@ def test_the_realised_fallback_reads_the_pairs_own_common_days() -> None:
                          factor_unmeasured=("d_vix",))]
     assert _corr_abs(ev)[0, 1] > 0.8
     assert breadth_channels(ev)["unresolved_pairs"] == 1
+
+
+def test_the_floor_is_counted_only_where_it_binds() -> None:
+    """Audit #363 MF-B: a same-mechanism floor above the macro floor leaves the count at 0."""
+    from libs.portfolio.robust_elog import _structured_corr
+    rng = np.random.default_rng(3)
+    a = tuple(rng.normal(0, 1, 300))
+    b = tuple(0.2 * np.asarray(a) + rng.normal(0, 1, 300))
+    ev = [_no_overlap("EURUSD_x", 0, symbol="EURUSD", family="f1", inst_r=a, inst_rho=0.5,
+                      mechanism="carry", factor_unmeasured=("d_vix",)),
+          _no_overlap("GBPUSD_y", 1, symbol="GBPUSD", family="f2", inst_r=b, inst_rho=0.5,
+                      mechanism="carry", factor_unmeasured=("d_vix",))]
+    _, meta = _structured_corr(ev)
+    assert meta["n_unmeasured_inst_floored"] == 0

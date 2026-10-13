@@ -303,7 +303,9 @@ def measure_unmeasured_factor_floor(r, alloc: dict, _fv: dict) -> dict[str, Any]
     It REPLACES a zero (ignorance read as independence) with a measurement -- the instruments'
     co-movement scaled by each sleeve's own |corr| with its instrument, else the sleeves'
     realised |corr| on their common days -- so it can
-    lower a fraction only where the zero had over-credited breadth. Its log-growth price needs
+    lower a fraction only where the zero had over-credited breadth. Pairs with neither stay at
+    zero and are counted as `unresolved_pairs`; `n_unmeasured_inst_floored` counts only the
+    pairs where the floor actually raised the target. Its log-growth price needs
     the true correlation the archive would have shown, so it stays UNMEASURED until the factor
     archive is whole again; the census below says how many pairs it touched."""
     bc = (alloc or {}).get("breadth_channels") or {}
