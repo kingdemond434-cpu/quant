@@ -19,6 +19,7 @@ import loss_autopsy as la  # noqa: E402
 
 #: The box publishes data/e8_ledger.jsonl; these tests decide E8's state themselves.
 la.E8_LEDGER = DESK / "tests" / "__no_e8_ledger__.jsonl"
+la.SHADOW_STATE = DESK / "tests" / "__no_shadow_state__.json"
 
 NOW = datetime(2026, 10, 13, 16, 0, tzinfo=UTC)
 NAME = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
@@ -156,3 +157,35 @@ def test_a_fault_between_signal_and_venue_is_a_missed_trade_and_a_decision_is_no
     doc = _build([], intents=[], e8=[], blocked=[stale, zero])
     assert [m["why"][:20] for m in doc["missed_sends"]] == ["blocked at desk_stal"]
     assert [b["stage"] for b in doc["blocked_decisions"]] == ["no_heat"]
+
+
+def test_a_clock_entry_the_live_sleeve_never_sent_is_a_missed_trade() -> None:
+    # 2026-10-13: all three gap-decay clocks entered on the 01:00 broker bar; AUDCHF sent at
+    # 22:41 UTC, the ZAR sleeves (LIVE since 10-07) sent nothing and nothing said so.
+    zar = NAME.replace("audchf", "usdzar")
+    roster = {"sleeves": [
+        {"name": NAME, "symbol": "AUDCHF", "family": "overnight_gap_decay", "selector": "asia",
+         "exec": "family_market", "status": "LIVE", "promoted_at": "2026-10-07T15:30:44+00:00"},
+        {"name": zar, "symbol": "USDZAR", "family": "overnight_gap_decay", "selector": "asia",
+         "exec": "family_market", "status": "LIVE", "promoted_at": "2026-10-07T15:30:44+00:00"},
+        {"name": NAME.replace("audchf", "eurzar"), "symbol": "EURZAR",
+         "family": "overnight_gap_decay", "selector": "asia", "exec": "family_market",
+         "status": "LIVE", "promoted_at": "2026-10-07T15:30:44+00:00"}]}
+    entry = {"status": "ACTIVE", "last_entry": "2026-10-13 01:00:00+00:00"}
+    shadow = {"AUDCHF.overnight_gap_decay.asia": entry, "USDZAR.overnight_gap_decay.asia": entry}
+    spread = {"time": "2026-10-12T22:20:00+00:00", "sleeve": zar, "symbol": "USDZAR",
+              "stage": "quote_spread", "why": "spread crosses the certified target"}
+    doc = la.build(NOW, deals=[], intents=[INTENT], sleeves_doc=roster, cert=CERT,
+                   account={}, drift={}, resolved={}, e8_ledger=[], e8_journals=[],
+                   blocked=[spread], shadow=shadow)
+    got = {m["symbol"]: m for m in doc["clock_misses"]}
+    assert set(got) == {"USDZAR", "EURZAR"}                  # AUDCHF sent inside the window
+    assert got["USDZAR"]["kind"] == "clock_fired" and got["USDZAR"]["blocked_at"] == [
+        "quote_spread"]
+    assert got["EURZAR"]["kind"] == "unclocked"
+    assert {f["fix_id"] for f in doc["fix_queue"]} == {
+        f"clock:{zar}|2026-10-13 01:00:00+00:00", f"clock:unclocked:{NAME.replace('audchf', 'eurzar')}"}
+    early = la.build(datetime(2026, 10, 12, 23, 0, tzinfo=UTC), deals=[], intents=[],
+                     sleeves_doc=roster, cert=CERT, account={}, drift={}, resolved={},
+                     e8_ledger=[], e8_journals=[], blocked=[], shadow=shadow)
+    assert [m["kind"] for m in early["clock_misses"]] == ["unclocked"]   # still in its grace

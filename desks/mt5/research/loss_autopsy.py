@@ -80,6 +80,11 @@ ACCOUNT = BASE / "data" / "account_state.json"
 DRIFT = BASE / "reports" / "DRIFT.json"
 RESOLVED = BASE / "data" / "loss_defects_resolved.json"
 FIX_QUEUE = BASE / "data" / "loss_fix_queue.jsonl"
+SHADOW_STATE = BASE / "reports" / "shadow" / "shadow_state.json"
+#: How far either side of the clock's entry a live send still counts as the same trade.
+CLOCK_MATCH_S = 5400.0
+#: How long after the clock's entry a live send may still arrive before the miss is called.
+CLOCK_GRACE_S = 7200.0
 
 DEFECT, EDGE_DECAY, NATURAL, UNMEASURED = "DEFECT", "EDGE_DECAY", "NATURAL", "UNMEASURED"
 WINDOW_DAYS = 30
@@ -446,12 +451,70 @@ def e8_autopsy(ledger: list[dict[str, Any]] | None, *, cert: Mapping[str, Any],
     return rows, {"status": "MEASURED", "closes": len(ledger), "losses": len(rows)}
 
 
+def clock_misses(sleeves_doc: Any, shadow: Any, intents: list[dict[str, Any]],
+                 blocked: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
+    """A LIVE family sleeve whose own forward clock ENTERED and whose live lane sent nothing.
+
+    Measured 2026-10-13: AUDCHF, EURZAR and USDZAR overnight_gap_decay all run the same family
+    with the same parameters, and all three clocks entered on the 01:00 broker bar of 10-13.
+    AUDCHF sent at 01:41 broker; EURZAR and USDZAR, LIVE since 10-07, have never sent at all,
+    and nothing anywhere said so: a block at a quiet or decision stage is not a refused send,
+    so `missed_sends` could not see it. The clock is the replay of the certified trade, so a
+    clock entry with no live send in the same window is a missed trade whatever stopped it, and
+    the blocked-entry ledger, when it holds a row for that sleeve, names the stage.
+
+    Clock bars are labelled in broker time (`broker_offset_h` 0); a send matches when it falls
+    within CLOCK_MATCH_S of the entry at either of the venue's offsets. A LIVE family sleeve
+    with no ACTIVE clock is a missed measurement and is listed too.
+    """
+    out: list[dict[str, Any]] = []
+    if not isinstance(shadow, Mapping):
+        return out
+    for s in ((sleeves_doc or {}).get("sleeves") or []) if isinstance(sleeves_doc, Mapping) \
+            else []:
+        if not isinstance(s, dict) or str(s.get("status") or "").upper() != "LIVE" \
+                or s.get("exec") != "family_market":
+            continue
+        name, sym = str(s.get("name") or ""), str(s.get("symbol") or "")
+        key = f"{sym}.{s.get('family')}.{s.get('selector')}"
+        clock = shadow.get(key)
+        if not isinstance(clock, Mapping) or str(clock.get("status") or "") != "ACTIVE":
+            out.append({"sleeve": name, "symbol": sym, "clock": key, "kind": "unclocked",
+                        "id": f"unclocked:{name}",
+                        "why": f"LIVE with no ACTIVE forward clock {key}: its edge is unmeasured"})
+            continue
+        label, live_since = _ts(clock.get("last_entry")), _ts(s.get("promoted_at"))
+        if label is None or (live_since and label - timedelta(hours=max(BROKER_OFFSETS_H))
+                             < live_since):
+            continue
+        entries = [label - timedelta(hours=h) for h in BROKER_OFFSETS_H]
+        if (now - min(entries)).total_seconds() < CLOCK_GRACE_S:
+            continue                                  # the live lane may still be sending
+        sent = any(str(i.get("sleeve") or "") == name and (t := _ts(i.get("time")))
+                   and any(abs((t - e).total_seconds()) <= CLOCK_MATCH_S for e in entries)
+                   for i in intents)
+        if sent:
+            continue
+        stages = sorted({str(b.get("stage")) for b in blocked
+                         if str(b.get("sleeve") or "") == name and (t := _ts(b.get("time")))
+                         and any(abs((t - e).total_seconds()) <= CLOCK_MATCH_S
+                                 for e in entries)})
+        out.append({"sleeve": name, "symbol": sym, "clock": key, "kind": "clock_fired",
+                    "id": f"{name}|{clock.get('last_entry')}", "entry": clock.get("last_entry"),
+                    "blocked_at": stages or UNMEASURED,
+                    "why": (f"forward clock {key} entered on bar {clock.get('last_entry')} "
+                            f"(broker) and the live sleeve sent no order; blocked at "
+                            f"{', '.join(stages) if stages else 'an UNRECORDED stage'}")})
+    return out
+
+
 def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = None,
           intents: list[dict[str, Any]] | None = None, sleeves_doc: Any = None,
           cert: Any = None, account: Any = None, drift: Any = None,
           resolved: Any = None, e8_ledger: list[dict[str, Any]] | None = None,
           e8_journals: list[dict[str, Any]] | None = None,
-          blocked: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+          blocked: list[dict[str, Any]] | None = None,
+          shadow: Any = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     deals = [d for d in (deals if deals is not None else _jsonl(LEDGER))
              if d.get("account_kind", "live") == "live"]
@@ -546,6 +609,12 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
                   "symbol": m["symbol"], "defect": "missed_send", "why": m["why"],
                   "pl": None, "time": m["time"]}
                  for m in missed if not missed_res.get(str(m["id"]))]
+    shadow = shadow if shadow is not None else _json(SHADOW_STATE)
+    clock_missed = clock_misses(sleeves_doc, shadow, intents, blocked, now)
+    fix_rows += [{"fix_id": f"clock:{m['id']}", "venue": "fusion", "class": DEFECT,
+                  "deal": None, "sleeve": m["sleeve"], "symbol": m["symbol"],
+                  "defect": m["kind"], "why": m["why"], "pl": None, "time": m.get("entry")}
+                 for m in clock_missed if not missed_res.get(str(m["id"]))]
     e8_rows, e8 = e8_autopsy(e8_ledger, cert=cert, since=since, res_map=res_map)
     rows += e8_rows
     fix_rows += [{"fix_id": f"loss:e8:{r['deal']}:{f['defect']}", "venue": "e8",
@@ -565,6 +634,7 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
             "verdict": "FAIL" if fix_rows else "PASS",
             "trades": len(rows), "losses": sum(1 for r in rows if r["r"] < LOSS_R),
             "by_verdict": dict(counts), "open_trades": open_n, "missed_sends": missed,
+            "clock_misses": clock_missed,
             "blocked_decisions": [b for b in blocked if str(b.get("stage")) in DECISION_STAGES
                                   and (_ts(b.get("time")) or since) >= since],
             "fix_queue": fix_rows, "e8": e8, "cap": cap, "rows": rows,
