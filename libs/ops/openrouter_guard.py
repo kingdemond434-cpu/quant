@@ -120,10 +120,15 @@ def _guarded_urlopen(url: Any, data: Any = None, *args: Any, **kwargs: Any) -> A
 
 
 def install_wire_guard() -> None:
+    """Idempotent, and safe under importlib.reload: the true original is kept on urllib.request
+    itself, so a reloaded module never wraps the wrapper or loses the function it wraps."""
     global _ORIG_URLOPEN
-    if getattr(urllib.request.urlopen, "_openrouter_guard", False):
+    orig = getattr(urllib.request, "_openrouter_orig_urlopen", None)
+    if getattr(urllib.request.urlopen, "_openrouter_guard", False) and orig is not None:
+        _ORIG_URLOPEN = orig
         return
     _ORIG_URLOPEN = urllib.request.urlopen
+    setattr(urllib.request, "_openrouter_orig_urlopen", _ORIG_URLOPEN)  # noqa: B010
     setattr(_guarded_urlopen, "_openrouter_guard", True)  # noqa: B010
     urllib.request.urlopen = _guarded_urlopen
 
