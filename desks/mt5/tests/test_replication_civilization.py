@@ -45,7 +45,7 @@ def test_successful_recheck_removes_only_its_prior_quarantine(tmp_path: Path) ->
     assert [r["key"] for r in json.loads(quarantine.read_text("utf-8"))["rows"]] == ["B"]
 
 
-def test_exact_priority_certificate_is_judged_first_with_the_normal_budget(
+def test_priority_first_then_the_never_judged_backlog_to_the_deadline(
         tmp_path: Path, monkeypatch) -> None:
     seen = []
     def fake_replicate(row, *, meta, bars):
@@ -58,7 +58,9 @@ def test_exact_priority_certificate_is_judged_first_with_the_normal_budget(
     doc = rc.build(certificates=certs, forward=[], universe_meta={},
                    bars_loader=lambda *_: None, cursor_path=tmp_path / "cursor.json",
                    dry_run=True, max_per_pass=2, priority_certificates=["C"])
-    assert seen == ["C"] and doc["population"]["certificates"] == 3
+    # The slice (max_per_pass // 2 == 1) bounds the rotation, never the never-judged backlog:
+    # an unjudged certificate holds its forward clock shut at the admission door.
+    assert seen == ["C", "A", "B"] and doc["population"]["certificates"] == 3
 
 
 def _gap_bars(seed: int = 5, fade: float = 0.0009, gap: float = 0.002) -> rc.Bars:
