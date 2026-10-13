@@ -284,6 +284,10 @@ QUEUE_WORKER = "hourly_cycle"
 # `recertify` claim; `scripts/check_no_queues.py` fails when READY rows of any kind age past
 # its bound, so a consumer that stops is a red fence, not a quiet backlog.
 
+#: acquire_datasets.MIN_ROWS, inlined: importing the desk module from libs/ drags the
+#: mypy-excluded desks/ tree into the type gate. A test pins the two equal.
+SCREEN_MIN_ROWS = 200
+
 INVALIDATE_KIND = "invalidate"
 SCREEN_KIND = "screen_class"
 CONSUMED_KINDS = (INVALIDATE_KIND, SCREEN_KIND)
@@ -425,7 +429,6 @@ def screen_class(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
     SCREENED into that search; one that does not is named with its reason. This writes no trial
     charge: the scans that evaluate cells charge their own.
     """
-    from desks.mt5.research.acquire_datasets import MIN_ROWS
     reg_p = root / "desks" / "mt5" / "data" / "acquired" / "registry.json"
     try:
         reg = json.loads(reg_p.read_text("utf-8"))
@@ -455,8 +458,8 @@ def screen_class(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
             n = int(meta.get("rows") or 0)
         except (TypeError, ValueError):
             n = 0
-        if n < MIN_ROWS:
-            why.append(f"{n} rows < {MIN_ROWS}")
+        if n < SCREEN_MIN_ROWS:
+            why.append(f"{n} rows < {SCREEN_MIN_ROWS}")
         rows.append({"series": str(name), "matched_by": "host" if by_host else "terms",
                      "eligible": not why, "why": "; ".join(why)})
     eligible = [r["series"] for r in rows if r["eligible"]]
