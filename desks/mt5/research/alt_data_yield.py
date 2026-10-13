@@ -20,8 +20,10 @@ output reached: named -> attempted -> reached -> yielded -> collected (an endpoi
 in `data/acquired/registry.json`) -> cell_generating (a compiled candidate in
 `data/hypotheses/miner_candidates.json` names its ground or one of its own hosts). The summary
 counts vectors per deepest stage. A stage whose source artifact is absent here is UNMEASURED with
-the reason. `by_outcome` keeps HELD (terms-held platform grounds, never fetched) apart from
-BLOCKED; `blocked_by_cause` counts BLOCKED vectors by the closed `BLOCK_CAUSES` enum and
+the reason. `by_outcome` keeps HELD (a ground whose source policy is METHOD_BLOCKED -- the
+only route would bypass a login, paywall, CAPTCHA, rate limit or region lock -- or NEEDS_KEY;
+never a category ban, and `held_by` says which) apart from BLOCKED; `blocked_by_cause` counts
+BLOCKED vectors by the closed `BLOCK_CAUSES` enum and
 `yielded_by_rule` counts YIELDED vectors by the rule that fired (claims | endpoints | papers).
 
 UNMEASURED IS NEVER ZERO (L1.28a). A counter that did not exist when a platform was last worked
@@ -108,21 +110,23 @@ def _ts(s: Any) -> datetime | None:
 #: its code beside it. UNCLASSIFIED is the honest residue for an error text none of these
 #: patterns names; it is counted and its text kept, never folded into a neighbour.
 BLOCK_CAUSES: tuple[str, ...] = (
-    "HTTP_4xx", "HTTP_5xx", "HTTP_429", "TRANSPORT", "ANTI_BOT", "TERMS_HELD",
+    "HTTP_4xx", "HTTP_5xx", "HTTP_429", "TRANSPORT", "ANTI_BOT", "METHOD_BLOCKED", "NEEDS_KEY",
     "RENDER_FAILED", "NO_ADDRESS", "NO_NETWORK", "BUDGET")
 UNCLASSIFIED = "UNCLASSIFIED"
 #: Most decisive first: an anti-bot wall or a terms refusal explains a ground even when a later
-#: fallback also failed for a duller reason. (A ground on a terms-held PLATFORM never gets here:
-#: it is HELD before any fetch. A per-URL terms refusal inside a ground ranks after anti-bot.)
-_CAUSE_RANK: tuple[str, ...] = ("ANTI_BOT", "TERMS_HELD", "HTTP_429", "HTTP_4xx", "HTTP_5xx",
+#: fallback also failed for a duller reason. (A ground HELD by its source policy never gets
+#: here: it is held before any fetch. A per-URL hold inside a ground ranks after anti-bot.)
+_CAUSE_RANK: tuple[str, ...] = ("ANTI_BOT", "METHOD_BLOCKED", "NEEDS_KEY", "HTTP_429",
+                                "HTTP_4xx", "HTTP_5xx",
                                 "RENDER_FAILED", "TRANSPORT", "NO_ADDRESS", "NO_NETWORK", "BUDGET",
                                 UNCLASSIFIED)
 _STATUS_CAUSE: dict[str, str] = {"NO_ADDRESS": "NO_ADDRESS", "NO_NETWORK": "NO_NETWORK",
-                                 "BUDGET_EXHAUSTED": "BUDGET", "TERMS_HELD": "TERMS_HELD"}
+                                 "BUDGET_EXHAUSTED": "BUDGET"}
 _RE_ANTI_BOT = re.compile(r"(?i)anti-bot|captcha|cf-chl|just a moment|attention required|"
                           r"are you a robot|ddos-guard|bot detection|"
                           r"(?:bing|duckduckgo) returned no parseable results")
-_RE_TERMS = re.compile(r"(?i)TERMS_HELD|terms[_ -]?fenced|robots(?:\.txt)? disallow")
+_RE_METHOD = re.compile(r"(?i)METHOD_BLOCKED|robots(?:\.txt)? disallow")
+_RE_NEEDS_KEY = re.compile(r"NEEDS_KEY")
 _RE_HTTP = re.compile(r"(?i)\bHTTP(?:Error)?(?: Error)?[ :=]+(\d{3})\b")
 _RE_RENDER = re.compile(r"(?i)\brender")
 _RE_TRANSPORT = re.compile(r"(?i)URLError|timed? ?out|TimeoutError|ConnectionReset|"
@@ -138,8 +142,8 @@ def _one_cause(e: Any) -> tuple[str, int | None]:
     """The cause ONE fetch error names. A dict is a structured per-URL error from the miner
     (`http`, `error`, `render`, `terms`, `anti_bot`); a string is a route's own error text."""
     if isinstance(e, dict):
-        if e.get("terms"):
-            return "TERMS_HELD", None
+        if e.get("held") in ("METHOD_BLOCKED", "NEEDS_KEY"):
+            return str(e["held"]), None
         if e.get("anti_bot"):
             return "ANTI_BOT", None
         if e.get("http") is not None:
@@ -154,8 +158,10 @@ def _one_cause(e: Any) -> tuple[str, int | None]:
             return _one_cause(str(e["error"]))
         return UNCLASSIFIED, None
     text = str(e or "")
-    if _RE_TERMS.search(text):
-        return "TERMS_HELD", None
+    if _RE_METHOD.search(text):
+        return "METHOD_BLOCKED", None
+    if _RE_NEEDS_KEY.search(text):
+        return "NEEDS_KEY", None
     if _RE_ANTI_BOT.search(text):
         return "ANTI_BOT", None
     m = _RE_HTTP.search(text)
@@ -187,6 +193,11 @@ def classify_cause(status: str = "", errors: Iterable[Any] = (), *,
     first code seen is kept. A failed attempt with no error text at all is BUDGET when the
     ground's time ran out, else UNCLASSIFIED -- never a guessed cause."""
     st = str(status or "")
+    if st == "HELD":
+        for e in errors or ():
+            c = _one_cause(e)[0]
+            if c in ("METHOD_BLOCKED", "NEEDS_KEY"):
+                return c, None
     if st in _STATUS_CAUSE:
         return _STATUS_CAUSE[st], None
     best: tuple[str, int | None] | None = None
@@ -290,14 +301,16 @@ def own_hosts(g: dict[str, Any]) -> set[str]:
     return out
 
 
-def _fenced(g: dict[str, Any] | None) -> str | None:
+def _held(g: dict[str, Any] | None) -> str | None:
+    """METHOD_BLOCKED or NEEDS_KEY when the ground's source policy holds it, else None."""
     if not g:
         return None
     try:
-        from research.deep_forest_miner import fenced_ground
+        from research.deep_forest_miner import held_ground
     except Exception:
         return None
-    return fenced_ground(g)
+    p = held_ground(g)
+    return str(p["status"]) if p else None
 
 
 def _endpoints_by_ground(rows: Iterable[dict[str, Any]] | None) -> dict[str, set[str]] | None:
@@ -391,6 +404,7 @@ def vectors(frontier: Any, stats: Any, now: datetime, *, grounds: Any = None,
     by_cause: dict[str, int] = {}
     by_code: dict[str, int] = {}
     by_rule: dict[str, int] = {}
+    held_by: dict[str, int] = {}
     deepest: dict[str, int] = dict.fromkeys(STAGES, 0)
     week = never = 0
     for name, v in sorted(vec.items()):
@@ -400,11 +414,13 @@ def vectors(frontier: Any, stats: Any, now: datetime, *, grounds: Any = None,
         attempts = int(v.get("attempts") or 0)
         recorded = str(v.get("outcome") or "NAMED_ONLY")
         outcome = recorded
-        # A terms-held ground is HELD by rule whatever an older pass recorded: it is never
+        # A ground its source policy HOLDS reads HELD whatever an older pass recorded: it is not
         # fetched again, so its last BLOCKED/EMPTY is history, not a standing outcome.
-        held = _fenced(g)
+        held = _held(g)
         if held and outcome != "HELD":
             outcome = "HELD"
+        elif not held and outcome == "HELD" and g is not None:
+            outcome = "NAMED_ONLY"          # re-admitted: its policy no longer holds it
         outcomes[outcome] = outcomes.get(outcome, 0) + 1
         la = _ts(v.get("last_attempt"))
         if attempts == 0:
@@ -431,7 +447,8 @@ def vectors(frontier: Any, stats: Any, now: datetime, *, grounds: Any = None,
         if outcome != recorded:
             row["outcome_recorded"] = recorded
         if held:
-            row["held_platform"] = held
+            row["held_by"] = held
+            held_by[held] = held_by.get(held, 0) + 1
         if outcome == "BLOCKED":
             if s is not None and s.get("last_cause"):
                 cause, code = str(s["last_cause"]), s.get("last_http_code")
@@ -486,7 +503,7 @@ def vectors(frontier: Any, stats: Any, now: datetime, *, grounds: Any = None,
     return {"named": named, "by_outcome": outcomes, "never_attempted": never,
             "attempted_this_week": week,
             "attempted_this_week_share": round(week / named, 4) if named else UNMEASURED,
-            "blocked_by_cause": by_cause, "blocked_http_codes": by_code,
+            "blocked_by_cause": by_cause, "blocked_http_codes": by_code, "held_by": held_by,
             "yielded_by_rule": by_rule,
             "conversion": {"deepest_stage": deepest, "reached_at_least": reached_at_least,
                            "unmeasured": why_unm,

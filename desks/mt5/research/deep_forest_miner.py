@@ -14,9 +14,10 @@ miner reaches those by ROUTE -- search-engine `site:` queries in the ground's ow
 grounds a link walk never reaches, platform APIs where they exist (Qiita, Zenn, Habr, arXiv,
 Gitee, Bilibili ...), RSS where a site publishes one, the Wayback Machine for archives that are
 gone, the Common Crawl URL index where the search engines answer with an anti-bot wall, a
-rendered fetch where a shell hides the listing (X/nitter, Reddit and Telegram grounds are
-TERMS-HELD: never fetched, reported HELD) -- and then hands every URL it finds to the
-crawler's frontier, so the forest it opens keeps being walked after this run ends.
+rendered fetch where a shell hides the listing (a ground whose only route would bypass a
+login, or whose API key is absent, is HELD and says which -- SOURCE_POLICY) -- and then
+hands every URL it finds to the crawler's frontier, so the forest it opens keeps being
+walked after this run ends.
 
 THE WHOLE WORLD, ROTATED (principal 2026-09-05: "asia west russia middle east south america
 oceania every place ... whole world crawling and mining fully"). The grounds file carries a
@@ -266,31 +267,53 @@ def accept_language(lang: str) -> str:
     return f"{setlang},{(lang or 'en').split('-')[0]};q=0.9,en;q=0.6"
 
 
-# --------------------------------------------------------------------------- terms fence
-#: TERMS-HELD PLATFORMS (2026-10-13). The desk's terms rules are FAIL CLOSED: a platform whose own
-#: agreement bars this desk's automated use is never fetched, whatever route reaches it. X (and
-#: every nitter / xcancel front-end, which serves X's data), Reddit, Telegram channel scraping,
-#: StockTwits, Discord, Yahoo and mql5.com. A ground on one of these is HELD: never scheduled,
-#: never fetched, reported by name -- never as yield and never as BLOCKED (a blocker may lift
-#: by itself; a terms hold lifts only with a recorded permitting clause). The concept and the
-#: helper names match `libs/data/terms_fence.py` on claude/reddit-terms-fence (#162).
-HELD_PLATFORMS: dict[str, dict[str, Any]] = {
-    "x": {"hosts": ("x.com", "twitter.com", "xcancel.com", "t.co"), "label_prefix": "nitter",
-          "routes": ("nitter",),
-          "reason": "X's terms bar scraping; nitter/xcancel mirrors serve X's data"},
-    "reddit": {"hosts": ("reddit.com", "redd.it", "redditmedia.com"), "routes": ("reddit",),
-               "reason": "Reddit's User Agreement / Data API terms require an agreement"},
-    "telegram": {"hosts": ("t.me", "telegram.me", "telegram.org"), "routes": ("telegram",),
-                 "reason": "Telegram channel scraping is outside the desk's terms rules"},
-    "stocktwits": {"hosts": ("stocktwits.com",), "routes": (),
-                   "reason": "StockTwits terms bar automated collection"},
-    "discord": {"hosts": ("discord.com", "discord.gg", "discordapp.com"), "routes": (),
-                "reason": "Discord terms bar scraping"},
-    "yahoo": {"hosts": ("yahoo.com", "yahoo.co.jp"), "routes": (),
-              "reason": "Yahoo terms bar automated collection"},
-    "mql5": {"hosts": ("mql5.com",), "routes": (),
-             "reason": "mql5.com is excluded by the desk's source rules"},
+# ------------------------------------------------------------------------- source policy
+#: PER-SOURCE POLICY (principal 2026-10-13: "no source should be banned"). There is no category
+#: ban: every source is handled by its own row. What stays off is a METHOD -- bypassing a login,
+#: paywall, CAPTCHA, rate limit or region lock; stolen data; MNPI -- never a platform. Statuses:
+#:   API_PERMITTED  an official API or free tier within its published limits (NEEDS_KEY when the
+#:                  row's key is absent from the environment);
+#:   PUBLIC_PAGE    fetch the public page politely (the default for any host not listed);
+#:   IDEAS_ONLY     read public posts for mechanism claims; NEVER registered as live input data
+#:                  (a cell built from the idea trades on the desk's own MT5 data);
+#:   METHOD_BLOCKED only when the ONLY route would bypass a login, paywall, CAPTCHA, rate limit
+#:                  or region lock -- the reason is named and a permitted route is offered.
+#: An anti-bot / CAPTCHA page met on any source is recorded ANTI_BOT and never routed around.
+#: Provenance and the terms note never block a claim or a cell (rule 4): they are labels.
+#: (Duplicated minimally from the table `libs/data/terms_fence.py` owns on #162's branch; the two
+#: are kept consistent by hand until that module lands on LIVE.)
+API_PERMITTED, PUBLIC_PAGE, IDEAS_ONLY, METHOD_BLOCKED, NEEDS_KEY = (
+    "API_PERMITTED", "PUBLIC_PAGE", "IDEAS_ONLY", "METHOD_BLOCKED", "NEEDS_KEY")
+SOURCE_POLICY: dict[str, dict[str, Any]] = {
+    "x_api": {"hosts": ("api.x.com", "api.twitter.com"), "status": API_PERMITTED,
+              "key_env": ("X_BEARER_TOKEN",),
+              "why": "X's official API: the permitted route to X posts (free/paid tier limits)"},
+    "x_web": {"hosts": ("x.com", "twitter.com", "t.co"), "status": IDEAS_ONLY,
+              "why": "public X posts may be read for ideas; never live input data"},
+    "nitter": {"hosts": ("xcancel.com",), "label_prefix": "nitter", "routes": ("nitter",),
+               "status": METHOD_BLOCKED, "reason": "login", "permitted_route": "x_api",
+               "why": ("a third-party front-end that exists to get around X's login wall; "
+                       "the permitted route is X's official API")},
+    "reddit_api": {"hosts": ("oauth.reddit.com",), "status": API_PERMITTED,
+                   "key_env": ("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"),
+                   "why": "Reddit's official Data API within its free-tier limits"},
+    "reddit": {"hosts": ("reddit.com", "redd.it"), "routes": ("reddit",), "status": IDEAS_ONLY,
+               "why": "public subreddit pages and feeds read politely for ideas"},
+    "telegram": {"hosts": ("t.me", "telegram.me"), "routes": ("telegram",),
+                 "status": IDEAS_ONLY,
+                 "why": "public channel previews (t.me/s/...) need no account; read for ideas"},
+    "stocktwits": {"hosts": ("stocktwits.com",), "status": IDEAS_ONLY,
+                   "why": "public stream pages read for ideas"},
+    "discord": {"hosts": ("discord.com", "discord.gg", "discordapp.com"),
+                "status": METHOD_BLOCKED, "reason": "login",
+                "why": "server messages are only readable behind an account login"},
+    "yahoo": {"hosts": ("yahoo.com", "yahoo.co.jp"), "status": IDEAS_ONLY,
+              "why": "public finance boards/pages read for ideas; prices come from MT5"},
+    "mql5": {"hosts": ("mql5.com",), "status": IDEAS_ONLY,
+             "why": "public articles and codebase pages read for mechanism ideas"},
 }
+#: The two statuses that HOLD a ground (it is not fetched this pass, and says which one).
+HOLDING: frozenset[str] = frozenset({METHOD_BLOCKED, NEEDS_KEY})
 
 
 def _host_of(u: Any) -> str:
@@ -302,38 +325,71 @@ def _host_of(u: Any) -> str:
     return (urlparse(s_).hostname or "").strip(".")
 
 
-def platform_of_url(url: Any) -> str | None:
-    """The terms-held platform a URL (or bare host) is on, or None."""
+def _resolve(key: str) -> dict[str, Any]:
+    """A policy row with its EFFECTIVE status: API_PERMITTED becomes NEEDS_KEY when a key is
+    absent (the key is checked for presence only, never read or printed)."""
+    row = SOURCE_POLICY[key]
+    status = str(row["status"])
+    if status == API_PERMITTED and not all(os.environ.get(k) for k in row.get("key_env") or ()):
+        status = NEEDS_KEY
+    out = {"source": key, "status": status, "why": row["why"]}
+    if row.get("reason"):
+        out["reason"] = row["reason"]
+    if row.get("permitted_route"):
+        out["permitted_route"] = row["permitted_route"]
+        out["permitted_route_status"] = _resolve(str(row["permitted_route"]))["status"]
+    return out
+
+
+def policy_of_url(url: Any) -> dict[str, Any]:
+    """The effective policy row for a URL (or bare host); PUBLIC_PAGE when unlisted."""
     host = _host_of(url)
-    if not host:
-        return None
-    for plat, spec in HELD_PLATFORMS.items():
-        if any(host == h or host.endswith("." + h) for h in spec["hosts"]):
-            return plat
-        pre = spec.get("label_prefix")
-        if pre and any(lab.startswith(pre) for lab in host.split(".")):
-            return plat
-    return None
+    if host:
+        for key, spec in SOURCE_POLICY.items():
+            if any(host == h or host.endswith("." + h) for h in spec["hosts"]):
+                return _resolve(key)
+            pre = spec.get("label_prefix")
+            if pre and any(lab.startswith(pre) for lab in host.split(".")):
+                return _resolve(key)
+    return {"source": host or "", "status": PUBLIC_PAGE, "why": "unlisted host: public page"}
 
 
-def fenced_ground(g: dict[str, Any]) -> str | None:
-    """The terms-held platform a ground belongs to (its route, url, alt, site, feeds or
-    mirrors), or None."""
+def ground_policy(g: dict[str, Any]) -> dict[str, Any]:
+    """The effective policy for a ground: its route's row, else the most restrictive row among
+    its url, alt, site, feeds and mirrors (a HOLD outranks IDEAS_ONLY outranks PUBLIC_PAGE)."""
     route = str(g.get("route") or "")
-    for plat, spec in HELD_PLATFORMS.items():
-        if route in spec["routes"]:
-            return plat
+    for key, spec in SOURCE_POLICY.items():
+        if route in (spec.get("routes") or ()):
+            return _resolve(key)
+    rank = {METHOD_BLOCKED: 0, NEEDS_KEY: 1, IDEAS_ONLY: 2, API_PERMITTED: 3, PUBLIC_PAGE: 4}
+    best: dict[str, Any] | None = None
     for u in (g.get("url"), g.get("site"), *(g.get("alt") or []), *(g.get("feeds") or []),
               *(g.get("mirrors") or [])):
-        plat = platform_of_url(u)
-        if plat:
-            return plat
-    return None
+        if not u:
+            continue
+        p = policy_of_url(u)
+        if best is None or rank[p["status"]] < rank[best["status"]]:
+            best = p
+    return best or {"source": "", "status": PUBLIC_PAGE, "why": "no address listed"}
 
 
-def held_row(plat: str) -> dict[str, Any]:
-    return {"status": "TERMS_HELD", "cause": "TERMS_HELD", "platform": plat,
-            "why": f"{plat}: {HELD_PLATFORMS[plat]['reason']} -- never fetched"}
+def held_ground(g: dict[str, Any]) -> dict[str, Any] | None:
+    """The policy row that HOLDS this ground (METHOD_BLOCKED or NEEDS_KEY), or None."""
+    p = ground_policy(g)
+    return p if p["status"] in HOLDING else None
+
+
+def held_row(p: dict[str, Any]) -> dict[str, Any]:
+    """A ground's status row when its policy holds it: HELD, labelled with WHICH hold."""
+    why = f"{p['source']}: {p['why']}"
+    if p.get("reason"):
+        why = f"{p['source']} ({p['reason']}): {p['why']}"
+    out = {"status": "HELD", "cause": p["status"], "held_by": p["status"],
+           "source_policy": p["source"], "why": why}
+    if p.get("permitted_route"):
+        out["permitted_route"] = p["permitted_route"]
+        out["permitted_route_status"] = p.get("permitted_route_status")
+    return out
 
 
 # ------------------------------------------------------------------- Common Crawl URL index
@@ -342,7 +398,7 @@ def held_row(plat: str) -> dict[str, Any]:
 #: other headers. The Common Crawl URL index enumerates a ground's own `site` pages instead, and
 #: those pages are then read from the site itself through `_Run.page`. One CDX query per ground
 #: per pass, a small limit, a wide per-host spacing, an honest user agent, and the index's own
-#: robots.txt consulted first (a disallow is recorded TERMS_HELD, never routed around).
+#: robots.txt consulted first (a disallow stands the route down, never routed around).
 #: web.archive.org is NOT used here: its terms could not be read, so it stays as it was.
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     "commoncrawl_index": {
@@ -358,7 +414,7 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                          "server.\""),
         "robots": ("consulted at run time (ccindex_robots); on 2026-10-13 a reader agent was "
                    "refused the CDX query path by robots, so a disallow for this agent is "
-                   "recorded TERMS_HELD and the route stands down"),
+                   "recorded and the route stands down"),
         "checked_at": "2026-10-13"},
 }
 CCINDEX_HOST = "index.commoncrawl.org"
@@ -390,7 +446,7 @@ def ccindex_robots() -> tuple[bool, str]:
             ok = robots_allows(r.text, CCINDEX_AGENT,
                                "/CC-MAIN-0000-00-index?url=example.org/*&output=json")
             out = (ok, "robots.txt allows the CDX path" if ok else
-                   "TERMS_HELD: robots.txt disallows the CDX query path for this agent")
+                   "robots.txt disallows the CDX query path for this agent; route stands down")
         elif r.status == 404:
             out = (True, "robots.txt absent (404): no rules")
         else:
@@ -485,8 +541,9 @@ def parse_cdx(text: str) -> list[str]:
 
 def ccindex_pages(site: str, limit: int = CCINDEX_LIMIT) -> tuple[list[str], str | None]:
     """(page URLs on `site`, error). ONE CDX query; a 404 is "no captures", not an error."""
-    if platform_of_url(site):
-        return [], f"TERMS_HELD:{platform_of_url(site)}"
+    pol = policy_of_url(site)
+    if pol["status"] in HOLDING:
+        return [], f"{pol['status']}:{pol['source']}"
     ok, why = ccindex_robots()
     if not ok:
         return [], why
@@ -920,8 +977,8 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     across runs and no region is worked only because it sorts first in a file."""
     picked = []
     for g in grounds:
-        # A TERMS-HELD ground is never scheduled: registered, reported HELD, never fetched.
-        if fenced_ground(g):
+        # A HELD ground (METHOD_BLOCKED or NEEDS_KEY) is not scheduled: reported HELD by name.
+        if held_ground(g):
             continue
         if region and str(g.get("region")) != region and cluster_of(g) != region:
             continue
@@ -1054,11 +1111,11 @@ class _Run:
         return str(self.ground.get("language") or "en")
 
     def page(self, url: str, referer: str = "") -> str:
-        # A terms-held platform is refused before the network check and before any request; it
+        # A HELD source (METHOD_BLOCKED or NEEDS_KEY) is refused before any request; it
         # is not a transport failure and never counts toward the NO_NETWORK verdict.
-        held = platform_of_url(url)
-        if held:
-            self.fetch_errors.append({"url": url, "terms": held})
+        pol = policy_of_url(url)
+        if pol["status"] in HOLDING:
+            self.fetch_errors.append({"url": url, "held": pol["status"], "source": pol["source"]})
             return ""
         if not self._net_ok():
             return ""
@@ -1083,9 +1140,9 @@ class _Run:
             return ""
 
     def rendered(self, url: str) -> str:
-        held = platform_of_url(url)
-        if held:
-            self.fetch_errors.append({"url": url, "terms": held})
+        pol = policy_of_url(url)
+        if pol["status"] in HOLDING:
+            self.fetch_errors.append({"url": url, "held": pol["status"], "source": pol["source"]})
             return ""
         try:
             from libs.data.render_fetch import render
@@ -1134,6 +1191,9 @@ class _Run:
                    # THE LABEL, NOT A BRAKE: robots/terms/paywall provenance rides with the
                    # claim so redistribution can be routed later. It never gates the claim.
                    "terms_note": terms_label(ground),
+                   # The source's policy status rides along as a LABEL (rule 4: provenance
+                   # never blocks a claim or a cell; only live input data is checked).
+                   "source_policy": policy_of_url(url)["status"],
                    "fetched_utc": now, "score": mc.claim_score(c), **(extra or {})}
             if dup_key:
                 self.counts["duplicate_mechanisms"] += 1
@@ -1162,7 +1222,9 @@ class _Run:
         """A page that hands over DATA: its endpoints become a discovery row in the crawler's
         own shape (kind "dataset"), so `acquire_datasets` registers them, and a row in the
         datasets ledger, so the report can count what each region's forest yields."""
-        eps = data_endpoints(page, url)
+        # IDEAS_ONLY sources are read for mechanism claims and NEVER registered as live input
+        # data: their endpoints are not handed to the acquirer (SOURCE_POLICY).
+        eps = [] if policy_of_url(url)["status"] == IDEAS_ONLY else data_endpoints(page, url)
         if ground.get("kind") != "dataset" and not eps:
             return 0
         now = datetime.now(tz=UTC).isoformat(timespec="seconds")
@@ -1407,10 +1469,15 @@ class _Run:
                 "errors": errors[:4]}
 
     def ground_reddit(self, g: dict[str, Any]) -> dict[str, Any]:
-        """TERMS-HELD (2026-10-13): Reddit's agreement covers its feeds and JSON too. `work`
-        refuses the ground before reaching here; this refuses too, so a direct call cannot
-        fetch either. Nothing here requests a page."""
-        return {**held_row("reddit"), "claims": 0, "subs": len(g.get("subs") or [])}
+        """Subreddits through their public feeds (the JSON API answers 403 to a datacenter;
+        the feeds do not -- measured by side_channels/reddit_miner)."""
+        feeds = []
+        for sub in g.get("subs") or []:
+            feeds.append(f"https://www.reddit.com/r/{sub}/top/.rss?t=month")
+            feeds.append(f"https://www.reddit.com/r/{sub}/new/.rss")
+        out = self.ground_rss(g, feeds)
+        out["subs"] = len(g.get("subs") or [])
+        return out
 
     def ground_wayback(self, g: dict[str, Any]) -> dict[str, Any]:
         """A ground that no longer exists (the Quantopian forum) through the Wayback Machine:
@@ -1439,9 +1506,11 @@ class _Run:
         return {"fetched": 1, "snapshot": snap, "deep_pages": pages, "claims": claims}
 
     def ground_nitter(self, g: dict[str, Any]) -> dict[str, Any]:
-        """TERMS-HELD (2026-10-13): a nitter mirror serves X's data, and X's terms cover it
-        wherever it is served from. Refused here as in `work`; nothing requests a page."""
-        return {**held_row("x"), "claims": 0, "mirrors": len(g.get("mirrors") or [])}
+        """METHOD_BLOCKED (login): a nitter mirror is a third-party front-end that exists to get
+        around X's login wall. The permitted route to X posts is X's official API (NEEDS_KEY
+        until a key is on the box). `work` holds the ground first; nothing here fetches."""
+        return {**held_row(_resolve("nitter")), "claims": 0,
+                "mirrors": len(g.get("mirrors") or [])}
 
     def ground_youtube(self, g: dict[str, Any]) -> dict[str, Any]:
         """The Bilibili route generalised: video METADATA through the search index (titles and
@@ -1490,9 +1559,12 @@ class _Run:
                 "transcripts": n_tr, "claims": claims, "errors": errors[:4]}
 
     def ground_telegram(self, g: dict[str, Any]) -> dict[str, Any]:
-        """TERMS-HELD (2026-10-13): Telegram channel scraping is outside the desk's terms
-        rules. Refused here as in `work`; nothing requests a page."""
-        return {**held_row("telegram"), "claims": 0, "channels": len(g.get("channels") or [])}
+        """Public channel previews at t.me/s/<channel>: server-rendered, no account, the last
+        twenty posts. The Russian market conversation lives here more than on any forum."""
+        urls = [f"https://t.me/s/{c}" for c in (g.get("channels") or [])]
+        out = self.ground_http(g, urls=urls, deep=False)
+        out["channels"] = len(urls)
+        return out
 
     def ground_bilibili(self, g: dict[str, Any]) -> dict[str, Any]:
         from libs.data import bilibili
@@ -1599,9 +1671,10 @@ class _Run:
             self.status.append({**row, "status": "NO_ADDRESS", "cause": "NO_ADDRESS",
                                 "why": f"no site and no url to reach for: {g.get('why')}"})
             return
-        # THE TERMS FENCE: a ground on a terms-held platform is never fetched (not even with
+        # THE METHOD FENCE: a ground whose only route would bypass a login (or whose API key is
+        # absent) is HELD, labelled with which, and not fetched (not even with
         # --no-fetch would it be), and is reported HELD -- never yield, never BLOCKED.
-        held = fenced_ground(g)
+        held = held_ground(g)
         if held:
             self.status.append({**row, **held_row(held), "claims": 0})
             return
@@ -1713,8 +1786,8 @@ def yield_rule(claims: int, endpoints: int, papers: int) -> str:
 
 def _fmt_fetch_error(e: dict[str, Any]) -> str:
     u = str(e.get("url") or "")[:100]
-    if e.get("terms"):
-        return f"TERMS_HELD:{e['terms']} {u}"
+    if e.get("held"):
+        return f"{e['held']}:{e.get('source')} {u}"
     if e.get("anti_bot"):
         return f"anti-bot page ({e['anti_bot']}) {u}"
     if e.get("http") is not None:
@@ -1765,8 +1838,8 @@ FRONTIER_NAME = "deep_forest_frontier.json"
 _FRONTIER_OUTCOME: dict[str, str] = {
     "PRODUCTIVE": "YIELDED", "REACHED_NO_CLAIMS": "EMPTY", "BLOCKED": "BLOCKED",
     "NO_NETWORK": "BLOCKED", "UNREACHABLE": "BLOCKED", "NO_ADDRESS": "BLOCKED",
-    # A terms-held platform ground is never fetched: HELD, apart from BLOCKED and from yield.
-    "TERMS_HELD": "HELD",
+    # METHOD_BLOCKED / NEEDS_KEY: HELD, apart from BLOCKED and from yield.
+    "HELD": "HELD",
 }
 
 
@@ -1805,9 +1878,9 @@ def _record_frontier(grounds_status: list[dict[str, Any]],
     state = hf.load(path)
     for g in grounds:
         name = str(g.get("name") or "")
-        held = fenced_ground(g) if name else None
+        held = held_ground(g) if name else None
         if held:
-            # A terms-held ground is HELD whatever an older pass recorded; never NAMED_ONLY
+            # A HELD ground is HELD whatever an older pass recorded; never NAMED_ONLY
             # frontier work, never BLOCKED. Recording it is not an attempt.
             v = state.vectors.get(name)
             if v is None or v.outcome != "HELD":
@@ -1815,7 +1888,9 @@ def _record_frontier(grounds_status: list[dict[str, Any]],
                           language=str(g.get("language") or ""),
                           region=str(g.get("region") or ""))
             continue
-        if name and name not in state.vectors:
+        prev = state.vectors.get(name) if name else None
+        if name and (prev is None or prev.outcome == "HELD"):
+            # RE-ADMITTED (2026-10-13): a ground an older policy held is frontier work again.
             hf.record(state, name, outcome="NAMED_ONLY", language=str(g.get("language") or ""),
                       region=str(g.get("region") or ""))
     for s in grounds_status:
@@ -2102,11 +2177,11 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         b = by_region.setdefault(reg, {"cluster": cluster_of(g), "grounds": 0, "worked": 0,
                                        "productive": 0, "blocked": 0, "claims": 0, "datasets": 0,
                                        "story": 0, "dataset": 0, "macro": 0, "momentum_only": 0,
-                                       "languages": [], "terms_fenced": 0})
-        if fenced_ground(g):
+                                       "languages": [], "held": 0})
+        if held_ground(g):
             # Registered, never workable: counted apart, so `worked == grounds` stays a
             # statement about the grounds the desk may actually fetch.
-            b["terms_fenced"] += 1
+            b["held"] += 1
             continue
         b["grounds"] += 1
         kind = "dataset" if g.get("kind") == "dataset" else ("macro" if g.get("kind") == "macro"
@@ -2151,9 +2226,10 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "productive": sum(1 for s in grounds_status if s.get("status") == "PRODUCTIVE"),
            "blocked": [s.get("ground") for s in grounds_status
                        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE")],
-           # Registered grounds on a terms-held platform: never scheduled, never fetched,
+           # Registered grounds HELD by their source policy (METHOD_BLOCKED or NEEDS_KEY):
            # named here so the gap is visible; the frontier records them HELD.
-           "terms_fenced": sorted({str(g.get("name")) for g in grounds if fenced_ground(g)}),
+           "held": {str(g.get("name")): str(p["status"]) for g in grounds
+                    for p in [held_ground(g)] if p},
            "yield_rules": {k: sum(1 for s in grounds_status if s.get("yield_rule") == k)
                            for k in ("claims", "endpoints", "papers")},
            "blocked_causes": {c: sum(1 for s in grounds_status
@@ -2267,8 +2343,8 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
             dsets = int(s.get("datasets") or 0)
             eps = int(s.get("endpoints") or 0)
             rule = str(s.get("yield_rule") or "")
-            held = s.get("status") == "TERMS_HELD"
-            # A terms hold is not an attempt: nothing was fetched.
+            held = s.get("status") == "HELD"
+            # A hold is not an attempt: nothing was fetched.
             e["attempts"] = int(e.get("attempts") or 0) + (0 if held else 1)
             e["successes"] = int(e.get("successes") or 0) + (1 if rule else 0)
             e["rows"] = int(e.get("rows") or 0) + rows
@@ -2296,7 +2372,7 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
                                                             "REACHED_NO_CLAIMS") else "")
             if rule:
                 e["last_success"] = now
-            if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE", "TERMS_HELD"):
+            if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE", "HELD"):
                 cause = str(s.get("cause") or "")
                 text = str(err or s.get("status"))
                 e["last_error"] = (f"{cause}: {text}" if cause and not text.startswith(cause)

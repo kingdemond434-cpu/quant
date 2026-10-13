@@ -69,7 +69,7 @@ OUTCOMES: tuple[str, ...] = (
     "BLOCKED",      # hunted and could not complete. NOT covered, and the blocker may lift.
     "EMPTY",        # hunted, nothing there. Covered -- this is real negative knowledge.
     "YIELDED",      # hunted, produced findings. Covered.
-    "HELD",         # never fetched: the platform's own terms bar this desk's automated use.
+    "HELD",         # not fetched: METHOD_BLOCKED (only route bypasses a login...) or NEEDS_KEY.
 )
 #: The four hunt outcomes every rollup row carries; HELD is added to a row only when the state
 #: holds a HELD vector, so a coverage file with none reads exactly as it always did.
@@ -125,11 +125,11 @@ class Vector:
         if self.outcome == "NAMED_ONLY":
             return True, f"{self.name}: NAMED but never hunted -- this is frontier, not coverage"
         if self.outcome == "HELD":
-            # TERMS-HELD (2026-10-13): not a blocker that lifts with time, so never retry-due.
-            # It lifts only when a permitting clause is recorded and the ground is re-routed.
+            # HELD (2026-10-13): METHOD_BLOCKED or NEEDS_KEY, not a blocker that lifts with time.
+            # It lifts when a permitted route (an official API) or its key is present.
             return False, (f"{self.name}: HELD"
                            + (f" ({self.blocker})" if self.blocker else "")
-                           + " -- never fetched; lifts only with a recorded permitting clause")
+                           + " -- not fetched; lifts when a permitted route or key exists")
         if self.outcome == "BLOCKED":
             age = self._age_days(self.last_attempt, now)
             if age is None or age >= BLOCKED_RETRY_D:

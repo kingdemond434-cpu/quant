@@ -476,7 +476,8 @@ def test_papers_yield_an_academic_ground_without_a_claim(monkeypatch, tmp_path) 
       "layout change, not an empty forest)", {"url": "u", "http": 404}], "BLOCKED",
      ("ANTI_BOT", None)),
     ([{"url": "u", "anti_bot": "cf-chl"}], "BLOCKED", ("ANTI_BOT", None)),
-    ([{"url": "u", "terms": "reddit"}], "BLOCKED", ("TERMS_HELD", None)),
+    ([{"url": "u", "held": "METHOD_BLOCKED"}], "BLOCKED", ("METHOD_BLOCKED", None)),
+    ([{"url": "u", "held": "NEEDS_KEY"}], "HELD", ("NEEDS_KEY", None)),
     ([{"url": "u", "render": "playwright missing"}], "BLOCKED", ("RENDER_FAILED", None)),
     ([], "NO_ADDRESS", ("NO_ADDRESS", None)),
     ([], "NO_NETWORK", ("NO_NETWORK", None)),
@@ -516,50 +517,100 @@ def test_a_403_ground_records_its_cause_on_the_frontier_and_the_stats(monkeypatc
     assert art["vectors"]["blocked_http_codes"] == {"403": 1}
 
 
-# ---- 3. banned-platform grounds are HELD: never fetched, never BLOCKED, never yield
-def test_terms_held_grounds_are_never_fetched_and_read_held(monkeypatch, tmp_path) -> None:
+# ---- 3. no source is banned: per-source policy, HELD only for METHOD_BLOCKED / NEEDS_KEY
+@pytest.mark.parametrize("url, status", [
+    ("https://www.reddit.com/r/algotrading/.rss", "IDEAS_ONLY"),
+    ("https://oauth.reddit.com/r/x/new", "NEEDS_KEY"),
+    ("https://t.me/s/markettwits", "IDEAS_ONLY"),
+    ("https://x.com/someone/status/1", "IDEAS_ONLY"),
+    ("https://api.x.com/2/tweets/search/recent", "NEEDS_KEY"),
+    ("https://nitter.poast.org/search?q=x", "METHOD_BLOCKED"),
+    ("https://xcancel.com/search?q=x", "METHOD_BLOCKED"),
+    ("https://www.mql5.com/en/articles", "IDEAS_ONLY"),
+    ("https://finance.yahoo.co.jp/cm/x", "IDEAS_ONLY"),
+    ("https://stocktwits.com/symbol/XAUUSD", "IDEAS_ONLY"),
+    ("https://discord.com/channels/1", "METHOD_BLOCKED"),
+    ("https://www.taifex.com.tw/x", "PUBLIC_PAGE"),
+])
+def test_every_source_has_a_per_source_status_and_none_is_banned(monkeypatch, url,
+                                                                status) -> None:
+    for k in ("X_BEARER_TOKEN", "REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"):
+        monkeypatch.delenv(k, raising=False)
+    p = dfm.policy_of_url(url)
+    assert p["status"] == status and p["why"]
+    assert all(r["why"] and r["status"] in ("API_PERMITTED", "PUBLIC_PAGE", "IDEAS_ONLY",
+                                            "METHOD_BLOCKED")
+               for r in dfm.SOURCE_POLICY.values())
+
+
+def test_a_present_key_turns_needs_key_into_api_permitted(monkeypatch) -> None:
+    monkeypatch.setenv("REDDIT_CLIENT_ID", "x")
+    monkeypatch.setenv("REDDIT_CLIENT_SECRET", "y")
+    assert dfm.policy_of_url("https://oauth.reddit.com/r/x")["status"] == "API_PERMITTED"
+
+
+def test_only_method_blocked_or_needs_key_grounds_are_held_and_the_rest_are_fetched(
+        monkeypatch, tmp_path) -> None:
     _isolate(monkeypatch, tmp_path)
+    monkeypatch.delenv("X_BEARER_TOKEN", raising=False)
     grounds = [
         {"name": "X (nitter) FX", "region": "us", "language": "en", "route": "nitter",
          "kind": "social", "queries": ["x"], "mirrors": ["nitter.net"]},
+        {"name": "xcancel search", "region": "us", "language": "en", "route": "search",
+         "kind": "social", "site": "xcancel.com", "queries": ["x"]},
         {"name": "r/algotrading", "region": "us", "language": "en", "route": "reddit",
          "kind": "community", "subs": ["algotrading"]},
         {"name": "Telegram RU", "region": "ru", "language": "ru", "route": "telegram",
          "kind": "social", "channels": ["c"]},
-        {"name": "xcancel search", "region": "us", "language": "en", "route": "search",
-         "kind": "social", "site": "xcancel.com", "queries": ["x"]},
-        {"name": "Yahoo board", "region": "jp", "language": "ja", "route": "search",
-         "kind": "forum", "site": "finance.yahoo.co.jp", "queries": ["x"]},
-        {"name": "open", "region": "us", "language": "en", "route": "http", "kind": "forum",
-         "url": "https://open.test/"}]
+        {"name": "MQL5 articles", "region": "global", "language": "en", "route": "http",
+         "kind": "forum", "url": "https://www.mql5.com/en/articles"}]
     _grounds(tmp_path, grounds)
     fetched: list[str] = []
 
     def spy(url, **kw):
         fetched.append(url)
-        return _PAGE
+        return _PAGE + "<a href='/data/x.csv'>csv</a>"
     monkeypatch.setattr(dfm, "_http", spy)
     doc = dfm.run(budget_s=60, fetch=True, workers=1)
-    assert fetched and all("open.test" in u for u in fetched)
-    assert set(doc["terms_fenced"]) == {g["name"] for g in grounds[:5]}
-    assert [g["ground"] for g in doc["grounds"]] == ["open"]
+    # RE-ADMITTED: reddit feeds, Telegram previews and mql5 pages are fetched for ideas.
+    assert any("reddit.com/r/algotrading" in u for u in fetched)
+    assert any("t.me/s/c" in u for u in fetched)
+    assert any("mql5.com" in u for u in fetched)
+    assert not any("nitter" in u or "xcancel" in u for u in fetched)
+    assert doc["held"] == {"X (nitter) FX": "METHOD_BLOCKED", "xcancel search": "METHOD_BLOCKED"}
     fr = hf.load(tmp_path / "deep_forest_frontier.json")
-    for g in grounds[:5]:
-        v = fr.vectors[g["name"]]
-        assert v.outcome == "HELD" and v.attempts == 0 and v.blocker.startswith("TERMS_HELD")
+    for n in ("X (nitter) FX", "xcancel search"):
+        v = fr.vectors[n]
+        assert v.outcome == "HELD" and v.attempts == 0 and v.blocker.startswith("METHOD_BLOCKED")
         assert v.huntable(datetime.now(tz=UTC))[0] is False
+    for n in ("r/algotrading", "Telegram RU", "MQL5 articles"):
+        assert fr.vectors[n].outcome in ("YIELDED", "EMPTY")
+    # IDEAS_ONLY: the claims carry the label; no endpoint is registered as live input data.
+    claims = [json.loads(x) for x in (tmp_path / "claims.jsonl").read_text("utf-8").splitlines()]
+    assert claims and all("source_policy" in c for c in claims)
+    ds = tmp_path / "datasets.jsonl"
+    rows = [json.loads(x) for x in ds.read_text("utf-8").splitlines()] if ds.exists() else []
+    assert not [d for d in rows if "mql5.com" in d["url"] and d["n_endpoints"]]
     summ = hf.summarise(fr)
-    assert summ["held"] == 5 and summ["blocked"] == 0
-    assert hf.frontier(fr)["held"] and not hf.frontier(fr)["unhunted"]
+    assert summ["held"] == 2
     art = json.loads((tmp_path / "ALT_DATA_YIELD.json").read_text("utf-8"))
-    assert art["vectors"]["by_outcome"]["HELD"] == 5
-    assert "BLOCKED" not in art["vectors"]["by_outcome"]
-    # A direct route call refuses too, without a request.
+    assert art["vectors"]["by_outcome"]["HELD"] == 2
+    assert art["vectors"]["held_by"] == {"METHOD_BLOCKED": 2}
     r = dfm._Run(10, True, None)
-    assert r.ground_reddit(grounds[1])["status"] == "TERMS_HELD"
-    assert r.ground_nitter(grounds[0])["status"] == "TERMS_HELD"
-    assert r.page("https://www.reddit.com/r/x/.rss") == ""
-    assert r.fetch_errors[-1]["terms"] == "reddit"
+    assert r.ground_nitter(grounds[0])["held_by"] == "METHOD_BLOCKED"
+    assert r.ground_nitter(grounds[0])["permitted_route"] == "x_api"
+    assert r.page("https://nitter.net/search?q=x") == ""
+    assert r.fetch_errors[-1]["held"] == "METHOD_BLOCKED"
+
+
+def test_a_ground_an_older_policy_held_is_re_admitted(monkeypatch, tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    st = hf.VectorState()
+    hf.record(st, "r/algotrading", outcome="HELD", blocker="TERMS_HELD: reddit")
+    hf.save(st, tmp_path / "deep_forest_frontier.json")
+    dfm._record_frontier([], [{"name": "r/algotrading", "route": "reddit", "subs": ["a"]}])
+    assert hf.load(tmp_path / "deep_forest_frontier.json").vectors[
+        "r/algotrading"].outcome == "NAMED_ONLY"
 
 
 def test_a_held_vector_never_changes_a_rollup_row_that_has_none() -> None:

@@ -511,10 +511,10 @@ def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credit
     _offline(monkeypatch, tmp_path)
     doc = _run_grounds(monkeypatch, tmp_path, _SRC["grounds"], budget=3000)
     statuses = {g["ground"]: g for g in doc["grounds"]}
-    # TERMS-HELD grounds (X/nitter, Reddit, Telegram, Yahoo, mql5) are never scheduled; they
-    # are named under `terms_fenced` and recorded HELD in the frontier (2026-10-13).
-    held = {str(g["name"]) for g in _SRC["grounds"] if dfm.fenced_ground(g)}
-    assert held and set(doc["terms_fenced"]) == held and not (held & set(statuses))
+    # HELD grounds (METHOD_BLOCKED: the nitter front-ends) are not scheduled; they are named
+    # under `held` with which hold applies, and recorded HELD in the frontier (2026-10-13).
+    held = {str(g["name"]) for g in _SRC["grounds"] if dfm.held_ground(g)}
+    assert held and set(doc["held"]) == held and not (held & set(statuses))
     assert len(statuses) == len(_SRC["grounds"]) - len(held)
     bad = {k: (v["status"], v.get("errors") or v.get("error")) for k, v in statuses.items()
            if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
@@ -590,8 +590,9 @@ def test_search_runs_in_the_ground_s_locale_and_a_snippets_only_label_still_fetc
     assert task["region"] == "jp" and task["mechanism_class"] == "calendar"
 
 
-def test_feed_foreign_papers_wayback_youtube_routes_resolve_and_fenced_routes_are_held(
+def test_feed_reddit_foreign_papers_wayback_youtube_and_telegram_routes_resolve_nitter_is_held(
         monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("X_BEARER_TOKEN", raising=False)
     queued = _offline(monkeypatch, tmp_path)
     grounds = [
         {"name": "Medium", "region": "us", "language": "en", "route": "rss", "kind": "blog",
@@ -613,33 +614,30 @@ def test_feed_foreign_papers_wayback_youtube_routes_resolve_and_fenced_routes_ar
         {"name": "coinpan never", "region": "kr", "language": "ko", "route": "foreign", "fn": "coinpan",
          "queries": ["x"], "kind": "forum"},
     ]
-    fetched: list[str] = []
-
-    def spy(url, **kw):
-        fetched.append(url)
-        return _dispatch(url, **kw)
-    monkeypatch.setattr(dfm, "_http", spy)
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
-    # TERMS-HELD (2026-10-13): reddit, nitter and Telegram grounds are never scheduled and no
-    # request ever reaches their hosts; the frontier records them HELD, not BLOCKED.
-    assert {"reddit", "nitter", "Telegram RU"} <= set(doc["terms_fenced"])
-    assert not {"reddit", "nitter", "Telegram RU"} & set(st)
-    assert not any(h in u for u in fetched for h in ("reddit.com", "nitter", "t.me/"))
-    fr = hf.load(tmp_path / "deep_forest_frontier.json")
-    assert {fr.vectors[n].outcome for n in ("reddit", "nitter", "Telegram RU")} == {"HELD"}
-    assert fr.vectors["nitter"].attempts == 0 and "TERMS_HELD" in fr.vectors["nitter"].blocker
+    assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
     assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]
+    # PER-SOURCE POLICY (principal 2026-10-13: no source is banned). Reddit and Telegram public
+    # pages resolve again; a nitter mirror is METHOD_BLOCKED (it exists to get around X's login
+    # wall) and offers X's official API -- NEEDS_KEY here -- as the permitted route.
+    assert "nitter" not in st and doc["held"]["nitter"] == "METHOD_BLOCKED"
+    fr = hf.load(tmp_path / "deep_forest_frontier.json")
+    assert fr.vectors["nitter"].outcome == "HELD" and fr.vectors["nitter"].attempts == 0
+    assert fr.vectors["nitter"].blocker.startswith("METHOD_BLOCKED")
+    pol = dfm.ground_policy(grounds[5])
+    assert pol["permitted_route"] == "x_api" and pol["permitted_route_status"] == "NEEDS_KEY"
     # The YouTube route generalises the Bilibili one: metadata converts, the transcript gap is SAID.
     assert st["YouTube JP"]["status"] == "PRODUCTIVE" and st["YouTube JP"]["transcripts"] == 0
     assert any("mirror rotation dead" in e for e in st["YouTube JP"]["errors"])
+    assert st["Telegram RU"]["status"] == "PRODUCTIVE" and st["Telegram RU"]["channels"] == 1
     # The fenced foreign function is refused by the allowlist, not by luck.
     assert st["coinpan never"]["status"] == "BLOCKED" and "allowlist" in st["coinpan never"]["error"]
     sources = {t["source"] for t in queued}
-    assert {"deep_forest_west", "deep_forest_jp", "deep_forest_institutional"} <= sources
+    assert {"deep_forest_west", "deep_forest_jp", "deep_forest_institutional", "deep_forest_ru"} <= sources
     # papers carry the abstract's published date as published_time
     arx = next(r for r in dfm._claims_rows() if r["ground"] == "arXiv")
     assert arx["published_time"] == "2026-09-01" and arx["evidence_grade"] == "PAPER"
