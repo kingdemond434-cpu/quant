@@ -424,9 +424,21 @@ def _r10_cross_asset() -> dict[str, Any]:
     }
     n_present = sum(present.values())
     level = 0.0 if not edges else (1.0 if n_present <= 2 else (2.0 if n_present <= 4 else 3.0))
+    # FIELDS ARE MACHINERY, ADMITTED EDGES ARE INTELLIGENCE. A graph whose every measured edge
+    # failed its deflated test carries the right columns and knows nothing tradable; grading it 3
+    # read as "above target" while zero cross-asset links had passed. Without an admitted edge the
+    # level stops at 1 (measured, nothing learned), and an absent count is read as zero.
+    admitted = _num(world.get("edges_admitted"))
+    if not admitted:
+        admitted = len([e for e in world.get("admitted_edges") or [] if isinstance(e, dict)])
+    capped = bool(edges) and admitted <= 0 and level > 1.0
+    if capped:
+        level = 1.0
     return _mk(dim, level, f"{_rel(WORLD_CAUSAL_GRAPH)} edges={len(edges)} carrying "
                f"{sorted(k for k, v in present.items() if v) or 'NO EDGE FIELDS'}; "
-               f"edges_admitted={world.get('edges_admitted')}", _stamp(world))
+               f"edges_admitted={world.get('edges_admitted')}"
+               + ("; capped at 1: no edge admitted, fields without an admitted edge are machinery"
+                  if capped else ""), _stamp(world))
 
 
 def _r11_macro() -> dict[str, Any]:
