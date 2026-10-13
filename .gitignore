@@ -480,3 +480,4 @@ desks/mt5/data/import_stems_cache.json
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
 desks/mt5/data/account_positions.json
 desks/mt5/data/account_positions.json.tmp
+desks/mt5/data/llm_lab/openrouter_key.json
