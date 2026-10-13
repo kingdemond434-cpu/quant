@@ -19,6 +19,17 @@ def test_judge_names_each_invariant() -> None:
     assert gd.judge("x", {"place_exc": "RuntimeError: boom"})[0].startswith("NO_CRASH")
 
 
+def test_reconcile_before_exposure_is_judged_both_ways() -> None:
+    for fault in gd.REFUSE_NEW_RISK:
+        assert gd.judge(fault, {"new_risk": "NO_GATE"})[0].startswith("RECONCILE_BEFORE")
+        assert gd.judge(fault, {"new_risk": True})[0].startswith("RECONCILE_BEFORE")
+        assert gd.judge(fault, {"new_risk": False}) == []
+    # a gate that refuses everything is a finding too: a healthy pass must still trade
+    assert gd.judge("healthy", {"new_risk": False})[0].startswith("RECONCILE_BEFORE")
+    assert gd.judge("healthy", {"new_risk": True}) == []
+    assert set(gd.REFUSE_NEW_RISK) <= set(gd.FAULTS)
+
+
 def test_the_real_gateway_runs_in_a_temp_root_against_the_double() -> None:
     row = gd.run_fault("healthy")
     if row["status"] == "UNMEASURED":        # gateway import needs the desk's own deps

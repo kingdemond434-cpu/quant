@@ -235,6 +235,7 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
+    "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
@@ -347,6 +348,11 @@ LEG_LAYER: dict[str, str] = {
     # the same question `source_routes`, `value_of_data` and `unseen_frontier` are information for
     # -- even though the frontier rows it writes become research work downstream. LAWS 5f.
     "coverage_tensor": "information",
+    # REGIONAL PARITY BY EQUIVALENCE. Which country holds which local functional equivalent of
+    # each information class (directive CORE LAW / PART III), disposed against a frozen ontology
+    # and projected from the tensor above: a question about the desk's INPUTS, asked before any
+    # signal exists, so information by the same reading as `coverage_tensor`.
+    "regional_parity": "information",
     # THE COVERAGE DRAIN. The tensor above says which inputs EXIST; this leg spends its hour
     # turning ground the desk already owns and has never read into ground it has actually
     # fetched -- registering every root the country packs declare, resolving the rows that were
@@ -439,6 +445,9 @@ LEG_LAYER: dict[str, str] = {
     # THE TWO ADVERSARIAL COMMITTEES argue explanations and run the falsifiers the judge picks:
     # they decide which experiments a hypothesis meets, so prediction, like falsifier_run.
     "committees": "prediction",
+    # THE SIX COMMITTEES (deterministic specialist ensembles, 2026-09-30 17:04 ruling) choose the
+    # next experiment each hypothesis meets and run the falsifiers on the gauntlet's own cell.
+    "committee_ensembles": "prediction",
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",
@@ -596,7 +605,8 @@ LEG_LAYER: dict[str, str] = {
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
     # Tier S institution: the machine judging and improving its own research machinery
-    "tier_s": "meta", "adversary_evolution": "prediction", "frontier_map": "information",
+    "tier_s": "meta", "tier_s_door": "meta",
+    "adversary_evolution": "prediction", "frontier_map": "information",
     "market_ecology": "information", "research_diversity_archive": "information",
     "execution_science": "execution",
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by

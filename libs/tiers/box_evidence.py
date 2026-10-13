@@ -158,12 +158,19 @@ def attest(*, root: Path = ROOT, out: Path | None = None, host: str | None = Non
             for r in ledger.get("layers") or []}
     ident = (host_identity.identify() if host is None
              else host_identity.classify(machine_id, host))
-    doc = {"generated_utc": now.isoformat(timespec="seconds"),
+    stamp = now.isoformat(timespec="seconds")
+    # `at` is the stamp every other Tier S artifact carries; a box read for `at` found None here
+    # (2026-10-06) because this file only wrote `generated_utc`. Both name the same instant.
+    doc = {"generated_utc": stamp, "at": stamp,
            "host": ident.hostname, "trading_host": TRADING_HOST,
            "machine_id": ident.machine_id, "host_identity": ident.as_dict(),
            # Evidence GRANTS credit, so only a confirmed identity counts: an unrecorded or
            # unreadable id is UNMEASURED and earns nothing (libs/ops/host_identity).
            "counts_toward_done": ident.confirmed_trading,
+           # why it does or does not count, in the identity helper's words (an unrecorded
+           # trading-box id reads UNMEASURED and earns nothing until config/trading_host.json
+           # carries it)
+           "counts_toward_done_why": ident.why,
            "n_ok": sum(1 for v in rows.values() if v["ok"]), "layers": rows,
            "published": {k: digest(root / rel, verbatim=k in VERBATIM)
                          for k, rel in PUBLISHED.items()}}

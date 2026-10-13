@@ -73,7 +73,8 @@ from research import exposure_decomposition as xd  # noqa: E402
 from research import hazard_engine as hz  # noqa: E402
 from research import posterior_alpha as pa  # noqa: E402
 
-SLEEVES, LIVE_LEDGER = BASE / "data" / "sleeves.json", BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+SLEEVES, LIVE_LEDGER = BASE / "data" / "sleeves.json", _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_STATE, HAZARD = SHADOW_DIR / "shadow_state.json", BASE / "reports" / "ALPHA_HAZARD.json"
 REGIME_STATE, CALENDAR = BASE / "data" / "regime_state.json", BASE / "data" / "forced_flow_calendar.json"  # noqa: E501
