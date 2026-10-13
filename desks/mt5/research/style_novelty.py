@@ -93,7 +93,7 @@ STYLES: tuple[str, ...] = ("passive_window", "abs_window", "reversal_1bar", "mom
                            "range_breakout_12bar", "trend_20d", "tsmom_60d", "reversal_1d",
                            "breakout_20d", "value_250d")
 #: Below this adjusted R^2 no style is named dominant: the betas of an unexplained fit are noise.
-DOMINANT_MIN_R2 = 0.05
+DOMINANT_MIN_R2 = 0.10
 UNMEASURED_STYLES = {"flow_positioning": "no COT/positioning history is read on every host",
                      "exits": "stops and targets are ignored: the direction choice is the style"}
 
