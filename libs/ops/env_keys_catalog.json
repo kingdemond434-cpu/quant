@@ -1007,11 +1007,11 @@
   },
   {
    "name": "X_BEARER_TOKEN",
-   "group": "banned",
-   "cost": "banned by policy",
+   "group": "unavailable",
+   "cost": "official API account; not banned (principal 2026-10-13), never requested",
    "machine": "-",
    "signup": "-",
-   "unlocks": "X / Reddit: fenced, never fetched",
+   "unlocks": "X / Reddit official APIs: read when present, UNMEASURED when absent; never requested",
    "readers": [
     "libs/mining/sources.yaml"
    ],
@@ -1020,11 +1020,11 @@
   },
   {
    "name": "REDDIT_CLIENT_ID",
-   "group": "banned",
-   "cost": "banned by policy",
+   "group": "unavailable",
+   "cost": "official API account; not banned (principal 2026-10-13), never requested",
    "machine": "-",
    "signup": "-",
-   "unlocks": "X / Reddit: fenced, never fetched",
+   "unlocks": "X / Reddit official APIs: read when present, UNMEASURED when absent; never requested",
    "readers": [
     "desks/mt5/data/credential_registry.json"
    ],
@@ -1032,11 +1032,11 @@
   },
   {
    "name": "REDDIT_SECRET",
-   "group": "banned",
-   "cost": "banned by policy",
+   "group": "unavailable",
+   "cost": "official API account; not banned (principal 2026-10-13), never requested",
    "machine": "-",
    "signup": "-",
-   "unlocks": "X / Reddit: fenced, never fetched",
+   "unlocks": "X / Reddit official APIs: read when present, UNMEASURED when absent; never requested",
    "readers": [
     "desks/mt5/data/credential_registry.json"
    ],

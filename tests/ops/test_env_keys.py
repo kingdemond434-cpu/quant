@@ -40,12 +40,22 @@ def test_another_users_hive_is_reported_but_never_read(monkeypatch: pytest.Monke
 
 
 @pytest.mark.parametrize("name", ["TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "XUEQIU_COOKIE",
-                                  "X_BEARER_TOKEN", "REDDIT_CLIENT_ID", "WIND_KEY"])
+                                  "WIND_KEY"])
 def test_paid_and_banned_names_are_refused_even_when_set(
         monkeypatch: pytest.MonkeyPatch, name: str) -> None:
     monkeypatch.setenv(name, "set-on-the-box")
     assert env_keys.refused(name)
     assert env_keys.read_key(name) == ""
+
+
+@pytest.mark.parametrize("name", ["X_BEARER_TOKEN", "REDDIT_CLIENT_ID", "REDDIT_SECRET"])
+def test_official_x_and_reddit_api_keys_are_read_when_set(
+        monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    """Principal 2026-10-13: X and Reddit are not banned. Their official API keys are read when
+    the box holds them and are never requested (group `unavailable`)."""
+    monkeypatch.setenv(name, "set-on-the-box")
+    assert not env_keys.refused(name)
+    assert env_keys.read_key(name) == "set-on-the-box"
 
 
 def test_missing_is_default(monkeypatch: pytest.MonkeyPatch) -> None:
