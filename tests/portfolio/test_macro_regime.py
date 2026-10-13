@@ -363,3 +363,17 @@ def test_instrument_returns_are_rebuilt_from_the_two_legs(tmp_path: Path) -> Non
     want = frame["EUR"].fillna(0).to_numpy() - frame["CHF"].fillna(0).to_numpy()
     assert np.allclose(r, want)
     assert leg_factors.instrument_returns(fs, "XAUUSD", universe=tmp_path) is None
+
+
+def test_a_gold_window_loads_on_its_own_xau_usd_legs(tmp_path: Path) -> None:
+    """Audit #363 MF-A: a `gold_*` sleeve is fitted as XAUUSD (it trades XAUUSD), so it carries
+    its USD leg. Before #363 the token 'gold' matched no factor and gold read as uncorrelated with
+    every USD pair; the change is deliberate and pinned here."""
+    frame = _factor_frame()
+    frame["XAU"] = frame["USD"] * -0.8 + 0.001 * np.random.default_rng(1).normal(size=len(frame))
+    fs = leg_factors.factor_set(frame)
+    assert fs is not None
+    r = 300.0 * (frame["XAU"] - frame["USD"]).to_numpy()
+    fl = leg_factors.fit_loadings(r, frame.index, fs, "XAUUSD")
+    assert fl.n >= 3 and "USD" in fl.used
+    assert leg_factors.fit_loadings(r, frame.index, fs, "gold").used == ()
