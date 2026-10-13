@@ -77,13 +77,16 @@ def test_record_refuses_off_the_trading_box(tmp_path: Path) -> None:
 def test_every_host_question_goes_through_the_helper() -> None:
     """The three organs the audit named ask ONE helper, never a prefix or a file's mtime."""
     for rel in ("libs/tiers/box_evidence.py", "scripts/check_placement_interlock.py",
-                "scripts/check_birth_obligations.py"):
+                "scripts/check_birth_obligations.py", "scripts/check_self_repair.py"):
         src = (ROOT / rel).read_text("utf-8")
         assert "host_identity" in src, rel
         assert ".startswith(TRADING_HOST)" not in src, rel
     birth = (ROOT / "scripts" / "check_birth_obligations.py").read_text("utf-8")
     body = birth[birth.index("def _is_trading_host"):birth.index("def _source_age_h")]
     assert "gateway_state" not in body and "st_mtime" not in body
+    repair = (ROOT / "scripts" / "check_self_repair.py").read_text("utf-8")
+    body = repair[repair.index("def _trading_host"):repair.index("def measure(")]
+    assert "gateway_state" not in body.split('"""')[2] and "st_mtime" not in body
 
 
 def test_birth_obligations_judges_by_the_helper(monkeypatch: pytest.MonkeyPatch,
@@ -105,3 +108,20 @@ def test_birth_obligations_judges_by_the_helper(monkeypatch: pytest.MonkeyPatch,
     assert birth._is_trading_host(tmp_path) is False
     monkeypatch.setattr(hi, "identify", lambda config_path=None: hi.classify(BOX, "vm", CFG))
     assert birth._is_trading_host(tmp_path) is True
+
+
+def test_self_repair_judges_by_the_helper(monkeypatch: pytest.MonkeyPatch,
+                                          tmp_path: Path) -> None:
+    """2026-10-13: the box publishes gateway_state.json, so a cloud checkout read as the trading
+    host for 3h after every box commit and this fence went red on clean trees."""
+    from scripts import check_self_repair as repair
+    gs = tmp_path / "desks" / "mt5" / "data" / "gateway_state.json"
+    gs.parent.mkdir(parents=True)
+    gs.write_text('{"last_reconcile": "2099-01-01T00:00:00+00:00"}', "utf-8")
+    monkeypatch.setattr(hi, "identify", lambda config_path=None: hi.classify(None, "vm", CFG))
+    assert repair._trading_host(tmp_path) is False          # a fresh box stamp is not identity
+    monkeypatch.setattr(hi, "identify",
+                        lambda config_path=None: hi.classify(None, "vmi3571445", CFG))
+    assert repair._trading_host(tmp_path) is True           # unrecorded id on the box: fail-closed
+    monkeypatch.setattr(hi, "identify", lambda config_path=None: hi.classify(BOX, "x", CFG))
+    assert repair._trading_host(tmp_path) is True
