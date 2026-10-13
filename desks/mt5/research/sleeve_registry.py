@@ -42,6 +42,7 @@ import tempfile
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from types import CodeType
 from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
@@ -177,17 +178,49 @@ def behaviour_hash(fn: Any) -> str:
     if code is None:
         return "nocode:" + getattr(fn, "__qualname__", str(fn))
     try:
-        consts = tuple(repr(c) for c in (code.co_consts or ())[1:])   # [0] is the docstring
-        blob = "|".join((
-            code.co_code.hex(),
-            ",".join(consts),
-            ",".join(code.co_names or ()),
-            ",".join(code.co_varnames or ()),
-            str(code.co_argcount),
-        ))
+        blob = _code_blob(code, top=True)
     except (AttributeError, TypeError):
         return "nocode:" + getattr(fn, "__qualname__", str(fn))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
+def _const_text(c: Any) -> str:
+    """One constant, DETERMINISTICALLY across processes (audit 2026-10-06).
+
+    `repr` of a nested code object -- every comprehension, lambda and inner function is one --
+    carries its memory address and file path, so the hash differed in every process: three fresh
+    interpreters gave three VERSIONs for the session helpers, and every session clock keyed on it
+    restarted on every pass. A nested code object is now hashed by its own content (recursively);
+    a set's members are sorted, because set iteration order follows the per-process string hash
+    seed. Every other constant keeps its plain `repr`, so a function with neither hashes exactly
+    as it did before."""
+    if isinstance(c, CodeType):
+        return "code:" + hashlib.sha256(_code_blob(c).encode("utf-8")).hexdigest()
+    if isinstance(c, (frozenset, set)):
+        return type(c).__name__ + "{" + ",".join(sorted(_const_text(x) for x in c)) + "}"
+    if isinstance(c, tuple) and _unstable(c):
+        return "(" + ",".join(_const_text(x) for x in c) + ")"
+    return repr(c)
+
+
+def _unstable(c: Any) -> bool:
+    """Whether `repr(c)` could differ between processes (a code object or a set, at any depth)."""
+    if isinstance(c, (CodeType, frozenset, set)):
+        return True
+    return isinstance(c, tuple) and any(_unstable(x) for x in c)
+
+
+def _code_blob(code: CodeType, *, top: bool = False) -> str:
+    consts = code.co_consts or ()
+    if top:
+        consts = consts[1:]                                        # [0] is the docstring
+    return "|".join((
+        code.co_code.hex(),
+        ",".join(_const_text(c) for c in consts),
+        ",".join(code.co_names or ()),
+        ",".join(code.co_varnames or ()),
+        str(code.co_argcount),
+    ))
 
 
 def code_hash(fn: Any) -> str:

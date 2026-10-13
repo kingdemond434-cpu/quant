@@ -52,7 +52,8 @@ SLEEVES = DATA / "sleeves.json"
 ALLOCATION = REPORTS / "pf_allocation.json"
 ROI_EVIDENCE = DATA / "roi_capital_evidence.json"
 SWAP_REJUDGE = REPORTS / "SWAP_REJUDGE.json"
-LIVE_LEDGER = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 BROKER_CLOCK = DATA / "broker_clock.json"
 TERMS_DIR = DATA / "tape" / "contract_terms"
 UNIVERSE = DATA / "universe" / "universe.json"

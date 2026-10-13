@@ -60,6 +60,7 @@ def fresh_tier_s_door(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterat
     for attr, path in paths.items():
         monkeypatch.setattr(pa, attr, path)
     monkeypatch.setattr(pa, "LEDGER", desk / "data" / "tier_s" / "promotion_blocks.jsonl")
+    monkeypatch.setattr(pa, "SUSPENDED_LEDGER", desk / "data" / "tier_s" / "door_suspended.jsonl")
     monkeypatch.setattr(pa, "LIVE_DOOR", desk / "data" / "tier_s" / "live_door.json")
     # the constitution and ratifications keep their repo-relative names; absent = sealed default
     monkeypatch.setattr(pa, "CONSTITUTION", root / "docs" / "research" / "tier_s_constitution.json")
@@ -92,13 +93,16 @@ def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
 
     def record(root: Path, rep: Any, ledger: str = blinding.RUNTIME_LEDGER) -> None:
         target = (Path(root) / ledger).resolve()
-        if target.is_relative_to(repo):
+        if (target.is_relative_to(repo)
+                and not target.is_relative_to(tmp_path_factory.getbasetemp().resolve())):
             root, ledger = sink, str(target.relative_to(repo))
         real_record(root, rep, ledger)
 
     monkeypatch.setattr(blinding, "record", record)
     if Path(pa.LEDGER).resolve().is_relative_to(repo):
         monkeypatch.setattr(pa, "LEDGER", sink / "promotion_blocks.jsonl")
+    if Path(pa.SUSPENDED_LEDGER).resolve().is_relative_to(repo):
+        monkeypatch.setattr(pa, "SUSPENDED_LEDGER", sink / "door_suspended.jsonl")
 
 
 def write_measured_dsr_inputs(root: Path, *, variance: float = 0.0002, n: int = 200,
@@ -159,3 +163,44 @@ def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     evidence. Every test that drives a lane through a fake venue goes through that door."""
     monkeypatch.setenv("MT5_ORDER_DOOR_DIR", str(tmp_path_factory.mktemp("order_door")))
     yield
+
+
+@pytest.fixture
+def portable_gateway(monkeypatch, tmp_path):
+    """Import the entire venue adapter on every OS; no SDK operation is permitted.
+
+    The contract was captured from SDK 5.0.6180 without initializing a terminal.
+    Constants are exact; unknown names raise AttributeError and all callable SDK
+    names raise AssertionError. Tests explicitly replace any operation they need.
+    This tests production code, including its imports, rather than AST fragments.
+    """
+    import importlib.util
+    import sys
+    from types import ModuleType
+    from mt5desk import config
+
+    contract = json.loads((Path(__file__).parent / 'fixtures' /
+                           'mt5_sdk_contract.json').read_text('utf-8'))
+    sdk = ModuleType('MetaTrader5')
+    sdk.__version__ = contract['sdk_version']
+    sdk._test_calls = []
+    for name, value in contract['constants'].items():
+        setattr(sdk, name, value)
+    def forbidden(name):
+        def call(*args, **kwargs):
+            sdk._test_calls.append(name)
+            raise AssertionError(f'Unmocked SDK operation in portable test: {name}')
+        return call
+    for name in contract['methods']:
+        setattr(sdk, name, forbidden(name))
+    monkeypatch.setitem(sys.modules, 'MetaTrader5', sdk)
+    monkeypatch.setattr(config, 'desk_root', lambda: tmp_path)
+    monkeypatch.setattr(config, 'terminal_path', lambda: 'test-terminal-only')
+    source = Path(__file__).parents[1] / 'mt5desk' / 'gateway.py'
+    spec = importlib.util.spec_from_file_location('_quant_portable_gateway', source)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert sdk._test_calls == [], 'Import must not contact or initialize a broker'
+    module._test_sdk = sdk
+    return module

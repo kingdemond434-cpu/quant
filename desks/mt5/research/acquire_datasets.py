@@ -257,6 +257,42 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
     return out
 
 
+#: Extra seats per pass for regional-parity discoveries (rows marked `lane: regional_parity`).
+PARITY_LANE = "regional_parity"
+PARITY_LANE_MAX = 6
+
+
+def _parity_lane(fresh: set[str], cap: int = PARITY_LANE_MAX) -> list[tuple[str, str]]:
+    """The known public equivalents no country pack declares, newest file first, as a priority
+    lane. Behind ~2.5k queued URLs at 40 a pass they would never be reached; this lane is ADDED
+    to the pass, never carved out of it. Fails closed on terms: a URL is taken only when the
+    ontology's TERMS_EVIDENCE quotes a permitting clause for it, whatever the row says."""
+    try:
+        from libs.research.equivalence_ontology import PERMITTED, terms_verdict
+    except Exception:
+        return []
+    out: list[tuple[str, str]] = []
+    taken: set[str] = set()
+    for f in sorted(glob.glob(str(WORLD / "discoveries_parity_*.json")), reverse=True):
+        try:
+            rows = json.loads(Path(f).read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict) or r.get("lane") != PARITY_LANE:
+                continue
+            for u in r.get("endpoints") or []:
+                u = str(u)
+                if (u in taken or u in fresh or _KEYED.search(u)
+                        or terms_verdict(u) != PERMITTED):
+                    continue
+                taken.add(u)
+                out.append((u, str(r.get("host") or urllib.parse.urlparse(u).netloc)))
+                if len(out) >= cap:
+                    return out
+    return out
+
+
 def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, str]]:
     """(url, host) from seeds/crawls, excluding only URLs refreshed within this hour.
 
@@ -282,7 +318,11 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
                     continue
         except (OSError, ValueError):
             fresh = set()
-    seen: set[str] = set()
+    # THE PARITY LANE IS ADDITIVE: up to PARITY_LANE_MAX seats ON TOP of `limit`, so no seed,
+    # pack or crawler endpoint loses a seat to it. Its URLs are claimed first so no other lane
+    # fetches them twice in one pass.
+    lane = _parity_lane(fresh)
+    seen: set[str] = {u for u, _ in lane}
     out: list[tuple[str, str]] = []
     # Seeds first: they are known to be dated, keyless and relevant, so a run never spends its
     # whole budget on discovered pages that turn out to be markup.
@@ -292,7 +332,7 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         seen.add(u)
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
         if len(out) >= limit:
-            return out
+            return out + lane
     # EVERY COUNTRY PACK, FAIRLY BY REGION. Declaring sources in 170+ native-market packs while
     # the acquirer reads only crawler output is declaration theatre: none of those sources can
     # ever reach a parser. Interleave regions so alphabetical country order cannot spend every
@@ -327,7 +367,7 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         if buckets[region]:
             active.append(region)
     if len(out) >= limit:
-        return out
+        return out + lane
     for f in sorted(glob.glob(str(WORLD / "discoveries_*.json")), reverse=True):
         try:
             rows = json.loads(Path(f).read_text("utf-8"))
@@ -340,8 +380,8 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
                 seen.add(u)
                 out.append((u, str(r.get("host") or "")))
                 if len(out) >= limit:
-                    return out
-    return out
+                    return out + lane
+    return out + lane
 
 
 def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:

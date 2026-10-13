@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -69,7 +70,10 @@ def measure(root: Path | None = None, *, require: bool = False) -> dict[str, Any
     # artifact there is a fact about the machine, not about the class -- and a fence that is red
     # on the day it is built gets switched off (L1.43). `--require-state` arms the half that the
     # box's own law gate runs, which is where silence IS the defect.
-    trading = _trading_host(base)
+    # A detached source checkout contains copied timestamps, not running detectors.
+    # --require-state still binds even if a caller inherits the source-view flag.
+    source_view = os.environ.get("QUANT_LAWGATE_SOURCE_VIEW") == "1"
+    trading = _trading_host(base) and not source_view
     floor_path = base / "docs" / "research" / "self_repair_floor.json"
     try:
         floor = json.loads(floor_path.read_text(encoding="utf-8-sig"))
