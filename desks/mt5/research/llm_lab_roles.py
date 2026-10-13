@@ -382,9 +382,6 @@ def code_refusal(code: str) -> str:
         tree = ast.parse(code)
     except SyntaxError as exc:
         return f"syntax error: {exc.msg}"
-    funcs = [n for n in tree.body if isinstance(n, ast.FunctionDef)]
-    if len(tree.body) != 1 or not funcs or funcs[0].name != "feature":
-        return "the source must be exactly one function named feature(df)"
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             return "import is not allowed (np and pd are provided)"
@@ -402,6 +399,9 @@ def code_refusal(code: str) -> str:
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and \
                 node.func.id not in SAFE_CALLS and node.func.id != "feature":
             return f"call to {node.func.id!r} is not allowed (use np./pd. functions)"
+    funcs = [n for n in tree.body if isinstance(n, ast.FunctionDef)]
+    if len(tree.body) != 1 or not funcs or funcs[0].name != "feature":
+        return "the source must be exactly one function named feature(df)"
     return ""
 
 

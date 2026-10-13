@@ -99,8 +99,10 @@ def test_verdicts_rank_labs_by_certified_keff_per_call(tmp_roles: Path) -> None:
 def test_assign_model_and_lab_order_spend_against_the_credit(tmp_roles: Path) -> None:
     reg = {"p:good": {"status": "REGISTERED", "novel": 0},
            "p:noisy": {"status": "REGISTERED", "novel": 500, "replies": 500}}
+    labs = {x.key: {"calls": 40, "keff": 0.0} for x in lab.INVENTORS}
+    labs["B"] = {"calls": 40, "keff": 12.0}
     credit = {"models": {"p:good": {"calls": 10, "keff": 3.0}, "p:noisy": {"calls": 500}},
-              "labs": {"B": {"calls": 5, "keff": 2.0}}}
+              "labs": labs}
     rng = random.Random(3)  # noqa: S311 - not crypto
     picks = [lab.assign_model(reg, rng, set(), credit) for _ in range(200)]
     assert picks.count("p:good") > 190, "novel-cell volume no longer buys a model its rank"
