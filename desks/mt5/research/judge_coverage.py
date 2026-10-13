@@ -85,6 +85,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter
@@ -1926,7 +1927,11 @@ def note_attempt(status: str, why: str, *, via: str, report: Path | None = None)
                            "status": status, "via": via, "why": str(why)[:500]}
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        # ATOMIC (audit of #334): a reader never sees half a report, and a failed write never
+        # truncates the table it was stamping.
+        tmp = target.with_name(f"{target.name}.{os.getpid()}.attempt.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        os.replace(tmp, target)
     except OSError:
         pass  # a stamp is a report; it never costs the docket or the table
 

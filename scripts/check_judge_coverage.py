@@ -133,7 +133,13 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     # table, so freshness has to bind on its own.
     stale: list[str] = []
     age = _age_h(doc.get("at"), at)
-    if age is not None and age > STALE_H:
+    if age is None:
+        # AN UNDATED TABLE PROVES NOTHING IS FRESH (audit of #334): it fails like a stale one.
+        out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
+                              "why": f"report `at` is missing or unparseable ({doc.get('at')!r})"})
+        if require_state:
+            stale.append("stale_report")
+    elif age > STALE_H:
         why = f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"
         attempt = doc.get("last_attempt")
         if isinstance(attempt, dict) and attempt.get("at"):
@@ -175,15 +181,24 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     verdicts = rate_doc.get("verdicts") if isinstance(rate_doc, dict) else None
     last_verdict = verdicts.get("last_verdict_at") if isinstance(verdicts, dict) else None
     v_age = _age_h(last_verdict, at)
-    backlog = int((doc.get("totals") or {}).get("unjudged_total") or 0)
+    _raw_backlog = (doc.get("totals") or {}).get("unjudged_total")
+    # An absent backlog is not "nothing waits" (audit of #334): unknown counts as owed.
+    backlog: int | None = int(_raw_backlog) if isinstance(_raw_backlog, (int, float)) else None
     if v_age is None:
-        out["checks"].append({"metric": "judge_silent", "state": "UNMEASURED",
-                              "why": f"{(rate or RATE).name} carries no last_verdict_at"})
-    elif v_age > STALE_H and backlog > 0:
+        # THE JUDGE'S CLOCK UNREADABLE ON THE BOX IS A CLAIM THE DESK CANNOT CASH (L1.49).
+        out["checks"].append({"metric": "judge_silent",
+                              "state": "FAIL" if require_state else "UNMEASURED",
+                              "why": (f"{(rate or RATE).name} is absent or carries no "
+                                      "last_verdict_at: the judge's clock is unread")})
+        if require_state:
+            stale.append("judge_silent")
+    elif v_age > STALE_H and (backlog is None or backlog > 0):
         out["checks"].append({"metric": "judge_silent",
                               "state": "FAIL" if require_state else "WARN",
                               "why": (f"no verdict recorded for {v_age:.1f}h (last "
-                                      f"{last_verdict}) while {backlog} cell(s) wait unjudged")})
+                                      f"{last_verdict}) while "
+                                      f"{'an unknown number of' if backlog is None else backlog} "
+                                      "cell(s) wait unjudged")})
         if require_state:
             stale.append("judge_silent")
     else:
