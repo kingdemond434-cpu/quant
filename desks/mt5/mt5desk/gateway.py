@@ -1805,9 +1805,20 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     unchanged level. Nothing is cached that could disagree with the account, which is what makes
     this idempotent and acknowledgement-driven rather than merely hopeful.
     """
-    symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"})
     _fixed_tags = {order_comment(str(s.get("name") or "")): str(s.get("name") or "")
                    for s in sleeves if s.get("exec") == "family_market" and s.get("name")}
+    # A REFUSED SLEEVE KEEPS ITS CERTIFIED EXITS (2026-10-13). The live policy drops a
+    # quarantined row from the roster (no new entries), but its open position was opened under
+    # the family lane's fixed bracket. Keyed by the roster alone, it lost both: on a symbol
+    # outside the roster nothing managed it, and on one inside it read as an untagged position
+    # and was TRAILED, the lookalike strategy the 2026-09-16 finding below forbids. Every name
+    # the family lane has state for is a family_market sleeve by construction, so it keeps its
+    # fixed-bracket treatment, and the symbols its open positions sit on are managed.
+    for _gname in st.get("generic") or {}:
+        _fixed_tags.setdefault(order_comment(str(_gname)), str(_gname))
+    _exit_only_syms = {str(p.symbol) for p in (mt5.positions_get() or [])
+                       if str(getattr(p, "comment", "") or "") in _fixed_tags}
+    symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"} | _exit_only_syms)
     for symbol in symbols:
         positions = mt5.positions_get(symbol=symbol) or []
         if not positions:
@@ -3599,6 +3610,38 @@ def close_retired_positions(st: dict) -> None:
             encoding="utf-8")
 
 
+def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
+    """A SLEEVE THE ROSTER NO LONGER ADMITS STILL GETS ITS TIME EXIT (2026-10-13).
+
+    The family lane's TTL housekeeping walks the ROSTER, so a row the live policy refuses (a
+    lineage or lookahead quarantine: no new entries) kept its open position past its certified
+    time exit with nobody to close it -- the same orphaning `close_retired_positions` fixed for
+    retired names, but for a refusal, which queues nothing. This walks the family lane's own
+    state instead: a name off the roster whose deadline has passed is closed by its order
+    comment, one sleeve at a time, on whatever symbol it is held. SHADOW unless armed, like
+    every other close here; the roster's own sleeves are left to their own loop.
+    """
+    on_roster = {str(s.get("name") or "") for s in sleeves}
+    gstate = st.get("generic") or {}
+    now_iso = datetime.now(tz=UTC).isoformat()
+    for name, srec in list(gstate.items()):
+        if name in on_roster or not isinstance(srec, dict):
+            continue
+        if not ttl_expired(srec.get("open_ttl_until"), now_iso):
+            continue
+        tag = order_comment(str(name))
+        held = [p for p in (mt5.positions_get() or [])
+                if str(getattr(p, "comment", "") or "") == tag]
+        for symbol in sorted({str(p.symbol) for p in held}):
+            _book_target(str(name), symbol, 0.0, "ttl")
+            if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
+                log(f"[{name}] OFF-ROSTER TTL: closing its {symbol} position(s)")
+                close_sleeve_positions(st, symbol, str(name))
+            else:
+                log(f"[{name}] SHADOW would TTL-close off-roster position(s) on {symbol}")
+        srec.pop("open_ttl_until", None)
+
+
 def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
     """Close ONE sleeve's positions on a symbol, never the symbol's whole book.
 
@@ -4190,6 +4233,10 @@ def main() -> None:
         close_retired_positions(st)
     except Exception as exc:
         log(f"RETIRED CLOSE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    try:
+        close_refused_sleeve_ttls(st, sleeves)
+    except Exception as exc:
+        log(f"OFF-ROSTER TTL FAILED (positions left untouched): {type(exc).__name__}: {exc}")
     save_state(st)
 
     # RELEASE IDENTITY: measured after management and before anything that could open a
