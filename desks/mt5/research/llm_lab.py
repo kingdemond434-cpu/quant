@@ -1086,6 +1086,21 @@ class Tally:
                 "discard_reasons": dict(self.reasons.most_common(6))}
 
 
+#: THE HIGH-YIELD ROLES GO FIRST (2026-10-13): turning what the desk already holds into testable
+#: cells beats inventing more of it. Conversion of owed debt runs BEFORE any inventor (phase 0);
+#: then donor reconstruction (K), semantic/policy text into PIT cells (L), graveyard descendants
+#: (J) and new data axes (F); raw idea generation takes whatever budget is left, in random order
+#: so no inventor is permanently last.
+PRIORITY_LABS = ("K", "L", "J", "F")
+
+
+def prioritised(rng: random.Random) -> list[Lab]:
+    first = [LAB_BY_KEY[k] for k in PRIORITY_LABS]
+    rest = [lab for lab in INVENTORS if lab.key not in PRIORITY_LABS]
+    rng.shuffle(rest)
+    return first + rest
+
+
 def _calls_left(daily_cap: int) -> int:
     doc = _read_json(CALLS, {}) or {}
     day = datetime.now(UTC).strftime("%Y-%m-%d")
@@ -1146,7 +1161,10 @@ def process(prop: Any, lab_key: str, coord: dict[str, str], reg: dict[str, Famil
     comp = compile_payload(payload, reg, uni)
     if comp.jev_question:
         outputs["jev"].append({**comp.jev_question, "node": node, "lab": lab_key,
-                               "state": "QUEUED", "at": _now()})
+                               "state": "QUEUED", "at": _now(),
+                               # A Jev answer series labelled over historical text inherits the
+                               # labelling model's cutoff, set when the job is answered.
+                               "lookahead_guard": "set from the answering model's cutoff"})
     if comp.refused:
         tally.refused += 1
         outputs["genealogy"].append({**base_row, "disposition": "REFUSED", "why": comp.refused})
@@ -1200,7 +1218,38 @@ def donation_row(cell: dict[str, Any], cid: str, g: dict[str, Any],
             "model": g["model"], "prompt_hash": g["prompt_hash"],
             "horizon": str(payload.get("horizon") or "")[:20],
             "url": f"llm_lab://{g['lab']}/{g['node']}",
+            "lookahead_guard": lookahead_guard(g["model"]),
             "copy_trade": False, "credibility_inherited": False, "gauntlet_bypass": False}
+
+
+#: KNOWN TRAINING CUTOFFS, by model-id fragment -> "YYYY-MM-DD". Empty by default ON PURPOSE: a
+#: cutoff written from memory is a claim, and a wrong one that is too EARLY would let in-sample
+#: history count as evidence. `desks/mt5/data/llm_lab/model_cutoffs.json` ({"<fragment>":
+#: "<date>", ...}, each with the provider's own documentation as its source) may name one.
+MODEL_CUTOFFS = STATE_DIR / "model_cutoffs.json"
+
+
+def lookahead_guard(model: str, *, at: str | None = None) -> dict[str, Any]:
+    """THE LOOK-AHEAD GUARD (2026-10-13). A model that proposed or labelled a cell has READ the
+    history the cell is about to be backtested on: anything before its training cutoff is
+    contaminated -- the cell may go to the gauntlet, but that window is not evidence.
+
+    `evidence_from` is the first date whose data counts: the model's documented cutoff when one
+    is registered, otherwise the date the cell was generated, which is always at or after the
+    cutoff and therefore never too lenient. With no registered cutoff the honest reading is that
+    ONLY forward (post-generation) data is evidence -- which the forward clocks already require
+    before any promotion, so the guard tightens nothing that is live and loosens nothing.
+    """
+    day = (at or _now())[:10]
+    table = _read_json(MODEL_CUTOFFS, {}) or {}
+    hit = next((str(d)[:10] for frag, d in table.items()
+                if isinstance(frag, str) and frag and frag.lower() in model.lower()), "")
+    return {"model": model, "model_training_cutoff": hit or UNMEASURED,
+            "evidence_from": min(hit, day) if hit else day,
+            "basis": ("registered cutoff" if hit else
+                      "cutoff UNMEASURED: generation date, so only post-generation data counts"),
+            "rule": "backtest data before evidence_from is contaminated; it may be run, never "
+                    "counted as evidence"}
 
 
 def synthesis_lines(outputs: dict[str, list[dict[str, Any]]]
@@ -1387,6 +1436,31 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     if seat_on and not dry_run:
         hunted = hunt_models(models, budget_s=min(30.0, budget_s / 10))
 
+    def _go(ask: Ask) -> tuple[Ask, list[Any]]:
+        left = budget_s - (time.time() - started)
+        if left < 30:
+            return ask, []
+        try:
+            return ask, _call(ask, n=4, timeout=min(120.0, left))
+        except Exception as exc:          # pragma: no cover - one lab never kills the pass
+            return ask, [("error", str(exc)[:160])]
+
+    calls_made = 0
+    # ---- phase 0: conversion FIRST. Re-compile everything owed; re-ask the rule-shaped debt.
+    debt = retry_debt(reg, uni, mem, tallies["CONVERTER"], outputs, fp, write=not dry_run)
+    if seat_on and not dry_run and calls_made < calls_budget:
+        conv = converter_asks(debt["rule_shaped_open"], reg, uni, rng,
+                              k=min(4, calls_budget - calls_made))
+        for ask in conv:
+            if budget_s - (time.time() - started) < 45:
+                break
+            _, props = _go(ask)
+            calls_made += 1
+            t = tallies["CONVERTER"]
+            t.asked += 1
+            for p in [p for p in props if not isinstance(p, tuple)]:
+                process(p, "CONVERTER", ask.coord, reg, uni, mem, t, models, outputs)
+
     # ---- phase 1: the independent first pass. No lab sees another lab's current answers.
     own_recent: dict[tuple[str, str], list[str]] = {}
     for g in _jsonl(GENEALOGY, limit=5000):
@@ -1400,8 +1474,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                    "jev": ["Jev answers are typed: probability in [0,1], a "
                                            "score in [-1,1] or a choice; the answer series is "
                                            "point-in-time by publication stamp"]}
-    order = list(INVENTORS)
-    rng.shuffle(order)
+    order = prioritised(rng)
     for lab in order:
         coord, why = choose_coordinate(lab, ontology, cov, rng)
         model = assign_model(models, rng, used_models)
@@ -1409,7 +1482,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
             used_models.add(model)
         recent = own_recent.get((lab.key, coord["mechanism_class"]), [])[-5:]
         ask = build_ask(lab, coord, why, model, reg, uni, rng, recent, extra)
-        if len(asks) < calls_budget:
+        if len(asks) < calls_budget - calls_made:
             asks.append(ask)
             plan.append({"lab": lab.key, "coordinate": coord, "why": why, "model": model or
                          "default_route"})
@@ -1418,16 +1491,6 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
             plan.append({"lab": lab.key, "coordinate": coord, "why": why, "state": "QUEUED",
                          "reason": "per-pass call cap: NOT THIS PASS, owed"})
 
-    def _go(ask: Ask) -> tuple[Ask, list[Any]]:
-        left = budget_s - (time.time() - started)
-        if left < 30:
-            return ask, []
-        try:
-            return ask, _call(ask, n=4, timeout=min(120.0, left))
-        except Exception as exc:          # pragma: no cover - one lab never kills the pass
-            return ask, [("error", str(exc)[:160])]
-
-    calls_made = 0
     if seat_on and not dry_run and asks:
         with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
             results = list(pool.map(_go, asks))
@@ -1506,24 +1569,11 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                                "model": p.provenance.model, "at": _now()})
             tallies["P"].accepted += len(outputs["attacks"])
 
-    # ---- phase 3: conversion debt. Re-compile everything owed; re-ask the rule-shaped debt.
-    debt = retry_debt(reg, uni, mem, tallies["CONVERTER"], outputs, fp, write=not dry_run)
-    if seat_on and not dry_run and calls_made < calls_budget:
-        conv = converter_asks(debt["rule_shaped_open"], reg, uni, rng,
-                              k=min(4, calls_budget - calls_made))
-        for ask in conv:
-            if budget_s - (time.time() - started) < 45:
-                break
-            _, props = _go(ask)
-            calls_made += 1
-            t = tallies["CONVERTER"]
-            t.asked += 1
-            for p in [p for p in props if not isinstance(p, tuple)]:
-                process(p, "CONVERTER", ask.coord, reg, uni, mem, t, models, outputs)
-        if conv:
-            debt = {**retry_debt(reg, uni, mem, tallies["CONVERTER"], outputs, fp, limit=0),
-                    "resolved_this_pass": debt["resolved_this_pass"],
-                    "retried_this_pass": debt["retried_this_pass"]}
+    # ---- the debt ledger again, so phase-1 and synthesis debt is persisted with its blockers.
+    debt = {**retry_debt(reg, uni, mem, tallies["CONVERTER"], outputs, fp, limit=0,
+                         write=not dry_run),
+            "resolved_this_pass": debt["resolved_this_pass"],
+            "retried_this_pass": debt["retried_this_pass"]}
 
     # ---- persist
     donated = None

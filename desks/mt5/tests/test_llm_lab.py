@@ -46,7 +46,7 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                       "DEBT": "conversion_debt.json", "COVERAGE": "coverage.json",
                       "ONTOLOGY": "ontology.json", "MODELS": "model_registry.json",
                       "DATA_REQUESTS": "data_requests.jsonl", "JEV_JOBS": "jev_jobs.jsonl",
-                      "CALLS": "calls.json"}.items():
+                      "CALLS": "calls.json", "MODEL_CUTOFFS": "model_cutoffs.json"}.items():
         monkeypatch.setattr(lab, name, sd / rel if rel else sd)
     monkeypatch.setattr(lab, "DONATE_DIR", tmp_path / "intelligence" / "llm_lab")
     monkeypatch.setattr(lab, "REPORT", tmp_path / "reports" / "LLM_LAB.json")
@@ -186,7 +186,7 @@ def test_owed_coordinates_are_visited_in_cursor_order_and_never_forgotten(state:
     cov = lab.Coverage.load()
     a = lab.LAB_BY_KEY["B"]
     onto = lab._ontology()
-    rng = random.Random(1)
+    rng = random.Random(1)  # noqa: S311
     lab.COLD_SHARE, lab.YIELD_SHARE = 0.0, 0.0
     try:
         c1, why1 = lab.choose_coordinate(a, onto, cov, rng)
@@ -210,7 +210,7 @@ def test_independent_labs_get_different_models_while_they_exist() -> None:
     reg_models = {f"local0:m{i}": {"status": "REGISTERED", "novel": 0, "replies": 0}
                   for i in range(3)}
     reg_models["local0:pending"] = {"status": "REVIEW_PENDING"}
-    rng = random.Random(7)
+    rng = random.Random(7)  # noqa: S311
     used: set[str] = set()
     picks = []
     for _ in range(3):
@@ -290,6 +290,9 @@ def test_a_pass_donates_exact_rows_the_compiler_admits(state: Path, reg: dict[st
     import miner_candidate_compiler as mc
     cands, disp = mc.compile_row("llm_lab", row, set(UNI))
     assert disp == "EXACT_RECIPE" and cands and cands[0]["family"] == fam
+    guard = cands[0]["lookahead_guard"]
+    assert guard["model"] == "local0:qwen-test" and guard["model_training_cutoff"] == "UNMEASURED"
+    assert guard["evidence_from"] == row["lookahead_guard"]["evidence_from"] == lab._now()[:10]
 
     # A second identical pass collapses the same cell instead of charging it again.
     monkeypatch.setattr(lab.Memory, "load", classmethod(
@@ -363,3 +366,35 @@ def test_sixteen_labs_with_distinct_mandates() -> None:
     assert [x.key for x in lab.LABS] == list("ABCDEFGHIJKLMNOP")
     assert len({x.mandate for x in lab.LABS}) == 16
     assert lab.LAB_BY_KEY["P"] not in lab.INVENTORS
+
+
+def test_a_registered_cutoff_moves_evidence_from_and_never_past_today(state: Path) -> None:
+    lab._write_json(lab.MODEL_CUTOFFS, {"qwen3": "2025-03-31"})
+    g = lab.lookahead_guard("local0:qwen3:8b", at="2026-10-13T00:00:00+00:00")
+    assert g["evidence_from"] == "2025-03-31" and g["basis"] == "registered cutoff"
+    assert lab.lookahead_guard("groq:other", at="2026-10-13T00:00:00+00:00")[
+        "evidence_from"] == "2026-10-13"
+
+
+def test_conversion_and_the_high_yield_labs_go_first(state: Path, reg: dict[str, Any],
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    assert [x.key for x in lab.prioritised(random.Random(0))][:4] == ["K", "L", "J", "F"]  # noqa: S311
+    payload = {"mechanism": "needs a rule the converter can write down for the desk",
+               "falsifier": "f", "symbols": ["EURUSD"], "family": "formula",
+               "expr": "not(an expr"}
+    lab._write_json(lab.DEBT, {"rows": {"D9": {"id": "D9", "lab": "C", "payload": payload,
+                                                "blockers": ["NEEDS_EXACT_RULE_EXTRACTION"],
+                                                "state": "OPEN", "first_seen": "x"}}})
+    order: list[str] = []
+
+    def fake_call(ask: lab.Ask, n: int, timeout: float) -> list[Any]:
+        order.append("CONVERTER" if ask.why == "conversion_debt" else ask.lab.key)
+        return []
+    monkeypatch.setattr(lab, "_seat", lambda: _Seat())
+    monkeypatch.setattr(lab, "_call", fake_call)
+    monkeypatch.setattr(lab, "universe", lambda: UNI)
+    monkeypatch.setattr(lab, "hunt_models", lambda registry, budget_s=0: [])
+    monkeypatch.setattr(lab.Memory, "load", classmethod(lambda cls, library=True: cls()))
+    monkeypatch.setattr(lab, "coverage_from_outcomes", lambda cov: {})
+    lab.run(budget_s=600, max_calls=40, seed=2, workers=1)
+    assert order[0] == "CONVERTER" and order[1:5] == ["K", "L", "J", "F"]

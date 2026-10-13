@@ -27,6 +27,7 @@ def _isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         if p.key_env:
             monkeypatch.delenv(p.key_env, raising=False)
     monkeypatch.setenv("QUANT_LOCAL_LLM_URLS", "http://127.0.0.1:11434/v1")
+    monkeypatch.setenv("QUANT_LOCAL_LLM_GUARD", "0")
     return tmp_path
 
 
@@ -192,3 +193,50 @@ def test_with_only_openrouter_the_rest_are_skipped_not_failed(
     assert doc["verdict"] == "RAN" and doc["cloud_usable"] == 1
     assert "openrouter_free" not in doc["skipped_no_key"]
     assert {"groq", "cerebras", "huggingface", "gemini"} <= set(doc["skipped_no_key"])
+
+
+class _Proc:
+    def __init__(self, cmd: list[str], name: str = "python") -> None:
+        self.info = {"cmdline": cmd, "name": name}
+        self.pid = id(self)
+        self.niced: Any = None
+
+    def nice(self, v: Any) -> None:
+        self.niced = v
+
+
+class _PS:
+    def __init__(self, cpu: float, procs: list[_Proc]) -> None:
+        self.cpu, self.procs = cpu, procs
+
+    def cpu_percent(self, interval: float = 0.0) -> float:
+        return self.cpu
+
+    def process_iter(self, attrs: Any = None) -> list[_Proc]:
+        return self.procs
+
+
+def test_the_local_rung_yields_to_a_busy_box_and_to_the_judge(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("QUANT_LOCAL_LLM_GUARD", "1")
+    server = _Proc([], name="ollama.exe")
+    monkeypatch.setattr(fc, "_psutil", lambda: _PS(80.0, [server]))
+    assert "busy" in fc.local_blocked()
+    judge = _Proc(["python", "desks/mt5/scripts/external_gauntlet.py"])
+    monkeypatch.setattr(fc, "_psutil", lambda: _PS(5.0, [judge, server]))
+    assert "external_gauntlet" in fc.local_blocked()
+    monkeypatch.setattr(fc, "_psutil", lambda: _PS(5.0, [server]))
+    fc._DEMOTED.clear()
+    assert fc.local_blocked() == "" and server.niced is not None, "server dropped to idle"
+    monkeypatch.setattr(fc, "_psutil", lambda: None)
+    assert fc.local_blocked(), "no way to prove idleness keeps the local rung off"
+
+
+def test_a_busy_box_skips_the_local_rung_in_the_chain(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("QUANT_LOCAL_LLM_GUARD", "1")
+    monkeypatch.setattr(fc, "_psutil", lambda: _PS(95.0, []))
+    seen: list[str] = []
+    monkeypatch.setattr(fc, "_request", _fake({}, seen))
+    with pytest.raises(fc.ChainExhausted, match="busy"):
+        fc.chat("s", "u", timeout=10)
+    assert not seen, "no request reached the local server"

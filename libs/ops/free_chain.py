@@ -420,9 +420,15 @@ def chat(system: str, user: str, *, max_tokens: int = 1600, temperature: float =
     hint_p, _, hint_m = model_hint.partition(":")
     for p in provs:
         if (p.name == hint_p and hint_m and not st.cooled(p.name)
-                and not (p.daily_cap and st.calls_today(p.name) >= p.daily_cap)):
+                and not (p.daily_cap and st.calls_today(p.name) >= p.daily_cap)
+                and not (p.tier == "local" and local_blocked())):
             plan.append((p, hint_m))
     for p in provs:
+        if p.tier == "local":
+            why = local_blocked()
+            if why:
+                tried.append(f"{p.name}: {why}")
+                continue
         if p.daily_cap and st.calls_today(p.name) >= p.daily_cap:
             tried.append(f"{p.name}: daily cap {p.daily_cap}")
             continue
@@ -504,11 +510,103 @@ def model_stats() -> dict[str, dict[str, Any]]:
     return dict(_State.load().doc.get("models") or {})
 
 
+# ------------------------------------------------------------------------------ the local rung
+#: LOCAL INFERENCE RUNS ON IDLE CPU ONLY, AT THE LOWEST PRIORITY (principal's direction relayed
+#: 2026-10-13: "it must never take cores from the judge or the miners"). Two rules, both read
+#: live on every call: the machine's measured CPU use must be under this share, and no judge
+#: process may be running. A blocked local rung is a skipped rung -- the call falls through or
+#: waits for the next pass -- never a queue that competes with the gauntlet for cores.
+LOCAL_MAX_CPU_PCT = float(os.environ.get("QUANT_LOCAL_LLM_MAX_CPU", "35"))
+#: Command-line fragments of the processes the local rung yields to.
+YIELD_TO = ("external_gauntlet", "run_external_backtest", "miner_candidate_compiler",
+            "conversion_maximiser", "sealed_suite", "judge_shard")
+#: Process names of local inference servers whose priority is dropped to idle.
+LOCAL_SERVERS = ("ollama", "llama-server", "llama_server", "llama.cpp", "lms", "vllm")
+_DEMOTED: set[int] = set()
+
+
+def _psutil() -> Any:
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+    except Exception:
+        return None
+    return psutil
+
+
+def demote_local_servers() -> list[int]:
+    """Drop every local inference server to the OS's idle priority. Best effort, once per pid.
+
+    Idle class on Windows, nice 19 elsewhere: the scheduler then gives the model only the cycles
+    nothing else wants, which is what makes a local rung safe on the box that trades.
+    """
+    ps = _psutil()
+    if ps is None:
+        return []
+    out = []
+    for proc in ps.process_iter(["pid", "name"]):
+        try:
+            name = str(proc.info.get("name") or "").lower()
+            if proc.pid in _DEMOTED or not any(n in name for n in LOCAL_SERVERS):
+                continue
+            idle = getattr(ps, "IDLE_PRIORITY_CLASS", None)
+            proc.nice(idle if idle is not None else 19)
+            _DEMOTED.add(proc.pid)
+            out.append(proc.pid)
+        except Exception:
+            continue
+    return out
+
+
+def local_blocked() -> str:
+    """Why the local rung must not run right now, or "" when the machine is idle enough."""
+    if os.environ.get("QUANT_LOCAL_LLM_GUARD", "1") == "0":
+        return ""
+    ps = _psutil()
+    if ps is None:
+        return "psutil unavailable: cannot prove the box is idle, so the local rung stays off"
+    try:
+        busy = float(ps.cpu_percent(interval=0.5))
+    except Exception:
+        return "cpu reading failed"
+    if busy > LOCAL_MAX_CPU_PCT:
+        return f"box busy ({busy:.0f}% CPU > {LOCAL_MAX_CPU_PCT:.0f}%)"
+    for proc in ps.process_iter(["cmdline"]):
+        try:
+            cmd = " ".join(proc.info.get("cmdline") or []).lower()
+        except Exception:
+            continue
+        hit = next((f for f in YIELD_TO if f in cmd), "")
+        if hit:
+            return f"yielding to a running {hit}"
+    demote_local_servers()
+    return ""
+
+
+def seat_compatible_chat(prompt: str, *, system: str = "", max_tokens: int = 1600,
+                         temperature: float = 0.0, timeout: float = TIMEOUT_S,
+                         local_only: bool = False) -> tuple[str, str | None]:
+    """`llm_seat.chat`'s shape -- (text, error) -- over this chain, for organs written to it.
+
+    `local_only` skips every cloud rung: the deepening worker uses it after OpenRouter's daily
+    allowance is spent, when asking the same account again would only collect the same refusal.
+    """
+    skip = tuple(p.name for p in providers() if p.tier != "local") if local_only else ()
+    try:
+        r = chat(system or "Answer exactly as instructed.", prompt, max_tokens=max_tokens,
+                 temperature=temperature, timeout=timeout, skip=skip)
+    except ChainExhausted as exc:
+        return "", f"free_chain: {str(exc)[:200]}"
+    return r.text, None
+
+
+def local_declared() -> bool:
+    return bool(os.environ.get("QUANT_LOCAL_LLM_URLS", "").strip())
+
+
 def local_fit() -> dict[str, Any]:
     """Which recommended open-weight models fit THIS machine's free RAM, measured, never assumed."""
     try:
-        import psutil  # type: ignore[import-untyped,unused-ignore]
-        vm = psutil.virtual_memory()
+        vm = _psutil().virtual_memory()
         total, free = vm.total / 1024**3, vm.available / 1024**3
     except Exception:
         return {"verdict": UNMEASURED, "why": "psutil unavailable"}
