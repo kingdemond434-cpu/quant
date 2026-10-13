@@ -15,7 +15,7 @@ age_sec = (datetime.now(tz=UTC) - tnow).total_seconds()
 if age_sec > 1800: ... idle: tick stale
 ```
 
-MetaTrader's `tick.time` counts the BROKER's wall clock (Fusion: EET/EEST, +3 now, +2 from 2026-10-25), not UTC. So:
+MetaTrader's `tick.time` counts the BROKER's wall clock (the venue clock is New York wall time + 7h: +3 while New York is on daylight time, +2 from 2026-11-01, NOT the EU date of 10-25), not UTC. So:
 
 1. `placement_pass` carries broker time under `+00:00`. Measured: at 15:35 UTC the published file read `2026-10-13T18:35:02+00:00`, with `last_reconcile` (real UTC) at `15:34:14`.
 2. The stale-tick gate subtracts a broker stamp from real UTC, so the age reads 3h too YOUNG. A reference tick up to about 3.5h old passes as fresh and the pass trades. This is the likely root of the earlier "gateway trades a 2h-stale quote" finding.
@@ -27,20 +27,17 @@ MetaTrader's `tick.time` counts the BROKER's wall clock (Fusion: EET/EEST, +3 no
 In `main`, right after `tnow` is built:
 
 ```python
-from session_phase import broker_utc_offset_h   # same resolver the rest of the desk uses
-_off, _off_src = broker_utc_offset_h()
-tick_utc = tnow - pd.Timedelta(hours=_off) if _off is not None else None
+from libs.regime.session_clock import server_to_utc, utc_offset_h   # the desk's one venue-clock rule
+tick_utc = server_to_utc([tnow.tz_localize(None)])[0].tz_localize("UTC")
 st["placement_pass"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
 st["placement_pass_clock"] = "utc"
 st["placement_tick_broker"] = tnow.tz_localize(None).isoformat()   # naive: broker wall clock
-st["broker_utc_offset_h"] = _off
+st["broker_utc_offset_h"] = utc_offset_h()
 ```
 
-Then replace the stale-tick age with `age_sec = (datetime.now(tz=UTC) - tick_utc).total_seconds()` when `tick_utc` is known.
+Do NOT use `session_phase.broker_utc_offset_h()`: it answers 0 on every host (`h1_source` pins the offset to 0.0 and `data/broker_clock.json` records 0), so subtracting it changes nothing. `session_clock` is a calendar rule measured on the desk's own bars and needs no live terminal.
 
-If the offset is unknown, which on the box only happens if the live terminal, `data/broker_clock.json` and the bar inference all fail:
-- log `stale-tick check UNMEASURED: broker offset unknown ({_off_src})`;
-- fall back to comparing `tnow` with the newest tick across the pass's symbols. That comparison is broker clock against broker clock, so the offset cancels.
+Then replace the stale-tick age with `age_sec = (datetime.now(tz=UTC) - tick_utc).total_seconds()`.
 
 `note_placement` only compares `placement_pass` for equality within a pass, and one value per pass still holds.
 
