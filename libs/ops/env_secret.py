@@ -130,7 +130,8 @@ PAID_BLOCKED = frozenset({"TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "CLOUDFLARE_
 
 
 def _hard_refused(up: str) -> bool:
-    return (up in BLOCKED_ON_TERMS or up in PAID_BLOCKED or (bool(REFUSED_PREFIXES) and up.startswith(REFUSED_PREFIXES))
+    return (up in BLOCKED_ON_TERMS or up in PAID_BLOCKED
+            or (bool(REFUSED_PREFIXES) and up.startswith(REFUSED_PREFIXES))
             or (up.startswith(OFFICIAL_API_PREFIXES) and any(m in up for m in LOGIN_MATERIAL)))
 
 
