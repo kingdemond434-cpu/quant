@@ -284,11 +284,28 @@ class Response:
 Fetch = Callable[[str, Mapping[str, str], float], Response]
 
 
+class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
+    """Follows a redirect only on the host that was asked. Terms and robots were checked for that
+    host alone, so a redirect to any other host comes back as its 3xx status, unfollowed."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> Any:
+        asked = (urllib.parse.urlparse(req.full_url).hostname or "").lower()
+        target = (urllib.parse.urlparse(newurl).hostname or "").lower()
+        if target != asked:
+            return None                        # urllib raises the 3xx as an HTTPError
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_SameHostRedirects())
+
+
 def urllib_fetch(url: str, headers: Mapping[str, str], timeout: float) -> Response:
-    """The live transport. Never retries; a 304 and every HTTP error come back as a status."""
+    """The live transport. Never retries; a 304 and every HTTP error come back as a status. A
+    redirect to another host is not followed: it returns its 3xx and Location."""
     req = urllib.request.Request(url, headers=dict(headers))
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with _OPENER.open(req, timeout=timeout) as r:
             body = r.read(MAX_PAGE_BYTES + 1)
             hdrs = {k.lower(): v for k, v in r.headers.items()}
             return Response(int(getattr(r, "status", 200) or 200), body, hdrs)

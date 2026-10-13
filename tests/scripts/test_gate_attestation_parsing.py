@@ -44,6 +44,33 @@ def test_a_state_path_is_recognised_after_parsing():
     assert ga._is_state("esks/mt5/data/compute_ledger.jsonl") is False
 
 
+def test_name_status_state_changes_do_not_void_the_code_attestation(monkeypatch):
+    """The real tracked census emits tab-delimited name-status, not porcelain rows."""
+    monkeypatch.setattr(ga, "_git", lambda *a: "abc123" if a[0] == "rev-parse" else "")
+    monkeypatch.setattr(ga, "_working_tree_rows", lambda: [
+        "M\tdata/canary_history.jsonl",
+        "M\tdesks/mt5/data/account_state.json",
+        "M\tdesks/mt5/frontier_intel/data/frontier_queue.jsonl",
+        "M\tdesks/mt5/swap_exposure.json",
+        "M\tdesks/mt5/docs/TRADE_PATH_REPORT.md",
+        "R100\tdesks/mt5/data/old.json\tdesks/mt5/data/new.json",
+    ])
+    doc = ga.attest("fast", "pass")
+    assert doc["tree_clean"] is True
+    assert doc["dirty_paths"] == 0
+
+
+def test_name_status_code_change_and_state_to_code_rename_still_void_it(monkeypatch):
+    monkeypatch.setattr(ga, "_git", lambda *a: "abc123" if a[0] == "rev-parse" else "")
+    monkeypatch.setattr(ga, "_working_tree_rows", lambda: [
+        "M\tdesks/mt5/mt5desk/gateway.py",
+        "R100\tdesks/mt5/data/old.py\tscripts/new.py",
+    ])
+    doc = ga.attest("fast", "pass")
+    assert doc["tree_clean"] is False
+    assert doc["dirty_paths"] == 2
+
+
 def test_an_untracked_scratch_script_does_not_void_the_claim():
     """A .py changes an import only by NAME COLLISION. Two dozen stray diagnostics sat in the
     repo and voided tested_sha on every run while being imported by nothing."""

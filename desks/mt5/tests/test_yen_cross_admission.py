@@ -103,15 +103,23 @@ def test_an_unreadable_policy_still_falls_back_to_gold_only(tmp_path: Path) -> N
     assert lp.refuse({"symbol": "USDJPY", "name": CHOSEN_MT5}, pol) is not None
 
 
-def test_the_shipped_policy_file_admits_exactly_gold_and_one_yen_sleeve() -> None:
-    """The artifact itself, as it will be read on the box."""
+def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
+    """The artifact itself, as it will be read on the box. Principal 2026-10-07: EURZAR, USDZAR
+    and AUDCHF joined gold for the certified sleeve book; USDJPY stays a live symbol but its
+    rr2.5 sleeve is Reddit-lineage quarantined (`live_sleeves.USDJPY == []`) until re-certified,
+    and the CHFNOK carry rows are quarantined for lookahead."""
     f = DESK / "data" / "live_sleeve_policy.json"
     if not f.exists():                      # the box writes its own; absent on a fresh clone
         pytest.skip("no live_sleeve_policy.json in this checkout")
     pol = lp.policy(f)
-    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY"})
+    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY", "EURZAR", "USDZAR", "AUDCHF"})
     assert "discovered" in pol.banned_families
-    assert lp.refuse({"symbol": "USDJPY", "name": CHOSEN_MT5}, pol) is None
+    for name in (CHOSEN_MT5, "USDJPY.asia#rr=2.5"):
+        assert lp.refuse({"symbol": "USDJPY", "name": name}, pol) is not None
+    assert lp.refuse({"symbol": "CHFNOK", "name": "chfnok_carry_asia_p_98d776f3e210d3e2"},
+                     pol) is not None
+    for sym in ("EURZAR", "USDZAR", "AUDCHF"):
+        assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay"}, pol) is None
     assert lp.refuse({"symbol": "EURJPY", "name": "eurjpy_session_range_breakout_asia_0_wb_12"},
                      pol) is not None
     assert lp.refuse({"symbol": "EURJPY", "family": "discovered"}, pol) is not None
@@ -296,11 +304,13 @@ def test_an_unmeasured_concentration_is_published_not_acted_on() -> None:
         assert any("CHF" in b for b in doc["unmeasured_blocks"])
 
 
-def test_the_clock_key_the_promoter_writes_is_admitted() -> None:
+def test_the_clock_key_the_promoter_writes_is_admitted(tmp_path: Path) -> None:
     """The promoter names a LIVE row by its forward clock's key; rr=2.5/wb=12 on asia is
     `USDJPY.asia#rr=2.5` (wait_bars 12 is the window default). Admitting only an alias no
-    writer produces would keep the approved sleeve off the live account forever."""
-    pol = lp.policy(DESK / "data" / "live_sleeve_policy.json")
+    writer produces would keep the approved sleeve off the live account forever. Pinned on the
+    allowlist shape, since the shipped file holds USDJPY quarantined (see the test above)."""
+    pol = _policy(tmp_path, {"live_symbols": ["XAUUSD", "USDJPY"], "live_sleeves": {
+        "USDJPY": ["USDJPY.asia#rr=2.5", CHOSEN_MT5]}})
     row = {"name": "USDJPY.asia#rr=2.5", "symbol": "USDJPY", "family": "session_range_breakout"}
     assert lp.refuse(row, pol) is None
     other = {**row, "name": "USDJPY.asia#rr=1.5"}
