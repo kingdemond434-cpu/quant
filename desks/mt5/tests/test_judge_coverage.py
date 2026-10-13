@@ -657,3 +657,20 @@ def test_an_undated_table_fails_on_the_box(tmp_path) -> None:
         box = fence.judge(report, require_state=True, now=NOW)
         assert box["verdict"] == "FAIL" and "stale_report" in box["why"], bad
         assert fence.judge(report, now=NOW)["verdict"] == "PASS"
+
+
+def test_a_resident_in_a_kill_loop_fails_on_the_box(tmp_path) -> None:
+    """Audit of #350: two consecutive hung kills with a live heartbeat still fail the fence."""
+    report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
+    res = tmp_path / "JUDGE_RESIDENT.json"
+    res.write_text(json.dumps({"heartbeat_utc": NOW.isoformat(), "status": "SWEEPING",
+                               "consecutive_hangs": 2, "last_hung_utc": NOW.isoformat(),
+                               "killed_in_phase": {"phase": "merge_and_publish"}}), "utf-8")
+    doc = fence.judge(report, require_state=True, now=NOW, resident=res)
+    assert doc["verdict"] == "FAIL" and "resident_hangs" in doc["why"]
+    assert any("merge_and_publish" in c["why"] for c in doc["checks"]
+               if c["metric"] == "resident_hangs")
+    one = json.loads(res.read_text("utf-8"))
+    one["consecutive_hangs"] = 1
+    res.write_text(json.dumps(one), "utf-8")
+    assert fence.judge(report, require_state=True, now=NOW, resident=res)["verdict"] == "PASS"

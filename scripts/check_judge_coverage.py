@@ -71,6 +71,8 @@ RATE = DESK / "reports" / "JUDGING_RATE.json"
 #: the one-minute trigger should already have started a fresh one.
 RESIDENT = DESK / "reports" / "JUDGE_RESIDENT.json"
 RESIDENT_DEAD_MIN = 5.0
+#: Consecutive hung-sweep kills (`run_sharded_gauntlet.RESIDENT_HANG_RC`) that fail the fence.
+RESIDENT_HANG_FAIL = 2
 
 #: A report older than this is stale: the organ runs at intake, hourly, so three hours of silence
 #: means the clock stopped. Generous because a box reboot or a long sweep is not a law breach.
@@ -177,6 +179,20 @@ def judge(report: Path | None = None, *, require_state: bool = False,
             out["checks"].append({"metric": "resident_alive", "state": "OK",
                                   "why": f"heartbeat {res.get('heartbeat_utc')}, status "
                                          f"{res.get('status')}"})
+    # A KILL LOOP IS A SILENT JUDGE WITH A PULSE (audit of #350): the resident kills a sweep past
+    # its ceiling and starts the next, so a sweep that always overruns beats every 30s and rules
+    # nothing. Two consecutive hung kills fail here, naming the phase the last one died in.
+    hangs = int(res.get("consecutive_hangs") or 0) if isinstance(res, dict) else 0
+    if hangs >= RESIDENT_HANG_FAIL:
+        died = (res.get("killed_in_phase") or {}).get("phase") \
+            if isinstance(res.get("killed_in_phase"), dict) else None
+        out["checks"].append({
+            "metric": "resident_hangs", "state": "FAIL" if require_state else "WARN",
+            "why": (f"{hangs} consecutive sweeps were killed as hung (last in phase "
+                    f"{died or 'UNMEASURED'}, {res.get('last_hung_utc')}): the judge beats and "
+                    "rules nothing")})
+        if require_state:
+            stale.append("resident_hangs")
     rate_doc = _read(rate or RATE)
     verdicts = rate_doc.get("verdicts") if isinstance(rate_doc, dict) else None
     last_verdict = verdicts.get("last_verdict_at") if isinstance(verdicts, dict) else None
@@ -456,7 +472,8 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     if stale:
         out["why"] = ("THE COVERAGE CLOCK STOPPED (" + ", ".join(stale) + "): "
                       + "; ".join(c["why"] for c in out["checks"]
-                                  if c.get("metric") in ("freshness", "judge_silent", "resident_alive")
+                                  if c.get("metric") in ("freshness", "judge_silent", "resident_alive",
+                                                          "resident_hangs")
                                   and c.get("state") == "FAIL")
                       + " -- " + out["why"])
     return out
@@ -521,7 +538,7 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["RATCHET", "RATE", "REPORT", "RESIDENT", "RESIDENT_DEAD_MIN", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
+__all__ = ["RATCHET", "RATE", "REPORT", "RESIDENT", "RESIDENT_DEAD_MIN", "RESIDENT_HANG_FAIL", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
