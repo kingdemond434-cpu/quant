@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""NEAR-MISS FARM -- paper-forward every near-miss cell, 24/7, on its own ledger with no authority.
+"""NEAR-MISS FARM -- paper-forward every near miss and every lane-less certificate, no authority.
 
 WHY (principal 2026-10-13, idea 4: "paper-forward every near-miss cell 24/7 so untouched evidence
 accumulates while the judge works")
@@ -30,6 +30,15 @@ WHAT THIS IS, and every line below is a fence:
     records `leg:near_miss_farm` instead, so the certified lane's stall detector never reads a
     farm count.
 
+AND EVERY CERTIFICATE WITHOUT A LANE CLOCK (principal 2026-10-13: "all certis must always be put
+in forward lanes"). `admission_integrity` keeps a new certificate out of the promoting lanes until
+an independent rebuild REPLICATES it; measured on the box that day, 127 certificates sat there
+27.7h to 448h with no clock at all, 102 of them in families the replication lane has no written
+rule for, so for them the wait had no end. Each such certificate is farmed here from the pass it
+appears, admission `CERT_AWAITING_LANE`, with the same no-authority fences as a near miss. The
+door is untouched: a certificate still enters a promoting lane only when it opens, and the farm
+row drops out on the pass after it does (it is built from "certified and not in a lane").
+
 WHAT IT PUBLISHES: `reports/NEAR_MISS_FARM.json` -- per cell the forward n, expectancy, drawdown
 and days, and whether that forward record alone already meets the gate spec's
 `forward_cure_thresholds`. That flag is EVIDENCE for the judge and the research loop (which
@@ -53,9 +62,17 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 REPORTS = BASE / "reports"
 ROSTER = REPORTS / "FORWARD_CURE_ROSTER.json"
 SNAPSHOT = REPORTS / "POWER_CURE_CANDIDATES.json"
-LEDGER_REL = "farm/near_miss_farm.json"
+FARM_SUBDIR = "farm"
+LEDGER_NAME = "near_miss_farm.json"
+LEDGER_REL = f"{FARM_SUBDIR}/{LEDGER_NAME}"
 OUT = REPORTS / "NEAR_MISS_FARM.json"
 ADMISSION = "NEAR_MISS_FARM"
+#: A CERTIFICATE THE INTEGRITY DOOR HAS NOT LET INTO A LANE YET (principal 2026-10-13: "all certis
+#: must always be put in forward lanes"). `admission_integrity` holds a new certificate's clock
+#: shut until an independent rebuild REPLICATES it, and the promoter honours that only because
+#: the door stands at clock creation. So the farm runs those certificates from the day they exist
+#: -- evidence, no authority -- and the door still decides when one enters a promoting lane.
+CERT_ADMISSION = "CERT_AWAITING_LANE"
 UNMEASURED = "UNMEASURED"
 #: The gate spec's cure thresholds, read from the spec; these literals are the fallback and are
 #: byte-identical to policy/gate_spec.yaml today.
@@ -137,6 +154,53 @@ def farm_rows(roster: dict[str, dict[str, Any]]
     return rows, refused
 
 
+def clockless_cert_rows() -> tuple[list[tuple[Any, ...]], list[dict[str, Any]], str]:
+    """Engine rows for every certificate with NO clock in any promoting lane, and why it has none.
+
+    Built exactly as `shadow_forward.certified_sleeves` builds a lane row (window hours merged
+    under the certificate's own params for a breakout, the certificate's params verbatim
+    otherwise, the same side rule), so the farm replays the recipe that passed and the key it
+    writes is the key the lane will use once the door opens.
+    """
+    from research import shadow_forward as sf
+    try:
+        from shadow_admission import authorized_runs
+    except ImportError:
+        from research.shadow_admission import authorized_runs  # type: ignore[no-redef]
+    try:
+        from admission_integrity import lane_clock_keys
+    except ImportError:
+        from research.admission_integrity import lane_clock_keys  # type: ignore[no-redef]
+    try:
+        runs = list(authorized_runs(BASE))
+    except Exception as exc:
+        return [], [], f"{UNMEASURED}: authorized_runs failed ({type(exc).__name__}: {exc})"
+    clocked = lane_clock_keys(sf.SHADOW_DIR)
+    rows: list[tuple[Any, ...]] = []
+    refused: list[dict[str, Any]] = []
+    for run in sorted(runs, key=lambda r: (str(r.get("symbol")), str(r.get("selector")))):
+        if str(run.get("certificate") or "").startswith("scalp."):
+            continue                        # scalp recipes run on their own lane's clock
+        fam = str(run.get("family") or "")
+        if fam == "session_range_breakout":
+            if run.get("selector") not in sf.WINDOWS:
+                refused.append({"cell": run.get("certificate"), "why": "no window mapping"})
+                continue
+            params = {**sf.WINDOWS[run["selector"]], **dict(run.get("params") or {})}
+        else:
+            params = dict(run.get("params") or {})
+        side = sf._runnable_side(run, fam)
+        if side is None:
+            refused.append({"cell": run.get("certificate"), "why": "side not runnable"})
+            continue
+        key = sf.sleeve_key(run["symbol"], run["selector"], params, fam, side)
+        if key in clocked:
+            continue
+        rows.append((str(run["symbol"]), str(run["selector"]), params, fam, side,
+                     CERT_ADMISSION, tuple(run.get("power_deficiencies") or ()), False))
+    return rows, refused, f"{len(runs)} certificates, {len(clocked)} lane clocks"
+
+
 def _farm_watermark(enrolled: int, ledger: str) -> None:
     try:
         from libs.ops.control_plane import watermarks as wm
@@ -148,15 +212,27 @@ def _farm_watermark(enrolled: int, ledger: str) -> None:
 def evaluate(rows: list[tuple[Any, ...]]) -> Path:
     """Run the one forward engine over the farm rows into the farm ledger."""
     from research import shadow_forward as sf
-    ledger = sf.SHADOW_DIR / LEDGER_REL
-    ledger.parent.mkdir(parents=True, exist_ok=True)
+    # THE ENGINE'S DIRECTORY IS THE FARM'S FOR THE RUN. `shadow_forward` writes per-trade ledgers
+    # as `ledger_<sym>_<fam>_<win>.json` beside its state, keyed without params, so a farm row on
+    # the same symbol, family and window as a certified clock would overwrite that clock's
+    # ledger in `reports/shadow/`. Pointed at `reports/shadow/farm/`, both files stay apart.
+    lane_dir = sf.SHADOW_DIR
+    farm_dir = lane_dir / FARM_SUBDIR
+    farm_dir.mkdir(parents=True, exist_ok=True)
     original = sf._enrolment_watermark
     sf._enrolment_watermark = _farm_watermark
+    sf.SHADOW_DIR = farm_dir
     try:
-        sf.main(rows=rows, ledger=LEDGER_REL)
+        sf.main(rows=rows, ledger=LEDGER_NAME)
     finally:
+        sf.SHADOW_DIR = lane_dir
         sf._enrolment_watermark = original
-    return ledger
+    return farm_dir / LEDGER_NAME
+
+
+def _row_key(row: tuple[Any, ...]) -> str:
+    from research import shadow_forward as sf
+    return str(sf.sleeve_key(row[0], row[1], row[2], row[3], row[4]))
 
 
 def summarise(ledger: Path, rows: list[tuple[Any, ...]]) -> dict[str, Any]:
@@ -190,21 +266,33 @@ def summarise(ledger: Path, rows: list[tuple[Any, ...]]) -> dict[str, Any]:
         with_trades += n > 0
         meets += ok
         cells.append({"key": key, "symbol": row[0], "family": row[3], "side": row[4],
+                      "admission": row[5],
                       "failed_power_gates": list(row[6]), "status": st.get("status"),
                       "n": n, "exp_r": exp_r, "max_dd_r": dd, "days": days,
                       "meets_forward_cure_thresholds": bool(ok)})
     cells.sort(key=lambda c: (-(c.get("n") or 0), str(c.get("key"))))
+    by_admission: dict[str, int] = {}
+    for row in rows:
+        by_admission[str(row[5])] = by_admission.get(str(row[5]), 0) + 1
     return {"cells_farmed": len(rows), "cells_with_forward_trades": with_trades,
             "meeting_forward_cure_thresholds": meets, "thresholds": th,
+            "by_admission": by_admission,
             "authority_leaks": authority_leaks, "cells": cells[:2000]}
 
 
 def run(*, dry_run: bool = False, out: Path | None = None) -> dict[str, Any]:
     roster, source = roster_rows()
     rows, refused = farm_rows(roster)
+    cert_rows, cert_refused, cert_source = clockless_cert_rows()
+    # A certificate's row wins over a near-miss row with the same key: it is the stronger claim.
+    cert_keys = {_row_key(r) for r in cert_rows}
+    rows = cert_rows + [r for r in rows if _row_key(r) not in cert_keys]
+    refused = cert_refused + refused
     doc: dict[str, Any] = {
         "generated_at": _now(), "producer": "desks/mt5/research/near_miss_farm.py",
-        "source": source, "roster_rows": len(roster), "refused": refused[:200],
+        "source": source, "roster_rows": len(roster),
+        "certificates_without_lane_clock": len(cert_rows), "certificate_source": cert_source,
+        "refused": refused[:200],
         "n_refused": len(refused), "ledger": f"reports/shadow/{LEDGER_REL}",
         "authority": ("NONE. Every farm row is passed with promotion_authority=False and "
                       f"admission {ADMISSION}; the ledger is outside every clock store the "

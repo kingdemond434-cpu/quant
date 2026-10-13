@@ -964,7 +964,13 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
     priority = [i for i, r in enumerate(certs) if certificate_id(r) in wanted]
     first = list(dict.fromkeys(priority + pending))
     order = first + [i for i in rotation if i not in set(first)]
-    for n, idx in enumerate(order[:per_lane]):
+    # NEVER-JUDGED CERTIFICATES ARE BOUNDED BY THE BUDGET, NOT BY THE SLICE (2026-10-13). The
+    # slice was `per_lane` (8) for priority, re-checks and rotation together, so with 974
+    # certificates and every old verdict re-checked first, a new certificate waited far longer
+    # than "about one pass": measured on the box, 127 certificates held clockless at the
+    # admission door for 27.7h to 448h, every one UNREACHED. The rotation keeps its slice; the
+    # backlog that holds clocks shut is worked until the deadline above stops it.
+    for n, idx in enumerate(order[:max(per_lane, len(first))]):
         if time.monotonic() > deadline:
             notes.append("budget: certificates left for the next pass")
             break
