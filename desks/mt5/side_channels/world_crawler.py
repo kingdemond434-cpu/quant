@@ -56,6 +56,8 @@ if str(BASE.parent.parent) not in sys.path:      # the repo root, for libs.data.
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
 
+from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+
 WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
 REPORT = BASE / "reports" / "world_crawl.json"
@@ -216,8 +218,9 @@ def fetch(url: str) -> tuple[bytes | None, str]:
             # cover the world quietly stops covering most of it.
             "Accept-Language": "*",
         })
-        # THE REDIRECT GUARD: a 30x into a held source or a login wall is refused, never followed.
-        with _tf.guarded_urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+        # THE ONE FETCH DOOR (polite_fetch.fenced_urlopen): a redirect into a login or CAPTCHA
+        # wall is refused, never followed.
+        with fenced_urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
             ctype = str(resp.headers.get("Content-Type", ""))
             if "html" not in ctype and "text" not in ctype and "json" not in ctype:
                 return None, f"content-type {ctype.split(';')[0] or 'unknown'}"

@@ -35,6 +35,10 @@ from pathlib import Path
 from typing import Any
 
 BASE = Path(__file__).resolve().parents[1]
+if str(BASE.parent.parent) not in sys.path:
+    sys.path.insert(0, str(BASE.parent.parent))
+from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+
 REGISTRY = BASE / "data" / "asia_sources.json"
 COLLECTOR_REPORT = BASE / "reports" / "ASIA_COLLECTOR.json"
 COLLECTOR_STATE = BASE / "data" / "lake" / "collector_state.json"
@@ -122,7 +126,7 @@ def _probe(url: str) -> tuple[int | None, str, bytes]:
         return None, f"{TERMS_FENCED}:{p}", b""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
     try:
-        with tf.guarded_urlopen(req, timeout=TIMEOUT_S) as r:
+        with fenced_urlopen(req, timeout=TIMEOUT_S) as r:   # the one fetch door
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             return status, ctype, r.read(4096)
@@ -158,8 +162,8 @@ def _wayback(url: str) -> str | None:
     if tf.platform_of_url(url):
         return None
     try:
-        with tf.guarded_urlopen(WAYBACK + urllib.parse.quote(url, safe=""),
-                                timeout=TIMEOUT_S) as r:
+        with fenced_urlopen(WAYBACK + urllib.parse.quote(url, safe=""),
+                            timeout=TIMEOUT_S) as r:
             doc = json.loads(r.read().decode("utf-8", errors="replace"))
     except tf.TermsFenced:
         return None

@@ -72,6 +72,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+
 REGISTRY = BASE / "data" / "asia_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"
@@ -176,7 +178,7 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
         rp = RobotFileParser()
         robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
         req = urllib.request.Request(robots, headers={"User-Agent": agent})
-        with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
+        with fenced_urlopen(req, timeout=12, context=_TLS) as r:   # the one fetch door
             rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
         return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
     except Exception as exc:
@@ -414,8 +416,8 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     req = urllib.request.Request(url, data=body_out, headers=headers)
     from libs.data import terms_fence as _tfg
     try:
-        # THE REDIRECT GUARD: a 30x into a held source or a login wall is refused, never followed.
-        with _tfg.guarded_urlopen(req, timeout=timeout, context=_TLS) as r:
+        # THE ONE FETCH DOOR: a redirect into a login / CAPTCHA wall is refused, not followed.
+        with fenced_urlopen(req, timeout=timeout, context=_TLS) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")

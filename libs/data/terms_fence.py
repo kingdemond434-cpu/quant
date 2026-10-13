@@ -39,6 +39,7 @@ import json
 import os
 import re
 import unicodedata
+import urllib.error
 import urllib.request
 from collections.abc import Mapping
 from typing import Any
@@ -106,7 +107,20 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                     "why": ("Discord's API with a bot token is the permitted route; a user "
                             "token driving it is a self-bot (METHOD_BLOCKED, check_request)")},
     "mql5": {"hosts": ("mql5.com",), "status": IDEAS_ONLY,
-             "why": "public articles, codebase and forum pages read for mechanism ideas"},
+             "sources": ("mql5", "miner:mql5"),
+             "why": ("public articles, codebase and forum pages read politely for mechanism "
+                     "ideas; ToU 3.7 names automated access, so an mql5 page is never live "
+                     "input and no content is reproduced -- the cell trades on MT5 data"),
+             "terms": {"url": "https://www.mql5.com/en/about/terms", "checked_at": "2026-10-13",
+                       "clauses": {
+                           "3.7": ("You agree not to use the website www.mql5.com by any means "
+                                   "other than through the interface that is provided by "
+                                   "MetaQuotes Ltd on www.mql5.com or the MetaQuotes Software "
+                                   "interface, unless You have been specifically allowed to do "
+                                   "so in a separate agreement with MetaQuotes Ltd. You "
+                                   "specifically agree not to access the website www.mql5.com "
+                                   "through any automated means, including use of scripts, "
+                                   "crawlers, or similar technologies.")}}},
     "yahoo": {"hosts": ("yahoo.com", "yahoo.co.jp"), "status": IDEAS_ONLY,
               "why": "public finance pages read for ideas; prices come from MT5"},
     "paywall_proxy": {"hosts": ("12ft.io",), "status": METHOD_BLOCKED, "reason": "paywall",
@@ -163,15 +177,27 @@ class _Platforms(Mapping[str, dict[str, Any]]):
 PLATFORMS: Mapping[str, dict[str, Any]] = _Platforms()
 
 
-class TermsFenced(RuntimeError):
-    """A fetch was asked for a HELD source, or a redirect led into a login wall."""
+class TermsFenced(urllib.error.URLError, RuntimeError):
+    """A fetch was asked for a HELD source, or a redirect led into a login wall.
+
+    ONE refusal type for THE ONE FETCH DOOR (`guarded_urlopen`, re-exported as
+    `polite_fetch.fenced_urlopen` / `polite_fetch.MethodRefused`). It is a `URLError`, so a caller
+    that only knows urllib's errors still records a failed fetch rather than crashing, and it is
+    deterministic, so no caller retries it. `reason` is the full refusal
+    (`STATUS:source: url -- why`), `why` the row's one line, `status` / `platform` the parts."""
 
     def __init__(self, platform: str, url: str) -> None:
         self.platform = platform
         v = _view(platform)
-        self.reason = str(v["reason"])
+        self.why = str(v["reason"])
         self.status = str(v["status"])
-        super().__init__(f"{self.status}:{platform}: {url[:120]} -- {self.reason}")
+        self.url = str(url)
+        msg = f"{self.status}:{platform}: {self.url[:160]} -- {self.why}"
+        super().__init__(msg)
+        self.args = (msg,)
+
+    def __str__(self) -> str:
+        return str(self.reason)
 
 
 _ARCHIVE_HOSTS = ("web.archive.org", "archive.org")
@@ -433,12 +459,22 @@ class FencedRedirectHandler(urllib.request.HTTPRedirectHandler):
     instead of being followed. A fence that checks only the FIRST URL is a fence any shortener or
     moved page walks straight through."""
 
+    def __init__(self) -> None:
+        super().__init__()
+        #: Every hop this opener was asked to follow, [(code, from, to)] -- redirects are VISIBLE.
+        self.chain: list[tuple[int, str, str]] = []
+
     def redirect_request(self, req: urllib.request.Request, fp: Any, code: int, msg: str,
                          headers: Any, newurl: str) -> urllib.request.Request | None:
-        check_url(newurl)
-        # METHOD: a redirect into a login / CAPTCHA wall is refused, never followed.
-        if login_wall(newurl):
-            raise TermsFenced("login_wall", newurl)
+        self.chain.append((int(code), str(req.full_url), str(newurl)))
+        held = platform_of_url(newurl)
+        # METHOD: a redirect into a held source or a login / CAPTCHA wall is refused, never
+        # followed; the 3xx response's socket is released before the refusal is raised.
+        if held or login_wall(newurl):
+            with contextlib.suppress(Exception):
+                fp.read()
+                fp.close()
+            raise TermsFenced(held or "login_wall", newurl)
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new is not None:
             check_request(new.full_url, _req_headers(new))
@@ -467,13 +503,23 @@ def guarded_opener(context: Any = None, *handlers: Any) -> urllib.request.Opener
     return urllib.request.build_opener(*hs, *handlers)
 
 
-def guarded_urlopen(req: Any, *, timeout: float = 30.0, context: Any = None) -> Any:
-    """`urllib.request.urlopen` with the fence: the URL is checked BEFORE any request is built,
-    and a redirect to a fenced host raises `TermsFenced` instead of being followed."""
+def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = None) -> Any:
+    """THE ONE FETCH DOOR (`polite_fetch.fenced_urlopen` is this function): `urlopen` with the
+    fence. The URL is checked BEFORE any request is built (a held source, or a first URL that is
+    itself a login wall, raises `TermsFenced`); a redirect into a held source or a login wall
+    raises instead of being followed; every hop followed is kept on the response as
+    `.redirects` [(code, from, to)]. `timeout=None` means the socket default."""
     url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
     hdrs = _req_headers(req) if isinstance(req, urllib.request.Request) else None
     check_request(url, hdrs)
-    return guarded_opener(context).open(req, timeout=timeout)
+    if login_wall(url):
+        raise TermsFenced("login_wall", url)
+    opener = guarded_opener(context)
+    fh = opener.open(req) if timeout is None else opener.open(req, timeout=timeout)
+    chain = next((h.chain for h in opener.handlers if isinstance(h, FencedRedirectHandler)), [])
+    with contextlib.suppress(AttributeError):
+        fh.redirects = list(chain)
+    return fh
 
 
 #: Generic producer prefixes stripped from a source name before it is matched, so
