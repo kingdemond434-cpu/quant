@@ -1031,7 +1031,8 @@ def _breadth_steer() -> dict[str, Any] | None:
     -- in which case the allocation is exactly what it was before the enforcer existed."""
     for mod in ("research.breadth_enforcer", "breadth_enforcer"):
         try:
-            return __import__(mod, fromlist=["load_steer"]).load_steer()
+            st: dict[str, Any] | None = __import__(mod, fromlist=["load_steer"]).load_steer()
+            return st
         except Exception:
             continue
     return None

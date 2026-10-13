@@ -186,7 +186,8 @@ def _survivor_counts(path: Path) -> dict[str, int] | None:
     for key, cert in rows.items():
         if not isinstance(cert, dict):
             continue
-        spec = cert.get("shadow_spec") if isinstance(cert.get("shadow_spec"), dict) else {}
+        _sp = cert.get("shadow_spec")
+        spec: dict[str, Any] = _sp if isinstance(_sp, dict) else {}
         fam = str(spec.get("family") or cert.get("family") or _family_of_key(key) or "")
         if fam:
             out[fam] += 1
@@ -243,7 +244,8 @@ def build_steer(certs: Mapping[str, int], judge: Mapping[str, Any] | None,
                 extra_families: Iterable[str] = ()) -> dict[str, Any]:
     """Classify every known family and rank the frontier. Pure: artifacts in, steer out."""
     jc = judge if isinstance(judge, dict) else {}
-    table = jc.get("families") if isinstance(jc.get("families"), dict) else {}
+    _tb = jc.get("families")
+    table: dict[str, Any] = _tb if isinstance(_tb, dict) else {}
     unmined = {str(f) for f in (jc.get("unmined_live_families") or []) if f}
     ranking = {str(r.get("family")): r for r in (jc.get("value_ranking") or [])
                if isinstance(r, dict) and r.get("family")}
@@ -263,7 +265,8 @@ def build_steer(certs: Mapping[str, int], judge: Mapping[str, Any] | None,
     classes: dict[str, str] = {}
     detail: dict[str, dict[str, Any]] = {}
     for f in sorted(fams):
-        row = table.get(f) if isinstance(table.get(f), dict) else {}
+        _row = table.get(f)
+        row: dict[str, Any] = _row if isinstance(_row, dict) else {}
         mined = int(row.get("mined") or 0)
         judged = int(row.get("judged_total") or 0)
         n_cert = int(certs.get(f, 0))
@@ -288,7 +291,7 @@ def build_steer(certs: Mapping[str, int], judge: Mapping[str, Any] | None,
                                              if keff_per_judge_h is not None else UNMEASURED),
                      "ev_per_judge_second": vr.get("ev_per_judge_second")}
 
-    def _frontier_key(f: str) -> tuple:
+    def _frontier_key(f: str) -> tuple[Any, ...]:
         d = detail[f]
         kph = d["keff_per_judge_hour"]
         ev = d["ev_per_judge_second"]
@@ -367,7 +370,7 @@ def apportion(rows: list[Any], budget: int, steer: Mapping[str, Any] | None = No
         c = class_of(fam(r), st)
         (sa if c == SATURATED else fr if c in FRONTIER else ex).append(r)
     nonsat = fr + ex
-    n_sat = min(len(sa), max(int(math.ceil(SAT_EXPLORE_SHARE * budget)),
+    n_sat = min(len(sa), max(math.ceil(SAT_EXPLORE_SHARE * budget),
                              budget - len(nonsat)))
     head_ns = nonsat[:max(0, budget - n_sat)]
     head = _interleave(head_ns, sa[:n_sat])
@@ -512,7 +515,7 @@ def judge_lens(jc: Mapping[str, Any] | None, steer: Mapping[str, Any]) -> dict[s
         # needs the value order back, which is the `rank` every row carries.
         ranking = sorted((r for r in (jc.get("value_ranking") or []) if isinstance(r, dict)),
                          key=lambda r: int(r.get("rank") or 0))
-        after = jcm.allocate(live, capacity, ranking=ranking, steer=steer)
+        after = jcm.allocate(live, capacity, ranking=ranking, steer=dict(steer))
         legacy = jcm.allocate(live, capacity, ranking=ranking)
         out["legacy_replay"] = shares(legacy, steer)
         out["steered_replay"] = shares(after, steer)
@@ -702,7 +705,7 @@ def render(doc: dict[str, Any]) -> list[str]:
     st = doc.get("steer") or {}
     lines = [f"breadth enforcer {doc.get('generated_utc')}: {doc.get('verdict')}"]
     if st.get("status") != "MEASURED":
-        return lines + [f"  {st.get('why')}"]
+        return [*lines, f"  {st.get('why')}"]
     sc = st.get("saturated_certificates") or {}
     lines.append(f"  saturated ({len(sc)}): " + ", ".join(f"{f} {n}" for f, n in sc.items()))
     lines.append(f"  frontier ({len(st.get('frontier') or [])}), head: "

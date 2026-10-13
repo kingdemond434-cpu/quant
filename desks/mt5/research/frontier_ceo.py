@@ -176,7 +176,7 @@ def _missing_families() -> list[dict]:
     return _with_breadth_frontier(out)
 
 
-def _with_breadth_frontier(out: list[dict]) -> list[dict]:
+def _with_breadth_frontier(out: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """THE BOARD'S LIST IS STALE; THE ENFORCER'S IS HOURLY (2026-10-13).
 
     `web/desk_state.json -> breadth.book_breadth.missing_families` has no writer on this branch:
