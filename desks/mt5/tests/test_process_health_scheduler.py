@@ -14,6 +14,22 @@ def _row(doc, name):
     return next(row for row in doc["processes"] if row["name"] == name)
 
 
+def test_e8_live_clock_and_book_have_measured_freshness_contracts(monkeypatch):
+    contracts = ph._contracts()
+    assert contracts["E8-Executor"][1] == 15
+    assert contracts["E8-Book"][1] == 180
+    monkeypatch.setattr(ph, "_tasks", lambda: ([
+        {"TaskName": r"\E8-Executor", "Scheduled Task State": "Ready", "Last Result": "0"},
+        {"TaskName": r"\E8-Book", "Scheduled Task State": "Ready", "Last Result": "0"},
+    ], "OK powershell"))
+    monkeypatch.setattr(ph, "_age_min", lambda path: 16.0 if path.name == "E8_EXEC.json"
+                        else 120.0)
+
+    doc = ph.build()
+    assert _row(doc, "E8-Executor")["verdict"] == "STALE"
+    assert _row(doc, "E8-Book")["verdict"] == "OK"
+
+
 def test_unreadable_scheduler_is_not_empty_scheduler(monkeypatch):
     monkeypatch.setattr(ph, "_tasks", lambda: ([], "UNMEASURED: scheduler timed out"))
     monkeypatch.setattr(ph, "_contracts", lambda: {
@@ -27,6 +43,23 @@ def test_unreadable_scheduler_is_not_empty_scheduler(monkeypatch):
     assert _row(doc, "MT5-Gateway")["verdict"] == "SCHEDULER_UNMEASURED"
     assert doc["counts"].get("NOT_SCHEDULED", 0) == 0
     assert doc["status"] == "ATTENTION"
+
+
+def test_hourly_replication_staleness_is_detected_before_live_door_expiry(monkeypatch):
+    contracts = ph._contracts()
+    name = "MT5-HourlyCore (replication)"
+    assert contracts[name][1] == 180
+    monkeypatch.setattr(ph, "_tasks", lambda: ([{
+        "TaskName": r"\MT5-HourlyCore", "Scheduled Task State": "Running",
+        "Last Result": "267009",
+    }], "OK powershell"))
+    monkeypatch.setattr(ph, "_contracts", lambda: {name: contracts[name]})
+    monkeypatch.setattr(ph, "_age_min", lambda path: 181.0)
+    row = _row(ph.build(), name)
+    assert row["verdict"] == "STALE"
+    assert row["state"] == "COMPONENT"
+    monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
+    assert _row(ph.build(), name)["verdict"] == "OK"
 
 
 def test_running_gateway_with_overlap_result_and_fresh_artifact_is_healthy(monkeypatch):

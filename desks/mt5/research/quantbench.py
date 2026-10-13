@@ -58,8 +58,8 @@ SEALED = ("desks/mt5/scripts/external_gauntlet.py", "desks/mt5/research/promoter
 PROMOTER_SEAL_ROTATION = {
     "path": "desks/mt5/research/promoter.py",
     "from": "86abbd9aba36586022c6cfaf4bb3dd685df6f7e8d73feaa2a401504fa32510e8",
-    "to": "5121ef29cb21bdcab6ebc0fc290a6a879cc33386232ba717698af4271ebd9566",
-    "signed_by": "principal via Codex 2026-10-07 live sleeve repair",
+    "to": "bb9c0e744bad615ff8546006b10edce4e4556e77928d734a0ea11273b53d4b17",
+    "signed_by": "Codex, principal-authorized audited ledger reader repair",
 }
 
 # The owner-approved 2026-10-08 allocator proof change reuses the same frozen evidence
@@ -70,6 +70,15 @@ ALLOCATOR_PROOF_SEAL_ROTATION = {
     "from": "09f8f0b9dff5239a1417d31ac6d63ada528f6f4d6ec1700d05b5760f69a5f5b3",
     "to": "f3ac6369ee40840e076136486deac2f935a76561ad5e4ff75338b3ddfd632fd4",
     "signed_by": "owner-approved-codex-2026-10-08",
+}
+
+# Authorized replay geometry/cache and input wiring repair; QB-002's historical pin
+# stays intact. Require the exact reviewed bytes and their file-only authorization.
+GAUNTLET_SEAL_ROTATION = {
+    "path": "desks/mt5/scripts/external_gauntlet.py",
+    "from": "d0919bfc921dac2c1bab40b821429d34e7fab056af4a66f02840da4877d1bc01",
+    "to": "44505acc9652daf074acc90702c279fac77e0dc8af51dfa1fd81093f5335922c",
+    "signed_by": "Codex, principal-authorized input wiring repair",
 }
 
 
@@ -124,7 +133,8 @@ def probe_sealed_files(expect: dict[str, Any]) -> dict[str, Any]:
             encoding="utf-8"))
     except (OSError, ValueError):
         manifest = {}
-    for rotation in (PROMOTER_SEAL_ROTATION, ALLOCATOR_PROOF_SEAL_ROTATION):
+    for rotation in (PROMOTER_SEAL_ROTATION, ALLOCATOR_PROOF_SEAL_ROTATION,
+                     GAUNTLET_SEAL_ROTATION):
         path = rotation["path"]
         if pinned.get(path) != rotation["from"] or now.get(path) != rotation["to"]:
             continue

@@ -57,8 +57,16 @@ def test_allocator_proof_rotation_rejects_any_other_bytes(
     assert qb.probe_sealed_files(case["expect"])["verdict"] == "REGRESSED"
 
 
+def test_gauntlet_rotation_rejects_any_other_bytes(monkeypatch) -> None:
+    old = qb.GAUNTLET_SEAL_ROTATION
+    monkeypatch.setattr(qb, "GAUNTLET_SEAL_ROTATION", {**old, "to": "0" * 64})
+    case = next(r for r in qb.cases() if r["id"] == "QB-002")
+    assert qb.probe_sealed_files(case["expect"])["verdict"] == "REGRESSED"
+
+
 @pytest.mark.parametrize("rotation_name", ["PROMOTER_SEAL_ROTATION",
-                                           "ALLOCATOR_PROOF_SEAL_ROTATION"])
+                                           "ALLOCATOR_PROOF_SEAL_ROTATION",
+                                           "GAUNTLET_SEAL_ROTATION"])
 def test_seal_rotations_require_their_exact_signer(
         monkeypatch: pytest.MonkeyPatch, rotation_name: str) -> None:
     old = getattr(qb, rotation_name)

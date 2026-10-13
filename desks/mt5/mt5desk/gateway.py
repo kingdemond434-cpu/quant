@@ -102,7 +102,8 @@ SLEEVES_FILE = BASE / "data" / "sleeves.json"
 #: Sleeves the decay monitor retired whose open positions must still be closed
 #: (`close_retired_positions` reads and drains it).
 RETIRED_CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LOG = BASE / "logs" / "gateway.log"
 #: The pause flag `gateway_paused()` reads. Named here so the desk can set the
 #: SAME file it already honours -- a second, private pause mechanism would be a
@@ -2024,7 +2025,9 @@ def _position_entry(pid) -> dict:
     """
     out = {"entry_price": 0.0, "sl": 0.0, "tp": 0.0, "comment": "",
            "entry_order": None, "entry_deal": None, "position_id": pid,
-           "entry_time": None, "entry_side": None}
+           "entry_time": None, "entry_side": None,
+           "entry_volume": 0.0, "entry_cost": 0.0,
+           "entry_cost_measured": False}
     if not pid:
         return out
     try:
@@ -2036,6 +2039,11 @@ def _position_entry(pid) -> dict:
                 out["tp"] = float(getattr(o, "tp", 0.0) or 0.0)
         for x in (mt5.history_deals_get(position=pid) or ()):
             if getattr(x, "entry", None) == mt5.DEAL_ENTRY_IN:
+                out["entry_volume"] += float(getattr(x, "volume", 0.0) or 0.0)
+                out["entry_cost"] += sum(float(getattr(x, k, 0.0) or 0.0)
+                                         for k in ("commission", "fee", "swap"))
+                if out["entry_deal"] is not None:
+                    continue
                 out["entry_price"] = float(getattr(x, "price", 0.0) or 0.0)
                 out["entry_order"] = getattr(x, "order", None)
                 out["entry_deal"] = getattr(x, "ticket", None)
@@ -2045,7 +2053,7 @@ def _position_entry(pid) -> dict:
                     stamp = float(getattr(x, "time", 0) or 0)
                 if stamp > 0:
                     out["entry_time"] = datetime.fromtimestamp(stamp, tz=UTC).isoformat()
-                break
+        out["entry_cost_measured"] = out["entry_volume"] > 0.0
     except Exception as exc:
         log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
     return out
@@ -2087,15 +2095,29 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # is not among them; a keyword the binding refuses lands in the `except` below and the
         # ledger is silently never written, which is indistinguishable from a quiet day.
         # Filtering the returned deals costs a list scan and cannot fail.
-        deals = [d for d in (mt5.history_deals_get(since, datetime.now(tz=UTC)) or [])
+        # Fusion stamps deal epochs in broker wall time (currently UTC+3). A UTC-now
+        # upper bound hid an already closed AUDCHF position for three hours. As in
+        # order_door's history reconciliation, include the next broker day: this only
+        # retrieves deals the broker already exposes, and ticket dedupe remains intact.
+        until = datetime.now(tz=UTC) + timedelta(days=1)
+        deals = [d for d in (mt5.history_deals_get(since, until) or [])
                  if int(getattr(d, "magic", 0) or 0) == MAGIC]
     except Exception as exc:
         log(f"ledger: history unreadable ({type(exc).__name__}: {exc}); nothing recorded")
         return
     written = 0
+    market_symbols = {s["symbol"] for s in sleeves
+                      if s.get("exec") in ("family_market", "scalp_market")}
     for d in deals:
         if d.entry not in (mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)):
             continue
+        ctx = None
+        if d.symbol in market_symbols:
+            ctx = _position_entry(getattr(d, "position_id", None))
+            try:
+                _record_closed_market_book(d, ctx, sleeves)
+            except Exception as exc:
+                log(f"market book exit unmeasured ({type(exc).__name__}: {exc})")
         if getattr(d, "ticket", None) in seen_deals:
             continue
         # A DEAL CARRIES NO STOP, NO TAKE-PROFIT AND NO ENTRY PRICE, and this function read all
@@ -2109,7 +2131,8 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # swap, volume}; TradeOrder has {price_open, sl, tp}. So the risk this trade actually
         # took is reconstructed from the position's OPENING deal (entry price) and its ORDER
         # (stop), joined on position_id -- the only join MT5 offers between the two.
-        ctx = _position_entry(getattr(d, "position_id", None))
+        if ctx is None:
+            ctx = _position_entry(getattr(d, "position_id", None))
         entry_price, sl_price, tp_price = ctx["entry_price"], ctx["sl"], ctx["tp"]
         # THE ENTRY'S TAG IS THE SLEEVE; THE EXIT'S TAG IS THE BROKER'S, AND IT IS NOT A NAME.
         #
@@ -2145,7 +2168,14 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         if sym_info is None:
             continue
         # risk per lot at entry: SL distance x contract (quote units)
-        pl_quote = float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
+        entry_volume = float(ctx.get("entry_volume") or 0.0)
+        closed_volume = float(getattr(d, "volume", 0.0) or 0.0)
+        entry_cost_measured = (bool(ctx.get("entry_cost_measured"))
+                               and entry_volume > 0 and 0 < closed_volume <= entry_volume)
+        entry_cost = (float(ctx.get("entry_cost") or 0.0) * closed_volume / entry_volume
+                      if entry_cost_measured else 0.0)
+        pl_quote = (float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
+                    + float(getattr(d, "fee", 0.0) or 0.0) + entry_cost)
         # UNRECONSTRUCTIBLE IS RECORDED, NEVER GUESSED -- `decision_core.closed_trade_r` returns
         # zeros without both the entry and the stop, and the row below says so.
         # THE POSITION'S OWN VOLUME AND THE VENUE'S TICK VALUE (2026-09-16): see
@@ -2167,6 +2197,9 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,
                "commission": d.commission, "swap": d.swap, "deal": d.ticket,
+               "entry_cost_allocated": entry_cost if entry_cost_measured else None,
+               "net_cost_status": "MEASURED" if entry_cost_measured else "UNMEASURED_ENTRY_COST",
+               "exit_fee": float(getattr(d, "fee", 0.0) or 0.0),
                # THE FILL, so it can be compared with the intent. price_open was already read
                # here to size `risk_quote` and then thrown away, which is why no markout was
                # possible: the one number that reveals execution quality was computed and
@@ -2174,7 +2207,10 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                # be converted to account currency without a second lookup at analysis time.
                "fill_price": float(d.price), "entry_price": float(entry_price),
                "sl": float(sl_price), "tp": float(tp_price),
-               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0),
+               # Existing R consumers honor this flag. An exit-only return with
+               # unknown opening costs is not reconstructed net evidence either.
+               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0
+                                           or not entry_cost_measured),
                "order": getattr(d, "order", None),
                # THE KEY CHAIN (2026-09-08): intent.ticket == entry_order == position_id for a
                # pending stop; entry_deal and this closing deal hang off position_id. With these
@@ -2425,6 +2461,52 @@ def _closing_fill(ticket: int) -> tuple[float, float] | None:
             lots += v
             notional += v * float(getattr(x, "price", 0.0) or 0.0)
     return (lots, notional / lots) if lots > 0 else None
+
+
+def _record_closed_market_book(deal, ctx: dict, sleeves: list[dict]) -> None:
+    """Book a proven complete market-position exit, without sending an order.
+
+    Never infer an exit from an empty terminal alone. Require its own opening
+    volume, all closing deals, an unambiguous roster tag and the matching booked
+    volume. Unknown/partial histories leave the ledger untouched. A persistent
+    position receipt prevents duplicate fills across passes and restarts.
+    """
+    book = _netting_book()
+    if book is None or int(getattr(deal, "magic", 0) or 0) != MAGIC:
+        return
+    symbol, pid = deal.symbol, getattr(deal, "position_id", None)
+    positions = mt5.positions_get(symbol=symbol)
+    # The legacy book has no entry-position IDs. Another open position on this
+    # symbol makes an equal-volume historical match ambiguous; never erase it.
+    if positions is None or positions:
+        return
+    candidates = [s for s in sleeves if s.get("exec") in ("family_market", "scalp_market")
+                  and s.get("symbol") == symbol
+                  and order_comment(s["name"]) == str(ctx.get("comment") or "")]
+    if len(candidates) != 1 or not ctx.get("entry_cost_measured"):
+        return
+    volume = float(ctx.get("entry_volume") or 0.0)
+    closed = _closing_fill(pid)
+    if not closed or volume <= 0 or abs(closed[0] - volume) > 1e-8:
+        return
+    name = candidates[0]["name"]
+    sign = 1.0 if ctx.get("entry_side") == mt5.POSITION_TYPE_BUY else -1.0
+    if ctx.get("entry_side") not in (0, 1):
+        return
+    held = book.filled(symbol).get(name, 0.0)
+    if abs(held - sign * volume) > 1e-8:
+        return
+    account = mt5.account_info()
+    login = int(getattr(account, "login", 0) or 0)
+    server = str(getattr(account, "server", "") or "")
+    if login <= 0 or not server:
+        return
+    receipt = f"broker-position-close/{server}/{login}/{pid}"
+    reset = abs(book.theoretical(symbol).get(name, 0.0) - sign * volume) <= 1e-8
+    if book.fill(name, symbol, -sign * volume, closed[1], at=datetime.now(tz=UTC),
+                 event_id=receipt, target_after=0.0 if reset else None,
+                 target_reason="broker_market_exit") is not None:
+        log(f"[netting] {name} position {pid}: confirmed complete broker exit booked")
 
 
 def _book_bracket_lane(st: dict, sleeves: list[dict]) -> None:

@@ -92,7 +92,8 @@ BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 PRINCIPAL_PROMOTIONS = BASE / "data" / "PRINCIPAL_PROMOTIONS.json"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LOG = BASE / "logs" / "promoter.log"
 #: The recertification audit (scripts/recertify_canon.py, daily before this runs): every
 #: standing certificate re-judged under the CURRENT cost model. A certificate that no longer
@@ -883,10 +884,12 @@ def _all_ledger_rows() -> list[dict] | None:
     `decision_core.ledger_rows` has): a ledger that parsed all-or-nothing read as EMPTY on one
     torn byte, and an empty ledger is exactly the reading the void rule below must never act on.
     None and [] are different answers -- "could not read" and "read, nothing there"."""
+
+    from libs.ops.live_ledger_view import ledger_path
     if not LEDGER.exists():
         return None
     try:
-        text = LEDGER.read_text(encoding="utf-8")
+        text = ledger_path(LEDGER).read_text(encoding="utf-8")
     except OSError:
         return None
     out: list[dict] = []

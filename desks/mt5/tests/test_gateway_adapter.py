@@ -93,7 +93,11 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)
+    # These are unchanged production AST nodes, including their source line numbers.
+    # Credit actual exercised branches to their source, rather than an anonymous <gw>
+    # file that coverage cannot join back to the money-path report.
+    exec(compile(ast.Module(body=keep, type_ignores=[]),
+                 str(_DESK / "mt5desk" / "gateway.py"), "exec"), seed)
     return seed
 
 
@@ -949,6 +953,182 @@ def test_filled_gold_sibling_cancel_is_shadow_only_when_disarmed() -> None:
     assert sent == []
 
 
+def test_live_ledger_sees_broker_wall_time_close_once_and_filters_other_magic(tmp_path) -> None:
+    """An observed close labelled UTC+3 must be recorded now, rather than three hours late."""
+    observed = datetime(2026, 10, 8, 22, 59, tzinfo=UTC)
+    class FrozenClock:
+        @staticmethod
+        def now(tz=None):
+            return observed
+
+        fromtimestamp = staticmethod(datetime.fromtimestamp)
+
+    own = SimpleNamespace(ticket=209521615, entry=1, magic=341953,
+                          position_id=233700226, comment="[tp 0.57870]", symbol="AUDCHF",
+                          profit=2.57, commission=-0.81, swap=0.0, type=1, volume=0.4,
+                          price=0.57871, time=int((observed+timedelta(hours=3)).timestamp()),
+                          order=233702129)
+    foreign = SimpleNamespace(**{**vars(own), "magic":99, "ticket":88})
+    calls = []
+
+    def history(start, end):
+        calls.append((start,end))
+        return [d for d in (own,foreign) if start.timestamp() <= d.time <= end.timestamp()]
+
+    venue = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3, POSITION_TYPE_BUY=0,
+                            history_deals_get=history, account_info=lambda:None,
+                            symbol_info=lambda _:SimpleNamespace(trade_contract_size=100000,
+                                                                 trade_tick_value=1,
+                                                                 trade_tick_size=0.00001))
+    ledger = tmp_path/"live_ledger.jsonl"
+    ns = _exec(("record_trades",), {
+        "mt5":venue, "datetime":FrozenClock, "LEDGER":ledger, "log":lambda *_:None,
+        "now":lambda:observed.isoformat(),
+        "_prov":SimpleNamespace(current_account=lambda _:None, stamp=lambda _:{}),
+        "_position_entry":lambda _:{"entry_price":0.57865,"sl":0.577,"tp":0.57870,
+                                   "comment":"DWaudchf_overnight_gap_decay_asia",
+                                   "entry_side":0, "entry_time":observed.isoformat(),
+                                   "entry_order":233700226, "entry_deal":209520348,
+                                   "entry_volume":0.4, "entry_cost":-0.81,
+                                   "entry_cost_measured":True}})
+    ns["record_trades"]({"armed":True}, [])
+    ns["record_trades"]({"armed":True}, [])
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert len(rows) == 1 and rows[0]["deal"] == own.ticket
+    assert rows[0]["position_id"] == 233700226
+    assert rows[0]["timestamp_basis"] == "broker_deal_epoch"
+    assert rows[0]["exit_time"] == datetime.fromtimestamp(own.time,UTC).isoformat()
+    assert rows[0]["time"] == observed.isoformat()
+    assert rows[0]["pl_quote"] == pytest.approx(0.95)
+    assert rows[0]["entry_cost_allocated"] == pytest.approx(-0.81)
+    assert rows[0]["net_cost_status"] == "MEASURED"
+    assert calls[0] == (observed-timedelta(days=30),observed+timedelta(days=1))
+    ns["record_trades"]({"armed":False}, [])
+    assert len(calls) == 2, "unarmed adapter must not query or write the ledger"
+
+
+def test_entry_cost_is_collected_from_all_opening_fills():
+    venue = SimpleNamespace(DEAL_ENTRY_IN=0,
+        history_orders_get=lambda **_:[],
+        history_deals_get=lambda **_:[
+            SimpleNamespace(entry=0, ticket=1, order=7, type=0, price=1.2,
+                            volume=0.2, commission=-0.4, fee=-0.1, swap=0, time=100),
+            SimpleNamespace(entry=0, ticket=2, order=7, type=0, price=1.2,
+                            volume=0.3, commission=-0.6, fee=-0.15, swap=0, time=101),
+            SimpleNamespace(entry=1, volume=0.5, commission=-1.0, fee=0, swap=0)])
+    ns = _exec(("_position_entry",), {"mt5":venue,"log":lambda *_:None})
+    ctx = ns["_position_entry"](7)
+    assert ctx["entry_volume"] == pytest.approx(0.5)
+    assert ctx["entry_cost"] == pytest.approx(-1.25)
+    assert ctx["entry_deal"] == 1 and ctx["entry_cost_measured"]
+
+
+@pytest.mark.parametrize("cost_measured", [True, False])
+def test_partial_closes_allocate_entry_cost_once_proportionally(tmp_path, cost_measured):
+    common = {"entry":1, "magic":341953, "position_id":7, "comment":"DWtest",
+              "symbol":"AUDCHF", "profit":2, "commission":-0.5, "swap":0, "fee":-0.1,
+              "type":1, "price":1.21, "time":100, "order":8}
+    closes = [SimpleNamespace(**common,ticket=11,volume=0.2),
+              SimpleNamespace(**common,ticket=12,volume=0.3)]
+    venue = SimpleNamespace(DEAL_ENTRY_OUT=1,DEAL_ENTRY_OUT_BY=3,POSITION_TYPE_BUY=0,
+        history_deals_get=lambda *_:closes,account_info=lambda:None,
+        symbol_info=lambda _:SimpleNamespace(trade_contract_size=100000))
+    ledger=tmp_path/"ledger.jsonl"
+    ns = _exec(("record_trades",), {"mt5":venue,"LEDGER":ledger,
+        "log":lambda *_:None,"now":lambda:"2026-10-09T00:00:00Z",
+        "_prov":SimpleNamespace(current_account=lambda _:None,stamp=lambda _:{}),
+        "_position_entry":lambda _:{"entry_price":1.2,"sl":1.19,"tp":1.22,
+            "comment":"DWtest","entry_side":0,"entry_time":None,
+            "entry_order":7,"entry_deal":1,"entry_volume":0.5,
+            "entry_cost":-1.25,"entry_cost_measured":cost_measured}})
+    ns["record_trades"]({"armed":True},[])
+    original=ledger.read_bytes()
+    ns["record_trades"]({"armed":True},[])
+    assert ledger.read_bytes()==original
+    rows=[json.loads(line) for line in original.splitlines()]
+    if cost_measured:
+        assert sum(r["entry_cost_allocated"] for r in rows)==pytest.approx(-1.25)
+        assert sum(r["pl_quote"] for r in rows)==pytest.approx(1.55)
+        assert all(not r["r_unreconstructible"] for r in rows)
+    else:
+        assert all(r["entry_cost_allocated"] is None for r in rows)
+        assert all(r["net_cost_status"] == "UNMEASURED_ENTRY_COST" for r in rows)
+        assert all(r["r_unreconstructible"] for r in rows)
+
+
+def test_market_book_exit_requires_complete_broker_evidence_and_survives_restart(tmp_path):
+    from mt5desk.netting import TheoreticalBook
+
+    name="audchf_overnight_gap_decay_asia_principal"
+    symbol="AUDCHF"
+    path=tmp_path/"book.jsonl"
+    book=TheoreticalBook(path)
+    book.set_target(name,symbol,0.4,"family_market",price=0.57865)
+    book.fill(name,symbol,0.4,0.57865)
+    prefix=path.read_bytes()
+    history=[SimpleNamespace(entry=1,volume=0.2,price=0.57871)]
+    positions=[]
+    term=SimpleNamespace(DEAL_ENTRY_OUT=1,POSITION_TYPE_BUY=0,
+        positions_get=lambda **_:positions,
+        account_info=lambda:SimpleNamespace(login=424242,server="FusionMarkets-Live"),
+        history_deals_get=lambda **_:history)
+    ns=_exec(("_record_closed_market_book","_closing_fill","order_comment"),
+             {"mt5":term,"_netting_book":lambda:book,"log":lambda *_:None})
+    deal=SimpleNamespace(symbol=symbol,position_id=7,magic=341953)
+    ctx={"comment":ns["order_comment"](name),"entry_cost_measured":True,
+         "entry_volume":0.4,"entry_side":0}
+    sleeves=[{"name":name,"symbol":symbol,"exec":"family_market"}]
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==prefix, "a partial history cannot prove a complete exit"
+    history.append(SimpleNamespace(entry=1,volume=0.2,price=0.57873))
+    positions.append(SimpleNamespace(ticket=7))
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==prefix, "a still-open position cannot be erased"
+    positions[0]=SimpleNamespace(ticket=99)
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==prefix, "another position makes the legacy book match ambiguous"
+    positions.clear()
+    term.account_info=lambda:None
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==prefix, "unknown account identity cannot create a receipt"
+    term.account_info=lambda:SimpleNamespace(login=424242,server="FusionMarkets-Live")
+    ns["_record_closed_market_book"](deal,ctx,sleeves+sleeves)
+    assert path.read_bytes()==prefix, "ambiguous sleeve tags cannot own an exit"
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes().startswith(prefix)
+    assert book.account_position(symbol)==0 and book.theoretical(symbol)=={}
+    repaired=path.read_bytes()
+    assert len(repaired.splitlines())==len(prefix.splitlines())+1
+    book=TheoreticalBook(path)
+    assert book.theoretical(symbol)=={}, "exit and target reset must replay together"
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==repaired
+    assert book.account_position(symbol)==0
+
+
+def test_netting_fill_receipt_deduplicates_after_restart_and_failed_write(tmp_path,monkeypatch):
+    from mt5desk.netting import TheoreticalBook
+
+    path=tmp_path/"fills.jsonl"
+    book=TheoreticalBook(path)
+    original=book._append
+    def broken(_):
+        raise OSError("disk unavailable")
+    monkeypatch.setattr(book,"_append",broken)
+    with pytest.raises(OSError):
+        book.set_target("a","AUDCHF",0.4,price=1.0)
+    assert book.theoretical("AUDCHF")=={}
+    with pytest.raises(OSError):
+        book.fill("a","AUDCHF",0.4,1.0,event_id="deal/7")
+    assert book.account_position("AUDCHF")==0
+    monkeypatch.setattr(book,"_append",original)
+    assert book.fill("a","AUDCHF",0.4,1.0,event_id="deal/7") is not None
+    prefix=path.read_bytes()
+    replay=TheoreticalBook(path)
+    assert replay.fill("a","AUDCHF",0.4,1.0,event_id="deal/7") is None
+    assert replay.account_position("AUDCHF")==0.4 and path.read_bytes()==prefix
+
+
 def test_close_by_deals_are_closing_fills_not_lost_attribution() -> None:
     deals = [SimpleNamespace(entry=3, volume=0.02, price=4317.5)]
     mt5 = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3,
@@ -1074,6 +1254,15 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     data/ directory, and every venue read, file write and sibling adapter faked."""
     data = tmp_path / "data"
     data.mkdir(exist_ok=True)
+    # Keep the real staleness guard, but give this isolated fake venue its own
+    # research heartbeat and report. The test must not depend on a live checkout.
+    from mt5desk import desk_staleness
+    heartbeat = data / "research_heartbeat.json"
+    heartbeat.write_text("{}", "utf-8")
+    reader = desk_staleness.staleness
+    monkeypatch.setattr(desk_staleness, "staleness",
+                        lambda: reader(heartbeats=(heartbeat,)))
+    monkeypatch.setattr(desk_staleness, "OUT", data / "DESK_STALE.json")
     pause = data / "GATEWAY_PAUSED"
     monkeypatch.setattr(_cfg, "PAUSE_FILE", pause)
     if paused:
