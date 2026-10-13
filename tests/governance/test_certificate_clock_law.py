@@ -402,3 +402,18 @@ def test_the_prior_sample_is_the_oldest_inside_the_window() -> None:
     """Most-recent would be minutes old on an hourly cadence and could never show a freeze."""
     n, at = law._prior_sample(_samples((300, 1), (200, 2), (1, 9)), "K", NOW, 100.0)
     assert n == 1 and at is not None and at < NOW - timedelta(hours=200)
+
+
+def test_a_sample_from_before_the_clocks_epoch_is_never_the_prior() -> None:
+    """A re-begun forward window restarts n at 0; a pre-reset sample counts another series."""
+    epoch = NOW - timedelta(hours=150)
+    n, at = law._prior_sample(_samples((300, 24), (120, 1)), "K", NOW, 100.0, epoch)
+    assert (n, at) == (1, NOW - timedelta(hours=120))
+
+
+def test_with_no_sample_in_the_epoch_the_epoch_itself_is_zero() -> None:
+    epoch = NOW - timedelta(hours=150)
+    assert law._prior_sample(_samples((300, 24)), "K", NOW, 100.0, epoch) == (0, epoch)
+    # An epoch younger than the window has nothing to rule on yet.
+    young = NOW - timedelta(hours=50)
+    assert law._prior_sample(_samples((300, 24)), "K", NOW, 100.0, young) == (None, None)
