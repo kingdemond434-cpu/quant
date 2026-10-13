@@ -324,7 +324,11 @@ def _degenerate(field: str, value: Any) -> bool:
     """True when `value` is a stub for `field` rather than a measurement."""
     if value is None:
         return True
-    if field in ZERO_IS_A_STUB:
+    # A ZERO SPREAD IS NEVER A MEASUREMENT THAT MAY REPLACE ONE (2026-10-13): fourteen rows
+    # (USDJPY, EURUSD, GBPUSD, ...) read 0.0 because a collector took the median of a window in
+    # which this commission account quotes bid == ask, and every clock on them ran on the
+    # engine's 0.05 floor -- free. A zero may not overwrite a positive value in `merge`.
+    if field in ("median_spread_pts",) or field in ZERO_IS_A_STUB:
         try:
             return float(value) <= 0
         except (TypeError, ValueError):
@@ -353,7 +357,13 @@ def _degenerate(field: str, value: Any) -> bool:
 #: A writer not listed here ranks below every writer that is: an unnamed producer cannot claim
 #: to beat a named one.
 MEDIAN_SPREAD_PRODUCERS: tuple[str, ...] = (
-    "realized_fills", "fusion_zero_m1_tape", "h1_spread_median", "download_all_symbols")
+    "realized_fills", "fusion_zero_m1_tape", "cost_surface_symbol_p50", "h1_spread_median",
+    "download_all_symbols")
+#:   cost_surface_symbol_p50  (added 2026-10-13) `cost_surface`'s symbol-level p50: priced bars
+#:                         only, full-session days, the pre-2021 fixed-spread era CUT. Written by
+#:                         the hourly collector only where its own median lands on ZERO, so a
+#:                         zero central value is replaced by the measured priced-book level
+#:                         rather than kept. Ranks above the H1 median it corrects.
 
 
 def may_write_median_spread(prev: dict[str, Any], writer: str) -> tuple[bool, str]:

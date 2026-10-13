@@ -126,6 +126,15 @@ class Costs:
     #: zero and this string is the verdict: UNMEASURED, never a clean zero (L1.28a), and never a
     #: points reading of a number whose unit is unknown.
     swap_unmeasured: str | None = None
+    #: THE SPREAD BY THE HOUR IT IS PAID (2026-10-13), in the same per-lot convention as
+    #: `spread_per_lot`: 24 entries (broker hour) or 168 (broker weekday*24 + hour, Monday=0),
+    #: built by `research/entry_hour_cost.py` from `data/cost_surface.json` on the SAME clock as
+    #: the bar index (Fusion server time, NY+7). When set, each trade is charged half the spread
+    #: of its ENTRY bar's slot plus half of its EXIT bar's slot instead of the flat
+    #: `spread_per_lot`, which on the exotics' broker-00 rollover is 3-30x too cheap.
+    #: None (the default) is exactly today's arithmetic, so no call site re-prices silently, and
+    #: a tuple is not a number, so `sleeve_registry.cost_hash` is unchanged by its presence.
+    spread_per_lot_by_hour: tuple[float, ...] | None = None
 
     def per_oz_roundtrip(self) -> float:
         """Round-trip cost per lot, in the convention the engine divides by `contract_oz`.
@@ -180,7 +189,10 @@ class Costs:
         scaled -- it is contractual and does not widen with market stress, so multiplying it
         models nothing that happens (see `from_symbol`).
         """
-        return replace(self, spread_per_lot=self.spread_per_lot * float(spread_mult))
+        tab = self.spread_per_lot_by_hour
+        return replace(self, spread_per_lot=self.spread_per_lot * float(spread_mult),
+                       spread_per_lot_by_hour=(None if tab is None else
+                                               tuple(v * float(spread_mult) for v in tab)))
 
     @classmethod
     def from_symbol(cls, meta: dict[str, Any], mult: float = 1.0,
@@ -244,6 +256,24 @@ class Costs:
                    swap_per_lot_per_price=per_price,
                    swap_price_basis=basis,
                    swap_unmeasured=why)
+
+
+def spread_at(costs: Costs, ts: Any) -> float:
+    """The per-lot spread `costs` charges for a fill at bar time `ts` (broker clock).
+
+    The flat `spread_per_lot` when no table is attached; otherwise the table's slot for `ts`'s
+    hour (24 entries) or weekday*24+hour (168). A malformed table falls back to the flat spread
+    or the table's own maximum, whichever is LARGER -- never to a cheaper number.
+    """
+    tab = costs.spread_per_lot_by_hour
+    if not tab:
+        return float(costs.spread_per_lot)
+    t = pd.Timestamp(ts)
+    if len(tab) == 168:
+        return float(tab[int(t.dayofweek) * 24 + int(t.hour)])
+    if len(tab) == 24:
+        return float(tab[int(t.hour)])
+    return max(float(costs.spread_per_lot), float(max(tab)))
 
 
 def swap_night_quote(meta: dict[str, Any], raw: float,
@@ -604,6 +634,9 @@ def run_backtest(
     geometry_rejections: list[dict[str, Any]] = []
     filled = 0
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
+    hourly = bool(costs.spread_per_lot_by_hour)
+    comm_per_oz = ((costs.per_oz_roundtrip() - costs.spread_per_lot) / costs.contract_oz
+                   if hourly else 0.0)
     last_exit_idx = -1  # single-position discipline: no overlapping trades
 
     for sig, i0 in zip(signals, locs, strict=True):
@@ -793,7 +826,16 @@ def run_backtest(
         for fill_px in adds:
             r += add_frac * (exit_price - fill_px) / stop_dist * side
             units += add_frac
-        r -= per_oz_cost * units / stop_dist
+        # ENTRY-HOUR AND EXIT-HOUR SPREAD when the cost model carries a table: half the spread
+        # of the slot the trade enters in plus half of the slot it leaves in, on the bars' own
+        # (broker) clock. The flat path below is byte-identical to before.
+        if hourly:
+            entry_t = pd.Timestamp(idx[fill_bar])
+            exit_t = pd.Timestamp(idx[min(fill_bar + bars_held - 1, len(idx) - 1)])
+            trade_spread = 0.5 * (spread_at(costs, entry_t) + spread_at(costs, exit_t))
+            r -= (comm_per_oz + trade_spread / costs.contract_oz) * units / stop_dist
+        else:
+            r -= per_oz_cost * units / stop_dist
         # FINANCING, PER NIGHT ACTUALLY CROSSED. Zero for every intraday sleeve, which is why
         # this changes nothing for the scalp lane and is decisive for the overnight one. It is
         # charged on the whole stack (`units`), the same size the spread is charged on.
