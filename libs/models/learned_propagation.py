@@ -721,6 +721,49 @@ def autoencoder_predictions(d: Design, *, latent: int = 3, hidden: int = 16,
     return walk_forward(t_n, n, fit, predict, **wf)
 
 
+def pca_predictions(d: Design, *, latent: int = 3, **wf: int) -> np.ndarray:
+    """The autoencoder's declared falsifier: a LINEAR code of the same size (PCA of the date's
+    standardised panel features, fitted on the fold's training rows only) with the identical
+    per-node readout. If this does as well, the non-linearity bought nothing. Never a trial."""
+    t_n, n = d.y.shape
+    v = d.x.reshape(t_n, -1)
+
+    @dataclass
+    class _Pca:
+        mu: np.ndarray
+        sd: np.ndarray
+        comp: np.ndarray
+        ridge: Ridge | None = None
+
+        def encode(self, a: np.ndarray) -> np.ndarray:
+            return cast(np.ndarray, ((a - self.mu) / self.sd) @ self.comp.T)
+
+    def fit(lo: int, k: int, prev: _Pca | None) -> _Pca | None:
+        if k - lo < 200:
+            return prev
+        tr = v[lo:k]
+        mu = tr.mean(axis=0)
+        sd = tr.std(axis=0)
+        sd[sd < 1e-12] = 1.0
+        _u, _s, vt = np.linalg.svd((tr - mu) / sd, full_matrices=False)
+        m = _Pca(mu, sd, vt[:int(latent)])
+        feats = _ae_readout_features(m.encode(tr), d.x[lo:k])
+        flat = feats.reshape(-1, feats.shape[-1])
+        yy = d.y[lo:k].reshape(-1)
+        ok = np.isfinite(yy)
+        if ok.sum() <= flat.shape[1] * 5:
+            return prev
+        m.ridge = fit_ridge(flat[ok], yy[ok])
+        return m
+
+    def predict(m: _Pca, a: int, b: int) -> np.ndarray:
+        assert m.ridge is not None
+        feats = _ae_readout_features(m.encode(v[a:b]), d.x[a:b])
+        return m.ridge.predict(feats.reshape(-1, feats.shape[-1])).reshape(b - a, n)
+
+    return walk_forward(t_n, n, fit, predict, **wf)
+
+
 # ========================================================================== dispatcher
 def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: int) -> np.ndarray:
     """One walk-forward prediction panel for (model, config). Every call is one trial."""
@@ -739,6 +782,8 @@ def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: int) -> 
     if model == "autoencoder":
         return autoencoder_predictions(d, latent=int(config.get("latent", 3)),
                                        hidden=int(config.get("hidden", 16)), **wf)
+    if model == "pca":
+        return pca_predictions(d, latent=int(config.get("latent", 3)), **wf)
     if model == "ridge":
         return ridge_predictions(d, None, **wf)
     if model == "ridge_lags":

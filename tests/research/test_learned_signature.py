@@ -139,9 +139,12 @@ def test_the_contract_measures_every_learned_model(tmp_path: Path, monkeypatch) 
             for c in [100 * np.exp(np.cumsum(rng.normal(0, 0.001, len(idx))))]}
     monkeypatch.setattr(LM, "load_bars", lambda panel, base: bars)
     monkeypatch.setattr(LM, "_git_meta", lambda: {})
-    monkeypatch.setattr(LM, "_cell_screen", lambda b, m, d: {})
+    monkeypatch.setattr(LM, "_cell_screen", lambda b, m, d, **_k: {})
     doc = LM.measure_contract(out_path=tmp_path / "c.json")
     for m in ("gnn", "attention", "rocket", "autoencoder", "signature"):
         assert m in doc["miners"], m
         assert doc["miners"][m]["verdict"].startswith(("GAIN", "NO_GAIN")), doc["miners"][m]
         assert doc["trials_charged"].get(f"{m}_configs", 1) >= 1
+    for m in ("rocket", "autoencoder", "signature"):
+        assert "ic_t" in doc["miners"][m]["falsifier_time_shuffled"]
+    assert doc["miners"]["autoencoder"]["falsifier_linear_code"]["model"] == "pca_latent3"
