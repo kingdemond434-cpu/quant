@@ -428,6 +428,11 @@ def _r10_cross_asset() -> dict[str, Any]:
     # failed its deflated test carries the right columns and knows nothing tradable; grading it 3
     # read as "above target" while zero cross-asset links had passed. Without an admitted edge the
     # level stops at 1 (measured, nothing learned), and an absent count is read as zero.
+    if "edges_admitted" not in world and "admitted_edges" not in world:
+        # An ABSENT count is not a zero (L1.28a): the graph did not say whether anything passed.
+        return _mk(dim, None, f"UNMEASURED: {_rel(WORLD_CAUSAL_GRAPH)} edges={len(edges)} but "
+                   "carries neither edges_admitted nor admitted_edges, so whether any cross-asset "
+                   "edge passed is unknown", _stamp(world))
     admitted = _num(world.get("edges_admitted"))
     if not admitted:
         admitted = len([e for e in world.get("admitted_edges") or [] if isinstance(e, dict)])

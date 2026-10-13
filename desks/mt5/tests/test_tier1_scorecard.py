@@ -225,8 +225,13 @@ def test_row10_counts_the_edge_fields_the_causal_graph_actually_carries(sandbox:
                             "state_dependence": 0.046, "conditional": None}]})
     row = sc._r10_cross_asset()
     assert row["current"] == 3.0 and row["verdict"] == sc.ABOVE
-    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"recorded_not_admitted": [{"src": "a", "dst": "b"}]})
+    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"edges_admitted": 0,
+                                           "recorded_not_admitted": [{"src": "a", "dst": "b"}]})
     assert sc._r10_cross_asset()["current"] == 1.0
+    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"recorded_not_admitted": [{"src": "a", "dst": "b"}]})
+    row = sc._r10_cross_asset()
+    assert row["current"] is None, "an absent admitted count is UNMEASURED, not a measured zero"
+    assert row["basis"].startswith("UNMEASURED")
 
 
 def test_row10_falls_back_to_the_counts_only_cross_asset_graph(sandbox: Path) -> None:
