@@ -579,10 +579,12 @@ class Ledgers:
         return self._json[rel]
 
     def rows(self, rel: str) -> list[dict[str, Any]]:
+        from libs.ops.live_ledger_view import ledger_path
+
         if rel not in self._rows:
             out: list[dict[str, Any]] = []
             try:
-                for ln in (self.root / rel).read_text("utf-8").splitlines():
+                for ln in ledger_path(self.root / rel).read_text("utf-8").splitlines():
                     if not ln.strip():
                         continue
                     try:

@@ -32,6 +32,10 @@ WHAT IS HERE, one fetcher per source row of `desks/mt5/data/free_stack_sources.j
                        their own client packages only (neither is in the requirements files)
     catalogue          open dataset catalogues (awesome-* lists, AltData.wiki, Brickroad's
                        public index) parsed into dataset candidates
+    cn_exchange        SHFE / INE / DCE / CZCE / GFEX / CFFEX dated daily files: member rankings
+                       (concentration, net, state-broker net, HHI), warehouse receipts and weekly
+                       inventory, settlement curves -- parsed in `libs.data.free_stack_cnx`, with
+                       change / acceleration / seasonal surprise / divergence derived by the hunter
 
 NOTHING HERE PRINTS OR STORES A CREDENTIAL, and nothing here stores a person: forum authors are
 reduced to a salted hash used only by the bot filter, and only AGGREGATES leave this module.
@@ -1634,10 +1638,13 @@ def fetch_catalogue(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, A
     return h
 
 
+from libs.data.free_stack_cnx import fetch_cn_exchange  # noqa: E402  (imports Harvest lazily)
+
 FETCHERS: dict[str, Callable[..., Harvest]] = {
     "app_rank_apple": fetch_app_rank_apple, "cn_forum": fetch_cn_forum, "jp_ir": fetch_jp_ir,
     "jp_patents": fetch_jp_patents, "gtrends": fetch_gtrends, "congress": fetch_congress,
     "coinpaprika": fetch_coinpaprika, "reddit": fetch_reddit, "telegram": fetch_telegram,
     "akshare": fetch_akshare_package, "tushare": fetch_tushare,
     "package": fetch_package_route, "catalogue": fetch_catalogue,
+    "cn_exchange": fetch_cn_exchange,
 }

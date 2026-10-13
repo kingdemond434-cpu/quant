@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "by": "principal 2026-10-06/07: one-time early live promotion of the certified max-growth book on Fusion; existing evidence retirement remains final",
+  "fusion": [
+    {
+      "source_name": "audchf_overnight_gap_decay_asia_p_44136fa355b3678a",
+      "name": "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+      "certificate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+      "book_key": "AUDCHF_overnight_gap_decay_asia"
+    },
+    {
+      "source_name": "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a",
+      "name": "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+      "certificate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+      "book_key": "EURZAR_overnight_gap_decay_asia"
+    },
+    {
+      "source_name": "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a",
+      "name": "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+      "certificate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+      "book_key": "USDZAR_overnight_gap_decay_asia"
+    }
+  ]
+}

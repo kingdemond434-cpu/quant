@@ -122,6 +122,17 @@ RULE = ("one controller, one north star, one release train: the day names its bi
 
 
 # ------------------------------------------------------------------------------ tolerant reading
+#: The instant a pass started. A pass that crosses midnight (the steps can run for hours) reads
+#: ONE day throughout -- observe, learn and the KPI rows -- instead of stamping its "after" half
+#: on tomorrow. None outside a pass, where every call reads the wall clock at call time.
+_PASS_CLOCK: datetime | None = None
+
+
+def _now() -> datetime:
+    """The clock, read at CALL time (never at import) and pinned for the length of a pass."""
+    return _PASS_CLOCK if _PASS_CLOCK is not None else datetime.now(tz=UTC)
+
+
 def _read(path: Path) -> Any:
     try:
         return json.loads(Path(path).read_text(encoding="utf-8-sig", errors="replace"))
@@ -248,7 +259,7 @@ def _kpis_on(day: str) -> dict[str, float]:
 
 def observe() -> dict[str, Any]:
     """Everything the controller reads, with every absence NAMED."""
-    now = datetime.now(tz=UTC)
+    now = _now()
     arts: dict[str, Any] = {}
     absent: list[str] = []
     docs: dict[str, Any] = {}
@@ -429,7 +440,7 @@ def diagnose(obs: dict[str, Any]) -> list[dict[str, Any]]:
                          {"n_unwired": unwired, "floor": breach,
                           "silent_scheduled_failures": silent_fail}))
 
-    cut = datetime.now(tz=UTC) - timedelta(days=7)
+    cut = _now() - timedelta(days=7)
     vals = [v for at, v in ((_at(h.get("at")), _num(h.get("effective_breadth")))
                             for h in obs["breadth_history"])
             if v is not None and (at is None or at >= cut)]
@@ -612,7 +623,7 @@ def allocate(ranked: list[dict[str, Any]], names: tuple[str, ...] | None = None)
     over = sum(floored.values())
     shares = {d: round(s / over, 6) for d, s in floored.items()}
     return {
-        "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "at": _now().isoformat(timespec="seconds"),
         "departments": {d: {"share": shares[d], "attack": attack.get(d),
                             "floor": MIN_SHARE, "enabled": True} for d in depts},
         "min_share": MIN_SHARE, "n_departments": len(depts),
@@ -753,7 +764,7 @@ def yesterdays_bottleneck(rows: list[dict[str, Any]]) -> dict[str, Any]:
     except Exception:
         return {"moved": None, "why": "research memory unreadable"}
     prior = None
-    yesterday = (datetime.now(tz=UTC) - timedelta(days=1)).date().isoformat()
+    yesterday = (_now() - timedelta(days=1)).date().isoformat()
     for m in mem:
         try:
             payload = json.loads(str(m.get("payload_json") or "{}"))
@@ -795,6 +806,18 @@ def run_once(*, dry_run: bool = False, timeout_s: float = STEP_TIMEOUT_S) -> dic
     """One full pass of the loop. `dry_run` stops after PRIORITIZE: nothing runs, nothing is
     written, and the diagnosis is printed -- which is the only safe thing to do on a box that is
     holding live positions when a session is only asking what the controller thinks."""
+    global _PASS_CLOCK
+    pinned = _PASS_CLOCK is None
+    if pinned:
+        _PASS_CLOCK = datetime.now(tz=UTC)
+    try:
+        return _run_pass(dry_run=dry_run, timeout_s=timeout_s)
+    finally:
+        if pinned:
+            _PASS_CLOCK = None
+
+
+def _run_pass(*, dry_run: bool, timeout_s: float) -> dict[str, Any]:
     t0 = time.monotonic()
     obs = observe()
     rules = diagnose(obs)
@@ -852,7 +875,7 @@ def run_once(*, dry_run: bool = False, timeout_s: float = STEP_TIMEOUT_S) -> dic
 def already_ran_today() -> bool:
     doc = _read(OUT)
     return bool(isinstance(doc, dict)
-                and doc.get("day") == datetime.now(tz=UTC).date().isoformat()
+                and doc.get("day") == _now().date().isoformat()
                 and doc.get("mode") == "apply")
 
 
@@ -864,7 +887,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--timeout-s", type=float, default=STEP_TIMEOUT_S)
     a = ap.parse_args(argv)
     if not a.dry_run and not a.once and already_ran_today():
-        print(f"daily research OS: already ran for {datetime.now(tz=UTC).date().isoformat()}; "
+        print(f"daily research OS: already ran for {_now().date().isoformat()}; "
               f"--once to force")
         return 0
     doc = run_once(dry_run=a.dry_run, timeout_s=a.timeout_s)
