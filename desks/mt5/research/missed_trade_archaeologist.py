@@ -319,7 +319,7 @@ def find_episodes(decisions: list[dict[str, Any]], live: list[dict[str, Any]],
             continue
         sleeve = str(f.get("sleeve") or "")
         sym = _sym(f.get("symbol"))
-        joined = [d for (t, d) in taken_by_sleeve.get(sleeve, []) if t <= t_exit]
+        joined = [(t, d) for (t, d) in taken_by_sleeve.get(sleeve, []) if t <= t_exit]
         if not joined:
             out.append({"kind": "large_adverse_move", "lane": "live", "symbol": sym,
                         "sleeve": sleeve, "decision_time": None, "outcome": {"r": loss_r},
