@@ -56,6 +56,7 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lab, "_cb_tone_role",
                         lambda **kw: {"state": "TEST_STUB", "model": {"calls": 0}, **kw})
     monkeypatch.setattr(lab, "_collector_role", lambda **kw: {"state": "RAN", "asked": 0, **kw})
+    monkeypatch.setattr(lab, "gauntlet_trims", lambda: True)
     import llm_lab_roles as roles
     for name in ("CREDIT", "EVIDENCE_START", "MISSED", "DAILY", "CODE_LEDGER", "SCOUTED",
                  "RED_TEAM"):
@@ -482,3 +483,29 @@ def test_the_measured_openrouter_limit_is_spread_and_models_rotate(
     lab.run(budget_s=600, max_calls=8, seed=2, workers=2)
     assert not (first & {m for m in hinted if m}) or len(first) + len(set(hinted)) > 60, \
         "the second pass reaches models the first left out before repeating any"
+
+
+def test_donations_are_held_until_the_gauntlet_trims(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit blocker on #332: LLM-born cells reach the gates only once the sealed look-ahead
+    patch is in the gauntlet. Until then they are HELD, and the first pass after it lands
+    releases every held file with no other step."""
+    monkeypatch.setattr(lab, "STATE_DIR", tmp_path / "state")
+    monkeypatch.setattr(lab, "DONATE_DIR", tmp_path / "seat")
+    gauntlet = tmp_path / "external_gauntlet.py"
+    gauntlet.write_text("def run():\n    pass\n")
+    monkeypatch.setattr(lab, "GAUNTLET", gauntlet)
+    target = lab.donation_target(lab.DONATE_DIR)
+    assert target != lab.DONATE_DIR
+    target.mkdir(parents=True)
+    (target / "discoveries_1.json").write_text("{}")
+    assert lab.release_held()["state"] == "HELD" and not lab.DONATE_DIR.exists()
+    gauntlet.write_text("def llm_born(c):\n    pass\ndef evidence_trim(c, ds):\n    pass\n")
+    assert lab.donation_target(lab.DONATE_DIR) == lab.DONATE_DIR
+    assert lab.release_held() == {"state": "DONATING", "released": 1}
+    assert (lab.DONATE_DIR / "discoveries_1.json").exists()
+
+
+def test_the_real_gauntlet_path_is_the_one_the_patch_edits() -> None:
+    assert lab.GAUNTLET == lab.BASE / "scripts" / "external_gauntlet.py"
+    assert lab.GAUNTLET.exists()

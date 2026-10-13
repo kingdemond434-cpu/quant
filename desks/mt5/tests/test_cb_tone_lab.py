@@ -50,6 +50,7 @@ def tone(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lab, "MODEL_CUTOFFS", tmp_path / "cutoffs.json")
     monkeypatch.setattr(lab, "universe", lambda: dict(UNI))
     monkeypatch.setattr(cb, "_robots_ok", lambda url, timeout: True)
+    monkeypatch.setattr(lab, "gauntlet_trims", lambda: True)
     return tmp_path
 
 

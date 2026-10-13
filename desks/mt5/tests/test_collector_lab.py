@@ -59,6 +59,7 @@ def tmp_lab(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(cl, "DONATE_DIR", tmp_path / "donate")
     monkeypatch.setattr(lab, "MODEL_CUTOFFS", tmp_path / "cutoffs.json")
     monkeypatch.setattr(lab, "_lane_ok", lambda s, f: True)
+    monkeypatch.setattr(lab, "gauntlet_trims", lambda: True)
     feed = tmp_path / "feed.jsonl"
     feed.write_text(json.dumps({"name": "Example Index", "url": SRC, "reachable": True,
                                 "duplicate": False}) + "\n")

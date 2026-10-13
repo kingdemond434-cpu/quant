@@ -109,6 +109,7 @@ if "libs" in sys.modules and not getattr(sys.modules["libs"], "__file__", None):
 STATE_DIR = BASE / "data" / "llm_lab"
 DONATE_DIR = BASE / "data" / "intelligence" / "llm_lab"
 REPORT = BASE / "reports" / "LLM_LAB.json"
+GAUNTLET = BASE / "scripts" / "external_gauntlet.py"
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
 VERDICTS = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
 SARES_DIR = BASE / "data" / "intelligence" / "sares"
@@ -1473,6 +1474,40 @@ def _cb_tone_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
         return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
 
 
+def gauntlet_trims() -> bool:
+    """True only when the canonical gauntlet carries the look-ahead trim (the sealed patch
+    `llm_lookahead_gauntlet`). Until then the lab's cells would reach every gate untrimmed, so
+    they are HELD, never donated (audit blocker on #332, 2026-10-13). Read from the source each
+    call: the first pass after the laptop lands the patch releases them with no other step."""
+    try:
+        text = GAUNTLET.read_text("utf-8", errors="replace")
+    except OSError:
+        return False
+    return "def llm_born(" in text and "def evidence_trim(" in text
+
+
+def donation_target(default: Path) -> Path:
+    """Where an LLM-lab donation may be written: the compiler's seat dir, or the held queue."""
+    return default if gauntlet_trims() else STATE_DIR / "held_donations"
+
+
+def release_held(dest: Path | None = None) -> dict[str, Any]:
+    """Move held donations into the seat dir once the gauntlet trims. Nothing is lost while held."""
+    held = STATE_DIR / "held_donations"
+    files = sorted(held.glob("*.json")) if held.is_dir() else []
+    if not gauntlet_trims():
+        return {"state": "HELD", "files": len(files),
+                "why": "external_gauntlet.py lacks the look-ahead trim (sealed patch "
+                       "llm_lookahead_gauntlet not landed): LLM-born cells are not donated"}
+    dest = dest or DONATE_DIR
+    moved = 0
+    for f in files:
+        dest.mkdir(parents=True, exist_ok=True)
+        os.replace(f, dest / f.name)
+        moved += 1
+    return {"state": "DONATING", "released": moved}
+
+
 def _collector_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
     """collector_author's replacement (`collector_lab`): declarative specs, fixed fetcher."""
     try:
@@ -1487,6 +1522,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     started = time.time()
     if os.environ.get("QUANT_LLM_LAB_PAID", "0") != "1":
         os.environ["QUANT_FREE_TIER"] = "1"
+    donations = release_held() if not dry_run else {"state": "dry run"}
     max_calls = int(max_calls if max_calls is not None else
                     os.environ.get("QUANT_LLM_LAB_MAX_CALLS", "24"))
     # The provider's own quota (a 429 cools the rung) is the binding daily limit; this cap only
@@ -1766,9 +1802,10 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         # it lands, so the guard's start dates are on disk before any donation is.
         roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
         if outputs["donate"]:
-            DONATE_DIR.mkdir(parents=True, exist_ok=True)
+            target = donation_target(DONATE_DIR)
+            target.mkdir(parents=True, exist_ok=True)
             stamp = _now().replace(":", "").replace("-", "")[:15]
-            donated = DONATE_DIR / f"discoveries_{stamp}.json"
+            donated = target / f"discoveries_{stamp}.json"
             _write_json(donated, {"source": ORGAN, "generated_at": _now(), "rule": RULE,
                                   "discoveries": outputs["donate"]})
         _write_json(MODELS, models)
@@ -1839,6 +1876,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "conversion_debt": debt,
         "cb_tone": cb_tone,
         "collector": collector,
+        "donations": donations,
         "roles": role_report,
         "model_coverage": {k: coverage.get(k) for k in ("verdict", "red", "models_available",
                                                   "models_answered")},

@@ -563,9 +563,11 @@ def run(*, budget_s: float = 120.0, max_llm: int = 4, chat: Any = None, get: Get
     known = set(_read_json(STATE_DIR / "donated.json", []) or [])
     fresh = [r for r in donate if r["cell_id"] not in known]
     if fresh:
-        DONATE_DIR.mkdir(parents=True, exist_ok=True)
+        import llm_lab
+        target = llm_lab.donation_target(DONATE_DIR)
+        target.mkdir(parents=True, exist_ok=True)
         stamp = _now().replace(":", "").replace("-", "")[:15]
-        _write_json(DONATE_DIR / f"discoveries_collector_{stamp}.json",
+        _write_json(target / f"discoveries_collector_{stamp}.json",
                     {"source": "llm_lab", "role": ROLE, "generated_at": _now(),
                      "rule": "THE LAB PROPOSES, THE DESK JUDGES", "discoveries": fresh})
         _write_json(STATE_DIR / "donated.json", sorted(known | {r["cell_id"] for r in fresh}))
