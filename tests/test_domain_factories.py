@@ -475,4 +475,29 @@ def test_a_point_without_first_seen_is_not_counted() -> None:
     pt = _lake_points(1)[0]
     assert D.pit_counted(pt)
     assert not D.pit_counted({**pt, "first_seen_at": None})
-    assert not D.pit_counted({**pt, "available_basis": "first_seen"})
+    assert not D.pit_counted({**pt, "pit_quality": "backfill"})
+    # a lifted LIVE point still counts: its stamp is max(release, first_seen) by construction
+    assert D.pit_counted({**pt, "available_basis": "first_seen"})
+
+
+def test_a_live_row_first_seen_after_its_release_is_lifted_too() -> None:
+    """AUDITOR SHOULD on #295: rows first seen within the two-day live window kept their release
+    time, so a value the desk read six hours late was 'available' six hours before it held it.
+    available_time is now max(release, first_seen) for EVERY row; the point stays live and
+    counts."""
+    src = D.JOBS_JOLTS
+    rel = datetime(2026, 9, 2, 14, 0, tzinfo=UTC)
+    seen = rel + timedelta(hours=6)
+    store = {"a": {"series": "s", "period": "2026-07-31", "published_time": rel.isoformat(),
+                   "first_seen_at": seen.isoformat(), "value_first": 1.0},
+             "b": {"series": "s", "period": "2026-08-31",
+                   "published_time": (rel + timedelta(days=30)).isoformat(),
+                   "first_seen_at": (rel + timedelta(days=30)).isoformat(), "value_first": 2.0}}
+    pts = {p["d"]: p for p in A.build_points(src, store, lift_backfill=True)["s"]}
+    late, on_time = pts["2026-07-31"], pts["2026-08-31"]
+    assert late["pit_quality"] == "live" and late["available_basis"] == "first_seen"
+    assert A._t(late["available_time"]) == seen and D.pit_counted(late)
+    assert on_time["available_basis"] == "release" and D.pit_counted(on_time)
+    unlifted = {p["d"]: p for p in A.build_points(src, store)["s"]}
+    assert unlifted["2026-07-31"]["available_basis"] == "release"   # the flag is the factories'
+

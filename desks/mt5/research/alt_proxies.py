@@ -3456,8 +3456,9 @@ def build_points(src: Source, store: dict[str, Any], *, lift_backfill: bool = Fa
     -- so nothing a point carries was unknowable at its own available_time. The first value seen
     is used (value_first): a later revision is its own stamped fact, never back-dated.
 
-    `lift_backfill` (the domain factories pass it): a BACKFILLED row -- first seen more than two
-    days after its release-rule time -- is stamped available at max(release time, first_seen_at).
+    `lift_backfill` (the domain factories pass it): EVERY row is stamped available at
+    max(release-rule time, first_seen_at) -- a backfilled row (first seen more than two days
+    after its release) most of all, but a live one first seen an hour late too.
     Its value is whatever vintage the desk read months later, so dating it to the release would
     hand a backtest a number nobody held then (auditor HOLD on #295: 186 of 200 Indeed/JOLTS
     points were available before the desk first saw them). `published_time` keeps the release
@@ -3524,7 +3525,10 @@ def build_points(src: Source, store: dict[str, Any], *, lift_backfill: bool = Fa
             quality = ("live" if first_seen and published
                        and first_seen <= published + timedelta(days=2) else "backfill")
             available, basis = str(r["published_time"]), "release"
-            if lift_backfill and quality == "backfill" and first_seen is not None and (
+            # EVERY ROW, NOT ONLY BACKFILL (auditor SHOULD on #295): a row first seen within the
+            # two-day live window still kept its release time, so it was "available" hours
+            # before the desk held it. available_time = max(release time, first_seen_at).
+            if lift_backfill and first_seen is not None and (
                     published is None or first_seen > published):
                 available, basis = first_seen.isoformat(timespec="seconds"), "first_seen"
             pts.append({

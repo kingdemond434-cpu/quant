@@ -921,12 +921,14 @@ class Hyp:
 
 
 def pit_counted(p: Mapping[str, Any]) -> bool:
-    """A point counts toward MIN_POINTS only when its availability is its RELEASE time and that
-    time is not before the desk first saw it. No first_seen_at = not measured = not counted."""
+    """A point counts toward MIN_POINTS only when it was read LIVE (first seen within two days
+    of its release, `pit_quality == "live"`) and its available_time is not before the desk first
+    saw it. A backfilled vintage read months later never counts, whatever its stamp. No
+    first_seen_at = not measured = not counted."""
     avail, seen = A._t(p.get("available_time")), A._t(p.get("first_seen_at"))
     if avail is None or seen is None:
         return False
-    return p.get("available_basis", "release") == "release" and avail >= seen
+    return p.get("pit_quality") == "live" and avail >= seen
 
 
 def _hyp_rows(paths: Paths, hyps: Iterable[Hyp], sources: Mapping[str, A.Source],
