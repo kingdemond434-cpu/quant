@@ -90,3 +90,28 @@ def test_the_build_names_positioning_gaps_rather_than_inventing_a_state(tmp_path
     assert svb.positioning_block(datetime(2026, 10, 13, tzinfo=UTC), gaps)["status"] == (
         "UNMEASURED")
     assert gaps["positioning"].startswith("UNMEASURED") and "positioning:gold" in gaps
+
+
+def test_the_leg_writes_its_report_when_every_contract_is_unreachable(tmp_path: Path,
+                                                                      monkeypatch) -> None:
+    import json
+    out, rep = tmp_path / "cot", tmp_path / "reports" / "COT_REFRESH.json"
+    out.mkdir()
+    _contract(out, "gold", "2026-08-11")
+    monkeypatch.setattr(F, "OUT", out)
+    monkeypatch.setattr(F, "DATA", tmp_path)
+    monkeypatch.setattr(F, "REPORT", rep)
+
+    def refused(commodity: str):
+        raise OSError("Tunnel connection failed: 403 Forbidden")
+    monkeypatch.setattr(F, "fetch_contract", refused)
+    now = datetime(2026, 10, 13, 17, tzinfo=UTC)
+    first = F.refresh(if_due=True, now=now)
+    assert first["due"] is True and first["fetched"]["gold"].startswith("FAILED: OSError")
+    doc = json.loads(rep.read_text("utf-8"))
+    assert doc["positioning"]["contracts"]["gold"]["report_date"] == "2026-08-11"
+    assert doc["last_attempt"] == now.isoformat(timespec="seconds")
+    second = F.refresh(if_due=True, now=now + timedelta(hours=1))
+    assert second["due"] is False and "retry after" in second["why"]
+    assert second["last_attempt"] == first["last_attempt"]          # the stamp is carried
+    assert not (out / "refresh_state.json").exists()

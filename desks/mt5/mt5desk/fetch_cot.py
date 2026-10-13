@@ -260,11 +260,11 @@ def refresh(*, if_due: bool, now: datetime | None = None) -> dict[str, Any]:
     if go:
         fetched = main()
         state["last_attempt"] = now.isoformat(timespec="seconds")
-    pos = positioning_state(now)
+    pos = positioning_state(now, OUT)
     report = {"generated_utc": now.isoformat(timespec="seconds"), "writer": "mt5desk/fetch_cot.py",
               "due": go, "why": why, "fetched": fetched,
               "last_attempt": state.get("last_attempt"),
-              "last_report": {slug: (str(t.date()) if (t := _last_report(slug)) is not None
+              "last_report": {slug: (str(t.date()) if (t := _last_report(slug, OUT)) is not None
                                      else "UNMEASURED") for slug, _ in TARGETS},
               "positioning": pos,
               "consumer": "research/state_vector_build.py -> StateVector.positioning"}

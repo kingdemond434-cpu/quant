@@ -149,13 +149,15 @@ def test_hunter_publishes_onchain_columns_for_the_crypto_cfds(tmp_path: Path) ->
     real = json.loads((_DESK / "data" / "universe" / "universe.json").read_text("utf-8"))
     (tmp_path / "data" / "universe" / "universe.json").write_text(json.dumps(real), "utf-8")
     roster = tmp_path / "roster.json"
-    rows = [_row("btc_onchain_mempool"), _row("histdata_fx_m1")]
+    rows = [_row("btc_onchain_mempool"), _row("histdata_fx_m1"), _row("ais_aisstream")]
     roster.write_text(json.dumps({"sources": rows}), "utf-8")
     fetch, _ = _fetcher()
     rep = run(budget_s=60, fetch=fetch, store=st, roster=roster, now=NOW, live=False)
     per = rep["per_source"]
     assert per["btc_onchain_mempool"]["status"] == "OK"
-    assert per["histdata_fx_m1"]["status"] in ("METHOD_BLOCKED", "REFUSED_HARD_BOUNDARY")
+    assert per["histdata_fx_m1"]["status"] == "METHOD_BLOCKED"
+    assert per["ais_aisstream"]["status"] == "NEEDS_KEY"           # its own state, not a refusal
+    assert per["ais_aisstream"]["requests"] == 0
     cols = json.loads(st.columns.read_text("utf-8"))["btc_onchain_mempool"]
     assert set(cols["btc_fee_fastest"]["hypothesis"]) == {"BTCUSD", "ETHUSD"}
     assert (st.series / "fs_btc_onchain_mempool.parquet").exists()
