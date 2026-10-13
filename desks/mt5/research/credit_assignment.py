@@ -52,7 +52,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 SLEEVES = DESK / "data" / "sleeves.json"
 SHADOW = (DESK / "reports" / "shadow" / "shadow_state.json",
           DESK / "reports" / "shadow" / "qquant_shadow_state.json",
