@@ -65,6 +65,10 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         monkeypatch.setattr(roles, name, tmp_path / name.lower())
     monkeypatch.setattr(roles, "SLEEVES", tmp_path / "sleeves.json")
     monkeypatch.setattr(roles, "_chat", lambda *a, **k: ("", "test: chain dark"))
+    import lab_style
+    monkeypatch.setattr(lab_style, "HELD", sd / "style_held.json")
+    monkeypatch.setattr(lab_style, "HOLDS_REPORT", tmp_path / "reports" / "LAB_STYLE_HOLDS.json")
+    monkeypatch.setattr(lab_style, "REPORT", tmp_path / "reports" / "STYLE_NOVELTY.json")
     return tmp_path
 
 

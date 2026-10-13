@@ -63,6 +63,10 @@ def tmp_lab(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lab, "STATE_DIR", tmp_path / "lab_state")
     monkeypatch.setattr(lab, "_lane_ok", lambda s, f: True)
     monkeypatch.setattr(lab, "gauntlet_trims", lambda: True)
+    import lab_style
+    monkeypatch.setattr(lab_style, "HELD", tmp_path / "style_held.json")
+    monkeypatch.setattr(lab_style, "HOLDS_REPORT", tmp_path / "reports" / "LAB_STYLE_HOLDS.json")
+    monkeypatch.setattr(lab_style, "REPORT", tmp_path / "reports" / "STYLE_NOVELTY.json")
     feed = tmp_path / "feed.jsonl"
     feed.write_text(json.dumps({"name": "Example Index", "url": SRC, "reachable": True,
                                 "duplicate": False}) + "\n")
