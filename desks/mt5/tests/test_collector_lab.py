@@ -104,7 +104,7 @@ def test_model_code_is_never_a_collector(tmp_lab: Path) -> None:
 @pytest.mark.parametrize("url,addrs,want", [
     ("https://evil.example.com/x", ["93.184.216.34"], "OFF_SITE"),
     ("https://data.example.org/x", ["169.254.169.254"], "REFUSED"),
-    ("https://api.example.org/x", ["10.0.0.5"], "REFUSED"),
+    ("https://api.data.example.org/x", ["10.0.0.5"], "REFUSED"),
 ])
 def test_a_spec_cannot_leave_the_site_or_reach_a_private_host(url: str, addrs: list[str],
                                                              want: str) -> None:
