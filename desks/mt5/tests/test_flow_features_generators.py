@@ -82,6 +82,27 @@ def cot_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture
+def swap_tape(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A broker swap tape written as the box writes it (observed_at stamped, mode 1)."""
+    fc = fs._swap_reader()
+    terms = tmp_path / "terms"
+    terms.mkdir()
+    monkeypatch.setattr(fc, "TERMS_DIR", terms)
+    monkeypatch.setattr(fc, "PANEL_DIR", tmp_path / "no_panel")
+    monkeypatch.setattr(fc, "UNITS", tmp_path / "none.json")
+    monkeypatch.setattr(fc, "_CACHE", {"key": None, "hist": None, "stats": None,
+                                       "ceiling": None})
+
+    def write(name: str, rows: list[tuple[str, float, float]]) -> None:
+        pd.DataFrame([{"observed_at": at, "symbol": "XAUUSD", "swap_long": lo,
+                       "swap_short": sh, "swap_mode": 1, "point": 0.01}
+                      for at, lo, sh in rows]).to_parquet(terms / f"{name}.parquet", index=False)
+
+    write("tape", [("2025-01-08 00:00", -61.76, 29.45), ("2025-01-11 00:00", -10.0, 1.0)])
+    return write
+
+
+@pytest.fixture
 def universe_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     p = tmp_path / "universe.json"
     p.write_text(json.dumps({"XAUUSD": {"swap_long": -61.76, "swap_short": 29.45},
@@ -132,33 +153,36 @@ def test_session_participation_compares_an_hour_with_its_own_history(tmp_path: P
     assert "tick_volume" in fs.LAST_REASON["session_participation"]
 
 
-def test_swap_features_are_static_per_symbol_and_nan_when_unknown(
-        tmp_path: Path, universe_json: Path) -> None:
+def test_swap_features_are_point_in_time_and_nan_before_the_first_row(
+        tmp_path: Path, swap_tape) -> None:
+    """Each bar sees the newest STAMPED row observed >= 3 h before it, never today's swap."""
     store = fs.FeatureStore(tmp_path / "store")
-    df = _bars(300)
+    df = _bars(300)                                                  # 2025-01-06 .. 01-18
+    t = df.index.asi8
+    first = pd.Timestamp("2025-01-08 00:00", tz="UTC").value + 3 * 3_600_000_000_000
+    second = pd.Timestamp("2025-01-11 00:00", tz="UTC").value + 3 * 3_600_000_000_000
+    stale = second + 96 * 3_600_000_000_000
     diff = store.get("swap_diff", df, {"symbol": "XAUUSD"}, check_causal=True)
-    assert np.allclose(diff, -61.76 - 29.45)
-    assert np.allclose(store.get("swap_long", df, {"symbol": "XAUUSD"}, check_causal=True),
-                       -61.76)
-    assert np.allclose(store.get("swap_short", df, {"symbol": "XAUUSD"}, check_causal=True),
-                       29.45)
+    assert np.isnan(diff[t < first]).all(), "no swap is ever read before its knowable instant"
+    assert np.allclose(diff[(t >= first) & (t < second)], -61.76 - 29.45)
+    assert np.allclose(diff[(t >= second) & (t <= stale)], -10.0 - 1.0)
+    assert np.isnan(diff[t > stale]).all(), "a row older than 96 h is stale"
+    lo = store.get("swap_long", df, {"symbol": "XAUUSD"}, check_causal=True)
+    sh = store.get("swap_short", df, {"symbol": "XAUUSD"}, check_causal=True)
+    assert np.allclose(lo[(t >= first) & (t < second)], -61.76)
+    assert np.allclose(sh[(t >= second) & (t <= stale)], 1.0)
     assert np.isnan(store.get("swap_diff", df, {"symbol": "ZZZ"}, check_causal=True)).all()
     assert "ZZZ" in fs.LAST_REASON["swap_diff"]
-    assert np.isnan(store.get("swap_diff", df, {"symbol": "NOSWAP"})).all()
-    assert "swap_long" in fs.LAST_REASON["swap_diff"]
 
 
-def test_an_external_input_is_part_of_the_feature_id(tmp_path: Path,
-                                                      universe_json: Path) -> None:
-    """A re-quoted swap must not be served from the cache under the old id."""
+def test_an_external_input_is_part_of_the_feature_id(tmp_path: Path, swap_tape) -> None:
+    """A newly stamped swap row must not be served from the cache under the old id."""
     store = fs.FeatureStore(tmp_path / "store")
     df = _bars(300)
     a = store.get("swap_diff", df, {"symbol": "XAUUSD"})
-    universe_json.write_text(json.dumps({"XAUUSD": {"swap_long": -10.0, "swap_short": 1.0}}))
-    import os
-    os.utime(universe_json, (universe_json.stat().st_atime, universe_json.stat().st_mtime + 5))
+    swap_tape("late", [("2025-01-15 00:00", -5.0, 2.0)])
     b = store.get("swap_diff", df, {"symbol": "XAUUSD"})
-    assert store.misses == 2 and a[0] != b[0] and b[0] == pytest.approx(-11.0)
+    assert store.misses == 2 and np.isnan(a[-1]) and b[-1] == pytest.approx(-7.0)
     assert fs.feature_id("x", {}, "d") != fs.feature_id("x", {}, "d", external="f:1")
     assert fs.feature_id("x", {}, "d") == fs.feature_id("x", {}, "d", external=None)
 
@@ -233,7 +257,7 @@ def test_cot_z_honours_a_rows_own_available_time(tmp_path: Path, monkeypatch: py
 
 
 def test_vocab_carries_the_flow_features_and_every_entry_is_causal(
-        tmp_path: Path, cot_dir: Path, universe_json: Path) -> None:
+        tmp_path: Path, cot_dir: Path, universe_json: Path, swap_tape) -> None:
     names = {n for n, _ in coevolution.VOCAB}
     assert {"tick_imbalance", "session_participation", "swap_diff", "cot_z"} <= names
     store = fs.FeatureStore(tmp_path / "store")

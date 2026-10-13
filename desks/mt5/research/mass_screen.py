@@ -208,6 +208,8 @@ class Prepared:
         c = df["close"].to_numpy("float64")
         atr = MR._atr(df, 20).to_numpy("float64")
         self.valid = np.isfinite(atr) & (atr > 0) & np.isfinite(c)
+        # the side the swap KNOWABLE AT EACH BAR paid (0: neither, or none knowable yet)
+        self.carry_pit = MR.pit_paying_side(df.index, symbol)
         t0, t1 = self.t_ns[0], self.t_ns[-1]
         self.cut = int(np.searchsorted(self.t_ns, t0 + int(TRAIN_FRAC * (t1 - t0))))
         # entry day of a fire at bar i is the day of bar i + 1
@@ -228,6 +230,10 @@ class Prepared:
             fill_hour[-1] = self.hour[-1]
             hs = by_hour[fill_hour]
             pts = np.where(np.isfinite(hs), np.maximum(pts, hs), pts)
+        # THE SWAP COST AS KNOWABLE AT EACH BAR (2026-10-07), never today's backdated: a hold's
+        # nights are charged the rate knowable at its ENTRY bar or, with no fresh row, the
+        # engine's stand-in (today's registry floor or the worst side knowable so far).
+        self.swap_rate = swap_rate_pit(symbol, self.t_ns, c, cm["swap_price"])
         spread_x1 = np.maximum(pts * cm["ts"] * cm["cs"], 0.05) / cm["cs"]
         spread_x3 = np.maximum(pts * cm["ts"] * cm["cs"] * COST_STRESS, 0.05) / cm["cs"]
         self.R1: dict[int, np.ndarray] = {}
@@ -246,7 +252,7 @@ class Prepared:
             win_lo = np.lib.stride_tricks.sliding_window_view(lo[1:], h)[:m].min(axis=1)
             win_hi = np.lib.stride_tricks.sliding_window_view(hi[1:], h)[:m].max(axis=1)
             nights = nights_between(self.t_ns[1: m + 1], self.t_ns[1 + h: m + 1 + h])
-            fin = nights * cm["swap_price"]
+            fin = nights * self.swap_rate[1: m + 1]
             for vi, (d, k) in enumerate(VARIANTS):
                 stop = c[:m] - d * k * atr[:m]
                 sd = np.abs(entry - stop)
@@ -277,7 +283,26 @@ class Prepared:
                               cond_lo=cond.get("cond_lo", -MR.OPEN_BOUND),
                               cond_hi=cond.get("cond_hi", MR.OPEN_BOUND),
                               hour=cond.get("hour", -1), weekday=cond.get("weekday", -1))
+        if cond.get("grammar") == "carry":
+            cs = int(cond.get("carry_side", 0) or 0)
+            m = m & (self.carry_pit == cs) & (cs != 0)
         return m & self.valid
+
+
+def swap_rate_pit(symbol: str, t_ns: np.ndarray, price: np.ndarray,
+                  today_rate: float) -> np.ndarray:
+    """Per-night swap in price units at each bar, through `families_carry.swap_asof` -- the
+    lookup the engine's cost side uses. No fresh row: max(today's registry rate, worst side
+    knowable so far). An unreadable tape degrades to today's rate, exactly the old arithmetic."""
+    today = float(today_rate or 0.0)
+    try:
+        from mt5desk import families_carry
+        a = families_carry.swap_asof(symbol, t_ns, price)
+    except Exception:
+        return np.full(t_ns.size, today)
+    peak = a["peak_px"]
+    standin = np.maximum(today, np.where(np.isfinite(peak), peak, 0.0))
+    return np.where(np.isfinite(a["worse_px"]), a["worse_px"], standin)
 
 
 def _q(a: np.ndarray, q: float) -> float | None:
@@ -287,13 +312,19 @@ def _q(a: np.ndarray, q: float) -> float | None:
     return float(f"{float(np.quantile(v, q)):.6g}")
 
 
-def carry_side(meta: dict[str, Any]) -> int:
-    """+1 / -1 for the side whose recorded swap is POSITIVE, 0 when neither pays."""
-    sl = float((meta or {}).get("swap_long", 0.0) or 0.0)
-    ss = float((meta or {}).get("swap_short", 0.0) or 0.0)
-    if max(sl, ss) <= 0:
+def carry_side(P: Prepared) -> int:
+    """+1 / -1 for the side the KNOWABLE swap paid on more training-window bars, 0 when no bar of
+    the training window had a paying swap knowable at it.
+
+    Point in time (2026-10-07): this read today's registry swap (`meta`) and applied it to every
+    past bar, so a symbol whose swap flipped was screened on the side it pays NOW across years it
+    paid the other. The side is now chosen from the training window only, and `Prepared.mask`
+    fires a carry cell only on bars where that side was paying then."""
+    w = P.carry_pit[: P.cut]
+    up, dn = int((w > 0).sum()), int((w < 0).sum())
+    if up == dn == 0:
         return 0
-    return 1 if sl >= ss else -1
+    return 1 if up >= dn else -1
 
 
 def conditions(P: Prepared, meta: dict[str, Any] | None = None) -> list[dict[str, Any]]:
@@ -339,7 +370,7 @@ def conditions(P: Prepared, meta: dict[str, Any] | None = None) -> list[dict[str
                 if thr is not None:
                     out.append({"grammar": "lead", "feat": f, "op": op, "thr": thr,
                                 "leader": leader, "_q": q})
-    cs = carry_side(meta or {})
+    cs = carry_side(P)
     if cs:
         vr = P.feats["volratio"][:cut]
         v1, v2 = _q(vr, TERCILE_Q[0]), _q(vr, TERCILE_Q[1])
@@ -493,7 +524,9 @@ def params_of(c: dict[str, Any]) -> dict[str, Any]:
             "cond_lo": float(cd.get("cond_lo", -MR.OPEN_BOUND)),
             "cond_hi": float(cd.get("cond_hi", MR.OPEN_BOUND)),
             "hour": int(cd.get("hour", -1)), "weekday": int(cd.get("weekday", -1)),
-            "leader": str(cd.get("leader", "")), "atr_n": 20, "gv": MR.GRAMMAR_VERSION}
+            "leader": str(cd.get("leader", "")), "atr_n": 20, "gv": MR.GRAMMAR_VERSION,
+            **({"symbol": str(c["symbol"]), "carry_side": int(cd["carry_side"])}
+               if c.get("grammar") == "carry" else {})}
 
 
 def structural_key(c: dict[str, Any]) -> str:
@@ -503,7 +536,10 @@ def structural_key(c: dict[str, Any]) -> str:
     return "|".join(str(x) for x in (
         c["symbol"], c["grammar"], cd.get("feat", ""), cd.get("op", ""), cd.get("_q", ""),
         cd.get("cond_feat", ""), _band_label(cd), cd.get("hour", -1), cd.get("weekday", -1),
-        cd.get("leader", ""), c["hold"], c["direction"], c["stop_atr"], MR.GRAMMAR_VERSION))
+        cd.get("leader", ""), c["hold"], c["direction"], c["stop_atr"], MR.GRAMMAR_VERSION)
+        # the point-in-time carry rule is a NEW rule, not the pre-2026-10-07 one that read today's
+        # swap onto every bar; only carry keys change, so no other cell is re-forwarded
+        + (("pit",) if c.get("grammar") == "carry" else ()))
 
 
 def _band_label(cd: dict[str, Any]) -> str:

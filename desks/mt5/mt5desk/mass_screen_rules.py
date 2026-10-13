@@ -21,7 +21,9 @@ GRAMMARS (the family name is the grammar; the params are the whole identity):
     mass_screen_cond     the same, conditioned on a second feature's tercile or a session bucket
     mass_screen_clock    a fixed broker hour (and optionally weekday) -- intraday seasonality
     mass_screen_lead     a LEADER instrument's normalised return beyond a threshold (lead-lag)
-    mass_screen_carry    the positive-carry side, entered at a fixed hour, regime-conditioned
+    mass_screen_carry    the positive-carry side, entered at a fixed hour, regime-conditioned;
+                         fires only on bars where the swap KNOWABLE THEN paid that side
+                         (`families_carry.paying_side_at`), never on today's registry swap
 
 MECHANISM CLASSES, named, because gate 1 asks for one: time-series momentum and short-horizon
 reversal (returns over lookbacks), mean reversion to a moving anchor (z-scores, range position),
@@ -267,7 +269,8 @@ def rule_signals(df: pd.DataFrame, *, feat: str, op: str, thr: float, direction:
                  hold: int, stop_atr: float, cond_feat: str = "",
                  cond_lo: float = -OPEN_BOUND, cond_hi: float = OPEN_BOUND, hour: int = -1,
                  weekday: int = -1, leader: str = "", atr_n: int = 20,
-                 tag: str = "mass_screen") -> list[Signal]:
+                 tag: str = "mass_screen", symbol: str = "",
+                 carry_side: int = 0) -> list[Signal]:
     h1 = _h1(df)
     if len(h1) < VOL_MIN_PERIODS + 2:
         return []
@@ -281,6 +284,8 @@ def rule_signals(df: pd.DataFrame, *, feat: str, op: str, thr: float, direction:
     atr = _atr(h1, atr_n).to_numpy(dtype="float64")
     close = h1["close"].to_numpy(dtype="float64")
     m &= np.isfinite(atr) & (atr > 0) & np.isfinite(close)
+    if carry_side:
+        m &= carry_mask(h1.index, symbol, int(carry_side))
     kept = thin(np.flatnonzero(m), int(hold), entry_days(h1.index))
     side = 1 if int(direction) >= 0 else -1
     idx = h1.index
@@ -294,11 +299,35 @@ def rule_signals(df: pd.DataFrame, *, feat: str, op: str, thr: float, direction:
     return sigs
 
 
+def pit_paying_side(index: Any, symbol: str) -> np.ndarray:
+    """Per bar, +1 / -1 for the side the swap KNOWABLE AT THAT BAR paid, 0 for neither.
+
+    Through `families_carry.paying_side_at`: a bar before the symbol's first stamped swap row, or
+    with only a stale one, is 0. No symbol, or an unreadable history, is all 0 (fails closed)."""
+    stamps = np.asarray(pd.DatetimeIndex(index).as_unit("ns").asi8, dtype="int64")
+    if not symbol:
+        return np.zeros(stamps.size, dtype="int8")
+    try:
+        from mt5desk import families_carry
+        return families_carry.paying_side_at(str(symbol), stamps)
+    except Exception:
+        return np.zeros(stamps.size, dtype="int8")
+
+
+def carry_mask(index: Any, symbol: str, carry_side: int) -> np.ndarray:
+    """True on the bars where the swap knowable at that bar paid `carry_side`; a carry cell that
+    cannot see its swap fires nothing."""
+    if not carry_side:
+        return np.zeros(len(index), dtype=bool)
+    return pit_paying_side(index, symbol) == (1 if int(carry_side) > 0 else -1)
+
+
 def family_mass_screen_rule(df: pd.DataFrame, side: int = 1, *, feat: str, op: str, thr: float,
                             direction: int, hold: int, stop_atr: float, cond_feat: str = "",
                             cond_lo: float = -OPEN_BOUND, cond_hi: float = OPEN_BOUND,
                             hour: int = -1, weekday: int = -1, leader: str = "",
-                            atr_n: int = 20, gv: int = GRAMMAR_VERSION) -> list[Signal]:
+                            atr_n: int = 20, gv: int = GRAMMAR_VERSION, symbol: str = "",
+                            carry_side: int = 0) -> list[Signal]:
     """The one constructor every mass-screen grammar rebuilds through.
 
     `side` is accepted and IGNORED: the gauntlet always passes side=1 ("both sides tested
@@ -306,14 +335,34 @@ def family_mass_screen_rule(df: pd.DataFrame, side: int = 1, *, feat: str, op: s
     `feat`, `op`, `thr`, `direction`, `hold` and `stop_atr` have no defaults on purpose: a
     default-parameter sweep (`breadth_sweep.default_families`) must set this family aside rather
     than mint a rule nobody screened.
+
+    `carry_side` (carry grammar only, with its `symbol`) gates every fire on the swap knowable at
+    that bar paying that side -- see `carry_mask`. 0 means no carry gate (the other grammars).
     """
     del side, gv
     return rule_signals(df, feat=feat, op=op, thr=thr, direction=direction, hold=hold,
                         stop_atr=stop_atr, cond_feat=cond_feat, cond_lo=cond_lo,
                         cond_hi=cond_hi, hour=hour, weekday=weekday, leader=leader,
-                        atr_n=atr_n)
+                        atr_n=atr_n, symbol=symbol, carry_side=carry_side)
+
+
+def family_mass_screen_carry(df: pd.DataFrame, side: int = 1, *, feat: str, op: str,
+                             thr: float, direction: int, hold: int, stop_atr: float,
+                             symbol: str = "", carry_side: int = 0,
+                             **kw: Any) -> list[Signal]:
+    """The carry grammar's rebuild: `family_mass_screen_rule` with the point-in-time swap gate
+    REQUIRED. A carry cell forwarded before 2026-10-07 carries no `carry_side`/`symbol` (its side
+    was read from today's registry swap and applied to every past bar); it rebuilds to NO
+    signals rather than to that lookahead. The fixed screen re-forwards the rule under params
+    that name both, so the honest version is judged on its own identity."""
+    if not carry_side or not symbol:
+        return []
+    return family_mass_screen_rule(df, side, feat=feat, op=op, thr=thr, direction=direction,
+                                   hold=hold, stop_atr=stop_atr, symbol=symbol,
+                                   carry_side=carry_side, **kw)
 
 
 GRAMMARS = ("thresh", "cond", "clock", "lead", "carry")
-MASS_SCREEN_FAMILIES: dict[str, Any] = {f"mass_screen_{g}": family_mass_screen_rule
-                                        for g in GRAMMARS}
+MASS_SCREEN_FAMILIES: dict[str, Any] = {
+    f"mass_screen_{g}": family_mass_screen_carry if g == "carry" else family_mass_screen_rule
+    for g in GRAMMARS}
