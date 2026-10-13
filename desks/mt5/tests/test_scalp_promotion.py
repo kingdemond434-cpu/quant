@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import ast
 import json
+import hashlib
 import os
 import sys
 from datetime import UTC, datetime, timedelta
@@ -353,7 +354,11 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     # which the gateway imports as `_pm` at module scope (2026-09-29).
     seed["_pm"] = _pm
     seed["os"] = os                  # MIN_STOP_SPREAD_MULT reads its env override
+    # Every lane matches positions through `position_tags` (2026-10-13), so the tag helpers,
+    # their roster map and their constant come with every exec.
+    seed.update({"hashlib": hashlib, "TAG_HASH": 6, "_ROSTER_LEGACY": {}})
     seed.update(ns)
+    names = (*names, "order_comment", "legacy_order_comment", "position_tags")
     keep = [n for n in _GW_TREE.body
             if (isinstance(n, ast.FunctionDef) and n.name in names)
             or (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in names
