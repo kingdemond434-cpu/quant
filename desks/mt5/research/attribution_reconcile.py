@@ -50,7 +50,8 @@ from typing import Any
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 
-LIVE_LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 SLEEVES = DESK / "data" / "sleeves.json"
 SURVIVORS = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 SLEEVE_REGISTRY = DESK / "data" / "sleeve_registry.json"
