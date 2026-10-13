@@ -52,6 +52,8 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lab, "REPORT", tmp_path / "reports" / "LLM_LAB.json")
     monkeypatch.setattr(lab, "VERDICTS", tmp_path / "none.jsonl")
     monkeypatch.setattr(lab, "SARES_DIR", tmp_path / "sares")
+    monkeypatch.setattr(lab, "_cb_tone_role",
+                        lambda **kw: {"state": "TEST_STUB", "model": {"calls": 0}, **kw})
     return tmp_path
 
 
@@ -285,6 +287,7 @@ def test_a_pass_donates_exact_rows_the_compiler_admits(state: Path, reg: dict[st
 
     files = sorted(lab.DONATE_DIR.glob("discoveries_*.json"))
     assert len(files) == 1
+    assert doc["cb_tone"]["state"] == "TEST_STUB", "the central-bank tone role runs in the pass"
     row = json.loads(files[0].read_text())["discoveries"][0]
     assert row["gauntlet_bypass"] is False and row["credibility_inherited"] is False
     import miner_candidate_compiler as mc

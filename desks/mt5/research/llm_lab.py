@@ -65,6 +65,11 @@ exists in the lake the cell is NEEDS_DATA debt, and the Jev provider reads UNMEA
 TypeSafe adapter is wired because no key is acquired and its current API was not verified, and
 this module will not guess an API's fields.
 
+CENTRAL-BANK TONE (role CB_TONE, `cb_tone_lab.py`). PBoC, BoJ, SARB, RBA and CBRT statements read
+in their original language, scored by a native lexicon and by a free-tier model, written as PIT
+lake series `cb_tone_<bank>` and donated as conditioner cells; contaminated model readings are
+kept out of the donated columns by the look-ahead guard.
+
     desks/mt5/reports/LLM_LAB.json                     the pass, the coverage, the models, the debt
     desks/mt5/data/intelligence/llm_lab/discoveries_*  the donations the compiler reads
     desks/mt5/data/llm_lab/*                           the lab's own state (outside intelligence/)
@@ -1398,6 +1403,15 @@ def coverage_from_outcomes(cov: Coverage) -> dict[str, int]:
     return dict(Counter(str(r.get("state")) for r in cov.doc["coords"].values()))
 
 
+def _cb_tone_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
+    """The central-bank tone role (`cb_tone_lab`). One role failing never fails the lab pass."""
+    try:
+        import cb_tone_lab
+        return cb_tone_lab.run(budget_s=budget_s, max_llm=max_llm)
+    except Exception as exc:                           # pragma: no cover - defensive
+        return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool = False,
         seed: int | None = None, workers: int = 4) -> dict[str, Any]:
     started = time.time()
@@ -1460,6 +1474,15 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
             t.asked += 1
             for p in [p for p in props if not isinstance(p, tuple)]:
                 process(p, "CONVERTER", ask.coord, reg, uni, mem, t, models, outputs)
+
+    # ---- phase 0b: the CENTRAL-BANK TONE role (idea 18). Native-language statements scored
+    # into point-in-time lake series; the lexicon half runs even with the seat dark.
+    cb_tone: dict[str, Any] = {"state": "NOT_RUN"} if not dry_run else {"state": "dry run"}
+    if not dry_run and budget_s - (time.time() - started) > 90:
+        cb_tone = _cb_tone_role(budget_s=min(150.0, budget_s * 0.25),
+                                max_llm=max(0, min(8, calls_budget - calls_made)) if seat_on
+                                else 0)
+        calls_made += int((cb_tone.get("model") or {}).get("calls") or 0)
 
     # ---- phase 1: the independent first pass. No lab sees another lab's current answers.
     own_recent: dict[tuple[str, str], list[str]] = {}
@@ -1622,6 +1645,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "independent_rediscoveries": redisc, "disagreements": disagree,
         "red_team_attacks": outputs["attacks"][:30],
         "conversion_debt": debt,
+        "cb_tone": cb_tone,
         "data_requests_this_pass": len(outputs["data_requests"]),
         "jev": {"provider": UNMEASURED,
                 "why": ("no TypeSafe/Jev key is acquired and its current API is unverified; "
