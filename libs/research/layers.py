@@ -101,7 +101,8 @@ LEG_LAYER: dict[str, str] = {
     # (Tier-1 #9/#11): the machine measuring what its research bought, which is meta.
     "alpha_rank": "meta", "factory_contracts": "meta",
     # timing: when a claim becomes a trade
-    "enrol_clocks": "timing", "near_miss_farm": "timing", "heal_clocks": "timing", "promoter": "timing",
+    "enrol_clocks": "timing", "near_miss_farm": "timing", "heal_clocks": "timing",
+    "promoter": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
     # WHICH HOURS the desk has an edge in is a TIMING question, not a sizing one -- this leg
     # measures and allocates nothing, and stacking it on pf_allocator would shrink twice.
@@ -407,7 +408,8 @@ LEG_LAYER: dict[str, str] = {
     # READ into claims it can. An hour spent there buys information the desk already paid to
     # fetch and had been throwing away by reading it with the wrong language's rules.
     "understanding_seat": "information",
-    "netting_report": "execution", "execution_alpha": "execution", "execution_feedback": "execution",
+    "netting_report": "execution", "execution_alpha": "execution",
+    "execution_feedback": "execution",
     "paradigm_router": "meta", "meta_controller": "meta", "lead_replication": "information",
     # THE META-EVOLUTION LAYER, THE COMPUTE-ECONOMICS SCIENTIST AND THE MISSED-TRADE
     # ARCHAEOLOGIST (LAWS 5m, 2026-09-22). The first two are the machine measuring and
