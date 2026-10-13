@@ -1042,6 +1042,10 @@ EXTERNAL_READERS = {
     "desks/mt5/data/missed_growth.jsonl": "missed_growth (its own append-only memory)",
     "desks/mt5/data/action_counterfactuals.jsonl": "action_counterfactuals (its own memory)",
     "desks/mt5/data/deep_forest_claims.jsonl": "deep_forest_miner (its own append-only memory)",
+    # carry_rejudge's adoption instant: stamped once on the first --write pass and read back by
+    # carry_rejudge on every later one to tell a look-ahead certificate from a post-adoption one.
+    "desks/mt5/data/hypotheses/carry_pit_adoption.json": ("carry_rejudge (its own adoption "
+                                                          "stamp, read back every pass)"),
     # THE MACRO LAYER'S MEMORY. Each of these is read back by `macro_intel` on its next pass and
     # by nothing else, which is precisely what makes the layer LEARN rather than restate: the
     # taxonomy's centroids move with the instances assigned to them, the credibility posteriors
