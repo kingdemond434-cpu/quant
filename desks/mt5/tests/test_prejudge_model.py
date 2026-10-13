@@ -208,6 +208,28 @@ def test_a_row_older_than_the_flag_bound_is_never_flagged() -> None:
     assert not (_flagged(out) & aged) and doc["aged_unflaggable"] == 30
 
 
+def test_a_future_first_seen_is_unknown_age_and_never_flagged() -> None:
+    """Re-audit of #330: a stamp ahead of the clock would read age 0 forever; it is old."""
+    rows = _docket()
+    for r in rows[:10]:
+        r["first_seen"] = (NOW + timedelta(hours=6)).isoformat()
+    for r in rows[10:12]:                          # inside the skew tolerance: a normal row
+        r["first_seen"] = (NOW + timedelta(seconds=60)).isoformat()
+    out, doc = pm.apply(rows, now=NOW, scorer=_fixed(rows), seen=set(), report=None)
+    assert not (_flagged(out) & {docket_cell_id(r) for r in rows[:10]})
+    assert doc["aged_unflaggable"] == 10
+    assert pm._age_h((NOW + timedelta(seconds=60)).isoformat(), NOW) == 0.0
+
+
+def test_apply_records_its_own_cost() -> None:
+    rows = _docket()
+    _out, doc = pm.apply(rows, now=NOW, scorer=_fixed(rows), seen=set(), report=None)
+    assert doc["apply_s"] >= 0.0
+    _out, doc = pm.apply(rows, now=NOW, scorer=_fixed(rows), seen=None,
+                         seen_path=Path("/nonexistent/seen.json"), report=None)
+    assert doc["status"].startswith("NOT_APPLIED") and doc["apply_s"] >= 0.0
+
+
 def test_a_family_with_few_low_rows_still_explores_one() -> None:
     rows = _docket(n_per_fam=8, fams=("good",))
     _, doc = pm.apply(rows, now=NOW, scorer=_fixed(rows), seen=set(), report=None,

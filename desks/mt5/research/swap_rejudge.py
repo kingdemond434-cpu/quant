@@ -67,6 +67,38 @@ def _read(p: Path, default: Any = None) -> Any:
         return default if default is not None else {}
 
 
+def _last_close(symbol: str) -> float | None:
+    """The last H1 close on disk: the price a mode-5 (annual percent) night is charged at."""
+    try:
+        import pandas as pd
+        df = pd.read_parquet(UNIVERSE / f"{symbol}_H1.parquet", columns=["close"])
+        px = float(df["close"].iloc[-1])
+    except Exception:
+        return None
+    return px if px > 0 else None
+
+
+def per_unit_night_swap(symbol: str, meta: dict[str, Any], price: float | None = None
+                        ) -> tuple[float | None, float | None, str]:
+    """(price units per unit per night of the worse swap side, price used, why).
+
+    IN THE UNIT swap_mode NAMES (2026-10-07). A mode-5 rate lives in `swap_per_lot_per_price`;
+    reading `swap_per_lot_per_night` alone charged it 0.0. A mode-5 night is charged at the last
+    H1 close on disk (or `price`). Unpriceable -> (None, None, why): UNMEASURED, never free.
+    """
+    from mt5desk.engine import Costs
+    costs = Costs.from_symbol({**meta, "symbol": meta.get("symbol") or symbol})
+    if costs.swap_unmeasured:
+        return None, None, costs.swap_unmeasured
+    px = None
+    if costs.swap_per_lot_per_price:
+        px = price if price is not None and price > 0 else _last_close(symbol)
+        if px is None:
+            return None, None, (f"UNMEASURED: {symbol}'s swap is an annual percent of notional "
+                                "and no H1 close is on disk to charge it at")
+    return costs.financing(1.0, px) / (costs.contract_oz or 1.0), px, "priced"
+
+
 def _stop_distance(symbol: str) -> tuple[float | None, str]:
     """2 x ATR20 on the finest chart on disk, in PRICE UNITS. The desk's standing stop unit."""
     try:
@@ -154,8 +186,6 @@ def _ledger_nights(symbol: str, family: str, window: str) -> dict[str, Any]:
 
 
 def rejudge() -> dict[str, Any]:
-    from mt5desk.engine import Costs
-
     doc = _read(SURVIVORS, {})
     survivors = doc.get("survivors") or {}
     registry = _read(REGISTRY, {})
@@ -181,8 +211,12 @@ def rejudge() -> dict[str, Any]:
             rows.append(rec)
             continue
 
-        costs = Costs.from_symbol(meta)
-        per_unit_night = costs.swap_per_lot_per_night / (costs.contract_oz or 1.0)
+        per_unit_night, price, why_swap = per_unit_night_swap(sym, meta)
+        if per_unit_night is None:
+            rec.update({"verdict": "UNMEASURED", "why": why_swap})
+            rows.append(rec)
+            continue
+        rec["swap_price_used"] = price
         rec["swap_points_worse_side"] = round(
             max(abs(float(meta.get("swap_long") or 0.0)),
                 abs(float(meta.get("swap_short") or 0.0))), 2)

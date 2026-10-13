@@ -90,6 +90,8 @@ MIN_FAMILY_ROWS = 4
 #: FIFO kept every symbol under 135h. A row first seen longer ago than this is never flagged, so it
 #: sorts as clean (oldest first) and its wait is bounded. Unknown age is treated as old.
 FLAG_MAX_AGE_H = float(os.environ.get("PREJUDGE_FLAG_MAX_AGE_H", "72"))
+#: clock skew tolerated on first_seen before a future stamp reads as unknown age (never flagged)
+FUTURE_SKEW_S = 300.0
 #: Training sample cap (stratified by family x label, inverse-inclusion weighted).
 MAX_TRAIN_ROWS = int(os.environ.get("PREJUDGE_MAX_TRAIN_ROWS", "200000"))
 PER_KEY_CAP = max(500, MAX_TRAIN_ROWS // 50)
@@ -542,14 +544,21 @@ def _seen_cells(path: Path) -> set[str] | None:
 
 
 def _age_h(first_seen: Any, now: datetime) -> float:
-    """Hours since the row was first seen; unknown or unparseable age is infinitely old."""
+    """Hours since the row was first seen; unknown, unparseable or FUTURE age is infinitely old.
+
+    A first_seen more than five minutes ahead of the clock would read as age 0 on every pass
+    until the clock caught up, so a skewed stamp could hold a row flaggable indefinitely; it
+    is treated as unknown instead, which never flags (re-audit of #330)."""
     try:
         seen = datetime.fromisoformat(str(first_seen).replace("Z", "+00:00"))
     except ValueError:
         return math.inf
     if seen.tzinfo is None:
         seen = seen.replace(tzinfo=UTC)
-    return max(0.0, (now - seen).total_seconds() / 3600.0)
+    age_s = (now - seen).total_seconds()
+    if age_s < -FUTURE_SKEW_S:
+        return math.inf
+    return max(0.0, age_s / 3600.0)
 
 
 def _flag(r: dict[str, Any], p: float) -> None:
@@ -579,6 +588,7 @@ def apply(rows: list[dict[str, Any]], *, now: datetime | None = None,
           quota: float | None = None, report: Path | None = REPORT
           ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Flag the low-priority tail of each family's NEVER-JUDGED rows; return a permutation."""
+    t0 = time.perf_counter()
     when = now or datetime.now(tz=UTC)
     pct = PERCENTILE if percentile is None else float(percentile)
     q = EXPLORATION_QUOTA if quota is None else float(quota)
@@ -594,6 +604,7 @@ def apply(rows: list[dict[str, Any]], *, now: datetime | None = None,
     }
     if judged is None:
         summary["status"] = "NOT_APPLIED: seen-cell index unreadable, never-judged unknown"
+        summary["apply_s"] = round(time.perf_counter() - t0, 3)
         _write_report(report, summary, sc)
         return rows, summary
     by_fam: dict[str, list[tuple[int, str]]] = {}
@@ -640,6 +651,7 @@ def apply(rows: list[dict[str, Any]], *, now: datetime | None = None,
         fam_doc["flag_rate"] = round(fam_doc["flagged"] / max(fam_doc["candidates"], 1), 4)
     out, summary["moved"] = _reorder(rows)
     summary["status"] = "APPLIED"
+    summary["apply_s"] = round(time.perf_counter() - t0, 3)   # its cost to the hourly merge
     _write_report(report, summary, sc)
     return out, summary
 
