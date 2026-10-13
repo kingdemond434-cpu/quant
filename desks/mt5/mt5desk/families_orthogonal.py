@@ -2402,6 +2402,29 @@ FAMILY_INPUTS["alt_conditioned"] = (
     "a price-only base family's bars plus an alt series' regime on its available_time clock",
     "data/universe/*_H1.parquet + data/lake/series/fs_<source>.parquet")
 
+# THE TICK-FLOW FAMILIES (flow factory, 2026-10-13). The sealed gauntlet hands the two older tape
+# families one flow series (net mid-change sign), so the tick rule, unit-depth order-flow
+# imbalance, quote intensity and the OrderFlow - PriceResponse residual had no family a cell could
+# name. `research/flow_factory.py` publishes them per symbol as five-minute buckets under
+# data/lake/series/tf_<SYMBOL>.parquet; both families load it from `source`/`feature` on the
+# recipe, so `fn(h1, **params)` rebuilds them unchanged.
+from mt5desk.family_tick_flow import family_flow_residual, family_tick_flow  # noqa: E402
+
+ORTHOGONAL_FAMILIES["tick_flow"] = family_tick_flow
+ORTHOGONAL_FAMILIES["flow_residual"] = family_flow_residual
+FAMILY_INPUTS["tick_flow"] = (
+    "one tick-tape feature (tick rule, unit-depth OFI, spread, quote rate) in five-minute "
+    "buckets (research/flow_factory.py)", "data/lake/series/tf_<SYMBOL>.parquet")
+FAMILY_INPUTS["flow_residual"] = (
+    "a signed tick-tape flow feature and the bar's own return",
+    "data/lake/series/tf_<SYMBOL>.parquet")
+for _tf_name in ("tick_flow", "flow_residual"):
+    FAMILY_TIMEFRAMES[_tf_name] = (
+        ("M5", "M15", "M30", "H1", "H4"),
+        "the series is five-minute buckets of the tick tape: M1 is finer than a bucket and cannot "
+        "be expressed, and the tape's history is days, so a D1 chart has too few bars to judge")
+del _tf_name
+
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
 # certificate: `family_cross_sectional` takes its peers as an argument and the sealed gauntlet's
