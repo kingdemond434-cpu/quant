@@ -260,6 +260,7 @@ SOURCES: dict[str, dict[str, Any]] = {
         "terms_url": "https://www.cmegroup.com/terms-of-use.html",
         "terms_quote": "(not readable: the terms page returned a fetch error on 2026-10-13)",
         "checked_at": "2026-10-13", "collector": None, "pit": "n/a", "publication_lag": "n/a",
+        "access": "UNREAD",
         "why_held": ("no CME clause could be read; the existing futures_lead_lag leg reads a "
                      "Yahoo route whose own terms are not on file here (per source, not a "
                      "category ban), so it is not counted as collection here")},
