@@ -138,54 +138,126 @@ def slug(name: str) -> str:
 
 
 # ============================================================================ the fixed fetcher
-def _domain(host: str) -> str:
-    parts = host.lower().rstrip(".").split(".")
-    return ".".join(parts[-2:]) if len(parts) >= 2 else host.lower()
+#: Total wall time one request may take, read included (audit should-fix: a per-read timeout let
+#: a trickling server hold a call for 40 s).
+REQUEST_S = 25.0
+#: A host that answered 429 or 5xx rests this long before this organ asks it again.
+COOLDOWN_S = 6 * 3600.0
+HOST_STATE = STATE_DIR / "hosts.json"
+#: Transient outcomes: never counted against a source's attempts (audit should-fix: two outage
+#: passes used to drop a source for good).
+TRANSIENT = ("UNREACHABLE", "HTTP_5", "GATED:HTTP_429", "COOLDOWN", "ROBOTS_UNAVAILABLE")
 
 
 def same_site(url: str, source_url: str) -> bool:
-    """A spec may only move within the source's own registered domain."""
-    a = urllib.parse.urlsplit(url).hostname or ""
-    b = urllib.parse.urlsplit(source_url).hostname or ""
-    return bool(a and b) and (a.lower() == b.lower() or _domain(a) == _domain(b))
+    """A spec may only stay on the source's own host or a host under it (audit M3 on #332: the
+    last-two-labels rule matched evil.co.uk with x.co.uk and any two *.github.io). A leading
+    `www.` on the source is the one parent a spec may climb to, since `www.x.org` and
+    `api.x.org` are the same publisher by construction."""
+    a = (urllib.parse.urlsplit(url).hostname or "").lower().rstrip(".")
+    b = (urllib.parse.urlsplit(source_url).hostname or "").lower().rstrip(".")
+    if not a or not b:
+        return False
+    base = b[4:] if b.startswith("www.") and b.count(".") >= 2 else b
+    return a in (b, base) or a.endswith("." + b) or a.endswith("." + base)
 
 
-def _default_get(url: str) -> tuple[int, bytes]:
-    import requests
-    # No redirects (a public URL that 302s to a private one would skip the host check), no auth,
-    # no cookies, a byte cap: the response is read as data and nothing else.
-    with requests.get(url, timeout=25, allow_redirects=False, stream=True,
-                      headers={"User-Agent": AGENT, "Accept": "*/*"}) as r:
-        body = b""
-        for chunk in r.iter_content(65536):
-            body += chunk
-            if len(body) > MAX_BYTES:
-                return 413, b""
-        return r.status_code, body
+def _pinned_get(ip: str) -> Getter:
+    """A GET that connects to the address the SSRF check approved and to nothing else (audit M1:
+    a second DNS resolution at connect time landed on 127.0.0.1). http.client reads no ~/.netrc,
+    no proxy and no environment (M2); no redirects are followed; the whole request, body
+    included, is bounded by REQUEST_S and MAX_BYTES; no compression is accepted, so the byte cap
+    is the cap on what is parsed."""
+    import http.client
+    import socket
+    import ssl
+
+    class _HTTP(http.client.HTTPConnection):
+        def connect(self) -> None:
+            self.sock = socket.create_connection((ip, self.port), self.timeout)
+
+    class _HTTPS(http.client.HTTPSConnection):
+        def connect(self) -> None:
+            raw = socket.create_connection((ip, self.port), self.timeout)
+            self.sock = ssl.create_default_context().wrap_socket(raw, server_hostname=self.host)
+
+    def get(url: str) -> tuple[int, bytes]:
+        parts = urllib.parse.urlsplit(url)
+        start = time.monotonic()
+        cls = _HTTPS if parts.scheme == "https" else _HTTP
+        conn = cls(parts.hostname or "", parts.port, timeout=10.0)
+        try:
+            path = urllib.parse.urlunsplit(("", "", parts.path or "/", parts.query, ""))
+            conn.request("GET", path, headers={"User-Agent": AGENT, "Accept": "*/*",
+                                               "Accept-Encoding": "identity"})
+            r = conn.getresponse()
+            body = b""
+            while True:
+                if time.monotonic() - start > REQUEST_S:
+                    raise TimeoutError("request exceeded its total budget")
+                chunk = r.read(65536)
+                if not chunk:
+                    break
+                body += chunk
+                if len(body) > MAX_BYTES:
+                    return 413, b""
+            return int(r.status), body
+        finally:
+            conn.close()
+    return get
+
+
+def _cooling(host: str, now: float) -> bool:
+    until = float((_read_json(HOST_STATE, {}) or {}).get(host, 0) or 0)
+    return now < until
+
+
+def _cool(host: str, now: float) -> None:
+    doc = _read_json(HOST_STATE, {}) or {}
+    doc[host] = now + COOLDOWN_S
+    _write_json(HOST_STATE, doc)
 
 
 def fetch(url: str, source_url: str, *, get: Getter | None = None,
           resolve: Callable[[str], list[str]] | None = None) -> tuple[bytes, str]:
     """(body, "") or (b"", why). Every refusal is named."""
-    from libs.ops.public_host import public_url
+    from libs.ops.public_host import resolve_public
     if not same_site(url, source_url):
-        return b"", "OFF_SITE: the spec left the source's own domain"
-    why = public_url(url, resolve=resolve)
-    if why:
-        return b"", f"REFUSED:{why}"
-    g = get or _default_get
+        return b"", "OFF_SITE: the spec left the source's own host"
     parts = urllib.parse.urlsplit(url)
     try:
+        port = parts.port
+    except ValueError:
+        return b"", "BAD_PORT"
+    if port not in (None, 80, 443):
+        return b"", f"BAD_PORT:{port}"
+    addrs, why = resolve_public(url, resolve=resolve)
+    if why:
+        return b"", f"REFUSED:{why}"
+    host = (parts.hostname or "").lower()
+    now = time.time()
+    if _cooling(host, now):
+        return b"", "COOLDOWN: the host answered 429/5xx recently"
+    g = get or _pinned_get(addrs[0])
+    try:
         code, robots = g(f"{parts.scheme}://{parts.netloc}/robots.txt")
+        if code >= 500:
+            # RFC 9309: an unreachable robots.txt is a full disallow, not a pass.
+            return b"", "ROBOTS_UNAVAILABLE"
         if code == 200:
             from urllib.robotparser import RobotFileParser
             rp = RobotFileParser()
             rp.parse(robots.decode("utf-8", errors="replace").splitlines())
             if not rp.can_fetch(AGENT, url):
                 return b"", "ROBOTS_DISALLOW"
+            delay = rp.crawl_delay(AGENT)
+            if delay:
+                time.sleep(min(float(delay), 10.0))
         code, body = g(url)
     except Exception as exc:
         return b"", f"UNREACHABLE:{type(exc).__name__}"
+    if code == 429 or code >= 500:
+        _cool(host, now)
     if code in (401, 402, 403, 407, 429):
         return b"", f"GATED:HTTP_{code}"
     if code != 200:
@@ -207,16 +279,19 @@ def parse_date(raw: Any, fmt: str = "") -> str | None:
         x = float(raw)
         if not math.isfinite(x):
             return None
-        if x > 1e11:
+        while x > 1e11:                 # milli-, micro- and nanosecond epochs (audit M4)
             x /= 1000.0
         if x < 1e8:
             return None
-        return datetime.fromtimestamp(x, UTC).date().isoformat()
+        try:
+            return datetime.fromtimestamp(x, UTC).date().isoformat()
+        except (OverflowError, OSError, ValueError):
+            return None
     s = str(raw).strip()
     if fmt:
         try:
             return datetime.strptime(s, fmt).replace(tzinfo=UTC).date().isoformat()
-        except ValueError:
+        except (ValueError, re.error, TypeError):     # a model's format may not even compile
             return None
     m = _ISO.match(s)
     if m:
@@ -270,8 +345,7 @@ def _pick(row: Any, field_: str) -> Any:
     return None
 
 
-def parse(body: bytes, spec: dict[str, Any]) -> tuple[dict[str, float], str]:
-    """{YYYY-MM-DD: value}, "" or {}, why. The last reading of a day wins."""
+def _parse(body: bytes, spec: dict[str, Any]) -> tuple[dict[str, float], str]:
     fmt = str(spec.get("format") or "")
     dkey, vkey = str(spec.get("date") or ""), str(spec.get("value") or "")
     dfmt = str(spec.get("date_format") or "")
@@ -282,7 +356,7 @@ def parse(body: bytes, spec: dict[str, Any]) -> tuple[dict[str, float], str]:
     if fmt == "json":
         try:
             doc = json.loads(text)
-        except ValueError:
+        except (ValueError, RecursionError):
             return {}, "NOT_JSON"
         recs = _walk(doc, str(spec.get("records") or ""))
         if isinstance(recs, dict) and dkey == "@key":
@@ -305,6 +379,16 @@ def parse(body: bytes, spec: dict[str, Any]) -> tuple[dict[str, float], str]:
     return dict(sorted(out.items())), ""
 
 
+def parse(body: bytes, spec: dict[str, Any]) -> tuple[dict[str, float], str]:
+    """{YYYY-MM-DD: value}, "" or {}, why. The last reading of a day wins. NEVER RAISES (audit
+    M4 on #332): a payload or a model-written format that breaks the parser marks that one spec
+    broken, and the pass carries on."""
+    try:
+        return _parse(body, spec)
+    except Exception as exc:                           # blind-except intentional (BLE001)
+        return {}, f"PARSE_ERROR:{type(exc).__name__}"
+
+
 def validate(series: dict[str, float]) -> tuple[bool, str]:
     """collector_author's diff-verify step, kept: garbage is worse than no collector."""
     if len(series) < MIN_POINTS:
@@ -316,6 +400,9 @@ def validate(series: dict[str, float]) -> tuple[bool, str]:
 
 
 # ============================================================================ PIT series
+VINTAGES = STATE_DIR / "vintages"
+
+
 def availability_lag(dates: Sequence[str]) -> timedelta:
     ds = sorted(datetime.fromisoformat(d) for d in dates)
     gaps = [(b - a).days for a, b in itertools.pairwise(ds) if (b - a).days > 0]
@@ -323,16 +410,42 @@ def availability_lag(dates: Sequence[str]) -> timedelta:
     return timedelta(days=max(1.0, 2.0 * float(spacing)))
 
 
-def series_rows(series: dict[str, float], source_id: str, retrieved: str) -> list[dict[str, Any]]:
-    if not series:
-        return []
-    lag = availability_lag(list(series))
-    rows = []
+def merge_vintages(store: dict[str, list[list[Any]]], series: dict[str, float], seen: str
+                   ) -> int:
+    """Record each date's value with the time this organ FIRST saw it; a changed value is a new
+    vintage, never an overwrite (audit M6 on #332). Returns how many readings were new."""
+    new = 0
     for d, v in series.items():
-        at = (datetime.fromisoformat(d).replace(tzinfo=UTC) + lag)
-        rows.append({"available_time": at.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-                     "published_time": "", "retrieval_time": retrieved,
-                     "source_id": source_id, "vintage_id": "v1", "value": v})
+        hist = store.setdefault(d, [])
+        if not hist or abs(float(hist[-1][0]) - v) > 1e-12 * max(1.0, abs(v)):
+            hist.append([v, seen])
+            new += 1
+    return new
+
+
+def series_rows(store: dict[str, list[list[Any]]], source_id: str, lag_days: float, born: str
+                ) -> list[dict[str, Any]]:
+    """One row per (date, vintage). POINT IN TIME AGAINST THIS ORGAN'S OWN CLOCK:
+
+      * a reading first seen AFTER the spec was born is available at max(D + lag, first seen);
+      * a revision is available only from when it was seen;
+      * the history fetched at birth keeps D + lag. It is warm-up for the conditioner's z-score,
+        never evidence: the cells' look-ahead stamp starts evidence the day AFTER birth, the
+        gauntlet trims every bar before that, and every bar after it sees only readings this
+        organ had already fetched.
+    """
+    lag = timedelta(days=float(lag_days))
+    rows = []
+    for d in sorted(store):
+        base = datetime.fromisoformat(d).replace(tzinfo=UTC) + lag
+        for i, (v, seen) in enumerate(store[d]):
+            at = base
+            if i > 0 or str(seen) > born:
+                at = max(base, datetime.fromisoformat(str(seen)))
+            rows.append({"available_time": at.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
+                         "published_time": "", "retrieval_time": seen, "source_id": source_id,
+                         "vintage_id": f"v{i + 1}", "value": v})
+    rows.sort(key=lambda r: (r["available_time"], r["vintage_id"]))
     return rows
 
 
@@ -352,6 +465,17 @@ def write_series(source_id: str, rows: Sequence[dict[str, Any]]) -> Path:
     return path
 
 
+def guard_for(model: str, born: str) -> dict[str, Any]:
+    """The lab's look-ahead stamp, with evidence starting no earlier than the day after birth, so
+    no bar on the birth day can see a reading fetched later that day."""
+    from llm_lab import lookahead_guard
+    g = lookahead_guard(model, at=born)
+    after = (datetime.fromisoformat(born[:10]) + timedelta(days=1)).date().isoformat()
+    g["evidence_from"] = max(str(g.get("evidence_from") or ""), after)
+    g["basis"] = str(g.get("basis") or "") + "; collector: evidence from the day after birth"
+    return g
+
+
 # ============================================================================ the model's half
 def parse_spec(text: str, uni: dict[str, str]) -> tuple[dict[str, Any], str]:
     m = re.search(r"\{.*\}", text or "", re.S)
@@ -359,7 +483,7 @@ def parse_spec(text: str, uni: dict[str, str]) -> tuple[dict[str, Any], str]:
         return {}, "NO_JSON"
     try:
         raw = json.loads(m.group(0))
-    except ValueError:
+    except (ValueError, RecursionError):
         return {}, "BAD_JSON"
     if not isinstance(raw, dict) or not raw:
         return {}, "DECLINED"
@@ -381,11 +505,18 @@ def parse_spec(text: str, uni: dict[str, str]) -> tuple[dict[str, Any], str]:
     return spec, ""
 
 
+def transient(rec: dict[str, Any]) -> bool:
+    return str(rec.get("detail") or "").startswith(TRANSIENT) or rec.get("status") == "CHAIN_DARK"
+
+
 def candidates(feed: Path, specs: dict[str, Any], attempts: list[dict[str, Any]]
                ) -> list[dict[str, Any]]:
+    """Unconverted sources. Only a DEFINITE failure counts toward MAX_ATTEMPTS; an outage, a 429,
+    a cooling host or a dark chain is retried on a later pass."""
     tried: dict[str, int] = {}
     for a in attempts:
-        tried[str(a.get("source"))] = tried.get(str(a.get("source")), 0) + 1
+        if not transient(a):
+            tried[str(a.get("source"))] = tried.get(str(a.get("source")), 0) + 1
     seen: set[str] = set()
     out = []
     for r in _jsonl(feed):
@@ -398,9 +529,13 @@ def candidates(feed: Path, specs: dict[str, Any], attempts: list[dict[str, Any]]
     return out
 
 
+class ChainDark(RuntimeError):
+    """The free chain could not answer: the pass stops asking, and the source is not charged."""
+
+
 def author(row: dict[str, Any], uni: dict[str, str], *, chat: Any, get: Getter | None,
            resolve: Callable[[str], list[str]] | None, timeout: float) -> dict[str, Any]:
-    """One source -> one attempt record (and a spec when it works)."""
+    """One source -> one attempt record (and a spec when it works). Raises only ChainDark."""
     rec: dict[str, Any] = {"source": row.get("name"), "url": row.get("url"), "at": _now()}
     sample, why = fetch(str(row.get("url") or ""), str(row.get("url") or ""), get=get,
                         resolve=resolve)
@@ -421,7 +556,10 @@ def author(row: dict[str, Any], uni: dict[str, str], *, chat: Any, get: Getter |
     except Exception:                                  # pragma: no cover
         rec.update(status=UNMEASURED, detail="prompt hygiene unavailable: nothing is sent")
         return rec
-    reply = chat(SYSTEM, user, max_tokens=500, temperature=0.0, timeout=timeout)
+    try:
+        reply = chat(SYSTEM, user, max_tokens=500, temperature=0.0, timeout=timeout)
+    except Exception as exc:                           # blind-except intentional (BLE001)
+        raise ChainDark(type(exc).__name__) from exc
     model = f"{getattr(reply, 'provider', '')}:{getattr(reply, 'model', '')}"
     rec["model"] = model
     spec, why = parse_spec(str(getattr(reply, "text", "") or ""), uni)
@@ -437,10 +575,12 @@ def author(row: dict[str, Any], uni: dict[str, str], *, chat: Any, get: Getter |
     ok, vmsg = validate(series) if not why else (False, why)
     rec.update(status="WORKS" if ok else "broken", detail=vmsg, n=len(series))
     if ok:
-        from llm_lab import lookahead_guard
+        born = _now()
         rec["spec"] = {**spec, "source": row.get("name"), "source_url": row.get("url"),
-                       "model": model, "born": _now(),
-                       "lookahead_guard": lookahead_guard(model)}
+                       "model": model, "born": born,
+                       "lag_days": availability_lag(list(series)).total_seconds() / 86400.0,
+                       "lookahead_guard": guard_for(model, born)}
+        rec["series"] = series          # the birth history, stamped as seen at birth by run()
     return rec
 
 
@@ -462,6 +602,8 @@ def cells(specs: dict[str, Any], counts: dict[str, int], uni: dict[str, str]
             owed.append({"collector": sid, "blocker": "NEEDS_INSTRUMENT_MAPPING"})
             continue
         side = int(spec.get("side_when_high") or 1)
+        guard = spec.get("lookahead_guard") or guard_for(str(spec.get("model") or ""),
+                                                          str(spec.get("born") or _now()))
         for sym in syms:
             if not llm_lab._lane_ok(sym, "exogenous_conditioner"):
                 continue
@@ -482,9 +624,7 @@ def cells(specs: dict[str, Any], counts: dict[str, int], uni: dict[str, str]
                     "mechanism_class": "alternative_data",
                     "lineage": {"root": f"collector:{sid}", "operator": "llm_lab"},
                     "url": str(spec.get("source_url") or ""),
-                    "producer": "llm_lab", "lookahead_guard": spec.get("lookahead_guard") or
-                    llm_lab.lookahead_guard(str(spec.get("model") or ""),
-                                            at=str(spec.get("born") or "") or None),
+                    "producer": "llm_lab", "lookahead_guard": guard,
                     "copy_trade": False, "credibility_inherited": False,
                     "gauntlet_bypass": False})
     return rows, owed
@@ -492,30 +632,49 @@ def cells(specs: dict[str, Any], counts: dict[str, int], uni: dict[str, str]
 
 # ============================================================================ the pass
 def refresh(specs: dict[str, Any], *, get: Getter | None, deadline: float,
-            resolve: Callable[[str], list[str]] | None = None) -> dict[str, int]:
-    """Re-run every working spec with no model call: the collector stays wired."""
+            resolve: Callable[[str], list[str]] | None = None
+            ) -> tuple[dict[str, int], dict[str, int]]:
+    """Re-run every working spec with no model call: the collector stays wired.
+
+    Returns (rows on disk per collector, outcome counts). A spec whose refresh fails keeps the
+    series it already has (its cells stay valid), but is counted FAILED, never refreshed (audit
+    M5: the old count made an all-503 pass read RAN)."""
     counts: dict[str, int] = {}
+    outcome = {"refreshed": 0, "failed": 0, "skipped_budget": 0}
     for sid, spec in specs.items():
+        prev = SERIES_DIR / f"col_{sid}.csv"
+        kept = int(spec.get("points") or 0) if prev.exists() else 0
         if time.time() > deadline:
-            break
-        body, why = fetch(str(spec["url"]), str(spec.get("source_url") or spec["url"]),
-                          get=get, resolve=resolve)
-        if why:
-            spec["last_error"] = why
-            counts[sid] = int(spec.get("points") or 0) if (SERIES_DIR / f"col_{sid}.csv"
-                                                         ).exists() else 0
+            outcome["skipped_budget"] += 1
+            counts[sid] = kept
             continue
-        series, why = parse(body, spec)
-        ok, vmsg = validate(series) if not why else (False, why)
-        if not ok:
-            spec["last_error"] = vmsg
+        try:
+            body, why = fetch(str(spec["url"]), str(spec.get("source_url") or spec["url"]),
+                              get=get, resolve=resolve)
+            series, why = parse(body, spec) if not why else ({}, why)
+            ok, vmsg = validate(series) if not why else (False, why)
+            if not ok:
+                raise ValueError(vmsg)
+            vpath = VINTAGES / f"{sid}.json"
+            store = _read_json(vpath, {}) or {}
+            seen = _now()
+            merge_vintages(store, series, seen)
+            _write_json(vpath, store)
+            rows = series_rows(store, f"col_{sid}",
+                               float(spec.get("lag_days") or
+                                     availability_lag(list(series)).days),
+                               str(spec.get("born") or seen))
+            write_series(f"col_{sid}", rows)
+        except Exception as exc:                       # blind-except intentional (BLE001)
+            spec["last_error"] = str(exc)[:160] or type(exc).__name__
+            outcome["failed"] += 1
+            counts[sid] = kept
             continue
-        rows = series_rows(series, f"col_{sid}", _now())
-        write_series(f"col_{sid}", rows)
         spec.update(last_ok=_now(), points=len(rows))
         spec.pop("last_error", None)
         counts[sid] = len(rows)
-    return counts
+        outcome["refreshed"] += 1
+    return counts, outcome
 
 
 def run(*, budget_s: float = 120.0, max_llm: int = 4, chat: Any = None, get: Getter | None = None,
@@ -532,38 +691,48 @@ def run(*, budget_s: float = 120.0, max_llm: int = 4, chat: Any = None, get: Get
     new: list[dict[str, Any]] = []
     todo = candidates(feed or FEED, specs, attempts)
     out["unconverted_sources"] = len(todo)
-    if max_llm > 0 and todo:
+    dark = ""
+    if todo and max_llm > 0:
         if chat is None:
             try:
                 from libs.ops import free_chain
                 chat = free_chain.chat
             except Exception:                          # pragma: no cover
-                chat = None
+                dark = "free_chain unavailable"
         for row in todo[:max_llm] if chat else []:
             if time.time() > deadline - 20:
                 break
             try:
                 rec = author(row, uni, chat=chat, get=get, resolve=resolve,
                              timeout=max(10.0, min(90.0, deadline - time.time())))
-            except Exception as exc:
-                out["chain"] = type(exc).__name__
+            except ChainDark as exc:
+                dark = str(exc) or "chain"
                 break
+            except Exception as exc:                   # blind-except intentional (BLE001)
+                rec = {"source": row.get("name"), "url": row.get("url"), "at": _now(),
+                       "status": "broken", "detail": f"AUTHOR_ERROR:{type(exc).__name__}"}
+            birth_series = rec.pop("series", None)
             new.append(rec)
             if rec.get("spec"):
-                specs[slug(str(row.get("name")))] = rec.pop("spec")
+                sid = slug(str(row.get("name")))
+                specs[sid] = rec.pop("spec")
+                store: dict[str, list[list[Any]]] = {}
+                merge_vintages(store, birth_series or {}, str(specs[sid]["born"]))
+                _write_json(VINTAGES / f"{sid}.json", store)
+    elif todo:
+        dark = "no model calls left in this pass"
     if new:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         with ATTEMPTS.open("a", encoding="utf-8") as fh:
             for r in new:
                 fh.write(json.dumps(r, default=str) + "\n")
 
-    counts = refresh(specs, get=get, deadline=deadline, resolve=resolve)
+    counts, outcome = refresh(specs, get=get, deadline=deadline, resolve=resolve)
     _write_json(SPECS, specs)
     donate, owed = cells(specs, counts, uni)
     known = set(_read_json(STATE_DIR / "donated.json", []) or [])
     fresh = [r for r in donate if r["cell_id"] not in known]
     if fresh:
-        import llm_lab
         target = llm_lab.donation_target(DONATE_DIR)
         target.mkdir(parents=True, exist_ok=True)
         stamp = _now().replace(":", "").replace("-", "")[:15]
@@ -574,11 +743,23 @@ def run(*, budget_s: float = 120.0, max_llm: int = 4, chat: Any = None, get: Get
     status: dict[str, int] = {}
     for r in new:
         status[str(r.get("status"))] = status.get(str(r.get("status")), 0) + 1
+    # THE STATE IS WHAT HAPPENED, NEVER WHAT IT LOOKED LIKE (audit M5): sources owed with no
+    # answer is DARK; working specs that all failed to refresh are STALE; NOTHING_OWED only when
+    # nothing was owed at all.
+    if outcome["refreshed"] or any(r.get("status") == "WORKS" for r in new):
+        state = "RAN"
+    elif specs and outcome["failed"] and not outcome["refreshed"]:
+        state = "STALE"
+    elif todo and (dark or not new):
+        state = "DARK"
+    elif new:
+        state = "RAN"
+    else:
+        state = "NOTHING_OWED"
     out.update({"asked": len(new), "attempts": status, "collectors": len(specs),
-                "series_refreshed": sum(1 for v in counts.values() if v), "cells_donated":
-                len(fresh), "cells_total": len(donate), "owed": owed[:20],
-                "state": "RAN" if (new or counts) else ("DARK" if todo and not chat
-                                                       else "NOTHING_OWED"),
+                "refresh": outcome, "series_refreshed": outcome["refreshed"],
+                "cells_donated": len(fresh), "cells_total": len(donate), "owed": owed[:20],
+                "chain": dark or "ok", "state": state,
                 "seconds": round(time.time() - started, 1)})
     return out
 

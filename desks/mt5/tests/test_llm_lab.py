@@ -498,6 +498,7 @@ def test_donations_are_held_until_the_gauntlet_trims(tmp_path: Path,
     target = lab.donation_target(lab.DONATE_DIR)
     assert target != lab.DONATE_DIR
     target.mkdir(parents=True)
+    assert target.name == lab.DONATE_DIR.name, "held per seat, so attribution survives"
     (target / "discoveries_1.json").write_text("{}")
     assert lab.release_held()["state"] == "HELD" and not lab.DONATE_DIR.exists()
     gauntlet.write_text("def llm_born(c):\n    pass\ndef evidence_trim(c, ds):\n    pass\n")

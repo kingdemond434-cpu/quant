@@ -1488,22 +1488,24 @@ def gauntlet_trims() -> bool:
 
 def donation_target(default: Path) -> Path:
     """Where an LLM-lab donation may be written: the compiler's seat dir, or the held queue."""
-    return default if gauntlet_trims() else STATE_DIR / "held_donations"
+    return default if gauntlet_trims() else STATE_DIR / "held_donations" / default.name
 
 
 def release_held(dest: Path | None = None) -> dict[str, Any]:
     """Move held donations into the seat dir once the gauntlet trims. Nothing is lost while held."""
     held = STATE_DIR / "held_donations"
-    files = sorted(held.glob("*.json")) if held.is_dir() else []
+    # One held subdirectory per destination seat, so a release keeps each donor's attribution.
+    files = sorted(held.glob("*/*.json")) if held.is_dir() else []
     if not gauntlet_trims():
         return {"state": "HELD", "files": len(files),
                 "why": "external_gauntlet.py lacks the look-ahead trim (sealed patch "
                        "llm_lookahead_gauntlet not landed): LLM-born cells are not donated"}
-    dest = dest or DONATE_DIR
+    root = (dest or DONATE_DIR).parent
     moved = 0
     for f in files:
-        dest.mkdir(parents=True, exist_ok=True)
-        os.replace(f, dest / f.name)
+        seat = root / f.parent.name
+        seat.mkdir(parents=True, exist_ok=True)
+        os.replace(f, seat / f.name)
         moved += 1
     return {"state": "DONATING", "released": moved}
 
