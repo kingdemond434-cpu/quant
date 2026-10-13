@@ -12,7 +12,7 @@
  },
  "e8": {
   "gold_asia": 0.01,
-  "AUDCHF_overnight_gap_decay_asia": 0.01
+  "AUDCHF_overnight_gap_decay_asia": 0.0
  },
  "excluded": {
   "USDJPY_session_range_breakout_asia": "Reddit-only lineage (PR #162); quarantined in live_sleeve_policy.json until re-certified from a clean lineage",
