@@ -35,8 +35,9 @@ WHAT IS MEASURED, PER CERTIFICATE, FROM ITS OWN SIGNALS:
     genealogy        distance of the family's declared mechanism class from the textbook: 0.0
                      for breakout / trend / reversion / carry / calendar / volatility, 0.5 for
                      the adjacent classes (residual, microstructure, plumbing, positioning,
-                     macro, event, regime, ensemble), 1.0 for a discovered, generic, learned or
-                     unclassified family.
+                     macro, event, regime, ensemble), 1.0 for a declared discovered, generic
+                     or learned family, and a neutral 0.0 (UNMEASURED) for a family the
+                     registry does not classify -- a registry gap never buys the tilt.
     novelty          novelty_return * (0.5 + 0.5 * genealogy) when the return projection is
                      measured: the returns decide and the declared class scales them, so a
                      "discovered" family that is one side of a fixed window reads as the textbook
@@ -83,7 +84,8 @@ DEFAULT_BUDGET_S = 300.0
 #: Re-measured at most this often; the certificates change on the judge's clock, not hourly.
 REFRESH_S = 20 * 3600.0
 WEEK_S = 7 * 86400.0
-#: Measured 2026-10-13 on a 58-certificate canon: peak 2,737 MB (the gauntlet's frame cache).
+#: Measured 2026-10-13 in a cloud session container (not either desk box) on the 58-certificate
+#: canon: peak 2,737 MB, the gauntlet's frame cache. The job lock re-learns it on each host.
 NEED_MB = 2800
 #: A certificate is NOVEL at or above this combined novelty, with its return novelty measured.
 NOVEL_T = 0.5
@@ -100,6 +102,11 @@ UNMEASURED_STYLES = {"flow_positioning": "no COT/positioning history is read on 
 TEXTBOOK = frozenset({"breakout", "trend", "reversion", "carry", "calendar", "volatility"})
 ADJACENT = frozenset({"residual", "microstructure", "plumbing", "positioning", "macro", "event",
                       "regime", "ensemble"})
+NOVEL_CLASSES = frozenset({"discovered", "generic"})
+#: The learned miners' families (research/learned_miners.MINERS), declared here so a missing
+#: import cannot silently re-score them as unclassified.
+LEARNED_FAMILIES = frozenset({"gnn_propagation", "attention_ts", "rocket_ts", "ae_latent",
+                              "sig_path"})
 
 
 def _now() -> str:
@@ -123,13 +130,23 @@ def _mechanism_classes() -> dict[str, str]:
 
 
 def genealogy(family: str, classes: Mapping[str, str] | None = None) -> tuple[float, str]:
-    """(distance from the textbook, the class it was read from). Undeclared is 1.0: unknown."""
-    cls = (classes if classes is not None else _mechanism_classes()).get(family, "UNCLASSIFIED")
+    """(distance from the textbook, the class it was read from).
+
+    Only a DECLARED novel class scores 1.0 (discovered, generic, a learned miner's family). A
+    family the registry does not classify is UNMEASURED and scores the neutral 0.0: a gap in
+    MECHANISM_CLASS must never buy the largest tilt (L1.28a, audit of #377)."""
+    if family in LEARNED_FAMILIES:
+        return 1.0, "learned"
+    cls = (classes if classes is not None else _mechanism_classes()).get(family)
+    if cls is None:
+        return 0.0, "UNMEASURED"
     if cls in TEXTBOOK:
         return 0.0, cls
     if cls in ADJACENT:
         return 0.5, cls
-    return 1.0, cls
+    if cls in NOVEL_CLASSES:
+        return 1.0, cls
+    return 0.0, f"UNMEASURED: class {cls!r} has no declared distance"
 
 
 def _bars_per_day(index: Any) -> float:
@@ -143,15 +160,15 @@ def _bars_per_day(index: Any) -> float:
 
 
 def style_matrix(close: np.ndarray, index: Any, signals: Sequence[Any],
-                 high: np.ndarray | None = None, low: np.ndarray | None = None
-                 ) -> tuple[np.ndarray, np.ndarray]:
+                 high: np.ndarray | None = None, low: np.ndarray | None = None,
+                 open_: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
     """(y, X): each signal's directional window P&L and each style's P&L on that window.
 
-    Every style's position is decided from closes at or before the entry only. A resting
-    stop-order signal (`trigger` set, a breakout bracket) enters at its trigger on the first of
-    its `wait_bars` bars that touches it, with the styles read at the bar before; an untouched
-    bracket side never traded and is not a sample (counting it is what read every session
-    breakout as unexplained by every style)."""
+    THE ENGINE'S OWN WINDOW (mt5desk/engine.py backtest): a signal stamped on bar i0 enters at
+    the OPEN of i0+1; a resting order (`trigger` set) fills at its trigger on the first of its
+    `wait_bars` bars from i0+1 whose range CONTAINS it (high >= trigger >= low), else it never
+    traded and is not a sample; the ttl exit is the OPEN of fill + ttl. Every style's position is
+    decided from closes at or before bar i0, so nothing after the signal is read."""
     import pandas as pd
     idx = pd.DatetimeIndex(index)
     n = len(close)
@@ -159,6 +176,9 @@ def style_matrix(close: np.ndarray, index: Any, signals: Sequence[Any],
     lb = {k: max(int(round(d * bpd)), 1) for k, d in (("1d", 1), ("20d", 20), ("60d", 60),
                                                        ("250d", 250))}
     logc = np.log(np.asarray(close, dtype=float))
+    logo = np.log(np.asarray(open_ if open_ is not None else close, dtype=float))
+    hi_a = None if high is None else np.asarray(high, dtype=float)
+    lo_a = None if low is None else np.asarray(low, dtype=float)
     ys: list[float] = []
     rows: list[list[float]] = []
     for s in signals:
@@ -166,30 +186,33 @@ def style_matrix(close: np.ndarray, index: Any, signals: Sequence[Any],
             t = pd.Timestamp(s.time)
             if t.tzinfo is None and idx.tz is not None:
                 t = t.tz_localize(idx.tz)
-            i = int(idx.searchsorted(t, side="left"))
+            i0 = int(idx.searchsorted(t, side="left"))
             side = int(np.sign(float(s.side)))
             ttl = max(int(getattr(s, "ttl_bars", 1) or 1), 1)
         except Exception:
             continue
-        trig = getattr(s, "trigger", None)
-        entry = None
-        if trig is not None and high is not None and low is not None:
-            wait = max(int(getattr(s, "wait_bars", 1) or 1), 1)
-            for k in range(i + 1, min(i + 1 + wait, n)):
-                if (side > 0 and high[k] >= trig) or (side < 0 and low[k] <= trig):
-                    entry = (k - 1, k, math.log(float(trig)))
-                    break
-            if entry is None:
-                continue
-        else:
-            entry = (i, i, None)
-        d_bar, e_bar, e_log = entry
-        j = min(e_bar + ttl, n - 1)
-        if side == 0 or e_bar >= n - 1 or j <= e_bar or d_bar < lb["250d"]:
+        i = i0 + 1
+        if side == 0 or i >= n - 1 or i0 < lb["250d"]:
             continue
-        w = float(logc[j] - (logc[e_bar] if e_log is None else e_log))
+        trig = getattr(s, "trigger", None)
+        fill, e_log = i, float(logo[i])
+        if trig is not None:
+            if hi_a is None or lo_a is None:
+                continue
+            tgt = float(trig)
+            wait = max(int(getattr(s, "wait_bars", 1) or 1), 1)
+            hit = next((k for k in range(i, min(i + wait, n))
+                        if hi_a[k] >= tgt >= lo_a[k]), -1)
+            if hit < 0 or not (tgt > 0):
+                continue
+            fill, e_log = hit, math.log(tgt)
+        x = fill + ttl
+        if x > n - 1:
+            continue
+        w = float(logo[x] - e_log)
         if not math.isfinite(w):
             continue
+        d_bar = i0
         past = logc[: d_bar + 1]
         r1 = past[-1] - past[-1 - lb["1d"]]
         r20 = past[-1] - past[-1 - lb["20d"]]
@@ -279,7 +302,9 @@ def score_certificate(cert: Mapping[str, Any], meta: Mapping[str, Any],
     hl = ((df["high"].to_numpy(dtype=float), df["low"].to_numpy(dtype=float))
           if {"high", "low"} <= set(df.columns) else (None, None))
     y, X = style_matrix(df["close"].to_numpy(dtype=float), df.index, obj.get("sigs") or [],
-                        high=hl[0], low=hl[1])
+                        high=hl[0], low=hl[1],
+                        open_=(df["open"].to_numpy(dtype=float) if "open" in df.columns
+                               else None))
     proj = project(y, X)
     out["return_projection"] = proj
     if proj["status"] != "MEASURED":
@@ -354,11 +379,16 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
         now: float | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     clock = time.time() if now is None else now
+    # FRESH MEANS A COMPLETE MEASUREMENT, DATED BY ITS OWN STAMP (audit of #377): a run the
+    # budget cut short is never fresh, and the age is read from generated_utc, not the file's
+    # mtime, which a clone or a copy resets.
+    old = _json(report_path)
+    age = float("inf")
     try:
-        age = clock - report_path.stat().st_mtime
-    except OSError:
-        age = float("inf")
-    if not force and age < REFRESH_S:
+        age = clock - datetime.fromisoformat(str(old.get("generated_utc"))).timestamp()
+    except (TypeError, ValueError):
+        pass
+    if not force and old.get("complete") is True and age < REFRESH_S:
         return {"status": "FRESH", "age_h": round(age / 3600.0, 1), "report": str(report_path)}
     deadline = t0 + float(budget_s)
     certs: dict[str, dict] = {}
@@ -376,16 +406,25 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
             build_err = f"gauntlet builder unavailable: {type(exc).__name__}: {exc}"
     meta = _json(universe)
     classes = _mechanism_classes()
-    prior = _json(report_path).get("per_certificate") or {}
+    prior = old.get("per_certificate") or {}
     per: dict[str, Any] = {}
-    for cid, cert in certs.items():
+    # STALEST FIRST, so a budget that runs out skips a different tail each pass and the report
+    # converges: never measured, then oldest measured_at.
+    def _stamp(cid: str) -> str:
+        e = prior.get(cid)
+        return str(e.get("measured_at") or "") if isinstance(e, dict) else ""
+
+    reached_all = True
+    for cid in sorted(certs, key=lambda c: (_stamp(c), c)):
+        cert = certs[cid]
         if time.monotonic() > deadline:
+            reached_all = False
             prev = prior.get(cid) if isinstance(prior.get(cid), dict) else None
             per[cid] = {**(prev or {}), "status": (prev or {}).get("status", "NOT_REACHED"),
                         "carried_forward": prev is not None,
                         "why_not_reached": f"the {budget_s:.0f}s budget was spent first"}
             continue
-        per[cid] = score_certificate(cert, meta, build, classes)
+        per[cid] = {**score_certificate(cert, meta, build, classes), "measured_at": _now()}
         if build_err and per[cid]["status"] == "UNMEASURED":
             per[cid]["why"] = build_err
     measured = [e for e in per.values() if e.get("novelty") is not None]
@@ -399,6 +438,7 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
     doc = {
         "generated_utc": _now(), "source": source, "n_certificates": len(certs),
         "n_measured": len(measured), "n_novel": len(novel), "novel_threshold": NOVEL_T,
+        "complete": reached_all,
         "status": ("NO_CERTIFICATES" if not certs else "MEASURED" if measured else "UNMEASURED"),
         "styles": list(STYLES), "styles_not_measured": UNMEASURED_STYLES,
         "dominant_style_counts": dict(sorted(dominant.items(), key=lambda kv: -kv[1])),
@@ -417,7 +457,7 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
         wage = clock - weekly_path.stat().st_mtime
     except OSError:
         wage = float("inf")
-    if wage >= WEEK_S:
+    if wage >= WEEK_S and reached_all:
         prev_w = _json(weekly_path)
         weekly_path.write_text(json.dumps({
             "generated_utc": doc["generated_utc"], "novel_threshold": NOVEL_T,

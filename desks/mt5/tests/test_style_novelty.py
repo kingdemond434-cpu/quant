@@ -70,7 +70,7 @@ def test_styles_are_decided_point_in_time() -> None:
     sig = _trend_sigs(df)[50]
     i = int(df.index.searchsorted(sig.time))
     _, x_full = sn.style_matrix(df["close"].to_numpy(), df.index, [sig])
-    cut = df.iloc[: i + sig.ttl_bars + 1]
+    cut = df.iloc[: i + 1 + sig.ttl_bars + 1]       # through the exit bar's open
     _, x_cut = sn.style_matrix(cut["close"].to_numpy(), cut.index, [sig])
     assert np.allclose(x_full, x_cut)
 
@@ -79,10 +79,12 @@ def test_an_untouched_bracket_side_is_not_a_sample() -> None:
     df = _bars(seed=3)
     t = df.index[400 * 24]
     px = float(df["close"].iloc[400 * 24])
-    hit = _Sig(t, 1, trigger=px * 0.5)            # below the next high: touched at once
-    miss = _Sig(t, -1, trigger=px * 0.5)          # a short stop far below: never touched
+    nxt = float(df["close"].iloc[400 * 24 + 1])
+    hit = _Sig(t, 1, trigger=nxt)                 # inside the next bar's range: filled
+    miss = _Sig(t, -1, trigger=px * 0.5)          # far below every bar it lives on: never filled
     y, _X = sn.style_matrix(df["close"].to_numpy(), df.index, [hit, miss],
-                            high=df["high"].to_numpy(), low=df["low"].to_numpy())
+                            high=df["high"].to_numpy(), low=df["low"].to_numpy(),
+                            open_=df["open"].to_numpy())
     assert len(y) == 1
 
 
@@ -90,7 +92,9 @@ def test_a_family_without_certificates_carries_its_genealogy() -> None:
     classes = {"carry": "carry", "pca_residual": "residual"}
     assert sn.family_novelty("carry", {}, classes) == 0.0
     assert sn.family_novelty("pca_residual", {}, classes) == 0.5
-    assert sn.family_novelty("never_heard_of_it", {}, classes) == 1.0
+    assert sn.family_novelty("never_heard_of_it", {}, classes) == 0.0   # a registry gap: neutral
+    assert sn.genealogy("never_heard_of_it", classes) == (0.0, "UNMEASURED")
+    assert sn.family_novelty("gnn_propagation", {}, classes) == 1.0
     assert sn.family_novelty("carry", {"carry": 0.7}, classes) == 0.7
 
 
@@ -124,9 +128,12 @@ def test_the_docket_fallback_judges_a_novel_family_first_at_equal_spend(monkeypa
     monkeypatch.setattr(mh, "alpha_rl_family_values", lambda: ({}, "none"))
     monkeypatch.setattr(mh, "residual_family_values", lambda: ({}, "none"))
     monkeypatch.setattr(mh, "novelty_family_values", lambda: ({}, "genealogy only"))
-    rows = [{"family": "carry"}] * 4 + [{"family": "zz_unclassified_style"}] * 4
-    ordered = mh.breadth_order(rows, {"carry": 8, "zz_unclassified_style": 8})
-    assert ordered[0]["family"] == "zz_unclassified_style"
+    rows = ([{"family": "carry"}] * 4 + [{"family": "zz_unclassified_style"}] * 4
+            + [{"family": "gnn_propagation"}] * 4)
+    ordered = mh.breadth_order(rows, {"carry": 8, "zz_unclassified_style": 8,
+                                      "gnn_propagation": 8})
+    assert ordered[0]["family"] == "gnn_propagation"
+    assert len(ordered) == len(rows)
     assert len(ordered) == len(rows)
 
 
@@ -140,3 +147,31 @@ def test_a_family_with_certificates_and_nothing_novel_is_saturated() -> None:
     assert fam["carry"]["dominant_styles"] == {"passive_window": 1}
     assert fam["pca_residual"]["saturation"] == "OPEN"
     assert fam["discovered"]["saturation"] == "UNMEASURED"
+
+
+def test_a_partial_run_is_never_fresh_and_the_stalest_certificate_goes_first(tmp_path) -> None:
+    certs = tmp_path / "certs.json"
+    certs.write_text(json.dumps({"survivors": {
+        k: {"shadow_spec": {"symbol": "EURUSD", "family": "carry"}} for k in ("a", "b", "c")}}),
+        "utf-8")
+    rep, wk = tmp_path / "r.json", tmp_path / "w.json"
+    rep.write_text(json.dumps({"generated_utc": "2026-10-13T00:00:00+00:00", "complete": True,
+                               "per_certificate": {
+                                   "a": {"measured_at": "2026-10-13T00:00:03+00:00"},
+                                   "b": {"measured_at": "2026-10-13T00:00:01+00:00"}}}),
+                   "utf-8")
+    seen: list[str] = []
+
+    def build(sym, family, params, meta, **_k):
+        seen.append(params.get("_id", "?"))
+        return None
+
+    doc = sn.run(certs_path=certs, fallback=tmp_path / "x.json", report_path=rep,
+                 weekly_path=wk, universe=tmp_path / "u.json", build=build, budget_s=0.0,
+                 force=True)
+    assert doc["complete"] is False and not wk.exists()
+    again = sn.run(certs_path=certs, report_path=rep, weekly_path=wk, build=build,
+                   budget_s=600.0)
+    assert again["status"] != "FRESH" and again["complete"] is True
+    order = list(again["per_certificate"])
+    assert order[0] == "c" and order.index("b") < order.index("a"), order

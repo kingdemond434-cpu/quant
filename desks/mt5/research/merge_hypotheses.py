@@ -227,8 +227,8 @@ def novelty_family_values() -> tuple[dict[str, float], str]:
 
     A family with measured certificates carries their mean novelty (the share of each one's P&L
     no known style reproduces, scaled by its mechanism class); any other family carries its
-    declared genealogy (0 textbook, 0.5 adjacent, 1.0 discovered/learned/unclassified). Every
-    family therefore has a value with or without the report. A failure to import returns {}:
+    declared genealogy (0 textbook, 0.5 adjacent, 1.0 discovered/generic/learned, and a neutral 0
+    for a family the registry does not classify). Every family therefore has a value with or without the report. A failure to import returns {}:
     every family then reads 0.0 and the order is exactly the pre-novelty order."""
     try:
         from research import style_novelty as sn

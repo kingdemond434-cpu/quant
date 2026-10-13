@@ -1283,8 +1283,9 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     # THE NOVELTY FACTOR (principal 2026-10-13: "hunt tons of unknown styles"). 1 + the family's
     # style novelty from research/style_novelty.py: the measured share of its certificates' P&L no
     # known style reproduces, else its declared genealogy (0 textbook, 0.5 adjacent, 1.0
-    # discovered/learned/unclassified). One-sided like the factors above (>= 1.0), so the floor
-    # is untouched and no family's ev is reduced; an import failure is 1.0 for every family.
+    # discovered/generic/learned; an unclassified family is a neutral 0). One-sided like the
+    # factors above (>= 1.0), so the floor is untouched and no family's ev is reduced; an import
+    # failure is 1.0 for every family.
     try:
         from research import style_novelty as _sn
         _nov_measured = _sn.family_values()
