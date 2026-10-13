@@ -1198,7 +1198,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
                      "ingestion_exploitation", "forest_attempts",
-                      "regional_parity",
+                     "regional_parity",
                      "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
