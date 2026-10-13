@@ -407,6 +407,7 @@ def vectors(frontier: Any, stats: Any, now: datetime, *, grounds: Any = None,
     held_by: dict[str, int] = {}
     deepest: dict[str, int] = dict.fromkeys(STAGES, 0)
     week = never = 0
+    landed_pages = landed_vectors = landed_unmeasured = 0
     for name, v in sorted(vec.items()):
         v = v if isinstance(v, dict) else {}
         s = st.get(name) if isinstance(st.get(name), dict) else None
@@ -430,10 +431,11 @@ def vectors(frontier: Any, stats: Any, now: datetime, *, grounds: Any = None,
         if s is not None:
             successes: Any = int(s.get("successes") or 0)
             rows_n: Any = int(s.get("rows") or 0)
+            landed: Any = int(s.get("landed_raw") or 0)
         elif attempts == 0:
-            successes, rows_n = 0, 0                 # never attempted: a MEASURED zero
+            successes, rows_n, landed = 0, 0, 0      # never attempted: a MEASURED zero
         else:
-            successes, rows_n = UNMEASURED, UNMEASURED
+            successes, rows_n, landed = UNMEASURED, UNMEASURED, UNMEASURED
         last_error = (s or {}).get("last_error") or v.get("blocker") or ""
         row: dict[str, Any] = {
             "outcome": outcome, "attempts": attempts, "successes": successes,
@@ -486,6 +488,14 @@ def vectors(frontier: Any, stats: Any, now: datetime, *, grounds: Any = None,
         row["conversion"] = _ladder(attempts=attempts, outcome=outcome,
                                     findings=row["findings_total"], endpoints=eps,
                                     collected=collected, cells=cells)
+        # RAW PAGES LANDED for the parser (deep_forest_miner.land_raw): counted beside the
+        # ladder, never a rung of it -- a landing is not a yield.
+        row["conversion"]["landed_raw"] = landed
+        if isinstance(landed, int):
+            landed_pages += landed
+            landed_vectors += int(landed > 0)
+        else:
+            landed_unmeasured += 1
         deepest[row["conversion"]["deepest"]] += 1
         rows[name] = row
     named = len(rows)
@@ -506,6 +516,10 @@ def vectors(frontier: Any, stats: Any, now: datetime, *, grounds: Any = None,
             "blocked_by_cause": by_cause, "blocked_http_codes": by_code, "held_by": held_by,
             "yielded_by_rule": by_rule,
             "conversion": {"deepest_stage": deepest, "reached_at_least": reached_at_least,
+                           "landed_raw": ({"pages": landed_pages, "vectors": landed_vectors,
+                                           "vectors_unmeasured": landed_unmeasured}
+                                          if st else {"status": UNMEASURED,
+                                                      "why": "vector stats absent here"}),
                            "unmeasured": why_unm,
                            "note": ("collected = an endpoint the ground produced is in the "
                                     "acquisition registry (exact URL); cell_generating = a "
@@ -608,6 +622,7 @@ def build(*, coverage: Path | None = None, frontier: Path | None = None,
             "blocked_by_cause": vec.get("blocked_by_cause", UNMEASURED),
             "yielded_by_rule": vec.get("yielded_by_rule", UNMEASURED),
             "conversion": (vec.get("conversion") or {}).get("reached_at_least", UNMEASURED),
+            "landed_raw": (vec.get("conversion") or {}).get("landed_raw", UNMEASURED),
         },
         "platforms": plat, "vectors": vec, "legs": leg,
         "sources": {"platforms": str(coverage), "vectors": [str(frontier), str(vector_stats)],

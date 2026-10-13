@@ -215,6 +215,7 @@ def _isolate(monkeypatch, tmp_path: Path) -> None:
                         ("DATASETS", "datasets.jsonl"), ("WORLD", "world"),
                         ("SOURCES", "src.json")):
         monkeypatch.setattr(dfm, name, tmp_path / fname)
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
     monkeypatch.setattr(dfm, "_feed_frontier", lambda urls: len(urls))
     monkeypatch.setattr(dfm, "_universe", lambda: {"XAUUSD", "EURUSD"})
     monkeypatch.setattr(dfm.time, "sleep", lambda s: None)
@@ -757,3 +758,87 @@ def test_the_yield_artifact_reports_outcomes_causes_rules_and_the_conversion_lad
 ])
 def test_robots_wildcards_are_read(robots, path, allowed) -> None:
     assert dfm.robots_allows(robots, dfm.CCINDEX_AGENT, path) is allowed
+
+
+# ---- 6. ugly data is landed raw (principal 2026-10-13 16:39Z), never counted as a yield
+_CSV = b"date,value\n2026-09-01,1.5\n2026-09-02,1.7\n"
+
+
+def test_a_page_dropped_for_its_form_lands_raw_and_is_not_a_yield(monkeypatch,
+                                                                  tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    _grounds(tmp_path, [
+        {"name": "csv", "region": "za", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://csv.test/data.csv"},
+        {"name": "short", "region": "za", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://short.test/"},
+        {"name": "bare", "region": "za", "language": "en", "route": "http", "kind": "dataset",
+         "url": "https://bare.test/stats"},
+        {"name": "ideas", "region": "us", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://www.reddit.com/r/Gold/"},
+        {"name": "bot", "region": "us", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://bot.test/"}])
+
+    def fake(url: str, **kw: object) -> str:
+        if "csv.test" in url:
+            dfm._LAST.resp = pf.Response(url=url, status=200, text=_CSV.decode(),
+                                         content_type="text/csv", body=_CSV)
+            return _CSV.decode()
+        if "bot.test" in url:
+            return "<html><title>Just a moment...</title>Checking your browser</html>"
+        return _BARE_PAGE
+
+    monkeypatch.setattr(dfm, "_http", fake)
+    doc = dfm.run(budget_s=60, fetch=True, workers=1)
+    st = {g["ground"]: g for g in doc["grounds"]}
+    assert st["csv"]["landed_raw"] >= 1 and st["short"]["landed_raw"] >= 1
+    assert st["bare"]["landed_raw"] >= 1
+    assert st["ideas"]["landed_raw"] == 0, "an IDEAS_ONLY page is never landed as data"
+    assert st["bot"]["landed_raw"] == 0, "an anti-bot page is recorded, never landed"
+    for name in ("csv", "short", "bare"):
+        assert "yield_rule" not in st[name] and st[name]["status"] != "PRODUCTIVE", name
+    metas = [json.loads(p.read_text("utf-8")) for p in (tmp_path / "vault").glob("*/*.meta.json")]
+    csv_meta = next(m for m in metas if m["url"] == "https://csv.test/data.csv")
+    assert csv_meta["reason"] == "format:text/csv" and csv_meta["content_type"] == "text/csv"
+    assert csv_meta["available_time"] and csv_meta["source_hash"] == csv_meta["sha256"]
+    blob = next((tmp_path / "vault").glob(f"{csv_meta['source_id']}/*.gz"))
+    assert gzip.decompress(blob.read_bytes()) == _CSV
+    assert {m["reason"] for m in metas} >= {"format:text/csv", "short_page",
+                                            "dataset_no_endpoints"}
+    # The desk's existing raw -> series parser reads the landing like any collected source.
+    from research import asia_parser as ap
+    monkeypatch.setattr(ap, "VAULT", tmp_path / "vault")
+    assert csv_meta["source_id"] in ap._blobs()
+    # The ladder counts it beside the rungs, never as one.
+    stats = json.loads((tmp_path / dfm.VECTOR_STATS_NAME).read_text("utf-8"))["vectors"]
+    assert stats["csv"]["landed_raw"] >= 1 and stats["csv"]["successes"] == 0
+    art = json.loads((tmp_path / "ALT_DATA_YIELD.json").read_text("utf-8"))
+    assert art["vectors"]["rows_by_vector"]["csv"]["conversion"]["landed_raw"] >= 1
+    assert art["vectors"]["rows_by_vector"]["csv"]["conversion"]["deepest"] != "yielded"
+    assert art["summary"]["landed_raw"]["pages"] >= 3
+    assert art["summary"]["landed_raw"]["vectors"] == 3
+
+
+def test_the_same_bytes_land_once(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
+    g = {"name": "x"}
+    first = dfm.land_raw("https://a.test/x.csv", _CSV, "text/csv", ground=g, reason="r")
+    again = dfm.land_raw("https://a.test/x.csv", _CSV, "text/csv", ground=g, reason="r")
+    assert first and first["new"] and again and not again["new"]
+    assert len(list((tmp_path / "vault").glob("*/*.gz"))) == 1
+    assert dfm.land_raw("https://a.test/y", b"", "", ground=g, reason="r") is None
+
+
+def test_landed_raw_is_unmeasured_without_vector_stats() -> None:
+    frontier = {"vectors": {"g": {"outcome": "EMPTY", "attempts": 2}}}
+    v = ady.vectors(frontier, None, datetime(2026, 10, 13, tzinfo=UTC))
+    assert v["rows_by_vector"]["g"]["conversion"]["landed_raw"] == ady.UNMEASURED
+    assert v["conversion"]["landed_raw"]["status"] == ady.UNMEASURED
+
+
+def test_a_compressed_body_is_inflated_only_up_to_the_cap() -> None:
+    bomb = gzip.compress(b"0" * 5_000_000)
+    assert len(pf.inflate(bomb, "gzip", cap=1000)) == 1000
+    assert pf.inflate(b"plain", "") == b"plain"
+    assert pf.decode_body(gzip.compress("héllo".encode()), "text/plain; charset=utf-8",
+                          "gzip") == "héllo"

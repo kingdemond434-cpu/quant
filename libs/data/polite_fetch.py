@@ -27,7 +27,6 @@ No secret is read or sent. Stdlib only (certifi is optional).
 """
 from __future__ import annotations
 
-import gzip
 import random
 import re
 import ssl
@@ -177,20 +176,32 @@ def reset_stats(leg: str | None = None) -> None:
 _META_CHARSET = re.compile(rb"""<meta[^>]+charset\s*=\s*["']?\s*([A-Za-z0-9_\-]+)""", re.I)
 
 
-def decode_body(raw: bytes, content_type: str = "", content_encoding: str = "") -> str:
-    """Bytes -> text: undo gzip/deflate, then the header charset, then `<meta charset>`, then
-    UTF-8. Never raises."""
+#: THE INFLATE CAP: a gzip/deflate body is never inflated past this many bytes, so a small
+#: compressed answer (a decompression bomb, or just a huge dump) cannot exhaust the box's memory.
+MAX_INFLATED = 20_000_000
+
+
+def inflate(raw: bytes, content_encoding: str = "", cap: int = MAX_INFLATED) -> bytes:
+    """Undo gzip/deflate, bounded to `cap` output bytes. Returns `raw` unchanged when it is not
+    compressed or cannot be inflated. Never raises."""
     enc = (content_encoding or "").lower()
     try:
         if "gzip" in enc or raw[:2] == b"\x1f\x8b":
-            raw = gzip.decompress(raw)
-        elif "deflate" in enc:
+            return zlib.decompressobj(16 + zlib.MAX_WBITS).decompress(raw, cap)
+        if "deflate" in enc:
             try:
-                raw = zlib.decompress(raw)
+                return zlib.decompressobj().decompress(raw, cap)
             except zlib.error:
-                raw = zlib.decompress(raw, -zlib.MAX_WBITS)
+                return zlib.decompressobj(-zlib.MAX_WBITS).decompress(raw, cap)
     except Exception:
         pass
+    return raw
+
+
+def decode_body(raw: bytes, content_type: str = "", content_encoding: str = "") -> str:
+    """Bytes -> text: undo gzip/deflate (bounded, `inflate`), then the header charset, then
+    `<meta charset>`, then UTF-8. Never raises."""
+    raw = inflate(raw, content_encoding)
     charset = ""
     if content_type:
         msg = Message()
@@ -220,6 +231,8 @@ class Response:
     error: str = ""
     elapsed_s: float = 0.0
     attempts: int = 0
+    #: The body as bytes (content-encoding undone, bounded): what a raw landing stores.
+    body: bytes = b""
 
     @property
     def ok(self) -> bool:
@@ -272,7 +285,8 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 resp.status = int(getattr(fh, "status", None) or getattr(fh, "code", 200) or 200)
                 resp.final_url = str(getattr(fh, "url", "") or url)
                 resp.content_type = ctype
-                resp.text = decode_body(raw, ctype, cenc)
+                resp.body = inflate(raw, cenc)
+                resp.text = decode_body(resp.body, ctype)
                 resp.error = ""
                 _stat(leg, ok=1, bytes=len(raw))
                 break

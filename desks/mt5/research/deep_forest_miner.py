@@ -76,6 +76,7 @@ import argparse
 import base64
 import contextlib
 import copy
+import gzip
 import hashlib
 import html as _html
 import json
@@ -106,6 +107,19 @@ KIND = "story_mechanism"
 SOURCES = _DESK / "data" / "deep_forest_sources.json"
 CLAIMS = _DESK / "data" / "deep_forest_claims.jsonl"
 DATASETS = _DESK / "data" / "deep_forest_datasets.jsonl"
+#: THE RAW LANDING (principal 2026-10-13 16:39Z: "bring in ALL public data, ugly data included").
+#: A fetched page this miner would drop for its FORM -- a non-HTML body (CSV, XLS, PDF, JSON, XML,
+#: ZIP, plain text), a page under MIN_PAGE_TEXT, a dataset page with no endpoints -- is landed
+#: raw in the lake vault the desk already parses (`asia_collector._vault`'s layout:
+#: `<id>/<sha16>.gz` + `.meta.json`), one source id per URL, so `asia_parser` (raw -> series,
+#: point-in-time stamped) and `source_drain` (series -> cells -> the gauntlet) judge it like any
+#: collected source. A landing is NOT a yield. Never for an IDEAS_ONLY or held source, never an
+#: anti-bot page, and nothing about how a page is fetched changes.
+RAW_VAULT = _DESK / "data" / "lake" / "vault"
+RAW_PREFIX = "dfraw__"
+RAW_MAX_PER_RUN = 200
+_NON_HTML_TYPE = re.compile(r"(?i)csv|excel|spreadsheet|officedocument|pdf|json|xml|zip|"
+                            r"octet-stream|text/plain|tab-separated")
 SEEN = _DESK / "data" / "deep_forest_seen.json"
 REPORT = _DESK / "reports" / "DEEP_FOREST.json"
 #: Where the world crawler writes its discoveries and `acquire_datasets._endpoints` reads them.
@@ -567,6 +581,11 @@ _ANTI_BOT_PAGE = re.compile(r"(?i)cf-chl|just a moment\.\.\.|attention required!
                             r"ddos-guard|are you a robot|captcha-delivery|px-captcha")
 
 
+#: The last polite_fetch Response on this thread, so `_Run.page` can land the BYTES of a page
+#: whose form it drops (`_http` returns text, and stays the seam tests replace).
+_LAST = threading.local()
+
+
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
     """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
     charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
@@ -575,6 +594,7 @@ def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "")
     if referer:
         hdr["Referer"] = referer
     r = pf.get(url, headers=hdr, timeout=timeout, retries=1, leg=LEG, max_bytes=2_000_000)
+    _LAST.resp = r
     if r.ok:
         return r.text
     if r.status is not None and r.status >= 400:
@@ -608,6 +628,34 @@ def _env_budget_cap() -> float | None:
     except ValueError:
         return None
     return cap if cap > 0 else None
+
+
+def land_raw(url: str, body: bytes, ctype: str, *, ground: dict[str, Any],
+             reason: str) -> dict[str, Any] | None:
+    """Land one fetched body raw in the lake vault with point-in-time stamps (available_time is
+    the moment it was fetched; source_hash is the sha256 of the bytes). Content-addressed:
+    the same bytes land once. Returns the landing, or None when nothing was written or found."""
+    if not body:
+        return None
+    digest = hashlib.sha256(body).hexdigest()
+    sid = RAW_PREFIX + hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
+    d = RAW_VAULT / sid
+    blob = d / f"{digest[:16]}.gz"
+    fresh = not blob.exists()
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    try:
+        if fresh:
+            d.mkdir(parents=True, exist_ok=True)
+            blob.write_bytes(gzip.compress(body))
+            _atomic_text(blob.with_name(f"{digest[:16]}.meta.json"), json.dumps({
+                "source_id": sid, "url": url, "content_type": ctype, "sha256": digest,
+                "bytes": len(body), "fetched_utc": now, "available_time": now,
+                "source_hash": digest, "landed_by": "deep_forest_miner", "reason": reason,
+                "ground": ground.get("name"), "region": ground.get("region"),
+                "language": ground.get("language")}, ensure_ascii=False, indent=1))
+    except OSError:
+        return None
+    return {"source_id": sid, "sha256": digest, "new": fresh, "reason": reason}
 
 
 def html_text(page: str) -> str:
@@ -1042,7 +1090,8 @@ class _Run:
         self.counts = {"queries": 0, "pages": 0, "transcripts": 0, "rendered": 0,
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
                        "claims_seen_before": 0, "net_failures": 0, "dataset_pages": 0,
-                       "dataset_endpoints": 0, "feeds": 0, "ccindex_queries": 0}
+                       "dataset_endpoints": 0, "feeds": 0, "ccindex_queries": 0,
+                       "landed_raw": 0, "landed_raw_new": 0}
         #: Shared by every fork of this run: the network verdict and its failure streak.
         self._shared: dict[str, Any] = {"network": None, "fails": 0}
         self._lock = threading.RLock()
@@ -1120,6 +1169,7 @@ class _Run:
         if not self._net_ok():
             return ""
         try:
+            _LAST.resp = None
             body = _http(url, referer=referer, lang=self.lang)
             self._note_net(True)
             self.counts["pages"] += 1
@@ -1128,6 +1178,8 @@ class _Run:
                 if m:
                     # RECORDED, never routed around: no retry with other headers.
                     self.fetch_errors.append({"url": url, "anti_bot": m.group(0)[:40]})
+                    return body
+            self._land_if_dropped(url, body, pol["status"])
             return body
         except urllib.error.HTTPError as exc:
             self._note_net(True)
@@ -1138,6 +1190,29 @@ class _Run:
             self.fetch_errors.append({"url": url,
                                       "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
             return ""
+
+    def _land(self, url: str, raw: bytes, ctype: str, reason: str) -> None:
+        if self.counts.get("landed_raw", 0) >= RAW_MAX_PER_RUN:
+            return
+        got = land_raw(url, raw, ctype, ground=self.ground or {}, reason=reason)
+        if got:
+            self.counts["landed_raw"] = self.counts.get("landed_raw", 0) + 1
+            self.counts["landed_raw_new"] = (self.counts.get("landed_raw_new", 0)
+                                             + int(bool(got["new"])))
+
+    def _land_if_dropped(self, url: str, body: str, status: str) -> None:
+        """Land the raw bytes of a page dropped for its form: a non-HTML body, or a page whose
+        visible text is under MIN_PAGE_TEXT. IDEAS_ONLY pages are never landed as data."""
+        if status == IDEAS_ONLY or not body:
+            return
+        resp = getattr(_LAST, "resp", None)
+        ok = resp is not None and resp.ok and str(resp.url) == url
+        raw = (resp.body or body.encode("utf-8")) if ok else body.encode("utf-8")
+        ctype = str(resp.content_type or "") if ok else ""
+        if ctype and "html" not in ctype.lower() and _NON_HTML_TYPE.search(ctype):
+            self._land(url, raw, ctype, f"format:{ctype.split(';')[0].strip()}")
+        elif len(html_text(body)) < MIN_PAGE_TEXT:
+            self._land(url, raw, ctype, "short_page")
 
     def rendered(self, url: str) -> str:
         pol = policy_of_url(url)
@@ -1227,6 +1302,10 @@ class _Run:
         eps = [] if policy_of_url(url)["status"] == IDEAS_ONLY else data_endpoints(page, url)
         if ground.get("kind") != "dataset" and not eps:
             return 0
+        if not eps and page and policy_of_url(url)["status"] != IDEAS_ONLY:
+            # A dataset page with no endpoints is a page, not a yield -- and its raw bytes are
+            # landed so the parser can find the table the link scan could not.
+            self._land(url, page.encode("utf-8"), "text/html", "dataset_no_endpoints")
         now = datetime.now(tz=UTC).isoformat(timespec="seconds")
         digest = hashlib.sha256((page or "").encode("utf-8")).hexdigest()[:20]
         row = {"source": SOURCE, "kind": "dataset", "title": title[:160] or url[:120], "url": url,
@@ -1688,6 +1767,7 @@ class _Run:
         self.ground, self.ground_claims = g, []
         seen_before = self.counts["claims_seen_before"]
         errs_before = len(self.fetch_errors)
+        landed_before = self.counts.get("landed_raw", 0)
         t0 = time.monotonic()
         self.g_end = min(self.started + self.budget_s, t0 + (share_s or self.budget_s))
         try:
@@ -1766,7 +1846,9 @@ class _Run:
                             "elapsed_s": round(time.monotonic() - t0, 1), "classes": classes,
                             # ORTHOGONALITY: a ground that yields only momentum says so.
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
-                            "datasets": len(mine), "endpoints": endpoints})
+                            "datasets": len(mine), "endpoints": endpoints,
+                            # raw pages landed for the parser: counted, never a yield
+                            "landed_raw": self.counts.get("landed_raw", 0) - landed_before})
 
 
 #: Ground kinds whose papers count as yield on their own (rule `papers`).
@@ -2350,6 +2432,7 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
             e["rows"] = int(e.get("rows") or 0) + rows
             e["datasets"] = int(e.get("datasets") or 0) + dsets
             e["endpoints"] = int(e.get("endpoints") or 0) + eps
+            e["landed_raw"] = int(e.get("landed_raw") or 0) + int(s.get("landed_raw") or 0)
             if rule:
                 e["last_yield_rule"] = rule
                 rules = e.get("yield_rules") if isinstance(e.get("yield_rules"), dict) else {}
