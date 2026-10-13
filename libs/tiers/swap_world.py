@@ -73,8 +73,8 @@ def stressed_nights(entry: Any, exit_at: Any, *, hour: int = ROLLOVER_HOUR_UTC,
 
 
 def baseline_nights(entry: Any, exit_at: Any) -> float:
-    """The engine's own count (Wednesday-night triple, server midnight), or this module's Wednesday-only walk
-    when the engine is not importable."""
+    """The engine's own count (Wednesday-night triple, server midnight), or this
+    module's Wednesday-only walk when the engine is not importable."""
     try:
         from mt5desk.engine import rollovers_between
         return float(rollovers_between(pd.Timestamp(entry), pd.Timestamp(exit_at)))
