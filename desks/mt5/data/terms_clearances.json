@@ -1,0 +1,12 @@
+{
+ "geoint:sentinel2_l2a": {
+  "status": "CLEARED",
+  "terms_url": "https://raw.githubusercontent.com/awslabs/open-data-registry/main/datasets/sentinel-2-l2a-cogs.yaml",
+  "terms_quote": "Access to Sentinel data is free, full and open for the broad Regional, National, European and International user community.",
+  "quote_source": "the License field of the AWS Open Data registry entry for sentinel-2-l2a-cogs (the page registry.opendata.aws/sentinel-2-l2a-cogs is rendered from this file), line 34, read verbatim from the cloud container 2026-10-13 15:42 UTC (HTTP 200, 8034 bytes, sha256 746e932dcaaf0f0cf9cb4fdf055594e1a4e66fee05c21f86c0b57e0fa7909f27)",
+  "scope": "Copernicus Sentinel-2 L2A granules read from the AWS open-data bucket s3://sentinel-cogs (Element 84), and the desk's own measurements derived from them (tank fill indices)",
+  "owed": "the Copernicus Sentinel Data Legal Notice the same field links (https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice) is owed a verbatim read on the box: the cloud proxy refuses sentinels.copernicus.eu. A term found there that narrows machine or commercial use re-holds this source",
+  "by": "claude/geoint-tank-fill",
+  "checked_at": "2026-10-13"
+ }
+}
