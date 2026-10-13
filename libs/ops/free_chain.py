@@ -511,13 +511,15 @@ def model_stats() -> dict[str, dict[str, Any]]:
 
 
 # ------------------------------------------------------------------------------ the local rung
-#: LOCAL INFERENCE RUNS ON IDLE CPU ONLY, AT THE LOWEST PRIORITY (principal's direction relayed
-#: 2026-10-13: "it must never take cores from the judge or the miners"). Two rules, both read
-#: live on every call: the machine's measured CPU use must be under this share, and no judge
-#: process may be running. A blocked local rung is a skipped rung -- the call falls through or
-#: waits for the next pass -- never a queue that competes with the gauntlet for cores.
+#: LOCAL INFERENCE RUNS ON SPARE CPU ONLY, AT THE LOWEST PRIORITY (principal's direction relayed
+#: 2026-10-13: "it must never take cores from the judge or the miners"). KEYED ON LOAD, NOT ON
+#: WHICH PROCESSES EXIST: the judge runs back to back 24/7 (#333), so "no judge running" would
+#: mean the local rung never runs at all. Two rules, both live on every call: the machine's
+#: measured CPU use must be under this share, and the inference server is dropped to the OS's
+#: idle class, so the moment the judge or a miner wants the cores the scheduler hands them over
+#: mid-generation. A blocked rung is a skipped rung, never a queue competing with the gauntlet.
 LOCAL_MAX_CPU_PCT = float(os.environ.get("QUANT_LOCAL_LLM_MAX_CPU", "35"))
-#: Command-line fragments of the processes the local rung yields to.
+#: Command-line fragments of the desk's heavy processes, NAMED in the busy reason (not a gate).
 YIELD_TO = ("external_gauntlet", "run_external_backtest", "miner_candidate_compiler",
             "conversion_maximiser", "sealed_suite", "judge_shard")
 #: Process names of local inference servers whose priority is dropped to idle.
@@ -569,15 +571,17 @@ def local_blocked() -> str:
     except Exception:
         return "cpu reading failed"
     if busy > LOCAL_MAX_CPU_PCT:
-        return f"box busy ({busy:.0f}% CPU > {LOCAL_MAX_CPU_PCT:.0f}%)"
-    for proc in ps.process_iter(["cmdline"]):
-        try:
-            cmd = " ".join(proc.info.get("cmdline") or []).lower()
-        except Exception:
-            continue
-        hit = next((f for f in YIELD_TO if f in cmd), "")
-        if hit:
-            return f"yielding to a running {hit}"
+        heavy = ""
+        for proc in ps.process_iter(["cmdline"]):
+            try:
+                cmd = " ".join(proc.info.get("cmdline") or []).lower()
+            except Exception:
+                continue
+            heavy = next((f for f in YIELD_TO if f in cmd), "")
+            if heavy:
+                break
+        return (f"box busy ({busy:.0f}% CPU > {LOCAL_MAX_CPU_PCT:.0f}%)"
+                + (f", {heavy} needs the cores" if heavy else ""))
     demote_local_servers()
     return ""
 

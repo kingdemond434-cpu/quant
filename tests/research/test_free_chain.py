@@ -216,15 +216,17 @@ class _PS:
         return self.procs
 
 
-def test_the_local_rung_yields_to_a_busy_box_and_to_the_judge(
-        monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_local_rung_runs_on_spare_cpu_only(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("QUANT_LOCAL_LLM_GUARD", "1")
     server = _Proc([], name="ollama.exe")
-    monkeypatch.setattr(fc, "_psutil", lambda: _PS(80.0, [server]))
-    assert "busy" in fc.local_blocked()
     judge = _Proc(["python", "desks/mt5/scripts/external_gauntlet.py"])
+    monkeypatch.setattr(fc, "_psutil", lambda: _PS(80.0, [judge, server]))
+    why = fc.local_blocked()
+    assert "busy" in why and "external_gauntlet" in why, "a loaded box blocks and names who"
+    # The judge runs 24/7: its PRESENCE on a box with spare cores must not block the rung.
     monkeypatch.setattr(fc, "_psutil", lambda: _PS(5.0, [judge, server]))
-    assert "external_gauntlet" in fc.local_blocked()
+    fc._DEMOTED.clear()
+    assert fc.local_blocked() == "" and server.niced is not None
     monkeypatch.setattr(fc, "_psutil", lambda: _PS(5.0, [server]))
     fc._DEMOTED.clear()
     assert fc.local_blocked() == "" and server.niced is not None, "server dropped to idle"

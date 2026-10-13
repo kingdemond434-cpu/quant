@@ -68,6 +68,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 REGISTRY = BASE / "data" / "asia_sources.json"
+SCOUTED = BASE / "data" / "llm_lab" / "scouted_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"
 STATE = BASE / "data" / "lake" / "collector_state.json"
@@ -522,6 +523,12 @@ def main(argv: list[str] | None = None) -> int:
 
     registry = _read(REGISTRY, {})
     sources = [s for s in (registry.get("sources") or []) if isinstance(s, dict)]
+    # SCOUTED SOURCES (llm_lab role S, 2026-10-13): official public rows a model named and one
+    # polite probe reached. They join as plane `llm_scout`, collected exactly like a declared row.
+    known = {str(s.get("id")) for s in sources}
+    scouted = _read(SCOUTED, {})
+    sources += [s for s in (scouted.get("sources") or []) if isinstance(s, dict)
+                and s.get("probe") == "REACHABLE" and str(s.get("id")) not in known]
     derived = _derived_sources(sources)
     if derived:
         print(f"asia collector: {len(derived)} endpoint(s) handed back by the parser "

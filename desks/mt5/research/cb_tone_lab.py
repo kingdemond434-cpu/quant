@@ -104,8 +104,8 @@ class Bank:
 
 #: SEED, not a boundary: `data/llm_lab/cb_tone/sources.json` ({"<sid>": {...}}) edits a row (url,
 #: include, terms) or adds one, so a moved page is a config change on the box, never a code edit.
-#: Terms basis is recorded per row; a row whose basis is unconfirmed carries terms "to_confirm"
-#: and is skipped quietly until the config confirms it.
+#: Terms basis is recorded per row. Public pages are read politely; a row the config marks
+#: "to_confirm" is skipped quietly, and nothing ever crosses a login, paywall, CAPTCHA or limit.
 BANKS: dict[str, Bank] = {
     "PBOC": Bank("PBOC", "People's Bank of China", "CNH", "zh",
                  ("people's bank of china",), {"USDCNH": -1},
@@ -123,8 +123,9 @@ BANKS: dict[str, Bank] = {
                  ("south african reserve bank",), {"USDZAR": -1, "EURZAR": -1},
                  (Source("sarb_speeches", "https://www.resbank.co.za/en/home/publications/speeches",
                          "html", "en", r"speech|address|statement|monetary policy|MPC",
-                         "to_confirm", "SARB website terms not yet read; history comes from the "
-                         "BIS corpus, whose SARB text is the original English"),)),
+                         "confirmed", "public official statements fetched politely (principal's "
+                         "no-ban ruling relayed 2026-10-13 16:10Z): never past a login, paywall, "
+                         "CAPTCHA or rate limit; BIS corpus is the history"),)),
     "RBA": Bank("RBA", "Reserve Bank of Australia", "AUD", "en",
                 ("reserve bank of australia",), {"AUDUSD": 1, "AUDJPY": 1},
                 (Source("rba_speeches", "https://www.rba.gov.au/rss/rss-cb-speeches.xml", "rss",

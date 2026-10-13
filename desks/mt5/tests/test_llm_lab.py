@@ -54,6 +54,14 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lab, "SARES_DIR", tmp_path / "sares")
     monkeypatch.setattr(lab, "_cb_tone_role",
                         lambda **kw: {"state": "TEST_STUB", "model": {"calls": 0}, **kw})
+    import llm_lab_roles as roles
+    for name in ("CREDIT", "EVIDENCE_START", "MISSED", "DAILY", "CODE_LEDGER", "SCOUTED",
+                 "RED_TEAM"):
+        monkeypatch.setattr(roles, name, sd / f"{name.lower()}.json")
+    for name in ("CODE_DIR", "SERIES_DIR", "BARS_DIR"):
+        monkeypatch.setattr(roles, name, tmp_path / name.lower())
+    monkeypatch.setattr(roles, "SLEEVES", tmp_path / "sleeves.json")
+    monkeypatch.setattr(roles, "_chat", lambda *a, **k: ("", "test: chain dark"))
     return tmp_path
 
 
@@ -288,6 +296,9 @@ def test_a_pass_donates_exact_rows_the_compiler_admits(state: Path, reg: dict[st
     files = sorted(lab.DONATE_DIR.glob("discoveries_*.json"))
     assert len(files) == 1
     assert doc["cb_tone"]["state"] == "TEST_STUB", "the central-bank tone role runs in the pass"
+    assert set(doc["roles"]) >= {"R", "S", "T"}, "the roles run inside the pass"
+    credit = json.loads((state / "llm_lab" / "verdict_credit.json").read_text())
+    assert credit["labs"] and doc["verdict_loop"]["ranking_rule"].startswith("certified")
     row = json.loads(files[0].read_text())["discoveries"][0]
     assert row["gauntlet_bypass"] is False and row["credibility_inherited"] is False
     import miner_candidate_compiler as mc

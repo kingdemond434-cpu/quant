@@ -136,6 +136,9 @@ def test_closed_terms_and_blocks_are_never_fetched_again(tone: Path,
         return 404, b"", "text/html"
 
     monkeypatch.setattr(cb, "_get", get)
+    # The terms gate still binds a row the config holds back.
+    cb.SOURCES_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    cb.SOURCES_CONFIG.write_text(json.dumps({"sarb_speeches": {"terms": "to_confirm"}}))
     state: dict[str, Any] = {}
     out = cb.fetch_new({}, state, deadline=1e12, max_fetch=5)
     assert out["sarb_speeches"]["state"] == "TERMS_CLOSED"
@@ -197,3 +200,5 @@ def test_quote_sense_follows_the_banks_currency() -> None:
     assert cb.BANKS["CBRT"].symbols["USDTRY"] == -1
     assert cb.BANKS["RBA"].symbols["AUDUSD"] == 1
     assert {b.lang for b in cb.BANKS.values()} == {"zh", "ja", "en", "tr"}
+    assert all(s.terms == "confirmed" for b in cb.BANKS.values() for s in b.sources), \
+        "public official pages are read politely; none is held back by default"

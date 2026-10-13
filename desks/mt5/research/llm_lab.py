@@ -233,7 +233,19 @@ LABS: tuple[Lab, ...] = (
         "(leakage, selection, cost, regime, data-snooping) and the cheapest falsifier.",
         ("alternative_explanation",)),
 )
-LAB_BY_KEY = {lab.key: lab for lab in LABS}
+#: ROLES (2026-10-13, "max edge discoveries"): run by `llm_lab_roles` inside the pass, not in the
+#: independent rotation, so the sixteen inventors keep their budget. Registered here so their
+#: proposals carry a lab name, a tally and verdict credit like every other lab's.
+ROLE_LABS: tuple[Lab, ...] = (
+    Lab("Q", "missed_move_archaeology",
+        "Explain the largest recent moves no live sleeve traded, as rules testable on every past "
+        "occurrence.", ("missed_move",)),
+    Lab("R", "code_lab", "Write sandboxed feature code for rule-shaped conversion debt.",
+        ("converted_rule",)),
+    Lab("S", "source_scout", "Name non-English official public sources the desk lacks.", ()),
+    Lab("T", "sleeve_red_team", "Argue why each live sleeve will fail; advisory only.", ()),
+)
+LAB_BY_KEY = {lab.key: lab for lab in (*LABS, *ROLE_LABS)}
 #: Labs that run in the independent first pass. P attacks phase-1 output; it does not invent.
 INVENTORS = tuple(lab for lab in LABS if lab.key != "P")
 
@@ -918,8 +930,12 @@ def observe_model(registry: dict[str, Any], key: str) -> None:
                      "novel": 0}
 
 
-def assign_model(registry: dict[str, Any], rng: random.Random, used: set[str]) -> str:
-    """Thompson draw over REGISTERED models on novel exact cells per reply. "" = default route.
+def assign_model(registry: dict[str, Any], rng: random.Random, used: set[str],
+                 credit: dict[str, Any] | None = None) -> str:
+    """Thompson draw over REGISTERED models on CERTIFIED INCREMENTAL k_eff PER CALL (the verdict
+    loop's `verdict_credit.json`). "" = default route. Novel-cell counts no longer rank a model:
+    a model that floods the docket with novel cells the gauntlet kills ranks below one whose
+    fewer cells certify as new independent bets.
 
     `used` keeps the first pass independent: two labs are not given the same model while another
     registered model is free, because ten agents repeating one model's habit is not ten labs.
@@ -927,15 +943,11 @@ def assign_model(registry: dict[str, Any], rng: random.Random, used: set[str]) -
     pool = [(k, r) for k, r in registry.items() if r.get("status") == "REGISTERED"]
     if not pool:
         return ""
-    fresh = [(k, r) for k, r in pool if k not in used] or pool
-    best, pick = -1.0, ""
-    for k, r in fresh:
-        a = 1.0 + float(r.get("novel", 0))
-        b = 1.0 + max(0.0, float(r.get("replies", 0)) - float(r.get("novel", 0)))
-        draw = rng.betavariate(a, b)
-        if draw > best:
-            best, pick = draw, k
-    return pick
+    fresh = [k for k, _ in pool if k not in used] or [k for k, _ in pool]
+    import llm_lab_roles as roles
+    rows = (credit if credit is not None else
+            (_read_json(roles.CREDIT, {}) or {})).get("models") or {}
+    return roles.thompson(rows, sorted(fresh), rng)[0]
 
 
 # ============================================================================ feeds
@@ -1023,6 +1035,7 @@ def build_ask(lab: Lab, coord: dict[str, str], why: str, model: str, reg: dict[s
            FORMULA_GRAMMAR]
     ctx += [f"menu: {ln}" for ln in menu_lines(reg, lab, rng)]
     ctx += feed_lines(lab, extra)
+    ctx += [f"gauntlet {ln}" for ln in (extra.get(f"verdicts:{lab.key}") or [])[:6]]
     ctx += [f"already proposed by this lab here (do NOT repeat): {m[:120]}" for m in own_recent[:5]]
     task = (f"{lab.mandate} Propose genuinely new mechanisms for the coordinate given. "
             f"{TASK_RULES}")
@@ -1099,11 +1112,16 @@ class Tally:
 PRIORITY_LABS = ("K", "L", "J", "F")
 
 
-def prioritised(rng: random.Random) -> list[Lab]:
+def prioritised(rng: random.Random, credit: dict[str, Any] | None = None) -> list[Lab]:
+    """Priority labs first; the rest by a Thompson draw on their certified k_eff per call, so a
+    lab that has earned independent bets is reached first when the call cap binds and an unproven
+    lab is still explored from the flat prior."""
     first = [LAB_BY_KEY[k] for k in PRIORITY_LABS]
-    rest = [lab for lab in INVENTORS if lab.key not in PRIORITY_LABS]
-    rng.shuffle(rest)
-    return first + rest
+    rest = [lab.key for lab in INVENTORS if lab.key not in PRIORITY_LABS]
+    import llm_lab_roles as roles
+    rows = (credit if credit is not None else
+            (_read_json(roles.CREDIT, {}) or {})).get("labs") or {}
+    return first + [LAB_BY_KEY[k] for k in roles.thompson(rows, sorted(rest), rng)]
 
 
 def _calls_left(daily_cap: int) -> int:
@@ -1497,10 +1515,14 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                    "jev": ["Jev answers are typed: probability in [0,1], a "
                                            "score in [-1,1] or a choice; the answer series is "
                                            "point-in-time by publication stamp"]}
-    order = prioritised(rng)
+    import llm_lab_roles as roles
+    credit: dict[str, Any] = _read_json(STATE_DIR / "verdict_credit.json", {}) or {}
+    for key, lines in (credit.get("feedback") or {}).items():
+        extra[f"verdicts:{key}"] = list(lines)
+    order = prioritised(rng, credit)
     for lab in order:
         coord, why = choose_coordinate(lab, ontology, cov, rng)
-        model = assign_model(models, rng, used_models)
+        model = assign_model(models, rng, used_models, credit)
         if model:
             used_models.add(model)
         recent = own_recent.get((lab.key, coord["mechanism_class"]), [])[-5:]
@@ -1592,6 +1614,20 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                                "model": p.provenance.model, "at": _now()})
             tallies["P"].accepted += len(outputs["attacks"])
 
+    # ---- phase 3: the roles -- missed moves (Q), code lab (R), source scout (S), sleeve red team
+    # (T). Same call budget, same free chain, same zero authority.
+    role_report: dict[str, Any] = {"state": "dry run"} if dry_run else {}
+    if not dry_run and budget_s - (time.time() - started) > 60:
+        try:
+            role_report, role_calls = roles.run(
+                lab=sys.modules[__name__], reg=reg, uni=uni, mem=mem, tallies=tallies,
+                models=models, outputs=outputs, rng=rng,
+                calls_left=max(0, calls_budget - calls_made),
+                deadline=started + budget_s - 30, seat_on=seat_on)
+            calls_made += role_calls
+        except Exception as exc:                       # pragma: no cover - a role never kills it
+            role_report = {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
     # ---- the debt ledger again, so phase-1 and synthesis debt is persisted with its blockers.
     debt = {**retry_debt(reg, uni, mem, tallies["CONVERTER"], outputs, fp, limit=0,
                          write=not dry_run),
@@ -1616,6 +1652,14 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                   "discoveries": outputs["donate"]})
         _write_json(MODELS, models)
         _count_calls(calls_made)
+        # THE VERDICT LOOP: this pass's calls are charged to their lab and model, every verdict on
+        # a lab cell is credited back, and the next pass ranks on certified k_eff per call.
+        pairs = [(a.lab.key, a.model) for a in asks] if seat_on else []
+        pairs += [(k, "") for k, t in tallies.items()
+                  for _ in range(max(0, t.asked - sum(1 for a in asks if a.lab.key == k)))]
+        credit = roles.verdict_loop(VERDICTS, DONATE_DIR, pairs[:calls_made] if calls_made else [],
+                                    STATE_DIR / "verdict_credit.json")
+        roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
     states = coverage_from_outcomes(cov)
     if not dry_run:
         _write_json(COVERAGE, cov.doc)
@@ -1646,6 +1690,9 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "red_team_attacks": outputs["attacks"][:30],
         "conversion_debt": debt,
         "cb_tone": cb_tone,
+        "roles": role_report,
+        "verdict_loop": {k: credit.get(k) for k in ("keff_basis", "judged_cells",
+                                                    "certified_cells", "ranking_rule")},
         "data_requests_this_pass": len(outputs["data_requests"]),
         "jev": {"provider": UNMEASURED,
                 "why": ("no TypeSafe/Jev key is acquired and its current API is unverified; "
