@@ -312,9 +312,9 @@ def held_book_still_wins(scores: Mapping[str, Mapping[str, float]],
 
 
 #: Two books whose weights differ in total by no more than this share of their heat are ONE
-#: book (2026-10-13). Below it the difference is under the venue's lot grid for every sleeve the
-#: desk trades, so no order would differ; scored against each other the copy can only tie, and a
-#: tie cannot clear the margin.
+#: book (2026-10-13). On the test book a rival 0.99% away scores within ~1% of the contestant,
+#: inside the 2% margin, so it can only tie, and a tie cannot clear the margin; keeping it as a
+#: rival withholds the dynamic weights for solver noise.
 SAME_BOOK_L1_FRAC = 0.01
 
 
