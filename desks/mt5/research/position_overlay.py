@@ -243,7 +243,7 @@ def load_bars(symbol: str, universe_dir: Path = UNIVERSE_DIR) -> Bars | None:
     idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
     sp = (d["spread"].to_numpy(dtype=float) if "spread" in d.columns
           else np.full(len(d), np.nan))
-    return Bars(t=(idx.asi8 // 10**9).astype(np.int64), o=d["open"].to_numpy(dtype=float),
+    return Bars(t=np.asarray(idx.as_unit("s").asi8, dtype=np.int64), o=d["open"].to_numpy(dtype=float),
                 h=d["high"].to_numpy(dtype=float), lo=d["low"].to_numpy(dtype=float),
                 c=d["close"].to_numpy(dtype=float), spread=sp, point=point)
 
@@ -410,8 +410,9 @@ def overlay_r(tr: Trade, ex: Exit | None, b: Bars, costs: CostModel) -> float:
         return tr.r
     px, i, frac = ex
     when = datetime.fromtimestamp(int(b.t[i]) + 3600, tz=UTC)
+    ib = int(np.searchsorted(b.t, int(tr.exit_time.timestamp()), side="right")) - 1
     dcost = (costs.half_spread(tr.symbol, b, i, when)
-             - costs.half_spread(tr.symbol, b, None, tr.exit_time)) / tr.risk
+             - costs.half_spread(tr.symbol, b, ib if ib >= 0 else None, tr.exit_time)) / tr.risk
     move = tr.side * (px - tr.exit) / tr.risk
     return tr.r + frac * (move - dcost)
 
