@@ -49,7 +49,8 @@ DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 
 SLEEVES = DESK / "data" / "sleeves.json"
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 BUDGET = DESK / "data" / "experimental_budget.json"
 POLICY = DESK / "data" / "live_sleeve_policy.json"
 EXP_LEDGER = DESK / "data" / "experimental_ledger.jsonl"

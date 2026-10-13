@@ -1,0 +1,258 @@
+{
+  "at": "2026-10-09T02:28:21.059619+00:00",
+  "controller_epoch": 17,
+  "state": "VALIDATING_SOURCE_DELIVERY_BLOCKED",
+  "closed": false,
+  "release": {
+    "production": "3726ff3acba95b0e9e839cdf22d2d0348c54f1d4",
+    "sealed_code": "cb341efee62c08f363123d0a002334da90769b4b",
+    "source_branch": "codex/repair-closure-20261009",
+    "source_base": "a2ee157dc39ce4b68720279a7cdf43a3e34d8da0",
+    "deployed": false,
+    "fast_gates": "PASS"
+  },
+  "capital_path": {
+    "fusion_account": "REDACTED_LIVE_IDENTIFIER",
+    "e8_account": 2478877,
+    "fusion_last_reconcile": "2026-10-09T02:28:20+00:00",
+    "fusion_restart": {
+      "at": "2026-10-09T02:28:03+00:00",
+      "caller": "restart_reconcile",
+      "kind": "restart_reconcile",
+      "magic": 341953,
+      "armed": true,
+      "positions": [],
+      "orders": [],
+      "in_doubt": [],
+      "stopless": [],
+      "verdict": "OK"
+    },
+    "fusion_positions": null,
+    "fusion_pending": null,
+    "e8_at": "2026-10-09T02:25:09+00:00",
+    "e8_guard": {
+      "verdict": "OK",
+      "why": "2,437 to today's floor, 7,486 to the static floor, 2,000 of counted profit left today",
+      "equity": 97486.1,
+      "day_start": 97486.1,
+      "day_pnl": 0.0,
+      "room_to_daily_floor": 2437.15,
+      "room_to_static_floor": 7486.1,
+      "counted_profit_today": 0.0,
+      "flatten": false,
+      "may_open": true
+    },
+    "e8_sleeves": [
+      {
+        "symbol": "AUDCHF",
+        "family": "overnight_gap_decay",
+        "tag": "E8overniAUDCHF",
+        "timeframe": "H1",
+        "bar_clock": "broker_wall_time/E8_server_day",
+        "n_raw_signals": 6,
+        "status": "NO_SIGNAL",
+        "last_bar": "2026-10-09 04:00:00+00:00",
+        "n_signals_in_window": 5,
+        "last_signal_seen": "2026-10-01 00:00:00+00:00",
+        "bar_repr": "Timestamp('2026-10-09 04:00:00+0000', tz='UTC')",
+        "last_signal_repr": "Timestamp('2026-10-01 00:00:00+0000', tz='UTC')"
+      }
+    ],
+    "live_book_or_arm_modified": false,
+    "orders_manufactured": false
+  },
+  "material_repairs": [
+    "reject unexecutable next-fill brackets without clipping valid costly trades or deleting signal trials",
+    "allocate opening commission, fee and swap across exit volume; include exit fee",
+    "book confirmed complete market exits with account-qualified persistent receipts and atomic target reset",
+    "bind gauntlet caches to replay-code bytes and preserve bounded receipt counts/digests",
+    "bind allocator worlds to every supplied posterior input and WorldConfig field"
+  ],
+  "proof": {
+    "cells": [
+      {
+        "symbol": "NZDCAD",
+        "params": {
+          "beta_win": 240,
+          "entry_z": 2.0,
+          "factor_symbols": [
+            "USDX"
+          ],
+          "lookback": 240,
+          "side_mode": "revert",
+          "timeframe": "M15",
+          "ttl_bars": 72
+        },
+        "signals": 12995,
+        "old_trades": 2426,
+        "new_trades": 2218,
+        "old_max_abs_r": 849090659346.9238,
+        "new_max_abs_r": 72.01104761887301,
+        "unfilled_geometry": 208,
+        "receipt_sha256": "f69a8d0fd3a7052d43193067361ff405959b67505ddc227c6f87f4c65baa201b"
+      },
+      {
+        "symbol": "XBRUSD",
+        "params": {
+          "beta_win": 240,
+          "entry_z": 2.0,
+          "factor_symbols": [
+            "NZDUSD",
+            "USDHUF"
+          ],
+          "lookback": 240,
+          "side_mode": "revert",
+          "timeframe": "M30",
+          "ttl_bars": 8
+        },
+        "signals": 7261,
+        "old_trades": 1935,
+        "new_trades": 1724,
+        "old_max_abs_r": 1444968681441.7554,
+        "new_max_abs_r": 12.33793476923128,
+        "unfilled_geometry": 211,
+        "receipt_sha256": "09a1ce70a1bf40ce617569800e046a17062d3aa3c9d6e918d512fdf2010fe475"
+      }
+    ],
+    "full_library": {
+      "days": 3420,
+      "sleeves": 160,
+      "certificates": 849,
+      "priced": 151,
+      "refused": {},
+      "max_abs_daily_r": 284.7885714274784,
+      "crisis_vol_mult": 2.5,
+      "crisis_note": "stress regime bull/high_vol (480d, shrink weight 0.89); pairwise correlation 0.01 in bull/low_vol vs 0.01 in bull/high_vol",
+      "prior_crisis_vol_mult": 301646980.4178
+    },
+    "broker_book": {
+      "at": "2026-10-09T02:07:07.935719+00:00",
+      "mode": "PRIVATE_REPLAY_AUTHENTICATED_SNAPSHOT_NO_ORDER_API",
+      "snapshot": "C:\\opt\\quant\\desks\\mt5\\reports\\FUSION_DEAL_RECONCILIATION_20261009.json",
+      "snapshot_at": "2026-10-08T22:44:36.536785+00:00",
+      "snapshot_sha256": "c25583d0c050093371ec74ada772950856db43a5b858115082e0ade8990df573",
+      "account": "REDACTED_LIVE_IDENTIFIER",
+      "server": "FusionMarkets-Live",
+      "position": 233700226,
+      "before": {
+        "filled": {
+          "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": 0.4
+        },
+        "target": {
+          "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": 0.4
+        }
+      },
+      "after": {
+        "filled": {},
+        "target": {}
+      },
+      "original_prefix_preserved": true,
+      "restart_idempotent": true,
+      "production_book_modified": false,
+      "net_account_pnl": 0.95,
+      "opening_cost": -0.81,
+      "historical_ledger_exit_only_pnl": 1.76,
+      "historical_correction_delta": -0.81,
+      "historical_correction_status": "EVIDENCED_NOT_APPLIED_APPEND_ONLY_HISTORY_PRESERVED"
+    },
+    "tests": {
+      "closure-final-junit.xml": {
+        "tests": "124",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "27.916"
+      },
+      "closure-geometry-cache-junit.xml": {
+        "tests": "113",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "22.299"
+      },
+      "closure-cache-junit.xml": {
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "9.991"
+      },
+      "closure-engine-broad-junit.xml": {
+        "tests": "40",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "9.615"
+      }
+    },
+    "repository_fast_gates": "PASS; lint, compilation, root collection and mypy",
+    "selected_final_suite": "RUNNING",
+    "broad_desk_suite": "RUNNING_WITH_FAILURES_TO_CLASSIFY",
+    "parent_full_gate": "RUNNING_ON_a2ee157; not proof for amended engine"
+  },
+  "owned_work": [
+    {
+      "id": "release-all-prepared-repairs",
+      "owner": "canonical release/adopter",
+      "state": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+      "blocker": "Prior PR/CI shell action: automatic approval review blocked by policy. GitHub connector:403 FORBIDDEN Resource not accessible by integration. No authority change evidenced.",
+      "unblock": "Legitimate PR/workflow write authority and clearance of separate automatic-review policy refusal; exact full green CI, canonical promotion, adopter/seal receipts."
+    },
+    {
+      "id": "current-judging-batch",
+      "owner": "canonical run_sharded_gauntlet",
+      "state": "RUNNING_CHECKPOINTED",
+      "next_action": "Retain completed shards and finish existing serialized build/rule/merge. Do not start a competing judge. New source prevention changes require canonical release before a subsequent batch."
+    },
+    {
+      "id": "legacy-unstamped-intake",
+      "owner": "canonical merge_hypotheses",
+      "state": "DEPENDENT_ON_CANONICAL_WRITER_AND_RELEASE",
+      "next_action": "Existing merge PID6612 remains active. Adopt tested preregistration join repair, complete or canonical supervisor-disposition the current writer, prove recovered stamps on canonical output. Never backdate unknown history."
+    },
+    {
+      "id": "historical-AUDCHF-net-PnL",
+      "owner": "canonical ledger/reconciliation",
+      "state": "EVIDENCED_HISTORY_PRESERVED",
+      "delta_account_pnl": -0.81,
+      "next_action": "Define and validate an append-only correction/consumer migration; original exit-only1.76 row preserved. New source records net0.95 from authenticated opening/closing costs."
+    },
+    {
+      "id": "historic-Gold-book-offset",
+      "owner": "canonical ledger/reconciliation",
+      "state": "UNRESOLVED_EVIDENCE_REQUIRED",
+      "next_action": "Resolve historical-0.24-lot diagnostic book offset from original owned fill/exit evidence; no blanket zero or synthetic trade."
+    },
+    {
+      "id": "new-engine-evidence-adoption",
+      "owner": "canonical gauntlet/allocator",
+      "state": "DEPLOYMENT_DEPENDENT",
+      "next_action": "After exact green release, rebuild under new cache namespace, measure verdict deltas with unchanged gates and retained prior trials, verify fresh noncorrupt allocator world receipt before claiming capital consumption."
+    },
+    {
+      "id": "validation-remaining",
+      "owner": "quant-codex-repair-closure",
+      "state": "IN_PROGRESS",
+      "next_action": "Classify all broader-suite failures against complete fixtures and parent; retain failed evidence and validate final source."
+    }
+  ],
+  "external_blockers": [
+    "Automatic approval review blocked PR/CI action by policy; no detailed reason supplied.",
+    "GitHub connector403 FORBIDDEN:Resource not accessible by integration."
+  ],
+  "evidence": [
+    "CLOSURE_GEOMETRY_REPLAY_20261009.json",
+    "CLOSURE_BOOK_REPLAY_20261009.json",
+    "closure-selected-final-junit.xml",
+    "closure-geometry-cache-junit.xml",
+    "closure-cache-junit.xml",
+    "closure-engine-broad-junit.xml",
+    "closure-fast-gates/",
+    "closure-desk-full-junit.xml"
+  ],
+  "next_action": "Complete failure classification and final source publication; delivery remains gated by exact external authority and full canonical CI.",
+  "privacy_redaction": {
+    "original_sha256": "5a01a51a859b8a56afab1ffae5087ad9851ca03b7ea1dc7fbc7315e1b7992872",
+    "reason": "Public evidence must not publish live infrastructure identifiers; private broker receipts remain unchanged."
+  }
+}
