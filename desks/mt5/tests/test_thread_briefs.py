@@ -113,6 +113,35 @@ def test_titles_that_slug_alike_get_separate_files(tmp_path: Path) -> None:
     assert (tmp_path / files[b]).read_text().startswith(f"# {b}:")
 
 
+def test_new_collider_never_takes_a_registered_threads_slug() -> None:
+    old = "Finish all paused work"
+    s = tb.assign_slugs(["A finish all paused work", "Finish-all paused work", old],
+                        registered={old})
+    assert s[old] == "finish-all-paused-work"
+    assert len(set(s.values())) == 3
+
+
+def test_suffixed_slug_is_rechecked_for_collisions() -> None:
+    import hashlib
+    t = "finish all paused work"
+    clash = f"finish-all-paused-work-{hashlib.sha1(t.encode()).hexdigest()[:6]}"
+    s = tb.assign_slugs([clash, t, "finish-all-paused-work"],
+                        registered={clash, "finish-all-paused-work"})
+    assert len(set(s.values())) == 3 and s[t] not in (clash, "finish-all-paused-work")
+
+
+def test_notes_dir_equal_to_out_dir_is_refused(tmp_path: Path) -> None:
+    import pytest
+    with pytest.raises(ValueError):
+        tb.write({"rows": []}, tmp_path, notes_dir=tmp_path, now=NOW, prs=None, pm=[],
+                 threads={})
+
+
+def test_index_stamps_the_measuring_host(tmp_path: Path) -> None:
+    idx, _ = _write(tmp_path)
+    assert idx["host"]
+
+
 def test_committed_inputs_load_and_cover_every_owner() -> None:
     pm = tb.load_pm()
     threads = tb.load_threads()

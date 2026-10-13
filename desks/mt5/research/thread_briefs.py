@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ONE BRIEF PER THREAD, REGENERATED WITH THE MANDATE AUDIT: WHAT IT OWES, WHERE IT STOPPED.
 
-    python desks/mt5/research/thread_briefs.py                       # desks/mt5/reports/thread_briefs/
+    python desks/mt5/research/thread_briefs.py          # -> desks/mt5/reports/thread_briefs/
     python desks/mt5/research/thread_briefs.py --out /mnt/project-files/reports/thread_briefs
 
 WHY (MISC-18 and MISC-22, principal 2026-10-06). A thread restarted after a usage limit or a
@@ -34,6 +34,7 @@ import hashlib
 import json
 import re
 import shutil
+import socket
 import subprocess
 from collections import Counter
 from datetime import UTC, datetime
@@ -66,6 +67,25 @@ def slug(title: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-") or "unowned"
 
 
+def assign_slugs(titles: list[str], registered: set[str]) -> dict[str, str]:
+    """One file name per title, never shared, and stable for registered threads.
+
+    Registered threads claim their bare slug first, so a newly seen title that slugs alike can
+    never take over an existing thread's brief or its notes/<slug>.md. Any other collider gets
+    a hash suffix, lengthened until it is unique, so a suffixed name cannot collide either."""
+    order = sorted(titles, key=lambda t: (t not in registered, t))
+    taken: set[str] = set()
+    out: dict[str, str] = {}
+    for title in order:
+        s, n = slug(title), 6
+        while s in taken:
+            s = f"{slug(title)}-{hashlib.sha1(title.encode()).hexdigest()[:n]}"
+            n += 2
+        taken.add(s)
+        out[title] = s
+    return out
+
+
 def load_pm(path: Path = PM) -> list[dict[str, Any]]:
     try:
         return list(json.loads(gzip.decompress(path.read_bytes()))["requirements"])
@@ -82,7 +102,9 @@ def load_threads(path: Path = THREADS) -> dict[str, dict[str, Any]]:
 
 
 def fetch_prs(timeout: float = 60.0) -> list[dict[str, Any]] | None:
-    """Open PRs with the session that wrote each (from the body's session link). None = unreachable."""
+    """Open PRs with the session that wrote each (from the body's session link).
+
+    None means GitHub was unreachable."""
     if shutil.which("gh") is None:
         return None
     # Pages by number: --paginate follows GitHub's numeric-id `repositories/{id}` links, which
@@ -231,16 +253,13 @@ def write(audit: dict[str, Any], out_dir: Path = OUT_DIR, notes_dir: Path | None
     threads = load_threads() if threads is None else threads
     pr_list = fetch_prs() if prs is False else prs
     notes_dir = notes_dir or out_dir / "notes"
+    if notes_dir.resolve() == out_dir.resolve():
+        raise ValueError("notes_dir must differ from out_dir: briefs would overwrite resume notes")
     rows = audit.get("rows") or []
     titles = sorted({r.get("owner_thread") or "UNOWNED" for r in rows}
                     | {p.get("owner_thread") or "UNOWNED" for p in pm} | set(threads))
     out_dir.mkdir(parents=True, exist_ok=True)
-    slugs: dict[str, str] = {}
-    for title in titles:                 # two titles that slug alike never share one file
-        s = slug(title)
-        if s in slugs.values():
-            s = f"{s}-{hashlib.sha1(title.encode()).hexdigest()[:6]}"
-        slugs[title] = s
+    slugs = assign_slugs(titles, registered=set(threads))
     index = []
     for title in titles:
         v = thread_view(title, rows, pm, pr_list if isinstance(pr_list, list) else None,
@@ -259,7 +278,8 @@ def write(audit: dict[str, Any], out_dir: Path = OUT_DIR, notes_dir: Path | None
                       "has_resume_note": note is not None, "next_step": v["next_step"]})
     doc = {"generated_utc": now.isoformat(timespec="seconds"),
            "audit_generated_utc": audit.get("generated_utc"),
-           "prs_measured": isinstance(pr_list, list), "threads": index}
+           "prs_measured": isinstance(pr_list, list), "host": socket.gethostname(),
+           "threads": index}
     atomic_write(out_dir / "INDEX.json", json.dumps(doc, indent=1))
     return doc
 

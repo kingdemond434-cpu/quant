@@ -42,7 +42,8 @@ one says nothing about the blocker. A row that names no
 module keeps its audited state with `measured: UNMEASURED` (L1.28a).
 
 Writes desks/mt5/reports/MANDATE_AUDIT.json, then one brief per owner thread
-(research/thread_briefs.py, MISC-18/MISC-22) from the same pass. Read by the CRO pass (STEP 4B, D13 and D41) and by
+(research/thread_briefs.py, MISC-18/MISC-22) from the same pass. Read by the CRO pass
+(STEP 4B, D13 and D41) and by
 the unfinished-work tracker.
 """
 from __future__ import annotations
