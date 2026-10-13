@@ -46,7 +46,8 @@ def _fake_sn() -> Any:
 @pytest.fixture()
 def wired(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     import pandas as pd
-    monkeypatch.setattr(ls, "_bars", lambda sym, d: pd.DataFrame({"close": [1.0, 1.1]}))
+    idx = pd.date_range("2024-01-01", periods=24 * 400, freq="h", tz="UTC")
+    monkeypatch.setattr(ls, "_bars", lambda sym, d: pd.DataFrame({"close": 1.0}, index=idx))
     monkeypatch.setattr(ls, "_family", lambda name: (lambda df, **p: dict(p["reads"]))
                         if name == "exogenous_conditioner" else None)
     return tmp_path
