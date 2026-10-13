@@ -55,6 +55,7 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lab, "SARES_DIR", tmp_path / "sares")
     monkeypatch.setattr(lab, "_cb_tone_role",
                         lambda **kw: {"state": "TEST_STUB", "model": {"calls": 0}, **kw})
+    monkeypatch.setattr(lab, "_collector_role", lambda **kw: {"state": "RAN", "asked": 0, **kw})
     import llm_lab_roles as roles
     for name in ("CREDIT", "EVIDENCE_START", "MISSED", "DAILY", "CODE_LEDGER", "SCOUTED",
                  "RED_TEAM"):
