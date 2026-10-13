@@ -47,7 +47,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import re
 import sys
 import time
@@ -66,6 +65,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.env_keys import read_key  # noqa: E402
 from libs.research import analyst_views as av  # noqa: E402
 from libs.research import asia_alt_digest  # noqa: E402
 from libs.research.analyst_views import UNMEASURED, AnalystView  # noqa: E402
@@ -634,7 +634,8 @@ SEC_PHRASES: dict[int, tuple[str, ...]] = {
 
 def fetch_sec(get: Getter, state: dict[str, Any], deadline: float, *, now: datetime
               ) -> tuple[list[AnalystView], dict[str, Any]]:
-    ua = os.environ.get("QUANT_EDGAR_UA", "").strip()
+    ua = next((v for v in map(read_key, ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT",
+                                         "SEC_EDGAR_UA")) if v), "")
     if not ua:
         return [], {"status": "UNCONFIGURED", "attempted": 0,
                     "why": "no QUANT_EDGAR_UA: the SEC's fair-access policy requires a declared "

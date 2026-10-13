@@ -1,0 +1,2 @@
+{"dataset": {"dataset_code": "GOLD", "database_code": "LBMA", "column_names": ["Date", "USD (AM)", "USD (PM)", "GBP (AM)", "GBP (PM)", "EURO (AM)", "EURO (PM)"],
+ "data": [["2026-09-29", 3801.1, 3805.25, 2840.2, 2842.9, 3240.0, 3243.1], ["2026-09-28", 3790.0, null, 2830.0, null, 3230.0, null]]}}

@@ -92,6 +92,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.env_keys import read_key  # noqa: E402
+
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
 UNMEASURED = "UNMEASURED"
@@ -3207,7 +3209,7 @@ def status_of(src: Source, environ: dict[str, str] | None = None,
         cands = SUBSTITUTED_BY.get(src.id)
         return (f"BLOCKED_NO_SUBSTITUTE:UNVERIFIED={','.join(cands)}" if cands
                 else f"BLOCKED_ON_TERMS:{src.terms}")
-    if src.key_env and not env.get(src.key_env):
+    if src.key_env and not (read_key(src.key_env) if environ is None else env.get(src.key_env)):
         return f"BLOCKED_ON_KEY:{src.key_env}"
     missing = [e for e in src.config_env if not config_value(e, env)]
     if missing:
@@ -3229,13 +3231,19 @@ def _tls() -> Any:
 
 
 def _redact(url: str, src: Source) -> str:
-    key = os.environ.get(src.key_env or "", "") if src.key_env else ""
-    return url.replace(key, f"<{src.key_env}>") if key else url
+    """The key out of `url` (or any text), raw AND url-encoded: a key holding `+`, `/` or `=`
+    travels encoded, and only the raw form used to be replaced (re-audit of #201)."""
+    from libs.data.keyed_sources import redact
+    key = read_key(src.key_env) if src.key_env else ""
+    return redact(url, (key,)).replace("<redacted>", f"<{src.key_env}>") if key else url
 
 
 def http_get(url: str) -> tuple[bytes, str]:
+    from libs.data.keyed_sources import keyed_opener
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+    # The key rides in this url's query: the opener strips it from, or refuses, any redirect
+    # that would carry it to another host (audit of #252).
+    with keyed_opener(_tls()).open(req, timeout=TIMEOUT) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 
@@ -3263,7 +3271,7 @@ class Request:
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
     """The requests one pass makes for a source. Paged and area sources expand here."""
-    key = os.environ.get(src.key_env or "", "") if src.key_env else ""
+    key = read_key(src.key_env) if src.key_env else ""
     if src.id == "cn_firms_industrial":
         out: list[Request] = []
         end = (now - timedelta(days=1)).date()
@@ -4085,6 +4093,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         elif fetch:
             try:
                 body, ctype = getter(req.url)
+                if src.key_env:
+                    from libs.data.keyed_sources import scrub_body
+                    body = scrub_body(body, (read_key(src.key_env),))
                 fetched += 1
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
@@ -4439,7 +4450,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
-        "keys": {s.key_env: bool(os.environ.get(s.key_env)) for s in SOURCES if s.key_env},
+        "keys": {s.key_env: bool(read_key(s.key_env)) for s in SOURCES if s.key_env},
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }

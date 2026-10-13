@@ -907,6 +907,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "C2_API_KEY",
+   "key_in": "query:apikey",
    "cadence": "weekly",
    "targets": [
     "EURUSD",
@@ -932,6 +933,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "DARWINEX_TOKEN",
+   "key_in": "bearer",
    "cadence": "weekly",
    "targets": [
     "EURUSD",
@@ -1088,6 +1090,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "EIA_API_KEY",
+   "key_in": "query:api_key",
    "cadence": "weekly",
    "pit": {
     "event_time": "reference week",
@@ -1628,6 +1631,7 @@
    "expect": "json",
    "access": "key",
    "key_env": "BANXICO_TOKEN",
+   "key_in": "header:Bmx-Token",
    "cadence": "daily",
    "pit": {
     "event_time": "publication",
@@ -4938,6 +4942,145 @@
     "XAUUSD"
    ],
    "mechanism": "East African artisanal and mine gold exports are a supply leg outside South Africa, and the central bank's own purchase programme is an official bid on it"
+  },
+  {
+   "id": "bis_kr_policy_rate",
+   "plane": "kr",
+   "country": "kr",
+   "name": "Bank of Korea base rate via BIS SDMX (keyless ECOS substitute)",
+   "url": "https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/M.KR?format=csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "effective date",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "USDKRW",
+    "KS11"
+   ],
+   "mechanism": "the BOK policy rate is the KRW carry leg; ECOS needs a key the operator cannot obtain, BIS republishes it keyless",
+   "substitutes": [
+    "ECOS_API_KEY",
+    "BOK_API_KEY"
+   ]
+  },
+  {
+   "id": "tdnet_jp_disclosures",
+   "plane": "jp",
+   "country": "jp",
+   "name": "JPX TDnet timely disclosure daily listing (keyless EDINET substitute)",
+   "url": "https://www.release.tdnet.info/inbs/I_list_001_{yyyy}{mm}{dd}.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "url_lag_days": 0,
+   "pit": {
+    "event_time": "disclosure time",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "JP225",
+    "USDJPY"
+   ],
+   "mechanism": "earnings revisions, buybacks and guidance cuts reach TDnet before EDINET; the tone of a day's disclosures leads the index",
+   "substitutes": [
+    "EDINET_API_KEY"
+   ]
+  },
+  {
+   "id": "krx_kind_disclosures",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KRX KIND today's disclosures (keyless DART substitute)",
+   "url": "https://kind.krx.co.kr/disclosure/todaydisclosure.do",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "disclosure time",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "KS11",
+    "USDKRW"
+   ],
+   "mechanism": "KIND carries the same exchange filings DART does, keyless; disclosure flow and tone lead the KOSPI",
+   "substitutes": [
+    "DART_API_KEY"
+   ]
+  },
+  {
+   "id": "kobis_boxoffice_web",
+   "plane": "kr",
+   "country": "kr",
+   "name": "KOFIC KOBIS daily box office page (keyless KOBIS API substitute)",
+   "url": "https://www.kobis.or.kr/kobis/business/stat/boxs/findDailyBoxOfficeList.do",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "reference day",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "KS11",
+    "USDKRW"
+   ],
+   "mechanism": "admissions are a daily discretionary-consumption print months ahead of retail sales",
+   "substitutes": [
+    "KOBIS_API_KEY"
+   ]
+  },
+  {
+   "id": "openmeteo_cams_air",
+   "plane": "alt",
+   "country": "cn",
+   "name": "Copernicus CAMS NO2/SO2 over Shanghai, Beijing, Guangzhou, Seoul via Open-Meteo (keyless CDSE substitute)",
+   "url": "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=31.23,39.90,23.13,37.57&longitude=121.47,116.40,113.26,126.98&hourly=nitrogen_dioxide,sulphur_dioxide&past_days=7",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "hour",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDCNH",
+    "CN50",
+    "XCUUSD",
+    "USDKRW"
+   ],
+   "mechanism": "industrial NO2/SO2 is an activity proxy that prints daily, weeks before the PMI and industrial production",
+   "substitutes": [
+    "CDSE_USERNAME",
+    "CDSE_CLIENT_ID"
+   ]
+  },
+  {
+   "id": "nasa_cmr_s5p_no2",
+   "plane": "alt",
+   "country": "global",
+   "name": "Sentinel-5P TROPOMI NO2 granules via NASA CMR (keyless search; EARTHDATA_TOKEN downloads)",
+   "url": "https://cmr.earthdata.nasa.gov/search/granules.json?short_name=S5P_L2__NO2____HiR&page_size=50&sort_key=-start_date",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "overpass",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDCNH",
+    "CN50",
+    "XCUUSD"
+   ],
+   "mechanism": "the same TROPOMI product CDSE serves, mirrored by NASA GES DISC; the granule index is keyless and the token fetches the swath",
+   "substitutes": [
+    "CDSE_USERNAME",
+    "CDSE_CLIENT_ID"
+   ]
   }
  ],
  "miners": {

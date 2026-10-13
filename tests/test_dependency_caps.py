@@ -125,6 +125,9 @@ _OPTIONAL_BY_DESIGN = {
     # try/except ImportError and reports "playwright not importable" as the reason no render is
     # spent; the plain-HTTP fetch path is unaffected, so absence degrades loudly, never silently.
     "playwright",
+    # libs/data/keyed_sources.scrub_body imports it behind try/except ImportError and REFUSES a
+    # `br` body (stores nothing) without it, so absence costs that body, never a leaked key.
+    "brotli",
     "hypothesis", "pytest", "_pytest",   # test-only, declared in the dev extra
 }
 

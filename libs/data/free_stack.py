@@ -66,6 +66,8 @@ from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise
 from typing import Any
 
+from libs.ops.env_keys import read_key
+
 UNMEASURED = "UNMEASURED"
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
       "Chrome/124.0.0.0 Safari/537.36 quant-desk-free-stack/1.0 (research)")
@@ -1456,7 +1458,7 @@ def parse_tushare(raw: bytes | None, value_field: str) -> list[tuple[str, float]
 def fetch_tushare(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                   now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
-    token = os.environ.get(str(row.get("key_env") or "TUSHARE_TOKEN"), "")
+    token = read_key(str(row.get("key_env") or "TUSHARE_TOKEN"))
     if not token:
         h.status = "NEEDS_CREDENTIAL"
         h.detail = f"{row.get('key_env') or 'TUSHARE_TOKEN'} is not set on this host"
@@ -1511,8 +1513,8 @@ def fetch_package_route(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[st
             h.status, h.detail = "BLOCKED", f"{type(exc).__name__}: {str(exc)[:120]}"
             return h
     elif mod == "jqdatasdk":
-        user = os.environ.get("JQ_USER", "")
-        pw = os.environ.get("JQ_PASS", "")
+        user = read_key("JQ_USER")
+        pw = read_key("JQ_PASS")
         if not user or not pw:
             h.status, h.detail = "NEEDS_CREDENTIAL", "JQ_USER / JQ_PASS are not set on this host"
             return h
