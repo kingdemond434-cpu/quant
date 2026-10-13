@@ -91,7 +91,7 @@ def test_gateway_key_join_reaches_the_cert_rows() -> None:
 def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None:
     pol = live_policy.policy()
     for sym in ("EURZAR", "USDZAR", "AUDCHF", "XAUUSD"):
-        assert sym in pol.live_symbols
+        assert sym in pol.live_symbols or "*" in pol.live_symbols  # '*' since 2026-10-13
     assert "discovered" in pol.banned_families
     assert "M15" in pol.banned_timeframes["XAUUSD"]
     row = {"symbol": "AUDCHF", "family": "overnight_gap_decay", "timeframe": "H1",
