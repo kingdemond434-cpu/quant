@@ -278,6 +278,7 @@ def unmeasured_fields(registry: dict[str, Any] | None,
     rows = reg.get("symbols") if isinstance(reg.get("symbols"), dict) else reg
     by_field: dict[str, dict[str, list[str]]] = {f: {} for f in COST_FIELDS}
     flagged: set[str] = set()
+    hard: set[str] = set()
     n_rows = 0
     for sym, row in sorted((rows or {}).items()):
         if not isinstance(row, dict):
@@ -287,8 +288,12 @@ def unmeasured_fields(registry: dict[str, Any] | None,
             if st != "MEASURED":
                 by_field[f].setdefault(st, []).append(str(sym))
                 flagged.add(str(sym))
+                if st in ("ZERO", "MISSING"):
+                    hard.add(str(sym))
     return {
         "n_symbols": len(flagged),
+        # The subset that is not merely old: a stored zero or an absent field.
+        "n_symbols_zero_or_missing": len(hard),
         "n_registry_rows": n_rows,
         "by_field": by_field,
         "counts": {f: {st: len(v) for st, v in d.items()} for f, d in by_field.items()},

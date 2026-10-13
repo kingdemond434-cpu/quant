@@ -91,7 +91,7 @@ def test_ladder_measured_thin_unmeasured_absent_never_zero():
     v1, i1 = ehc.hour_spread_pts(surf, "X", 1)
     assert v1 == pytest.approx((50 * 300 + ehc.K_SHRINK * 100) / (50 + ehc.K_SHRINK))
     assert i1["n_eff"] == 50 + ehc.K_SHRINK and "session:asia" in i1["basis"]
-    v2, i2 = ehc.hour_spread_pts(surf, "X", 2)
+    v2, _ = ehc.hour_spread_pts(surf, "X", 2)
     assert v2 == 140.0, "an unmeasured hour takes the parent's UPPER quantile, not its median"
     v2s, _ = ehc.hour_spread_pts(surf, "X", 2, q="p90")
     assert v2s == 200.0
@@ -121,9 +121,9 @@ def test_costs_at_entry_hour_attaches_the_table_and_never_prices_zero():
     assert basis == "fill_hour_surface_table"
     assert c.spread_per_lot_by_hour[0] == pytest.approx(400.0 * 1e-5 * 1e5)
     assert c.spread_per_lot_by_hour[1] == pytest.approx(20.0 * 1e-5 * 1e5)
-    c2, basis2 = ehc.costs_at_entry_hour("ABSENT", zero_meta, surface=surf)
+    _, basis2 = ehc.costs_at_entry_hour("ABSENT", zero_meta, surface=surf)
     assert basis2.startswith("UNMEASURED"), "a zero registry spread and no surface row is not free"
-    c3, basis3 = ehc.costs_at_entry_hour("ABSENT", META, surface=surf)
+    _, basis3 = ehc.costs_at_entry_hour("ABSENT", META, surface=surf)
     assert basis3.startswith("REGISTRY_FALLBACK")
 
 
@@ -173,3 +173,17 @@ def test_collector_never_writes_a_zero_central_value(monkeypatch):
     monkeypatch.setattr(ex, "_surface_symbol_p50", lambda sym: (None, "no priced level"))
     assert ex._median_spread_write({"median_spread_pts": 0.0}, {"spread": [0, 0]}, _Info(),
                                    datetime.now(UTC)) == {}
+
+
+def test_judge_coverage_publishes_the_unmeasured_cost_fields(tmp_path):
+    import json
+
+    from research import judge_coverage as jc
+    reg = tmp_path / "universe.json"
+    reg.write_text(json.dumps({"USDJPY": {**META, "median_spread_pts": 0.0}, "EURUSD": META}))
+    block = jc._cost_fields_unmeasured(reg)
+    assert block["status"] == "MEASURED"
+    assert block["n_symbols"] == 1 and block["n_symbols_zero_or_missing"] == 1
+    assert block["by_field"]["spread"]["ZERO"] == ["USDJPY"]
+    missing = jc._cost_fields_unmeasured(tmp_path / "absent.json")
+    assert missing["status"].startswith("UNMEASURED") and missing["n_symbols"] is None

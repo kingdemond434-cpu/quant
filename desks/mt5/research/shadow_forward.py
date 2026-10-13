@@ -566,7 +566,8 @@ def per_symbol_costs(meta: dict, sym: str):
     # median (USDZAR 329 pts against 3,534 at hour 00), and a clock on a symbol whose registry
     # spread is ZERO (USDJPY and 13 others) paid the engine's 0.05 floor -- nothing. The cost
     # model now carries the surface's per-(weekday, hour) table and the engine charges each
-    # long its entry slot and a short its exit slot (bid bars: the ask is crossed there). `meta[sym]` still raises KeyError for a
+    # long its entry slot and a short its exit slot (bid bars: the ask is crossed there).
+    # `meta[sym]` still raises KeyError for a
     # symbol the catalogue lacks, which is what routes the caller to its frozen basis.
     from mt5desk.engine import Costs
     from research.entry_hour_cost import attach_table
