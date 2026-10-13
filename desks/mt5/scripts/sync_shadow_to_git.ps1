@@ -686,6 +686,7 @@ $reportPaths = @(
     "desks/mt5/reports/LLM_LAB.json",
     "desks/mt5/reports/LLM_COVERAGE.json",
     "desks/mt5/reports/LAB_STYLE_HOLDS.json",
+    "desks/mt5/reports/ELECTION_CALENDAR.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
