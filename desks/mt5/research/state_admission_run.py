@@ -37,7 +37,8 @@ from libs.regime.state_admission import (  # noqa: E402
 
 OUT = BASE / "reports" / "STATE_ADMISSION.json"
 LEDGER_DIRS = (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "shadow_ledgers")
-LIVE = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 
 #: Dimensions judged by default. Only those reconstructible AT THE TRADE'S OWN MOMENT are here.
 #: `event` qualifies because the calendar carries each release's scheduled stamp, so a January

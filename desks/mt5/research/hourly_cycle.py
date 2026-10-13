@@ -147,14 +147,22 @@ def health() -> dict:
     for name, (_, script) in EXPECTED.items():
         alive = script in blob
         res[name] = {"alive": alive}
+        if alive and name == "hunt12":
+            # Command-line presence also includes suspended interpreters. Inspect
+            # the existing writer; never launch a second writer on uncertainty.
+            res[name].update(_hunt12_resident_health())
         if not alive:
+            if (BASE / "data" / f"HOLD_{name}").exists():
+                res[name]["note"] = f"HOLD_{name} pauses the canonical target; no launch attempted"
+                continue
             launch_ok = start(script)
             if launch_ok:
                 # Give the OS a moment to actually create the process before checking for it --
                 # process creation itself is near-instant even for a script whose real work is
                 # slow.
                 time.sleep(5)
-            res[name]["restarted"] = bool(launch_ok and script in procs())
+            after = procs() if launch_ok else None
+            res[name]["restarted"] = bool(after is not None and script in after)
             if not res[name]["restarted"]:
                 res[name]["restart_failed"] = True
     # `str.find` RETURNS -1 WHEN NOT FOUND, AND bool(-1) IS TRUE -- so this read "alive" exactly
@@ -169,6 +177,54 @@ def health() -> dict:
     else:
         res["gateway_cmd"] = {"alive": "MT5Gateway" in cmds}
     return res
+
+
+def _hunt12_resident_health() -> dict:
+    """Recover only a suspended, unused canonical interpreter; honor HOLD.
+
+    A measured box incident left a zero-CPU interpreter stopped for 18 hours.
+    Never resume a stopped active computation or a process owning files/children.
+    Those cases remain visible for an owned operational review.
+    """
+    try:
+        import psutil
+    except ImportError:
+        return {"alive": None, "note": "resident status UNMEASURED: psutil unavailable"}
+    try:
+        target = (BASE / "research" / "run_hunt12.py").resolve()
+        candidates = []
+        for proc in psutil.process_iter(["cmdline"]):
+            argv = proc.info.get("cmdline") or []
+            scripts = [arg for arg in argv[1:] if Path(arg).name == target.name]
+            if not scripts:
+                continue
+            cwd = Path(proc.cwd()).resolve()
+            if cwd != BASE.resolve():
+                continue
+            if any((cwd / arg).resolve() == target for arg in scripts):
+                candidates.append(proc)
+        if len(candidates) != 1:
+            return {"alive": None, "note": "canonical resident count unproven",
+                    "resident_count": len(candidates)}
+        proc = candidates[0]
+        status = proc.status()
+        result = {"alive": status != psutil.STATUS_STOPPED,
+                  "pid": proc.pid, "process_status": status}
+        if status != psutil.STATUS_STOPPED:
+            return result
+        if (BASE / "data" / "HOLD_hunt12").exists():
+            return {**result, "note": "stopped resident preserved by HOLD_hunt12"}
+        cpu = proc.cpu_times()
+        if (time.time() - proc.create_time() < 300 or cpu.user + cpu.system > 0
+                or proc.children() or proc.open_files()):
+            return {**result, "note": "stopped resident requires review; active ownership preserved"}
+        proc.resume()
+        after = proc.status()
+        return {**result, "alive": after != psutil.STATUS_STOPPED,
+                "process_status": after, "resumed": after != psutil.STATUS_STOPPED,
+                "note": "resumed existing unused resident; no new writer launched"}
+    except (OSError, RuntimeError, psutil.Error) as exc:
+        return {"alive": None, "note": f"resident status UNMEASURED: {type(exc).__name__}"}
 
 
 def mine() -> dict:
@@ -678,6 +734,9 @@ ADMISSION_SCAN_MAX_AGE_S = 2 * 3600.0
 #: bars is ~120 rows against the ~54,000 each symbol carries, so this clock exists to stop the
 #: artifact ageing forever, not because the answer moves inside a day.
 HUNT12_MAX_AGE_S = 7 * 24 * 3600.0
+# Start two days before the existing seven-day evidence expiry, leaving the
+# complete snapshot available while the fair compute lane advances a refresh.
+HUNT12_REFRESH_AGE_S = 5 * 24 * 3600.0
 
 def _hunt12_state(art: Path | None = None,
                   now: datetime | None = None) -> tuple[bool, str]:
@@ -703,7 +762,7 @@ def _hunt12_state(art: Path | None = None,
 
         absent        never swept on this box: the condition that has held since 2026-09-04
         incomplete    a resumable sweep part-way through; the next pass advances it
-        stale         past HUNT12_MAX_AGE_S, so it is re-swept from scratch
+        refresh_due   past HUNT12_REFRESH_AGE_S, before the evidence expires
         fresh         complete and inside the age bound -- skipped, and the leg says so
 
     A leg that reports SKIPPED with a reason is not an idle leg (III.16): the artifact it exists
@@ -727,9 +786,12 @@ def _hunt12_state(art: Path | None = None,
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=UTC)
     age = ((now or datetime.now(UTC)) - ts).total_seconds()
-    if age > HUNT12_MAX_AGE_S:
+    if age < 0:
+        return True, "the carried sweep has a future timestamp"
+    if age >= HUNT12_REFRESH_AGE_S:
         return True, (f"the carried sweep is {age / 3600:.0f}h old "
-                      f"(max {HUNT12_MAX_AGE_S / 3600:.0f}h)")
+                      f"(refresh {HUNT12_REFRESH_AGE_S / 3600:.0f}h; "
+                      f"evidence expiry {HUNT12_MAX_AGE_S / 3600:.0f}h)")
     return False, f"complete and {age / 3600:.0f}h old"
 
 
@@ -747,11 +809,15 @@ def hunt12() -> dict:
     refuses an unfinished one, so a part-swept universe can never be loaded as the whole book.
     """
     run, why = _hunt12_state()
+    if (BASE / "data" / "HOLD_hunt12").exists():
+        return {"status": "SKIPPED", "why": "HOLD_hunt12 pauses the canonical target",
+                "at": datetime.now(UTC).isoformat()}
     if not run:
         return {"status": "SKIPPED", "why": why, "at": datetime.now(UTC).isoformat()}
     print(f"  hunt12: sweeping -- {why}", flush=True)
     return {**_producer("hunt12", "research/run_hunt12.py",
-                        "--deadline-s", str(HUNT12_DEADLINE_S)), "why": why}
+                        "--deadline-s", str(HUNT12_DEADLINE_S),
+                        "--max-age-h", str(HUNT12_REFRESH_AGE_S / 3600)), "why": why}
 
 
 def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None) -> float | None:
@@ -921,7 +987,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
     # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
     "research_live_identity",
-    "tier_s",
+    "tier_s", "tier_s_door", "replication_civilization",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
@@ -963,7 +1029,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "forward_evidence_tracker",
+    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -1073,7 +1139,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
                      "null_lab",
-                     "committees", "rejection_throughput"),
+                     "committees", "committee_ensembles", "rejection_throughput"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1118,7 +1184,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
-                     "ingestion_exploitation", "coverage_tensor", "research_evolution",
+                     "ingestion_exploitation", "coverage_tensor", "regional_parity",
+                     "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
@@ -1149,7 +1216,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control", "tier_s",
+                     "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
@@ -1739,6 +1806,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # twin 64 s, world_science 58 s); the cap leaves room for the box's larger ledgers (the
     # gate verdict ledger and hypothesis graph are read in full).
     "tier_s": 1_500,
+    # Review + promotion-door verdicts take seconds on the live box. The full Tier S run can
+    # time out before its final door organ, leaving E8's fail-closed input stale for >6h.
+    "tier_s_door": 180,
     # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
     # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
     # the cap sits above both and the document is checkpointed, so a kill still publishes.
@@ -1753,6 +1823,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "control_plane": 660,
     # The committees stop themselves at --budget-s 600 (experiments included); the cap sits above.
     "committees": 720,
+    # The six committees stop themselves at --budget-s 300 (traps and writes included).
+    "committee_ensembles": 420,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
@@ -1852,7 +1924,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # their artifact; the cycle's cap sits above that for the reason `enrol_clocks` was raised.
     "event_graph_lab": 1_000,
     "attribution_reconcile": 400,
-    "macro_state_engine": 700,
+    "macro_state_engine": 850,
     "research_artifacts": 400,
     "engine_registry": 400,
     "counterfactual_attribution": 700,
@@ -1889,6 +1961,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cap below an organ's budget truncates it at the same prefix every hour, and for a drain
     # that would mean the same rows at the head of the queue never being reached.
     "coverage_drain": 1_000,
+    # Regional parity reads every pack and two reports and writes three small files; measured
+    # at ~10 s on a build box. The cap sits above its own --budget-s for the usual reason.
+    "regional_parity": 400,
     # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
     # above its own budget for the reason every other leg's does.
     "judge_coverage": 300,
@@ -2354,6 +2429,11 @@ def tier_s() -> dict:
     is read by sizing, certificates or order flow.
     """
     return _producer("tier_s", "research/tier_s.py")
+
+
+def tier_s_door() -> dict:
+    """Refresh the candidate review and promotion door before long hourly research legs."""
+    return _producer("tier_s_door", "research/tier_s.py", "--only", "review,door")
 
 
 def adversary_evolution() -> dict:
@@ -2865,11 +2945,9 @@ def catch_up_intake() -> dict:
     if compiled.get("exit_code") != 0:
         return {"status": "FAILED", "compile": compiled,
                 "why": "fresh compilation failed; catch-up merge withheld"}
-    with exclusive_job("merge_hypotheses", need_mb=14000) as acquired:
-        if not acquired:
-            return {"status": "SKIPPED", "compile": compiled,
-                    "why": "canonical merge lane already owned"}
-        merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
+    # The child now owns the same writer lock for EVERY entry point, including Scheduler.
+    # Holding it in this parent would make that child correctly defer against its own caller.
+    merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
     return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
             "compile": compiled, "merge": merged}
 
@@ -3643,6 +3721,16 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # Replication is a required live-door input with a six-hour expiry. Keeping its
+    # writer late in the validation department let E8's entry door go stale even
+    # while core passes ran. Refresh it on the existing core clock, before the door
+    # and long research work; the same bounded rotation and independent replay apply.
+    rpc = _costed("replication_civilization", lambda: _producer(
+        "replication_civilization", "research/replication_civilization.py",
+        "--once", "--budget-s", "900"))
+    # E8 reads this fail-closed input every five minutes. The full Tier S research pass
+    # runs much later and can hit its budget before reaching the review/door organs.
+    tdoor = _costed("tier_s_door", tier_s_door)
     # Drain existing intake before the long research legs. The later pipeline still
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
@@ -3883,7 +3971,8 @@ def main() -> None:
     # hunter could reach. A link that turned on, flipped sign or died is now a dated ROW
     # with a change-point p-value, and the top ones are donated as hypotheses.
     mse = _costed("macro_state_engine", lambda: _producer(
-        "macro_state_engine", "research/macro_state_engine.py", "--once", "--budget-s", "600"))
+        "macro_state_engine", "research/macro_state_engine.py", "--once", "--budget-s", "600",
+        "--latent-budget-s", "150"))
     # THE HASH-LINKED RESEARCH CHAIN, POPULATED (W9): the chain library and its verifier
     # landed and the chain was EMPTY, which verifies clean at n=0. The gauntlet and the
     # promoter are sealed, so the writer is a HARVESTER: it appends the SOURCE -> CLAIM ->
@@ -4229,6 +4318,15 @@ def main() -> None:
     cdr = _costed("coverage_drain", lambda: _producer("coverage_drain",
                                                        "research/coverage_drain.py",
                                                        "--once", "--budget-s", "900"))
+    # REGIONAL PARITY BY EQUIVALENCE (global directive CORE LAW + PARTS II/III/XXXIII; completion
+    # audit 2026-10-06 rank 11). Every country x information class disposed against the frozen
+    # equivalence ontology -- COVERED only with ingestion-ledger proof, DECLARED, a known public
+    # equivalent nobody declared, NO_EQUIVALENT with its reason, or UNMEASURED -- projected from
+    # the tensor above and the packs, with a ranked missing-cell queue and the known equivalents
+    # handed to acquire_datasets as `discoveries_parity_*.json`. Reads; decides nothing.
+    rpp = _costed("regional_parity", lambda: _producer("regional_parity",
+                                                        "research/regional_parity_pass.py",
+                                                        "--once", "--budget-s", "300"))
     # THE JUDGE TESTS 100% OF WHAT THE DESK MINES (principal 2026-09-23). Measured from 120,000
     # gate verdicts: 18% of the judge went to `discovered` -- banned from live capital, 0 passes
     # -- while `cross_asset_residual` (55,190 mined), `overnight_drift` (26,721) and
@@ -4395,13 +4493,7 @@ def main() -> None:
                                                          "research/lead_replication.py",
                                                          "--max-leads", "10",
                                                          "--budget-s", "240"))
-    # THE INDEPENDENT REPLICATION CIVILIZATION (LAWS 5m): every certificate and every
-    # forward-enrolled row rebuilt in rotation from its WRITTEN specification and the raw bars
-    # only -- no import of the original implementation -- and quarantined by name when fills,
-    # P&L, position state or costs disagree materially. Validate.
-    rpc = _costed("replication_civilization", lambda: _producer(
-        "replication_civilization", "research/replication_civilization.py",
-        "--once", "--budget-s", "900"))
+    # Independent replication already ran before the live door on the core clock.
     # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m, Tier-1 U19): stamps the research genome
     # and family id on every registry candidate, prices the trial stream at N_effective (the
     # count follows the FAMILY), keeps online-FDR wealth per lineage and records BLOCKED for the
@@ -5328,6 +5420,13 @@ def main() -> None:
     # self-scrapping when its kills stop paying for its calls. Dark seat -> UNMEASURED.
     cmt = _costed("committees", lambda: _producer(
         "committees", "research/committees.py", "--once", "--budget-s", "600"))
+    # THE SIX COMMITTEES (principal's rulings 2026-09-30 16:59 / 17:04): Scientific, Forensic,
+    # Portfolio & Tail, Execution, Data Integrity, Meta-Research, each a DETERMINISTIC specialist
+    # ensemble. Typed PASS/FAIL/UNMEASURED results, L0-L4 escalation, Python-ranked experiments,
+    # planted traps every pass, Brier calibration, ROI re-weighting and retirement. No LLM sits
+    # on a seat and no committee certifies, allocates or trades. The CRO reads its health file.
+    cme = _costed("committee_ensembles", lambda: _producer(
+        "committee_ensembles", "research/committee_ensembles.py", "--once", "--budget-s", "300"))
     # KIMI'S ONLY CLOCK WAS A VPS TIMER (measured 2026-09-23). `quant-kimi-hunter.timer` fires
     # hourly on the VPS; the box that holds the credentials ran it never, so
     # `data/intelligence/kimi` was 240 hours stale on the trading box while deepseek -- whose
@@ -5549,6 +5648,8 @@ def main() -> None:
     #   experimental_budget         the principal's override sleeves in their own ledger/budget
     #   ops_redundancy              journal replay, off-box restore drill, terminal health,
     #                               independent price cross-check, duplicate-position count
+    #   recovery_drills             one PASS/FAIL/UNMEASURED row per named failure mode, graded
+    #                               from the drill artifacts above (CHAOS, offsite restore, ...)
     #   forward_evidence_tracker    survival / degradation / calibration / breadth / cost /
     #                               capacity / hit rate as an append-only hourly series
     lcp = _costed("live_calibration_posterior", lambda: _producer(
@@ -5558,13 +5659,16 @@ def main() -> None:
     # MAXIMUM AGGRESSION INSIDE SURVIVAL (principal 2026-09-30): per gold window, the Fusion lot
     # and the E8 risk fraction with the highest ruin-counted growth (Fusion) or fastest pass (E8)
     # whose P(death) stays under EPS_STOP. Read by prop/e8_gold.py; absent or stale -> today's
-    # sizing, unchanged.
+    # sizing, unchanged. `--book` adds the whole certified book under the same rule (the `book`
+    # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
-        "kelly_survival", "research/kelly_survival.py"))
+        "kelly_survival", "research/kelly_survival.py", "--book"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    rcd = _costed("recovery_drills", lambda: _producer(
+        "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
         "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
@@ -5640,6 +5744,11 @@ def main() -> None:
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
+    # LF ON EVERY BOX (2026-10-06). `indent=1` makes this multi-line, and Path.write_text with no
+    # `newline` translates "\n" to os.linesep -- CRLF on the Windows box that runs this cycle,
+    # while desks/mt5/.gitattributes stores *.json as eol=lf. A CRLF write reads as a modified
+    # file on every checkout; that is how desks/mt5/sync_marker.json (the 2026-08-17 copy) became
+    # permanently dirty. Pinned by tests/test_sync_marker_is_written_lf.py.
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "state_vector": s, "daily": d,
@@ -5693,6 +5802,7 @@ def main() -> None:
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
+                    "regional_parity": rpp,
                     "orthogonality_yield": oyz, "effective_trials": eft,
                     "dsr_inputs": dsi,
                     "occupancy_map": ocm,
@@ -5749,7 +5859,7 @@ def main() -> None:
                     "orthogonality": orth,
                     "null_lab": nlab, "research_live_identity": rlid,
                     "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
-                    "tier_s": tiers, "adversary_evolution": advx,
+                    "tier_s_door": tdoor, "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
                     "market_ecology": meco, "research_diversity_archive": rdar,
                     "session_allocation": sess,
@@ -5788,7 +5898,8 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "proposer_seat": prs, "committees": cmt, "kimi_hunt": kh,
+                    "proposer_seat": prs, "committees": cmt,
+                    "committee_ensembles": cme, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
@@ -5810,6 +5921,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
+                    "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
@@ -5843,7 +5955,7 @@ def main() -> None:
                     "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
-                   indent=1), encoding="utf-8")
+                   indent=1), encoding="utf-8", newline="\n")
     # THE PASS'S OWN ATTENDANCE RECORD, re-published now that the pass is complete: what actually
     # ran, what was rotated out (and therefore leads the next pass), and -- by name -- every leg
     # that has NEVER run. `scripts/check_leg_rotation.py` fences both lists.

@@ -4,5 +4,6 @@
 "awesome_alt_data_README.recorded.md": "first 12,000 bytes of https://raw.githubusercontent.com/happyendpointhq/awesome-alternative-data/main/README.md, fetched 2026-09-30 from the build sandbox",
 "awesome_public_datasets_economics.recorded.rst": "lines 405-440 of https://raw.githubusercontent.com/awesomedata/awesome-public-datasets/master/README.rst, fetched 2026-09-30"
 },
-"synthetic": "every *.synthetic.* file is HAND-BUILT in the documented shape of the public response (the sandbox proxy refused every one of those hosts); it proves the parser, not the source"
+"synthetic": "every *.synthetic.* file is HAND-BUILT in the documented shape of the public response (the sandbox proxy refused every one of those hosts); it proves the parser, not the source",
+"cnx": "cnx/*.synthetic.* are HAND-BUILT in each China exchange's documented file layout (cnx/README.md says which publication and which fields); no exchange host is reachable from the sandbox"
 }
