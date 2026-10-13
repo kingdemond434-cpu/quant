@@ -1473,6 +1473,15 @@ def _cb_tone_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
         return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
 
 
+def _collector_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
+    """collector_author's replacement (`collector_lab`): declarative specs, fixed fetcher."""
+    try:
+        import collector_lab
+        return collector_lab.run(budget_s=budget_s, max_llm=max_llm)
+    except Exception as exc:                           # pragma: no cover - defensive
+        return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool = False,
         seed: int | None = None, workers: int = 4) -> dict[str, Any]:
     started = time.time()
@@ -1562,6 +1571,15 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                 max_llm=max(0, min(8, calls_budget - calls_made)) if seat_on
                                 else 0)
         calls_made += int((cb_tone.get("model") or {}).get("calls") or 0)
+
+    # ---- phase 0c: the COLLECTOR role. Breadth-feed sources become declarative specs a fixed
+    # fetcher runs (no model-written code); working specs refresh every pass with no call.
+    collector: dict[str, Any] = {"state": "NOT_RUN"} if not dry_run else {"state": "dry run"}
+    if not dry_run and budget_s - (time.time() - started) > 90:
+        collector = _collector_role(budget_s=min(120.0, budget_s * 0.2),
+                                    max_llm=max(0, min(4, calls_budget - calls_made)) if seat_on
+                                    else 0)
+        calls_made += int(collector.get("asked") or 0)
 
     # ---- phase 1: the independent first pass. No lab sees another lab's current answers.
     own_recent: dict[tuple[str, str], list[str]] = {}
@@ -1777,7 +1795,8 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                      role_report, cb_tone, credit, chain_status,
                                      seat_on=seat_on, dry_run=dry_run, rotation=rotation,
                                      window_h=window_h,
-                                     budget_bound=bool(share) and calls_made >= calls_budget)
+                                     budget_bound=bool(share) and calls_made >= calls_budget,
+                                     collector=collector)
     coverage["openrouter_share"] = share or UNMEASURED
     if not dry_run:
         _write_json(STATE_DIR / "model_yield.json", coverage["models"])
@@ -1819,6 +1838,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "red_team_attacks": outputs["attacks"][:30],
         "conversion_debt": debt,
         "cb_tone": cb_tone,
+        "collector": collector,
         "roles": role_report,
         "model_coverage": {k: coverage.get(k) for k in ("verdict", "red", "models_available",
                                                   "models_answered")},

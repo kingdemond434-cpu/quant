@@ -933,7 +933,8 @@ def coverage_report(models: dict[str, Any], pass_cov: dict[str, dict[str, Any]],
                     tallies: dict[str, dict[str, Any]], role_report: dict[str, Any],
                     cb_tone: dict[str, Any], credit: dict[str, Any], chain: dict[str, Any], *,
                     seat_on: bool, dry_run: bool, rotation: dict[str, str] | None = None,
-                    window_h: int | None = None, budget_bound: bool = False) -> dict[str, Any]:
+                    window_h: int | None = None, budget_bound: bool = False,
+                    collector: dict[str, Any] | None = None) -> dict[str, Any]:
     """EVERY MODEL, EVERY LAB, EVERY ROLE PRODUCES EVERY CYCLE (principal 2026-10-13). RED names
     each one that did not, and why: never asked (cap), asked and silent, or the chain fell
     through to another model (rate limit or outage on that one).
@@ -1002,6 +1003,10 @@ def coverage_report(models: dict[str, Any], pass_cov: dict[str, dict[str, Any]],
     roles["CB_TONE"] = "RAN" if (cb_tone or {}).get("docs") is not None else cb_state
     if roles["CB_TONE"] != "RAN":
         red.append(f"role CB_TONE: {roles['CB_TONE']}")
+    if collector is not None:
+        roles["COLLECTOR"] = str(collector.get("state") or "NOT_RUN")
+        if roles["COLLECTOR"] not in ("RAN", "NOTHING_OWED"):
+            red.append(f"role COLLECTOR: {roles['COLLECTOR']}")
     if not available:
         red.append("no free model registered: OpenRouter catalogue unreadable or key absent")
     verdict = ("UNMEASURED" if dry_run or not seat_on else "GREEN" if not red else "RED")
