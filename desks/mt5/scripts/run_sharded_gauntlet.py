@@ -377,6 +377,8 @@ def _one_sweep_child() -> int:
 def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> None:
     """Re-stamp the heartbeat while the main thread waits on a sweep."""
     while not stop.wait(every_s):
+        if stop.is_set():                         # never land a beat after the final record
+            return
         with contextlib.suppress(RuntimeError):   # the dict changed while it was copied
             _write_state(dict(state))
 
