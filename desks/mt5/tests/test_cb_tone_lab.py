@@ -166,10 +166,11 @@ def test_full_pass_writes_pit_series_and_guarded_cells(tone: Path,
     assert live["llm"]["lookahead_guard"]["evidence_from"] == lab._now()[:10]
 
     # The conditioner family reads the written series on its own PIT stamp.
-    import family_exogenous_conditioner as fec
+    from mt5desk import family_exogenous_conditioner as fec
     s = fec.conditioner("cb_tone_rba", "tone_lex", "level_z", root=cb.SERIES_DIR)
     assert s is not None and len(s) >= 30
-    rows = list(csv.DictReader((cb.SERIES_DIR / "cb_tone_rba.csv").open(encoding="utf-8")))
+    with (cb.SERIES_DIR / "cb_tone_rba.csv").open(encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
     assert rows[0]["available_time"] == "2019-01-08T00:00:00+00:00"   # speech date + 7d
     # 2019 BIS readings were scored by a model first used today: contaminated, never clean.
     assert all(r["tone_llm"] != "" and r["tone_llm_clean"] == "" for r in rows)
