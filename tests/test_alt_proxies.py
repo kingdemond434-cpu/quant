@@ -476,7 +476,7 @@ def test_roster_rows_carry_uses_status_and_the_regional_schema() -> None:
         assert set(r["uses"]) == {"direct_cells", "indirect_cells", "allocation_intel"}
         assert (r["status"] in ("UNMEASURED_LIVE_YIELD", f"BLOCKED_ON_KEY:{r['auth'][9:]}")
                 or r["status"].startswith(("DEAD:", "BLOCKED_ON_TERMS:", "BLOCKED+SUBSTITUTE:",
-                                           "UNCONFIGURED:")))
+                                           "BLOCKED_NO_SUBSTITUTE:", "UNCONFIGURED:")))
         assert r["terms"] in A.TERMS_VALUES
         for k in (*REQUIRED_META, "id", "name", "url", "region", "language", "cadence", "auth",
                                   "licence", "cursor", "pit", "consumer"):

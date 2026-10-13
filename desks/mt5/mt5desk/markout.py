@@ -244,10 +244,12 @@ def _entry_fill(deal: dict) -> Any:
 
 
 def load_jsonl(path: Path) -> list[dict]:
+    from libs.ops.live_ledger_view import ledger_path
+
     if not path.exists():
         return []
     out = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in ledger_path(path).read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue
@@ -423,8 +425,9 @@ def render(m: Markout) -> str:
 
 def main() -> int:
     from mt5desk.config import DATA
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
     m = compute(load_jsonl(DATA / "order_intents.jsonl"),
-                load_jsonl(DATA / "live_ledger.jsonl"))
+                load_jsonl(_audited_ledger_path(DATA / "live_ledger.jsonl")))
     print(render(m))
     return 0
 
