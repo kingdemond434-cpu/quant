@@ -38,6 +38,7 @@ def desk(tmp_path, monkeypatch):
     for name, path in {"STATE_DIR": d, "CONTRACTS": d / "contracts.jsonl",
                        "SETTLEMENTS": d / "settlements.jsonl", "STATE": d / "state.json",
                        "PREMORTEMS": d / "premortems.json",
+                       "TRIAL_UNION": d / "trial_union.txt",
                        "DONATE_DIR": tmp_path / "intelligence" / "committees",
                        "REPORT": tmp_path / "reports" / "COMMITTEES.json",
                        "THROUGHPUT": tmp_path / "reports" / "JUDGING_THROUGHPUT.json"}.items():
@@ -115,6 +116,50 @@ def test_cheap_screen_runs_before_any_call_and_counts_its_reasons() -> None:
 
 
 # --------------------------------------------------------------------------- the pass
+def test_falsifier_looks_are_charged_once_at_their_original_count(desk, monkeypatch):
+    monkeypatch.setattr(cm, "run_experiments", lambda s, v, d, **k: {
+        "status": "KILLED", "kills": ["cost_surface"], "results": {
+            "cost_surface": {"verdict": "FAIL"}, "placebo": {"verdict": "PASS"},
+            "regime_split": {"verdict": "NOT_REACHED"}, "capacity": {"verdict": "UNMEASURED"}}})
+    subjects = {cm.SCIENTIFIC: [_subject()], cm.FORENSIC: []}
+    doc = cm.run(ask=FakeSeat(), fates={}, calls=24, subjects=subjects)
+    # two falsifiers looked at the returns; the two that did not run are not trials
+    assert doc["falsifier_trials"] == {"looks_this_pass": 2, "new_in_union": 2}
+    lines = cm.TRIAL_UNION.read_text().split()
+    assert len(lines) == 2 and {ln.rsplit("|", 1)[1] for ln in lines} == {"cost_surface",
+                                                                          "placebo"}
+    # the same looks on the same cell are never charged again
+    again = cm.charge_looks(set(lines), write=True)
+    assert again == {"looks_this_pass": 2, "new_in_union": 0}
+    assert cm.TRIAL_UNION.read_text().split() == lines
+
+
+def test_one_look_run_by_both_committee_legs_is_one_union_line(desk, monkeypatch):
+    """The hourly `committees` and `committee_ensembles` legs both run FALSIFIERS[name] on the
+    same cell; the look is one trial, so both must write the same key (audit, 2026-10-13)."""
+    import committee_ensembles as ce
+    monkeypatch.setattr(ce, "TRIAL_UNION", cm.TRIAL_UNION)
+    s = _subject()
+    looks = cm.falsifier_looks(s, {"results": {"cost_surface": {"verdict": "FAIL"}}})
+    assert cm.charge_looks(looks, write=True)["new_in_union"] == 1
+    cell = next(iter(looks)).rsplit("|", 1)[0]
+    ce._charge_trials([{"key": "k", "keys": {"cell": cell}, "results": [
+        {"specialist": "cost_surface", "verdict": "FAIL"}]}], write=True)
+    assert cm.TRIAL_UNION.read_text().split() == [f"{cell}|cost_surface"]
+
+
+def test_the_subject_id_fallback_keys_a_look_stably(monkeypatch):
+    from libs.research import hypothesis_graph as hg
+
+    def boom(*a, **k):
+        raise RuntimeError("graph unavailable")
+    monkeypatch.setattr(hg, "node_id", boom)
+    out = {"results": {"placebo": {"verdict": "PASS"}}}
+    first = cm.falsifier_looks(_subject(i=3), out)
+    assert first == cm.falsifier_looks(_subject(i=3), out) == {"s3|placebo"}
+    assert first != cm.falsifier_looks(_subject(i=4), out)
+
+
 def test_a_pass_writes_contracts_without_authority_and_donates_forensic_cells(desk, monkeypatch):
     monkeypatch.setattr(cm, "run_experiments", lambda s, v, d, **k: {
         "status": "KILLED", "kills": ["cost_surface"], "results": {}})
