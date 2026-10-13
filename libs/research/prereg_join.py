@@ -68,11 +68,37 @@ def _ledger_rows(path: Path, start: int = 0) -> tuple[list[dict[str, Any]], int]
 
 def judged_spec_ids(graph: hg.Graph, *, gate_ledger: Path = GATE_LEDGER) -> set[str]:
     """Every spec id the desk has EVER judged: graph fates plus the gate ledger's `graph_id`."""
-    out = {str(r.get("id")) for r in graph.rows()
-           if r.get("fate") in (hg.FAILED, hg.CERTIFIED, hg.JUDGED)}
+    # This join needs only ids, not the graph's multi-gigabyte history resident
+    # beside the full docket. A frozen Graph view still uses its frozen rows.
+    out: set[str] = set()
+    if graph._snapshot:
+        out.update(str(r.get("id")) for r in graph.rows()
+                   if r.get("fate") in (hg.FAILED, hg.CERTIFIED, hg.JUDGED))
+    else:
+        try:
+            with graph.path.open(encoding="utf-8") as ledger:
+                for line in ledger:
+                    if not line.strip():
+                        continue
+                    row = json.loads(line)
+                    if row.get("fate") in (hg.FAILED, hg.CERTIFIED, hg.JUDGED):
+                        out.add(str(row.get("id")))
+        except (OSError, ValueError):
+            # Match Graph.rows(): an unreadable/malformed graph contributes no
+            # rows; independent gate-ledger evidence below remains intact.
+            out.clear()
     rows, _ = _ledger_rows(gate_ledger)
     out.update(str(r["graph_id"]) for r in rows if r.get("graph_id"))
     return out
+
+
+def _publish_cursor(out: dict[str, Any], cursor: Path, end: int) -> None:
+    try:
+        cursor.parent.mkdir(parents=True, exist_ok=True)
+        cursor.write_text(json.dumps({"offset": end}), "utf-8")
+    except OSError as exc:
+        out["cursor_error"] = f"{type(exc).__name__}: {exc}"
+    out["status"] = "MEASURED"
 
 
 def preregister_docket(rows: list[dict[str, Any]], *, graph: hg.Graph | None = None,
@@ -136,6 +162,13 @@ def record_gate_ledger(*, graph: hg.Graph | None = None, gate_ledger: Path = GAT
             out["stamped_by_judge"] += 1       # the judge recorded it in-process already
             continue
         pending.append(_verdict_of(r))
+    if not pending:
+        # Judge-owned receipts are already recorded. Loading the graph and all
+        # cards here used gigabytes even for a zero-work incremental join.
+        out.update(verdicts=0, stamped=0, recorded=0, unchanged=0,
+                   not_a_verdict=0, no_spec=0, PREREGISTERED=0, POST_HOC=0, join_rate=None)
+        _publish_cursor(out, cursor, end)
+        return out
     by_id: dict[str, dict[str, Any]] = {}
     want = {str(v["spec_id"]) for v in pending if v.get("spec_id")}
     if want:
@@ -163,10 +196,5 @@ def record_gate_ledger(*, graph: hg.Graph | None = None, gate_ledger: Path = GAT
     res = hg.record_gauntlet_verdicts(pending, specs_by_cell, first_judged=first, graph=g,
                                       prereg_path=prereg_path)
     out.update(res)
-    try:
-        cursor.parent.mkdir(parents=True, exist_ok=True)
-        cursor.write_text(json.dumps({"offset": end}), "utf-8")
-    except OSError as exc:
-        out["cursor_error"] = f"{type(exc).__name__}: {exc}"
-    out["status"] = "MEASURED"
+    _publish_cursor(out, cursor, end)
     return out

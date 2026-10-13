@@ -54,6 +54,19 @@ import pytest
 
 _ROOT = Path(__file__).resolve().parent.parent
 
+# Windows shell integration tests require the Bash already shipped with Git for Windows.
+# Git's installer often adds only cmd/ to PATH; add its sibling bin/ for this process.
+if sys.platform == "win32":
+    import os
+    import shutil
+
+    if shutil.which("bash") is None:
+        _git_executable = shutil.which("git")
+        if _git_executable:
+            _git_bash = Path(_git_executable).resolve().parent.parent / "bin" / "bash.exe"
+            if _git_bash.is_file():
+                os.environ["PATH"] = str(_git_bash.parent) + os.pathsep + os.environ.get("PATH", "")
+
 # PATH BOOTSTRAP, and it must happen here. pytest imports conftest before collecting anything, so
 # without this a `libs` import below resolves only when the project is pip-installed into the
 # interpreter in use -- which is not how the gates invoke it.
@@ -236,14 +249,10 @@ def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
     sink = tmp_path_factory.mktemp("tier_s_sink")
     real_record = blinding.record
 
-    # A test's OWN tmp_path is never redirected, even when the basetemp sits inside the checkout
-    # (builders keep `--basetemp` in their worktree). Redirecting it sent the test's write to the
-    # sink while the test read its tmp_path: FileNotFoundError on blinding_runtime.jsonl.
-    base = tmp_path_factory.getbasetemp().resolve()
-
     def record(root: Path, rep: Any, ledger: str = blinding.RUNTIME_LEDGER) -> None:
         target = (Path(root) / ledger).resolve()
-        if target.is_relative_to(repo) and not target.is_relative_to(base):
+        if (target.is_relative_to(repo)
+                and not target.is_relative_to(tmp_path_factory.getbasetemp().resolve())):
             root, ledger = sink, str(target.relative_to(repo))
         real_record(root, rep, ledger)
 

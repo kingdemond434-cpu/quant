@@ -839,7 +839,7 @@ def _harvest_leads(app: _Appender, inputs: dict[str, Any], cache: dict[str, dict
         for path in docs:
             if out["documents"] >= max_leads or not app.room():
                 break
-            rel = str(path.relative_to(ROOT)) if str(path).startswith(str(ROOT)) else str(path)
+            rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
             src = _source_payload(f"intel:{rel.replace(os.sep, '/')}", url=rel,
                                   registry_row={"kind": "document", "first_seen": datetime
                                                 .fromtimestamp(path.stat().st_mtime, tz=UTC)
