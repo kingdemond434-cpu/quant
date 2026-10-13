@@ -74,7 +74,13 @@ _EXEC_ATTRS: dict[str, frozenset[str]] = {
                      "spawnv", "spawnl", "startfile"}),
     "pickle": frozenset({"loads", "load"}),
     "marshal": frozenset({"loads", "load"}),
+    "builtins": frozenset({"eval", "exec", "compile", "__import__"}),
 }
+#: Modules whose attributes `getattr(<module>, "<name>")` can turn into code execution. A dynamic
+#: lookup on one of them hides the callee from a check keyed on names, so it is resolved when the
+#: name is a constant and is a breach on its own when it is not (the name could be fetched).
+_DYNAMIC_OWNERS = frozenset({"builtins", "__builtins__", "os", "subprocess", "importlib",
+                             "runpy", "pickle", "marshal"})
 _WRITE_METHODS = frozenset({"write_text", "write_bytes", "touch", "mkdir", "chmod",
                             "symlink_to", "hardlink_to"})
 _WRITE_FUNCS_FIRST_ARG = re.compile(r"(^|_)(atomic|write|dump|save|persist)", re.IGNORECASE)
@@ -93,6 +99,30 @@ def _dotted(node: ast.AST) -> tuple[str, str]:
             base.attr if isinstance(base, ast.Attribute) else "")
         return owner, node.attr
     return "", ""
+
+
+def _is_exec(owner: str, attr: str) -> bool:
+    return (not owner and attr in _EXEC_NAMES) or attr in _EXEC_ATTRS.get(owner, ())
+
+
+def _dynamic_lookup(node: ast.Call, mod: _Module) -> str | None:
+    """`getattr(<exec-capable module>, name)`: the reason it is a breach, or None.
+
+    A CONSTANT naming an exec-capable attribute is a breach on sight (there is no reason for a
+    fetch organ to reach `exec` by string); a NON-constant name on one of these modules is a
+    breach too, because the static view cannot rule out that fetched text chose it."""
+    if _dotted(node.func) not in (("", "getattr"), ("builtins", "getattr")) or len(node.args) < 2:
+        return None
+    owner = mod._module_of(node.args[0])
+    if owner not in _DYNAMIC_OWNERS:
+        return None
+    name = node.args[1]
+    if isinstance(name, ast.Constant) and isinstance(name.value, str):
+        key = "builtins" if owner == "__builtins__" else owner
+        if _is_exec(key, name.value):
+            return f"getattr({owner}, {name.value!r}) reaches an exec-capable callee by string"
+        return None
+    return f"getattr({owner}, <non-constant>) lets a computed name choose the callee"
 
 
 def _names(node: ast.AST) -> set[str]:
@@ -146,9 +176,45 @@ def _protected(text: str) -> str | None:
 WARNINGS = frozenset({"LEAF_FROM_FETCHED"})
 
 
+def _import_aliases(tree: ast.AST) -> tuple[dict[str, str], dict[str, tuple[str, str]]]:
+    """(module aliases, imported names) from every Import / ImportFrom in the module.
+
+    ALIASES DEFEATED THE FIRST BUILD (auditor HOLD on #292): the callee was keyed on the literal
+    owner name, so `import subprocess as sp; sp.run(x)` and `from subprocess import run; run(x)`
+    were invisible. `import a.b as c` maps c -> "a.b" (its last part is the owner the tables key
+    on); `import a.b` binds `a`; `from m import f as g` maps g -> ("m", "f")."""
+    mods: dict[str, str] = {}
+    names: dict[str, tuple[str, str]] = {}
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            for a in n.names:
+                if a.asname:
+                    mods[a.asname] = a.name
+                else:
+                    head = a.name.split(".", 1)[0]
+                    mods.setdefault(head, head)
+        elif isinstance(n, ast.ImportFrom) and n.module and not n.level:
+            for a in n.names:
+                if a.name == "*":
+                    continue
+                names[a.asname or a.name] = (n.module, a.name)
+    return mods, names
+
+
+def _owner_key(module: str) -> str:
+    """The table key for a dotted module: `urllib.request` -> `request` is wrong for the net
+    tables, so a few dotted owners keep their full name; everything else keys on its last part."""
+    return module.rsplit(".", 1)[-1] if module not in ("urllib.request", "http.client") \
+        else module
+
+
 class _Module:
     def __init__(self, tree: ast.Module) -> None:
         self.tree = tree
+        self.mod_alias, self.name_alias = _import_aliases(tree)
+        #: local names bound to an exec-capable callee: `run = subprocess.run`,
+        #: `f = getattr(builtins, "exec")`, `x = sp.Popen` -- filled below, after resolution.
+        self.callee_alias: dict[str, tuple[str, str]] = {}
         self.consts: dict[str, str] = {}
         for _ in range(2):                                   # resolve chained constants
             for stmt in tree.body:
@@ -160,6 +226,12 @@ class _Module:
                     for t in targets:
                         if isinstance(t, ast.Name) and text:
                             self.consts[t.id] = text
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Assign) and len(n.targets) == 1 \
+                    and isinstance(n.targets[0], ast.Name):
+                owner, attr = self.resolve(n.value)
+                if attr and (owner, attr) != ("", "") and _is_exec(owner, attr):
+                    self.callee_alias[n.targets[0].id] = (owner, attr)
         self.funcs = {n.name: n for n in ast.walk(tree)
                       if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
         self.tainted_funcs: set[str] = {f for f in self.funcs if _FETCHER_NAME.match(f)}
@@ -178,13 +250,54 @@ class _Module:
             if not grew:
                 break
 
+    def resolve(self, func: ast.AST) -> tuple[str, str]:
+        """(owner, attr) of a callee with import aliases, local callee aliases and constant
+        `getattr(<module>, "<name>")` resolved. ("", name) for a plain builtin name."""
+        if isinstance(func, ast.Call) and _dotted(func.func) in (("", "getattr"),
+                                                                  ("builtins", "getattr")) \
+                and len(func.args) >= 2:
+            owner = self._module_of(func.args[0])
+            name = func.args[1]
+            if owner and isinstance(name, ast.Constant) and isinstance(name.value, str):
+                return owner, name.value
+            return "", ""
+        if isinstance(func, ast.Name):
+            if func.id in self.callee_alias:
+                return self.callee_alias[func.id]
+            if func.id in self.name_alias:
+                module, attr = self.name_alias[func.id]
+                return _owner_key(module), attr
+            return "", func.id
+        if isinstance(func, ast.Attribute):
+            owner = self._module_of(func.value)
+            if owner:
+                return owner, func.attr
+            return _dotted(func)
+        return "", ""
+
+    def _module_of(self, node: ast.AST) -> str:
+        """The module key a name or dotted expression denotes, through import aliases."""
+        if isinstance(node, ast.Name):
+            if node.id in self.mod_alias:
+                return _owner_key(self.mod_alias[node.id])
+            if node.id in self.name_alias:          # `from os import path` -> os.path
+                module, attr = self.name_alias[node.id]
+                return _owner_key(f"{module}.{attr}")
+            return node.id if node.id == "__builtins__" else ""
+        if isinstance(node, ast.Attribute):
+            base = self._module_of(node.value)
+            if base:
+                return _owner_key(f"{base}.{node.attr}")
+        return ""
+
     def source_call(self, node: ast.Call) -> bool:
-        owner, attr = _dotted(node.func)
+        owner, attr = self.resolve(node.func)
         if attr in _NET_CALLS:
             return True
         if owner in _NET_ATTR_OWNERS:
             return True
-        return attr in self.tainted_funcs and (not owner or owner in ("self", "cls"))
+        raw_owner, raw_attr = _dotted(node.func)
+        return raw_attr in self.tainted_funcs and (not raw_owner or raw_owner in ("self", "cls"))
 
     def is_tainted(self, node: ast.AST, tainted: set[str]) -> bool:
         """Does fetched content flow into this expression? A sanitiser call (`_slug`, `_stem`,
@@ -312,9 +425,13 @@ def _base_of(node: ast.AST) -> ast.AST:
             return node
 
 
-def _write_path(call: ast.Call) -> tuple[ast.AST | None, str]:
-    """The PATH expression a call writes to, with the kind of write, or (None, "")."""
-    owner, attr = _dotted(call.func)
+def _write_path(call: ast.Call, mod: _Module | None = None) -> tuple[ast.AST | None, str]:
+    """The PATH expression a call writes to, with the kind of write, or (None, "").
+    `mod` resolves import aliases (`from os import replace`, `import shutil as sh`)."""
+    raw_owner, raw_attr = _dotted(call.func)
+    owner, attr = mod.resolve(call.func) if mod is not None else (raw_owner, raw_attr)
+    if (owner, attr) not in _PATH_SECOND_ARG | _PATH_FIRST_ARG:
+        owner, attr = raw_owner, raw_attr          # everything else keys on the written name
     if not owner and attr == "open" and len(call.args) >= 1:
         mode = call.args[1] if len(call.args) > 1 else next(
             (k.value for k in call.keywords if k.arg == "mode"), None)
@@ -362,9 +479,19 @@ def check_source(text: str, rel: str) -> list[dict[str, Any]]:
         for node in (n for b in body for n in ast.walk(b)):
             if not isinstance(node, ast.Call):
                 continue
-            owner, attr = _dotted(node.func)
+            dyn = _dynamic_lookup(node, mod)
+            if dyn:
+                key = (node.lineno, "DYN")
+                if key not in seen:
+                    seen.add(key)
+                    out.append({"file": rel, "line": node.lineno, "kind": "DYNAMIC_EXEC_LOOKUP",
+                                "severity": "breach", "detail": dyn})
+                continue
+            owner, attr = mod.resolve(node.func)
+            if owner == "__builtins__":
+                owner = "builtins"
             args = [*node.args, *(k.value for k in node.keywords)]
-            is_exec = (not owner and attr in _EXEC_NAMES) or attr in _EXEC_ATTRS.get(owner, ())
+            is_exec = _is_exec(owner, attr)
             if is_exec and any(mod.is_tainted(a, tainted) for a in args):
                 key = (node.lineno, "EXEC")
                 if key not in seen:
@@ -373,7 +500,7 @@ def check_source(text: str, rel: str) -> list[dict[str, Any]]:
                                 "detail": f"fetched content reaches {owner + '.' if owner else ''}"
                                           f"{attr}(): it would run as code or a command"})
                 continue
-            path, how = _write_path(node)
+            path, how = _write_path(node, mod)
             if path is None:
                 continue
             # a write helper (path is the call itself): resolve its path-like arguments
@@ -403,6 +530,56 @@ def check_source(text: str, rel: str) -> list[dict[str, Any]]:
     return out
 
 
+#: THE LLM SEATS' PROMPT BUILDERS THAT CARRY FETCHED TEXT (auditor HOLD on #292: the fence
+#: checked code paths and never reached prompt construction). Each must route that text through
+#: `libs.research.untrusted` (`wrap` for bodies, `fenced_line` for short fields): delimited,
+#: labelled as data, control sequences neutralised. A builder that stops doing so -- or that is
+#: renamed or moved without this list following -- is a breach, never a silent pass.
+SEAT_PROMPT_BUILDERS: tuple[tuple[str, str], ...] = (
+    ("libs/research/public_strategy_hunter.py", "extraction_prompt"),
+    ("libs/research/event_factors_llm.py", "llm_tags"),
+    ("libs/ops/deepseek_cycle.py", "_build_prompt"),
+    ("libs/research/proposer_seat.py", "build_prompt"),
+)
+_FENCE_CALLS = frozenset({"wrap", "fenced_line"})
+UNMEASURED_SEATS = "UNMEASURED: no seat prompt builder under this root"
+
+
+def check_seat_prompts(root: Path = ROOT,
+                       builders: Iterable[tuple[str, str]] = SEAT_PROMPT_BUILDERS
+                       ) -> list[dict[str, Any]]:
+    """A breach for every listed seat prompt builder that does not fence the text it carries."""
+    out: list[dict[str, Any]] = []
+    builders = list(builders)
+    if not any((root / rel).exists() for rel, _ in builders):
+        return out          # a fixture tree, not a checkout: `check` reports this UNMEASURED
+    for rel, fn_name in builders:
+        p = root / rel
+        try:
+            tree = ast.parse(p.read_text("utf-8"))
+        except (OSError, SyntaxError) as exc:
+            out.append({"file": rel, "line": 0, "kind": "UNFENCED_SEAT_PROMPT",
+                        "severity": "breach",
+                        "detail": f"{fn_name}: builder unreadable ({type(exc).__name__}); an "
+                                  f"unchecked prompt counts as unfenced"})
+            continue
+        fn = next((n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef,
+                                                                 ast.AsyncFunctionDef))
+                   and n.name == fn_name), None)
+        if fn is None:
+            out.append({"file": rel, "line": 0, "kind": "UNFENCED_SEAT_PROMPT",
+                        "severity": "breach",
+                        "detail": f"{fn_name} not found: the builder moved and the fence lost it"})
+            continue
+        called = {_dotted(c.func)[1] for c in ast.walk(fn) if isinstance(c, ast.Call)}
+        if not called & _FENCE_CALLS:
+            out.append({"file": rel, "line": fn.lineno, "kind": "UNFENCED_SEAT_PROMPT",
+                        "severity": "breach",
+                        "detail": (f"{fn_name} builds an LLM seat prompt from fetched text "
+                                   f"without libs.research.untrusted.wrap / fenced_line")})
+    return out
+
+
 def scan_files(root: Path, roots: Iterable[str] = SCAN_ROOTS) -> list[Path]:
     files: list[Path] = []
     for r in roots:
@@ -427,12 +604,17 @@ def check(root: Path = ROOT, roots: Iterable[str] = SCAN_ROOTS) -> dict[str, Any
     for p in files:
         rel = p.relative_to(root).as_posix()
         found.extend(check_source(p.read_text("utf-8", errors="ignore"), rel))
+    found.extend(check_seat_prompts(root))
+    seat_state = ("CHECKED" if any((root / rel).exists() for rel, _ in SEAT_PROMPT_BUILDERS)
+                  else UNMEASURED_SEATS)
     breaches = [f for f in found if f["severity"] == "breach"]
     warnings = [f for f in found if f["severity"] != "breach"]
     return {"law": "DATA-15: fetched content and code are untrusted evidence, never instructions",
             "roots": list(roots), "modules_checked": len(files),
             "ok": not breaches and bool(files), "breaches": breaches, "warnings": warnings,
-            "protected_fragments": list(PROTECTED_FRAGMENTS)}
+            "protected_fragments": list(PROTECTED_FRAGMENTS),
+            "seat_prompt_builders": [f"{f}:{n}" for f, n in SEAT_PROMPT_BUILDERS],
+            "seat_prompts": seat_state}
 
 
 def main(argv: list[str] | None = None) -> int:

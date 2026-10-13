@@ -51,6 +51,8 @@ def main(argv: list[str] | None = None) -> int:
     for v in doc["violations"]:
         print(f"  VIOLATION {v['kind']} {v['sleeve']} ({v['status']}) <- {v['dataset']}: "
               f"{v['why']}")
+    for ds in (doc.get("inputs_unmeasured") or [])[:20]:
+        print(f"  UNMEASURED input: {ds} (its contract could not be read on this host)")
     for name in doc["lineage_unmeasured"][:20]:
         print(f"  UNMEASURED lineage: {name} (its certificate's spec is not on this host)")
     return 1 if doc["violations"] else 0

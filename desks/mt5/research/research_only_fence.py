@@ -163,11 +163,20 @@ def sleeve_lineage(sleeve: Mapping[str, Any], survivors: Mapping[str, Any]
 
 
 def _prices_contract() -> dict[str, Any] | None:
+    """The broker-bar contract, or an UNMEASURED marker when the compiler cannot be read.
+
+    A FAILED IMPORT IS NOT A MISSING CONTRACT (auditor HOLD on #292). Returning None here made
+    every `bars:<SYM>` input -- all 66 guarded sleeves -- read UNCONTRACTED, and the box state
+    fence failed on a violation that was only this host failing to import `feature_compiler`.
+    The contract exists; this pass could not read it, so the input is UNMEASURED by name."""
     try:
         import feature_compiler as F
         base = dict(F.CONTRACT_BASE["prices"])
-    except Exception:
-        return None
+    except Exception as exc:
+        return {"unmeasured": True,
+                "why": (f"feature_compiler CONTRACT_BASE['prices'] unreadable on this host "
+                        f"({type(exc).__name__}: {str(exc)[:120]}); the broker-bar contract is "
+                        f"not measured, which is not a violation")}
     return {"contract": {"dataset_id": "modality:prices", **base,
                          "permitted_uses": list(base.get("permitted_uses") or ())},
             "admission": {"admitted": True}, "basis": "feature_compiler CONTRACT_BASE['prices']"}
@@ -196,6 +205,9 @@ def eligibility(ds: str, entry: Mapping[str, Any] | None,
     if entry is None:
         return {"dataset": ds, "production_eligible": False, "violation": "UNCONTRACTED",
                 "why": "no contract names this dataset; absence is not permission"}
+    if entry.get("unmeasured"):
+        return {"dataset": ds, "production_eligible": None, "violation": None,
+                "unmeasured": True, "why": str(entry.get("why") or UNMEASURED)}
     contract = entry.get("contract") or {}
     uses = [str(u) for u in (contract.get("permitted_uses") or [])]
     adm = entry.get("admission") if isinstance(entry.get("admission"), Mapping) else {}
@@ -244,6 +256,7 @@ def build(now: datetime | None = None, *, sleeves_path: Path = SLEEVES,
     per_sleeve: list[dict[str, Any]] = []
     violations: list[dict[str, Any]] = []
     unresolved: list[str] = []
+    unmeasured_inputs: set[str] = set()
     eligible_cache: dict[str, dict[str, Any]] = {}
     for s in rows:
         if not isinstance(s, dict):
@@ -262,6 +275,8 @@ def build(now: datetime | None = None, *, sleeves_path: Path = SLEEVES,
                     ds, resolve_contract(ds, contracts, acquired, prices), acquired)
             v = eligible_cache[ds]
             verdicts.append(v)
+            if v.get("unmeasured"):
+                unmeasured_inputs.add(ds)
             if v["violation"]:
                 violations.append({"sleeve": name, "status": status, "dataset": ds,
                                    "kind": v["violation"], "why": v["why"],
@@ -269,7 +284,10 @@ def build(now: datetime | None = None, *, sleeves_path: Path = SLEEVES,
         per_sleeve.append({"sleeve": name, "status": status, "lineage": basis,
                            "inputs": inputs,
                            "non_price_inputs": [d for d in inputs if not d.startswith("bars:")],
-                           "eligible": all(v["production_eligible"] for v in verdicts)})
+                           "eligible": (False if any(v["violation"] for v in verdicts)
+                                        else UNMEASURED if any(v.get("unmeasured")
+                                                               for v in verdicts)
+                                        else True)})
     by_kind = {k: sum(1 for v in violations if v["kind"] == k) for k in VIOLATION_KINDS}
     return {
         **base,
@@ -279,6 +297,8 @@ def build(now: datetime | None = None, *, sleeves_path: Path = SLEEVES,
         "violations": violations,
         "lineage_unmeasured": sorted(unresolved),
         "n_lineage_unmeasured": len(unresolved),
+        "inputs_unmeasured": sorted(unmeasured_inputs),
+        "n_inputs_unmeasured": len(unmeasured_inputs),
         "lineage_note": ("a sleeve whose certificate cell is not in UNIVERSAL_SURVIVORS on this "
                          "host has an unknown spec: UNMEASURED by name, never a pass"),
         "contracts_held": len(contracts),

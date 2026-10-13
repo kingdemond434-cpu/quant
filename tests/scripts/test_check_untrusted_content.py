@@ -74,6 +74,91 @@ PLANTED = {
         "    os.chmod('ops/githooks/pre-push', 0o777)\n", "PROTECTED_PATH_WRITE"),
 }
 
+#: ALIASED CALLEES (auditor HOLD on #292): the first build keyed the callee on the literal owner
+#: name, so each of these reached exec / a shell with fetched bytes and passed.
+ALIASED = {
+    "subprocess_module_alias": (
+        "import requests\nimport subprocess as sp\n"
+        "def run(u):\n"
+        "    sp.run(requests.get(u).text, shell=True)\n", "FETCHED_TO_EXEC"),
+    "from_subprocess_import_run": (
+        "import requests\nfrom subprocess import run as go\n"
+        "def run(u):\n"
+        "    go(requests.get(u).text, shell=True)\n", "FETCHED_TO_EXEC"),
+    "from_os_import_system": (
+        "import requests\nfrom os import system\n"
+        "def run(u):\n"
+        "    system(requests.get(u).text)\n", "FETCHED_TO_EXEC"),
+    "getattr_builtins_exec": (
+        "import builtins, requests\n"
+        "def run(u):\n"
+        "    getattr(builtins, 'exec')(requests.get(u).text)\n", "DYNAMIC_EXEC_LOOKUP"),
+    "getattr_builtins_exec_resolves_to_exec": (
+        "import builtins, requests\n"
+        "def run(u):\n"
+        "    getattr(builtins, 'exec')(requests.get(u).text)\n", "FETCHED_TO_EXEC"),
+    "getattr_os_computed_name": (
+        "import os, requests\n"
+        "def run(u):\n"
+        "    doc = requests.get(u).json()\n"
+        "    getattr(os, doc['fn'])('x')\n", "DYNAMIC_EXEC_LOOKUP"),
+    "local_alias_of_callee": (
+        "import requests, subprocess\n"
+        "go = subprocess.Popen\n"
+        "def run(u):\n"
+        "    go(requests.get(u).text, shell=True)\n", "FETCHED_TO_EXEC"),
+    "aliased_network_source": (
+        "import requests as rq\n"
+        "def run(u):\n"
+        "    exec(rq.get(u).text)\n", "FETCHED_TO_EXEC"),
+    "from_requests_import_get": (
+        "from requests import get\n"
+        "def run(u):\n"
+        "    eval(get(u).text)\n", "FETCHED_TO_EXEC"),
+    "importlib_alias": (
+        "import requests\nfrom importlib import import_module as im\n"
+        "def run(u):\n"
+        "    im(requests.get(u).json()['m'])\n", "FETCHED_TO_EXEC"),
+    "from_os_import_replace_protected": (
+        "import requests\nfrom os import replace\n"
+        "def run(u):\n"
+        "    requests.get(u)\n"
+        "    replace('tmp.json', 'desks/mt5/data/sleeves.json')\n", "PROTECTED_PATH_WRITE"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(ALIASED))
+def test_an_aliased_callee_is_resolved_and_caught(name: str) -> None:
+    src, kind = ALIASED[name]
+    found = C.check_source(src, f"{name}.py")
+    assert any(f["kind"] == kind and f["severity"] == "breach" for f in found), found
+
+
+def test_a_harmless_getattr_on_os_is_not_flagged() -> None:
+    src = ("import os, requests\n"
+           "def run(u):\n"
+           "    requests.get(u)\n"
+           "    return getattr(os, 'sep')\n")
+    assert [f for f in C.check_source(src, "ok.py") if f["severity"] == "breach"] == []
+
+
+def test_every_seat_prompt_builder_fences_its_fetched_text() -> None:
+    assert C.check_seat_prompts(ROOT) == []
+
+
+def test_an_unfenced_seat_prompt_builder_is_a_breach(tmp_path: Path) -> None:
+    rel = "libs/research/seat.py"
+    (tmp_path / "libs" / "research").mkdir(parents=True)
+    (tmp_path / rel).write_text("def build(page):\n    return 'Summarise: ' + page\n")
+    got = C.check_seat_prompts(tmp_path, [(rel, "build")])
+    assert [g["kind"] for g in got] == ["UNFENCED_SEAT_PROMPT"]
+    (tmp_path / rel).write_text("from libs.research.untrusted import wrap\n"
+                                "def build(page):\n    return 'Summarise: ' + wrap(page)\n")
+    assert C.check_seat_prompts(tmp_path, [(rel, "build")]) == []
+    assert [g["kind"] for g in C.check_seat_prompts(tmp_path, [(rel, "gone")])] == [
+        "UNFENCED_SEAT_PROMPT"]                            # a moved builder fails closed
+
+
 CLEAN = (
     "import json, re, requests\nfrom pathlib import Path\n"
     "STORE = Path('desks/mt5/data/acquired')\n"

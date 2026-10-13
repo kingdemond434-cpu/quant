@@ -168,7 +168,7 @@ def test_research_only_dataset_feeding_a_live_sleeve_is_a_named_violation(tmp_pa
                                                       "RESEARCH_ONLY")
     assert doc["lineage_unmeasured"] == ["ghost"]            # spec not on host: named
     plain = next(s for s in doc["sleeves"] if s["sleeve"] == "standby_plain")
-    assert plain["inputs"] == ["bars:XAGUSD", "bars:XAUUSD"] and plain["eligible"]
+    assert plain["inputs"] == ["bars:XAGUSD", "bars:XAUUSD"] and plain["eligible"] is True
     assert all(s["sleeve"] != "retired_cond" for s in doc["sleeves"])
 
 
@@ -179,6 +179,26 @@ def test_uncontracted_and_inadmissible_inputs_fail_closed(tmp_path):
     assert shut["violations"][0]["kind"] == "INADMISSIBLE"
     ok = _fence_box(tmp_path, {"lake:alt_kr__load": _contract(["research", "live_signal"])})
     assert ok["status"] == "OK" and ok["n_violations"] == 0
+
+
+def test_a_feature_compiler_that_cannot_import_reads_unmeasured_never_uncontracted(
+        tmp_path, monkeypatch):
+    """Auditor HOLD on #292: a failed `import feature_compiler` made `_prices_contract` return
+    None, so every `bars:<SYM>` input -- all 66 guarded sleeves on the box -- read UNCONTRACTED
+    and the box state fence failed. The contract exists; it could not be READ. UNMEASURED."""
+    monkeypatch.setitem(sys.modules, "feature_compiler", None)     # import now raises
+    ok = _fence_box(tmp_path, {"lake:alt_kr__load": _contract(["research", "live_signal"])})
+    assert ok["status"] == "OK" and ok["n_violations"] == 0
+    assert all(v["kind"] != "UNCONTRACTED" for v in ok["violations"])
+    assert {"bars:EURUSD", "bars:XAUUSD", "bars:XAGUSD"} <= set(ok["inputs_unmeasured"])
+    plain = next(s for s in ok["sleeves"] if s["sleeve"] == "standby_plain")
+    assert plain["eligible"] == F.UNMEASURED                      # never True, never a violation
+    bars = next(d for d in ok["datasets"] if d["dataset"] == "bars:XAUUSD")
+    assert bars["production_eligible"] is None and bars["unmeasured"] is True
+    # a real violation still fails while bars are unmeasured
+    bad = _fence_box(tmp_path, {"lake:alt_kr__load": _contract(["research"])})
+    assert bad["status"] == "VIOLATION" and {v["kind"] for v in bad["violations"]} == {
+        "RESEARCH_ONLY"}
 
 
 def test_dataset_ids_place_every_declared_input_shape():
