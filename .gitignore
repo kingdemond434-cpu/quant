@@ -464,6 +464,7 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/JUDGING_THROUGHPUT.json
 !desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
 !desks/mt5/reports/JUDGE_COVERAGE.json
+!desks/mt5/reports/CELL_STATE.json
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json
@@ -475,3 +476,5 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+# the no-limbo cell state ledger: box-local durable state, read back by its own writer only
+desks/mt5/data/hypotheses/cell_state_ledger.json

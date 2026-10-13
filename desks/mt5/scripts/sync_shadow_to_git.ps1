@@ -667,6 +667,8 @@ $reportPaths = @(
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
     "desks/mt5/reports/JUDGE_COVERAGE.json",
+    # the no-limbo cell state ledger's KPIs and dependency queue (research/cell_state.py)
+    "desks/mt5/reports/CELL_STATE.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",
