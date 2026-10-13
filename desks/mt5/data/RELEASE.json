@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-10-13T06:37:12.257142+00:00",
- "live_sha": "e1c80dfa3e2da5c25e969c58d6cc6f4e96446bec",
- "code_sha": "e1c80dfa3e2da5c25e969c58d6cc6f4e96446bec",
- "parent_sha": "b97794f488f770053fbc5fb01355711a2a778cde",
- "tree_sha": "a04d36d7bf40f4fdc3a9669a91eb02df44ded395",
+ "generated_utc": "2026-10-13T10:52:19.257145+00:00",
+ "live_sha": "4806022d811c85a0d2a6e3b9c9053da1527a2fd6",
+ "code_sha": "4806022d811c85a0d2a6e3b9c9053da1527a2fd6",
+ "parent_sha": "1f0276af0d425f1f33075828a173b13e621be3da",
+ "tree_sha": "6ada406afe5045fe7a9e673a3e220919ce1cf5f0",
  "config_hash": "e0d1bfe75cb0d2c3",
  "survivor_registry_hash": "d3f308039b71e195",
  "allocator_hash": "d115a84a94566a73",
@@ -59,9 +59,9 @@
  },
  "canon_sha256": "355aa79b27c15a1ef43273f5278fadf18fedea571f0704d4c32bf78a866c1e81",
  "immutable_manifest": {
-  "sha256_16": "ed9455d320dc252f",
-  "signed_utc": "2026-10-13T00:41:04.540131+00:00",
-  "signed_by": "Codex, principal-authorized audited ledger reader repair",
+  "sha256_16": "fdfcd72cfb7739f9",
+  "signed_utc": "2026-10-13T07:23:40.551268+00:00",
+  "signed_by": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved",
   "n_files": 22
  },
  "allocator_certificate": null,
@@ -109,17 +109,17 @@
   "desks/mt5/reports/shadow/shadow_state.json",
   "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json"
  ],
- "immutable_hash": "ed9455d320dc252f",
- "release_id": "74ddddc9f3bd",
+ "immutable_hash": "fdfcd72cfb7739f9",
+ "release_id": "bca362d23253",
  "sealed": true,
- "sealed_at": "2026-10-13T06:37:12.257142+00:00",
+ "sealed_at": "2026-10-13T10:52:19.257145+00:00",
  "sealed_by": "Adopt-And-Seal",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [],
  "worktree_dirty_scope": "release_code_paths",
- "previous_code_sha": "f7eb5a97631e137c689bb780803730cf24b5766d",
- "previous_release_id": "daa55a834406",
+ "previous_code_sha": "e1c80dfa3e2da5c25e969c58d6cc6f4e96446bec",
+ "previous_release_id": "74ddddc9f3bd",
  "signature_algo": "hmac-sha256-v1",
- "signature": "d695b0b3aa6a98c353bca62434ed429def7698ed8f21f197c3f65a3cf2a74ea4"
+ "signature": "ac411c41ff9b6d0d0136d5c9842ca0536cdef827a997637e650110a902c9ed5b"
 }
