@@ -984,6 +984,14 @@ def main() -> int:
     # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
     # nothing is withheld. A screen fault costs the demotion, never a row.
     prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
+    # THE LEARNED PRE-JUDGE'S FLAG FROM LAST HOUR NEVER CARRIES OVER (research/prejudge_model.py):
+    # banked rows come back with their `prejudge` field, so this module's own flag is stripped
+    # BEFORE the screen below reads flags, and re-derived after it from this hour's model.
+    try:
+        from research import prejudge_model as _pjm
+        _pjm.strip_stale(rows_out)
+    except Exception as exc:
+        print(f"   learned pre-judge strip unavailable ({type(exc).__name__}: {exc})")
     try:
         import sys as _sys
         _root = str(BASE.parents[1])
@@ -999,6 +1007,32 @@ def main() -> int:
     except Exception as exc:
         prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # THE LEARNED PRE-JUDGE (research/prejudge_model.py, principal 2026-10-13): P(survive) from
+    # the gate verdict ledger x the value terms the desk measures. Inside each family the
+    # never-judged rows below the median priority get `prejudge.flags += [surrogate_low_priority]`
+    # -- minus a seeded 10% exploration quota -- and move behind their clean siblings in the
+    # family's own slots, exactly like the screen above. QUEUE ORDER ONLY: no row is removed,
+    # rejected or charged, and a fault here costs the reorder, never a row.
+    try:
+        from research import prejudge_model as _pjm
+        _before = len(rows_out)
+        _pj_rows, _pj_doc = _pjm.apply(
+            rows_out, scorer=_pjm.Scorer.load(BASE / "data" / "prejudge_model"),
+            seen_path=HYP / "gauntlet_seen_cells.json",
+            report=BASE / "reports" / "PREJUDGE.json")
+        if len(_pj_rows) != _before:
+            raise RuntimeError(f"pre-judge changed the row count {_before} -> {len(_pj_rows)}")
+        rows_out = _pj_rows
+        prejudge["learned"] = {k: _pj_doc.get(k) for k in
+                               ("status", "scorer", "candidates", "flagged", "explored",
+                                "moved", "judged_skipped")}
+        if _pj_doc.get("flagged"):
+            print(f"   learned pre-judge ({_pj_doc.get('scorer')}): {_pj_doc['flagged']} "
+                  f"never-judged row(s) flagged low priority, {_pj_doc.get('explored')} kept "
+                  f"by the exploration quota, 0 removed")
+    except Exception as exc:
+        prejudge["learned"] = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   learned pre-judge unavailable ({type(exc).__name__}: {exc}); order unchanged")
     # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
     # Every docket row -- fresh, carried over or already judged -- whose own words say its result
     # was the best of N searched variations is stamped with its claim family, so the 25,520 cells
