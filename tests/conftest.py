@@ -245,3 +245,5 @@ def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr(blinding, "record", record)
     if Path(pa.LEDGER).resolve().is_relative_to(repo):
         monkeypatch.setattr(pa, "LEDGER", sink / "promotion_blocks.jsonl")
+    if Path(pa.SUSPENDED_LEDGER).resolve().is_relative_to(repo):
+        monkeypatch.setattr(pa, "SUSPENDED_LEDGER", sink / "door_suspended.jsonl")

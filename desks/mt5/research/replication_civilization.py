@@ -208,7 +208,10 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         raw = frame[tcol] if tcol is not None else frame.index.to_series()
         stamps = pd.to_datetime(raw, utc=True, errors="coerce")
         keep = ~stamps.isna().to_numpy()
-        t_ns = stamps[keep].astype("int64").to_numpy() if hasattr(stamps, "astype") else None
+        # nanoseconds by construction: pandas 3 parses to microsecond resolution, so a bare
+        # int64 cast read hourly bars as 3,600,000 ns apart and the bar clock as 1 minute
+        t_ns = (stamps[keep].dt.as_unit("ns").astype("int64").to_numpy()
+                if hasattr(stamps, "dt") else None)
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
