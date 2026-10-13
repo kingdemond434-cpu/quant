@@ -522,7 +522,7 @@ def test_a_403_ground_records_its_cause_on_the_frontier_and_the_stats(monkeypatc
 @pytest.mark.parametrize("url, status", [
     ("https://www.reddit.com/r/algotrading/.rss", "IDEAS_ONLY"),
     ("https://oauth.reddit.com/r/x/new", "NEEDS_KEY"),
-    ("https://t.me/s/markettwits", "PUBLIC_PAGE"),
+    ("https://t.me/s/markettwits", "IDEAS_ONLY"),         # auditor ruling 2026-10-13
     ("https://x.com/someone/status/1", "IDEAS_ONLY"),
     ("https://api.x.com/2/tweets/search/recent", "NEEDS_KEY"),
     ("https://nitter.poast.org/search?q=x", "METHOD_BLOCKED"),
