@@ -23,50 +23,11 @@
     }
   },
   "position": null,
-  "last_bracket_date": "2026-10-13",
-  "last_reconcile": "2026-10-13T21:50:09+00:00",
+  "last_bracket_date": "2026-10-14",
+  "last_reconcile": "2026-10-13T22:05:31+00:00",
   "bracket_cancelled": true,
   "pending": null,
-  "brackets": {
-    "gold_asia": {
-      "date": "2026-10-13",
-      "hi": 4189.46,
-      "lo": 4150.75,
-      "lot": 0.01,
-      "spec": {
-        "buy_stop": {
-          "price": 4189.46,
-          "sl": 4150.55,
-          "tp": 4266.88
-        },
-        "sell_stop": {
-          "price": 4150.75,
-          "sl": 4189.66,
-          "tp": 4073.33
-        }
-      },
-      "placed_at": "2026-10-13T04:00:13+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": 10009,
-            "comment": "Request executed",
-            "door_refused": false,
-            "door_reason": null
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10009,
-            "comment": "Request executed",
-            "door_refused": false,
-            "door_reason": null
-          }
-        ]
-      }
-    }
-  },
+  "brackets": {},
   "lot": 0.06,
   "equity": 484.83,
   "placement_health": {
@@ -92,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-13T23:58:59+00:00",
+  "placement_pass": "2026-10-14T01:04:57+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -489,7 +450,7 @@
     "234917497": 39.029999999999745
   },
   "restart_reconcile": {
-    "at": "2026-10-13T21:50:03+00:00",
+    "at": "2026-10-13T22:05:03+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
