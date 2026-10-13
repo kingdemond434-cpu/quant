@@ -49,6 +49,9 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"
+#: The deep forest's raw landings (`deep_forest_miner.RAW_PREFIX`): no registry row, so
+#: first-sight stamped (available_time = max(period_end + lag, fetched_utc)).
+RAW_LANDING_PREFIX = "dfraw__"
 FOUND = BASE / "data" / "intelligence" / "asia_endpoints"
 OUT = BASE / "reports" / "ASIA_PARSER.json"
 
@@ -547,9 +550,15 @@ def _stamp_pit(rec: dict[str, Any], source_id: str, meta: dict[str, Any],
         path = SERIES / name
         try:
             df = pd.read_parquet(path) if name.endswith(".parquet") else pd.read_csv(path)
+            # FIRST SIGHT FOR A RAW LANDING (deep forest `dfraw__*`): no registry row declares
+            # its publication lag, so it reads on the 20-day fallback -- and a row may never be
+            # visible before the desk first fetched the file. available_time is therefore
+            # max(period_end + lag, fetched_utc), per row.
             out, m = pit_stamp.stamp_frame(df, lag_days=lag,
                                            observed_at=meta.get("fetched_utc"),
-                                           source_id=source_id, vintage_fallback=True)
+                                           source_id=source_id, vintage_fallback=True,
+                                           not_before_observed=source_id.startswith(
+                                               RAW_LANDING_PREFIX))
             if m.get("status") == "STAMPED":
                 if name.endswith(".parquet"):
                     out.to_parquet(path)

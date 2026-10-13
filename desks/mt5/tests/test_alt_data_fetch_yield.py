@@ -522,7 +522,7 @@ def test_a_403_ground_records_its_cause_on_the_frontier_and_the_stats(monkeypatc
 @pytest.mark.parametrize("url, status", [
     ("https://www.reddit.com/r/algotrading/.rss", "IDEAS_ONLY"),
     ("https://oauth.reddit.com/r/x/new", "NEEDS_KEY"),
-    ("https://t.me/s/markettwits", "IDEAS_ONLY"),
+    ("https://t.me/s/markettwits", "PUBLIC_PAGE"),
     ("https://x.com/someone/status/1", "IDEAS_ONLY"),
     ("https://api.x.com/2/tweets/search/recent", "NEEDS_KEY"),
     ("https://nitter.poast.org/search?q=x", "METHOD_BLOCKED"),
@@ -530,7 +530,10 @@ def test_a_403_ground_records_its_cause_on_the_frontier_and_the_stats(monkeypatc
     ("https://www.mql5.com/en/articles", "IDEAS_ONLY"),
     ("https://finance.yahoo.co.jp/cm/x", "IDEAS_ONLY"),
     ("https://stocktwits.com/symbol/XAUUSD", "IDEAS_ONLY"),
-    ("https://discord.com/channels/1", "METHOD_BLOCKED"),
+    # One table (libs/data/terms_fence.py): Discord's row is its bot-token API, judged per
+    # REQUEST (a user token is a self-bot); a channel page is held by the fetch door when it
+    # redirects into Discord's login wall, never by a host ban.
+    ("https://discord.com/channels/1", "PUBLIC_PAGE"),
     ("https://www.taifex.com.tw/x", "PUBLIC_PAGE"),
 ])
 def test_every_source_has_a_per_source_status_and_none_is_banned(monkeypatch, url,
@@ -844,3 +847,64 @@ def test_a_compressed_body_is_inflated_only_up_to_the_cap() -> None:
     assert pf.inflate(b"plain", "") == b"plain"
     assert pf.decode_body(gzip.compress("héllo".encode()), "text/plain; charset=utf-8",
                           "gzip") == "héllo"
+
+
+# ---- #357 MF1: a raw landing is first-sight stamped, never on the bare 20-day fallback ----
+def test_pit_stamp_floors_available_time_at_the_fetch_per_row() -> None:
+    import pandas as pd
+
+    from libs.data import pit_stamp
+    df = pd.DataFrame({"period_end": ["2019-01-31", "2026-10-01"], "v": [1.0, 2.0]})
+    out, meta = pit_stamp.stamp_frame(df, lag_days=20, observed_at="2026-10-13T12:00:00+00:00",
+                                      source_id="dfraw__x", not_before_observed=True)
+    assert meta["status"] == "STAMPED" and meta["floored_to_fetch"] == 1
+    avail = [str(x)[:19] for x in out["available_time"]]
+    # an old row: never before the desk first read the file; a recent one: period + lag
+    assert avail == ["2026-10-13 12:00:00", "2026-10-21 00:00:00"]
+    assert str(out["event_time"].iloc[0])[:10] == "2019-01-31"       # the period is untouched
+    plain, _ = pit_stamp.stamp_frame(df, lag_days=20, observed_at="2026-10-13T12:00:00+00:00")
+    assert str(plain["available_time"].iloc[0])[:10] == "2019-02-20", "registered sources keep" \
+        " their declared-lag stamp"
+
+
+def test_a_dfraw_landing_parses_with_available_at_max_period_lag_or_fetch(monkeypatch,
+                                                                          tmp_path) -> None:
+    import pandas as pd
+
+    from research import asia_parser as ap
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
+    body = b"date,value\n2018-03-31,1.5\n2026-10-10,1.7\n"
+    landed = dfm.land_raw("https://stats.example.test/m.csv", body, "text/csv",
+                          ground={"name": "g"}, reason="format:text/csv")
+    assert landed and landed["source_id"].startswith(ap.RAW_LANDING_PREFIX)
+    sid = landed["source_id"]
+    meta = json.loads(next((tmp_path / "vault" / sid).glob("*.meta.json")).read_text("utf-8"))
+    monkeypatch.setattr(ap, "VAULT", tmp_path / "vault")
+    monkeypatch.setattr(ap, "SERIES", tmp_path / "series")
+    monkeypatch.setattr(ap, "FOUND", tmp_path / "found")
+    monkeypatch.setattr(ap, "_registry_rows", lambda: {})
+    (tmp_path / "series").mkdir()
+    doc = ap.parse_all([sid])
+    row = doc["rows"][0]
+    assert row["status"] == "PARSED" and row["pit"]["status"] == "STAMPED"
+    assert row["pit"]["lag_days"] == 20                      # the fallback, and only that
+    fetched = pd.Timestamp(meta["fetched_utc"])
+    frames = [p for p in (tmp_path / "series").iterdir() if p.suffix in (".parquet", ".csv")]
+    assert frames
+    for p in frames:
+        df = pd.read_parquet(p) if p.suffix == ".parquet" else pd.read_csv(p)
+        avail = pd.to_datetime(df["available_time"], utc=True)
+        period = pd.to_datetime(df["event_time"], utc=True)
+        want = [max(pe + pd.Timedelta(days=20), fetched) for pe in period]
+        assert list(avail) == want, p.name
+        assert (avail >= fetched).all(), "a row visible before the desk fetched it"
+
+
+def test_the_deep_forest_reads_the_one_policy_table() -> None:
+    """#357 dropped its hand-copied SOURCE_POLICY; it reads libs/data/terms_fence.py (#162)."""
+    from libs.data import terms_fence as tf
+    assert dfm.SOURCE_POLICY is tf.SOURCE_POLICY and dfm.HOLDING is tf.HOLDING
+    src = (Path(dfm.__file__)).read_text("utf-8")
+    assert "SOURCE_POLICY: dict[str, dict[str, Any]] = {" not in src
+    # a wrapper of a held page is the held page, through the one table's resolution
+    assert dfm.policy_of_url("https://r.jina.ai/https://nitter.net/x")["status"] == "METHOD_BLOCKED"
