@@ -41,6 +41,8 @@ def desk(tmp_path: Path, monkeypatch) -> Path:
         {"name": "old", "status": "RETIRED", "certificate": {"cell": CID}}]}))
     monkeypatch.setattr(cm, "CHAIN", put("chain.json", {"chain": [{"sleeve": "eurusd_carry"}]}))
     monkeypatch.setattr(cm, "MARKOUT", put("markout.json", {"n_deals": 3}))
+    monkeypatch.setattr(cm, "FILL_REPRICE", tmp_path / "no_reprice.json")
+    monkeypatch.setattr(cm, "LIVE_TRADABILITY", tmp_path / "no_trad.json")
     return tmp_path
 
 
@@ -111,3 +113,25 @@ def test_every_registered_family_has_a_declared_class() -> None:
         pytest.skip("family registry not importable here")
     missing = sorted(f for f in map(str, FAMILY_REGISTRY) if f not in MECHANISM_CLASS)
     assert not missing, missing
+
+
+def test_the_owners_are_read_first_for_cost_and_tradability(desk: Path, monkeypatch) -> None:
+    rep = desk / "reprice.json"
+    rep.write_text(json.dumps({"cost_never_charged": {CID: {"ev": -0.1}},
+                               "certificates": {}}), "utf-8")
+    trad = desk / "trad.json"
+    trad.write_text(json.dumps({"sleeves": [{"name": "eurusd_carry", "status": "FAIL"}]}),
+                    "utf-8")
+    monkeypatch.setattr(cm, "FILL_REPRICE", rep)
+    monkeypatch.setattr(cm, "LIVE_TRADABILITY", trad)
+    doc, _ = cm.judge(cm.measure(NOW), {}, NOW)
+    f = doc["subjects"]["sleeve:eurusd_carry"]["fields"]
+    assert f["fill_cost"]["status"] == "UNMEASURED" and "never" in f["fill_cost"]["why"]
+    assert f["tradability"] == {"status": "MEASURED", "why": "live_tradability FAIL",
+                                "value": "FAIL", "source": "LIVE_TRADABILITY.json"}
+    rep.write_text(json.dumps({"cost_never_charged": "UNMEASURED: no survivors file on this host",
+                               "certificates": {CID: {"verdict": "SURVIVES_FILL_HOUR"}}}),
+                   "utf-8")
+    doc, _ = cm.judge(cm.measure(NOW), {}, NOW)
+    fc = doc["subjects"][f"cert:{CID}"]["fields"]["fill_cost"]
+    assert fc["status"] == "MEASURED" and fc["source"] == "fill_hour_reprice"

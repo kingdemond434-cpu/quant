@@ -16,8 +16,11 @@ THE FIELDS, each read from the artifact that already owns it (this fence measure
 itself):
     mechanism_class   research/alpha_genome.MECHANISM_CLASS declares the family's cause
     novelty           reports/STYLE_NOVELTY.json per_certificate[cert].novelty is a number
-    fill_cost         data/cost_surface.json has a MEASURED spread hour for the symbol
-    tradability       data/universe/universe.json carries the symbol's contract terms
+    fill_cost         reports/FILL_HOUR_REPRICE.json (the owner) prices the cert at its own fill
+                      hour; a cert in its `cost_never_charged` is UNMEASURED. Only without a
+                      row there: data/cost_surface.json has a MEASURED spread hour for it
+    tradability       reports/LIVE_TRADABILITY.json (the owner, #331) for a LIVE sleeve; else
+                      data/universe/universe.json carries the symbol's contract terms
                       (volume_min, volume_step, contract_size, tick_value) and bars
     forward_clock     reports/CERTIFICATE_CLOCK_LAW.json: the certificate has a clock that is
                       neither NO_CLOCK nor UNMEASURED
@@ -60,6 +63,10 @@ CERTS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 SLEEVES = DESK / "data" / "sleeves.json"
 NOVELTY = DESK / "reports" / "STYLE_NOVELTY.json"
 COST_SURFACE = DESK / "data" / "cost_surface.json"
+#: The owners, read first when present (one truth per field): the fill-hour repricer (the
+#: AUDCHF/promotion lane's `fill_hour_reprice` leg) and the live tradability check (#331).
+FILL_REPRICE = DESK / "reports" / "FILL_HOUR_REPRICE.json"
+LIVE_TRADABILITY = DESK / "reports" / "LIVE_TRADABILITY.json"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
 CLOCK_LAW = DESK / "reports" / "CERTIFICATE_CLOCK_LAW.json"
 CHAIN = DESK / "reports" / "attribution_chain.json"
@@ -78,9 +85,12 @@ CONVERTERS: dict[str, str] = {
                         "MECHANISM_CLASS (the style library owner)"),
     "novelty": ("research/style_novelty.py on the host that holds the symbol's bars -- the "
                 "box's hourly leg style_novelty; --force when the report predates the cert"),
-    "fill_cost": ("research/cost_surface.py on the box (it reads the symbol's spread column); a "
+    "fill_cost": ("the fill_hour_reprice leg prices the cert at its own fill hour (a cert in "
+                  "cost_never_charged was judged on a cost it never paid); without it, "
+                  "research/cost_surface.py on the box (it reads the symbol's spread column); a "
                   "symbol absent from the surface needs its bars collected first"),
-    "tradability": ("refresh data/universe/universe.json from MT5 symbol_info on the box (the "
+    "tradability": ("scripts/check_live_tradability.py (hourly leg live_tradability) for LIVE "
+                    "sleeves; for a certificate, refresh data/universe/universe.json from MT5 symbol_info on the box (the "
                     "universe refresh leg); a symbol the venue no longer lists is RETIRED "
                     "upstream, never left blank here"),
     "forward_clock": ("research/forward_enrolment.py (hourly, after the judge) enrols every "
@@ -135,9 +145,29 @@ def _field(ok: bool | None, why: str, **extra: Any) -> dict[str, Any]:
     return {"status": status, "why": why, **extra}
 
 
+def _reprice_row(reprice: Any, cid: str, cert: Mapping[str, Any]) -> tuple[str, Any]:
+    """(state, row) from FILL_HOUR_REPRICE.json: ABSENT, NEVER_CHARGED, or ROW."""
+    if not isinstance(reprice, dict):
+        return "ABSENT", None
+    raw = cert.get("shadow_spec")
+    spec: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    keys = [cid, str(cert.get("cell") or ""),
+            ".".join(str(x) for x in (spec.get("symbol"), spec.get("family"),
+                                      spec.get("selector")) if x)]
+    never = reprice.get("cost_never_charged")
+    if isinstance(never, dict) and any(k and k in never for k in keys):
+        return "NEVER_CHARGED", next(never[k] for k in keys if k and k in never)
+    certs = reprice.get("certificates")
+    if isinstance(certs, dict):
+        for k in keys:
+            if k and isinstance(certs.get(k), dict):
+                return "ROW", certs[k]
+    return "ABSENT", None
+
+
 def cert_fields(cid: str, cert: Mapping[str, Any], *, classes: Mapping[str, str] | None,
-                novelty: Any, surface: Any, universe: Any, clocks: Mapping[str, Any]
-                ) -> dict[str, dict[str, Any]]:
+                novelty: Any, surface: Any, universe: Any, clocks: Mapping[str, Any],
+                reprice: Any = None) -> dict[str, dict[str, Any]]:
     sym, fam = _spec(cert)
     out: dict[str, dict[str, Any]] = {}
     if classes is None:
@@ -157,7 +187,16 @@ def cert_fields(cid: str, cert: Mapping[str, Any], *, classes: Mapping[str, str]
                                 str((e or {}).get("why") or "the report has no row for it"),
                                 value=v)
     syms = (surface or {}).get("symbols") if isinstance(surface, dict) else None
-    if not isinstance(syms, dict):
+    rstate, rrow = _reprice_row(reprice, cid, cert)
+    if rstate == "NEVER_CHARGED":
+        out["fill_cost"] = _field(False, "FILL_HOUR_REPRICE lists it in cost_never_charged: "
+                                  "judged on a cost it never paid", source="fill_hour_reprice",
+                                  detail=rrow)
+    elif rstate == "ROW":
+        v = str(rrow.get("verdict") or "")
+        out["fill_cost"] = _field(v not in ("", "UNMEASURED"), f"fill_hour_reprice verdict {v}",
+                                  source="fill_hour_reprice", value=v)
+    elif not isinstance(syms, dict):
         out["fill_cost"] = _field(False, "data/cost_surface.json absent or unreadable")
     else:
         hours = ((syms.get(sym) or {}).get("hours") or {}) if isinstance(syms.get(sym), dict) \
@@ -166,7 +205,7 @@ def cert_fields(cid: str, cert: Mapping[str, Any], *, classes: Mapping[str, str]
                 and h.get("status") == "MEASURED")
         out["fill_cost"] = _field(n > 0, f"{n} of {len(hours)} broker hours measured for {sym}"
                                   if hours else f"{sym} is absent from the cost surface",
-                                  measured_hours=n)
+                                  measured_hours=n, source="cost_surface (fallback)")
     row = (universe or {}).get(sym) if isinstance(universe, dict) else None
     if not isinstance(universe, dict):
         out["tradability"] = _field(False, "universe.json absent or unreadable")
@@ -214,13 +253,17 @@ def measure(now: datetime | None = None) -> dict[str, Any]:
     classes = _classes()
     novelty, surface, universe = _json(NOVELTY), _json(COST_SURFACE), _json(UNIVERSE)
     law = _json(CLOCK_LAW)
+    reprice = _json(FILL_REPRICE)
     clocks = {str(r.get("certificate")): r for r in ((law or {}).get("certificates") or [])
               if isinstance(r, dict)} if isinstance(law, dict) else {}
     subjects: dict[str, dict[str, Any]] = {}
     for cid, cert in sorted(certs.items()):
         subjects[f"cert:{cid}"] = {"kind": "certificate", "fields": cert_fields(
             cid, cert, classes=classes, novelty=novelty, surface=surface, universe=universe,
-            clocks=clocks)}
+            clocks=clocks, reprice=reprice)}
+    lt = _json(LIVE_TRADABILITY)
+    trad = {str(r.get("name")): r for r in ((lt or {}).get("sleeves") or [])
+            if isinstance(r, dict)} if isinstance(lt, dict) else {}
     sl = _json(SLEEVES)
     chain, markout = _json(CHAIN), _json(MARKOUT)
     live = [s for s in ((sl or {}).get("sleeves") or []) if isinstance(s, dict)
@@ -230,8 +273,14 @@ def measure(now: datetime | None = None) -> dict[str, Any]:
         cid = str((s.get("certificate") or {}).get("cell") or "")
         scert = certs.get(cid)
         fields = (cert_fields(cid, scert, classes=classes, novelty=novelty, surface=surface,
-                              universe=universe, clocks=clocks) if scert else
+                              universe=universe, clocks=clocks, reprice=reprice) if scert else
                   {"certificate": _field(False, f"certificate.cell {cid!r} is not in the canon")})
+        own = trad.get(name)
+        if own is not None:
+            st = str(own.get("status") or "")
+            fields["tradability"] = _field(st not in ("", "UNMEASURED"),
+                                           f"live_tradability {st}", value=st,
+                                           source="LIVE_TRADABILITY.json")
         fields["pnl_attribution"] = sleeve_attribution(name, chain, markout)
         subjects[f"sleeve:{name}"] = {"kind": "live_sleeve", "certificate": cid,
                                       "fields": fields}
