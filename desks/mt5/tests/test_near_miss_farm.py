@@ -72,7 +72,7 @@ def test_a_farm_pass_writes_its_own_ledger_with_authority_withheld(
     assert ledger.exists() and marks == [nmf.LEDGER_NAME]
     # Per-trade ledgers land beside the farm state, never beside the certified lane's.
     assert not list((tmp_path / "shadow").glob("ledger_*.json"))
-    assert sf.SHADOW_DIR == tmp_path / "shadow"                # restored after the run
+    assert tmp_path / "shadow" == sf.SHADOW_DIR                # restored after the run
     state = json.loads(ledger.read_text())
     rows = [v for v in state.values() if isinstance(v, dict) and "n" in v]
     assert rows and not any(v.get("promotion_authority") for v in rows)
@@ -92,9 +92,7 @@ def test_every_certificate_without_a_lane_clock_is_farmed(
              "family": "scalp", "side": "LONG", "params": {}}]
     clocked = sf.sleeve_key("GBPUSD", "asia", {"gap_atr": 0.5}, "overnight_gap_decay", "LONG")
     monkeypatch.setattr(shadow_admission, "authorized_runs", lambda base: runs)
-    monkeypatch.setitem(sys.modules, "shadow_admission", shadow_admission)
     monkeypatch.setattr(admission_integrity, "lane_clock_keys", lambda d: {clocked})
-    monkeypatch.setitem(sys.modules, "admission_integrity", admission_integrity)
     rows, refused, why = nmf.clockless_cert_rows()
     assert [r[0] for r in rows] == ["EURUSD"] and not refused
     assert rows[0][5] == nmf.CERT_ADMISSION and rows[0][7] is False

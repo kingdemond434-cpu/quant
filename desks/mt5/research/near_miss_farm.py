@@ -150,7 +150,8 @@ def farm_rows(roster: dict[str, dict[str, Any]]
         if side is None:
             refused.append({"cell": key, "why": f"side {spec.get('side')!r} not runnable"})
             continue
-        rows.append((str(spec["symbol"]), str(spec["selector"]), params, fam, side, ADMISSION, tuple(r.get("failed_power_gates") or ()), False))
+        rows.append((str(spec["symbol"]), str(spec["selector"]), params, fam, side, ADMISSION,
+                     tuple(r.get("failed_power_gates") or ()), False))
     return rows, refused
 
 
@@ -163,14 +164,8 @@ def clockless_cert_rows() -> tuple[list[tuple[Any, ...]], list[dict[str, Any]], 
     writes is the key the lane will use once the door opens.
     """
     from research import shadow_forward as sf
-    try:
-        from shadow_admission import authorized_runs
-    except ImportError:
-        from research.shadow_admission import authorized_runs  # type: ignore[no-redef]
-    try:
-        from admission_integrity import lane_clock_keys
-    except ImportError:
-        from research.admission_integrity import lane_clock_keys  # type: ignore[no-redef]
+    from research.admission_integrity import lane_clock_keys
+    from research.shadow_admission import authorized_runs
     try:
         runs = list(authorized_runs(BASE))
     except Exception as exc:
