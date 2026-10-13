@@ -94,7 +94,7 @@ CALENDAR = BASE / "data" / "forced_flow_calendar.json"
 
 #: Bumped whenever a RULE changes, so an artifact on disk can be told apart from one written by
 #: a different set of rules. A consumer comparing two calendars compares this first.
-RULES_VERSION = "2026-09-16.1"
+RULES_VERSION = "2026-10-13.1"
 
 #: The two labels the blueprint requires on anything not derivable from a rule.
 VERIFY_BANK = "verify against the bank's published calendar"
@@ -108,6 +108,12 @@ MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY = 0, 1, 2, 3, 4
 KINDS = (
     "month_end", "quarter_end", "index_rebalance", "futures_roll", "option_expiry",
     "bond_auction", "central_bank", "fixing", "inventory", "usda", "holiday_liquidity",
+    # 2026-10-13 (principal: "calendar and flow mechanics ... all mapped to MT5 symbols"). Seven
+    # kinds the calendar named in prose but never dated: the gotobi-only Tokyo fix, the Japanese
+    # fiscal half-year ends, the FX option expiry at the New York cut, the monthly US coupon
+    # auctions and the quarterly refunding announcement, and Chinese holiday liquidity.
+    "gotobi_fix", "jp_fiscal_flow", "fx_option_expiry", "ust_coupon_auction",
+    "ust_refunding", "cn_holiday", "cn_pre_holiday",
 )
 
 
@@ -878,6 +884,235 @@ def _holiday_events(year: int) -> list[Event]:
     return rows
 
 
+# ------------------------------------------------------------------- 2026-10-13 flow mechanics
+
+def _jp_calendar() -> Any:
+    """`mt5desk.flowcal`, the desk's Japanese settlement calendar, or None.
+
+    ONE COPY OF THE JAPANESE HOLIDAY TABLE. flowcal holds the Cabinet Office list with the
+    Reiwa and Olympic moves; restating it here would give the desk two tables to drift apart.
+    """
+    try:
+        from mt5desk import flowcal
+        return flowcal
+    except ImportError:
+        try:
+            sys.path.insert(0, str(BASE))
+            from mt5desk import flowcal  # type: ignore[no-redef]
+            return flowcal
+        except ImportError:
+            return None
+
+
+_TTM_ACTOR = ("Japanese importers and exporters settling invoices at the TTM rate their bank "
+              "strikes at 09:55 Tokyo, and the banks that must cover that book into the print")
+
+
+def _gotobi_events(day: date) -> list[Event]:
+    """The Tokyo 09:55 fix on GOTOBI days only -- the days the invoices concentrate.
+
+    `fixing` already carries a tokyo_0955 row on every business day. This kind is the
+    conditioning the flowcal docstring names as the falsifier: if the fix effect is settlement
+    driven it must be LARGER on the 5th/10th/month-end (brought forward to the prior Tokyo
+    business day when it falls on a holiday), and a gotobi cell that is no better than the
+    every-day cell kills the story.
+    """
+    cal = _jp_calendar()
+    if cal is None or not cal.effective_gotobi(day):
+        return []
+    return [_event(
+        day, "gotobi_fix", f"gotobi_0955_{day.isoformat()}",
+        _around(day, 9, 55, "Asia/Tokyo", 30, 30),
+        _keep(_fx_with("JPY") + _venue("nikkei")), _TTM_ACTOR,
+        "Corporate payment terms settle on dates ending in 5 or 0 and at month end, so the "
+        "dollar demand covered at the 09:55 TTM is systematically larger on those days. The "
+        "importer must buy at the fix whatever the level; the bank that guaranteed the rate "
+        "pre-hedges into it.",
+        "effective gotobi (day % 5 == 0 or last business day, brought forward to the prior "
+        "Tokyo business day), 09:55 Asia/Tokyo, window -30/+30 min (= 00:25-01:25 UTC)")]
+
+
+def _jp_fiscal_events(year: int, month: int) -> list[Event]:
+    """The last ten Tokyo business days of March and September, through the Tokyo session.
+
+    Japanese corporates and lifers close their fiscal year on 31 March and the half on 30
+    September. Foreign earnings are repatriated and FX hedges rolled into those dates so the
+    book is reported at a known yen value -- a mandated window, not a view.
+    """
+    if month not in (3, 9):
+        return []
+    cal = _jp_calendar()
+    if cal is None:
+        return []
+    days: list[date] = []
+    probe = date(year, month, 30 if month == 9 else 31)
+    while len(days) < 10:
+        if cal.japan_business_day(probe):
+            days.append(probe)
+        probe -= timedelta(days=1)
+    rows: list[Event] = []
+    label = "fiscal_year_end" if month == 3 else "fiscal_half_end"
+    for day in sorted(days):
+        rows.append(_event(
+            day, "jp_fiscal_flow", f"jp_{label}_{day.isoformat()}",
+            _span(day, (9, 0), day, (15, 0), "Asia/Tokyo"),
+            _keep(_fx_with("JPY") + _venue("nikkei")),
+            "Japanese exporters, life insurers and corporates repatriating foreign earnings "
+            "and rolling FX hedges before the book is struck at the fiscal period end",
+            "The reporting date is statutory, so the yen value of foreign assets has to be "
+            "locked in before it. Repatriation is a yen BUY that does not care about the level; "
+            "it concentrates in the final two weeks of March and, smaller, of September.",
+            f"last ten Tokyo business days of {'March' if month == 3 else 'September'} "
+            "(Japanese fiscal year end 31 Mar, half 30 Sep), 09:00-15:00 Asia/Tokyo"))
+    return rows
+
+
+def _fx_option_expiry_events(year: int, month: int) -> list[Event]:
+    """CME FX monthly options: the second Friday before the third Wednesday, 10:00 New York.
+
+    The 10:00 New York cut is where the large FX expiries are struck, and the CME monthly is the
+    one whose date a rule gives. Quarterly (IMM) months carry the bigger open interest and are
+    named so a cell can tell them apart.
+    """
+    third_wed = nth_weekday(year, month, WEDNESDAY, 3)
+    day = third_wed - timedelta(days=(third_wed.weekday() - FRIDAY) % 7 + 7)
+    while not is_business_day(day):
+        day -= timedelta(days=1)
+    quarterly = month in (3, 6, 9, 12)
+    return [_event(
+        day, "fx_option_expiry",
+        f"{'imm' if quarterly else 'monthly'}_fx_expiry_{year:04d}{month:02d}",
+        _around(day, 10, 0, "America/New_York", 90, 30),
+        _keep(_fx_majors() + _fx_with("USD") + _gold()),
+        "FX option dealers short gamma into the New York cut, hedging the delta their book "
+        "acquires as spot moves through the large strikes",
+        "A dealer's delta hedge is mechanical and grows as expiry nears and spot sits near a "
+        "large strike, which pins spot into the cut and releases it after. The cut time and "
+        "the expiry date are contractual.",
+        "CME FX monthly option expiry: the second Friday before the third Wednesday of the "
+        "month (rolled back over a US holiday), 10:00 America/New_York cut, window -90/+30 min")]
+
+
+#: (tenor, weekday, which week) for the monthly US coupon auctions. 3y/10y/30y sit in the week
+#: after the refunding-style mid-month slot (Tue/Wed/Thu of the second full week); 2y/5y/7y sit
+#: in the last full week (Tue/Wed/Thu after the fourth Monday). A PATTERN, labelled VERIFY.
+_COUPON_AUCTIONS = (("3y", TUESDAY, "mid"), ("10y", WEDNESDAY, "mid"), ("30y", THURSDAY, "mid"),
+                    ("2y", TUESDAY, "late"), ("5y", WEDNESDAY, "late"), ("7y", THURSDAY, "late"))
+
+_DEALER_ACTOR = ("primary dealers, who are obliged to bid in every auction and then have to "
+                 "distribute or carry whatever they are left with")
+_DEALER_MECH = ("A dealer's bid is a contractual obligation of its primary dealership, not a "
+                "view, and the size is announced days ahead. The concession into the auction "
+                "and the unwind after it are the price of a position nobody chose to hold.")
+
+
+def _coupon_auction_events(year: int, month: int) -> list[Event]:
+    rows: list[Event] = []
+    second_mon = nth_weekday(year, month, MONDAY, 2)
+    fourth_mon = nth_weekday(year, month, MONDAY, 4)
+    for tenor, weekday, slot in _COUPON_AUCTIONS:
+        anchor = second_mon if slot == "mid" else fourth_mon
+        day = anchor + timedelta(days=weekday - MONDAY)
+        while not is_business_day(day):
+            day += timedelta(days=1)
+        rows.append(_event(
+            day, "ust_coupon_auction", f"ust_{tenor}_auction_{year:04d}{month:02d}",
+            _around(day, 13, 0, "America/New_York", 60, 60),
+            _keep(_venue("rates", "sp") + _gold() + _fx_majors()), _DEALER_ACTOR, _DEALER_MECH,
+            f"US Treasury {tenor} coupon auction, 13:00 America/New_York, window -60/+60 min: "
+            f"{VERIFY_SCHEDULE}. Encoded as the {('Tue', 'Wed', 'Thu')[weekday - 1]} of the "
+            f"week of the {'second' if slot == 'mid' else 'fourth'} Monday"))
+    return rows
+
+
+def _refunding_events(year: int, month: int) -> list[Event]:
+    """The quarterly refunding announcement: Wednesday of the first full week, 08:30 New York."""
+    if month not in (2, 5, 8, 11):
+        return []
+    day = nth_weekday(year, month, WEDNESDAY, 1)
+    if day.day < 3:                       # a Wednesday on the 1st or 2nd is not a full week
+        day += timedelta(days=7)
+    return [_event(
+        day, "ust_refunding", f"ust_refunding_{year:04d}{month:02d}",
+        _around(day, 8, 30, "America/New_York", 30, 120),
+        _keep(_venue("rates", "sp") + _gold() + _fx_majors()),
+        "rates desks and duration-mandated funds that must re-hedge to the coupon supply the "
+        "Treasury announces for the next quarter",
+        "The refunding statement fixes the coupon supply a duration-benchmarked fund has to "
+        "absorb; the hedge is resized on the print, at a minute announced in advance.",
+        f"US Treasury quarterly refunding announcement, Wednesday of the first full week of "
+        f"Feb/May/Aug/Nov, 08:30 America/New_York, window -30/+120 min: {VERIFY_SCHEDULE}")]
+
+
+def _cn_holidays(year: int) -> dict[date, str]:
+    """Mainland exchange holidays from the China country pack -- the one copy of that table.
+
+    A year the pack has no table for contributes nothing and is reported as unmeasured, never
+    as a year without holidays (L1.28a).
+    """
+    try:
+        from research.countries.cn.pack import _CN_HOLIDAYS
+    except ImportError:
+        try:
+            sys.path.insert(0, str(BASE))
+            from research.countries.cn.pack import _CN_HOLIDAYS  # type: ignore[no-redef]
+        except ImportError:
+            return {}
+    table = _CN_HOLIDAYS.get(year) or {}
+    return {date.fromisoformat(k): v for k, v in table.items()}
+
+
+def _cn_instruments() -> tuple[str, ...]:
+    return _keep(("USDCNH", "HK50", "CHINAH", "XCUUSD", "AUDUSD", "NZDUSD", "AUDJPY",
+                  "USDHKD", "AUS200") + _gold())
+
+
+def _cn_holiday_events(year: int) -> list[Event]:
+    """Each mainland closure day, plus the two business days before each closure run.
+
+    The closure removes onshore CNY flow and mainland demand for copper and gold for days at a
+    time; the two days before it are when mainland importers and treasuries pre-fund and
+    square books. Both are dated by the published State Council holiday notice.
+    """
+    table = _cn_holidays(year)
+    if not table:
+        return []
+    instruments = _cn_instruments()
+    rows: list[Event] = []
+    days = sorted(table)
+    for day in days:
+        rows.append(_event(
+            day, "cn_holiday", f"cn_holiday_{day.isoformat()}",
+            (datetime.combine(day, time(0, 0), tzinfo=UTC),
+             datetime.combine(day, time(23, 59, 59), tzinfo=UTC)),
+            instruments,
+            "offshore CNH and Hong Kong market makers left without the onshore market and its "
+            "importers on the other side",
+            "Onshore CNY and the Shanghai metals market are shut, so the flow that normally "
+            "clears there is absent: depth thins, and the commodities and proxies priced off "
+            "mainland demand trade without their largest buyer.",
+            f"{table[day]}: State Council holiday notice (country pack cn table)"))
+    starts = [d for d in days if (d - timedelta(days=1)) not in table]
+    for start in starts:
+        pre, probe = [], start - timedelta(days=1)
+        while len(pre) < 2:
+            if probe.weekday() < 5 and probe not in table:
+                pre.append(probe)
+            probe -= timedelta(days=1)
+        for day in sorted(pre):
+            rows.append(_event(
+                day, "cn_pre_holiday", f"cn_pre_holiday_{day.isoformat()}_{start.isoformat()}",
+                _span(day, (9, 0), day, (17, 0), "Asia/Shanghai"), instruments,
+                "mainland importers, corporate treasuries and banks squaring FX and funding "
+                "before a multi-day closure",
+                "A book cannot be adjusted while the market is shut, so positions that must be "
+                "flat or funded across the closure are moved in the two sessions before it -- "
+                "a dated, price-insensitive flow.",
+                f"two business days before the closure starting {start.isoformat()} "
+                f"({table[start]}), 09:00-17:00 Asia/Shanghai"))
+    return rows
+
+
 # =============================================================================================
 # The public surface
 # =============================================================================================
@@ -910,11 +1145,17 @@ def _events(start: date, end: date) -> list[Event]:
             out.extend(_option_expiry_events(year, month))
             out.extend(_bond_auction_events(year, month))
             out.extend(_usda_events(year, month))
+            out.extend(_jp_fiscal_events(year, month))
+            out.extend(_fx_option_expiry_events(year, month))
+            out.extend(_coupon_auction_events(year, month))
+            out.extend(_refunding_events(year, month))
         out.extend(_central_bank_events(year))
         out.extend(_holiday_events(year))
+        out.extend(_cn_holiday_events(year))
     day = start
     while day <= end:
         out.extend(_fixing_events(day))
+        out.extend(_gotobi_events(day))
         out.extend(_inventory_events(day))
         day += timedelta(days=1)
     inside = [e for e in out if start <= e.date <= end]
@@ -970,6 +1211,8 @@ def build(days_ahead: int = 120, days_back: int = 400,
         "by_kind": by_kind(rows),
         "unmeasured": {
             "central_bank_years": unmeasured_years(start, end),
+            "cn_holiday_years": [y for y in range(start.year, end.year + 1)
+                                 if not _cn_holidays(y)],
             "note": ("a bank with no published table for a year contributes NO rows for it. "
                      "That is an absence of measurement, not a year without meetings"),
         },
