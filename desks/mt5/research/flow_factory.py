@@ -209,9 +209,24 @@ SOURCES: dict[str, dict[str, Any]] = {
         "api_quote": ("An API Credential is required to make API requests on the FINRA API "
                       "platform. [...] Synchronous requests: 1200 requests per minute per IP "
                       "address."),
+        "cdn_files_checked": {
+            "checked_at": "2026-10-13",
+            "files_page": ("https://www.finra.org/finra-data/browse-catalog/short-sale-volume-"
+                           "data/daily-short-sale-volume-files"),
+            "file_pattern": "https://cdn.finra.org/equity/regsho/daily/<PREFIX>shvol<YYYYMMDD>.txt",
+            "finding": ("no terms page specific to the daily files: the files page carries no "
+                        "terms or download clause, and the FINRA Data page says only \"FINRA "
+                        "Data provides non-commercial use of data\". The site terms define their "
+                        "scope as \"the FINRA.ORG site, including all of its content\" and bar "
+                        "\"any data mining, scraping or harvesting tools (including robots)\" and "
+                        "\"develop or create a database of data using the FINRA Website, except "
+                        "as expressly permitted by any other terms\". No page permits automated "
+                        "download, so no keyless collector is built and the robots clause is not "
+                        "routed around")},
         "why_held": ("the website terms prohibit robots and building a database from the site, "
-                     "so the site is not a route; the official FINRA API is, and it needs an "
-                     "OAuth API credential the desk does not hold (NEEDS_KEY)")},
+                     "and no page permits automated download of the daily CDN files, so neither "
+                     "is a route; the official FINRA API is, and it needs an OAuth API "
+                     "credential the desk does not hold and cannot obtain (NEEDS_KEY, final)")},
     "sec_fails_to_deliver": {
         "publisher": "U.S. Securities and Exchange Commission", "verdict": PERMITTED,
         "access": "PUBLIC_PAGE",
