@@ -40,6 +40,7 @@ def _rows(n: int, fam: str = "alpha") -> list[dict]:
 def bank(tmp_path, monkeypatch):
     path = tmp_path / "unrunnable_specs.json"
     monkeypatch.setattr(jc, "UNRUNNABLE_BANK", path)
+    monkeypatch.setattr(jc, "CONVERSION_HANDOFF", tmp_path / "conversion_handoff.json")
     return path
 
 
@@ -58,6 +59,10 @@ def test_not_testable_cells_leave_the_backlog_and_are_counted(bank, tmp_path) ->
     assert t["unjudged_total"] == 3                     # the defect stays owed, as do 2 fresh cells
     assert t["not_testable_total"] == 2
     assert t["not_testable_by_reason"] == {"never_fires": 1, "too_rare": 1}
+    # NO CELL ENDS UNTESTABLE: all three parked cells are handed to the converter, by class.
+    f = t["judging_failures"]
+    assert f["parked"] == {"no_series": 1, "untestable_as_specified": 2}
+    assert f["handed_to_converter"] == 3
     assert doc["families"]["alpha"]["not_testable"] == 2
 
 
