@@ -91,3 +91,33 @@ def test_the_ledger_takes_the_measured_verdicts(tmp_path: Path) -> None:
     row = json.loads(ledger.read_text("utf-8"))["acceptance_properties"][0]
     assert row["status"] == "PARTIAL"
     assert "MEASURED" in row["evidence"][0] and "0.75" in row["evidence"][0]
+
+
+def _acceptance(desk: Path, at: datetime, **doc) -> None:
+    (desk / "reports" / "GLOBAL_RESEARCH_ACCEPTANCE.json").write_text(json.dumps({
+        "at": at.isoformat(), "release": "a" * 40, **doc}), "utf-8")
+
+
+def test_complete_against_is_read_into_the_hourly_acceptance_report(tmp_path: Path) -> None:
+    desk = _desk(tmp_path)
+    _acceptance(desk, NOW - timedelta(hours=1),
+                by_specification={"A_V1": {"CURRENT_VERIFIED": 3, "PARTIAL": 0},
+                                  "B_V1": {"CURRENT_VERIFIED": 1, "PARTIAL": 2}},
+                complete_against=["A_V1", "B_V1"], open_blockers=4,
+                ownerless_blockers=["MI01:x"])
+    spec = cap.measure(desk, ROOT, NOW)["specifications"]
+    assert spec["measured"] is True
+    assert spec["complete_against"] == ["A_V1"], "a version with PARTIAL rows is never complete"
+    assert spec["rejected_claims"] == ["B_V1"] and spec["partial_against"] == ["B_V1"]
+    assert spec["open_blockers"] == 4 and spec["ownerless_blockers"] == ["MI01:x"]
+
+
+def test_absent_or_stale_acceptance_completes_against_nothing(tmp_path: Path) -> None:
+    desk = _desk(tmp_path)
+    spec = cap.specification_completion(desk, NOW)
+    assert spec["measured"] is False and spec["complete_against"] == []
+    _acceptance(desk, NOW - timedelta(hours=27),
+                by_specification={"A_V1": {"CURRENT_VERIFIED": 3, "PARTIAL": 0}},
+                complete_against=["A_V1"])
+    spec = cap.specification_completion(desk, NOW)
+    assert spec["measured"] is False and spec["complete_against"] == []
