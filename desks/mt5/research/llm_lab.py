@@ -889,12 +889,24 @@ def hunt_models(registry: dict[str, Any], *, budget_s: float = 30.0) -> list[str
         models, err = free_chain.list_models(p, timeout=6.0)
         if err:
             continue
-        for m in models[:40]:
+        # EVERY free model, not the first forty (principal 2026-10-13: "all openrouter models
+        # must be running"). Embedders, guards and speech models cannot answer a lab and are
+        # skipped by the chain's own capability filter.
+        listed = {f"{p.name}:{m}" for m in models}
+        for key, row in registry.items():
+            if row.get("provider") == p.name and key not in listed and \
+                    row.get("status") == "REGISTERED" and p.tier != "local":
+                row["status"] = "DELISTED"          # gone from the provider's free catalogue
+                row["delisted_at"] = _now()
+        for m in free_chain._cheapest_capable(models):
             key = f"{p.name}:{m}"
             row = registry.setdefault(key, {"provider": p.name, "model": m, "tier": p.tier,
                                             "first_seen": _now(), "status": "DISCOVERED",
                                             "asked": 0, "replies": 0, "accepted": 0, "exact": 0,
                                             "novel": 0})
+            if row["status"] == "DELISTED":
+                row["status"] = "REGISTERED"        # back in the free catalogue
+                row["relisted_at"] = _now()
             if row["status"] == "DISCOVERED":
                 if p.tier == "local":
                     lic = _local_license(p.url(), m)
@@ -1437,7 +1449,9 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         os.environ["QUANT_FREE_TIER"] = "1"
     max_calls = int(max_calls if max_calls is not None else
                     os.environ.get("QUANT_LLM_LAB_MAX_CALLS", "24"))
-    daily_cap = int(os.environ.get("QUANT_LLM_LAB_DAILY_CALLS", "600"))
+    # The provider's own quota (a 429 cools the rung) is the binding daily limit; this cap only
+    # stops a runaway loop, so it sits far above an hourly pass that covers every model.
+    daily_cap = int(os.environ.get("QUANT_LLM_LAB_DAILY_CALLS", "3000"))
     rng = random.Random(seed if seed is not None else int(started))  # noqa: S311 - not crypto
     reg = family_registry()
     uni = universe()
@@ -1467,6 +1481,11 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     hunted: list[str] = []
     if seat_on and not dry_run:
         hunted = hunt_models(models, budget_s=min(30.0, budget_s / 10))
+    # EVERY MODEL, EVERY CYCLE: the pass is sized to give each registered model one call on top of
+    # the labs' own, inside the daily cap. A model the cap still leaves out is named in the
+    # coverage report, never silently skipped.
+    n_registered = sum(1 for r in models.values() if r.get("status") == "REGISTERED")
+    calls_budget = min(max(max_calls, n_registered + len(INVENTORS) + 6), _calls_left(daily_cap))
 
     def _go(ask: Ask) -> tuple[Ask, list[Any]]:
         left = budget_s - (time.time() - started)
@@ -1536,6 +1555,24 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
             plan.append({"lab": lab.key, "coordinate": coord, "why": why, "state": "QUEUED",
                          "reason": "per-pass call cap: NOT THIS PASS, owed"})
 
+    # MODEL COVERAGE: every registered model the labs' draws left out gets its own ask, labs in
+    # rotation, so each free model produces on every cycle and earns (or fails to earn) credit.
+    uncovered = sorted(k for k, r in models.items()
+                       if r.get("status") == "REGISTERED" and k not in used_models)
+    for i, mkey in enumerate(uncovered):
+        lab = order[i % len(order)]
+        if len(asks) >= calls_budget - calls_made:
+            plan.append({"lab": lab.key, "model": mkey, "state": "QUEUED",
+                         "reason": "daily call cap: model coverage owed this cycle"})
+            continue
+        coord, why = choose_coordinate(lab, ontology, cov, rng)
+        recent = own_recent.get((lab.key, coord["mechanism_class"]), [])[-5:]
+        asks.append(build_ask(lab, coord, why, mkey, reg, uni, rng, recent, extra))
+        used_models.add(mkey)
+        plan.append({"lab": lab.key, "coordinate": coord, "why": "model_coverage",
+                     "model": mkey})
+
+    pass_cov: dict[str, dict[str, Any]] = {}
     if seat_on and not dry_run and asks:
         with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
             results = list(pool.map(_go, asks))
@@ -1549,6 +1586,14 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
             answered = [p for p in props if getattr(p, "payload", None) is not None]
             model_key = next((str(p.provenance.model) for p in props
                               if getattr(p.provenance, "model", "")), "")
+            if ask.model:
+                pc = pass_cov.setdefault(ask.model, {"asked": 0, "answered": 0,
+                                                     "fell_through_to": []})
+                pc["asked"] += 1
+                if model_key == ask.model and answered:
+                    pc["answered"] += 1
+                elif model_key and model_key not in pc["fell_through_to"]:
+                    pc["fell_through_to"].append(model_key)
             if model_key:
                 observe_model(models, model_key)
             for key in {ask.model, model_key} - {""}:
@@ -1660,6 +1705,12 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         credit = roles.verdict_loop(VERDICTS, DONATE_DIR, pairs[:calls_made] if calls_made else [],
                                     STATE_DIR / "verdict_credit.json")
         roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
+    coverage = roles.coverage_report(models, pass_cov, {k: t.row() for k, t in tallies.items()},
+                                     role_report, cb_tone, credit, chain_status,
+                                     seat_on=seat_on, dry_run=dry_run)
+    if not dry_run:
+        _write_json(STATE_DIR / "model_yield.json", coverage["models"])
+        _write_json(REPORT.parent / "LLM_COVERAGE.json", coverage)
     states = coverage_from_outcomes(cov)
     if not dry_run:
         _write_json(COVERAGE, cov.doc)
@@ -1691,6 +1742,8 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "conversion_debt": debt,
         "cb_tone": cb_tone,
         "roles": role_report,
+        "coverage": {k: coverage.get(k) for k in ("verdict", "red", "models_available",
+                                                  "models_answered")},
         "verdict_loop": {k: credit.get(k) for k in ("keff_basis", "judged_cells",
                                                     "certified_cells", "ranking_rule")},
         "data_requests_this_pass": len(outputs["data_requests"]),

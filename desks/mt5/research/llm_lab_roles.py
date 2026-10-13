@@ -846,3 +846,79 @@ def run(*, lab: Any, reg: Any, uni: dict[str, str], mem: Any, tallies: dict[str,
             rep["T"] = {"live": 0, "why": "no LIVE sleeve in data/sleeves.json on this host"}
         _mark_today("T")
     return rep, calls
+
+
+# ============================================================================ coverage fence
+#: Roles that run once a UTC day; the fence reads them on their own cadence.
+DAILY_ROLES = ("Q", "T")
+
+
+def coverage_report(models: dict[str, Any], pass_cov: dict[str, dict[str, Any]],
+                    tallies: dict[str, dict[str, Any]], role_report: dict[str, Any],
+                    cb_tone: dict[str, Any], credit: dict[str, Any], chain: dict[str, Any], *,
+                    seat_on: bool, dry_run: bool) -> dict[str, Any]:
+    """EVERY MODEL, EVERY LAB, EVERY ROLE PRODUCES EVERY CYCLE (principal 2026-10-13). RED names
+    each one that did not, and why: never asked (cap), asked and silent, or the chain fell
+    through to another model (rate limit or outage on that one)."""
+    red: list[str] = []
+    yields = (credit or {}).get("models") or {}
+    rows: dict[str, Any] = {}
+    available = sorted(k for k, r in models.items() if r.get("status") == "REGISTERED")
+    for k in available:
+        r = models[k]
+        pc = pass_cov.get(k) or {}
+        y = yields.get(k) or {}
+        state = ("ANSWERED" if pc.get("answered") else
+                 "FELL_THROUGH" if pc.get("fell_through_to") else
+                 "SILENT" if pc.get("asked") else "NOT_ASKED")
+        rows[k] = {"state_this_cycle": state, "asked_total": int(r.get("asked", 0)),
+                   "replies_total": int(r.get("replies", 0)),
+                   "accepted_total": int(r.get("accepted", 0)),
+                   "exact_cells_total": int(r.get("exact", 0)),
+                   "novel_cells_total": int(r.get("novel", 0)),
+                   "certified": int(y.get("certified", 0)), "certified_keff": y.get("keff", 0.0),
+                   "keff_per_call": y.get("keff_per_call", 0.0),
+                   "fell_through_to": pc.get("fell_through_to") or []}
+        if state != "ANSWERED":
+            red.append(f"model {k}: {state}")
+    for k, r in models.items():
+        if r.get("status") in ("DELISTED", "REVIEW_PENDING") and k not in rows:
+            rows[k] = {"state_this_cycle": r["status"]}
+    labs = {}
+    for key, t in tallies.items():
+        state = ("PRODUCED" if int(t.get("proposals", 0)) else
+                 "SILENT" if int(t.get("asked", 0)) else "NOT_ASKED")
+        labs[key] = state
+        if state != "PRODUCED" and key not in ("SYNTHESIS", "CONVERTER", *DAILY_ROLES):
+            red.append(f"lab {key}: {state}")
+    roles: dict[str, str] = {}
+    daily = _read_json(DAILY, {}) or {}
+    yesterday = (datetime.now(UTC) - timedelta(days=1)).strftime("%Y-%m-%d")
+    for key in DAILY_ROLES:
+        ran = str(daily.get(key) or "")
+        roles[key] = "RAN_TODAY" if ran == _now()[:10] else (
+            "RAN_YESTERDAY" if ran == yesterday else "NOT_RUN")
+        if roles[key] == "NOT_RUN":
+            red.append(f"role {key}: has not run in its daily window")
+    for key in ("R", "S"):
+        rr = (role_report or {}).get(key)
+        roles[key] = "RAN" if isinstance(rr, dict) else "NOT_RUN"
+        if roles[key] == "NOT_RUN":
+            red.append(f"role {key}: not run this cycle")
+    cb_state = str((cb_tone or {}).get("state") or ("RAN" if (cb_tone or {}).get("docs") is not
+                                                     None else "NOT_RUN"))
+    roles["CB_TONE"] = "RAN" if (cb_tone or {}).get("docs") is not None else cb_state
+    if roles["CB_TONE"] != "RAN":
+        red.append(f"role CB_TONE: {roles['CB_TONE']}")
+    if not available:
+        red.append("no free model registered: OpenRouter catalogue unreadable or key absent")
+    verdict = ("UNMEASURED" if dry_run or not seat_on else "GREEN" if not red else "RED")
+    return {"generated_at": _now(), "verdict": verdict,
+            "rule": "every available free model, every lab and every LLM role produces on every "
+                    "cycle; RED names each one that did not",
+            "red": red[:200], "models_available": len(available),
+            "models_answered": sum(1 for k in available if rows[k]["state_this_cycle"] ==
+                                   "ANSWERED"),
+            "models": rows, "labs": labs, "roles": roles,
+            "chain": {k: (chain or {}).get(k) for k in ("verdict", "cloud_usable",
+                                                         "skipped_no_key")}}

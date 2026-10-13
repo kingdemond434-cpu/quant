@@ -412,3 +412,28 @@ def test_conversion_and_the_high_yield_labs_go_first(state: Path, reg: dict[str,
     monkeypatch.setattr(lab, "coverage_from_outcomes", lambda cov: {})
     lab.run(budget_s=600, max_calls=40, seed=2, workers=1)
     assert order[0] == "CONVERTER" and order[1:5] == ["K", "L", "J", "F"]
+
+
+def test_every_registered_model_gets_a_call_every_pass(state: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    keys = [f"openrouter_free:m{i}:free" for i in range(20)]
+    lab._write_json(lab.MODELS, {k: {"provider": "openrouter_free", "model": k.split(":", 1)[1],
+                                     "status": "REGISTERED", "asked": 0, "replies": 0}
+                                 for k in keys})
+    hinted: list[str] = []
+
+    def fake_call(ask: lab.Ask, n: int, timeout: float) -> list[_Prop]:
+        hinted.append(ask.model)
+        return [_Prop({"mechanism": "a stub mechanism long enough", "falsifier": "x",
+                       "symbols": ["EURUSD"], "family": "NONE"},
+                      provenance=_Prov(model=ask.model))]
+
+    monkeypatch.setattr(lab, "_seat", lambda: _Seat())
+    monkeypatch.setattr(lab, "_call", fake_call)
+    monkeypatch.setattr(lab, "hunt_models", lambda registry, budget_s=30.0: [])
+    doc = lab.run(budget_s=600, max_calls=8, seed=1, workers=2)
+    assert set(keys) <= set(hinted), "the per-pass cap grows to cover every registered model"
+    cov = json.loads((state / "reports" / "LLM_COVERAGE.json").read_text())
+    assert cov["models_available"] == 20 and cov["models_answered"] == 20
+    assert all(cov["models"][k]["state_this_cycle"] == "ANSWERED" for k in keys)
+    assert doc["coverage"]["models_answered"] == 20

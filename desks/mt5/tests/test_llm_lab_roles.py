@@ -232,3 +232,51 @@ def test_sleeve_red_team_is_advisory_and_typed() -> None:
     assert calls == 1 and doc["advisory"] is True and "NONE" in doc["authority"]
     assert doc["attacked"] == ["gold_asia"] and doc["unattacked"] == ["audchf_gap"]
     assert doc["modes"] == {"crowding": 1}
+
+
+def _cov(models: dict, pass_cov: dict, tallies: dict | None = None) -> dict:
+    tallies = tallies if tallies is not None else {"A": {"asked": 1, "proposals": 2}}
+    roles._write_json(roles.DAILY, {"Q": lab._now()[:10], "T": lab._now()[:10]})
+    return roles.coverage_report(models, pass_cov, tallies, {"R": {}, "S": {}}, {"docs": 3},
+                                 {}, {}, seat_on=True, dry_run=False)
+
+
+def test_coverage_is_red_for_every_model_or_lab_that_did_not_produce(tmp_roles: Path) -> None:
+    models = {"openrouter_free:a": {"status": "REGISTERED"},
+              "openrouter_free:b": {"status": "REGISTERED"},
+              "openrouter_free:c": {"status": "REGISTERED"},
+              "openrouter_free:gone": {"status": "DELISTED"}}
+    doc = _cov(models, {"openrouter_free:a": {"asked": 1, "answered": 1},
+                        "openrouter_free:b": {"asked": 1, "answered": 0,
+                                              "fell_through_to": ["groq:x"]}},
+               {"A": {"asked": 1, "proposals": 2}, "B": {"asked": 1, "proposals": 0}})
+    assert doc["verdict"] == "RED" and doc["models_available"] == 3
+    assert doc["models_answered"] == 1
+    assert set(doc["red"]) == {"model openrouter_free:b: FELL_THROUGH",
+                               "model openrouter_free:c: NOT_ASKED", "lab B: SILENT"}
+    assert doc["models"]["openrouter_free:gone"]["state_this_cycle"] == "DELISTED"
+    green = _cov({"openrouter_free:a": {"status": "REGISTERED"}},
+                 {"openrouter_free:a": {"asked": 1, "answered": 1}})
+    assert green["verdict"] == "GREEN" and not green["red"]
+
+
+def test_the_fence_fails_on_red_stale_or_absent_reports(tmp_path: Path) -> None:
+    import llm_coverage_fence as fence
+    p = tmp_path / "LLM_COVERAGE.json"
+    assert fence.verdict(p)[0] == 1
+    now = lab._now()
+    p.write_text(json.dumps({"generated_at": now, "verdict": "GREEN", "models_available": 2,
+                             "models_answered": 2, "red": []}))
+    assert fence.verdict(p) == (0, "GREEN: 2/2 models answered; 0 gap(s)")
+    p.write_text(json.dumps({"generated_at": now, "verdict": "RED", "red": ["lab B: SILENT"]}))
+    code, text = fence.verdict(p)
+    assert code == 1 and "lab B: SILENT" in text
+    p.write_text(json.dumps({"generated_at": "2026-01-01T00:00:00+00:00", "verdict": "GREEN"}))
+    assert "stale" in fence.verdict(p)[1]
+
+
+def test_the_coverage_leg_is_wired() -> None:
+    src = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
+    assert '"llm_coverage", "research/llm_coverage_fence.py"' in src
+    from libs.research import layers
+    assert "llm_coverage" in str(layers.__dict__)

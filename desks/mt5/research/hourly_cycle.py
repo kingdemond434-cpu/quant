@@ -1103,7 +1103,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # search, and the docket the sealed gauntlet orders its sweep by.
                      "research_tree", "residual_map", "frontier_ceo",
                      "federation_ops", "sandbox_runner", "sandbox_provision",
-                     "sandbox_roster", "proposer_seat", "llm_lab", "kimi_hunt",
+                     "sandbox_roster", "proposer_seat", "llm_lab", "llm_coverage", "kimi_hunt",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure"),
@@ -1825,6 +1825,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The research lab stops STARTING calls with under a minute of its --budget-s 600 left and
     # bounds every call by the time remaining; the cap sits above its own budget.
     "llm_lab": 720,
+    "llm_coverage": 30,
     # The six committees stop themselves at --budget-s 300 (traps and writes included).
     "committee_ensembles": 420,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
@@ -5422,6 +5423,9 @@ def main() -> None:
     # only (free cloud -> local model); dark seat -> UNMEASURED with every coordinate owed.
     llm = _costed("llm_lab", lambda: _producer(
         "llm_lab", "research/llm_lab.py", "--once", "--budget-s", "600"))
+    # THE COVERAGE FENCE: RED when any free model, lab or LLM role produced nothing this cycle.
+    llc = _costed("llm_coverage", lambda: _producer(
+        "llm_coverage", "research/llm_coverage_fence.py"))
     # THE TWO ADVERSARIAL COMMITTEES (2026-09-25 brief, landed 2026-09-30). Seat roles argue
     # competing explanations; the deterministic judge picks the cheapest separating falsifiers
     # and runs them on the gauntlet's own cell. Contracts and kills are defect reports: nothing
@@ -5899,7 +5903,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "proposer_seat": prs, "llm_lab": llm, "committees": cmt,
+                    "proposer_seat": prs, "llm_lab": llm, "llm_coverage": llc, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
