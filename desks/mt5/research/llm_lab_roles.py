@@ -178,20 +178,24 @@ _DAY = re.compile(r"^\d{4}-\d{2}-\d{2}")
 
 
 def record_evidence_start(rows: Iterable[dict[str, Any]], path: Path | None = None) -> int:
-    """cell id -> first date whose data is evidence, for every donated cell whose guard names a
-    date. The sealed gauntlet patch (patches/llm_lookahead_gauntlet) reads this map and drops
-    earlier days from the cell's series before any gate. A later entry never loosens an earlier
-    one: the stored date only ever moves LATER."""
+    """cell id -> {"from": first date whose data is evidence, "sym", "family", "params"}, for every
+    donated cell whose guard names a date. The sealed gauntlet patch
+    (patches/llm_lookahead_gauntlet) reads this map and drops earlier days from the cell's series
+    before any gate; sym/family/params let it match a cell whose params the compiler filled out.
+    A later entry never loosens an earlier one: the stored date only ever moves LATER."""
     p = path or EVIDENCE_START
-    doc: dict[str, str] = _read_json(p, {}) or {}
+    doc: dict[str, Any] = _read_json(p, {}) or {}
     n = 0
     for r in rows:
         cid = str(r.get("cell_id") or "")
         ev = str((r.get("lookahead_guard") or {}).get("evidence_from") or "")
         if not cid or not _DAY.match(ev) or ev[:10] <= "1900-01-01":
             continue
-        if ev[:10] > doc.get(cid, ""):
-            doc[cid] = ev[:10]
+        old = doc.get(cid)
+        was = str(old.get("from") if isinstance(old, dict) else old or "")
+        if ev[:10] > was:
+            doc[cid] = {"from": ev[:10], "sym": str(r.get("symbol") or ""),
+                        "family": str(r.get("family") or ""), "params": r.get("params") or {}}
             n += 1
     if n:
         _write_json(p, doc)

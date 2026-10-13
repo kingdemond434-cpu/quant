@@ -112,13 +112,15 @@ def test_assign_model_and_lab_order_spend_against_the_credit(tmp_roles: Path) ->
 
 
 def test_evidence_start_only_moves_later(tmp_roles: Path) -> None:
-    rows = [{"cell_id": "c1", "lookahead_guard": {"evidence_from": "2026-10-13"}},
+    rows = [{"cell_id": "c1", "symbol": "EURUSD", "family": "formula", "params": {"expr": "x"},
+             "lookahead_guard": {"evidence_from": "2026-10-13"}},
             {"cell_id": "c2", "lookahead_guard": {"evidence_from": "per-document"}},
             {"cell_id": "c3", "lookahead_guard": {"evidence_from": "1900-01-01"}}]
     assert roles.record_evidence_start(rows) == 1
     roles.record_evidence_start([{"cell_id": "c1",
                                   "lookahead_guard": {"evidence_from": "2025-01-01"}}])
-    assert json.loads(roles.EVIDENCE_START.read_text()) == {"c1": "2026-10-13"}
+    assert json.loads(roles.EVIDENCE_START.read_text()) == {"c1": {
+        "from": "2026-10-13", "sym": "EURUSD", "family": "formula", "params": {"expr": "x"}}}
 
 
 def test_missed_moves_skip_symbols_a_live_sleeve_trades(tmp_roles: Path) -> None:
