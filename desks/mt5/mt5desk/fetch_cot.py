@@ -50,7 +50,6 @@ from mt5desk.config import DATA, REPORTS  # noqa: E402
 OUT = DATA / "cot"
 OUT.mkdir(parents=True, exist_ok=True)
 REPORT = REPORTS / "COT_REFRESH.json"
-REFRESH_STATE = OUT / "refresh_state.json"
 #: A Tuesday report is public on Friday ~19:30 UTC; four days on (Saturday 00:00 UTC) is the
 #: desk's standing "available from" stamp (`owned_data._COT_PUBLICATION_LAG_DAYS = 4`).
 PUBLICATION_LAG = timedelta(days=4)
@@ -253,16 +252,18 @@ def _read_json(p: Path) -> dict[str, Any]:
 def refresh(*, if_due: bool, now: datetime | None = None) -> dict[str, Any]:
     """The hourly leg: fetch when due, then always publish the positioning state."""
     now = now or datetime.now(tz=UTC)
-    state = _read_json(REFRESH_STATE)
+    # The backoff stamp lives in this host's own (gitignored) report, never in data/cot: the
+    # contract files are shared state, a per-host attempt time is not.
+    state = {"last_attempt": _read_json(REPORT).get("last_attempt")}
     go, why = due(now, OUT, state) if if_due else (True, "forced (no --if-due)")
     fetched: dict[str, Any] = {}
     if go:
         fetched = main()
         state["last_attempt"] = now.isoformat(timespec="seconds")
-        REFRESH_STATE.write_text(json.dumps(state, indent=1), "utf-8")
     pos = positioning_state(now)
     report = {"generated_utc": now.isoformat(timespec="seconds"), "writer": "mt5desk/fetch_cot.py",
               "due": go, "why": why, "fetched": fetched,
+              "last_attempt": state.get("last_attempt"),
               "last_report": {slug: (str(t.date()) if (t := _last_report(slug)) is not None
                                      else "UNMEASURED") for slug, _ in TARGETS},
               "positioning": pos,
@@ -276,13 +277,18 @@ def main() -> dict[str, Any]:
     done: dict[str, Any] = {}
     for slug, candidates in TARGETS:
         df = None
+        err = ""
         for cand in candidates:
-            df = fetch_contract(cand)
+            try:
+                df = fetch_contract(cand)
+            except Exception as exc:     # one unreachable contract never costs the others
+                err = f"{type(exc).__name__}: {str(exc)[:120]}"
+                df = None
             if df is not None:
                 break
         if df is None or df.empty:
-            print(f"{slug:>10}: FAILED (no rows for {candidates})")
-            done[slug] = "FAILED: no rows"
+            print(f"{slug:>10}: FAILED ({err or f'no rows for {candidates}'})")
+            done[slug] = f"FAILED: {err or 'no rows'}"
             continue
         df.to_parquet(OUT / f"{slug}.parquet", index=False)
         done[slug] = {"rows": len(df), "last": str(df["report_date"].max().date())}

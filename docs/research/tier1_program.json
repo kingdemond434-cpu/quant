@@ -9112,9 +9112,9 @@
    "consumer": "desks/mt5/research/state_vector_build.py positioning_block -> StateVector.positioning in desks/mt5/data/state_vector.json, which pf_allocator loads through state_vector_build.load; the same contract files feed edge_search, orthogonal_sweep and external_gauntlet",
    "evidence": [
     "desks/mt5/research/hourly_cycle.py:3745 -- the leg (mt5desk/fetch_cot.py --if-due), before state_vector",
-    "desks/mt5/mt5desk/fetch_cot.py:155 -- due(): the newest file against the newest public Tuesday report; six-hour backoff after a pass that found nothing newer",
-    "desks/mt5/mt5desk/fetch_cot.py:182 -- positioning_state(): net/OI, three-year rank and z, weekly change, crowding, signed per MT5 instrument; a short history is UNMEASURED, never 0.5",
-    "desks/mt5/mt5desk/fetch_cot.py:253 -- refresh(): writes desks/mt5/reports/COT_REFRESH.json every pass",
+    "desks/mt5/mt5desk/fetch_cot.py:154 -- due(): the newest file against the newest public Tuesday report; six-hour backoff after a pass that found nothing newer",
+    "desks/mt5/mt5desk/fetch_cot.py:181 -- positioning_state(): net/OI, three-year rank and z, weekly change, crowding, signed per MT5 instrument; a short history is UNMEASURED, never 0.5",
+    "desks/mt5/mt5desk/fetch_cot.py:252 -- refresh(): writes desks/mt5/reports/COT_REFRESH.json every pass (its six-hour backoff stamp lives there, never in data/cot)",
     "desks/mt5/research/state_vector_build.py:619 -- positioning_block: the state on the vector, its gaps named, freshness on the `cot` information class",
     "libs/regime/state_vector.py:73 -- StateVector.positioning (serialised in to_dict/from_dict)",
     "libs/research/layers.py:269 -- layer: information",
