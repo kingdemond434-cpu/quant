@@ -150,6 +150,7 @@ NON_CODE: frozenset[str] = frozenset({
     # Live tradability and the trade autopsy (2026-10-13): the fix routine reads them from origin.
     "desks/mt5/reports/LIVE_TRADABILITY.json",
     "desks/mt5/reports/TRADE_AUTOPSY.json",
+    "desks/mt5/reports/PROMOTION_LAG.json",
     "desks/mt5/data/loss_fix_queue.jsonl",
     "desks/mt5/data/e8_ledger.jsonl",
     # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).

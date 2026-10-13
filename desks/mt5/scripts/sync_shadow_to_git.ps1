@@ -634,6 +634,7 @@ $relPaths = @(
     # the cloud fix routine reads the verdicts and their fix queue from origin and builds each fix.
     "desks/mt5/reports/LIVE_TRADABILITY.json",
     "desks/mt5/reports/TRADE_AUTOPSY.json",
+    "desks/mt5/reports/PROMOTION_LAG.json",
     "desks/mt5/data/loss_fix_queue.jsonl",
     "desks/mt5/data/e8_ledger.jsonl",
     # THE REST OF THE TIER S PROMOTION DOOR'S EVIDENCE (2026-09-30). `promotion_authority` reads
