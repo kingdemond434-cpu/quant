@@ -115,13 +115,20 @@ BLOCKED_ON_TERMS = frozenset({"MYFXBOOK_EMAIL", "MYFXBOOK_PASSWORD", "MYFXBOOK_S
 #: HARD REFUSALS, with or without a catalog (audit #204, 2026-10-07): the fenced platforms
 #: (libs/data/terms_fence.py) by prefix, and the paid sources by name. A suffix-mode resident
 #: would otherwise hand X_BEARER_TOKEN or a paid vendor's token to every child it starts.
-REFUSED_PREFIXES: tuple[str, ...] = ("X_", "TWITTER_", "REDDIT_", "STOCKTWITS_", "DISCORD_")
+#: X and Reddit are NOT fenced (principal 2026-10-13: "not banned ... dont ban it"): their official
+#: API credentials (bearer token, client id/secret) are carried like any key. What stays refused
+#: on those platforms is login-bypass material -- a session cookie or account password -- because
+#: using it is the refused METHOD, not the source.
+REFUSED_PREFIXES: tuple[str, ...] = ("STOCKTWITS_", "DISCORD_")
+OFFICIAL_API_PREFIXES: tuple[str, ...] = ("X_", "TWITTER_", "REDDIT_")
+LOGIN_MATERIAL = ("COOKIE", "PASSWORD", "SESSION", "USERNAME")
 PAID_BLOCKED = frozenset({"TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "CLOUDFLARE_API_TOKEN",
                           "GFW_API_TOKEN", "XUEQIU_COOKIE", "WIND_KEY"})
 
 
 def _hard_refused(up: str) -> bool:
-    return up in BLOCKED_ON_TERMS or up in PAID_BLOCKED or up.startswith(REFUSED_PREFIXES)
+    return (up in BLOCKED_ON_TERMS or up in PAID_BLOCKED or up.startswith(REFUSED_PREFIXES)
+            or (up.startswith(OFFICIAL_API_PREFIXES) and any(m in up for m in LOGIN_MATERIAL)))
 
 
 def _catalog_names() -> tuple[set[str], set[str]] | None:

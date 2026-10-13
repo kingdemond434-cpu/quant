@@ -43,7 +43,7 @@ ASK_GROUPS = frozenset({"free_data", "free_llm", "free_infra"})
 #: Groups never asked for, whatever a report says: the principal marked them unavailable, or the
 #: policy refuses them, or nothing reads them.
 NEVER_ASK = frozenset({"unavailable", "paid_blocked", "banned", "paid_llm", "legacy",
-                       "not_built", "infra"})
+                       "not_built", "infra", "official_api"})
 
 
 def _read(path: Path) -> Any:

@@ -99,10 +99,21 @@ def test_hard_refusals_hold_even_without_a_catalog(monkeypatch: pytest.MonkeyPat
     """Audit #204 (2026-10-07): suffix mode carried X_BEARER_TOKEN, REDDIT_SECRET and paid
     vendors' tokens to every child."""
     monkeypatch.setattr(es, "CATALOG", tmp_path / "absent.json")
-    for name in ("X_BEARER_TOKEN", "REDDIT_SECRET", "STOCKTWITS_TOKEN", "DISCORD_TOKEN",
+    for name in ("REDDIT_PASSWORD", "X_SESSION_COOKIE", "STOCKTWITS_TOKEN", "DISCORD_TOKEN",
                  "TIANYANCHA_TOKEN", "WIND_KEY", "MYFXBOOK_SESSION"):
         assert not es.is_secret_name(name), name
     assert es.is_secret_name("FRED_API_KEY")
+
+
+def test_x_and_reddit_official_api_keys_pass(monkeypatch: pytest.MonkeyPatch,
+                                             tmp_path: Path) -> None:
+    """Principal 2026-10-13: X and Reddit are not banned; their official API credentials are
+    carried, with or without the catalog. Login material on those platforms is not."""
+    for name in ("X_BEARER_TOKEN", "REDDIT_CLIENT_ID", "REDDIT_SECRET"):
+        assert es.is_secret_name(name), name                # the catalog names all three
+    monkeypatch.setattr(es, "CATALOG", tmp_path / "absent.json")
+    for name in ("X_BEARER_TOKEN", "REDDIT_SECRET"):         # suffix mode: secret-shaped names
+        assert es.is_secret_name(name), name
 
 
 @pytest.mark.parametrize("body", ["{not json", '{"keys": "abc"}', "[]"])
