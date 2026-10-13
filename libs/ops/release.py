@@ -154,6 +154,7 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/loss_fix_queue.jsonl",
     "desks/mt5/data/e8_ledger.jsonl",
     "desks/mt5/data/blocked_entries.jsonl",
+    "desks/mt5/data/refused_orders.jsonl",
     "desks/mt5/reports/E8_EXEC.json",
     # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).
     "desks/mt5/data/tier_s/door_verdicts.json",
