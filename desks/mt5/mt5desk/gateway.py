@@ -3301,6 +3301,37 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         # UNMEASURED IS 1.0, NEVER A SILENT SHRINK: a decomposition that cannot be trusted must
         # not quietly become a reason to trade smaller.
         leg_mult, leg_why = 1.0, f"leg balance UNMEASURED ({type(exc).__name__}: {exc})"
+    # The nominal fraction was capped before currency-leg and macro modifiers. Enforce that
+    # same existing per-order envelope on the final venue volume: boosts and nearest-step
+    # rounding otherwise turn a 10% allocation into a 14% stop. Price in account currency,
+    # floor to the venue step, and refuse an unimplementable minimum rather than lift it.
+    risk_envelope_capped = False
+    if float(lot) > 0.0:
+        try:
+            import math
+
+            unit = float(_core._eur_per_price_unit(s["symbol"], sym))
+            step_volume = float(getattr(sym, "volume_step", 0.01))
+            minimum_volume = float(getattr(sym, "volume_min", 0.01))
+            venue_maximum = float(getattr(sym, "volume_max", 5.0))
+            values = (float(equity), float(dist), unit, step_volume,
+                      minimum_volume, venue_maximum, float(lot))
+            if not all(math.isfinite(v) and v > 0.0 for v in values):
+                raise ValueError("nonpositive or nonfinite final risk input")
+            raw_limit = float(_core.MAX_RISK_FRAC) * float(equity) / (float(dist) * unit)
+            ceiling = min(raw_limit, venue_maximum, 5.0)
+            maximum_volume = math.floor(ceiling / step_volume + 1e-12) * step_volume
+            capped_lot = min(float(lot), maximum_volume)
+            if capped_lot + 1e-12 < minimum_volume or not capped_lot > 0.0:
+                return {"ok": False, "stage": "risk_envelope", "considered": True,
+                        "mark": False, "last_bar": last_bar,
+                        "why": "venue minimum exceeds the existing per-order risk envelope"}
+            risk_envelope_capped = capped_lot < float(lot) - 1e-12
+            lot = capped_lot
+        except Exception as exc:
+            return {"ok": False, "stage": "risk_envelope", "considered": True,
+                    "mark": False, "last_bar": last_bar,
+                    "why": f"final risk envelope unmeasured ({type(exc).__name__}: {exc})"}
     return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
             "lot": float(lot), "dist": float(dist),
             "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
@@ -3309,6 +3340,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             "ttl_until": family_ttl_until(last_bar, g.ttl_bars, _BAR_MINUTES.get(tf, 60)),
             "leg_mult": float(leg_mult), "leg_why": leg_why,
             "macro_mult": float(macro_mult), "macro_why": macro_why,
+            "risk_envelope_capped": risk_envelope_capped,
             "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
                       f"{' from the allocator book' if from_book else ''} at the signal's own "
                       f"{dist:.5g} stop; {leg_why}; {macro_why}")}
