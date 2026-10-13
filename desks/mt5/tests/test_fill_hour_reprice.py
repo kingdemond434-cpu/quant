@@ -78,6 +78,7 @@ def _desk(tmp_path: Path, monkeypatch, replays: dict[str, dict]) -> list[list[di
     sleeves.write_text(json.dumps({"sleeves": [
         {"name": "usdzar_gap", "status": "LIVE",
          "certificate": {"cell": "external.USDZAR.overnight_gap_decay.p=x"}}]}), "utf-8")
+    monkeypatch.setattr(fh, "SURVIVOR_FILES", (tmp_path / "absent.json",))
     for attr, path in (("UNIVERSE", uni), ("SURFACE", surf), ("SLEEVES", sleeves),
                        ("OUT", tmp_path / "FILL_HOUR_REPRICE.json"),
                        ("DONATED", tmp_path / "donated.json")):
@@ -165,3 +166,35 @@ def test_the_replay_prices_the_same_signals_three_ways() -> None:
                                  "costs": Costs.from_symbol(meta)}
     assert fh._replay(eg, "USDZAR", "overnight_gap_decay", {}, {})["at_fill_hour"][
         "status"].startswith("UNMEASURED")
+
+
+def test_a_certificate_whose_cost_stress_never_bit_is_flagged_and_alarms_when_live() -> None:
+    surv = {"survivors": {
+        "external.AUDCHF.overnight_gap_decay.p=x": {"gates": {
+            "expected_value": {"ev": 0.2377}, "stress_costs": {"exp_x3": 0.2377}}},
+        "external.EURCHF.discovered.p=y": {"gates": {
+            "expected_value": {"ev": 0.4764}, "stress_costs": {"exp_x3": 0.5471}}},
+        "external.USDZAR.overnight_gap_decay.p=x": {"gates": {
+            "expected_value": {"ev": 0.3321}, "stress_costs": {"exp_x3": 0.2442}}},
+        "external.X.f.p=z": {"gates": {"expected_value": {"ev": -0.1},
+                                       "stress_costs": {"exp_x3": -0.1}}}}}
+    got = fh.cost_never_charged(surv)
+    assert set(got) == {"external.AUDCHF.overnight_gap_decay.p=x",
+                        "external.EURCHF.discovered.p=y"}
+    assert fh.cost_never_charged(None) == {} and fh.cost_never_charged({"survivors": []}) == {}
+
+
+def test_a_live_unbitten_certificate_raises_the_alarm(tmp_path, monkeypatch) -> None:
+    _desk(tmp_path, monkeypatch, {
+        "USDZAR|{}": _rep(1, 0.05), "XAUUSD|{'rr': 2.5}": _rep(8, 0.3),
+        "USDZAR|{'entry_hour': 10}": _rep(10, 0.05), "USDZAR|{'entry_hour': 15}": _rep(15, 0.0)})
+    surv = tmp_path / "surv.json"
+    surv.write_text(json.dumps({"survivors": {"external.USDZAR.overnight_gap_decay.p=x": {
+        "gates": {"expected_value": {"ev": 0.33}, "stress_costs": {"exp_x3": 0.33}}}}}), "utf-8")
+    monkeypatch.setattr(fh, "SURVIVOR_FILES", (surv,))
+    assert fh.run(force=True) == 1
+    doc = json.loads(fh.OUT.read_text("utf-8"))
+    assert doc["cost_never_charged"]["external.USDZAR.overnight_gap_decay.p=x"][
+        "live_sleeve"] == "usdzar_gap"
+    assert doc["summary"]["cost_never_charged"] == 1
+    assert any("cost never charged" in a.get("why", "") for a in doc["alarm"])

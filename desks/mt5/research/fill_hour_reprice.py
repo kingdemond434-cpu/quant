@@ -57,6 +57,9 @@ OUT = BASE / "reports" / "FILL_HOUR_REPRICE.json"
 DONATED = BASE / "data" / "fill_shift_donations.json"
 SLEEVES = BASE / "data" / "sleeves.json"
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
+#: The certificates' own gate records, read for the cost-stress check (the box's sweep first).
+SURVIVOR_FILES = (BASE / "reports" / "UNIVERSAL_SURVIVORS.json",
+                  BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json")
 SURFACE = BASE / "data" / "cost_surface.json"
 
 #: Fill-hour over pooled spread above which a certificate is repriced (coordinator, 2026-10-13).
@@ -117,6 +120,29 @@ def verdict_of(in_scope: bool, fill: dict[str, Any]) -> str:
     if fill.get("status") != "MEASURED":
         return f"UNMEASURED: {fill.get('status')}"
     return "NEGATIVE_AT_FILL_HOUR" if float(fill["exp_r"]) <= 0 else "SURVIVES_FILL_HOUR"
+
+
+def cost_never_charged(survivors: Any) -> dict[str, dict[str, float]]:
+    """Certificates whose 3x cost stress did not lower their expectancy: no cost was ever
+    charged, so their EV is a zero-spread number and reads UNMEASURED at real cost.
+
+    Measured 2026-10-13: all 22 certified `discovered` cells and the AUDCHF, CADCHF and GBPCHF
+    gap-decay cells have exp_x3 >= ev (the registry priced those pairs at 0-1 point against a
+    12-46 point fill-hour book). The discovered family lost -0.14R/trade live against +0.28R
+    certified; AUDCHF lost -0.68R over 10 forward trades.
+    """
+    rows = (survivors or {}).get("survivors") if isinstance(survivors, dict) else None
+    out: dict[str, dict[str, float]] = {}
+    for key, row in (rows.items() if isinstance(rows, dict) else ()):
+        gates = row.get("gates") if isinstance(row, dict) else None
+        if not isinstance(gates, dict):
+            continue
+        ev = (gates.get("expected_value") or {}).get("ev")
+        x3 = (gates.get("stress_costs") or {}).get("exp_x3")
+        if isinstance(ev, (int, float)) and isinstance(x3, (int, float)) and ev > 0 \
+                and x3 >= ev:
+            out[str(key)] = {"ev": float(ev), "exp_x3": float(x3)}
+    return out
 
 
 def live_certificates() -> dict[str, str]:
@@ -193,6 +219,16 @@ def run(force: bool = False) -> int:
         return 0
 
     live = live_certificates()
+    survivors = next((d for d in (_read(f) for f in SURVIVOR_FILES) if isinstance(d, dict)),
+                     None)
+    unbitten = cost_never_charged(survivors)
+    doc["cost_never_charged"] = (
+        {k: {**v, "live_sleeve": live.get(k)} for k, v in sorted(unbitten.items())}
+        if survivors is not None else "UNMEASURED: no survivors file on this host")
+    for key in sorted(unbitten):
+        if live.get(key):
+            doc["alarm"].append({"certificate": key, "sleeve": live[key],
+                                 "why": "3x cost stress did not lower EV: cost never charged"})
     donated = _read(DONATED) or {}
     candidates: list[dict[str, Any]] = []
     for sv in load_survivors():
@@ -241,7 +277,8 @@ def run(force: bool = False) -> int:
     doc["status"] = "ALARM" if doc["alarm"] else "OK"
     doc["summary"] = {"certificates": len(doc["certificates"]), "in_scope": n_scope,
                       "negative_at_fill_hour": n_neg, "children": len(doc["children"]),
-                      "live_negative": len(doc["alarm"])}
+                      "live_negative": len(doc["alarm"]),
+                      "cost_never_charged": len(unbitten)}
     OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     print(f"fill_hour_reprice: {len(doc['certificates'])} certificates, {n_scope} in scope, "
           f"{n_neg} negative at their fill hour, {len(doc['alarm'])} of them LIVE; "
