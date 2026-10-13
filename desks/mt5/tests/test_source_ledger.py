@@ -201,6 +201,25 @@ def test_a_feature_compiler_that_cannot_import_reads_unmeasured_never_uncontract
         "RESEARCH_ONLY"}
 
 
+
+def test_a_fence_whose_every_input_is_unmeasured_is_unmeasured_never_ok(tmp_path, monkeypatch):
+    """AUDITOR SHOULD on #292: with the price contract unreadable and only price inputs, every
+    input read UNMEASURED, no violation was possible, and the fence said OK. It now says
+    UNMEASURED, and the law gate's --require-state run exits 2 on it."""
+    monkeypatch.setitem(sys.modules, "feature_compiler", None)
+    doc = _fence_box(tmp_path, {}, cond="NORMAL_DAY")             # bars-only lineage
+    assert doc["n_violations"] == 0 and doc["inputs_unmeasured"]
+    assert doc["status"] == F.UNMEASURED and "measured nothing" in doc["why"]
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "check_research_only_data", ROOT / "scripts" / "check_research_only_data.py")
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr(mod.F, "build", lambda: doc)
+    monkeypatch.setattr(mod.F, "write", lambda d, path=None: None)
+    assert mod.main(["--require-state"]) == 2
+
 def test_dataset_ids_place_every_declared_input_shape():
     assert F.dataset_ids("alt:alt_x__y:pace:gt:0") == ["lake:alt_x__y"]
     assert F.dataset_ids("desks/mt5/data/lake/series/cn_pmi.parquet") == ["lake:cn_pmi"]

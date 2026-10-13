@@ -206,3 +206,83 @@ def test_the_repository_passes_and_the_fence_is_on_the_law_gate() -> None:
     sys.path.insert(0, str(ROOT))
     from scripts.run_law_gate import _LAW_FENCES
     assert ("check_untrusted_content.py", ()) in _LAW_FENCES
+
+
+#: DESERIALISERS AND WRITERS THE FENCE MISSED (auditor MUST on #292).
+DATA15_SINKS = {
+    "read_pickle_of_fetched": (
+        "import pandas as pd, requests\n"
+        "def run(u):\n"
+        "    pd.read_pickle(requests.get(u).json()['p'])\n", "FETCHED_TO_EXEC"),
+    "np_load_allow_pickle": (
+        "import numpy as np, requests\n"
+        "def run(u):\n"
+        "    np.load(requests.get(u).json()['p'], allow_pickle=True)\n", "FETCHED_TO_EXEC"),
+    "joblib_load_of_fetched": (
+        "import joblib, requests\n"
+        "def run(u):\n"
+        "    joblib.load(requests.get(u).json()['p'])\n", "FETCHED_TO_EXEC"),
+    "to_csv_fetched_path": (
+        "import requests\n"
+        "def run(u, df):\n"
+        "    doc = requests.get(u).json()\n"
+        "    df.to_csv(doc['path'])\n", "FETCHED_CHOOSES_PATH"),
+    "np_save_fetched_path": (
+        "import numpy as np, requests\n"
+        "def run(u, a):\n"
+        "    doc = requests.get(u).json()\n"
+        "    np.save(doc['path'], a)\n", "FETCHED_CHOOSES_PATH"),
+    "open_memmap_w_fetched_path": (
+        "import numpy as np, requests\n"
+        "def run(u):\n"
+        "    doc = requests.get(u).json()\n"
+        "    np.lib.format.open_memmap(doc['path'], mode='w+', shape=(3,))\n",
+        "FETCHED_CHOOSES_PATH"),
+    "to_parquet_onto_roster": (
+        "import requests\n"
+        "def run(u, df):\n"
+        "    requests.get(u)\n"
+        "    df.to_parquet('desks/mt5/data/sleeves.json')\n", "PROTECTED_PATH_WRITE"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(DATA15_SINKS))
+def test_pickle_readers_and_frame_writers_are_caught(name: str) -> None:
+    src, kind = DATA15_SINKS[name]
+    found = C.check_source(src, f"{name}.py")
+    assert any(f["kind"] == kind and f["severity"] == "breach" for f in found), found
+
+
+def test_safe_forms_of_the_new_sinks_pass() -> None:
+    src = ("import numpy as np, requests\n"
+           "def run(u, a):\n"
+           "    doc = requests.get(u).json()\n"
+           "    np.load(doc['p'])\n"                              # allow_pickle defaults False
+           "    np.load(doc['p'], allow_pickle=False)\n"
+           "    np.lib.format.open_memmap(doc['p'], mode='r')\n"  # read-only map
+           "    np.save('desks/mt5/data/acquired/x.npy', a)\n")   # fixed destination
+    assert [f for f in C.check_source(src, "ok.py") if f["severity"] == "breach"] == []
+
+
+def test_every_seat_calling_module_is_a_builder_home_or_a_declared_exclusion() -> None:
+    """AUDITOR MUST on #292: a seat call site outside SEAT_PROMPT_BUILDERS was invisible to the
+    fence. Every module that calls `llm_seat.chat` / `<seat>.chat` / `chat()` / `_ask()` must be
+    a listed builder's home or carry a declared reason."""
+    sites = C.seat_call_sites(ROOT)
+    assert "desks/mt5/research/deepening_worker.py" in sites
+    assert "desks/mt5/frontier_intel/implementer.py" in sites
+    assert C.check_seat_call_sites(ROOT) == []
+    assert all(C.SEAT_CALL_EXCLUSIONS.values())
+    assert not set(C.SEAT_CALL_EXCLUSIONS) & {rel for rel, _ in C.SEAT_PROMPT_BUILDERS}
+    stale = set(C.SEAT_CALL_EXCLUSIONS) - set(sites)
+    assert stale == set(), f"exclusions for modules that no longer call a seat: {stale}"
+
+
+def test_an_unclassified_seat_caller_is_a_breach(tmp_path: Path) -> None:
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "new_seat.py").write_text(
+        "from libs.ops import llm_seat\n"
+        "def go(page):\n    return llm_seat.chat('Summarise: ' + page)\n")
+    got = C.check_seat_call_sites(tmp_path)
+    assert [(g["file"], g["kind"]) for g in got] == [
+        ("scripts/new_seat.py", "UNCLASSIFIED_SEAT_CALL")]

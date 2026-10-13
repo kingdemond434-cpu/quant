@@ -20,7 +20,8 @@ network (it imports or calls urllib.request / requests / httpx / aiohttp / http.
           or from any expression built out of a tainted name.
   EXEC    a tainted argument reaching eval / exec / compile / __import__ /
           importlib.import_module / runpy / subprocess.* / os.system / os.popen / os.exec* /
-          pickle.loads / marshal.loads is a breach.
+          pickle.loads / marshal.loads / pd.read_pickle / joblib.load /
+          np.load(allow_pickle=True) is a breach.
   WRITE   a write whose PATH is tainted is a breach (fetched bytes chose the destination), and so
           is any write, chmod or replace by one of these organs onto a PROTECTED path -- whatever
           the data -- because a discovery organ has no business there at all.
@@ -86,7 +87,19 @@ _WRITE_METHODS = frozenset({"write_text", "write_bytes", "touch", "mkdir", "chmo
 _WRITE_FUNCS_FIRST_ARG = re.compile(r"(^|_)(atomic|write|dump|save|persist)", re.IGNORECASE)
 _PATH_SECOND_ARG = {("os", "replace"), ("os", "rename"), ("shutil", "copy"),
                     ("shutil", "copy2"), ("shutil", "copyfile"), ("shutil", "move")}
-_PATH_FIRST_ARG = {("os", "chmod"), ("os", "chown"), ("os", "remove"), ("os", "unlink")}
+_PATH_FIRST_ARG = {("os", "chmod"), ("os", "chown"), ("os", "remove"), ("os", "unlink"),
+                   *((np_, f) for np_ in ("numpy", "np")
+                     for f in ("save", "savez", "savez_compressed", "savetxt"))}
+#: DataFrame / array writers whose FIRST argument (or path keyword) is the destination (auditor
+#: MUST on #292: `df.to_csv(fetched_path)` and `arr.tofile(...)` were not seen as writes).
+_FIRST_ARG_WRITE_METHODS = frozenset({"to_csv", "to_parquet", "to_pickle", "to_json",
+                                      "to_feather", "to_excel", "to_hdf", "to_stata", "tofile"})
+_PATH_KEYWORDS = ("path_or_buf", "path", "fname", "file", "filename", "excel_writer")
+#: Memory maps opened for writing create or overwrite their file: `mode` w / w+ / r+ / c.
+_MEMMAP_CALLS = frozenset({"open_memmap", "memmap"})
+#: Deserialisers that run code from the bytes they read: a fetched argument is an EXEC.
+_PICKLE_READERS = frozenset({"read_pickle"})
+_PICKLE_LOAD_OWNERS = frozenset({"joblib", "dill", "cloudpickle", "shelve"})
 
 
 def _dotted(node: ast.AST) -> tuple[str, str]:
@@ -101,8 +114,18 @@ def _dotted(node: ast.AST) -> tuple[str, str]:
     return "", ""
 
 
-def _is_exec(owner: str, attr: str) -> bool:
-    return (not owner and attr in _EXEC_NAMES) or attr in _EXEC_ATTRS.get(owner, ())
+def _is_exec(owner: str, attr: str, call: ast.Call | None = None) -> bool:
+    if (not owner and attr in _EXEC_NAMES) or attr in _EXEC_ATTRS.get(owner, ()):
+        return True
+    # PICKLE BY ANOTHER NAME (auditor MUST on #292): `pd.read_pickle`, `joblib.load` and
+    # `np.load(..., allow_pickle=True)` all execute code carried in the bytes they read.
+    if attr in _PICKLE_READERS or (attr in ("load", "loads", "open")
+                                   and owner in _PICKLE_LOAD_OWNERS):
+        return True
+    if call is not None and attr == "load" and owner in ("numpy", "np"):
+        ap = next((k.value for k in call.keywords if k.arg == "allow_pickle"), None)
+        return ap is not None and not (isinstance(ap, ast.Constant) and ap.value is False)
+    return False
 
 
 def _dynamic_lookup(node: ast.Call, mod: _Module) -> str | None:
@@ -443,6 +466,19 @@ def _write_path(call: ast.Call, mod: _Module | None = None) -> tuple[ast.AST | N
         return (call.args[1], f"{owner}.{attr}") if len(call.args) >= 2 else (None, "")
     if (owner, attr) in _PATH_FIRST_ARG:
         return (call.args[0], f"{owner}.{attr}") if call.args else (None, "")
+    if attr in _MEMMAP_CALLS:
+        mode = next((k.value for k in call.keywords if k.arg == "mode"),
+                    call.args[1] if len(call.args) > 1 else None)
+        writes = mode is not None and not (
+            isinstance(mode, ast.Constant) and isinstance(mode.value, str)
+            and not set(mode.value) & set("wc+"))
+        target = call.args[0] if call.args else next(
+            (k.value for k in call.keywords if k.arg in _PATH_KEYWORDS), None)
+        return (target, f"{attr}(mode=w)") if writes and target is not None else (None, "")
+    if isinstance(call.func, ast.Attribute) and attr in _FIRST_ARG_WRITE_METHODS:
+        target = call.args[0] if call.args else next(
+            (k.value for k in call.keywords if k.arg in _PATH_KEYWORDS), None)
+        return (target, f".{attr}()") if target is not None else (None, "")
     if isinstance(call.func, ast.Attribute):
         if attr == "open":
             mode = call.args[0] if call.args else next(
@@ -491,7 +527,7 @@ def check_source(text: str, rel: str) -> list[dict[str, Any]]:
             if owner == "__builtins__":
                 owner = "builtins"
             args = [*node.args, *(k.value for k in node.keywords)]
-            is_exec = _is_exec(owner, attr)
+            is_exec = _is_exec(owner, attr, node)
             if is_exec and any(mod.is_tainted(a, tainted) for a in args):
                 key = (node.lineno, "EXEC")
                 if key not in seen:
@@ -540,7 +576,81 @@ SEAT_PROMPT_BUILDERS: tuple[tuple[str, str], ...] = (
     ("libs/research/event_factors_llm.py", "llm_tags"),
     ("libs/ops/deepseek_cycle.py", "_build_prompt"),
     ("libs/research/proposer_seat.py", "build_prompt"),
+    # auditor MUST on #292: forum claims of up to 1,200 chars and frontier cards reached a seat
+    # bare; the collector author's reply is code this desk executes.
+    ("desks/mt5/research/deepening_worker.py", "task_text"),
+    ("desks/mt5/frontier_intel/implementer.py", "specification"),
+    ("scripts/collector_author.py", "author_prompt"),
 )
+
+#: EVERY OTHER MODULE THAT CALLS AN LLM SEAT, with the reason no fetched text reaches its prompt.
+#: `check_seat_call_sites` fails on a module that calls a seat and is neither a builder's home
+#: above nor named here: a new seat caller must be classified before it ships.
+SEAT_CALL_EXCLUSIONS: dict[str, str] = {
+    "desks/mt5/research/scientist_tournament.py":
+        "evidence blocks are desk artifacts (cells, verdicts, ledgers) and other seats' replies",
+    "libs/research/second_family.py":
+        "family briefs and the desk's own candidate rows; nothing fetched",
+    "scripts/breadth_expander.py": "desk coverage state and the miners' own inventory",
+    "scripts/capacity_test.py": "a synthetic payload sized to probe a seat's context window",
+    "scripts/check_free_roster.py": "a fixed canary prompt",
+    "scripts/deep_review.py": "one file of this repository for a code review",
+    "scripts/hypothesis_generator.py": "the graveyard and family registry: desk-authored",
+    "scripts/kimi_hunter.py": ("desk-authored wave briefs, coverage state and the previous "
+                               "wave's model output; no page text is fetched into the prompt"),
+    "scripts/meta_architect.py": "the desk's organ inventory and its own reports",
+    "scripts/model_upgrade.py": "fixed capability probes",
+    "scripts/run_external_panel.py": ("the sanitized cold-audit dossier of this repository; "
+                                      "its prompt already labels replies untrusted"),
+    "scripts/run_micro_audit.py": "the last 24 h of this repository's diff",
+    "scripts/run_strategic_director.py": "a dossier assembled from the desk's own artifacts",
+    "scripts/run_survivor_panel.py": "the desk's measured negative-result ledger",
+}
+#: Roots scanned for seat call sites, and the callee names that reach a seat.
+SEAT_CALL_ROOTS: tuple[str, ...] = ("libs", "desks/mt5", "scripts")
+_SEAT_CALL_NAMES = frozenset({"_ask", "chat"})
+
+
+def seat_call_sites(root: Path = ROOT) -> dict[str, list[int]]:
+    """rel path -> lines of every `llm_seat.chat` / `<seat>.chat` / `chat(...)` / `_ask(...)`
+    call outside tests and retired code."""
+    out: dict[str, list[int]] = {}
+    for r in SEAT_CALL_ROOTS:
+        base = root / r
+        if not base.exists():
+            continue
+        for p in sorted(base.rglob("*.py")):
+            rel = p.relative_to(root).as_posix()
+            parts = set(p.relative_to(root).parts)
+            if parts & {"tests", "_retired", "__pycache__"} or p.name.startswith("test_"):
+                continue
+            try:
+                text = p.read_text("utf-8", errors="ignore")
+            except OSError:
+                continue
+            if "chat(" not in text and "_ask(" not in text:
+                continue
+            try:
+                tree = ast.parse(text)
+            except SyntaxError:
+                continue
+            lines = [n.lineno for n in ast.walk(tree) if isinstance(n, ast.Call)
+                     and _dotted(n.func)[1] in _SEAT_CALL_NAMES]
+            if lines:
+                out[rel] = lines
+    return out
+
+
+def check_seat_call_sites(root: Path = ROOT) -> list[dict[str, Any]]:
+    """A breach for every seat-calling module that is neither home to a listed prompt builder
+    nor a declared exclusion with its reason."""
+    homes = {rel for rel, _ in SEAT_PROMPT_BUILDERS} | {"libs/ops/llm_seat.py"}
+    return [{"file": rel, "line": lines[0], "kind": "UNCLASSIFIED_SEAT_CALL",
+             "severity": "breach",
+             "detail": (f"{len(lines)} LLM seat call(s) in a module that is neither a listed "
+                        f"SEAT_PROMPT_BUILDERS home nor in SEAT_CALL_EXCLUSIONS with a reason")}
+            for rel, lines in sorted(seat_call_sites(root).items())
+            if rel not in homes and rel not in SEAT_CALL_EXCLUSIONS]
 _FENCE_CALLS = frozenset({"wrap", "fenced_line"})
 UNMEASURED_SEATS = "UNMEASURED: no seat prompt builder under this root"
 
@@ -605,6 +715,8 @@ def check(root: Path = ROOT, roots: Iterable[str] = SCAN_ROOTS) -> dict[str, Any
         rel = p.relative_to(root).as_posix()
         found.extend(check_source(p.read_text("utf-8", errors="ignore"), rel))
     found.extend(check_seat_prompts(root))
+    if any((root / rel).exists() for rel, _ in SEAT_PROMPT_BUILDERS):
+        found.extend(check_seat_call_sites(root))
     seat_state = ("CHECKED" if any((root / rel).exists() for rel, _ in SEAT_PROMPT_BUILDERS)
                   else UNMEASURED_SEATS)
     breaches = [f for f in found if f["severity"] == "breach"]

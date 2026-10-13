@@ -289,9 +289,18 @@ def build(now: datetime | None = None, *, sleeves_path: Path = SLEEVES,
                                                                for v in verdicts)
                                         else True)})
     by_kind = {k: sum(1 for v in violations if v["kind"] == k) for k in VIOLATION_KINDS}
+    # EVERY INPUT UNMEASURED IS NOT A PASS (auditor SHOULD on #292): with the price contract
+    # unreadable, each input read UNMEASURED, no violation could be found, and the fence said OK.
+    # A fence that measured nothing reports UNMEASURED, which the law gate (--require-state)
+    # fails.
+    all_unmeasured = bool(eligible_cache) and not violations and all(
+        v.get("unmeasured") for v in eligible_cache.values())
+    status = "VIOLATION" if violations else UNMEASURED if all_unmeasured else "OK"
     return {
         **base,
-        "status": "VIOLATION" if violations else "OK",
+        "status": status,
+        **({"why": (f"all {len(eligible_cache)} sleeve input(s) are UNMEASURED on this host: "
+                    f"the fence measured nothing, so it cannot pass")} if all_unmeasured else {}),
         "n_guarded_sleeves": len(per_sleeve),
         "n_violations": len(violations), "by_kind": by_kind,
         "violations": violations,
