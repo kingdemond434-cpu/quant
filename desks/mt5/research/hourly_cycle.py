@@ -1045,6 +1045,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
+    # citations point at, re-derived hourly so a stale number is visible as stale.
+    "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
@@ -1845,6 +1848,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The six committees stop themselves at --budget-s 300 (traps and writes included).
     "committee_ensembles": 420,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
+    # THE KIMI HUNT is three waves, each one ask of up to 240 s that may walk the free chain; on
+    # the default 720 s a slow Wave 3 was cut and (before it donated per wave) lost every finding.
+    # PRODUCER_YIELD read the seat DEAD for 3 days on 2026-10-13. Three full waves fit here.
+    "kimi_hunt": 1_020,
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
@@ -5702,6 +5709,13 @@ def main() -> None:
     # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
         "kelly_survival", "research/kelly_survival.py", "--book"))
+    # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
+    # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
+    # A report only -- the money path carries the cited values. Each value passes a two-sided
+    # robustness gate (adopt/adopted_value); missed_growth (daily cycle) reads the report and
+    # carries every held move's published missed-growth line into MISSED_GROWTH.json.
+    sgd = _costed("stop_geometry_derivation", lambda: _producer(
+        "stop_geometry_derivation", "research/stop_geometry_derivation.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -5961,6 +5975,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
+                    "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,

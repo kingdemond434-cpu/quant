@@ -312,7 +312,10 @@ def terminal_health() -> dict[str, Any]:
                 except Exception:
                     pass
     gs = _read(GATEWAY_STATE)
-    last_pass = _parse_ts(gs.get("placement_pass")) if isinstance(gs, dict) else None
+    # placement_pass was written in BROKER time under a UTC label (L3); read it through the one
+    # converter, which answers None rather than an age three hours too young.
+    from libs.ops.gateway_clock import placement_pass_utc
+    last_pass = placement_pass_utc(gs)
     out["gateway_last_pass"] = {
         "at": last_pass.isoformat() if last_pass else None,
         "age_min": (round((datetime.now(tz=UTC) - last_pass).total_seconds() / 60.0, 1)
