@@ -463,7 +463,7 @@ def publish(paths: Paths, src: A.Source, now: datetime, *, dry_run: bool
             ) -> dict[str, list[dict[str, Any]]]:
     """Points per series from the store; lake CSVs and the axis doc unless dry_run."""
     store = _read_json(paths.obs_dir / f"{src.id}.json", {})
-    pts = A.build_points(src, store) if store else {}
+    pts = A.build_points(src, store, lift_backfill=True) if store else {}
     if pts and not dry_run:
         A.write_lake_series(paths.alt, src, pts)
         _atomic(paths.alt.axes / f"alt_{src.id}.json", A.axis_doc(src, pts, now))
@@ -920,6 +920,15 @@ class Hyp:
     falsifier: str
 
 
+def pit_counted(p: Mapping[str, Any]) -> bool:
+    """A point counts toward MIN_POINTS only when its availability is its RELEASE time and that
+    time is not before the desk first saw it. No first_seen_at = not measured = not counted."""
+    avail, seen = A._t(p.get("available_time")), A._t(p.get("first_seen_at"))
+    if avail is None or seen is None:
+        return False
+    return p.get("available_basis", "release") == "release" and avail >= seen
+
+
 def _hyp_rows(paths: Paths, hyps: Iterable[Hyp], sources: Mapping[str, A.Source],
               points: Mapping[str, Mapping[str, list[dict[str, Any]]]], factory: str,
               state: dict[str, Any], now: datetime) -> tuple[list[dict[str, Any]],
@@ -935,8 +944,14 @@ def _hyp_rows(paths: Paths, hyps: Iterable[Hyp], sources: Mapping[str, A.Source]
         cell = f"{h.symbol}.exogenous_conditioner.{lake}.{h.signal}"
         pts = [p for p in (points.get(h.store) or {}).get(h.series, [])
                if p.get(h.signal) is not None]
-        if len(pts) < MIN_POINTS:
-            held.append({"cell": cell, "why": f"UNMEASURED: {len(pts)} PIT points < {MIN_POINTS}"})
+        # ONLY POINTS THE DESK HELD BY THEIR OWN AVAILABILITY COUNT (auditor HOLD on #295). A
+        # backfilled point is honestly re-stamped at first_seen_at, but it carries no history a
+        # strategy could have traded at its release, so it never counts toward the minimum.
+        pit = [p for p in pts if pit_counted(p)]
+        if len(pit) < MIN_POINTS:
+            held.append({"cell": cell, "why": (
+                f"UNMEASURED: {len(pit)} PIT points < {MIN_POINTS} "
+                f"({len(pts) - len(pit)} backfilled point(s) not counted)")})
             continue
         if not A.may_mint(h.symbol):
             held.append({"cell": cell, "why": "two-lane order: not a hypothesis-lane instrument"})
@@ -959,7 +974,8 @@ def _hyp_rows(paths: Paths, hyps: Iterable[Hyp], sources: Mapping[str, A.Source]
             "mechanism": h.mechanism,
             "prior_sign": int(h.side),
             "falsifier": h.falsifier,
-            "evidence": {"n_points": len(pts), "backfill_share": round(backfill, 3),
+            "evidence": {"n_points": len(pts), "n_pit_points": len(pit),
+                         "backfill_share": round(backfill, 3),
                          "first": pts[0]["d"], "last": pts[-1]["d"],
                          "tested_here": False,
                          "why": "a declared prior; the gauntlet judges it and charges the trial"},
@@ -1406,7 +1422,7 @@ def _alt_run(paths: Paths, sid: str,
         run.status, run.why = NEEDS_KEY, f"{run.key_state}: alt_proxies cannot fetch it"
         return run
     store = _read_json(paths.alt.obs_dir / f"{sid}.json", {})
-    pts = A.build_points(src, store) if store else {}
+    pts = A.build_points(src, store, lift_backfill=True) if store else {}
     n = sum(len(v) for v in pts.values())
     if into is not None and pts:
         into[sid] = pts

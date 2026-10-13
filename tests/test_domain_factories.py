@@ -332,6 +332,7 @@ def _lake_points(n: int) -> list[dict[str, Any]]:
     return [{"d": (t0 + timedelta(days=i)).date().isoformat(),
              "event_time": (t0 + timedelta(days=i)).date().isoformat(),
              "available_time": (t0 + timedelta(days=i, hours=18)).isoformat(),
+             "first_seen_at": (t0 + timedelta(days=i, hours=17)).isoformat(),
              "value": float(i % 7), "pace": None, "pit_quality": "live"} for i in range(n)]
 
 
@@ -425,3 +426,53 @@ def test_dry_run_writes_only_the_report(tmp_path: Path) -> None:
     assert (tmp_path / "reports" / "DOMAIN_FACTORIES.json").exists()
     assert not (tmp_path / "data" / "domain_factories" / "obs").exists()
     assert not (tmp_path / "data" / "lake").exists()
+
+
+# ============================================================== look-ahead (auditor HOLD, #295)
+def _indeed_history(now: datetime, days: int = 200) -> bytes:
+    rows = ["date,jobcountry,indeed_job_postings_index_SA,indeed_job_postings_index_NSA,variable"]
+    for k in range(days, 0, -1):
+        d = (now - timedelta(days=k)).date()
+        rows.append(f"{d.isoformat()},US,{100 + (k * 7919) % 13 * 0.4:.2f},100,total postings")
+    return ("\n".join(rows) + "\n").encode()
+
+
+def test_backfilled_indeed_points_are_never_available_before_the_desk_saw_them(
+        tmp_path: Path) -> None:
+    """The auditor's probe: 200 days of Indeed history fetched in one pass. Only the last 14 days
+    are fresh; 186 were stamped by the release rule and so read as available months before the
+    desk first saw them -- and _hyp_rows minted on them."""
+    p = D.Paths(tmp_path)
+    obs = D.parse_indeed_aggregate(_indeed_history(NOW), NOW)
+    assert len(obs) == 200 and sum(o.published_at is None for o in obs) == 186
+    D.merge_into(p, D.JOBS_INDEED, obs, NOW)
+    pts = D.publish(p, D.JOBS_INDEED, NOW, dry_run=True)["US_total_sa"]
+    early = [x for x in pts if A._t(x["available_time"]) < A._t(x["first_seen_at"])]
+    assert early == []                                       # was 186 of 200 before the fix
+    lifted = [x for x in pts if x["available_basis"] == "first_seen"]
+    assert len(lifted) == 186 and all(x["pit_quality"] == "backfill" for x in lifted)
+    assert all(x["published_time"] < x["available_time"] for x in lifted)   # release kept
+    # only the 14 points the desk held at their release count, so nothing is minted
+    srcs = {D.JOBS_INDEED.id: D.JOBS_INDEED}
+    rows, held = D._hyp_rows(p, D.JOBS_HYPS[:1], srcs, {D.JOBS_INDEED.id: {"US_total_sa": pts}},
+                             "jobs", {}, NOW)
+    assert rows == [] and held[0]["why"].startswith("UNMEASURED")
+    assert sum(D.pit_counted(x) for x in pts) <= D.FRESH_D + 1
+
+
+def test_jolts_rows_read_after_their_release_are_lifted_to_first_seen(tmp_path: Path) -> None:
+    p = D.Paths(tmp_path)
+    obs = D.parse_bls((FIX / "bls_JTS000000000000000JOL.json").read_bytes())
+    D.merge_into(p, D.JOBS_JOLTS, obs, NOW)
+    pts = D.publish(p, D.JOBS_JOLTS, NOW, dry_run=True)["us_openings_total"]
+    jul = next(x for x in pts if x["d"] == "2026-07-31")
+    assert A._t(jul["published_time"]) < NOW - timedelta(days=2)    # its release rule time
+    assert jul["available_time"] == NOW.isoformat(timespec="seconds")
+    assert jul["available_basis"] == "first_seen" and not D.pit_counted(jul)
+
+
+def test_a_point_without_first_seen_is_not_counted() -> None:
+    pt = _lake_points(1)[0]
+    assert D.pit_counted(pt)
+    assert not D.pit_counted({**pt, "first_seen_at": None})
+    assert not D.pit_counted({**pt, "available_basis": "first_seen"})
