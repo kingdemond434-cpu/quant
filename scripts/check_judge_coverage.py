@@ -66,6 +66,11 @@ AUDIT = DESK / "reports" / "judge_coverage_fence.json"
 #: The judge's own verdict clock (`research/judging_throughput.py`, core hourly leg): the time of
 #: the newest row in gate_verdict_ledger.jsonl, read without re-parsing the ledger here.
 RATE = DESK / "reports" / "JUDGING_RATE.json"
+#: The resident judge's heartbeat (`scripts/run_sharded_gauntlet.py`), re-stamped every 30s while
+#: a sweep runs. Older than RESIDENT_DEAD_MIN with no operator stop means the resident is dead:
+#: the one-minute trigger should already have started a fresh one.
+RESIDENT = DESK / "reports" / "JUDGE_RESIDENT.json"
+RESIDENT_DEAD_MIN = 5.0
 
 #: A report older than this is stale: the organ runs at intake, hourly, so three hours of silence
 #: means the clock stopped. Generous because a box reboot or a long sweep is not a law breach.
@@ -107,7 +112,8 @@ def _age_h(stamp: object, now: datetime) -> float | None:
 
 
 def judge(report: Path | None = None, *, require_state: bool = False,
-          now: datetime | None = None, rate: Path | None = None) -> dict[str, Any]:
+          now: datetime | None = None, rate: Path | None = None,
+          resident: Path | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     path = report or REPORT
     doc = _read(path)
@@ -142,6 +148,29 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     # THE JUDGE'S OWN CLOCK. Unjudged cells with no verdict recorded inside the lease means the
     # sweep itself stopped -- measured 2026-10-13: the last verdict was 2026-10-12 06:59Z with
     # ~1.2M cells unjudged. This is the gauntlet's clock, so it fails here only on the box.
+    # THE RESIDENT'S PULSE (audit of #333): a resident killed mid-sweep leaves SWEEPING on disk,
+    # so liveness is the heartbeat's age, never the status it last wrote.
+    res = _read(resident or RESIDENT)
+    if not isinstance(res, dict) or not res.get("heartbeat_utc"):
+        out["checks"].append({"metric": "resident_alive", "state": "UNMEASURED",
+                              "why": f"{(resident or RESIDENT).name} carries no heartbeat"})
+    elif str(res.get("status")) == "STOPPED":
+        out["checks"].append({"metric": "resident_alive", "state": "WARN",
+                              "why": f"operator stop: {res.get('why')}"})
+    else:
+        beat_h = _age_h(res.get("heartbeat_utc"), at)
+        if beat_h is not None and beat_h * 60.0 > RESIDENT_DEAD_MIN:
+            out["checks"].append({
+                "metric": "resident_alive", "state": "FAIL" if require_state else "WARN",
+                "why": (f"DEAD: the resident judge's heartbeat is {beat_h * 60.0:.0f} min old "
+                        f"(last status {res.get('status')}, pid {res.get('pid')}); nothing has "
+                        f"restarted it")})
+            if require_state:
+                stale.append("resident_dead")
+        else:
+            out["checks"].append({"metric": "resident_alive", "state": "OK",
+                                  "why": f"heartbeat {res.get('heartbeat_utc')}, status "
+                                         f"{res.get('status')}"})
     rate_doc = _read(rate or RATE)
     verdicts = rate_doc.get("verdicts") if isinstance(rate_doc, dict) else None
     last_verdict = verdicts.get("last_verdict_at") if isinstance(verdicts, dict) else None
@@ -412,7 +441,7 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     if stale:
         out["why"] = ("THE COVERAGE CLOCK STOPPED (" + ", ".join(stale) + "): "
                       + "; ".join(c["why"] for c in out["checks"]
-                                  if c.get("metric") in ("freshness", "judge_silent")
+                                  if c.get("metric") in ("freshness", "judge_silent", "resident_alive")
                                   and c.get("state") == "FAIL")
                       + " -- " + out["why"])
     return out
@@ -477,7 +506,7 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["RATCHET", "RATE", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
+__all__ = ["RATCHET", "RATE", "REPORT", "RESIDENT", "RESIDENT_DEAD_MIN", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

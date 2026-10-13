@@ -26,6 +26,7 @@ NOW = datetime(2026, 9, 23, 12, 0, tzinfo=UTC)
 def _no_live_rate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The fence reads the judge's verdict clock; tests never see the checkout's copy."""
     monkeypatch.setattr(fence, "RATE", tmp_path / "no_rate.json")
+    monkeypatch.setattr(fence, "RESIDENT", tmp_path / "no_resident.json")
 
 
 def _rows(spec: dict[str, int], *, age_h: float = 5.0) -> list[dict]:
@@ -602,3 +603,23 @@ def test_order_docket_names_its_failure_on_the_table(tmp_path, monkeypatch) -> N
     stamp = json.loads(report.read_text("utf-8"))["last_attempt"]
     assert stamp["status"] == "FAILED" and "docket too large" in stamp["why"]
     assert stamp["via"] == "merge_hypotheses"
+
+
+def test_a_dead_resident_fails_on_the_box(tmp_path) -> None:
+    """Audit of #333: a resident killed mid-sweep still reads SWEEPING; its heartbeat is the truth."""
+    res = tmp_path / "JUDGE_RESIDENT.json"
+    report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
+    res.write_text(json.dumps({"status": "SWEEPING", "pid": 7,
+                               "heartbeat_utc": (NOW - timedelta(minutes=20)).isoformat()}),
+                   "utf-8")
+    doc = fence.judge(report, require_state=True, now=NOW, resident=res)
+    assert doc["verdict"] == "FAIL" and "resident_dead" in doc["why"]
+    assert fence.judge(report, now=NOW, resident=res)["verdict"] == "PASS"
+    res.write_text(json.dumps({"status": "SWEEPING",
+                               "heartbeat_utc": (NOW - timedelta(seconds=40)).isoformat()}),
+                   "utf-8")
+    assert fence.judge(report, require_state=True, now=NOW, resident=res)["verdict"] == "PASS"
+    res.write_text(json.dumps({"status": "STOPPED", "why": "RESIDENT_STOP present",
+                               "heartbeat_utc": (NOW - timedelta(hours=3)).isoformat()}),
+                   "utf-8")
+    assert fence.judge(report, require_state=True, now=NOW, resident=res)["verdict"] == "PASS"
