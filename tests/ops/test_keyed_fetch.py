@@ -14,7 +14,7 @@ SEEN: list[str] = []
 
 
 class _Handler(BaseHTTPRequestHandler):
-    def do_GET(self) -> None:  # noqa: N802 -- http.server's name
+    def do_GET(self) -> None:
         SEEN.append(f"{self.headers.get('Host')}{self.path}")
         port = self.server.server_address[1]
         if self.path.startswith("/same"):
