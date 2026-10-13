@@ -529,6 +529,8 @@ def main(argv: list[str] | None = None) -> int:
     scouted = _read(SCOUTED, {})
     # The host is re-checked here, not trusted from the probe: a name that resolved public when
     # scouted may resolve private now (audit must-fix 8).
+    if str(BASE.parents[1]) not in sys.path:
+        sys.path.insert(0, str(BASE.parents[1]))    # the repo root, for libs/
     from libs.ops.public_host import public_url
     sources += [s for s in (scouted.get("sources") or []) if isinstance(s, dict)
                 and s.get("probe") == "REACHABLE" and str(s.get("id")) not in known
