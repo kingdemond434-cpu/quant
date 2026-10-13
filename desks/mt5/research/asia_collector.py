@@ -348,6 +348,31 @@ def _declared_headers(src: dict[str, Any]) -> dict[str, str]:
             if str(k).lower() not in banned}
 
 
+class _PublicOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """A model-scouted URL may redirect only to another public host (audit should-fix on #332):
+    `urlopen` follows redirects, so a public page that 302s to 169.254.169.254 would otherwise
+    skip the host check made at ingest."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        from libs.ops.public_host import public_url
+        why = public_url(newurl)
+        if why:
+            raise urllib.error.URLError(f"redirect refused: {why}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open(req: urllib.request.Request, src: dict[str, Any], timeout: float) -> Any:
+    if src.get("origin") != "llm_source_scout":
+        return urllib.request.urlopen(req, timeout=timeout, context=_TLS)
+    from libs.ops.public_host import public_url
+    why = public_url(req.full_url)          # re-resolved at fetch time, not trusted from ingest
+    if why:
+        raise urllib.error.URLError(f"refused: {why}")
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=_TLS),
+                                         _PublicOnlyRedirects())
+    return opener.open(req, timeout=timeout)
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
@@ -396,7 +421,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     body_out = _declared_form(src)
     req = urllib.request.Request(url, data=body_out, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        with _open(req, src, timeout) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")

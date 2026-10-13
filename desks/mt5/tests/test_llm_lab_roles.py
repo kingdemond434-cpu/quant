@@ -345,3 +345,19 @@ def test_the_local_model_installer_checks_what_it_runs() -> None:
     assert "/inheritance:r" in src and "S-1-5-19" in src
     assert "pinned ${pinned}" in src and "& $ollama rm $m" in src
     assert "6 GB floor" in src
+
+
+def test_a_scouted_source_cannot_redirect_or_resolve_to_a_private_host() -> None:
+    """Audit should-fix on #332: the collector re-checks the host at fetch time and on every
+    redirect, not only when the scouted row was ingested."""
+    import urllib.error
+    import urllib.request
+
+    import asia_collector as ac
+    req = urllib.request.Request("http://169.254.169.254/latest/meta-data/")
+    with pytest.raises(urllib.error.URLError, match="refused"):
+        ac._open(req, {"origin": "llm_source_scout"}, 1.0)
+    h = ac._PublicOnlyRedirects()
+    with pytest.raises(urllib.error.URLError, match="redirect refused"):
+        h.redirect_request(urllib.request.Request("https://example.org/"), None, 302, "Found",
+                           {}, "http://10.0.0.5/admin")
