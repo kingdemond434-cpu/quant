@@ -135,6 +135,8 @@ def _cost_evidence(root: Path, queue: TaskQueue) -> dict[str, Any]:
 
 #: Data versions the `lanes` producer has already turned into information work.
 VERSIONS_REL = "desks/mt5/data/queue_data_versions.json"
+#: The information kind one new data version becomes; the `lanes` producer drains it itself.
+INGEST_KIND = "ingest_version"
 #: Information tasks the `lanes` producer may execute in one pass (its own bookkeeping only).
 LANE_DRAIN_MAX = 500
 
@@ -233,7 +235,7 @@ def _lanes(root: Path, queue: TaskQueue) -> dict[str, Any]:
         # NO HOST ON THIS TASK: ingesting a version reads the local registry and lineage and
         # sends nothing to the publisher, so it must not spend the publisher's token. The
         # buckets above govern tasks that FETCH (a mission's acquisition, a catalogue page).
-        got = queue.submit("ingest_version", lane=INFORMATION,
+        got = queue.submit(INGEST_KIND, lane=INFORMATION,
                            payload={"artifact_id": aid, "version": v["version"],
                                     "publisher_host": v["host"]},
                            dedupe_key=f"ingest_version|{aid}@{v['version']}",
@@ -247,7 +249,7 @@ def _lanes(root: Path, queue: TaskQueue) -> dict[str, Any]:
     invalidated: list[dict[str, Any]] = []
     drained = 0
     while drained < LANE_DRAIN_MAX:
-        task = queue.claim(QUEUE_WORKER, kinds=("ingest_version",), lane=INFORMATION)
+        task = queue.claim(QUEUE_WORKER, kinds=LANES_CLAIMS, lane=INFORMATION)
         if task is None:
             break
         drained += 1
@@ -285,6 +287,17 @@ QUEUE_WORKER = "hourly_cycle"
 INVALIDATE_KIND = "invalidate"
 SCREEN_KIND = "screen_class"
 CONSUMED_KINDS = (INVALIDATE_KIND, SCREEN_KIND)
+
+#: THE CLAIM LISTS, in one place, and every consumer claims FROM them -- `consume` above claims
+#: CONSUMED_KINDS, `_lanes` claims LANES_CLAIMS, the hourly cycle's `_recertify_canon_claimed`
+#: claims RECERTIFY_CLAIMS -- so `CLAIMED_KINDS` is derived from what is actually claimed, never
+#: typed a second time. `scripts/check_no_queues.py` reads it: a READY row of a claimed kind past
+#: its bound is a BREACH (its consumer stopped); a READY row of any other kind (`wire`, the human
+#: inbox, `acquire_class`) has no automated consumer by design and is reported as unconsumed.
+#: `tests/ops/test_queue_cycle_lanes.py` fails if a claim call names a kind outside this set.
+RECERTIFY_CLAIMS = ("recertify",)
+LANES_CLAIMS = (INGEST_KIND,)
+CLAIMED_KINDS = frozenset((*RECERTIFY_CLAIMS, *LANES_CLAIMS, *CONSUMED_KINDS))
 #: Tasks one pass may consume. Each is a few file reads; the bound only stops a pathological
 #: journal from holding the hourly cycle, and the leftover is the next pass's first work.
 CONSUME_MAX = 500
@@ -538,6 +551,48 @@ _IMPL = {"wiring_campaign": _wiring_campaign, "coverage_governor": _coverage_gov
          "cost_evidence": _cost_evidence, "lanes": _lanes}
 
 
+#: Hours past release after which a READY row is reported as waiting (the no-queues bound).
+READY_BOUND_H = 3.0
+
+
+def ready_ages(tasks: Any, now: datetime) -> dict[str, list[float | None]]:
+    """kind -> the age in hours, past its RELEASE time, of every claimable row (READY, or LEASED
+    to a holder that died). None where the row carries no readable timestamp."""
+    out: dict[str, list[float | None]] = {}
+    for t in tasks:
+        if not t.is_ready(now):
+            continue
+        since = None
+        for raw in (t.not_before, t.created_at):
+            if raw:
+                try:
+                    since = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+                except ValueError:
+                    since = None
+                if since is not None:
+                    since = since if since.tzinfo else since.replace(tzinfo=UTC)
+                    break
+        out.setdefault(str(t.kind), []).append(
+            None if since is None else (now - since).total_seconds() / 3600.0)
+    return out
+
+
+def unconsumed_kinds(by_kind: dict[str, list[float | None]],
+                     bound_h: float = READY_BOUND_H) -> list[dict[str, Any]]:
+    """The READY rows of kinds NO automated consumer claims (not in CLAIMED_KINDS), with counts
+    and ages: visible on QUEUE.json and the no-queues fence, never a breach."""
+    rows = []
+    for kind, ages in sorted(by_kind.items()):
+        if kind in CLAIMED_KINDS:
+            continue
+        known = [a for a in ages if a is not None]
+        rows.append({"kind": kind, "ready": len(ages),
+                     "past_bound": sum(1 for a in known if a > bound_h),
+                     "oldest_age_h": round(max(known), 3) if known else None,
+                     "undated": len(ages) - len(known), "bound_h": bound_h})
+    return rows
+
+
 def human_inbox(queue: TaskQueue) -> list[dict[str, Any]]:
     """Work that reached the top of the chart and stopped there. Non-empty means someone is owed
     a sentence. Ordered oldest first, because the oldest is the one that has been ignored longest.
@@ -569,6 +624,7 @@ def run(root: Path | None = None, *, queue: TaskQueue | None = None) -> dict[str
 
     swept = org.sweep_dead(q)
     inbox = human_inbox(q)
+    at = datetime.now(tz=UTC)
     return {
         "at": datetime.now(tz=UTC).isoformat(),
         "queue": q.census(),
@@ -578,6 +634,8 @@ def run(root: Path | None = None, *, queue: TaskQueue | None = None) -> dict[str
         "escalated": swept["escalated"],
         "human_inbox": inbox,
         "needs_a_person": len(inbox),
+        "claimed_kinds": sorted(CLAIMED_KINDS),
+        "unconsumed_kinds": unconsumed_kinds(ready_ages(q.tasks().values(), at)),
         "why": ("producers queue, the sweep escalates what died, and the inbox is where work "
                 "that reached the top of the chart waits -- a non-empty inbox is the desk asking "
                 "for a decision, not a backlog"),

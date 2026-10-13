@@ -2786,7 +2786,11 @@ def forward_reconcile_leg() -> dict:
 
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
-    q, task, why = _claim_one("recertify")
+    try:
+        from libs.ops.queue_cycle import RECERTIFY_CLAIMS
+    except Exception as exc:
+        return {"status": "ERROR", "why": f"queue_cycle unimportable ({type(exc).__name__})"}
+    q, task, why = _claim_one(RECERTIFY_CLAIMS[0])
     if task is None:
         return {"status": "STOOD_DOWN", "why": why,
                 "note": ("not a failure: the queue is the schedule now, and an empty queue means "

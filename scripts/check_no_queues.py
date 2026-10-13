@@ -60,7 +60,9 @@ _PASSING = frozenset({"CLEAN"})
 #: THE DESK TASK QUEUE IS A QUEUE TOO (auditor HOLD on #289). `task_queue.jsonl` is not in the
 #: census, and its strategy-lane kinds once had no consumer at all, so READY rows piled up with
 #: this fence green. It is folded here directly: a READY row (or a LEASED one whose holder died)
-#: older than this many hours past its release time is a BREACH, whatever its kind. Every
+#: older than this many hours past its release time is a BREACH when its kind is one an automated
+#: consumer claims (`queue_cycle.CLAIMED_KINDS`, derived from the consumers' own claim lists).
+#: Other kinds are listed as `unconsumed_kinds` with counts and ages and never fail. Every
 #: consumer of the journal is an hourly leg, so this is one cycle plus slack, as for the census.
 TASK_QUEUE_REL = ("desks", "mt5", "data", "task_queue.jsonl")
 TASK_QUEUE_MAX_READY_AGE_H = 3.0
@@ -93,14 +95,17 @@ def task_queue_breaches(base: Path, stamp: datetime,
 
     Age runs from the row's RELEASE time (`not_before`, else `created_at`): a task that may not
     be claimed yet is not waiting on anyone. An absent journal holds no rows. An unreadable one,
-    or a READY row with no readable timestamp, is UNMEASURED and fails (L1.28a)."""
+    or a READY row of a claimed kind with no readable timestamp, is UNMEASURED and fails
+    (L1.28a). Kinds no consumer claims are listed in `unconsumed_kinds` and never fail."""
     path = base.joinpath(*TASK_QUEUE_REL)
     out: dict[str, Any] = {"path": "/".join(TASK_QUEUE_REL), "bound_h": bound_h,
-                           "ready": 0, "breaches": [], "unmeasured": []}
+                           "ready": 0, "breaches": [], "unmeasured": [],
+                           "unconsumed_kinds": []}
     if not path.exists():
         out["state"] = "ABSENT"
         return out
     try:
+        from libs.ops.queue_cycle import CLAIMED_KINDS, ready_ages, unconsumed_kinds
         from libs.ops.task_queue import TaskQueue
         tasks = list(TaskQueue(path).tasks().values())
     except Exception as exc:  # an unreadable journal is unmeasured, never clean
@@ -109,21 +114,19 @@ def task_queue_breaches(base: Path, stamp: datetime,
                                   "cycle_h": bound_h, "owner_leg": "queue_consumers",
                                   "why": f"task_queue.jsonl unreadable: {type(exc).__name__}"})
         return out
-    by_kind: dict[str, list[float | None]] = {}
-    for t in tasks:
-        if not t.is_ready(stamp):
-            continue
-        since = _parse(t.not_before) or _parse(t.created_at)
-        age = None if since is None else (stamp - since).total_seconds() / 3600.0
-        by_kind.setdefault(str(t.kind), []).append(age)
+    by_kind = ready_ages(tasks, stamp)
     out["state"] = "READ"
     out["ready"] = sum(len(v) for v in by_kind.values())
+    out["claimed_kinds"] = sorted(CLAIMED_KINDS)
+    out["unconsumed_kinds"] = unconsumed_kinds(by_kind, bound_h)
     for kind, ages in sorted(by_kind.items()):
         known = [a for a in ages if a is not None]
         oldest = max(known) if known else None
         row = {"id": f"task_queue:{kind}", "depth": len(ages),
                "oldest_age_h": None if oldest is None else round(oldest, 3),
                "cycle_h": bound_h, "owner_leg": "queue_consumers"}
+        if kind not in CLAIMED_KINDS:
+            continue                 # reported below as unconsumed, never a breach
         if len(known) < len(ages):
             out["unmeasured"].append({**row, "why": (
                 f"{len(ages) - len(known)} READY {kind!r} row(s) carry no readable timestamp")})
@@ -146,6 +149,7 @@ def build_report(root: Path | None = None, *, now: datetime | None = None,
     if doc is None:
         return {"status": "DARK", "scanned": 0, "breaches": list(tq["breaches"]), "parked": [],
                 "unmeasured": list(tq["unmeasured"]), "task_queue": tq,
+                "unconsumed_kinds": tq.get("unconsumed_kinds", []),
                 "detail": (f"{census_path.name} is absent or unreadable: the census has never "
                            f"run, so 'no queues' is a claim the desk cannot cash (L1.49). "
                            f"Run `python desks/mt5/research/queue_census.py --once`")}
@@ -175,6 +179,7 @@ def build_report(root: Path | None = None, *, now: datetime | None = None,
         "rows_waiting": (doc.get("totals") or {}).get("rows_waiting"),
         "breaches": breaches, "parked": parked, "unmeasured": unmeasured,
         "task_queue": tq,
+        "unconsumed_kinds": tq.get("unconsumed_kinds", []),
         "rule": doc.get("rule", ""),
     }
     if age_h is None:

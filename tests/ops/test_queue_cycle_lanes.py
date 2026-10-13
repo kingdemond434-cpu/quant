@@ -190,3 +190,48 @@ def test_the_consumers_are_wired_into_the_hourly_cycle():
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["queue_consumers"] == "meta"
     assert set(queue_cycle.CONSUMED_KINDS) == {"invalidate", "screen_class"}
+
+
+def test_every_claim_call_names_only_kinds_in_the_derived_claim_set():
+    """CLAIMED_KINDS is what the no-queues fence breaches on; it must be the consumers' OWN
+    claim lists. A claim call that names a literal kind (or a kind outside the set) would make
+    the fence and the consumers disagree, so the claim sites are read here by AST."""
+    import ast
+    sources = [_ROOT / "libs" / "ops" / "queue_cycle.py",
+               _ROOT / "desks" / "mt5" / "research" / "hourly_cycle.py"]
+    sites = 0
+    for path in sources:
+        tree = ast.parse(path.read_text("utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            name = getattr(node.func, "attr", getattr(node.func, "id", ""))
+            if name == "_claim_one" and node.args:
+                sites += 1
+                arg = node.args[0]
+                assert not isinstance(arg, ast.Constant), f"{path.name}:{node.lineno} literal"
+            elif name == "claim":
+                kinds = next((k.value for k in node.keywords if k.arg == "kinds"), None)
+                names = ({n.id for n in ast.walk(kinds) if isinstance(n, ast.Name)}
+                         if kinds is not None else set())
+                if kinds is None or (names and names <= {"kind", "kinds"}
+                                     and not any(isinstance(n, ast.Constant)
+                                                 for n in ast.walk(kinds))):
+                    continue      # a generic helper (`_claim_one`'s body): its callers are checked
+                sites += 1
+                assert not any(isinstance(n, ast.Constant) for n in ast.walk(kinds)), (
+                    f"{path.name}:{node.lineno}: claim names a literal kind")
+                assert isinstance(kinds, ast.Name) and kinds.id in (
+                    "CONSUMED_KINDS", "LANES_CLAIMS", "RECERTIFY_CLAIMS"), ast.dump(kinds)
+    assert sites >= 3
+    derived = frozenset((*queue_cycle.RECERTIFY_CLAIMS, *queue_cycle.LANES_CLAIMS,
+                         *queue_cycle.CONSUMED_KINDS))
+    assert derived == queue_cycle.CLAIMED_KINDS
+
+
+def test_queue_json_lists_unconsumed_kinds(tmp_path):
+    q = TaskQueue(tmp_path / "q.jsonl")
+    q.submit("wire", payload={})
+    doc = queue_cycle.run(tmp_path, queue=q)
+    assert [r["kind"] for r in doc["unconsumed_kinds"]] == ["wire"]
+    assert "invalidate" in doc["claimed_kinds"]

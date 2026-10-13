@@ -206,12 +206,37 @@ def test_ready_task_queue_rows_past_the_bound_fail_the_fence(tmp_path: Path) -> 
     old = (datetime.now(tz=UTC) - timedelta(hours=fence.TASK_QUEUE_MAX_READY_AGE_H + 2)
            ).isoformat(timespec="seconds")
     _task_queue(root, [{"kind": "invalidate", "lane": "strategy", "created_at": old},
-                       {"kind": "screen_class", "lane": "strategy"}])
+                       {"kind": "screen_class", "lane": "strategy"},
+                       {"kind": "recertify", "created_at": old},
+                       {"kind": "ingest_version", "lane": "information", "created_at": old}])
     rep = build_report(root)
     assert rep["status"] == "QUEUED"
     ids = {b["id"] for b in rep["breaches"]}
-    assert ids == {"task_queue:invalidate"}                  # the fresh row is carry, not a park
-    assert rep["task_queue"]["ready"] == 2
+    assert ids == {"task_queue:invalidate", "task_queue:recertify",
+                   "task_queue:ingest_version"}            # the fresh row is carry, not a park
+    assert rep["task_queue"]["ready"] == 4 and rep["unconsumed_kinds"] == []
+
+
+def test_unconsumed_kinds_past_the_bound_are_reported_never_a_breach(tmp_path: Path) -> None:
+    """`wire` decisions and the human inbox have no automated consumer by design: they stay
+    visible with counts and ages, and the fence stays CLEAN on them."""
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    old = (datetime.now(tz=UTC) - timedelta(hours=fence.TASK_QUEUE_MAX_READY_AGE_H + 5)
+           ).isoformat(timespec="seconds")
+    _task_queue(root, [{"kind": "wire", "created_at": old}, {"kind": "wire"},
+                       {"kind": "human_inbox", "created_at": old}])
+    rep = build_report(root)
+    assert rep["status"] == "CLEAN" and rep["breaches"] == []
+    got = {r["kind"]: r for r in rep["unconsumed_kinds"]}
+    assert set(got) == {"wire", "human_inbox"}
+    assert got["wire"]["ready"] == 2 and got["wire"]["past_bound"] == 1
+    assert got["human_inbox"]["oldest_age_h"] > fence.TASK_QUEUE_MAX_READY_AGE_H
+
+
+def test_the_breach_set_is_the_consumers_claim_lists() -> None:
+    from libs.ops import queue_cycle as QC
+    assert {"recertify", "ingest_version", "invalidate", "screen_class"} == QC.CLAIMED_KINDS
+    assert fence.TASK_QUEUE_MAX_READY_AGE_H == QC.READY_BOUND_H
 
 
 def test_a_task_not_yet_released_is_not_aged(tmp_path: Path) -> None:
