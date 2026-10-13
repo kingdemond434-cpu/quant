@@ -35,6 +35,7 @@ run every 15 minutes and move the book twice a day.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -42,6 +43,7 @@ import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
+from dataclasses import fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -372,6 +374,13 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
                 acct["refused"][name] = "build_cell returned no signals"
                 continue
             ser = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
+            rejections = ser.attrs.get("geometry_rejections") if ser is not None else None
+            if rejections:
+                acct.setdefault("unfilled_geometry", {})[name] = {
+                    "count": ser.attrs.get("geometry_rejection_count", len(rejections)),
+                    "receipt_sha256": ser.attrs.get("geometry_receipt_sha256"),
+                    "examples": rejections,
+                }
             if ser is None or len(ser) < 2:
                 acct["refused"][name] = f"replay produced {0 if ser is None else len(ser)} days"
                 continue
@@ -506,11 +515,14 @@ def live_days_by_sleeve() -> dict[str, int]:
     2026-09-01 (the gateway required a broker-rewritable comment prefix), so an empty answer here
     is expected for now and is reported as zero live evidence rather than hidden.
     """
-    path = BASE / "data" / "live_ledger.jsonl"
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    path = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
+    from libs.ops.live_ledger_view import ledger_path
+
     if not path.exists():
         return {}
     days: dict[str, set[str]] = {}
-    for line in path.read_text("utf-8").splitlines():
+    for line in ledger_path(path).read_text("utf-8").splitlines():
         try:
             row = json.loads(line)
         except ValueError:
@@ -751,8 +763,13 @@ def search_trials() -> dict[str, int]:
             out[f"family:{fam}"] = max(int(out.get(f"family:{fam}", 0)), int(n))
         out["lifetime_total"] = max(int(out.get("lifetime_total", 0)),
                                     int(life.get("lifetime_trials", 0)))
-    except Exception:
-        pass
+    except Exception as exc:
+        # The lifetime count is a multiplicity input, not optional telemetry. Continuing with
+        # only the current gate count when the graph is unreadable would size a selected winner
+        # as if its earlier searches never happened. The previous book stands instead.
+        raise RuntimeError(
+            f"lifetime trial count unavailable: {type(exc).__name__}: {exc}"
+        ) from exc
     return out
 
 
@@ -3316,6 +3333,24 @@ def kelly_fraction(ev: list[SleeveEvidence], cfg: WorldConfig, *,
     return out
 
 
+def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -> str:
+    """Bind cached worlds to every supplied return, posterior input and draw setting."""
+    digest = hashlib.sha256(b"quant-world-decision-state-v1")
+    for obj in (cfg, *ev):
+        for field in fields(obj):
+            value = getattr(obj, field.name)
+            digest.update(field.name.encode("utf-8") + b"\0")
+            if isinstance(value, np.ndarray):
+                arr = np.ascontiguousarray(value)
+                digest.update(str((arr.dtype.str, arr.shape)).encode("ascii") + b"\0")
+                digest.update(arr.tobytes())
+            else:
+                digest.update(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                         default=str).encode("utf-8"))
+            digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -3510,11 +3545,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                       **(cov_cal.as_overrides() if cov_cal else {}))
 
     cachef = CACHE / "worlds.npz"
+    fingerprint = decision_state_fingerprint(ev, cfg)
     worlds: Worlds | None = None
     if mode == "fast" and cachef.exists() and time.time() - cachef.stat().st_mtime < 3600:
         try:
             z = np.load(cachef, allow_pickle=False)
-            if tuple(z["names"]) == tuple(e.name for e in ev):
+            if (tuple(z["names"]) == tuple(e.name for e in ev)
+                    and "fingerprint" in z and str(z["fingerprint"].item()) == fingerprint):
                 worlds = Worlds(r=z["r"], names=tuple(str(x) for x in z["names"]),
                                 crisis=z["crisis"], mu_draws=z["mu"],
                                 note="reused cached world population")
@@ -3527,7 +3564,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         try:
             CACHE.mkdir(parents=True, exist_ok=True)
             np.savez_compressed(cachef, r=worlds.r, names=np.array(worlds.names),
-                                crisis=worlds.crisis, mu=worlds.mu_draws)
+                                crisis=worlds.crisis, mu=worlds.mu_draws,
+                                fingerprint=np.array(fingerprint))
         except OSError as exc:
             _log(f"world cache not written ({exc}); next fast pass will resample")
 
@@ -4117,7 +4155,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         prev_admission = _prev_art if isinstance(_prev_art, dict) else {}
     except (OSError, ValueError, AttributeError):
         prev_admission = {}
-    if heavy and funded:
+    # Cash is a valid incumbent. The scanner already compares an empty book with
+    # each candidate under the same cap; skipping it strands the first admission
+    # and keeps carrying an old measurement even on the heavy clock.
+    if heavy:
         admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
                                        total_heat=book.total_heat, order=free.marginal,
                                        # Whatever the last scan could not finish goes first, and

@@ -1,0 +1,44 @@
+{
+  "C:/Users/Administrator/Documents/Codex/2026-10-01/check-repo-https-github-com-kingdemond434/outputs/closure-sparse-gate-junit.xml": {
+    "path": "docs/cro/evidence/20261012/journal-archives/closure-sparse-gate-junit.xml",
+    "sha256": "694e64f8fba297da656f491a6297b6cde8f4f62ddd2562cf7b2c63caa2320c98",
+    "original_sha256": "694e64f8fba297da656f491a6297b6cde8f4f62ddd2562cf7b2c63caa2320c98",
+    "redacted": false
+  },
+  "C:/Users/Administrator/Documents/Codex/2026-10-01/check-repo-https-github-com-kingdemond434/outputs/closure-net-evidence-junit.xml": {
+    "path": "docs/cro/evidence/20261012/journal-archives/closure-net-evidence-junit.xml",
+    "sha256": "d153432137d8c7f5732bfffd7b4d66d8485c2c60e69fefe569e15c85d99e720e",
+    "original_sha256": "d153432137d8c7f5732bfffd7b4d66d8485c2c60e69fefe569e15c85d99e720e",
+    "redacted": false
+  },
+  "C:/Users/Administrator/Documents/Codex/2026-10-01/check-repo-https-github-com-kingdemond434/outputs/closure-sparse-gate-final-junit.xml": {
+    "path": "docs/cro/evidence/20261012/journal-archives/closure-sparse-gate-final-junit.xml",
+    "sha256": "6991eb7686fd92cbf20d03cdee33d9bb089299f697bb49614517345fb3c43d5f",
+    "original_sha256": "6991eb7686fd92cbf20d03cdee33d9bb089299f697bb49614517345fb3c43d5f",
+    "redacted": false
+  },
+  "C:/Users/Administrator/Documents/Codex/2026-10-01/check-repo-https-github-com-kingdemond434/outputs/closure-all-sparse-cases-junit.xml": {
+    "path": "docs/cro/evidence/20261012/journal-archives/closure-all-sparse-cases-junit.xml",
+    "sha256": "089c2e712c890d5eefd3be20b1eb102ec84fb8f35a44cef37ddb1e297ab89518",
+    "original_sha256": "089c2e712c890d5eefd3be20b1eb102ec84fb8f35a44cef37ddb1e297ab89518",
+    "redacted": false
+  },
+  "C:/opt/quant/desks/mt5/reports/CLOSURE_REPAIR_REVIEW_PACKET_20261009.json": {
+    "path": "docs/cro/evidence/20261012/journal-archives/CLOSURE_REPAIR_REVIEW_PACKET_20261009.json",
+    "sha256": "53cbd5210fd688d4b711509a404e20edd8468c415703100378ec10fc96831e02",
+    "original_sha256": "8a4afb5e5e7a72cf5fb30f8783e94632394687ce4dc4c7e0d2b0bead33d678b9",
+    "redacted": false
+  },
+  "C:/opt/quant/desks/mt5/reports/CLOSURE_VERDICT_MEASUREMENT_20261009.json": {
+    "path": "docs/cro/evidence/20261012/journal-archives/CLOSURE_VERDICT_MEASUREMENT_20261009.json",
+    "sha256": "593724100cc0086531ac739d7b33c11596edccda73eecabef4de4be3ed140de6",
+    "original_sha256": "84df179354ab84961db8e5800206b58aca0402965c67a2232d1d485199c61838",
+    "redacted": false
+  },
+  "C:\\opt\\quant\\desks\\mt5\\reports\\REMAINING_REPAIRS_20261011.json": {
+    "path": "docs/cro/evidence/20261012/journal-archives/REMAINING_REPAIRS_20261011.json",
+    "sha256": "1210ea62370de67094a8cf4ca004fc156bf53062bd30826f94baa831a145726d",
+    "original_sha256": "4ee5040830fdb4cfde98d3a92721cba0bf9227a864a17c9582469b80641d2aa5",
+    "redacted": true
+  }
+}

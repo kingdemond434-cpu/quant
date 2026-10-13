@@ -86,7 +86,8 @@ from research import moat_series as mos  # noqa: E402
 
 #: The desk's own ledgers. Every one is written by an organ that already owns it; nothing here
 #: writes to any of them.
-LIVE_LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 FILL_CORPUS = BASE / "data" / "fill_corpus.jsonl"
 ORDER_INTENTS = BASE / "data" / "order_intents.jsonl"
 REPORTS = BASE / "reports"
