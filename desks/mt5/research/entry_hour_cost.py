@@ -73,6 +73,9 @@ TICK_SURFACE_PATH = _DESK / "data" / "cost_surface_tick.json"
 #: A quarter of `cost_surface.MIN_OBS` (200), so a cell one bar short of MEASURED is ~80% its own.
 K_SHRINK = 50.0
 
+#: Priced bars in an hour's last-365-day window before it is preferred (`cost_surface`).
+MIN_RECENT_OBS = 100
+
 #: Bars of a dow x hour cell before it is used at all (mirrors `cost_surface.MIN_DOW_OBS`).
 MIN_DOW_OBS = 40
 
@@ -162,6 +165,13 @@ def hour_spread_pts(surface: dict[str, Any] | None, symbol: str, hour: int,
         return None, {"basis": "UNMEASURED: symbol absent from the cost surface"}
     cell = (row.get("hours") or {}).get(str(h)) or {}
     n = int(cell.get("n_nonzero") or 0)
+    # RECENCY-PREFERRED: the last year's priced bars at this hour, when there are enough of them.
+    # NZDJPY hour 0 reads 42/100 over eight years and 87/119 over the last twelve months; the
+    # long-run cell understates the regime the sleeve actually trades in by ~2x.
+    rn = int(cell.get("r365_n") or 0)
+    rv = _num(cell.get(f"r365_{q}"))
+    if rn >= MIN_RECENT_OBS and rv is not None and rv > 0:
+        return rv, {"basis": "hour_recent365", "n": rn, "n_eff": rn}
     if cell.get("status") == "MEASURED" and _num(cell.get(q)) is not None:
         return float(cell[q]), {"basis": "hour", "n": n, "n_eff": n}
     parent, plabel, upper = _parent(row, h, q)
@@ -304,6 +314,63 @@ def unmeasured_fields(registry: dict[str, Any] | None,
         "rule": ("a symbol listed here prices as UNMEASURED: a certificate or clock priced on "
                  "it is queued for repricing, never treated as free"),
     }
+
+
+def charged_vs_hour(surface: dict[str, Any] | None, registry: dict[str, Any] | None,
+                    ratio: float = 2.0) -> dict[str, Any]:
+    """Every symbol whose CHARGED scalar differs from an hour's own charge by more than `ratio`.
+
+    "Charged" is what a flat consumer pays: the registry's `median_spread_pts`, and the
+    surface's stored `pooled_median_spread_pts` (a revision-1 surface copied it from the registry
+    at build time and never checked it). For each, the hours whose entry-hour charge (this
+    module's ladder, p50) sits outside [1/ratio, ratio] of it are listed, so a rollover sleeve
+    priced flat is named with the hour that makes it wrong. `pooled_vs_hourly` separately lists
+    symbols whose stored pooled value disagrees with the median of their own hourly p50s.
+    """
+    reg = registry if isinstance(registry, dict) else {}
+    reg = reg.get("symbols", reg) if isinstance(reg.get("symbols"), dict) else reg
+    by_symbol: dict[str, Any] = {}
+    pooled_bad: list[dict[str, Any]] = []
+    for sym, row in sorted(((surface or {}).get("symbols") or {}).items()):
+        if not isinstance(row, dict):
+            continue
+        hours = row.get("hours") or {}
+        hp50 = sorted(float(c["p50"]) for c in hours.values()
+                      if isinstance(c, dict) and c.get("status") == "MEASURED"
+                      and _num(c.get("p50")) is not None)
+        own = hp50[len(hp50) // 2] if hp50 else None
+        stored = _num(row.get("pooled_median_spread_pts"))
+        if own and (stored is None or stored <= 0 or not (1 / ratio <= stored / own <= ratio)):
+            pooled_bad.append({"symbol": sym, "stored_pooled_pts": stored,
+                               "median_hourly_p50_pts": own,
+                               "ratio": round(stored / own, 3) if stored else None})
+        entry: dict[str, Any] = {}
+        for label, charged in (("registry", _num((reg.get(sym) or {}).get("median_spread_pts"))),
+                               ("surface_pooled", stored)):
+            bad: dict[str, Any] = {}
+            for h in range(24):
+                v, _ = hour_spread_pts(surface, sym, h)
+                if v is None:
+                    continue
+                if charged is None or charged <= 0:
+                    bad[str(h)] = {"hour_pts": v, "charged_pts": charged, "x": None}
+                elif not (1 / ratio <= v / charged <= ratio):
+                    bad[str(h)] = {"hour_pts": v, "charged_pts": charged,
+                                   "x": round(v / charged, 2)}
+            if bad:
+                entry[label] = bad
+        if entry:
+            by_symbol[sym] = entry
+    under = sorted(s for s, e in by_symbol.items()
+                   if any((c.get("x") or 0) > ratio for c in (e.get("registry") or {}).values()))
+    roll = sorted(s for s, e in by_symbol.items()
+                  if any(h in (e.get("registry") or {}) and
+                         ((e["registry"][h].get("x") or 0) > ratio) for h in ("23", "0", "1")))
+    return {"ratio": ratio, "n_symbols": len(by_symbol),
+            "n_undercharged_some_hour": len(under), "undercharged_some_hour": under,
+            "n_undercharged_at_rollover": len(roll), "undercharged_at_rollover": roll,
+            "n_pooled_vs_hourly_mismatch": len(pooled_bad), "pooled_vs_hourly": pooled_bad,
+            "by_symbol": by_symbol}
 
 
 # ----------------------------------------------------------------------------------------------

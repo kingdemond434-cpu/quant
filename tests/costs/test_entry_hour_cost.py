@@ -205,3 +205,39 @@ def test_accuracy_report_compares_the_fill_quote_to_the_modelled_charge():
     assert acc.broker_slot("2026-09-16T04:45:53+00:00") == (2, 7), "summer: broker = UTC+3"
     empty = acc.build(fills=[], registry={}, surface=surf)
     assert empty["status"].startswith("UNMEASURED")
+
+
+def test_recent_window_is_preferred_when_it_has_the_bars():
+    surf = _surface({"0": {"status": "MEASURED", "p50": 42.0, "p90": 100.0, "n_nonzero": 2255,
+                           "r365_n": 250, "r365_p50": 87.0, "r365_p90": 119.0},
+                     "1": {"status": "MEASURED", "p50": 15.0, "p90": 18.0, "n_nonzero": 2255,
+                           "r365_n": 20, "r365_p50": 99.0, "r365_p90": 99.0}})
+    v, info = ehc.hour_spread_pts(surf, "X", 0)
+    assert v == 87.0 and info["basis"] == "hour_recent365", "NZDJPY's rollover regime, not 8y"
+    assert ehc.hour_spread_pts(surf, "X", 0, q="p90")[0] == 119.0
+    assert ehc.hour_spread_pts(surf, "X", 1)[0] == 15.0, "too few recent bars: long-run cell"
+
+
+def test_surface_pooled_is_its_own_median_and_registry_disagreement_is_named(tmp_path):
+    idx = pd.date_range("2022-01-03", periods=24 * 400, freq="h", tz="UTC")
+    df = pd.DataFrame({"spread": [42 if t.hour == 0 else 15 for t in idx],
+                       "tick_volume": 100, "open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0},
+                      index=idx)
+    df.to_parquet(tmp_path / "NZDJPY_H1.parquet")
+    (tmp_path / "universe.json").write_text('{"NZDJPY": {"median_spread_pts": 147.0}}')
+    doc = cs.build(tmp_path)
+    row = doc["symbols"]["NZDJPY"]
+    assert row["pooled_median_spread_pts"] == 15.0
+    assert row["registry_median_spread_pts"] == 147.0
+    assert [m["symbol"] for m in doc["registry_pooled_mismatch"]] == ["NZDJPY"]
+    assert row["hours"]["0"]["r365_p50"] == 42.0
+
+
+def test_charged_vs_hour_names_the_rollover_undercharge():
+    surf = _surface({str(h): {"status": "MEASURED", "p50": 42.0 if h == 0 else 15.0,
+                              "p90": 100.0, "n_nonzero": 999} for h in range(24)},
+                    pooled_median_spread_pts=147.0)
+    out = ehc.charged_vs_hour(surf, {"X": {"median_spread_pts": 15.0}})
+    assert out["undercharged_at_rollover"] == ["X"]
+    assert out["by_symbol"]["X"]["registry"]["0"]["x"] == 2.8
+    assert out["pooled_vs_hourly"][0]["stored_pooled_pts"] == 147.0

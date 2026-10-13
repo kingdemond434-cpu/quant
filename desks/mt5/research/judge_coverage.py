@@ -828,7 +828,19 @@ def _cost_fields_unmeasured(path: Path | None = None) -> dict[str, Any]:
         from desks.mt5.research.entry_hour_cost import (  # type: ignore[import-not-found,no-redef]
             unmeasured_fields,
         )
-    return {"status": "MEASURED", **unmeasured_fields(reg)}
+    block: dict[str, Any] = {"status": "MEASURED", **unmeasured_fields(reg)}
+    # THE ENTRY-HOUR MISPRICING SWEEP: symbols whose flat charged scalar (registry, or the
+    # surface's stored pooled value) is more than 2x off an hour's own charge, by hour.
+    try:
+        from research.entry_hour_cost import charged_vs_hour, load_surface
+    except ImportError:  # pragma: no cover - path variant
+        from desks.mt5.research.entry_hour_cost import (  # type: ignore[import-not-found,no-redef]
+            charged_vs_hour,
+            load_surface,
+        )
+    sweep = charged_vs_hour(load_surface(), reg)
+    block["hour_mispriced"] = {k: v for k, v in sweep.items() if k != "by_symbol"}
+    return block
 
 
 def _prewarm_share(path: Path | None = None) -> float | None:

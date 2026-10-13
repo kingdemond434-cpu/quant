@@ -134,6 +134,20 @@ SCHEMA_REVISION = 2
 #: 2020 out of six years.
 ERA_START = pd.Timestamp("2021-01-01", tz="UTC")
 
+#: The registry's stored spread and the surface's own pooled value (median of the measured
+#: hourly p50s) may differ by this factor either way before the symbol is named as a mismatch.
+#: 2.0 is MATERIAL_RATIO: the threshold this module already uses for a cell that matters.
+POOLED_TOLERANCE = 2.0
+
+#: THE RECENT WINDOW EACH HOUR ALSO CARRIES (priced bars, full-session days): the last
+#: RECENT_PRICED_DAYS of the symbol's own tape. The entry-hour reader PREFERS it when it holds
+#: at least MIN_RECENT_OBS priced bars -- recency-preferred lookup, chosen over a decay weight
+#: because it is auditable per cell and cannot cheapen a regime by averaging it with a dead
+#: one. Measured 2026-10-13 (Max-growth): NZDJPY broker hour 0 p50/p90 42/100 over 8 years,
+#: 87/119 over the last 12 months, every other hour ~15 in both.
+RECENT_PRICED_DAYS = 365
+MIN_RECENT_OBS = 100
+
 #: A cell with fewer priced bars than MIN_OBS is UNMEASURED and carries no `p50` (consumers must
 #: refuse it), but from this many it carries `thin_p50`/`thin_p90` and its `n_nonzero`, so the
 #: entry-hour cost (`entry_hour_cost`) can SHRINK it toward its parent with n_eff stated rather
@@ -223,6 +237,9 @@ def profile_symbol(df: pd.DataFrame) -> dict | None:
         return None
     hours: dict[str, dict] = {}
     hh = pd.DatetimeIndex(d.index).hour
+    d_idx = pd.DatetimeIndex(d.index)
+    recent_mask = np.asarray(d_idx >= d_idx.max() - pd.Timedelta(days=RECENT_PRICED_DAYS)) \
+        if len(d_idx) else np.zeros(0, dtype=bool)
     for h in range(24):
         cell = d.loc[hh == h, "spread"]
         n_bars = int(cell.size)
@@ -246,6 +263,12 @@ def profile_symbol(df: pd.DataFrame) -> dict | None:
         else:
             row["status"] = "MEASURED"
             row.update(_pct_block(nz))
+        rc = d.loc[(hh == h) & recent_mask, "spread"]
+        rnz = rc[rc > 0].astype(float)
+        row["r365_n"] = int(rnz.size)
+        if rnz.size >= MIN_THIN_OBS:
+            row["r365_p50"] = round(float(rnz.median()), 2)
+            row["r365_p90"] = round(float(rnz.quantile(0.90)), 2)
         hours[str(h)] = row
     if not hours:
         return None
@@ -363,6 +386,7 @@ def build(universe_dir: Path | None = None) -> dict:
     registry = json.loads(reg_path.read_text("utf-8")) if reg_path.exists() else {}
     surface: dict[str, dict] = {}
     skipped: list[str] = []
+    mismatch: list[dict[str, object]] = []
     for f in sorted(u.glob("*_H1.parquet")):
         sym = f.name[: -len("_H1.parquet")]
         try:
@@ -385,8 +409,31 @@ def build(universe_dir: Path | None = None) -> dict:
             skipped.append(f"{sym}: {why}")
             continue
         meta = registry.get(sym) or {}
-        pooled = meta.get("median_spread_pts")
-        prof["pooled_median_spread_pts"] = float(pooled) if pooled is not None else None
+        # THE POOLED VALUE IS THIS SURFACE'S OWN, NEVER A COPY OF THE REGISTRY (2026-10-13).
+        # This line copied `universe.json:median_spread_pts` and never checked it against the
+        # 24 hourly p50s it had just computed, so a registry row in flux was frozen into the
+        # surface: NZDJPY read 147 at build (2026-09-23 04:25) against hourly p50s of 15-42, the
+        # registry was repaired to 15 twenty minutes later, and the surface kept 147 -- so
+        # every consumer that divides by the pooled scalar read NZDJPY's rollover at 0.29x when
+        # it is 2.8x. 47 of 299 symbols disagreed. The pooled value is now the median of the
+        # MEASURED hourly p50s; the registry's number rides beside it, and a disagreement beyond
+        # POOLED_TOLERANCE is published by name rather than absorbed.
+        reg_pooled = meta.get("median_spread_pts")
+        hp50 = sorted(float(c["p50"]) for c in prof["hours"].values()
+                      if c.get("status") == "MEASURED")
+        own = float(np.median(hp50)) if hp50 else None
+        prof["pooled_median_spread_pts"] = round(own, 3) if own is not None else None
+        prof["pooled_basis"] = ("median of measured hourly p50s" if own is not None
+                                else "UNMEASURED: no measured hour")
+        prof["registry_median_spread_pts"] = (float(reg_pooled) if reg_pooled is not None
+                                              else None)
+        if own is not None:
+            rp = prof["registry_median_spread_pts"]
+            ratio = (rp / own) if (rp is not None and own > 0) else None
+            prof["registry_over_pooled"] = round(ratio, 3) if ratio is not None else None
+            if ratio is None or not (1 / POOLED_TOLERANCE <= ratio <= POOLED_TOLERANCE):
+                mismatch.append({"symbol": sym, "registry_pts": rp, "pooled_pts": round(own, 3),
+                                 "ratio": prof["registry_over_pooled"]})
         prof["tick_size"] = float(meta.get("tick_size", 0.0) or 0.0)
         prof["contract_size"] = float(meta.get("contract_size", 0.0) or 0.0)
         surface[sym] = prof
@@ -399,6 +446,13 @@ def build(universe_dir: Path | None = None) -> dict:
         "session_share": SESSION_SHARE,
         "source": str(u.relative_to(_DESK.parent.parent)) if u == _UNIVERSE else str(u),
         "n_symbols": len(surface),
+        # THE FENCE ON THE REGISTRY: every symbol whose stored median_spread_pts disagrees with
+        # the median of its own measured hourly p50s by more than POOLED_TOLERANCE either way
+        # (or is zero/absent). A consumer charging the registry scalar on one of these is
+        # charging a number the bars contradict.
+        "pooled_tolerance": POOLED_TOLERANCE,
+        "n_registry_pooled_mismatch": len(mismatch),
+        "registry_pooled_mismatch": mismatch,
         "n_skipped": len(skipped),
         "skipped": skipped[:50],
         "symbols": surface,
