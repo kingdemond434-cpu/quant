@@ -30,12 +30,12 @@
       "price_open": 4189.58,
       "sl": 4156.24,
       "tp": 4266.88,
-      "profit": -2.82,
+      "profit": -2.18,
       "symbol": "XAUUSD"
     }
   ],
   "last_bracket_date": "2026-10-13",
-  "last_reconcile": "2026-10-13T07:50:06+00:00",
+  "last_reconcile": "2026-10-13T08:05:16+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -79,7 +79,7 @@
     }
   },
   "lot": 0.06,
-  "equity": 482.64,
+  "equity": 483.08,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-13T04:00:13+00:00",
@@ -103,7 +103,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-13T10:49:24+00:00",
+  "placement_pass": "2026-10-13T11:05:02+00:00",
   "netting_booked": {
     "234917497": {
       "sleeve": "gold_asia",
@@ -321,15 +321,15 @@
       "last_signal_bar": "2026-09-30 10:00:00+00:00"
     },
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-13 09:00:00+00:00",
+      "last_signal_bar": "2026-10-13 10:00:00+00:00",
       "trail_k": 0.0,
       "open_ttl_until": "2026-10-13T09:00:00+00:00"
     },
     "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-13 09:00:00+00:00"
+      "last_signal_bar": "2026-10-13 10:00:00+00:00"
     },
     "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
-      "last_signal_bar": "2026-10-13 09:00:00+00:00"
+      "last_signal_bar": "2026-10-13 10:00:00+00:00"
     }
   },
   "orig_stop_dist": {
@@ -509,7 +509,7 @@
     "234917497": 39.029999999999745
   },
   "restart_reconcile": {
-    "at": "2026-10-13T07:49:26+00:00",
+    "at": "2026-10-13T08:05:03+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
