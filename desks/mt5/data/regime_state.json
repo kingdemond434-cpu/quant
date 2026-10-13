@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-13T07:30:37.960511+00:00",
+  "swept_at": "2026-10-13T07:46:15.448542+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -64,7 +64,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 24,
-      "shadow_exp_r": -0.7069,
+      "shadow_exp_r": -0.6899,
       "woke_on_shadow": false
     },
     "AUDHUF|correlation_regime_continuous": {
@@ -207,7 +207,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1101,
+      "shadow_exp_r": -0.1067,
       "woke_on_shadow": false
     },
     "AUDSGD|clock_transition_asia": {
@@ -1659,7 +1659,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1318,
+      "shadow_exp_r": -0.0943,
       "woke_on_shadow": false
     },
     "EURZAR|formula_asia": {
@@ -1670,7 +1670,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.4989,
+      "shadow_exp_r": 0.4926,
       "woke_on_shadow": false
     },
     "EURZAR|formula_continuous": {
@@ -1868,7 +1868,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2201,
+      "shadow_exp_r": -0.2281,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -1901,7 +1901,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 42,
-      "shadow_exp_r": 0.4007,
+      "shadow_exp_r": 0.4004,
       "woke_on_shadow": false
     },
     "GBPCHF|overnight_gap_decay_asia": {
@@ -5211,8 +5211,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.9088,
+      "shadow_n": 0,
+      "shadow_exp_r": 0.0,
       "woke_on_shadow": false
     },
     "XCUUSD|cross_asset_residual_continuous": {
