@@ -144,7 +144,8 @@ def read_key(name: str) -> str:
     if val:
         return val
     try:
-        import winreg  # type: ignore[import-not-found,unused-ignore]
+        import importlib
+        winreg: Any = importlib.import_module("winreg")
     except ImportError:
         return ""
     for hive, sub in ((winreg.HKEY_LOCAL_MACHINE,
