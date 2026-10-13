@@ -43,7 +43,53 @@ and under the second reading it silently re-runs a short certificate long.
 from __future__ import annotations
 
 import inspect
+import math
 from typing import Any
+
+
+def signal_reference_price(family: str, bars: Any, signal: Any) -> float | None:
+    """Preserve the overnight replay's entry-to-level geometry at next-bar open.
+
+    The constructor lays absolute levels from its signal-bar open, but engine
+    fills at the following open without moving those levels. The forming bar's
+    open is already observed at decision time. Other families retain their
+    existing signal-close reference. An invalid replay bracket never gains a
+    new reference: the existing close-based stale check still applies.
+    """
+    try:
+        value = float(bars.loc[signal.time, "close"])
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+    if family == "overnight_gap_decay":
+        try:
+            index = int(bars.index.get_loc(signal.time))
+            if index + 1 < len(bars):
+                replay_entry = float(bars.iloc[index + 1]["open"])
+                low, high = sorted((float(signal.stop), float(signal.target)))
+                if math.isfinite(replay_entry) and low < replay_entry < high:
+                    value = replay_entry
+        except (AttributeError, KeyError, TypeError, ValueError):
+            pass
+    return value if math.isfinite(value) and value > 0 else None
+
+
+def spread_blocks_entry(signal: Any, side: int, bid: float, ask: float) -> bool:
+    """The executable side crossed the target solely through the quoted spread.
+
+    This permits another quote check on the same still-current signal bar. It
+    grants no order permission and never retries a quote already beyond the
+    original target or stop on both sides.
+    """
+    try:
+        stop, target = float(signal.stop), float(signal.target)
+        bid, ask = float(bid), float(ask)
+    except (AttributeError, TypeError, ValueError):
+        return False
+    if not all(math.isfinite(x) for x in (stop, target, bid, ask)) or bid >= ask:
+        return False
+    if side > 0:
+        return stop < bid < target <= ask
+    return bid <= target < ask < stop
 
 
 def accepts_side(fn: Any) -> bool:

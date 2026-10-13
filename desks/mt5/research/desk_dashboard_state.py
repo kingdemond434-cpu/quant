@@ -560,7 +560,8 @@ def _live(deadline: float) -> dict[str, Any]:
     guard = Src("desks/mt5/data/e8_guard_state.json", 86400, "the E8 guard")
     e8g = Src("desks/mt5/reports/E8_GOLD.json", 7200, "desks/mt5/research/e8_gold.py")
     e8x = Src("desks/mt5/reports/E8_EXEC.json", 7200, "the E8 executor")
-    led_path = DESK / "data" / "live_ledger.jsonl"
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    led_path = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
     led_age = (max(0.0, time.time() - led_path.stat().st_mtime) if led_path.exists() else None)
     rows = _all_rows(led_path) if led_path.exists() and time.time() < deadline else []
     led_cite = {"source": "desks/mt5/data/live_ledger.jsonl", "age_s": led_age,
