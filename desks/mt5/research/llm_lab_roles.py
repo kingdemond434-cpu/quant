@@ -456,6 +456,10 @@ def code_refusal(code: str) -> str:
     return ""
 
 
+#: The OS as read at import; a test overrides this, never `os.name` (pathlib reads that).
+_OS_NAME = os.name
+
+
 def code_lab_isolated() -> str:
     """'' when the sandbox can cap the child, else why role R stands down.
 
@@ -465,7 +469,7 @@ def code_lab_isolated() -> str:
     """
     if os.environ.get("QUANT_LLM_CODE_LAB", "") == "1":
         return ""
-    if os.name != "posix":
+    if _OS_NAME != "posix":
         return ("DISABLED_NO_ISOLATION: no rlimit on this OS; set QUANT_LLM_CODE_LAB=1 to run "
                 "under the allowlist and timeout alone")
     return ""

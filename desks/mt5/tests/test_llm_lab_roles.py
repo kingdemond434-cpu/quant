@@ -165,7 +165,7 @@ def test_attribute_chains_cannot_reach_the_os(src: str) -> None:
 
 def test_role_r_stands_down_without_isolation(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("QUANT_LLM_CODE_LAB", raising=False)
-    monkeypatch.setattr(roles.os, "name", "nt")
+    monkeypatch.setattr(roles, "_OS_NAME", "nt")
     assert roles.code_lab_isolated().startswith("DISABLED_NO_ISOLATION")
     dons, tally = roles.code_lab(Path("absent.json"), {}, max_items=3, deadline=1e18)
     assert dons == [] and tally["state"].startswith("DISABLED")
