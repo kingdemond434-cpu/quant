@@ -190,6 +190,21 @@
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
    }
+  },
+  "meta_label": {
+   "hypothesis": "A purged walk-forward meta-label over point-in-time cross-asset/macro state separates winning from losing signals of existing sleeves, so skipping the low-probability signals raises forward R per signal under the Tier S DSR bar.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_forward",
+    "better": "up",
+    "organ": "report:META_LABEL.json"
+   },
+   "falsifier": {
+    "metric": "n_trades",
+    "op": "==",
+    "threshold": 0,
+    "after": "7 days: no sleeve ledger reached the conditioner, so it filters nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
