@@ -124,11 +124,18 @@ def _write_json(path: Path, doc: Any) -> None:
 
 
 def page_text(body: bytes) -> str:
+    """Visible text, one line per block (paragraph, table row, list item, heading): a keyword
+    and a date are only read together when they share a block."""
     raw = body.decode("utf-8", errors="replace")
     raw = re.sub(r"(?is)<(script|style|noscript|head)\b.*?</\1>", " ", raw)
+    raw = re.sub(r"(?i)</t[dh]\s*>", " | ", raw)
+    raw = re.sub(r"(?i)<br\s*/?>|</(p|tr|li|div|h[1-6]|dd|dt|caption|section|article)\s*>",
+                 "\n", raw)
     raw = re.sub(r"(?s)<[^>]+>", " ", raw)
     import html
-    return re.sub(r"\s+", " ", html.unescape(raw)).strip()
+    lines = (re.sub(r"[ \t\r\f\v]+", " ", ln).strip()
+             for ln in html.unescape(raw).split("\n"))
+    return "\n".join(ln for ln in lines if ln)
 
 
 def _dates(text: str) -> list[tuple[int, date]]:
@@ -154,20 +161,19 @@ def _dates(text: str) -> list[tuple[int, date]]:
 
 
 def extract(text: str, lang: str, *, today: date | None = None) -> list[dict[str, str]]:
-    """Every date within KEYWORD_SPAN characters of an election keyword, with the quote."""
-    low = text.lower()
+    """Every date in the same block and sentence as an election keyword, within KEYWORD_SPAN
+    characters of it, with the quote it was read from."""
     keys = KEYWORDS.get(lang, ()) + (KEYWORDS["en"] if lang != "en" else ())
-    hits = [m.start() for k in keys for m in re.finditer(re.escape(k.lower()), low)]
-    if not hits:
-        return []
     limit = (today or datetime.now(UTC).date()) + timedelta(days=400)
     out: dict[str, dict[str, str]] = {}
-    for pos, d in _dates(text):
-        if not EARLIEST <= d <= limit:
+    for seg in re.split(r"\n|(?<=[.!?\u3002])\s+", text):
+        low = seg.lower()
+        hits = [m.start() for k in keys for m in re.finditer(re.escape(k.lower()), low)]
+        if not hits:
             continue
-        if any(abs(pos - h) <= KEYWORD_SPAN for h in hits):
-            lo, hi = max(0, pos - 80), min(len(text), pos + 80)
-            out.setdefault(d.isoformat(), {"date": d.isoformat(), "quote": text[lo:hi]})
+        for pos, d in _dates(seg):
+            if EARLIEST <= d <= limit and any(abs(pos - h) <= KEYWORD_SPAN for h in hits):
+                out.setdefault(d.isoformat(), {"date": d.isoformat(), "quote": seg[:240]})
     return sorted(out.values(), key=lambda e: e["date"])
 
 
