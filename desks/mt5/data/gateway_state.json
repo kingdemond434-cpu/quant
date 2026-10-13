@@ -22,24 +22,22 @@
       "orders": []
     }
   },
-  "position": null,
-  "last_bracket_date": "2026-10-13",
-  "last_reconcile": "2026-10-13T04:04:08+00:00",
-  "bracket_cancelled": true,
-  "pending": [
+  "position": [
     {
       "ticket": 234917497,
-      "type": 4,
-      "price": 4189.46,
-      "symbol": "XAUUSD"
-    },
-    {
-      "ticket": 234917501,
-      "type": 5,
-      "price": 4150.75,
+      "type": 0,
+      "volume": 0.01,
+      "price_open": 4189.58,
+      "sl": 4150.55,
+      "tp": 4266.88,
+      "profit": 1.46,
       "symbol": "XAUUSD"
     }
   ],
+  "last_bracket_date": "2026-10-13",
+  "last_reconcile": "2026-10-13T04:26:23+00:00",
+  "bracket_cancelled": true,
+  "pending": null,
   "brackets": {
     "gold_asia": {
       "date": "2026-10-13",
@@ -81,7 +79,7 @@
     }
   },
   "lot": 0.06,
-  "equity": 485.08,
+  "equity": 487.14,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-13T04:00:13+00:00",
@@ -105,8 +103,14 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-13T07:04:09+00:00",
-  "netting_booked": {},
+  "placement_pass": "2026-10-13T07:26:07+00:00",
+  "netting_booked": {
+    "234917497": {
+      "sleeve": "gold_asia",
+      "symbol": "XAUUSD",
+      "lots": 0.01
+    }
+  },
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
       "last_signal_bar": "2026-09-17 08:00:00+00:00"
@@ -501,27 +505,25 @@
     "233203619": 40.8799999999992,
     "233700226": 0.0016500000000000403,
     "233796519": 49.340000000000146,
-    "234810421": 0.0008599999999999719
+    "234810421": 0.0008599999999999719,
+    "234917497": 39.029999999999745
   },
   "restart_reconcile": {
-    "at": "2026-10-13T04:04:12+00:00",
+    "at": "2026-10-13T04:26:07+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
-    "positions": [],
-    "orders": [
+    "positions": [
       {
         "ticket": 234917497,
         "symbol": "XAUUSD",
-        "comment": "DWgold_asia"
-      },
-      {
-        "ticket": 234917501,
-        "symbol": "XAUUSD",
-        "comment": "DWgold_asia"
+        "comment": "DWgold_asia",
+        "volume": 0.01,
+        "sl": 4150.55
       }
     ],
+    "orders": [],
     "in_doubt": [],
     "stopless": [],
     "verdict": "OK"
