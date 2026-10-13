@@ -1,10 +1,8 @@
 {
   "schema": "ledger_view_adoption/1",
-  "state": "MIGRATED",
-  "target": "eedea400739fff34bd933d4db9c2926bebb5c26a",
+  "state": "ALREADY_VERIFIED",
+  "target": "e6a2ae71b8fa2b39ff67cab84b4879de9af6d566",
   "rows": 256,
-  "verified_at": "2026-10-13T04:21:34.553413+00:00",
-  "raw_sha256": "0aa07f09afaaa1513aa036868e48aad5e35e1a9b944b3ed6ec315536383de64b",
-  "financial_facts_changed": false,
-  "original_seals_preserved": 195
+  "verified_at": "2026-10-13T04:36:29.559333+00:00",
+  "financial_facts_changed": false
 }
