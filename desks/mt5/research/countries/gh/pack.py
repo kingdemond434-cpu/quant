@@ -801,7 +801,6 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     _src("gh_retail_ecology", "Ghanaian and Ivorian boards, in English, Twi and French",
          layer="retail_ecology",
          roots=("ghanaweb.com business and forum sections",
-                "reddit.com/r/ghana (economy and cost-of-living threads)",
                 "public X/Twitter threads on the cedi and the forex bureau rate",
                 "public francophone forums and comment threads on the franc CFA",
                 "farmer-facing Facebook groups discussing farmgate prices, described generically"),

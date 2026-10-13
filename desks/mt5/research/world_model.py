@@ -87,6 +87,11 @@ AXES = DESK / "data" / "axes"
 FRED = ROOT / "data" / "fred_macro.json"
 REPRESENTATIONS = DESK / "data" / "representations"
 MOAT_SERIES = DESK / "reports" / "MOAT_SERIES.json"
+#: The acquirer's registry (`research/acquire_datasets.py`). Until 2026-10-06 nothing here read it,
+#: so every dataset the acquirer fetched, parsed and certified reached the anomaly miner's
+#: primitives and never the representation forge -- the organ that turns one series into its
+#: level, change, acceleration, surprise and revision features.
+ACQUIRED = DESK / "data" / "acquired" / "registry.json"
 STORE = DESK / "data" / "world_model"
 CURSOR = STORE / "cursor.json"
 OUT = DESK / "reports" / "WORLD_MODEL.json"
@@ -299,6 +304,127 @@ def _points_from_rows(rows: list[Any], value_key: str, time_keys: tuple[str, ...
     return out
 
 
+def _acquired_lag_days(stamps: list[datetime]) -> int:
+    """Publication lag for an acquired series from its OWN spacing (median gap -> cadence ->
+    `pit_stamp.DEFAULT_LAG_DAYS`). The acquirer knows no release calendar for a crawled file, so
+    the cadence default -- conservative, pushed late -- is the honest rule."""
+    from libs.data.pit_stamp import DEFAULT_LAG_DAYS, FALLBACK_LAG_DAYS
+    gaps = sorted((b - a).total_seconds() / 86400.0 for a, b in zip(stamps, stamps[1:], strict=False)
+                  if b > a)
+    if not gaps:
+        return FALLBACK_LAG_DAYS
+    med = gaps[len(gaps) // 2]
+    cadence = ("daily" if med <= 1.5 else "weekly" if med <= 8 else "10-daily" if med <= 12
+               else "monthly" if med <= 40 else "quarterly" if med <= 100 else "")
+    return DEFAULT_LAG_DAYS.get(cadence, FALLBACK_LAG_DAYS)
+
+
+#: How late after its estimated publication a first sighting still counts as a live capture.
+LIVE_CAPTURE_SLACK = timedelta(days=3)
+
+
+def _first_seen(frame: Any, index: Any) -> list[datetime | None]:
+    """Per point, when the desk first saw it (the acquirer's `first_seen_at`), else None."""
+    import pandas as pd
+    if "first_seen_at" not in getattr(frame, "columns", ()):
+        return [None] * len(index)
+    raw = pd.to_datetime(frame["first_seen_at"].reindex(index), errors="coerce", utc=True)
+    return [None if pd.isna(x) else x.to_pydatetime() for x in raw]
+
+
+def _receipt(raw: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(raw)) if raw else None
+    except ValueError:
+        return None
+    return (t if t.tzinfo else t.replace(tzinfo=UTC)) if t else None
+
+
+def _acquired_inputs(unmeasured: list[dict[str, str]]) -> list[R.Series]:
+    """Every PIT-AUTHORITATIVE acquired series as a representation input.
+
+    Authority is the acquirer's certificate verdict (`pit_authority is True`), the same bar the
+    cell vocabulary uses; an uncertified series is retained and accumulating, and is named here
+    as UNMEASURED rather than silently absent. Each point is available from the later of its
+    period plus the cadence lag plus the broker-clock pad, and its receipt, and the value is the FIRST value the desk saw for that
+    period (the acquirer's accumulation keeps it), so a later revision never leaks backwards.
+    """
+    import pandas as pd
+    reg = _read_json(ACQUIRED)
+    if not isinstance(reg, dict) or not isinstance(reg.get("series"), dict):
+        unmeasured.append({"name": "acquired", "why": "no data/acquired/registry.json",
+                           "measured_by": "the hourly acquire_datasets leg"})
+        return []
+    out: list[R.Series] = []
+    withheld = 0
+    live_pts = backfilled_pts = no_receipt = 0
+    for name, meta in sorted(reg["series"].items()):
+        if not isinstance(meta, dict):
+            continue
+        if meta.get("pit_authority") is not True:
+            withheld += 1
+            continue
+        try:
+            frame = pd.read_parquet(str(meta["path"]))
+            vals = pd.to_numeric(frame["value"], errors="coerce").dropna()
+        except Exception:                                      # noqa: BLE001 -- named below
+            unmeasured.append({"name": f"acquired:{name}", "why": "parquet unreadable",
+                               "measured_by": "the next acquire_datasets pass"})
+            continue
+        if not vals.index.is_unique or len(vals) < R.MIN_PRIOR:
+            continue
+        stamps = [ts.to_pydatetime() for ts in pd.DatetimeIndex(vals.index)]
+        stamps = [t if t.tzinfo else t.replace(tzinfo=UTC) for t in stamps]
+        lag = timedelta(days=_acquired_lag_days(stamps), hours=CLOCK_PAD_H)
+        seen = _first_seen(frame, vals.index)
+        acquired_at = _receipt(meta.get("acquired_at"))
+        pts = []
+        for t, v, s_at in zip(stamps[-MAX_POINTS_PER_SERIES:],
+                              vals.to_numpy()[-MAX_POINTS_PER_SERIES:],
+                              seen[-MAX_POINTS_PER_SERIES:], strict=False):
+            if not math.isfinite(float(v)):
+                continue
+            # EVERY POINT IS STAMPED AT RECEIPT. A point is available no earlier than its
+            # cadence lag AND no earlier than the moment the desk first saw it. A history backfill
+            # (first seen long after publication) therefore enters as of the day it was fetched,
+            # never back-dated to when it might have been published: its vintage was not observed,
+            # so it is not point-in-time evidence before receipt. A point with no receipt stamp at
+            # all is withheld (fail closed), counted below.
+            receipt = s_at or acquired_at
+            if receipt is None:
+                no_receipt += 1
+                continue
+            avail = max(t + lag, receipt)
+            if receipt <= t + lag + LIVE_CAPTURE_SLACK:
+                live_pts += 1
+            else:
+                backfilled_pts += 1
+            pts.append(R.Point(available_time=avail.isoformat(), period_time=t.isoformat(),
+                               value=float(v)))
+        if len(pts) >= R.MIN_PRIOR:
+            host = str(meta.get("host") or "acquired")
+            out.append(R.Series(series_id=f"acquired:{name}", points=tuple(pts),
+                                dataset=f"acquired:{host}", region="GLOBAL",
+                                information_type="acquired_dataset"))
+    if backfilled_pts:
+        unmeasured.append({"name": "acquired:backfilled_reference",
+                           "why": (f"{backfilled_pts} acquired points were backfilled from a "
+                                   f"publisher's history ({live_pts} were live captures): their "
+                                   "vintage is not observed, so each is stamped at receipt and "
+                                   "carries no history before the desk fetched it"),
+                           "measured_by": "forward accumulation of first_seen_at"})
+    if no_receipt:
+        unmeasured.append({"name": "acquired:no_receipt",
+                           "why": f"{no_receipt} acquired points carry no receipt stamp and are "
+                                  "withheld",
+                           "measured_by": "the acquirer's first_seen_at / acquired_at"})
+    if withheld:
+        unmeasured.append({"name": "acquired:uncertified",
+                           "why": f"{withheld} acquired series retained without PIT authority",
+                           "measured_by": "a certificate whose seven questions all PASS"})
+    return out
+
+
 def load_inputs(*, max_series: int = 240) -> Inputs:
     """Every PIT series: the axes, FRED, the country data planes and the forge's own store.
 
@@ -308,6 +434,7 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
     series: list[R.Series] = []
     unmeasured: list[dict[str, str]] = []
 
+    axis_files: dict[str, str] = {}
     for path in sorted(AXES.glob("*.json")) if AXES.exists() else []:
         doc = _read_json(path)
         if not isinstance(doc, dict):
@@ -315,6 +442,7 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
                                "measured_by": "re-run the axis collector for this file"})
             continue
         axis_id = str(doc.get("id") or path.stem)
+        axis_files[axis_id] = path.stem
         region = _axis_region(axis_id)
         info = str(doc.get("axis") or "macro_state")
         sub = doc.get("series")
@@ -409,8 +537,29 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
         unmeasured.append({"name": "moat_series", "why": "reports/MOAT_SERIES.json absent",
                            "measured_by": "the hourly moat_series leg"})
 
+    series.extend(_acquired_inputs(unmeasured))
+
     series.sort(key=lambda s: (-len(s.points), s.series_id))
     kept = series[:max_series]
+    if len(series) > max_series:
+        # NAMED, NOT SILENT: the shortest series fall outside this pass's model width.
+        unmeasured.append({"name": "width",
+                           "why": f"{len(series) - max_series} series beyond max_series="
+                                  f"{max_series}, shortest first: "
+                                  + ", ".join(s.series_id for s in series[max_series:][:12]),
+                           "measured_by": "a wider max_series or a longer history"})
+
+    # CRO D18 counts a dataset as fed only on a recorded read: every axis file and acquired series
+    # this pass actually kept as a model input is recorded (libs/data/dataset_use).
+    axis_reads = {f"axis:{axis_files.get(s.dataset.split(':', 1)[1], s.dataset)}": ""
+                  for s in kept if s.dataset.startswith("axis:")}
+    axis_reads.update({s.series_id: "" for s in kept if s.series_id.startswith("acquired:")})
+    if axis_reads:
+        try:
+            from libs.data.dataset_use import record_reads
+            record_reads("world_model", axis_reads, use="regime_state")
+        except Exception:                                      # noqa: BLE001 -- never blocks
+            pass
     return Inputs(series=kept, unmeasured=unmeasured, arrays=_prepare(kept))
 
 

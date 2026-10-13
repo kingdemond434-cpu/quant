@@ -100,6 +100,9 @@ def _leg_series(selector: str) -> tuple[np.ndarray, np.ndarray] | None:
             series = acquired_series(require_authority=True).get(name)
             if series is None:
                 return None
+            # Credit only the series this chain stage actually read (libs.data.dataset_use).
+            from libs.data.dataset_use import record_reads
+            record_reads("transmission_engine", {f"acquired:{name}": None}, use="nowcast")
             s = pd.to_numeric(series, errors="coerce").dropna().sort_index()
             if len(s) < 3:
                 return None

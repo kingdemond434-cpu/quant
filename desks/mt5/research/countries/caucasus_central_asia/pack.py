@@ -1463,10 +1463,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class(
         "cca_retail_forums", "The regional retail ground: Armenian and Central Asian Facebook "
                              "and Telegram rate groups, forum.uz, diesel.elcat.kg, the "
-                             "country subreddits and the YouTube gold-and-dollar channels",
+                             "the YouTube gold-and-dollar channels",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/armenia/", "https://www.reddit.com/r/Uzbekistan/",
-               "https://diesel.elcat.kg/index.php?showforum=87",
+        roots=("https://diesel.elcat.kg/index.php?showforum=87",
                "https://t.me/s/kurs_valyut_uzbekistan"),
         queries=("դոլարի փոխարժեք այսօր", "ոսկու գին Երևանում", "dollar kursi bugun",
                  "доллар курси бугун", "доллар курсу бүгүн", "нархи доллар имрӯз",

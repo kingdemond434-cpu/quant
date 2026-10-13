@@ -108,7 +108,7 @@ def _alt_series(file: str, column: str, root: Path | None = None) -> Any:
     if key not in _ALT_CACHE:
         if len(_ALT_CACHE) > 64:
             _ALT_CACHE.clear()
-        _ALT_CACHE[key] = conditioner(file, column, "raw", root=root)
+        _ALT_CACHE[key] = conditioner(file, column, "raw", root=root, use="conditioning")
     return _ALT_CACHE[key]
 ENTRY_TIMINGS = frozenset({"", "instant", "delayed"})
 MARKET_STYLES = frozenset({"", "market"})

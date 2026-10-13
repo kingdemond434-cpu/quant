@@ -510,7 +510,11 @@ def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credit
     _offline(monkeypatch, tmp_path)
     doc = _run_grounds(monkeypatch, tmp_path, _SRC["grounds"], budget=3000)
     statuses = {g["ground"]: g for g in doc["grounds"]}
-    assert len(statuses) == len(_SRC["grounds"])
+    # A TERMS-FENCED ground (Reddit, 2026-09-30; libs/data/terms_fence.py) is never scheduled
+    # and never fetched; the run names every one of them under `terms_fenced`.
+    fenced = {str(g["name"]) for g in _SRC["grounds"] if dfm.fenced_ground(g)}
+    assert fenced and set(doc["terms_fenced"]) == fenced and not fenced & set(statuses)
+    assert len(statuses) == len(_SRC["grounds"]) - len(fenced)
     bad = {k: (v["status"], v.get("errors") or v.get("error")) for k, v in statuses.items()
            if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
     assert not bad, bad
@@ -611,7 +615,9 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
-    assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
+    # FENCED 2026-09-30 (Reddit terms): the ground is never scheduled and never fetched; the
+    # run names it under `terms_fenced` instead of a status row.
+    assert "reddit" not in st and doc["terms_fenced"] == ["reddit"]
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
     assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]

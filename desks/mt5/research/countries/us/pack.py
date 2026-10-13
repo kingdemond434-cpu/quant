@@ -612,7 +612,7 @@ TERMINOLOGY: dict[str, tuple[str, ...]] = {
                      "refunding preview", "month-end rebalance estimate", "CTA positioning "
                      "estimate", "gamma exposure level", "0DTE flows"),
     "retail_ecology": ("wallstreetbets DD", "options flow", "gamma squeeze", "margin call",
-                       "YOLO", "diamond hands", "the tape", "elite trader thread", "stocktwits"),
+                       "YOLO", "diamond hands", "the tape", "elite trader thread"),
     "app_ecosystem": ("TradingView script", "thinkscript", "QuantConnect algorithm",
                       "Alpaca API", "IBKR TWS API", "polygon.io", "FRED API", "fredapi"),
     "media": ("Fed press conference transcript", "CNBC transcript", "Reuters Fed", "Bloomberg "
@@ -848,16 +848,15 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         notes="REGISTERED, NEVER SCRAPED: the desk knows this ground exists and reads only what "
               "the authors publish openly; the mechanisms are reconstructed from public data"),
     source_class(
-        "us_retail_forums", "Retail ecology: r/wallstreetbets, r/options, StockTwits, the Elite "
+        "us_retail_forums", "Retail ecology: the Elite "
                             "Trader forum",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/wallstreetbets/", "https://www.reddit.com/r/options/",
-               "https://stocktwits.com/", "https://www.elitetrader.com/et/"),
+        roots=("https://www.elitetrader.com/et/",),
         queries=("DD", "YOLO", "gamma squeeze", "diamond hands", "0DTE", "options flow",
                  "margin call", "the tape", "theta gang", "wheel strategy"),
         languages=("en",), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
         predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
-        licence="Reddit and StockTwits API terms; the forum's own terms",
+        licence="the forum's own terms",
         notes="KEPT AT LOW WEIGHT, NEVER DROPPED: crowding and narrative are features (US-F "
               "conditions on retail option volume); read through the public daily aggregates "
               "and never by scraping accounts"),

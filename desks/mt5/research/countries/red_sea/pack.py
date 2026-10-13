@@ -1737,8 +1737,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                               "Sudanese, Eritrean and Somali communities arguing about rates, "
                               "fuel queues, port closures and remittance costs in public",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Sudan/", "https://www.reddit.com/r/Somalia/",
-               "https://www.facebook.com", "https://t.me/s/"),
+        roots=("https://www.facebook.com", "https://t.me/s/"),
         queries=("سعر الدولار اليوم", "أزمة الوقود", "الحوالات من الخارج",
                  "qiimaha doollarka maanta", "xawaalada lacagta dibadda",
                  "ናቕፋ ዋጋ", "ዲያስፖራ ግብሪ"),

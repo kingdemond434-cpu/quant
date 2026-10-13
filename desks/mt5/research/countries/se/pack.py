@@ -553,7 +553,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
          "Swedish retail investor forums and social trading communities",
          layer="retail_ecology",
          roots=("https://www.avanza.se/placera/forum.html", "https://www.shareville.se/",
-                "https://www.flashback.org/f169", "https://www.reddit.com/r/ISKbets/"),
+                "https://www.flashback.org/f169"),
          languages=("sv",), licence="public forum, quote-and-cite only",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE", predictive_state="UNTESTED",
          weight=0.25, machine_use_allowed=True,

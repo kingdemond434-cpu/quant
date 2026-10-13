@@ -141,7 +141,7 @@ def _conditions(df: pd.DataFrame, symbol: str = "") -> dict[str, np.ndarray]:
     extra: dict[str, Any] = {}
     try:
         from research.acquire_datasets import acquired_series  # type: ignore[import-not-found]
-        extra = acquired_series(df.index)
+        extra = acquired_series(df.index, consumer="anomaly_miner", use="new_hypotheses")
     except Exception:
         extra = {}                       # no acquired data is fewer conditions, never a failure
     try:

@@ -689,17 +689,15 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         licence="subscription; terms forbid redistribution and machine extraction",
         notes="REGISTERED, NEVER SCRAPED; read only through public interviews"),
     source_class(
-        "ca_retail_forums", "Retail ecology: r/CanadianInvestor, r/PersonalFinanceCanada, "
+        "ca_retail_forums", "Retail ecology: "
                             "RedFlagDeals investing, the Stockhouse bullboards",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/CanadianInvestor/",
-               "https://www.reddit.com/r/PersonalFinanceCanada/",
-               "https://forums.redflagdeals.com/investing-f9/", "https://stockhouse.com/"),
+        roots=("https://forums.redflagdeals.com/investing-f9/", "https://stockhouse.com/"),
         queries=("TFSA", "RRSP", "the loonie", "Norbert's gambit", "the TSX", "oil stocks",
                  "bullboard", "REER", "CELI", "le huard", "FNB"),
         languages=("en", "fr"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
         predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
-        licence="Reddit API terms; forum terms",
+        licence="forum terms",
         notes="KEPT AT LOW WEIGHT: Stockhouse is single-name-heavy and belongs to the event "
               "lane; 'Norbert's gambit' is a retail USDCAD conversion flow with a real "
               "settlement footprint and is the one mechanism this layer names"),
@@ -779,10 +777,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         notes="REGISTERED, NEVER SCRAPED: the Alberta weekly series is the free echo"),
     source_class(
         "ca_source_graph", "What the other nine cite: the Bank's related-research links, RePEc "
-                           "Canada, the r/CanadianInvestor wiki, bank-economics blogrolls",
+                           "Canada, bank-economics blogrolls",
         layer="source_graph",
-        roots=("https://ideas.repec.org/", "https://www.reddit.com/r/CanadianInvestor/wiki/",
-               "https://www.bankofcanada.ca/research/"),
+        roots=("https://ideas.repec.org/", "https://www.bankofcanada.ca/research/"),
         queries=("cited by", "related research", "wiki resources", "further reading",
                  "liens connexes", "lectures complémentaires"),
         languages=("en", "fr"), access_label="PUBLIC_WITH_TERMS", credibility="UNKNOWN",

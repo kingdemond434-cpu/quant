@@ -1408,7 +1408,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                            "Congolese and Zambian rate-watching pages, the price-of-the-day "
                            "posts and the diaspora remittance forums",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Zambia", "https://www.facebook.com",
+        roots=("https://www.facebook.com",
                "https://www.youtube.com"),
         queries=("taux du dollar aujourd'hui Kinshasa", "bei ya dola leo Lubumbashi",
                  "mtengo wa dollar lero", "talo ya dollar lelo", "kwacha exchange rate today",

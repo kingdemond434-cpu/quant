@@ -762,8 +762,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class(
         "az_retail_forums", "Azerbaijani banking forums and Russian boards used locally",
         layer="retail_ecology",
-        roots=("https://banker.az/", "https://www.reddit.com/r/azerbaijan/",
-               "https://smart-lab.ru/"),
+        roots=("https://banker.az/", "https://smart-lab.ru/"),
         queries=("əmanət faizi", "dollar almaq", "manatı dollara çevirmək", "bank depoziti",
                  "ставка по депозиту", "купить доллары", "перевести в доллары", "смартлаб"),
         languages=("az", "ru"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",

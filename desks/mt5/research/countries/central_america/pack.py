@@ -2019,12 +2019,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               "the freight leg is UNMEASURED and the physical transit count carries the claim"),
     # ---- retail_ecology
     source_class(
-        "ca_retail_investor", "The retail and diaspora discussion ecology: the national "
-                              "subreddits and the open expatriate and investor boards for "
-                              "Panama, Costa Rica, Guatemala and El Salvador",
+        "ca_retail_investor", "The retail and diaspora discussion ecology: the open expatriate "
+                              "and investor boards for Panama, Costa Rica, Guatemala and El "
+                              "Salvador (the platform roots left with the 2026-09-30 terms "
+                              "fence)",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Panama/", "https://www.reddit.com/r/Costa_Rica/",
-               "https://www.reddit.com/r/Guatemala/", "https://www.reddit.com/r/ElSalvador/"),
+        roots=("https://www.expat.com/forum/",),
         queries=("dónde cambiar dólares mejor tipo de cambio",
                  "invertir en bolsa desde Costa Rica cómo",
                  "cuenta en dólares banco panameño requisitos",
@@ -2041,8 +2041,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                                 "argue about fees",
         layer="retail_ecology",
         roots=("https://remittanceprices.worldbank.org",
-               "https://www.reddit.com/r/immigration/",
-               "https://www.reddit.com/r/Honduras/"),
+               ),
         queries=("costo de enviar remesas a Guatemala comisión",
                  "mejor forma de mandar dinero a Honduras",
                  "remesas a Nicaragua comisión tipo de cambio",

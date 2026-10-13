@@ -1246,8 +1246,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                             "Facebook and YouTube bolsa/forex groups in Spanish, and the street "
                             "cambista market that quotes the sol in cash",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/PERU/", "https://www.reddit.com/r/peruinversiones/",
-               "https://www.youtube.com/results?search_query=bolsa+de+valores+de+lima+invertir"),
+        roots=("https://www.youtube.com/results?search_query=bolsa+de+valores+de+lima+invertir",),
         queries=("en qué invertir Perú", "comprar dólares hoy", "cambista Jirón Ocoña",
                  "tipo de cambio paralelo", "bolsa de valores de Lima para principiantes",
                  "fondos mutuos Perú opiniones", "retiro AFP qué hacer con el dinero"),

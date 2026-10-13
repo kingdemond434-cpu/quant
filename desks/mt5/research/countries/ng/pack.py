@@ -768,7 +768,6 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
          layer="retail_ecology",
          roots=("nairaland.com/business", "nairaland.com/investment",
                 "nairaland.com/politics (subsidy and FX threads)",
-                "reddit.com/r/Nigeria (economy threads)",
                 "public Telegram and WhatsApp-adjacent BDC rate channels, described generically",
                 "public X/Twitter threads quoting the street rate"),
          languages=("en", "ha", "yo", "ig"),

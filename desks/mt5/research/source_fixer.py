@@ -96,14 +96,36 @@ def candidate_urls(url: str) -> list[str]:
     return out
 
 
+def _tf() -> Any:
+    """libs.data.terms_fence, importable from a desk-rooted process too."""
+    root = str(BASE.parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.data import terms_fence
+    return terms_fence
+
+
+#: The status `_probe` returns for a URL the terms fence refused: never requested, never a repair.
+TERMS_FENCED = "terms_fenced"
+
+
 def _probe(url: str) -> tuple[int | None, str, bytes]:
-    """(status, content-type, first bytes) for a GET; status None when unreachable."""
+    """(status, content-type, first bytes) for a GET; status None when unreachable.
+
+    TERMS FENCE (principal 2026-09-30): a fenced URL -- or a redirect into one -- is never
+    requested or followed; it answers (None, "terms_fenced:<platform>", b"")."""
+    tf = _tf()
+    p = tf.platform_of_url(url)
+    if p:
+        return None, f"{TERMS_FENCED}:{p}", b""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
+        with tf.guarded_urlopen(req, timeout=TIMEOUT_S) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             return status, ctype, r.read(4096)
+    except tf.TermsFenced as exc:
+        return None, f"{TERMS_FENCED}:{exc.platform}", b""
     except urllib.error.HTTPError as e:
         return int(getattr(e, "code", 0) or 0), "", b""
     except (urllib.error.URLError, TimeoutError, OSError, ValueError):
@@ -128,14 +150,22 @@ def _acceptable(expect: str, ctype: str, head: bytes) -> tuple[bool, str]:
 
 
 def _wayback(url: str) -> str | None:
+    """The newest archived copy of `url`, or None. An archived copy of a terms-fenced page IS
+    the fenced page, so a fenced URL is never looked up and a fenced snapshot never returned."""
+    tf = _tf()
+    if tf.platform_of_url(url):
+        return None
     try:
-        with urllib.request.urlopen(WAYBACK + urllib.parse.quote(url, safe=""),
-                                    timeout=TIMEOUT_S) as r:
+        with tf.guarded_urlopen(WAYBACK + urllib.parse.quote(url, safe=""),
+                                timeout=TIMEOUT_S) as r:
             doc = json.loads(r.read().decode("utf-8", errors="replace"))
+    except tf.TermsFenced:
+        return None
     except (OSError, ValueError, urllib.error.URLError):
         return None
     snap = ((doc.get("archived_snapshots") or {}).get("closest") or {})
-    return str(snap.get("url")) if snap.get("available") and snap.get("url") else None
+    out = str(snap.get("url")) if snap.get("available") and snap.get("url") else None
+    return None if out and tf.platform_of_url(out) else out
 
 
 def _failed_sources(registry_rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -166,6 +196,7 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
         fstate = {}
     started = time.monotonic()
     results: list[dict[str, Any]] = []
+    terms_fenced: dict[str, int] = {}
     repaired = 0
     for sid, verdict in sorted(failed.items()):
         if time.monotonic() - started > budget_s:
@@ -182,11 +213,21 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
                             "why": "declares key/paid access; a missing key is not a dead route"})
             continue
         base_url = str(src.get("url_override") or src.get("url") or "")
+        fenced = _tf().platform_of_url(base_url) or _tf().fenced_source(sid)
+        if fenced:
+            # NEVER REPAIRED, NEVER PROBED: a terms-fenced source is not a dead route.
+            terms_fenced[fenced] = terms_fenced.get(fenced, 0) + 1
+            results.append({"id": sid, "outcome": "TERMS_FENCED", "platform": fenced,
+                            "why": _tf().refusal(fenced)["why"]})
+            continue
         expect = str(src.get("expect") or "any")
         tried: list[dict[str, Any]] = []
         fix: str | None = None
         for cand in candidate_urls(base_url):
             status, ctype, head = _probe(cand)
+            if ctype.startswith(TERMS_FENCED):
+                tried.append({"url": cand, "status": None, "ok": False, "why": ctype})
+                continue
             ok, _shape = (_acceptable(expect, ctype, head) if status == 200 else (False, ""))
             tried.append({"url": cand, "status": status, "ok": ok})
             if ok:
@@ -229,6 +270,7 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
                  "becomes url_override in the registry; three failed passes mark dead_since"),
         "n_failed_sources": len(failed), "n_repaired": repaired,
         "n_dead": sum(1 for r in results if r.get("outcome") == "DEAD"),
+        "n_terms_fenced": sum(terms_fenced.values()), "terms_fenced": terms_fenced,
         "dry_run": dry_run, "results": results,
     }
     _write_atomic(OUT, json.dumps(doc, indent=1, ensure_ascii=False))

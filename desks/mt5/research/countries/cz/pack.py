@@ -942,7 +942,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "cz_retail_forums", "Czech retail communities: r/czech and r/Czechia investing threads, "
                             "the Kurzy.cz and Patria discussion boards, Facebook investing "
                             "groups and the Czech personal-finance blogs", layer="retail_ecology",
-        roots=("https://www.reddit.com/r/czech/", "https://www.kurzy.cz/diskuze/",
+        roots=("https://www.kurzy.cz/diskuze/",
                "https://www.facebook.com/groups/investoriCZ"),
         queries=("kam investovat peníze", "spoření versus investice", "koruna posílí nebo "
                  "oslabí", "nákup eura kurz", "zkušenosti s brokerem", "daň z investic"),
