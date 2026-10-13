@@ -142,6 +142,9 @@ def slug(name: str) -> str:
 #: Total wall time one request may take, read included (audit should-fix: a per-read timeout let
 #: a trickling server hold a call for 40 s).
 REQUEST_S = 25.0
+#: Wall time one DNS lookup may take (audit residual on #332: getaddrinfo ran before the request
+#: deadline started, so a resolver that never answers held the pass for the system's own timeout).
+DNS_S = 10.0
 #: A host that answered 429 or 5xx rests this long before this organ asks it again.
 COOLDOWN_S = 6 * 3600.0
 HOST_STATE = STATE_DIR / "hosts.json"
@@ -282,6 +285,32 @@ def _pinned_get(addrs: Sequence[str]) -> Getter:
     return get
 
 
+class DNSTimeout(OSError):
+    """The resolver did not answer inside DNS_S: an outage, retried on a later pass."""
+
+
+def _bounded_resolve(host: str) -> list[str]:
+    """getaddrinfo on a daemon thread, abandoned after DNS_S. The thread may outlive the call
+    (getaddrinfo cannot be interrupted), but the pass never waits for it."""
+    import socket
+    import threading
+    box: dict[str, Any] = {}
+
+    def _look() -> None:
+        try:
+            box["addrs"] = sorted({str(i[4][0]) for i in socket.getaddrinfo(host, None)})
+        except Exception as exc:  # handed back to the caller's thread below
+            box["exc"] = exc
+    th = threading.Thread(target=_look, daemon=True)
+    th.start()
+    th.join(DNS_S)
+    if th.is_alive():
+        raise DNSTimeout(f"no DNS answer for {host} within {DNS_S:.0f}s")
+    if "exc" in box:
+        raise box["exc"]
+    return list(box.get("addrs") or [])
+
+
 def _cooling(host: str, now: float) -> bool:
     until = float((_read_json(HOST_STATE, {}) or {}).get(host, 0) or 0)
     return now < until
@@ -306,6 +335,14 @@ def fetch(url: str, source_url: str, *, get: Getter | None = None,
         return b"", "BAD_PORT"
     if port not in (None, 80, 443):
         return b"", f"BAD_PORT:{port}"
+    if resolve is None:
+        try:
+            looked = _bounded_resolve(parts.hostname or "")
+        except DNSTimeout:
+            return b"", "UNREACHABLE:DNS_TIMEOUT"
+        except (OSError, UnicodeError, ValueError):
+            looked = []
+        resolve = lambda _h, _a=looked: _a  # noqa: E731 -- the one lookup, checked below
     addrs, why = resolve_public(url, resolve=resolve)
     if why:
         return b"", f"REFUSED:{why}"

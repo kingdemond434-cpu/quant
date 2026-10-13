@@ -311,6 +311,31 @@ def test_blackholed_addresses_share_one_deadline(monkeypatch: pytest.MonkeyPatch
     assert timeouts and all(t <= 1.0 for t in timeouts)
 
 
+def test_a_resolver_that_never_answers_is_a_bounded_transient(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit residual on #332: DNS ran outside the request deadline."""
+    import socket
+    import threading
+    import time as _t
+    monkeypatch.setattr(cl, "DNS_S", 0.5)
+    release = threading.Event()
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **k: release.wait(30) and [])
+    t0 = _t.monotonic()
+    body, why = cl.fetch("https://data.example.org/x", "https://data.example.org/")
+    release.set()
+    assert body == b"" and why == "UNREACHABLE:DNS_TIMEOUT"
+    assert cl.transient({"detail": why}) and _t.monotonic() - t0 < 2.0
+
+
+def test_the_bounded_lookup_still_refuses_a_private_answer(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import socket
+    monkeypatch.setattr(socket, "getaddrinfo",
+                        lambda *a, **k: [(2, 1, 6, "", ("127.0.0.1", 0))])
+    _, why = cl.fetch("https://data.example.org/x", "https://data.example.org/")
+    assert why.startswith("REFUSED:")
+
+
 def test_all_transient_or_skipped_never_reads_green(tmp_lab: Path,
                                                     monkeypatch: pytest.MonkeyPatch) -> None:
     """MF2: an outage on every owed source is DARK; working specs all skipped are STALE."""
