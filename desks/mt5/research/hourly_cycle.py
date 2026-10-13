@@ -1301,7 +1301,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
-                     "cross_sectional_breadth"),
+                     "cross_sectional_breadth",
+                     # every dated forced-flow kind, kind x mode x polarity on the UTC clock
+                     "calendar_flow_cells"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
@@ -2124,6 +2126,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
+    # Stops itself at --budget-s 900 and re-measures each cell at most once a day.
+    "calendar_flow_cells": 1_000,
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
@@ -4266,6 +4270,13 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # CALENDAR FLOW CELLS (principal 2026-10-13): every dated kind in forced_flow_calendar -- WMR
+    # fix, month/quarter end, gotobi Tokyo fix, JP fiscal half-year ends, equity and FX option
+    # expiries, UST coupon auctions and refunding, CN closures -- on the instruments the
+    # calendar names for it, kind x mode x polarity on the UTC clock, through the one proposer
+    # door. The breadth sweep reaches forced_flow only at its month_end/bars-clock defaults.
+    cfc = _costed("calendar_flow_cells", lambda: _producer(
+        "calendar_flow_cells", "research/calendar_flow_cells.py", "--budget-s", "900"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -6106,6 +6117,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "calendar_flow_cells": cfc,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
