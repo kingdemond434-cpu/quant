@@ -1,0 +1,1802 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Pol\u00edtica de Privacidad - RoboForex",
+  "url": "https://roboforex.com/es/about/client/security-policy/",
+  "published": "2026-10-13T15:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e8940831af9a6385ef7d",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Aviso de riesgos - RoboForex",
+  "url": "https://roboforex.com/es/about/client/risk-warning/",
+  "published": "2026-10-13T15:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1e823c3c8512b40f50ec",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: I-access ang Mga Pamilihang Pinansyal at Magsimula ng Trading Ngayon - RoboForex",
+  "url": "https://roboforex.com/ph/",
+  "published": "2026-10-13T15:13:33+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://roboforex.com/ph/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cc496009b14ca05c77f5",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mga Trading Account ng RoboForex - Pro, Prime, ECN, ProCent, RST na may malinaw na kundisyon - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/trading/trading-accounts/",
+  "published": "2026-10-13T15:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "8bbc2c561c7ccbaa67e4",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Pangangalakal ng assets | Pinansiyal na instrumento - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/other-assets/",
+  "published": "2026-10-13T15:13:37+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fc39fd6c8b87061da8cb",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 4 (MT4) platform - download for PC, web and mobile - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/platforms/metatrader4-mt4/",
+  "published": "2026-10-13T15:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "df7557cdd043475cba58",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Plataporma MetaTrader 5 (MT5) - i-download para sa PC, web at mobile - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/platforms/metatrader5-mt5/",
+  "published": "2026-10-13T15:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "344cd6f168ecfe275c4a",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Spot Brent Crude Oil (BRENT) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/BRENT/",
+  "published": "2026-10-13T15:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a58c84eee4e88e3bc401",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Spot WTI Light Crude Oil (WTI) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/WTI/",
+  "published": "2026-10-13T15:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "70be454965f9876604c6",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BitCoin vs US Dollar (BTCUSD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/BTCUSD/",
+  "published": "2026-10-13T15:13:46+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ca6c9fef995c91091a6a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ethereum vs US Dollar (ETHUSD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/ETHUSD/",
+  "published": "2026-10-13T15:13:48+00:00",
+  "symbols": [
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9e69661efd3a744f19b4",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Alphabet Inc. stocks CFD (GOOGL) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GOOGL/",
+  "published": "2026-10-13T15:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e80e1c1636b9bdfa5122",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Microsoft Corporation stocks CFD (MSFT) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/MSFT/",
+  "published": "2026-10-13T15:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "dd7017a27927c7174113",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "International Business Machines Corp. stocks CFD (IBM) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/IBM/",
+  "published": "2026-10-13T15:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8b9a83ba5d5064375bcb",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u03a3\u03c4\u03c1\u03b1\u03c4\u03b7\u03b3\u03b9\u03ba\u03ae",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.el.html",
+  "published": "2026-10-13T15:13:57+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a9661c9742284561efbd",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Estrategia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.es.html",
+  "published": "2026-10-13T15:13:58+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b44fa8a3104a643944e5",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strateegia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.et.html",
+  "published": "2026-10-13T15:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1e2c6b5bbd412a4f5ccd",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.fi.html",
+  "published": "2026-10-13T15:14:03+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a85acd9297384796024c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "La strat\u00e9gie",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.fr.html",
+  "published": "2026-10-13T15:14:06+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d3a3bd091005a0b84092",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "On peut citer notamment les coussins de fonds propres pour les \u00e9tablissements d\u2019importance syst\u00e9mique mondiale et autres \u00e9tablissements d\u2019importance syst\u00e9mique, le ratio de liquidit\u00e9 \u00e0 court terme (LCR) et le ratio structurel de liquidit\u00e9 \u00e0 long terme (NSFR).",
+    "lang": "fr",
+    "quantities": [
+     "liquidit\u00e9"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "court terme",
+     "long terme"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "378f2a2da0c3"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Macroprudential policy strategy",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.ga.html",
+  "published": "2026-10-13T15:14:08+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "37e532c78021b69ba14f",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategija",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.hr.html",
+  "published": "2026-10-13T15:14:09+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cd24196dc98d77914d64",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6307\u6570\u57fa\u672c\u4fe1\u606f\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_info",
+  "published": "2026-10-13T15:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "24a909f51a2a2384ef00",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53ef\u8f6c\u503a\u6307\u6570\u6210\u5206\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_cbond_index_components",
+  "published": "2026-10-13T15:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1ddc1078e123fac9c5e",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e2d\u56fd\u6307\u65701\u5206\u949f\u884c\u60c5\u6570\u636e-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_bar1m",
+  "published": "2026-10-13T15:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "65565b695e255e9804a1",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7533\u4e07\u4e00\u7ea7\u884c\u4e1a\u6307\u6570\u65e5\u884c\u60c5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_sw_bar1d",
+  "published": "2026-10-13T15:14:18+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f32bea5adf1bff01f1c1",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "``` \u8868\u7ed3\u6784 \u5b57\u6bb5 \u5b57\u6bb5\u7c7b\u578b \u5b57\u6bb5\u63cf\u8ff0 close double \u6536\u76d8\u4ef7 instrument string \u884c\u4e1a\u6307\u6570\u4ee3\u7801 low double \u6700\u4f4e\u4ef7 high double \u6700\u9ad8\u4ef7 date timestamp[ns] - open double \u5f00\u76d8\u4ef7 volume double \u6210\u4ea4\u91cf pre_close double \u6628\u6536\u76d8\u4ef7 change_ratio double \u6da8\u8dcc\u5e45 turn double \u6362\u624b\u7387 amount double \u6210\u4ea4\u989d \u8868\u540d\uff1acn_stock_industry_sw_bar1d \u8d77\u59cb\u65f6\u95f4\uff1a 2023-11-08T18:22:56.",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u5f00\u76d8",
+     "\u6536\u76d8",
+     "close"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6052\u751f",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ed93c058f39"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u4e1a\u65e5\u7ebf\u6570\u636e-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_bar1d",
+  "published": "2026-10-13T15:14:21+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ac1ea674586cba50d45",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "\u8be5\u8868\u8be6\u7ec6\u8bb0\u5f55\u4e86\u4e0d\u540c\u884c\u4e1a\u7684\u65e5\u7ebf\u884c\u60c5\u6570\u636e\uff0c\u5305\u62ec\u6839\u636e\u4e0d\u540c\u8ba1\u7b97\u65b9\u5f0f\uff08\u7b97\u672f\u5e73\u5747\u3001\u603b\u80a1\u672c\u52a0\u6743\u5e73\u5747\u3001\u6d41\u901a\u80a1\u672c\u52a0\u6743\u5e73\u5747\uff09\u5f97\u51fa\u7684\u6628\u6536\u76d8\u4ef7\u3001\u5f00\u9ad8\u4f4e\u6536\uff08\u5747\u4e3a\u540e\u590d\u6743\u5904\u7406\u4ee5\u6d88\u9664\u5206\u7ea2\u3001\u914d\u80a1\u7b49\u5bf9\u4ef7\u683c\u7684\u5f71\u54cd\uff09\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u7b14\u6570\u3001\u6210\u4ea4\u91d1\u989d\u3001\u6da8\u8dcc\u5e45\u4ee5\u53ca\u6362\u624b\u7387\u7b49\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u7ebf"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f98c53a1f86c"
+   },
+   {
+    "claim": "3-\u6d41\u901a\u80a1\u672c\u52a0\u6743\u5e73\u5747) high double \u6700\u9ad8\u4ef7(\u540e\u590d\u6743) date timestamp[ns] - open double \u5f00\u76d8\u4ef7(\u540e\u590d\u6743) volume int64 \u6210\u4ea4\u91cf pre_close double \u6628\u6536\u76d8\u4ef7(\u540e\u590d\u6743) change_ratio double \u6da8\u8dcc\u5e45(\u540e\u590d\u6743) low double \u6700\u4f4e\u4ef7(\u540e\u590d\u6743) turn double \u6362\u624b\u7387 amount double \u6210\u4ea4\u91d1\u989d \u8868\u540d\uff1acn_stock_industry_bar1d \u8d77\u59cb\u65f6\u95f4\uff1a 2023-11-21T18:47:32.",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u5f00\u76d8",
+     "\u6536\u76d8",
+     "open"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dc9412816ab6"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u4e1a\u672a\u590d\u6743\u65e5\u884c\u60c5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_real_bar1d",
+  "published": "2026-10-13T15:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4538296c971f8c8d6d47",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u884c\u4e1a\u6210\u5206\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_industry_component",
+  "published": "2026-10-13T15:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e290349ab92da7dbfc3e",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top Market Movers | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/snapshots/top-market-movers",
+  "published": "2026-10-13T15:14:26+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e5ec25f436c64c3553d",
+  "host": "polygon.io",
+  "claims": [
+   {
+    "claim": "Gainers are stocks with the largest percentage increase since the previous day\u2019s close, and losers are those with the largest percentage decrease.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close"
+    ],
+    "direction": [
+     "increase",
+     "decrease"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7de231d1fe0e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quotes | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/quotes/quotes",
+  "published": "2026-10-13T15:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "432376e85e9fb7e51952",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Last Quote | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/quotes/last-quote",
+  "published": "2026-10-13T15:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "70fe218e301b8344b40d",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Simple Moving Average (SMA) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/simple-moving-average",
+  "published": "2026-10-13T15:14:33+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "56cb9e561528bbfe5762",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exponential Moving Average (EMA) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/exponential-moving-average",
+  "published": "2026-10-13T15:14:36+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7025406a1a69cdebd7b6",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Moving Average Convergence/Divergence (MACD) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/moving-average-convergence-divergence",
+  "published": "2026-10-13T15:14:37+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "58dbb063c7bc3fccde56",
+  "host": "polygon.io",
+  "claims": [
+   {
+    "claim": "timespan=day&adjusted=true&short_window=12&long_window=26&signal_window=9&series_type=close&order=desc&limit=10&apiKey=YOUR_API_KEY\" from massive import RESTClient",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "25238b22e1dc"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Relative Strength Index (RSI) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/relative-strength-index",
+  "published": "2026-10-13T15:14:39+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bcf741f63c9873788a4c",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Asset Purchase Facility: Gilt Sales \u2013 Market Notice 17 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/markets/market-notices/2026/asset-purchase-facility-gilt-sales-market-notice-17-september-2026",
+  "published": "2026-10-13T15:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d1a68860a9cf3880a62d",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Chancellor announces Bank of England appointments | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/chancellor-announces-boe-appointments",
+  "published": "2026-10-13T15:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9189bd0fd63a1fc188ed",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistical Notice 2026/08 - Changes to the criteria for monthly form BT reporting | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/statistics/notice/2026/statistical-notice-2026-08",
+  "published": "2026-10-13T15:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "25a7c2ebeba8fa7d06e5",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Minutes of the Securities Lending Committee meeting \u2013 March 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/minutes/2026/march/minutes-of-the-securities-lending-committee-meeting-march-2026",
+  "published": "2026-10-13T15:14:46+00:00",
+  "symbols": [
+   "XAUUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa32a5d1628215f8bf17",
+  "host": "www.bankofengland.co.uk",
+  "claims": [
+   {
+    "claim": "Banks continue to explore use-cases in tokenised assets for intraday liquidity, instant settlement, margin call coverage and collateral mobility.",
+    "lang": "en",
+    "quantities": [
+     "liquidity"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDNOK"
+     ],
+     "channels": [
+      "bank of england: policy: BoE -> GBP",
+      "norges bank: policy/flow: Norges Bank and the oil fund -> NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "32b80fce581e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Announcement of the publication of the Governor&#39;s interview transcript | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/statement-announcing-governors-interview",
+  "published": "2026-10-13T15:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b564b85f6149a4b39bb5",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Foreign Currency Reserves 2026 \u2013 Market Notice 22 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/markets/market-notices/2026/september/foreign-currency-reserves-2026-market-notice-22-september-2026",
+  "published": "2026-10-13T15:14:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d680dbc2d8c8b0351448",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank of England announces new office space in Leeds | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/bank-of-england-announces-new-office-space-in-leeds",
+  "published": "2026-10-13T15:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bcbbf0d36391b942da9d",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://tradinghours.com/data",
+  "published": "2026-10-13T15:14:55+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "71eaa946d8a188eb3c24",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Advanced Market Metrics APIs | Performance &amp; Valuations | FMP",
+  "url": "https://site.financialmodelingprep.com/datasets/advanced",
+  "published": "2026-10-13T15:14:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://site.financialmodelingprep.com/datasets/advanced",
+   "https://site.financialmodelingprep.com/es/datasets/advanced",
+   "https://site.financialmodelingprep.com/de/datasets/advanced",
+   "https://site.financialmodelingprep.com/fr/datasets/advanced",
+   "https://site.financialmodelingprep.com/pt/datasets/advanced",
+   "https://site.financialmodelingprep.com/ru/datasets/advanced",
+   "https://site.financialmodelingprep.com/it/datasets/advanced",
+   "https://site.financialmodelingprep.com/datasets/market-data-real-time",
+   "https://site.financialmodelingprep.com/datasets/calendars",
+   "https://site.financialmodelingprep.com/datasets/market-data-historic",
+   "https://site.financialmodelingprep.com/datasets/form-13f",
+   "https://site.financialmodelingprep.com/datasets/fundamental-financial-statements",
+   "https://site.financialmodelingprep.com/datasets/indexes",
+   "https://site.financialmodelingprep.com/datasets/crypto",
+   "https://site.financialmodelingprep.com/datasets/economics",
+   "https://site.financialmodelingprep.com/datasets/forex",
+   "https://site.financialmodelingprep.com/datasets/company-profile",
+   "https://site.financialmodelingprep.com/datasets/commodity",
+   "https://site.financialmodelingprep.com/datasets/analyst-estimates-targets",
+   "https://site.financialmodelingprep.com/datasets/ownership-senate-insider",
+   "https://site.financialmodelingprep.com/datasets/earnings-call-transcripts",
+   "https://site.financialmodelingprep.com/datasets/esg",
+   "https://site.financialmodelingprep.com/datasets/search-directory",
+   "https://site.financialmodelingprep.com/datasets/etf-mutual-funds",
+   "https://site.financialmodelingprep.com/datasets/market-news",
+   "https://site.financialmodelingprep.com/datasets/analyst-ratings-tipranks",
+   "https://site.financialmodelingprep.com/datasets",
+   "https://site.financialmodelingprep.com/datasets/bulk-data"
+  ],
+  "n_endpoints": 28,
+  "vault_sha": "7ab6db6444ccc7978c98",
+  "host": "site.financialmodelingprep.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Full Historical Forex Chart API | Financial Modeling Prep",
+  "url": "https://site.financialmodelingprep.com/developer/docs/stable/forex-historical-price-eod-full",
+  "published": "2026-10-13T15:14:58+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://site.financialmodelingprep.com/datasets/market-data-real-time",
+   "https://site.financialmodelingprep.com/datasets/calendars",
+   "https://site.financialmodelingprep.com/datasets/market-data-historic",
+   "https://site.financialmodelingprep.com/datasets/form-13f",
+   "https://site.financialmodelingprep.com/datasets/fundamental-financial-statements",
+   "https://site.financialmodelingprep.com/datasets/advanced",
+   "https://site.financialmodelingprep.com/datasets/indexes",
+   "https://site.financialmodelingprep.com/datasets/crypto",
+   "https://site.financialmodelingprep.com/datasets/economics",
+   "https://site.financialmodelingprep.com/datasets/forex",
+   "https://site.financialmodelingprep.com/datasets/company-profile",
+   "https://site.financialmodelingprep.com/datasets/commodity",
+   "https://site.financialmodelingprep.com/datasets/analyst-estimates-targets",
+   "https://site.financialmodelingprep.com/datasets/ownership-senate-insider",
+   "https://site.financialmodelingprep.com/datasets/earnings-call-transcripts",
+   "https://site.financialmodelingprep.com/datasets/esg",
+   "https://site.financialmodelingprep.com/datasets/search-directory",
+   "https://site.financialmodelingprep.com/datasets/etf-mutual-funds",
+   "https://site.financialmodelingprep.com/datasets/market-news",
+   "https://site.financialmodelingprep.com/datasets/analyst-ratings-tipranks"
+  ],
+  "n_endpoints": 20,
+  "vault_sha": "80a575195133c295b0c4",
+  "host": "site.financialmodelingprep.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5957\u5229\u80a1 \u8981\u7ea6\u6536\u8d2d \u73b0\u91d1\u9009\u62e9 \u6362\u80a1\u4ef7 \u5438\u6536\u5408\u5e76 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/data/taoligu/",
+  "published": "2026-10-13T15:14:59+00:00",
+  "symbols": [
+   "HK50"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa67ff9731c693bd6736",
+  "host": "www.jisilu.cn",
+  "claims": [
+   {
+    "claim": "Edge Chrome Firefox \u9996\u9875 \u6295\u8d44\u65e5\u5386 \u5b9e\u65f6\u6570\u636e \u793e\u533a-\u77e5\u8bc6\u5e93 \u767b\u5f55 \u6ce8\u518c \u6301\u4ed3 \u65b0\u80a1 \u80a1\u606f\u7387 \u5957\u5229\u80a1 \u503a\u5238 \u53ef\u8f6c\u503a \u5c01\u95ed\u57fa\u91d1 ETF \u73b0\u91d1\u7ba1\u7406 A/H\u6bd4\u4ef7 T+0 QDII REITs \u6307\u6570\u6da8\u5e45 LOF \u4e2d\u6982\u80a1\u79c1\u6709\u5316\u5957\u5229 \u6e2f\u80a1\u79c1\u6709\u5316\u5957\u5229 \u6e2f\u80a1\u4f9b\u80a1\u6743\u5957\u5229 A\u80a1\u5957\u5229 A\u80a1\u5957\u5229( \u5237\u65b0 ) \u7f51\u683c\u8ba1\u7b97\u5668 \u6ce8\uff1a\u5df2\u6309\u5f53\u65e5\u6c47\u7387\u8ba1\u7b97B\u80a1\u6298\u6ea2\u4ef7\uff08\uff09 \u4e2d\u6982\u80a1\u79c1\u6709\u5316\u5957\u5229( \u5237\u65b0 ) \u4e2d\u6982\u80a1\u79c1\u6709\u5316FAQ \u6d4b\u8bd5\u7248\uff0c\u8bf7\u8c28\u614e\u53c2\u8003\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5957\u5229",
+     "\u6301\u4ed3",
+     "\u6c47\u7387",
+     "\u6ea2\u4ef7"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5f53\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "a\u80a1",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ad099491ec2e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign In - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/export/",
+  "published": "2026-10-13T15:15:01+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/",
+   "https://www.quiverquant.com/accounts/google/login/?next=%2Fexport%2F"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "ffb35dc7b4941328577d",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quiver API Setup",
+  "url": "https://www.quiverquant.com/api/",
+  "published": "2026-10-13T15:15:03+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/app-ratings"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "eac29c0ae21f269b8b94",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://quote.eastmoney.com/center/forex.html",
+  "published": "2026-10-13T15:15:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ed21a3aa3a0b06c35389",
+  "host": "quote.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://quote.eastmoney.com/center/gridlist.html",
+  "published": "2026-10-13T15:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e57a65b02a71f67faaf4",
+  "host": "quote.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://quote.eastmoney.com/center/gridlist.html",
+  "published": "2026-10-13T15:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e57a65b02a71f67faaf4",
+  "host": "quote.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6b27\u5143\u5151\u7f8e\u5143(EURUSD)\u6700\u65b0\u4ef7\u683c_\u884c\u60c5_\u8d70\u52bf\u56fe\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://quote.eastmoney.com/forex/EURUSD.html",
+  "published": "2026-10-13T15:15:10+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d29a5b2a00b9a55551cb",
+  "host": "quote.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u82f1\u9551\u5151\u7f8e\u5143(GBPUSD)\u6700\u65b0\u4ef7\u683c_\u884c\u60c5_\u8d70\u52bf\u56fe\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://quote.eastmoney.com/forex/GBPUSD.html",
+  "published": "2026-10-13T15:15:12+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "36fbbd9d8aebfaf864bc",
+  "host": "quote.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7f8e\u5143\u5151\u65e5\u5143(USDJPY)\u6700\u65b0\u4ef7\u683c_\u884c\u60c5_\u8d70\u52bf\u56fe\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://quote.eastmoney.com/forex/USDJPY.html",
+  "published": "2026-10-13T15:15:14+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e01c1f6144603ee88558",
+  "host": "quote.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://quote.eastmoney.com/center/whsc.html",
+  "published": "2026-10-13T15:15:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc0d1d46529efb2d6192",
+  "host": "quote.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex \u0441\u0430\u0443\u0434\u0430 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0430\u043b\u0430\u0440\u044b - PC, \u0432\u0435\u0431 \u0436\u04d9\u043d\u0435 \u043c\u043e\u0431\u0438\u043b\u044c\u0434\u0456 \u049b\u04b1\u0440\u044b\u043b\u0493\u044b\u043b\u0430\u0440 \u04af\u0448\u0456\u043d \u0436\u04af\u043a\u0442\u0435\u043f \u0430\u043b\u044b\u04a3\u044b\u0437 - RoboForex",
+  "url": "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+  "published": "2026-10-13T15:15:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "kk",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1791449053",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboinvesting.pro/kk/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "23d20e0169a85244d158",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex Trading Platforms - download for PC, web and mobile - RoboForex",
+  "url": "https://roboinvesting.pro/forex-trading/terminals/download/",
+  "published": "2026-10-13T15:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1791449053",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "8de3b16f2e4d8fd67615",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Plataformas de trading RoboForex - descarga para PC, web y m\u00f3vil - RoboForex",
+  "url": "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+  "published": "2026-10-13T15:15:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1791449053",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "c6d301c05c00f53c9149",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "N\u1ec1n t\u1ea3ng giao d\u1ecbch RoboForex - t\u1ea3i v\u1ec1 cho PC, web v\u00e0 di \u0111\u1ed9ng - RoboForex",
+  "url": "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+  "published": "2026-10-13T15:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "vi",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1791449053",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "6a4881952443126e2eab",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mga Trading Platform ng RoboForex - i-download para sa PC, web at mobile - RoboForex",
+  "url": "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+  "published": "2026-10-13T15:15:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1791449053",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "e922c7c85cc12b75183e",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ }
+]
