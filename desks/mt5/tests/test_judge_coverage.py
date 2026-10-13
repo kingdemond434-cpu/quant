@@ -528,3 +528,32 @@ def test_a_family_the_posterior_never_learned_is_backfilled(tmp_path: Path) -> N
     out = jc.learn_priors(ledger, since="2026-09-23T11:35:40+00:00", state_dir=tmp_path)
     assert out["backfilled_families"] == 1
     assert out["recorded"] == 1
+
+
+def test_two_readings_of_one_sweep_are_never_a_stall(tmp_path: Path) -> None:
+    """Audit of #374: the resident publishes after a sweep and the hourly reads again before the
+    next; with verdicts inside the hour, equal shares from ONE verdict file read as a stall."""
+    def _rep(stamp_was: str | None) -> Path:
+        report = tmp_path / "JUDGE_COVERAGE.json"
+        report.write_text(json.dumps({
+            "at": NOW.isoformat(),
+            "families": {"a": {"unjudged": 1, "queued": 1, "judged_window": 1, "quota": 1,
+                               "window_h": 1.0}},
+            "totals": {"unknown_total": 100, "unknown_share": 0.5, "unknown_unnamed": 0,
+                       "prior_unknown_share": 0.5, "unrunnable_bank": 40,
+                       "gates_report_stamp": "111", "prior_gates_report_stamp": stamp_was}}),
+            "utf-8")
+        return report
+    assert fence.judge(_rep("111"), now=NOW)["verdict"] == "PASS"     # same sweep, read twice
+    assert fence.judge(_rep("100"), now=NOW)["verdict"] == "FAIL"     # a new sweep, same share
+
+
+def test_the_ratchet_write_is_atomic_and_carries_the_sweep_stamp(tmp_path: Path) -> None:
+    gates = tmp_path / "gates.json"
+    gates.write_text("{}", "utf-8")
+    assert jc.gates_report_stamp(gates) == str(gates.stat().st_mtime_ns)
+    assert jc.gates_report_stamp(tmp_path / "absent.json") is None
+    rt, rep = tmp_path / "ratchet.json", tmp_path / "JC.json"
+    jc.write({"totals": {"gates_report_stamp": "42"}, "families": {}}, report=rep, ratchet=rt)
+    assert json.loads(rt.read_text("utf-8"))["gates_report_stamp"] == "42"
+    assert not list(tmp_path.glob("*.tmp"))

@@ -10,13 +10,14 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
-from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
 
@@ -304,6 +305,21 @@ RESIDENT_HANG_FLOOR_S = 3600.0
 #: back from JUDGE_RESIDENT.json), so a deterministic long merge widens its own window instead of
 #: being killed at the same mark forever. Two or more in a row fail the coverage fence.
 RESIDENT_HANG_CAP_S = 48 * 3600.0
+#: THE JUDGE'S OWN READINGS, PUBLISHED AFTER EVERY SWEEP (2026-10-13). These producers ran only
+#: inside the hourly cycle, and while MT5-Hourly was refused (0x800710E0) the desk went 6 days
+#: with no JUDGE_COVERAGE reading, no JUDGING_BURNDOWN, a 10-day-old GAUNTLET_BACKPRESSURE and no
+#: OCCUPANCY_MAP -- so a red coverage ratchet could not refresh and the backlog's ETA read
+#: UNMEASURED. ORDER IS DEPENDENCY: the occupancy map feeds the coverage ranking, the coverage
+#: pass writes the handoff the burn-down reads. They run in ONE background chain, never more
+#: than one chain at a time, so the next sweep starts immediately (zero cadence is untouched)
+#: and a slow producer can never stack copies of itself.
+POST_SWEEP_PUBLISHERS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    ("occupancy_map", "research/occupancy_map.py", ("--once",)),
+    ("judge_coverage", "research/judge_coverage.py", ("--once",)),
+    ("judging_burndown", "research/judging_burndown.py", ()),
+    ("gauntlet_backpressure", "research/gauntlet_backpressure.py", ()),
+)
+POST_SWEEP_TIMEOUT_S = 900.0
 #: The sealed judge's own default build budget, used when the sweep's env names none.
 SEALED_FRESH_BUDGET_S = 2700.0
 
@@ -523,9 +539,77 @@ def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> 
             _write_state(dict(state))
 
 
+#: The sealed judge's verdict file: the chain re-reads coverage only when a new sweep wrote it.
+GATES_REPORT = DESK / "reports" / "universal_gates_external.json"
+
+
+def _gates_stamp() -> str | None:
+    try:
+        return str(GATES_REPORT.stat().st_mtime_ns)
+    except OSError:
+        return None
+
+
+def _run_publishers(state: dict[str, Any], lock: threading.Lock,
+                    runner: Callable[..., Any] = run) -> None:
+    """Run the post-sweep publishers in order; record each one's rc and seconds in the state.
+
+    `runner` is the tree-killing `proctree.run` (72-orphans lesson): a producer that overruns its
+    timeout dies with its whole tree. judge_coverage runs only when the sealed judge's verdict
+    file changed since the chain last read it -- a failed sweep wrote nothing new, and two
+    readings of one sweep are one reading (audit of #374)."""
+    try:
+        out: dict[str, Any] = {}
+        stamp = _gates_stamp()
+        for name, script, args in POST_SWEEP_PUBLISHERS:
+            t0 = time.monotonic()
+            if name == "judge_coverage" and stamp is not None \
+                    and stamp == state.get("publishers_gates_stamp"):
+                out[name] = {"rc": "SKIPPED_SAME_SWEEP", "seconds": 0.0,
+                             "at": datetime.now(UTC).isoformat(timespec="seconds")}
+                state["publishers"] = dict(out)
+                continue
+            try:
+                rc = runner([sys.executable, script, *args], cwd=str(DESK),
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                            timeout=POST_SWEEP_TIMEOUT_S, check=False).returncode
+            except subprocess.TimeoutExpired:
+                rc = "TIMEOUT"
+            except Exception as exc:          # a missing script must not take the judge down
+                rc = f"{type(exc).__name__}"
+            out[name] = {"rc": rc, "seconds": round(time.monotonic() - t0, 1),
+                         "at": datetime.now(UTC).isoformat(timespec="seconds")}
+            if name == "judge_coverage" and rc == 0:
+                state["publishers_gates_stamp"] = stamp
+            state["publishers"] = dict(out)
+    finally:
+        lock.release()
+
+
+def _start_publishers(state: dict[str, Any], lock: threading.Lock) -> bool:
+    """Start the publisher chain in the background unless one is still running."""
+    if not lock.acquire(blocking=False):
+        state["publishers_skipped"] = int(state.get("publishers_skipped") or 0) + 1
+        return False
+    try:
+        t = threading.Thread(target=_run_publishers, args=(state, lock), daemon=True)
+        t.start()
+    except BaseException:
+        lock.release()               # a chain that never started must not skip every later one
+        raise
+    _PUBLISHER_THREADS[:] = [t]
+    return True
+
+
+#: The running chain, so the resident's exit can wait for it instead of orphaning its child.
+_PUBLISHER_THREADS: list[threading.Thread] = []
+PUBLISHER_EXIT_WAIT_S = 30.0
+
+
 def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
              limit_s: float | None = None, max_sweeps: int | None = None,
-             heartbeat_s: float = RESIDENT_HEARTBEAT_S) -> int:
+             heartbeat_s: float = RESIDENT_HEARTBEAT_S,
+             publish: Callable[[dict[str, Any]], Any] | None = None) -> int:
     """Run sweeps back to back until stopped; return the last sweep's exit code."""
     started, last_rc = clock(), 0
     state: dict[str, Any] = {"pid": os.getpid(), "started_utc": datetime.now(UTC).isoformat(
@@ -537,6 +621,12 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
     state["longest_sweep_s"] = prev.get("longest_sweep_s")
     state["consecutive_hangs"] = int(prev.get("consecutive_hangs") or 0)
     state["hung_kills"] = int(prev.get("hung_kills") or 0)
+    if publish is None and sweep is None:
+        # The real judge publishes its readings; an injected (test) sweep publishes nothing.
+        _plock = threading.Lock()
+
+        def publish(st: dict[str, Any]) -> Any:
+            return _start_publishers(st, _plock)
     if sweep is None:
         def sweep() -> int:
             hang = _hang_limit_s(state.get("longest_sweep_s"),
@@ -547,10 +637,15 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
     beat = threading.Thread(target=_heartbeat, args=(state, stop, heartbeat_s), daemon=True)
     beat.start()
     try:
-        last_rc = _resident_loop(state, sweep, sleep, clock, started, limit_s, max_sweeps)
+        last_rc = _resident_loop(state, sweep, sleep, clock, started, limit_s, max_sweeps,
+                                 publish)
     finally:
         stop.set()
         beat.join(timeout=5)
+        for _t in list(_PUBLISHER_THREADS):
+            _t.join(timeout=PUBLISHER_EXIT_WAIT_S)
+            if _t.is_alive():
+                state["publishers_left_running"] = True
         if state.get("status") in ("RUNNING", "SWEEPING", "BACKOFF"):
             # Anything that ends the loop without naming why (an exception, an interrupt) still
             # leaves an EXITED record rather than a SWEEPING one.
@@ -570,7 +665,8 @@ def _read_state() -> dict[str, Any]:
 
 def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
                    sleep: Callable[[float], Any], clock: Callable[[], float], started: float,
-                   limit_s: float | None, max_sweeps: int | None) -> int:
+                   limit_s: float | None, max_sweeps: int | None,
+                   publish: Callable[[dict[str, Any]], Any] | None = None) -> int:
     failures, n, last_rc = 0, 0, 0
     last_sweep_s: float | None = None
     while True:
@@ -599,6 +695,9 @@ def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
         state.update(last_rc=last_rc, last_sweep_s=round(dt, 1), uptime_s=round(
             clock() - started, 1), last_sweep_ended_utc=datetime.now(UTC).isoformat(
             timespec="seconds"))
+        if publish is not None and last_rc != LANE_HELD_RC:
+            # A failed or hung sweep is still a reading: the coverage and burn-down must say so.
+            publish(state)
         if last_rc == 0:
             failures, last_sweep_s = 0, dt
             state["consecutive_hangs"] = 0

@@ -83,8 +83,10 @@ it first appears in the docket, with no edit to this file.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter
@@ -1677,6 +1679,12 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "named_verdicts_per_hour_24h": rate.get("named_per_hour_24h"),
         "unknown_by_reason": unknown.get("by_reason"),
         "prior_unknown_share": prior_unknown_share,
+        # WHICH SWEEP THIS READING SAW, so the stall check compares two readings of DIFFERENT
+        # sweeps: the resident publishes after every sweep and the hourly reads again before the
+        # next, and two readings of one verdict file are the same reading, never a stall.
+        "gates_report_stamp": gates_report_stamp(),
+        "prior_gates_report_stamp": (prior.get("gates_report_stamp")
+                                     if isinstance(prior, dict) else None),
         "never_fires_cells": ((unknown.get("causes") or {}).get("never_fires_days_0")
                               or {}).get("cells"),
         "unknown_unnamed": max(0, int(unknown.get("unknown_total") or 0)
@@ -1898,6 +1906,28 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
+def gates_report_stamp(path: Path | None = None) -> str | None:
+    """The sealed judge's verdict file's mtime (ns): a new value means a new sweep landed."""
+    try:
+        return str((path or GATES_REPORT).stat().st_mtime_ns)
+    except OSError:
+        return None
+
+
+def _atomic_write(target: Path, text: str) -> None:
+    """Two writers now publish these (the resident's chain and the hourly leg): a torn ratchet
+    reads as an empty prior and would wipe the sticky best, baseline and defect. Write a sibling
+    and replace; on failure the previous file stays whole."""
+    tmp = target.with_name(f"{target.name}.{os.getpid()}.tmp")
+    tmp.write_text(text, "utf-8")
+    try:
+        os.replace(tmp, target)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        raise
+
+
 def write(doc: dict[str, Any], *, report: Path | None = None,
           ratchet: Path | None = None) -> None:
     """Publish the table and advance the ratchet. A ratchet write is the NEXT reading's baseline."""
@@ -1911,7 +1941,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                 dk.publish(keff)
             except OSError as exc:
                 doc.setdefault("keff_order", {})["publish_error"] = f"{type(exc).__name__}"
-    target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    _atomic_write(target, json.dumps(doc, indent=1, default=str))
     fams = doc.get("families") or {}
     state = {
         "at": doc.get("at"),
@@ -1923,6 +1953,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
         "unknown_share_basis": (doc.get("totals") or {}).get("unknown_share_basis"),
         "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
+        "gates_report_stamp": (doc.get("totals") or {}).get("gates_report_stamp"),
         "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
@@ -1931,7 +1962,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
     }
     rt = ratchet or RATCHET
     rt.parent.mkdir(parents=True, exist_ok=True)
-    rt.write_text(json.dumps(state, indent=1, default=str), "utf-8")
+    _atomic_write(rt, json.dumps(state, indent=1, default=str))
 
 
 def render(doc: dict[str, Any]) -> list[str]:

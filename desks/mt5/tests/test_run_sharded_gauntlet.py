@@ -435,3 +435,100 @@ def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
                     limit_s=None, max_sweeps=2, heartbeat_s=60)
     st = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
     assert st["killed_in_phase"]["phase"] == "merge_and_publish"
+
+
+def test_the_resident_publishes_its_readings_after_every_sweep_but_a_held_lane() -> None:
+    """2026-10-13: coverage, burn-down, backpressure and occupancy ran only in the hourly cycle."""
+    seen: list[int] = []
+    rcs = iter([0, 1, runner.LANE_HELD_RC, 0])
+    rc = runner.resident(sweep=lambda: next(rcs), sleep=lambda s: None, max_sweeps=4,
+                         heartbeat_s=3600, publish=lambda st: seen.append(st["last_rc"]))
+    assert rc == 0 and seen == [0, 1, 0]
+
+
+def test_the_publisher_chain_runs_in_order_and_never_stacks(monkeypatch) -> None:
+    import threading
+    calls: list[str] = []
+
+    class _R:
+        returncode = 0
+
+    def fake_run(cmd, **kw):
+        calls.append(Path(cmd[1]).stem)
+        assert kw["cwd"] == str(runner.DESK) and kw["timeout"] == runner.POST_SWEEP_TIMEOUT_S
+        return _R()
+
+    state: dict = {}
+    lock = threading.Lock()
+    lock.acquire()
+    runner._run_publishers(state, lock, runner=fake_run)
+    assert calls == ["occupancy_map", "judge_coverage", "judging_burndown",
+                     "gauntlet_backpressure"]
+    assert not lock.locked() and state["publishers"]["judge_coverage"]["rc"] == 0
+    lock.acquire()                                   # a chain still running: the next is skipped
+    assert runner._start_publishers(state, lock) is False and state["publishers_skipped"] == 1
+    lock.release()
+
+
+def test_a_publisher_that_hangs_or_is_missing_never_takes_the_judge_down() -> None:
+    import subprocess
+    import threading
+
+    def boom(cmd, **kw):
+        if "occupancy" in cmd[1]:
+            raise subprocess.TimeoutExpired(cmd, 1)
+        raise FileNotFoundError(cmd[1])
+
+    state: dict = {}
+    lock = threading.Lock()
+    lock.acquire()
+    runner._run_publishers(state, lock, runner=boom)
+    assert state["publishers"]["occupancy_map"]["rc"] == "TIMEOUT"
+    assert state["publishers"]["judge_coverage"]["rc"] == "FileNotFoundError"
+    assert not lock.locked()
+
+
+def test_the_chain_reads_coverage_only_after_a_new_sweep_and_kills_trees(
+        tmp_path, monkeypatch) -> None:
+    """Audit of #374: two coverage readings of one verdict file read as a stall; and the
+    producers run on the tree-killing runner by default."""
+    import threading
+    gates = tmp_path / "universal_gates_external.json"
+    gates.write_text("{}", "utf-8")
+    monkeypatch.setattr(runner, "GATES_REPORT", gates)
+    calls: list[str] = []
+
+    class _R:
+        returncode = 0
+
+    def fake_run(cmd, **kw):
+        calls.append(Path(cmd[1]).stem)
+        return _R()
+
+    state: dict = {}
+    lock = threading.Lock()
+    for _ in range(2):
+        lock.acquire()
+        runner._run_publishers(state, lock, runner=fake_run)
+    assert calls.count("judge_coverage") == 1
+    assert state["publishers"]["judge_coverage"]["rc"] == "SKIPPED_SAME_SWEEP"
+    import inspect
+
+    from libs.ops import proctree
+    assert inspect.signature(runner._run_publishers).parameters["runner"].default is proctree.run
+
+
+def test_a_chain_that_cannot_start_releases_its_lock(monkeypatch) -> None:
+    import threading
+
+    import pytest
+
+    class _NoStart(threading.Thread):
+        def start(self) -> None:
+            raise RuntimeError("can't start new thread")
+
+    monkeypatch.setattr(runner.threading, "Thread", _NoStart)
+    lock = threading.Lock()
+    with pytest.raises(RuntimeError):
+        runner._start_publishers({}, lock)
+    assert not lock.locked()
