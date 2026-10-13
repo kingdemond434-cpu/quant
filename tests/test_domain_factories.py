@@ -225,7 +225,10 @@ def test_pit_forecast_obs_stamped_at_fetch_and_observed_by_release_rule(tmp_path
     pts = D.publish(p, D.WEATHER_OBS, NOW, dry_run=False)["conus_hdd"]
     assert pts[0]["value"] == 4.0                          # the first vintage is the value
     assert pts[0]["revision_time"] == later.isoformat(timespec="seconds")
-    assert pts[0]["available_time"] == "2026-10-06T18:00:00+00:00"     # D+1 18:00 UTC
+    assert pts[0]["published_time"] == "2026-10-06T18:00:00+00:00"     # D+1 18:00 UTC rule
+    # ...but the desk first read it at NOW, after that release: available at max(rule, seen)
+    assert pts[0]["available_time"] == NOW.isoformat(timespec="seconds")
+    assert pts[0]["available_basis"] == "first_seen"
     lake = tmp_path / "data" / "lake" / "series" / "alt_dfw_weather_obs__conus_hdd.csv"
     assert lake.exists() and "available_time" in lake.read_text().splitlines()[0]
 
@@ -381,11 +384,17 @@ def test_payments_take_only_permitted_components_at_their_own_release() -> None:
     assert D.payment_obs(alt, []) == []
 
 
-def test_refused_payment_sources_report_held(tmp_path: Path) -> None:
+def test_refused_payment_sources_report_held(tmp_path: Path,
+                                            monkeypatch: pytest.MonkeyPatch) -> None:
     runs = {sid: D._alt_run(D.Paths(tmp_path), sid)
             for sid in ("in_npci_upi", "tr_bkm_card", "br_cielo_icva", "za_beti",
-                        "cn_holiday_spend", "kr_bok_card_spend")}
+                        "cn_holiday_spend")}
     assert {r.status for r in runs.values()} == {D.HELD}
+    # #192 confirmed the Bank of Korea's terms; with no ECOS key on this host it fails closed
+    # as NEEDS_KEY, never fetched and never a pass
+    monkeypatch.delenv("ECOS_API_KEY", raising=False)
+    kr = D._alt_run(D.Paths(tmp_path), "kr_bok_card_spend")
+    assert kr.status == D.NEEDS_KEY and kr.parsed == 0 and kr.requests == 0
     assert D._alt_run(D.Paths(tmp_path), "br_bcb_payments").status == D.UNMEASURED  # empty store
 
 
