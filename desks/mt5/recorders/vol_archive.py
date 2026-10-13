@@ -72,14 +72,13 @@ HTTP 404 and is therefore not in GROUND at all rather than sitting in it as a pe
 Absences are recorded as absences with the reason -- an unavailable series is a fact about the
 world, and a module that quietly drops it teaches its reader the series was never wanted.
 
-THE SOURCE, AS OF 2026-10-06: HELD. Those 2026-09-05 readings came through Yahoo's chart API.
-Yahoo's terms bar automated collection without express prior permission, so that route is
-refused: `YahooVolSource` is a refusal record that sends nothing. FRED's republication of the
-CBOE indices (`FredVolSource`) and CBOE's own history files are HELD_PENDING_TERMS: the terms
-read that day (quoted verbatim in `TERMS_EVIDENCE`) contain no clause that clearly permits
-automated download for this desk's research, and a missing permission is a hold. Until a
-permitting clause is quoted there, every cycle records each ground as HELD_PENDING_TERMS with no
-request sent. Every row and report carries `terms_note` and the route that served (or held) it.
+THE SOURCE, AS OF 2026-10-13: LIVE's ROUTE, KEPT. The principal's ruling of 2026-10-13 ("no
+source should be banned") keeps the Yahoo chart route MT5-VolArchive runs, with FRED as its
+fallback. `TERMS_EVIDENCE` is the per-source rule register: each row names its policy, a
+one-line why, whether the route is kept, and the terms read 2026-10-06 quoted verbatim
+(`permits_use` stays what those quotes say). A row whose policy holds it (METHOD_BLOCKED,
+NEEDS_KEY) sends no request and its grounds are recorded HELD. Every row and report carries
+`terms_note` and the route that served (or held) it.
 
 NOTHING HERE IS A SIGNAL. Every row is an observation. The gauntlet decides, this measures, and
 the archive has no promotion authority in any lane.
@@ -92,6 +91,7 @@ import io
 import json
 import math
 import sys
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
@@ -129,20 +129,47 @@ RV_WINDOW_D = 21
 ANNUALISE = math.sqrt(252.0)
 
 #: AN HONEST USER-AGENT THAT NAMES THE DESK. No browser prefix: this is an automated collector
-#: and says so.
+#: and says so (the method rule: nothing here dresses up as a browser to get past a block).
 UA = "quant-mt5-research-desk/1.0 (point-in-time vol collector; internal research only)"
 
 #: Carried on every series, observation and report built from CBOE index values, whoever serves
 #: them: the values are CBOE's copyright.
 TERMS_NOTE = "CBOE copyright: internal research only, never redistributed"
 
-#: THE TERMS EVIDENCE, READ 2026-10-06, QUOTED VERBATIM. A source is requested only when its
-#: record carries `permits_use: True` on a quoted clause that clearly permits automated download
-#: for internal research. A missing permission is a HOLD, never an inference.
+#: THE PER-SOURCE RULE REGISTER for the vol indices (principal ruling 2026-10-13: "no source
+#: should be banned"; what stays off is a METHOD -- bypassing a login, paywall, CAPTCHA, rate
+#: limit or region lock). Each row carries its `policy` (API_PERMITTED / NEEDS_KEY / PUBLIC_PAGE /
+#: IDEAS_ONLY / METHOD_BLOCKED), a one-line `why`, and `route_kept`: whether the desk runs that
+#: source as a live-input route. The terms read 2026-10-06 stay QUOTED VERBATIM and
+#: `permits_use` stays what the quotes say -- keeping a route on the principal's ruling is
+#: recorded as exactly that, never as a permission the page does not grant.
 TERMS_EVIDENCE: dict[str, dict[str, Any]] = {
+    "yahoo": {
+        "source": "Yahoo Finance chart API (query1.finance.yahoo.com)",
+        "policy": "PUBLIC_PAGE",
+        "status": "ROUTE_KEPT",
+        "route_kept": True,
+        "why": ("LIVE's MT5-VolArchive route, kept by the principal's ruling of 2026-10-13; two "
+                "requests per index per daily pass, no login, CAPTCHA or rate limit is crossed. "
+                "Its ToS 2.4(i) is quoted below and the call on it is the principal's"),
+        "permits_use": False,
+        "read": "2026-10-06",
+        "pages": ["https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html"],
+        "quotes": [
+            "access or collect data, or attempt to access or collect data, from our Services "
+            "using any automated means, devices, programs, algorithms or methodologies, "
+            "including but not limited to robots, spiders, scrapers, data mining tools, or data "
+            "gathering or extraction tools, for any purpose without our express, prior "
+            "permission. (Terms of Service 2.4(i))",
+        ],
+    },
     "fred": {
-        "source": "FRED fredgraph CSV (fred.stlouisfed.org), republishing CBOE indices",
-        "status": "HELD_PENDING_TERMS",
+        "source": "FRED (fred.stlouisfed.org), republishing CBOE indices",
+        "policy": "PUBLIC_PAGE",
+        "status": "ROUTE_KEPT",
+        "route_kept": True,
+        "why": ("LIVE's fallback after Yahoo (research/free_data.fred_series), kept as LIVE runs "
+                "it; public keyless series, fetched politely. The CBOE label below is recorded"),
         "permits_use": False,
         "read": "2026-10-06",
         "pages": ["https://fred.stlouisfed.org/legal/",
@@ -158,15 +185,14 @@ TERMS_EVIDENCE: dict[str, dict[str, Any]] = {
             "Copyright, 2016, Chicago Board Options Exchange, Inc. Reprinted with permission. "
             "(the label on VIXCLS and GVZCLS)",
         ],
-        "why_held": ("the CBOE series carry 'Reprinted with permission', not one of the two "
-                     "labels FRED clears for internal use, and FRED's terms send any use beyond "
-                     "personal use to the data owner for permission. No clause read clearly "
-                     "permits automated download for this desk's research."),
-        "unblocks_when": "CBOE (permissions@cboe.com) grants permission in writing, quoted here",
     },
     "cboe": {
         "source": "CBOE daily history CSVs and CBOE website content",
-        "status": "HELD_PENDING_TERMS",
+        "policy": "IDEAS_ONLY",
+        "status": "NO_ROUTE",
+        "route_kept": False,
+        "why": ("no LIVE route reads CBOE's own files; its use-of-content page asks for a signed "
+                "licence, so it stays a source of ideas, not live input"),
         "permits_use": False,
         "read": "2026-10-06",
         "pages": ["https://www.cboe.com/use-of-content"],
@@ -177,31 +203,26 @@ TERMS_EVIDENCE: dict[str, dict[str, Any]] = {
             "You are not approved to use Cboe Content until a license agreement has been signed "
             "by both you and Cboe.",
         ],
-        "why_held": "CBOE requires advance approval and a signed licence; neither exists",
-        "unblocks_when": "a signed CBOE licence agreement covering this use",
-    },
-    "yahoo": {
-        "source": "Yahoo Finance chart API (query1.finance.yahoo.com)",
-        "status": "FAIL_CLOSED_TERMS",
-        "permits_use": False,
-        "read": "2026-10-06",
-        "pages": ["https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html"],
-        "quotes": [
-            "access or collect data, or attempt to access or collect data, from our Services "
-            "using any automated means, devices, programs, algorithms or methodologies, "
-            "including but not limited to robots, spiders, scrapers, data mining tools, or data "
-            "gathering or extraction tools, for any purpose without our express, prior "
-            "permission. (Terms of Service 2.4(i))",
-        ],
-        "why_held": "an explicit bar on automated collection without express prior permission",
-        "unblocks_when": "Yahoo's express, prior permission",
     },
 }
 
-#: The fail-closed records reports carry. Never requested.
-YAHOO_REFUSAL: dict[str, Any] = TERMS_EVIDENCE["yahoo"]
-CBOE_HELD: dict[str, Any] = TERMS_EVIDENCE["cboe"]
-FRED_HELD: dict[str, Any] = TERMS_EVIDENCE["fred"]
+#: Policies under which a source is HELD as live input (the ruling's two holding statuses).
+HOLDING: frozenset[str] = frozenset({"METHOD_BLOCKED", "NEEDS_KEY"})
+
+
+def route_admitted(row: dict[str, Any] | None) -> bool:
+    """True when a register row lets its source serve live input: the route is kept and its
+    policy does not hold it, or a quoted clause permits the use. Fails closed on a bad row."""
+    row = row or {}
+    if str(row.get("policy", "")) in HOLDING:
+        return False
+    return bool(row.get("route_kept")) or (bool(row.get("permits_use"))
+                                           and bool(row.get("quotes")))
+
+
+YAHOO_TERMS: dict[str, Any] = TERMS_EVIDENCE["yahoo"]
+FRED_TERMS: dict[str, Any] = TERMS_EVIDENCE["fred"]
+CBOE_TERMS: dict[str, Any] = TERMS_EVIDENCE["cboe"]
 
 FRED_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
 #: Ticker -> FRED series (FRED republishes these CBOE indices). VIX9D, VIX6M and SKEW have none.
@@ -258,14 +279,11 @@ class VolSource(Protocol):
 
 
 class FredVolSource:
-    """FRED's republication of the CBOE volatility indices -- HELD, so it requests nothing.
+    """FRED's republication of the CBOE volatility indices, fetched directly as fredgraph CSV.
 
-    It fetches ONLY while `TERMS_EVIDENCE["fred"]["permits_use"]` is True, and that flag is set
-    only on a quoted clause that clearly permits this use. As read on 2026-10-06 it is False (see
-    the record's quotes), so every `series` call answers None, records HELD_PENDING_TERMS for the
-    ticker and sends no request. CBOE's own files and Yahoo are held and refused the same way.
-
-    Were it admitted: VIX9D, VIX6M and SKEW have no FRED series, so those tickers are recorded
+    It requests only while its register row (`TERMS_EVIDENCE["fred"]`) admits it
+    (`route_admitted`): a row whose policy holds it, or a bad row, sends nothing and records the
+    ticker HELD. VIX9D, VIX6M and SKEW have no FRED series, so those tickers are recorded
     UNMEASURED with the reason, never substituted. `fetch` is injectable for fixtures.
     """
 
@@ -274,18 +292,18 @@ class FredVolSource:
                  evidence: dict[str, Any] | None = None) -> None:
         self.timeout = timeout
         self.fetch = fetch or _http_text
-        self.evidence = evidence if evidence is not None else FRED_HELD
+        self.evidence = evidence if evidence is not None else FRED_TERMS
         self._fred_ok = True
         self.routes: dict[str, dict[str, Any]] = {}
 
     @property
     def admitted(self) -> bool:
-        return bool(self.evidence.get("permits_use")) and bool(self.evidence.get("quotes"))
+        return route_admitted(self.evidence)
 
     def series(self, ticker: str) -> dict[str, float] | None:
         if not self.admitted:
-            self.routes[ticker] = {"route": "fred_csv", "status": "HELD_PENDING_TERMS",
-                                   "why": self.evidence.get("why_held", "no permitting clause"),
+            self.routes[ticker] = {"route": "fred_csv", "status": "HELD",
+                                   "why": self.evidence.get("why", "the register holds it"),
                                    "requested": False, "terms_note": TERMS_NOTE}
             return None
         sid = FRED_SERIES.get(ticker)
@@ -317,30 +335,126 @@ class FredVolSource:
     def provenance(self) -> dict[str, Any]:
         return {"order": ["fred_csv"], "admitted": self.admitted, "user_agent": UA,
                 "terms_note": TERMS_NOTE, "routes": dict(sorted(self.routes.items())),
-                "held": [self.evidence, CBOE_HELD], "refused": [YAHOO_REFUSAL]}
+                "register": {"fred": self.evidence, "cboe": CBOE_TERMS}}
 
 
 class YahooVolSource:
-    """REFUSED, KEPT AS A RECORD. Yahoo's terms (quoted in `TERMS_EVIDENCE["yahoo"]`) bar
-    automated collection without express prior permission, so `series` sends NO request, notes
-    the ticker it was asked for and answers None."""
+    """LIVE's MT5-VolArchive route, kept by the principal's ruling of 2026-10-13: keyless CBOE
+    volatility indices through the public chart API, with FRED as the fallback.
 
-    refusal: dict[str, Any] = YAHOO_REFUSAL
-    admitted = False
+    TWO RANGES ARE FETCHED AND MERGED, AND THE REASON IS A MEASURED DEFECT IN THE SOURCE, not
+    caution. Measured 2026-09-05 against the live endpoint:
 
-    def __init__(self, *_a: Any, **_k: Any) -> None:
-        self.refused: list[str] = []
+        ^VIX     range=10y -> 2,515 points ending 2026-09-04   (current)
+        ^VIX9D   range=10y -> 2,479 points ending 2026-07-17   (SEVEN WEEKS STALE)
+        ^VIX9D   range=1mo ->     1 point  ending 2026-09-04   (current, no history)
+        ^VIX3M, ^VIX6M: identical split
+
+    The long-range endpoint carries the history and is stale for the term indices; the short-range
+    endpoint is current and carries nothing behind it. A collector using either one alone gets a
+    term curve that is either seven weeks out of date or one point long -- and the first failure
+    is the dangerous one, because a stale 9-day tenor beside a fresh 30-day one manufactures a
+    term slope out of a publication lag, and a term-structure signal would fire on exactly that.
+
+    Order of preference: the merged Yahoo pair, then `research/free_data.yahoo_daily` (the desk's
+    declared keyless collector, with its own cache), then FRED. Each step runs only while its
+    register row admits it (`route_admitted`); a held step sends nothing and is named in `routes`.
+    """
+
+    def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo",
+                 evidence: dict[str, Any] | None = None,
+                 fred_evidence: dict[str, Any] | None = None) -> None:
+        self.timeout = timeout
+        self.range = range_
+        self.fresh_range = fresh_range
+        self.evidence = evidence if evidence is not None else YAHOO_TERMS
+        self.fred_evidence = fred_evidence if fred_evidence is not None else FRED_TERMS
+        self._fred_ok = True
         self.routes: dict[str, dict[str, Any]] = {}
 
+    @property
+    def admitted(self) -> bool:
+        return route_admitted(self.evidence) or route_admitted(self.fred_evidence)
+
     def series(self, ticker: str) -> dict[str, float] | None:
-        self.refused.append(ticker)
-        self.routes[ticker] = {"route": "yahoo_chart", "status": "FAIL_CLOSED_TERMS",
-                               "requested": False}
-        return None
+        history = fresh = None
+        if route_admitted(self.evidence):
+            history = self._chart(ticker, self.range)
+            if history is None:
+                try:
+                    from research import free_data as fd
+                    got = fd.yahoo_daily(ticker)
+                    history = {str(k): float(v) for k, v in got.items()} if got else None
+                except Exception:
+                    history = None
+            fresh = self._chart(ticker, self.fresh_range)
+        if history is None and fresh is None:
+            got_fred = self._fred(ticker) if route_admitted(self.fred_evidence) else None
+            if got_fred:
+                self.routes[ticker] = {"route": "fred", "status": "OBSERVED", "n": len(got_fred)}
+            elif not self.admitted:
+                self.routes[ticker] = {"route": "yahoo_chart", "status": "HELD",
+                                       "why": "the register holds every route", "requested": False}
+            else:
+                self.routes[ticker] = {"route": "yahoo_chart", "status": "UNAVAILABLE"}
+            return got_fred
+        merged: dict[str, float] = dict(history or {})
+        # THE FRESH TAIL WINS ON OVERLAP. It is the endpoint that is current, and where the two
+        # disagree on a shared date the disagreement is the source restating itself -- which is
+        # the very thing this archive's vintage claim is about.
+        merged.update(fresh or {})
+        self.routes[ticker] = {"route": "yahoo_chart",
+                               "status": "OBSERVED" if merged else "UNAVAILABLE",
+                               "n": len(merged)}
+        return merged or None
+
+    def _chart(self, ticker: str, range_: str) -> dict[str, float] | None:
+        url = ("https://query1.finance.yahoo.com/v8/finance/chart/"
+               + urllib.parse.quote(ticker) + f"?range={range_}&interval=1d")
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                doc = json.loads(r.read())
+        except Exception:
+            return None
+        res = (doc.get("chart") or {}).get("result")
+        if not res:
+            return None
+        node = res[0]
+        stamps = node.get("timestamp") or []
+        try:
+            closes = node["indicators"]["quote"][0]["close"]
+        except (KeyError, IndexError, TypeError):
+            # A REAL AND MEANINGFUL ABSENCE. ^EVZ answers with a result block carrying no close
+            # series, which is not the same as a 404 and not the same as a zero. Returning None
+            # here makes the caller record it as an unavailable series rather than a flat one.
+            return None
+        out: dict[str, float] = {}
+        for t, c in zip(stamps, closes, strict=False):
+            if c is None:
+                continue
+            out[datetime.fromtimestamp(int(t), tz=UTC).date().isoformat()] = float(c)
+        return out or None
+
+    def _fred(self, ticker: str) -> dict[str, float] | None:
+        sid = {"^VIX": "VIXCLS", "^GVZ": "GVZCLS", "^OVX": "OVXCLS", "^VXN": "VXNCLS",
+               "^VXD": "VXDCLS", "^EVZ": "EVZCLS", "^VIX3M": "VXVCLS"}.get(ticker)
+        if not sid or not self._fred_ok:
+            return None
+        try:
+            from research import free_data as fd
+            got = fd.fred_series(sid, start="2015-01-01")
+        except Exception:
+            self._fred_ok = False
+            return None
+        return {str(k): float(v) for k, v in got.items()} if got else None
 
     def provenance(self) -> dict[str, Any]:
-        return {"admitted": False, "refused": [{**YAHOO_REFUSAL, "asked_for": list(self.refused)}],
-                "terms_note": TERMS_NOTE, "routes": dict(self.routes)}
+        return {"order": ["yahoo_chart", "free_data.yahoo_daily", "fred"],
+                "admitted": self.admitted, "user_agent": UA, "terms_note": TERMS_NOTE,
+                "routes": dict(sorted(self.routes.items())),
+                "register": {"yahoo": self.evidence, "fred": self.fred_evidence,
+                             "cboe": CBOE_TERMS}}
 
 
 def _http_text(url: str, timeout: int) -> str:
@@ -554,11 +668,11 @@ def observe(source: VolSource, registry: dict[str, Any], universe_dir: Path,
         s = source.series(g.vol_ticker)
         route = route_of(source, g.vol_ticker)
         if not s:
-            held = route["source_status"] in ("HELD_PENDING_TERMS", "FAIL_CLOSED_TERMS")
+            held = route["source_status"] == "HELD"
             out.append(Observation(
                 **base, **route, value_date="",
                 status=route["source_status"] if held else "UNAVAILABLE",
-                reason=(f"{g.vol_ticker}: source held by its terms, no request sent "
+                reason=(f"{g.vol_ticker}: source held by its register row, no request sent "
                         f"(TERMS_EVIDENCE)" if held else
                         f"{g.vol_ticker} returned no series -- recorded as an absence, not as "
                         f"a flat or missing value")))
@@ -654,9 +768,10 @@ def source_record(source: VolSource | None) -> dict[str, Any]:
         got = prov()
         if isinstance(got, dict):
             return got
-    return {"order": ["fred_csv"], "admitted": bool(FRED_HELD.get("permits_use")),
+    return {"order": ["yahoo_chart", "free_data.yahoo_daily", "fred"],
+            "admitted": route_admitted(YAHOO_TERMS) or route_admitted(FRED_TERMS),
             "user_agent": UA, "terms_note": TERMS_NOTE, "routes": {},
-            "held": [FRED_HELD, CBOE_HELD], "refused": [YAHOO_REFUSAL]}
+            "register": dict(TERMS_EVIDENCE)}
 
 
 def report(rows: list[dict[str, Any]], cycle: list[Observation],
@@ -705,8 +820,7 @@ def report(rows: list[dict[str, Any]], cycle: list[Observation],
         },
         "cycle": [asdict(o) for o in cycle],
         "unavailable": [o.vol_ticker for o in cycle if o.status == "UNAVAILABLE"],
-        "held_pending_terms": [o.vol_ticker for o in cycle
-                               if o.status in ("HELD_PENDING_TERMS", "FAIL_CLOSED_TERMS")],
+        "held_by_source_policy": [o.vol_ticker for o in cycle if o.status == "HELD"],
         "not_tradeable_here": [o.vol_ticker for o in cycle if o.status == "NOT_TRADEABLE_HERE"],
     }
 
@@ -728,7 +842,7 @@ def main(argv: list[str] | None = None) -> int:
               "instrument id this desk cannot confirm it trades (that is how a foreign alias "
               "becomes a node). Observing WITHOUT the join.")
 
-    source = FredVolSource()
+    source = YahooVolSource()
     cycle = observe(source, registry, args.universe)
     rows = read_archive(args.archive)
     if not args.dry_run:

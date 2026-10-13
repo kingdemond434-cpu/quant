@@ -165,21 +165,26 @@ def test_the_desks_own_vintage_overrides_the_restated_reference() -> None:
              "vol_ticker": "^VIX", "implied_vol": 16.5, "term": {}, **ok},
             {"observed_at": "2026-10-03T00:40:00+00:00", "value_date": "",
              "vol_ticker": "^GVZ", "implied_vol": None, **ok},
-            # A row from before the route stamp (an unadmitted source) is never a vintage.
+            # A row stamped as served by a route the register holds is never a vintage.
             {"observed_at": "2026-10-03T01:40:00+00:00", "value_date": "2026-10-03",
-             "vol_ticker": "^OVX", "implied_vol": 40.0, "term": {}}]
+             "vol_ticker": "^OVX", "implied_vol": 40.0, "term": {}, "source_admitted": False},
+            # A row from before the route stamp came through LIVE's kept Yahoo route: it counts.
+            {"observed_at": "2026-10-01T21:40:00+00:00", "value_date": "2026-10-01",
+             "vol_ticker": "^EVZ", "implied_vol": 7.5, "term": {}}]
     v = P.desk_vintages(rows)
     assert v["^VIX"] == {"2026-10-02": 16.5}            # the newest read of a date wins
     assert v["^VIX9D"] == {"2026-10-02": 15.1}
     assert "^GVZ" not in v                               # an absence is not a value
-    assert "^OVX" not in v                               # no admitted route, no vintage
+    assert "^OVX" not in v                               # a held route, no vintage
+    assert v["^EVZ"] == {"2026-10-01": 7.5}              # pre-stamp row: LIVE's kept route
 
 
 def test_a_held_source_is_never_asked_and_an_unadmitted_cache_is_never_served(tmp_path) -> None:
     asked: list[str] = []
-    held = va.FredVolSource(fetch=lambda u, t: asked.append(u) or "")
+    held = va.FredVolSource(fetch=lambda u, t: asked.append(u) or "",
+                            evidence={**va.FRED_TERMS, "policy": "NEEDS_KEY"})
     got, prov = P.reference_history("^GVZ", held, cache_dir=tmp_path, now=NOW)
-    assert got == {} and prov["status"] == "HELD_PENDING_TERMS" and asked == []
+    assert got == {} and prov["status"] == "HELD" and asked == []
     (tmp_path / "GVZ.json").write_text(json.dumps(
         {"ticker": "^GVZ", "fetched_at": NOW.isoformat(), "series": {"2026-10-02": 19.0}}))
     got2, prov2 = P.reference_history("^GVZ", None, cache_dir=tmp_path, now=NOW)
@@ -358,7 +363,7 @@ def test_one_pass_writes_series_feeds_the_forge_and_donates_each_cell_once(
     assert rep["seat"] == "options_implied"
     # Terms floor 2026-10-06: the note rides on the series, the feed and the report.
     assert rep["terms_note"] == va.TERMS_NOTE and set(us500["terms_note"]) == {va.TERMS_NOTE}
-    assert rep["sources"]["refused"][0]["status"] == "FAIL_CLOSED_TERMS"
+    assert set(rep["sources"]["register"]) >= {"fred", "cboe"}
     feed = json.loads((tmp_path / "lake" / "axes" / "options_implied.json").read_text())
     assert feed["terms_note"] == va.TERMS_NOTE
 
@@ -400,19 +405,30 @@ def test_the_forge_feed_is_read_by_the_world_model(monkeypatch, tmp_path) -> Non
         first.period_time)[1])
 
 
-def test_with_fred_held_the_pass_is_unmeasured_and_mints_nothing(monkeypatch, tmp_path) -> None:
+def test_with_every_route_held_the_pass_is_unmeasured_and_mints_nothing(monkeypatch,
+                                                                        tmp_path) -> None:
     sent = _point(monkeypatch, tmp_path)
     asked: list[str] = []
     uni = tmp_path / "universe"
     _bars(uni, "XAUUSD")
-    doc = P.run(source=va.FredVolSource(fetch=lambda u, t: asked.append(u) or ""),
+    held = {**va.FRED_TERMS, "policy": "METHOD_BLOCKED"}
+    doc = P.run(source=va.FredVolSource(fetch=lambda u, t: asked.append(u) or "", evidence=held),
                 registry=REGISTRY, universe_dir=uni, archive=tmp_path / "no_archive.jsonl",
                 now=NOW)
     assert asked == [], "a held source sends no request"
     assert doc["status"] == "UNMEASURED" and doc["grid"]["total"] == 0 and sent == []
     assert {r["status"] for r in doc["symbols"].values()} == {"UNMEASURED"}
-    assert {p["status"] for p in doc["reference"].values()} == {"HELD_PENDING_TERMS"}
+    assert {p["status"] for p in doc["reference"].values()} == {"HELD"}
     assert doc["sources"]["admitted"] is False
+
+
+def test_the_kept_fred_route_is_asked(tmp_path) -> None:
+    asked: list[str] = []
+    fixture = "observation_date,GVZCLS\n2026-10-01,19.5\n2026-10-02,.\n"
+    src = va.FredVolSource(fetch=lambda u, t: asked.append(u) or fixture)
+    got, prov = P.reference_history("^GVZ", src, cache_dir=tmp_path, now=NOW)
+    assert src.admitted and asked and got == {"2026-10-01": 19.5}
+    assert prov["status"] == "FETCHED"
 
 
 # ------------------------------------------------------------------ the wiring ----
@@ -440,36 +456,39 @@ def test_the_forcer_no_longer_calls_the_cluster_unreachable() -> None:
     assert "UNREACHABLE BY VENUE" not in ecf.MISSING_ARTIFACT["options_implied"]
 
 
-def test_the_cluster_register_reads_blocked_pending_terms_while_every_vol_source_is_held(
+def test_the_cluster_is_a_register_entry_and_is_admitted_by_the_kept_route(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     import empty_cluster_forcer as ecf
     from recorders import vol_archive as va
 
-    assert not any(ev.get("permits_use") for ev in va.TERMS_EVIDENCE.values())
-    hold = ecf.terms_hold("options_implied")
-    assert hold and hold["reason"] == (
-        "vol sources held pending a licensed source (FRED FAQ Q3, CBOE licence, "
-        "Yahoo ToS 2.4(i))")
-    # The register: options_implied is listed (empty or not) and reads BLOCKED_PENDING_TERMS,
-    # never UNREACHABLE, PROPOSER_OWNED or FORCED, and no cell is minted for it.
+    spec = ecf.CLUSTER_SOURCES["options_implied"]
+    assert set(spec["sources"]) <= set(va.TERMS_EVIDENCE)
+    # Ruling 2026-10-13: LIVE's Yahoo route is kept, so the cluster is not held ...
+    assert va.TERMS_EVIDENCE["yahoo"]["route_kept"] is True
+    assert va.TERMS_EVIDENCE["yahoo"]["permits_use"] is False   # ... and the quote stays true
+    assert ecf.source_hold("options_implied") is None
     for empty in ([], ["options_implied"]):
         (tmp_path / "b.json").write_text(json.dumps({"clusters": {"empty_in_both": empty}}))
         monkeypatch.setattr(ecf, "BREADTH", tmp_path / "b.json")
         monkeypatch.setattr(ecf, "MANDATE", tmp_path / "missing.json")
         doc = ecf.plan()
-        row = next(r for r in doc["clusters"] if r["cluster"] == "options_implied")
-        assert row["verdict"] == row["status"] == "BLOCKED_PENDING_TERMS"
-        assert row["reason"] == hold["reason"]
-        assert not [c for c in doc["cells"] if c.get("alpha_cluster") == "options_implied"]
+        assert not [r for r in doc["clusters"] if r.get("verdict") == "HELD"]
 
 
-def test_the_terms_hold_lifts_only_when_the_record_admits_a_source(
-        monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_cluster_reads_held_only_when_the_register_holds_every_source(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     import empty_cluster_forcer as ecf
     from recorders import vol_archive as va
 
-    ev = {k: dict(v) for k, v in va.TERMS_EVIDENCE.items()}
-    ev["fred"]["permits_use"] = True
+    ev = {k: {**v, "policy": "NEEDS_KEY"} for k, v in va.TERMS_EVIDENCE.items()}
     monkeypatch.setattr(va, "TERMS_EVIDENCE", ev)
-    assert ecf.terms_hold("options_implied") is None
-    assert ecf.terms_hold("news_reaction") is None
+    hold = ecf.source_hold("options_implied")
+    assert hold and "yahoo: NEEDS_KEY" in hold["reason"] and "fred: NEEDS_KEY" in hold["reason"]
+    (tmp_path / "b.json").write_text(json.dumps({"clusters": {"empty_in_both": []}}))
+    monkeypatch.setattr(ecf, "BREADTH", tmp_path / "b.json")
+    monkeypatch.setattr(ecf, "MANDATE", tmp_path / "missing.json")
+    doc = ecf.plan()
+    row = next(r for r in doc["clusters"] if r["cluster"] == "options_implied")
+    assert row["verdict"] == row["status"] == "HELD" and row["reason"] == hold["reason"]
+    assert not [c for c in doc["cells"] if c.get("alpha_cluster") == "options_implied"]
+    assert ecf.source_hold("news_reaction") is None

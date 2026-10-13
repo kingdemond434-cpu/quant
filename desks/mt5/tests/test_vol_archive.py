@@ -290,11 +290,36 @@ def test_the_ground_only_names_instruments_this_desk_could_trade() -> None:
             assert tenor in va.TENOR_DAYS, f"{tenor} has no declared tenor"
 
 
-# ------------------------------------------------------- terms evidence (2026-10-06) --
+# ------------------------------------------- the per-source register (ruling 2026-10-13) --
 FRED_FIXTURE = "observation_date,GVZCLS\n2026-10-01,18.20\n2026-10-02,.\n2026-10-05,19.05\n"
+POLICIES = {"API_PERMITTED", "NEEDS_KEY", "PUBLIC_PAGE", "IDEAS_ONLY", "METHOD_BLOCKED"}
 
 
-def test_fred_is_held_by_its_terms_evidence_and_sends_no_request() -> None:
+def test_every_register_row_names_a_policy_a_why_and_its_quotes() -> None:
+    for key, row in va.TERMS_EVIDENCE.items():
+        assert row["policy"] in POLICIES, key
+        assert row["why"] and row["quotes"] and row["pages"], key
+        assert row["permits_use"] is False, f"{key}: the quotes grant no permission; say so"
+    assert va.TERMS_EVIDENCE["yahoo"]["policy"] == "PUBLIC_PAGE"
+    assert va.TERMS_EVIDENCE["yahoo"]["route_kept"] is True          # LIVE's route, kept
+    assert "robots, spiders, scrapers" in va.TERMS_EVIDENCE["yahoo"]["quotes"][0]
+    assert va.TERMS_EVIDENCE["fred"]["route_kept"] is True           # LIVE's fallback, kept
+    assert va.TERMS_EVIDENCE["cboe"]["policy"] == "IDEAS_ONLY"
+    assert va.TERMS_EVIDENCE["cboe"]["route_kept"] is False
+
+
+def test_route_admitted_holds_only_method_blocked_or_needs_key() -> None:
+    assert va.route_admitted(va.YAHOO_TERMS) and va.route_admitted(va.FRED_TERMS)
+    assert not va.route_admitted(va.CBOE_TERMS)
+    for held in ("METHOD_BLOCKED", "NEEDS_KEY"):
+        assert not va.route_admitted({**va.YAHOO_TERMS, "policy": held})
+    assert not va.route_admitted(None) and not va.route_admitted({})
+    assert not va.route_admitted({"permits_use": True, "quotes": []}), \
+        "a permission with no quoted clause is not a permission"
+    assert va.route_admitted({"permits_use": True, "quotes": ["clause"]})
+
+
+def test_the_kept_fred_route_parses_and_routes() -> None:
     asked: list[str] = []
 
     def fetch(url: str, timeout: int) -> str:
@@ -302,59 +327,65 @@ def test_fred_is_held_by_its_terms_evidence_and_sends_no_request() -> None:
         return FRED_FIXTURE
 
     src = va.FredVolSource(fetch=fetch)
-    assert va.TERMS_EVIDENCE["fred"]["permits_use"] is False
-    assert va.TERMS_EVIDENCE["fred"]["quotes"], "a hold records the clauses that were read"
-    assert src.admitted is False
-    assert src.series("^GVZ") is None and src.series("^VIX") is None
-    assert asked == [], "a held source makes no request"
-    assert src.routes["^GVZ"]["status"] == "HELD_PENDING_TERMS"
-    prov = src.provenance()
-    assert prov["admitted"] is False
-    assert {h["status"] for h in prov["held"]} == {"HELD_PENDING_TERMS"}
-    assert prov["refused"][0]["status"] == "FAIL_CLOSED_TERMS"
-
-
-def test_a_held_cycle_records_every_ground_as_held_with_its_route(tmp_path: Path) -> None:
-    obs = va.observe(va.FredVolSource(fetch=lambda u, t: FRED_FIXTURE), REGISTRY, tmp_path)
-    assert {o.status for o in obs} == {"HELD_PENDING_TERMS"}
-    assert all(o.source_route == "FredVolSource:fred_csv" and o.source_admitted is False
-               for o in obs)
-    rep = va.report([], obs, sources=va.source_record(None))
-    assert set(rep["held_pending_terms"]) == {g.vol_ticker for g in va.GROUND}
-
-
-def test_fred_would_parse_and_route_only_on_a_permitting_record() -> None:
-    """The fetch path exists for the day a permitting clause is quoted; it runs only then."""
-    asked: list[str] = []
-
-    def fetch(url: str, timeout: int) -> str:
-        asked.append(url)
-        return FRED_FIXTURE
-
-    permit = {**va.FRED_HELD, "permits_use": True}
-    src = va.FredVolSource(fetch=fetch, evidence=permit)
+    assert src.admitted
     assert src.series("^GVZ") == {"2026-10-01": 18.2, "2026-10-05": 19.05}
     assert src.series("^VIX9D") is None
     assert asked == ["https://fred.stlouisfed.org/graph/fredgraph.csv?id=GVZCLS"]
     assert src.routes["^VIX9D"]["status"] == "UNMEASURED"
-    no_quotes = va.FredVolSource(fetch=fetch, evidence={"permits_use": True, "quotes": []})
-    assert no_quotes.admitted is False, "a permission with no quoted clause is not a permission"
 
 
-def test_yahoo_is_a_refusal_that_sends_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_held_row_sends_no_request_and_every_ground_reads_held(tmp_path: Path) -> None:
+    asked: list[str] = []
+    held = {**va.FRED_TERMS, "policy": "NEEDS_KEY"}
+    src = va.FredVolSource(fetch=lambda u, t: asked.append(u) or FRED_FIXTURE, evidence=held)
+    obs = va.observe(src, REGISTRY, tmp_path)
+    assert asked == [] and {o.status for o in obs} == {"HELD"}
+    assert all(o.source_route == "FredVolSource:fred_csv" and o.source_admitted is False
+               for o in obs)
+    rep = va.report([], obs, sources=src.provenance())
+    assert set(rep["held_by_source_policy"]) == {g.vol_ticker for g in va.GROUND}
+
+
+def test_the_yahoo_route_is_live_and_merges_history_with_the_fresh_tail(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import contextlib
+    import io as _io
+    import json
+
+    asked: list[str] = []
+
+    def fake_urlopen(req: object, timeout: int = 0) -> object:
+        url = req.full_url  # type: ignore[attr-defined]
+        asked.append(url)
+        if "range=10y" in url:
+            stamps, closes = [1759276800, 1759363200], [16.0, 16.2]      # 2025-10-01, -02
+        else:
+            stamps, closes = [1759363200, 1759449600], [16.4, 16.8]      # -02 restated, -03
+        body = json.dumps({"chart": {"result": [{"timestamp": stamps, "indicators": {
+            "quote": [{"close": closes}]}}]}}).encode()
+        return contextlib.closing(_io.BytesIO(body))
+
+    monkeypatch.setattr(va.urllib.request, "urlopen", fake_urlopen)
+    y = va.YahooVolSource()
+    got = y.series("^VIX")
+    assert got == {"2025-10-01": 16.0, "2025-10-02": 16.4, "2025-10-03": 16.8}
+    assert len(asked) == 2 and all("finance.yahoo.com/v8/finance/chart/" in u for u in asked)
+    assert y.routes["^VIX"]["route"] == "yahoo_chart" and y.admitted
+    assert y.provenance()["register"]["yahoo"]["route_kept"] is True
+    src = (_DESK / "recorders" / "vol_archive.py").read_text("utf-8")
+    assert "source = YahooVolSource()" in src, "MT5-VolArchive runs LIVE's Yahoo route"
+    assert "daily_prices/{" not in src, "no request template for CBOE's IDEAS_ONLY files"
+
+
+def test_a_held_yahoo_row_sends_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
     def no_network(*_a: object, **_k: object) -> None:
-        raise AssertionError("the Yahoo refusal opened a connection")
+        raise AssertionError("a held route opened a connection")
 
     monkeypatch.setattr(va.urllib.request, "urlopen", no_network)
-    y = va.YahooVolSource()
-    assert y.series("^VIX") is None
-    rec = y.provenance()["refused"][0]
-    assert rec["status"] == "FAIL_CLOSED_TERMS" and rec["asked_for"] == ["^VIX"]
-    assert "robots, spiders, scrapers" in rec["quotes"][0]
-    src = (_DESK / "recorders" / "vol_archive.py").read_text("utf-8")
-    assert "finance.yahoo.com/v8" not in src, "no Yahoo request URL survives in the module"
-    assert "daily_prices/{" not in src, "no request template for CBOE's held files exists"
-    assert "§5e" not in src
+    y = va.YahooVolSource(evidence={**va.YAHOO_TERMS, "policy": "METHOD_BLOCKED"},
+                          fred_evidence={**va.FRED_TERMS, "policy": "NEEDS_KEY"})
+    assert y.series("^VIX") is None and y.routes["^VIX"]["status"] == "HELD"
+    assert y.admitted is False
 
 
 def test_the_user_agent_names_the_desk_and_claims_no_browser() -> None:
@@ -366,5 +397,5 @@ def test_terms_note_rides_on_every_row_and_the_report(tmp_path: Path) -> None:
     assert all(o.terms_note == va.TERMS_NOTE for o in obs)
     rep = va.report([], obs, sources=va.FredVolSource(fetch=lambda u, t: "").provenance())
     assert rep["terms_note"] == va.TERMS_NOTE
-    assert rep["sources"]["refused"][0]["status"] == "FAIL_CLOSED_TERMS"
-    assert va.report([], obs)["sources"]["admitted"] is False
+    assert set(rep["sources"]["register"]) == {"fred", "cboe"}
+    assert va.report([], obs)["sources"]["admitted"] is True

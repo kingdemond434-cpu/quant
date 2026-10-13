@@ -48,12 +48,11 @@ judged on that reference history; each row's `vintage` column says which one it 
 report keeps vol_archive's own `backtestable` line -- false until MIN_VINTAGES desk observations
 exist. NOTHING HERE PROMOTES, SIZES OR CONDITIONS CAPITAL. The gauntlet decides.
 
-SOURCES: HELD AS OF 2026-10-06. History comes only through `vol_archive.FredVolSource`, which
-sends no request while `vol_archive.TERMS_EVIDENCE` holds FRED (and CBOE, and refuses Yahoo):
-the terms read that day contain no clause clearly permitting this use. A source that is not
-admitted is never asked; a reference cache is used only if it was written by an admitted source;
-a desk vintage counts only if its row was served by an admitted route. So until a permitting
-clause is quoted there, every symbol is UNMEASURED and nothing is minted. Every series row, the
+SOURCES (2026-10-13): history comes through `vol_archive.YahooVolSource` -- LIVE's MT5-VolArchive
+route (Yahoo chart, then FRED), kept by the principal's ruling -- and each step runs only while
+its row in `vol_archive.TERMS_EVIDENCE`, the per-source rule register, admits it. A source the
+register holds is never asked; a reference cache is used only if an admitted source wrote it; a
+desk vintage counts unless its row was stamped as served by a held route. Every series row, the
 reference cache, the forge feed and the report carry `terms_note`.
 
     python desks/mt5/research/options_implied.py --once [--offline] [--dry-run]
@@ -250,9 +249,9 @@ def reference_history(ticker: str, source: va.VolSource | None, *, cache_dir: Pa
         return series, {"status": "CACHE_STALE", "fetched_at": fetched_at, "n": len(series),
                         "why": "source did not answer this pass; the last fetch is used"}
     if source is not None and not admitted:
-        return {}, {"status": "HELD_PENDING_TERMS", "n": 0, "requested": False,
-                    "why": (f"{type(source).__name__} is not admitted by vol_archive."
-                            f"TERMS_EVIDENCE; no request sent and no unadmitted cache used")}
+        return {}, {"status": "HELD", "n": 0, "requested": False,
+                    "why": (f"{type(source).__name__} is held by its vol_archive.TERMS_EVIDENCE "
+                            f"register row; no request sent and no unadmitted cache used")}
     return {}, {"status": "UNMEASURED", "n": 0,
                 "why": ("no cache and the source did not answer (offline, or no egress from this "
                         "host)"),
@@ -268,9 +267,10 @@ def desk_vintages(rows: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
     out: dict[str, dict[str, float]] = {}
     for r in sorted(rows, key=lambda x: str(x.get("observed_at") or "")):
         vdate = str(r.get("value_date") or "")[:10]
-        # ONLY ROWS AN ADMITTED ROUTE SERVED. Rows before the route stamp (2026-10-06) came
-        # through a source now refused by its terms and are not served as vintages.
-        if not vdate or r.get("source_admitted") is not True:
+        # NEVER A ROW A HELD ROUTE SERVED. Rows before the route stamp (2026-10-06) came through
+        # LIVE's Yahoo route, which the register keeps, so they count; a row stamped
+        # `source_admitted: False` was served (or held) by a route the register holds.
+        if not vdate or r.get("source_admitted") is False:
             continue
         iv = r.get("implied_vol")
         if isinstance(iv, (int, float)) and math.isfinite(float(iv)):
@@ -589,7 +589,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--offline", action="store_true",
                     help="never fetch; use the reference cache and the desk's own vintages")
     a = ap.parse_args(argv)
-    doc = run(source=None if a.offline else va.FredVolSource(), dry_run=a.dry_run)
+    doc = run(source=None if a.offline else va.YahooVolSource(), dry_run=a.dry_run)
     print(f"options_implied: {doc['status']} -- {len(doc['symbols'])} mapped symbol(s), "
           f"grid {doc['grid']['total']}, fresh {doc['donated']['fresh']}, minted "
           f"{doc['donated']['minted']}, desk vintages min {doc['desk_vintages_min']}")
