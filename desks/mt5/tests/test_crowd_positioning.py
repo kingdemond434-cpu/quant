@@ -30,6 +30,7 @@ def _isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cp, "STATE", tmp_path / "state.json")
     for env in (cp.ENV_SESSION, cp.ENV_EMAIL, cp.ENV_PASSWORD):
         monkeypatch.delenv(env, raising=False)
+    monkeypatch.setattr(cp, "read_key", lambda name: cp.os.environ.get(name, ""))
 
 
 def test_one_outlook_is_one_stamped_wide_row() -> None:
@@ -47,8 +48,8 @@ def test_rows_append_and_history_counts_per_symbol() -> None:
     assert cp.history() == {"EURUSD": 3, "XAUUSD": 3}
 
 
-def test_no_credentials_is_unconfigured_by_name() -> None:
-    with pytest.raises(cp.SessionError, match="UNCONFIGURED"):
+def test_no_credentials_is_blocked_on_key_by_name() -> None:
+    with pytest.raises(cp.SessionError, match="BLOCKED_ON_KEY"):
         cp.session()
 
 
