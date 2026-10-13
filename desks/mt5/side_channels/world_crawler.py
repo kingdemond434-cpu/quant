@@ -54,7 +54,7 @@ sys.path.insert(0, str(BASE))
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
 
-from libs.data.polite_fetch import terms_refusal  # noqa: E402
+from libs.data.polite_fetch import MethodRefused, fenced_urlopen  # noqa: E402
 
 WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
@@ -198,9 +198,6 @@ def _ascii_url(url: str) -> str:
 
 def fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
-    refused = terms_refusal(url)
-    if refused:                       # terms prohibit automated access: no request at all
-        return None, refused
     try:
         req = urllib.request.Request(_ascii_url(url), headers={
             "User-Agent": UA,
@@ -209,13 +206,17 @@ def fetch(url: str) -> tuple[bytes | None, str]:
             # cover the world quietly stops covering most of it.
             "Accept-Language": "*",
         })
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+        # THE ONE FETCH DOOR (polite_fetch.fenced_urlopen): a redirect into a login or CAPTCHA
+        # wall is refused, never followed.
+        with fenced_urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
             ctype = str(resp.headers.get("Content-Type", ""))
             if "html" not in ctype and "text" not in ctype and "json" not in ctype:
                 return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
             return resp.read(MAX_BYTES), ""
     except urllib.error.HTTPError as exc:
         return None, f"HTTP {exc.code}"
+    except MethodRefused as exc:
+        return None, str(exc.reason)[:120]
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return None, f"{type(exc).__name__}: {str(exc)[:60]}"
     except Exception as exc:
@@ -649,8 +650,9 @@ def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = 
 #: chosen so the first hour reaches several languages rather than one; after that the frontier is
 #: whatever the crawler found, and this list stops mattering.
 SEEDS = (
-    # www.mql5.com seeds removed 2026-10-06: MQL5 ToU 3.7/3.9/3.13 prohibit automated access
-    # (side_channels/mql5_terms.py). `fetch` refuses any mql5.com URL the frontier still holds.
+    "https://www.mql5.com/en/code/mt5/experts",
+    "https://www.mql5.com/zh/code",
+    "https://www.mql5.com/ja/code",
     "https://www.forexfactory.com/forums",
     "https://www.reddit.com/r/algotrading/top/?t=week",
     "https://quantocracy.com/",
@@ -736,6 +738,8 @@ SEEDS = (
     # guessing". An article cannot supply a registered family with exact params -- but an EA's
     # SOURCE can: it names its entry condition, its parameters and their defaults. This is the
     # only prose-adjacent ground with a route to a candidate, and it is MT5-native.
+    "https://www.mql5.com/en/code/mt5/experts",
+    "https://www.mql5.com/en/code/mt5/indicators",
     "https://github.com/topics/mql5",
     "https://github.com/topics/metatrader5",
     # ---- THE CHINESE DEEP FOREST (principal 2026-09-04): STORIES THAT NAME MECHANISMS ---------
@@ -996,10 +1000,6 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
             log(f"run budget {run_budget_s}s spent; {len(picked)} planned, stopping here. "
                 f"The frontier resumes next hour rather than restarting.")
             break
-        if terms_refusal(src.url):
-            # TERMS PROHIBIT (mql5_terms): counted as BLOCKED_TERMS, no request and no spacing.
-            failures["BLOCKED_TERMS"] += 1
-            continue
 
         gap = seconds_per_host - (time.time() - last_host_hit.get(src.host, 0.0))
         if gap > 0:

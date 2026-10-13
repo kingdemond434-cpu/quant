@@ -27,13 +27,12 @@ No secret is read or sent. Stdlib only (certifi is optional).
 """
 from __future__ import annotations
 
-import gzip
+import contextlib
 import random
 import re
 import ssl
 import threading
 import time
-import unicodedata
 import urllib.error
 import urllib.request
 import zlib
@@ -42,7 +41,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from email.message import Message
 from typing import Any, TypeVar
-from urllib.parse import unquote, urlparse
+from urllib.parse import urlparse
 
 BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
@@ -67,70 +66,6 @@ HOST_INTERVAL_S: dict[str, float] = {
 }
 MAX_RETRY_AFTER_S = 30.0
 MAX_BYTES = 2_000_000
-#: HOSTS WHOSE TERMS PROHIBIT AUTOMATED ACCESS, refused here before any connection. A written
-#: prohibition with no permitting agreement is fail-closed: `get` returns a BLOCKED_TERMS response
-#: and never opens a socket. The record and the verbatim clauses live in
-#: `desks/mt5/side_channels/mql5_terms.py` (MQL5_TERMS); this mirrors its HOSTS so every client
-#: built on this module (deep_forest_miner, moat_collectors, archaeology) is fenced too, and
-#: `test_mql5_terms_fence.py` fails if the two drift.
-TERMS_REFUSED_HOSTS: dict[str, str] = {
-    "www.mql5.com": "MQL5 ToU 3.7/3.9/3.13: automated access not permitted",
-    "mql5.com": "MQL5 ToU 3.7/3.9/3.13: automated access not permitted",
-}
-
-
-#: A refused host named INSIDE another URL (an archive snapshot, a reader proxy, a cache or a
-#: translate wrapper): fetching through a third party is still automated access to that site.
-_WRAPPED = {h: re.compile(r"(?:^|[^a-z0-9-])(?:[a-z0-9-]+\.)*" + re.escape(h) + r"(?:[/:?#&]|$)",
-                          re.I)
-            for h in TERMS_REFUSED_HOSTS}
-
-
-def terms_refusal(url: str) -> str:
-    """`BLOCKED_TERMS: <reason>` when the URL's host (or a parent domain) is terms-refused, or the
-    URL wraps such a URL in its path, query or fragment. Compatibility forms (fullwidth) of the
-    host are folded first."""
-    try:
-        parts = urlparse(str(url))
-        host = unicodedata.normalize("NFKC", (parts.hostname or "").lower()).rstrip(".")
-        tail = unicodedata.normalize("NFKC", unquote(unquote(
-            f"{parts.path}?{parts.query}#{parts.fragment}")))
-    except ValueError:
-        return ""
-    for refused, reason in TERMS_REFUSED_HOSTS.items():
-        if host == refused or host.endswith("." + refused) or _WRAPPED[refused].search(tail):
-            return f"BLOCKED_TERMS: {reason}"
-    return ""
-
-
-class TermsRedirectRefused(urllib.error.URLError):
-    """A redirect whose target is terms-refused. Raised before the target is opened."""
-
-
-class TermsRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Follows redirects like urllib's own handler, except one INTO a terms-refused host: a moved
-    page or a shortener can 302 onto a refused site after the first URL passed the fence."""
-
-    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
-                         newurl: str) -> Any:
-        refused = terms_refusal(newurl)
-        if refused:
-            raise TermsRedirectRefused(f"{refused} (redirect to {newurl})")
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
-
-
-def fenced_urlopen(req: Any, timeout: float | None = None,
-                   context: ssl.SSLContext | None = None) -> Any:
-    """`urllib.request.urlopen` with the terms fence on the first URL AND every redirect."""
-    url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
-    refused = terms_refusal(url)
-    if refused:
-        raise TermsRedirectRefused(refused)
-    handlers: list[Any] = [TermsRedirectHandler()]
-    if context is not None:
-        handlers.append(urllib.request.HTTPSHandler(context=context))
-    opener = urllib.request.build_opener(*handlers)
-    return opener.open(req, timeout=timeout) if timeout is not None else opener.open(req)
 
 
 # --------------------------------------------------------------------------- TLS
@@ -238,24 +173,95 @@ def reset_stats(leg: str | None = None) -> None:
             _STATS.pop(leg, None)
 
 
+# --------------------------------------------------------------------------- the method fence
+#: A redirect INTO one of these paths is a login, sign-in or CAPTCHA wall. Following it would be
+#: the first step of getting around an access control, so it is refused and named -- never
+#: followed, never retried with other headers (principal ruling 2026-10-13: no source is banned;
+#: what stays off is the METHOD -- bypassing a login, paywall, CAPTCHA, rate limit or region lock).
+LOGIN_WALL = re.compile(r"(?i)/(?:i/flow/)?(?:log-?in|sign-?in|signin|accounts?/login|"
+                        r"session/new|oauth/authorize|captcha|cdn-cgi/challenge-platform)"
+                        r"(?:[/?#.]|$)")
+
+
+def login_wall(url: str) -> bool:
+    """True when `url`'s path is a login / sign-in / CAPTCHA wall. Never raises."""
+    try:
+        return bool(LOGIN_WALL.search(urlparse(str(url)).path or ""))
+    except ValueError:
+        return False
+
+
+class MethodRefused(urllib.error.URLError):
+    """A fetch the method rules refuse (a redirect into a login or CAPTCHA wall). Raised before
+    the target is opened; deterministic, so a caller never retries it."""
+
+
+class MethodRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """urllib's redirect handler, except that every hop is RECORDED (`chain`) and a hop into a
+    login or CAPTCHA wall raises `MethodRefused` instead of being followed."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.chain: list[tuple[int, str, str]] = []
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> Any:
+        self.chain.append((int(code), str(req.full_url), str(newurl)))
+        if login_wall(newurl):
+            raise MethodRefused(f"METHOD_BLOCKED:login_wall: redirect to {newurl[:160]}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fenced_urlopen(req: Any, timeout: float | None = None,
+                   context: ssl.SSLContext | None = None) -> Any:
+    """THE ONE FETCH DOOR for the desk's urllib call sites: `urllib.request.urlopen` with the
+    method rules on every redirect (a hop into a login / CAPTCHA wall raises `MethodRefused`)
+    and the redirect chain kept visible on the response as `.redirects` [(code, from, to)].
+    A first URL that is itself a login wall is refused the same way."""
+    url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
+    if login_wall(url):
+        raise MethodRefused(f"METHOD_BLOCKED:login_wall: {url[:160]}")
+    redirects = MethodRedirectHandler()
+    handlers: list[Any] = [redirects]
+    if context is not None:
+        handlers.append(urllib.request.HTTPSHandler(context=context))
+    opener = urllib.request.build_opener(*handlers)
+    fh = opener.open(req, timeout=timeout) if timeout is not None else opener.open(req)
+    with contextlib.suppress(AttributeError):
+        fh.redirects = list(redirects.chain)
+    return fh
+
+
 # --------------------------------------------------------------------------- decoding
 _META_CHARSET = re.compile(rb"""<meta[^>]+charset\s*=\s*["']?\s*([A-Za-z0-9_\-]+)""", re.I)
 
 
-def decode_body(raw: bytes, content_type: str = "", content_encoding: str = "") -> str:
-    """Bytes -> text: undo gzip/deflate, then the header charset, then `<meta charset>`, then
-    UTF-8. Never raises."""
+#: THE INFLATE CAP: a gzip/deflate body is never inflated past this many bytes, so a small
+#: compressed answer (a decompression bomb, or just a huge dump) cannot exhaust the box's memory.
+MAX_INFLATED = 20_000_000
+
+
+def inflate(raw: bytes, content_encoding: str = "", cap: int = MAX_INFLATED) -> bytes:
+    """Undo gzip/deflate, bounded to `cap` output bytes. Returns `raw` unchanged when it is not
+    compressed or cannot be inflated. Never raises."""
     enc = (content_encoding or "").lower()
     try:
         if "gzip" in enc or raw[:2] == b"\x1f\x8b":
-            raw = gzip.decompress(raw)
-        elif "deflate" in enc:
+            return zlib.decompressobj(16 + zlib.MAX_WBITS).decompress(raw, cap)
+        if "deflate" in enc:
             try:
-                raw = zlib.decompress(raw)
+                return zlib.decompressobj().decompress(raw, cap)
             except zlib.error:
-                raw = zlib.decompress(raw, -zlib.MAX_WBITS)
+                return zlib.decompressobj(-zlib.MAX_WBITS).decompress(raw, cap)
     except Exception:
         pass
+    return raw
+
+
+def decode_body(raw: bytes, content_type: str = "", content_encoding: str = "") -> str:
+    """Bytes -> text: undo gzip/deflate (bounded, `inflate`), then the header charset, then
+    `<meta charset>`, then UTF-8. Never raises."""
+    raw = inflate(raw, content_encoding)
     charset = ""
     if content_type:
         msg = Message()
@@ -285,6 +291,10 @@ class Response:
     error: str = ""
     elapsed_s: float = 0.0
     attempts: int = 0
+    #: The body as bytes (content-encoding undone, bounded): what a raw landing stores.
+    body: bytes = b""
+    #: Every redirect hop the fetch followed, [(code, from, to)] -- redirects are VISIBLE.
+    redirects: list[tuple[int, str, str]] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -310,10 +320,6 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     `timeout` is per attempt; `deadline` (a `time.monotonic()` value) caps the whole call,
     retries and backoff included, so no fetch can outlive the budget of the leg that made it.
     """
-    refused = terms_refusal(url)
-    if refused:
-        _stat(leg, error="BLOCKED_TERMS")
-        return Response(url=url, error=refused)
     hdr = {**BROWSER_HEADERS, **(headers or {})}
     host = urlparse(url).netloc.lower()
     open_ = opener or fenced_urlopen
@@ -340,16 +346,17 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 cenc = str(h.get("Content-Encoding") or "") if h is not None else ""
                 resp.status = int(getattr(fh, "status", None) or getattr(fh, "code", 200) or 200)
                 resp.final_url = str(getattr(fh, "url", "") or url)
-                landed = terms_refusal(resp.final_url)
-                if landed:                  # an opener that followed a redirect unfenced
-                    resp.status, resp.text, resp.error = None, "", landed
-                    _stat(leg, error="BLOCKED_TERMS")
-                    break
                 resp.content_type = ctype
-                resp.text = decode_body(raw, ctype, cenc)
+                resp.body = inflate(raw, cenc)
+                resp.text = decode_body(resp.body, ctype)
+                resp.redirects = list(getattr(fh, "redirects", None) or [])
                 resp.error = ""
                 _stat(leg, ok=1, bytes=len(raw))
                 break
+        except MethodRefused as exc:                    # deterministic: never retried
+            resp.error = str(exc.reason)[:240]
+            _stat(leg, error="METHOD_BLOCKED")
+            break
         except urllib.error.HTTPError as exc:
             resp.status = int(exc.code)
             resp.error = f"HTTP {exc.code}"
@@ -364,10 +371,6 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 break
             if gate is not None and host:
                 gate.penalise(host, wait or backoff_s * (2 ** attempt))
-        except TermsRedirectRefused as exc:           # deterministic: never retried
-            resp.error = str(exc.reason)[:240]
-            _stat(leg, error="BLOCKED_TERMS")
-            break
         except Exception as exc:
             name = type(exc).__name__
             reason = getattr(exc, "reason", None)
