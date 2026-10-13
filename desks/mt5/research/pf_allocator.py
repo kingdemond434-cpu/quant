@@ -863,7 +863,10 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
         # Both are empty when unmeasured, which the posterior and the covariance read as "no
         # claim" (see `_MacroContext`).
         macro_w = mctx.weights(dates)
-        fl = mctx.loadings(hist, dates, parts[0])
+        # THE INSTRUMENT, not the roster token: a gold window trades XAUUSD.
+        _sym = "XAUUSD" if name.startswith("gold_") else parts[0]
+        fl = mctx.loadings(hist, dates, _sym)
+        _inst = mctx.inst_r(_sym)
         # FAMILY IS THE MECHANISM, NOT THE SYMBOL. The hierarchical posterior pools a sleeve
         # toward its family mean, and pooling by SYMBOL pools EURJPY_asia_TREND with
         # EURJPY_london_NORMAL -- two different mechanisms that happen to share an instrument --
@@ -918,9 +921,12 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             factor_resid_var=(float(fl.resid_var) if fl is not None and fl.n >= 3 else 0.0),
             # A dark macro factor is carried, never dropped (audit #211 should-fix): the
             # covariance floors this sleeve's pairs at its instrument's measured co-movement.
-            factor_unmeasured=tuple(getattr(fl, "unmeasured", ()) or ()) if fl is not None
-            else (),
-            inst_r=mctx.inst_r(parts[0]),
+            # Only a sleeve with a fitted loading (n >= 3) can be missing a dimension of it
+            # (audit #363 MF3): an unfitted one claims no structure either way.
+            factor_unmeasured=(tuple(getattr(fl, "unmeasured", ()) or ())
+                               if fl is not None and fl.n >= 3 else ()),
+            inst_r=_inst,
+            inst_rho=mctx.inst_rho(hist, dates, _inst),
             # THE THREE SAMENESS CHANNELS (Tier-1 B13). Measured here because this is where the
             # sleeve's own trades are in hand: the input keys it reads, the UTC hours it actually
             # entered in, and the mechanism it declares. `_structured_corr` charges a pair that
@@ -1032,6 +1038,17 @@ class _MacroContext:
         except Exception:
             return ()
         return () if r is None else tuple(float(x) for x in r)
+
+    def inst_rho(self, hist: np.ndarray, dates: list[str],
+                 inst: tuple[float, ...]) -> float | None:
+        """|corr(sleeve, instrument)| on common days; None when unmeasured."""
+        if self.fs is None or self._leg_factors is None or not inst:
+            return None
+        try:
+            return self._leg_factors.sleeve_instrument_rho(hist, dates, self.fs,
+                                                           np.asarray(inst, dtype=float))
+        except Exception:
+            return None
 
     def finish(self, n_sleeves: int) -> dict[str, Any]:
         f = dict(self.meta.get("factors") or {})

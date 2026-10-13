@@ -232,21 +232,67 @@ def macro_unmeasured(columns: Iterable[Any], frame: Any = None) -> dict[str, str
     return out
 
 
-def instrument_returns(fs: FactorSet, symbol: str) -> np.ndarray | None:
-    """The instrument's own daily log return on the factor calendar, rebuilt from its two legs.
+def instrument_returns(fs: FactorSet, symbol: str, universe: Path = UNIVERSE
+                       ) -> np.ndarray | None:
+    """The instrument's own daily log return on the factor calendar (NaN where it has none).
 
-    The fallback `_structured_corr` reads when a macro factor is UNMEASURED: the leg history is
-    measured independently of the FRED archive, so two sleeves whose macro driver went dark still
-    show the co-movement of the instruments they trade -- never a correlation of zero."""
+    The fallback `_structured_corr` reads when a macro factor is UNMEASURED: price history is
+    measured independently of the FRED archive. An FX pair is rebuilt from its two legs; anything
+    else (metals, indices, energy, share CFDs) is read from its own H1 bars."""
     try:
         from libs.risk.fx_factors import split_pair
         pair = split_pair(symbol)
     except ImportError:
+        pair = None
+    if pair is not None and pair[0] in fs.names and pair[1] in fs.names:
+        b, q = fs.names.index(pair[0]), fs.names.index(pair[1])
+        return np.asarray(fs.values[:, b] * fs.sd[b] - fs.values[:, q] * fs.sd[q], dtype=float)
+    path = universe / f"{symbol}_H1.parquet"
+    if not path.exists():
         return None
-    if pair is None or pair[0] not in fs.names or pair[1] not in fs.names:
+    try:
+        r = _pair_daily_logret(path)
+    except (OSError, ValueError):
         return None
-    b, q = fs.names.index(pair[0]), fs.names.index(pair[1])
-    return np.asarray(fs.values[:, b] * fs.sd[b] - fs.values[:, q] * fs.sd[q], dtype=float)
+    if r is None:
+        return None
+    out = np.full(len(fs.index), np.nan)
+    for d, v in r.items():
+        j = fs.index.get(str(d)[:10])
+        if j is not None and math.isfinite(float(v)):
+            out[j] = float(v)
+    return out
+
+
+#: Common days a sleeve needs with its instrument before |corr(sleeve, instrument)| is measured.
+MIN_RHO_DAYS = 20
+
+
+def sleeve_instrument_rho(r: np.ndarray, dates: Iterable[Any], fs: FactorSet,
+                          inst: np.ndarray | None) -> float | None:
+    """|corr| of a sleeve's own returns with its instrument's, on the days both exist, or None.
+
+    This scales the unmeasured-factor floor: an unrelated sleeve on a co-moving pair carries
+    little of that co-movement, so it must not be charged as the same bet (audit #363 MF1)."""
+    if inst is None:
+        return None
+    xs: list[float] = []
+    ys: list[float] = []
+    for v, d in zip(np.asarray(r, dtype=float), dates, strict=True):
+        j = fs.index.get(str(d)[:10])
+        if j is None or not math.isfinite(v) or v == 0.0:
+            continue
+        w = float(inst[j])
+        if not math.isfinite(w) or w == 0.0:
+            continue
+        xs.append(float(v))
+        ys.append(w)
+    if len(xs) < MIN_RHO_DAYS:
+        return None
+    x, y = np.asarray(xs), np.asarray(ys)
+    if x.std() <= 0 or y.std() <= 0:
+        return None
+    return float(min(1.0, abs(np.corrcoef(x, y)[0, 1])))
 
 
 def factor_set(frame: Any) -> FactorSet | None:

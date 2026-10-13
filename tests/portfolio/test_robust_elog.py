@@ -219,20 +219,43 @@ def test_an_unmeasured_macro_pair_is_floored_at_its_instruments_co_movement() ->
     vix = rng.normal(0, 1, 500)
     a = tuple(0.95 * vix + 0.3 * rng.normal(0, 1, 500))
     b = tuple(0.95 * vix + 0.3 * rng.normal(0, 1, 500))
-    dark = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a,
+    dark = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a, inst_rho=0.95,
                         factor_unmeasured=("d_vix",)),
-            _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b,
+            _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b, inst_rho=0.95,
                         factor_unmeasured=("d_vix",))]
-    assert _corr_abs(dark)[0, 1] > 0.85            # the archive went dark; the legs did not
-    lit = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a),
-           _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b)]
+    assert _corr_abs(dark)[0, 1] > 0.75            # the archive went dark; the prices did not
+    lit = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a, inst_rho=0.95),
+           _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b, inst_rho=0.95)]
     assert _corr_abs(lit)[0, 1] < 0.05             # measured macro: nothing changes
 
 
-def test_an_unmeasured_pair_with_no_legs_falls_back_to_the_prior_never_zero() -> None:
-    from libs.portfolio.robust_elog import UNMEASURED_PAIR_CORR, _corr_abs, breadth_channels
-    ev = [_no_overlap("XAUUSD_x", 0, symbol="XAUUSD", family="f1", factor_unmeasured=("d_vix",)),
-          _no_overlap("US500_y", 1, symbol="US500", family="f2")]
-    assert _corr_abs(ev)[0, 1] >= UNMEASURED_PAIR_CORR
-    bc = breadth_channels(ev)
-    assert bc["n_unmeasured_factor_pairs"] == 1 and bc["unresolved_pairs"] == 1
+def test_noise_sleeves_on_co_moving_pairs_are_not_charged_as_one_bet() -> None:
+    """Audit #363 MF1: the floor is SLEEVE co-movement. Two sleeves barely related to their
+    co-moving pairs stay near their full-archive value."""
+    from libs.portfolio.robust_elog import _corr_abs
+    rng = np.random.default_rng(9)
+    usd = rng.normal(0, 1, 500)
+    a = tuple(usd + 0.2 * rng.normal(0, 1, 500))
+    b = tuple(usd + 0.2 * rng.normal(0, 1, 500))
+    ev = [_no_overlap("EURUSD_x", 0, symbol="EURUSD", family="f1", inst_r=a, inst_rho=0.05,
+                      factor_unmeasured=("d_vix",)),
+          _no_overlap("GBPUSD_y", 1, symbol="GBPUSD", family="f2", inst_r=b, inst_rho=0.05,
+                      factor_unmeasured=("d_vix",))]
+    assert _corr_abs(ev)[0, 1] < 0.05
+
+
+def test_the_realised_fallback_reads_the_pairs_own_common_days() -> None:
+    """Audit #363 MF2: 25 common days at a true 0.945 must read near 0.945, not the 0.1 the
+    zero-filled calendar gave, and fewer than MIN_REALISED_DAYS makes no claim."""
+    from libs.portfolio.robust_elog import _corr_abs, breadth_channels
+    rng = np.random.default_rng(3)
+    base = rng.normal(0, 1, 400)
+    x, y = np.full(400, np.nan), np.full(400, np.nan)
+    x[:200] = base[:200]
+    y[175:] = base[175:] + 0.3 * rng.normal(0, 1, 225)      # 25 common days
+    ev = [SleeveEvidence(name="XAUUSD_x", daily_r=x, symbol="XAUUSD", family="f1",
+                         factor_unmeasured=("d_vix",)),
+          SleeveEvidence(name="US500_y", daily_r=y, symbol="US500", family="f2",
+                         factor_unmeasured=("d_vix",))]
+    assert _corr_abs(ev)[0, 1] > 0.8
+    assert breadth_channels(ev)["unresolved_pairs"] == 1

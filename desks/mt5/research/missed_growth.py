@@ -301,7 +301,8 @@ def measure_unmeasured_factor_floor(r, alloc: dict, _fv: dict) -> dict[str, Any]
     """The covariance floor for pairs whose macro factor is UNMEASURED (audit #211 follow-up).
 
     It REPLACES a zero (ignorance read as independence) with a measurement -- the instruments'
-    own co-movement, else the sleeves' realised |corr|, else the trade-time prior -- so it can
+    co-movement scaled by each sleeve's own |corr| with its instrument, else the sleeves'
+    realised |corr| on their common days -- so it can
     lower a fraction only where the zero had over-credited breadth. Its log-growth price needs
     the true correlation the archive would have shown, so it stays UNMEASURED until the factor
     archive is whole again; the census below says how many pairs it touched."""
@@ -313,7 +314,7 @@ def measure_unmeasured_factor_floor(r, alloc: dict, _fv: dict) -> dict[str, Any]
     return {"verdict": UNMEASURED,
             "why": (f"{n} pair(s) carry an UNMEASURED macro factor: "
                     f"{bc.get('n_unmeasured_inst_floored', 0)} floored at instrument co-movement, "
-                    f"{bc.get('unresolved_pairs', 0)} at realised |corr| or the trade-time prior; "
+                    f"{bc.get('unresolved_pairs', 0)} left to realised |corr| on common days; "
                     "priced once the archive returns and the true factor |corr| is known")}
 
 
