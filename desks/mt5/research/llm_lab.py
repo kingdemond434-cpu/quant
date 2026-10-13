@@ -1526,26 +1526,49 @@ def style_screened(rows: list[dict[str, Any]], *, deadline: float | None = None
         import lab_style
         return lab_style.screen(rows, deadline=deadline)
     except Exception as exc:                           # pragma: no cover - defensive
-        return rows, {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
+        why = f"{type(exc).__name__}: {str(exc)[:120]}"
+        _style_event("screen_error", why)
+        return rows, {"state": "ERROR", "why": why}
+
+
+def _style_event(kind: str, why: str) -> None:
+    """A style-screen failure reaches the leg event log, not only this pass's report."""
+    try:
+        from libs.ops import events
+        events.emit("lab_style", leg="llm_lab", status=kind, why=why)
+    except Exception:                                  # pragma: no cover - defensive
+        pass
 
 
 def release_restyled() -> dict[str, Any]:
     """Donate held cells whose style the book no longer owns (to the seat dir or the hold)."""
     try:
         import lab_style
-        rows, still = lab_style.release()
+        freed, still = lab_style.release()
+        rows = list(freed.values())
+        if rows:
+            import llm_lab_roles as roles
+            roles.record_evidence_start(rows, STATE_DIR / "evidence_start.json")
+            target = donation_target(DONATE_DIR)
+            target.mkdir(parents=True, exist_ok=True)
+            stamp = _now().replace(":", "").replace("-", "")[:15]
+            # The donation is on disk BEFORE the hold forgets it (audit should-fix 4).
+            _write_json(target / f"discoveries_restyled_{stamp}.json",
+                        {"source": ORGAN, "generated_at": _now(), "rule": RULE,
+                         "discoveries": rows})
+            lab_style.forget(freed)
+        expired = sum(1 for r in rows
+                      if (r.get("style_screen") or {}).get("release_reason") == "HELD_EXPIRED")
+        holds = lab_style.publish_holds(
+            credit=_read_json(STATE_DIR / "verdict_credit.json", {}) or {},
+            released=len(rows) - expired, expired=expired)
     except Exception as exc:                           # pragma: no cover - defensive
-        return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
-    if rows:
-        import llm_lab_roles as roles
-        roles.record_evidence_start(rows, STATE_DIR / "evidence_start.json")
-        target = donation_target(DONATE_DIR)
-        target.mkdir(parents=True, exist_ok=True)
-        stamp = _now().replace(":", "").replace("-", "")[:15]
-        _write_json(target / f"discoveries_restyled_{stamp}.json",
-                    {"source": ORGAN, "generated_at": _now(), "rule": RULE,
-                     "discoveries": rows})
-    return {"released": len(rows), "still_held": still}
+        why = f"{type(exc).__name__}: {str(exc)[:120]}"
+        _style_event("release_error", why)
+        return {"state": "ERROR", "why": why}
+    return {"released": len(rows) - expired, "expired": expired, "still_held": still,
+            "oldest_hold_days": holds.get("oldest_hold_days"),
+            "keff_days_deferred": holds.get("keff_days_deferred")}
 
 
 def _collector_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:

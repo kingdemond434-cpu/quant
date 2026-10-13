@@ -83,11 +83,57 @@ def test_a_held_cell_is_released_when_its_style_stops_being_saturated(wired: Pat
     rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
     ls.screen([_row("passive", 0.1, "passive_window")], report=rep, held_path=held,
               sn=_fake_sn())
-    assert ls.release(report=rep, held_path=held) == ([], 1)
+    assert ls.release(report=rep, held_path=held) == ({}, 1)
     _report(rep, {"trend_20d": 30, "passive_window": 2})
     freed, still = ls.release(report=rep, held_path=held)
-    assert [r["cell_id"] for r in freed] == ["passive"] and still == 0
-    assert "released" in freed[0]["style_screen"] and json.loads(held.read_text()) == {}
+    assert [r["cell_id"] for r in freed.values()] == ["passive"] and still == 0
+    sc = next(iter(freed.values()))["style_screen"]
+    assert sc["release_reason"] == "STYLE_NO_LONGER_SATURATED"
+    # Release never forgets on its own: the caller writes the donation, then forgets.
+    assert list(json.loads(held.read_text())) == ["passive"]
+    ls.forget(freed, held_path=held)
+    assert json.loads(held.read_text()) == {}
+
+
+def test_a_hold_is_a_deferral_that_expires(wired: Path) -> None:
+    """Audit must-fix 2 on #385: saturation alone may never clear, so a hold has a maximum age."""
+    from datetime import UTC, datetime, timedelta
+    rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
+    ls.screen([_row("passive", 0.1, "passive_window")], report=rep, held_path=held,
+              sn=_fake_sn())
+    later = datetime.now(UTC) + timedelta(days=ls.MAX_HOLD_DAYS + 1)
+    freed, still = ls.release(report=rep, held_path=held, now=later)
+    sc = freed["passive"]["style_screen"]
+    assert still == 0 and sc["release_reason"] == "HELD_EXPIRED" and sc["held_days"] > 14
+
+
+def test_two_held_rows_never_share_a_key(wired: Path) -> None:
+    rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
+    a, b = _row("", 0.1, "passive_window"), _row("", 0.2, "passive_window")
+    ls.screen([a, b], report=rep, held_path=held, sn=_fake_sn())
+    assert len(json.loads(held.read_text())) == 2
+
+
+def test_the_hold_publishes_its_missed_growth_line(wired: Path) -> None:
+    rep, held, out = _report(wired / "s.json", COUNTS), wired / "held.json", wired / "h.json"
+    ls.screen([_row("passive", 0.1, "passive_window")], report=rep, held_path=held,
+              sn=_fake_sn())
+    doc = ls.publish_holds(held_path=held, out=out)
+    assert doc["held"] == doc["trials_deferred"] == 1 and doc["verdict"] == "UNMEASURED"
+    assert doc["oldest_hold_days"] is not None and json.loads(out.read_text())["held"] == 1
+    doc = ls.publish_holds(credit={"style_hold_cost": {"judged": 2, "certified": 1,
+                                                       "keff_days": 3.5}},
+                           held_path=held, out=out)
+    assert doc["verdict"] == "COSTS_GROWTH" and doc["keff_days_deferred"] == 3.5
+
+
+def test_the_screen_never_reads_the_lockbox() -> None:
+    import pandas as pd
+    idx = pd.date_range("2024-01-01", periods=24 * 400, freq="h", tz="UTC")
+    df = pd.DataFrame({"close": 1.0}, index=idx)
+    cut = ls._before_lockbox(df)
+    from research.gate_policy import LOCKBOX_FRAC
+    assert 0 < len(cut) < len(df) and cut.index[-1] < idx[int(len(idx) * (1 - LOCKBOX_FRAC))]
 
 
 def test_no_style_report_holds_nothing(wired: Path) -> None:
@@ -130,15 +176,32 @@ def test_the_verdict_loop_credits_novel_certified_keff(tmp_path: Path,
     ledger.write_text("\n".join(json.dumps({"cell": r["cell_id"], "passed": True})
                                 for r in rows) + "\n")
     monkeypatch.setattr(roles, "_keff", lambda cells: ({c["cid"]: 1.0 for c in cells}, "test"))
-    doc = roles.verdict_loop(ledger, donate, [(x, "m") for x in "NSU" for _ in range(4)],
+    doc = roles.verdict_loop(ledger, donate, [(x, "m") for x in "NSU" for _ in range(20)],
                              tmp_path / "credit.json")
     labs = doc["labs"]
     assert [labs[x]["keff"] for x in "NSU"] == [4.0, 4.0, 4.0]
-    assert [labs[x]["novel_keff"] for x in "NSU"] == [4.0, 0.0, 2.0]
+    # Novelty is a bonus: a known-style certificate keeps its k_eff; an unmeasured one is
+    # credited at its lab's measured novel share, which is 0 for a lab with nothing measured.
+    assert [labs[x]["novel_keff"] for x in "NSU"] == [8.0, 4.0, 4.0]
     assert labs["S"]["styles"] == {"KNOWN_STYLE": 4}
     rng = random.Random(5)  # noqa: S311 - not crypto
     firsts = [roles.thompson(labs, ["S", "N"], rng)[0] for _ in range(300)]
-    assert firsts.count("N") > 250, "a lab of new styles outranks one re-buying owned styles"
+    assert firsts.count("N") > 200, "a lab of new styles outranks one re-buying owned styles"
+
+
+def test_a_held_then_certified_cell_is_charged_to_the_hold(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    donate = tmp_path / "donate"
+    donate.mkdir()
+    row = {"cell_id": "h1", "lab": "L", "model": "m", "symbol": "USDCNH",
+           "family": "exogenous_conditioner",
+           "style_screen": {"verdict": "KNOWN_STYLE", "held_days": 5.0}}
+    (donate / "discoveries_r.json").write_text(json.dumps({"discoveries": [row]}))
+    ledger = tmp_path / "v.jsonl"
+    ledger.write_text(json.dumps({"cell": "h1", "passed": True}) + "\n")
+    monkeypatch.setattr(roles, "_keff", lambda cells: ({c["cid"]: 0.4 for c in cells}, "t"))
+    doc = roles.verdict_loop(ledger, donate, [], tmp_path / "c.json")
+    assert doc["style_hold_cost"] == {"judged": 1, "certified": 1, "keff_days": 2.0}
 
 
 def test_the_inventors_are_told_which_styles_the_book_owns(tmp_path: Path) -> None:

@@ -71,6 +71,8 @@ BARS_DIR = BASE / "data" / "universe"
 SLEEVES = BASE / "data" / "sleeves.json"
 DONATE_DIR = BASE / "data" / "intelligence" / "llm_lab"
 UNMEASURED = "UNMEASURED"
+#: lab_style.NOVELTY_BONUS, repeated so the credit survives a tree without lab_style.
+NOVELTY_BONUS = 1.0
 PROXY_KEFF = 0.5          #: a certified cell's credit when k_eff cannot be measured, labelled so
 
 
@@ -207,17 +209,30 @@ def _donations(donate_dir: Path) -> dict[str, dict[str, Any]]:
     """cell id -> {lab, model, style} from every donation the lab and its roles have written."""
     try:
         import lab_style
-        weigh: Callable[[dict[str, Any]], tuple[float, str]] = lab_style.credit_weight
+        weigh: Callable[[dict[str, Any], float], tuple[float, str]] = lab_style.credit_weight
+        share: Callable[[Iterable[dict[str, Any]]], float] = lab_style.novel_share
     except Exception:                                  # pragma: no cover - defensive
-        def weigh(_r: dict[str, Any]) -> tuple[float, str]:
-            return 0.5, UNMEASURED
+        def weigh(_r: dict[str, Any], _u: float = 0.0) -> tuple[float, str]:
+            return 0.0, UNMEASURED
+
+        def share(_rows: Iterable[dict[str, Any]]) -> float:
+            return 0.0
+    rows_by_lab: dict[str, list[dict[str, Any]]] = {}
+    for f in sorted(donate_dir.glob("discoveries_*.json")):
+        for r in (_read_json(f, {}) or {}).get("discoveries") or []:
+            if isinstance(r, dict) and r.get("cell_id"):
+                rows_by_lab.setdefault(str(r.get("lab") or "?"), []).append(r)
+    # An UNMEASURED cell is credited at its lab's MEASURED novel share (audit must-fix 3).
+    lab_share = {lab: share(rows) for lab, rows in rows_by_lab.items()}
     out: dict[str, dict[str, Any]] = {}
     for f in sorted(donate_dir.glob("discoveries_*.json")):
         doc = _read_json(f, {}) or {}
         for r in doc.get("discoveries") or []:
             if isinstance(r, dict) and r.get("cell_id"):
-                w, style = weigh(r)
-                out[str(r["cell_id"])] = {"lab": str(r.get("lab") or "?"),
+                w, style = weigh(r, lab_share.get(str(r.get("lab") or "?"), 0.0))
+                sc = r.get("style_screen") or {}
+                out[str(r["cell_id"])] = {"held_days": float(sc.get("held_days") or 0.0),
+                                          "lab": str(r.get("lab") or "?"),
                                           "model": str(r.get("model") or "lexicon"),
                                           "symbol": str(r.get("symbol") or ""),
                                           "family": str(r.get("family") or ""),
@@ -271,8 +286,15 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
             row.update({"judged": 0, "certified": 0, "keff": 0.0, "novel_keff": 0.0,
                         "styles": {}, "gates": {}})
     feedback: dict[str, list[str]] = {}
+    hold_cost = {"judged": 0, "certified": 0, "keff_days": 0.0}
     for cid, r in latest.items():
         own = owners[cid]
+        if own.get("held_days"):
+            hold_cost["judged"] += 1
+            if r.get("passed"):
+                hold_cost["certified"] += 1
+                hold_cost["keff_days"] = round(hold_cost["keff_days"] + keff.get(cid, 0.0)
+                                               * float(own["held_days"]), 4)
         gate = str(r.get("terminal_gate") or r.get("gate") or ("CERTIFIED" if r.get("passed")
                                                                  else "UNKNOWN"))
         why = str(r.get("reason") or r.get("why") or "")[:90]
@@ -284,10 +306,10 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
             if r.get("passed"):
                 row["certified"] += 1
                 row["keff"] = round(row["keff"] + keff.get(cid, 0.0), 4)
-                # NOVEL CERTIFIED k_eff (2026-10-13): a certificate that re-buys a style the
-                # book owns earns no novelty credit; an unmeasured one earns half, labelled.
-                row["novel_keff"] = round(row.get("novel_keff", 0.0)
-                                          + keff.get(cid, 0.0) * float(own["novel_weight"]), 4)
+                # NOVELTY IS A BONUS ON k_eff (audit must-fix 3 on #385): a known-style
+                # certificate keeps the k_eff it measured; a novel one earns (1 + bonus) x it.
+                row["novel_keff"] = round(row.get("novel_keff", 0.0) + keff.get(cid, 0.0)
+                                          * (1.0 + NOVELTY_BONUS * float(own["novel_weight"])), 4)
                 row["styles"][own["style"]] = row["styles"].get(own["style"], 0) + 1
         if not r.get("passed") and held_out(gate, why):
             continue                      # audit must-fix 7: a held-out death is never told
@@ -303,8 +325,10 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
     doc.update({"generated_at": _now(), "keff_basis": basis, "judged_cells": len(latest),
                 "certified_cells": len(certified),
                 "ranking_rule": "NOVEL certified incremental k_eff per call: each certificate's "
-                                "k_eff times its style screen weight (NOVEL 1, KNOWN_STYLE 0, "
-                                "UNMEASURED 0.5); novelty counts are NOT a ranking input",
+                                "k_eff x (1 + bonus x w), w = 1 NOVEL, 0 KNOWN_STYLE, the lab's "
+                                "measured novel share if UNMEASURED; novelty counts are NOT a "
+                                "ranking input",
+                "style_hold_cost": hold_cost,
                 "feedback": {k: v[-8:] for k, v in feedback.items()}})
     _write_json(path, doc)
     return doc

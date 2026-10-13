@@ -17,14 +17,22 @@ WHAT IT CHANGES, AND WHAT IT DOES NOT.
   * A cell whose dominant style is SATURATED -- it dominates at least SATURATION_SHARE of the
     desk's measured certificates in STYLE_NOVELTY.json `dominant_style_counts` -- and whose
     novelty_return is below the certificate threshold is HELD, not donated: it would re-buy a
-    style the desk owns and spend a family-wise trial doing so. HELD IS NOT DROPPED: the row is
-    kept in `style_held.json` with its measurement and released on the first pass at which its
-    style is no longer saturated. Nothing is deleted, and the trial count only falls by trials
-    that were never run.
+    style the desk owns and spend a family-wise trial doing so. HELD IS A DEFERRAL, NEVER A VETO:
+    the row is kept in `style_held.json` and donated on the first pass at which its style is no
+    longer saturated OR its hold reaches MAX_HOLD_DAYS (stamped HELD_EXPIRED), whichever is first
+    (audit must-fix 2 on #385: with 0 of 43 certificates novel, saturation alone never clears).
+  * THE MISSED-GROWTH LINE (Rule 1; audit must-fix 1 on #385). `reports/LAB_STYLE_HOLDS.json`
+    publishes, every pass: cells held, the oldest hold's age, trials deferred, released and
+    expired counts, and -- once a held cell has been judged -- the certified k_eff that waited and
+    for how many days (k_eff-days deferred). That last number is what the hold cost in forward
+    growth; a hold whose released cells certify at a high rate is costing growth, and says so.
   * NOVEL and UNMEASURED cells are donated exactly as before. UNMEASURED is not a pass (L1.28a):
-    the row carries `style_screen.status = UNMEASURED` and earns half credit, labelled.
-  * The verdict loop credits a lab by NOVEL certified k_eff (`credit_weight`), so the lab ranking
-    spends calls on the labs whose certificates are new styles.
+    the row carries `style_screen.status = UNMEASURED`.
+  * NOVELTY IS A BONUS ON k_eff, NEVER A SUBSTITUTE (audit must-fix 3 on #385). A certified
+    known-style cell still adds the k_eff it measured, and k_eff already discounts correlation,
+    so it adds E[log W]. The verdict loop credits keff * (1 + NOVELTY_BONUS * w): w is 1 for
+    NOVEL, 0 for KNOWN_STYLE and, for UNMEASURED, the MEASURED novel share of the lab's own
+    screened donations (0 until one is measured), never an assumed number.
 No bar, gate, trial charge or promotion path is touched: models still have zero authority and the
 one gauntlet judges every donated row.
 """
@@ -55,10 +63,13 @@ UNMEASURED = "UNMEASURED"
 SATURATION_SHARE = 0.10
 #: Fallback when STYLE_NOVELTY.json carries no threshold: style_novelty.NOVEL_T.
 NOVEL_T = 0.5
-#: Credit per certified cell by screen verdict. UNMEASURED is half, labelled, as PROXY_KEFF is.
-CREDIT_WEIGHT = {"NOVEL": 1.0, "KNOWN_STYLE": 0.0, UNMEASURED: 0.5}
+#: Novelty bonus on certified k_eff: a NOVEL certificate is credited (1 + this) times its k_eff.
+NOVELTY_BONUS = 1.0
+#: A held cell is donated anyway after this long, stamped HELD_EXPIRED: a deferral, not a veto.
+MAX_HOLD_DAYS = 14.0
 #: Most cells screened per call: each runs one family over the full H1 history.
 MAX_SCREEN = 60
+HOLDS_REPORT = BASE / "reports" / "LAB_STYLE_HOLDS.json"
 
 
 def _now() -> str:
@@ -117,22 +128,43 @@ def _bars(sym: str, bars_dir: Path) -> Any:
         return None
 
 
+def _before_lockbox(df: Any) -> Any:
+    """The bars before the gauntlet's lockbox (gate_policy.LOCKBOX_FRAC of days, at least
+    LOCKBOX_MIN_DAYS): the screen never reads the window the lockbox gate will judge."""
+    try:
+        import math as _m
+
+        import pandas as pd
+        from research.gate_policy import LOCKBOX_FRAC, LOCKBOX_MIN_DAYS
+        days = pd.DatetimeIndex(df.index).normalize().unique()
+        tail = max(int(LOCKBOX_MIN_DAYS), _m.ceil(len(days) * float(LOCKBOX_FRAC)))
+        if tail >= len(days):
+            return df.iloc[0:0]
+        return df[pd.DatetimeIndex(df.index) < days[-tail]]
+    except Exception:
+        return df.iloc[0:0]       # a lockbox that cannot be located is UNMEASURED, never read
+
+
 def measure(row: Mapping[str, Any], *, bars_dir: Path | None = None,
             sn: Any = None) -> dict[str, Any]:
-    """One cell's style reading on its own bars. Never raises; every gap is UNMEASURED."""
+    """One cell's style reading on its own pre-lockbox bars. Never raises; gaps are UNMEASURED."""
     sym = str(row.get("symbol") or (row.get("symbols") or [""])[0] or "")
     fam = str(row.get("family") or "")
     if sn is None:
         try:
-            import style_novelty as sn
+            import style_novelty
         except Exception:
             return {"status": UNMEASURED, "why": "style_novelty is not on this tree (#377)"}
+        sn = style_novelty
     fn = _family(fam)
     if fn is None:
         return {"status": UNMEASURED, "why": f"family {fam!r} is not executable here"}
     df = _bars(sym, bars_dir or BARS_DIR)
     if df is None or len(df) == 0 or "close" not in getattr(df, "columns", ()):
         return {"status": UNMEASURED, "why": f"no H1 bars for {sym!r} on this host"}
+    df = _before_lockbox(df)
+    if len(df) == 0:
+        return {"status": UNMEASURED, "why": "no bars before the lockbox"}
     try:
         sigs = fn(df, **dict(row.get("params") or {}))
         hl = ((df["high"].to_numpy(dtype=float), df["low"].to_numpy(dtype=float))
@@ -192,7 +224,13 @@ def screen(rows: Iterable[dict[str, Any]], *, deadline: float | None = None,
                                    "saturated_styles": list(sat.get("saturated") or [])}}
         if held(reading, sat):
             tally["held"] += 1
-            store[str(r.get("cell_id") or len(store))] = r
+            key = str(r.get("cell_id") or "")
+            if not key or (key in store and store[key] != r):
+                import hashlib
+                key = (key or "anon") + "_" + hashlib.sha256(
+                    json.dumps(r, sort_keys=True, default=str).encode()).hexdigest()[:12]
+            r["style_screen"]["held_at"] = r["style_screen"]["at"]
+            store[key] = r
             continue
         out.append(r)
     if tally["held"]:
@@ -202,29 +240,91 @@ def screen(rows: Iterable[dict[str, Any]], *, deadline: float | None = None,
                  "held_total": len(store)}
 
 
-def release(*, report: Path | None = None, held_path: Path | None = None
-            ) -> tuple[list[dict[str, Any]], int]:
-    """(rows whose style is no longer saturated, rows still held). No re-measurement: the stored
-    reading is judged against the CURRENT saturation, so a style the book stops owning frees its
-    cells on the next pass. An unreadable report frees every row: holding is the exception."""
-    path = held_path or HELD
-    store = _read_json(path, {}) or {}
+def _age_days(stamp: Any, now: datetime) -> float:
+    try:
+        t = datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return float("inf")       # an unreadable stamp is past any hold, so the row is donated
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return max(0.0, (now - t).total_seconds() / 86400.0)
+
+
+def release(*, report: Path | None = None, held_path: Path | None = None,
+            now: datetime | None = None) -> tuple[dict[str, dict[str, Any]], int]:
+    """({store key: row to donate}, rows still held). Nothing is removed here: the caller writes
+    the donation FIRST and then calls `forget` (audit should-fix 4: a crash between the two
+    donates twice, which the compiler de-duplicates by cell id, and never loses a row).
+
+    A row is freed when its style is no longer saturated (no re-measurement: the stored reading
+    is judged against the CURRENT saturation) or when it has been held MAX_HOLD_DAYS (HELD_EXPIRED).
+    An unreadable report frees every row: holding is the exception."""
+    store = _read_json(held_path or HELD, {}) or {}
     if not store:
-        return [], 0
+        return {}, 0
     sat = saturation(report)
-    freed = {k: v for k, v in store.items()
-             if not held(v.get("style_screen") or {}, sat)}
-    if freed:
-        _write_json(path, {k: v for k, v in store.items() if k not in freed})
-    return [{**v, "style_screen": {**(v.get("style_screen") or {}),
-                                   "released": _now()}} for v in freed.values()], \
-        len(store) - len(freed)
+    clock = now or datetime.now(UTC)
+    freed: dict[str, dict[str, Any]] = {}
+    for k, v in store.items():
+        sc = dict(v.get("style_screen") or {})
+        age = _age_days(sc.get("held_at") or sc.get("at"), clock)
+        if age >= MAX_HOLD_DAYS:
+            sc.update(released=_now(), release_reason="HELD_EXPIRED", held_days=round(age, 2))
+        elif not held(sc, sat):
+            sc.update(released=_now(), release_reason="STYLE_NO_LONGER_SATURATED",
+                      held_days=round(age, 2))
+        else:
+            continue
+        freed[k] = {**v, "style_screen": sc}
+    return freed, len(store) - len(freed)
 
 
-def credit_weight(row: Mapping[str, Any]) -> tuple[float, str]:
-    """A certified cell's share of credit for being a NEW style, and the verdict it came from."""
+def forget(keys: Iterable[str], *, held_path: Path | None = None) -> None:
+    """Drop donated rows from the hold. Called only after their donation file is on disk."""
+    path = held_path or HELD
+    gone = set(keys)
+    store = _read_json(path, {}) or {}
+    if gone & set(store):
+        _write_json(path, {k: v for k, v in store.items() if k not in gone})
+
+
+def novel_share(rows: Iterable[Mapping[str, Any]]) -> float:
+    """The MEASURED novel share of screened rows: what an UNMEASURED row is credited at."""
+    seen = [str((r.get("style_screen") or {}).get("verdict") or "") for r in rows]
+    measured = [v for v in seen if v in ("NOVEL", "KNOWN_STYLE")]
+    return sum(v == "NOVEL" for v in measured) / len(measured) if measured else 0.0
+
+
+def credit_weight(row: Mapping[str, Any], unmeasured_w: float = 0.0) -> tuple[float, str]:
+    """(novelty weight w in [0, 1], verdict). Credit is keff * (1 + NOVELTY_BONUS * w)."""
     v = str((row.get("style_screen") or {}).get("verdict") or UNMEASURED)
-    return CREDIT_WEIGHT.get(v, CREDIT_WEIGHT[UNMEASURED]), v
+    return {"NOVEL": 1.0, "KNOWN_STYLE": 0.0}.get(v, float(unmeasured_w)), v
+
+
+def publish_holds(*, credit: Mapping[str, Any] | None = None, held_path: Path | None = None,
+                  out: Path | None = None, released: int = 0, expired: int = 0,
+                  now: datetime | None = None) -> dict[str, Any]:
+    """The missed-growth line for the hold: what it is deferring, and what deferral has cost."""
+    store = _read_json(held_path or HELD, {}) or {}
+    clock = now or datetime.now(UTC)
+    ages = [_age_days((v.get("style_screen") or {}).get("held_at")
+                      or (v.get("style_screen") or {}).get("at"), clock) for v in store.values()]
+    ages = [a for a in ages if math.isfinite(a)]
+    cost = dict((credit or {}).get("style_hold_cost") or {})
+    doc = {"generated_at": _now(), "held": len(store),
+           "trials_deferred": len(store),
+           "oldest_hold_days": round(max(ages), 2) if ages else None,
+           "max_hold_days": MAX_HOLD_DAYS, "released_this_pass": released,
+           "expired_this_pass": expired,
+           "held_then_judged": cost.get("judged", 0),
+           "held_then_certified": cost.get("certified", 0),
+           "keff_days_deferred": cost.get("keff_days", 0.0),
+           "verdict": ("UNMEASURED" if not cost.get("judged") else
+                       "COSTS_GROWTH" if cost.get("certified") else "NOT_BINDING"),
+           "rule": "Rule 1 missed-growth line: certified k_eff that waited in the hold, times the "
+                   "days it waited. A deferral only: every held row is donated by MAX_HOLD_DAYS."}
+    _write_json(out or HOLDS_REPORT, doc)
+    return doc
 
 
 def prompt_line(report: Path | None = None) -> str:
