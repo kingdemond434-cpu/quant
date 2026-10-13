@@ -1,1 +1,0 @@
-{"fingerprint": "0f76c922476c3bf8", "component_id": "plumbing:adoption_lag", "defect_class": "RuntimeError", "normalised": "watchdog_artifact: the adoption_lag check raised RuntimeError: the box hung up", "at": "2026-10-13T15:23:32+00:00", "occurrences": 1, "first_seen": "2026-10-13T15:23:32+00:00", "invariant_test": "desks/mt5/tests/test_plumbing_watchdog.py"}

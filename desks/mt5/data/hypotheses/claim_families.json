@@ -1,6 +1,0 @@
-{
- "families": {},
- "updated_at": "2026-10-13T15:28:03+00:00",
- "lifetime_selection_trials": 0,
- "rule": "a source that reports the best of N searched variations has already spent N trials; every cell minted from it shares ONE claim_family, counts as ONE breadth unit, and the family is charged N trials ONCE for its lifetime -- never once per cell, never removed, only ratcheted up"
-}
