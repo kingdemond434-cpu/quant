@@ -901,6 +901,10 @@ NODES: tuple[Node, ...] = (
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
 #: node advisory. Listed so the check has a definition rather than an opinion.
 HUMAN_READ = frozenset({
+    # The never-UNMEASURED fence's report. Its decision edge is the law gate's state-fence exit
+    # code and the work orders it names; the converters are the organs that already own each
+    # field, so nothing in the graph sizes on it.
+    "desks/mt5/reports/MEASURABILITY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
     # output is external_survivors.json, whose certificate consumer is declared above.
     "desks/mt5/data/hypotheses/merge_report.json",
