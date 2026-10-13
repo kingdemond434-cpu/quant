@@ -2453,7 +2453,10 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
             rows = int(s.get("claims") or 0)
             dsets = int(s.get("datasets") or 0)
             eps = int(s.get("endpoints") or 0)
-            rule = str(s.get("yield_rule") or "")
+            # The rule the attempt yielded by; a PRODUCTIVE row written without one (an older
+            # status row) reads its rule off its own counts, so a success is never lost.
+            rule = str(s.get("yield_rule") or "") or (
+                yield_rule(rows, eps, 0) if s.get("status") == "PRODUCTIVE" else "")
             held = s.get("status") == "HELD"
             # A hold is not an attempt: nothing was fetched.
             e["attempts"] = int(e.get("attempts") or 0) + (0 if held else 1)

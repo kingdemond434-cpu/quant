@@ -299,7 +299,9 @@ def test_deep_forest_holds_a_held_ground_before_any_request(
     run.status, run.fetch = [], True
     run.work(ground)
     assert called == []
-    assert run.status and run.status[-1]["status"] == tf.METHOD_BLOCKED
+    # #357's vocabulary (one table, terms_fence): a held ground is HELD, naming which hold.
+    assert run.status and run.status[-1]["status"] == "HELD"
+    assert run.status[-1]["held_by"] == tf.METHOD_BLOCKED
 
 
 def test_deep_forest_page_and_nitter_route_hold_without_a_request(
@@ -308,7 +310,7 @@ def test_deep_forest_page_and_nitter_route_hold_without_a_request(
     called: list[str] = []
     monkeypatch.setattr(dfm, "_http", lambda url, **kw: called.append(url) or "")
     run = dfm._Run.__new__(dfm._Run)
-    run.status = []
+    run.status, run.fetch_errors = [], []
     run._net_ok = lambda: True  # type: ignore[method-assign]
     for url in ("https://nitter.poast.org/search?f=tweets&q=x",
                 "https://archive.ph/newest/https://xcancel.com/x"):
@@ -316,10 +318,11 @@ def test_deep_forest_page_and_nitter_route_hold_without_a_request(
         assert run.rendered(url) == ""
     out = run.ground_nitter({"mirrors": ["nitter.net", "nitter.privacydev.net"],
                              "queries": ["XAUUSD"]})
-    assert out["status"] == tf.METHOD_BLOCKED and out["platform"] == "nitter"
-    assert out["substitutes"] == ["x_api"]
-    assert out["fetched"] == 0 and called == []
-    assert all(r.get("status") == tf.METHOD_BLOCKED for r in run.status)
+    assert out["status"] == "HELD" and out["held_by"] == tf.METHOD_BLOCKED
+    assert out["source_policy"] == "nitter" and out["permitted_route"] == "x_api"
+    assert out["claims"] == 0 and called == []
+    assert run.fetch_errors and all(e.get("held") == tf.METHOD_BLOCKED
+                                    for e in run.fetch_errors)
 
 
 def test_the_renderer_holds_a_held_url_before_launching_a_browser(

@@ -617,10 +617,10 @@ def test_feed_reddit_foreign_papers_wayback_youtube_and_telegram_routes_resolve_
     st = {g["ground"]: g for g in doc["grounds"]}
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
     # PER-SOURCE POLICY (ruling 2026-10-13): reddit is IDEAS_ONLY and mined; nitter is HELD
-    # (METHOD_BLOCKED, a login-wall workaround) and named under `terms_fenced`, never fetched.
+    # (METHOD_BLOCKED, a login-wall workaround) and named under `held`, never fetched.
     assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
     assert "nitter" not in st
-    assert doc["terms_fenced"] == ["nitter"]
+    assert doc["held"] == {"nitter": "METHOD_BLOCKED"}
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
     assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]
