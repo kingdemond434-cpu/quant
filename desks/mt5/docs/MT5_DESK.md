@@ -53,6 +53,8 @@ spread_state_avoidance (marginal, maxDD -49R to -96R).
 - The **crypto desk is frozen**: no new alphas, no execution work. Its data
   feeds remain as information inputs. `CASHCARRY_KILL` stays latched.
 - The MT5 gateway runs only on the Windows host; do not attempt to run it here.
-- If you see a red flag in `MT5_DESK_STATE.json` (e.g. gateway unarmed,
-  reconcile failures), report it in the repo — the human + Windows host
-  operator act on it.
+- If you see a red flag in `desks/mt5/reports/DESK_HEALTH.json`,
+  `desks/mt5/reports/process_health.json` or `desks/mt5/data/gateway_state.json` (e.g. gateway
+  unarmed, reconcile failures), report it in the repo — the human + Windows host operator act on
+  it. `MT5_DESK_STATE.json` is RETIRED (2026-10-13): it was a hand-written snapshot of the old
+  Vantage gold desk and now only points at these files.
