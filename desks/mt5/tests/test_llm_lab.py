@@ -436,4 +436,4 @@ def test_every_registered_model_gets_a_call_every_pass(state: Path,
     cov = json.loads((state / "reports" / "LLM_COVERAGE.json").read_text())
     assert cov["models_available"] == 20 and cov["models_answered"] == 20
     assert all(cov["models"][k]["state_this_cycle"] == "ANSWERED" for k in keys)
-    assert doc["coverage"]["models_answered"] == 20
+    assert doc["model_coverage"]["models_answered"] == 20

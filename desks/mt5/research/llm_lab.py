@@ -1742,7 +1742,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "conversion_debt": debt,
         "cb_tone": cb_tone,
         "roles": role_report,
-        "coverage": {k: coverage.get(k) for k in ("verdict", "red", "models_available",
+        "model_coverage": {k: coverage.get(k) for k in ("verdict", "red", "models_available",
                                                   "models_answered")},
         "verdict_loop": {k: credit.get(k) for k in ("keff_basis", "judged_cells",
                                                     "certified_cells", "ranking_rule")},
