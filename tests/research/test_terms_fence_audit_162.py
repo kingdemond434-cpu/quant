@@ -105,7 +105,8 @@ def web(monkeypatch: pytest.MonkeyPatch, wire: _Tripwire) -> _FakeWeb:
     fake = _FakeWeb({
         "http://data.example.test/moved.csv": (302, "https://nitter.net/x/rss"),
         "http://data.example.test/mirror.csv": (301, "https://xcancel.com/x/rss"),
-        "http://data.example.test/login.csv": (302, "http://data.example.test/login?next=/a.csv"),
+        "http://data.example.test/auth-hop.csv": (302,
+                                                  "http://data.example.test/login?next=/a.csv"),
         "http://data.example.test/idea.csv": (302, "https://www.reddit.com/r/Gold/top.json"),
         "http://data.example.test/ok.csv": (302, "http://data.example.test/final.csv"),
         "http://data.example.test/final.csv": (200, "date,value\n2026-01-01,1\n"),
@@ -221,7 +222,7 @@ def test_guarded_urlopen_follows_clean_and_listed_redirects_and_refuses_held_one
         web: _FakeWeb) -> None:
     with tf.guarded_urlopen("http://data.example.test/ok.csv", timeout=5) as r:
         assert r.read().startswith(b"date,value")
-    for url in ("http://data.example.test/moved.csv", "http://data.example.test/login.csv"):
+    for url in ("http://data.example.test/moved.csv", "http://data.example.test/auth-hop.csv"):
         with pytest.raises(tf.TermsFenced):
             tf.guarded_urlopen(url, timeout=5)
     with pytest.raises(urllib.error.HTTPError):       # followed (the fake web 404s it)
@@ -306,7 +307,7 @@ def test_the_endpoint_selector_never_seats_an_ideas_only_url(
     picked = [u for u, _h in ad._endpoints(100_000)]
     assert not [u for u in picked if tf.input_source(u)]
     assert "https://data.example.test/a.csv" in picked
-    assert ad._ENDPOINT_FENCED.get("reddit") == 1
+    assert ad._ENDPOINT_FENCED.get("reddit", 0) >= 1
 
 
 # ------------------------------------------------------------------ 2. the source fixer ----

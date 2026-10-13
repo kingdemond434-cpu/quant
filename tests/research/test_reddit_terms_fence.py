@@ -349,16 +349,21 @@ def test_the_registered_file_holds_only_the_nitter_grounds() -> None:
 
 
 def test_the_stocktwits_asia_source_is_not_live_input_and_mints_no_pack_cell(
-        wire: _Tripwire) -> None:
-    """StockTwits' Terms s.5 bar automated extraction of its pages, so its row is IDEAS_ONLY:
-    the asia collector (a live-input organ) never requests `stocktwits_macro` (robots.txt
-    included) and pack_cells mints nothing new from its lake series."""
+        wire: _Tripwire, monkeypatch: pytest.MonkeyPatch) -> None:
+    """StockTwits' Terms s.5 bar automated extraction of its pages (IDEAS_ONLY) and name its API
+    the automated route (NEEDS_KEY until a token exists): the asia collector, a live-input organ,
+    never requests `stocktwits_macro` (robots.txt included) and pack_cells mints nothing new
+    from its lake series."""
+    monkeypatch.delenv("STOCKTWITS_ACCESS_TOKEN", raising=False)
     import asia_collector as ac
     import pack_cells as pk
     doc = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
     row = next(r for r in doc["sources"] if r["id"] == "stocktwits_macro")
     rec = ac.collect_one(row)
-    assert rec["status"] == tf.IDEAS_ONLY and rec["platform"] == "stocktwits"
+    # its registered url is StockTwits' API: NEEDS_KEY until STOCKTWITS_ACCESS_TOKEN exists
+    assert rec["status"] == tf.NEEDS_KEY and rec["platform"] == "stocktwits_api"
     assert not [h for h in wire.hosts if "stocktwits" in h]
-    assert pk._fenced_pack(row) == "stocktwits"
+    assert pk._fenced_pack(row) == "stocktwits_api"
+    page = {"id": "stocktwits_page", "url": "https://stocktwits.com/symbol/XAUUSD"}
+    assert pk._fenced_pack(page) == "stocktwits"          # IDEAS_ONLY: never live input
     assert pk._fenced_pack({"id": "cftc_cot", "url": "https://www.cftc.gov/x.csv"}) is None
