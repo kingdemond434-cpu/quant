@@ -156,8 +156,8 @@ def reference_validator(cfg: ValidatorConfig | None = None) -> Validator:
             if p.std() == 0 or len(p) < 30:
                 reasons.append("DSR: degenerate pnl")
             else:
-                from libs.validation.dsr import deflated_sharpe_ratio
                 from libs.research.trial_count_guard import bar_n  # fixed N, as the judge
+                from libs.validation.dsr import deflated_sharpe_ratio
                 res = deflated_sharpe_ratio(p, n_trials=bar_n(case.n_variants_tried),
                                             variance_of_sharpes=1.0 / len(p),
                                             threshold=cfg.dsr_threshold)

@@ -1,4 +1,4 @@
-"""The bar never rises with a trial count (principal, 2026-10-13), and the fence that keeps it so."""
+"""The bar never rises with a trial count (principal, 2026-10-13), and the fence keeping it so."""
 from __future__ import annotations
 
 import sys
@@ -48,7 +48,8 @@ def test_a_new_file_with_its_own_trial_count_fails(tmp_path: Path) -> None:
         "    return deflated_sharpe_ratio(arr, n_trials=len(arr) * 40)\n")})
     doc = fence.judge(root, now=NOW)
     assert doc["verdict"] == "FAIL"
-    assert _check(doc, "unpinned_bar_calls")["sites"][0]["file"] == "desks/mt5/research/new_miner.py"
+    site = _check(doc, "unpinned_bar_calls")["sites"][0]
+    assert site["file"] == "desks/mt5/research/new_miner.py"
 
 
 def test_pinned_calls_pass_including_locals_and_conditionals(tmp_path: Path) -> None:
@@ -72,7 +73,8 @@ def test_a_function_that_pins_inside_frees_its_callers_only_if_every_definition_
     caller = "def f(n):\n    return trials_penalty(n * 9)\n"
     root = _tree(tmp_path, {"a.py": pinned, "b.py": caller})
     assert fence.judge(root, now=NOW)["verdict"] == "PASS"
-    _tree(tmp_path, {"c.py": "def trials_penalty(effective_trials):\n    return effective_trials\n"})
+    _tree(tmp_path, {"c.py": ("def trials_penalty(effective_trials):\n"
+                              "    return effective_trials\n")})
     assert fence.judge(root, now=NOW)["verdict"] == "FAIL"
 
 
