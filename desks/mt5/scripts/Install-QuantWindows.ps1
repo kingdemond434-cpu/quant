@@ -216,15 +216,20 @@ $tasks = @(
        Desc = "Rebuild web/desk_state.json -- the file every dashboard reads." },
     @{ Name = "MT5-Gauntlet"
        Script = "scripts\\run_sharded_gauntlet.py"
+       # RESIDENT, NOT HOURLY (principal 2026-10-10: "24 7 uninterrupted, 0 cadences"). The
+       # launcher runs sweeps back to back and never exits while it can judge; this one-minute
+       # repetition (IgnoreNew) only respawns it if it dies, and the zero time limit stops the
+       # scheduler killing a resident judge at the old four-hour ceiling.
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionInterval (New-TimeSpan -Minutes 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
+       TimeLimit = ([TimeSpan]::Zero)
        # The launcher invokes the sealed judge's fail-closed shard protocol; the judge still owns
        # every verdict and the one union merge. Also a leg of the hourly cycle, deliberately BOTH:
        # the cycle can be
        # long, and a judged docket is what every downstream stage waits on. Its own job lock
        # makes the overlap a wait, not a race.
-       Desc = "The ten statistical gates, hourly, over every newly backtested cell." },
+       Desc = "The ten statistical gates, resident: sweeps back to back over every backtested cell." },
     @{ Name = "MT5-Frontier"
        Script = "frontier_intel\\frontier_supervisor.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
