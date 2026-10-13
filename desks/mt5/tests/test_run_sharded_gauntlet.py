@@ -33,6 +33,8 @@ def _isolated_state(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "SHARD_PEAKS", tmp_path / "judge_shard_peaks.json")
     monkeypatch.setattr(runner, "RESIDENT_STATE", tmp_path / "JUDGE_RESIDENT.json")
     monkeypatch.setattr(runner, "RESIDENT_STOP", tmp_path / "RESIDENT_STOP")
+    monkeypatch.setattr(runner, "SWEEP_PHASE", tmp_path / "JUDGE_SWEEP_PHASE.json")
+    monkeypatch.setattr(runner, "_PHASE_DOC", {})
 
 
 def test_parallelism_is_bounded_and_configurable(monkeypatch) -> None:
@@ -288,3 +290,148 @@ def test_each_sweep_takes_the_latest_measured_env(monkeypatch) -> None:
     assert env["GAUNTLET_WORKERS"] == "15"
     assert env["GAUNTLET_SHARDS"] == "4"
     assert env["GAUNTLET_PER_WORKER_MB"] == "768"
+
+
+def test_the_heartbeat_moves_while_a_sweep_runs(tmp_path) -> None:
+    import json
+    import time as _t
+
+    seen: list[str] = []
+
+    def slow_sweep() -> int:
+        _t.sleep(0.35)
+        seen.append(json.loads(runner.RESIDENT_STATE.read_text("utf-8"))["heartbeat_utc"])
+        return 0
+
+    runner.resident(sweep=slow_sweep, sleep=lambda s: None, max_sweeps=1, heartbeat_s=0.1)
+    doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert seen and doc["heartbeat_utc"] >= seen[0]
+    assert doc["status"] == "DONE"
+
+
+def test_an_unexpected_end_is_recorded_as_exited(tmp_path) -> None:
+    import json
+
+    def interrupted() -> int:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        runner.resident(sweep=interrupted, sleep=lambda s: None, heartbeat_s=60)
+    doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert doc["status"] == "EXITED" and doc["heartbeat_utc"]
+
+
+def test_a_hung_sweep_has_a_ceiling_from_its_own_budget(monkeypatch) -> None:
+    """A sweep that never ends kept the task's one instance alive and every trigger was refused
+    (2026-10-12/13): the child's ceiling is twice ITS build budget, or 3x the longest sweep."""
+    assert runner._hang_limit_s(None, env={"GAUNTLET_FRESH_BUDGET_SEC": "8640"}) == 17280.0
+    assert runner._hang_limit_s(9000.0, env={"GAUNTLET_FRESH_BUDGET_SEC": "8640"}) == 27000.0
+    assert runner._hang_limit_s(None, env={"GAUNTLET_FRESH_BUDGET_SEC": "60"}) \
+        == runner.RESIDENT_HANG_FLOOR_S
+    # the sealed default when the child's env names no budget
+    assert runner._hang_limit_s(None, env={}) == 2 * runner.SEALED_FRESH_BUDGET_S
+
+
+def test_consecutive_hangs_widen_the_ceiling_to_a_cap() -> None:
+    """Audit of #350: a slow (not stuck) sweep must eventually be allowed to finish."""
+    env = {"GAUNTLET_FRESH_BUDGET_SEC": "8640"}
+    assert runner._hang_limit_s(None, 1, env) == 34560.0
+    assert runner._hang_limit_s(None, 2, env) == 69120.0
+    assert runner._hang_limit_s(None, 30, env) == runner.RESIDENT_HANG_CAP_S
+
+
+def test_a_hung_sweep_is_killed_recorded_and_the_next_one_starts(monkeypatch, tmp_path) -> None:
+    import json
+    import subprocess
+
+    seen: dict = {}
+
+    class _Child:
+        pid = 4242
+
+        def wait(self, timeout=None):
+            seen.setdefault("timeouts", []).append(timeout)
+            raise subprocess.TimeoutExpired("sweep", timeout or 0)
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: _Child())
+    monkeypatch.setattr(runner, "_kill_sweep_tree", lambda pid: seen.setdefault("killed", pid))
+    monkeypatch.setattr(runner, "_sweep_env", lambda: {})
+    assert runner._one_sweep_child(5.0) == runner.RESIDENT_HANG_RC
+    assert seen["timeouts"][0] == 5.0 and seen["killed"] == 4242
+
+    clock, slept = _Clock(), []
+    seq = iter([runner.RESIDENT_HANG_RC, runner.RESIDENT_HANG_RC])
+    runner.resident(sweep=lambda: next(seq), sleep=slept.append, clock=clock, limit_s=None,
+                    max_sweeps=2)
+    doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert doc["hung_kills"] == 2 and doc["consecutive_hangs"] == 2 and doc["last_hung_utc"]
+    # A RESTARTED RESIDENT REMEMBERS THE RUN, and a success ends it.
+    runner.resident(sweep=lambda: 0, sleep=slept.append, clock=clock, limit_s=None,
+                    max_sweeps=0)
+    assert json.loads(runner.RESIDENT_STATE.read_text("utf-8"))["consecutive_hangs"] == 2
+    runner.resident(sweep=lambda: 0, sleep=slept.append, clock=clock, limit_s=None,
+                    max_sweeps=1)
+    doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert doc["consecutive_hangs"] == 0 and doc["hung_kills"] == 2
+
+
+_RESPAWNER = """
+import subprocess, sys, time
+pids = open(sys.argv[1], "a")
+while True:
+    p = subprocess.Popen([sys.executable, "-c",
+                          "import subprocess,sys,time;"
+                          "subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)']);"
+                          "time.sleep(60)"])
+    pids.write(f"{p.pid}\\n"); pids.flush()
+    time.sleep(0.05)
+"""
+
+
+def test_the_tree_kill_leaves_no_orphan_while_the_root_respawns(tmp_path) -> None:
+    """Audit of #350: a root that keeps spawning shards (and grandchildren) during the kill."""
+    import subprocess
+    import sys as _sys
+    import time as _t
+
+    psutil = pytest.importorskip("psutil")
+    log = tmp_path / "pids.txt"
+    root = subprocess.Popen([_sys.executable, "-c", _RESPAWNER, str(log)])
+    try:
+        _t.sleep(1.5)
+        before = {c.pid for c in psutil.Process(root.pid).children(recursive=True)}
+        assert len(before) >= 4
+        runner._kill_sweep_tree(root.pid)
+        root.wait(timeout=15)
+        _t.sleep(0.5)
+        spawned = {int(x) for x in log.read_text().split()} | before
+        alive = [p for p in spawned if psutil.pid_exists(p)
+                 and psutil.Process(p).status() != psutil.STATUS_ZOMBIE]
+        orphans = [p for p in alive
+                   if "time.sleep(60)" in " ".join(psutil.Process(p).cmdline())]
+        assert not orphans, orphans
+    finally:
+        with __import__("contextlib").suppress(Exception):
+            root.kill()
+
+
+def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
+    """The 33h stall could not say which part of the sweep the core was in: each phase is now
+    stamped, folded into the resident's heartbeat, and named on a hung kill."""
+    import json
+
+    clock = iter([100.0, 160.0, 400.0])
+    with monkeypatch.context() as m:
+        m.setattr(runner.time, "time", lambda: next(clock))
+        runner._phase("plan")
+        runner._phase("build_shards")
+        runner._phase("merge_and_publish")
+    doc = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    assert doc["phase"] == "merge_and_publish"
+    assert doc["phases"] == {"plan": 60.0, "build_shards": 240.0}
+
+    seq = iter([runner.RESIDENT_HANG_RC, 0])
+    runner.resident(sweep=lambda: next(seq), sleep=lambda s: None, clock=_Clock(),
+                    limit_s=None, max_sweeps=2, heartbeat_s=60)
+    st = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert st["killed_in_phase"]["phase"] == "merge_and_publish"
