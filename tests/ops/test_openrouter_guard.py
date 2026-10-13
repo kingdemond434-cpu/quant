@@ -181,6 +181,9 @@ def test_importing_the_guard_installs_the_backstop() -> None:
     import importlib
     importlib.reload(g)
     assert getattr(urllib.request.urlopen, "_openrouter_guard", False)
+    # A reload must keep the function it wraps (CI 2026-10-13: it became None and every later
+    # urlopen in the worker raised "'NoneType' object is not callable").
+    assert callable(g._ORIG_URLOPEN) and not getattr(g._ORIG_URLOPEN, "_openrouter_guard", False)
 
 
 def test_the_account_file_never_reaches_the_public_repo() -> None:
