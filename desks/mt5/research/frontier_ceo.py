@@ -173,7 +173,38 @@ def _missing_families() -> list[dict]:
             out.append({"family": str(m["family"]), "needs": str(m.get("needs") or "")})
         elif isinstance(m, str) and m:
             out.append({"family": m, "needs": ""})
-    return out
+    return _with_breadth_frontier(out)
+
+
+def _with_breadth_frontier(out: list[dict]) -> list[dict]:
+    """THE BOARD'S LIST IS STALE; THE ENFORCER'S IS HOURLY (2026-10-13).
+
+    `web/desk_state.json -> breadth.book_breadth.missing_families` has no writer on this branch:
+    the repo copy is stamped 2026-09-16 and still names `cross_asset_residual` a gap -- the family
+    that now holds 346 certificates. Every proposal row here becomes a family the sealed
+    gauntlet's `_ceo_rank` serves FIRST, so a stale gap list was steering the judge onto the most
+    saturated ground on the desk. The breadth enforcer's measured steer fixes both halves: a gap
+    the steer now calls SATURATED is dropped, and every family on the ranked FRONTIER (unknown,
+    then under-mined) is proposed, in the steer's order. No steer: the board's list, as it was.
+    """
+    try:
+        from research.breadth_enforcer import SATURATED, class_of, load_steer
+        steer = load_steer()
+    except Exception:
+        steer = None
+    if not steer:
+        return out
+    kept = [m for m in out if class_of(m["family"], steer) != SATURATED]
+    have = {m["family"] for m in kept}
+    detail = steer.get("families") or {}
+    for i, fam in enumerate(steer.get("frontier") or [], 1):
+        if fam in have:
+            continue
+        cls = (detail.get(fam) or {}).get("class") or "FRONTIER"
+        kept.append({"family": fam, "needs": (f"breadth enforcer frontier #{i} ({cls}): judge its "
+                                              f"never-judged cells first, mint them if none")})
+        have.add(fam)
+    return kept
 
 
 def _frontier_scout() -> dict:

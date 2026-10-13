@@ -403,7 +403,19 @@ def _served_first(declared: tuple[str, ...]) -> tuple[str, ...]:
     return merged or declared
 
 
+def _breadth_brief() -> str:
+    """The breadth enforcer's steer as plain facts for the seat, or '' when unmeasured/stale."""
+    try:
+        from libs.research.proposer_seat import breadth_steer_lines
+        lines = breadth_steer_lines()
+    except Exception:
+        return ""
+    return ("\nBREADTH (measured hourly):\n" + "\n".join(f"- {ln}" for ln in lines) + "\n"
+            if lines else "")
+
+
 def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
+    system = system + _breadth_brief()
     body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.0,
                        "messages": [{"role": "system",
                                      "content": (OBJECTIVE_PREAMBLE + DATA_AXIS_MANDATE + "\n"

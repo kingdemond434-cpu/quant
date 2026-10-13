@@ -424,6 +424,16 @@ def cells(only: str | None = None) -> list[dict]:
     out, stats = order_by_failure_memory(out)
     FAILURE_MEMORY_STATS.clear()
     FAILURE_MEMORY_STATS.update(stats)
+    # THE BREADTH STEER DECIDES WHAT THE CAP MINTS (research/breadth_enforcer.py, 2026-10-13).
+    # The cert-ascending key above only ranked; it never bounded. `apportion` makes the head that
+    # `apply` merges hold the frontier first and the saturated families at their exploration
+    # floor. Work-conserving and lossless: every cell is still here, a saturated cell past the
+    # head waits for a pass with room, and no steer leaves the order exactly as above.
+    try:
+        from research.breadth_enforcer import apportion
+        out = apportion(out, MAX_NEW_PER_RUN)
+    except Exception:
+        pass
     return out
 
 

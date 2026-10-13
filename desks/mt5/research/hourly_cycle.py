@@ -972,6 +972,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # minute, and the closed-loop attestation that runs in this same plan reads three of them.
     # `regime_hierarchy` and `representation_discovery` fit models and stay on the heavy plan.
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
+    # THE BREADTH ENFORCER (principal 2026-10-13), right before the CEO docket it feeds: reads
+    # five small artifacts, writes one, seconds. Its steer is what judge_coverage, breadth_sweep,
+    # frontier_ceo and the proposer seats obey, so it rides the core clock every hour.
+    "breadth_enforcer",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
@@ -1191,6 +1195,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
+                     # THE BREADTH ENFORCER: the saturated set, the ranked frontier and the
+                     # per-producer share of mining each went to.
+                     "breadth_enforcer",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -2016,6 +2023,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
+    "breadth_enforcer": 180,
     # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
@@ -3877,6 +3885,12 @@ def main() -> None:
         "failure_prior", "research/failure_prior.py", "--once", "--budget-s", "300"))
     sst = _costed("scientist_standings", lambda: _producer(
         "scientist_standings", "research/scientist_standings.py", "--once"))
+    # THE BREADTH ENFORCER RUNS BEFORE THE CEO DOCKET, because the docket's family proposals --
+    # which the sealed gauntlet serves first -- are its ranked frontier. It measures the saturated
+    # set from the certificate registry, the frontier from docket_keff / k_eff per judge-hour /
+    # the unmined ontology, and the share of mining each producer spent on both. Meta department.
+    bef = _costed("breadth_enforcer", lambda: _producer(
+        "breadth_enforcer", "research/breadth_enforcer.py"))
     fce = _costed("frontier_ceo", lambda: _producer(
         "frontier_ceo", "research/frontier_ceo.py", "--apply"))
     rtr = _costed("research_tree", lambda: _producer(
@@ -5750,7 +5764,7 @@ def main() -> None:
                     "pit_canaries": pcn, "placement_interlock": pil,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
-                    "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
+                    "failure_prior": fpr, "scientist_standings": sst, "breadth_enforcer": bef, "frontier_ceo": fce,
                     "research_tree": rtr, "representation_discovery": rpd,
                     "evig_acquisition": eva,
                     "axis_registry": axr, "breadth_ladder": bld, "forced_flow_calendar": ffc,

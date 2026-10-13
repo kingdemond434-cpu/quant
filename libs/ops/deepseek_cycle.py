@@ -620,6 +620,15 @@ def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tupl
     )
     user = ("COLD CONTEXT -- facts only, no other agent's conclusion is present in this:\n"
            + json.dumps(cold.get("cold_context") or {}, indent=1, default=str)[:6000])
+    # THE BREADTH STEER (desks/mt5/research/breadth_enforcer.py): saturated families and the
+    # ranked frontier, by name -- measured facts, never a score. Empty when unmeasured or stale.
+    try:
+        from libs.research.proposer_seat import breadth_steer_lines
+        _steer = breadth_steer_lines()
+    except Exception:
+        _steer = []
+    if _steer:
+        user += "\n\nBREADTH (measured hourly):\n" + "\n".join(f"- {ln}" for ln in _steer)
     return system, user
 
 
