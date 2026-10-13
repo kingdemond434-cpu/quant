@@ -91,7 +91,18 @@ TASK_QUEUE = DESK / "data" / "task_queue.jsonl"
 
 BACKED, BREACHED, AWAITING, RETIRED, UNMEASURED = (
     "BACKED", "BREACHED", "AWAITING_JUDGEMENT", "RETIRED", "UNMEASURED")
-BACKING_STATES = (BACKED, BREACHED, AWAITING, RETIRED, UNMEASURED)
+#: A CERTIFICATE UNDER RE-MINT IS STILL A CERTIFICATE (audit 2026-10-13, T8 blocker a). A re-seal
+#: changes the attestation, and the gauntlet's `remint_partition` then lifts every row judged
+#: under the old one OUT of the survivor set into `pending_rejudge` until a sweep re-judges it.
+#: Nothing about that row was rejected: its gates passed, the bar it passed is merely being
+#: re-asked. Reading it as "no certificate" retired every forward clock the desk held on the
+#: first pass after any re-seal. It is NOT the abolished AWAITING_JUDGEMENT state either: that
+#: kept clocks that had NEVER certified; this keeps only clocks whose certificate exists and has
+#: not been ruled on again. The clock leaves this state the pass the judge rules: BACKED on a
+#: re-pass, retired (JUDGE_REJECTED) on a MEASURED failure -- never on a re-judge that could not
+#: measure (an UNMEASURED/UNKNOWN re-judge stays pending in the gauntlet too).
+REMINT_PENDING = "CERTIFICATE_REMINT_PENDING"
+BACKING_STATES = (BACKED, BREACHED, AWAITING, RETIRED, UNMEASURED, REMINT_PENDING)
 
 #: One judging cycle, kept only because the artifact still publishes breach ages for the record.
 #: It is no longer a tolerance: under the strict rule an unbacked clock is retired on the pass it
@@ -315,8 +326,12 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
           now: datetime | None = None, apply: bool = True,
           canon_path: Path | None = None, verdict_path: Path | None = None,
           ledger_path: Path | None = None,
-          queue_path: Path | None = None) -> dict[str, Any]:
-    """The whole law in one pass: trace, queue, keep, retire -- and publish the four counts."""
+          queue_path: Path | None = None,
+          pending: set[str] | None = None) -> dict[str, Any]:
+    """The whole law in one pass: trace, queue, keep, retire -- and publish the four counts.
+
+    `pending` is the engine-keyed set of clocks whose certificate sits in the canon's
+    `pending_rejudge` block (see REMINT_PENDING); such a clock is kept, never retired."""
     now = now or now_utc()
     n_canon, canon_why = canon_state(canon_path)
     rows: list[dict[str, Any]] = []
@@ -344,6 +359,13 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                     "why": (canon_why if n_canon is None else
                             "the engine roster is unreadable on this host, so backing is "
                             "UNMEASURED")}
+        elif (str(c.get("key")) in (pending or set())
+              and str(c.get("key")) not in (roster or set())):
+            row |= {"backing": REMINT_PENDING,
+                    "why": ("this clock's certificate is in `pending_rejudge`: lifted out of the "
+                            "survivor set only because the attestation changed (a re-seal), "
+                            "never rejected. Kept; the sweep re-judges it first, and only a "
+                            "MEASURED failure retires it")}
         elif str(c.get("key")) in (roster or set()):
             row |= {"backing": BACKED,
                     "why": (f"a current certificate backs this clock: its key is on "
@@ -407,6 +429,7 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
         "counts": counts,
         "breached": counts[BREACHED],
         "awaiting": 0, "backed": counts[BACKED], "retired": counts[RETIRED],
+        "remint_pending": counts[REMINT_PENDING],
         # What the fence reads: clocks still running with no certificate AFTER this pass. Zero by
         # construction once the retirement is applied; anything else is the law broken.
         "unbacked_live": counts[BREACHED] + counts[AWAITING],
