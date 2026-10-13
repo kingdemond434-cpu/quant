@@ -50349,8 +50349,8 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.1,
-      "status": "LIVE",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
       "risk_frac_source": "principal_cert_book",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
@@ -50407,7 +50407,9 @@
       "principal_certificate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
       "principal_order": "principal 2026-10-06/07: one-time early live promotion of the certified max-growth book on Fusion; existing evidence retirement remains final",
       "cost_hash": "f2bb65952c424536",
-      "cost_basis_source": "row"
+      "cost_basis_source": "row",
+      "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
+      "standby_at": "2026-10-13T21:30:32.440131Z"
     },
     {
       "name": "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -50417,8 +50419,8 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.098,
-      "status": "LIVE",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
       "risk_frac_source": "principal_cert_book",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
@@ -50475,7 +50477,9 @@
       "principal_certificate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
       "principal_order": "principal 2026-10-06/07: one-time early live promotion of the certified max-growth book on Fusion; existing evidence retirement remains final",
       "cost_hash": "5029427a021b7824",
-      "cost_basis_source": "row"
+      "cost_basis_source": "row",
+      "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
+      "standby_at": "2026-10-13T21:30:32.440178Z"
     },
     {
       "name": "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -50485,8 +50489,8 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.1,
-      "status": "LIVE",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
       "risk_frac_source": "principal_cert_book",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
@@ -50542,7 +50546,9 @@
       "principal_certificate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
       "principal_order": "principal 2026-10-06/07: one-time early live promotion of the certified max-growth book on Fusion; existing evidence retirement remains final",
       "cost_hash": "f52589ec78a1b603",
-      "cost_basis_source": "row"
+      "cost_basis_source": "row",
+      "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
+      "standby_at": "2026-10-13T21:30:32.440190Z"
     },
     {
       "name": "AUDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
