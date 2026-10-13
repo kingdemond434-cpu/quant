@@ -36,8 +36,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "desks" / "mt5" / "data" / "account_state.json"
+#: The open book, per position. UNTRACKED (.gitignore): the repository is public, and tickets,
+#: sizes and stops are the live account's own. It stays on the box for restore and reconcile.
+POSITIONS_REL = "desks/mt5/data/account_positions.json"
+POSITIONS = ROOT / POSITIONS_REL
 sys.path.insert(0, str(ROOT / "desks" / "mt5"))
 from research.mt5_session import attach_or_initialize  # noqa: E402
+
+
+def _position(p: object) -> dict[str, object]:
+    """One open position as the ledger row; a field the terminal did not supply reads None."""
+    def f(name: str) -> float | None:
+        v = getattr(p, name, None)
+        return round(float(v), 5) if v is not None else None
+    opened = getattr(p, "time", None)
+    kind = getattr(p, "type", None)
+    return {"ticket": getattr(p, "ticket", None), "symbol": getattr(p, "symbol", None),
+            "side": None if kind is None else ("buy" if int(kind) == 0 else "sell"),
+            "volume": f("volume"), "price_open": f("price_open"),
+            "sl": f("sl") or None, "tp": f("tp") or None,
+            "swap": f("swap"), "profit": f("profit"), "magic": getattr(p, "magic", None),
+            "opened_at": (datetime.fromtimestamp(int(opened), tz=UTC).isoformat()
+                          if opened else None)}
 
 
 def main() -> int:
@@ -90,11 +110,26 @@ def main() -> int:
         "today_closed_pnl": round(closed, 2),
         "today_floating_pnl": round(floating, 2),
         "open_positions": len(positions),
+        # ONE AUTHORITATIVE LEDGER (recovery drills, account_ledger row, 2026-10-07): used margin
+        # and the financing carried, as AGGREGATES. The positions themselves (tickets, sizes,
+        # stops) go to POSITIONS, which is gitignored: this file is committed by the box and the
+        # repository is public, so nothing that identifies a live position may land here.
+        "margin": round(float(getattr(info, "margin", 0.0) or 0.0), 2),
+        "margin_level": (round(float(info.margin_level), 2)
+                         if getattr(info, "margin_level", None) else None),
+        "swap": round(sum(float(getattr(p, "swap", 0.0) or 0.0) for p in positions), 2),
+        "today_swap": round(sum(float(getattr(d, "swap", 0.0) or 0.0) for d in deals), 2),
+        "positions_file": POSITIONS_REL,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     tmp = OUT.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(rec, indent=1), encoding="utf-8")
     tmp.replace(OUT)          # atomic, so a reader never sees a half-written record
+    book = {"updated_at": rec["updated_at"], "open_positions": len(positions),
+            "positions": [_position(p) for p in positions]}
+    ptmp = POSITIONS.with_suffix(".json.tmp")
+    ptmp.write_text(json.dumps(book, indent=1), encoding="utf-8")
+    ptmp.replace(POSITIONS)
     print(f"wrote {OUT.name}: equity {rec['equity']} {rec['currency']} "
           f"today_pnl {rec['today_pnl']} positions {rec['open_positions']}")
     return 0
