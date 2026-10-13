@@ -111,3 +111,16 @@ def test_wired_as_an_hourly_leg_and_report_only() -> None:
     assert ml.OUT.name == "META_LABEL.json" and ml.OUT.parent.name == "reports"
     for p in (DESK / "mt5desk").glob("*.py"):
         assert "META_LABEL" not in p.read_text("utf-8", errors="ignore")
+
+
+def test_archived_and_pre_snapshot_ledgers_are_not_double_counted(tmp_path: Path) -> None:
+    row = {"entry_time": "2026-09-01T04:00:00Z", "exit_time": "2026-09-01T08:00:00Z",
+           "r_multiple": 1.0, "side": 1, "phase": "forward"}
+    (tmp_path / "ledger_XAUUSD_asia.json").write_text(json.dumps([row]), "utf-8")
+    (tmp_path / "ledger_XAUUSD_asia.pre_20260901.json").write_text(json.dumps([row]), "utf-8")
+    arch = tmp_path / "archived_runtime_windows"
+    arch.mkdir()
+    (arch / "ledger_XAUUSD_asia.pre_x.json").write_text(json.dumps([row]), "utf-8")
+    (arch / "ledger_XAUUSD_asia.json").write_text(json.dumps([row]), "utf-8")
+    trades = ml.load_trades(tmp_path)
+    assert len(trades) == 1 and trades[0].sleeve == "XAUUSD_asia"

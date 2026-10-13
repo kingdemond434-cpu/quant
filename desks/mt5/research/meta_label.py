@@ -127,8 +127,12 @@ def _ts(v: Any) -> datetime | None:
 def load_trades(shadow_dir: Path = SHADOW_DIR) -> list[Trade]:
     """Every replayed trade of every sleeve ledger under `shadow_dir`, sorted by entry."""
     out: list[Trade] = []
-    for f in sorted(glob.glob(str(shadow_dir / "**" / "ledger_*.json"), recursive=True)):
+    # Top level only: archived_runtime_windows/ and *.pre_* snapshots are copies of live
+    # ledgers, and reading them double-counts trades (inflating T and the DSR).
+    for f in sorted(glob.glob(str(shadow_dir / "ledger_*.json"))):
         p = Path(f)
+        if ".pre_" in p.name:
+            continue
         sleeve = p.stem[len("ledger_"):]
         symbol = sleeve.split("_", 1)[0]
         try:
@@ -180,7 +184,8 @@ def build_features(trades: Sequence[Trade], frame: Any) -> np.ndarray:
 
     def win(a: np.ndarray, end: int, n: int) -> np.ndarray:
         w = a[max(0, end - n):end]
-        return w[np.isfinite(w)]
+        kept: np.ndarray = w[np.isfinite(w)]
+        return kept
 
     for i, t in enumerate(trades):
         d = t.entry.date()
