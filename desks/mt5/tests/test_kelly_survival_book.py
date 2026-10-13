@@ -147,3 +147,24 @@ def test_certified_roster_excludes_only_the_banned_m15_sleeve(desk, tmp_path, mo
     assert str(why["banned"]).startswith("M15 banned")
     assert not str(why["sibling"] or "").startswith("M15 banned")
     assert not str(why["fx"] or "").startswith("M15 banned")
+def _gauntlet_m15_cert(with_spec: bool) -> dict:
+    """Shaped as external_gauntlet writes it: the chart rides in shadow_spec.params and the key."""
+    c: dict = {"cell": "XAUUSD@M15.anti_donchian_breakout.p=ab12",
+               "gates": {"stress_costs": {"exp_x3": 0.2}}}
+    if with_spec:
+        c["shadow_spec"] = {"family": "anti_donchian_breakout", "symbol": "XAUUSD",
+                            "params": {"timeframe": "M15", "lookback": 20}}
+    return c
+
+
+def test_certified_roster_bans_a_gauntlet_shaped_m15_cert(desk, tmp_path, monkeypatch):
+    """Audit #383 must-fix: params/key timeframe must not read as H1 and escape the M15 ban."""
+    key = "external.XAUUSD@M15.anti_donchian_breakout.p=ab12"
+    for with_spec in (True, False):
+        canon = tmp_path / f"canon_gauntlet_{with_spec}.json"
+        canon.write_text(json.dumps({"gate_policy": {"version": "v2"}, "survivors": {
+            key: _gauntlet_m15_cert(with_spec)}}), encoding="utf-8")
+        monkeypatch.setattr(desk, "CERT_CANON", canon)
+        _, rows = desk.certified_roster([])
+        assert rows[0]["symbol"] == "XAUUSD"
+        assert str(rows[0].get("excluded")).startswith("M15 banned"), (with_spec, rows[0])

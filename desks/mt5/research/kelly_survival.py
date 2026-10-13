@@ -429,6 +429,26 @@ def m15_banned(sym: str, fam: str, tf: str, selector: str = "all") -> bool:
     return (str(sym).upper(), str(fam).lower(), sel) in M15_BANNED_CELLS
 
 
+def _cert_timeframe(key: str, cert: dict[str, Any], spec: dict[str, Any]) -> str:
+    """The chart a certificate was judged on (audit #383 must-fix).
+
+    The gauntlet writes the timeframe into `shadow_spec.params`, not onto the spec, and keys the
+    certificate `external.XAUUSD@M15.family.p=...`; reading only `spec["timeframe"]` let an M15
+    certificate pass as H1 and escape the M15 ban. Resolved the way `frontier_identity` does:
+    spec, then spec["params"], then the `@TF` carried by the key or the cell.
+    """
+    from frontier_identity import REFERENCE_TIMEFRAME, timeframe_of
+
+    tf = timeframe_of(spec)
+    if tf != REFERENCE_TIMEFRAME:
+        return tf
+    for ident in (str(key), str(cert.get("cell") or "")):
+        for part in ident.split("."):
+            if "@" in part:
+                return part.split("@", 1)[1].upper()
+    return tf
+
+
 def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]:
     """(world columns, one screening row per certificate) for the non-banned certified sleeves."""
     doc = _read_json(CERT_STORE) or {}
@@ -450,8 +470,9 @@ def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]
         # Store rows may carry no family field; the key is `external.SYM.family.p=...`.
         fam = str(spec.get("family") or (parts[2] if len(parts) > 2 else ""))
         sym = str(c.get("sym") or spec.get("symbol") or (parts[1] if len(parts) > 1 else ""))
+        sym = sym.split("@")[0]
         sel = str(spec.get("selector") or "")
-        tf = str(spec.get("timeframe") or "H1").upper()
+        tf = _cert_timeframe(key, c, spec)
         g = c.get("gates") or {}
         row = {"certificate": key, "store": source, "symbol": sym, "family": fam,
                "selector": sel,
