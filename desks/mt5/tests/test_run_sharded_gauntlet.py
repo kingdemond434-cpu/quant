@@ -317,3 +317,37 @@ def test_an_unexpected_end_is_recorded_as_exited(tmp_path) -> None:
         runner.resident(sweep=interrupted, sleep=lambda s: None, heartbeat_s=60)
     doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
     assert doc["status"] == "EXITED" and doc["heartbeat_utc"]
+
+
+def test_a_hung_sweep_has_a_ceiling_from_its_own_budget(monkeypatch) -> None:
+    """A sweep that never ends kept the task's one instance alive and every trigger was refused
+    (2026-10-12/13): the child's ceiling is twice the build budget, or 3x the longest sweep."""
+    monkeypatch.setenv("GAUNTLET_FRESH_BUDGET_SEC", "8640")
+    assert runner._hang_limit_s(None) == 17280.0
+    assert runner._hang_limit_s(9000.0) == 27000.0
+    monkeypatch.setenv("GAUNTLET_FRESH_BUDGET_SEC", "60")
+    assert runner._hang_limit_s(None) == runner.RESIDENT_HANG_FLOOR_S
+
+
+def test_a_hung_sweep_is_killed_recorded_and_the_next_one_starts(monkeypatch, tmp_path) -> None:
+    import json
+    import subprocess
+
+    seen: dict = {}
+
+    def timed_out(*_a, **kw):
+        seen["timeout"] = kw.get("timeout")
+        raise subprocess.TimeoutExpired("sweep", kw.get("timeout") or 0)
+
+    monkeypatch.setattr(runner, "run", timed_out)
+    monkeypatch.setattr(runner, "_sweep_env", lambda: {})
+    assert runner._one_sweep_child(5.0) == runner.RESIDENT_HANG_RC
+    assert seen["timeout"] == 5.0
+
+    clock, slept = _Clock(), []
+    seq = iter([runner.RESIDENT_HANG_RC, 0])
+    runner.resident(sweep=lambda: next(seq), sleep=slept.append, clock=clock, limit_s=None,
+                    max_sweeps=2)
+    doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert doc["hung_kills"] == 1 and doc["last_hung_utc"] and doc["sweeps"] == 2
+    assert slept == [runner.RESIDENT_BACKOFF_S[0]]

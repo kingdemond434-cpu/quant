@@ -275,6 +275,19 @@ LANE_HELD_RC = 75
 #: reads as an old heartbeat (check_judge_coverage marks it DEAD past 5 minutes), never as a
 #: SWEEPING that lasts forever.
 RESIDENT_HEARTBEAT_S = 30.0
+#: A SWEEP THAT NEVER ENDS IS THE ONE FAILURE THE RESPAWNER CANNOT SEE (2026-10-13). The task runs
+#: with `MultipleInstances IgnoreNew` and no time limit (`task_time_limit_s` 0), so one hung sweep
+#: keeps its instance alive and every trigger after it is refused (0x800710E0): from 10-12 06:59Z
+#: the box held ~1 busy judge core, wrote no verdict for 33 hours, and Task Scheduler refused each
+#: MT5-Gauntlet start. The heartbeat thread kept beating through it. So each sweep child now has a
+#: ceiling derived from what it is allowed to spend -- twice the build budget the throughput
+#: organ sets (`GAUNTLET_FRESH_BUDGET_SEC`) or three times the longest sweep this resident has
+#: measured, whichever is larger, never under an hour -- and a child past it is killed WITH ITS
+#: WHOLE TREE (`libs.ops.proctree.run`), recorded as a hung sweep, and the next one starts.
+RESIDENT_HANG_RC = 124
+RESIDENT_HANG_BUDGET_MULT = 2.0
+RESIDENT_HANG_SWEEP_MULT = 3.0
+RESIDENT_HANG_FLOOR_S = 3600.0
 
 
 def _resident_enabled(argv: list[str]) -> bool:
@@ -360,17 +373,31 @@ def _sweep_env() -> dict[str, str]:
     return env
 
 
-def _one_sweep_child() -> int:
+def _hang_limit_s(longest_sweep_s: float | None) -> float:
+    """The most one sweep child may run before it is killed as hung (see RESIDENT_HANG_RC)."""
+    try:
+        budget = float(os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", "8640"))
+    except (TypeError, ValueError):
+        budget = 8640.0
+    return max(RESIDENT_HANG_FLOOR_S, RESIDENT_HANG_BUDGET_MULT * max(budget, 0.0),
+               RESIDENT_HANG_SWEEP_MULT * float(longest_sweep_s or 0.0))
+
+
+def _one_sweep_child(hang_s: float | None = None) -> int:
     """One sweep in a fresh process, at the priority the scheduler gives the judge today."""
+    import subprocess
+
     flags = 0
     if sys.platform == "win32":
-        import subprocess
         # BELOW_NORMAL is the Task Scheduler's default priority (7) for MT5-Gauntlet, so the
         # child keeps exactly the standing the judge has now: miners are never displaced by it.
         flags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
-    done = run([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
-               cwd=DESK, env=_sweep_env(), timeout=None, capture_output=False,
-               creationflags=flags)
+    try:
+        done = run([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
+                   cwd=DESK, env=_sweep_env(), timeout=hang_s, capture_output=False,
+                   creationflags=flags)
+    except subprocess.TimeoutExpired:
+        return RESIDENT_HANG_RC              # the tree is already killed by proctree.run
     return int(done.returncode)
 
 
@@ -387,11 +414,15 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
              limit_s: float | None = None, max_sweeps: int | None = None,
              heartbeat_s: float = RESIDENT_HEARTBEAT_S) -> int:
     """Run sweeps back to back until stopped; return the last sweep's exit code."""
-    sweep = sweep or _one_sweep_child
     started, last_rc = clock(), 0
     state: dict[str, Any] = {"pid": os.getpid(), "started_utc": datetime.now(UTC).isoformat(
         timespec="seconds"), "task_limit_s": limit_s, "sweeps": 0, "failures": 0,
-        "lane_held": 0, "busy_seconds": 0.0, "status": "RUNNING"}
+        "lane_held": 0, "hung_kills": 0, "busy_seconds": 0.0, "status": "RUNNING"}
+    if sweep is None:
+        def sweep() -> int:
+            hang = _hang_limit_s(state.get("longest_sweep_s"))
+            state["hang_limit_s"] = round(hang, 1)
+            return _one_sweep_child(hang)
     stop = threading.Event()
     beat = threading.Thread(target=_heartbeat, args=(state, stop, heartbeat_s), daemon=True)
     beat.start()
@@ -441,6 +472,8 @@ def _resident_loop(state: dict[str, Any], sweep, sleep, clock, started: float,
             timespec="seconds"))
         if last_rc == 0:
             failures, last_sweep_s = 0, dt
+            state["longest_sweep_s"] = round(max(dt, float(state.get("longest_sweep_s") or 0.0)),
+                                             1)
             state["status"] = "RUNNING"
             _write_state(state)
             continue                       # ZERO CADENCE: the next sweep starts now
@@ -450,6 +483,9 @@ def _resident_loop(state: dict[str, Any], sweep, sleep, clock, started: float,
         else:
             failures += 1
             state["failures"] += 1
+            if last_rc == RESIDENT_HANG_RC:
+                state["hung_kills"] = int(state.get("hung_kills") or 0) + 1
+                state["last_hung_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
             pause = RESIDENT_BACKOFF_S[min(failures, len(RESIDENT_BACKOFF_S)) - 1]
         state.update(status="BACKOFF", backoff_s=pause)
         _write_state(state)
