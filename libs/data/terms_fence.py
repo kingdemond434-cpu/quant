@@ -593,7 +593,8 @@ def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = No
         raise TermsFenced("login_wall", url)
     opener = guarded_opener(context)
     fh = opener.open(req) if timeout is None else opener.open(req, timeout=timeout)
-    chain = next((h.chain for h in opener.handlers if isinstance(h, FencedRedirectHandler)), [])
+    chain = next((h.chain for h in getattr(opener, "handlers", ())
+                  if isinstance(h, FencedRedirectHandler)), [])
     with contextlib.suppress(AttributeError):
         fh.redirects = list(chain)
     return fh
