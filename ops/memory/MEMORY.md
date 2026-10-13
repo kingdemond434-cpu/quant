@@ -9,7 +9,8 @@
 > today's state, and NEVER as a licence to hunt a crypto-exchange venue.**
 >
 > The live desk is `desks/mt5/` on the MT5/Fusion Markets universe; its state is
-> `desks/mt5/docs/MT5_DESK.md` + `MT5_DESK_STATE.json`, and the standing mandate is `CLAUDE.md`
+> `desks/mt5/data/sleeves.json`, `account_state.json` and `reports/DESK_HEALTH.json`
+> (`MT5_DESK_STATE.json` is RETIRED, 2026-10-13), and the standing mandate is `CLAUDE.md`
 > and `docs/LAWS.md` S1. The block is kept because a large part of it IS universe-independent and
 > still true — the principal's name and preferences, the model/effort settings, the seat and
 > budget envelope, the dead-man reset procedure requiring all three files, the shadow_sleeves.json

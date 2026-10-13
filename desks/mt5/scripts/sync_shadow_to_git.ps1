@@ -563,6 +563,11 @@ $relPaths = @(
     # plain-English answer to "is the desk running", which until now only a person at the box saw.
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    # WHICH ORGANS ARE SILENTLY FAILING (2026-10-13). ops/process_health.py (MT5-ProcessHealth,
+    # hourly) names every scheduled organ that is FAILING, NOT_SCHEDULED, STALE or has no
+    # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it
+    # counted stayed on the box, so no reader on this branch could say WHICH eleven.
+    "desks/mt5/reports/process_health.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two
@@ -669,6 +674,9 @@ $reportPaths = @(
     "desks/mt5/reports/JUDGE_COVERAGE.json",
     # its fence's verdict (2026-10-13): a stale table or a silent judge reads FAIL off the box too
     "desks/mt5/reports/judge_coverage_fence.json",
+    # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
+    # the only off-box evidence of whether the judge is running between its verdicts
+    "desks/mt5/reports/JUDGE_RESIDENT.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",

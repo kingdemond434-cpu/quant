@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-10-13T15:30:23+00:00",
+ "updated_at": "2026-10-13T21:45:08+00:00",
  "source": "ops/publish_account_state.py",
  "venue": "Fusion Markets Pty Ltd",
  "server": "FusionMarkets-Live",
@@ -11,5 +11,10 @@
  "today_pnl": -76.43,
  "today_closed_pnl": -76.43,
  "today_floating_pnl": 0,
- "open_positions": 0
+ "open_positions": 0,
+ "margin": 0.0,
+ "margin_level": null,
+ "swap": 0,
+ "today_swap": 0.0,
+ "positions_file": "desks/mt5/data/account_positions.json"
 }
