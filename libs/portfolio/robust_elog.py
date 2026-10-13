@@ -156,6 +156,15 @@ class SleeveEvidence:
     inputs: tuple[str, ...] = ()
     trade_hours: tuple[int, ...] = ()
     mechanism: str = ""
+    #: MACRO FACTORS THIS SLEEVE CARRIES THAT ARE UNMEASURED (audit #211 MF1 follow-up). Its
+    #: `factor_load` then omits a dimension, and a zero there is ignorance, not independence:
+    #: two VIX-driven sleeves read |corr| 0.921 with the archive and 0.002 without it.
+    #: `_structured_corr` floors such pairs at the measured co-movement of their instruments
+    #: (`inst_r`); `_corr_abs` falls back to their own realised |corr| where that is unavailable.
+    factor_unmeasured: tuple[str, ...] = ()
+    #: The instrument's daily log return on the factor calendar (one common calendar for every
+    #: sleeve), from `leg_factors.instrument_returns`. Empty when it has no FX legs.
+    inst_r: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:
         if self.daily_r.ndim != 1:
@@ -914,6 +923,13 @@ TIME_DISJOINT_FLOOR = 0.25
 #: Both sleeves must have this many measured entry hours before the relaxation is allowed to act;
 #: below it the pair keeps the unrelaxed prior, because "no hours recorded" is not "no overlap".
 MIN_HOURS_FOR_RELAX = 3
+#: Common days an instrument-return correlation needs before it can floor an unmeasured pair.
+MIN_INST_DAYS = 60
+#: The |corr| an UNMEASURED-factor pair carries when neither instrument legs nor 20 common realised
+#: days exist: the trade-time prior, the smallest structural floor the desk already uses. A claim
+#: the desk can defend, never the zero that oversized two VIX bets as independent.
+UNMEASURED_PAIR_CORR = TRADE_TIME_CORR
+MIN_REALISED_DAYS = 20
 
 
 def _jaccard(a: Sequence[str] | Sequence[int], b: Sequence[str] | Sequence[int]) -> float:
@@ -934,7 +950,7 @@ def _mechanism_sim(a: str, b: str) -> float:
     return float(len(ta & tb)) / float(len(ta | tb))
 
 
-def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str, int]]:
+def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str, Any]]:
     """|corr| from the loadings, floored by the structural prior; zeros where nothing is known.
 
     B13 -- EFFECTIVE BREADTH, NOT RAW COUNT. Three dimensions of sameness join the factor model
@@ -969,6 +985,10 @@ def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str
     ins = [tuple(getattr(e, "inputs", ()) or ()) for e in ev]
     hrs = [tuple(getattr(e, "trade_hours", ()) or ()) for e in ev]
     mechs = [str(getattr(e, "mechanism", "") or "") for e in ev]
+    unm = [bool(getattr(e, "factor_unmeasured", ())) for e in ev]
+    inst = [np.asarray(getattr(e, "inst_r", ()) or (), dtype=float) for e in ev]
+    unresolved: list[tuple[int, int]] = []
+    n_unm = 0
     for i in range(n):
         for j in range(i + 1, n):
             floors: list[float] = []
@@ -1002,6 +1022,16 @@ def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str
                 if jh > 0.0:
                     floors.append(TRADE_TIME_CORR * jh)
                     n_time += 1
+            # UNMEASURED MACRO: a dark factor is ignorance, not independence. Floor the pair at the
+            # measured co-movement of the two instruments (cross-instrument only: a same-symbol
+            # pair keeps its own prior and its trade-time credit).
+            if (unm[i] or unm[j]) and syms[i] != syms[j]:
+                ci = _inst_corr(inst[i], inst[j])
+                if ci is None:
+                    unresolved.append((i, j))
+                else:
+                    floors.append(ci)
+                    n_unm += 1
             if floors:
                 s = max(floors)
                 if s > t[i, j]:
@@ -1009,7 +1039,22 @@ def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str
     np.fill_diagonal(t, 1.0)
     return t, {"n_with_loadings": n_factor, "n_structural_pairs": n_struct,
                "n_shared_input_pairs": n_input, "n_same_mechanism_pairs": n_mech,
-               "n_trade_time_pairs": n_time, "n_time_relaxed_pairs": n_relaxed}
+               "n_trade_time_pairs": n_time, "n_time_relaxed_pairs": n_relaxed,
+               "n_unmeasured_factor_pairs": n_unm + len(unresolved),
+               "n_unmeasured_inst_floored": n_unm, "unresolved_pairs": unresolved}
+
+
+def _inst_corr(a: np.ndarray, b: np.ndarray) -> float | None:
+    """|corr| of two instrument return series on the common factor calendar, or None."""
+    if a.size == 0 or a.size != b.size:
+        return None
+    ok = np.isfinite(a) & np.isfinite(b) & (a != 0.0) & (b != 0.0)
+    if int(ok.sum()) < MIN_INST_DAYS:
+        return None
+    x, y = a[ok], b[ok]
+    if x.std() <= 0 or y.std() <= 0:
+        return None
+    return float(min(1.0, abs(np.corrcoef(x, y)[0, 1])))
 
 
 def breadth_channels(ev: Sequence[SleeveEvidence]) -> dict[str, Any]:
@@ -1017,6 +1062,7 @@ def breadth_channels(ev: Sequence[SleeveEvidence]) -> dict[str, Any]:
     evidence CREDITED. Pure, report-only -- `_structured_corr` does the arithmetic; this names it
     so the allocation report can show the channels instead of one blended number."""
     _t, meta = _structured_corr(ev)
+    meta = {**meta, "unresolved_pairs": len(meta.get("unresolved_pairs", ()))}
     declared = {"inputs": sum(1 for e in ev if getattr(e, "inputs", ())),
                 "trade_hours": sum(1 for e in ev if getattr(e, "trade_hours", ())),
                 "mechanism": sum(1 for e in ev if str(getattr(e, "mechanism", "") or ""))}
@@ -1063,10 +1109,16 @@ def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
         c[np.ix_(live, live)] = np.abs(np.nan_to_num(sub, nan=0.0))
     np.fill_diagonal(c, 1.0)
     target, _meta = _structured_corr(ev)
-    if not np.any(target - np.eye(n)):
-        return c
     f = fin.astype(float)
     overlap = f.T @ f                                              # common days per pair
+    # An UNMEASURED-factor pair with no instrument legs falls back to its OWN realised |corr|
+    # (twenty common days or more), else to UNMEASURED_PAIR_CORR -- never to zero.
+    for i, j in _meta.get("unresolved_pairs", ()):
+        fb = c[i, j] if overlap[i, j] >= MIN_REALISED_DAYS else UNMEASURED_PAIR_CORR
+        if fb > target[i, j]:
+            target[i, j] = target[j, i] = fb
+    if not np.any(target - np.eye(n)):
+        return c
     w = overlap / (overlap + CORR_BLEND_K)
     out: np.ndarray = w * c + (1.0 - w) * target
     np.fill_diagonal(out, 1.0)

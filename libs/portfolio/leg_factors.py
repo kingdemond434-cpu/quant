@@ -57,6 +57,10 @@ K_PRIOR = float(os.environ.get("LEG_FACTORS_K_PRIOR", "20"))
 MIN_PAIRS = 3
 #: The cross-asset macro factors, as daily CHANGES of the FRED series (the state module uses the
 #: LEVELS; a factor return must be a return).
+#: A macro column with fewer finite days than this (or than this share of the calendar) is a
+#: partial archive and reads UNMEASURED with its span named.
+MIN_MACRO_DAYS = 60
+MIN_MACRO_SPAN = 0.25
 MACRO_FACTORS: dict[str, tuple[str, str]] = {"d_vix": ("VIXCLS", "dlog"),
                                              "d_r10": ("DGS10", "diff")}
 
@@ -214,10 +218,35 @@ def macro_unmeasured(columns: Iterable[Any], frame: Any = None) -> dict[str, str
         if name not in have:
             out[name] = (f"UNMEASURED: no {sid} rows in the macro archive (empty, held or "
                          "absent); sleeves that carry this factor have no loading on it")
-        elif frame is not None and not bool(np.isfinite(
-                frame[name].to_numpy(dtype=float)).any()):
-            out[name] = f"UNMEASURED: {sid} has no finite change on the factor calendar"
+        elif frame is not None:
+            n_fin = int(np.isfinite(frame[name].to_numpy(dtype=float)).sum())
+            need = max(MIN_MACRO_DAYS, int(MIN_MACRO_SPAN * len(frame)))
+            if n_fin == 0:
+                out[name] = f"UNMEASURED: {sid} has no finite change on the factor calendar"
+            elif n_fin < need:
+                # A SHORT-SPAN PARTIAL ARCHIVE (audit #211 should-fix): a column holding a few
+                # weeks of a multi-year calendar fits a loading on almost nothing and z-scores to
+                # a near-zero factor, so it read as MEASURED while carrying no structure.
+                out[name] = (f"UNMEASURED: {sid} covers {n_fin} of {len(frame)} factor days "
+                             f"(< {need}); a partial archive is not a measured factor")
     return out
+
+
+def instrument_returns(fs: FactorSet, symbol: str) -> np.ndarray | None:
+    """The instrument's own daily log return on the factor calendar, rebuilt from its two legs.
+
+    The fallback `_structured_corr` reads when a macro factor is UNMEASURED: the leg history is
+    measured independently of the FRED archive, so two sleeves whose macro driver went dark still
+    show the co-movement of the instruments they trade -- never a correlation of zero."""
+    try:
+        from libs.risk.fx_factors import split_pair
+        pair = split_pair(symbol)
+    except ImportError:
+        return None
+    if pair is None or pair[0] not in fs.names or pair[1] not in fs.names:
+        return None
+    b, q = fs.names.index(pair[0]), fs.names.index(pair[1])
+    return np.asarray(fs.values[:, b] * fs.sd[b] - fs.values[:, q] * fs.sd[q], dtype=float)
 
 
 def factor_set(frame: Any) -> FactorSet | None:

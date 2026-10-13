@@ -916,6 +916,11 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             factor_load=(tuple(float(x) for x in fl.load) if fl is not None and fl.n >= 3
                          else ()),
             factor_resid_var=(float(fl.resid_var) if fl is not None and fl.n >= 3 else 0.0),
+            # A dark macro factor is carried, never dropped (audit #211 should-fix): the
+            # covariance floors this sleeve's pairs at its instrument's measured co-movement.
+            factor_unmeasured=tuple(getattr(fl, "unmeasured", ()) or ()) if fl is not None
+            else (),
+            inst_r=mctx.inst_r(parts[0]),
             # THE THREE SAMENESS CHANNELS (Tier-1 B13). Measured here because this is where the
             # sleeve's own trades are in hand: the input keys it reads, the UTC hours it actually
             # entered in, and the mechanism it declares. `_structured_corr` charges a pair that
@@ -975,7 +980,8 @@ class _MacroContext:
             from libs.portfolio import leg_factors
             self._leg_factors = leg_factors
             self.fs = leg_factors.factor_set(leg_factors.daily_factor_returns())
-            self.meta["factors"] = ({"status": "MEASURED", "note": self.fs.note,
+            self.meta["factors"] = ({"status": "PARTIAL" if self.fs.unmeasured else "MEASURED",
+                                     "note": self.fs.note,
                                      "names": list(self.fs.names),
                                      # a held/empty macro archive is named, never silent
                                      "macro": {m: {"status": "UNMEASURED", "why": why}
@@ -1016,6 +1022,16 @@ class _MacroContext:
             self.n_loaded += 1
             self.explained.append(float(fl.explained))
         return fl
+
+    def inst_r(self, symbol: str) -> tuple[float, ...]:
+        """The instrument's leg-built daily return on the factor calendar; empty when unknown."""
+        if self.fs is None or self._leg_factors is None:
+            return ()
+        try:
+            r = self._leg_factors.instrument_returns(self.fs, symbol)
+        except Exception:
+            return ()
+        return () if r is None else tuple(float(x) for x in r)
 
     def finish(self, n_sleeves: int) -> dict[str, Any]:
         f = dict(self.meta.get("factors") or {})

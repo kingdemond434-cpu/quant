@@ -329,7 +329,7 @@ def test_an_empty_macro_archive_reads_unmeasured_with_a_reason() -> None:
     assert fl.n == 500 and set(fl.used) == {"EUR", "USD"}       # the legs still load
 
 
-def test_an_all_nan_macro_column_is_unmeasured_and_does_not_void_the_legs() -> None:
+def test_one_all_nan_macro_column_is_unmeasured_while_the_other_macro_and_legs_measure() -> None:
     frame = _factor_frame()
     frame["d_vix"] = np.nan
     fs = leg_factors.factor_set(frame)
@@ -344,3 +344,22 @@ def test_a_full_macro_frame_claims_nothing_unmeasured() -> None:
     assert fs is not None and fs.unmeasured == {} and "UNMEASURED" not in fs.note
     fl = leg_factors.fit_loadings(np.zeros(500), _factor_frame().index, fs, "EURCHF")
     assert fl.unmeasured == () and "UNMEASURED" not in fl.why
+
+
+def test_a_short_span_macro_column_is_unmeasured_with_its_span_named() -> None:
+    frame = _factor_frame()
+    frame.iloc[: len(frame) - 20, frame.columns.get_loc("d_vix")] = np.nan
+    fs = leg_factors.factor_set(frame)
+    assert fs is not None and "d_vix" in fs.unmeasured
+    assert "covers 20 of" in fs.unmeasured["d_vix"]
+
+
+def test_instrument_returns_are_rebuilt_from_the_two_legs() -> None:
+    frame = _factor_frame()
+    fs = leg_factors.factor_set(frame)
+    assert fs is not None
+    r = leg_factors.instrument_returns(fs, "EURCHF")
+    assert r is not None
+    want = frame["EUR"].fillna(0).to_numpy() - frame["CHF"].fillna(0).to_numpy()
+    assert np.allclose(r, want)
+    assert leg_factors.instrument_returns(fs, "XAUUSD") is None

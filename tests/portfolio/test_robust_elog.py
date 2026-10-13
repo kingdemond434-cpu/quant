@@ -202,3 +202,37 @@ def test_world_population_respects_the_memory_budget() -> None:
     w = sample_worlds(ev, WorldConfig(n_worlds=256, n_rows=384, max_elements=200_000, seed=1))
     assert w.r.size <= 200_000
     assert "trimmed" in w.note
+
+
+# ------------------------------- audit #211 follow-up: an UNMEASURED macro factor is not a zero
+def _no_overlap(name: str, half: int, **kw: object) -> SleeveEvidence:
+    """A sleeve alive on one half of a 400-day calendar only, so no pair has a realised |corr|."""
+    r = np.full(400, np.nan)
+    sl = slice(0, 200) if half == 0 else slice(200, 400)
+    r[sl] = np.random.default_rng(half).normal(0.0, 1.0, 200)
+    return SleeveEvidence(name=name, daily_r=r, **kw)  # type: ignore[arg-type]
+
+
+def test_an_unmeasured_macro_pair_is_floored_at_its_instruments_co_movement() -> None:
+    from libs.portfolio.robust_elog import _corr_abs
+    rng = np.random.default_rng(7)
+    vix = rng.normal(0, 1, 500)
+    a = tuple(0.95 * vix + 0.3 * rng.normal(0, 1, 500))
+    b = tuple(0.95 * vix + 0.3 * rng.normal(0, 1, 500))
+    dark = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a,
+                        factor_unmeasured=("d_vix",)),
+            _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b,
+                        factor_unmeasured=("d_vix",))]
+    assert _corr_abs(dark)[0, 1] > 0.85            # the archive went dark; the legs did not
+    lit = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a),
+           _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b)]
+    assert _corr_abs(lit)[0, 1] == 0.0             # measured macro: nothing changes
+
+
+def test_an_unmeasured_pair_with_no_legs_falls_back_to_the_prior_never_zero() -> None:
+    from libs.portfolio.robust_elog import UNMEASURED_PAIR_CORR, _corr_abs, breadth_channels
+    ev = [_no_overlap("XAUUSD_x", 0, symbol="XAUUSD", family="f1", factor_unmeasured=("d_vix",)),
+          _no_overlap("US500_y", 1, symbol="US500", family="f2")]
+    assert _corr_abs(ev)[0, 1] == UNMEASURED_PAIR_CORR
+    bc = breadth_channels(ev)
+    assert bc["n_unmeasured_factor_pairs"] == 1 and bc["unresolved_pairs"] == 1

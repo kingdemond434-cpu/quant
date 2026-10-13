@@ -297,6 +297,26 @@ def measure_factor_floor(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     return {"verdict": UNMEASURED, "why": "needs the live ledger's factor exposures (box)"}
 
 
+def measure_unmeasured_factor_floor(r, alloc: dict, _fv: dict) -> dict[str, Any]:
+    """The covariance floor for pairs whose macro factor is UNMEASURED (audit #211 follow-up).
+
+    It REPLACES a zero (ignorance read as independence) with a measurement -- the instruments'
+    own co-movement, else the sleeves' realised |corr|, else the trade-time prior -- so it can
+    lower a fraction only where the zero had over-credited breadth. Its log-growth price needs
+    the true correlation the archive would have shown, so it stays UNMEASURED until the factor
+    archive is whole again; the census below says how many pairs it touched."""
+    bc = (alloc or {}).get("breadth_channels") or {}
+    n = bc.get("n_unmeasured_factor_pairs")
+    if not n:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0,
+                "why": "no pair carries an UNMEASURED macro factor on this pass"}
+    return {"verdict": UNMEASURED,
+            "why": (f"{n} pair(s) carry an UNMEASURED macro factor: "
+                    f"{bc.get('n_unmeasured_inst_floored', 0)} floored at instrument co-movement, "
+                    f"{bc.get('unresolved_pairs', 0)} at realised |corr| or the trade-time prior; "
+                    "priced once the archive returns and the true factor |corr| is known")}
+
+
 def measure_hazard_shrink(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     """The PRE-RETIREMENT SHRINK: the book scored with the hazard tilt against without it.
 
