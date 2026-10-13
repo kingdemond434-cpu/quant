@@ -178,7 +178,10 @@ def charge(census_dict: dict[str, Any], *, nominal: int = NOMINAL_CAMPAIGN_TRIAL
     fams = {row["family"]: FamilyCharge(
         str(row["family"]), int(row["n_nominal"]), float(row["n_effective"]),
         int(row.get("n_grid_cells") or 0), int(row.get("n_identities") or 0),
-        float(row.get("ratio") or 1.0), str(row.get("basis") or ""))
+        float(row.get("ratio") or 1.0), str(row.get("basis") or ""),
+        # the source's own selection, charged once (#: FamilyCharge.selection_trials). The merge
+        # resolution in fda104165 dropped it, so the re-read census reported 0 for every family.
+        int(row.get("selection_trials") or 0))
         for row in census_dict.get("by_family") or []}
     census = ChargeCensus(int(census_dict.get("n_nominal") or 0),
                           float(census_dict.get("n_effective") or 0.0),

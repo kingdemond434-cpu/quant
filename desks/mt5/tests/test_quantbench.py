@@ -16,6 +16,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
 for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
@@ -37,3 +39,37 @@ def test_no_historical_defect_has_returned() -> None:
     assert regressed == [], "\n".join(
         f"{r['id']}: {r.get('why')} ({r.get('lesson')})" for r in regressed)
     assert doc["counts"].get("PASS", 0) >= 1, "a bench where nothing could run proves nothing"
+
+
+def test_seal_rotation_still_rejects_any_other_promoter_bytes(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    old = qb.PROMOTER_SEAL_ROTATION
+    monkeypatch.setattr(qb, "PROMOTER_SEAL_ROTATION", {**old, "to": "0" * 64})
+    case = next(r for r in qb.cases() if r["id"] == "QB-002")
+    assert qb.probe_sealed_files(case["expect"])["verdict"] == "REGRESSED"
+
+
+def test_allocator_proof_rotation_rejects_any_other_bytes(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    old = qb.ALLOCATOR_PROOF_SEAL_ROTATION
+    monkeypatch.setattr(qb, "ALLOCATOR_PROOF_SEAL_ROTATION", {**old, "to": "0" * 64})
+    case = next(r for r in qb.cases() if r["id"] == "QB-002")
+    assert qb.probe_sealed_files(case["expect"])["verdict"] == "REGRESSED"
+
+
+def test_gauntlet_rotation_rejects_any_other_bytes(monkeypatch) -> None:
+    old = qb.GAUNTLET_SEAL_ROTATION
+    monkeypatch.setattr(qb, "GAUNTLET_SEAL_ROTATION", {**old, "to": "0" * 64})
+    case = next(r for r in qb.cases() if r["id"] == "QB-002")
+    assert qb.probe_sealed_files(case["expect"])["verdict"] == "REGRESSED"
+
+
+@pytest.mark.parametrize("rotation_name", ["PROMOTER_SEAL_ROTATION",
+                                           "ALLOCATOR_PROOF_SEAL_ROTATION",
+                                           "GAUNTLET_SEAL_ROTATION"])
+def test_seal_rotations_require_their_exact_signer(
+        monkeypatch: pytest.MonkeyPatch, rotation_name: str) -> None:
+    old = getattr(qb, rotation_name)
+    monkeypatch.setattr(qb, rotation_name, {**old, "signed_by": "unauthorized"})
+    case = next(r for r in qb.cases() if r["id"] == "QB-002")
+    assert qb.probe_sealed_files(case["expect"])["verdict"] == "REGRESSED"

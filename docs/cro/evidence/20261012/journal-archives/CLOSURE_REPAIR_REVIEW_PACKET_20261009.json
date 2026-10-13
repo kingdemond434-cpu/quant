@@ -1,0 +1,289 @@
+{
+  "at": "2026-10-09T05:14:53.056379+00:00",
+  "source_head": "fd950f32657fb9c7d36be3bbafae56dd3d900086",
+  "source_base": "a2ee157dc39ce4b68720279a7cdf43a3e34d8da0",
+  "source_branch": "codex/repair-closure-20261009",
+  "patch": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\quant-remaining-repairs-review.patch",
+  "patch_sha256": "1c5367ace0706fb27673c4b001d65f617ce0fac054ee14eb0d91a4cc1c8baef7",
+  "complete_base_to_working_tree_patch": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\quant-complete-closure-review.patch",
+  "complete_patch_sha256": "e78eae0a7a74f275848a8085b7ac05d15ce7c732a2c12515dd1b2c73eafd04c2",
+  "complete_patch_paths": [
+    "context/decision_journal.jsonl",
+    "desks/mt5/data/IMMUTABLE_MANIFEST.json",
+    "desks/mt5/mt5desk/engine.py",
+    "desks/mt5/mt5desk/gateway.py",
+    "desks/mt5/mt5desk/netting.py",
+    "desks/mt5/research/burn_in.py",
+    "desks/mt5/research/pf_allocator.py",
+    "desks/mt5/research/quantbench.py",
+    "desks/mt5/research/research_artifacts.py",
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/tests/conftest.py",
+    "desks/mt5/tests/test_entry_geometry_integrity.py",
+    "desks/mt5/tests/test_gateway_adapter.py",
+    "desks/mt5/tests/test_quantbench.py",
+    "desks/mt5/tests/test_release_identity.py",
+    "desks/mt5/tests/test_research_artifacts.py",
+    "desks/mt5/tests/test_reviewer_findings_2026_10_06.py",
+    "desks/mt5/tests/test_timeframe_identity.py",
+    "docs/cro/evidence/20261009/repair-closure.json",
+    "libs/validation/independent_replica.py",
+    "libs/validation/replay2.py",
+    "scripts/check_immutable_evaluator.py",
+    "scripts/run_law_gate.py",
+    "tests/conftest.py",
+    "tests/governance/test_law_gate_sparse_checkout.py",
+    "tests/scripts/test_check_credentials.py",
+    "tests/scripts/test_check_immutable_evaluator_wall.py"
+  ],
+  "source_hashes": {
+    "desks/mt5/research/burn_in.py": "6b91b5eff50af092f75a25190962f473e6e81acdfe0714bcf636b3aef423c2a5",
+    "desks/mt5/research/quantbench.py": "422152fb695339237040d2061d4827f1367e3c411fae5cedce01918ba0490d40",
+    "desks/mt5/research/research_artifacts.py": "a51e2cd77e41ff1fb6fd79e8d0f7e0f7f59019ea5f4df4582be60a03735e30c6",
+    "desks/mt5/tests/conftest.py": "d0166d4ef014020a439d83e703c15a2ca625e575f6811be824f804c72728a723",
+    "desks/mt5/tests/test_entry_geometry_integrity.py": "db646f4dba6c512a47df27139303f42e98d21b63ec782249c7f9f6b95ac16d6c",
+    "desks/mt5/tests/test_quantbench.py": "d8f937e51be8c1eaee56105535cec78dab7dbb2b6debc9a479d65adb41e597d7",
+    "desks/mt5/tests/test_research_artifacts.py": "823a147904ad20a14a7667511d98ba860797d81326ac9ec1d4d655f08a6c6d12",
+    "desks/mt5/tests/test_release_identity.py": "0cbf3804696aa303dc3e5f4e5a56fd8ef954b33a9c277e6489520d251dcb33c2",
+    "libs/validation/independent_replica.py": "3e7f72bf33102b59fb858e1bc3ce9b5780573953d05c21a2dc16bfb637d3f3a2",
+    "libs/validation/replay2.py": "e0c5e33d2a2467b3e3def14444627128fc05a2d9d9ea423cd387e8438a513038",
+    "scripts/check_immutable_evaluator.py": "3cda4b1e10d466ee7a272357bee441f6bb3d1a4029a0cc21119133d0cab77d6a",
+    "tests/conftest.py": "1746b8f8793c73de3e3c6fab70db1b0285bb7d223a626489b4ef2f94d9f8867d",
+    "tests/scripts/test_check_immutable_evaluator_wall.py": "8a85e9da77bcfb69a3df9fe58aa3d164228e07f47d46044052e9d909779bf979",
+    "tests/scripts/test_check_credentials.py": "d5fd3eec3f8297640b0786e2427ecb375e5d89059d96b9c397eaddfd3b29f9d2",
+    "desks/mt5/data/IMMUTABLE_MANIFEST.json": "b8b2556abee89232591ebc2b91bc424106468008e68ed1b4b32910476b721a49"
+  },
+  "append_only_prefixes_unchanged": true,
+  "vintage_unchanged": true,
+  "record_seals": 194,
+  "library_changes_committed": false,
+  "published": false,
+  "deployed": false,
+  "tests": {
+    "closure-final-seal-check-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "34",
+        "time": "41.093",
+        "timestamp": "2026-10-09T06:43:18.662166+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "closure-root-crash-repro-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "35",
+        "time": "48.111",
+        "timestamp": "2026-10-09T06:08:46.138100+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "closure-desk-final-repair-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "33",
+        "time": "248.584",
+        "timestamp": "2026-10-09T07:02:40.560492+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "closure-smoke-covered-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "19.485",
+        "timestamp": "2026-10-09T07:08:05.763208+02:00",
+        "hostname": "vmi3571445"
+      }
+    ]
+  },
+  "full_gate": {
+    "status": "RED",
+    "root": [
+      {
+        "name": "pytest",
+        "errors": "2",
+        "failures": "0",
+        "skipped": "50",
+        "tests": "10352",
+        "time": "1750.505",
+        "timestamp": "2026-10-09T05:33:34.845206+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "desk": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "9",
+        "skipped": "25",
+        "tests": "11093",
+        "time": "2574.823",
+        "timestamp": "2026-10-09T06:02:57.545084+02:00",
+        "hostname": "vmi3571445"
+      }
+    ],
+    "root_note": "Incomplete xdist run: two worker crashes, zero recorded assertion failures; not a full pass.",
+    "desk_note": "Nine failures: eight path-containment failures repaired, one instrumented runtime benchmark separated from tracing and rechecked; original red evidence retained.",
+    "global_coverage_percent": 49.29,
+    "global_coverage_floor_percent": 86.48,
+    "money_path_floor": "PASS",
+    "floors_lowered": false,
+    "root_retry": "AUTOMATIC_APPROVAL_REVIEW_REJECTED: blocked by policy; no detailed reason supplied",
+    "retry_via_alternate_route": false
+  },
+  "smoke": {
+    "ok": false,
+    "sha": "fd950f32657fb9c7d36be3bbafae56dd3d900086",
+    "release_sha": "373fe2baf68f4a79ba3cc867c3c6edf8480d71b0",
+    "failures": [
+      {
+        "check": "identity",
+        "why": "REFUSED: running fd950f32657f carries 35 path(s) the sealed release 373fe2baf68f never named: ['desks/mt5/mt5desk/engine.py', 'desks/mt5/mt5desk/family_call.py', 'desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/netting.py', 'desks/mt5/prop/e8_executor.py', 'desks/mt5/research/hourly_cycle.py']; money path drifted on disk: ['desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/engine.py', 'desks/mt5/mt5desk/netting.py', 'desks/mt5/research/pf_allocator.py', 'libs/portfolio/robust_elog.py', 'libs/portfolio/allocator_proof.py']; the signed judge manifest on disk is not the one the release sealed"
+      }
+    ],
+    "skipped": [],
+    "checks": {
+      "compile": {
+        "ok": true,
+        "n": 16
+      },
+      "imports": {
+        "ok": true,
+        "n": 16,
+        "skipped": 0
+      },
+      "identity": {
+        "ok": false,
+        "running_sha": "fd950f32657fb9c7d36be3bbafae56dd3d900086",
+        "release_sha": "373fe2baf68f4a79ba3cc867c3c6edf8480d71b0",
+        "reason": "running fd950f32657f carries 35 path(s) the sealed release 373fe2baf68f never named: ['desks/mt5/mt5desk/engine.py', 'desks/mt5/mt5desk/family_call.py', 'desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/netting.py', 'desks/mt5/prop/e8_executor.py', 'desks/mt5/research/hourly_cycle.py']; money path drifted on disk: ['desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/engine.py', 'desks/mt5/mt5desk/netting.py', 'desks/mt5/research/pf_allocator.py', 'libs/portfolio/robust_elog.py', 'libs/portfolio/allocator_proof.py']; the signed judge manifest on disk is not the one the release sealed",
+        "age_h": 22.566,
+        "stale": false,
+        "measured": true,
+        "stale_refuses": false,
+        "source": "git",
+        "release_id": "446a9c62e04d",
+        "changed_paths": [
+          "desks/mt5/mt5desk/engine.py",
+          "desks/mt5/mt5desk/family_call.py",
+          "desks/mt5/mt5desk/gateway.py",
+          "desks/mt5/mt5desk/netting.py",
+          "desks/mt5/prop/e8_executor.py",
+          "desks/mt5/research/hourly_cycle.py",
+          "desks/mt5/research/judging_throughput.py",
+          "desks/mt5/research/pf_allocator.py",
+          "desks/mt5/research/portfolio_projection.py",
+          "desks/mt5/research/quantbench.py",
+          "desks/mt5/research/run_hunt12.py",
+          "desks/mt5/scripts/external_gauntlet.py",
+          "desks/mt5/scripts/install_e8_tasks.ps1",
+          "desks/mt5/scripts/install_state_vector_task.ps1",
+          "desks/mt5/scripts/run_sharded_gauntlet.py",
+          "desks/mt5/tests/test_e8_signal_clock.py",
+          "desks/mt5/tests/test_entry_geometry_integrity.py",
+          "desks/mt5/tests/test_family_execution_reference.py",
+          "desks/mt5/tests/test_gateway_adapter.py",
+          "desks/mt5/tests/test_hourly_cycle_leg_rotation.py",
+          "desks/mt5/tests/test_hunt12_clock.py",
+          "desks/mt5/tests/test_judging_throughput.py",
+          "desks/mt5/tests/test_prereg_join.py",
+          "desks/mt5/tests/test_process_health_scheduler.py",
+          "desks/mt5/tests/test_quantbench.py",
+          "desks/mt5/tests/test_reviewer_findings_2026_10_06.py",
+          "desks/mt5/tests/test_run_sharded_gauntlet.py",
+          "desks/mt5/tests/test_timeframe_identity.py",
+          "libs/portfolio/allocator_proof.py",
+          "libs/portfolio/robust_elog.py",
+          "libs/research/prereg_join.py",
+          "ops/organ_contract.py",
+          "scripts/run_law_gate.py",
+          "tests/governance/test_law_gate_sparse_checkout.py",
+          "tests/portfolio/test_allocator_authority.py"
+        ],
+        "drift": [
+          "desks/mt5/mt5desk/gateway.py",
+          "desks/mt5/mt5desk/engine.py",
+          "desks/mt5/mt5desk/netting.py",
+          "desks/mt5/research/pf_allocator.py",
+          "libs/portfolio/robust_elog.py",
+          "libs/portfolio/allocator_proof.py"
+        ],
+        "report": [],
+        "at": "2026-10-09T05:09:23+00:00",
+        "tested_sha": "373fe2baf68f4a79ba3cc867c3c6edf8480d71b0",
+        "tested_gates": "UNMEASURED",
+        "allocator_certificate": "UNMEASURED",
+        "ci_run_id": "UNMEASURED",
+        "allows_new_risk": false,
+        "verdict": "REFUSED"
+      },
+      "immutable": {
+        "ok": true,
+        "breaches": [],
+        "crlf_only": [],
+        "n_signed": 19
+      }
+    },
+    "elapsed_s": 13.181,
+    "at": "2026-10-09T05:09:24+00:00"
+  },
+  "delivery_authority": {
+    "at": "2026-10-09T04:00:06.042679+00:00",
+    "authenticated_connector_login": "kingdemond434-cpu",
+    "repository": "kingdemond434-cpu/quant",
+    "read_permission_probe": {
+      "tool": "github_get_repo_collaborator_permission",
+      "http_status": 403,
+      "error": "Resource not accessible by integration"
+    },
+    "previous_pr_create": {
+      "http_status": 403,
+      "error": "Resource not accessible by integration"
+    },
+    "previous_pr_ci_shell_action": {
+      "result": "automatic approval review rejected",
+      "reason": "blocked by policy",
+      "detailed_reason": null
+    },
+    "write_authority_change_evidenced": false,
+    "denied_mutation_retried": false,
+    "required_unblock": "Legitimate GitHub integration PR/workflow write access and clearance of separate automatic-review policy refusal; exact green full CI plus canonical integration/release/adopter receipts.",
+    "supported_plugin_inspection": {
+      "at": "2026-10-09T04:36:22.759598+00:00",
+      "plugin": "GitHub",
+      "id": "plugin_connector_1p_1a69035c238881919c4190932b2df699",
+      "installed": true,
+      "status": "ENABLED",
+      "oauth_or_repository_admin_grant_capability": false,
+      "note": "Available plugin permission tools manage ChatGPT approval preferences, explicitly not GitHub OAuth/admin scopes; no permission setting changed, no duplicate installation suggested."
+    },
+    "full_root_validation_action": {
+      "state": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+      "result": "automatic approval review rejected command",
+      "reason": "blocked by policy; no detailed reason supplied",
+      "retried_in_alternate_form": false,
+      "required_unblock": "Legitimate clearance of the automatic policy refusal for the exact full-root validation action; then all required full checks before committing library changes."
+    }
+  },
+  "excluded_private_fixture_state": [
+    "desks/mt5/data/broker_clock.json",
+    "desks/mt5/data/compute_ledger.jsonl",
+    "desks/mt5/data/events.jsonl",
+    "desks/mt5/data/release_identity.json"
+  ],
+  "generated_high_water": "Preserved separately; money-path ratchet rose in original full gate. Not committed or deployed.",
+  "generated_high_water_path": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\closure-generated-coverage-high-water.json"
+}
