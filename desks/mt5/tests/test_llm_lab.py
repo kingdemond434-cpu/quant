@@ -46,7 +46,8 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                       "DEBT": "conversion_debt.json", "COVERAGE": "coverage.json",
                       "ONTOLOGY": "ontology.json", "MODELS": "model_registry.json",
                       "DATA_REQUESTS": "data_requests.jsonl", "JEV_JOBS": "jev_jobs.jsonl",
-                      "CALLS": "calls.json", "MODEL_CUTOFFS": "model_cutoffs.json"}.items():
+                      "CALLS": "calls.json", "MODEL_CUTOFFS": "model_cutoffs.json",
+                      "ROTATION": "model_rotation.json"}.items():
         monkeypatch.setattr(lab, name, sd / rel if rel else sd)
     monkeypatch.setattr(lab, "DONATE_DIR", tmp_path / "intelligence" / "llm_lab")
     monkeypatch.setattr(lab, "REPORT", tmp_path / "reports" / "LLM_LAB.json")
@@ -437,3 +438,43 @@ def test_every_registered_model_gets_a_call_every_pass(state: Path,
     assert cov["models_available"] == 20 and cov["models_answered"] == 20
     assert all(cov["models"][k]["state_this_cycle"] == "ANSWERED" for k in keys)
     assert doc["model_coverage"]["models_answered"] == 20
+
+
+def test_the_measured_openrouter_limit_is_spread_and_models_rotate(
+        state: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """With the account's limit measured, each pass spends its even share of what is left today
+    and models are asked least-recently first; the rest are ROTATING, not red, inside the window."""
+    from datetime import UTC, datetime
+
+    from libs.ops import openrouter_guard
+    openrouter_guard.key_info(refresh=True, fetch=lambda u: {"data": {"is_free_tier": False}})
+    share = lab.openrouter_pass_share(datetime(2026, 10, 13, 12, tzinfo=UTC))
+    assert share["account_daily_limit"] == 1000 and share["per_pass"] == 500 // 12
+
+    keys = [f"openrouter_free:m{i:02d}:free" for i in range(60)]
+    lab._write_json(lab.MODELS, {k: {"provider": "openrouter_free", "model": k.split(":", 1)[1],
+                                     "status": "REGISTERED", "asked": 0, "replies": 0}
+                                 for k in keys})
+    hinted: list[str] = []
+
+    def fake_call(ask: lab.Ask, n: int, timeout: float) -> list[_Prop]:
+        hinted.append(ask.model)
+        return [_Prop({"mechanism": "a stub mechanism long enough", "falsifier": "x",
+                       "symbols": ["EURUSD"], "family": "NONE"},
+                      provenance=_Prov(model=ask.model))]
+
+    monkeypatch.setattr(lab, "openrouter_pass_share", lambda now=None: {"per_pass": 25})
+    monkeypatch.setattr(lab, "_seat", lambda: _Seat())
+    monkeypatch.setattr(lab, "_call", fake_call)
+    monkeypatch.setattr(lab, "hunt_models", lambda registry, budget_s=30.0: [])
+    lab.run(budget_s=600, max_calls=8, seed=1, workers=2)
+    first = {m for m in hinted if m}
+    assert 0 < len(hinted) <= 25
+    cov = json.loads((state / "reports" / "LLM_COVERAGE.json").read_text())
+    assert cov["rotation_window_h"] == 4
+    assert not [r for r in cov["red"] if r.startswith("model ")]
+    assert cov["models_rotating"] == 60 - cov["models_answered"]
+    hinted.clear()
+    lab.run(budget_s=600, max_calls=8, seed=2, workers=2)
+    assert not (first & {m for m in hinted if m}) or len(first) + len(set(hinted)) > 60, \
+        "the second pass reaches models the first left out before repeating any"

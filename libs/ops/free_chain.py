@@ -434,7 +434,14 @@ def chat(system: str, user: str, *, max_tokens: int = 1600, temperature: float =
         if (p.name == hint_p and hint_m and not st.cooled(p.name)
                 and not (p.daily_cap and st.calls_today(p.name) >= p.daily_cap)
                 and not (p.tier == "local" and local_blocked())):
-            plan.append((p, hint_m))
+            # A HINT IS ONLY A PREFERENCE AMONG FREE MODELS (audit must-fix 3, 2026-10-13): it is
+            # tried only when the provider's own free-filtered catalogue lists it, so a caller can
+            # never name its way past the free filter to a paid id.
+            listed, _ = _cached_models(st, p)
+            if hint_m in listed:
+                plan.append((p, hint_m))
+            else:
+                tried.append(f"{p.name}:{hint_m}: hint not in the free catalogue")
     for p in provs:
         if p.tier == "local":
             why = local_blocked()

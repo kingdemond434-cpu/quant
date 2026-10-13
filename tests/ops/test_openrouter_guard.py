@@ -158,3 +158,27 @@ def test_budgets_scale_with_the_measured_limit(tmp_path: Path,
     g.key_info(refresh=True, fetch=lambda u: {"data": {"is_free_tier": False}})
     assert 900 < llm_seat.free_daily_max() < 1000
     assert next(p for p in fc.providers() if p.name == "openrouter_free").daily_cap == 1000
+
+
+def test_a_model_hint_cannot_skip_the_free_filter(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit must-fix 3: a hinted model is tried only if the free catalogue lists it."""
+    monkeypatch.setattr(fc, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(fc, "CONFIG", tmp_path / "providers.json")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    monkeypatch.setenv("QUANT_LOCAL_LLM_URLS", "")
+    sent: list[str] = []
+
+    def fake(url: str, key: str, payload: Any, timeout: float) -> tuple[dict, str | None]:
+        if url.endswith("/models"):
+            return {"data": [{"id": "openai/gpt-6", "pricing": {"prompt": "1",
+                                                                "completion": "1"}},
+                             {"id": "qwen/qwen3:free"}]}, None
+        sent.append(str(payload.get("model")))
+        return {"choices": [{"message": {"content": "ok"}}]}, None
+
+    monkeypatch.setattr(fc, "_request", fake)
+    monkeypatch.setattr(fc, "providers", lambda: [p for p in fc.DEFAULTS
+                                                  if p.name == "openrouter_free"])
+    reply = fc.chat("s", "u", model_hint="openrouter_free:openai/gpt-6", timeout=5)
+    assert "openai/gpt-6" not in sent and reply.model == "qwen/qwen3:free"

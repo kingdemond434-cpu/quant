@@ -856,11 +856,20 @@ DAILY_ROLES = ("Q", "T")
 def coverage_report(models: dict[str, Any], pass_cov: dict[str, dict[str, Any]],
                     tallies: dict[str, dict[str, Any]], role_report: dict[str, Any],
                     cb_tone: dict[str, Any], credit: dict[str, Any], chain: dict[str, Any], *,
-                    seat_on: bool, dry_run: bool) -> dict[str, Any]:
+                    seat_on: bool, dry_run: bool, rotation: dict[str, str] | None = None,
+                    window_h: int | None = None, budget_bound: bool = False) -> dict[str, Any]:
     """EVERY MODEL, EVERY LAB, EVERY ROLE PRODUCES EVERY CYCLE (principal 2026-10-13). RED names
     each one that did not, and why: never asked (cap), asked and silent, or the chain fell
-    through to another model (rate limit or outage on that one)."""
+    through to another model (rate limit or outage on that one).
+
+    THE ACCOUNT'S DAILY LIMIT IS SPREAD, NOT IGNORED. When OpenRouter's measured allowance cannot
+    give every free model a call every hour, the lab rotates least-recently-asked first and the
+    cycle is the rotation window (`window_h`). A model not asked this pass is ROTATING, not red,
+    while its last ask is inside that window, or while it has never been asked and the pass spent
+    its whole share (`budget_bound`); past the window it is red."""
     red: list[str] = []
+    rotation = rotation or {}
+    now_dt = datetime.now(UTC)
     yields = (credit or {}).get("models") or {}
     rows: dict[str, Any] = {}
     available = sorted(k for k, r in models.items() if r.get("status") == "REGISTERED")
@@ -871,6 +880,11 @@ def coverage_report(models: dict[str, Any], pass_cov: dict[str, dict[str, Any]],
         state = ("ANSWERED" if pc.get("answered") else
                  "FELL_THROUGH" if pc.get("fell_through_to") else
                  "SILENT" if pc.get("asked") else "NOT_ASKED")
+        if state == "NOT_ASKED" and window_h:
+            last = _parse_ts(rotation.get(k))
+            if (last is not None and now_dt - last <= timedelta(hours=window_h)) or (
+                    last is None and budget_bound):
+                state = "ROTATING"
         rows[k] = {"state_this_cycle": state, "asked_total": int(r.get("asked", 0)),
                    "replies_total": int(r.get("replies", 0)),
                    "accepted_total": int(r.get("accepted", 0)),
@@ -879,7 +893,7 @@ def coverage_report(models: dict[str, Any], pass_cov: dict[str, dict[str, Any]],
                    "certified": int(y.get("certified", 0)), "certified_keff": y.get("keff", 0.0),
                    "keff_per_call": y.get("keff_per_call", 0.0),
                    "fell_through_to": pc.get("fell_through_to") or []}
-        if state != "ANSWERED":
+        if state not in ("ANSWERED", "ROTATING"):
             red.append(f"model {k}: {state}")
     for k, r in models.items():
         if r.get("status") in ("DELISTED", "REVIEW_PENDING") and k not in rows:
@@ -919,6 +933,17 @@ def coverage_report(models: dict[str, Any], pass_cov: dict[str, dict[str, Any]],
             "red": red[:200], "models_available": len(available),
             "models_answered": sum(1 for k in available if rows[k]["state_this_cycle"] ==
                                    "ANSWERED"),
+            "models_rotating": sum(1 for k in available if rows[k]["state_this_cycle"] ==
+                                   "ROTATING"),
+            "rotation_window_h": window_h or UNMEASURED,
             "models": rows, "labs": labs, "roles": roles,
             "chain": {k: (chain or {}).get(k) for k in ("verdict", "cloud_usable",
                                                          "skipped_no_key")}}
+
+
+def _parse_ts(raw: Any) -> datetime | None:
+    try:
+        dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)

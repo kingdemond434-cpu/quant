@@ -121,6 +121,7 @@ MODELS = STATE_DIR / "model_registry.json"
 DATA_REQUESTS = STATE_DIR / "data_requests.jsonl"
 JEV_JOBS = STATE_DIR / "jev_jobs.jsonl"
 CALLS = STATE_DIR / "calls.json"
+ROTATION = STATE_DIR / "model_rotation.json"
 
 ORGAN = "llm_lab"
 UNMEASURED = "UNMEASURED"
@@ -1136,6 +1137,32 @@ def prioritised(rng: random.Random, credit: dict[str, Any] | None = None) -> lis
     return first + [LAB_BY_KEY[k] for k in roles.thompson(rows, sorted(rest), rng)]
 
 
+def openrouter_pass_share(now: datetime | None = None) -> dict[str, Any]:
+    """This pass's share of OpenRouter's MEASURED daily allowance, spread over the hours left.
+
+    The account's limit is read from its /key endpoint (50 a day without credit, 1,000 with).
+    The lab takes QUANT_LLM_LAB_OR_SHARE of it (default half: the deepening worker and the
+    seats draw on the same allowance) and divides what is left today by the UTC hours left, so
+    the day's requests land evenly across every hourly pass rather than in the first ones.
+    `{}` while the limit is UNMEASURED: the pass then runs on the older call caps.
+    """
+    from libs.ops import openrouter_guard
+    lim = openrouter_guard.daily_limit(cached_only=True)
+    if not lim:
+        return {}
+    try:
+        share = min(1.0, max(0.0, float(os.environ.get("QUANT_LLM_LAB_OR_SHARE", "0.5"))))
+    except ValueError:
+        share = 0.5
+    t = now or datetime.now(UTC)
+    lab_day = int(lim * share)
+    used = int((_read_json(CALLS, {}) or {}).get(t.strftime("%Y-%m-%d"), 0))
+    hours_left = max(1, 24 - t.hour)
+    per_pass = max(0, lab_day - used) // hours_left
+    return {"account_daily_limit": lim, "lab_share": share, "lab_daily": lab_day,
+            "lab_used_today": used, "hours_left": hours_left, "per_pass": per_pass}
+
+
 def _calls_left(daily_cap: int) -> int:
     doc = _read_json(CALLS, {}) or {}
     day = datetime.now(UTC).strftime("%Y-%m-%d")
@@ -1491,6 +1518,12 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     # coverage report, never silently skipped.
     n_registered = sum(1 for r in models.values() if r.get("status") == "REGISTERED")
     calls_budget = min(max(max_calls, n_registered + len(INVENTORS) + 6), _calls_left(daily_cap))
+    # ...unless OpenRouter's MEASURED allowance says otherwise: then the pass spends exactly its
+    # even share of the day, and models rotate least-recently-asked first inside it.
+    share = openrouter_pass_share() if seat_on and not dry_run else {}
+    if share:
+        calls_budget = min(int(share["per_pass"]), _calls_left(daily_cap))
+    rotation: dict[str, str] = _read_json(ROTATION, {}) or {}
 
     def _go(ask: Ask) -> tuple[Ask, list[Any]]:
         left = budget_s - (time.time() - started)
@@ -1562,8 +1595,15 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
 
     # MODEL COVERAGE: every registered model the labs' draws left out gets its own ask, labs in
     # rotation, so each free model produces on every cycle and earns (or fails to earn) credit.
-    uncovered = sorted(k for k, r in models.items()
-                       if r.get("status") == "REGISTERED" and k not in used_models)
+    registered = [k for k, r in models.items() if r.get("status") == "REGISTERED"]
+    # Least recently asked first (never-asked before all), so a capped pass still reaches every
+    # model within the rotation window; any share left after one call each goes round again.
+    uncovered = sorted((k for k in registered if k not in used_models),
+                       key=lambda k: (str(rotation.get(k) or ""), k))
+    if share and registered:
+        spare = calls_budget - calls_made - len(asks) - len(uncovered)
+        again = sorted(registered, key=lambda k: (str(rotation.get(k) or ""), k))
+        uncovered += [again[i % len(again)] for i in range(max(0, spare))]
     for i, mkey in enumerate(uncovered):
         lab = order[i % len(order)]
         if len(asks) >= calls_budget - calls_made:
@@ -1710,9 +1750,19 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         credit = roles.verdict_loop(VERDICTS, DONATE_DIR, pairs[:calls_made] if calls_made else [],
                                     STATE_DIR / "verdict_credit.json")
         roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
+    now_iso = _now()
+    for mkey in pass_cov:
+        rotation[mkey] = now_iso
+    per_pass = int(share.get("per_pass") or 0) if share else 0
+    window_h = (-(-len(registered) // per_pass) + 1) if per_pass else None
+    if not dry_run:
+        _write_json(ROTATION, rotation)
     coverage = roles.coverage_report(models, pass_cov, {k: t.row() for k, t in tallies.items()},
                                      role_report, cb_tone, credit, chain_status,
-                                     seat_on=seat_on, dry_run=dry_run)
+                                     seat_on=seat_on, dry_run=dry_run, rotation=rotation,
+                                     window_h=window_h,
+                                     budget_bound=bool(share) and calls_made >= calls_budget)
+    coverage["openrouter_share"] = share or UNMEASURED
     if not dry_run:
         _write_json(STATE_DIR / "model_yield.json", coverage["models"])
         _write_json(REPORT.parent / "LLM_COVERAGE.json", coverage)
