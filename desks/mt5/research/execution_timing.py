@@ -8,10 +8,14 @@ has the lowest measured spread, and what does waiting for that minute cost in fo
               price via the registry's tick_size), in R. One side of the round trip per leg.
     drift(m)  the mean signed move (sleeve direction) from offset 0 to offset m, in R, across the
               same days. Entering late FORGOES it; exiting late EARNS it.
-    lift(m)   cost(0) - cost(m) - max(0, adverse drift(m) + 2 SE), adverse = forgone on entry,
+    lift(m)   saving(m) - max(0, adverse drift(m)), per paired day; adverse = forgone on entry,
               given back on exit. Favourable drift is credited at zero.
 
-A minute is RECOMMENDED only when that conservative lift is positive; otherwise KEEP_CURRENT.
+A minute is RECOMMENDED only when the LOWER confidence bound of the paired saving, minus the
+UPPER bound of adverse drift, is positive, both at a Bonferroni z over every candidate minute
+(the minute is an argmin over up to 59 offsets; its in-sample saving is otherwise optimistic).
+A leg whose fill hour is not fixed (continuous selector, undeclared exit hour) is UNMEASURED:
+pricing it on an all-hours pooled spread credits other hours' costs to this fill.
 A cheaper but later fill that gives the edge back is reported as net worse, which is the
 point of measuring the drift at all.
 
@@ -20,7 +24,7 @@ WHAT IT WILL NOT DO:
     offsets inside the first hour after the signal bar closes, which is the hour the gateway
     already places in.
   * It never touches the gateway. Report only: `desks/mt5/reports/EXECUTION_TIMING.json`.
-  * It never invents a minute surface. Only sub-hour bars on disk (M1 > M5 > M15) are read; a
+  * It never invents a minute surface. Only sub-hour bars on disk (M1 > M5 > M15 > M30) are read; a
     symbol with H1 bars alone is UNMEASURED, because an H1 bar carries one spread stamp an hour.
   * A resting stop entry (session_range_breakout) fires where PRICE reaches the level, so its
     entry minute is NOT_SELECTABLE; its exit is still priced.
@@ -54,7 +58,7 @@ BARS_REL = "desks/mt5/data/universe"
 OUT_REL = "desks/mt5/reports/EXECUTION_TIMING.json"
 
 #: Finest first. H1 is deliberately absent: one stamp an hour is not a minute surface.
-SUBHOUR = (("M1", 1), ("M5", 5), ("M15", 15))
+SUBHOUR = (("M1", 1), ("M5", 5), ("M15", 15), ("M30", 30))
 #: Days an offset must be observed on before its median or drift is read.
 MIN_DAYS = 20
 #: Families whose entry is a resting stop: the fill minute is price's choice, not ours.
@@ -127,137 +131,173 @@ def r_unit(root: Path, symbol: str) -> float | None:
     return med if math.isfinite(med) and med > 0 else None
 
 
-def minute_profile(frame: Any, step: int, hour: int | None, sign: int,
+def _z_one_sided(alpha: float) -> float:
+    """Upper-tail standard normal quantile by bisection on erfc (stdlib only)."""
+    lo, hi = 0.0, 10.0
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if 0.5 * math.erfc(mid / math.sqrt(2.0)) > alpha:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def _mean_se(values: list[float]) -> tuple[float, float]:
+    n = len(values)
+    mean = sum(values) / n
+    var = sum((v - mean) ** 2 for v in values) / (n - 1) if n > 1 else 0.0
+    return mean, math.sqrt(var / n)
+
+
+def minute_profile(frame: Any, step: int, hour: int, sign: int,
                    tick: float, r: float) -> dict[str, Any]:
-    """Per offset inside the placing hour: half-spread cost and signed drift from offset 0, in R."""
+    """Per offset inside the placing hour: PAIRED per-day half-spread saving against offset 0
+    and signed drift from offset 0, both in R. One row per day is one trade opportunity: a
+    windowed sleeve places at most once a day in its hour, so `n_trades` counts paired days in
+    THAT hour, never bars pooled over other hours."""
     import pandas as pd
     idx = pd.DatetimeIndex(frame.index)
     df = pd.DataFrame({"open": frame["open"].to_numpy(float),
                        "spread": frame["spread"].to_numpy(float),
                        "anchor": idx.floor("h"), "offset": idx.minute}, index=idx)
-    if hour is not None:
-        df = df[idx.hour == hour]
+    df = df[idx.hour == hour]
     if df.empty:
         return {"offsets": [], "why": "no sub-hour bars in the placing hour"}
-    base = df[df["offset"] == 0].set_index("anchor")["open"]
-    rows = []
+    base = df[df["offset"] == 0].drop_duplicates("anchor").set_index("anchor")
+    rows: list[dict[str, Any]] = []
     for off in range(0, 60, step):
-        cell = df[df["offset"] == off]
-        n = len(cell)
+        cell = df[df["offset"] == off].drop_duplicates("anchor").set_index("anchor")
+        j = cell[["open", "spread"]].join(base[["open", "spread"]], rsuffix="0", how="inner")
+        n = len(j)
         if n < MIN_DAYS:
-            rows.append({"offset_min": off, "n": n, "status": UNMEASURED})
+            rows.append({"offset_min": off, "n_trades": n, "status": UNMEASURED})
             continue
-        # EXPECTED cost is the mean: a minute whose median ties its neighbours can still carry
-        # a fatter tail, and the tail is paid on the trades that land in it.
-        cost = 0.5 * float(cell["spread"].mean()) * tick / r
-        row: dict[str, Any] = {"offset_min": off, "n": n, "status": "MEASURED",
-                               "spread_mean_pts": round(float(cell["spread"].mean()), 4),
-                               "spread_p50_pts": float(cell["spread"].median()),
-                               "spread_p90_pts": float(cell["spread"].quantile(0.9)),
-                               "half_spread_R": round(cost, 6)}
+        saving = (0.5 * (j["spread0"] - j["spread"]) * tick / r).tolist()
+        row: dict[str, Any] = {"offset_min": off, "n_trades": n, "status": "MEASURED",
+                               "spread_mean_pts": round(float(j["spread"].mean()), 4),
+                               "spread_p50_pts": float(j["spread"].median()),
+                               "spread_p90_pts": float(j["spread"].quantile(0.9)),
+                               "half_spread_R": round(0.5 * float(j["spread"].mean()) * tick / r,
+                                                      6),
+                               "_saving": saving}
         if sign:
-            joined = cell.set_index("anchor")["open"].to_frame("p").join(base.rename("p0"),
-                                                                          how="inner")
-            mv = sign * (joined["p"] - joined["p0"]) / r
-            if len(mv) >= MIN_DAYS:
-                row["drift_R"] = round(float(mv.mean()), 6)
-                row["drift_se_R"] = round(float(mv.std(ddof=1) / math.sqrt(len(mv))), 6)
+            row["_drift"] = (sign * (j["open"] - j["open0"]) / r).tolist()
+            m, se = _mean_se(row["_drift"])
+            row["drift_R"], row["drift_se_R"] = round(m, 6), round(se, 6)
         rows.append(row)
     return {"offsets": rows}
 
 
-def choose(rows: list[dict[str, Any]], leg: str) -> dict[str, Any]:
-    """Current fill (offset 0) against the best net minute in the window."""
+def choose(rows: list[dict[str, Any]], leg: str, alpha: float = 0.05) -> dict[str, Any]:
+    """Current fill (offset 0) against the best net minute, with the selection over every
+    candidate minute paid for: each minute's bound uses a Bonferroni z at alpha / k.
+
+        lift      = mean(saving) - max(0, mean(adverse drift))
+        lift_lcb  = LCB(saving)  - max(0, UCB(adverse drift))
+        lift_ucb  = UCB(saving)  - max(0, LCB(adverse drift))
+
+    RECOMMEND only when lift_lcb > 0. Favourable drift is credited at zero: harvesting an
+    unconditional drift is a new directional bet, not cheaper execution of this signal."""
     measured = [r for r in rows if r.get("status") == "MEASURED"]
     cur = next((r for r in measured if r["offset_min"] == 0), None)
     if cur is None:
         return {"verdict": UNMEASURED, "why": f"offset 0 has fewer than {MIN_DAYS} days"}
+    cands = [r for r in measured if r is not cur]
     cheapest = min(measured, key=lambda r: r["half_spread_R"])
     out: dict[str, Any] = {
         "current_minute": 0, "current_cost_R": cur["half_spread_R"],
         "cheapest_minute": cheapest["offset_min"], "cheapest_cost_R": cheapest["half_spread_R"],
-        "gross_saving_R": round(cur["half_spread_R"] - cheapest["half_spread_R"], 6)}
-    if not all("drift_R" in r for r in measured):
+        "gross_saving_R": round(cur["half_spread_R"] - cheapest["half_spread_R"], 6),
+        "n_candidates": len(cands), "alpha_one_sided": alpha,
+        "selection_correction": "bonferroni"}
+    if not cands:
+        out.update(verdict=KEEP, best_minute=0, lift_R_per_trade=0.0,
+                   lift_ci_R=[0.0, 0.0], n_trades=cur["n_trades"])
+        return out
+    if not all("_drift" in r for r in measured):
         out.update(verdict=UNMEASURED, why="drift not measurable (direction unknown or thin)")
         return out
+    z = _z_one_sided(alpha / len(cands))
     sgn = -1.0 if leg == "entry" else 1.0
-    best, best_lift = cur, 0.0
-    for r in measured:
-        saving = cur["half_spread_R"] - r["half_spread_R"]
-        # Only a COST saving earns a minute. Drift is charged at its upper 2-SE bound when it is
-        # adverse and credited at ZERO when it is favourable: harvesting an unconditional drift
-        # is a new directional bet, not cheaper execution of this signal.
-        adverse = max(0.0, -sgn * r["drift_R"] + 2.0 * r["drift_se_R"])
-        lift = saving - adverse
-        if saving > 0 and lift > best_lift:
-            best, best_lift = r, lift
-    out.update(best_minute=best["offset_min"], best_cost_R=best["half_spread_R"],
-               drift_at_best_R=best["drift_R"], lift_R_per_trade=round(best_lift, 6),
-               edge_decay_R_at_cheapest=cheapest["drift_R"],
-               verdict=RECOMMEND if best is not cur else KEEP)
+    best: dict[str, Any] | None = None
+    for r in cands:
+        s_m, s_se = _mean_se(r["_saving"])
+        d_m, d_se = _mean_se([-sgn * d for d in r["_drift"]])   # adverse drift, signed
+        lift = s_m - max(0.0, d_m)
+        lcb = (s_m - z * s_se) - max(0.0, d_m + z * d_se)
+        ucb = (s_m + z * s_se) - max(0.0, d_m - z * d_se)
+        rec = {"minute": r["offset_min"], "cost_R": r["half_spread_R"], "drift_R": r["drift_R"],
+               "lift": round(lift, 6), "ci": [round(lcb, 6), round(ucb, 6)],
+               "n": r["n_trades"]}
+        if best is None or lcb > best["ci"][0]:
+            best = rec
+    assert best is not None
+    out.update(best_minute=best["minute"], best_cost_R=best["cost_R"],
+               drift_at_best_R=best["drift_R"], lift_R_per_trade=best["lift"],
+               lift_ci_R=best["ci"], n_trades=best["n"], z_bonferroni=round(z, 4),
+               edge_decay_R_at_cheapest=cheapest.get("drift_R"),
+               verdict=RECOMMEND if best["ci"][0] > 0 else KEEP)
     return out
+
+
+def _public(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{k: v for k, v in r.items() if not k.startswith("_")} for r in rows]
+
+
+def exit_hour(identity: dict[str, Any]) -> int | None:
+    """The UTC hour the exit fills in, ONLY when the identity declares it. None otherwise."""
+    raw = (identity.get("params") or {}).get("exit_hour_utc", identity.get("exit_hour_utc"))
+    if not isinstance(raw, (int, str)) or isinstance(raw, bool):
+        return None
+    try:
+        h = int(raw)
+    except ValueError:
+        return None
+    return h if 0 <= h < 24 else None
+
+
+def _profile(loaded: list[tuple[str, int, Any]], hour: int, sign: int, tick: float,
+             r: float) -> tuple[str, dict[str, Any]]:
+    """Finest timeframe whose offset 0 holds MIN_DAYS paired days; else the finest (thin)."""
+    profs = [(tf, minute_profile(fr, st, hour, sign, tick, r)) for tf, st, fr in loaded]
+    return next(((tf, p) for tf, p in profs if any(
+        o["offset_min"] == 0 and o.get("status") == "MEASURED" for o in p["offsets"])),
+        profs[0])
+
+
+NO_INTRADAY_WHY = ("no sub-hour bars on disk (M1/M5/M15/M30): one H1 spread stamp an hour is no "
+                   "minute surface. Collector: fetch_universe.INTRADAY_TIMEFRAMES (its per-symbol "
+                   "coverage names the reason a timeframe was not written)")
+CONTINUOUS_WHY = ("continuous selector: the placing hour is not fixed, and pricing it on an "
+                  "all-hours pooled spread would credit other hours' costs to this fill")
+EXIT_WHY = ("exit hour not declared in the identity (params.exit_hour_utc): the exit is not "
+            "priced on an all-hours pooled spread")
 
 
 def assess(root: Path | None = None) -> dict[str, Any]:
     root = root or ROOT
     sleeves = (_read(root / REGISTRY_REL).get("sleeves") or {})
     meta = _read(root / UNIVERSE_REL)
-    cache: dict[tuple[Any, ...], dict[str, Any]] = {}
-    bars: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
+    by_symbol: dict[str, list[tuple[str, dict[str, Any]]]] = {}
     for name, entry in sorted(sleeves.items()):
-        if not isinstance(entry, dict) or entry.get("status") != "LIVE":
-            continue
-        ident = entry.get("identity") or {}
-        sym = str(ident.get("symbol") or "")
-        family = str(ident.get("family") or "")
-        hour = signal_hour(str(ident.get("selector") or ""))
-        sign = direction_sign(ident)
-        row: dict[str, Any] = {"sleeve": name, "symbol": sym, "family": family,
-                               "selector": ident.get("selector"), "placing_hour_utc": hour,
-                               "slippage": UNMEASURED}
-        if sym not in bars:
-            bars[sym] = load_bars(root, sym)
-        loaded = bars[sym]
+        if isinstance(entry, dict) and entry.get("status") == "LIVE":
+            ident = entry.get("identity") or {}
+            by_symbol.setdefault(str(ident.get("symbol") or ""), []).append((name, ident))
+    # Symbol by symbol: one symbol's frames are resident at a time and freed before the next.
+    for sym in sorted(by_symbol):
+        loaded = load_bars(root, sym) if sym else []
         tick = float((meta.get(sym) or {}).get("tick_size") or 0.0)
         r = r_unit(root, sym) if loaded and tick > 0 else None
-        if not loaded or r is None:
-            row.update(verdict=UNMEASURED,
-                       why=("only H1 bars on disk: one spread stamp an hour is no minute surface"
-                            if not loaded else "no tick_size or H1 range for an R unit"))
-            rows.append(row)
-            continue
-        def profile(h: int | None, _l: Any = loaded, _t: float = tick, _r: float = r,
-                    _s: int = sign, _y: str = sym) -> tuple[str, dict[str, Any]]:
-            key = (_y, h, _s)
-            if key not in cache:
-                # Finest timeframe whose offset 0 holds MIN_DAYS; else the finest (reads thin).
-                profs = [(tf, minute_profile(fr, st, h, _s, _t, _r)) for tf, st, fr in _l]
-                cache[key] = next(((tf, p) for tf, p in profs if any(
-                    o["offset_min"] == 0 and o.get("status") == "MEASURED"
-                    for o in p["offsets"])), profs[0])
-            return cache[key]
-        tf, prof = profile(hour)
-        # The exit hour is not in the identity, so the exit is priced on the all-hours profile.
-        etf, eprof = profile(None)
-        row.update(bars_tf=tf, exit_bars_tf=etf, R_basis="median H1 ATR14", R_price=round(r, 8),
-                   drift_basis="unconditional on the placing hour; signal times not replayed",
-                   exit_basis="all hours (exit hour not declared in the identity)",
-                   minute_profile=prof["offsets"])
-        exit_leg = choose(eprof["offsets"], "exit")
-        entry_leg = ({"verdict": NOT_SELECTABLE, "why": "resting stop: price picks the minute"}
-                     if family in RESTING_STOP_FAMILIES else choose(prof["offsets"], "entry"))
-        row.update(entry=entry_leg, exit=exit_leg)
-        lifts = [leg.get("lift_R_per_trade") for leg in (entry_leg, exit_leg)
-                 if isinstance(leg.get("lift_R_per_trade"), (int, float))]
-        row["verdict"] = (RECOMMEND if RECOMMEND in (entry_leg["verdict"], exit_leg["verdict"])
-                          else KEEP if lifts else UNMEASURED)
-        row["total_lift_R_per_trade"] = round(sum(lifts), 6) if lifts else None
-        rows.append(row)
+        for name, ident in by_symbol[sym]:
+            rows.append(_assess_sleeve(name, ident, sym, loaded, tick, r))
+        del loaded
+    rows.sort(key=lambda row: row["sleeve"])
     counts: dict[str, int] = {}
     for row in rows:
         counts[row["verdict"]] = counts.get(row["verdict"], 0) + 1
-    return {"schema": "execution-timing-1",
+    return {"schema": "execution-timing-2",
             "built_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "report_only": True, "min_days": MIN_DAYS,
             "n_sleeves": len(rows), "verdicts": counts,
@@ -265,6 +305,49 @@ def assess(root: Path | None = None) -> dict[str, Any]:
                                "verdict": r["verdict"]}
                               for r in rows if r.get("total_lift_R_per_trade") is not None],
             "sleeves": rows}
+
+
+def _assess_sleeve(name: str, ident: dict[str, Any], sym: str,
+                   loaded: list[tuple[str, int, Any]], tick: float,
+                   r: float | None) -> dict[str, Any]:
+    family = str(ident.get("family") or "")
+    hour = signal_hour(str(ident.get("selector") or ""))
+    xhour = exit_hour(ident)
+    sign = direction_sign(ident)
+    row: dict[str, Any] = {"sleeve": name, "symbol": sym, "family": family,
+                           "selector": ident.get("selector"), "placing_hour_utc": hour,
+                           "exit_hour_utc": xhour, "slippage": UNMEASURED}
+    if not loaded or r is None:
+        row.update(verdict=UNMEASURED,
+                   why=NO_INTRADAY_WHY if not loaded else "no tick_size or H1 range for an R unit")
+        return row
+    row.update(R_basis="median H1 ATR14", R_price=round(r, 8),
+               cost_basis="per-hour: spreads stamped on sub-hour bars inside the fill hour only",
+               drift_basis="unconditional on the placing hour; signal times not replayed")
+    entry_leg: dict[str, Any]
+    if family in RESTING_STOP_FAMILIES:
+        entry_leg = {"verdict": NOT_SELECTABLE, "why": "resting stop: price picks the minute"}
+    elif hour is None:
+        entry_leg = {"verdict": UNMEASURED, "why": CONTINUOUS_WHY}
+    else:
+        tf, prof = _profile(loaded, hour, sign, tick, r)
+        row.update(bars_tf=tf, minute_profile=_public(prof["offsets"]))
+        entry_leg = choose(prof["offsets"], "entry")
+    exit_leg: dict[str, Any]
+    if xhour is None:
+        exit_leg = {"verdict": UNMEASURED, "why": EXIT_WHY}
+    else:
+        etf, eprof = _profile(loaded, xhour, sign, tick, r)
+        row["exit_bars_tf"] = etf
+        exit_leg = choose(eprof["offsets"], "exit")
+    row.update(entry=entry_leg, exit=exit_leg)
+    lifts = [float(leg["lift_R_per_trade"]) for leg in (entry_leg, exit_leg)
+             if leg.get("verdict") in (RECOMMEND, KEEP)
+             and isinstance(leg.get("lift_R_per_trade"), (int, float))]
+    row["verdict"] = (RECOMMEND if RECOMMEND in (entry_leg["verdict"], exit_leg["verdict"])
+                      else KEEP if lifts else UNMEASURED)
+    row["total_lift_R_per_trade"] = round(sum(lifts), 6) if lifts else None
+    return row
 
 
 def main(argv: list[str] | None = None) -> int:

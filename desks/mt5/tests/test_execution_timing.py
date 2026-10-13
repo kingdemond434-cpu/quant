@@ -3,19 +3,22 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from desks.mt5.research import execution_timing as et
 
 
-def _world(tmp: Path, *, spread_at: dict[int, int], drift_per_min: float = 0.0,
-           days: int = 40, family: str = "overnight_gap_decay", m1: bool = True) -> Path:
+def _world(tmp: Path, *, spread_at: dict[int, float], drift_per_min: float = 0.0,
+           days: int = 40, family: str = "overnight_gap_decay", m1: bool = True,
+           selector: str = "asia", params: dict[str, Any] | None = None,
+           noise: float = 0.0) -> Path:
     bars = tmp / et.BARS_REL
     bars.mkdir(parents=True)
     reg = {"sleeves": {"S": {"status": "LIVE", "identity": {
-        "symbol": "EURUSD", "family": family, "direction": "LONG", "selector": "asia",
-        "params": {}}}}}
+        "symbol": "EURUSD", "family": family, "direction": "LONG", "selector": selector,
+        "params": params or {}}}}}
     (tmp / et.REGISTRY_REL).parent.mkdir(parents=True, exist_ok=True)
     (tmp / et.REGISTRY_REL).write_text(json.dumps(reg))
     (tmp / et.UNIVERSE_REL).write_text(json.dumps({"EURUSD": {"tick_size": 0.0001}}))
@@ -24,15 +27,18 @@ def _world(tmp: Path, *, spread_at: dict[int, int], drift_per_min: float = 0.0,
     h1.to_parquet(bars / "EURUSD_H1.parquet")
     if m1:
         idx = pd.date_range("2026-01-01", periods=24 * 60 * days, freq="min", tz="UTC")
-        spread = np.array([spread_at.get(m, 10) for m in idx.minute])
+        spread = np.array([spread_at.get(m, 10) for m in idx.minute], dtype=float)
+        if noise:
+            spread = spread + np.random.default_rng(7).normal(0.0, noise, len(spread))
         opens = 1.0 + drift_per_min * idx.minute.to_numpy()
         pd.DataFrame({"open": opens, "spread": spread}, index=idx).to_parquet(
             bars / "EURUSD_M1.parquet")
     return tmp
 
 
-def _row(root: Path) -> dict:
-    return et.assess(root)["sleeves"][0]
+def _row(root: Path) -> dict[str, Any]:
+    row: dict[str, Any] = et.assess(root)["sleeves"][0]
+    return row
 
 
 def test_cheaper_minute_without_decay_is_recommended(tmp_path: Path) -> None:
@@ -70,7 +76,34 @@ def test_thin_history_is_unmeasured(tmp_path: Path) -> None:
 def test_resting_stop_entry_is_not_selectable(tmp_path: Path) -> None:
     row = _row(_world(tmp_path, spread_at={20: 2}, family="session_range_breakout"))
     assert row["entry"]["verdict"] == et.NOT_SELECTABLE
+    assert row["exit"]["verdict"] == et.UNMEASURED     # exit hour not declared
+
+
+def test_exit_priced_only_in_its_declared_hour(tmp_path: Path) -> None:
+    row = _row(_world(tmp_path, spread_at={20: 2}, family="session_range_breakout",
+                      params={"exit_hour_utc": 19}))
     assert row["exit"]["verdict"] == et.RECOMMEND
+    assert row["exit"]["n_trades"] == 40
+
+
+def test_continuous_selector_entry_is_unmeasured_not_pooled(tmp_path: Path) -> None:
+    row = _row(_world(tmp_path, spread_at={20: 2}, selector="continuous"))
+    assert row["entry"]["verdict"] == et.UNMEASURED
+    assert row["verdict"] == et.UNMEASURED
+
+
+def test_noise_level_saving_is_not_recommended_after_selection(tmp_path: Path) -> None:
+    # A 0.3-point true saving under 5-point per-bar noise: best-of-59 in-sample would pick it,
+    # the Bonferroni lower bound must not.
+    row = _row(_world(tmp_path, spread_at={20: 9.7}, noise=5.0))
+    assert row["entry"]["verdict"] == et.KEEP
+    lo, hi = row["entry"]["lift_ci_R"]
+    assert lo <= row["entry"]["lift_R_per_trade"] <= hi
+
+
+def test_no_intraday_reason_names_the_collector(tmp_path: Path) -> None:
+    row = _row(_world(tmp_path, spread_at={}, m1=False))
+    assert "INTRADAY_TIMEFRAMES" in row["why"]
 
 
 def test_side_param_outranks_identity_direction() -> None:
