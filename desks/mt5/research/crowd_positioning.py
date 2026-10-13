@@ -17,7 +17,7 @@ sent nowhere. The web page itself sits behind a Cloudflare challenge, and that i
 WHAT THIS DOES, hourly (the free tier allows 100 outlook calls a day):
   1. SESSION. `MYFXBOOK_SESSION` if set; else `login.json` with `MYFXBOOK_EMAIL` and
      `MYFXBOOK_PASSWORD`, the session cached under `data/secrets/` (never committed, never
-     printed). An "invalid session" answer re-logs in once. No credentials: UNCONFIGURED, named.
+     printed). An "invalid session" answer re-logs in once. No credentials: BLOCKED_ON_KEY, named.
   2. RECORD. One row per call into `data/lake/series/myfxbook_outlook.parquet`, the pack's own
      canonical frame, stamped `available_time` = the moment this desk received it. Columns per
      symbol: `<SYM>_long_pct`, `<SYM>_long_vol_pct` (volume-weighted), `<SYM>_positions`. That is
@@ -127,10 +127,42 @@ def _get(endpoint: str, query: dict[str, str], timeout: float = 25.0) -> dict[st
     return doc
 
 
+def read_key(name: str) -> str:
+    """One key from wherever the box keeps it: `libs.ops.env_keys.read_key` once it lands, else
+    the process environment, then the Windows Machine and User registry scopes.
+
+    THE SCOPE MATTERS (keys thread, 2026-10-13): the Myfxbook pair was set at USER scope, and a
+    task running as SYSTEM does not inherit a user's environment. Reading the registry directly
+    is what the shared reader does; the caller names BLOCKED_ON_KEY when every scope is empty.
+    """
+    try:
+        import importlib
+        return str(importlib.import_module("libs.ops.env_keys").read_key(name) or "")
+    except Exception:
+        pass
+    val = os.environ.get(name, "")
+    if val:
+        return val
+    try:
+        import winreg  # type: ignore[import-not-found,unused-ignore]
+    except ImportError:
+        return ""
+    for hive, sub in ((winreg.HKEY_LOCAL_MACHINE,
+                       r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"),
+                      (winreg.HKEY_CURRENT_USER, "Environment")):
+        try:
+            with winreg.OpenKey(hive, sub) as k:
+                got = winreg.QueryValueEx(k, name)[0]
+                if got:
+                    return str(got)
+        except OSError:
+            continue
+    return ""
+
+
 def credentials() -> tuple[str, str, str]:
-    """(session, email, password) from the environment; empty strings where unset."""
-    return (os.environ.get(ENV_SESSION, "").strip(), os.environ.get(ENV_EMAIL, "").strip(),
-            os.environ.get(ENV_PASSWORD, ""))
+    """(session, email, password) from every scope; empty strings where unset."""
+    return (read_key(ENV_SESSION).strip(), read_key(ENV_EMAIL).strip(), read_key(ENV_PASSWORD))
 
 
 def session(*, fresh: bool = False) -> str:
@@ -143,8 +175,10 @@ def session(*, fresh: bool = False) -> str:
         if isinstance(cached, dict) and cached.get("session"):
             return str(cached["session"])
     if not (email and password):
-        raise SessionError(f"UNCONFIGURED: neither {ENV_SESSION} nor {ENV_EMAIL} + "
-                           f"{ENV_PASSWORD} is set on this host")
+        raise SessionError(f"BLOCKED_ON_KEY: {ENV_EMAIL} + {ENV_PASSWORD} (or "
+                           f"{ENV_SESSION}) unreadable in the process env and the Machine and "
+                           f"User registry scopes; the pair was set at User scope, which a "
+                           f"SYSTEM task does not see")
     doc = _get("login.json", {"email": email, "password": password})
     if doc.get("error") or not doc.get("session"):
         raise SessionError(f"login refused: {str(doc.get('message') or 'no message')[:80]}")
@@ -316,7 +350,7 @@ def run(*, dry_run: bool = False, out: Path | None = None) -> dict[str, Any]:
                              "frame_rows": rows}
         except SessionError as exc:
             rec["record"] = {"status": str(exc).split(":")[0] if str(exc).startswith(
-                "UNCONFIGURED") else "REFUSED", "why": str(exc)}
+                "BLOCKED_ON_KEY") else "REFUSED", "why": str(exc)}
         except OSError as exc:
             rec["record"] = {"status": "UNREACHABLE", "why": str(exc)}
     counts = history()
