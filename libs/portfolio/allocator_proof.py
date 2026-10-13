@@ -58,7 +58,7 @@ from typing import Any
 
 import numpy as np
 
-from libs.portfolio.robust_elog import SleeveEvidence, WorldConfig, Worlds, score_book
+from libs.portfolio.robust_elog import SleeveEvidence, WorldConfig, Worlds, _corr_abs, score_book
 
 #: How much better than the BEST baseline the dynamic book must be, in robust score. Not zero:
 #: a hair's-breadth win is inside the noise of a sampled-world estimate, and granting authority
@@ -388,7 +388,12 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
         except Exception:
             pass
 
-    scored = {k: score_book(ev, b, cfg=cfg, worlds=worlds) for k, b in books.items()}
+    # Correlation depends only on this frozen evidence set, not on the book or state-world
+    # subset. Rebuilding its pairwise structural model for every rival and every state made
+    # the fast allocator's proof consume most of its refresh window.
+    corr_abs = _corr_abs(ev)
+    scored = {k: score_book(ev, b, cfg=cfg, worlds=worlds, corr_abs=corr_abs)
+              for k, b in books.items()}
     prev = previous_verdicts(root)
     passed, why, best_name = _judge(scored, holding=bool(prev["global"]))
 
@@ -407,7 +412,8 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
                 continue
             try:
                 sub = _subworlds(worlds, idx)
-                s_scored = {k: score_book(ev, b, cfg=cfg, worlds=sub) for k, b in books.items()}
+                s_scored = {k: score_book(ev, b, cfg=cfg, worlds=sub, corr_abs=corr_abs)
+                            for k, b in books.items()}
             except (IndexError, ValueError, KeyError) as exc:
                 by_state[sid] = {"passed": False, "n_worlds": len(idx),
                                  "why": f"unscorable ({type(exc).__name__}: {exc})",

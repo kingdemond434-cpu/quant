@@ -945,7 +945,9 @@ def main(argv: list[str] | None = None) -> int:
     import MetaTrader5 as mt5
     from mt5desk.config import terminal_path
 
-    if mt5.terminal_info() is None and not mt5.initialize(path=terminal_path()):
+    from research.mt5_session import attach_or_initialize
+
+    if not attach_or_initialize(mt5, path=terminal_path(), timeout=5000):
         print(f"mt5 init failed: {_explain(mt5.last_error())}")
         return 1
 
