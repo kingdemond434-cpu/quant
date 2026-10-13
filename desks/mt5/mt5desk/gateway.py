@@ -1005,6 +1005,38 @@ def _state_vector_id() -> str:
 
 
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
+#: EVERY ENTRY A LIVE SLEEVE WANTED AND DID NOT GET (2026-10-13). The family lane's refusals --
+#: a stale desk, an unpriceable symbol, no tick, the risk envelope, the generic-exec switch, a
+#: tight margin, the release gate -- went only to the box's console log, so from off the box a
+#: sleeve that never traded was indistinguishable from one whose signal never fired. Published
+#: with the box state; the trade autopsy reads it as the missed-trade half of its verdicts.
+BLOCKED = BASE / "data" / "blocked_entries.jsonl"
+#: The family lane's ordinary quiet outcomes: no signal on this bar, or this bar already acted on.
+QUIET_STAGES = ("no_signal", "no_signal_bar", "already_considered", "already_open",
+                "bar_traded", "duplicate_at_floor", "signal_hour", "no_window", "session_ended")
+
+
+def _record_block(st: dict, sleeve: str, symbol: str, stage: str, why: str,
+                  bar: object = None) -> None:
+    """Append one blocked entry, once per (sleeve, stage, bar-or-hour). NEVER raises."""
+    try:
+        stamp = datetime.now(tz=UTC)
+        key = f"{sleeve}|{stage}|{bar if bar is not None else stamp.strftime('%Y-%m-%dT%H')}"
+        seen = st.setdefault("blocked_keys", {})
+        if key in seen:
+            return
+        today = stamp.date().isoformat()
+        for k in [k for k, d in seen.items() if d < today]:
+            seen.pop(k, None)
+        seen[key] = today
+        BLOCKED.parent.mkdir(parents=True, exist_ok=True)
+        with BLOCKED.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"time": stamp.isoformat(timespec="seconds"), "sleeve": sleeve,
+                                 "symbol": symbol, "stage": stage, "why": str(why)[:300],
+                                 "bar": None if bar is None else str(bar),
+                                 "release_id": _release_id()}, default=str) + "\n")
+    except Exception as exc:                            # pragma: no cover - never on money path
+        log(f"blocked-entry record failed (non-fatal) [{sleeve}]: {type(exc).__name__}: {exc}")
 _PROCESS_INSTANCE_ID = f"{os.getpid()}:{datetime.now(UTC).isoformat(timespec='seconds')}"
 #: In-process cache of sleeve -> strategy-state identity, keyed by sleeves.json's mtime
 #: (47b75ca86, 2026-09-27). The -1.0 is a sentinel derived from the stat() contract -- no real
@@ -3539,6 +3571,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             # reads as one.
             if plan["stage"] not in ("no_signal", "no_signal_bar"):
                 log(f"[{name}] FAMILY-EXEC{plan.get('sep', ': ')}{plan['why']}")
+            if plan["stage"] not in QUIET_STAGES:
+                _record_block(st, name, s["symbol"], str(plan["stage"]), str(plan.get("why")),
+                              plan.get("last_bar"))
             continue
         srec = gstate.setdefault(name, {})
         side, lot, dist = int(plan["side"]), float(plan["lot"]), float(plan["dist"])
@@ -3546,6 +3581,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             plan["signal"]
         if not (lot > 0):
             log(f"[{name}] FAMILY-EXEC: allocator gave this sleeve no heat; skipped")
+            _record_block(st, name, s["symbol"], "no_heat", "allocator gave this sleeve no heat",
+                          plan.get("last_bar"))
             continue
         # EXECUTION POLICY, IN SHADOW: what the utility-maximising plan would have been for this
         # order (market / passive / pullback / split / skip), recorded on the intent so the
@@ -3592,9 +3629,13 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not armed:
             log(f"[{name}] WOULD PLACE (generic exec blocked: "
                 f"{unarmed_why(st)}): {order_desc}")
+            _record_block(st, name, s["symbol"], "not_armed", unarmed_why(st),
+                          plan.get("last_bar"))
             continue
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
+            _record_block(st, name, s["symbol"], "margin", f"margin tight (lot={lot})",
+                          plan.get("last_bar"))
             continue
         _t0 = time.perf_counter()
         res = mt5.order_send({
@@ -3610,6 +3651,11 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        intended=entry_ref, sl=float(g.stop), tp=float(g.target),
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice, latency_ms=_lat_ms,
+                       # THE SIGNAL THIS SEND ACTS ON AND ITS CERTIFIED TIME EXIT (2026-10-13),
+                       # recorded so the trade autopsy can judge signal age, a missed time
+                       # exit and a second send on one bar. Broker-labelled, as the bars are.
+                       signal_bar=str(plan.get("last_bar")), ttl_until=ttl_until,
+                       bar_minutes=int(_BAR_MINUTES.get(str(plan.get("tf") or "H1"), 60)),
                        # A MARKET ORDER'S FILL IS KNOWN AT SEND TIME AND WAS THROWN AWAY. The
                        # venue answers `order_send` with the price it filled at; recording it
                        # here means slippage on this order is complete before it ever closes,
@@ -4321,6 +4367,7 @@ def main() -> None:
     NEW_RISK_OK, _ident_why = release_gate()
     if not NEW_RISK_OK:
         log(f"RELEASE IDENTITY refuses NEW risk: {_ident_why} -- managing open positions only")
+        _record_block(st, "*", "*", "release_gate", str(_ident_why))
 
     # THE SCALP LANE'S OWN MANAGEMENT, HERE AND NOT INSIDE ITS EXECUTOR (2026-09-09). A basket
     # the broker has closed and a basket past its time exit are POSITIONS, and this desk's
@@ -4695,6 +4742,9 @@ def main() -> None:
                     log(f"[{s['name']}] SKIPPED: {_pend['why']}")
                 elif _pend["stage"] == "session_ended":
                     log(f"[{s['name']}] NOT PLACED: {_pend['why']}")
+                if _pend["stage"] not in (*QUIET_STAGES, "range_not_ready"):
+                    _record_block(st, s["name"], s["symbol"], str(_pend["stage"]),
+                                  str(_pend.get("why")), day_key)
                 continue
             sym, df = _pend["sym"], _pend["df"]
             hi, lo, spec, dist = _pend["hi"], _pend["lo"], _pend["spec"], _pend["dist"]
@@ -4708,6 +4758,8 @@ def main() -> None:
             log(f"[{s['name']}] sizing basis: {_pend['basis']}")
             if not (lot > 0):
                 log(f"[{s['name']}] SKIPPED: allocator gave this sleeve no heat")
+                _record_block(st, s["name"], s["symbol"], "no_heat",
+                              "allocator gave this sleeve no heat", day_key)
                 continue
             log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
                 f"(realised q {q_real:.2%})")

@@ -1327,6 +1327,13 @@ def main(argv: list[str] | None = None) -> int:
     armed = bool(args.armed or ARMED_MARKER.exists())
     venue = TradeLockerVenue().connect()
     doc = run(venue, armed=armed, entry_enabled=args.enable_certified_entries)
+    # WHAT CAME BACK, NOT ONLY WHAT WAS SENT (2026-10-13): every closed E8 position this desk
+    # opened, with its R, for the loss autopsy. Read-only and never raises.
+    try:
+        from prop.e8_close_ledger import record as _record_closes
+        doc["close_ledger"] = _record_closes(venue)
+    except Exception as exc:
+        doc["close_ledger"] = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     doc["armed_by"] = ("--armed" if args.armed else
                        f"{ARMED_MARKER.name} present" if ARMED_MARKER.exists() else "not armed")
     OUT.parent.mkdir(parents=True, exist_ok=True)

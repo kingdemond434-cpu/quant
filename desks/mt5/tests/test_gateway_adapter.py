@@ -55,7 +55,7 @@ def _is_literal(node: ast.AST) -> bool:
 
 
 _TAG_HELPERS = ("order_comment", "legacy_order_comment", "position_tags", "note_roster_tags",
-                "note_ticket_owners", "tag_owner", "owns")
+                "_record_block", "note_ticket_owners", "tag_owner", "owns")
 
 
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
@@ -94,6 +94,8 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) \
                 and node.value is not None and _is_literal(node.value):
             seed.setdefault(node.target.id, ast.literal_eval(node.value))
+    # The blocked-entry ledger every lane writes (2026-10-13) goes to a scratch file here.
+    seed.setdefault("BLOCKED", Path(tempfile.gettempdir()) / "gw_test_blocked_entries.jsonl")
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
@@ -1571,6 +1573,17 @@ def test_a_legacy_tag_is_a_sleeves_own_only_while_nobody_else_carries_it() -> No
     # two roster sleeves sharing a legacy tag: neither may act on a legacy position
     ns["note_roster_tags"]([{"name": live}, {"name": twin}])
     assert ns["position_tags"](live) == {ns["order_comment"](live)}
+
+
+def test_a_blocked_entry_is_recorded_once_per_bar_and_stage(tmp_path) -> None:
+    ns = _exec(("_record_block",), {"BLOCKED": tmp_path / "blocked.jsonl",
+                                     "_release_id": lambda: "rel", "log": lambda *a: None})
+    st: dict = {}
+    for _ in range(3):
+        ns["_record_block"](st, "eurzar_x", "EURZAR", "desk_stale", "desk state stale", "b1")
+    ns["_record_block"](st, "eurzar_x", "EURZAR", "desk_stale", "desk state stale", "b2")
+    rows = [json.loads(x) for x in (tmp_path / "blocked.jsonl").read_text().splitlines()]
+    assert [r["bar"] for r in rows] == ["b1", "b2"] and rows[0]["release_id"] == "rel"
 
 
 def test_an_ambiguous_legacy_tag_is_resolved_by_the_ticket_s_own_intent(tmp_path) -> None:
