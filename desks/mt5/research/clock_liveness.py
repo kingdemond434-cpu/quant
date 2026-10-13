@@ -477,6 +477,50 @@ def engine_roster() -> tuple[set[str] | None, str]:
         os.chdir(cwd)
 
 
+def pending_roster() -> tuple[set[str], str]:
+    """Engine keys of the certificates waiting in the canon's `pending_rejudge` block.
+
+    A re-seal lifts every row judged under the old attestation out of `survivors` until a sweep
+    re-judges it (`external_gauntlet.remint_partition`), so `engine_roster` no longer holds their
+    keys. Those certificates were never rejected, and `clock_certificate.REMINT_PENDING` keeps
+    their clocks. The key is computed by the engine's own `sleeve_key` from the row's
+    `shadow_spec`, exactly as `certified_sleeves` does, so the join is exact. A spec that does
+    not declare its side contributes both directions' keys: only an exact key can match, so the
+    worst case keeps the opposite-direction twin of the SAME pending certificate. Unreadable is
+    an empty set: nothing is kept that the canon does not name.
+    """
+    cwd = os.getcwd()
+    try:
+        os.chdir(str(DESK))
+        import shadow_admission as sa  # type: ignore[import-not-found]
+        import shadow_forward as sf  # type: ignore[import-not-found]
+        keys: set[str] = set()
+        rows = 0
+        for rel, _what in sa.CANON_SOURCES:
+            doc = read_json(DESK / rel)
+            block = doc.get("pending_rejudge") if isinstance(doc, dict) else None
+            for row in (block.values() if isinstance(block, dict) else ()):
+                spec = row.get("shadow_spec") if isinstance(row, dict) else None
+                if not (isinstance(spec, dict) and spec.get("symbol") and spec.get("selector")
+                        and isinstance(spec.get("params"), dict)):
+                    continue
+                rows += 1
+                fam = str(spec.get("family") or "session_range_breakout")
+                params = dict(spec["params"])
+                if fam == "session_range_breakout":
+                    params = {**dict(sf.WINDOWS.get(str(spec["selector"]), {})), **params}
+                sides = ([str(spec["side"]).upper()] if spec.get("side")
+                         else ["LONG", "SHORT"])
+                for side in sides:
+                    keys.add(sf.sleeve_key(str(spec["symbol"]), str(spec["selector"]), params,
+                                           fam, side))
+        return keys, f"pending_rejudge -> {rows} certificate row(s), {len(keys)} key(s)"
+    except Exception as exc:
+        return set(), f"pending_rejudge unreadable ({type(exc).__name__}: {exc}); none kept"
+    finally:
+        os.chdir(cwd)
+
+
 def universe_symbols() -> tuple[dict[str, Any], bool]:
     doc = read_json(UNIVERSE)
     if not isinstance(doc, dict):
@@ -1115,7 +1159,9 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
     # certificate at all, which is a breach of a standing law. The audit traces every clock to
     # its backing certificate, pushes each breached CELL to the front of the judge's queue, and
     # takes a clock away only on the judge's own rejection -- never to make the count smaller.
-    cert = cc.audit(after, roster=roster, now=now_utc(), apply=apply)
+    pending, pending_why = pending_roster()
+    cert = cc.audit(after, roster=roster, now=now_utc(), apply=apply, pending=pending)
+    cert["pending_roster"] = pending_why
     cert["unbacked_found"] = len(cert.get("retire") or [])
     if apply and cert.get("retire"):
         # STRICT (principal 2026-09-23): every clock without a canonical certificate is retired on
@@ -1126,7 +1172,8 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
         n_retired = cc.retire_unbacked(cert["retire"], LANE_BY_NAME)
         after = census(cal, roster, now_utc(), tasks, host=host, host_why=host_why)
         counts_after = _counts(after)
-        cert = cc.audit(after, roster=roster, now=now_utc(), apply=False)
+        cert = cc.audit(after, roster=roster, now=now_utc(), apply=False, pending=pending)
+        cert["pending_roster"] = pending_why
         cert["retired_now"] = n_retired
         cert["unbacked_found"] = n_retired
     cert_ratchet = (cc.ratchet(int(cert["breached"])) if apply and host == "trading_box"
@@ -1153,7 +1200,8 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
                         "oldest_breach_age_s": cc.oldest_breach_age_s(cert),
                         "rows": [r for r in cert["rows"]
                                  if r.get("backing") in (cc.BREACHED, cc.AWAITING,
-                                                         cc.UNMEASURED)][:400]},
+                                                         cc.UNMEASURED, cc.REMINT_PENDING)
+                                 ][:400]},
         "schedule": schedule,
         "schedule_verdicts": {v: sum(1 for r in schedule if r.get("verdict") == v)
                               for v in sorted({str(r.get("verdict")) for r in schedule})},
