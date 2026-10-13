@@ -239,6 +239,10 @@ FAMILY_CLUSTER: dict[str, str] = {
     # -- execution and entry alpha
     "entry_alpha": "execution_entry",
     "execution_alpha": "execution_entry",
+    # The registered execution-entry operators (mt5desk/family_execution_entry.py, 2026-10-06),
+    # declared EXACTLY so `classify_family` places their cells by registry key.
+    "entry_alpha_spread_session_median": "execution_entry",
+    "entry_alpha_post_open_normalised": "execution_entry",
     # -- unscheduled news reaction
     "cb_tone": "news_reaction",
     "news_reaction": "news_reaction",

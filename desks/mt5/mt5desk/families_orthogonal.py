@@ -2446,3 +2446,25 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
+
+# THE EXECUTION-ENTRY FAMILIES (2026-10-06). `execution_entry` was a declared alpha cluster with
+# no registered family, so `empty_cluster_forcer` filed it UNREACHABLE and the breadth law could
+# raise no debt against it. Both are OPERATORS over a price-only base family's market entries,
+# conditioned on the bars' own `spread` column and the `family_call.SESSIONS` clock: enter only
+# off a bar whose spread is at or below its session's trailing median, or move an open-window
+# fill past the open once the spread has normalised. Price-only by construction (the spread is a
+# column of the bars the gauntlet already passes), every argument has a default, so the sealed
+# `fn(h1, **params)` call and the compiler's family-default mint both build them unchanged.
+from mt5desk.family_execution_entry import FAMILIES as EXECUTION_ENTRY_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(EXECUTION_ENTRY_FAMILIES)
+for _ee_name in EXECUTION_ENTRY_FAMILIES:
+    FAMILY_INPUTS[_ee_name] = ("price only",
+                               "data/universe/*_<chart>.parquet (OHLC + the bars' own spread "
+                               "column; the base family is rebuilt from the same bars)")
+    FAMILY_TIMEFRAMES[_ee_name] = (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "the claim is about WHEN inside a session the fill lands -- the rollover/open bar against "
+        "the bars after it -- and a four-hour or daily bar spans the open window and its "
+        "normalisation alike, so the operator would have no later bar to move an entry to")
+del _ee_name
