@@ -242,3 +242,108 @@ def summarise(root: Path, series: str) -> dict[str, Any]:
         "n_revised_periods": len(revised),
         "detail": detail,
     }
+
+
+# ------------------------------------------------------------------ forecast-vintage revisions
+#: The fixed revision horizons (DATA-45). A forecast for one target time is re-issued many times;
+#: what it moved by over the last hour, six hours, day and three days are four different pieces
+#: of news, and the store above already holds every vintage needed to compute all four.
+FORECAST_LAGS_S: Final[dict[str, int]] = {"1h": 3_600, "6h": 21_600, "1d": 86_400,
+                                          "3d": 259_200}
+
+
+def _stamp(value: Any) -> float | None:
+    """Epoch seconds of an ISO stamp or a bare date (midnight UTC); None when unparseable."""
+    from datetime import UTC, datetime
+
+    raw = str(value or "").strip().replace("Z", "+00:00")
+    if not raw:
+        return None
+    for attempt in (raw, raw[:19], raw[:10]):
+        try:
+            parsed = datetime.fromisoformat(attempt)
+        except ValueError:
+            continue
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=UTC)
+        return parsed.timestamp()
+    return None
+
+
+def _by_target(rows: list[dict[str, Any]]) -> dict[str, list[tuple[float, int, float, str]]]:
+    """Per target period, (vintage seconds, file position, value, vintage text), vintage-ordered.
+
+    Ordered by VINTAGE with file position as the tie-break -- the same rule `_resolve` uses, for
+    the same reason: a backfilled vintage is written late and published early."""
+    out: dict[str, list[tuple[float, int, float, str]]] = {}
+    for index, row in enumerate(rows):
+        when = _stamp(row.get("vintage"))
+        try:
+            value = float(row["value"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if when is None or value != value:
+            continue
+        out.setdefault(str(row.get("period")), []).append(
+            (when, index, value, str(row.get("vintage"))))
+    for history in out.values():
+        history.sort()
+    return out
+
+
+def _value_at(history: list[tuple[float, int, float, str]], when: float) -> float | None:
+    """The value the store held for one target at `when`: the last vintage at or before it.
+
+    The log records only CHANGES, so the last recorded row at or before `when` IS the value
+    then; before the first vintage the target was not knowable and the answer is None."""
+    found: float | None = None
+    for stamp, _index, value, _text in history:
+        if stamp > when:
+            break
+        found = value
+    return found
+
+
+def forecast_revisions(rows: list[dict[str, Any]], lag_s: int) -> list[dict[str, Any]]:
+    """Revision at a fixed lag: value at vintage v minus the value at the nearest vintage <= v-lag.
+
+    One row per recorded (target, vintage) whose target was already knowable at v - lag, stamped
+    at v -- the instant the revision became knowable. A target first issued inside the lag has no
+    earlier value to be revised FROM and emits nothing (absence, never a zero)."""
+    out: list[dict[str, Any]] = []
+    for target, history in _by_target(rows).items():
+        for stamp, _index, value, text in history:
+            before = _value_at(history, stamp - lag_s)
+            if before is None:
+                continue
+            out.append({"target": target, "vintage": text, "vintage_s": stamp,
+                        "revision": value - before})
+    out.sort(key=lambda r: (r["vintage_s"], r["target"]))
+    return out
+
+
+def revision_momentum(rows: list[dict[str, Any]], lag_s: int) -> list[dict[str, Any]]:
+    """Whether a forecast's revisions are ACCELERATING: rev[v-lag, v] minus rev[v-2lag, v-lag].
+
+    Positive momentum is a forecast being pushed the same way harder; it needs the target to
+    have been knowable two lags back, and emits nothing otherwise."""
+    out: list[dict[str, Any]] = []
+    for target, history in _by_target(rows).items():
+        for stamp, _index, value, text in history:
+            mid = _value_at(history, stamp - lag_s)
+            old = _value_at(history, stamp - 2 * lag_s)
+            if mid is None or old is None:
+                continue
+            out.append({"target": target, "vintage": text, "vintage_s": stamp,
+                        "momentum": (value - mid) - (mid - old)})
+    out.sort(key=lambda r: (r["vintage_s"], r["target"]))
+    return out
+
+
+def log_series_names(root: Path) -> list[str]:
+    """Every series the store holds a revision log for, newest-written first."""
+    folder = root / STORE_DIR
+    if not folder.exists():
+        return []
+    files = sorted(folder.glob("*.jsonl"), key=lambda p: (-p.stat().st_mtime, p.name))
+    return [p.stem for p in files]
