@@ -80,7 +80,7 @@ def test_telegram_public_previews_are_live_input_again() -> None:
     assert tf.platform_of_url("https://t.me/s/markettwits") is None
 
 
-def test_the_free_stack_telegram_feed_runs(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_free_stack_telegram_feed_runs(tmp_path: Path) -> None:
     from research import free_stack_hunter as H
     page = (DESK / "tests" / "fixtures" / "free_stack" / "telegram_preview.synthetic.html")
     asked: list[str] = []
@@ -89,9 +89,10 @@ def test_the_free_stack_telegram_feed_runs(monkeypatch: pytest.MonkeyPatch) -> N
         asked.append(url)
         return page.read_bytes()
 
-    h, _ = H.run_source(_roster_row("telegram"), None, fetch, {}, NOW)  # type: ignore[arg-type]
+    h, _ = H.run_source(_roster_row("telegram"), H.Store(tmp_path), fetch, {}, NOW)
     assert asked and all(u.startswith("https://t.me/s/") for u in asked)
     assert h.status not in (tf.IDEAS_ONLY, tf.NEEDS_KEY, tf.METHOD_BLOCKED), h.detail
+    assert h.raw, "the telegram feed archived its posts"
 
 
 def test_reddit_live_input_is_the_data_api_route_only(monkeypatch: pytest.MonkeyPatch) -> None:
