@@ -13,9 +13,10 @@ by search engines, sits behind JavaScript shells, or lives on platforms with the
 miner reaches those by ROUTE -- search-engine `site:` queries in the ground's own locale for
 grounds a link walk never reaches, platform APIs where they exist (Qiita, Zenn, Habr, arXiv,
 Gitee, Bilibili ...), RSS where a site publishes one, the Wayback Machine for archives that are
-gone, public Telegram previews, nitter mirrors when one is up, a rendered fetch where a shell
-hides the listing -- and then hands every URL it finds to the crawler's frontier, so the forest
-it opens keeps being walked after this run ends.
+gone, the Common Crawl URL index where the search engines answer with an anti-bot wall, a
+rendered fetch where a shell hides the listing (X/nitter, Reddit and Telegram grounds are
+TERMS-HELD: never fetched, reported HELD) -- and then hands every URL it finds to the
+crawler's frontier, so the forest it opens keeps being walked after this run ends.
 
 THE WHOLE WORLD, ROTATED (principal 2026-09-05: "asia west russia middle east south america
 oceania every place ... whole world crawling and mining fully"). The grounds file carries a
@@ -265,7 +266,215 @@ def accept_language(lang: str) -> str:
     return f"{setlang},{(lang or 'en').split('-')[0]};q=0.9,en;q=0.6"
 
 
+# --------------------------------------------------------------------------- terms fence
+#: TERMS-HELD PLATFORMS (2026-10-13). The desk's terms rules are FAIL CLOSED: a platform whose own
+#: agreement bars this desk's automated use is never fetched, whatever route reaches it. X (and
+#: every nitter / xcancel front-end, which serves X's data), Reddit, Telegram channel scraping,
+#: StockTwits, Discord, Yahoo and mql5.com. A ground on one of these is HELD: never scheduled,
+#: never fetched, reported by name -- never as yield and never as BLOCKED (a blocker may lift
+#: by itself; a terms hold lifts only with a recorded permitting clause). The concept and the
+#: helper names match `libs/data/terms_fence.py` on claude/reddit-terms-fence (#162).
+HELD_PLATFORMS: dict[str, dict[str, Any]] = {
+    "x": {"hosts": ("x.com", "twitter.com", "xcancel.com", "t.co"), "label_prefix": "nitter",
+          "routes": ("nitter",),
+          "reason": "X's terms bar scraping; nitter/xcancel mirrors serve X's data"},
+    "reddit": {"hosts": ("reddit.com", "redd.it", "redditmedia.com"), "routes": ("reddit",),
+               "reason": "Reddit's User Agreement / Data API terms require an agreement"},
+    "telegram": {"hosts": ("t.me", "telegram.me", "telegram.org"), "routes": ("telegram",),
+                 "reason": "Telegram channel scraping is outside the desk's terms rules"},
+    "stocktwits": {"hosts": ("stocktwits.com",), "routes": (),
+                   "reason": "StockTwits terms bar automated collection"},
+    "discord": {"hosts": ("discord.com", "discord.gg", "discordapp.com"), "routes": (),
+                "reason": "Discord terms bar scraping"},
+    "yahoo": {"hosts": ("yahoo.com", "yahoo.co.jp"), "routes": (),
+              "reason": "Yahoo terms bar automated collection"},
+    "mql5": {"hosts": ("mql5.com",), "routes": (),
+             "reason": "mql5.com is excluded by the desk's source rules"},
+}
+
+
+def _host_of(u: Any) -> str:
+    s_ = str(u or "").strip().lower()
+    if not s_:
+        return ""
+    if "://" not in s_:
+        s_ = "https://" + s_
+    return (urlparse(s_).hostname or "").strip(".")
+
+
+def platform_of_url(url: Any) -> str | None:
+    """The terms-held platform a URL (or bare host) is on, or None."""
+    host = _host_of(url)
+    if not host:
+        return None
+    for plat, spec in HELD_PLATFORMS.items():
+        if any(host == h or host.endswith("." + h) for h in spec["hosts"]):
+            return plat
+        pre = spec.get("label_prefix")
+        if pre and any(lab.startswith(pre) for lab in host.split(".")):
+            return plat
+    return None
+
+
+def fenced_ground(g: dict[str, Any]) -> str | None:
+    """The terms-held platform a ground belongs to (its route, url, alt, site, feeds or
+    mirrors), or None."""
+    route = str(g.get("route") or "")
+    for plat, spec in HELD_PLATFORMS.items():
+        if route in spec["routes"]:
+            return plat
+    for u in (g.get("url"), g.get("site"), *(g.get("alt") or []), *(g.get("feeds") or []),
+              *(g.get("mirrors") or [])):
+        plat = platform_of_url(u)
+        if plat:
+            return plat
+    return None
+
+
+def held_row(plat: str) -> dict[str, Any]:
+    return {"status": "TERMS_HELD", "cause": "TERMS_HELD", "platform": plat,
+            "why": f"{plat}: {HELD_PLATFORMS[plat]['reason']} -- never fetched"}
+
+
+# ------------------------------------------------------------------- Common Crawl URL index
+#: THE PERMITTED SEARCH FALLBACK (2026-10-13). Bing answers this desk with an anti-bot shell and
+#: DuckDuckGo with nothing; an anti-bot page is recorded as the blocker and NEVER retried with
+#: other headers. The Common Crawl URL index enumerates a ground's own `site` pages instead, and
+#: those pages are then read from the site itself through `_Run.page`. One CDX query per ground
+#: per pass, a small limit, a wide per-host spacing, an honest user agent, and the index's own
+#: robots.txt consulted first (a disallow is recorded TERMS_HELD, never routed around).
+#: web.archive.org is NOT used here: its terms could not be read, so it stays as it was.
+TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "commoncrawl_index": {
+        "terms_url": "https://commoncrawl.org/terms-of-use",
+        "terms_quote": ("CC grants you a limited, non-assignable, non-transferable, "
+                        "non-sublicensable, non-exclusive, limited license [...] to access and "
+                        "use the Service subject to the terms and conditions of these ToU. "
+                        "(Preamble:) for the purpose of enabling a new wave of innovation, "
+                        "education and research."),
+        "restrictions": ("no \"interfering with or disrupting the Service\"; no \"forging or "
+                         "intentionally modifying headers\"; no collecting personal information"),
+        "service_note": ("index.commoncrawl.org: \"Please do not overload the URL index "
+                         "server.\""),
+        "robots": ("consulted at run time (ccindex_robots); on 2026-10-13 a reader agent was "
+                   "refused the CDX query path by robots, so a disallow for this agent is "
+                   "recorded TERMS_HELD and the route stands down"),
+        "checked_at": "2026-10-13"},
+}
+CCINDEX_HOST = "index.commoncrawl.org"
+CCINDEX_COLLINFO = f"https://{CCINDEX_HOST}/collinfo.json"
+CCINDEX_LIMIT = 15
+CCINDEX_PAGES = 4
+CCINDEX_AGENT = "quant-desk-deep-forest"
+CCINDEX_UA = {"User-Agent": f"{CCINDEX_AGENT}/1.0 (research; Common Crawl URL index, one "
+                            "query per ground per pass)",
+              "Accept": "application/json,text/plain;q=0.9,*/*;q=0.5"}
+#: Its own gate: the index host is spaced far wider than an ordinary site.
+_CC_GATE = pf.HostGate(default_s=4.0)
+_CC_STATE: dict[str, Any] = {}
+_CC_LOCK = threading.Lock()
+
+
+def _cc_get(url: str) -> pf.Response:
+    return pf.get(url, headers=CCINDEX_UA, timeout=25.0, retries=0, leg=LEG,
+                  gate=_CC_GATE, max_bytes=1_000_000)
+
+
+def ccindex_robots() -> tuple[bool, str]:
+    """(allowed, why) for the CDX query path under this agent, read once per process."""
+    with _CC_LOCK:
+        if "robots" in _CC_STATE:
+            return _CC_STATE["robots"]
+        r = _cc_get(f"https://{CCINDEX_HOST}/robots.txt")
+        if r.ok:
+            from urllib.robotparser import RobotFileParser
+            rp = RobotFileParser()
+            rp.parse(r.text.splitlines())
+            probe = f"https://{CCINDEX_HOST}/CC-MAIN-0000-00-index?url=example.org/*&output=json"
+            ok = bool(rp.can_fetch(CCINDEX_AGENT, probe))
+            out = (ok, "robots.txt allows the CDX path" if ok else
+                   "TERMS_HELD: robots.txt disallows the CDX query path for this agent")
+        elif r.status == 404:
+            out = (True, "robots.txt absent (404): no rules")
+        else:
+            # Unreadable is not permission: the route stands down this pass (fail closed).
+            out = (False, f"robots.txt unreadable ({r.error or r.status}); route stands down")
+        _CC_STATE["robots"] = out
+        return out
+
+
+def ccindex_collection() -> tuple[str, str | None]:
+    """The newest collection's CDX endpoint from collinfo.json, read once per process."""
+    with _CC_LOCK:
+        if "api" in _CC_STATE:
+            return _CC_STATE["api"]
+        r = _cc_get(CCINDEX_COLLINFO)
+        out: tuple[str, str | None]
+        if not r.ok:
+            out = ("", f"collinfo: {r.error or f'HTTP {r.status}'}")
+        else:
+            try:
+                info = json.loads(r.text)
+                api = str(info[0].get("cdx-api") or "") if info else ""
+                out = (api, None) if api.startswith(f"https://{CCINDEX_HOST}/") else (
+                    "", "collinfo: no cdx-api in the newest collection")
+            except (ValueError, TypeError, AttributeError, IndexError) as exc:
+                out = ("", f"collinfo unparseable: {type(exc).__name__}")
+        _CC_STATE["api"] = out
+        return out
+
+
+def parse_cdx(text: str) -> list[str]:
+    """Page URLs from a CDX `output=json` answer (one JSON object per line), HTML 200s only,
+    de-duplicated in order."""
+    out: list[str] = []
+    for line in (text or "").splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        url = str(row.get("url") or "")
+        if not url.startswith(("http://", "https://")):
+            continue
+        if str(row.get("status") or "200") != "200":
+            continue
+        mime = str(row.get("mime") or row.get("mime-detected") or "text/html")
+        if "html" not in mime:
+            continue
+        if url not in out:
+            out.append(url)
+    return out
+
+
+def ccindex_pages(site: str, limit: int = CCINDEX_LIMIT) -> tuple[list[str], str | None]:
+    """(page URLs on `site`, error). ONE CDX query; a 404 is "no captures", not an error."""
+    if platform_of_url(site):
+        return [], f"TERMS_HELD:{platform_of_url(site)}"
+    ok, why = ccindex_robots()
+    if not ok:
+        return [], why
+    api, err = ccindex_collection()
+    if err:
+        return [], err
+    q = (f"{api}?url={quote(site.strip('/'), safe='.-_~')}/*&output=json"
+         f"&limit={int(limit)}&filter=status:200&filter=mime:text/html")
+    r = _cc_get(q)
+    if r.status == 404:
+        return [], None
+    if not r.ok:
+        return [], f"ccindex: {r.error or f'HTTP {r.status}'}"
+    return parse_cdx(r.text), None
+
+
 # ------------------------------------------------------------------------------- fetching
+#: Markers of an anti-bot interstitial served with a 200. Read only on SHORT pages, where a
+#: challenge is the whole page rather than a footer link.
+_ANTI_BOT_PAGE = re.compile(r"(?i)cf-chl|just a moment\.\.\.|attention required!? \| cloudflare|"
+                            r"ddos-guard|are you a robot|captcha-delivery|px-captcha")
+
+
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
     """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
     charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
@@ -543,19 +752,6 @@ def wayback_snapshot(url: str, timestamp: str = "") -> tuple[str, str | None]:
     return str(snap["url"]), None
 
 
-def parse_nitter(page: str) -> list[dict[str, str]]:
-    """Tweet texts on a nitter search page, with the status link when the markup carries one."""
-    rows: list[dict[str, str]] = []
-    for m in re.finditer(r'(?is)<div class="tweet-content[^"]*"[^>]*>(.*?)</div>', page or ""):
-        text = html_text(m.group(1))
-        if not text:
-            continue
-        before = (page or "")[max(0, m.start() - 1500):m.start()]
-        lm = list(re.finditer(r'href="(/[^"]+/status/\d+[^"]*)"', before))
-        rows.append({"text": text[:600], "url": lm[-1].group(1) if lm else ""})
-    return rows
-
-
 # --------------------------------------------------------------------------- dataset pages
 _ENDPOINT_RE = re.compile(
     r"""href=["']([^"']+?\.(?:csv|tsv|json|jsonl|parquet|zip|gz|xlsx?|txt|xml)(?:\?[^"']*)?)["']""",
@@ -689,6 +885,9 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     across runs and no region is worked only because it sorts first in a file."""
     picked = []
     for g in grounds:
+        # A TERMS-HELD ground is never scheduled: registered, reported HELD, never fetched.
+        if fenced_ground(g):
+            continue
         if region and str(g.get("region")) != region and cluster_of(g) != region:
             continue
         if only and not ({str(g.get("name")), str(g.get("route")), str(g.get("region")),
@@ -743,11 +942,15 @@ class _Run:
         self.new: list[dict[str, Any]] = []
         self.datasets: list[dict[str, Any]] = []
         self.status: list[dict[str, Any]] = []
+        #: Per-URL fetch errors (http code, transport, render, terms, anti-bot). They belong to
+        #: the ground being worked and are folded into ITS row by `work`; `status` holds ground
+        #: rows only. The report's `fetch_notes` reads the first forty of these.
+        self.fetch_errors: list[dict[str, Any]] = []
         self.frontier: list[tuple[str, str, str]] = []
         self.counts = {"queries": 0, "pages": 0, "transcripts": 0, "rendered": 0,
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
                        "claims_seen_before": 0, "net_failures": 0, "dataset_pages": 0,
-                       "dataset_endpoints": 0, "feeds": 0}
+                       "dataset_endpoints": 0, "feeds": 0, "ccindex_queries": 0}
         #: Shared by every fork of this run: the network verdict and its failure streak.
         self._shared: dict[str, Any] = {"network": None, "fails": 0}
         self._lock = threading.RLock()
@@ -771,6 +974,7 @@ class _Run:
         crossed between threads."""
         f = copy.copy(self)
         f.new, f.datasets, f.status, f.frontier = [], [], [], []
+        f.fetch_errors = []
         f.counts = dict.fromkeys(self.counts, 0)
         f.ground, f.ground_claims = {}, []
         f.render_used = 0
@@ -781,6 +985,8 @@ class _Run:
             self.new.extend(f.new)
             self.datasets.extend(f.datasets)
             self.status.extend(f.status)
+            if len(self.fetch_errors) < 200:
+                self.fetch_errors.extend(f.fetch_errors[:40])
             self.frontier.extend(f.frontier)
             for k, v in f.counts.items():
                 if k != "net_failures":
@@ -813,30 +1019,46 @@ class _Run:
         return str(self.ground.get("language") or "en")
 
     def page(self, url: str, referer: str = "") -> str:
+        # A terms-held platform is refused before the network check and before any request; it
+        # is not a transport failure and never counts toward the NO_NETWORK verdict.
+        held = platform_of_url(url)
+        if held:
+            self.fetch_errors.append({"url": url, "terms": held})
+            return ""
         if not self._net_ok():
             return ""
         try:
             body = _http(url, referer=referer, lang=self.lang)
             self._note_net(True)
             self.counts["pages"] += 1
+            if len(body) < 40_000:
+                m = _ANTI_BOT_PAGE.search(body)
+                if m:
+                    # RECORDED, never routed around: no retry with other headers.
+                    self.fetch_errors.append({"url": url, "anti_bot": m.group(0)[:40]})
             return body
         except urllib.error.HTTPError as exc:
             self._note_net(True)
-            self.status.append({"url": url, "http": exc.code})
+            self.fetch_errors.append({"url": url, "http": exc.code})
             return ""
         except Exception as exc:
             self._note_net(False)
-            self.status.append({"url": url, "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
+            self.fetch_errors.append({"url": url,
+                                      "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
             return ""
 
     def rendered(self, url: str) -> str:
+        held = platform_of_url(url)
+        if held:
+            self.fetch_errors.append({"url": url, "terms": held})
+            return ""
         try:
             from libs.data.render_fetch import render
             page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0])
         except Exception as exc:
             page, err = "", f"{type(exc).__name__}: {str(exc)[:80]}"
         if err:
-            self.status.append({"url": url, "render": err[:120]})
+            self.fetch_errors.append({"url": url, "render": err[:120]})
             return ""
         self.counts["rendered"] += 1
         return page
@@ -1012,8 +1234,40 @@ class _Run:
                                                   f"search:{engine}:page")
                     time.sleep(1.0)
             time.sleep(1.5)
-        return {"queries": len(g.get("queries") or []), "engines": engines, "pages": pages,
-                "claims": claims, "errors": errors[:4]}
+        out: dict[str, Any] = {"queries": len(g.get("queries") or []), "engines": engines,
+                               "pages": pages, "claims": claims, "errors": errors[:4]}
+        # THE PERMITTED FALLBACK: no engine returned a row (an anti-bot shell, or nothing), so
+        # the Common Crawl URL index enumerates the ground's own site -- once per ground per
+        # pass -- and those pages are read from the site itself.
+        if not engines and site and not self.over() and self._net_ok():
+            cc = self.ground_ccindex(g, site)
+            out["claims"] = claims + int(cc.pop("claims_ccindex", 0))
+            out["pages"] = pages + int(cc.get("ccindex_pages") or 0)
+            out.update(cc)
+            out["errors"] = (errors[:3] + list(out.pop("cc_errors", [])))[:5]
+        return out
+
+    def ground_ccindex(self, g: dict[str, Any], site: str) -> dict[str, Any]:
+        """One CDX query for `site`, then up to CCINDEX_PAGES of its pages through `page`."""
+        self.counts["ccindex_queries"] = self.counts.get("ccindex_queries", 0) + 1
+        urls, err = ccindex_pages(site)
+        errs = [f"ccindex: {err}"] if err else []
+        claims = pages = 0
+        for u in urls:
+            self.follow(u, "", via=f"{SOURCE}:{g.get('name')}:ccindex")
+        for u in urls[:CCINDEX_PAGES]:
+            if self.over():
+                break
+            body = self.page(u)
+            if len(html_text(body)) >= MIN_PAGE_TEXT:
+                pages += 1
+                claims += self._read_page(g, body, u, _title(body) or u, "search:ccindex")
+            time.sleep(1.0)
+        res: dict[str, Any] = {"ccindex": len(urls), "ccindex_pages": pages, "cc_errors": errs}
+        if urls:
+            res["route_used"] = "search:ccindex"
+        res["claims_ccindex"] = claims
+        return res
 
     def ground_cn_api(self, g: dict[str, Any]) -> dict[str, Any]:
         from libs.data import cn_sources
@@ -1118,15 +1372,10 @@ class _Run:
                 "errors": errors[:4]}
 
     def ground_reddit(self, g: dict[str, Any]) -> dict[str, Any]:
-        """Subreddits through their public feeds (the JSON API answers 403 to a datacenter;
-        the feeds do not -- measured by side_channels/reddit_miner)."""
-        feeds = []
-        for sub in g.get("subs") or []:
-            feeds.append(f"https://www.reddit.com/r/{sub}/top/.rss?t=month")
-            feeds.append(f"https://www.reddit.com/r/{sub}/new/.rss")
-        out = self.ground_rss(g, feeds)
-        out["subs"] = len(g.get("subs") or [])
-        return out
+        """TERMS-HELD (2026-10-13): Reddit's agreement covers its feeds and JSON too. `work`
+        refuses the ground before reaching here; this refuses too, so a direct call cannot
+        fetch either. Nothing here requests a page."""
+        return {**held_row("reddit"), "claims": 0, "subs": len(g.get("subs") or [])}
 
     def ground_wayback(self, g: dict[str, Any]) -> dict[str, Any]:
         """A ground that no longer exists (the Quantopian forum) through the Wayback Machine:
@@ -1155,35 +1404,9 @@ class _Run:
         return {"fetched": 1, "snapshot": snap, "deep_pages": pages, "claims": claims}
 
     def ground_nitter(self, g: dict[str, Any]) -> dict[str, Any]:
-        """Public tweets through whichever nitter mirror answers; never an API key, never a
-        login. Mirrors die weekly, so every one is tried and the last reason is recorded."""
-        mirrors = [str(m) for m in (g.get("mirrors") or [])]
-        claims = tweets = 0
-        errors: list[str] = []
-        live: str | None = None
-        for q in g.get("queries") or []:
-            if self.over() or not self._net_ok():
-                break
-            self.counts["queries"] += 1
-            rows: list[dict[str, str]] = []
-            for m in ([live] if live else []) + [x for x in mirrors if x != live]:
-                page = self.page(f"https://{m}/search?f=tweets&q={quote(str(q))}")
-                rows = parse_nitter(page)
-                if rows:
-                    live = m
-                    break
-                errors.append(f"{m}: no tweets parsed")
-            for r in rows:
-                tweets += 1
-                url = (f"https://{live}{r['url']}" if r.get("url")
-                       else f"https://{live}/search?q={quote(str(q))}")
-                claims += self.take(r["text"], ground=g, url=url, title=r["text"][:80],
-                                    route="nitter", grade="COMMUNITY_POST")
-            time.sleep(1.0)
-        if not live and mirrors:
-            errors.append("no nitter mirror reachable -- recorded, not routed around")
-        return {"queries": len(g.get("queries") or []), "tweets": tweets, "mirror": live,
-                "claims": claims, "errors": errors[-4:]}
+        """TERMS-HELD (2026-10-13): a nitter mirror serves X's data, and X's terms cover it
+        wherever it is served from. Refused here as in `work`; nothing requests a page."""
+        return {**held_row("x"), "claims": 0, "mirrors": len(g.get("mirrors") or [])}
 
     def ground_youtube(self, g: dict[str, Any]) -> dict[str, Any]:
         """The Bilibili route generalised: video METADATA through the search index (titles and
@@ -1232,12 +1455,9 @@ class _Run:
                 "transcripts": n_tr, "claims": claims, "errors": errors[:4]}
 
     def ground_telegram(self, g: dict[str, Any]) -> dict[str, Any]:
-        """Public channel previews at t.me/s/<channel>: server-rendered, no account, the last
-        twenty posts. The Russian market conversation lives here more than on any forum."""
-        urls = [f"https://t.me/s/{c}" for c in (g.get("channels") or [])]
-        out = self.ground_http(g, urls=urls, deep=False)
-        out["channels"] = len(urls)
-        return out
+        """TERMS-HELD (2026-10-13): Telegram channel scraping is outside the desk's terms
+        rules. Refused here as in `work`; nothing requests a page."""
+        return {**held_row("telegram"), "claims": 0, "channels": len(g.get("channels") or [])}
 
     def ground_bilibili(self, g: dict[str, Any]) -> dict[str, Any]:
         from libs.data import bilibili
@@ -1341,18 +1561,25 @@ class _Run:
                                "language": g.get("language"),
                                "terms_note": label}
         if route == "unreachable":
-            self.status.append({**row, "status": "NO_ADDRESS",
+            self.status.append({**row, "status": "NO_ADDRESS", "cause": "NO_ADDRESS",
                                 "why": f"no site and no url to reach for: {g.get('why')}"})
+            return
+        # THE TERMS FENCE: a ground on a terms-held platform is never fetched (not even with
+        # --no-fetch would it be), and is reported HELD -- never yield, never BLOCKED.
+        held = fenced_ground(g)
+        if held:
+            self.status.append({**row, **held_row(held), "claims": 0})
             return
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
             return
         if not self._net_ok():
-            self.status.append({**row, "status": "NO_NETWORK",
+            self.status.append({**row, "status": "NO_NETWORK", "cause": "NO_NETWORK",
                                 "why": "three straight transport failures on this box"})
             return
         self.ground, self.ground_claims = g, []
         seen_before = self.counts["claims_seen_before"]
+        errs_before = len(self.fetch_errors)
         t0 = time.monotonic()
         self.g_end = min(self.started + self.budget_s, t0 + (share_s or self.budget_s))
         try:
@@ -1393,18 +1620,73 @@ class _Run:
         # this run had already banked from another ground (a repeat is a measurement, not a
         # blocked route).
         reached = any(out.get(k) for k in ("fetched", "engines", "videos", "repos", "papers",
-                                            "items", "tweets", "channels", "feeds", "articles")
+                                            "items", "tweets", "channels", "feeds", "articles",
+                                            "ccindex")
                       ) or self.counts["claims_seen_before"] > seen_before
-        status = "PRODUCTIVE" if n_claims else ("REACHED_NO_CLAIMS" if reached else "BLOCKED")
+        # THE YIELD RULE IS PER KIND (2026-10-13). A ground yields when it produced claims, OR
+        # data endpoints (a dataset row with 0 endpoints is a PAGE, not a yield), OR -- for an
+        # academic ground -- papers. The rule that fired is recorded on the row.
+        mine = [d for d in self.datasets if d.get("ground") == name]
+        endpoints = sum(int(d.get("n_endpoints") or 0) for d in mine)
+        n_papers = (int(out.get("papers") or 0)
+                    if route == "papers" or str(g.get("kind") or "") in ACADEMIC_KINDS else 0)
+        rule = yield_rule(n_claims, endpoints, n_papers)
+        status = "PRODUCTIVE" if rule else ("REACHED_NO_CLAIMS" if reached else "BLOCKED")
+        # THE GROUND'S OWN FETCH ERRORS travel on its row, so its blocker names a cause.
+        fetched_errs = self.fetch_errors[errs_before:]
+        if fetched_errs:
+            out["errors"] = [*list(out.get("errors") or [])[:4],
+                             *[_fmt_fetch_error(e) for e in fetched_errs[:4]]]
+            out["fetch_errors"] = fetched_errs[:8]
+        extra: dict[str, Any] = {}
+        if rule:
+            extra["yield_rule"] = rule
+        if status == "BLOCKED":
+            from research.alt_data_yield import classify_cause
+            cause, code = classify_cause(
+                status, [*fetched_errs, *(out.get("errors") or [])[:4],
+                         *([out["error"]] if out.get("error") else [])],
+                over_budget=self.over())
+            extra["cause"] = cause
+            if code:
+                extra["http_code"] = code
         classes: dict[str, int] = {}
         for c in self.ground_claims:
             k = str(c.get("mechanism_class"))
             classes[k] = classes.get(k, 0) + 1
-        self.status.append({**row, "status": status, **out,
+        self.status.append({**row, "status": status, **out, **extra,
                             "elapsed_s": round(time.monotonic() - t0, 1), "classes": classes,
                             # ORTHOGONALITY: a ground that yields only momentum says so.
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
-                            "datasets": sum(1 for d in self.datasets if d.get("ground") == name)})
+                            "datasets": len(mine), "endpoints": endpoints})
+
+
+#: Ground kinds whose papers count as yield on their own (rule `papers`).
+ACADEMIC_KINDS: frozenset[str] = frozenset({"academic"})
+
+
+def yield_rule(claims: int, endpoints: int, papers: int) -> str:
+    """The rule a ground's attempt yielded by, or "" -- claims, else endpoints, else papers."""
+    if claims > 0:
+        return "claims"
+    if endpoints > 0:
+        return "endpoints"
+    if papers > 0:
+        return "papers"
+    return ""
+
+
+def _fmt_fetch_error(e: dict[str, Any]) -> str:
+    u = str(e.get("url") or "")[:100]
+    if e.get("terms"):
+        return f"TERMS_HELD:{e['terms']} {u}"
+    if e.get("anti_bot"):
+        return f"anti-bot page ({e['anti_bot']}) {u}"
+    if e.get("http") is not None:
+        return f"HTTP {e['http']} {u}"
+    if e.get("render"):
+        return f"render: {e['render']} {u}"
+    return f"{e.get('error') or 'fetch failed'} {u}"
 
 
 def _feed_frontier(urls: list[tuple[str, str, str]]) -> int:
@@ -1447,8 +1729,25 @@ FRONTIER_NAME = "deep_forest_frontier.json"
 #: the budget or --no-fetch never reached stays NAMED_ONLY -- named, not hunted.
 _FRONTIER_OUTCOME: dict[str, str] = {
     "PRODUCTIVE": "YIELDED", "REACHED_NO_CLAIMS": "EMPTY", "BLOCKED": "BLOCKED",
-    "NO_NETWORK": "BLOCKED", "UNREACHABLE": "BLOCKED",
+    "NO_NETWORK": "BLOCKED", "UNREACHABLE": "BLOCKED", "NO_ADDRESS": "BLOCKED",
+    # A terms-held platform ground is never fetched: HELD, apart from BLOCKED and from yield.
+    "TERMS_HELD": "HELD",
 }
+
+
+def _blocker(s: dict[str, Any]) -> str:
+    """The frontier blocker: the closed-enum cause first (`HTTP_4xx(403): ...`), then the
+    detail, so the yield artifact can count causes instead of reading the word BLOCKED."""
+    from research.alt_data_yield import cause_label, classify_cause
+    cause = str(s.get("cause") or "")
+    code = s.get("http_code")
+    if not cause:
+        cause, code = classify_cause(str(s.get("status") or ""),
+                                     [*(s.get("fetch_errors") or []), *(s.get("errors") or []),
+                                      *([s["error"]] if s.get("error") else [])])
+    errs = s.get("errors") or []
+    detail = str(s.get("why") or s.get("error") or (errs[0] if errs else "") or "")
+    return f"{cause_label(cause, code)}: {detail}".strip(": ")[:300]
 
 
 def _frontier_path() -> Path:
@@ -1471,6 +1770,16 @@ def _record_frontier(grounds_status: list[dict[str, Any]],
     state = hf.load(path)
     for g in grounds:
         name = str(g.get("name") or "")
+        held = fenced_ground(g) if name else None
+        if held:
+            # A terms-held ground is HELD whatever an older pass recorded; never NAMED_ONLY
+            # frontier work, never BLOCKED. Recording it is not an attempt.
+            v = state.vectors.get(name)
+            if v is None or v.outcome != "HELD":
+                hf.record(state, name, outcome="HELD", blocker=_blocker(held_row(held)),
+                          language=str(g.get("language") or ""),
+                          region=str(g.get("region") or ""))
+            continue
         if name and name not in state.vectors:
             hf.record(state, name, outcome="NAMED_ONLY", language=str(g.get("language") or ""),
                       region=str(g.get("region") or ""))
@@ -1480,12 +1789,11 @@ def _record_frontier(grounds_status: list[dict[str, Any]],
         if not name or outcome is None:
             continue
         hf.record(state, name, outcome=outcome, findings=int(s.get("claims") or 0),
-                  blocker=(f"{s.get('status')}: {s.get('why') or s.get('error') or ''}".strip(": ")
-                           if outcome == "BLOCKED" else ""),
+                  blocker=(_blocker(s) if outcome in ("BLOCKED", "HELD") else ""),
                   language=str(s.get("language") or ""), region=str(s.get("region") or ""))
     hf.save(state, path)
     summary = hf.summarise(state)
-    return {k: summary.get(k) for k in ("vectors", "unhunted", "blocked", "off_cooldown",
+    return {k: summary.get(k) for k in ("vectors", "unhunted", "blocked", "held", "off_cooldown",
                                          "picked_over", "total_findings", "yield_rate",
                                          "by_language", "by_region", "languages_yielded",
                                          "languages_named_only", "by_language_note")} | {
@@ -1759,7 +2067,12 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         b = by_region.setdefault(reg, {"cluster": cluster_of(g), "grounds": 0, "worked": 0,
                                        "productive": 0, "blocked": 0, "claims": 0, "datasets": 0,
                                        "story": 0, "dataset": 0, "macro": 0, "momentum_only": 0,
-                                       "languages": []})
+                                       "languages": [], "terms_fenced": 0})
+        if fenced_ground(g):
+            # Registered, never workable: counted apart, so `worked == grounds` stays a
+            # statement about the grounds the desk may actually fetch.
+            b["terms_fenced"] += 1
+            continue
         b["grounds"] += 1
         kind = "dataset" if g.get("kind") == "dataset" else ("macro" if g.get("kind") == "macro"
                                                               else "story")
@@ -1803,6 +2116,15 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "productive": sum(1 for s in grounds_status if s.get("status") == "PRODUCTIVE"),
            "blocked": [s.get("ground") for s in grounds_status
                        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE")],
+           # Registered grounds on a terms-held platform: never scheduled, never fetched,
+           # named here so the gap is visible; the frontier records them HELD.
+           "terms_fenced": sorted({str(g.get("name")) for g in grounds if fenced_ground(g)}),
+           "yield_rules": {k: sum(1 for s in grounds_status if s.get("yield_rule") == k)
+                           for k in ("claims", "endpoints", "papers")},
+           "blocked_causes": {c: sum(1 for s in grounds_status
+                                     if s.get("status") == "BLOCKED" and s.get("cause") == c)
+                              for c in sorted({str(s.get("cause")) for s in grounds_status
+                                               if s.get("status") == "BLOCKED"})},
            "momentum_only_grounds": [s.get("ground") for s in grounds_status
                                      if s.get("momentum_only")],
            "by_region": by_region,
@@ -1833,7 +2155,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "source_shares": share_meta,
            "proposer_seat": seat_hint,
            "source_expansion": expansion,
-           "fetch_notes": [s for s in r.status if "url" in s][:40],
+           "fetch_notes": r.fetch_errors[:40],
            "top_claims": [{k: t.get(k) for k in ("title", "symbols", "channel", "mechanism_class",
                                                  "n_tellings", "evidence_grade",
                                                  "claimed_performance", "score", "url")}
@@ -1860,7 +2182,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             from research import alt_data_yield
             alt_data_yield.write(out=REPORT.with_name(alt_data_yield.ARTIFACT_NAME),
                                  frontier=_frontier_path(), vector_stats=_vector_stats_path(),
-                                 runs=_runs_path())
+                                 runs=_runs_path(), sources=SOURCES, datasets=DATASETS)
     return doc
 
 
@@ -1887,8 +2209,10 @@ def _append_run(row: dict[str, Any]) -> None:
 
 def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
     """Cumulative per-vector attempts / successes / rows / last error. The frontier keeps the
-    outcome; this keeps the COUNTS the yield artifact needs (a success is a ground that
-    produced at least one claim or dataset)."""
+    outcome; this keeps the COUNTS the yield artifact needs. A success is an attempt whose
+    per-kind yield rule fired (claims, endpoints, or papers for an academic ground) -- the same
+    rule the frontier outcome uses, so the two never disagree. A dataset row with 0 endpoints is
+    counted under `datasets` and is NOT a success."""
     p = _vector_stats_path()
     with _xlock("deep_forest_vector_stats"):
         try:
@@ -1906,10 +2230,26 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
                                       "datasets": 0, "counted_since": now})
             rows = int(s.get("claims") or 0)
             dsets = int(s.get("datasets") or 0)
-            e["attempts"] = int(e.get("attempts") or 0) + 1
-            e["successes"] = int(e.get("successes") or 0) + (1 if rows or dsets else 0)
+            eps = int(s.get("endpoints") or 0)
+            rule = str(s.get("yield_rule") or "")
+            held = s.get("status") == "TERMS_HELD"
+            # A terms hold is not an attempt: nothing was fetched.
+            e["attempts"] = int(e.get("attempts") or 0) + (0 if held else 1)
+            e["successes"] = int(e.get("successes") or 0) + (1 if rule else 0)
             e["rows"] = int(e.get("rows") or 0) + rows
             e["datasets"] = int(e.get("datasets") or 0) + dsets
+            e["endpoints"] = int(e.get("endpoints") or 0) + eps
+            if rule:
+                e["last_yield_rule"] = rule
+                rules = e.get("yield_rules") if isinstance(e.get("yield_rules"), dict) else {}
+                rules[rule] = int(rules.get(rule) or 0) + 1
+                e["yield_rules"] = rules
+            # THE STANDING CAUSE of this attempt's failure (closed enum), or "" when it reached.
+            e["last_cause"] = str(s.get("cause") or "")
+            if s.get("http_code"):
+                e["last_http_code"] = s.get("http_code")
+            else:
+                e.pop("last_http_code", None)
             e["last_status"] = s.get("status")
             e["last_attempt"] = now
             e["last_elapsed_s"] = s.get("elapsed_s")
@@ -1919,10 +2259,13 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
             err = s.get("error") or "; ".join(str(x) for x in (s.get("errors") or [])[:2]) \
                 or (s.get("why") if s.get("status") not in ("PRODUCTIVE",
                                                             "REACHED_NO_CLAIMS") else "")
-            if rows or dsets:
+            if rule:
                 e["last_success"] = now
-            if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE"):
-                e["last_error"] = str(err or s.get("status"))[:200]
+            if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE", "TERMS_HELD"):
+                cause = str(s.get("cause") or "")
+                text = str(err or s.get("status"))
+                e["last_error"] = (f"{cause}: {text}" if cause and not text.startswith(cause)
+                                   else text)[:200]
         _atomic_text(p, json.dumps({"updated": now, "vectors": vec,
                                     "note": "per-vector cumulative counts since counted_since; "
                                             "written by deep_forest_miner at each ground's "
