@@ -288,6 +288,10 @@ class RuleSpec:
     defaults: dict[str, Any]
     build: Callable[[Bars, dict[str, Any]], list[Order]]
     selector_params: bool = False
+    #: The session is the cell's own `session` param (never the selector), the side is a rule
+    #: param the build applies itself (a fade flips it per signal), and a variant modifier with
+    #: no written meaning here is refused rather than silently dropped.
+    params_own_session_and_side: bool = False
 
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
@@ -415,6 +419,69 @@ def _build_overnight_drift(b: Bars, p: dict[str, Any]) -> list[Order]:
     return out
 
 
+#: The plumbing moments a clock-transition cell may name. The rule reads only the STAMP HOUR the
+#: cell carries; the label must be one of these or the cell names no cause and is not a rule.
+CLOCK_LABELS = frozenset({"london_fix", "ny_option_cut", "cme_fx_close", "cash_equity_close",
+                          "comex_settle", "tokyo_open", "london_open", "ny_open",
+                          "broker_rollover"})
+
+
+def _build_clock_transition(b: Bars, p: dict[str, Any]) -> list[Order]:
+    side, mode = int(p["side"]), str(p["mode"])
+    stamp = int(p["stamp_hour"])
+    if (str(p.get("label") or "") not in CLOCK_LABELS or mode not in ("into", "out_of", "fade")
+            or side not in (1, -1) or not 0 <= stamp <= 23):
+        return []
+    if len(b) < max(1, 1440 // max(1, b.minutes)) * 60:
+        return []
+    hour = b.hour
+    at = np.flatnonzero(hour == stamp)
+    if at.size < 40:
+        return []
+    a = atr(b, int(p["atr_n"]))
+    lead, hold = int(p["lead_bars"]), int(p["hold_bars"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    out: list[Order] = []
+    for i in at:
+        if mode == "into":
+            j = int(i) - lead
+            if j < 1:
+                continue
+            entry, ttl, s = j, lead, side
+        elif mode == "out_of":
+            entry, ttl, s = int(i), hold, side
+        else:
+            j = int(i) - lead
+            if j < 1:
+                continue
+            move = float(b.c[i] - b.c[j])
+            if move == 0.0:
+                continue
+            entry, ttl, s = int(i), hold, (-1 if move > 0 else 1) * side
+        ai = float(a[entry])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        px = float(b.c[entry])
+        out.append(Order(int(b.t[entry]), s, px - s * stop_atr * ai,
+                         px + s * stop_atr * ai * rr, max(1, ttl)))
+    return out
+
+
+#: Variant keys and the values that leave a rule unchanged. Any other value names a variant the
+#: written rule does not describe, and that certificate is not rebuilt (UNMEASURED by name).
+NO_OP_MODIFIERS: dict[str, frozenset[str]] = {
+    "regime": frozenset({"", "unconditional", "all", "any"}),
+    "side_mode": frozenset({"", "follow"}),
+    "entry_timing": frozenset({"", "instant"}),
+    "execution_style": frozenset({"", "market"}),
+    "entry_style": frozenset({"", "market"}),
+}
+#: Keys that only label a cell's coordinate and change nothing about how it trades.
+LABEL_KEYS = frozenset({"representation", "timeframe", "selector", "session"})
+VARIANT_KEYS = frozenset({"cost_aware", "residual", "residual_tag", "conditioner", "macro_axis",
+                          "macro_state", "publication_lag_d", "transform"})
+
+
 SPEC_BOOK: dict[str, RuleSpec] = {
     "overnight_gap_decay": RuleSpec(
         "overnight_gap_decay",
@@ -461,6 +528,19 @@ SPEC_BOOK: dict[str, RuleSpec] = {
         "fade it: entry next open, stop 1.2 x ATR, target rr x that, time exit after ttl_bars.",
         {"anchor_hour": 0, "hold_bars": 8, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
         _build_overnight_drift),
+    "clock_transition": RuleSpec(
+        "clock_transition",
+        "One named plumbing moment (label, from the catalogue) at broker stamp hour stamp_hour. "
+        "Only when the bars hold at least 60 days and at least 40 bars at that hour. At each bar "
+        "i stamped stamp_hour: mode into -- signal at bar i - lead_bars, side, held lead_bars; "
+        "out_of -- signal at bar i, side, held hold_bars; fade -- signal at bar i, side x the "
+        "opposite of the sign of close[i] - close[i - lead_bars] (no signal when it is 0), held "
+        "hold_bars. Stop stop_atr x ATR(atr_n) from the signal bar's close, target rr x that "
+        "distance; entry next open, time exit after the hold. The cell's `session` keeps only "
+        "signals whose bar hour is inside that session.",
+        {"label": "", "stamp_hour": -1, "mode": "out_of", "side": 1, "lead_bars": 2,
+         "hold_bars": 4, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
+        _build_clock_transition, params_own_session_and_side=True),
 }
 
 #: Breakout selector -> window parameters, written into the spec text above.
@@ -625,6 +705,25 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     for k, v in dict(params or {}).items():
         if k in p or k in ("range_start", "range_end", "signal_at", "wait_bars"):
             p[k] = v
+    if spec.params_own_session_and_side:
+        raw = dict(params or {})
+        for k, v in raw.items():
+            val = str(v if v is not None else "").strip().lower()
+            if k in NO_OP_MODIFIERS and val not in NO_OP_MODIFIERS[k]:
+                return None, (f"variant {k}={v!r} has no written rule in the spec book for "
+                              f"{family!r}")
+            if k in VARIANT_KEYS:
+                return None, f"variant {k}={v!r} has no written rule in the spec book"
+        try:
+            p["side"] = int(p["side"])
+        except (TypeError, ValueError):
+            return None, f"side {p.get('side')!r} is not +1 or -1"
+        session = str(raw.get("session") or "all").strip().lower()
+        if session not in SESSIONS:
+            return None, f"session {session!r} has no written window"
+        p["_side"] = 0
+        p["_session"] = SESSIONS[session]
+        return p, "ok"
     s = str(side or "").upper()
     p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
     p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
