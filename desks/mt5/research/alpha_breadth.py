@@ -452,7 +452,8 @@ def allocator_history_reading(path: Path = ALLOCATOR_DAILY) -> dict[str, Any]:
     carries `in_headline: False` and no `would_raise_headline_to`. A flat (exact zero) or missing
     day is ABSENT, never a zero, as in `daily_sleeve_returns`.
     """
-    base = {"name": "allocator_history_returns", "informational": True, "in_headline": False,
+    base: dict[str, Any] = {"name": "allocator_history_returns", "informational": True,
+            "in_headline": False,
             "headline_unchanged": True, "source": str(path),
             "provenance": "backtest_replay (pf_allocator.build_evidence): gold windows + hunt "
                           "survivors, not the funded book; never a headline or capital input"}
@@ -462,15 +463,30 @@ def allocator_history_reading(path: Path = ALLOCATOR_DAILY) -> dict[str, Any]:
     except Exception as exc:
         return {**base, "status": UNMEASURED, "n_eff": None, "n_obs": 0,
                 "why": f"allocator daily matrix unreadable: {type(exc).__name__}: {exc}"}
+    try:
+        mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat()
+    except OSError:
+        mtime = None
+    # Several rows on one date are COMPOUNDED into that date, never last-row-wins: a date key
+    # cut from a sub-daily index would otherwise keep one bar and drop the rest of the day.
     series: dict[str, dict[str, float]] = {}
+    collapsed = 0
     for col in df.columns:
-        col_s = df[col]
-        out = {str(k)[:10]: float(v) for k, v in col_s.items()
-               if isinstance(v, (int, float)) and np.isfinite(v) and v != 0.0}
+        growth: dict[str, float] = {}
+        rows: dict[str, int] = {}
+        for k, v in df[col].items():
+            if not (isinstance(v, (int, float)) and np.isfinite(v) and v != 0.0):
+                continue
+            day = str(k)[:10]
+            growth[day] = growth.get(day, 1.0) * (1.0 + float(v))
+            rows[day] = rows.get(day, 0) + 1
+        collapsed += sum(c - 1 for c in rows.values())
+        out = {d: g - 1.0 for d, g in growth.items() if g != 1.0}
         if out:
             series[str(col)] = out
     r = realised_breadth(series, name="allocator_history_returns")
-    return {**base, **r.as_dict(), "n_sleeves": len(series)}
+    return {**base, **r.as_dict(), "n_sleeves": len(series), "source_mtime": mtime,
+            "rows_compounded_into_a_day": collapsed}
 
 
 def run(write_queue: bool = True) -> dict[str, Any]:

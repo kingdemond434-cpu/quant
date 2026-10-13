@@ -696,3 +696,29 @@ def test_allocator_history_reading_is_informational_and_long(tmp_path: Path) -> 
     assert row["n_obs"] == 250 and row["n_eff"] > 5.0
     missing = abm.allocator_history_reading(tmp_path / "absent.parquet")
     assert missing["status"] == eb.UNMEASURED and missing["n_eff"] is None
+
+
+def test_allocator_history_compounds_rows_sharing_a_date_and_stamps_the_source(
+        tmp_path: Path) -> None:
+    import pandas as pd
+
+    idx = pd.DatetimeIndex(["2024-01-01T00:00Z", "2024-01-01T12:00Z", "2024-01-02T00:00Z"])
+    df = pd.DataFrame({"a": [0.01, 0.02, -0.01], "b": [0.03, 0.0, 0.02]}, index=idx)
+    p = tmp_path / "daily_r.parquet"
+    df.to_parquet(p)
+    seen: dict[str, dict[str, float]] = {}
+    real = ab.realised_breadth
+
+    def spy(series: dict[str, dict[str, float]], **kw: object) -> object:
+        seen.update(series)
+        return real(series, **kw)
+
+    ab.realised_breadth = spy  # type: ignore[assignment]
+    try:
+        row = ab.allocator_history_reading(p)
+    finally:
+        ab.realised_breadth = real  # type: ignore[assignment]
+    assert seen["a"]["2024-01-01"] == pytest.approx(1.01 * 1.02 - 1.0)
+    assert seen["b"]["2024-01-01"] == pytest.approx(0.03)
+    assert row["rows_compounded_into_a_day"] == 1
+    assert row["source_mtime"] and row["source_mtime"].startswith("20")
