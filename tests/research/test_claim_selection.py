@@ -107,7 +107,7 @@ def test_the_lifetime_ledger_charges_each_family_once(tmp_path, monkeypatch) -> 
     assert cs.lifetime_charges() == {rows[0]["claim_family"]: 200}
     assert set(cs.lineage_index()) == {f"g{i}" for i in range(30)}
     monkeypatch.setattr(el, "_graph_counts", lambda: (10, {"carry": 10}))
-    monkeypatch.setattr(el, "_proposer_counts", lambda: (5, {"carry": 5}))
+    monkeypatch.setattr(el, "_proposer_counts", lambda *a: (5, {"carry": 5}))
     monkeypatch.setattr(el, "_prereg_counts", lambda: 0)
     doc = el.lifetime(write=False)
     assert doc["lifetime_trials"] == 10 + 5 + 200
