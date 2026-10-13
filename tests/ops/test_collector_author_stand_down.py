@@ -36,3 +36,17 @@ def test_main_records_the_stand_down_and_calls_nothing(tmp_path: Path,
     monkeypatch.setattr(ca.urllib.request, "urlopen", _boom)
     ca.main()
     assert json.loads((tmp_path / "status.json").read_text())["status"] == "STAND_DOWN"
+
+
+def test_the_stood_down_bodies_have_no_caller() -> None:
+    """Audit should-fix on #362: a later edit must not quietly re-wire the unsafe bodies."""
+    import re
+    root = Path(__file__).resolve().parents[2]
+    names = ("_run_isolated_unsafe_stood_down", "_main_unsafe_stood_down")
+    for path in [*root.glob("scripts/**/*.py"), *root.glob("libs/**/*.py"),
+                 *root.glob("desks/**/*.py")]:
+        text = path.read_text("utf-8", errors="ignore")
+        for n in names:
+            calls = [m for m in re.finditer(rf"\b{n}\s*\(", text)
+                     if not text[max(0, m.start() - 4):m.start()].endswith("def ")]
+            assert not calls, f"{path}: calls {n}"

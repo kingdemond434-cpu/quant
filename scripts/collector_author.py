@@ -164,7 +164,7 @@ def run_isolated(code: str, timeout: int = 70) -> tuple[dict | None, str]:
     return None, "STAND_DOWN: " + STAND_DOWN
 
 
-def _run_isolated_unsafe_retired(code: str, timeout: int = 70) -> tuple[dict | None, str]:
+def _run_isolated_unsafe_stood_down(code: str, timeout: int = 70) -> tuple[dict | None, str]:
     """The pre-2026-10-13 runner, kept as the record of what the lab port must replace."""
     runner = code + (
         "\n\nif __name__ == '__main__':\n"
@@ -220,7 +220,7 @@ def main() -> None:
     print("STAND_DOWN: " + STAND_DOWN)
 
 
-def _main_unsafe_retired() -> None:
+def _main_unsafe_stood_down() -> None:
     """The pre-2026-10-13 body, kept for the isolated-lab port. Nothing calls it."""
     if not (KEYS.exists() and FEED.exists()):
         print("missing panel keys or breadth feed")
