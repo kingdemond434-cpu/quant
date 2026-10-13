@@ -202,3 +202,78 @@ def test_world_population_respects_the_memory_budget() -> None:
     w = sample_worlds(ev, WorldConfig(n_worlds=256, n_rows=384, max_elements=200_000, seed=1))
     assert w.r.size <= 200_000
     assert "trimmed" in w.note
+
+
+# ------------------------------- audit #211 follow-up: an UNMEASURED macro factor is not a zero
+def _no_overlap(name: str, half: int, **kw: object) -> SleeveEvidence:
+    """A sleeve alive on one half of a 400-day calendar only, so no pair has a realised |corr|."""
+    r = np.full(400, np.nan)
+    sl = slice(0, 200) if half == 0 else slice(200, 400)
+    r[sl] = np.random.default_rng(half).normal(0.0, 1.0, 200)
+    return SleeveEvidence(name=name, daily_r=r, **kw)  # type: ignore[arg-type]
+
+
+def test_an_unmeasured_macro_pair_is_floored_at_its_instruments_co_movement() -> None:
+    from libs.portfolio.robust_elog import _corr_abs
+    rng = np.random.default_rng(7)
+    vix = rng.normal(0, 1, 500)
+    a = tuple(0.95 * vix + 0.3 * rng.normal(0, 1, 500))
+    b = tuple(0.95 * vix + 0.3 * rng.normal(0, 1, 500))
+    # rho MEASURED, not asserted (audit #363 MF-B): a sleeve that is its instrument plus noise.
+    sa = np.asarray(a) + 0.3 * rng.normal(0, 1, 500)
+    rho = float(abs(np.corrcoef(sa, np.asarray(a))[0, 1]))
+    assert 0.9 < rho < 0.99
+    dark = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a, inst_rho=rho,
+                        factor_unmeasured=("d_vix",)),
+            _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b, inst_rho=rho,
+                        factor_unmeasured=("d_vix",))]
+    assert _corr_abs(dark)[0, 1] > 0.75            # the archive went dark; the prices did not
+    lit = [_no_overlap("AUDJPY_x", 0, symbol="AUDJPY", family="f1", inst_r=a, inst_rho=rho),
+           _no_overlap("NZDJPY_y", 1, symbol="NZDJPY", family="f2", inst_r=b, inst_rho=rho)]
+    assert _corr_abs(lit)[0, 1] < 0.05             # measured macro: nothing changes
+
+
+def test_noise_sleeves_on_co_moving_pairs_are_not_charged_as_one_bet() -> None:
+    """Audit #363 MF1: the floor is SLEEVE co-movement. Two sleeves barely related to their
+    co-moving pairs stay near their full-archive value."""
+    from libs.portfolio.robust_elog import _corr_abs
+    rng = np.random.default_rng(9)
+    usd = rng.normal(0, 1, 500)
+    a = tuple(usd + 0.2 * rng.normal(0, 1, 500))
+    b = tuple(usd + 0.2 * rng.normal(0, 1, 500))
+    ev = [_no_overlap("EURUSD_x", 0, symbol="EURUSD", family="f1", inst_r=a, inst_rho=0.05,
+                      factor_unmeasured=("d_vix",)),
+          _no_overlap("GBPUSD_y", 1, symbol="GBPUSD", family="f2", inst_r=b, inst_rho=0.05,
+                      factor_unmeasured=("d_vix",))]
+    assert _corr_abs(ev)[0, 1] < 0.05
+
+
+def test_the_realised_fallback_reads_the_pairs_own_common_days() -> None:
+    """Audit #363 MF2: 25 common days at a true 0.945 must read near 0.945, not the 0.1 the
+    zero-filled calendar gave, and fewer than MIN_REALISED_DAYS makes no claim."""
+    from libs.portfolio.robust_elog import _corr_abs, breadth_channels
+    rng = np.random.default_rng(3)
+    base = rng.normal(0, 1, 400)
+    x, y = np.full(400, np.nan), np.full(400, np.nan)
+    x[:200] = base[:200]
+    y[175:] = base[175:] + 0.3 * rng.normal(0, 1, 225)      # 25 common days
+    ev = [SleeveEvidence(name="XAUUSD_x", daily_r=x, symbol="XAUUSD", family="f1",
+                         factor_unmeasured=("d_vix",)),
+          SleeveEvidence(name="US500_y", daily_r=y, symbol="US500", family="f2",
+                         factor_unmeasured=("d_vix",))]
+    assert _corr_abs(ev)[0, 1] > 0.8
+    assert breadth_channels(ev)["unresolved_pairs"] == 1
+
+
+def test_the_floor_is_counted_only_where_it_binds() -> None:
+    """Audit #363 MF-B: a same-mechanism floor above the macro floor leaves the count at 0."""
+    from libs.portfolio.robust_elog import _structured_corr
+    rng = np.random.default_rng(3)
+    a = tuple(rng.normal(0, 1, 300))
+    b = tuple(0.2 * np.asarray(a) + rng.normal(0, 1, 300))
+    ev = [_no_overlap("EURUSD_x", 0, symbol="EURUSD", family="f1", inst_r=a, inst_rho=0.5,
+                      mechanism="carry", factor_unmeasured=("d_vix",)),
+          _no_overlap("GBPUSD_y", 1, symbol="GBPUSD", family="f2", inst_r=b, inst_rho=0.5,
+                      mechanism="carry", factor_unmeasured=("d_vix",))]
+    _, meta = _structured_corr(ev)
+    assert meta["n_unmeasured_inst_floored"] == 0
