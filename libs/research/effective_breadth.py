@@ -382,6 +382,21 @@ def realised_breadth(series: Mapping[str, Mapping[str, float]], *,
     Averaging is in Fisher-z space and the UPPER 95% bound is returned, not the point estimate:
     correlations are estimated on whatever regime happened to be sampled, and the desk takes the
     breadth its evidence supports at the pessimistic end.
+
+    THE STANDARD ERROR OF THE MEAN IS THE MEAN OF THE PAIRS' STANDARD ERRORS. Pairwise
+    correlations inside one book are dependent, so sqrt(n_pairs) shrinkage is refused. But the
+    standard deviation of a mean of dependent estimates is never larger than the mean of their
+    standard deviations (Minkowski: sd(sum X_i) <= sum sd(X_i)), whatever the dependence. So
+    mean_i 1/sqrt(n_i - 3) is a bound that holds under ANY correlation between the pairs. The
+    earlier rule took the THINNEST pair's error for every pair, which at a 20-day floor puts
+    rho_upper >= tanh(1.645/sqrt(17)) = 0.38 even when every pair is exactly uncorrelated, and so
+    caps this reading at about 1/0.38 = 2.6 bets for ANY book of any size. A number that cannot
+    move whatever the book does is not a measurement of the book.
+
+    `evidence_ceiling` is the reading the same overlap would give a book whose true mean
+    correlation is zero. When the reading sits near it (`evidence_limited`), the number is set by
+    how much history exists, not by how correlated the sleeves are, and the fix is more overlap,
+    not different sleeves.
     """
     names = sorted(series)
     n = len(names)
@@ -389,6 +404,7 @@ def realised_breadth(series: Mapping[str, Mapping[str, float]], *,
         return _unmeasured(name, f"{n} sleeve(s) with realised returns; correlation needs two",
                            n_nominal=n)
     zs: list[float] = []
+    ses: list[float] = []
     smallest = 0
     for i, a in enumerate(names):
         for b in names[i + 1:]:
@@ -404,19 +420,28 @@ def realised_breadth(series: Mapping[str, Mapping[str, float]], *,
                 continue
             r = max(min(r, 0.999999), -0.999999)
             zs.append(math.atanh(r))
+            ses.append(1.0 / math.sqrt(max(len(common) - 3, 1)))
             smallest = len(common) if smallest == 0 else min(smallest, len(common))
     if not zs:
         return _unmeasured(
             name, f"no sleeve pair has {min_overlap} overlapping trading days ({n} sleeves); the "
                   "floor is not lowered to produce a number", n_nominal=n)
     z_bar = sum(zs) / len(zs)
-    se = 1.0 / math.sqrt(max(smallest - 3, 1))
+    se = sum(ses) / len(ses)
     rho_upper = math.tanh(z_bar + 1.645 * se)
-    return Reading(name, MEASURED, effective_bets(n, rho_upper), n, smallest,
+    k = effective_bets(n, rho_upper)
+    ceiling = effective_bets(n, math.tanh(1.645 * se))
+    limited = k >= 0.9 * ceiling
+    return Reading(name, MEASURED, k, n, smallest,
                    f"{len(zs)} pair(s) cleared the {min_overlap}-day overlap floor, thinnest "
-                   f"overlap {smallest}d; rho <= {rho_upper:.3f} at the 95% upper bound, not the "
-                   "point estimate",
-                   {"n_pairs": len(zs), "rho_upper": round(rho_upper, 4)})
+                   f"overlap {smallest}d; rho <= {rho_upper:.3f} at the 95% upper bound (point "
+                   f"{math.tanh(z_bar):.3f}), not the point estimate"
+                   + ("; EVIDENCE-LIMITED: a zero-correlation book would read "
+                      f"{ceiling:.2f} on this overlap" if limited else ""),
+                   {"n_pairs": len(zs), "rho_upper": round(rho_upper, 4),
+                    "rho_point": round(math.tanh(z_bar), 4), "se_z": round(se, 4),
+                    "se_rule": "mean_of_pair_se", "evidence_ceiling": round(ceiling, 3),
+                    "evidence_limited": bool(limited)})
 
 
 def headline(readings: Sequence[Reading], n_nominal: int) -> dict[str, Any]:
