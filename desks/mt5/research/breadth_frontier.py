@@ -47,10 +47,14 @@ value -- it reaches them THIN at most. Empty cells are ranked by an argued produ
 the row): asset weight in the hypothesis-lane universe x geography relevance to an MT5 instrument
 x novelty of the cell's axis values x the source kind's measured yield prior.
 
-TERMS ARE FAIL CLOSED. The fringe registry (`data/fringe_families.json`) carries a verbatim quoted
-clause for every PERMITS source; anything else is HELD. This organ fetches NOTHING -- it reads
-artifacts on this tree -- so HELD stays unfetched by construction, and a PERMITS source is only
-ever named as an acquisition target for the organs that own fetching.
+NO SOURCE IS BANNED AS A CATEGORY; ONLY A METHOD IS OFF (principal's ruling, 2026-10-13). Every
+source carries an access status -- API_PERMITTED, NEEDS_KEY, PUBLIC_PAGE, IDEAS_ONLY or
+METHOD_BLOCKED with its reason. A live status needs a READ terms page with a verbatim quote; an
+UNREAD source is IDEAS_ONLY and never fetched as live input; a ground whose fetches met an
+anti-bot wall is METHOD_BLOCKED (the wall is recorded, never routed around). Idea provenance never
+blocks a cell: access is censused beside the map and never changes a cell's state. This organ
+fetches NOTHING -- it reads artifacts on this tree -- so a live source is only ever named as an
+acquisition target for the organs that own fetching.
 
 Nothing here sizes, gates, judges or charges a trial; it measures and proposes.
 """
@@ -260,6 +264,8 @@ STOPWORDS = frozenset({
     "datasets", "export", "exports", "api", "rest", "json", "xlsx", "csv", "sdmx", "pdf",
     "manifest", "llms", "humans", "robots", "sitemap", "favicon", "trading", "financial",
     "information", "historical", "mobile", "tipo", "openapi", "swagger"})
+#: Words in a fetch error that mean an automation wall answered, not an empty page.
+ANTI_BOT = ("anti-bot", "captcha", "cloudflare", "challenge", "access denied", "403")
 #: A proposal is offered to the ontology once this many distinct hosts carry it.
 PROMOTE_HOSTS = 3
 MAX_PROPOSALS = 60
@@ -305,9 +311,12 @@ def horizon_of(cadence: Any) -> str | None:
 
 def _row(origin: str, name: str, *, source: str | None, geo: str | None, langs: Iterable[str],
          actors: Iterable[str] = (), assets: Iterable[str] = (), horizons: Iterable[str] = (),
-         yielded: bool | None = None) -> dict[str, Any]:
-    """One observed source, on the six axes. Empty tuple = the axis is UNDECLARED."""
+         yielded: bool | None = None, access: str = "IDEAS_ONLY",
+         access_reason: str = "terms not read by this organ") -> dict[str, Any]:
+    """One observed source, on the six axes. Empty tuple = the axis is UNDECLARED. `access` is a
+    census label only: it never changes what a cell is (idea provenance never blocks a cell)."""
     return {"origin": origin, "name": name, "source": source, "geo": geo,
+            "access": access, "access_reason": access_reason,
             "langs": tuple(sorted({str(x) for x in langs if x})),
             "actors": tuple(sorted(set(actors))), "assets": tuple(sorted(set(assets))),
             "horizons": tuple(sorted(set(horizons))), "yielded": yielded}
@@ -330,14 +339,19 @@ def rows_from_grounds(doc: Mapping[str, Any] | None, alt: Mapping[str, Any] | No
             continue
         v = vectors.get(str(g.get("name"))) if isinstance(vectors, Mapping) else None
         yielded: bool | None = None
+        access, why = "IDEAS_ONLY", "ground terms UNREAD here: mined for ideas, not live input"
         if isinstance(v, Mapping) and v.get("outcome"):
             yielded = str(v["outcome"]) == "YIELDED"
+            err = str(v.get("last_error") or "").lower()
+            if str(v["outcome"]) == "BLOCKED" and any(w in err for w in ANTI_BOT):
+                access, why = "METHOD_BLOCKED", ("an anti-bot / CAPTCHA wall answered; recorded "
+                                                 "as the blocker, never routed around")
         text = _text(g.get("name"), g.get("why"), g.get("url"), g.get("dataset_class"))
         out.append(_row("deep_forest", str(g.get("name")), source=source,
                         geo=str(g.get("region") or "") or None,
                         langs=[str(g.get("language") or "")],
                         actors=[ACTOR_OF_KIND[source]], assets=assets_in(text),
-                        yielded=yielded))
+                        yielded=yielded, access=access, access_reason=why))
     return out
 
 
@@ -368,6 +382,13 @@ def rows_from_free_stack(doc: Mapping[str, Any] | None, yld: Mapping[str, Any] |
             if isinstance(succ, (int, float)):
                 yielded = succ > 0
         langs = str(s.get("language") or "").replace("+", "/").split("/")
+        if s.get("machine_use_allowed") is True:
+            key_env = s.get("key_env")
+            access, why = (("NEEDS_KEY", f"{key_env} is not set on this host")
+                           if key_env and not os.environ.get(str(key_env))
+                           else ("API_PERMITTED", "roster: machine_use_allowed"))
+        else:
+            access, why = "IDEAS_ONLY", "roster has not proven machine use: ideas only"
         actor = PARTICIPANT_TO_ACTOR.get(str(s.get("participant_structure") or ""))
         text = _text(s.get("name"), s.get("mechanism"), json.dumps(s.get("targets") or ""),
                      s.get("kind"))
@@ -376,7 +397,7 @@ def rows_from_free_stack(doc: Mapping[str, Any] | None, yld: Mapping[str, Any] |
                         langs=[x for x in langs if x and x != "multi"],
                         actors=[actor] if actor else [], assets=assets_in(text),
                         horizons=[h] if (h := horizon_of(s.get("cadence"))) else [],
-                        yielded=yielded))
+                        yielded=yielded, access=access, access_reason=why))
     return out
 
 
@@ -448,7 +469,10 @@ def rows_from_registry(doc: Mapping[str, Any] | None) -> list[dict[str, Any]]:
             continue
         blob = _text(key, r.get("source"), r.get("notes"), r.get("symbol"), r.get("symbols"))
         life = str(r.get("lifecycle") or "").upper()
-        out.append(_row("data_registry", str(key), source="exchange_venue"
+        own = "mt5" in blob or "terminal" in blob
+        out.append(_row("data_registry", str(key), access="API_PERMITTED" if own else
+                        "IDEAS_ONLY", access_reason="the desk's own broker terminal" if own
+                        else "terms not read by this organ", source="exchange_venue"
                         if "mt5" in blob or "terminal" in blob else "official_statistics",
                         geo="global", langs=["en"], actors=["professional_trader"]
                         if "mt5" in blob else ["official_sector"], assets=assets_in(blob),
@@ -627,43 +651,76 @@ def source_priors(rows: list[dict[str, Any]]) -> dict[str, float]:
 
 # ------------------------------------------------------------------- fringe families (ontology)
 
+#: The access statuses (principal's ruling, 2026-10-13): no source is banned as a category; only
+#: a METHOD is off. IDEAS_ONLY is read for ideas and
+#: never fetched as input (every UNREAD source lands here); METHOD_BLOCKED names the method.
+#: API_PERMITTED and PUBLIC_PAGE may be fetched as live input; NEEDS_KEY may once its key is set.
+ACCESS_STATUSES: tuple[str, ...] = ("API_PERMITTED", "NEEDS_KEY", "PUBLIC_PAGE", "IDEAS_ONLY",
+                                    "METHOD_BLOCKED")
+LIVE_ACCESS = frozenset({"API_PERMITTED", "PUBLIC_PAGE"})
+
+
+def access_of(s: Mapping[str, Any]) -> tuple[str, str]:
+    """(status, reason) for one fringe source, re-derived: a live status needs a READ terms page
+    with a quote, and a key the box does not hold reads NEEDS_KEY, never zero."""
+    declared = str(s.get("access_status") or "")
+    if declared not in ACCESS_STATUSES:
+        return "IDEAS_ONLY", f"undeclared status {declared!r}: never fetched as live input"
+    if declared == "METHOD_BLOCKED":
+        return declared, str(s.get("status_reason") or "method named in the registry")
+    if declared in ("API_PERMITTED", "NEEDS_KEY", "PUBLIC_PAGE"):
+        if s.get("terms_read") != "READ" or not s.get("quote"):
+            return "IDEAS_ONLY", "terms UNREAD or no verbatim quote: never fetched as live input"
+        key_env = s.get("key_env")
+        if key_env and not os.environ.get(str(key_env)):
+            return "NEEDS_KEY", f"{key_env} is not set on this host"
+        if declared == "NEEDS_KEY":
+            return "API_PERMITTED", f"{key_env} present"
+        return declared, str(s.get("conditions") or "")
+    return "IDEAS_ONLY", str(s.get("status_reason") or "")
+
+
 def fringe_status(doc: Mapping[str, Any] | None) -> dict[str, Any]:
-    """Each family's stage, DERIVED from the tree: terms, a collector module, ingested evidence."""
+    """Each family's stage, DERIVED from the tree: access, a collector module, ingested evidence."""
     if not isinstance(doc, Mapping):
         return {"status": UNMEASURED, "why": f"{FRINGE} absent"}
+    order = list(doc.get("stage_ladder") or ["NAMED", "TERMS_CLEARED", "COLLECTOR_EXISTS",
+                                              "INGESTED"])
     fams = []
     for f in doc.get("families") or []:
         srcs = []
         for s in f.get("sources") or []:
-            permits = s.get("terms_status") == "PERMITS" and bool(s.get("quote"))
-            key_env = s.get("key_env")
+            status, reason = access_of(s)
             stage = "NAMED"
-            if permits:
+            if status in LIVE_ACCESS or status == "NEEDS_KEY":
                 stage = "TERMS_CLEARED"
                 owner = s.get("owner")
                 if owner and (REPO / owner).exists():
                     stage = "COLLECTOR_EXISTS"
                 if any(any(BASE.glob(g)) for g in s.get("evidence_globs") or []):
                     stage = "INGESTED"
-            srcs.append({"id": s.get("id"), "terms": "PERMITS" if permits else "HELD",
-                         "stage": stage,
-                         "key": (("PRESENT" if os.environ.get(str(key_env)) else "NEEDS_KEY")
-                                 if key_env else None)})
-        order = doc.get("stage_ladder") or ["NAMED", "TERMS_CLEARED", "COLLECTOR_EXISTS",
-                                            "INGESTED"]
+            srcs.append({"id": s.get("id"), "access": status, "reason": reason,
+                         "terms_read": s.get("terms_read") or "UNREAD", "stage": stage})
         stage = max((s["stage"] for s in srcs), key=order.index, default="NAMED")
+        counts = Counter(s["access"] for s in srcs)
         fams.append({"id": f.get("id"), "name": f.get("name"),
                      "information_type": f.get("information_type"),
                      "mt5_instruments": list((f.get("mt5_mapping") or {}).get("instruments")
                                              or []),
                      "channel": (f.get("mt5_mapping") or {}).get("channel"),
-                     "stage": stage, "permits": sum(s["terms"] == "PERMITS" for s in srcs),
-                     "held": sum(s["terms"] == "HELD" for s in srcs), "sources": srcs})
+                     "stage": stage, "access": {a: counts[a] for a in ACCESS_STATUSES},
+                     "live_sources": sum(counts[a] for a in LIVE_ACCESS),
+                     "sources": srcs})
+    every = Counter(s["access"] for f in fams for s in f["sources"])
     return {"families": fams, "n": len(fams),
-            "with_permits_source": sum(1 for f in fams if f["permits"]),
-            "held_only": sum(1 for f in fams if not f["permits"]),
-            "sources_permits": sum(f["permits"] for f in fams),
-            "sources_held": sum(f["held"] for f in fams),
+            "with_live_source": sum(1 for f in fams if f["live_sources"]),
+            "with_key_pending_only": sum(1 for f in fams if not f["live_sources"]
+                                         and f["access"]["NEEDS_KEY"]),
+            "ideas_only": sum(1 for f in fams if not f["live_sources"]
+                              and not f["access"]["NEEDS_KEY"]),
+            "sources_by_access": {a: every[a] for a in ACCESS_STATUSES},
+            "sources_terms_unread": sum(1 for f in fams for s in f["sources"]
+                                        if s["terms_read"] != "READ"),
             "by_stage": dict(Counter(f["stage"] for f in fams)),
             "rule": doc.get("terms_rule")}
 
@@ -809,10 +866,11 @@ def dataset_discovery(rows: list[dict[str, Any]], n_files: int | str,
     new = digests - seen
     state["endpoints_seen"] = sorted(seen | digests)[-MAX_SEEN:]
     cat = _read(DISCOVERED_CATALOGUE)
-    targets = [{"family": f["id"], "source": s["id"], "stage": s["stage"], "key": s["key"]}
+    targets = [{"family": f["id"], "source": s["id"], "stage": s["stage"],
+                "access": s["access"]}
                for f in fringe.get("families") or [] for s in f["sources"]
-               if s["terms"] == "PERMITS" and s["stage"] in ("TERMS_CLEARED",
-                                                             "COLLECTOR_EXISTS")]
+               if s["access"] in ("API_PERMITTED", "PUBLIC_PAGE", "NEEDS_KEY")
+               and s["stage"] in ("TERMS_CLEARED", "COLLECTOR_EXISTS")]
     return {
         "owner": {"world_dataset_hunt": "research/world_dataset_hunter.py -> "
                                         "reports/DATASET_HUNT.json",
@@ -897,6 +955,9 @@ def run(*, out: Path | None = None, state_path: Path | None = None,
         cmap = {"status": "measured", "asset_weight_source": wstat,
                 **build_map(rows, regions, weights, source_priors(rows))}
     cmap["rows_by_origin"] = dict(Counter(r["origin"] for r in rows))
+    cmap["access_census"] = {a: sum(1 for r in rows if r["access"] == a)
+                             for a in ACCESS_STATUSES}
+    cmap["access_rule"] = "a census only: access never changes a cell's state"
     cmap["rows_without_yield_measure"] = sum(1 for r in rows if r["yielded"] is None)
     cmap["legacy_crypto_native_set_aside"] = set_aside
     cmap["inputs_unmeasured"] = [k for k, v in inputs.items() if v["status"] == UNMEASURED]
@@ -946,8 +1007,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"breadth_frontier: map size={cm.get('size')} filled={cm.get('filled')} "
               f"thin={cm.get('thin')} empty={cm.get('empty')} | fringe families "
-              f"{ff.get('n')} permits={ff.get('with_permits_source')} "
-              f"held_only={ff.get('held_only')} | unknown terms={uk['terms_observed']} "
+              f"{ff.get('n')} live={ff.get('with_live_source')} "
+              f"key_pending={ff.get('with_key_pending_only')} "
+              f"ideas_only={ff.get('ideas_only')} | unknown terms={uk['terms_observed']} "
               f"new={uk['new_this_pass']} proposed={uk['proposed_to_ontology']}")
     return 0
 

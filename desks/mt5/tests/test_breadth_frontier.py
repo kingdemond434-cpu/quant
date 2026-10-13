@@ -132,28 +132,40 @@ def test_top_empty_is_ranked_diverse_and_argued(monkeypatch, tmp_path) -> None:
 
 # ------------------------------------------------------------------------------ fringe terms
 
-def test_permits_requires_a_quote_and_stage_is_derived(monkeypatch, tmp_path) -> None:
+def test_live_access_requires_a_read_quote_and_stage_is_derived(monkeypatch, tmp_path) -> None:
     _point(monkeypatch, tmp_path)
     (tmp_path / "owner.py").write_text("", "utf-8")
     monkeypatch.delenv("BF_TEST_KEY", raising=False)
     _w(tmp_path / "data" / "fringe_families.json", {"families": [
         {"id": "f_ok", "mt5_mapping": {"instruments": ["XAUUSD"], "channel": "c"}, "sources": [
-            {"id": "a", "terms_status": "PERMITS", "quote": ["you may use the API"],
-             "owner": "owner.py", "key_env": "BF_TEST_KEY"}]},
+            {"id": "a", "access_status": "API_PERMITTED", "terms_read": "READ",
+             "quote": ["you may use the API"], "owner": "owner.py"},
+            {"id": "k", "access_status": "NEEDS_KEY", "terms_read": "READ",
+             "quote": ["free API with a key"], "key_env": "BF_TEST_KEY"}]},
         {"id": "f_noquote", "mt5_mapping": {}, "sources": [
-            {"id": "b", "terms_status": "PERMITS"}]},
-        {"id": "f_held", "mt5_mapping": {}, "sources": [
-            {"id": "c", "terms_status": "HELD", "held_reason": "unread"}]}]})
+            {"id": "b", "access_status": "API_PERMITTED", "terms_read": "UNREAD"}]},
+        {"id": "f_ideas", "mt5_mapping": {}, "sources": [
+            {"id": "c", "access_status": "IDEAS_ONLY", "terms_read": "UNREAD",
+             "status_reason": "unread"},
+            {"id": "m", "access_status": "METHOD_BLOCKED", "terms_read": "READ",
+             "status_reason": "login wall"}]}]})
     ff = bf.run()["fringe_families"]
     fams = {f["id"]: f for f in ff["families"]}
+    src = {s["id"]: s for f in ff["families"] for s in f["sources"]}
     assert fams["f_ok"]["stage"] == "COLLECTOR_EXISTS"
-    assert fams["f_ok"]["sources"][0]["key"] == "NEEDS_KEY"
-    assert fams["f_noquote"]["sources"][0]["terms"] == "HELD", "no quote, no permit"
+    assert src["a"]["access"] == "API_PERMITTED"
+    assert src["k"]["access"] == "NEEDS_KEY", "a missing key reads NEEDS_KEY, never zero"
+    assert src["b"]["access"] == "IDEAS_ONLY", "UNREAD terms are never live input"
     assert fams["f_noquote"]["stage"] == "NAMED"
-    assert ff["with_permits_source"] == 1 and ff["held_only"] == 2
+    assert src["m"]["access"] == "METHOD_BLOCKED" and src["m"]["reason"] == "login wall"
+    assert ff["with_live_source"] == 1 and ff["ideas_only"] == 2
+    assert ff["sources_by_access"]["IDEAS_ONLY"] == 2
+    monkeypatch.setenv("BF_TEST_KEY", "x")
+    src = {s["id"]: s for f in bf.run()["fringe_families"]["families"] for s in f["sources"]}
+    assert src["k"]["access"] == "API_PERMITTED"
 
 
-def test_the_real_fringe_registry_is_fail_closed_and_mapped() -> None:
+def test_the_real_fringe_registry_uses_the_access_statuses() -> None:
     doc = json.loads((DESK / "data" / "fringe_families.json").read_text("utf-8"))
     fams = doc["families"]
     assert len(fams) == 10 and len({f["id"] for f in fams}) == 10
@@ -165,12 +177,31 @@ def test_the_real_fringe_registry_is_fail_closed_and_mapped() -> None:
         assert set(m["instruments"]) <= set(universe), f["id"]
         assert f["sources"]
         for s in f["sources"]:
-            assert s["terms_status"] in ("PERMITS", "HELD")
-            if s["terms_status"] == "PERMITS":
+            assert "terms_status" not in s, "no source is banned or HELD as a category"
+            assert s["access_status"] in bf.ACCESS_STATUSES
+            assert s["terms_read"] in ("READ", "UNREAD")
+            if s["access_status"] in ("API_PERMITTED", "NEEDS_KEY", "PUBLIC_PAGE"):
+                assert s["terms_read"] == "READ"
                 assert s["quote"] and all(isinstance(q, str) and q for q in s["quote"])
                 assert s["terms_url"].startswith("https://")
             else:
-                assert s.get("held_reason"), s["id"]
+                assert s.get("status_reason"), s["id"]
+            if s["terms_read"] == "UNREAD":
+                assert s["access_status"] == "IDEAS_ONLY"
+
+
+def test_access_is_a_census_and_never_changes_a_cell(monkeypatch, tmp_path) -> None:
+    _point(monkeypatch, tmp_path)
+    ground = {"name": "jp board", "region": "jp", "language": "ja", "kind": "forum"}
+    _forest(tmp_path, [ground])
+    _w(tmp_path / "reports" / "ALT_DATA_YIELD.json", {"vectors": {"rows_by_vector": {
+        "jp board": {"outcome": "BLOCKED", "last_error": "bing returned an anti-bot shell"}}}})
+    cm = bf.run()["coverage_map"]
+    assert cm["access_census"]["METHOD_BLOCKED"] == 1
+    _w(tmp_path / "reports" / "ALT_DATA_YIELD.json", {"vectors": {"rows_by_vector": {}}})
+    cm2 = bf.run()["coverage_map"]
+    assert cm2["access_census"]["IDEAS_ONLY"] == 1
+    assert (cm["filled"], cm["thin"], cm["empty"]) == (cm2["filled"], cm2["thin"], cm2["empty"])
 
 
 # ----------------------------------------------------------------------- the unknown frontier
