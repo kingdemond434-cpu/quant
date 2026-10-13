@@ -63,6 +63,9 @@ DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "JUDGE_COVERAGE.json"
 RATCHET = DESK / "data" / "judge_backlog_ratchet.json"
 AUDIT = DESK / "reports" / "judge_coverage_fence.json"
+#: The judge's own verdict clock (`research/judging_throughput.py`, core hourly leg): the time of
+#: the newest row in gate_verdict_ledger.jsonl, read without re-parsing the ledger here.
+RATE = DESK / "reports" / "JUDGING_RATE.json"
 
 #: A report older than this is stale: the organ runs at intake, hourly, so three hours of silence
 #: means the clock stopped. Generous because a box reboot or a long sweep is not a law breach.
@@ -104,7 +107,7 @@ def _age_h(stamp: object, now: datetime) -> float | None:
 
 
 def judge(report: Path | None = None, *, require_state: bool = False,
-          now: datetime | None = None) -> dict[str, Any]:
+          now: datetime | None = None, rate: Path | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     path = report or REPORT
     doc = _read(path)
@@ -117,15 +120,51 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                          else "; this tree holds no judge-coverage state (L1.28a)"))
         return out
 
+    # A STALE TABLE IS A FAILURE ON THE BOX, NOT A NOTE (2026-10-13). This check used to append
+    # a FAIL row without entering `failures`, so the verdict stayed PASS: the report sat frozen at
+    # 2026-10-07 20:54Z for six days, 40 families showed mined cells with zero judged, and the
+    # fence kept passing on the frozen copy. Every other check below re-reads that same frozen
+    # table, so freshness has to bind on its own.
+    stale: list[str] = []
     age = _age_h(doc.get("at"), at)
     if age is not None and age > STALE_H:
+        why = f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"
+        attempt = doc.get("last_attempt")
+        if isinstance(attempt, dict) and attempt.get("at"):
+            why += (f"; the writer's last attempt was {attempt.get('status')} at "
+                    f"{attempt.get('at')} via {attempt.get('via')}: {attempt.get('why')}")
+        else:
+            why += "; the writer left no attempt stamp, so it did not reach a build at all"
         out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
-                              "why": f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"})
+                              "why": why})
+        if require_state:
+            stale.append("stale_report")
+    # THE JUDGE'S OWN CLOCK. Unjudged cells with no verdict recorded inside the lease means the
+    # sweep itself stopped -- measured 2026-10-13: the last verdict was 2026-10-12 06:59Z with
+    # ~1.2M cells unjudged. This is the gauntlet's clock, so it fails here only on the box.
+    rate_doc = _read(rate or RATE)
+    verdicts = rate_doc.get("verdicts") if isinstance(rate_doc, dict) else None
+    last_verdict = verdicts.get("last_verdict_at") if isinstance(verdicts, dict) else None
+    v_age = _age_h(last_verdict, at)
+    backlog = int((doc.get("totals") or {}).get("unjudged_total") or 0)
+    if v_age is None:
+        out["checks"].append({"metric": "judge_silent", "state": "UNMEASURED",
+                              "why": f"{(rate or RATE).name} carries no last_verdict_at"})
+    elif v_age > STALE_H and backlog > 0:
+        out["checks"].append({"metric": "judge_silent",
+                              "state": "FAIL" if require_state else "WARN",
+                              "why": (f"no verdict recorded for {v_age:.1f}h (last "
+                                      f"{last_verdict}) while {backlog} cell(s) wait unjudged")})
+        if require_state:
+            stale.append("judge_silent")
+    else:
+        out["checks"].append({"metric": "judge_silent", "state": "OK",
+                              "why": f"last verdict {v_age:.1f}h ago"})
 
     fams: dict[str, Any] = {f: r for f, r in (doc.get("families") or {}).items()
                             if isinstance(r, dict)}
     judged_any = sum(int(r.get("judged_window") or 0) for r in fams.values())
-    failures: list[str] = []
+    failures: list[str] = list(stale)
 
     # 1. STARVATION: unjudged cells and no place in the queue.
     starved = sorted((f for f, r in fams.items()
@@ -370,6 +409,12 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                   + ", ".join(sorted(set(failures))[:6])) if failures else (
         "every family holding unjudged cells is queued, its carried backlog fell, and none sits "
         "past its own window")
+    if stale:
+        out["why"] = ("THE COVERAGE CLOCK STOPPED (" + ", ".join(stale) + "): "
+                      + "; ".join(c["why"] for c in out["checks"]
+                                  if c.get("metric") in ("freshness", "judge_silent")
+                                  and c.get("state") == "FAIL")
+                      + " -- " + out["why"])
     return out
 
 
@@ -432,7 +477,7 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["RATCHET", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
+__all__ = ["RATCHET", "RATE", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

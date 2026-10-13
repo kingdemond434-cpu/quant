@@ -667,6 +667,8 @@ $reportPaths = @(
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
     "desks/mt5/reports/JUDGE_COVERAGE.json",
+    # its fence's verdict (2026-10-13): a stale table or a silent judge reads FAIL off the box too
+    "desks/mt5/reports/judge_coverage_fence.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",
