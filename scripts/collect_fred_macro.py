@@ -32,6 +32,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.data.terms_hold import fred_display_terms  # noqa: E402
+from libs.ops.keyed_fetch import open_keyed  # noqa: E402
 from libs.research.vintage import record  # noqa: E402
 
 _KEYFILE = Path("data/secrets/fred.json")
@@ -83,7 +84,8 @@ def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
     q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
                                 "observation_start": start})
     req = urllib.request.Request(f"{_BASE}?{q}", headers={"User-Agent": "quant-fred/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:
+    # the key rides in the query, so a redirect may never take it to another host
+    with open_keyed(req, timeout=30) as r:
         obs = json.loads(r.read()).get("observations", [])
     out: list[tuple[str, float]] = []
     for o in obs:
