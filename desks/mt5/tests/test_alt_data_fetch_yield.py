@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 import urllib.error
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -214,6 +215,7 @@ def _isolate(monkeypatch, tmp_path: Path) -> None:
                         ("DATASETS", "datasets.jsonl"), ("WORLD", "world"),
                         ("SOURCES", "src.json")):
         monkeypatch.setattr(dfm, name, tmp_path / fname)
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
     monkeypatch.setattr(dfm, "_feed_frontier", lambda urls: len(urls))
     monkeypatch.setattr(dfm, "_universe", lambda: {"XAUUSD", "EURUSD"})
     monkeypatch.setattr(dfm.time, "sleep", lambda s: None)
@@ -222,6 +224,9 @@ def _isolate(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(rc, "_merge_into_queue", lambda tasks, source="x": None)
     monkeypatch.setattr(ady, "COMPUTE_LEDGER", tmp_path / "none.jsonl")
     monkeypatch.setattr(ady, "COVERAGE", tmp_path / "none.json")
+    monkeypatch.setattr(ady, "ACQUIRED", tmp_path / "none_registry.json")
+    monkeypatch.setattr(ady, "CANDIDATES", tmp_path / "none_candidates.json")
+    dfm._CC_STATE.clear()
 
 
 _PAGE = ("<html><title>t</title><body><p>"
@@ -402,3 +407,440 @@ def test_deep_forest_tasks_carry_no_banned_family() -> None:
     tasks = dfm.build_tasks(rows)
     assert tasks and all(t["kind"] == "story_mechanism" for t in tasks)
     assert not any(fp.family_banned(t.get("family")) for t in tasks)
+
+
+# ======================================================= forest yield rules (2026-10-13)
+def _grounds(tmp_path: Path, grounds: list[dict]) -> None:
+    (tmp_path / "src.json").write_text(json.dumps({"grounds": grounds}, ensure_ascii=False),
+                                       "utf-8")
+
+
+_DATA_PAGE = ("<html><title>Stats</title><body><p>Monthly reserves.</p>"
+              "<a href='/stats/reserves.csv'>csv</a><a href='/stats/fx.json'>json</a>"
+              "</body></html>")
+_BARE_PAGE = "<html><title>Stats</title><body><p>Monthly reserves.</p></body></html>"
+
+
+# ---- 1. the yield rule follows the ground's kind, and never inflates
+def test_endpoints_yield_a_dataset_ground_and_a_zero_endpoint_page_does_not(monkeypatch,
+                                                                            tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    _grounds(tmp_path, [
+        {"name": "eps", "region": "za", "language": "en", "route": "http", "kind": "dataset",
+         "url": "https://eps.test/stats"},
+        {"name": "bare", "region": "za", "language": "en", "route": "http", "kind": "dataset",
+         "url": "https://bare.test/stats"}])
+    monkeypatch.setattr(dfm, "_http",
+                        lambda url, **kw: _DATA_PAGE if "eps.test" in url else _BARE_PAGE)
+    doc = dfm.run(budget_s=60, fetch=True, workers=1)
+    st = {g["ground"]: g for g in doc["grounds"]}
+    assert st["eps"]["status"] == "PRODUCTIVE" and st["eps"]["yield_rule"] == "endpoints"
+    assert st["eps"]["endpoints"] == 2 and st["eps"]["claims"] == 0
+    # A dataset row with 0 endpoints is a PAGE: reached, counted, never a yield.
+    assert st["bare"]["status"] == "REACHED_NO_CLAIMS" and st["bare"]["datasets"] == 1
+    assert "yield_rule" not in st["bare"] and st["bare"]["endpoints"] == 0
+    fr = hf.load(tmp_path / "deep_forest_frontier.json")
+    assert fr.vectors["eps"].outcome == "YIELDED" and fr.vectors["bare"].outcome == "EMPTY"
+    stats = json.loads((tmp_path / dfm.VECTOR_STATS_NAME).read_text("utf-8"))["vectors"]
+    assert stats["eps"]["successes"] == 1 and stats["eps"]["last_yield_rule"] == "endpoints"
+    assert stats["bare"]["successes"] == 0 and stats["bare"]["datasets"] == 1
+    art = json.loads((tmp_path / "ALT_DATA_YIELD.json").read_text("utf-8"))
+    assert art["vectors"]["yielded_by_rule"] == {"endpoints": 1}
+    assert art["summary"]["yielded_by_rule"] == {"endpoints": 1}
+
+
+def test_papers_yield_an_academic_ground_without_a_claim(monkeypatch, tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    from libs.data import papers
+
+    class _P:
+        title, url, published, searchable = ("A note", "https://arxiv.org/abs/9", "2026-09-01",
+                                             "An ordinary sentence with no mechanism.")
+    monkeypatch.setattr(papers, "arxiv", lambda q, **kw: ([_P()], None))
+    _grounds(tmp_path, [{"name": "arXiv", "region": "institutional", "language": "en",
+                         "route": "papers", "fn": "arxiv", "queries": ["x"],
+                         "kind": "academic"}])
+    doc = dfm.run(budget_s=60, fetch=True, workers=1)
+    g = doc["grounds"][0]
+    assert g["claims"] == 0 and g["papers"] == 1
+    assert g["status"] == "PRODUCTIVE" and g["yield_rule"] == "papers"
+    assert dfm.yield_rule(0, 0, 0) == "" and dfm.yield_rule(2, 5, 1) == "claims"
+
+
+# ---- 2. a blocked ground names its cause, and per-URL rows stay off the status list
+@pytest.mark.parametrize("errors, status, expect", [
+    ([{"url": "u", "http": 403}], "BLOCKED", ("HTTP_4xx", 403)),
+    ([{"url": "u", "http": 503}], "BLOCKED", ("HTTP_5xx", 503)),
+    (["HTTPError: HTTP Error 429: HTTP 429"], "BLOCKED", ("HTTP_429", 429)),
+    ([{"url": "u", "error": "URLError: timed out"}], "BLOCKED", ("TRANSPORT", None)),
+    (["bing: bing returned no parseable results (94518 bytes -- an anti-bot shell or a "
+      "layout change, not an empty forest)", {"url": "u", "http": 404}], "BLOCKED",
+     ("ANTI_BOT", None)),
+    ([{"url": "u", "anti_bot": "cf-chl"}], "BLOCKED", ("ANTI_BOT", None)),
+    ([{"url": "u", "held": "METHOD_BLOCKED"}], "BLOCKED", ("METHOD_BLOCKED", None)),
+    ([{"url": "u", "held": "NEEDS_KEY"}], "HELD", ("NEEDS_KEY", None)),
+    ([{"url": "u", "render": "playwright missing"}], "BLOCKED", ("RENDER_FAILED", None)),
+    ([], "NO_ADDRESS", ("NO_ADDRESS", None)),
+    ([], "NO_NETWORK", ("NO_NETWORK", None)),
+    ([], "BUDGET_EXHAUSTED", ("BUDGET", None)),
+    (["something nobody named"], "BLOCKED", ("UNCLASSIFIED", None)),
+])
+def test_every_blocker_falls_into_the_closed_cause_enum(errors, status, expect) -> None:
+    got = ady.classify_cause(status, errors)
+    assert got == expect
+    assert got[0] in (*ady.BLOCK_CAUSES, ady.UNCLASSIFIED)
+    assert ady.classify_cause("BLOCKED", [], over_budget=True) == ("BUDGET", None)
+
+
+def test_a_403_ground_records_its_cause_on_the_frontier_and_the_stats(monkeypatch,
+                                                                      tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    _grounds(tmp_path, [{"name": "walled", "region": "us", "language": "en", "route": "http",
+                         "kind": "forum", "url": "https://walled.test/"}])
+
+    def forbidden(url, **kw):
+        raise _http_error(url, 403)
+    monkeypatch.setattr(dfm, "_http", forbidden)
+    doc = dfm.run(budget_s=60, fetch=True, workers=1)
+    # Every status row is a GROUND row; the per-URL error rode on the ground's own row.
+    assert all("ground" in s for s in doc["grounds"]) and len(doc["grounds"]) == 1
+    g = doc["grounds"][0]
+    assert g["status"] == "BLOCKED" and g["cause"] == "HTTP_4xx" and g["http_code"] == 403
+    assert any("HTTP 403" in e for e in g["errors"]) and g["fetch_errors"][0]["http"] == 403
+    assert doc["fetch_notes"] and doc["fetch_notes"][0]["http"] == 403
+    assert doc["blocked_causes"] == {"HTTP_4xx": 1}
+    fr = hf.load(tmp_path / "deep_forest_frontier.json")
+    assert fr.vectors["walled"].blocker.startswith("HTTP_4xx(403)")
+    stats = json.loads((tmp_path / dfm.VECTOR_STATS_NAME).read_text("utf-8"))["vectors"]
+    assert stats["walled"]["last_cause"] == "HTTP_4xx" and stats["walled"]["last_http_code"] == 403
+    art = json.loads((tmp_path / "ALT_DATA_YIELD.json").read_text("utf-8"))
+    assert art["vectors"]["blocked_by_cause"] == {"HTTP_4xx": 1}
+    assert art["vectors"]["blocked_http_codes"] == {"403": 1}
+
+
+# ---- 3. no source is banned: per-source policy, HELD only for METHOD_BLOCKED / NEEDS_KEY
+@pytest.mark.parametrize("url, status", [
+    ("https://www.reddit.com/r/algotrading/.rss", "IDEAS_ONLY"),
+    ("https://oauth.reddit.com/r/x/new", "NEEDS_KEY"),
+    ("https://t.me/s/markettwits", "IDEAS_ONLY"),
+    ("https://x.com/someone/status/1", "IDEAS_ONLY"),
+    ("https://api.x.com/2/tweets/search/recent", "NEEDS_KEY"),
+    ("https://nitter.poast.org/search?q=x", "METHOD_BLOCKED"),
+    ("https://xcancel.com/search?q=x", "METHOD_BLOCKED"),
+    ("https://www.mql5.com/en/articles", "IDEAS_ONLY"),
+    ("https://finance.yahoo.co.jp/cm/x", "IDEAS_ONLY"),
+    ("https://stocktwits.com/symbol/XAUUSD", "IDEAS_ONLY"),
+    ("https://discord.com/channels/1", "METHOD_BLOCKED"),
+    ("https://www.taifex.com.tw/x", "PUBLIC_PAGE"),
+])
+def test_every_source_has_a_per_source_status_and_none_is_banned(monkeypatch, url,
+                                                                status) -> None:
+    for k in ("X_BEARER_TOKEN", "REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"):
+        monkeypatch.delenv(k, raising=False)
+    p = dfm.policy_of_url(url)
+    assert p["status"] == status and p["why"]
+    assert all(r["why"] and r["status"] in ("API_PERMITTED", "PUBLIC_PAGE", "IDEAS_ONLY",
+                                            "METHOD_BLOCKED")
+               for r in dfm.SOURCE_POLICY.values())
+
+
+def test_a_present_key_turns_needs_key_into_api_permitted(monkeypatch) -> None:
+    monkeypatch.setenv("REDDIT_CLIENT_ID", "x")
+    monkeypatch.setenv("REDDIT_CLIENT_SECRET", "y")
+    assert dfm.policy_of_url("https://oauth.reddit.com/r/x")["status"] == "API_PERMITTED"
+
+
+def test_only_method_blocked_or_needs_key_grounds_are_held_and_the_rest_are_fetched(
+        monkeypatch, tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    monkeypatch.delenv("X_BEARER_TOKEN", raising=False)
+    grounds = [
+        {"name": "X (nitter) FX", "region": "us", "language": "en", "route": "nitter",
+         "kind": "social", "queries": ["x"], "mirrors": ["nitter.net"]},
+        {"name": "xcancel search", "region": "us", "language": "en", "route": "search",
+         "kind": "social", "site": "xcancel.com", "queries": ["x"]},
+        {"name": "r/algotrading", "region": "us", "language": "en", "route": "reddit",
+         "kind": "community", "subs": ["algotrading"]},
+        {"name": "Telegram RU", "region": "ru", "language": "ru", "route": "telegram",
+         "kind": "social", "channels": ["c"]},
+        {"name": "MQL5 articles", "region": "global", "language": "en", "route": "http",
+         "kind": "forum", "url": "https://www.mql5.com/en/articles"}]
+    _grounds(tmp_path, grounds)
+    fetched: list[str] = []
+
+    def spy(url, **kw):
+        fetched.append(url)
+        return _PAGE + "<a href='/data/x.csv'>csv</a>"
+    monkeypatch.setattr(dfm, "_http", spy)
+    doc = dfm.run(budget_s=60, fetch=True, workers=1)
+    # RE-ADMITTED: reddit feeds, Telegram previews and mql5 pages are fetched for ideas.
+    assert any("reddit.com/r/algotrading" in u for u in fetched)
+    assert any("t.me/s/c" in u for u in fetched)
+    assert any("mql5.com" in u for u in fetched)
+    assert not any("nitter" in u or "xcancel" in u for u in fetched)
+    assert doc["held"] == {"X (nitter) FX": "METHOD_BLOCKED", "xcancel search": "METHOD_BLOCKED"}
+    fr = hf.load(tmp_path / "deep_forest_frontier.json")
+    for n in ("X (nitter) FX", "xcancel search"):
+        v = fr.vectors[n]
+        assert v.outcome == "HELD" and v.attempts == 0 and v.blocker.startswith("METHOD_BLOCKED")
+        assert v.huntable(datetime.now(tz=UTC))[0] is False
+    for n in ("r/algotrading", "Telegram RU", "MQL5 articles"):
+        assert fr.vectors[n].outcome in ("YIELDED", "EMPTY")
+    # IDEAS_ONLY: the claims carry the label; no endpoint is registered as live input data.
+    claims = [json.loads(x) for x in (tmp_path / "claims.jsonl").read_text("utf-8").splitlines()]
+    assert claims and all("source_policy" in c for c in claims)
+    ds = tmp_path / "datasets.jsonl"
+    rows = [json.loads(x) for x in ds.read_text("utf-8").splitlines()] if ds.exists() else []
+    assert not [d for d in rows if "mql5.com" in d["url"] and d["n_endpoints"]]
+    summ = hf.summarise(fr)
+    assert summ["held"] == 2
+    art = json.loads((tmp_path / "ALT_DATA_YIELD.json").read_text("utf-8"))
+    assert art["vectors"]["by_outcome"]["HELD"] == 2
+    assert art["vectors"]["held_by"] == {"METHOD_BLOCKED": 2}
+    r = dfm._Run(10, True, None)
+    assert r.ground_nitter(grounds[0])["held_by"] == "METHOD_BLOCKED"
+    assert r.ground_nitter(grounds[0])["permitted_route"] == "x_api"
+    assert r.page("https://nitter.net/search?q=x") == ""
+    assert r.fetch_errors[-1]["held"] == "METHOD_BLOCKED"
+
+
+def test_a_ground_an_older_policy_held_is_re_admitted(monkeypatch, tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    st = hf.VectorState()
+    hf.record(st, "r/algotrading", outcome="HELD", blocker="TERMS_HELD: reddit")
+    hf.save(st, tmp_path / "deep_forest_frontier.json")
+    dfm._record_frontier([], [{"name": "r/algotrading", "route": "reddit", "subs": ["a"]}])
+    assert hf.load(tmp_path / "deep_forest_frontier.json").vectors[
+        "r/algotrading"].outcome == "NAMED_ONLY"
+
+
+def test_a_held_vector_never_changes_a_rollup_row_that_has_none() -> None:
+    st = hf.VectorState()
+    hf.record(st, "a", outcome="EMPTY", language="zh")
+    assert hf.rollup(st, "language")["zh"] == {"NAMED_ONLY": 0, "BLOCKED": 0, "EMPTY": 1,
+                                               "YIELDED": 0, "findings": 0, "vectors": 1}
+    hf.record(st, "b", outcome="HELD", language="zh")
+    assert hf.rollup(st, "language")["zh"]["HELD"] == 1
+
+
+# ---- 4. the search route: anti-bot is the cause, the Common Crawl index is the fallback
+_ANTIBOT = "<html><body>" + "x" * 90_000 + "</body></html>"
+
+
+def _cc_fake(calls: list, *, robots: str = "User-agent: *\nAllow: /\n"):
+    def fake(url: str) -> pf.Response:
+        calls.append(url)
+        if url.endswith("/robots.txt"):
+            return pf.Response(url=url, status=200, text=robots)
+        if url.endswith("collinfo.json"):
+            return pf.Response(url=url, status=200, text=json.dumps([
+                {"id": "CC-MAIN-2026-39",
+                 "cdx-api": "https://index.commoncrawl.org/CC-MAIN-2026-39-index"}]))
+        lines = [json.dumps({"url": f"https://forum.test/t/{i}", "mime": "text/html",
+                             "status": "200"}) for i in range(3)]
+        lines.append(json.dumps({"url": "https://forum.test/a.png", "mime": "image/png",
+                                 "status": "200"}))
+        return pf.Response(url=url, status=200, text="\n".join(lines))
+    return fake
+
+
+def test_an_anti_bot_engine_falls_back_to_the_common_crawl_index(monkeypatch, tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    _grounds(tmp_path, [{"name": "Forum", "region": "us", "language": "en", "route": "search",
+                         "kind": "forum", "site": "forum.test", "queries": ["a", "b"]}])
+    calls: list[str] = []
+    monkeypatch.setattr(dfm, "_cc_get", _cc_fake(calls))
+    pages: list[str] = []
+
+    def http(url, **kw):
+        if "bing.com" in url:
+            return _ANTIBOT
+        if "duckduckgo" in url:
+            return ""
+        pages.append(url)
+        return _PAGE
+    monkeypatch.setattr(dfm, "_http", http)
+    doc = dfm.run(budget_s=60, fetch=True, workers=1)
+    g = doc["grounds"][0]
+    cdx = [u for u in calls if "-index?" in u]
+    assert len(cdx) == 1                                 # ONE query per ground per pass
+    assert "url=forum.test/*" in cdx[0] and "limit=15" in cdx[0]
+    assert g["route_used"] == "search:ccindex" and g["ccindex"] == 3
+    assert pages and all(u.startswith("https://forum.test/t/") for u in pages)
+    assert g["status"] == "PRODUCTIVE" and g["yield_rule"] == "claims"
+    claims = [json.loads(x) for x in (tmp_path / "claims.jsonl").read_text("utf-8").splitlines()]
+    assert claims and {c["route"] for c in claims} == {"search:ccindex"}
+    assert "Mozilla" not in dfm.CCINDEX_UA["User-Agent"]          # an honest agent
+    assert "commoncrawl.org/terms-of-use" in dfm.TERMS_EVIDENCE["commoncrawl_index"]["terms_url"]
+
+
+def test_a_robots_disallow_stands_the_index_down_and_the_cause_stays_anti_bot(monkeypatch,
+                                                                             tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    _grounds(tmp_path, [{"name": "Forum", "region": "us", "language": "en", "route": "search",
+                         "kind": "forum", "site": "forum.test", "queries": ["a"]}])
+    calls: list[str] = []
+    monkeypatch.setattr(dfm, "_cc_get",
+                        _cc_fake(calls, robots="User-agent: *\nDisallow: /*-index\n"))
+    monkeypatch.setattr(dfm, "_http",
+                        lambda url, **kw: _ANTIBOT if "bing.com" in url else "")
+    doc = dfm.run(budget_s=60, fetch=True, workers=1)
+    g = doc["grounds"][0]
+    assert not [u for u in calls if "-index?" in u]               # never queried
+    assert g["status"] == "BLOCKED" and g["cause"] == "ANTI_BOT"
+    assert any("robots" in e for e in g["errors"])
+    assert dfm.parse_cdx('{"url": "https://a.test/x", "status": "404"}\nnot json') == []
+
+
+# ---- 5. the artifact: HELD apart, causes, rules and the conversion ladder
+def test_the_yield_artifact_reports_outcomes_causes_rules_and_the_conversion_ladder(
+        tmp_path) -> None:
+    now = "2026-10-13T00:00:00+00:00"
+    frontier = {"vectors": {
+        "nitter FX": {"outcome": "BLOCKED", "attempts": 3, "blocker": "BLOCKED",
+                      "last_attempt": now},
+        "legacy": {"outcome": "BLOCKED", "attempts": 2, "blocker": "BLOCKED",
+                   "last_attempt": now},
+        "bingwall": {"outcome": "BLOCKED", "attempts": 1, "blocker": "BLOCKED",
+                     "last_attempt": now},
+        "walled": {"outcome": "BLOCKED", "attempts": 1, "blocker": "HTTP_4xx(403): x",
+                   "last_attempt": now},
+        "stats": {"outcome": "YIELDED", "attempts": 1, "findings": 0, "last_attempt": now},
+        "story": {"outcome": "YIELDED", "attempts": 4, "findings": 7, "last_attempt": now},
+        "never": {"outcome": "NAMED_ONLY", "attempts": 0}}}
+    stats = {"vectors": {
+        "bingwall": {"successes": 0, "rows": 0, "last_error": "bing: bing returned no "
+                     "parseable results (94518 bytes -- an anti-bot shell)"},
+        "stats": {"successes": 1, "rows": 0, "datasets": 1, "last_yield_rule": "endpoints"}}}
+    grounds = {"grounds": [
+        {"name": "nitter FX", "route": "nitter", "mirrors": ["nitter.net"]},
+        {"name": "stats", "route": "http", "url": "https://stats.test/data", "kind": "dataset"},
+        {"name": "story", "route": "http", "url": "https://story.test/"}]}
+    datasets = [{"ground": "stats", "endpoints": ["https://stats.test/a.csv"], "n_endpoints": 1},
+                {"ground": "story", "endpoints": [], "n_endpoints": 0}]
+    for name, obj in (("f.json", frontier), ("s.json", stats), ("g.json", grounds),
+                      ("reg.json", {"by_url": {"https://stats.test/a.csv": {}}}),
+                      ("cand.json", {"hypotheses": [{"source_title": "story"}]})):
+        (tmp_path / name).write_text(json.dumps(obj), "utf-8")
+    (tmp_path / "d.jsonl").write_text("\n".join(json.dumps(r) for r in datasets), "utf-8")
+    common = {"frontier": tmp_path / "f.json", "vector_stats": tmp_path / "s.json",
+              "runs": tmp_path / "none", "compute_ledger": tmp_path / "none",
+              "coverage": tmp_path / "none", "sources": tmp_path / "g.json",
+              "datasets": tmp_path / "d.jsonl", "acquired": tmp_path / "reg.json"}
+    doc = ady.write(out=tmp_path / "out.json", candidates=tmp_path / "cand.json", **common)
+    v = doc["vectors"]
+    assert v["by_outcome"] == {"HELD": 1, "BLOCKED": 3, "YIELDED": 2, "NAMED_ONLY": 1}
+    assert v["rows_by_vector"]["nitter FX"]["outcome_recorded"] == "BLOCKED"
+    # A bare "BLOCKED" from before causes were kept is UNMEASURED, never a guessed cause.
+    assert v["blocked_by_cause"] == {"UNMEASURED": 1, "ANTI_BOT": 1, "HTTP_4xx": 1}
+    assert v["yielded_by_rule"] == {"endpoints": 1, "claims": 1}
+    lad = {n: r["conversion"]["deepest"] for n, r in v["rows_by_vector"].items()}
+    assert lad["stats"] == "collected" and lad["story"] == "cell_generating"
+    assert lad["never"] == "named" and lad["walled"] == "attempted"
+    assert doc["summary"]["conversion"]["collected"] == 2           # stats + story beneath
+    # An absent source artifact is UNMEASURED with its reason -- never 0.
+    doc2 = ady.write(out=tmp_path / "out2.json", candidates=tmp_path / "absent.json", **common)
+    assert doc2["summary"]["conversion"]["cell_generating"] == "UNMEASURED"
+    assert "absent" in doc2["vectors"]["conversion"]["unmeasured"]["cell_generating"]
+    assert doc2["vectors"]["rows_by_vector"]["story"]["conversion"]["cell_generating"] \
+        == "UNMEASURED"
+
+
+@pytest.mark.parametrize("robots, path, allowed", [
+    ("User-agent: *\nDisallow: /*-index\n", "/CC-MAIN-1-index?url=a/*", False),
+    ("User-agent: *\nDisallow: /*-index\nAllow: /CC-MAIN-1-index?url\n",
+     "/CC-MAIN-1-index?url=a/*", True),
+    ("User-agent: *\nDisallow: /\n", "/x", False),
+    ("User-agent: *\nDisallow:\n", "/x", True),
+    ("User-agent: quant-desk-deep-forest\nDisallow: /\nUser-agent: *\nAllow: /\n", "/x", False),
+    ("User-agent: *\nDisallow: /*.json$\n", "/collinfo.json", False),
+    ("", "/x", True),
+])
+def test_robots_wildcards_are_read(robots, path, allowed) -> None:
+    assert dfm.robots_allows(robots, dfm.CCINDEX_AGENT, path) is allowed
+
+
+# ---- 6. ugly data is landed raw (principal 2026-10-13 16:39Z), never counted as a yield
+_CSV = b"date,value\n2026-09-01,1.5\n2026-09-02,1.7\n"
+
+
+def test_a_page_dropped_for_its_form_lands_raw_and_is_not_a_yield(monkeypatch,
+                                                                  tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    _grounds(tmp_path, [
+        {"name": "csv", "region": "za", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://csv.test/data.csv"},
+        {"name": "short", "region": "za", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://short.test/"},
+        {"name": "bare", "region": "za", "language": "en", "route": "http", "kind": "dataset",
+         "url": "https://bare.test/stats"},
+        {"name": "ideas", "region": "us", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://www.reddit.com/r/Gold/"},
+        {"name": "bot", "region": "us", "language": "en", "route": "http", "kind": "forum",
+         "url": "https://bot.test/"}])
+
+    def fake(url: str, **kw: object) -> str:
+        if "csv.test" in url:
+            dfm._LAST.resp = pf.Response(url=url, status=200, text=_CSV.decode(),
+                                         content_type="text/csv", body=_CSV)
+            return _CSV.decode()
+        if "bot.test" in url:
+            return "<html><title>Just a moment...</title>Checking your browser</html>"
+        if "bare.test" in url:                 # long enough to read, and no endpoint in it
+            return "<html><body><p>" + "Monthly reserves, table below. " * 80 + "</p></html>"
+        return _BARE_PAGE
+
+    monkeypatch.setattr(dfm, "_http", fake)
+    doc = dfm.run(budget_s=60, fetch=True, workers=1)
+    st = {g["ground"]: g for g in doc["grounds"]}
+    assert st["csv"]["landed_raw"] >= 1 and st["short"]["landed_raw"] >= 1
+    assert st["bare"]["landed_raw"] >= 1
+    assert st["ideas"]["landed_raw"] == 0, "an IDEAS_ONLY page is never landed as data"
+    assert st["bot"]["landed_raw"] == 0, "an anti-bot page is recorded, never landed"
+    for name in ("csv", "short", "bare"):
+        assert "yield_rule" not in st[name] and st[name]["status"] != "PRODUCTIVE", name
+    metas = [json.loads(p.read_text("utf-8")) for p in (tmp_path / "vault").glob("*/*.meta.json")]
+    csv_meta = next(m for m in metas if m["url"] == "https://csv.test/data.csv")
+    assert csv_meta["reason"] == "format:text/csv" and csv_meta["content_type"] == "text/csv"
+    assert csv_meta["available_time"] and csv_meta["source_hash"] == csv_meta["sha256"]
+    blob = next((tmp_path / "vault").glob(f"{csv_meta['source_id']}/*.gz"))
+    assert gzip.decompress(blob.read_bytes()) == _CSV
+    assert {m["reason"] for m in metas} >= {"format:text/csv", "short_page",
+                                            "dataset_no_endpoints"}
+    # The desk's existing raw -> series parser reads the landing like any collected source.
+    from research import asia_parser as ap
+    monkeypatch.setattr(ap, "VAULT", tmp_path / "vault")
+    assert csv_meta["source_id"] in ap._blobs()
+    # The ladder counts it beside the rungs, never as one.
+    stats = json.loads((tmp_path / dfm.VECTOR_STATS_NAME).read_text("utf-8"))["vectors"]
+    assert stats["csv"]["landed_raw"] >= 1 and stats["csv"]["successes"] == 0
+    art = json.loads((tmp_path / "ALT_DATA_YIELD.json").read_text("utf-8"))
+    assert art["vectors"]["rows_by_vector"]["csv"]["conversion"]["landed_raw"] >= 1
+    assert art["vectors"]["rows_by_vector"]["csv"]["conversion"]["deepest"] != "yielded"
+    assert art["summary"]["landed_raw"]["pages"] >= 3
+    assert art["summary"]["landed_raw"]["vectors"] == 3
+
+
+def test_the_same_bytes_land_once(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
+    g = {"name": "x"}
+    first = dfm.land_raw("https://a.test/x.csv", _CSV, "text/csv", ground=g, reason="r")
+    again = dfm.land_raw("https://a.test/x.csv", _CSV, "text/csv", ground=g, reason="r")
+    assert first and first["new"] and again and not again["new"]
+    assert len(list((tmp_path / "vault").glob("*/*.gz"))) == 1
+    assert dfm.land_raw("https://a.test/y", b"", "", ground=g, reason="r") is None
+
+
+def test_landed_raw_is_unmeasured_without_vector_stats() -> None:
+    frontier = {"vectors": {"g": {"outcome": "EMPTY", "attempts": 2}}}
+    v = ady.vectors(frontier, None, datetime(2026, 10, 13, tzinfo=UTC))
+    assert v["rows_by_vector"]["g"]["conversion"]["landed_raw"] == ady.UNMEASURED
+    assert v["conversion"]["landed_raw"]["status"] == ady.UNMEASURED
+
+
+def test_a_compressed_body_is_inflated_only_up_to_the_cap() -> None:
+    bomb = gzip.compress(b"0" * 5_000_000)
+    assert len(pf.inflate(bomb, "gzip", cap=1000)) == 1000
+    assert pf.inflate(b"plain", "") == b"plain"
+    assert pf.decode_body(gzip.compress("héllo".encode()), "text/plain; charset=utf-8",
+                          "gzip") == "héllo"
