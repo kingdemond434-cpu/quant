@@ -208,6 +208,9 @@ class MethodRedirectHandler(urllib.request.HTTPRedirectHandler):
                          newurl: str) -> Any:
         self.chain.append((int(code), str(req.full_url), str(newurl)))
         if login_wall(newurl):
+            with contextlib.suppress(Exception):         # release the 3xx response's socket
+                fp.read()
+                fp.close()
             raise MethodRefused(f"METHOD_BLOCKED:login_wall: redirect to {newurl[:160]}")
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
