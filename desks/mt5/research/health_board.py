@@ -50,6 +50,11 @@ READERS = {
     "build_failure_bank": DESK / "reports" / "BUILD_FAILURE_BANK.json",
     "trade_pathology": DESK / "reports" / "TRADE_PATHOLOGY.json",
     "experiment_contracts": DESK / "reports" / "EXPERIMENT_CONTRACTS.json",
+    # CRO D35: the 24/7 GitHub resident miner (federation_ops' delta scan); RAN or UNMEASURED.
+    "github_resident_miner": DESK / "reports" / "GITHUB_RESIDENT_MINER.json",
+    # ROMAN-0832: who excites whom (bar events per symbol, Treasury -> USD -> gold), hourly.
+    "cross_excitation": DESK / "reports" / "CROSS_EXCITATION.json",
+    "total_expectation": DESK / "reports" / "TOTAL_EXPECTATION.json",
 }
 OUT = DESK / "reports" / "HEALTH_BOARD.json"
 OUT_MD = DESK / "reports" / "HEALTH_BOARD.md"

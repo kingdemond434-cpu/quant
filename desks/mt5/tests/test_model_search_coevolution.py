@@ -117,7 +117,10 @@ def test_the_planted_momentum_structure_is_rediscovered(one_symbol: str,
                  report=tmp_path / "MODEL_SEARCH.json")
     assert doc["n_earning"] >= 1, doc["per_symbol"]
     assert doc["winners"][0]["net_gain"] > 0
-    assert doc["winners"][0]["representation"] in {"raw", "vol_scaled"}
+    # The row may carry a non-default target ("raw@tscan": the trend-scanning label, ported from
+    # ml4t), which is the same planted momentum read through another target; the coordinates
+    # that found it are the part before "@".
+    assert doc["winners"][0]["representation"].split("@")[0] in {"raw", "vol_scaled"}
 
 
 def test_the_control_bars_with_nothing_planted_win_far_less(

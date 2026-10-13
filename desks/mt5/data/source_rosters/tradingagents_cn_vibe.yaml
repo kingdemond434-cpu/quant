@@ -1,0 +1,188 @@
+# hsliuping/TradingAgents-CN (Apache-2.0 for tradingagents/, cli/, docs/; app/, core/ and
+# frontend/ are source-available and NOT copied) and HKUDS/Vibe-Trading (MIT) data sources,
+# absorbed 2026-09-30. Only what no roster held: AkShare, TuShare, BaoStock, pytdx, Xueqiu,
+# Polymarket, FRED and EDGAR filings are already rostered elsewhere. Keyed-only vendors on those
+# repos (Tiingo, FMP, Longbridge, Finnhub, Alpha Vantage, QVeris) and every crypto venue are not
+# rostered. Read by libs/mining/acquirer.load_roster (#133).
+sources:
+- id: tacn_cls_telegraph
+  name: 'CLS 财联社 telegraph (cls.cn/telegraph): minute-stamped CN market flash news, public page'
+  priority: 2
+  kind: text
+  uses:
+  - indirect_cells
+  - allocation_intel
+  fetcher: html_listing
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://www.cls.cn/telegraph
+  note: CN policy and data flashes as event stamps for USDCNH, China50, HK50, copper, gold; realtime_news.py in
+    TradingAgents-CN reads its sw API
+  owner: elitequant_thread
+  origin: github.com/hsliuping/TradingAgents-CN
+- id: tacn_wallstreetcn_live
+  name: WallstreetCN 华尔街见闻 live feed (wallstreetcn.com/live/global), public page
+  priority: 2
+  kind: text
+  uses:
+  - indirect_cells
+  - allocation_intel
+  fetcher: html_listing
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://wallstreetcn.com/live/global
+  note: CN-language macro flash for event-reaction cells on CNH, HK50, XAUUSD
+  owner: elitequant_thread
+  origin: github.com/hsliuping/TradingAgents-CN
+- id: tacn_sina_finance_futures
+  name: Sina Finance 新浪财经 futures and FX quote pages (hq.sinajs.cn), keyless
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://finance.sina.com.cn/futuremarket/
+  note: CN futures night-session quotes as lead-lag conditioners for XAUUSD, XCUUSD, XTIUSD
+  owner: elitequant_thread
+  origin: github.com/hsliuping/TradingAgents-CN
+- id: tacn_eastmoney_quotes
+  name: Eastmoney 东方财富 push2 quote API (A-share, HK, CN futures, northbound flow), keyless
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://quote.eastmoney.com/center/
+  note: northbound (沪深港通) daily net flow as a China50/HK50/USDCNH conditioner
+  owner: elitequant_thread
+  origin: github.com/hsliuping/TradingAgents-CN
+- id: vt_tencent_kline
+  name: Tencent 腾讯 fqkline quote API (A-share/HK adjusted daily bars), keyless
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://web.ifzq.gtimg.cn/appstock/app/fqkline/get
+  note: CN/HK index and ETF bars for China50/HK50 lead-lag; Vibe-Trading notes it serves only the last 500 bars
+    per call
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading
+- id: vt_mootdx
+  name: 'mootdx: TongDaXin client library (A-share, futures ext market), keyless'
+  priority: 2
+  kind: code
+  uses:
+  - direct_cells
+  fetcher: github_search
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://github.com/mootdx/mootdx
+  note: second route to TDX quotes beside pytdx
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading
+- id: vt_pykrx_krx
+  name: 'pykrx: KRX (Korea Exchange) daily OHLCV, investor-type net buying (foreign/institution/retail), keyless'
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: kr
+  language: ko
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://github.com/sharebook-kr/pykrx
+  note: KR investor-type flows (외국인 순매수) as a USDKRW-proxy/KOSPI-CFD and AUDJPY risk conditioner; KR has no producer
+    yet
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading
+- id: vt_stooq
+  name: Stooq daily CSV (world indices, FX, commodities), keyless; answers non-browser clients with a proof-of-work
+    page
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: pl
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://stooq.com/db/h/
+  note: long daily history for indices the broker store starts late
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading
+- id: vt_byma
+  name: BYMA Argentina listings and CEDEARs via Yahoo .BA, keyless
+  priority: 2
+  kind: mechanics
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: ar
+  language: es
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://www.byma.com.ar/
+  note: CEDEAR premium over the US line = the implied ARS dollar (dolar CCL), a LatAm stress conditioner for USDBRL/USDMXN
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading
+- id: vt_sec_13f
+  name: SEC 13F quarterly holdings with quarter-over-quarter diffs (EDGAR), keyless
+  priority: 2
+  kind: text
+  uses:
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: us
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails closed)
+  config:
+    url: https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=13F
+  note: crowding prior for share-CFD class books (institutional ownership concentration)
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading

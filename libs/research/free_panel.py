@@ -124,8 +124,13 @@ TIMEOUT_S = 180
 class PanelExhausted(RuntimeError):
     """Every model in the tier is cooling down or refusing.
 
-    Raised so a caller can wait rather than guess -- capacity is not a defect.
+    Raised so a caller can wait rather than guess -- capacity is not a defect. `attempts` is
+    the HTTP requests this ask made before giving up, so a caller metering calls counts them.
     """
+
+    def __init__(self, message: str, attempts: int = 0) -> None:
+        super().__init__(message)
+        self.attempts = attempts
 
 
 def _load_key() -> str:
@@ -182,16 +187,22 @@ class Reply:
 
 
 def ask(role: str, system: str, user: str, *, max_tokens: int = 2000,
-        temperature: float = 0.9) -> Reply:
+        temperature: float = 0.9, max_attempts: int | None = None) -> Reply:
     """Ask the free panel, rotating on rate limits. Never charges the account.
 
     Rotation is the whole design. A single free model is a single point of failure with a rate
     limit attached; thirteen rotated by least-used is a research capacity that runs all day.
+    `max_attempts` bounds the HTTP requests one ask may make (each rotated model is one): a
+    caller with a call budget passes what is left of it, and `Reply.attempts` /
+    `PanelExhausted.attempts` say how many were spent.
     """
     tier = ROLE_TIER.get(role, LIGHT)
     key = _load_key()
     tried: list[str] = []
     for model in available(tier) or list(tier):
+        if max_attempts is not None and len(tried) >= max_attempts:
+            raise PanelExhausted(f"the caller's call budget ({max_attempts}) is spent "
+                                 f"(tried {tried})", attempts=len(tried))
         body = json.dumps({
             "model": model, "max_tokens": max_tokens, "temperature": temperature,
             "messages": [{"role": "system", "content": system},
@@ -226,7 +237,7 @@ def ask(role: str, system: str, user: str, *, max_tokens: int = 2000,
     raise PanelExhausted(
         f"every model in the '{role}' tier is cooling down or refusing (tried {tried}). This is "
         f"a capacity state, not a defect -- the cooldown expires on its own; retry later rather "
-        f"than falling back to a paid model on an overdrawn balance.")
+        f"than falling back to a paid model on an overdrawn balance.", attempts=len(tried))
 
 
 def panel_health() -> dict[str, Any]:

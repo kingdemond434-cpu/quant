@@ -6026,6 +6026,12 @@ _DIG_DOCS = (
 #: Card-bearing docs deliberately OUT of §33 scope, each with its reason. Kept explicit so the
 #: scope check below can tell "consciously excluded" from "quietly unmonitored".
 _DIG_DOCS_EXCLUDED = {
+    "docs/research/quant_guild/ROUTING_2026-10-06.md":
+        "A ROUTING INDEX for the Quant Guild / Paolucci / OpenTerminal translator cards, not a "
+        "card-bearing find doc: the cards themselves are the JSON beside it, each with its §33 "
+        "route (a registered-family packet the compiler drains, a family built in "
+        "mt5desk/families_quantguild.py, or an organ owned by a named thread), so the disposition "
+        "lives on the card and this page only says who holds it.",
     "docs/research/mt5_source_seeds.md":
         "A SEED MAP, not a card-bearing find doc, and the distinction is the point: the catalogue "
         "(data_axis_watchlist.md, which IS in _DIG_DOCS) carries graded cards that owe "

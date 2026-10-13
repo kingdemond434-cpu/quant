@@ -1,0 +1,81 @@
+{
+ "system_id": "gh_micro_sheep_efinance",
+ "run_id": "queued_repo_cards_2026-10-06_gh_micro_sheep_efinance",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "XAUUSD",
+   "family": "exogenous_conditioner",
+   "params": {
+    "source": "eastmoney_shfe_au_premium",
+    "signal": "premium_usd_oz",
+    "transform": "level_z",
+    "threshold": 1.0,
+    "side_when_high": 1,
+    "ttl_bars": 96
+   },
+   "mechanism": "Onshore-offshore metals premium: Eastmoney serves SHFE/INE futures history and quotes (market ids m:113 SHFE, m:142 INE, m:225 GFEX); the Shanghai gold (and copper) price converted at USDCNH minus the MT5 London price is the China import premium, a direct read of Chinese physical demand.",
+   "title": "XAUUSD exogenous_conditioner (QR-A-EF-001)",
+   "card_id": "QR-A-EF-001",
+   "licence": "MIT",
+   "falsifier": "no return difference between high and low premium states"
+  },
+  {
+   "symbol": "XCUUSD",
+   "family": "exogenous_conditioner",
+   "params": {
+    "source": "eastmoney_shfe_au_premium",
+    "signal": "premium_usd_oz",
+    "transform": "level_z",
+    "threshold": 1.0,
+    "side_when_high": 1,
+    "ttl_bars": 96
+   },
+   "mechanism": "Onshore-offshore metals premium: Eastmoney serves SHFE/INE futures history and quotes (market ids m:113 SHFE, m:142 INE, m:225 GFEX); the Shanghai gold (and copper) price converted at USDCNH minus the MT5 London price is the China import premium, a direct read of Chinese physical demand.",
+   "title": "XCUUSD exogenous_conditioner (QR-A-EF-001)",
+   "card_id": "QR-A-EF-001",
+   "licence": "MIT",
+   "falsifier": "no return difference between high and low premium states"
+  },
+  {
+   "symbol": "CHINAH",
+   "family": "exogenous_conditioner",
+   "params": {
+    "source": "eastmoney_fflow",
+    "signal": "main_net_inflow_ratio",
+    "transform": "level_z",
+    "threshold": 1.0,
+    "side_when_high": 1,
+    "ttl_bars": 24
+   },
+   "mechanism": "Eastmoney money-flow series (fflow daykline/kline): per security or index, \u4e3b\u529b\u51c0\u6d41\u5165 (main-force net inflow = super-large + large order net), with intraday minute resolution today and daily history (~100 days).",
+   "title": "CHINAH exogenous_conditioner (QR-A-EF-002)",
+   "card_id": "QR-A-EF-002",
+   "licence": "MIT",
+   "falsifier": "no quintile spread after 250 recorded days"
+  },
+  {
+   "symbol": "HK50",
+   "family": "exogenous_conditioner",
+   "params": {
+    "source": "eastmoney_fflow",
+    "signal": "main_net_inflow_ratio",
+    "transform": "level_z",
+    "threshold": 1.0,
+    "side_when_high": 1,
+    "ttl_bars": 24
+   },
+   "mechanism": "Eastmoney money-flow series (fflow daykline/kline): per security or index, \u4e3b\u529b\u51c0\u6d41\u5165 (main-force net inflow = super-large + large order net), with intraday minute resolution today and daily history (~100 days).",
+   "title": "HK50 exogenous_conditioner (QR-A-EF-002)",
+   "card_id": "QR-A-EF-002",
+   "licence": "MIT",
+   "falsifier": "no quintile spread after 250 recorded days"
+  }
+ ],
+ "trials_charged": 4,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}
