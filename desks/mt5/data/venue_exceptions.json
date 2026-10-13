@@ -1,0 +1,20 @@
+{
+ "schema": "venue_exceptions/1",
+ "declared_at": "2026-10-13T16:10:00+00:00",
+ "rule": "A symbol a venue does not list is VENUE_UNLISTED in check_live_tradability, never a FAIL. A measured catalogue overrides this file both ways: a listed symbol is re-tested as any other.",
+ "e8": {
+  "evidence": "docs/PROP_FIRM_E8.md, 2026-09-13 first connection to account 2478877: server E8, 46 instruments in the catalogue, no Scandi or EM crosses; blocked symbols listed there",
+  "unlisted": {
+   "CHFNOK": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "EURNOK": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "GBPNOK": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "GBPSEK": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "EURZAR": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "GBPZAR": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "USDZAR": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "GBPMXN": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "USDMXN": "not in E8's 46-instrument catalogue (2026-09-13)",
+   "CHFDKK": "not in E8's 46-instrument catalogue (2026-09-13)"
+  }
+ }
+}

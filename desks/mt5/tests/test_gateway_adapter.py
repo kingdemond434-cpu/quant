@@ -54,6 +54,9 @@ def _is_literal(node: ast.AST) -> bool:
     return True
 
 
+_TAG_HELPERS = ("order_comment", "legacy_order_comment", "position_tags", "note_roster_tags")
+
+
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
     """Exec the named gateway functions over a namespace seeded with the real decision core, so
     a bare name the adapter uses resolves to the same object the gateway imports.
@@ -93,6 +96,10 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
+    # THE TAG HELPERS COME WITH EVERY EXEC (2026-10-13): every lane matches positions through
+    # `position_tags`, so a test of any lane would otherwise list the three by hand.
+    keep += [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef)
+             and n.name in _TAG_HELPERS and n.name not in names]
     # These are unchanged production AST nodes, including their source line numbers.
     # Credit actual exercised branches to their source, rather than an anonymous <gw>
     # file that coverage cannot join back to the money-path report.
@@ -860,7 +867,10 @@ def test_the_scalp_tag_is_the_lane_s_own_and_only_the_scalp_lane_s() -> None:
     assert ns["scalp_position_tags"]([{"name": "gold_asia"}, {"name": "x", "exec": "family_market"},
                                       {"exec": "scalp_market"}]) == frozenset()
     tag = ns["scalp_position_tags"]([{"name": "a" * 40, "exec": "scalp_market"}])
-    assert tag == frozenset({("DW" + "a" * 40)[:29]})            # the venue's measured 29-char comment
+    # the unique tag a position is sent under now, and the legacy truncation older ones carry --
+    # both within the venue's measured 29-char comment
+    assert tag == frozenset({ns["order_comment"]("a" * 40), ("DW" + "a" * 40)[:29]})
+    assert all(len(t) == 29 for t in tag)
 
 
 def test_position_bars_use_the_broker_clock_not_wall_clock() -> None:
@@ -1532,3 +1542,31 @@ def test_unarmed_the_retired_close_only_logs(tmp_path) -> None:
     ns["close_retired_positions"]({"armed": False})
     assert sent == [] and any("SHADOW would close 1 retired position" in x for x in logs)
     assert json.loads(queue.read_text("utf-8"))["names"] == [_NAME]
+
+
+# ------------------------------------------------------------------ unique tags (2026-10-13)
+
+def test_siblings_that_shared_a_truncated_tag_now_carry_distinct_tags() -> None:
+    ns = _exec((), {})
+    oc = ns["order_comment"]
+    stem = "xauusd_cross_asset_residual_"                    # 28 chars: the 27-char stem is shared
+    names = [f"{stem}{i}_p_{i:016x}" for i in range(9)]
+    tags = {oc(n) for n in names}
+    assert len(tags) == 9 and all(len(t) == 29 for t in tags)
+    assert len({ns["legacy_order_comment"](n) for n in names}) == 1   # the collision it fixes
+    assert oc("gold_asia") == "DWgold_asia"                  # a short name keeps its exact tag
+    assert oc("a" * 27) == "DW" + "a" * 27                   # 29 chars fits: unchanged
+
+
+def test_a_legacy_tag_is_a_sleeves_own_only_while_nobody_else_carries_it() -> None:
+    ns = _exec((), {})
+    live = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    twin = "audchf_overnight_gap_decay_asia_p_99999999999999_principal_20261007"
+    legacy = ns["legacy_order_comment"](live)
+    ns["note_roster_tags"]([{"name": live}])
+    assert ns["position_tags"](live) == {ns["order_comment"](live), legacy}
+    # a RETIRED sibling sharing the stem must never claim the live sleeve's legacy position
+    assert ns["position_tags"](twin, in_roster=False) == {ns["order_comment"](twin)}
+    # two roster sleeves sharing a legacy tag: neither may act on a legacy position
+    ns["note_roster_tags"]([{"name": live}, {"name": twin}])
+    assert ns["position_tags"](live) == {ns["order_comment"](live)}
