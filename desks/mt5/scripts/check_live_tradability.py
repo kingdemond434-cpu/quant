@@ -15,13 +15,19 @@ PER LIVE SLEEVE, FUSION (MT5):
   priceable   its symbol has tick size, tick value and a volume step in the universe snapshot,
               so a stop converts to account currency (`risk_units`) and a lot can be sized
   sized       it carries a positive risk fraction, or the principal's certified book funds it
-  tag_unique  its order comment (`gateway.order_comment`, truncated to COMMENT_MAX) is no other
+  tag_unique  its order comment (`gateway.order_comment`, unique within COMMENT_MAX) is no other
               standing sleeve's: the gateway finds a sleeve's positions, and closes a retired
               sleeve's, by that exact string, so two sleeves sharing it see and close each other's
 
 PER LIVE SLEEVE, E8:
   listed      E8's measured instrument catalogue (data/e8_catalogue.json) lists the symbol
   booked      the certified book's e8 block funds it, or E8_BOOK.json selected it
+
+  A symbol E8 does not list is VENUE_UNLISTED, not FAIL: no fix on this side can place it there.
+  The measured catalogue decides when it is present; on a clone without it, the declaration in
+  data/venue_exceptions.json (E8's own blocked list, docs/PROP_FIRM_E8.md 2026-09-13) does. The
+  moment a measured catalogue lists the symbol the exception lapses and both checks run as for
+  any other sleeve, so a ZAR listing is picked up on the next pass with nobody editing anything.
 
 TRACE, over the last TRACE_DAYS days on the live account:
   every acknowledged order intent carries intent_id, release_id and state_vector_id and its
@@ -36,6 +42,7 @@ Artifact: desks/mt5/reports/LIVE_TRADABILITY.json. Exit 1 when any check FAILS.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from collections.abc import Iterable, Mapping
@@ -58,9 +65,11 @@ INTENTS = DESK / "data" / "order_intents.jsonl"
 LEDGER = DESK / "data" / "live_ledger.jsonl"
 GATEWAY_STATE = DESK / "data" / "gateway_state.json"
 OUT = DESK / "reports" / "LIVE_TRADABILITY.json"
+VENUE_EXCEPTIONS = DESK / "data" / "venue_exceptions.json"
 
-#: Must match `gateway.COMMENT_MAX`; `test_live_tradability` pins the two together.
+#: Must match `gateway.COMMENT_MAX` and `gateway.TAG_HASH`; `test_live_tradability` pins them.
 COMMENT_MAX = 29
+TAG_HASH = 6
 TRACE_DAYS = 14
 #: Gold bracket windows the gateway places from `gateway_state.brackets`, not from sleeves.json.
 GOLD_WINDOWS = ("gold_asia", "gold_london_am", "gold_afternoon", "gold_ny_open")
@@ -68,10 +77,17 @@ GOLD_WINDOWS = ("gold_asia", "gold_london_am", "gold_afternoon", "gold_ny_open")
 TRACE_FIELDS = ("intent_id", "release_id", "state_vector_id")
 
 PASS, FAIL, UNMEASURED = "PASS", "FAIL", "UNMEASURED"
+#: The venue does not list the symbol: a declared, evidenced fact about E8, never a fault here.
+VENUE_UNLISTED = "VENUE_UNLISTED"
 
 
 def order_comment(name: str) -> str:
-    return f"DW{name}"[:COMMENT_MAX]
+    """`gateway.order_comment`, mirrored so this check runs without the terminal package."""
+    tag = f"DW{name}"
+    if len(tag) <= COMMENT_MAX:
+        return tag
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:TAG_HASH]
+    return f"DW{name[:COMMENT_MAX - 3 - TAG_HASH]}~{digest}"
 
 
 def _json(path: Path) -> Any:
@@ -167,9 +183,19 @@ def fusion_checks(row: Mapping[str, Any], *, policy: Any, refuse: Any, executor_
 
 
 def e8_checks(row: Mapping[str, Any], *, catalogue: set[str] | None,
-              cert: Mapping[str, Any], e8_book: Any) -> dict[str, dict]:
+              cert: Mapping[str, Any], e8_book: Any,
+              declared: Mapping[str, Any] | None = None) -> dict[str, dict]:
     sym = str(row.get("symbol") or "").upper()
     out: dict[str, dict] = {}
+    unlisted = (sym not in catalogue) if catalogue is not None else (sym in (declared or {}))
+    if unlisted:
+        why = (f"{sym} is not in E8's measured {len(catalogue)}-instrument catalogue"
+               if catalogue is not None else
+               f"{sym} declared unlisted on E8: {(declared or {}).get(sym)}")
+        out["listed"] = {"status": VENUE_UNLISTED, "why": why}
+        out["booked"] = {"status": VENUE_UNLISTED,
+                         "why": "no E8 book can fund a symbol the venue does not list"}
+        return out
     if catalogue is None:
         out["listed"] = _check(None, "data/e8_catalogue.json absent: E8's instrument list is "
                                      "box-only and was not measured here")
@@ -243,6 +269,11 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     cert_doc = _json(CERT_BOOK) or {}
     cert = cert_doc if cert_doc.get("enabled") is True else {}
     universe = _json(UNIVERSE) or {}
+    exc_doc = _json(VENUE_EXCEPTIONS)
+    declared = ((exc_doc or {}).get("e8") or {}).get("unlisted") if isinstance(exc_doc, dict) \
+        else None
+    declared = {str(k).upper(): v for k, v in declared.items()} \
+        if isinstance(declared, dict) else {}
     cat_doc = _json(E8_CATALOGUE)
     inst = cat_doc.get("instruments") if isinstance(cat_doc, dict) else None
     catalogue = {str(i).upper() for i in inst} if isinstance(inst, list) and inst else None
@@ -255,19 +286,25 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     for r in live_rows(sleeves, cert, _json(GATEWAY_STATE)):
         f = fusion_checks(r, policy=pol, refuse=refuse, executor_gap=executor_gap,
                           universe=universe, cert=cert, tags=tags)
-        e = e8_checks(r, catalogue=catalogue, cert=cert, e8_book=_json(E8_BOOK))
+        e = e8_checks(r, catalogue=catalogue, cert=cert, e8_book=_json(E8_BOOK),
+                      declared=declared)
         verdicts = [c["status"] for c in (*f.values(), *e.values())]
         rows.append({"name": r.get("name"), "symbol": r.get("symbol"),
                      "family": r.get("family"), "fusion": f, "e8": e,
                      "status": FAIL if FAIL in verdicts else
-                     UNMEASURED if UNMEASURED in verdicts else PASS})
+                     UNMEASURED if UNMEASURED in verdicts else
+                     VENUE_UNLISTED if VENUE_UNLISTED in verdicts else PASS})
     collisions = {t: n for t, n in tags.items() if len(n) > 1}
     tr = trace(_jsonl(INTENTS), _jsonl(LEDGER), now=now)
     failed = [r["name"] for r in rows if r["status"] == FAIL]
     verdict = FAIL if failed or tr["status"] == FAIL else \
         UNMEASURED if any(r["status"] == UNMEASURED for r in rows) else PASS
+    lapsed = sorted(s for s in declared if catalogue is not None and s in catalogue)
     return {"at": now.isoformat(timespec="seconds"), "verdict": verdict,
             "live_sleeves": len(rows), "failed": failed, "sleeves": rows,
+            "venue_unlisted": [r["name"] for r in rows if r["status"] == VENUE_UNLISTED],
+            "e8_catalogue": "measured" if catalogue is not None else UNMEASURED,
+            "declared_exceptions_lapsed": lapsed,
             "standing_tag_collisions": collisions, "trace": tr,
             "rule": "every live sleeve admitted, executable, priceable, sized and uniquely tagged "
                     "on Fusion, listed and booked on E8; every live order traceable intent <-> "
@@ -287,7 +324,7 @@ def main(argv: list[str] | None = None) -> int:
           f"failed {doc.get('failed', [])}")
     for r in doc.get("sleeves", []):
         bad = {f"{venue}.{k}": c["why"] for venue in ("fusion", "e8")
-               for k, c in r[venue].items() if c["status"] != PASS}
+               for k, c in r[venue].items() if c["status"] not in (PASS, VENUE_UNLISTED)}
         if bad:
             print(f"  {r['status']:10s} {r['name']}: {bad}")
     tr = doc.get("trace") or {}

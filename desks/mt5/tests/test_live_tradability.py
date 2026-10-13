@@ -49,18 +49,35 @@ def test_each_reason_a_sleeve_cannot_place_fails_loudly() -> None:
     assert _fusion(tags=twin)["tag_unique"]["status"] == clt.FAIL
 
 
-def test_the_comment_bound_matches_the_gateway() -> None:
+def test_the_tag_mirror_matches_the_gateway() -> None:
+    """The check's `order_comment` is a copy (the gateway imports the terminal package); the copy
+    must produce the gateway's exact tag or a collision verdict is about the wrong string."""
+    import ast
+    import hashlib
     src = (DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
     assert f"COMMENT_MAX = {clt.COMMENT_MAX}\n" in src
-    assert 'return f"DW{name}"[:COMMENT_MAX]' in src
+    assert f"TAG_HASH = {clt.TAG_HASH}\n" in src
+    fn = next(n for n in ast.parse(src).body
+              if isinstance(n, ast.FunctionDef) and n.name == "order_comment")
+    ns: dict = {"hashlib": hashlib, "COMMENT_MAX": clt.COMMENT_MAX, "TAG_HASH": clt.TAG_HASH}
+    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<gw>", "exec"), ns)  # noqa: S102
+    for name in ("gold_asia", "a" * 27, ROW["name"], ROW["name"] + "_twin"):
+        assert clt.order_comment(name) == ns["order_comment"](name)
+    assert clt.order_comment(ROW["name"]) != clt.order_comment(ROW["name"] + "_twin")
 
 
-def test_e8_unlisted_or_unbooked_fails_and_an_unread_catalogue_is_unmeasured() -> None:
+def test_e8_unlisted_is_a_declared_venue_fact_and_lapses_once_e8_lists_it() -> None:
     ok = clt.e8_checks(ROW, catalogue={"AUDCHF"}, cert=CERT, e8_book=None)
     assert ok["listed"]["status"] == ok["booked"]["status"] == clt.PASS
     zar = {**ROW, "symbol": "EURZAR"}
     bad = clt.e8_checks(zar, catalogue={"AUDCHF"}, cert=CERT, e8_book=None)
-    assert bad["listed"]["status"] == bad["booked"]["status"] == clt.FAIL
+    assert bad["listed"]["status"] == bad["booked"]["status"] == clt.VENUE_UNLISTED
+    declared = {"EURZAR": "not in E8's 46-instrument catalogue"}
+    off = clt.e8_checks(zar, catalogue=None, cert=CERT, e8_book=None, declared=declared)
+    assert off["listed"]["status"] == clt.VENUE_UNLISTED
+    # E8 lists ZAR one day: the declaration lapses and the sleeve must be booked like any other
+    listed = clt.e8_checks(zar, catalogue={"EURZAR"}, cert=CERT, e8_book=None, declared=declared)
+    assert listed["listed"]["status"] == clt.PASS and listed["booked"]["status"] == clt.FAIL
     unread = clt.e8_checks(ROW, catalogue=None, cert=CERT, e8_book=None)
     assert unread["listed"]["status"] == clt.UNMEASURED
 
