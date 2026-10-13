@@ -9099,6 +9099,32 @@
    ]
   },
   {
+   "id": "COT1",
+   "item": "CFTC COT positioning on a clock and published as a cross-asset STATE where the allocator reads states: the contract files refreshed when a newer Friday release is public, and per contract the speculators' net share of open interest, its trailing three-year rank and z, its weekly change and a crowding label, point in time by the four-day release lag, carried on the state vector (StateVector.positioning) as information, never authority.",
+   "domain": "U",
+   "phase": "U",
+   "status": "PARTIAL",
+   "gap": "Wired 2026-10-13; nothing in the repository had called mt5desk/fetch_cot.py, so the committed contract files stop at the 2026-08-11 report. LIVE YIELD UNMEASURED until the box runs the leg (the authoring container cannot reach publicreporting.cftc.gov). Two contracts are named gaps, not ranked: eur has no file (its commodity name never resolved) and sp500 ends 2021-09-14 (CFTC renamed the contract). No state-admission verdict yet: the positioning dimension conditions nothing until libs/regime/state_admission judges it.",
+   "next_step": "Box: one pass of the cot_refresh leg brings every resolvable contract to the newest public report; then resolve the eur and sp500 commodity names in fetch_cot.TARGETS and submit `positioning` to the state-admission gauntlet as a dimension.",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:cot_refresh",
+   "artifact": "desks/mt5/reports/COT_REFRESH.json",
+   "consumer": "desks/mt5/research/state_vector_build.py positioning_block -> StateVector.positioning in desks/mt5/data/state_vector.json, which pf_allocator loads through state_vector_build.load; the same contract files feed edge_search, orthogonal_sweep and external_gauntlet",
+   "evidence": [
+    "desks/mt5/research/hourly_cycle.py:3745 -- the leg (mt5desk/fetch_cot.py --if-due), before state_vector",
+    "desks/mt5/mt5desk/fetch_cot.py:155 -- due(): the newest file against the newest public Tuesday report; six-hour backoff after a pass that found nothing newer",
+    "desks/mt5/mt5desk/fetch_cot.py:182 -- positioning_state(): net/OI, three-year rank and z, weekly change, crowding, signed per MT5 instrument; a short history is UNMEASURED, never 0.5",
+    "desks/mt5/mt5desk/fetch_cot.py:253 -- refresh(): writes desks/mt5/reports/COT_REFRESH.json every pass",
+    "desks/mt5/research/state_vector_build.py:619 -- positioning_block: the state on the vector, its gaps named, freshness on the `cot` information class",
+    "libs/regime/state_vector.py:73 -- StateVector.positioning (serialised in to_dict/from_dict)",
+    "libs/research/layers.py:269 -- layer: information",
+    "LIVE YIELD UNMEASURED: the box has not run the leg yet"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_cot_positioning_state.py"
+   ]
+  },
+  {
    "id": "ASIA_P2",
    "item": "China exchange positioning, inventory and curves (directive 2026-10-05 PART II.B/C; audit asia_directive_diff_2026-10-06 rows 11-16): SHFE/INE member rankings, warehouse receipts and weekly inventory, DCE/CZCE/GFEX ranks and quotes, CFFEX index/bond futures ranks, parsed into top-5/20 concentration, top-20 net, state-broker net, HHI, curve slope/roll/curvature, with change, acceleration, seasonal surprise and four divergence scores, minted on mapped MT5 instruments through the free-stack door with every cell charged",
    "domain": "U",

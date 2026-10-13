@@ -482,7 +482,7 @@ def run_source(row: dict[str, Any], store: Store, fetch: fs.Fetch, cstate: dict[
         return h, {}
     cur = dict(cstate.get("cursor") or {})
     try:
-        if kind == "coinpaprika":
+        if kind in ("coinpaprika", "onchain_explorer"):
             h = fn(fetch, row, cur, now, crypto_cfds=crypto_cfds(store))
         elif kind == "jp_patents":
             h = fn(fetch, row, cur, now, inbox=store.inbox / "jp_patents")

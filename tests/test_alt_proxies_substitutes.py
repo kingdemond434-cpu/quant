@@ -832,3 +832,63 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
     assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v
                    if A.BY_ID[x].terms == "confirmed"}
     assert "asia_za_statssa_retail" not in lib
+
+
+# ============================================================================ GDELT GKG supply
+def test_gkg_folds_themes_into_supply_buckets_with_anchored_infixes() -> None:
+    obs = A.parse_gdelt_gkg((FIX / "gdelt_gkg_supply.csv").read_bytes(), A.Ctx())
+    got = {o.series: o.value for o in obs}
+    assert got["GLOBAL|docs"] == 7
+    assert got["GLOBAL|energy_docs"] == 1 and got["GLOBAL|energy_tone_sum"] == -4.0
+    assert got["GLOBAL|logistics_docs"] == 1                       # SPORTS is not `_PORTS`
+    assert got["GLOBAL|conflict_docs"] == 2 and got["GLOBAL|conflict_tone_sum"] == -15.0
+    assert got["GLOBAL|food_docs"] == 1 and got["GLOBAL|metals_docs"] == 1
+    assert A._gkg_bucket_of("SPORTS") == [] and A._gkg_bucket_of("AIRSTRIKE") == []
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("x.gkg.csv", (FIX / "gdelt_gkg_supply.csv").read_bytes())
+    assert {o.series: o.value for o in A.parse_gdelt_gkg(buf.getvalue(), A.Ctx())} == got
+
+
+def test_gkg_day_publishes_shares_and_tone_only_when_complete_and_large_enough() -> None:
+    obs = A.parse_gdelt_gkg((FIX / "gdelt_gkg_supply.csv").read_bytes(), A.Ctx())
+    big = [A.Obs(o.series, o.period, o.value * 100) for o in obs]   # 700 docs in slot 0
+    acc: dict[str, Any] = {}
+    slots = _slots("20260929")
+    A.gdelt_accumulate(acc, slots[0], big)
+    for s in slots[1:95]:
+        A.gdelt_accumulate(acc, s, [])
+    assert A.gkg_complete_days(acc) == ([], [])                     # one slot unread
+    A.gdelt_accumulate(acc, slots[95], None)
+    done, _ = A.gkg_complete_days(acc)
+    got = {o.series: o.value for o in done}
+    assert got["conflict_share"] == pytest.approx(2 / 7) and got["conflict_tone"] == -7.5
+    assert got["strike_docs"] == 0 and "strike_tone" not in got     # no docs: no tone, not 0
+    small: dict[str, Any] = {}
+    A.gdelt_accumulate(small, slots[0], obs)                        # 7 docs < GKG_MIN_DOCS
+    for s in slots[1:]:
+        A.gdelt_accumulate(small, s, [])
+    assert A.gkg_complete_days(small) == ([], [])
+
+
+def test_gkg_rides_the_gdelt_slot_cursor_on_its_own_url_and_budget(tmp_path: Path) -> None:
+    paths = A.Paths(tmp_path / "desk")
+    src = A.BY_ID["gdelt_gkg_supply"]
+    assert src.terms == "confirmed" and "unrestricted use" in A.TERMS_EVIDENCE[src.id][
+        "terms_quote"]
+    calls: list[str] = []
+
+    def getter(url: str) -> tuple[bytes, str]:
+        calls.append(url)
+        return (FIX / "gdelt_gkg_supply.csv").read_bytes(), "application/zip"
+
+    sst: dict[str, Any] = {}
+    rec = A.collect_gdelt(paths, src, sst, {}, NOW, fetch=True, fixtures=None, deadline=1e18,
+                          getter=getter)
+    assert rec["fetched"] == A.GKG_FWD_PER_PASS + A.GKG_BACK_PER_PASS == len(calls)
+    assert all(c.startswith("http://data.gdeltproject.org/gdeltv2/") and
+               c.endswith(".gkg.csv.zip") for c in calls)
+    assert sst["fwd"] == "2026-09-29T01:30:00+00:00"
+    for sym in {k for m in A.GKG_LEGS.values() for k in m}:
+        assert sym in json.loads((DESK / "data" / "universe" / "universe.json").read_text(
+            "utf-8")), sym

@@ -1280,6 +1280,360 @@
      "note": "cnx_cffex latest point-in-time z and regime per mapped instrument"
     }
    }
+  },
+  {
+   "id": "btc_onchain_mempool",
+   "kind": "onchain_explorer",
+   "name": "mempool.space public REST API: BTC fee pressure, mempool backlog, large on-chain transfers",
+   "url": "https://mempool.space/api",
+   "api": "https://mempool.space/api",
+   "cadence": "hourly",
+   "auth": "none",
+   "licence": "mempool.space public REST API within its published rate limits (Terms of Service cover 'their associated API services'; no clause restricts API use)",
+   "machine_use_allowed": true,
+   "cursor": "last_height (blocks summarised oldest-first, never stepped over) + open-hour accumulators; hours close 2h after their end",
+   "region": "global",
+   "language": "en",
+   "lag_hours": 0,
+   "mechanism": "on-chain settlement demand (fee pressure, backlog) and whale-sized transfers move before the CFD reprices: large transfers precede exchange deposits/withdrawals, and fee spikes mark forced on-chain activity",
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "fails when on-chain activity is dominated by non-price flows (inscriptions, consolidations, custodian reshuffles) that raise fees and large-transfer counts without any directional intent",
+   "targets": {
+    "hypothesis": [
+     "BTCUSD",
+     "ETHUSD"
+    ],
+    "event": "none"
+   },
+   "exchange_flow": "UNMEASURED: needs a labelled exchange-wallet set; no permitted keyless source on file publishes one",
+   "terms_evidence": {
+    "terms_url": "https://mempool.space/terms-of-service",
+    "terms_source_read": "https://raw.githubusercontent.com/mempool/mempool/master/frontend/src/app/components/terms-of-service/terms-of-service.component.html (the terms page itself is rendered client-side)",
+    "terms_quote": "By accessing this Website, you agree to the following Terms of Service: ... operated by Mempool Holdings S.A. de C.V. in El Salvador ... and their associated API services",
+    "api_docs_url": "https://mempool.space/docs/api/rest",
+    "api_quote": "Below is a reference for the Bitcoin REST API service. ... Note that we enforce rate limits. If you exceed these limits, you will get an HTTP 429 error. If you repeatedly exceed the limits, you may be banned from accessing the service altogether. Consider an enterprise sponsorship if you need higher API limits.",
+    "judgement": "ALLOWED under the 2026-10-13 source rules: an official keyless API used within its published limits (one pass an hour, ~12 requests); a 429 is a stop, never retried around",
+    "checked_at": "2026-10-13"
+   },
+   "blocker_prior": "the build sandbox's proxy refuses the host; probed 2026-10-13 via WebFetch: /v1/fees/recommended, /mempool, /v1/blocks and /v1/block/:hash/summary all answered",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "btc on-chain columns as their own direct cells on BTCUSD / ETHUSD"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "on-chain regime (lagged z high/low) gating price-only base families on BTCUSD / ETHUSD"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "latest point-in-time z of each on-chain column per crypto CFD"
+    }
+   }
+  },
+  {
+   "id": "eth_onchain_blockscout",
+   "kind": "access_record",
+   "access_state": "HELD",
+   "name": "Blockscout Ethereum explorer API (keyless default tier)",
+   "url": "https://eth.blockscout.com/api/v2",
+   "cadence": "weekly",
+   "auth": "none",
+   "licence": "UNREAD: Blockscout's terms page could not be fetched",
+   "machine_use_allowed": false,
+   "cursor": "none: not fetched",
+   "region": "global",
+   "language": "en",
+   "mechanism": "ETH gas pressure and large transfers for the ETHUSD CFD (the ETH analogue of btc_onchain_mempool)",
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "would fail when L2 settlement moves activity off the L1 the explorer reads",
+   "access_evidence": {
+    "terms_url": "https://www.blockscout.com/terms",
+    "terms_quote": "(not readable: https://www.blockscout.com/terms and /terms-of-service both failed to fetch on 2026-10-13)",
+    "api_docs_url": "https://docs.blockscout.com/devs/apis/requests-and-limits",
+    "api_quote": "The default rate limit is 300 requests per minute per IP. ... This limit applies to all requests that are not from whitelisted addresses and do not use an API key. ... When a frontend user reaches the default IP limit, they must solve a captcha to obtain a temporary token.",
+    "judgement": "HELD: a documented keyless tier exists but the terms could not be read, so it fails closed; the keyed PRO API needs a key the desk cannot obtain. ETHUSD reads btc_onchain_mempool as a cross-crypto state meanwhile",
+    "checked_at": "2026-10-13"
+   },
+   "uses": {
+    "direct": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists: ETH on-chain columns for ETHUSD"
+    },
+    "indirect": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists"
+    },
+    "allocation": {
+     "artifact": "reports/FREE_STACK_YIELD.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "the access state is reported per pass; no series"
+    }
+   }
+  },
+  {
+   "id": "histdata_fx_m1",
+   "kind": "access_record",
+   "access_state": "METHOD_BLOCKED",
+   "name": "HistData.com free FX / metals M1 history",
+   "url": "https://www.histdata.com/download-free-forex-data/",
+   "cadence": "weekly",
+   "auth": "none",
+   "licence": "no licence or terms page; FAQ: 'Since it's free data, you'll not get from us any kind of warranty or certification.'",
+   "machine_use_allowed": false,
+   "cursor": "none: not fetched",
+   "region": "global",
+   "language": "en",
+   "mechanism": "non-broker M1 reference bars as depth backfill for FX / metals cells",
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "n/a: not fetched",
+   "access_evidence": {
+    "terms_url": "https://www.histdata.com/f-a-q/",
+    "terms_quote": "Since it's free data, you'll not get from us any kind of warranty or certification. Use the data at your own will and risk. ... We can allow you to download the data via FTP ... Get your FTP or SFTP access, via PayPal, here: ... You can get the Forex Historical Data Automatic Updates using Google Drive! Subscribe, via PayPal, here:",
+    "mechanics": "each file is released only by POSTing a per-page one-time hidden form token (input id 'tk') to https://www.histdata.com/get.php with the download page as Referer -- documented by public downloaders: philipperemy/FX-1-Minute-Data histdata/api.py ('token = soup.find('input', {'id': 'tk'}).attrs['value']'; the Referer is 'the most important thing here') and an elitetrader.com thread ('creates a one time token (needed to have access to data)')",
+    "judgement": "METHOD_BLOCKED: the free route is an interactive per-file one-time token form; automated bulk access is the PAID FTP/SFTP and Google-Drive product, and no terms clause permits scripting the free form. Not built. Also redundant: research/dukascopy_backfill.py (hourly leg) already backfills free non-broker tick depth for the same FX / metals set",
+    "no_bars_cure_measured": "docket external_survivors.json 2026-10-13: 57,538 cells, all on broker-registry symbols; 28,691 on histdata-covered symbols, of which 6,556 declare an intraday chart (M1 15, M5 1,044, M15 2,749, M30 2,748). Cells cured = 0 by law: hold_uncoverable makes a cell testable only on BROKER bars + broker costs, so reference bars can never lift a no_bars hold; the box's own held_no_bars count is in the gitignored BACKTEST_COVERAGE.json (UNMEASURED here)",
+    "checked_at": "2026-10-13"
+   },
+   "uses": {
+    "direct": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists: reference M1 bars"
+    },
+    "indirect": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists"
+    },
+    "allocation": {
+     "artifact": "reports/FREE_STACK_YIELD.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "the access state is reported per pass; no series"
+    }
+   }
+  },
+  {
+   "id": "ais_aisstream",
+   "kind": "access_record",
+   "access_state": "NEEDS_KEY",
+   "name": "aisstream.io live AIS websocket",
+   "url": "https://aisstream.io/documentation",
+   "cadence": "weekly",
+   "auth": "key:AISSTREAM_API_KEY",
+   "licence": "account API key; no terms page linked from the documentation",
+   "machine_use_allowed": false,
+   "cursor": "none: not fetched",
+   "region": "global",
+   "language": "en",
+   "mechanism": "vessel positions at chokepoints and ports for energy / metals / grains supply",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "n/a: not fetched",
+   "access_evidence": {
+    "terms_url": "https://aisstream.io/documentation",
+    "terms_quote": "APIKey (required): Account API key. ... Create and rotate keys from the Account page. ... Three subscribed connections per account.",
+    "judgement": "NEEDS_KEY: every subscription requires an account API key; no new key can be obtained",
+    "checked_at": "2026-10-13"
+   },
+   "uses": {
+    "direct": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists: AIS vessel counts"
+    },
+    "indirect": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists"
+    },
+    "allocation": {
+     "artifact": "reports/FREE_STACK_YIELD.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "the access state is reported per pass; no series"
+    }
+   }
+  },
+  {
+   "id": "ais_aishub",
+   "kind": "access_record",
+   "access_state": "NEEDS_KEY",
+   "name": "AISHub combined AIS feed",
+   "url": "https://www.aishub.net/join-us",
+   "cadence": "weekly",
+   "auth": "key:AISHUB_USERNAME",
+   "licence": "reciprocal: data for members who share their own station feed; credit 'Data: AISHub contributors'",
+   "machine_use_allowed": false,
+   "cursor": "none: not fetched",
+   "region": "global",
+   "language": "en",
+   "mechanism": "vessel positions at chokepoints and ports",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "n/a: not fetched",
+   "access_evidence": {
+    "terms_url": "https://www.aishub.net/join-us",
+    "terms_quote": "Applications without an operational AIS station and feed will not be approved.",
+    "judgement": "NEEDS_KEY (reciprocal): API access is a member key granted only to operators of a qualifying AIS receiver (>=10 vessels, >=90% uptime); the desk runs no station",
+    "checked_at": "2026-10-13"
+   },
+   "uses": {
+    "direct": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists: AIS vessel counts"
+    },
+    "indirect": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists"
+    },
+    "allocation": {
+     "artifact": "reports/FREE_STACK_YIELD.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "the access state is reported per pass; no series"
+    }
+   }
+  },
+  {
+   "id": "ais_marinetraffic",
+   "kind": "access_record",
+   "access_state": "NEEDS_KEY",
+   "name": "MarineTraffic (free web map / keyed API)",
+   "url": "https://servicedocs.marinetraffic.com/",
+   "cadence": "weekly",
+   "auth": "key:MARINETRAFFIC_API_KEY",
+   "licence": "keyed, credit-metered API; terms page not readable",
+   "machine_use_allowed": false,
+   "cursor": "none: not fetched",
+   "region": "global",
+   "language": "en",
+   "mechanism": "vessel positions and port calls",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "n/a: not fetched",
+   "access_evidence": {
+    "terms_url": "https://www.marinetraffic.com/en/p/terms",
+    "terms_quote": "(not readable: /en/p/terms, /en/p/terms-of-use and robots.txt all failed to fetch on 2026-10-13)",
+    "api_docs_url": "https://servicedocs.marinetraffic.com/",
+    "api_quote": "Security Scheme Type: API Key; Query parameter name: api_key (with a getCredits Balance endpoint)",
+    "judgement": "NEEDS_KEY: machine access is the keyed, credit-metered API; the free tier is a rendered map tied to an account, and reading it by script would be METHOD_BLOCKED. IMF PortWatch (alt_proxies, confirmed terms) already carries port calls and chokepoint transits",
+    "checked_at": "2026-10-13"
+   },
+   "uses": {
+    "direct": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists: AIS port calls"
+    },
+    "indirect": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists"
+    },
+    "allocation": {
+     "artifact": "reports/FREE_STACK_YIELD.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "the access state is reported per pass; no series"
+    }
+   }
+  },
+  {
+   "id": "tradingeconomics_asia_macro",
+   "kind": "access_record",
+   "access_state": "NEEDS_KEY",
+   "name": "Trading Economics API (CN / JP / KR / SG indicators)",
+   "url": "https://docs.tradingeconomics.com/get_started/",
+   "cadence": "weekly",
+   "auth": "key:TRADINGECONOMICS_KEY",
+   "licence": "subscription; guest credential not documented on the official pages read",
+   "machine_use_allowed": false,
+   "cursor": "none: not fetched",
+   "region": "asia",
+   "language": "en",
+   "mechanism": "Asian macro prints and consensus for CN / JP / KR / SG",
+   "source_culture": "GLOBAL",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "n/a: not fetched",
+   "access_evidence": {
+    "terms_url": "https://tradingeconomics.com/terms-of-service.aspx",
+    "terms_quote": "(not readable: the terms page failed to fetch on 2026-10-13)",
+    "api_docs_url": "https://docs.tradingeconomics.com/get_started/",
+    "api_quote": "To access the API, subscribe to a plan",
+    "judgement": "NEEDS_KEY: the official docs read (get_started, docs home, developer code examples, the PyPI client) document only key:secret after subscribing; nothing official permits guest:guest, so it is not used. The desk's own official feeds (e-Stat, BOK ECOS, NBS, SingStat in alt_proxies) cover the same indicators",
+    "checked_at": "2026-10-13"
+   },
+   "uses": {
+    "direct": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists: Asian macro indicators"
+    },
+    "indirect": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists"
+    },
+    "allocation": {
+     "artifact": "reports/FREE_STACK_YIELD.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "the access state is reported per pass; no series"
+    }
+   }
+  },
+  {
+   "id": "investing_econ_calendar",
+   "kind": "access_record",
+   "access_state": "IDEAS_ONLY",
+   "name": "Investing.com economic calendar (Asian central-bank timing)",
+   "url": "https://www.investing.com/economic-calendar/",
+   "cadence": "weekly",
+   "auth": "none",
+   "licence": "Fusion Media terms: automated extraction forbidden; personal use only",
+   "machine_use_allowed": false,
+   "cursor": "none: not fetched",
+   "region": "global",
+   "language": "en",
+   "mechanism": "central-bank decision timing (BOJ / PBOC / RBA / BOK / MAS) as a cross-check of the desk's own calendar",
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "n/a: read by a human for ideas only",
+   "access_evidence": {
+    "terms_url": "https://cdn.investing.com/about-us/terms_and_conditions.html",
+    "terms_quote": "You are expressly forbidden from employing any automated system or software to extract data or content from this ... This includes, but is not limited to, scraping, data mining, robot or spider programs, and other automatic devices ... Any use of the Platform shall be solely for your own personal use only.",
+    "judgement": "IDEAS_ONLY: automated access prohibited by section 10c. A cross-check, not a dependency: the desk already holds an event calendar (side_channels/forexfactory_miner.py and the ff_calendar_vintage seed miner, read by libs.regime.event_state through state_vector_build.event_state)",
+    "checked_at": "2026-10-13"
+   },
+   "uses": {
+    "direct": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists: central-bank event timing"
+    },
+    "indirect": {
+     "families": [],
+     "organ": "research/free_stack_proposer.py",
+     "note": "none until access exists"
+    },
+    "allocation": {
+     "artifact": "reports/FREE_STACK_YIELD.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "the access state is reported per pass; no series"
+    }
+   }
   }
  ]
 }

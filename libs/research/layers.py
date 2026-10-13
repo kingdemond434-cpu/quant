@@ -266,6 +266,7 @@ LEG_LAYER: dict[str, str] = {
     "alpha_capture": "information",
     # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
     "alt_proxies": "information",
+    "cot_refresh": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",

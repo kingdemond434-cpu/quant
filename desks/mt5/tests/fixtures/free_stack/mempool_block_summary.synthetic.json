@@ -1,0 +1,1 @@
+[{"txid": "cb", "fee": 0, "vsize": 199, "value": 50000000000, "rate": 0}, {"txid": "a", "fee": 500, "vsize": 200, "value": 15000000000, "rate": 2.5}, {"txid": "b", "fee": 900, "vsize": 300, "value": 120000000000, "rate": 3.0}, {"txid": "c", "fee": 300, "vsize": 150, "value": 200000000, "rate": 2.0}]
