@@ -118,14 +118,20 @@ def effective_gotobi(d: _dt.date) -> bool:
     dd = _to_date(d)
     if not japan_business_day(dd):
         return False
-    probe, seen = dd, 0
-    while seen < 5:
+    if gotobi(dd):
+        return True
+    # FORWARD, NOT BACKWARD (2026-10-13). A settlement dated to a closed day is brought forward
+    # to the business day BEFORE it, so this day owns the gotobi dates in the closed run that
+    # FOLLOWS it. The old walk went backward and handed Saturday 28 Feb's month-end to Monday
+    # 2 Mar, Sunday 15 Mar to Monday 16 Mar and the 20 Mar equinox holiday to Monday 23 Mar --
+    # every brought-forward date landed on the wrong side of the closure.
+    probe = dd + _dt.timedelta(days=1)
+    for _ in range(10):
+        if japan_business_day(probe):
+            return False
         if gotobi(probe):
             return True
-        probe -= _dt.timedelta(days=1)
-        seen += 1
-        if japan_business_day(probe):      # an earlier business day owns any flow before it
-            break
+        probe += _dt.timedelta(days=1)
     return False
 
 
