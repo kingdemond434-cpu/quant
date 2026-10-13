@@ -1,0 +1,129 @@
+"""THE FREE CHAIN: free cloud, then another free provider, then a local model -- and never a bill.
+
+  * a rate-limited provider cools and the chain moves on to the next rung, ending on local;
+  * configuration can add a free endpoint and can never add a paid one;
+  * a model_free provider sends only ids its catalogue marks free;
+  * the whole call is bounded by its timeout, however many rungs are left;
+  * status reports keys as present/absent and never prints one;
+  * the proposer seat reaches the chain after the free panel and before the paid seat.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from libs.ops import free_chain as fc
+from libs.research import proposer_seat as ps
+
+
+@pytest.fixture(autouse=True)
+def _isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.setattr(fc, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(fc, "CONFIG", tmp_path / "providers.json")
+    for p in fc.DEFAULTS:
+        if p.key_env:
+            monkeypatch.delenv(p.key_env, raising=False)
+    monkeypatch.setenv("QUANT_LOCAL_LLM_URLS", "http://127.0.0.1:11434/v1")
+    return tmp_path
+
+
+def _fake(responses: dict[str, Any], seen: list[str]):
+    def request(url: str, key: str, payload: Any, timeout: float):
+        seen.append(url)
+        for frag, out in responses.items():
+            if frag in url:
+                return out
+        return {}, "URLError"
+    return request
+
+
+def test_a_rate_limit_falls_through_to_the_local_rung(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GROQ_API_KEY", "gsk-test-not-real")
+    seen: list[str] = []
+    monkeypatch.setattr(fc, "_request", _fake({
+        "groq.com/openai/v1/models": ({"data": [{"id": "llama-test"}]}, None),
+        "groq.com/openai/v1/chat": ({}, "HTTP 429"),
+        "11434/v1/models": ({"data": [{"id": "qwen-local"}]}, None),
+        "11434/v1/chat": ({"choices": [{"message": {"content": "{\"a\": 1}"}}]}, None),
+    }, seen))
+    r = fc.chat("sys", "user", timeout=30)
+    assert (r.provider, r.model, r.tier) == ("local0", "qwen-local", "local")
+    assert any("groq" in u and "chat" in u for u in seen), "the free cloud rung was tried first"
+    st = json.loads(fc.STATE.read_text())
+    assert any(k.startswith("groq:") for k in st["cooldown"]), "the 429 cooled that model"
+
+
+def test_config_can_add_a_free_endpoint_and_never_a_paid_one(_isolated: Path) -> None:
+    fc.CONFIG.write_text(json.dumps({"providers": [
+        {"name": "paid_flagship", "base_url": "https://api.example.com/v1", "tier": "paid"},
+        {"name": "lmstudio", "base_url": "http://127.0.0.1:1234/v1", "tier": "local"},
+        {"name": "gemini", "disabled": True}]}))
+    names = [p.name for p in fc.providers()]
+    assert "paid_flagship" not in names and "lmstudio" in names and "gemini" not in names
+
+
+def test_a_model_free_provider_sends_only_free_ids(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
+    monkeypatch.setattr(fc, "_request", _fake({"openrouter.ai/api/v1/models": ({"data": [
+        {"id": "vendor/flagship", "pricing": {"prompt": "0.000003", "completion": "0.00001"}},
+        {"id": "vendor/small:free"},
+        {"id": "vendor/zero", "pricing": {"prompt": "0", "completion": "0"}}]}, None)}, []))
+    p = next(p for p in fc.providers() if p.name == "openrouter_free")
+    models, err = fc.list_models(p)
+    assert err is None and set(models) == {"vendor/small:free", "vendor/zero"}
+
+
+def test_the_call_is_bounded_by_its_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = [1000.0]
+    monkeypatch.setattr(fc, "_now", lambda: clock[0])
+
+    def slow(url: str, key: str, payload: Any, timeout: float):
+        clock[0] += 25.0
+        if url.endswith("/models"):
+            return {"data": [{"id": f"m{i}"} for i in range(4)]}, None
+        return {}, "HTTP 500"
+    monkeypatch.setattr(fc, "_request", slow)
+    with pytest.raises(fc.ChainExhausted, match="deadline"):
+        fc.chat("s", "u", timeout=60)
+
+
+def test_status_never_prints_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    secret = "gsk-THIS-MUST-NOT-APPEAR"
+    monkeypatch.setenv("GROQ_API_KEY", secret)
+    doc = fc.status()
+    assert secret not in json.dumps(doc)
+    row = next(r for r in doc["providers"] if r["name"] == "groq")
+    assert row["key_present"] is True and doc["verdict"] == "RAN"
+
+
+def test_the_seat_reaches_the_chain_after_the_panel(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ps, "_panel_module", lambda: None)
+    monkeypatch.setattr(ps, "_seat_module", lambda: None)
+    monkeypatch.setattr(fc, "chat", lambda *a, **k: fc.Reply("{\"x\": 1}", "local0", "q", "local"))
+    text, model, err = ps._ask("generation", "prompt", timeout=10)
+    assert err is None and model == "local0:q" and text
+
+
+def test_a_hint_is_tried_first_and_an_exhausted_hint_falls_through(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[str] = []
+
+    def chat(*a: Any, model_hint: str = "", **k: Any) -> fc.Reply:
+        calls.append(model_hint)
+        raise fc.ChainExhausted("nothing")
+    monkeypatch.setattr(fc, "chat", chat)
+    monkeypatch.setattr(ps, "_panel_module", lambda: None)
+    monkeypatch.setattr(ps, "_seat_module", lambda: None)
+    text, _, err = ps._ask("generation", "prompt", timeout=10, model_hint="local0:q")
+    assert calls == ["local0:q"] and not text and err
+
+
+def test_a_declared_local_server_turns_the_seat_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("QUANT_PROPOSER_SEAT", "1")
+    monkeypatch.setenv("QUANT_LOCAL_LLM_URLS", "http://127.0.0.1:11434/v1")
+    assert ps.enabled()
+    monkeypatch.setenv("QUANT_PROPOSER_SEAT", "0")
+    assert not ps.enabled()
