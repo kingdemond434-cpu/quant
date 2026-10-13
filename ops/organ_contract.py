@@ -106,11 +106,17 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     #
     # Budgets are the task's own cadence plus one period of slack, so a single skipped run is not
     # an alarm and two are.
-    "E8-Executor":        ("desks/mt5/reports/E8_EXEC.json", 120,
-                           "guard and management of inherited E8 positions; legacy FX entry is "
-                           "retired"),
+    "E8-Executor":        ("desks/mt5/reports/E8_EXEC.json", 15,
+                           "five-minute certified FX evaluation, broker guard and position "
+                           "management"),
     "E8-Gold":            ("desks/mt5/reports/E8_GOLD.json", 15,
                            "the mirrored Fusion gold windows actually sent, or refused and why"),
+    "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 180,
+                           "hourly venue-listed, positive-risk certified sleeve selection"),
+    "MT5-HourlyCore (replication)": (
+        "desks/mt5/reports/REPLICATION.json", 180,
+        "independent certificate and forward replay required by the live door; "
+        "detect missed hourly refreshes before its six-hour evidence expiry"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
     # NO E8-Guard ROW, AND REMOVING IT IS THE POINT. I added one earlier tonight naming
@@ -172,9 +178,12 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-IdentityHealer": ("desks/mt5/logs/MT5-IdentityHealer.log", 180,
                            "clears IDENTITY_BROKEN clocks. It had NEVER ONCE RUN before "
                            "2026-09-12 and nothing noticed, which is this row's whole reason"),
-    "MT5-TerminalBoot":   ("desks/mt5/logs/MT5-TerminalBoot.log", 180,
-                           "keeps the MT5 terminal up -- without it every other organ's "
-                           "market data goes stale while each reports success"),
+    # GRADED ON THE PASSED PROBE, NOT THE LOG (2026-10-06): every refusal appends to the log, so
+    # a watchdog wedged on "refusing" kept the log fresh and read OK. ensure_terminal.ps1 writes
+    # terminal_boot_ok.json only when the read-only IPC/account probe passes.
+    "MT5-TerminalBoot":   ("desks/mt5/data/terminal_boot_ok.json", 180,
+                           "keeps the MT5 terminal up and its IPC answering -- without it every "
+                           "other organ's market data goes stale while each reports success"),
     # DAILY OR EVENT-DRIVEN, so the age is generous on purpose. An alarm that fires on a
     # legitimately quiet organ is the cry-wolf failure, and these three are quiet by design.
     "MT5-ResearchReports": ("desks/mt5/reports/RESEARCH_REPORT_CLOCK.json", 1560,
@@ -182,8 +191,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-NewsDesk":       ("desks/mt5/logs/MT5-NewsDesk.log", 1440,
                            "the news daemon; its log moves when news moves, so a quiet window "
                            "is not a defect and only a silent DAY is"),
-    "MT5-FusionDeadman":  ("desks/mt5/logs/fusion_deadman.log", 1440,
-                           "the Fusion dead-man watch"),
+    # A clean pass writes the state stamp but no log line. Watching the log called the guard
+    # STALE for five days while its checked_at advanced every scheduled pass.
+    "MT5-FusionDeadman":  ("desks/mt5/data/fusion_deadman_state.json", 90,
+                           "the Fusion dead-man watch and its latest safety verdict"),
     # THE ONLY LOSS ON THIS DESK THAT CANNOT BE UNDONE. Every other defect costs time; an
     # unrecorded day costs the thing the time was buying, because 2029 cannot re-record 2026.
     # 90 minutes against a 30-minute clock: this must be noticed inside the window the broker
@@ -208,7 +219,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-CertHygiene":    ("desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
                            "certificates the enrolment engine can never run, evicted with their "
                            "evidence kept"),
-    "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY.json", 45,
+    "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY_AUDIT.json", 45,
                              "does the running tree match a SIGNED release, and would the hourly "
                              "adopter overwrite unpushed money-path work"),
     "MT5-MoatCapture":    ("desks/mt5/reports/MOAT_CAPTURE.json", 90,

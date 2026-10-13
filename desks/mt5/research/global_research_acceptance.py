@@ -130,7 +130,9 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
                                  "consumers": [], "runtime": []})
             continue
         addendum = json.loads(addendum_path.read_text("utf-8"))
-        requirements.extend(addendum.get("requirements") or [])
+        name = str(addendum.get("specification") or rel)
+        requirements.extend({**r, "specification": name}
+                            for r in addendum.get("requirements") or [])
         loaded_addenda.append(str(rel))
     rows: list[dict[str, Any]] = []
     for req in requirements:
@@ -159,16 +161,30 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
             runtime_rows.append(proof)
             missing.extend(f"runtime:{rel}:{reason}" for reason in errors)
         checks["runtime"] = runtime_rows
+        # A named, still-open defect keeps the requirement PARTIAL however complete its files
+        # look: four kinds of evidence present is not proof that the handoff they serve works.
+        blockers = [b for b in req.get("blockers") or [] if isinstance(b, dict)
+                    and str(b.get("status") or "OPEN").upper() != "CLOSED"]
+        missing.extend(f"blocker:{b.get('id')}" for b in blockers)
         rows.append({"id": req["id"], "title": req["title"], "priority": req["priority"],
+                     "specification": req.get("specification") or spec["specification"],
+                     "lane": req.get("lane") or "UNDECLARED",
                      "status": "CURRENT_VERIFIED" if not missing else "PARTIAL",
-                     "missing_evidence": missing, "checks": checks})
+                     "missing_evidence": missing, "blockers": blockers, "checks": checks})
     counts = {status: sum(r["status"] == status for r in rows)
               for status in ("CURRENT_VERIFIED", "PARTIAL")}
+    by_spec: dict[str, dict[str, int]] = {}
+    for r in rows:
+        tally = by_spec.setdefault(r["specification"], {"CURRENT_VERIFIED": 0, "PARTIAL": 0})
+        tally[r["status"]] += 1
     doc = {"specification": spec["specification"], "at": instant.isoformat(),
            "release": release,
            "addenda": loaded_addenda,
            "requirements": len(rows), "counts": counts,
            "all_current_verified": counts["PARTIAL"] == 0,
+           # "complete against spec version X" is said only of a version with nothing PARTIAL
+           "by_specification": by_spec,
+           "complete_against": sorted(k for k, v in by_spec.items() if v["PARTIAL"] == 0),
            "rows": rows, "unresolved": [r["id"] for r in rows if r["status"] != "CURRENT_VERIFIED"],
            "rule": spec["completion_rule"], "frontier_rule": spec["frontier_rule"]}
     _atomic(report, doc)

@@ -291,7 +291,7 @@ def _live_book(alloc: dict[str, Any], book: dict[str, float]) -> dict[str, Any]:
     """
     out: dict[str, Any] = {"status": UNMEASURED}
     try:
-        from mt5desk.sizing import clamp_risk_frac
+        from mt5desk.sizing import MAX_RISK_FRAC, clamp_risk_frac
         from scripts.check_allocator_join import _book_key
     except Exception as exc:
         out["why"] = f"join/sizing unimportable ({type(exc).__name__}: {exc})"
@@ -305,17 +305,24 @@ def _live_book(alloc: dict[str, Any], book: dict[str, float]) -> dict[str, Any]:
             and str(r.get("status") or "").upper() == "LIVE"]
     fb = {str(k): float(v) for k, v in
           ((alloc.get("book_fallback") or {}).get("book") or {}).items()}
+    from mt5desk.kelly_sizing import load_cert_book
+    cert = load_cert_book(DATA / "CERT_BOOK_LIVE.json", "fusion") or {}
+    book = {**book, **cert}
+    fb = {**fb, **cert}
     per: dict[str, Any] = {}
     total = 0.0
     n_joined = 0
     for r in live:
         key = _book_key(r, book) or _book_key(r, fb)
         src = book.get(key, fb.get(key)) if key else None
-        frac = clamp_risk_frac(src if src is not None else r.get("risk_frac"))
+        frac = (min(MAX_RISK_FRAC, max(0.0, float(src))) if src is not None
+                else clamp_risk_frac(r.get("risk_frac")))
         n_joined += int(key is not None)
         total += frac
         per[str(r.get("name"))] = {"frac": round(float(frac), 6),
                                    "from_book": key is not None, "book_key": key,
+                                   "allocation_source": ("principal_cert_book" if key in cert
+                                                         else "allocator"),
                                    "book_frac": (round(float(src), 6)
                                                  if src is not None else None)}
     out.update({"status": "MEASURED", "n_live": len(live), "n_joined": n_joined,

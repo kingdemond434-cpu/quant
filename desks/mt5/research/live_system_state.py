@@ -62,7 +62,8 @@ STALL_WATCH = DESK / "data" / "stall_watch.json"
 BANNED_FAMILIES = DESK / "data" / "banned_families.json"
 FORWARD_RECONCILE = DESK / "data" / "forward_reconcile.json"
 SHADOW_STATE = DESK / "reports" / "shadow" / "shadow_state.json"
-LIVE_LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 GATE_ATTESTATION_PATHS = (DESK / "data" / "gate_attestation.json",
                           ROOT / "data" / "gate_attestation.json")
 CLOSED_LOOP = DESK / "data" / "architecture" / "closed_loop_attestation.json"
