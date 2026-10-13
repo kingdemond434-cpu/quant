@@ -125,6 +125,7 @@ LEG_LAYER: dict[str, str] = {
     # What a sleeve pays to trade belongs with execution too: it is a cost, not a signal.
     "cost_to_edge": "execution",
     "swap_rejudge": "execution",
+    "carry_rejudge": "prediction",
     "asia_plane": "information",
     "sge_premium": "information",
     "asia_collector": "information",
@@ -261,6 +262,10 @@ LEG_LAYER: dict[str, str] = {
     "trend_core": "prediction",
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
+    "elitequant_breadth": "prediction",
+    # model-proposed cells, screened and donated to the gauntlet: prediction, like the seeders
+    "analyst_panel": "prediction",
+    "zoo_breadth": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",

@@ -1,0 +1,419 @@
+{
+ "system_id": "gh_llmquant_quant_wiki",
+ "run_id": "queued_repo_cards_2026-10-06_gh_llmquant_quant_wiki",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "US500",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "monthly_opex",
+    "mode": "pre_flow",
+    "window_before_min": 6300,
+    "window_after_min": 0,
+    "side": 1
+   },
+   "mechanism": "Option-expiration week: buy the index on the Monday of the monthly opex week (expiry within 5 days) and exit on expiry day; flat otherwise.",
+   "title": "US500 forced_flow (QR-A-QW-003)",
+   "card_id": "QR-A-QW-003",
+   "licence": "NONE",
+   "falsifier": "no excess return"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "monthly_opex",
+    "mode": "pre_flow",
+    "window_before_min": 6300,
+    "window_after_min": 0,
+    "side": 1
+   },
+   "mechanism": "Option-expiration week: buy the index on the Monday of the monthly opex week (expiry within 5 days) and exit on expiry day; flat otherwise.",
+   "title": "NAS100 forced_flow (QR-A-QW-003)",
+   "card_id": "QR-A-QW-003",
+   "licence": "NONE",
+   "falsifier": "no excess return"
+  },
+  {
+   "symbol": "US30",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "monthly_opex",
+    "mode": "pre_flow",
+    "window_before_min": 6300,
+    "window_after_min": 0,
+    "side": 1
+   },
+   "mechanism": "Option-expiration week: buy the index on the Monday of the monthly opex week (expiry within 5 days) and exit on expiry day; flat otherwise.",
+   "title": "US30 forced_flow (QR-A-QW-003)",
+   "card_id": "QR-A-QW-003",
+   "licence": "NONE",
+   "falsifier": "no excess return"
+  },
+  {
+   "symbol": "US500",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 21,
+    "skip_d": 231,
+    "hold_d": 21,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "12-month cycle (Heston-Sadka): rank names by their return in the same calendar month one year ago; long the winner decile, short the loser decile, monthly.",
+   "title": "US500 cross_sectional_class_momentum (QR-A-QW-006)",
+   "card_id": "QR-A-QW-006",
+   "licence": "NONE",
+   "falsifier": "no class earns net positive"
+  },
+  {
+   "symbol": "GER40",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 21,
+    "skip_d": 231,
+    "hold_d": 21,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "12-month cycle (Heston-Sadka): rank names by their return in the same calendar month one year ago; long the winner decile, short the loser decile, monthly.",
+   "title": "GER40 cross_sectional_class_momentum (QR-A-QW-006)",
+   "card_id": "QR-A-QW-006",
+   "licence": "NONE",
+   "falsifier": "no class earns net positive"
+  },
+  {
+   "symbol": "JPN225",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 21,
+    "skip_d": 231,
+    "hold_d": 21,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "12-month cycle (Heston-Sadka): rank names by their return in the same calendar month one year ago; long the winner decile, short the loser decile, monthly.",
+   "title": "JPN225 cross_sectional_class_momentum (QR-A-QW-006)",
+   "card_id": "QR-A-QW-006",
+   "licence": "NONE",
+   "falsifier": "no class earns net positive"
+  },
+  {
+   "symbol": "HK50",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 21,
+    "skip_d": 231,
+    "hold_d": 21,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "12-month cycle (Heston-Sadka): rank names by their return in the same calendar month one year ago; long the winner decile, short the loser decile, monthly.",
+   "title": "HK50 cross_sectional_class_momentum (QR-A-QW-006)",
+   "card_id": "QR-A-QW-006",
+   "licence": "NONE",
+   "falsifier": "no class earns net positive"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 21,
+    "skip_d": 231,
+    "hold_d": 21,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "12-month cycle (Heston-Sadka): rank names by their return in the same calendar month one year ago; long the winner decile, short the loser decile, monthly.",
+   "title": "XAUUSD cross_sectional_class_momentum (QR-A-QW-006)",
+   "card_id": "QR-A-QW-006",
+   "licence": "NONE",
+   "falsifier": "no class earns net positive"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 21,
+    "skip_d": 231,
+    "hold_d": 21,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "12-month cycle (Heston-Sadka): rank names by their return in the same calendar month one year ago; long the winner decile, short the loser decile, monthly.",
+   "title": "XTIUSD cross_sectional_class_momentum (QR-A-QW-006)",
+   "card_id": "QR-A-QW-006",
+   "licence": "NONE",
+   "falsifier": "no class earns net positive"
+  },
+  {
+   "symbol": "CORN",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 21,
+    "skip_d": 231,
+    "hold_d": 21,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "12-month cycle (Heston-Sadka): rank names by their return in the same calendar month one year ago; long the winner decile, short the loser decile, monthly.",
+   "title": "CORN cross_sectional_class_momentum (QR-A-QW-006)",
+   "card_id": "QR-A-QW-006",
+   "licence": "NONE",
+   "falsifier": "no class earns net positive"
+  },
+  {
+   "symbol": "US500",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "US500 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "NAS100 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "US30",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "US30 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "US2000",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "US2000 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "GER40",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "GER40 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "UK100",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "UK100 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "FRA40",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "FRA40 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "EUSTX50",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "EUSTX50 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "JPN225",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "JPN225 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "HK50",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "HK50 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "CHINAH",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "CHINAH cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "AUS200",
+   "family": "cross_sectional_class_low_vol",
+   "params": {
+    "measure": "beta",
+    "window_d": 120,
+    "hold_d": 20
+   },
+   "mechanism": "Betting against beta in country indexes: 1-year rolling beta vs the US market; long low-beta, short high-beta, each side rescaled to beta 1, monthly.",
+   "title": "AUS200 cross_sectional_class_low_vol (QR-A-QW-007)",
+   "card_id": "QR-A-QW-007",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "mass_screen_clock",
+   "params": {
+    "hour": 1,
+    "hold": 2,
+    "direction": 1
+   },
+   "mechanism": "Bitcoin intraday seasonality: long BTC at 22:00 UTC, exit at 00:00 UTC (two hours), every day.",
+   "title": "BTCUSD mass_screen_clock (QR-A-QW-009)",
+   "card_id": "QR-A-QW-009",
+   "licence": "NONE",
+   "falsifier": "no excess at deflated threshold over 24 hours",
+   "translation_note": "card params adapted to the registered family: hour_utc->hour"
+  },
+  {
+   "symbol": "ETHUSD",
+   "family": "mass_screen_clock",
+   "params": {
+    "hour": 1,
+    "hold": 2,
+    "direction": 1
+   },
+   "mechanism": "Bitcoin intraday seasonality: long BTC at 22:00 UTC, exit at 00:00 UTC (two hours), every day.",
+   "title": "ETHUSD mass_screen_clock (QR-A-QW-009)",
+   "card_id": "QR-A-QW-009",
+   "licence": "NONE",
+   "falsifier": "no excess at deflated threshold over 24 hours",
+   "translation_note": "card params adapted to the registered family: hour_utc->hour"
+  },
+  {
+   "symbol": "US500",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "XBRUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "entry_z": 1.0,
+    "norm": 240
+   },
+   "mechanism": "Crude oil predicts equity returns: monthly regression of next-month equity excess return on the prior month's oil return; long equities if the forecast is positive, else cash.",
+   "title": "US500 lead_lag (QR-A-QW-013)",
+   "card_id": "QR-A-QW-013",
+   "licence": "NONE",
+   "falsifier": "as in the breadth cell"
+  },
+  {
+   "symbol": "GER40",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "XBRUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "entry_z": 1.0,
+    "norm": 240
+   },
+   "mechanism": "Crude oil predicts equity returns: monthly regression of next-month equity excess return on the prior month's oil return; long equities if the forecast is positive, else cash.",
+   "title": "GER40 lead_lag (QR-A-QW-013)",
+   "card_id": "QR-A-QW-013",
+   "licence": "NONE",
+   "falsifier": "as in the breadth cell"
+  },
+  {
+   "symbol": "EUSTX50",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "XBRUSD",
+    "lag": 1,
+    "direction": "opposite",
+    "entry_z": 1.0,
+    "norm": 240
+   },
+   "mechanism": "Crude oil predicts equity returns: monthly regression of next-month equity excess return on the prior month's oil return; long equities if the forecast is positive, else cash.",
+   "title": "EUSTX50 lead_lag (QR-A-QW-013)",
+   "card_id": "QR-A-QW-013",
+   "licence": "NONE",
+   "falsifier": "as in the breadth cell"
+  }
+ ],
+ "trials_charged": 27,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

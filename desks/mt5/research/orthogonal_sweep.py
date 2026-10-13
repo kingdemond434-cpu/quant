@@ -494,6 +494,11 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 #: this organ's to resolve -- not that the family is dead. Anything NOT listed and not wired is a
 #: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
 NOT_SOURCED_HERE = {
+    "zoo_alpha_class": "the alpha and its peer-class panel are named by research/zoo_breadth, "
+                       "which builds the class panel from the hypothesis-lane peers, measures "
+                       "each class book (both signs) and screens each leg, charging every look "
+                       "once by identity whether or not the pass donates; enumerating the zoo "
+                       "here would be a second search over the same catalogue",
     "regime_split": "the base family and the regime are named by regime_split_miner, which "
                     "deflates over every family x regime cell it tried and kills with purged "
                     "walk-forward; a sweep that enumerated the split here would be a second "
@@ -571,6 +576,27 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The paperswithbacktest commodity class books (mt5desk/families_class_moments.py): seeded on
+    # commodity legs only by research/elitequant_breadth, which charges each look once.
+    **dict.fromkeys(("cross_sectional_class_skew", "cross_sectional_class_asymmetry",
+                     "cross_sectional_class_corr_momentum"),
+                    "research/elitequant_breadth seeds these commodity class books on commodity "
+                    "legs and charges each look once by identity; sweeping them here would "
+                    "charge them twice and spend trials on classes the papers never named"),
+    # The Roman rows (mt5desk/families_roman.py). The hedge and beta legs read a partner named by
+    # `pair_symbol`, which only the seeder's pair table supplies; hawkes_flow refits a
+    # three-type Hawkes process (~20 s a symbol) and is seeded where its events exist.
+    **dict.fromkeys(("kalman_hedge_spread", "kalman_beta_residual", "hawkes_flow"),
+                    "research/elitequant_breadth seeds these on the pairs and symbols the Roman "
+                    "rows name and charges each look once; blind here the pair legs have no "
+                    "partner and the Hawkes refits would spend the sweep's whole budget"),
+    # The FX carry books (mt5desk/families_carry.py) read the broker's stamped swap history and
+    # are seeded by research/elitequant_breadth only once that history reaches the lockbox floor.
+    **dict.fromkeys(("fx_swap_carry_rank", "dollar_carry_basket", "good_bad_carry",
+                     "commodity_basis_carry"),
+                    "research/elitequant_breadth seeds these carry books once the honest swap "
+                    "history reaches the lockbox floor and charges each look once; swept here "
+                    "they would charge trials on a history too short to judge"),
 }
 
 
@@ -731,12 +757,14 @@ def sweep(budget_s: float | None = None) -> dict:
     from mt5desk.families_orthogonal import (
         FAMILY_INPUTS,
         ORTHOGONAL_FAMILIES,
+        carry_history_status,
         timeframe_overrides,
         timeframe_refusal,
     )
 
     meta = _read(UNIVERSE / "universe.json") or {}
     pairs = sweep_pairs(meta)
+    carry_status: dict[str, dict] = {}          # one history read per symbol per sweep
     # RESUME, THEN ROTATE: the whole universe is still swept, one full lap per however many
     # passes it takes, instead of the first K pairs forever.
     _start = _read_cursor(len(pairs))
@@ -908,6 +936,20 @@ def sweep(budget_s: float | None = None) -> dict:
                 key = f"{fam}:needs-source-evidence ({need_args})"
                 gaps[key] = gaps.get(key, 0) + 1
                 continue
+            # CARRY IS POINT-IN-TIME, SO ITS HISTORY IS ONLY AS LONG AS THE SWAP TAPE (2026-10-07).
+            # Until the honest weekday count is strictly above the gauntlet's judgeable floor
+            # (families_carry.judgeable_floor: 60 development days plus the held-out tail) the
+            # cell is named PENDING_HISTORY and not proposed: the judge could only call it
+            # UNMEASURED, and that spends a trial without judging anything.
+            if fam == "carry":
+                if sym not in carry_status:
+                    carry_status[sym] = carry_history_status(sym)
+                _hs = carry_status[sym]
+                if not _hs.get("ready"):
+                    key = (f"carry:{_hs.get('status')} (honest swap history below the "
+                           f"{_hs.get('floor_days', '?')}-day lockbox floor)")
+                    gaps[key] = gaps.get(key, 0) + 1
+                    continue
             try:
                 sigs = fn(df, **kw)
             except Exception as exc:

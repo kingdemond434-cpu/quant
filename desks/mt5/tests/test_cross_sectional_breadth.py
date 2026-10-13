@@ -340,7 +340,7 @@ def test_equity_admission_is_pinned_to_the_class_book_families():
     from mt5desk.families_cross_sectional import CROSS_SECTIONAL_FAMILIES
 
     from research import universe_policy as up
-    assert set(CROSS_SECTIONAL_FAMILIES) == set(up.CROSS_SECTIONAL_FAMILIES)
+    assert set(CROSS_SECTIONAL_FAMILIES) | {"zoo_alpha_class"} == set(up.CROSS_SECTIONAL_FAMILIES)
 
 def test_merge_door_admits_a_share_cfd_only_in_a_class_book(tmp_path, monkeypatch):
     """The docket door passes the row's family, so AAPL momentum reaches the judge and AAPL

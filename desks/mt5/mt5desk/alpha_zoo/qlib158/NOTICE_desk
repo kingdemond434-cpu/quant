@@ -1,0 +1,11 @@
+Desk note on the qlib158 licence texts (2026-10-06, audit PR166_v2).
+
+LICENSE.md and NOTICE are Vibe-Trading's own attribution files for this subpackage, copied
+verbatim from github.com/HKUDS/Vibe-Trading agent/src/factors/zoo/qlib158/ (Vibe-Trading is
+MIT; see ../LICENSE_Vibe-Trading_MIT and ../NOTICE_Vibe-Trading).
+
+LICENSE_qlib is microsoft/qlib's LICENSE as it stands at the repository root today, copied
+verbatim. It is the MIT licence, whereas Vibe-Trading's files and the per-file headers say
+Apache-2.0. Both are permissive, and both texts are kept here so the attribution any reading
+requires is present. The definitions were re-expressed by Vibe-Trading, and no qlib source
+code is copied.

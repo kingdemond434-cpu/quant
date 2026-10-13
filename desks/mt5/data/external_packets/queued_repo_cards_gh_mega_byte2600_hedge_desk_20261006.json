@@ -1,0 +1,175 @@
+{
+ "system_id": "gh_mega_byte2600_hedge_desk",
+ "run_id": "queued_repo_cards_2026-10-06_gh_mega_byte2600_hedge_desk",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "US500",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "XTIUSD",
+    "lag": 120,
+    "direction": "opposite",
+    "entry_z": 1.5,
+    "norm": 1440,
+    "hold_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Crude oil leads equities through the inflation -> policy-rate channel (oil -> CPI -> Fed path -> yields -> equity valuations); the donor's check: is the week's yield move oil-driven? Literature: Driesprong, Jacobsen & Maat (2008) oil changes predict lower next-month stock returns.",
+   "title": "US500 lead_lag (B-HD-07)",
+   "card_id": "B-HD-07",
+   "licence": "Apache-2.0",
+   "falsifier": "Same-sign or zero response; effect only in 2020/2022 energy shocks."
+  },
+  {
+   "symbol": "NAS100",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "XTIUSD",
+    "lag": 120,
+    "direction": "opposite",
+    "entry_z": 1.5,
+    "norm": 1440,
+    "hold_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Crude oil leads equities through the inflation -> policy-rate channel (oil -> CPI -> Fed path -> yields -> equity valuations); the donor's check: is the week's yield move oil-driven? Literature: Driesprong, Jacobsen & Maat (2008) oil changes predict lower next-month stock returns.",
+   "title": "NAS100 lead_lag (B-HD-07)",
+   "card_id": "B-HD-07",
+   "licence": "Apache-2.0",
+   "falsifier": "Same-sign or zero response; effect only in 2020/2022 energy shocks."
+  },
+  {
+   "symbol": "GER40",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "XTIUSD",
+    "lag": 120,
+    "direction": "opposite",
+    "entry_z": 1.5,
+    "norm": 1440,
+    "hold_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Crude oil leads equities through the inflation -> policy-rate channel (oil -> CPI -> Fed path -> yields -> equity valuations); the donor's check: is the week's yield move oil-driven? Literature: Driesprong, Jacobsen & Maat (2008) oil changes predict lower next-month stock returns.",
+   "title": "GER40 lead_lag (B-HD-07)",
+   "card_id": "B-HD-07",
+   "licence": "Apache-2.0",
+   "falsifier": "Same-sign or zero response; effect only in 2020/2022 energy shocks."
+  },
+  {
+   "symbol": "EUSTX50",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "XTIUSD",
+    "lag": 120,
+    "direction": "opposite",
+    "entry_z": 1.5,
+    "norm": 1440,
+    "hold_bars": 120,
+    "stop_atr": 2.0,
+    "rr": 1.5
+   },
+   "mechanism": "Crude oil leads equities through the inflation -> policy-rate channel (oil -> CPI -> Fed path -> yields -> equity valuations); the donor's check: is the week's yield move oil-driven? Literature: Driesprong, Jacobsen & Maat (2008) oil changes predict lower next-month stock returns.",
+   "title": "EUSTX50 lead_lag (B-HD-07)",
+   "card_id": "B-HD-07",
+   "licence": "Apache-2.0",
+   "falsifier": "Same-sign or zero response; effect only in 2020/2022 energy shocks."
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "bond_auction",
+    "mode": "pre_flow",
+    "window_before_min": 1440,
+    "window_after_min": 1440,
+    "side": -1
+   },
+   "mechanism": "US Treasury auction results (fiscaldata auctions_query: auction date, tenor, high yield, bid-to-cover) as the actual auction calendar; known concession pattern: yields rise into auctions and fall after (Lou, Yan & Zhang 2013).",
+   "title": "UST10Y forced_flow (B-HD-08)",
+   "card_id": "B-HD-08",
+   "licence": "Apache-2.0",
+   "falsifier": "Pre-auction return not negative or reversal absent.",
+   "translation_note": "card params adapted to the registered family: calendar_source"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "bond_auction",
+    "mode": "pre_flow",
+    "window_before_min": 1440,
+    "window_after_min": 1440,
+    "side": -1
+   },
+   "mechanism": "US Treasury auction results (fiscaldata auctions_query: auction date, tenor, high yield, bid-to-cover) as the actual auction calendar; known concession pattern: yields rise into auctions and fall after (Lou, Yan & Zhang 2013).",
+   "title": "UST05Y forced_flow (B-HD-08)",
+   "card_id": "B-HD-08",
+   "licence": "Apache-2.0",
+   "falsifier": "Pre-auction return not negative or reversal absent.",
+   "translation_note": "card params adapted to the registered family: calendar_source"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "cot_positioning",
+   "params": {
+    "lookback_weeks": 156,
+    "extreme_pct": 0.9
+   },
+   "mechanism": "CFTC COT futures-only (Socrata 6dca-aqww) net speculator positioning as crowding/contrarian context.",
+   "title": "XAUUSD cot_positioning (B-HD-09)",
+   "card_id": "B-HD-09",
+   "licence": "Apache-2.0",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "cot_positioning",
+   "params": {
+    "lookback_weeks": 156,
+    "extreme_pct": 0.9
+   },
+   "mechanism": "CFTC COT futures-only (Socrata 6dca-aqww) net speculator positioning as crowding/contrarian context.",
+   "title": "XAGUSD cot_positioning (B-HD-09)",
+   "card_id": "B-HD-09",
+   "licence": "Apache-2.0",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "cot_positioning",
+   "params": {
+    "lookback_weeks": 156,
+    "extreme_pct": 0.9
+   },
+   "mechanism": "CFTC COT futures-only (Socrata 6dca-aqww) net speculator positioning as crowding/contrarian context.",
+   "title": "XTIUSD cot_positioning (B-HD-09)",
+   "card_id": "B-HD-09",
+   "licence": "Apache-2.0",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "cot_positioning",
+   "params": {
+    "lookback_weeks": 156,
+    "extreme_pct": 0.9
+   },
+   "mechanism": "CFTC COT futures-only (Socrata 6dca-aqww) net speculator positioning as crowding/contrarian context.",
+   "title": "EURUSD cot_positioning (B-HD-09)",
+   "card_id": "B-HD-09",
+   "licence": "Apache-2.0",
+   "falsifier": "N/A"
+  }
+ ],
+ "trials_charged": 10,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

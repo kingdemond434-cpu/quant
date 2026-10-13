@@ -44,7 +44,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from mt5desk.causal_residual import causal_residual
-from mt5desk.families import Signal, _atr, _h1
+from mt5desk.families import Signal, _atr, _h1, bar_minutes
 from mt5desk.universe_registry import REFERENCE_TIMEFRAME as _REFERENCE_TF
 from mt5desk.universe_registry import TIMEFRAMES as _TIMEFRAMES
 from mt5desk.universe_registry import scale_bars as _scale_bars
@@ -104,7 +104,11 @@ SWAP_MODE_POINTS = 1
 
 
 def _swap_terms(symbol: str) -> dict | None:
-    """Point-in-time swap/contract terms the tape recorder already stores. None if unrecorded."""
+    """The NEWEST recorded terms row for `symbol`, or None if unrecorded.
+
+    NOT POINT-IN-TIME, and it used to say it was. This is today's row; applied to a past bar it
+    is lookahead. `family_carry` reads its swap through `_swap_history_for` (as-of each bar) and
+    uses this only for the static `contract_size`."""
     if not TERMS.exists():
         return None
     parquet_row = _load_terms().get(str(symbol).upper())
@@ -171,6 +175,116 @@ def swap_money_per_lot(terms: dict) -> tuple[float, float] | None:
     return lo * scale, sh * scale
 
 
+def _swap_history_for(symbol: str) -> dict[str, np.ndarray] | None:
+    """This symbol's swap rows as `families_carry.swap_history` reads them, or None.
+
+    ONE READER, NOT A THIRD (2026-10-07). `families_carry` (#166) already reads the contract-terms
+    tape and the honest `broker_swaps` panel rows by their OWN `observed_at`, drops every row
+    without one, and indexes each row at `observed_at + 3 h` (`BROKER_LEAD_NS`) -- the instant a
+    broker-stamped bar may first use it. `family_carry` reads through it rather than keeping a
+    second parser of the same files.
+    """
+    from mt5desk import families_carry as fc
+
+    hist, _ = fc.swap_history()
+    want = str(symbol)
+    h = hist.get(want) or hist.get(want.upper())
+    if h is None:
+        h = next((v for k, v in hist.items() if str(k).upper() == want.upper()), None)
+    return h if isinstance(h, dict) else None
+
+
+#: The oldest swap observation a bar may still use, in hours. 72 h spans a weekend, when the FX
+#: venue prints no bars and the tape may hold no new row; past it the swap is no longer a fact
+#: about this bar and the bar emits nothing (audit PR269 should-fix: a staleness bound).
+MAX_SWAP_AGE_H = 72.0
+
+
+def carry_history_status(symbol: str, floor_days: int | None = None,
+                         max_swap_age_h: float = MAX_SWAP_AGE_H) -> dict[str, object]:
+    """READY or PENDING_HISTORY for ONE symbol's carry cell, with the count; UNMEASURED if the
+    gauntlet's floor cannot be derived.
+
+    THE FLOOR IS THE GAUNTLET'S JUDGEABLE MINIMUM, `families_carry.judgeable_floor()` (#166):
+    60 development days plus the held-out tail (max(LOCKBOX_MIN_DAYS, LOCKBOX_FRAC * n)), which
+    is 100 today. It used to be LOCKBOX_MIN_DAYS (40) alone, which let a 40-day cell into a
+    judge that cannot judge it: the verdict would have been UNMEASURED, and an UNMEASURED
+    verdict must never reach a certificate (audit PR269 M1). One derivation, imported.
+
+    THE COUNT IS STRICT. A day counts only if it is a weekday (the cell's daily series holds
+    trading days, never weekends) whose OPENING instant already had a swap row knowable
+    (`observed_at + 3 h`) and no older than `max_swap_age_h`. So the first, partial day never
+    counts, nor does a day after the tape went stale. And the cell is READY only STRICTLY ABOVE
+    the floor, `honest_days > floor_days`: a history sitting exactly on the boundary is the case
+    a one-day disagreement between this calendar and the judge's would turn into an UNMEASURED
+    verdict, so it waits one more day.
+
+    A cell below it reads PENDING_HISTORY by name at the judging boundary (the orthogonal sweep,
+    and the gauntlet's carry build with the `carry_pit` patch). It is never judged on a history
+    the judge could not hold, and it enters on its own the day the history is long enough.
+    """
+    from mt5desk import families_carry as fc
+
+    if floor_days is None:
+        try:
+            floor_days = int(fc.judgeable_floor())
+        except Exception as exc:                     # pragma: no cover - import guard
+            return {"status": "UNMEASURED", "ready": False, "symbol": symbol,
+                    "why": f"judgeable floor unreadable: {type(exc).__name__}"}
+    h = _swap_history_for(symbol)
+    t = np.asarray([] if h is None else h["t"], dtype="int64")
+    days: list[str] = []
+    if t.size:
+        first = pd.Timestamp(int(t[0]), unit="ns", tz="UTC").normalize()
+        last = pd.Timestamp(int(t[-1]) - fc.BROKER_LEAD_NS, unit="ns", tz="UTC").normalize()
+        opens = pd.bdate_range(first + pd.Timedelta(days=1), last, tz="UTC")
+        if len(opens):
+            o = opens.as_unit("ns").asi8
+            j = np.searchsorted(t, o, side="right") - 1
+            ok = (j >= 0) & ((o - t[np.maximum(j, 0)]) <= float(max_swap_age_h) * 3_600e9)
+            days = [d.date().isoformat() for d, k in zip(opens, ok, strict=True) if k]
+    ready = len(days) > int(floor_days)
+    return {"status": "READY" if ready else "PENDING_HISTORY", "ready": ready, "symbol": symbol,
+            "honest_days": len(days), "floor_days": int(floor_days),
+            "max_swap_age_h": float(max_swap_age_h),
+            "first_day": days[0] if days else None, "last_day": days[-1] if days else None,
+            "why": ("carry is judged only on swap observations knowable at each bar; until the "
+                    "honest weekday count is strictly above the gauntlet's judgeable floor the "
+                    "cell waits, and no earlier bar is ever filled")}
+
+
+def _contract_size(symbol: str) -> float | None:
+    """The contract's lot size: a static contract specification, not a rate that moves.
+
+    Read from the newest recorded terms row, then the universe registry. Only the SWAP is
+    time-varying; it is never read from here."""
+    row = _swap_terms(symbol) or {}
+    try:
+        v = float(row.get("contract_size") or 0.0)
+    except (TypeError, ValueError):
+        v = 0.0
+    if v > 0:
+        return v
+    try:
+        reg = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
+        v = float((reg.get(str(symbol).upper()) or reg.get(str(symbol)) or {})
+                  .get("contract_size") or 0.0)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+    return v if v > 0 else None
+
+
+def _decision_ns(d: pd.DataFrame) -> np.ndarray:
+    """Each bar's decision instant in ns: its CLOSE (stamp + bar length), the moment the signal
+    on it is observed. The entry is the next open (`trigger=None`)."""
+    idx = pd.DatetimeIndex(d.index)
+    if idx.tz is not None:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    stamps = idx.as_unit("ns").asi8
+    minutes = bar_minutes(d) or 60
+    return np.asarray(stamps + int(minutes) * 60_000_000_000, dtype="int64")
+
+
 def family_carry(
     df: pd.DataFrame,
     *,
@@ -181,6 +295,7 @@ def family_carry(
     stop_atr: float = 2.0,
     rr: float = 1.5,
     require_quiet: bool = True,
+    max_swap_age_h: float = MAX_SWAP_AGE_H,
 ) -> list[Signal]:
     """Hold the positive-swap side while the market is QUIET; stand aside when it trends.
 
@@ -191,31 +306,55 @@ def family_carry(
     breakout sleeve is making money. The two are complementary rather than additive, and that
     is the point.
 
-    REFUSES WITHOUT SWAP DATA. `swap_long`/`swap_short` come from the venue's own recorded
-    contract terms. With no terms recorded this returns nothing rather than degrading into a
-    long-only momentum sleeve wearing the word "carry".
-    """
-    terms = _swap_terms(symbol)
-    if not terms:
-        return []
-    # THE MAGNITUDE GATE READ THE RAW FIELD (repaired 2026-08-29). `swap_long - swap_short` is
-    # points on 110 symbols and annual percent on 138, and it was being compared against a
-    # threshold named `min_edge_bp_per_day`: three dimensions, one constant. In practice the
-    # gate was vacuous -- AUDHUF's raw differential is 1,580 and USDTRY's is 11,364 against a
-    # bar of 0.5, so any symbol with enough decimal places passed unconditionally, while the
-    # SIDE was picked by comparing two numerals whose scale is the broker's digit count.
-    # Resolving the unit first makes an unresolvable symbol STAND ASIDE, which can only ever
-    # emit fewer signals than before -- never a new one.
-    money = swap_money_per_lot(terms)
-    if money is None:
-        return []
-    swap_long, swap_short = money
-    side = 1 if swap_long > swap_short else -1
-    edge = abs(swap_long - swap_short)
-    if edge < min_edge_bp_per_day:
-        return []                      # the differential does not pay for the spread; no trade
+    POINT-IN-TIME (2026-10-07, the EliteQuant review). This family used to read TODAY's swap
+    (`_swap_terms`, the newest row on disk) and apply its side and magnitude to every bar in
+    history. The contract-terms tape starts on 2026-08-27, so a certificate stamped
+    `days: 1120` (CHFNOK carry) was judged on three years of bars carrying a swap nobody could
+    have known. Each bar now uses only the newest swap row whose `observed_at + 3 h` is at or
+    before the bar's decision instant (its close); a bar before the first such row emits
+    nothing -- no backfill -- and so does a bar whose newest knowable row is older than
+    `max_swap_age_h`: a stale swap is not a fact about that bar. Side and edge can therefore
+    change bar by bar as the venue's swap does. Whether the cell may be JUDGED yet is a
+    separate question, answered by `carry_history_status` at the judging boundary; live and
+    forward use are unaffected, because a bar printed now always has a fresh, knowable swap.
 
+    REFUSES WITHOUT SWAP DATA. With no observation knowable at a bar, or a unit that cannot be
+    established (`swap_money_per_lot` is None), that bar emits nothing rather than degrading
+    into a long-only momentum sleeve wearing the word "carry".
+    """
+    h = _swap_history_for(symbol)
+    if h is None or not len(h["t"]):
+        return []
+    contract = _contract_size(symbol)
+    if contract is None:
+        return []
     d = _h1(df)
+    if d.empty:
+        return []
+    # THE AS-OF JOIN. h["t"] is already observed_at + 3 h; side="right" admits a row knowable
+    # exactly at the decision instant and nothing later.
+    dec = _decision_ns(d)
+    row_at = np.searchsorted(h["t"], dec, side="right") - 1
+    # THE STALENESS BOUND: a row older than `max_swap_age_h` at the decision instant is no row.
+    stale = (row_at >= 0) & ((dec - h["t"][np.maximum(row_at, 0)])
+                             > float(max_swap_age_h) * 3_600e9)
+    row_at = np.where(stale, -1, row_at)
+    # Resolve each distinct row ONCE. The unit lives in a different field from the number (see
+    # swap_money_per_lot) and is resolved per row, so a mode change mid-history is honoured.
+    side_of: dict[int, int] = {}
+    for j in {int(x) for x in np.unique(row_at) if x >= 0}:
+        money = swap_money_per_lot({"swap_mode": None if np.isnan(h["mode"][j]) else h["mode"][j],
+                                    "point": h["point"][j], "contract_size": contract,
+                                    "swap_long": h["lo"][j], "swap_short": h["sh"][j]})
+        if money is None:
+            continue
+        lo, sh = money
+        if abs(lo - sh) < min_edge_bp_per_day:
+            continue                   # the differential does not pay for the spread; no trade
+        side_of[j] = 1 if lo > sh else -1
+    if not side_of:
+        return []
+
     atr = _atr(d, atr_n)
     # QUIET = realised range below its own median. Carry dies in the regime breakouts love.
     rng = (d["high"] - d["low"]).rolling(atr_n).mean()
@@ -226,6 +365,9 @@ def family_carry(
     _a_atr = atr.to_numpy()
     _a_d_close = d["close"].to_numpy()
     for i in range(atr_n * 5, len(d) - 1):
+        side = side_of.get(int(row_at[i]))
+        if side is None:
+            continue
         if require_quiet and not (_a_rng[i] < _a_med[i]):
             continue
         a = float(_a_atr[i])
@@ -2423,6 +2565,120 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# FIVE MECHANISMS ABSORBED FROM THE ELITEQUANT MAP (2026-09-30): fractionally differentiated
+# level reversion, the Corwin-Schultz high-low spread shock, backward sup-ADF bubbles, Carver's
+# accel and skew rules. Each was absent from the desk (no family, no feature); each is price only
+# and fails on its own days (the reasons are in `families_elitequant.CULTURE`). Seeded per
+# hypothesis-lane symbol by `research/elitequant_breadth.py` through the one proposer door.
+from mt5desk.families_elitequant import ELITEQUANT_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(ELITEQUANT_FAMILIES)
+for _eq_name in ELITEQUANT_FAMILIES:
+    FAMILY_INPUTS[_eq_name] = ("price only", "data/universe/*_H1.parquet")
+del _eq_name
+
+# THE CHINESE FUTURES CTA CANON (2026-09-30): Dual Thrust, R-Breaker, Sky Garden (空中花园) and
+# King Keltner, absorbed from thuquant/awesome-quant and the CN strategy collections it links.
+# The cell emitter reads these systems in vn.py's code and had no family to map them onto. Price
+# only; seeded (CN analogues first: USDCNH, XAUUSD, China50/HK50, copper, oil) by
+# `research/elitequant_breadth.py`.
+from mt5desk.families_cn_cta import CN_CTA_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(CN_CTA_FAMILIES)
+for _cn_name in CN_CTA_FAMILIES:
+    FAMILY_INPUTS[_cn_name] = ("price only", "data/universe/*_H1.parquet")
+del _cn_name
+
+# SIX MECHANISMS FROM je-suis-tm/quant-trading (2026-09-30): Heikin-Ashi exhaustion, the Awesome
+# Oscillator saucer, the parabolic SAR flip, the Bollinger W/M retest, head-and-shoulders on the
+# RSI, and "Oil Money" -- a commodity currency's residual on the commodity it exports, traded only
+# while the fit is valid. The last loads its commodity leg itself, keyed by the cell's `symbol`.
+# Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_quanttrading import QUANTTRADING_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(QUANTTRADING_FAMILIES)
+for _qt_name in QUANTTRADING_FAMILIES:
+    FAMILY_INPUTS[_qt_name] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["commodity_fx_residual"] = (
+    "price only", "the cell's H1 bars plus its export commodity's (economic_drivers.ROLES), "
+    "read as of the cell's own daily decision bar from data/universe/*_H1.parquet")
+del _qt_name
+
+# TWO MECHANISMS FROM THE QUANT GUILD LECTURES (2026-10-06): an OU fair value tracked by a Kalman
+# filter on the price level, and a Hawkes intensity that follows clustered jumps and fades lone
+# ones. Re-derived (no upstream licence). Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_quantguild import QUANTGUILD_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(QUANTGUILD_FAMILIES)
+for _qg_name in QUANTGUILD_FAMILIES:
+    FAMILY_INPUTS[_qg_name] = ("price only", "data/universe/*_H1.parquet")
+del _qg_name
+
+# NINE MECHANISMS FROM THE QUEUED REPOSITORIES (2026-10-06): czsc's Chan-theory structure (TD
+# setup, volume climax, overlap boxes, the false-break reclaim, the quiet grind, the ribbon
+# release), tqsdk's escalator, and two index calendar claims (payday, the rare losing streak).
+# Rewritten from the cards. Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_queued_repos import QUEUED_REPO_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(QUEUED_REPO_FAMILIES)
+for _qr_name in QUEUED_REPO_FAMILIES:
+    FAMILY_INPUTS[_qr_name] = ("price only", "data/universe/*_H1.parquet")
+del _qr_name
+
+# THREE COMMODITY CLASS BOOKS FROM THE PAPERSWITHBACKTEST LIST (2026-10-06): skew, tail-day
+# asymmetry and correlation-gated momentum, ranked on the class panel `families_cross_sectional`
+# loads. Seeded on commodity legs by `research/elitequant_breadth.py`.
+from mt5desk.families_class_moments import CLASS_MOMENT_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(CLASS_MOMENT_FAMILIES)
+for _cm_name in CLASS_MOMENT_FAMILIES:
+    FAMILY_INPUTS[_cm_name] = FAMILY_INPUTS["cross_sectional_class_momentum"]
+    FAMILY_TIMEFRAMES[_cm_name] = FAMILY_TIMEFRAMES["cross_sectional_class_momentum"]
+del _cm_name
+
+# THE ROMAN ROWS ON MT5 BARS (2026-10-06): Kalman hedge/beta/trend/vol residuals and bar-event
+# Hawkes flow states, filtered by the shared libs/research/state_space.py and point_process.py.
+# Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_roman import ROMAN_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(ROMAN_FAMILIES)
+for _rm_name in ROMAN_FAMILIES:
+    FAMILY_INPUTS[_rm_name] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["kalman_hedge_spread"] = (
+    "price only", "the cell's bars plus its pair_symbol's, read as of each bar from "
+    "data/universe/*_H1.parquet")
+FAMILY_INPUTS["kalman_beta_residual"] = FAMILY_INPUTS["kalman_hedge_spread"]
+del _rm_name
+
+# THREE FX CARRY BOOKS ON THE BROKER'S OWN SWAP HISTORY, FORWARD ONLY (2026-10-06): carry rank,
+# the dollar carry basket and good/bad carry, each reading only swap rows stamped with the
+# instant the terminal reported them. Seeded by `research/elitequant_breadth.py` once that
+# history reaches the lockbox floor.
+from mt5desk.families_carry import CARRY_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(CARRY_FAMILIES)
+for _cy_name in CARRY_FAMILIES:
+    FAMILY_INPUTS[_cy_name] = (
+        "broker swap history (mt5:broker_swaps)", "data/tape/contract_terms/*.parquet and the "
+        "observed_at-stamped rows of data/intelligence/broker_swaps, as of each bar")
+    FAMILY_TIMEFRAMES[_cy_name] = FAMILY_TIMEFRAMES["cross_sectional_class_momentum"]
+del _cy_name
+
+# THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
+# academic) vendored from HKUDS/Vibe-Trading (MIT) under mt5desk/alpha_zoo/, each ranked within
+# the cell's peer class on each date. Loads its own class panel keyed by the cell's `symbol`, like
+# the cross-sectional families. Judged book-first by `research/zoo_breadth.py`.
+from mt5desk.family_zoo_alpha import ZOO_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(ZOO_FAMILIES)
+FAMILY_INPUTS["zoo_alpha_class"] = (
+    "the symbol's peer class (research.universe_policy.peer_class) as a daily OHLCV panel, "
+    "each date built from bars stamped that UTC date", "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["zoo_alpha_class"] = (
+    ("H1",), "decides once a day on the class's completed daily panel, entering at the cell's "
+             "first bar of the next date")
+
 
 # ANALYST REVISION DRIFT AND THE CROSS-MARKET ANALYST LEAD (2026-09-30, the Alpha Capture
 # substitute). Public broker, company-guidance and forecast-revision views, stored point-in-time

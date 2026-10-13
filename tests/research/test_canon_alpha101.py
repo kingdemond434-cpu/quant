@@ -52,7 +52,7 @@ def test_fifteen_published_alphas_are_carried_with_their_ids() -> None:
     ids = sorted(ag.CANON_ALPHA101_IDS.values())
     assert len(set(ids)) == 15, "two entries claim the same published alpha"
     assert all(i.startswith("alpha") and i[5:].isdigit() and 1 <= int(i[5:]) <= 101 for i in ids)
-    assert len(ag.CANON) == len(LEGACY) + 15
+    assert len(ag.CANON) == len(LEGACY) + 15 + len(ag.CANON_TDX)
 
 
 @pytest.mark.parametrize("name", sorted({

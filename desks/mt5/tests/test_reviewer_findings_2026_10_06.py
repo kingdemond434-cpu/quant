@@ -418,6 +418,12 @@ def _acquire_one(monkeypatch: pytest.MonkeyPatch, raw: bytes, url: str = PLAIN
                  ) -> dict[str, Any]:
     monkeypatch.setattr(acq, "_endpoints", lambda limit: [(url, "example.org")])
     monkeypatch.setattr(acq, "_fetch", lambda u: (raw, "text/csv"))
+    # The endpoint path alone: the repo-mined feeds would otherwise fetch the same stub bytes
+    # and add their own refusals to the report these reproductions read.
+    from libs.data import repo_mined_feeds as rmf
+    empty = {"tried": 0, "kept": 0, "new_series": [], "refusals": {}}
+    for fn in ("absorb", "absorb_dtcc", "absorb_crop_weather"):
+        monkeypatch.setattr(rmf, fn, lambda *a, **k: dict(empty), raising=False)
     rep: dict[str, Any] = acq.acquire(limit=5)
     return rep
 

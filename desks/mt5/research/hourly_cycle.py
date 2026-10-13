@@ -1003,7 +1003,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
-    "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
+    "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "carry_rejudge",
+    "queue_compact",
     "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
     "research_exchange_score", "model_skill", "research_org", "experiment_design",
     "experiment_cache", "opportunity_gap", "opportunity_forecast", "forecast_contract",
@@ -1087,7 +1088,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "ground_depth",
                      "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
-                     "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
+                     "cost_construction", "swap_rejudge", "carry_rejudge", "sge_premium",
+                     "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "orthogonality_yield", "effective_trials",
@@ -1125,7 +1127,13 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
-                     "cross_sectional_breadth"),
+                     "cross_sectional_breadth",
+                     # the five EliteQuant-map families, screened on cost and seeded
+                     "elitequant_breadth",
+                     # TradingAgents' four analysts + bull/bear debate, proposing cells on the seat
+                     "analyst_panel",
+                     # the vendored alpha zoo (GTJA191/Qlib158/Alpha101), judged book-first
+                     "zoo_breadth"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1795,6 +1803,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
     "acquire_datasets": 1_100,
+    # Two survivor JSON reads and one small write (carry_pit, 2026-10-07).
+    "carry_rejudge": 120,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -1934,6 +1944,14 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
+    # elitequant_breadth carves --budget-s 780 into the seeder (600) and its two add-on reports
+    # (120 + 60), checks the budget per cell, and writes its report before the add-ons run.
+    "elitequant_breadth": 900,
+    # analyst_panel stops itself at --budget-s 420 and at 10 seat calls; the cap sits above.
+    "analyst_panel": 540,
+    # zoo_breadth stops measuring books at --budget-s 600 and screens survivor legs for at most
+    # 120s more; the cap sits above both.
+    "zoo_breadth": 900,
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
@@ -2607,6 +2625,20 @@ def swap_rejudge() -> dict:
     overnight_gap_decay sleeves is where `cost_to_edge` finds cost exceeding the whole edge.
     """
     return _producer("swap_rejudge", "research/swap_rejudge.py")
+
+
+def carry_rejudge() -> dict:
+    """`carry_rejudge`: hold every look-ahead carry certificate in force until its real verdict.
+
+    `family_carry` applied the newest recorded swap to every past bar until 2026-10-07
+    (carry_pit). Each hour this leg writes every carry certificate gated before the fix was
+    adopted on this host (survivor files plus every non-terminal carry sleeve) into
+    `priority_remint.json`: its cell is judged first, and its key is VERDICT-BOUND, never stale.
+    It stays in the survivor set, still backing its forward clock, until a real ten-gate
+    verdict lands (with the sealed carry_pit patch): PASS replaces it, FAIL retires it,
+    anything else keeps it. An UNMEASURED or PENDING_HISTORY verdict never retires one.
+    """
+    return _producer("carry_rejudge", "scripts/queue_carry_rejudge.py", "--write")
 
 
 def asia_plane() -> dict:
@@ -4008,6 +4040,23 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # FIVE MECHANISMS ABSORBED FROM THE ELITEQUANT MAP (2026-09-30): FFD level reversion, the
+    # Corwin-Schultz spread shock, backward sup-ADF bubbles, Carver's accel and skew. Screens
+    # every hypothesis-lane cell on cost and donates the payers through the one proposer door;
+    # writes reports/ELITEQUANT_BREADTH.json. Additive: no other miner is touched.
+    eqb = _costed("elitequant_breadth", lambda: _producer(
+        "elitequant_breadth", "research/elitequant_breadth.py", "--once", "--budget-s", "780"))
+    # THE ANALYST PANEL (TradingAgents, 2026-09-30): four analyst lenses propose cells in the
+    # registered price-only grammar on the proposer seat, the bear attacks each one, the payers
+    # are screened and donated through the one proposer door; writes reports/ANALYST_PANEL.json.
+    # Never a trade decision and never a size. UNMEASURED and inert when no seat resolves.
+    anp = _costed("analyst_panel", lambda: _producer(
+        "analyst_panel", "research/analyst_panel.py", "--once", "--budget-s", "420"))
+    # THE ALPHA ZOO (Vibe-Trading, 2026-09-30): 317 published alphas ranked within every peer
+    # class; a book whose daily rank IC survives deflation over every book measured has its legs
+    # screened on cost and donated; writes reports/ZOO_BREADTH.json. Additive.
+    zoob = _costed("zoo_breadth", lambda: _producer(
+        "zoo_breadth", "research/zoo_breadth.py", "--once", "--budget-s", "600"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5257,6 +5306,7 @@ def main() -> None:
     fat = _costed("fill_attribution", fill_attribution)
     c2e = _costed("cost_to_edge", cost_to_edge)
     swr = _costed("swap_rejudge", swap_rejudge)
+    crj = _costed("carry_rejudge", carry_rejudge)
     asp = _costed("asia_plane", asia_plane)
     sge = _costed("sge_premium", sge_premium)
     aco = _costed("asia_collector", asia_collector)
@@ -5779,6 +5829,8 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "elitequant_breadth": eqb, "analyst_panel": anp,
+                    "zoo_breadth": zoob,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
@@ -5869,6 +5921,7 @@ def main() -> None:
                     "fill_attribution": fat,
                     "cost_to_edge": c2e,
                     "swap_rejudge": swr,
+                    "carry_rejudge": crj,
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,

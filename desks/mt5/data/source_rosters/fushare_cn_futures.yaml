@@ -1,0 +1,429 @@
+# LowinLi/fushare, absorbed 2026-10-01: every endpoint it scrapes for China's four futures exchanges and
+# 100ppi spot/basis. Deduped against the CN pack (desks/mt5/research/countries/cn/pack.py), which DESCRIBED
+# member positions and weekly stocks with no fetch URL, and against rm_em_push2his_kline (Eastmoney,
+# dominant contract only). AkShare is fushare's descendant; the desk's akshare adapter calls only stock_zh_a_hist,
+# futures_main_sina and macro_china_cpi, so none of these endpoints was held. Every row is BLOCKED_ON_TERMS until the box
+# reads the exchange's terms page (this container cannot reach the hosts). Shapers: Breadth.
+sources:
+- id: fs_100ppi_spot_basis
+  name: '100ppi (生意社) 现期表: daily physical spot price, nearest and dominant futures price and basis for
+    ~50 SHFE/DCE/CZCE/INE commodities'
+  priority: 1
+  kind: mechanics
+  uses: &id001
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.100ppi.com/sf/day-%Y-%m-%d.html
+  note: 'NEW to the desk. Spot-futures basis is the physical-tightness read the CN pack names but never
+    fetched: a widening backwardation in copper, aluminium, zinc, nickel or crude is onshore demand before
+    it reaches LME/COMEX. Conditions XCUUSD, XALUSD, XZNUSD, XNIUSD, XTIUSD and, through iron ore, AUDUSD.'
+  mt5_assets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - XTIUSD
+  - XBRUSD
+  - AUDUSD
+  - XAUUSD
+  - XAGUSD
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+- id: fs_shfe_daily_bars
+  name: SHFE/INE daily bars, every contract (kx<date>.dat JSON)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.shfe.com.cn/data/dailydata/kx/kx%Y%m%d.dat
+  note: 'Every listed month, not just the dominant one: the input to roll yield and term structure. INE
+    crude and SC appear in the same file.'
+  mt5_assets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - XAUUSD
+  - XAGUSD
+  - XTIUSD
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+  dedupe: rm_em_push2his_kline holds the dominant contract via Eastmoney; this is exchange-direct and
+    has every month
+- id: fs_shfe_member_rank
+  name: 'SHFE/INE 持仓排名: top-20 member volume, long and short OI per contract (pm<date>.dat)'
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.shfe.com.cn/data/dailydata/kx/pm%Y%m%d.dat
+  note: Fetch endpoint for the CN pack's cn_commodity_positions dataset, which named the data but no URL.
+  mt5_assets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - XAUUSD
+  - XAGUSD
+  - XTIUSD
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+  dedupe: CN pack dataset cn_commodity_positions (description only, unfed)
+- id: fs_shfe_warehouse_stocks
+  name: SHFE/INE 库存周报 and daily warehouse stocks (dailystock.dat)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.shfe.com.cn/data/dailydata/%Y%m%ddailystock.dat
+  note: 'Physical inventory in exchange warehouses: the stock leg of the tightness read beside basis.'
+  mt5_assets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - XAUUSD
+  - XAGUSD
+  - XTIUSD
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+  dedupe: CN pack names weekly 库存 with no URL
+- id: fs_shfe_vwap
+  name: SHFE daily time-weighted settlement prices (dailyTimePrice.dat)
+  priority: 1
+  kind: mechanics
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.shfe.com.cn/data/dailydata/ck/%Y%m%ddailyTimePrice.dat
+  note: 'The settlement window price: a fixing-style reference for SHFE gold and copper against the MT5
+    close.'
+  mt5_assets:
+  - XAUUSD
+  - XCUUSD
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+- id: fs_dce_daily_bars
+  name: DCE daily quotes, every contract (dayQuotesCh)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.dce.com.cn/publicweb/quotesdata/dayQuotesCh.html
+  note: 'Iron ore, coking coal, soybean complex and palm oil: the China steel and feed demand read for
+    AUDUSD, soft commodities and palm-linked MYR.'
+  mt5_assets:
+  - AUDUSD
+  - SOYBEAN
+  - CORN
+  - XTIUSD
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+  dedupe: rm_em_push2his_kline (dominant only)
+- id: fs_dce_member_rank
+  name: DCE 持仓排名 (exportMemberDealPosiQuotesData)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.dce.com.cn/publicweb/quotesdata/exportMemberDealPosiQuotesData.html
+  note: Fetch endpoint for cn_commodity_positions on DCE.
+  mt5_assets:
+  - AUDUSD
+  - SOYBEAN
+  - CORN
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+  dedupe: CN pack cn_commodity_positions
+- id: fs_dce_warehouse_receipts
+  name: DCE 仓单日报 warehouse receipts (wbillWeeklyQuotes)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.dce.com.cn/publicweb/quotesdata/wbillWeeklyQuotes.html
+  note: Registered receipts are deliverable supply; a falling count into delivery month is a squeeze precondition.
+  mt5_assets:
+  - AUDUSD
+  - SOYBEAN
+  - CORN
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+- id: fs_czce_daily_bars
+  name: CZCE daily quotes, every contract (FutureDataDaily.txt)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.czce.com.cn/cn/DFSStaticFiles/Future/%Y/%Y%m%d/FutureDataDaily.txt
+  note: 'Cotton, sugar, PTA, methanol, glass, soda ash, apples: cotton and sugar map to Fusion softs.'
+  mt5_assets:
+  - COTTON
+  - SUGAR
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+  dedupe: rm_em_push2his_kline (dominant only)
+- id: fs_czce_member_rank
+  name: CZCE 持仓排名 (FutureDataHolding.htm)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.czce.com.cn/cn/DFSStaticFiles/Future/%Y/%Y%m%d/FutureDataHolding.htm
+  note: Fetch endpoint for cn_commodity_positions on CZCE.
+  mt5_assets:
+  - COTTON
+  - SUGAR
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+  dedupe: CN pack cn_commodity_positions
+- id: fs_czce_warehouse_receipts
+  name: CZCE 仓单日报 (FutureDataWhsheet.htm)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.czce.com.cn/cn/DFSStaticFiles/Future/%Y/%Y%m%d/FutureDataWhsheet.htm
+  note: Deliverable supply for cotton and sugar.
+  mt5_assets:
+  - COTTON
+  - SUGAR
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+- id: fs_cffex_daily_bars
+  name: 'CFFEX daily quotes (mrhq csv): IF, IH, IC, IM, T, TF, TS'
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.cffex.com.cn/fzjy/mrhq/%Y%m/%d/%Y%m%d_1.csv
+  note: 'Index-futures basis to the CSI indices and the bond-futures curve: CHINA50/CHINAH/HK50 and USDCNH
+    conditioners.'
+  mt5_assets:
+  - CHINA50
+  - CHINAH
+  - HK50
+  - USDCNH
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+- id: fs_cffex_member_rank
+  name: CFFEX 持仓排名 (ccpm csv)
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://www.cffex.com.cn/fzjy/ccpm/%Y%m/%d/%Y%m%d_1.csv
+  note: 'Fetch endpoint for the CN pack''s cffex_member_positions: CITIC and the big brokers'' net short
+    in IF/IC is the hedge-book state.'
+  mt5_assets:
+  - CHINA50
+  - CHINAH
+  - HK50
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'
+  dedupe: CN pack POSITIONING_SOURCES cffex_member_positions (description only)
+- id: fs_cn_roll_yield
+  name: Roll yield and term-structure slope per CN commodity, derived from the every-month daily bars
+    above
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: exchange bulletin page, public; terms NOT YET CONFIRMED -- this container's network policy
+    refuses the host (host_not_allowed), so the terms gate holds the row BLOCKED_ON_TERMS until the box
+    reads the exchange's terms page; the gate fails closed
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: derived:fs_shfe_daily_bars,fs_dce_daily_bars,fs_czce_daily_bars
+  note: 'fushare''s get_rollYield: log price ratio of the next two liquid months, annualised. Onshore
+    carry state per commodity, the CN analogue of the desk''s carry family.'
+  mt5_assets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - XTIUSD
+  - AUDUSD
+  - COTTON
+  - SUGAR
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+    crowding_prior: low (Western desks rarely parse exchange bulletins in Chinese)
+  owner: breadth
+  origin: 'github.com/LowinLi/fushare (no licence file: endpoints are taken as facts, no code copied)'

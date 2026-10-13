@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from typing import Any
@@ -747,8 +748,119 @@ SEEDS: tuple[ExternalSystem, ...] = (
                    "public:cn-quant", "Data Lab / AI Lab / systems lab split, data breadth",
                    "REBUILT", _s("institutional_capability",), _s("research_workflow",),
                    region="cn", languages=_s("zh",)),
+    # ---- Roman Paolucci / Quant Guild (principal 2026-10-05, upload abbb18fd): a public research
+    # DONOR civilization, mined into translator cards (/mnt/project-files/mining/quant_guild/) and
+    # delta-watched here, so a new lecture or commit reopens the fingerprint. No exemptions: every
+    # card compiles through the same door. All are REBUILT (ideas reimplemented). At the 2026-10-06
+    # clone the delta-hedging, Q-Fin, discourses and OpenTerminal repos carried an MIT LICENSE and
+    # the library, AI_Stock_Trading and Quant_Dev none; `licence` stays UNVERIFIED until pinned.
+    ExternalSystem("quant_guild_library", "Quant Guild Library (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/Quant-Guild-Library",
+                   "143 lecture notebooks: regime-switching bots, IV surface, variance swaps, "
+                   "Kalman, Hawkes, GARCH, Black-Litterman, crisis alpha, market making",
+                   "REBUILT", _s("regime_selection", "portfolio_research", "point_process",
+                                 "microstructure", "research_reproduction"),
+                   _s("mathematical_method", "model_family", "execution_method"),
+                   discovery_source="principal_upload_2026-10-05",
+                   notes="no LICENSE file at the 2026-10-06 clone: ideas only, never copied; "
+                         "the licence stays UNVERIFIED until a provisioning run pins it"),
+    ExternalSystem("paolucci_ai_stock_trading", "AI_Stock_Trading (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/AI_Stock_Trading",
+                   "early AI equity framework; the semantic-alpha donor", "REBUILT",
+                   _s("financial_nlp", "forecast_zoo"), _s("representation", "data"),
+                   discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("paolucci_quant_dev", "Quant_Dev (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/Quant_Dev",
+                   "old execution architecture: level/ladder bot, persistent policy state, order "
+                   "dedup", "REBUILT", _s("execution_engine",), _s("execution_method",),
+                   discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("paolucci_delta_hedging", "Algorithmic_Delta_Hedging (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/Algorithmic_Delta_Hedging",
+                   "discrete delta hedging and hedge-error states", "REBUILT",
+                   _s("market_simulation",), _s("simulation_world", "mathematical_method"),
+                   discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("paolucci_qfin", "Q-Fin (Roman Paolucci)", "github:romanmichaelpaolucci/Q-Fin",
+                   "shared stochastic-model interface: GBM, Heston, jumps, Monte Carlo pricing",
+                   "REBUILT", _s("market_simulation", "simulation_based_inference"),
+                   _s("simulation_world", "model_family"),
+                   discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("paolucci_discourses", "discourses (Roman Paolucci)",
+                   "github:romanmichaelpaolucci/discourses",
+                   "semantic drift, language-era drift and user cohorts in public discourse",
+                   "REBUILT", _s("financial_nlp", "information_acquisition"),
+                   _s("representation", "data"), discovery_source="principal_upload_2026-10-05",
+                   lineage_parent="quant_guild_library"),
+    # The whole public account, so a NEW repository, push or release by the author reopens the
+    # civilization's fingerprint (audit repair 14; the scoped author-monitoring exception is
+    # recorded in desks/mt5/research/source_civilizations.MONITORED_AUTHOR_EXCEPTIONS).
+    ExternalSystem("paolucci_github_account", "Roman Paolucci public GitHub (all repositories)",
+                   "github:romanmichaelpaolucci",
+                   "account-level activity feed: new repositories, pushes and releases",
+                   "REBUILT", _s("information_acquisition",), _s("data",),
+                   discovery_source="principal_upload_2026-10-06",
+                   lineage_parent="quant_guild_library"),
+    ExternalSystem("openterminal", "OpenTerminal (ErTasselli)", "github:ErTasselli/OpenTerminal",
+                   "open Bloomberg-style terminal: a provider and function catalogue mined for "
+                   "free sources and terminal analytics", "REBUILT",
+                   _s("data_source", "information_acquisition"), _s("data",),
+                   discovery_source="principal_header_2026-10-05"),
 )
 
+#: EVERY REPOSITORY THE "MINE THE ELITEQUANT LIST" THREAD ABSORBED (audit PR166_v2 fix 4,
+#: 2026-10-06), as a federation system under its registry id `github:<owner>/<repo>`, so the
+#: mining registry can credit a cell to the donor it came from and the delta scan reopens the
+#: donor when it moves. Ideas were rewritten (REBUILT); code was vendored only where the
+#: upstream licence allowed it, with its notice. The licence stays UNVERIFIED here until a
+#: provisioning run pins it at a commit; what the clone carried is in the thread's gap table.
+ABSORBED_REPOS: tuple[tuple[str, str, str], ...] = (
+    ("EliteQuant/EliteQuant", "global", "quant map; ffd, Corwin-Schultz, SADF, Carver rules"),
+    ("thuquant/awesome-quant", "cn", "CN futures CTA canon: Dual Thrust, R-Breaker, Keltner"),
+    ("jamesmawm/High-Frequency-Trading-Model-with-IB", "global", "pairs HFT model"),
+    ("HKUDS/Vibe-Trading", "cn", "the alpha zoo: GTJA191, Alpha158, Alpha101"),
+    ("hsliuping/TradingAgents-CN", "cn", "CN multi-agent analyst roles"),
+    ("StockSharp/StockSharp", "global", "execution and connector architecture"),
+    ("je-suis-tm/quant-trading", "global", "chart patterns and Oil Money"),
+    ("paperswithbacktest/awesome-systematic-trading", "global", "replicated-paper index"),
+    ("asavinov/intelligent-trading-bot", "global", "rolling features and extremum labels"),
+    ("stefan-jansen/machine-learning-for-trading", "global", "ML4T methods and tscan target"),
+    ("avhz/RustQuant", "global", "pricing and stochastic-process library"),
+    ("LLMQuant/quant-mind", "global", "LLM research-agent pipeline"),
+    ("dkl0707/QuantDatabase", "cn", "CN market database builder"),
+    ("hummingbot/quants-lab", "global", "research notebooks and backtests"),
+    ("ZhuLinsen/daily_stock_analysis", "cn", "daily analysis pipeline"),
+    ("LowinLi/fushare", "cn", "CN futures data"),
+    ("yutiansut/QUANTAXIS", "cn", "Tongdaxin indicator canon"),
+    ("AgriQuantAI/AgriQuant-AI", "global", "softs and grains sources"),
+    ("waditu/czsc", "cn", "Chan theory structure, TD9, exit operators"),
+    ("QuantaAlpha/QuantaAlpha", "cn", "LLM alpha-mining methods"),
+    ("charliedream1/ai_quant_trade", "cn", "CN AI trading collection"),
+    ("LongOnly/Quantitative-Notebooks", "global", "factor and allocation notebooks"),
+    ("shinnytech/tqsdk-python", "cn", "CN futures SDK and strategy demos"),
+    ("Micro-sheep/efinance", "cn", "Eastmoney data: SHFE gold premium, flows"),
+    ("cybergeekgyan/Quant-Developers-Resources", "global", "resource list"),
+    ("QuantFans/quantdigger", "cn", "CN backtest engine"),
+    ("LLMQuant/quant-wiki", "cn", "CN quant wiki: dollar carry, asymmetry, 12-month cycle"),
+    ("quant-science/sunday-quant-scientist", "global", "weekly strategy notebooks"),
+    ("AI-Efficiency/Awesome-Model-Quantization", "global", "model compression methods"),
+    ("PyPatel/Quant-Finance-Resources", "global", "reading list"),
+    ("Ricktho1/Quant_resources", "global", "resource links"),
+    ("LukePrior/Australian-Open-Banking-Data-Database", "au", "AU bank-rate snapshots"),
+    ("Finnhub-Stock-API/finnhub-python", "global", "Finnhub free-tier client"),
+    ("mega-byte2600/hedge-desk", "global", "auction concession, oil lead, free feeds"),
+    ("IdealAuror/all-weather-portfolio", "cn", "CN risk parity"),
+)
+_SEEDED_UPSTREAMS = {s.upstream for s in SEEDS}
+SEEDS = SEEDS + tuple(
+    ExternalSystem("gh_" + re.sub(r"[^a-z0-9]+", "_", repo.lower()).strip("_"),
+                   repo.split("/", 1)[1], f"github:{repo}", role, "REBUILT",
+                   _s("research_reproduction",), _s("model_family",), region=region,
+                   languages=_s("zh",) if region == "cn" else _s("en",),
+                   discovery_source="elitequant_thread_absorbed")
+    for repo, region, role in ABSORBED_REPOS if f"github:{repo}" not in _SEEDED_UPSTREAMS)
 SEED_BY_ID: dict[str, ExternalSystem] = {s.system_id: s for s in SEEDS}
 
 
