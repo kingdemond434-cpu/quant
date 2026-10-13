@@ -619,7 +619,6 @@ LEG_LAYER: dict[str, str] = {
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
     "tier5_acceptance": "meta",
     "live_tradability": "execution",
-    "loss_autopsy": "execution",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')

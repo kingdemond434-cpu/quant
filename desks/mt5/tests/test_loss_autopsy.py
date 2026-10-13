@@ -1,4 +1,4 @@
-"""Every live loss is a DEFECT, an EDGE_DECAY or NATURAL, and an unresolved defect fails loudly.
+"""Every live trade is DEFECT, SUBOPTIMAL, EDGE_DECAY or NATURAL; an open finding fails loudly.
 
 Principal 2026-10-13: "it fixes its own losses if theyre bottlenecks flaws defects etc". The case
 that started it is pinned first: the 2026-10-12 AUDCHF trade risked 13.0% of equity against the
@@ -6,7 +6,6 @@ that started it is pinned first: the 2026-10-12 AUDCHF trade risked 13.0% of equ
 """
 from __future__ import annotations
 
-import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -39,7 +38,7 @@ SLEEVES = {"sleeves": [{"name": NAME, "status": "LIVE", "shadow_exp": 0.2}]}
 def _build(deals, intents=(INTENT,), resolved=None, balance=484.83, e8=None):
     return la.build(NOW, deals=list(deals), intents=list(intents), sleeves_doc=SLEEVES,
                     cert=CERT, account={"balance": balance}, drift={},
-                    resolved=resolved or {}, e8_ledger=e8)
+                    resolved=resolved or {}, e8_ledger=e8, e8_journals=[])
 
 
 def test_the_audchf_loss_is_an_oversize_defect_until_its_fix_is_named() -> None:
@@ -101,10 +100,10 @@ def test_history_is_reported_never_queued_and_e8_is_a_standing_gap() -> None:
 
 def test_the_fix_queue_is_appended_once_per_fix(tmp_path: Path) -> None:
     doc = _build([AUDCHF], balance=561.26 - 74.58)
-    out, queue = tmp_path / "LOSS_AUTOPSY.json", tmp_path / "q.jsonl"
-    first = la.publish(doc, out, queue)
-    assert first == len(doc["fix_queue"]) and la.publish(doc, out, queue) == 0
-    assert json.loads(out.read_text())["verdict"] == "FAIL"
+    queue = tmp_path / "q.jsonl"
+    first = la.queue_fixes(doc, queue)
+    assert first == len(doc["fix_queue"]) and la.queue_fixes(doc, queue) == 0
+    assert doc["verdict"] == "FAIL"
     assert len(queue.read_text().splitlines()) == first
 
 
@@ -114,10 +113,37 @@ def test_e8_losses_are_autopsied_from_the_close_ledger_and_its_absence_is_a_fix_
             "pl_usd_est": -1000.0, "latency_send_to_ack_ms": 120.0}
     cert = {"enabled": True, "e8": {"gold_asia": 0.01}}
     doc = la.build(NOW, deals=[], intents=[], sleeves_doc=SLEEVES, cert=cert, account={},
-                   drift={}, resolved={}, e8_ledger=[gold])
+                   drift={}, resolved={}, e8_ledger=[gold], e8_journals=[])
     assert doc["e8"]["status"] == "MEASURED" and doc["rows"][0]["verdict"] == la.NATURAL
     assert doc["fix_queue"] == []
     big = {**gold, "position_id": 78, "risk_frac": 0.02}
     doc = la.build(NOW, deals=[], intents=[], sleeves_doc=SLEEVES, cert=cert, account={},
-                   drift={}, resolved={}, e8_ledger=[big])
+                   drift={}, resolved={}, e8_ledger=[big], e8_journals=[])
     assert [f["fix_id"] for f in doc["fix_queue"]] == ["loss:e8:e8:78:over_allocation"]
+
+
+def test_a_winner_sized_timidly_is_suboptimal_and_queued() -> None:
+    win = {**AUDCHF, "pl_quote": 30.0, "r_multiple": 1.0, "commission": 0.0, "deal": 9}
+    row = _build([win], balance=1000.0, e8=[])["rows"][0]       # 3% risked, book funds 10%
+    assert row["outcome"] == "win" and row["verdict"] == la.SUBOPTIMAL
+    assert [f["finding"] for f in row["suboptimal"]] == ["undersize"]
+    full = {**win, "pl_quote": 100.0}
+    assert _build([full], balance=1000.0, e8=[])["rows"][0]["verdict"] == la.NATURAL
+
+
+def test_slow_sends_late_fills_and_wide_spreads_are_suboptimal() -> None:
+    win = {**AUDCHF, "pl_quote": 100.0, "r_multiple": 1.0, "commission": 0.0}
+    slow = {**INTENT, "latency_ms": 900.0, "spread_at_decision": 0.0001}
+    row = _build([win], intents=[slow], balance=1000.0, e8=[])["rows"][0]
+    assert {"slow_send", "wide_spread"} <= {f["finding"] for f in row["suboptimal"]}
+    late = {**win, "entry_time": "2026-10-13T01:43:26+00:00"}       # 120 s after the intent
+    row = _build([late], balance=1000.0, e8=[])["rows"][0]
+    assert "late_fill" in {f["finding"] for f in row["suboptimal"]}
+
+
+def test_a_refused_send_is_a_missed_trade() -> None:
+    refused = {**INTENT, "ticket": 0, "retcode": 10027, "intent_id": "miss1",
+               "time": "2026-10-13T05:00:00+00:00"}
+    doc = _build([], intents=[INTENT, refused], e8=[])
+    assert [m["id"] for m in doc["missed_sends"]] == ["miss1"]
+    assert [f["fix_id"] for f in doc["fix_queue"]] == ["missed:fusion:miss1"]

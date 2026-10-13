@@ -294,11 +294,24 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     t0 = time.monotonic()
     doc = build(done=existing_deals(a.ledger))
+    # THE VERDICTS (principal 2026-10-13): every live trade, winners included, judged DEFECT,
+    # SUBOPTIMAL, EDGE_DECAY or NATURAL, every refused send a missed trade, and every open
+    # finding queued for the fix routine. A failure to judge is recorded, never a pass.
+    try:
+        import loss_autopsy
+        verdicts = loss_autopsy.build()
+        verdicts["newly_queued"] = loss_autopsy.queue_fixes(verdicts)
+    except Exception as exc:
+        verdicts = {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+    doc["verdicts"] = verdicts
     doc["elapsed_s"] = round(time.monotonic() - t0, 3)
     doc["budget_s"] = a.budget_s
     publish(doc, a.out, a.ledger)
     print(f"trade autopsy: {doc['headline']}")
-    return 0
+    print(f"  verdicts: {verdicts.get('verdict')} -- {verdicts.get('by_verdict')}; "
+          f"{len(verdicts.get('fix_queue') or [])} open fix row(s), "
+          f"{len(verdicts.get('missed_sends') or [])} missed send(s)")
+    return 1 if verdicts.get("verdict") in ("FAIL", "UNMEASURED") else 0
 
 
 if __name__ == "__main__":

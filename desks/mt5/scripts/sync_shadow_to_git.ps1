@@ -630,10 +630,10 @@ $relPaths = @(
     "desks/mt5/reports/OCCUPANCY_MAP.json",
     "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
     "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
-    # LIVE TRADABILITY AND THE LOSS AUTOPSY (2026-10-13, legs live_tradability and loss_autopsy):
-    # the cloud fix routine reads the autopsy and its fix queue from origin and builds each fix.
+    # LIVE TRADABILITY AND THE TRADE AUTOPSY (2026-10-13, legs live_tradability and trade_autopsy):
+    # the cloud fix routine reads the verdicts and their fix queue from origin and builds each fix.
     "desks/mt5/reports/LIVE_TRADABILITY.json",
-    "desks/mt5/reports/LOSS_AUTOPSY.json",
+    "desks/mt5/reports/TRADE_AUTOPSY.json",
     "desks/mt5/data/loss_fix_queue.jsonl",
     "desks/mt5/data/e8_ledger.jsonl",
     # THE REST OF THE TIER S PROMOTION DOOR'S EVIDENCE (2026-09-30). `promotion_authority` reads

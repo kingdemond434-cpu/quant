@@ -1,4 +1,12 @@
-"""LOSS AUTOPSY: EVERY LIVE LOSS IS A DEFECT, A DECAYING EDGE, OR THE MARKET (principal 2026-10-13).
+"""TRADE VERDICTS: EVERY LIVE TRADE IS A DEFECT, SUB-OPTIMAL, A DECAYING EDGE, OR THE MARKET.
+
+Principal 2026-10-13, widened the same minute to "or unoptimalities": winners are judged too, a
+trade that made money but was sized timidly, exited early at a tightened stop, sent slowly,
+filled late or paid more spread or slippage than its stop can carry is SUBOPTIMAL, and a
+certified signal whose send the venue refused is a MISSED trade. SUBOPTIMAL findings queue fix
+rows exactly as defects do. Run inside the hourly `trade_autopsy` leg, which publishes the
+verdicts in reports/TRADE_AUTOPSY.json.
+
 
 The principal's words: "it fixes its own losses if theyre bottlenecks flaws defects etc". The
 night of 2026-10-12 the desk lost 74.58 EUR on one AUDCHF gap-decay trade and nobody could say,
@@ -35,11 +43,11 @@ UNMEASURED IS A VERDICT (L1.28a): a check whose input is absent says so and is n
 clean. E8's losses come from data/e8_ledger.jsonl (prop/e8_close_ledger.py, written on every E8
 pass); until that file exists on the box the E8 half is UNMEASURED and that is a standing fix row.
 
-Artifact: desks/mt5/reports/LOSS_AUTOPSY.json. Exit 1 while any DEFECT is unresolved.
+Published by research/trade_autopsy.py into reports/TRADE_AUTOPSY.json (`verdicts`); that leg
+exits 1 while any DEFECT or SUBOPTIMAL finding is unresolved.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import math
 import sys
@@ -66,7 +74,6 @@ ACCOUNT = BASE / "data" / "account_state.json"
 DRIFT = BASE / "reports" / "DRIFT.json"
 RESOLVED = BASE / "data" / "loss_defects_resolved.json"
 FIX_QUEUE = BASE / "data" / "loss_fix_queue.jsonl"
-OUT = BASE / "reports" / "LOSS_AUTOPSY.json"
 
 DEFECT, EDGE_DECAY, NATURAL, UNMEASURED = "DEFECT", "EDGE_DECAY", "NATURAL", "UNMEASURED"
 WINDOW_DAYS = 30
@@ -85,6 +92,12 @@ COST_R = 0.20
 CLOCK_TOL_S = 900.0
 BROKER_OFFSETS_H = (2, 3)  # the venue's clock: UTC+2 winter, UTC+3 summer (NY+7)
 DECAY_Z = 2.0
+SUBOPTIMAL = "SUBOPTIMAL"
+UNDERSIZE = 0.75           # charged under 75% of the fraction the book funds: timid sizing
+SLOW_MS = 500.0            # send-to-ack over this is slow; over STALE_MS it is a defect
+LATE_FILL_S = 60.0         # a market fill this long after its intent is a late entry
+COST_SLIP_R = 0.05         # slippage between this and SLIP_R is a cost, not yet a fault
+SPREAD_R = 0.10            # a spread over a tenth of the stop is a costly entry
 DECAY_MIN_N = 8
 STEM = 27                  # the ledger's sleeve stem (`gateway.COMMENT_MAX` - len("DW"))
 
@@ -278,6 +291,79 @@ def defects(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *,
     return out, sorted(set(unmeasured))
 
 
+def suboptimal(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *, sleeve: str,
+               equity: float | None, funded: float | None) -> list[dict[str, Any]]:
+    """What made a trade -- winner or loser -- worse than the certificate's own rules allowed,
+    short of a fault: sized timidly, exited early at a tightened stop, sent slowly, filled late,
+    paid more slippage or spread than the stop can carry."""
+    out: list[dict[str, Any]] = []
+    risk = risk_account(deal)
+    if risk is not None and equity and funded and funded > 0:
+        frac = risk / equity
+        if frac < funded * UNDERSIZE:
+            out.append({"finding": "undersize", "why": f"risked {frac:.2%} where the book funds "
+                        f"{funded:.2%}: growth left unclaimed", "risk_frac": round(frac, 4)})
+    if intent is None:
+        return out
+    side = 1.0 if int(_f(deal.get("side")) or 0) == 1 else -1.0
+    quote = _f(intent.get("decision_ask") if side > 0 else intent.get("decision_bid"))
+    want = quote if quote is not None else _f(intent.get("intended"))
+    isl, dsl = _f(intent.get("sl")), _f(deal.get("sl"))
+    entry, fill = _f(deal.get("entry_price")), _f(deal.get("fill_price"))
+    pending = str(intent.get("order_type") or "").startswith("pending")
+    dist = abs(want - isl) if want is not None and isl is not None else 0.0
+    if dist > 0 and not pending and entry is not None:
+        slip = side * (want - entry) / dist
+        if -SLIP_R <= slip < -COST_SLIP_R:
+            out.append({"finding": "slippage_cost", "why": f"filled {abs(slip):.2f}R worse "
+                        f"than the quote", "slip_r": round(slip, 4)})
+    spread = _f(intent.get("spread_at_decision"))
+    if dist > 0 and spread is not None and spread / dist > SPREAD_R:
+        out.append({"finding": "wide_spread", "why": f"spread {spread / dist:.2f}R of the stop "
+                    f"at the decision", "spread_r": round(spread / dist, 4)})
+    lat = _f(intent.get("latency_send_to_ack_ms") or intent.get("latency_ms"))
+    if lat is not None and SLOW_MS < lat <= STALE_MS:
+        out.append({"finding": "slow_send", "why": f"{lat:.0f} ms send to acknowledgement",
+                    "latency_ms": lat})
+    it, et = _ts(intent.get("time")), _ts(deal.get("entry_time"))
+    if not pending and it is not None and et is not None:
+        gap = min(abs((et - it).total_seconds() - h * 3600) for h in BROKER_OFFSETS_H)
+        if LATE_FILL_S < gap <= CLOCK_TOL_S:
+            out.append({"finding": "late_fill", "why": f"filled {gap:.0f}s after its intent",
+                        "late_s": round(gap, 1)})
+    # A fixed-bracket sleeve's certificate holds its opening stop to target or time exit; a
+    # close AT a stop tightened from the sent one is a lookalike exit that left money behind.
+    # The gold windows' ratchet is their certified behaviour and is not judged here.
+    if (dist > 0 and isl is not None and dsl is not None and fill is not None
+            and not sleeve.startswith("gold_") and side * (dsl - isl) > 0.02 * dist
+            and abs(fill - dsl) <= 0.05 * dist):
+        out.append({"finding": "stop_tightened", "why": f"closed at {dsl}, tightened from the "
+                    f"sent stop {isl}", "left_r": round(side * (dsl - isl) / dist, 4)})
+    return out
+
+
+def missed_sends(intents: list[dict[str, Any]], e8_journals: list[dict[str, Any]],
+                 since: datetime) -> list[dict[str, Any]]:
+    """A certified signal the desk decided to trade and the venue never took: a Fusion intent
+    whose send came back without TRADE_RETCODE_DONE, or an E8 send journalled REJECTED."""
+    out: list[dict[str, Any]] = []
+    for i in intents:
+        t, rc = _ts(i.get("time")), int(_f(i.get("retcode")) or 0)
+        if t is None or t < since or rc in (0, 10008, 10009):
+            continue
+        out.append({"venue": "fusion", "time": i.get("time"), "sleeve": i.get("sleeve"),
+                    "symbol": i.get("symbol"), "id": i.get("intent_id") or f"{t.isoformat()}:"
+                    f"{i.get('sleeve')}", "why": f"send refused, retcode {rc}"})
+    for j in e8_journals:
+        t = _ts(j.get("at"))
+        if t is None or t < since or j.get("status") != "REJECTED":
+            continue
+        out.append({"venue": "e8", "time": j.get("at"), "sleeve": j.get("sleeve"),
+                    "symbol": j.get("symbol"), "id": f"{j.get('at')}:{j.get('sleeve')}",
+                    "why": str(j.get("why") or "E8 send rejected")[:200]})
+    return out
+
+
 def edge_decay(sleeve: str, history: list[dict[str, Any]], cert_exp: float | None,
                drift: Mapping[str, Any] | None) -> dict[str, Any] | None:
     """Drift's own hazard first (the one the allocator prices); the live-vs-certificate test
@@ -348,8 +434,8 @@ def e8_autopsy(ledger: list[dict[str, Any]] | None, *, cert: Mapping[str, Any],
 def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = None,
           intents: list[dict[str, Any]] | None = None, sleeves_doc: Any = None,
           cert: Any = None, account: Any = None, drift: Any = None,
-          resolved: Any = None, e8_ledger: list[dict[str, Any]] | None = None
-          ) -> dict[str, Any]:
+          resolved: Any = None, e8_ledger: list[dict[str, Any]] | None = None,
+          e8_journals: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     deals = [d for d in (deals if deals is not None else _jsonl(LEDGER))
              if d.get("account_kind", "live") == "live"]
@@ -385,7 +471,7 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
     for d in deals:
         t = _ts(d.get("time"))
         r = _f(d.get("r_multiple"))
-        if t is None or t < since or r is None or r >= LOSS_R:
+        if t is None or t < since or r is None:
             continue
         intent = join_intent(d, by_ticket)
         sleeve, why = resolve_sleeve(d, intent, names)
@@ -400,23 +486,49 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
         for f in found:
             fix = deal_res.get(f["defect"]) if isinstance(deal_res, dict) else None
             f["resolved_by"] = fix
+        sub = suboptimal(d, intent, sleeve=sleeve or "", equity=eq.get(str(d.get("deal"))),
+                         funded=funded)
+        for f in sub:
+            fix = deal_res.get(f["finding"]) if isinstance(deal_res, dict) else None
+            f["resolved_by"] = fix
         historical = t < FIX_SINCE
-        open_defects = [] if historical else [f for f in found if not f.get("resolved_by")]
-        decay = None if found else edge_decay(sleeve or "", history.get(
-            str(d.get("sleeve") or ""), []), exp.get(sleeve or ""), drift)
-        verdict = DEFECT if found else EDGE_DECAY if decay else NATURAL
+        open_defects = [] if historical else [f for f in found + sub
+                                              if not f.get("resolved_by")]
+        decay = None if found or sub or r >= LOSS_R else edge_decay(
+            sleeve or "", history.get(str(d.get("sleeve") or ""), []), exp.get(sleeve or ""),
+            drift)
+        verdict = (DEFECT if found else SUBOPTIMAL if sub else EDGE_DECAY if decay
+                   else NATURAL)
         rows.append({"venue": "fusion", "deal": str(d.get("deal")),
                      "position_id": d.get("position_id"), "time": d.get("time"),
                      "sleeve": sleeve, "symbol": d.get("symbol"), "r": r,
                      "pl": _f(d.get("pl_quote")), "verdict": verdict,
                      "open": bool(open_defects), "historical": historical,
-                     "defects": found, "edge_decay": decay,
+                     "outcome": "loss" if r < LOSS_R else "win" if r > -LOSS_R else "scratch",
+                     "defects": found, "suboptimal": sub, "edge_decay": decay,
                      "unmeasured": unmeasured,
                      "intent_id": (intent or {}).get("intent_id")})
     fix_rows = [{"fix_id": f"loss:{r['deal']}:{f['defect']}", "venue": r["venue"],
-                 "deal": r["deal"], "sleeve": r["sleeve"], "symbol": r["symbol"],
-                 "defect": f["defect"], "why": f["why"], "pl": r["pl"], "time": r["time"]}
+                 "class": DEFECT, "deal": r["deal"], "sleeve": r["sleeve"],
+                 "symbol": r["symbol"], "defect": f["defect"], "why": f["why"], "pl": r["pl"],
+                 "time": r["time"]}
                 for r in rows if r["open"] for f in r["defects"] if not f.get("resolved_by")]
+    fix_rows += [{"fix_id": f"trade:{r['deal']}:{f['finding']}", "venue": r["venue"],
+                  "class": SUBOPTIMAL, "deal": r["deal"], "sleeve": r["sleeve"],
+                  "symbol": r["symbol"], "defect": f["finding"], "why": f["why"],
+                  "pl": r["pl"], "time": r["time"]}
+                 for r in rows if r["open"] for f in r["suboptimal"]
+                 if not f.get("resolved_by")]
+    from prop.e8_close_ledger import JOURNALS as _E8_JOURNALS
+    e8_journal_rows = e8_journals if e8_journals is not None else \
+        [r for p in _E8_JOURNALS for r in _jsonl(p)]
+    missed = missed_sends(intents, e8_journal_rows, max(since, FIX_SINCE))
+    missed_res = res_map.get("missed") if isinstance(res_map.get("missed"), dict) else {}
+    fix_rows += [{"fix_id": f"missed:{m['venue']}:{m['id']}", "venue": m["venue"],
+                  "class": SUBOPTIMAL, "deal": None, "sleeve": m["sleeve"],
+                  "symbol": m["symbol"], "defect": "missed_send", "why": m["why"],
+                  "pl": None, "time": m["time"]}
+                 for m in missed if not missed_res.get(str(m["id"]))]
     e8_rows, e8 = e8_autopsy(e8_ledger, cert=cert, since=since, res_map=res_map)
     rows += e8_rows
     fix_rows += [{"fix_id": f"loss:e8:{r['deal']}:{f['defect']}", "venue": "e8",
@@ -434,22 +546,22 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
     open_n = sum(1 for r in rows if r["open"])
     return {"at": now.isoformat(timespec="seconds"), "window_days": WINDOW_DAYS,
             "verdict": "FAIL" if fix_rows else "PASS",
-            "losses": len(rows), "by_verdict": dict(counts), "open_defect_losses": open_n,
+            "trades": len(rows), "losses": sum(1 for r in rows if r["r"] < LOSS_R),
+            "by_verdict": dict(counts), "open_trades": open_n, "missed_sends": missed,
             "fix_queue": fix_rows, "e8": e8, "cap": cap, "rows": rows,
             "edge_decay_by_sleeve": {r["sleeve"]: r["edge_decay"] for r in rows
                                      if r["edge_decay"]},
             "consumer": ("data/loss_fix_queue.jsonl -> the cloud fix routine -> OWNERSHIP ledger "
                          "and a built fix; EDGE_DECAY is the hazard pf_allocator already prices "
                          "through drift_monitor.hazard_by_sleeve"),
-            "rule": ("every live losing close is DEFECT, EDGE_DECAY or NATURAL; an unresolved "
-                     "DEFECT fails this leg until data/loss_defects_resolved.json names the "
-                     "commit that fixed it. Principal 2026-10-13.")}
+            "rule": ("every live close, winners included, is DEFECT, SUBOPTIMAL, EDGE_DECAY or "
+                     "NATURAL, and every refused send is a missed trade; an unresolved DEFECT "
+                     "or SUBOPTIMAL finding fails the leg until data/loss_defects_resolved.json "
+                     "names the commit that fixed it. Principal 2026-10-13.")}
 
 
-def publish(doc: dict[str, Any], out: Path = OUT, queue: Path = FIX_QUEUE) -> int:
-    """Write the report and append each NEW fix row once (idempotent on fix_id)."""
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+def queue_fixes(doc: dict[str, Any], queue: Path = FIX_QUEUE) -> int:
+    """Append each NEW fix row once (idempotent on fix_id); the count appended."""
     seen = {str(r.get("fix_id")) for r in _jsonl(queue)}
     new = [r for r in doc["fix_queue"] if r["fix_id"] not in seen]
     if new:
@@ -459,24 +571,3 @@ def publish(doc: dict[str, Any], out: Path = OUT, queue: Path = FIX_QUEUE) -> in
                 fh.write(json.dumps({**r, "queued_at": doc["at"]}, default=str,
                                     separators=(",", ":")) + "\n")
     return len(new)
-
-
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--out", type=Path, default=OUT)
-    ap.add_argument("--queue", type=Path, default=FIX_QUEUE)
-    ap.add_argument("--no-write", action="store_true")
-    a = ap.parse_args(argv)
-    doc = build()
-    queued = 0 if a.no_write else publish(doc, a.out, a.queue)
-    print(f"loss autopsy: {doc['verdict']} -- {doc['losses']} loss(es) in {WINDOW_DAYS}d "
-          f"{doc['by_verdict']}; {len(doc['fix_queue'])} open fix row(s), {queued} newly queued")
-    for r in doc["rows"]:
-        if r["open"]:
-            print(f"  DEFECT {r['time']} {r['sleeve']} {r['pl']}: "
-                  f"{[f['defect'] for f in r['defects'] if not f.get('resolved_by')]}")
-    return 1 if doc["verdict"] == "FAIL" else 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
