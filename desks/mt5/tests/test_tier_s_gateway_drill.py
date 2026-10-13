@@ -42,3 +42,9 @@ def test_the_real_gateway_runs_in_a_temp_root_against_the_double() -> None:
     assert row["breaches"] == []
     down = gd.run_fault("terminal_down")
     assert down["observed"]["connect"] is False
+
+
+def test_a_stale_quote_send_is_a_breach_and_a_refusal_is_not() -> None:
+    assert any("NO_SEND_STALE" in b for b in gd.judge("stale_tick", {"sends": 2, "intents": 2}))
+    assert gd.judge("stale_tick", {"sends": 0}) == []
+    assert "stale_tick" in gd.FAULTS
