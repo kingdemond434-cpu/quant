@@ -49,12 +49,16 @@ def _trading_host(base: Path) -> bool:
     except (OSError, ValueError):
         doc = {}
     stamps: list[float] = []
-    for key in ("last_reconcile", "placement_pass", "updated_at", "at", "ts"):
+    # placement_pass is broker time under a UTC label (L3); it enters only once converted.
+    for key in ("last_reconcile", "updated_at", "at", "ts"):
         try:
             stamps.append(datetime.fromisoformat(
                 str(doc[key]).replace("Z", "+00:00")).timestamp())
         except (KeyError, TypeError, ValueError):
             continue
+    from libs.ops.gateway_clock import placement_pass_utc
+    if (_pass := placement_pass_utc(doc)) is not None:
+        stamps.append(_pass.timestamp())
     if stamps:
         age = max(age, _t.time() - max(stamps))
     return age < 3 * 3600

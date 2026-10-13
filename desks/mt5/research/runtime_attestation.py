@@ -293,10 +293,14 @@ def host_identity(paths: Paths) -> dict[str, Any]:
     # the file carries any: a checkout can make the file look new, never its contents.
     gw_doc = _read_json(paths.gateway) or {}
     stamps: list[float] = []
-    for key in ("last_reconcile", "placement_pass", "updated_at", "at", "ts"):
+    # placement_pass is broker time under a UTC label (L3); it enters only once converted.
+    for key in ("last_reconcile", "updated_at", "at", "ts"):
         with contextlib.suppress(KeyError, TypeError, ValueError):
             stamps.append(datetime.fromisoformat(str(gw_doc[key]).replace("Z", "+00:00"))
                           .timestamp())
+    from libs.ops.gateway_clock import placement_pass_utc
+    if (_pass := placement_pass_utc(gw_doc)) is not None:
+        stamps.append(_pass.timestamp())
     if gw_age is not None and stamps:
         gw_age = max(gw_age, now - max(stamps))
     rel = _read_json(paths.release) or {}
