@@ -93,7 +93,21 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
                     cwd=DESK, env=os.environ.copy(), timeout=None, capture_output=False,
                     stdout=output, stderr=output, check=True)
             except Exception as exc:
+                # A native child can fail without writing a traceback (termination, allocation
+                # failure). Persist its exit evidence immediately, before the remaining wave
+                # finishes; a start-only receipt must never be mistaken for a still-running job.
+                try:
+                    output.seek(0, os.SEEK_END)
+                    output.write(f"{datetime.now(UTC).isoformat()} CHILD_FAILED "
+                                 f"type={type(exc).__name__} "
+                                 f"returncode={getattr(exc, 'returncode', None)}\n".encode())
+                    output.flush()
+                except OSError:
+                    pass  # the original child failure still propagates below
                 raise RuntimeError(f"{phase} shard {k} failed; child log={receipt}") from exc
+            output.seek(0, os.SEEK_END)
+            output.write(f"{datetime.now(UTC).isoformat()} CHILD_EXIT_OK\n".encode())
+            output.flush()
 
     def attempted(k: int) -> tuple[int, Exception | None]:
         try:

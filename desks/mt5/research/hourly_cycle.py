@@ -2944,11 +2944,9 @@ def catch_up_intake() -> dict:
     if compiled.get("exit_code") != 0:
         return {"status": "FAILED", "compile": compiled,
                 "why": "fresh compilation failed; catch-up merge withheld"}
-    with exclusive_job("merge_hypotheses", need_mb=14000) as acquired:
-        if not acquired:
-            return {"status": "SKIPPED", "compile": compiled,
-                    "why": "canonical merge lane already owned"}
-        merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
+    # The child now owns the same writer lock for EVERY entry point, including Scheduler.
+    # Holding it in this parent would make that child correctly defer against its own caller.
+    merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
     return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
             "compile": compiled, "merge": merged}
 
