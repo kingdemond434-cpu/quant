@@ -285,3 +285,5 @@ TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of 
 # with each fence's own `ran_at`, and a fence whose verdict ages past the stated 48 h window is
 # dropped from the record and reported as never run. No fence is disabled to make this pass.
 TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --rotate --budget-s 1800" installer="desks/mt5/scripts/install_law_gate_task.ps1" lane="ops"
+
+# Ledger adoption child: scripts/migrate_live_ledger_view.py runs only from MT5-AdoptRelease; emits reports/LEDGER_VIEW_ADOPTION.json, consumed by the adopter and runtime attestation. No independent scheduler.

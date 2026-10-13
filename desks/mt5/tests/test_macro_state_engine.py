@@ -35,6 +35,20 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 from research import macro_state_engine as mse  # noqa: E402
 from research import universe_policy as up  # noqa: E402
 
+
+def _redirect_latent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The latent-dataset half of `build` (package P5) writes the axis door, the lake, its
+    vintage ledgers, the Asia event objects and the null-trial side ledger. Every one of those
+    is pointed into the test's own directory, so no test here can touch a tracked file."""
+    for name, rel in (("AXES_DIR", "axes"), ("LATENT_DIR", "latent"),
+                      ("LAKE_SERIES", "lake_series"), ("LATENT_INTEL", "reports/LI.json"),
+                      ("ASIA_EVENTS", "latent/asia_events.json"),
+                      ("ASIA_EVENTS_LEDGER", "latent/asia_events.jsonl"),
+                      ("NULL_TRIALS", "null_pass_trials.jsonl"),
+                      ("SURVIVORS", "reports/UNIVERSAL_SURVIVORS.json")):
+        monkeypatch.setattr(mse, name, tmp_path / rel)
+
+
 #: The synthetic broker registry. NAS100 is an index, EURUSD/USDJPY are the hypothesis lane,
 #: XAUUSD is metals, and Apple is a share CFD settling in USD -- tradable, event lane, never hunted.
 REGISTRY: dict[str, dict[str, Any]] = {
@@ -108,6 +122,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # The FRED archive is EMPTY unless a test plants one: a test that silently read the live
     # archive would pass or fail on whatever the collector last fetched.
     monkeypatch.setattr(mse, "fred_levels", lambda: {})
+    _redirect_latent(monkeypatch, tmp_path)
     monkeypatch.setattr(up, "UNIVERSE", uni / "universe.json")
     mse._registry.cache_clear()
     up._registry.cache_clear()
@@ -273,6 +288,7 @@ def test_everything_absent_still_writes_a_report(tmp_path: Path,
     monkeypatch.setattr(mse, "WORLD_GRAPH", tmp_path / "b.json")
     monkeypatch.setattr(mse, "CROSS_ASSET", tmp_path / "c.json")
     monkeypatch.setattr(mse, "fred_levels", lambda: {})
+    _redirect_latent(monkeypatch, tmp_path)
     mse._registry.cache_clear()
     try:
         assert mse.main(["--once", "--budget-s", "20", "--n-perm", "9"]) == 0

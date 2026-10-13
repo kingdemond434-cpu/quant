@@ -107,9 +107,31 @@ def test_unclassified_is_not_unmeasured():
     assert carry_state.classify(None, 10.0)[0] == "UNMEASURED"
 
 
+def _fresh(hours_ago: float = 1.0, status: str = "FRESH") -> dict:
+    from datetime import UTC, datetime, timedelta
+    at = datetime.now(UTC) - timedelta(hours=hours_ago)
+    return {"status": status, "last_capture_at": at.isoformat(timespec="seconds"),
+            "stale_after_h": 26.0}
+
+
+def test_swap_per_lot_refuses_a_feed_it_cannot_show_is_live():
+    """A rate is served only while the box's capture is FRESH or PARTIAL, re-aged on the
+    reader's own clock: a report the box stopped rewriting goes STALE by itself."""
+    leg = {"X": {"long": {"side": "long", "swap_money_per_lot_night": 3.0}}}
+    assert carry_state.swap_per_lot({"feed": _fresh(), "symbols": leg}, "X", "long") == -3.0
+    assert carry_state.swap_per_lot({"feed": _fresh(status="PARTIAL"), "symbols": leg},
+                                    "X", "long") == -3.0
+    assert carry_state.swap_per_lot({"feed": _fresh(30.0), "symbols": leg}, "X", "long") is None
+    assert carry_state.swap_per_lot({"feed": {"status": "UNMEASURED"}, "symbols": leg},
+                                    "X", "long") is None
+    assert carry_state.swap_per_lot({"symbols": leg}, "X", "long") is None        # no report
+    assert carry_state.swap_feed(path=Path("/no/such/file.json"))["status"] == "MISSING"
+
+
 def test_swap_per_lot_keys_on_the_value_not_the_label():
     """A known rate must be served even when the state label could not be computed."""
-    state = {"symbols": {"USDJPY": {"long": {"side": "long", "state": "UNCLASSIFIED",
+    state = {"feed": _fresh(),
+             "symbols": {"USDJPY": {"long": {"side": "long", "state": "UNCLASSIFIED",
                                              "swap_money_per_lot_night": 3.843}}}}
     assert carry_state.swap_per_lot(state, "USDJPY", "long") == pytest.approx(-3.843)
 
@@ -117,13 +139,13 @@ def test_swap_per_lot_keys_on_the_value_not_the_label():
 def test_swap_per_lot_negates_into_the_cost_convention():
     """The artifact publishes CREDIT-positive (MT5's own sign); `financing.drag_r` wants a
     positive COST. A credit must come back negative, or a paid side is charged as a cost."""
-    state = {"symbols": {"X": {"short": {"side": "short", "state": "CARRY-PAID",
+    state = {"feed": _fresh(), "symbols": {"X": {"short": {"side": "short", "state": "CARRY-PAID",
                                          "swap_money_per_lot_night": 28.121}}}}
     assert carry_state.swap_per_lot(state, "X", "short") == pytest.approx(-28.121)
 
 
 def test_swap_per_lot_refuses_an_unmeasured_side():
-    state = {"symbols": {"X": {"long": {"side": "long", "state": "UNMEASURED",
+    state = {"feed": _fresh(), "symbols": {"X": {"long": {"side": "long", "state": "UNMEASURED",
                                         "swap_money_per_lot_night": None}}}}
     assert carry_state.swap_per_lot(state, "X", "long") is None
     assert carry_state.swap_per_lot(state, "MISSING", "long") is None

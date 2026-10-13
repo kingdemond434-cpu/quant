@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 781,
+  "NEVER": 790,
   "UNMEASURED": 38
  },
  "scope": {
-  "attested": 1000,
+  "attested": 1009,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -298,7 +298,34 @@
     ]
    },
    {
-    "at": "2026-10-07T06:29:30+00:00",
+    "at": "2026-10-07T06:15:09+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:regional_parity"
+    ]
+   },
+   {
+    "at": "2026-10-12T21:51:05+00:00",
+    "host": "vmi3571445",
+    "machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:desks/mt5/research/fetch_universe.py",
+     "executable:desks/mt5/research/run_hunt10.py",
+     "executable:desks/mt5/research/run_hunt7.py",
+     "executable:desks/mt5/research/run_hunt8.py",
+     "executable:desks/mt5/research/run_hunt9.py",
+     "executable:scripts/migrate_live_ledger_view.py",
+     "leg:alt_proxies",
+     "leg:organ_battery"
+    ]
+   },
+   {
+    "at": "2026-10-13T15:42:04+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -310,7 +337,7 @@
     ]
    },
    {
-    "at": "2026-10-13T15:22:38+00:00",
+    "at": "2026-10-13T15:54:33+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -25401,6 +25428,259 @@
    "measured_at": "2026-10-07T01:02:10+00:00"
   },
   {
+   "organ": "leg:regional_parity",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/regional_parity_pass.py"
+   ],
+   "clock": "hourly_cycle:regional_parity",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/REGIONAL_PARITY.json",
+   "artifact_declared": "desks/mt5/reports/REGIONAL_PARITY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-07T06:15:09+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/fetch_universe.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/fetch_universe.py"
+   ],
+   "clock": "daily_cycle:weekly_hunt_refresh",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/desk_module_drift.json",
+   "artifact_declared": "data/desk_module_drift.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/run_hunt10.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/run_hunt10.py"
+   ],
+   "clock": "daily_cycle:weekly_hunt_refresh",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/desk_module_drift.json",
+   "artifact_declared": "data/desk_module_drift.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/run_hunt7.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/run_hunt7.py"
+   ],
+   "clock": "daily_cycle:weekly_hunt_refresh",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/desk_module_drift.json",
+   "artifact_declared": "data/desk_module_drift.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/run_hunt8.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/run_hunt8.py"
+   ],
+   "clock": "daily_cycle:weekly_hunt_refresh",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/desk_module_drift.json",
+   "artifact_declared": "data/desk_module_drift.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/run_hunt9.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/run_hunt9.py"
+   ],
+   "clock": "daily_cycle:weekly_hunt_refresh",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/desk_module_drift.json",
+   "artifact_declared": "data/desk_module_drift.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
+   "organ": "executable:scripts/migrate_live_ledger_view.py",
+   "kind": "executable",
+   "code": [
+    "scripts/migrate_live_ledger_view.py",
+    "libs/ops/live_ledger_migration.py"
+   ],
+   "clock": "invoked:desks/mt5/scripts/Adopt-And-Seal.ps1",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",
+   "artifact_declared": "desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "rows",
+   "consumer": "desks/mt5/scripts/Adopt-And-Seal.ps1",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
+   "organ": "leg:alt_proxies",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "clock": "hourly_cycle:alt_proxies",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+   "artifact_declared": "desks/mt5/reports/ALT_PROXIES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/data/digests/asia_alt_data_digest.json (written by libs/research/asia_",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
+   "organ": "leg:organ_battery",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/batteries.py"
+   ],
+   "clock": "hourly_cycle:organ_battery",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/data/latent/latent_cn_industrial.vintages.jsonl",
+   "artifact_declared": "desks/mt5/data/latent/latent_cn_industrial.vintages.jsonl",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 4,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "libs/research/alpha_dsl.py FieldCatalogue (axis door); mt5desk/family_exogenous_",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
    "organ": "leg:sensor_ledger",
    "kind": "leg",
    "code": [
@@ -25426,7 +25706,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-07T06:29:30+00:00"
+   "measured_at": "2026-10-13T15:42:04+00:00"
   },
   {
    "organ": "library:libs/ops/env_secret.py",
@@ -25454,7 +25734,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-07T06:29:30+00:00"
+   "measured_at": "2026-10-13T15:42:04+00:00"
   },
   {
    "organ": "task:MT5-NewsResident",
@@ -25482,7 +25762,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-07T06:29:30+00:00"
+   "measured_at": "2026-10-13T15:42:04+00:00"
   },
   {
    "organ": "leg:ws_fetch_alfred",
@@ -25510,7 +25790,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_implied_move",
@@ -25538,7 +25818,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_latent_states",
@@ -25566,7 +25846,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_model_disagreement",
@@ -25594,7 +25874,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_name_sentiment",
@@ -25622,7 +25902,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_news_hawkes",
@@ -25650,7 +25930,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_option_chains",
@@ -25678,7 +25958,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_own_risk_index",
@@ -25706,7 +25986,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_pit_audit",
@@ -25734,7 +26014,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_priced_in",
@@ -25762,7 +26042,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_regime_probabilities",
@@ -25790,7 +26070,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_taiwan_options",
@@ -25818,7 +26098,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "leg:ws_vol_conditioner",
@@ -25846,7 +26126,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   },
   {
    "organ": "library:desks/mt5/research/state_vector_build.py",
@@ -25866,7 +26146,7 @@
    "artifact_declared": "desks/mt5/data/state_vector.json",
    "artifact_resolved_by": "declared",
    "artifact_declared_n": 1,
-   "artifact_age_s": 601344,
+   "artifact_age_s": 603259,
    "artifact_bytes": 11500,
    "artifact_sha256": "298d8b9c819d1a21bb7d38b3b7eb5f84b52b9de3030ce0e9a4fe8e5135e44e25",
    "summary": {},
@@ -25874,7 +26154,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T15:22:38+00:00"
+   "measured_at": "2026-10-13T15:54:33+00:00"
   }
  ],
  "ratchet": {

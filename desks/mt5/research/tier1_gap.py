@@ -250,7 +250,8 @@ def edges_and_live(now: datetime) -> dict[str, Any]:
     since = now - timedelta(days=30)
     per_day: dict[str, set[str]] = {}
     trades = 0
-    for row in _jsonl(DATA / "live_ledger.jsonl", since, at_key="time"):
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    for row in _jsonl(_audited_ledger_path(DATA / "live_ledger.jsonl"), since, at_key="time"):
         trades += 1
         d = str(row.get("time"))[:10]
         per_day.setdefault(d, set()).add(str(row.get("symbol") or ""))
@@ -307,6 +308,7 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     mj = mining_and_judging(t)
     el = edges_and_live(t)
     flat = {**ing, **mj, **el}
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
     return {
         "at": t.isoformat(timespec="seconds"),
         "reference_basis": "tier-1 references are public estimates; desk values are measured "
@@ -317,7 +319,7 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             DATA / "data_registry.json", REPORTS / "JUDGE_COVERAGE.json",
             REPORTS / "JUDGING_RATE.json", HYP / "gate_verdict_ledger.jsonl",
             REPORTS / "universal_gates_external.json", DATA / "UNIVERSAL_SURVIVORS.canon.json",
-            DATA / "effective_breadth.jsonl", DATA / "sleeves.json", DATA / "live_ledger.jsonl",
+            DATA / "effective_breadth.jsonl", DATA / "sleeves.json", _audited_ledger_path(DATA / "live_ledger.jsonl"),
             REPORTS / "DATASET_HUNT.json", REPORTS / "MASS_SCREEN.json",
             REPORTS / "ALT_DATA_YIELD.json", REPORTS / "CROSS_SECTIONAL_BREADTH.json")},
     }
