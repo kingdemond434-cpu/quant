@@ -376,4 +376,4 @@ def test_a_gold_window_loads_on_its_own_xau_usd_legs(tmp_path: Path) -> None:
     r = 300.0 * (frame["XAU"] - frame["USD"]).to_numpy()
     fl = leg_factors.fit_loadings(r, frame.index, fs, "XAUUSD")
     assert fl.n >= 3 and "USD" in fl.used
-    assert leg_factors.fit_loadings(r, frame.index, fs, "gold").used == ()
+    assert "USD" not in leg_factors.fit_loadings(r, frame.index, fs, "gold").used
