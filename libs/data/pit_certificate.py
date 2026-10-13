@@ -265,7 +265,7 @@ def check_timestamps(meta: dict[str, Any], series: pd.DataFrame | pd.Series,
         return Check("timestamps", VERDICT_UNMEASURED, "the series is empty", {"rows": 0})
     ok = int(idx.notna().sum())
     frac = ok / n
-    monotonic = bool(pd.Series(idx.dropna().astype("int64")).is_monotonic_increasing)
+    monotonic = bool(pd.Series(idx.dropna().as_unit("ns").asi8).is_monotonic_increasing)
     detail = {"rows": n, "parseable": ok, "parseable_frac": round(frac, 6),
               "monotonic": monotonic, "timezone": "UTC"}
     if frac < MIN_TIMESTAMP_FRAC:

@@ -72,14 +72,14 @@ ALLOCATOR_PROOF_SEAL_ROTATION = {
     "signed_by": "owner-approved-codex-2026-10-08",
 }
 
-# Authorized replay geometry/cache, input wiring and build preflight repair; the historical pin
-# stays intact. Require the exact reviewed bytes and their file-only authorization.
+# The principal's 2026-10-13 re-seal on top of Codex's f56bc72f repair:
+# #215 resumable epochs and plan slices, reseal batch 1, and the deterministic build-failure memo,
+# audited. The historical pin stays intact.
 GAUNTLET_SEAL_ROTATION = {
     "path": "desks/mt5/scripts/external_gauntlet.py",
     "from": "d0919bfc921dac2c1bab40b821429d34e7fab056af4a66f02840da4877d1bc01",
-    "to": "f56bc72fc5532a67924ac0a26eaff0e392702549c1b2c5a4d4ef75e72aec96de",
-    "signed_by": ("Codex under principal instruction: maximise and repair build bottleneck "
-                  "canonically; policy and record seals preserved"),
+    "to": "bc806fc94cdf74f86b16f936dbf877d98c34eda183ad8b1a2483398bbd712b17",
+    "signed_by": "zuck",
 }
 
 
