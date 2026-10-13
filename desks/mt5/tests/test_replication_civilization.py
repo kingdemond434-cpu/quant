@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pytest
 
 DESK = Path(__file__).resolve().parents[1]
 for _p in (str(DESK / "research"), str(DESK), str(DESK.parents[1])):
