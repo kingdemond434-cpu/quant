@@ -1079,6 +1079,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # the GEOINT factory: Sentinel-2 tank shadows over Cushing as a PIT state
+                     "geoint_tank_fill",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1936,6 +1938,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # geoint_tank_fill stops itself at --budget-s 540 (scene reads are ~6 MB, ~10 s each) and
+    # writes GEOINT_TANK_FILL.json; the cap sits above so the write is never the part cut off.
+    "geoint_tank_fill": 660,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -5265,6 +5270,13 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # THE FIRST GEOINT FACTORY (2026-10-13): Cushing floating-roof tank fill from free
+    # Sentinel-2 L2A (AWS open data) -- new scenes first, then the archive backfill, each scene
+    # PIT-stamped at its S3 publication; the EIA calibration, the perfect-information ceiling per
+    # crude CFD and the terms-gated cells ride the same pass. Writes GEOINT_TANK_FILL.json.
+    gtf = _costed("geoint_tank_fill", lambda: _producer(
+        "geoint_tank_fill", "research/geoint_tank_fill.py", "--once", "--max-scenes", "8",
+        "--budget-s", "540"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -5863,6 +5875,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "geoint_tank_fill": gtf,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

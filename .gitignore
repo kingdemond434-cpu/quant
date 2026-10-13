@@ -475,3 +475,11 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+# THE GEOINT FACTORY (2026-10-13). The tank registry (desks/mt5/data/geoint/cushing_tanks.json) is
+# DERIVED evidence and tracked; the per-scene measurement store and the S3 listing cache are
+# machine-rewritten caches and never enter history. Imagery itself is never written to disk.
+desks/mt5/data/geoint/scene_store.jsonl
+desks/mt5/data/geoint/listing_cache.json
+desks/mt5/data/geoint/*.tmp
+# Its hub index report, published by sync_shadow_to_git.ps1's $reportPaths.
+!desks/mt5/reports/GEOINT_TANK_FILL.json
