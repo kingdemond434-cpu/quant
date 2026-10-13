@@ -36,9 +36,20 @@ FLOOR = ROOT / "docs" / "research" / "self_repair_floor.json"
 
 def _trading_host(base: Path) -> bool:
     """Is the live gateway writing here? By the file's age AND its own stamps: gateway_state.json
-    is tracked, so a checkout resets its mtime and a fresh clone read as the trading host."""
+    is tracked, so a checkout resets its mtime and a fresh clone read as the trading host.
+
+    AND ONLY ON A MACHINE THAT MAY BE THE BOX (2026-10-13). The box now publishes
+    gateway_state.json to origin every 15 minutes, so its stamps are fresh on every checkout, and
+    its `placement_pass` carries broker time labelled UTC (hours in the future), which made any
+    copy read as "written seconds ago". The machine's own identity (libs/ops/host_identity, the
+    helper check_birth_obligations already uses) decides first; the gateway's age still decides on
+    the box, exactly as before."""
     import time as _t
     from datetime import datetime
+
+    from libs.ops import host_identity
+    if not host_identity.identify().may_be_trading:
+        return False
     path = base / "desks" / "mt5" / "data" / "gateway_state.json"
     try:
         age = _t.time() - path.stat().st_mtime
