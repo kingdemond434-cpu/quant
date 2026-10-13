@@ -16,6 +16,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
 
@@ -275,6 +276,36 @@ LANE_HELD_RC = 75
 #: reads as an old heartbeat (check_judge_coverage marks it DEAD past 5 minutes), never as a
 #: SWEEPING that lasts forever.
 RESIDENT_HEARTBEAT_S = 30.0
+#: A SWEEP THAT NEVER ENDS IS THE ONE FAILURE THE RESPAWNER CANNOT SEE (2026-10-13). The task runs
+#: with `MultipleInstances IgnoreNew` and no time limit (`task_time_limit_s` 0), so one hung sweep
+#: keeps its instance alive and every trigger after it is refused (0x800710E0): from 10-12 06:59Z
+#: the box held ~1 busy judge core, wrote no verdict for 33 hours, and Task Scheduler refused each
+#: MT5-Gauntlet start. The heartbeat thread kept beating through it. So each sweep child now has a
+#: ceiling derived from what it is allowed to spend -- twice the build budget the throughput
+#: organ sets (`GAUNTLET_FRESH_BUDGET_SEC`) or three times the longest sweep this resident has
+#: measured, whichever is larger, never under an hour -- and a child past it is killed WITH ITS
+#: WHOLE TREE (`libs.ops.proctree.run`), recorded as a hung sweep, and the next one starts.
+RESIDENT_HANG_RC = 124
+#: WHICH PART OF A SWEEP THE TIME WENT TO, named from outside the sealed judge (2026-10-13). The
+#: 33-hour stall held ~1 busy core -- CPU-bound in one process, not a deadlock -- and nothing on
+#: origin could say whether that was planning, a shard wave, or the single-process merge and
+#: publish after the last wave. The launcher sees every boundary the protocol exposes: the judge
+#: plans until it dispatches `build`, collects and cuts between `build` and `rule`, and merges
+#: and publishes after `rule` returns. Each sweep child stamps the phase it is in and the seconds
+#: each finished phase took; the resident folds that into JUDGE_RESIDENT.json (published) on
+#: every heartbeat and names the phase a hung sweep was killed in.
+SWEEP_PHASE = DESK / "reports" / "JUDGE_SWEEP_PHASE.json"
+_PHASE_DOC: dict[str, Any] = {}
+RESIDENT_HANG_BUDGET_MULT = 2.0
+RESIDENT_HANG_SWEEP_MULT = 3.0
+RESIDENT_HANG_FLOOR_S = 3600.0
+#: A SWEEP THAT IS SLOW, NOT STUCK, MUST STILL FINISH (audit of #350). Each consecutive kill
+#: doubles the ceiling, up to this cap, and the count survives a resident restart (it is read
+#: back from JUDGE_RESIDENT.json), so a deterministic long merge widens its own window instead of
+#: being killed at the same mark forever. Two or more in a row fail the coverage fence.
+RESIDENT_HANG_CAP_S = 48 * 3600.0
+#: The sealed judge's own default build budget, used when the sweep's env names none.
+SEALED_FRESH_BUDGET_S = 2700.0
 
 
 def _resident_enabled(argv: list[str]) -> bool:
@@ -312,8 +343,40 @@ def _fits(elapsed: float, limit: float | None, last_sweep_s: float | None) -> bo
     return elapsed + need <= limit
 
 
+def _phase(name: str) -> None:
+    """Close the current sweep phase and open `name`, stamped to SWEEP_PHASE."""
+    now = time.time()
+    doc = _PHASE_DOC
+    if not doc:
+        doc.update(pid=os.getpid(), sweep_started_utc=datetime.now(UTC).isoformat(
+            timespec="seconds"), phases={})
+    prev, since = doc.get("phase"), doc.get("_t")
+    if prev and isinstance(since, float):
+        doc["phases"][prev] = round(doc["phases"].get(prev, 0.0) + now - since, 1)
+    doc.update(phase=name, phase_started_utc=datetime.now(UTC).isoformat(timespec="seconds"),
+               _t=now)
+    try:
+        SWEEP_PHASE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = SWEEP_PHASE.with_name(f"{SWEEP_PHASE.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps({k: v for k, v in doc.items() if k != "_t"}, indent=1),
+                       encoding="utf-8")
+        os.replace(tmp, SWEEP_PHASE)
+    except OSError:
+        pass  # a phase stamp is a report; judging never stops for it
+
+
+def _sweep_phase() -> dict[str, Any] | None:
+    try:
+        doc = json.loads(SWEEP_PHASE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
 def _write_state(doc: dict[str, Any]) -> None:
     doc = {**doc, "heartbeat_utc": datetime.now(UTC).isoformat(timespec="seconds")}
+    if doc.get("status") == "SWEEPING":
+        doc["sweep_phase"] = _sweep_phase()
     try:
         RESIDENT_STATE.parent.mkdir(parents=True, exist_ok=True)
         tmp = RESIDENT_STATE.with_name(
@@ -360,18 +423,95 @@ def _sweep_env() -> dict[str, str]:
     return env
 
 
-def _one_sweep_child() -> int:
+def _hang_limit_s(longest_sweep_s: float | None, consecutive_hangs: int = 0,
+                  env: dict[str, str] | None = None) -> float:
+    """The most one sweep child may run before it is killed as hung (see RESIDENT_HANG_RC).
+
+    The budget is the one the CHILD runs with (`_sweep_env`), never the resident's own env.
+    """
+    raw = (env if env is not None else os.environ).get("GAUNTLET_FRESH_BUDGET_SEC")
+    try:
+        budget = float(raw) if raw is not None else SEALED_FRESH_BUDGET_S
+    except (TypeError, ValueError):
+        budget = SEALED_FRESH_BUDGET_S
+    base = max(RESIDENT_HANG_FLOOR_S, RESIDENT_HANG_BUDGET_MULT * max(budget, 0.0),
+               RESIDENT_HANG_SWEEP_MULT * float(longest_sweep_s or 0.0))
+    return min(RESIDENT_HANG_CAP_S, base * (2.0 ** max(0, int(consecutive_hangs))))
+
+
+def _kill_sweep_tree(pid: int, *, rounds: int = 20) -> int:
+    """Kill a sweep and EVERY descendant, including shards its dispatch respawns mid-kill.
+
+    Audit of #350: snapshot-then-kill left orphans in 2 of 5 probes, because the root's retry
+    loop and executor started new shards after the snapshot -- and on the box an orphan becomes
+    the oldest external_gauntlet, which StallWatch keeps while it kills the NEXT sweep's shards.
+    So the root is SUSPENDED first (it can start nothing), then descendants are re-enumerated,
+    suspended and killed until a pass finds none, then the root dies. Returns processes killed.
+    """
+    try:
+        import psutil
+    except ImportError:                                        # pragma: no cover - box has it
+        return 0
+    try:
+        root = psutil.Process(pid)
+        root.suspend()
+    except psutil.Error:
+        return 0
+    killed = 0
+    for _ in range(rounds):
+        try:
+            kids = root.children(recursive=True)
+        except psutil.Error:
+            break
+        if not kids:
+            break
+        # FREEZE THE WHOLE TREE BEFORE ANY KILL: a grandchild started between enumeration and
+        # suspension would be re-parented away (and orphaned) the moment its parent died, so
+        # enumerate-and-suspend repeats until a pass finds nobody new.
+        frozen: dict[int, Any] = {}
+        while True:
+            fresh = [k for k in kids if k.pid not in frozen]
+            if not fresh:
+                break
+            for k in fresh:
+                with contextlib.suppress(psutil.Error):
+                    k.suspend()
+                frozen[k.pid] = k
+            try:
+                kids = root.children(recursive=True)
+            except psutil.Error:
+                break
+        kids = list(frozen.values())
+        for k in kids:
+            with contextlib.suppress(psutil.Error):
+                k.kill()
+                killed += 1
+        psutil.wait_procs(kids, timeout=5)
+    with contextlib.suppress(psutil.Error):
+        root.kill()
+        killed += 1
+        root.wait(timeout=10)
+    return killed
+
+
+def _one_sweep_child(hang_s: float | None = None) -> int:
     """One sweep in a fresh process, at the priority the scheduler gives the judge today."""
+    import subprocess
+
     flags = 0
     if sys.platform == "win32":
-        import subprocess
         # BELOW_NORMAL is the Task Scheduler's default priority (7) for MT5-Gauntlet, so the
         # child keeps exactly the standing the judge has now: miners are never displaced by it.
         flags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
-    done = run([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
-               cwd=DESK, env=_sweep_env(), timeout=None, capture_output=False,
-               creationflags=flags)
-    return int(done.returncode)
+    child = subprocess.Popen([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
+                             cwd=DESK, env=_sweep_env(), creationflags=flags)
+    try:
+        return int(child.wait(timeout=hang_s))
+    except subprocess.TimeoutExpired:
+        _kill_sweep_tree(child.pid)
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            child.wait(timeout=30)
+        return RESIDENT_HANG_RC
 
 
 def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> None:
@@ -387,11 +527,22 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
              limit_s: float | None = None, max_sweeps: int | None = None,
              heartbeat_s: float = RESIDENT_HEARTBEAT_S) -> int:
     """Run sweeps back to back until stopped; return the last sweep's exit code."""
-    sweep = sweep or _one_sweep_child
     started, last_rc = clock(), 0
     state: dict[str, Any] = {"pid": os.getpid(), "started_utc": datetime.now(UTC).isoformat(
         timespec="seconds"), "task_limit_s": limit_s, "sweeps": 0, "failures": 0,
-        "lane_held": 0, "busy_seconds": 0.0, "status": "RUNNING"}
+        "lane_held": 0, "hung_kills": 0, "busy_seconds": 0.0, "status": "RUNNING"}
+    # WHAT A RESTART MUST NOT FORGET (audit of #350): the longest measured sweep and the run of
+    # consecutive hung kills, read back from the last record, so the ceiling keeps widening.
+    prev = _read_state()
+    state["longest_sweep_s"] = prev.get("longest_sweep_s")
+    state["consecutive_hangs"] = int(prev.get("consecutive_hangs") or 0)
+    state["hung_kills"] = int(prev.get("hung_kills") or 0)
+    if sweep is None:
+        def sweep() -> int:
+            hang = _hang_limit_s(state.get("longest_sweep_s"),
+                                 int(state.get("consecutive_hangs") or 0), _sweep_env())
+            state["hang_limit_s"] = round(hang, 1)
+            return _one_sweep_child(hang)
     stop = threading.Event()
     beat = threading.Thread(target=_heartbeat, args=(state, stop, heartbeat_s), daemon=True)
     beat.start()
@@ -409,7 +560,16 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
     return last_rc
 
 
-def _resident_loop(state: dict[str, Any], sweep, sleep, clock, started: float,
+def _read_state() -> dict[str, Any]:
+    try:
+        doc = json.loads(RESIDENT_STATE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
+                   sleep: Callable[[float], Any], clock: Callable[[], float], started: float,
                    limit_s: float | None, max_sweeps: int | None) -> int:
     failures, n, last_rc = 0, 0, 0
     last_sweep_s: float | None = None
@@ -441,6 +601,9 @@ def _resident_loop(state: dict[str, Any], sweep, sleep, clock, started: float,
             timespec="seconds"))
         if last_rc == 0:
             failures, last_sweep_s = 0, dt
+            state["consecutive_hangs"] = 0
+            state["longest_sweep_s"] = round(max(dt, float(state.get("longest_sweep_s") or 0.0)),
+                                             1)
             state["status"] = "RUNNING"
             _write_state(state)
             continue                       # ZERO CADENCE: the next sweep starts now
@@ -450,6 +613,11 @@ def _resident_loop(state: dict[str, Any], sweep, sleep, clock, started: float,
         else:
             failures += 1
             state["failures"] += 1
+            if last_rc == RESIDENT_HANG_RC:
+                state["hung_kills"] = int(state.get("hung_kills") or 0) + 1
+                state["consecutive_hangs"] = int(state.get("consecutive_hangs") or 0) + 1
+                state["last_hung_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
+                state["killed_in_phase"] = _sweep_phase()
             pause = RESIDENT_BACKOFF_S[min(failures, len(RESIDENT_BACKOFF_S)) - 1]
         state.update(status="BACKOFF", backoff_s=pause)
         _write_state(state)
@@ -468,6 +636,7 @@ def _sweep_once() -> int:
     from research.judging_throughput import apply_env
 
     apply_env()
+    _phase("plan")
     log_path = DESK / "logs" / "MT5-Gauntlet.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a", encoding="utf-8", buffering=1) as log:
@@ -486,7 +655,15 @@ def _sweep_once() -> int:
                 raise RuntimeError(
                     "canonical judge does not expose the required fail-closed shard protocol v2"
                 )
-            return int(judge.run_sharded(_shards(), dispatch))
+            def _timed_dispatch(shard_dir: Path, n: int, phase: str) -> None:
+                _phase(f"{phase}_shards")
+                dispatch(shard_dir, n, phase)
+                # after `build`: collect + cut; after `rule`: the single-process merge + publish
+                _phase("collect_and_cut" if phase == "build" else "merge_and_publish")
+
+            rc = int(judge.run_sharded(_shards(), _timed_dispatch))
+            _phase("done")
+            return rc
         finally:
             sys.stdout, sys.stderr = old_out, old_err
 
