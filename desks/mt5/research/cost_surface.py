@@ -115,7 +115,11 @@ MIN_SESSION_BARS = 2
 #: EITHER direction: undercharging manufactures survivors, overcharging kills real edges silently.
 MATERIAL_RATIO = 2.0
 
-SCHEMA = "cost-surface-2"
+#: The schema NAME stays "cost-surface-1": the tick tape's producer (`tape_features`) writes the
+#: same name and the desk's ~25 readers key on it. Revision 2 (2026-10-13) only ADDS fields
+#: (sessions, symbol_level, dow_hours, recent, thin_*), so every revision-1 reader is unchanged.
+SCHEMA = "cost-surface-1"
+SCHEMA_REVISION = 2
 
 #: THE BROKER'S FIXED-SPREAD ERA ENDS HERE, AND NOTHING BEFORE IT IS A SPREAD (2026-10-13).
 #:
@@ -388,6 +392,8 @@ def build(universe_dir: Path | None = None) -> dict:
         surface[sym] = prof
     return {
         "schema": SCHEMA,
+        "schema_revision": SCHEMA_REVISION,
+        "era_start": str(ERA_START.date()),
         "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "min_obs": MIN_OBS,
         "session_share": SESSION_SHARE,

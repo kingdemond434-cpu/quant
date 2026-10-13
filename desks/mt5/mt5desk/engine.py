@@ -129,9 +129,10 @@ class Costs:
     #: THE SPREAD BY THE HOUR IT IS PAID (2026-10-13), in the same per-lot convention as
     #: `spread_per_lot`: 24 entries (broker hour) or 168 (broker weekday*24 + hour, Monday=0),
     #: built by `research/entry_hour_cost.py` from `data/cost_surface.json` on the SAME clock as
-    #: the bar index (Fusion server time, NY+7). When set, each trade is charged half the spread
-    #: of its ENTRY bar's slot plus half of its EXIT bar's slot instead of the flat
-    #: `spread_per_lot`, which on the exotics' broker-00 rollover is 3-30x too cheap.
+    #: the bar index (Fusion server time, NY+7). When set, a LONG is charged the spread of its
+    #: ENTRY bar's slot and a SHORT that of its EXIT bar's slot (bid bars: the ask is crossed
+    #: there) instead of the flat `spread_per_lot`, which on the exotics' broker-00 rollover is
+    #: 3-30x too cheap.
     #: None (the default) is exactly today's arithmetic, so no call site re-prices silently, and
     #: a tuple is not a number, so `sleeve_registry.cost_hash` is unchanged by its presence.
     spread_per_lot_by_hour: tuple[float, ...] | None = None
@@ -826,13 +827,16 @@ def run_backtest(
         for fill_px in adds:
             r += add_frac * (exit_price - fill_px) / stop_dist * side
             units += add_frac
-        # ENTRY-HOUR AND EXIT-HOUR SPREAD when the cost model carries a table: half the spread
-        # of the slot the trade enters in plus half of the slot it leaves in, on the bars' own
-        # (broker) clock. The flat path below is byte-identical to before.
+        # THE SPREAD IS PAID WHERE THE ASK IS CROSSED, when the cost model carries a table. MT5
+        # bars are BID bars: a long buys at the ask at ENTRY and sells at the bid, a short sells
+        # at the bid and buys back at the ask at EXIT. So a long pays its entry slot's spread and
+        # a short its exit slot's, on the bars' own (broker) clock -- a long entering at the
+        # broker-00 rollover pays the rollover book in full. The flat path below is
+        # byte-identical to before (one full spread per round trip either way).
         if hourly:
-            entry_t = pd.Timestamp(idx[fill_bar])
-            exit_t = pd.Timestamp(idx[min(fill_bar + bars_held - 1, len(idx) - 1)])
-            trade_spread = 0.5 * (spread_at(costs, entry_t) + spread_at(costs, exit_t))
+            pay_t = pd.Timestamp(idx[fill_bar] if side > 0
+                                 else idx[min(fill_bar + bars_held - 1, len(idx) - 1)])
+            trade_spread = spread_at(costs, pay_t)
             r -= (comm_per_oz + trade_spread / costs.contract_oz) * units / stop_dist
         else:
             r -= per_oz_cost * units / stop_dist

@@ -17,11 +17,15 @@ and fourteen registry rows (USDJPY, EURUSD, GBPUSD, AUDUSD, ...) read a spread o
 clocks ran on the engine's 0.05 floor -- free.
 
 WHAT THIS DOES. It turns the surface into a per-(weekday, hour) spread TABLE on the cost model
-(`Costs.spread_per_lot_by_hour`), and the engine charges each trade half the spread of its ENTRY
-bar's hour plus half the spread of its EXIT bar's hour, on the same clock the bars carry:
+(`Costs.spread_per_lot_by_hour`), and the engine charges each trade the spread of the slot where
+it crosses the ask, on the same clock the bars carry. MT5 bars are bid bars, so:
 
-    trade cost = spread(entry dow, hour)/2 + spread(exit dow, hour)/2 + 2 x commission
-                 + swap x nights crossed                        (commission/swap: unchanged)
+    long  trade cost = spread(ENTRY dow, hour) + 2 x commission + swap x nights crossed
+    short trade cost = spread(EXIT dow, hour)  + 2 x commission + swap x nights crossed
+
+(commission and swap are unchanged). A long entering at the broker-00/01 rollover on a ZAR
+cross pays the rollover book in full -- the hour where the venue refused the desk's sends with
+retcode 10016 -- never the pooled price.
 
 THE CLOCK. The surface is built from the H1 parquets' own index hours, which are Fusion's server
 clock (NY+7: UTC+3 in the northern summer, UTC+2 in winter; `fusion_spread_tape` measured the
@@ -60,6 +64,10 @@ from typing import Any
 
 _DESK = Path(__file__).resolve().parent.parent
 SURFACE_PATH = _DESK / "data" / "cost_surface.json"
+#: The same schema measured from Fusion's own TICKS (`recorders/tape_features.py`, trading box
+#: only). Where it holds a MEASURED cell it outranks the bar-spread surface: a tick is the quote
+#: the order meets, a bar's `spread` column is one reading per bar.
+TICK_SURFACE_PATH = _DESK / "data" / "cost_surface_tick.json"
 
 #: Pseudo-observations of the parent mixed into a thin cell: a cell with n = K is believed half.
 #: A quarter of `cost_surface.MIN_OBS` (200), so a cell one bar short of MEASURED is ~80% its own.
@@ -141,10 +149,17 @@ def hour_spread_pts(surface: dict[str, Any] | None, symbol: str, hour: int,
     `q` is "p50" (the base charge) or "p90" (the stress charge). None only when the symbol has
     no row and no parent at all -- the caller must then read UNMEASURED, never zero.
     """
+    h = int(hour) % 24
+    tick = load_surface(TICK_SURFACE_PATH) if surface is None or surface is load_surface() \
+        else None
+    tcell = ((((tick or {}).get("symbols") or {}).get(symbol) or {}).get("hours") or {}
+             ).get(str(h)) or {}
+    if tcell.get("status") == "MEASURED" and (_num(tcell.get(q)) or 0) > 0:
+        n_t = int(tcell.get("n_nonzero") or tcell.get("n") or 0)
+        return float(tcell[q]), {"basis": "tick_hour", "n": n_t, "n_eff": n_t}
     row = ((surface or {}).get("symbols") or {}).get(symbol)
     if not isinstance(row, dict):
         return None, {"basis": "UNMEASURED: symbol absent from the cost surface"}
-    h = int(hour) % 24
     cell = (row.get("hours") or {}).get(str(h)) or {}
     n = int(cell.get("n_nonzero") or 0)
     if cell.get("status") == "MEASURED" and _num(cell.get(q)) is not None:
@@ -290,6 +305,28 @@ def unmeasured_fields(registry: dict[str, Any] | None,
 # The cost model every consumer builds.
 # ----------------------------------------------------------------------------------------------
 
+def attach_table(symbol: str, meta_row: dict[str, Any], base: Any, mult: float = 1.0, *,
+                 q: str = "p50", surface: dict[str, Any] | None = None) -> tuple[Any, str]:
+    """(costs, basis): `base` (a `Costs.from_symbol` result) with the surface's spread table.
+
+    For call sites that must keep calling the sanctioned constructor themselves (the forward
+    clock's test pins it). `mult` must be the spread multiple `base` was built with.
+    """
+    row = meta_row if isinstance(meta_row, dict) else {}
+    surf = surface if surface is not None else load_surface()
+    table, info = spread_table_pts(surf, symbol, q)
+    cs = float(row.get("contract_size", 1e5) or 1e5)
+    ts = float(row.get("tick_size", 0.0) or 0.0)
+    if table is not None and ts > 0:
+        per_lot = tuple(max(p * ts * cs * float(mult), 0.05) for p in table)
+        return replace(base, spread_per_lot_by_hour=per_lot), str(info["basis"])
+    st = field_status(row)["spread"]
+    if st == "MEASURED":
+        return base, "REGISTRY_FALLBACK:pooled_median_spread"
+    why = info.get("basis") if table is None else "tick_size missing"
+    return base, f"UNMEASURED(spread={st}):{why}"
+
+
 def costs_at_entry_hour(symbol: str, meta_row: dict[str, Any], mult: float = 1.0, *,
                         commission: float | None = None, q: str = "p50",
                         surface: dict[str, Any] | None = None,
@@ -361,8 +398,8 @@ def gauntlet_costs(symbol: str, meta: dict[str, Any], sigs: Any = None,
 
 
 def charged_spread_pts(costs: Any, meta_row: dict[str, Any], entry_ts: Any,
-                       exit_ts: Any) -> float | None:
-    """The points one trade was charged (entry half + exit half), for audits and reports."""
+                       exit_ts: Any, side: int = 1) -> float | None:
+    """The points one trade was charged (a long at entry, a short at exit), for audits."""
     tab = getattr(costs, "spread_per_lot_by_hour", None)
     cs = float((meta_row or {}).get("contract_size", 1e5) or 1e5)
     ts = float((meta_row or {}).get("tick_size", 0.0) or 0.0)
@@ -370,5 +407,5 @@ def charged_spread_pts(costs: Any, meta_row: dict[str, Any], entry_ts: Any,
         return None
     from mt5desk.engine import spread_at
 
-    per_lot = 0.5 * (spread_at(costs, entry_ts) + spread_at(costs, exit_ts))
+    per_lot = spread_at(costs, entry_ts if side > 0 else exit_ts)
     return per_lot / (ts * cs)

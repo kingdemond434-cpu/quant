@@ -566,10 +566,14 @@ def per_symbol_costs(meta: dict, sym: str):
     # median (USDZAR 329 pts against 3,534 at hour 00), and a clock on a symbol whose registry
     # spread is ZERO (USDJPY and 13 others) paid the engine's 0.05 floor -- nothing. The cost
     # model now carries the surface's per-(weekday, hour) table and the engine charges each
-    # trade half its entry slot plus half its exit slot. `meta[sym]` still raises KeyError for a
+    # long its entry slot and a short its exit slot (bid bars: the ask is crossed there). `meta[sym]` still raises KeyError for a
     # symbol the catalogue lacks, which is what routes the caller to its frozen basis.
+    from mt5desk.engine import Costs
+    from research.entry_hour_cost import attach_table
+
     row = meta[sym]
-    costs, basis = _entry_hour_costs(sym, row, COMMISSION_PER_LOT_PER_SIDE)
+    costs, basis = attach_table(sym, row, Costs.from_symbol(
+        row, commission_per_lot=COMMISSION_PER_LOT_PER_SIDE))
     COST_BASIS[sym] = basis
     return costs
 
@@ -578,11 +582,6 @@ def per_symbol_costs(meta: dict, sym: str):
 #: "REGISTRY_FALLBACK:...", or "UNMEASURED..."). Published beside each clock so an UNMEASURED
 #: price is queued for repricing rather than read as a clean number.
 COST_BASIS: dict[str, str] = {}
-
-
-def _entry_hour_costs(sym: str, row: dict, commission: float):
-    from research.entry_hour_cost import costs_at_entry_hour
-    return costs_at_entry_hour(sym, row, commission=commission)
 
 
 def frozen_costs(key: str):
