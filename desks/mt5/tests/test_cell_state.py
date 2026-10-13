@@ -390,3 +390,14 @@ def test_handoff_is_one_file_one_row_per_cell(tmp_path: Path) -> None:
     assert info["deduped_by_cell"] == 1 and info["from_other_writer"] == 2
     empty, _ = cs.fold_handoff(None, [], at="now")
     assert empty == {"schema_version": 1, "generated_utc": "now", "n": 0, "rows": []}
+
+
+def test_handoff_routes_are_judge_coverage_failure_routes() -> None:
+    """One route table, two modules: a class Gate -2 hands over must route the same in both."""
+    from research import judge_coverage as jc
+    for cls, route in cs.HANDOFF_ROUTES.items():
+        assert cls in jc.FAILURE_ROUTES, cls
+        assert route["owner"] == jc.FAILURE_ROUTES[cls]["owner"], cls
+        assert route["axes"] == jc.FAILURE_ROUTES[cls]["axes"], cls
+    assert cs.HANDOFF_SCHEMA_VERSION == jc.CONVERSION_HANDOFF_SCHEMA
+    assert cs.CONVERSION_HANDOFF.name == jc.CONVERSION_HANDOFF.name
