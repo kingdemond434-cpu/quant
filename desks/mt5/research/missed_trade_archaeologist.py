@@ -50,7 +50,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 DATA = DESK / "data"
 REPORTS = DESK / "reports"
 DECISIONS = DATA / "decision_ledger.jsonl"
-LIVE = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(DATA / "live_ledger.jsonl")
 SHADOW_DIR = REPORTS / "shadow"
 UNIVERSE = DATA / "universe"
 STATE = DATA / "missed_trade_archaeology.json"

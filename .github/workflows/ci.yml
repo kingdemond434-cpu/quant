@@ -54,6 +54,7 @@ jobs:
           cache: pip
 
       - name: Install (pinned dev extras)
+        id: dev_install
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
@@ -89,6 +90,10 @@ jobs:
       # never once invoked. First measurement, 2026-08-04: 88.1% repo-wide, and the money path at
       # 41.6%, which is backwards from where the care belongs.
       - name: Tests (pytest + branch coverage)
+        id: root_tests
+        # Collect independent software diagnostics even when a law is red.
+        # The failed law step still fails quality and all release dependents.
+        if: ${{ !cancelled() && steps.dev_install.outcome == 'success' }}
         run: pytest -n auto --dist loadfile --cov=libs --cov-branch --cov-report=term:skip-covered --cov-report=json:coverage.json --junitxml=quality-junit.xml
 
       # Two floors, not one: a repo-wide average lets ORDER-PATH coverage fall while a wave of
@@ -97,6 +102,7 @@ jobs:
       # Shared libs are also exercised by the desk suite. Preserve raw branch data so the
       # unchanged floor measures BOTH completed suites, not only root testpaths=[tests].
       - name: Preserve root coverage
+        if: ${{ !cancelled() && steps.root_tests.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: root-coverage-${{ github.sha }}

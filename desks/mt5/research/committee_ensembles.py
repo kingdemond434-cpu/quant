@@ -84,7 +84,8 @@ HEALTH = BASE / "reports" / "COMMITTEE_HEALTH.json"
 BANK = BASE / "data" / "hypotheses" / "external_survivors.json"
 NAMING_QUEUE = BASE / "data" / "hypotheses" / "mechanism_naming_queue.json"
 MQL5 = BASE / "data" / "intelligence" / "mql5_survivors"
-LIVE_LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 MARKOUT = BASE / "reports" / "markout.json"
 EXEC_QUALITY = BASE / "reports" / "execution_quality.json"
 FILL_SURFACE = BASE / "reports" / "FILL_SURFACE.json"

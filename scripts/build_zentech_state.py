@@ -67,7 +67,9 @@ def _timestamp(value: Any) -> datetime | None:
 
 
 def _ledger() -> list[dict[str, Any]]:
-    path = DESK / "data" / "live_ledger.jsonl"
+    from libs.ops.live_ledger_view import ledger_path
+
+    path = ledger_path(DESK / "data" / "live_ledger.jsonl")
     try:
         return [json.loads(line) for line in path.read_text("utf-8").splitlines()
                 if line.strip()]
