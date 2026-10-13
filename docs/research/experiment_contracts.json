@@ -190,6 +190,21 @@
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
    }
+  },
+  "position_overlay": {
+   "hypothesis": "Managing an open trade (time stop, breakeven after +xR, ATR trail, partial scale-out, regime/cross-asset exit, adverse-spread exit) raises a certified sleeve's R per trade over its baseline exits, walk-forward and net of fill-hour costs, under the Tier S DSR bar.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_trades",
+    "better": "up",
+    "organ": "report:POSITION_MANAGER.json"
+   },
+   "falsifier": {
+    "metric": "n_trades",
+    "op": "==",
+    "threshold": 0,
+    "after": "7 days: no certified sleeve ledger reached the overlay replay, so it judges nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
