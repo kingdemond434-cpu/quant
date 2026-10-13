@@ -103,7 +103,10 @@ _SIZING_MODULES: tuple[str, ...] = (
 #: that stand are real risk numbers argued in prose with no measurement behind them --
 #: gateway.MIN_STOP_SPREAD_MULT (3.0) and decision_core.ENTRY_DRIFT_TOL_FRAC (0.25) -- and
 #: their derivation is owed by whoever measures them, never written here from guesswork.
-MAX_UNJUSTIFIED = 2
+#:
+#: 0 since both carry measured live evidence (2026-09-16 stop floor ebd9074cb, entry drift
+#: 072f030e2) and stop_geometry_derivation re-solves them hourly on kelly_survival: ratcheted.
+MAX_UNJUSTIFIED = 0
 
 #: Words that mark a real derivation. A comment must contain at least one AND a digit, so
 #: "measured" alone does not pass -- the number itself has to appear in the justification.
