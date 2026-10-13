@@ -1654,12 +1654,15 @@ def _strip_box_paths(text: str) -> str:
     return _BOX_ROOTS.sub("", text)
 
 
-def _count(raw: Any) -> int:
-    """A count from the box's report; a malformed one reads 0 rather than killing the leg."""
-    try:
-        return max(0, int(raw or 0))
-    except (TypeError, ValueError):
+def _count(raw: Any) -> int | None:
+    """A count from the box's report, or None when it is malformed -- never a clean 0: a count
+    nobody can read is UNMEASURED, and the caller says so out loud."""
+    if raw is None:
         return 0
+    try:
+        return max(0, int(raw))
+    except (TypeError, ValueError):
+        return None
 
 
 def prewarm_failures(doc: Any) -> dict[str, Any]:
@@ -1673,17 +1676,19 @@ def prewarm_failures(doc: Any) -> dict[str, Any]:
     pw = doc.get("prewarm") if isinstance(doc, dict) else None
     if not isinstance(pw, dict):
         return {"status": "UNMEASURED", "why": "the last sweep's report carries no pre-warm block"}
-    reasons = pw.get("failure_reasons") if isinstance(pw.get("failure_reasons"), dict) else {}
+    _r, _f = pw.get("failure_reasons"), pw.get("failures")
+    reasons: dict[Any, Any] = _r if isinstance(_r, dict) else {}
     merged: dict[str, int] = {}
     for r, n in reasons.items():
         key = _strip_box_paths(str(r))
-        merged[key] = merged.get(key, 0) + _count(n)
+        merged[key] = merged.get(key, 0) + (_count(n) or 0)
     top = sorted(merged.items(), key=lambda kv: -kv[1])
-    fails = pw.get("failures") if isinstance(pw.get("failures"), dict) else {}
+    fails: dict[Any, Any] = _f if isinstance(_f, dict) else {}
     return {"status": "MEASURED", "submitted": pw.get("submitted"), "warmed": pw.get("warmed"),
             "hit": pw.get("hit"), "failed": pw.get("failed"), "unreached": pw.get("unreached"),
             "workers": pw.get("workers"), "seconds": pw.get("seconds"),
             "failures": {str(k): _count(v) for k, v in sorted(fails.items())},
+            "malformed_counts": sorted(str(k) for k, v in fails.items() if _count(v) is None),
             "top_reasons": [{"why": r[:300], "n": n} for r, n in top[:12]],
             "distinct_reasons": len(top)}
 
@@ -1736,9 +1741,9 @@ def judging_failures(path: Path | None = None,
             # a MODIFIER row whose reason the POOL itself recorded (the pool keys its reasons by
             # the first 300 chars) is traceable to it -- a preflight refusal never reached the
             # pool -- and no more of them than the pool recorded for that reason.
-            pool_reasons = pw.get("failure_reasons") if isinstance(
-                pw.get("failure_reasons"), dict) else {}
-            mod_left = {str(r): _count(n) for r, n in pool_reasons.items()
+            _pr = pw.get("failure_reasons") if isinstance(pw, dict) else None
+            pool_reasons: dict[Any, Any] = _pr if isinstance(_pr, dict) else {}
+            mod_left = {str(r): _count(n) or 0 for r, n in pool_reasons.items()
                         if str(r).startswith("NOT_RUN_MODIFIER")}
             spare_mod = 0
             for v in verdicts:
@@ -1747,6 +1752,14 @@ def judging_failures(path: Path | None = None,
                     if mod_left.get(key, 0) > 0:
                         mod_left[key] -= 1
                         spare_mod += 1
+            # Cells the main loop deferred carry the pool's kind once the sealed patch lands
+            # (`prewarm_status`); only those can be pool cells of a non-NOT_RUN kind.
+            deferred_by_kind: dict[str, int] = {}
+            for v in verdicts:
+                if isinstance(v, dict) and v.get("prewarm_status") and str(
+                        v.get("downstream_status") or "") == "NOT_RUN_BUILD_BUDGET_DEFERRED":
+                    _pk = str(v.get("prewarm_status"))
+                    deferred_by_kind[_pk] = deferred_by_kind.get(_pk, 0) + 1
             excess = 0
             for k, n in fails.items():
                 # A NOT_RUN_* kind the verdict rows already carry is booked once. But a cell the
@@ -1755,23 +1768,35 @@ def judging_failures(path: Path | None = None,
                 # measured 2026-10-13, 55.6% of pre-warm builds failed while the rows named 0
                 # NOT_RUN data/build cells. The excess over the rows is booked here, or it
                 # vanishes from every count while it fails again at the head of every sweep.
-                n_i = _count(n)
+                c = _count(n)
+                if c is None:                    # unreadable: named as unrouted, never a 0
+                    unrouted[f"MALFORMED_COUNT:{k}"] = unrouted.get(f"MALFORMED_COUNT:{k}", 0) + 1
+                    continue
+                n_i = c
                 if str(k).startswith(NOT_JUDGED_PREFIX):
                     seen = in_rows.get(str(k), 0)
                     if str(k) == "NOT_RUN_BUILD_FAILED":
                         seen += spare_mod
                     n_i = max(0, n_i - seen)
+                    excess += n_i               # a NOT_RUN pool cell the rows never named
+                else:
+                    # FAIL_3X / ERROR / SAVE_FAILED may have been rebuilt and judged by the loop,
+                    # so only a deferred row that names this kind leaves budget_deferred.
+                    excess += min(n_i, deferred_by_kind.get(str(k), 0))
                 if n_i:
                     _book(str(k), sweep, n_i)
-                    excess += n_i
             # ONE CELL, ONE CLASS: a cell booked above from the pool reached the rows as
             # BUDGET_DEFERRED (the pool had spent the budget), so it leaves that class here and
             # last_sweep stays additive -- each cell counted once, under the door that failed it.
             deferred = failure_class("NOT_RUN_BUILD_BUDGET_DEFERRED")
-            if deferred and excess and deferred in sweep:
-                sweep[deferred] -= min(excess, sweep[deferred])
+            have = sweep.get(deferred, 0) if deferred else 0
+            if deferred and excess and have:
+                sweep[deferred] = have - min(excess, have)
                 if not sweep[deferred]:
                     del sweep[deferred]
+            if excess > have:
+                # More pool cells than deferred rows: recorded, never silently dropped.
+                out["deferred_excess_unmatched"] = excess - have
         out["last_sweep"] = dict(sorted(sweep.items()))
         out["prewarm"] = prewarm_failures(doc)
         out["last_sweep_status"] = "MEASURED"
