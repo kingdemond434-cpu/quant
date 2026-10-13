@@ -849,6 +849,11 @@ def _live_frame(sym: str, timeframe: str = "H1"):
 def modifier_preflight(spec: dict) -> str | None:
     """Name a deterministic modifier refusal without loading bars or runtime inputs."""
     family = str(spec.get("family") or "")
+    from mt5desk.legacy_family_inputs import input_preflight
+
+    required_inputs = input_preflight(family, spec.get("params"))
+    if required_inputs:
+        return required_inputs
     fn = getattr(families, f"family_{family}", None)
     if fn is None:
         try:
@@ -857,7 +862,8 @@ def modifier_preflight(spec: dict) -> str | None:
         except ImportError:
             fn = None
     if fn is None:
-        return None
+        return (f"BLOCKED_EXECUTOR: no implementation of family {family!r} in families "
+                "or families_orthogonal")
     params = dict(spec.get("params") or {})
     try:
         from mt5desk.family_inputs import strip_identity_keys
@@ -2008,6 +2014,7 @@ def _warm_one(spec: dict, meta: dict) -> dict:
         obj = build_cell(sym, family, params, meta)
         if not obj:
             out["status"] = "NOT_RUN_BUILD_FAILED"
+            out["why"] = LAST_BUILD_FAILURE or "UNMEASURED: build_cell returned no cell"
             return out
         ds1 = _series_trim_partial(daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
         try:
@@ -2052,7 +2059,8 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     # every hour and never reach the tail") and guards the pool's ORDER, which was never the
     # problem: the pool built in the right order and nothing recorded that it had.
     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
-               "unreached": 0, "seconds": 0.0, "failures": {}, "built_symbols": set()}
+               "unreached": 0, "seconds": 0.0, "failures": {}, "failure_reasons": {},
+               "built_symbols": set()}
     t0 = time.time()
     it = iter(specs)
     pending: dict = {}
@@ -2104,6 +2112,9 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                 else:
                     summary["failed"] += 1
                     summary["failures"][st] = summary["failures"].get(st, 0) + 1
+                    reason = str(r.get("why") or f"UNMEASURED: {st}")[:300]
+                    reasons = summary["failure_reasons"]
+                    reasons[reason] = reasons.get(reason, 0) + 1
                 if time.time() <= deadline:
                     _submit_next()
     summary["unreached"] += sum(1 for _ in it)
@@ -2112,6 +2123,8 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
           f"{summary['seconds']:.0f}s ({summary['hit']} already cached, {summary['failed']} "
           f"failed, {summary['unreached']} not reached before the build budget)"
           + (f"; failures by kind {summary['failures']}" if summary["failures"] else ""))
+    if summary["failure_reasons"]:
+        print(f"PRE-WARM failure reasons: {summary['failure_reasons']}", flush=True)
     return summary
 
 
@@ -3569,13 +3582,16 @@ def main():
         _why = modifier_preflight(_spec)
         if _why:
             _modifier_blocked.append({**_spec,
-                                      "downstream_status": "NOT_RUN_MODIFIER",
-                                      "why": f"NOT_RUN_MODIFIER: {_why}"})
+                                      "downstream_status": ("NOT_RUN_BUILD_FAILED"
+                                          if _why.startswith("BLOCKED_") else "NOT_RUN_MODIFIER"),
+                                      "why": (f"NOT_RUN_BUILD_FAILED: {_why}"
+                                          if _why.startswith("BLOCKED_")
+                                          else f"NOT_RUN_MODIFIER: {_why}")})
         else:
             _modifier_ready.append(_spec)
     eligible_specs = _modifier_ready
     if _modifier_blocked:
-        print(f"Modifier preflight: {len(_modifier_blocked)} impossible variant(s) conserved "
+        print(f"Build preflight: {len(_modifier_blocked)} incomplete input/variant(s) conserved "
               f"without spending build/gate compute; {len(eligible_specs)} executable cell(s) "
               "remain")
 
