@@ -11,6 +11,7 @@ import contextlib
 import json
 import os
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
@@ -270,6 +271,10 @@ RESIDENT_LIMIT_MARGIN_S = 300.0
 RESIDENT_MIN_SWEEP_S = 600.0
 #: Exit code a sweep returns when another certifier owns the lane (`run_sharded`).
 LANE_HELD_RC = 75
+#: The heartbeat is re-stamped this often while a sweep runs, so a resident killed mid-sweep
+#: reads as an old heartbeat (check_judge_coverage marks it DEAD past 5 minutes), never as a
+#: SWEEPING that lasts forever.
+RESIDENT_HEARTBEAT_S = 30.0
 
 
 def _resident_enabled(argv: list[str]) -> bool:
@@ -308,9 +313,11 @@ def _fits(elapsed: float, limit: float | None, last_sweep_s: float | None) -> bo
 
 
 def _write_state(doc: dict[str, Any]) -> None:
+    doc = {**doc, "heartbeat_utc": datetime.now(UTC).isoformat(timespec="seconds")}
     try:
         RESIDENT_STATE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = RESIDENT_STATE.with_name(f"{RESIDENT_STATE.name}.{os.getpid()}.tmp")
+        tmp = RESIDENT_STATE.with_name(
+            f"{RESIDENT_STATE.name}.{os.getpid()}.{threading.get_ident()}.tmp")
         tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
         os.replace(tmp, RESIDENT_STATE)
     except OSError:
@@ -367,15 +374,43 @@ def _one_sweep_child() -> int:
     return int(done.returncode)
 
 
+def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> None:
+    """Re-stamp the heartbeat while the main thread waits on a sweep."""
+    while not stop.wait(every_s):
+        with contextlib.suppress(RuntimeError):   # the dict changed while it was copied
+            _write_state(dict(state))
+
+
 def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
-             limit_s: float | None = None, max_sweeps: int | None = None) -> int:
+             limit_s: float | None = None, max_sweeps: int | None = None,
+             heartbeat_s: float = RESIDENT_HEARTBEAT_S) -> int:
     """Run sweeps back to back until stopped; return the last sweep's exit code."""
     sweep = sweep or _one_sweep_child
-    started, failures, n, last_rc = clock(), 0, 0, 0
-    last_sweep_s: float | None = None
+    started, last_rc = clock(), 0
     state: dict[str, Any] = {"pid": os.getpid(), "started_utc": datetime.now(UTC).isoformat(
         timespec="seconds"), "task_limit_s": limit_s, "sweeps": 0, "failures": 0,
         "lane_held": 0, "busy_seconds": 0.0, "status": "RUNNING"}
+    stop = threading.Event()
+    beat = threading.Thread(target=_heartbeat, args=(state, stop, heartbeat_s), daemon=True)
+    beat.start()
+    try:
+        last_rc = _resident_loop(state, sweep, sleep, clock, started, limit_s, max_sweeps)
+    finally:
+        stop.set()
+        beat.join(timeout=5)
+        if state.get("status") in ("RUNNING", "SWEEPING", "BACKOFF"):
+            # Anything that ends the loop without naming why (an exception, an interrupt) still
+            # leaves an EXITED record rather than a SWEEPING one.
+            state["status"], state["why"] = "EXITED", "the resident loop ended unexpectedly"
+        state["uptime_s"] = round(clock() - started, 1)
+        _write_state(state)
+    return last_rc
+
+
+def _resident_loop(state: dict[str, Any], sweep, sleep, clock, started: float,
+                   limit_s: float | None, max_sweeps: int | None) -> int:
+    failures, n, last_rc = 0, 0, 0
+    last_sweep_s: float | None = None
     while True:
         if RESIDENT_STOP.exists():
             state["status"], state["why"] = "STOPPED", f"{RESIDENT_STOP.name} present"
@@ -417,8 +452,6 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
         state.update(status="BACKOFF", backoff_s=pause)
         _write_state(state)
         sleep(pause)
-    state["uptime_s"] = round(clock() - started, 1)
-    _write_state(state)
     return last_rc
 
 

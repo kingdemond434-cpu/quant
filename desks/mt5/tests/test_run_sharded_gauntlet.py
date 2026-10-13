@@ -288,3 +288,32 @@ def test_each_sweep_takes_the_latest_measured_env(monkeypatch) -> None:
     assert env["GAUNTLET_WORKERS"] == "15"
     assert env["GAUNTLET_SHARDS"] == "4"
     assert env["GAUNTLET_PER_WORKER_MB"] == "768"
+
+
+def test_the_heartbeat_moves_while_a_sweep_runs(tmp_path) -> None:
+    import json
+    import time as _t
+
+    seen: list[str] = []
+
+    def slow_sweep() -> int:
+        _t.sleep(0.35)
+        seen.append(json.loads(runner.RESIDENT_STATE.read_text("utf-8"))["heartbeat_utc"])
+        return 0
+
+    runner.resident(sweep=slow_sweep, sleep=lambda s: None, max_sweeps=1, heartbeat_s=0.1)
+    doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert seen and doc["heartbeat_utc"] >= seen[0]
+    assert doc["status"] == "DONE"
+
+
+def test_an_unexpected_end_is_recorded_as_exited(tmp_path) -> None:
+    import json
+
+    def interrupted() -> int:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        runner.resident(sweep=interrupted, sleep=lambda s: None, heartbeat_s=60)
+    doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert doc["status"] == "EXITED" and doc["heartbeat_utc"]
