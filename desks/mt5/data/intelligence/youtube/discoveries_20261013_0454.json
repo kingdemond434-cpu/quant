@@ -1,0 +1,54 @@
+[
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 BTC Live trading 389 / 13.10.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
+    "channel": "UpDown FX",
+    "url": "https://youtube.com/watch?v=N52n8iPuUrM",
+    "published": "2026-10-13T02:36:57Z",
+    "symbols": [
+      "GBPJPY"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 XAU/USD Live trading 708 / 13.10.2026 #xauusd #fomc  #updownfx #nfp #forex #gold #cpi",
+    "channel": "UpDown FX",
+    "url": "https://youtube.com/watch?v=t3Wz8461xOM",
+    "published": "2026-10-13T02:26:54Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD Ultimate Guide 2026: Price Drivers, News Impact &amp; High Accuracy Strategy",
+    "channel": "GROW MORE TRADING INSTITUTE",
+    "url": "https://youtube.com/watch?v=mFYCVDPpcNI",
+    "published": "2026-10-12T21:31:39Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Which News Moves Gold the Most? NFP, CPI and the Fed | XAUUSD",
+    "channel": "ElevateWithin",
+    "url": "https://youtube.com/watch?v=lqsddz_I97M",
+    "published": "2026-10-11T14:41:00Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  }
+]
