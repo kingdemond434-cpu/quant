@@ -100,6 +100,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
         sys.path.insert(0, p)
 
 from libs.data import polite_fetch as pf  # noqa: E402
+from libs.data import terms_fence as _tf  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 
 SOURCE = "deep_forest"
@@ -294,40 +295,19 @@ def accept_language(lang: str) -> str:
 #:                  or region lock -- the reason is named and a permitted route is offered.
 #: An anti-bot / CAPTCHA page met on any source is recorded ANTI_BOT and never routed around.
 #: Provenance and the terms note never block a claim or a cell (rule 4): they are labels.
-#: (Duplicated minimally from the table `libs/data/terms_fence.py` owns on #162's branch; the two
-#: are kept consistent by hand until that module lands on LIVE.)
-API_PERMITTED, PUBLIC_PAGE, IDEAS_ONLY, METHOD_BLOCKED, NEEDS_KEY = (
-    "API_PERMITTED", "PUBLIC_PAGE", "IDEAS_ONLY", "METHOD_BLOCKED", "NEEDS_KEY")
-SOURCE_POLICY: dict[str, dict[str, Any]] = {
-    "x_api": {"hosts": ("api.x.com", "api.twitter.com"), "status": API_PERMITTED,
-              "key_env": ("X_BEARER_TOKEN",),
-              "why": "X's official API: the permitted route to X posts (free/paid tier limits)"},
-    "x_web": {"hosts": ("x.com", "twitter.com", "t.co"), "status": IDEAS_ONLY,
-              "why": "public X posts may be read for ideas; never live input data"},
-    "nitter": {"hosts": ("xcancel.com",), "label_prefix": "nitter", "routes": ("nitter",),
-               "status": METHOD_BLOCKED, "reason": "login", "permitted_route": "x_api",
-               "why": ("a third-party front-end that exists to get around X's login wall; "
-                       "the permitted route is X's official API")},
-    "reddit_api": {"hosts": ("oauth.reddit.com",), "status": API_PERMITTED,
-                   "key_env": ("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"),
-                   "why": "Reddit's official Data API within its free-tier limits"},
-    "reddit": {"hosts": ("reddit.com", "redd.it"), "routes": ("reddit",), "status": IDEAS_ONLY,
-               "why": "public subreddit pages and feeds read politely for ideas"},
-    "telegram": {"hosts": ("t.me", "telegram.me"), "routes": ("telegram",),
-                 "status": IDEAS_ONLY,
-                 "why": "public channel previews (t.me/s/...) need no account; read for ideas"},
-    "stocktwits": {"hosts": ("stocktwits.com",), "status": IDEAS_ONLY,
-                   "why": "public stream pages read for ideas"},
-    "discord": {"hosts": ("discord.com", "discord.gg", "discordapp.com"),
-                "status": METHOD_BLOCKED, "reason": "login",
-                "why": "server messages are only readable behind an account login"},
-    "yahoo": {"hosts": ("yahoo.com", "yahoo.co.jp"), "status": IDEAS_ONLY,
-              "why": "public finance boards/pages read for ideas; prices come from MT5"},
-    "mql5": {"hosts": ("mql5.com",), "status": IDEAS_ONLY,
-             "why": "public articles and codebase pages read for mechanism ideas"},
-}
+#:
+#: ONE TABLE. The rows, their quoted terms and the wrapper / spelling resolution live in
+#: `libs/data/terms_fence.py` (`SOURCE_POLICY`) and nowhere else; this miner reads them through
+#: the views below, which keep the shape its callers and its status rows already use.
+API_PERMITTED = _tf.API_PERMITTED
+PUBLIC_PAGE = _tf.PUBLIC_PAGE
+IDEAS_ONLY = _tf.IDEAS_ONLY
+METHOD_BLOCKED = _tf.METHOD_BLOCKED
+NEEDS_KEY = _tf.NEEDS_KEY
+#: The table itself (read-only here): `libs.data.terms_fence.SOURCE_POLICY`.
+SOURCE_POLICY = _tf.SOURCE_POLICY
 #: The two statuses that HOLD a ground (it is not fetched this pass, and says which one).
-HOLDING: frozenset[str] = frozenset({METHOD_BLOCKED, NEEDS_KEY})
+HOLDING: frozenset[str] = _tf.HOLDING
 
 
 def _host_of(u: Any) -> str:
@@ -336,36 +316,32 @@ def _host_of(u: Any) -> str:
         return ""
     if "://" not in s_:
         s_ = "https://" + s_
-    return (urlparse(s_).hostname or "").strip(".")
+    try:
+        return (urlparse(s_).hostname or "").strip(".")
+    except ValueError:
+        return ""
 
 
 def _resolve(key: str) -> dict[str, Any]:
-    """A policy row with its EFFECTIVE status: API_PERMITTED becomes NEEDS_KEY when a key is
-    absent (the key is checked for presence only, never read or printed)."""
+    """A policy row with its EFFECTIVE status (`terms_fence.status`: API_PERMITTED becomes
+    NEEDS_KEY when a key is absent; presence only, never read or printed)."""
     row = SOURCE_POLICY[key]
-    status = str(row["status"])
-    if status == API_PERMITTED and not all(os.environ.get(k) for k in row.get("key_env") or ()):
-        status = NEEDS_KEY
-    out = {"source": key, "status": status, "why": row["why"]}
+    out: dict[str, Any] = {"source": key, "status": _tf.status(key), "why": row["why"]}
     if row.get("reason"):
         out["reason"] = row["reason"]
     if row.get("permitted_route"):
         out["permitted_route"] = row["permitted_route"]
-        out["permitted_route_status"] = _resolve(str(row["permitted_route"]))["status"]
+        out["permitted_route_status"] = _tf.status(str(row["permitted_route"]))
     return out
 
 
 def policy_of_url(url: Any) -> dict[str, Any]:
-    """The effective policy row for a URL (or bare host); PUBLIC_PAGE when unlisted."""
-    host = _host_of(url)
-    if host:
-        for key, spec in SOURCE_POLICY.items():
-            if any(host == h or host.endswith("." + h) for h in spec["hosts"]):
-                return _resolve(key)
-            pre = spec.get("label_prefix")
-            if pre and any(lab.startswith(pre) for lab in host.split(".")):
-                return _resolve(key)
-    return {"source": host or "", "status": PUBLIC_PAGE, "why": "unlisted host: public page"}
+    """The effective policy row for a URL (or bare host); PUBLIC_PAGE when unlisted. A wrapper
+    (archive, cache, reader, translate proxy) reads as what it wraps (`terms_fence`)."""
+    key = _tf.source_of_url(str(url or ""))
+    if key:
+        return _resolve(key)
+    return {"source": _host_of(url), "status": PUBLIC_PAGE, "why": "unlisted host: public page"}
 
 
 def ground_policy(g: dict[str, Any]) -> dict[str, Any]:
@@ -373,7 +349,7 @@ def ground_policy(g: dict[str, Any]) -> dict[str, Any]:
     its url, alt, site, feeds and mirrors (a HOLD outranks IDEAS_ONLY outranks PUBLIC_PAGE)."""
     route = str(g.get("route") or "")
     for key, spec in SOURCE_POLICY.items():
-        if route in (spec.get("routes") or ()):
+        if route and route in (spec.get("routes") or ()):
             return _resolve(key)
     rank = {METHOD_BLOCKED: 0, NEEDS_KEY: 1, IDEAS_ONLY: 2, API_PERMITTED: 3, PUBLIC_PAGE: 4}
     best: dict[str, Any] | None = None
@@ -584,6 +560,13 @@ _ANTI_BOT_PAGE = re.compile(r"(?i)cf-chl|just a moment\.\.\.|attention required!
 #: The last polite_fetch Response on this thread, so `_Run.page` can land the BYTES of a page
 #: whose form it drops (`_http` returns text, and stays the seam tests replace).
 _LAST = threading.local()
+
+
+def fenced_ground(g: dict[str, Any]) -> str | None:
+    """The HELD source key a ground belongs to (METHOD_BLOCKED, or NEEDS_KEY until its key
+    exists; `held_ground` over libs/data/terms_fence.py), or None. Kept for its callers."""
+    p = held_ground(g)
+    return str(p["source"]) if p else None
 
 
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
@@ -1006,20 +989,42 @@ def _fair_order(grounds: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+#: THE DAILY FLOOR (2026-09-30): a ground not attempted inside this many hours is scheduled ahead
+#: of every ground that was, whatever its cooldown says. The 45-day covered cooldown and the
+#: 10-day blocked retry decide the order of FRONTIER work; they may never let a registered ground
+#: go a day unattempted while the pass still has budget (`research/forest_attempts.py`).
+DAILY_FLOOR_H = 24.0
+N_BUCKETS = 6
+
+
 def _frontier_bucket(g: dict[str, Any], frontier_state: Any | None,
-                     now: datetime) -> int:
-    vector = getattr(frontier_state, "vectors", {}).get(str(g.get("name") or "")) \
+                     now: datetime, retired: set[str] | frozenset[str] = frozenset()) -> int:
+    """0 NAMED_ONLY, 1 retry-due BLOCKED, 2 cooldown-due covered, 3 not attempted in 24h (the
+    daily floor), 4 attempted in 24h, 5 LOW_EV_RETIRED and not reopen-due (still scheduled --
+    last, never dropped)."""
+    name = str(g.get("name") or "")
+    vector = getattr(frontier_state, "vectors", {}).get(name) \
         if frontier_state is not None else None
     if vector is None or str(getattr(vector, "outcome", "NAMED_ONLY")) == "NAMED_ONLY":
         return 0
-    if str(getattr(vector, "outcome", "")) == "BLOCKED":
-        return 1 if vector.huntable(now)[0] else 3
-    return 2 if vector.huntable(now)[0] else 3
+    if name in retired:
+        return 5
+    if str(getattr(vector, "outcome", "")) == "BLOCKED" and vector.huntable(now)[0]:
+        return 1
+    if str(getattr(vector, "outcome", "")) != "BLOCKED" and vector.huntable(now)[0]:
+        return 2
+    try:
+        last = datetime.fromisoformat(str(getattr(vector, "last_attempt", "") or ""))
+        last = last if last.tzinfo else last.replace(tzinfo=UTC)
+        recent = (now - last).total_seconds() < DAILY_FLOOR_H * 3600.0
+    except ValueError:
+        recent = False                    # an unreadable stamp is overdue, never exempt
+    return 4 if recent else 3
 
 
 def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] | None = None,
-             region: str | None = None, frontier_state: Any | None = None
-             ) -> list[dict[str, Any]]:
+             region: str | None = None, frontier_state: Any | None = None,
+             retired: set[str] | frozenset[str] = frozenset()) -> list[dict[str, Any]]:
     """The order a run works grounds in: round-robin across clusters (heaviest weight first
     inside each), rotated by the cursor the previous run left, so every forest gets its turn
     across runs and no region is worked only because it sorts first in a file."""
@@ -1041,10 +1046,10 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     # regional fairness and the ROI weights, but rotate each frontier bucket independently and
     # place uncovered/retry-due ground first.  A mapping row can therefore never masquerade as a
     # completed hunt or starve behind already-covered ground.
-    buckets: list[list[dict[str, Any]]] = [[], [], [], []]
+    buckets: list[list[dict[str, Any]]] = [[] for _ in range(N_BUCKETS)]
     now = datetime.now(tz=UTC)
     for g in picked:
-        buckets[_frontier_bucket(g, frontier_state, now)].append(g)
+        buckets[_frontier_bucket(g, frontier_state, now, retired)].append(g)
     # LEAST-RECENTLY-ATTEMPTED FIRST (2026-09-30). Inside a bucket the fair, cursor-rotated
     # order is then sorted -- stably -- by the vector's last attempt, oldest first. Never-tried
     # ground has no attempt and sorts first; ground tried an hour ago sorts behind ground tried a
@@ -1091,7 +1096,7 @@ class _Run:
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
                        "claims_seen_before": 0, "net_failures": 0, "dataset_pages": 0,
                        "dataset_endpoints": 0, "feeds": 0, "ccindex_queries": 0,
-                       "landed_raw": 0, "landed_raw_new": 0}
+                       "landed_raw": 0, "landed_raw_new": 0, "urls_new": 0}
         #: Shared by every fork of this run: the network verdict and its failure streak.
         self._shared: dict[str, Any] = {"network": None, "fails": 0}
         self._lock = threading.RLock()
@@ -1331,6 +1336,9 @@ class _Run:
             if url in self.seen_urls:
                 return
             self.seen_urls.add(url)
+        # THE DELTA SCAN: a fork works one ground, so this count is THAT ground's new URLs
+        # against the durable seen-set -- what the attempt found that no earlier pass had.
+        self.counts["urls_new"] = self.counts.get("urls_new", 0) + 1
         self.frontier.append((url, via, self.lang))
 
     # ---------------------------------------------------------------- routes per ground
@@ -1549,7 +1557,9 @@ class _Run:
 
     def ground_reddit(self, g: dict[str, Any]) -> dict[str, Any]:
         """Subreddits through their public feeds (the JSON API answers 403 to a datacenter;
-        the feeds do not -- measured by side_channels/reddit_miner)."""
+        the feeds do not -- measured by side_channels/reddit_miner). Reddit is IDEAS_ONLY in the
+        per-source policy (libs/data/terms_fence.py, ruling of 2026-10-13): posts are read for
+        mechanism ideas, and any cell built from one trades on the desk's own MT5 data."""
         feeds = []
         for sub in g.get("subs") or []:
             feeds.append(f"https://www.reddit.com/r/{sub}/top/.rss?t=month")
@@ -1768,6 +1778,7 @@ class _Run:
         seen_before = self.counts["claims_seen_before"]
         errs_before = len(self.fetch_errors)
         landed_before = self.counts.get("landed_raw", 0)
+        urls_before = self.counts.get("urls_new", 0)
         t0 = time.monotonic()
         self.g_end = min(self.started + self.budget_s, t0 + (share_s or self.budget_s))
         try:
@@ -1848,7 +1859,12 @@ class _Run:
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
                             "datasets": len(mine), "endpoints": endpoints,
                             # raw pages landed for the parser: counted, never a yield
-                            "landed_raw": self.counts.get("landed_raw", 0) - landed_before})
+                            "landed_raw": self.counts.get("landed_raw", 0) - landed_before,
+                            # the per-ground DELTA against the durable seen-sets
+                            "delta": {"urls_new": self.counts.get("urls_new", 0) - urls_before,
+                                      "claims_new": n_claims,
+                                      "claims_seen_before": (self.counts["claims_seen_before"]
+                                                             - seen_before)}})
 
 
 #: Ground kinds whose papers count as yield on their own (rule `papers`).
@@ -1922,6 +1938,9 @@ _FRONTIER_OUTCOME: dict[str, str] = {
     "NO_NETWORK": "BLOCKED", "UNREACHABLE": "BLOCKED", "NO_ADDRESS": "BLOCKED",
     # METHOD_BLOCKED / NEEDS_KEY: HELD, apart from BLOCKED and from yield.
     "HELD": "HELD",
+    # Pre-ruling spellings of a hold, so an older status row still reads.
+    "METHOD_BLOCKED": "HELD", "NEEDS_KEY": "HELD",
+    "BLOCKED_WITH_SUBSTITUTE": "BLOCKED", "BLOCKED_TERMS": "BLOCKED",
 }
 
 
@@ -2132,8 +2151,16 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         frontier_state = _hf.load(_frontier_path())
     except Exception:  # a damaged accounting file may never stop the miner
         frontier_state = None
+    # LOW_EV_RETIRED is derived from the counters every pass (`research/forest_attempts.py`):
+    # retired grounds are scheduled LAST, never dropped, and reopen on a named condition.
+    try:
+        from research import forest_attempts as _fa
+        retired = _fa.retired_names(grounds, frontier=_frontier_path(),
+                                    stats=_vector_stats_path())
+    except Exception:  # a damaged accounting file may never stop the miner
+        retired = set()
     order = schedule(grounds, cursor, only=r.only, region=region,
-                     frontier_state=frontier_state)
+                     frontier_state=frontier_state, retired=retired)
     # THE PROPOSER SEAT, OPTIONAL: which registered GROUND is worth this pass's seconds first.
     # An ORDER over the grounds the registry already holds -- the seat may reorder the crawl and
     # may never widen it, so a name it invents is discarded and no unregistered ground can be
@@ -2157,7 +2184,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             now = datetime.now(tz=UTC)
             # frontier bucket first, then least-recently-attempted, the seat's rank breaking ties
             order = sorted(seat_order,
-                           key=lambda g: (_frontier_bucket(g, frontier_state, now),
+                           key=lambda g: (_frontier_bucket(g, frontier_state, now, retired),
                                           _last_attempt(g, frontier_state)))
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
@@ -2324,8 +2351,10 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "languages": sorted({str(g.get("language")) for g in grounds if g.get("language")}),
            "frontier": frontier,
            "scheduler": {"policy": ("NAMED_ONLY -> retry-due BLOCKED -> cooldown-due covered "
-                                    "-> picked-over; inside each bucket least-recently-"
+                                    "-> not attempted in 24h (daily floor) -> attempted in 24h "
+                                    "-> LOW_EV_RETIRED; inside each bucket least-recently-"
                                     "attempted first over a regional round-robin"),
+                         "retired_scheduled_last": len(retired),
                          "frontier_state_loaded": frontier_state is not None,
                          "workers": n_workers, "requested_budget_s": requested_s,
                          "cycle_cap_s": cap,
@@ -2460,6 +2489,25 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
                 text = str(err or s.get("status"))
                 e["last_error"] = (f"{cause}: {text}" if cause and not text.startswith(cause)
                                    else text)[:200]
+            # THE STANDING failure reason: this attempt's, or none when the route answered.
+            # `last_error` stays sticky -- it is history; this is the current state.
+            e["failure_reason"] = (str(err or s.get("status"))[:200]
+                                   if err or s.get("status") not in ("PRODUCTIVE",
+                                                                    "REACHED_NO_CLAIMS")
+                                   else "")
+            # THE DURABLE DELTA CURSOR. The seen-sets (deep_forest_seen.json) are the scan's
+            # memory; this is its per-ground reading: what the last attempt added, when the
+            # ground last showed anything new, and how many attempts running it showed nothing.
+            delta = s.get("delta") if isinstance(s.get("delta"), dict) else None
+            if delta is not None:
+                e["last_delta"] = delta
+                fresh = int(delta.get("urls_new") or 0) + int(delta.get("claims_new") or 0) \
+                    + dsets
+                if fresh:
+                    e["last_new_content_at"] = now
+                    e["empty_delta_streak"] = 0
+                else:
+                    e["empty_delta_streak"] = int(e.get("empty_delta_streak") or 0) + 1
         _atomic_text(p, json.dumps({"updated": now, "vectors": vec,
                                     "note": "per-vector cumulative counts since counted_since; "
                                             "written by deep_forest_miner at each ground's "

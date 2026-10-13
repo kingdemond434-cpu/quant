@@ -172,6 +172,29 @@ def reset_stats(leg: str | None = None) -> None:
             _STATS.pop(leg, None)
 
 
+# --------------------------------------------------------------------------- the method fence
+# ONE FETCH DOOR, ONE TABLE (composition of #162 and #262). The per-source policy and the method
+# rules live in `libs.data.terms_fence` and nowhere else; this module re-exports the door under the
+# names its callers already use, so there is no second redirect handler and no second login-wall
+# pattern to drift. What stays off is the METHOD (principal ruling 2026-10-13: no source is
+# banned): a HELD source, or a redirect into a login / sign-in / CAPTCHA wall, is refused and named
+# -- never followed, never retried with other headers -- and every followed hop stays visible.
+from libs.data import terms_fence as _tf  # noqa: E402
+
+LOGIN_WALL = _tf.LOGIN_WALL
+login_wall = _tf.login_wall
+#: The refusal THE ONE FETCH DOOR raises: a `URLError`, deterministic, never retried.
+MethodRefused = _tf.TermsFenced
+
+
+def fenced_urlopen(req: Any, timeout: float | None = None,
+                   context: ssl.SSLContext | None = None) -> Any:
+    """THE ONE FETCH DOOR for the desk's urllib call sites: `terms_fence.guarded_urlopen`. A held
+    source, a first URL that is a login wall, or a redirect into either raises `MethodRefused`;
+    the redirect chain is kept on the response as `.redirects` [(code, from, to)]."""
+    return _tf.guarded_urlopen(req, timeout=timeout, context=context)
+
+
 # --------------------------------------------------------------------------- decoding
 _META_CHARSET = re.compile(rb"""<meta[^>]+charset\s*=\s*["']?\s*([A-Za-z0-9_\-]+)""", re.I)
 
@@ -233,6 +256,8 @@ class Response:
     attempts: int = 0
     #: The body as bytes (content-encoding undone, bounded): what a raw landing stores.
     body: bytes = b""
+    #: Every redirect hop the fetch followed, [(code, from, to)] -- redirects are VISIBLE.
+    redirects: list[tuple[int, str, str]] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -258,10 +283,20 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     `timeout` is per attempt; `deadline` (a `time.monotonic()` value) caps the whole call,
     retries and backoff included, so no fetch can outlive the budget of the leg that made it.
     """
+    resp = Response(url=url)
+    # THE METHOD FENCE (libs/data/terms_fence.py; ruling of 2026-10-13, no source is banned): a
+    # URL on a HELD source (METHOD_BLOCKED, or NEEDS_KEY until its key exists) is never requested.
+    # The Response carries the named refusal, so the caller records it instead of a silent miss.
+    _why = _tf.platform_of_url(url)
+    if _why:
+        resp.error = f"{_tf.PLATFORMS[_why]['status']}:{_why}: {_tf.PLATFORMS[_why]['reason']}"
+        _stat(leg, error=f"terms_fenced:{_why}")
+        return resp
     hdr = {**BROWSER_HEADERS, **(headers or {})}
     host = urlparse(url).netloc.lower()
-    open_ = opener or urllib.request.urlopen
-    resp = Response(url=url)
+    # THE REDIRECT GUARD: the default opener is THE ONE FETCH DOOR (a 30x into a held source or a
+    # login wall raises); a caller-supplied opener is the caller's own test.
+    open_ = opener or fenced_urlopen
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
         if deadline is not None and time.monotonic() >= deadline:
@@ -287,9 +322,17 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 resp.content_type = ctype
                 resp.body = inflate(raw, cenc)
                 resp.text = decode_body(resp.body, ctype)
+                resp.redirects = list(getattr(fh, "redirects", None) or [])
                 resp.error = ""
                 _stat(leg, ok=1, bytes=len(raw))
                 break
+        except MethodRefused as exc:
+            # A held source or a 30x into one or into a login wall: refused, never followed,
+            # and never retried -- the next attempt would be redirected to the same place.
+            resp.error = str(exc.reason)[:240]
+            _stat(leg, error=(exc.status if exc.platform == "login_wall"
+                              else f"terms_fenced:{exc.platform}"))
+            break
         except urllib.error.HTTPError as exc:
             resp.status = int(exc.code)
             resp.error = f"HTTP {exc.code}"
