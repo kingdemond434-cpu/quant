@@ -572,7 +572,9 @@ def test_judging_failures_counts_per_class_and_names_the_unrouted(tmp_path: Path
             "z": {"reason": "build_failed"}}
     f = jc.judging_failures(rep, bank=bank)
     assert f["last_sweep_status"] == "MEASURED"
-    assert f["last_sweep"] == {"budget_deferred": 1, "fail_3x": 4, "no_bars": 2}
+    # 2 data-missing cells in the rows; the pool failed 9, so the 7 the rows never named are
+    # booked too (a pool failure reaches the rows as BUDGET_DEFERRED, not as its own kind).
+    assert f["last_sweep"] == {"budget_deferred": 1, "fail_3x": 4, "no_bars": 9}
     assert f["unrouted"] == {"NOT_RUN_SOMETHING_NEW": 1} and f["verdict"] == "UNROUTED"
     assert f["parked"] == {"build_fail": 1, "no_bars": 1, "untestable_as_specified": 1}
     assert f["parked_to_converter"] == 3 and f["terminal_classes"] == []
@@ -600,3 +602,18 @@ def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
     # EMPTY IS WRITTEN: absence must never read as zero cells awaiting conversion.
     assert jc.write_conversion_handoff({}, at="t", path=out) == 0
     assert json.loads(out.read_text("utf-8"))["rows"] == []
+
+
+def test_prewarm_failures_publish_kinds_and_named_reasons(tmp_path: Path) -> None:
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": [], "prewarm": {
+        "submitted": 10, "warmed": 3, "hit": 1, "failed": 6, "unreached": 0,
+        "failures": {"SAVE_FAILED": 4, "NOT_RUN_BUILD_FAILED": 2},
+        "failure_reasons": {"UNMEASURED: SAVE_FAILED": 4, "BLOCKED_x: no column": 2}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    pw = f["prewarm"]
+    assert pw["status"] == "MEASURED" and pw["submitted"] == 10
+    assert pw["failures"] == {"NOT_RUN_BUILD_FAILED": 2, "SAVE_FAILED": 4}
+    assert pw["top_reasons"][0] == {"why": "UNMEASURED: SAVE_FAILED", "n": 4}
+    assert f["last_sweep"]["build_fail"] == 2           # the pool's, never in the rows
+    assert jc.prewarm_failures({})["status"] == "UNMEASURED"

@@ -1644,6 +1644,28 @@ def failure_class(raw: Any) -> str | None:
     return FAILURE_CLASS.get(str(raw or ""))
 
 
+def prewarm_failures(doc: Any) -> dict[str, Any]:
+    """What the sealed judge's pre-warm pool failed on, by kind and by named reason.
+
+    The kinds say WHICH door failed (BUILD_FAILED, FAIL_3X, ERROR, SAVE_FAILED); the reasons are
+    the exception text (`No space left on device`, `BrokenProcessPool`, a construction defect),
+    which is the only thing that names a ROOT cause. Both live only in the box's gitignored
+    gates report, so without this block a pre-warm regression is a number nobody off the box
+    can explain (2026-10-13: 16.3% -> 55.6% with no kind or reason on origin)."""
+    pw = doc.get("prewarm") if isinstance(doc, dict) else None
+    if not isinstance(pw, dict):
+        return {"status": "UNMEASURED", "why": "the last sweep's report carries no pre-warm block"}
+    reasons = pw.get("failure_reasons") if isinstance(pw.get("failure_reasons"), dict) else {}
+    top = sorted(((str(r), int(n or 0)) for r, n in reasons.items()), key=lambda kv: -kv[1])
+    fails = pw.get("failures") if isinstance(pw.get("failures"), dict) else {}
+    return {"status": "MEASURED", "submitted": pw.get("submitted"), "warmed": pw.get("warmed"),
+            "hit": pw.get("hit"), "failed": pw.get("failed"), "unreached": pw.get("unreached"),
+            "workers": pw.get("workers"), "seconds": pw.get("seconds"),
+            "failures": {str(k): int(v or 0) for k, v in sorted(fails.items())},
+            "top_reasons": [{"why": r[:300], "n": n} for r, n in top[:12]],
+            "distinct_reasons": len(top)}
+
+
 def judging_failures(path: Path | None = None,
                      bank: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """Per-class counts of every way the judge failed to rule, last sweep and parked stock.
@@ -1678,11 +1700,25 @@ def judging_failures(path: Path | None = None,
         pw = doc.get("prewarm") if isinstance(doc, dict) else None
         fails = pw.get("failures") if isinstance(pw, dict) else None
         if isinstance(fails, dict):
+            in_rows: dict[str, int] = {}
+            for v in verdicts:
+                if isinstance(v, dict):
+                    st = str(v.get("downstream_status") or "")
+                    in_rows[st] = in_rows.get(st, 0) + 1
             for k, n in fails.items():
-                # NOT_RUN_* kinds are already booked once from the verdict rows.
-                if not str(k).startswith(NOT_JUDGED_PREFIX):
-                    _book(str(k), sweep, int(n or 0))
+                # A NOT_RUN_* kind the verdict rows already carry is booked once. But a cell the
+                # POOL failed is deferred by the main loop once the pool has spent the build
+                # budget, so it reaches the rows as BUDGET_DEFERRED, never as its own kind:
+                # measured 2026-10-13, 55.6% of pre-warm builds failed while the rows named 0
+                # NOT_RUN data/build cells. The excess over the rows is booked here, or it
+                # vanishes from every count while it fails again at the head of every sweep.
+                n_i = int(n or 0)
+                if str(k).startswith(NOT_JUDGED_PREFIX):
+                    n_i = max(0, n_i - in_rows.get(str(k), 0))
+                if n_i:
+                    _book(str(k), sweep, n_i)
         out["last_sweep"] = dict(sorted(sweep.items()))
+        out["prewarm"] = prewarm_failures(doc)
         out["last_sweep_status"] = "MEASURED"
     else:
         out["last_sweep"] = None

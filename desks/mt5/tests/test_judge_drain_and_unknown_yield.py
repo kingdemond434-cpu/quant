@@ -164,9 +164,17 @@ def test_fence_ratchets_prewarm_failures(tmp_path: Path) -> None:
     sys.path.insert(0, str(ROOT / "scripts"))
     import check_judge_coverage as fence
 
-    doc = fence.judge(now=NOW, report=_fence_report(tmp_path, {"prewarm_fail_share": 0.5,
-                                               "prior_prewarm_fail_share": 0.3}))
-    assert {c["metric"]: c for c in doc["checks"]}["prewarm_fail_ratchet"]["state"] == "FAIL"
+    rising = {"prewarm_fail_share": 0.5, "prior_prewarm_fail_share": 0.3,
+              "judging_failures": {"prewarm": {"failures": {"SAVE_FAILED": 50},
+                                               "top_reasons": [{"why": "OSError: disk", "n": 50}]}}}
+    doc = fence.judge(now=NOW, report=_fence_report(tmp_path, rising), require_state=True)
+    chk = {c["metric"]: c for c in doc["checks"]}["prewarm_fail_ratchet"]
+    assert chk["state"] == "FAIL" and doc["verdict"] == "FAIL"
+    assert "SAVE_FAILED" in chk["why"] and "OSError: disk" in chk["why"]
+    # A FRESH CHECKOUT did not run the sweep: the box reading WARNs there, FAILs on the box.
+    doc = fence.judge(now=NOW, report=_fence_report(tmp_path, rising))
+    chk = {c["metric"]: c for c in doc["checks"]}["prewarm_fail_ratchet"]
+    assert chk["state"] == "WARN" and doc["verdict"] != "FAIL"
     doc = fence.judge(now=NOW, report=_fence_report(tmp_path, {"prewarm_fail_share": 0.2,
                                                "prior_prewarm_fail_share": 0.3}))
     assert {c["metric"]: c for c in doc["checks"]}["prewarm_fail_ratchet"]["state"] == "OK"
