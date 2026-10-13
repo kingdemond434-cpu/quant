@@ -239,7 +239,7 @@ def test_gate_minus2_rows_use_the_one_handoff_schema(host: Path, tmp_path: Path)
     assert k["convert"] == 5, "four Gate -2 conversions and one parked bank cell"
     q = json.loads((tmp_path / cs.CONVERSION_HANDOFF.name).read_text("utf-8"))
     assert q["schema_version"] == 1 and q["n"] == len(q["rows"]) == 4
-    assert set(q) == {"schema_version", "generated_utc", "n", "rows"}
+    assert set(q) == {"schema_version", "generated_utc", "generated_by", "n", "rows"}
     for r in q["rows"]:
         assert set(r) >= HANDOFF_FIELDS
         assert r["source"] == "cell_state"
@@ -399,8 +399,10 @@ def test_handoff_is_one_file_one_row_per_cell(tmp_path: Path) -> None:
     both = next(r for r in doc["rows"] if r["cell"] == "BOTH.b")
     assert both["first_parked_utc"] == "2026-10-11T00:00:00+00:00", "earliest is kept"
     assert info["deduped_by_cell"] == 1 and info["from_other_writer"] == 2
-    empty, _ = cs.fold_handoff(None, [], at="now")
-    assert empty == {"schema_version": 1, "generated_utc": "now", "n": 0, "rows": []}
+    at = "2026-10-13T20:00:00+00:00"
+    empty, _ = cs.fold_handoff(None, [], at=at)
+    assert empty == {"schema_version": 1, "generated_utc": at,
+                     "generated_by": {"cell_state": at}, "n": 0, "rows": []}
 
 
 def test_handoff_routes_are_judge_coverage_failure_routes() -> None:
