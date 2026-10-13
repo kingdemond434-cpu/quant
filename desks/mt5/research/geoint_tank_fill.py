@@ -18,8 +18,12 @@ ONE PASS (`--once`), on the hourly cycle (leg `geoint_tank_fill`):
   3. FILL. Per tank per scene: sun-side half-disk brightness over the ground ring, shadow contrast
      against the anti-sun half, the sun-geometry correction to a fill index and its sigma; per
      scene the hub aggregate (count, mean, trimmed mean, median, capacity-weighted, MAD, sigma).
-  4. PIT. ``event_time`` = acquisition; ``knowable_at`` = the item's S3 LastModified (MEASURED,
-     basis printed_stamp), else acquisition + ``DECLARED_LATENCY_H`` (basis declared_lag).
+  4. PIT. ``event_time`` = acquisition; ``knowable_at`` = ESA's own L2A generation stamp
+     (``s2:generation_time``) + ``DIST_LAG_H`` (basis declared_lag), else acquisition +
+     ``DECLARED_LATENCY_H``. The AWS mirror's S3 LastModified is recorded beside it as
+     ``source_publication_time`` and its lag MEASURED -- but it is not the world clock: the
+     mirror re-uploaded 2019-2021 in November 2022 (measured: 14SPE 2019-01-05 -> 2022-11-08),
+     so on history it says when this bucket held the file, not when the world could know it.
   5. CALIBRATION. Against EIA weekly Cushing crude stocks (``W_EPC0_SAX_YCUOK_MBBL``) when the
      owner archive (``data/owner_macro.json``) carries it: level and change correlation, and the
      satellite's lead over the Wednesday release. Absent -> UNMEASURED, by name.
@@ -75,11 +79,19 @@ BAND = "B08"
 #: the 2024-07 composite (the town is excluded by the cluster rule, not by the box).
 HUB_LONLAT = (-96.79, 35.905, -96.70, 36.035)
 START = (2019, 1)
-#: L2A on this bucket: measured 2024-07-02 17:24 UTC acquisition -> item LastModified 2024-07-03
-#: 03:21 UTC (~10 h). The declared fallback, used only when a scene's stamp is absent, is 48 h --
-#: conservative: a late knowable_at only makes a measured reaction later, never earlier.
+#: ESA stamps each L2A product's generation (``s2:generation_time``: 2024-07-02 17:24 acquisition
+#: -> generated 2024-07-03 00:35, ~7 h); distribution to the Copernicus hubs follows. DIST_LAG_H is
+#: the DECLARED distribution lag after that stamp; the mirror's own lag after it is measured on
+#: every scene the mirror took live (stamp within MIRROR_LIVE_D of generation) and reported, so
+#: the declaration is checked against the one lag this desk can see. The fallback, used only when
+#: no generation stamp exists, is acquisition + 48 h. A late knowable_at only makes a measured
+#: reaction later, never earlier.
+DIST_LAG_H = 12.0
 DECLARED_LATENCY_H = 48.0
+MIRROR_LIVE_D = 7.0
 MIN_VALID_FRAC = 0.8
+#: a scene whose read raised is retried on later passes, at most this many times in all
+MAX_ATTEMPTS = 3
 MAX_CLOUD_PCT = 60.0
 REGISTRY_SCENES = 6
 REGISTRY_MIN_ELEV = 60.0
@@ -204,11 +216,12 @@ def build_registry(candidates: Sequence[s2.Scene], bbox: tuple[float, float, flo
             w = s2.read_window(m, bbox, BAND)
         except Exception:
             continue
-        if float(w.valid.mean()) < 0.97:
+        if float(w.valid.mean()) < 0.9:
             continue
         if tr is not None and (w.reflectance.shape != stack[0].shape):
             continue
-        stack.append(np.where(w.valid, w.reflectance, np.nan))
+        # the roof mask, not the ground one: SCL reads a white roof as cloud (sentinel2.py)
+        stack.append(np.where(w.roof_valid, w.reflectance, np.nan))
         used.append({"scene_id": m.scene_id, "acquired": m.acquired,
                      "sun_elevation": m.sun_elevation, "cloud_cover": m.cloud_cover})
         tr = w.transform
@@ -255,15 +268,27 @@ def registry_id(reg: Mapping[str, Any]) -> str:
 
 
 # ============================================================================== one scene
-def pit_stamp(acquired: datetime, stamped: datetime | None) -> dict[str, Any]:
-    """The world clock of one scene. The S3 LastModified of its item JSON is the measured instant
-    the scene became public here (printed_stamp); a stamp that is absent or precedes the
-    acquisition is not trusted, and the declared latency stands in (declared_lag)."""
-    if stamped is not None and stamped >= acquired:
-        return {"knowable_at": _iso(stamped), "knowable_basis": "printed_stamp",
-                "publication_latency_h": round((stamped - acquired).total_seconds() / 3600, 3)}
-    return {"knowable_at": _iso(acquired + timedelta(hours=DECLARED_LATENCY_H)),
-            "knowable_basis": "declared_lag", "publication_latency_h": UNMEASURED}
+def pit_stamp(acquired: datetime, generated: datetime | None, mirrored: datetime | None
+              ) -> dict[str, Any]:
+    """The clocks of one scene. World: ESA's generation stamp + DIST_LAG_H (a stamp that is
+    absent or precedes the acquisition is not trusted: acquisition + DECLARED_LATENCY_H stands
+    in). Source: the mirror's S3 LastModified, with its measured lag and whether the mirror took
+    the scene live (within MIRROR_LIVE_D of generation) or in a later backfill."""
+    if generated is not None and generated >= acquired:
+        world, why = generated + timedelta(hours=DIST_LAG_H), "s2:generation_time + DIST_LAG_H"
+    else:
+        world, why = acquired + timedelta(hours=DECLARED_LATENCY_H), "acquired + 48 h"
+    out: dict[str, Any] = {"knowable_at": _iso(world), "knowable_basis": "declared_lag",
+                           "knowable_rule": why,
+                           "generation_time": _iso(generated) if generated else UNMEASURED,
+                           "source_publication_time": _iso(mirrored) if mirrored else UNMEASURED,
+                           "mirror_lag_h": UNMEASURED, "mirror_live": None}
+    if mirrored is not None:
+        ref = generated if generated is not None else acquired
+        lag = (mirrored - ref).total_seconds() / 3600
+        out["mirror_lag_h"] = round(lag, 3)
+        out["mirror_live"] = bool(0 <= lag <= MIRROR_LIVE_D * 24)
+    return out
 
 
 def measure_scene(sc: s2.Scene, tanks: Sequence[tk.Tank], bbox: tuple[float, float, float, float],
@@ -281,7 +306,8 @@ def measure_scene(sc: s2.Scene, tanks: Sequence[tk.Tank], bbox: tuple[float, flo
                            "received_at": _iso(received)}
     if acquired is None:
         return {**row, "status": "REFUSED", "why": "no acquisition time in the STAC item"}
-    row.update(pit_stamp(acquired, stamped))
+    row.update(pit_stamp(acquired, s2.parse_time(str(m.properties.get("s2:generation_time")
+                                                     or "")), stamped))
     if m.sun_azimuth is None or m.sun_elevation is None:
         return {**row, "status": "REFUSED", "why": "no sun geometry in the STAC item"}
     if m.cloud_cover is not None and m.cloud_cover > MAX_CLOUD_PCT:
@@ -293,7 +319,8 @@ def measure_scene(sc: s2.Scene, tanks: Sequence[tk.Tank], bbox: tuple[float, flo
         return {**row, "status": "CLOUDY", "why": f"hub window {vf:.0%} clear < "
                                                    f"{MIN_VALID_FRAC:.0%}"}
     rows = [tk.measure_tank(w.reflectance, w.valid, w.transform, t, sun_azimuth=m.sun_azimuth,
-                            sun_elevation=m.sun_elevation, others=tanks) for t in tanks]
+                            sun_elevation=m.sun_elevation, others=tanks,
+                            roof_valid=w.roof_valid) for t in tanks]
     hub = tk.hub_index(rows)
     compact = [{k: r.get(k) for k in ("tank_id", "status", "fill_index", "fill_sigma",
                                       "shadow_contrast", "b_sun_half", "b_full_disk",
@@ -316,7 +343,9 @@ def hub_series(store: Mapping[str, Mapping[str, Any]], reg_id: str) -> list[dict
         item = {"scene_id": r["scene_id"], "event_time": r["acquired"],
                 "knowable_at": r["knowable_at"], "knowable_basis": r["knowable_basis"],
                 "received_at": r.get("received_at", UNMEASURED),
-                "publication_latency_h": r.get("publication_latency_h"),
+                "generation_time": r.get("generation_time", UNMEASURED),
+                "source_publication_time": r.get("source_publication_time", UNMEASURED),
+                "mirror_lag_h": r.get("mirror_lag_h"), "mirror_live": r.get("mirror_live"),
                 "sun_elevation": r.get("sun_elevation"), "n_tanks": hub.get("n_tanks"),
                 "fill_level": f, "fill_median": hub.get("fill_median"),
                 "fill_trimmed_mean": hub.get("fill_trimmed_mean"),
@@ -505,7 +534,9 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
     reg_id = registry_id(reg)
     store = load_store()
     todo = [s for s in scenes if s.scene_id not in store
-            or store[s.scene_id].get("registry") != reg_id]
+            or store[s.scene_id].get("registry") != reg_id
+            or (store[s.scene_id].get("status") == "ERROR"
+                and int(store[s.scene_id].get("attempts") or 1) < MAX_ATTEMPTS)]
     if pick == "spread" and todo:
         idx = np.unique(np.linspace(0, len(todo) - 1, num=min(max_scenes, len(todo)))
                         .round().astype(int))
@@ -520,7 +551,8 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
             row = measure_scene(sc, tanks, bbox, reg_id)
         except Exception as exc:
             row = {"scene_id": sc.scene_id, "registry": reg_id, "status": "ERROR",
-                   "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+                   "why": f"{type(exc).__name__}: {str(exc)[:160]}",
+                   "attempts": int((store.get(sc.scene_id) or {}).get("attempts") or 0) + 1}
             errors.append(f"{sc.scene_id}: {row['why']}")
         append_store(row)
         store[sc.scene_id] = row
@@ -535,6 +567,8 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
         entity="cushing_hub", metric="tank_fill_capacity_weighted", value=float(r["fill_level"]),
         event_time=r["event_time"], knowable_at=r["knowable_at"],
         knowable_basis=r["knowable_basis"], received_at=r["received_at"],
+        publication_time=r.get("generation_time") or UNMEASURED,
+        source_publication_time=r.get("source_publication_time") or UNMEASURED,
         uncertainty=r.get("fill_sigma"),
         raw_pointer=f"{s2.BUCKET_URL}/{s2.tile_prefix(TILE)}{r['scene_id']}",
         attributes={"scene_id": r["scene_id"], "n_tanks": r["n_tanks"],
@@ -552,8 +586,8 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
                                           mechanism=MECHANISM, falsifier=FALSIFIER,
                                           dry_run=dry_run or not emit)
                         if emit else {"status": "NOT_RUN"})
-    lat = [float(r["publication_latency_h"]) for r in series
-           if isinstance(r.get("publication_latency_h"), (int, float))]
+    lat = [float(r["mirror_lag_h"]) for r in series
+           if r.get("mirror_live") and isinstance(r.get("mirror_lag_h"), (int, float))]
     fills = [float(r["fill_level"]) for r in series]
     statuses: dict[str, int] = {}
     for r in store.values():
@@ -567,7 +601,7 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
         "hub_lonlat": list(HUB_LONLAT),
         "priors": {"wall_h_m": tk.WALL_H_M, "shadow_depth": tk.SHADOW_DEPTH,
                    "roof_inset_px": tk.ROOF_INSET, "ring_px": [tk.RING_IN, tk.RING_OUT],
-                   "declared_latency_h": DECLARED_LATENCY_H,
+                   "dist_lag_h": DIST_LAG_H, "declared_latency_h": DECLARED_LATENCY_H,
                    "note": "declared, never fitted: the absolute fill level is a geometric-prior "
                            "index UNCALIBRATED until the EIA join below is MEASURED"},
         "registry": {"path": REGISTRY.relative_to(REPO).as_posix(), "id": reg_id,
@@ -576,9 +610,12 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
                                       (reg.get("derived_from") or {}).get("scenes") or []]},
         "scenes": {"listed": len(scenes), "measured_this_pass": measured,
                    "by_status": statuses, "series_n": len(series)},
-        "publication_latency_h": ({"n": len(lat), "median": float(np.median(lat)),
-                                   "p95": float(np.percentile(lat, 95)), "max": max(lat)}
-                                  if lat else UNMEASURED),
+        "mirror_lag_after_generation_h": (
+            {"n": len(lat), "median": round(float(np.median(lat)), 3),
+             "p95": round(float(np.percentile(lat, 95)), 3), "max": round(max(lat), 3),
+             "declared_dist_lag_h": DIST_LAG_H,
+             "note": "measured on scenes the mirror took live; the world clock is ESA's stamp + "
+                     "the declared lag, never earlier"} if lat else UNMEASURED),
         "index": ({"n": len(fills), "first": series[0]["event_time"],
                    "last": series[-1]["event_time"], "mean": round(float(np.mean(fills)), 4),
                    "sd": round(float(np.std(fills)), 4), "min": round(min(fills), 4),

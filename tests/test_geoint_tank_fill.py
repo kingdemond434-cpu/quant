@@ -196,11 +196,16 @@ def test_detection_finds_a_planted_tank_farm_and_ignores_a_lone_blob():
 def test_no_value_is_knowable_before_acquisition_plus_latency():
     from desks.mt5.research import geoint_tank_fill as g
     acq = datetime(2024, 7, 2, 17, 24, tzinfo=UTC)
-    printed = g.pit_stamp(acq, acq + timedelta(hours=10))
-    assert printed["knowable_basis"] == "printed_stamp" and printed["publication_latency_h"] == 10
+    gen = acq + timedelta(hours=7)
+    printed = g.pit_stamp(acq, gen, gen + timedelta(hours=3))
+    assert s2.parse_time(printed["knowable_at"]) == gen + timedelta(hours=g.DIST_LAG_H)
+    assert printed["mirror_lag_h"] == 3 and printed["mirror_live"] is True
+    # a mirror that re-uploaded the archive years later is recorded, never the world clock
+    late = g.pit_stamp(acq, gen, acq + timedelta(days=900))
+    assert late["mirror_live"] is False and late["knowable_at"] == printed["knowable_at"]
     for bad in (None, acq - timedelta(hours=1)):
-        d = g.pit_stamp(acq, bad)
-        assert d["knowable_basis"] == "declared_lag"
+        d = g.pit_stamp(acq, bad, None)
+        assert d["knowable_basis"] == "declared_lag" and d["mirror_lag_h"] == "UNMEASURED"
         assert s2.parse_time(d["knowable_at"]) == acq + timedelta(hours=g.DECLARED_LATENCY_H)
     store = {"a": {"scene_id": "a", "registry": "R", "status": "MEASURED", "acquired":
                    acq.isoformat(), "received_at": "x", **printed,
@@ -315,3 +320,22 @@ def test_ceiling_below_its_sample_is_unmeasured_never_a_pass():
     state, times, closes = _ceiling_world(0.02, n=20)
     res = ceil.ceiling_test(state, times, closes, n_null=100)
     assert res["verdict"] == ceil.UNMEASURED and ceil.decision(res)["judge_cells"] is False
+
+
+def test_a_white_roof_classed_as_cloud_is_measured_when_its_ground_is_clear():
+    """SCL reads a white floating roof as cloud (measured on 14SPE 2020-10-06: 256 of 280 tank
+    centres in class 9). The roof is judged on its own mask; a real cloud covers the ring too."""
+    img, tr = render([(300, 300, 30, 0.5)])
+    t = tank_at(tr, 300, 300, 30)
+    ground = np.ones(img.shape, bool)
+    ground[27:34, 27:34] = False                     # SCL cloud on the roof only
+    roof = np.ones(img.shape, bool)
+    m = tk.measure_tank(img, ground, tr, t, sun_azimuth=SUN_AZ, sun_elevation=SUN_EL,
+                        roof_valid=roof)
+    assert m["status"] == "MEASURED"
+    assert m["fill_index"] == pytest.approx(measure(img, tr, t)["fill_index"], abs=1e-9)
+    cloud = np.ones(img.shape, bool)
+    cloud[20:41, 20:41] = False                      # a real cloud: roof AND ring
+    m2 = tk.measure_tank(img, cloud, tr, t, sun_azimuth=SUN_AZ, sun_elevation=SUN_EL,
+                         roof_valid=roof)
+    assert m2["status"] == "REFUSED"

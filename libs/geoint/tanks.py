@@ -205,6 +205,7 @@ def sun_unit(azimuth_deg: float) -> tuple[float, float]:
 def measure_tank(img: np.ndarray, valid: np.ndarray, transform: GeoTransform, tank: Tank, *,
                  sun_azimuth: float, sun_elevation: float,
                  others: Sequence[Tank] = (), wall_h_m: float = WALL_H_M,
+                 roof_valid: np.ndarray | None = None,
                  shadow_depth: float = SHADOW_DEPTH) -> dict[str, Any]:
     """One tank in one scene: ring-normalised roof halves, shadow contrast, fill and its sigma."""
     col, row = transform.to_pixel(tank.x, tank.y)
@@ -217,6 +218,8 @@ def measure_tank(img: np.ndarray, valid: np.ndarray, transform: GeoTransform, ta
         return {**out, "status": "REFUSED", "why": "tank window leaves the scene window"}
     win = img[r0:r0 + 2 * pad + 1, c0:c0 + 2 * pad + 1].astype(float)
     ok = valid[r0:r0 + 2 * pad + 1, c0:c0 + 2 * pad + 1]
+    # the roof is judged on its own mask when one is given (a bright roof reads as cloud to SCL)
+    rok = ok if roof_valid is None else roof_valid[r0:r0 + 2 * pad + 1, c0:c0 + 2 * pad + 1]
     cx, cy = col - c0, row - r0
     roof_r = max(r - ROOF_INSET, 0.75)
     disk = _weights(win.shape, cx, cy, roof_r)
@@ -234,12 +237,13 @@ def measure_tank(img: np.ndarray, valid: np.ndarray, transform: GeoTransform, ta
     proj = (xx + 0.5 - cx) * ux + (yy + 0.5 - cy) * uy
     sun_half = disk * (proj > 0)
     anti_half = disk * (proj < 0)
-    masked = 1.0 - float((disk * ok).sum() / max(disk.sum(), 1e-9))
+    masked = 1.0 - float((disk * rok).sum() / max(disk.sum(), 1e-9))
     ring_masked = 1.0 - float((ring * ok).sum() / max(ring.sum(), 1e-9))
     if masked > MAX_MASKED or ring_masked > MAX_MASKED:
         return {**out, "status": "REFUSED", "masked_roof": round(masked, 3),
                 "masked_ring": round(ring_masked, 3), "why": "cloud/defect mask over the tank"}
     okf = ok.astype(float)
+    rokf = rok.astype(float)
     ring_vals = win[(ring * okf) > 0.5]
     if ring_vals.size < 8:
         return {**out, "status": "REFUSED", "why": f"ground ring has {ring_vals.size} pixels"}
@@ -249,7 +253,7 @@ def measure_tank(img: np.ndarray, valid: np.ndarray, transform: GeoTransform, ta
         return {**out, "status": "REFUSED", "why": "ground ring is not positive"}
 
     def wmean(wt: np.ndarray) -> tuple[float, float]:
-        wt = wt * okf
+        wt = wt * rokf
         s = float(wt.sum())
         return (float((wt * win).sum() / s), s) if s > 0 else (float("nan"), 0.0)
 

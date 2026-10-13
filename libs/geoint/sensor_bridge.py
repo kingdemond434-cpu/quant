@@ -13,9 +13,10 @@ ORGAN_ABSENT and does nothing else:
   * NO cell is emitted: the terms gate is the only thing that may clear a source, and a gate that
     cannot be consulted holds (the same rule `terms_hold._fence` applies to its own fence).
 
-Every value is PIT: `event_time` is the acquisition instant, `knowable_at` the S3 LastModified of
-the scene's item JSON (``knowable_basis = printed_stamp``) or, when that stamp is absent, the
-acquisition plus the DECLARED latency (``declared_lag``); `received_at` is when this desk read it.
+Every value is PIT: `event_time` is the acquisition instant, `publication_time` ESA's L2A
+generation stamp, `source_publication_time` the AWS mirror's S3 LastModified, `knowable_at` the
+generation stamp plus the DECLARED distribution lag (``declared_lag``), and `received_at` when
+this desk read it.
 """
 from __future__ import annotations
 
@@ -43,6 +44,8 @@ def _organ(name: str) -> Any:
 
 def observation_row(*, entity: str, metric: str, value: float, event_time: str,
                     knowable_at: str, knowable_basis: str, received_at: str,
+                    publication_time: str = UNMEASURED,
+                    source_publication_time: str = UNMEASURED,
                     uncertainty: float | None, raw_pointer: str,
                     attributes: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """One observation in the contract's field names (built through `make` when it exists)."""
@@ -51,9 +54,8 @@ def observation_row(*, entity: str, metric: str, value: float, event_time: str,
         "dataset_id": "sentinel-2-l2a-cogs", "kind": "state", "sensor_class": "geoint",
         "geography": "US-OK:Cushing", "asset_domain": "crude_oil", "value": value,
         "unit": "fill_fraction_index", "event_time": event_time,
-        "publication_time": knowable_at if knowable_basis == "printed_stamp" else UNMEASURED,
-        "source_publication_time": (knowable_at if knowable_basis == "printed_stamp"
-                                    else UNMEASURED),
+        "publication_time": publication_time,
+        "source_publication_time": source_publication_time,
         "knowable_at": knowable_at, "knowable_basis": knowable_basis,
         "received_at": received_at, "parse_complete_at": received_at,
         "measurement_uncertainty": uncertainty, "licence": LICENCE,

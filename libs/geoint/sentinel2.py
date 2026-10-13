@@ -44,6 +44,12 @@ BUCKET_URL = "https://sentinel-cogs.s3.us-west-2.amazonaws.com"
 PREFIX = "sentinel-s2-l2a-cogs"
 #: SCL classes refused as unobserved ground (ESA L2A Scene Classification legend).
 SCL_BAD = frozenset({0, 1, 3, 8, 9, 10, 11})
+#: On a BRIGHT ROOF the cloud and snow classes are refused only through the ground around it.
+#: MEASURED 2026-10-13 on 14SPE 2020-10-06 (baseline 02.14, tile cloud 0.17%): SCL put 256 of
+#: 280 Cushing tank centres in class 9 (high-probability cloud) -- a white floating roof reads as
+#: cloud to the classifier. A real cloud over a 60 m roof covers its ground ring too, and the
+#: ring is judged on SCL_BAD; the roof itself is refused only for no-data, defects and shadow.
+SCL_ROOF_BAD = frozenset({0, 1, 3})
 SCL_NAMES = {0: "no_data", 1: "saturated_defective", 2: "dark_area", 3: "cloud_shadow",
              4: "vegetation", 5: "not_vegetated", 6: "water", 7: "unclassified",
              8: "cloud_medium", 9: "cloud_high", 10: "thin_cirrus", 11: "snow"}
@@ -231,6 +237,7 @@ class Window:
     reflectance: np.ndarray
     valid: np.ndarray
     transform: GeoTransform
+    roof_valid: np.ndarray
     scl_counts: dict[str, int]
     bytes_read: int
 
@@ -243,6 +250,7 @@ def read_window(scene: Scene, bbox_utm: tuple[float, float, float, float], band:
     dn, tr = cog.read_bbox(*bbox_utm)
     refl = (dn.astype(np.float64) + scene.dn_offset) / 10000.0
     valid = dn > 0
+    roof_valid = np.zeros_like(valid)
     scl_counts: dict[str, int] = {}
     read = cog.bytes_read
     try:
@@ -256,6 +264,7 @@ def read_window(scene: Scene, bbox_utm: tuple[float, float, float, float], band:
         orow = round((str_.y0 - tr.y0) / tr.dy)
         up = up[orow:orow + dn.shape[0], oc:oc + dn.shape[1]]
         if up.shape == dn.shape:
+            roof_valid = valid & ~np.isin(up, list(SCL_ROOF_BAD))
             valid &= ~np.isin(up, list(SCL_BAD))
             vals, cnts = np.unique(up, return_counts=True)
             scl_counts = {SCL_NAMES.get(int(v), str(int(v))): int(c) for v, c in zip(vals, cnts,
@@ -265,10 +274,11 @@ def read_window(scene: Scene, bbox_utm: tuple[float, float, float, float], band:
     except Exception as exc:  # an unreadable mask is recorded, never read as clear
         scl_counts = {"UNMEASURED": int(dn.size), f"error:{type(exc).__name__}": 1}
         valid[:] = False
-    return Window(reflectance=refl, valid=valid, transform=tr, scl_counts=scl_counts,
+    return Window(reflectance=refl, valid=valid, roof_valid=roof_valid, transform=tr,
+                  scl_counts=scl_counts,
                   bytes_read=read)
 
 
-__all__ = ["BUCKET_URL", "SCL_BAD", "Scene", "Window", "list_objects", "load_metadata",
-           "lonlat_to_utm", "parse_time", "read_window", "search", "tile_prefix",
+__all__ = ["BUCKET_URL", "SCL_BAD", "SCL_ROOF_BAD", "Scene", "Window", "list_objects",
+           "load_metadata", "lonlat_to_utm", "parse_time", "read_window", "search", "tile_prefix",
            "utm_to_lonlat", "utm_zone"]
