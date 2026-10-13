@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
@@ -110,7 +111,10 @@ def _age_h(stamp: object, now: datetime) -> float | None:
         at = datetime.fromisoformat(txt.replace("Z", "+00:00")).astimezone(UTC)
     except ValueError:
         return None
-    return max(0.0, (now.timestamp() - at.timestamp()) / 3600.0)
+    age = (now.timestamp() - at.timestamp()) / 3600.0
+    # A STAMP FROM THE FUTURE PROVES NOTHING IS FRESH (audit of #334): past five minutes of clock
+    # skew it is unreadable, never "zero hours old" forever.
+    return max(0.0, age) if age > -5.0 / 60.0 else None
 
 
 def judge(report: Path | None = None, *, require_state: bool = False,
@@ -167,7 +171,14 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                               "why": f"operator stop: {res.get('why')}"})
     else:
         beat_h = _age_h(res.get("heartbeat_utc"), at)
-        if beat_h is not None and beat_h * 60.0 > RESIDENT_DEAD_MIN:
+        if beat_h is None:
+            # AN UNREADABLE PULSE IS NOT A PULSE (audit of #334).
+            out["checks"].append({
+                "metric": "resident_alive", "state": "FAIL" if require_state else "UNMEASURED",
+                "why": f"heartbeat_utc {res.get('heartbeat_utc')!r} is unparseable or future"})
+            if require_state:
+                stale.append("resident_dead")
+        elif beat_h * 60.0 > RESIDENT_DEAD_MIN:
             out["checks"].append({
                 "metric": "resident_alive", "state": "FAIL" if require_state else "WARN",
                 "why": (f"DEAD: the resident judge's heartbeat is {beat_h * 60.0:.0f} min old "
@@ -182,7 +193,10 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     # A KILL LOOP IS A SILENT JUDGE WITH A PULSE (audit of #350): the resident kills a sweep past
     # its ceiling and starts the next, so a sweep that always overruns beats every 30s and rules
     # nothing. Two consecutive hung kills fail here, naming the phase the last one died in.
-    hangs = int(res.get("consecutive_hangs") or 0) if isinstance(res, dict) else 0
+    try:
+        hangs = int(res.get("consecutive_hangs") or 0) if isinstance(res, dict) else 0
+    except (TypeError, ValueError):
+        hangs = RESIDENT_HANG_FAIL                     # an unreadable count is not a clean one
     if hangs >= RESIDENT_HANG_FAIL:
         died = (res.get("killed_in_phase") or {}).get("phase") \
             if isinstance(res.get("killed_in_phase"), dict) else None
@@ -199,7 +213,8 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     v_age = _age_h(last_verdict, at)
     _raw_backlog = (doc.get("totals") or {}).get("unjudged_total")
     # An absent backlog is not "nothing waits" (audit of #334): unknown counts as owed.
-    backlog: int | None = int(_raw_backlog) if isinstance(_raw_backlog, (int, float)) else None
+    backlog: int | None = (int(_raw_backlog) if isinstance(_raw_backlog, (int, float))
+                           and math.isfinite(_raw_backlog) else None)
     if v_age is None:
         # THE JUDGE'S CLOCK UNREADABLE ON THE BOX IS A CLAIM THE DESK CANNOT CASH (L1.49).
         out["checks"].append({"metric": "judge_silent",

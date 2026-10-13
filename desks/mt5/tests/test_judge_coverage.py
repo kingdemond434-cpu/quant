@@ -611,7 +611,7 @@ def test_order_docket_names_its_failure_on_the_table(tmp_path, monkeypatch) -> N
 
 
 def test_a_dead_resident_fails_on_the_box(tmp_path) -> None:
-    """Audit of #333: a resident killed mid-sweep still reads SWEEPING; its heartbeat is the truth."""
+    """Audit of #333: a resident killed mid-sweep still reads SWEEPING; the heartbeat is truth."""
     res = tmp_path / "JUDGE_RESIDENT.json"
     report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
     res.write_text(json.dumps({"status": "SWEEPING", "pid": 7,
@@ -674,3 +674,30 @@ def test_a_resident_in_a_kill_loop_fails_on_the_box(tmp_path) -> None:
     one["consecutive_hangs"] = 1
     res.write_text(json.dumps(one), "utf-8")
     assert fence.judge(report, require_state=True, now=NOW, resident=res)["verdict"] == "PASS"
+
+
+def test_unreadable_or_future_stamps_and_bad_counts_never_pass_on_the_box(tmp_path) -> None:
+    """Audit of #334: an unparseable or future heartbeat, a future table stamp, a NaN backlog and
+    a non-numeric hang count each fail on the box instead of passing or crashing."""
+    report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
+    res = tmp_path / "JUDGE_RESIDENT.json"
+    for beat in ("not-a-time", (NOW + timedelta(hours=3)).isoformat()):
+        res.write_text(json.dumps({"heartbeat_utc": beat, "status": "SWEEPING"}), "utf-8")
+        doc = fence.judge(report, require_state=True, now=NOW, resident=res)
+        assert doc["verdict"] == "FAIL" and "resident_dead" in doc["why"], beat
+    res.write_text(json.dumps({"heartbeat_utc": NOW.isoformat(), "status": "SWEEPING",
+                               "consecutive_hangs": "lots"}), "utf-8")
+    doc = fence.judge(report, require_state=True, now=NOW, resident=res)
+    assert doc["verdict"] == "FAIL" and "resident_hangs" in doc["why"]
+    future = _fresh_table(tmp_path, at=NOW + timedelta(days=2))
+    assert "stale_report" in fence.judge(future, require_state=True, now=NOW)["why"]
+    nan = tmp_path / "nan" / "JUDGE_COVERAGE.json"
+    nan.parent.mkdir()
+    doc = json.loads(report.read_text("utf-8"))
+    doc["totals"]["unjudged_total"] = float("nan")
+    nan.write_text(json.dumps(doc), "utf-8")
+    rate = tmp_path / "old_rate.json"
+    rate.write_text(json.dumps({"verdicts": {
+        "last_verdict_at": (NOW - timedelta(hours=31)).isoformat()}}), "utf-8")
+    out = fence.judge(nan, require_state=True, now=NOW, rate=rate)
+    assert out["verdict"] == "FAIL" and "judge_silent" in out["why"]

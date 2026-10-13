@@ -83,6 +83,7 @@ it first appears in the docket, with no edit to this file.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -1925,15 +1926,17 @@ def note_attempt(status: str, why: str, *, via: str, report: Path | None = None)
         doc = {}
     doc["last_attempt"] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                            "status": status, "via": via, "why": str(why)[:500]}
+    # ATOMIC (audit of #334): a reader never sees half a report, and a failed write never
+    # truncates the table it was stamping.
+    tmp = target.with_name(f"{target.name}.{os.getpid()}.attempt.tmp")
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        # ATOMIC (audit of #334): a reader never sees half a report, and a failed write never
-        # truncates the table it was stamping.
-        tmp = target.with_name(f"{target.name}.{os.getpid()}.attempt.tmp")
         tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
         os.replace(tmp, target)
     except OSError:
-        pass  # a stamp is a report; it never costs the docket or the table
+        # a stamp is a report; it never costs the docket or the table -- and leaves no debris
+        with contextlib.suppress(OSError):
+            tmp.unlink()
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,
