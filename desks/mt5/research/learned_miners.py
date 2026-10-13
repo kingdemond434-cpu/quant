@@ -318,6 +318,19 @@ def _redeflate(rows: list[dict[str, Any]], n_attempted: int) -> list[dict[str, A
 
 
 # ================================================================================ miner
+def _trial_id(panel_name: str, panel_syms: Sequence[str], sym: str, ck: str, z: float) -> str:
+    """One trial = (panel members, symbol, config, threshold). The forecast pools across the
+    peers, so a panel that gained or lost a symbol re-tests every cell as a NEW trial (audit
+    2026-10-13). The full declared panel keeps the historical id, so the ledger already on the
+    box is not re-charged; any other membership carries a short hash of its peers."""
+    head = sym if panel_name == "core" else f"{panel_name}:{sym}"
+    if sorted(panel_syms) != sorted(PANELS.get(panel_name, ())):
+        import hashlib
+        tag = hashlib.sha1(",".join(sorted(panel_syms)).encode()).hexdigest()[:8]
+        head = f"{head}:p{tag}"
+    return f"{head}:{ck}:z{z}"
+
+
 def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], *,
          deadline: float, grid: Sequence[Mapping[str, Any]] | None = None,
          entry_z: Sequence[float] = ENTRY_Z, panel_name: str = "core") -> dict[str, Any]:
@@ -364,8 +377,7 @@ def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], 
             for z in entry_z:
                 attempted += 1
                 trials.append(TL.Trial(
-                    trial_id=(f"{sym}:{ck}:z{z}" if panel_name == "core"
-                              else f"{panel_name}:{sym}:{ck}:z{z}"),
+                    trial_id=_trial_id(panel_name, panel_syms, sym, ck, z),
                     family=f"{spec['source']}:{spec['family']}",
                     descriptors={"symbol": sym, "model_family": model, "horizon": "1d",
                                  "mechanism": spec["event"], "representation": ck,
@@ -593,17 +605,22 @@ def run(budget_s: float = BUDGET_S,
                                               f"below the {MIN_PANEL} floor")
             continue
         out["panels"][pname]["status"] = "MINED"
-        jobs.extend((model, pname, pbars) for model in models)
-    # EACH PANEL GETS ITS OWN SLICE of the budget (audit 2026-10-13): queued behind the core
-    # panel's whole grid, the retail panel read UNMEASURED every day. Time a panel leaves unused
-    # rolls forward to the panels after it.
+        # Cheapest model first inside a panel, so a tight slice measures the most models.
+        jobs.extend((model, pname, pbars)
+                    for model in sorted(models, key=lambda m: MODEL_COST_RANK.get(m, 99)))
+    # EACH PANEL GETS ITS OWN SLICE of the budget, FIXED UP FRONT (audit 2026-10-13): queued
+    # behind the core panel's whole grid, the retail panel read UNMEASURED every day. Panel i
+    # ends at start + (i+1)/n of the mining budget, so time an earlier panel leaves unused rolls
+    # forward and no panel can take a later one's share. A due weekly contract is carved out of
+    # the SAME budget first, so the pass never runs past budget_s.
+    due = (contract if contract is not None else not injected) and _contract_due()
+    start = time.monotonic()
+    mine_end = deadline - (float(budget_s) * CONTRACT_SHARE if due else 0.0)
     order = list(dict.fromkeys(p for _m, p, _b in jobs))
-    pdeadline: dict[str, float] = {}
+    pdeadline = {p: start + (mine_end - start) * (i + 1) / len(order)
+                 for i, p in enumerate(order)}
     for model, pname, bars in jobs:
         key = model if pname == "core" else f"{model}@{pname}"
-        if pname not in pdeadline:
-            left = max(0.0, deadline - time.monotonic())
-            pdeadline[pname] = time.monotonic() + left / max(1, len(order) - order.index(pname))
         res = mine(model, bars, meta, deadline=pdeadline[pname], panel_name=pname)
         # THE INDIRECT DOOR: the primary configuration's forecast (already computed above, so
         # this is a cache hit) becomes a dated conditioning axis every expression family can bind.
@@ -632,7 +649,10 @@ def run(budget_s: float = BUDGET_S,
         res["tests_new"] = len({t.trial_id for t in trials} - seen)
         donated_file = False
         if donate and cands:
-            door = pc.donate(res["source"], cands, res["tests_new"])
+            # The full sweep count rides on the file (the lifetime ledger takes a max per seat, so
+            # this can never re-charge); the panel suffix keeps a core and a retail donation in
+            # the same minute from overwriting each other.
+            door = pc.donate(res["source"], cands, res["tests_attempted"], suffix=pname)
             res["donated"] = str(door)
             # The door can refuse every candidate (lane, blinding, pre-registration) and write no
             # discovery file; then nothing charged the trials there, so the side ledger must.
@@ -651,8 +671,10 @@ def run(budget_s: float = BUDGET_S,
     # THE CONTRACT ON A CLOCK (audit 2026-10-13): weekly, from the daily pass, so every model's
     # allocation-intel verdict is a measurement no older than CONTRACT_EVERY_S, never a verdict
     # frozen at the day the model was added. An injected (test) run never triggers it.
-    if contract if contract is not None else not injected:
-        out["contract"] = _refresh_contract()
+    if due:
+        left = deadline - time.monotonic()
+        out["contract"] = (_refresh_contract(cell_budget_s=0.5 * left) if left >= 120.0 else
+                           {"status": f"DEFERRED: {left:.0f}s left of budget_s, contract due"})
     if axis_docs:
         ip = intel_path or INTEL_REPORT
         ip.parent.mkdir(parents=True, exist_ok=True)
@@ -672,21 +694,36 @@ def run(budget_s: float = BUDGET_S,
 
 # ============================================================================ contract
 CONTRACT_EVERY_S = 7 * 86400.0
-#: The weekly contract's cell-screen budget, split evenly across the models; the walk-forward
-#: model scores themselves are cheap (seconds per config) and always run in full.
+#: The weekly contract's cell-screen budget ceiling, split evenly across the models; the
+#: walk-forward model scores themselves are cheap (seconds per config) and always run in full.
 CONTRACT_CELL_BUDGET_S = 1800.0
+#: Share of the daily pass's budget_s reserved for the contract on the day it is due.
+CONTRACT_SHARE = 1.0 / 3.0
+#: Measured primary-config fit seconds on an 18-symbol, 900-day panel (2026-10-13): signature
+#: 0.1, gnn 0.3, autoencoder 1.0, rocket 1.8, attention 2.5.
+MODEL_COST_RANK = {"signature": 0, "gnn": 1, "autoencoder": 2, "rocket": 3, "attention": 4}
 
 
-def _refresh_contract(path: Path | None = None, now: float | None = None) -> dict[str, Any]:
-    p = path or CONTRACT_REPORT
+def _contract_age(path: Path | None = None, now: float | None = None) -> float:
     try:
-        age = (time.time() if now is None else now) - p.stat().st_mtime
+        return (time.time() if now is None else now) - (path or CONTRACT_REPORT).stat().st_mtime
     except OSError:
-        age = float("inf")
+        return float("inf")
+
+
+def _contract_due(path: Path | None = None, now: float | None = None) -> bool:
+    return _contract_age(path, now) >= CONTRACT_EVERY_S
+
+
+def _refresh_contract(path: Path | None = None, now: float | None = None,
+                      cell_budget_s: float = CONTRACT_CELL_BUDGET_S) -> dict[str, Any]:
+    p = path or CONTRACT_REPORT
+    age = _contract_age(p, now)
     if age < CONTRACT_EVERY_S:
         return {"status": "FRESH", "age_h": round(age / 3600.0, 1)}
     try:
-        doc = measure_contract(out_path=p, cell_budget_s=CONTRACT_CELL_BUDGET_S)
+        doc = measure_contract(out_path=p,
+                               cell_budget_s=min(CONTRACT_CELL_BUDGET_S, float(cell_budget_s)))
         return {"status": "MEASURED", "verdicts": {m: b.get("verdict")
                                                     for m, b in doc["miners"].items()}}
     except Exception as exc:

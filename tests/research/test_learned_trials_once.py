@@ -134,3 +134,65 @@ def test_the_contract_is_refreshed_weekly(tmp_path: Path, monkeypatch) -> None:
     got = LM._refresh_contract(p, now=time.time() + LM.CONTRACT_EVERY_S + 1)
     assert got["status"] == "MEASURED" and got["verdicts"] == {"gnn": "NO_GAIN: x"}
     assert seen["budget"] == LM.CONTRACT_CELL_BUDGET_S
+
+
+def test_a_changed_panel_is_a_new_trial_and_the_full_panel_keeps_its_id() -> None:
+    """The forecast pools across the peers, so the same symbol x config x threshold on a panel
+    that gained a member is a different trial (audit of #354, M1)."""
+    import learned_miners as LM
+    ck = "gnn:adjacency=lead_lag,layers=1"
+    full = LM._trial_id("core", LM.PANEL, "EURUSD", ck, 1.0)
+    assert full == f"EURUSD:{ck}:z1.0"                       # the ledger on the box is kept
+    seven = list(LM.RETAIL_PANEL[:7])
+    eight = list(LM.RETAIL_PANEL[:8])
+    a = LM._trial_id("retail_heavy", seven, seven[0], ck, 1.0)
+    b = LM._trial_id("retail_heavy", eight, seven[0], ck, 1.0)
+    assert a != b and a.startswith("retail_heavy:") and b.startswith("retail_heavy:")
+    assert LM._trial_id("retail_heavy", list(reversed(seven)), seven[0], ck, 1.0) == a
+
+
+def test_mining_two_different_panels_charges_both(tmp_path: Path) -> None:
+    import learned_miners as LM
+    rng = np.random.default_rng(1)
+    idx = pd.date_range("2020-01-01", periods=24 * 1000, freq="h", tz="UTC")
+    syms = list(LM.PANEL[:8])
+    bars = {s: pd.DataFrame({"open": c, "high": c, "low": c, "close": c, "spread": 10.0},
+                            index=idx)
+            for s in syms for c in [np.exp(np.cumsum(rng.normal(0, 1e-3, len(idx))))]}
+    grid = [LM.MINERS["signature"]["grid"][0]]
+    r7 = LM.mine("signature", {s: bars[s] for s in syms[:7]}, {}, deadline=time.monotonic()
+                 + 600, grid=grid, entry_z=(1.0,))
+    r8 = LM.mine("signature", bars, {}, deadline=time.monotonic() + 600, grid=grid,
+                 entry_z=(1.0,))
+    ids7 = {t.trial_id for t in r7["_trials"]}
+    ids8 = {t.trial_id for t in r8["_trials"]}
+    assert len(ids7) == 7 and len(ids8) == 8 and not ids7 & ids8
+    ledger = tmp_path / "t.jsonl"
+    LM._append_trials([{"trial_id": t} for t in sorted(ids7)], ledger)
+    LM._append_trials([{"trial_id": t} for t in sorted(ids8)], ledger)
+    assert len(ledger.read_text("utf-8").splitlines()) == 15
+
+
+def test_a_due_contract_is_paid_for_inside_budget_s(tmp_path: Path, monkeypatch) -> None:
+    import learned_miners as LM
+    monkeypatch.setattr(LM, "CONTRACT_REPORT", tmp_path / "absent_contract.json")
+    seen: dict = {}
+
+    def fake_contract(out_path=None, cell_budget_s=None, **_k):
+        seen["cell_budget_s"] = cell_budget_s
+        return {"miners": {"gnn": {"verdict": "NO_GAIN: x"}}}
+
+    monkeypatch.setattr(LM, "measure_contract", fake_contract)
+    calls: list = []
+    t0 = time.monotonic()
+    orig_mine, orig_load = LM.mine, LM.load_bars
+    try:
+        LM.mine = _fake_mine(calls)
+        LM.load_bars = lambda symbols=LM.PANEL, base=None: _fake_bars(symbols)
+        res = LM.run(budget_s=300.0, models=("gnn",), donate=False, report=tmp_path / "r.json",
+                     trials_path=tmp_path / "t.jsonl", publish_axes=False, contract=True)
+    finally:
+        LM.mine, LM.load_bars = orig_mine, orig_load
+    assert max(d for _m, _p, d in calls) - t0 <= 300.0 * (1 - LM.CONTRACT_SHARE) + 1.0
+    assert res["contract"]["status"] == "MEASURED"
+    assert 0 < seen["cell_budget_s"] <= LM.CONTRACT_CELL_BUDGET_S
