@@ -1510,6 +1510,15 @@ def release_held(dest: Path | None = None) -> dict[str, Any]:
     return {"state": "DONATING", "released": moved}
 
 
+def _election_role(*, budget_s: float) -> dict[str, Any]:
+    """`election_calendar`: national vote dates as PIT series and pre-registered cells."""
+    try:
+        import election_calendar
+        return election_calendar.run(budget_s=budget_s)
+    except Exception as exc:                           # pragma: no cover - defensive
+        return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 def _collector_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
     """collector_author's replacement (`collector_lab`): declarative specs, fixed fetcher."""
     try:
@@ -1618,6 +1627,12 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                     max_llm=max(0, min(4, calls_budget - calls_made)) if seat_on
                                     else 0)
         calls_made += int(collector.get("asked") or 0)
+
+    # ---- phase 0d: the ELECTION CALENDAR (idea F3). No model in the path: fixed code reads
+    # national vote dates from public pages into PIT lake series and pre-registered cells.
+    elections: dict[str, Any] = {"state": "NOT_RUN"} if not dry_run else {"state": "dry run"}
+    if not dry_run and budget_s - (time.time() - started) > 90:
+        elections = _election_role(budget_s=min(60.0, budget_s * 0.1))
 
     # ---- phase 1: the independent first pass. No lab sees another lab's current answers.
     own_recent: dict[tuple[str, str], list[str]] = {}
@@ -1878,6 +1893,8 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "conversion_debt": debt,
         "cb_tone": cb_tone,
         "collector": collector,
+        "elections": {k: elections.get(k) for k in ("state", "countries", "cells_total",
+                                                    "cells_donated", "why") if k in elections},
         "donations": donations,
         "roles": role_report,
         "model_coverage": {k: coverage.get(k) for k in ("verdict", "red", "models_available",
