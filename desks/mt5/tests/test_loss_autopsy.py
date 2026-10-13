@@ -128,8 +128,9 @@ def test_e8_losses_are_autopsied_from_the_close_ledger_and_its_absence_is_a_fix_
     cert = {"enabled": True, "e8": {"gold_asia": 0.01}}
     doc = la.build(NOW, deals=[], intents=[], sleeves_doc=SLEEVES, cert=cert, account={},
                    drift={}, resolved={}, e8_ledger=[gold], e8_journals=[], blocked=[])
-    assert doc["e8"]["status"] == "MEASURED" and doc["rows"][0]["verdict"] == la.NATURAL
-    assert doc["fix_queue"] == []
+    # No intent on the E8 ledger: oversize, slippage and clock are unchecked, so never NATURAL.
+    assert doc["e8"]["status"] == "MEASURED" and doc["rows"][0]["verdict"] == la.UNMEASURED
+    assert doc["fix_queue"] == [] and doc["unmeasured_trades"] == 1
     big = {**gold, "position_id": 78, "risk_frac": 0.02}
     doc = la.build(NOW, deals=[], intents=[], sleeves_doc=SLEEVES, cert=cert, account={},
                    drift={}, resolved={}, e8_ledger=[big], e8_journals=[], blocked=[])
@@ -265,5 +266,8 @@ def test_a_fix_closes_a_defect_only_as_a_real_commit_in_the_running_release() ->
 
 def test_the_broker_offset_follows_eu_summer_time() -> None:
     assert la.broker_offset_h(datetime(2026, 10, 13, tzinfo=UTC)) == 3
-    assert la.broker_offset_h(datetime(2026, 10, 26, tzinfo=UTC)) == 2   # after 10-25
-    assert la.broker_offset_h(datetime(2026, 3, 30, tzinfo=UTC)) == 3    # after 03-29
+    # NY+7, the US rule: still +3 between the EU change (10-25) and the US one (11-01)
+    assert la.broker_offset_h(datetime(2026, 10, 26, tzinfo=UTC)) == 3
+    assert la.broker_offset_h(datetime(2026, 11, 2, tzinfo=UTC)) == 2
+    assert la.broker_offset_h(datetime(2026, 3, 9, 12, tzinfo=UTC)) == 3   # after US 03-08
+    assert la.broker_offset_h(datetime(2026, 3, 7, tzinfo=UTC)) == 2

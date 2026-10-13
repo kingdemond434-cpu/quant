@@ -66,6 +66,7 @@ from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 BASE = Path(__file__).resolve().parents[1]
 REPO = BASE.parents[1]
@@ -237,12 +238,14 @@ def resolve_sleeve(deal: Mapping[str, Any], intent: Mapping[str, Any] | None,
 
 
 def broker_offset_h(t: datetime) -> int:
-    """The venue's offset from UTC at instant `t`: EET/EEST, so +3 from 01:00 UTC on the last
-    Sunday of March to 01:00 UTC on the last Sunday of October, else +2."""
-    def last_sunday(month: int) -> datetime:
-        d = datetime(t.year, month, 31, 1, 0, tzinfo=UTC)
-        return d - timedelta(days=(d.weekday() + 1) % 7)
-    return 3 if last_sunday(3) <= t.astimezone(UTC) < last_sunday(10) else 2
+    """The venue's offset from UTC at instant `t`. The broker clock is NEW YORK + 7 (the session
+    closes at 17:00 New York = broker 00:00), so it follows the US daylight rule, not the EU
+    one: +3 while New York is on EDT (second Sunday of March to first Sunday of November), else
+    +2. The EU last-Sunday rule this replaced was wrong for the weeks between the two changes
+    (2026-10-25 to 11-01 and 03-08 to 03-29), which is exactly when a stale-signal or missed
+    exit verdict would have been an hour off. Same anchor as prop/e8_guard.SERVER_ANCHOR_TZ."""
+    ny = t.astimezone(ZoneInfo("America/New_York")).utcoffset()
+    return int(ny.total_seconds() // 3600) + 7 if ny is not None else 3
 
 
 def slip_allowance_r(symbol: str, dist: float, universe: Any) -> float | None:
@@ -575,7 +578,10 @@ def e8_autopsy(ledger: list[dict[str, Any]] | None, *, cert: Mapping[str, Any],
         rows.append({"venue": "e8", "deal": deal, "position_id": d.get("position_id"),
                      "time": d.get("time"), "sleeve": sleeve, "symbol": d.get("symbol"),
                      "r": r, "pl": _f(d.get("pl_usd_est")),
-                     "verdict": DEFECT if found else NATURAL, "open": open_,
+                     # UNMEASURED, NEVER NATURAL (audit 2026-10-13): the E8 ledger carries no
+                     # intent, so oversize, entry slippage and the clock cannot be checked, and
+                     # a loss is never clean on checks that did not run.
+                     "verdict": DEFECT if found else UNMEASURED, "open": open_,
                      "historical": t < FIX_SINCE, "defects": found, "edge_decay": None,
                      "unmeasured": ["oversize", "entry_slippage", "clock"],
                      "intent_id": None})
