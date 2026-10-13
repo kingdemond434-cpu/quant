@@ -404,38 +404,47 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
     # FEEDS THE MINED REPOS USE, which need a shape and a first-print vintage the generic parser
     # cannot supply (`libs/data/repo_mined_feeds.py`). Same registry, same certificate, same
-    # `ext_<name>` vocabulary; a feed that fails is refused by name like any endpoint.
+    # `ext_<name>` vocabulary; a feed that fails is refused by name like any endpoint. Counted in
+    # their OWN report block (`mined_feeds`), never in the endpoint scan's tried/kept/refusals:
+    # they are a fixed list, not a discovered endpoint, and mixing the two made one organ's
+    # refusals read as the other's.
+    mined_report: dict[str, Any] = {"tried": 0, "kept": 0, "new_series": [], "refusals": {}}
+
+    def _mined_refuse(why: str) -> None:
+        mined_report["refusals"][why] = mined_report["refusals"].get(why, 0) + 1
+
     try:
         from libs.data import repo_mined_feeds as _rmf
         mined = _rmf.absorb(reg, STORE, fetch=_fetch, parse=_parse, certify=certify,
                             write_certificate=write_certificate)
-        tried += mined["tried"]
-        kept += mined["kept"]
-        new_series.extend(mined["new_series"])
+        mined_report["tried"] += mined["tried"]
+        mined_report["kept"] += mined["kept"]
+        mined_report["new_series"].extend(mined["new_series"])
         for why, n in mined["refusals"].items():
-            refusals[why] = refusals.get(why, 0) + n
+            mined_report["refusals"][why] = mined_report["refusals"].get(why, 0) + n
     except Exception as exc:                                                # noqa: BLE001
-        _refuse(f"repo-mined feeds failed: {type(exc).__name__}")
+        _mined_refuse(f"repo-mined feeds failed: {type(exc).__name__}")
     # The DTCC public FX option tape (via OpenBB's cftc provider): a few daily slices a pass.
     try:
         from libs.data import repo_mined_feeds as _rmf
         tape = _rmf.absorb_dtcc(reg, STORE, fetch=_fetch, certify=certify,
                                 write_certificate=write_certificate)
-        tried += 1
-        kept += int(bool(tape["new_series"]))
-        new_series.extend(tape["new_series"])
+        mined_report["tried"] += 1
+        mined_report["kept"] += int(bool(tape["new_series"]))
+        mined_report["new_series"].extend(tape["new_series"])
     except Exception as exc:                                                # noqa: BLE001
-        _refuse(f"DTCC FX option tape failed: {type(exc).__name__}")
+        _mined_refuse(f"DTCC FX option tape failed: {type(exc).__name__}")
     # Crop-belt weather for the soft and grain CFDs (NASA POWER; regions from AgriQuant-AI).
     try:
         from libs.data import repo_mined_feeds as _rmf
         wx = _rmf.absorb_crop_weather(reg, STORE, fetch=_fetch, certify=certify,
                                       write_certificate=write_certificate)
-        tried += 1
-        kept += int(bool(wx["new_series"]))
-        new_series.extend(wx["new_series"])
+        mined_report["tried"] += 1
+        mined_report["kept"] += int(bool(wx["new_series"]))
+        mined_report["new_series"].extend(wx["new_series"])
     except Exception as exc:                                                # noqa: BLE001
-        _refuse(f"crop-belt weather failed: {type(exc).__name__}")
+        _mined_refuse(f"crop-belt weather failed: {type(exc).__name__}")
+    new_series.extend(mined_report["new_series"])
 
     for url, host in _endpoints(limit):
         tried += 1
@@ -528,6 +537,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         "endpoints_tried": tried, "datasets_kept": kept,
         "new_series": new_series, "total_series": len(reg["series"]),
         "refusals": refusals,
+        "mined_feeds": mined_report,
         "rule": ("point-in-time or nothing: a frame with no usable date column is refused rather "
                  "than stamped with now, because backfilling today's value across history "
                  "manufactures an edge that never existed"),
