@@ -158,3 +158,84 @@ def test_a_versioned_gold_bracket_records_zero_as_a_copy_of_its_base(tmp_path,
     ev = [types.SimpleNamespace(name="gold_asia")]
     z = pa.zeroed_live(ev, {"gold_asia": 0.08})
     assert set(z) == {"gold_asia_v2"} and "same signal as gold_asia" in z["gold_asia_v2"]
+
+
+# ------------------------------------------------------------- audit #346 follow-ups (10-13)
+def test_a_live_versioned_gold_row_is_never_zeroed_by_the_name_rule(tmp_path,
+                                                                     monkeypatch) -> None:
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "sleeves.json").write_text(json.dumps({"sleeves": [
+        {"name": "gold_asia", "status": "LIVE"}, {"name": "gold_asia_v2", "status": "LIVE"}]}),
+        "utf-8")
+    monkeypatch.setattr(pa, "BASE", tmp_path)
+    ev = [types.SimpleNamespace(name="gold_asia")]
+    assert "gold_asia_v2" not in pa.zeroed_live(ev, {"gold_asia": 0.08})
+
+
+def test_a_fill_hour_replay_is_not_charged_the_cost_bias_again(monkeypatch) -> None:
+    import numpy as np
+    idx = pd.date_range("2025-01-01", periods=60)
+    daily = pd.DataFrame({"EURZAR_x_asia": np.random.default_rng(0).normal(0, 1, 60)},
+                         index=idx)
+    monkeypatch.setattr(pa, "_execution_costs", lambda names: {
+        "sleeves": {"EURZAR_x_asia": {"cost_bias_r": 0.18, "cost_r": 0.05}},
+        "summary": {"n_measured": 1, "n_sleeves": 1, "n_undercharged": 1,
+                    "worst_undercharge": None}})
+    charged = pa.sleeve_evidence(daily, {}, {})
+    once = pa.sleeve_evidence(daily, {}, {},
+                              cost_basis={"EURZAR_x_asia": "fill_hour_01_spread"})
+    assert charged[0].cost_bias_r == 0.18 and once[0].cost_bias_r == 0.0
+
+
+def _cost_frame(name: str):
+    import numpy as np
+    idx = pd.date_range("2025-01-01", periods=60)
+    return pd.DataFrame({name: np.random.default_rng(0).normal(0, 1, 60)}, index=idx)
+
+
+def _costs(monkeypatch, name: str) -> None:
+    monkeypatch.setattr(pa, "_execution_costs", lambda names: {
+        "sleeves": {name: {"cost_bias_r": 0.18, "cost_r": 0.05}},
+        "summary": {"n_measured": 1, "n_sleeves": 1, "n_undercharged": 1,
+                    "worst_undercharge": None}})
+
+
+def test_a_pooled_or_empty_cost_basis_keeps_the_cost_bias(monkeypatch) -> None:
+    daily = _cost_frame("EURZAR_x_asia")
+    _costs(monkeypatch, "EURZAR_x_asia")
+    for basis in ({"EURZAR_x_asia": "pooled_spread"}, {"EURZAR_x_asia": ""}, {}, None):
+        ev = pa.sleeve_evidence(daily, {}, {}, cost_basis=basis)
+        assert ev[0].cost_bias_r == 0.18, basis
+
+
+def test_the_cost_basis_is_dropped_where_the_backtest_series_wins_alignment() -> None:
+    daily = _cost_frame("EURZAR_x_asia")
+    short = pd.Series([0.1, 0.2], index=pd.date_range("2025-01-01", periods=2).date)
+    longer = pd.Series([0.1] * 90, index=pd.date_range("2024-01-01", periods=90).date)
+    basis = {"EURZAR_x_asia": "fill_hour_01_spread", "NEW_y": "fill_hour_02_spread"}
+    assert pa.cost_basis_after_align(daily, {"EURZAR_x_asia": short, "NEW_y": short},
+                                     basis) == {"NEW_y": "fill_hour_02_spread"}
+    assert pa.cost_basis_after_align(daily, {"EURZAR_x_asia": longer}, basis) == {
+        "EURZAR_x_asia": "fill_hour_01_spread"}
+
+
+def test_gold_names_resolve_to_the_gold_bars_with_no_identity_and_no_legs() -> None:
+    daily = _cost_frame("gold_asia")
+    ev = pa.sleeve_evidence(daily, {}, {})
+    # Unchanged by the identity change: no identity row, so the name's own token stands.
+    assert ev[0].symbol == "gold" and tuple(ev[0].inputs) == ("bars:GOLD",)
+
+
+def test_an_early_library_failure_publishes_unmeasured_not_an_empty_map() -> None:
+    v = pa._book_unmeasured({"refused": {"import": "ModuleNotFoundError: eg"}})
+    assert v["verdict"] == "UNMEASURED" and "import" in v["why"]
+    assert pa._book_unmeasured({"rostered_unmeasured": {}}) == {}
+
+
+def test_cost_basis_is_unmeasured_when_the_roster_was_never_walked() -> None:
+    """Audit #370 v2: an early exit publishes UNMEASURED, never a clean {}."""
+    v = pa._cost_basis_published({"refused": {"universe": "unreadable"}})
+    assert v["verdict"] == "UNMEASURED" and "universe" in v["why"]
+    walked = {"rostered_unmeasured": {}, "cost_basis": {"a": "fill_hour_01_spread"}}
+    assert pa._cost_basis_published(walked) == {"a": "fill_hour_01_spread"}
+    assert pa._cost_basis_published({"rostered_unmeasured": {}}) == {}

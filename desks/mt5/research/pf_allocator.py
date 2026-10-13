@@ -453,7 +453,8 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             # unconditioned +0.163R behind a conditioned sleeve's +0.276R promotion.
             cell = eg.build_cell(sym, fam, dict(params or {}), meta)
             if not cell or cell.get("sigs") is None:
-                acct["refused"][name] = "build_cell returned no signals"
+                why = getattr(eg, "LAST_BUILD_FAILURE", None) or "no reason recorded"
+                acct["refused"][name] = f"build_cell returned no signals: {why}"
                 return
             ser = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
             rejections = ser.attrs.get("geometry_rejections") if ser is not None else None
@@ -474,6 +475,9 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             ser.index = pd.to_datetime(pd.Index(ser.index)).date
             out[name] = ser.groupby(level=0).sum()
             acct["priced"] += 1
+            basis = str(cell.get("_cost_basis") or "")
+            if basis:
+                acct.setdefault("cost_basis", {})[name] = basis
         except Exception as exc:
             acct["refused"][name] = f"{type(exc).__name__}: {exc}"
 
@@ -517,6 +521,23 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
          f"{len(acct['identity'])} STANDBY certificates under their own names) "
          f"({acct['certificates']} certificates), {len(acct['refused'])} refused")
     return out, acct
+
+
+def _book_unmeasured(cert_acct: dict[str, Any]) -> dict[str, Any]:
+    """The rostered-but-unpriced map, or an UNMEASURED verdict when it was never built."""
+    if "rostered_unmeasured" in cert_acct:
+        return dict(cert_acct.get("rostered_unmeasured") or {})
+    why = "; ".join(f"{k}: {v}" for k, v in (cert_acct.get("refused") or {}).items())
+    return {"verdict": "UNMEASURED",
+            "why": why or "the certified library returned before walking the roster"}
+
+
+def _cost_basis_published(cert_acct: dict[str, Any]) -> dict[str, Any]:
+    """The per-sleeve cost basis, or an UNMEASURED verdict when the roster was never walked
+    (audit #370 v2): an early exit must not publish a clean empty map."""
+    if "rostered_unmeasured" not in cert_acct:
+        return _book_unmeasured(cert_acct)
+    return dict(cert_acct.get("cost_basis") or {})
 
 
 #: The scalp lane's per-trade forward ledgers, one file per clock, written by `scalp_shadow`.
@@ -852,6 +873,26 @@ def align(daily: pd.DataFrame, certified: dict[str, pd.Series] | None) -> pd.Dat
                         index=idx, dtype=float)
 
 
+def cost_basis_after_align(daily: pd.DataFrame, certified: dict[str, pd.Series] | None,
+                           cost_basis: dict[str, str] | None) -> dict[str, str]:
+    """Keep a sleeve's certified `cost_basis` only where its certified series wins `align`.
+
+    Same rule as `align`: the certified series replaces a backtest column only when it holds
+    more observed days. Where the backtest column stays, the basis describes a series the solve
+    never sees, and carrying it would waive a `cost_bias_r` the backtest really owes.
+    """
+    out: dict[str, str] = {}
+    for name, basis in (cost_basis or {}).items():
+        ser = (certified or {}).get(name)
+        if ser is None:
+            continue
+        if name in daily.columns and \
+                int(pd.Series(ser).notna().sum()) <= int(daily[name].notna().sum()):
+            continue
+        out[name] = basis
+    return out
+
+
 def search_trials() -> dict[str, int]:
     """Trials each hunt searched, from the desk's own gate reports. The winner's-curse input.
 
@@ -932,7 +973,8 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     trades_by_sleeve: dict[str, list[dict]] | None = None,
                     broker_utc_offset_h: int = 0,
                     forward_only_days: dict[str, int] | None = None,
-                    identity: dict[str, tuple[str, str]] | None = None) -> list[SleeveEvidence]:
+                    identity: dict[str, tuple[str, str]] | None = None,
+                    cost_basis: dict[str, str] | None = None) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -984,7 +1026,14 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
         # Both are empty when unmeasured, which the posterior and the covariance read as "no
         # claim" (see `_MacroContext`).
         macro_w = mctx.weights(dates)
-        fl = mctx.loadings(hist, dates, parts[0])
+        # THE INSTRUMENT, not the lowercase roster token (audit #346): a STANDBY certificate
+        # priced under its roster name carries its certificate's symbol in `identity`. The
+        # loadings, the input key and the evidence all read this one value.
+        # A no-op on today's roster (every identity symbol equals the name's first token, and
+        # gold_* names carry no identity and resolve through `parts[0]`); it guards the case
+        # where a roster name and its certificate's symbol diverge.
+        sym_of = identity[name][0] if identity and name in identity else parts[0]
+        fl = mctx.loadings(hist, dates, sym_of)
         # FAMILY IS THE MECHANISM, NOT THE SYMBOL. The hierarchical posterior pools a sleeve
         # toward its family mean, and pooling by SYMBOL pools EURJPY_asia_TREND with
         # EURJPY_london_NORMAL -- two different mechanisms that happen to share an instrument --
@@ -1005,7 +1054,6 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
         # A STANDBY certificate priced under its roster name carries its certificate's own
         # symbol and family: parsed from a lowercase roster name they would read as a new
         # instrument and a family of one, past the family cap and the structured floor.
-        sym_of = parts[0]
         if identity and name in identity:
             sym_of, fam = identity[name]
         out.append(SleeveEvidence(
@@ -1031,7 +1079,11 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             # spread it was charged at). Zero where the desk cannot price the sleeve, which is
             # exactly the behaviour that existed before -- unpriced is not cheap.
             cost_r=float((costs.get(name) or {}).get("cost_r", 0.05)),
-            cost_bias_r=float((costs.get(name) or {}).get("cost_bias_r", 0.0)),
+            # NO DOUBLE CHARGE: a certified replay whose cell was priced at its own fill-hour
+            # spread (`_cost_basis` fill_hour_XX_spread) already carries the under-charge
+            # `cost_bias_r` measures; adding it again charged those sleeves twice.
+            cost_bias_r=(0.0 if str((cost_basis or {}).get(name, "")).startswith("fill_hour_")
+                         else float((costs.get(name) or {}).get("cost_bias_r", 0.0))),
             # THE HOUR, AS THE NARROWEST LEVEL OF A SHRINKAGE THAT ALREADY EXISTED. Empty unless
             # a phase and this sleeve's own trades were supplied, and empty means the posterior
             # behaves exactly as it did before -- a caller that does not know the hour is not
@@ -1048,7 +1100,7 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             # entered in, and the mechanism it declares. `_structured_corr` charges a pair that
             # shares them -- and CREDITS a same-instrument pair whose entry hours are disjoint,
             # which is how the same heat comes to hold more independent bets rather than fewer.
-            inputs=_input_keys(name, parts[0], fam),
+            inputs=_input_keys(name, sym_of, fam),
             trade_hours=_trade_hours(name, trades_by_sleeve, broker_utc_offset_h),
             mechanism=_mechanism_of(name, fam),
         ))
@@ -3224,8 +3276,11 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
         rostered = {str(r.get("name")) for r in rows
                     if isinstance(r, dict)
                     and str(r.get("status") or "").upper() in ("LIVE", "STANDBY")}
+        standby = {str(r.get("name")) for r in rows
+                   if isinstance(r, dict) and str(r.get("status") or "").upper() == "STANDBY"}
     except (OSError, ValueError, AttributeError):
         rostered = set()
+        standby = set()
     rostered |= {str(k) for k in (extra or {})}
     # Zeros decided before the solve (a forward clock's KILL), each with its reason.
     out: dict[str, str] = {str(k): str(v) for k, v in (recorded or {}).items()}
@@ -3233,7 +3288,9 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
         if name in out:
             continue
         base = re.sub(r"_v\d+$", "", name) if name.startswith("gold_") else name
-        if base != name and name not in priced and base in priced:
+        # STANDBY copies only (audit #346): a LIVE versioned row is the gateway's own decision
+        # and is never zeroed here by a name rule.
+        if base != name and name in standby and name not in priced and base in priced:
             # A versioned gold bracket (gold_asia_v2..) carries the SAME signal as its base
             # window: decision_core's roster has no rr field, so it trades identically. It is the
             # same bet, priced once under the base name; its recorded answer is zero.
@@ -3511,6 +3568,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # therefore reached the roster at STANDBY and could never leave it, because `admission_of`
     # had nothing to join to and `_door_status` writes LIVE only on a MEASURED admission.
     scalp, scalp_acct = scalp_evidence()
+    # THE BASIS GOES WITH THE SERIES (audit S6): where the backtest column wins `align`, the
+    # sleeve is not priced on its fill-hour certified replay, so its cost_bias_r stands.
+    if "rostered_unmeasured" in cert_acct:
+        cert_acct["cost_basis"] = cost_basis_after_align(daily, certified,
+                                                         cert_acct.get("cost_basis"))
     daily = align(align(daily, certified), scalp)
     _log(f"aligned universe: {daily.shape[1]} sleeves on {daily.shape[0]} trading days "
          f"({len(scalp)} of them scalp clocks priced on forward ledgers)")
@@ -3532,7 +3594,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                          # count is the forward day count. `join_forward` never sees these
                          # names -- they are not in `forward` -- so nothing else supplies it.
                          forward_only_days={n: len(sr) for n, sr in scalp.items()},
-                         identity=cert_acct.get("identity"))
+                         identity=cert_acct.get("identity"),
+                         cost_basis=cert_acct.get("cost_basis"))
     # CROSS-CULTURE ORTHOGONALITY: merge groups share one cap family and one mechanism, proven-
     # divergent cultures get their own. Labels only -- heat-neutral (see apply_culture_labels).
     culture_family, culture_meta = apply_culture_labels(ev)
@@ -4766,6 +4829,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # which carries them into the sizing book AT ZERO so the gateway can size them at zero
         # instead of falling back to the 3% base fraction. Nothing here is retired.
         "book_zeroed": zeroed,
+        # ROSTERED CERTIFICATES THIS PASS COULD NOT PRICE (BLOCKED_NO_BARS, unrecoverable spec,
+        # replay failure), each with its reason: UNMEASURED, never a zero and never silent.
+        # A report for audit (no organ reads it yet). When the library build failed before the
+        # roster was walked (import / universe unreadable), the map was never measured, so the
+        # artifact says UNMEASURED with the reason rather than an empty map that reads as clean.
+        "book_unmeasured": _book_unmeasured(cert_acct),
+        "cost_basis": _cost_basis_published(cert_acct),
         # THE EXCHANGE'S ZEROS, AND WHERE THEIR HEAT WENT (see `exchange_zero`).
         "exchange_zero": exchange_zero_meta,
         # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
