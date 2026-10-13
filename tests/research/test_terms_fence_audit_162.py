@@ -273,9 +273,6 @@ def test_the_endpoint_selector_never_seats_a_fenced_url(
         {"endpoints": ["https://www.reddit.com/r/Gold/top.json",
                        "https://data.example.test/a.csv"], "host": "x"}]), "utf-8")
     monkeypatch.setattr(ad, "WORLD", world)
-    # A discovered URL also needs quoted permitting terms for its host (catalog_routes terms
-    # evidence, #192); grant it here so only the platform fence is under test.
-    monkeypatch.setattr(ad, "_TERMS_PERMITTED", frozenset({"data.example.test"}))
     picked = [u for u, _h in ad._endpoints(100_000)]
     assert not [u for u in picked if tf.platform_of_url(u)]
     assert "https://data.example.test/a.csv" in picked

@@ -386,14 +386,22 @@ def _gunzip(raw: bytes, limit: int = MAX_BYTES) -> bytes | None:
     stops at the limit, the same rule `_read_member` applies to zip members.
     """
     import zlib
-    d = zlib.decompressobj(wbits=31)
-    try:
-        out = d.decompress(raw, limit + 1)
-    except zlib.error:
-        return None
-    if len(out) > limit or d.unconsumed_tail:
-        return None
-    return out
+    parts: list[bytes] = []
+    total, rest = 0, raw
+    while rest:                 # a multi-member file (concatenated gzips) is inflated whole
+        d = zlib.decompressobj(wbits=31)
+        try:
+            chunk = d.decompress(rest, limit + 1 - total)
+        except zlib.error:
+            return None
+        total += len(chunk)
+        if total > limit or d.unconsumed_tail:
+            return None
+        parts.append(chunk)
+        if not d.eof:
+            return None         # truncated member: never a silently partial body
+        rest = d.unused_data
+    return b"".join(parts)
 
 
 #: Terms evidence for catalogue-discovered endpoints (catalog_routes/terms_evidence.json): a
@@ -579,15 +587,21 @@ def _endpoints(limit: int, *, now: datetime | None = None,
     # `discoveries_*.json`; read only after ~170 country packs, they almost never reached a seat
     # in a 40-endpoint pass. A quarter of the pass is theirs whenever they have work; packs keep
     # the rest, and either side's unused share flows to the other.
+    # The terms-evidence gate binds CATALOG-ROUTE rows only: catalog_routes quotes permitting
+    # terms per portal, so a row it wrote without them is unverified. Crawler and deep-forest
+    # rows carry no such evidence by construction (3 of 11,632 passed when it bound them all,
+    # which shut a running raw-mining lane); their terms law holds per fetch in polite_fetch.
     found: list[tuple[str, str]] = []
     for f in sorted(glob.glob(str(WORLD / "discoveries_*.json")), reverse=True):
         try:
             rows = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
             continue
+        catalog_file = Path(f).name.startswith("discoveries_catalog_")
         for r in rows if isinstance(rows, list) else []:
             if not isinstance(r, dict):
                 continue
+            catalog_row = catalog_file or r.get("source") == "catalog_routes"
             for u in (r.get("endpoints") or []):
                 if _KEYED.search(str(u)):
                     if keyed is not None:
@@ -596,7 +610,7 @@ def _endpoints(limit: int, *, now: datetime | None = None,
                 if u in seen or u in fresh:
                     continue
                 seen.add(u)
-                if _fenced_pick(u) or _terms_unverified(str(u)):
+                if _fenced_pick(u) or (catalog_row and _terms_unverified(str(u))):
                     continue
                 found.append((u, str(r.get("host") or "")))
     room = limit - len(out)
