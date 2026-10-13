@@ -95,3 +95,55 @@ def test_only_resting_legs_that_would_hedge_are_named_for_cancel() -> None:
     assert ca.opposing_resting(legs, "XAUUSD", {}) == []
     assert ca.opposing_resting(legs, "XAUUSD", None) == []
     assert ca.opposing_resting({"buy_stop": {"id": None}}, "XAUUSD", {"XAUUSD": {-1}}) == []
+
+
+def test_e8_gold_cancels_its_resting_leg_that_would_fill_against_fusion(
+        monkeypatch: Any, tmp_path: Path) -> None:
+    """The afternoon bracket rests both legs; Fusion has since gone long gold. The pass cancels
+    the sell_stop (its fill would be the banned hedge) and leaves the buy_stop resting."""
+    from prop import e8_gold
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "stop_rests_harness", Path(__file__).with_name("test_stop_rests_at_venue.py"))
+    assert spec is not None and spec.loader is not None
+    h = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(h)
+
+    class _Venue(h._GoldVenue):
+        def __init__(self) -> None:
+            super().__init__(h.EVENT["bid"], h.EVENT["ask"])
+            self.cancelled: list[int] = []
+
+        def positions(self) -> list[dict]:
+            return []
+
+        def orders(self, symbol: str | None = None) -> list[dict]:
+            return [{"id": 77, "stopPrice": 4300.0}, {"id": 78, "stopPrice": 4260.0}]
+
+        def cancel(self, order_id: int) -> bool:
+            self.cancelled.append(int(order_id))
+            return True
+
+    class _Fusion(h._MT5):
+        def positions_get(self) -> list[SimpleNamespace]:
+            return [_pos("XAUUSD", 0)]
+
+    for name in ("OUT", "INTENTS", "GUARD", "LOG"):
+        monkeypatch.setattr(e8_gold, name, tmp_path / f"{name.lower()}.json")
+    state = tmp_path / "state.json"
+    legs = {"buy_stop": {"id": 77, "price": 4300.0, "sl": 4280.0, "tp": 4340.0, "lot": 0.1},
+            "sell_stop": {"id": 78, "price": 4260.0, "sl": 4280.0, "tp": 4220.0, "lot": 0.1}}
+    done = {"orders": {}, "position_id": None, "shadow": False, "placed_hour": 7.0}
+    state.write_text(json.dumps({
+        "date": str(h._NOW.date()), "carried": {},
+        "windows": {"asia": dict(done), "london_am": dict(done),
+                    "afternoon": {"placed_at": str(h._NOW), "placed_hour": 14.0, "hi": 4300.0,
+                                  "lo": 4260.0, "orders": legs, "position_id": None,
+                                  "shadow": False}}}), encoding="utf-8")
+    monkeypatch.setattr(e8_gold, "STATE", state)
+    venue = _Venue()
+    doc = e8_gold.run(venue, _Fusion(), armed=True)
+    assert doc["fusion_book"] == "terminal"
+    acts = [a for a in doc["actions"] if a["act"] == "cross_account_cancel"]
+    assert [(a["side"], a["order_id"]) for a in acts] == [("sell_stop", 78)]
+    assert 78 in venue.cancelled and 77 not in venue.cancelled
