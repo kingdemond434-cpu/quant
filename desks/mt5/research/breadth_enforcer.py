@@ -355,8 +355,9 @@ def apportion(rows: list[Any], budget: int, steer: Mapping[str, Any] | None = No
     exploration floor -- WORK-CONSERVING and lossless.
 
     Returns every row (same multiset). Inside the head: frontier rows (producer's own order kept),
-    then explored rows, with saturated rows interleaved evenly at `SAT_EXPLORE_SHARE` of the
-    budget -- or more, when the non-saturated rows cannot fill it. Saturated rows beyond that go
+    then explored rows, with saturated rows interleaved evenly at what the producer's own head
+    held, capped at `SAT_EXPLORE_SHARE` of the budget -- or more, only when the non-saturated rows
+    cannot fill it. Saturated rows beyond that go
     after the head, where a later pass reaches them. No measured steer: the input order, as is.
     """
     st = steer if steer is not None else load_steer()
@@ -370,7 +371,11 @@ def apportion(rows: list[Any], budget: int, steer: Mapping[str, Any] | None = No
         c = class_of(fam(r), st)
         (sa if c == SATURATED else fr if c in FRONTIER else ex).append(r)
     nonsat = fr + ex
-    n_sat = min(len(sa), max(math.ceil(SAT_EXPLORE_SHARE * budget),
+    # A FLOOR THAT IS ALSO A CEILING, NEVER A QUOTA: the saturated set keeps what the producer's
+    # own head already gave it, up to SAT_EXPLORE_SHARE -- the steer never ADDS saturated cells
+    # to a head that had fewer -- and more only when nothing else can fill the budget.
+    natural = sum(1 for r in rows[:budget] if class_of(fam(r), st) == SATURATED)
+    n_sat = min(len(sa), max(min(natural, math.ceil(SAT_EXPLORE_SHARE * budget)),
                              budget - len(nonsat)))
     head_ns = nonsat[:max(0, budget - n_sat)]
     head = _interleave(head_ns, sa[:n_sat])

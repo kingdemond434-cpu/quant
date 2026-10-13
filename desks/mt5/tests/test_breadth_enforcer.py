@@ -98,6 +98,14 @@ def test_apportion_is_lossless_and_holds_saturated_to_the_floor() -> None:
     assert any(r["family"] == "cross_asset_residual" for r in out[:20])
 
 
+def test_apportion_never_adds_saturated_cells_to_a_head_that_had_fewer() -> None:
+    st = _steer()
+    rows = ([{"family": "newfam"} for _ in range(195)] + [{"family": "carry"} for _ in range(5)]
+            + [{"family": "carry"} for _ in range(500)] + [{"family": "lead_lag"}] * 100)
+    head = Counter(r["family"] for r in be.apportion(rows, 200, st)[:200])
+    assert head["carry"] == 5                                       # not raised to 20
+
+
 def test_apportion_is_work_conserving_when_the_frontier_runs_dry() -> None:
     st = _steer()
     rows = ([{"family": "carry"} for _ in range(500)] + [{"family": "newfam"} for _ in range(30)])
