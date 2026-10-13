@@ -54,7 +54,8 @@ def _is_literal(node: ast.AST) -> bool:
     return True
 
 
-_TAG_HELPERS = ("order_comment", "legacy_order_comment", "position_tags", "note_roster_tags")
+_TAG_HELPERS = ("order_comment", "legacy_order_comment", "position_tags", "note_roster_tags",
+                "_record_block")
 
 
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
@@ -93,6 +94,8 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) \
                 and node.value is not None and _is_literal(node.value):
             seed.setdefault(node.target.id, ast.literal_eval(node.value))
+    # The blocked-entry ledger every lane writes (2026-10-13) goes to a scratch file here.
+    seed.setdefault("BLOCKED", Path(tempfile.gettempdir()) / "gw_test_blocked_entries.jsonl")
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"

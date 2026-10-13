@@ -957,9 +957,8 @@ DECISIONS = BASE / "data" / "decision_ledger.jsonl"
 #: with the box state; the trade autopsy reads it as the missed-trade half of its verdicts.
 BLOCKED = BASE / "data" / "blocked_entries.jsonl"
 #: The family lane's ordinary quiet outcomes: no signal on this bar, or this bar already acted on.
-QUIET_STAGES = frozenset({"no_signal", "no_signal_bar", "already_considered", "already_open",
-                          "bar_traded", "duplicate_at_floor", "signal_hour", "no_window",
-                          "session_ended"})
+QUIET_STAGES = ("no_signal", "no_signal_bar", "already_considered", "already_open",
+                "bar_traded", "duplicate_at_floor", "signal_hour", "no_window", "session_ended")
 
 
 def _record_block(st: dict, sleeve: str, symbol: str, stage: str, why: str,
@@ -4676,7 +4675,7 @@ def main() -> None:
                     log(f"[{s['name']}] SKIPPED: {_pend['why']}")
                 elif _pend["stage"] == "session_ended":
                     log(f"[{s['name']}] NOT PLACED: {_pend['why']}")
-                if _pend["stage"] not in QUIET_STAGES | {"range_not_ready"}:
+                if _pend["stage"] not in (*QUIET_STAGES, "range_not_ready"):
                     _record_block(st, s["name"], s["symbol"], str(_pend["stage"]),
                                   str(_pend.get("why")), day_key)
                 continue

@@ -21,10 +21,11 @@ What is pinned:
 from __future__ import annotations
 
 import ast
-import json
 import hashlib
+import json
 import os
 import sys
+import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -356,9 +357,11 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     seed["os"] = os                  # MIN_STOP_SPREAD_MULT reads its env override
     # Every lane matches positions through `position_tags` (2026-10-13), so the tag helpers,
     # their roster map and their constant come with every exec.
-    seed.update({"hashlib": hashlib, "TAG_HASH": 6, "_ROSTER_LEGACY": {}})
+    seed.update({"hashlib": hashlib, "TAG_HASH": 6, "_ROSTER_LEGACY": {},
+                 "QUIET_STAGES": ("no_signal", "no_signal_bar"), "BLOCKED":
+                 Path(tempfile.gettempdir()) / "scalp_test_blocked_entries.jsonl"})
     seed.update(ns)
-    names = (*names, "order_comment", "legacy_order_comment", "position_tags")
+    names = (*names, "order_comment", "legacy_order_comment", "position_tags", "_record_block")
     keep = [n for n in _GW_TREE.body
             if (isinstance(n, ast.FunctionDef) and n.name in names)
             or (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in names
