@@ -269,3 +269,48 @@ def test_load_bars_reads_a_parquet_whose_time_is_a_plain_column(tmp_path: Path) 
     frame.to_parquet(path, index=False)
     bars = rc.load_bars("TESTFY", "H1", universe=tmp_path)
     assert bars is not None and len(bars) == n and bars.minutes == 60
+
+
+def _walk_bars(days: int = 90, seed: int = 3) -> tuple[rc.Bars, Any]:
+    import pandas as pd
+    rng = np.random.default_rng(seed)
+    n = days * 24
+    idx = pd.date_range("2025-01-01", periods=n, freq="h", tz="UTC")
+    close = 1.1 * np.exp(np.cumsum(rng.normal(0, 0.0008, n)))
+    open_ = np.concatenate([[1.1], close[:-1]])
+    high = np.maximum(open_, close) * 1.0004
+    low = np.minimum(open_, close) * 0.9996
+    df = pd.DataFrame({"open": open_, "high": high, "low": low, "close": close}, index=idx)
+    t = idx.as_unit("ns").asi8
+    return rc.bars_from_arrays(t, open_, high, low, close), df
+
+
+@pytest.mark.parametrize("mode", ["into", "out_of", "fade"])
+def test_the_written_clock_transition_rule_emits_the_desks_signals(mode: str) -> None:
+    """The spec text, read by this lane, must emit what the desk's family emits; the test may
+    import the original, the lane may not."""
+    from mt5desk.family_clock_transition import family_clock_transition
+    bars, df = _walk_bars()
+    params = {"label": "london_fix", "stamp_hour": 18, "mode": mode, "side": -1,
+              "lead_bars": 3, "hold_bars": 5}
+    p, why = rc.resolve_spec("clock_transition", params, "asia", "LONG")
+    assert p is not None, why
+    ours = rc._build_clock_transition(bars, p)
+    theirs = family_clock_transition(df, **params)
+    assert len(ours) == len(theirs) > 40
+    for o, s in zip(ours, theirs, strict=True):
+        assert o.t_ns == s.time.value and o.side == s.side and o.ttl_bars == s.ttl_bars
+        assert o.stop == pytest.approx(s.stop) and o.target == pytest.approx(s.target)
+
+
+def test_clock_transition_session_is_the_cells_and_a_real_variant_is_refused() -> None:
+    p, _ = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                "session": "ny"}, "asia", "LONG")
+    assert p is not None and p["_session"] == rc.SESSIONS["ny"] and p["_side"] == 0
+    noop, _ = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                   "entry_timing": "instant",
+                                                   "representation": "x"}, "asia", "LONG")
+    assert noop is not None
+    refused, why = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                        "entry_timing": "delayed"}, "asia", "LONG")
+    assert refused is None and "entry_timing" in why
