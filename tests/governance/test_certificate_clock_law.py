@@ -203,7 +203,9 @@ def test_a_never_traded_family_is_judged_exactly_like_every_other() -> None:
     absent = law.judge(_cert(family=NOVEL), "K", None, [], 100.0, "why", NOW)
     assert absent["verdict"] == "NO_CLOCK" and absent["breach"] is True
 
-    ticking = law.judge(_cert(family=NOVEL), "K", _row(n=5), _samples((200, 1)),
+    ticking = law.judge(_cert(family=NOVEL), "K",
+                        _row(n=5, forward_start=(NOW - timedelta(hours=300)).isoformat()),
+                        _samples((200, 1)),
                         100.0, "why", NOW)
     assert ticking["verdict"] == "ACCUMULATING" and ticking["breach"] is False
     assert ticking["family"] == NOVEL
