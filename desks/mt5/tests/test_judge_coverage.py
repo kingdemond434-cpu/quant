@@ -681,7 +681,7 @@ def test_only_pool_cells_the_rows_show_deferred_leave_budget_deferred(tmp_path: 
     f = jc.judging_failures(rep, bank={})
     assert f["last_sweep"]["budget_deferred"] == 4
     # once the sealed patch stamps the kind on the deferred row, that cell is counted once
-    rows = dfr[:3] + [{**dfr[3], "prewarm_status": "FAIL_3X"}]
+    rows = [*dfr[:3], {**dfr[3], "prewarm_status": "FAIL_3X"}]
     rep.write_text(json.dumps({"verdicts": rows, "prewarm": {
         "failures": {"FAIL_3X": 2}}}), "utf-8")
     f = jc.judging_failures(rep, bank={})
