@@ -522,6 +522,9 @@ NOT_SOURCED_HERE = {
     "rocket_ts": "the peer panel and the (kernels, lookback) configuration are named by "
                  "research/learned_miners, which fits each configuration once per panel and "
                  "charges its whole grid; a per-symbol sweep here would be an uncharged search",
+    "sig_path": "the peer panel and the (depth, lookback) configuration are named by "
+                "research/learned_miners, which fits each configuration once per panel and "
+                "charges its whole grid; a per-symbol sweep here would be an uncharged search",
     "ae_latent": "the peer panel and the (latent, hidden) configuration are named by "
                  "research/learned_miners, which trains each autoencoder once per panel and "
                  "charges its whole grid; a per-symbol sweep here would be an uncharged search",

@@ -1695,12 +1695,17 @@ from mt5desk.family_learned_propagation import (  # noqa: E402
     family_attention_ts,
     family_gnn_propagation,
     family_rocket_ts,
+    family_sig_path,
 )
 
 ORTHOGONAL_FAMILIES["gnn_propagation"] = family_gnn_propagation
 ORTHOGONAL_FAMILIES["attention_ts"] = family_attention_ts
 ORTHOGONAL_FAMILIES["rocket_ts"] = family_rocket_ts
 ORTHOGONAL_FAMILIES["ae_latent"] = family_ae_latent
+ORTHOGONAL_FAMILIES["sig_path"] = family_sig_path
+FAMILY_INPUTS["sig_path"] = ("the peer panel's bars (peer_symbols on the recipe; the readout is "
+                             "pooled across it and the path includes the panel mean), resolved "
+                             "by the family itself", "data/universe/*_H1.parquet")
 FAMILY_INPUTS["rocket_ts"] = ("the peer panel's bars (peer_symbols on the recipe; the readout is "
                               "pooled across it), resolved by the family itself",
                               "data/universe/*_H1.parquet")
@@ -2038,6 +2043,10 @@ FAMILY_TIMEFRAMES["attention_ts"] = (
     "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
     "daily signal and only multiplies the trial count")
 FAMILY_TIMEFRAMES["rocket_ts"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
+    "daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["sig_path"] = (
     ("H1", "H4", "D1"),
     "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
     "daily signal and only multiplies the trial count")

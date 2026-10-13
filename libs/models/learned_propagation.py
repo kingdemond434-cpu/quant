@@ -93,6 +93,16 @@ ROCKET_KLEN = 9
 ROCKET_SEED = 13
 #: Deep autoencoder over the whole panel's own features on a date: tanh encoder -> linear latent
 #: code -> linear decoder, trained on the walk-forward training window only.
+#: Rough-path signatures (Lyons; Chevyrev-Kormilitzin 2016) of each node's recent path in
+#: (own cumulative z, panel-mean cumulative z, time): the iterated integrals are a fixed,
+#: data-free transform that encodes order and area (who moved first, by how much); only the
+#: ridge readout is fitted, walk-forward.
+SIG_GRID: tuple[dict[str, Any], ...] = (
+    {"depth": 2, "lookback": 10},
+    {"depth": 3, "lookback": 10},
+    {"depth": 2, "lookback": 20},
+    {"depth": 3, "lookback": 20},
+)
 AE_GRID: tuple[dict[str, Any], ...] = (
     {"latent": 3, "hidden": 16},
     {"latent": 6, "hidden": 16},
@@ -566,6 +576,43 @@ def rocket_predictions(d: Design, *, kernels: int = 64, lookback: int = 32,
     return ridge_predictions(d, np.concatenate([feats, d.x], axis=-1), **wf)
 
 
+# ===================================================================== path signature model
+def signature_features(d: Design, *, depth: int = 2, lookback: int = 20) -> np.ndarray:
+    """(T, N, 3 + 9 [+ 27]): the depth-2 or depth-3 signature of the piecewise-linear path whose
+    increments are (z_s, market_s, 1) / sqrt(lookback) for the last `lookback` days s <= t,
+    oldest first. Chen's identity appends one linear segment at a time, so row t sees days <= t
+    only and the transform has no parameter to fit."""
+    if int(depth) not in (2, 3):
+        raise ValueError(f"signature depth must be 2 or 3, got {depth!r}")
+    tok = tokens(d)
+    seq = _sequences(np.stack([tok[..., 0], tok[..., 2], np.ones_like(tok[..., 0])], axis=-1),
+                     int(lookback))                        # (T, N, L, 3), position 0 = today
+    t_n, n, lk, c = seq.shape
+    scale = 1.0 / math.sqrt(float(lk))
+    s1 = np.zeros((t_n, n, c))
+    s2 = np.zeros((t_n, n, c, c))
+    s3 = np.zeros((t_n, n, c, c, c)) if int(depth) == 3 else None
+    for pos in range(lk - 1, -1, -1):                      # oldest segment first
+        dx = seq[:, :, pos, :] * scale
+        dxx = np.einsum("tni,tnj->tnij", dx, dx)
+        if s3 is not None:
+            s3 = (s3 + np.einsum("tnij,tnk->tnijk", s2, dx)
+                  + np.einsum("tni,tnjk->tnijk", s1, dxx) / 2.0
+                  + np.einsum("tnij,tnk->tnijk", dxx, dx) / 6.0)
+        s2 = s2 + np.einsum("tni,tnj->tnij", s1, dx) + dxx / 2.0
+        s1 = s1 + dx
+    parts = [s1, s2.reshape(t_n, n, c * c)]
+    if s3 is not None:
+        parts.append(s3.reshape(t_n, n, c ** 3))
+    return np.concatenate(parts, axis=-1)
+
+
+def signature_predictions(d: Design, *, depth: int = 2, lookback: int = 20,
+                          **wf: int) -> np.ndarray:
+    feats = signature_features(d, depth=int(depth), lookback=int(lookback))
+    return ridge_predictions(d, np.concatenate([feats, d.x], axis=-1), **wf)
+
+
 # ======================================================================= autoencoder model
 @dataclass
 class AutoEncoder:
@@ -686,6 +733,9 @@ def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: int) -> 
     if model == "rocket":
         return rocket_predictions(d, kernels=int(config.get("kernels", 64)),
                                   lookback=int(config.get("lookback", 32)), **wf)
+    if model == "signature":
+        return signature_predictions(d, depth=int(config.get("depth", 2)),
+                                     lookback=int(config.get("lookback", 20)), **wf)
     if model == "autoencoder":
         return autoencoder_predictions(d, latent=int(config.get("latent", 3)),
                                        hidden=int(config.get("hidden", 16)), **wf)

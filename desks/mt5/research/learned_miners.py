@@ -154,6 +154,23 @@ MINERS: dict[str, dict[str, Any]] = {
                          "features and the sign flips out of sample"),
         "crowding_prior": "low",
     },
+    "signature": {
+        "source": "learned_signature", "family": "sig_path", "grid": LP.SIG_GRID,
+        "event": "inventory_shock",
+        "mechanism": ("order and area of {sym}'s recent path against the panel: the depth-{depth} "
+                      "rough-path signature of (own, market, time) over the last {lookback} days "
+                      "(a fixed transform, never fitted) feeds a ridge readout pooled across the "
+                      "panel, so who moved first and how far the instrument lagged the crowd "
+                      "can be priced"),
+        "falsifier": ("the out-of-sample IC of the signature forecast is no better than ridge "
+                      "on the instrument's own lags, or a time-shuffled panel shows the same edge"),
+        "constraint": ("constrained participants (retail stop-outs, dealer inventory, index "
+                       "rebalancers) react to the ORDER of moves, not only their sum, so the "
+                       "lead-lag area between an instrument and its crowd repeats"),
+        "failure_mode": ("the level-two area terms track the panel's volatility regime, which "
+                         "forecasts size but not sign"),
+        "crowding_prior": "low",
+    },
     "autoencoder": {
         "source": "learned_autoencoder", "family": "ae_latent", "grid": LP.AE_GRID,
         "event": "cross_market_lead",
@@ -175,7 +192,8 @@ MINERS: dict[str, dict[str, Any]] = {
 FAMILY_FN: dict[str, Any] = {"gnn": FLP.family_gnn_propagation,
                              "attention": FLP.family_attention_ts,
                              "rocket": FLP.family_rocket_ts,
-                             "autoencoder": FLP.family_ae_latent}
+                             "autoencoder": FLP.family_ae_latent,
+                             "signature": FLP.family_sig_path}
 
 #: The dominant participant structure of the instruments the cell trades (the desk's vocabulary:
 #: retail_heavy, institutional, tax_driven, policy_driven, physical_flow, broker_specific,
@@ -334,7 +352,8 @@ def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], 
     census = TL.census(trials)
     proposals = pc.best_per_cell(rows)
     return {"model": model, "source": spec["source"], "family": spec["family"],
-            "panel": panel_syms, "panel_name": panel_name, "configs": configs, "tests_attempted": attempted,
+            "panel": panel_syms, "panel_name": panel_name, "configs": configs,
+            "tests_attempted": attempted,
             "tests_screened": len(rows), "effective_trials": round(census.n_effective, 3),
             "trial_census": census.to_dict(), "skipped": skipped, "rows": rows,
             "proposals": proposals, "_trials": trials}
@@ -481,7 +500,7 @@ def load_bars(symbols: Sequence[str] = PANEL, base: Path | None = None
 
 
 def run(budget_s: float = BUDGET_S,
-        models: Sequence[str] = ("gnn", "attention", "rocket", "autoencoder"),
+        models: Sequence[str] = ("gnn", "attention", "rocket", "autoencoder", "signature"),
         panels: Sequence[str] = tuple(PANELS),
         bars: Mapping[str, pd.DataFrame] | None = None, meta: Mapping[str, Any] | None = None,
         donate: bool = True, report: Path | None = None,
