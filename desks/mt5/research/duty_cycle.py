@@ -96,6 +96,7 @@ MINT_LEGS: frozenset[str] = frozenset({
     "coevolution", "sandbox_runner", "math_lab", "physics_lab", "weak_signals", "scout_swarm",
     "moat_miner", "deepen", "world_crawler", "deep_forest_miner", "graveyard_resurrection",
     "trajectory_evolution", "paradigm_router", "pack_cells", "alpha_replenishment",
+    "institutional_footprint",
 })
 JUDGE_LEGS: frozenset[str] = frozenset({
     "external_gauntlet", "backtest", "falsifier_run", "adversaries", "universal_gate",

@@ -1541,3 +1541,14 @@ def pack() -> Any:
     """Indonesia's pack: `CountryPack` when the framework has landed, else the same fields as a
     dict. `transmission_targets` and `dhe_regime` ride alongside the twenty-one frozen fields."""
     return build_pack(**fields())
+
+
+# ------------------------------------------------------------------------- institutional footprint
+#: The common institutional schema every department carries (principal 2026-09-30 18:12Z):
+#: its roles, atlas rows by canonical id and one coverage status per frozen source class, read
+#: from the atlas roster and the measured coverage report. See `countries/_institutional.py`.
+try:
+    from .. import _institutional  # noqa: TID252 -- reached from two sys.path shapes
+    INSTITUTIONAL_FOOTPRINT: dict = _institutional.institutional_footprint(__name__)
+except ImportError:  # loaded by file path, outside the package: the schema is read elsewhere
+    INSTITUTIONAL_FOOTPRINT = {}

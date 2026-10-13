@@ -2657,3 +2657,14 @@ def mine(ctx: Any = None) -> dict[str, Any]:
             "interactions": len(INTERACTIONS), "sources": len(SOURCE_CLASSES),
             "layers_covered": source_layer_coverage()["n_layers_covered"]}
 
+
+
+# ------------------------------------------------------------------------- institutional footprint
+#: The common institutional schema every department carries (principal 2026-09-30 18:12Z):
+#: its roles, atlas rows by canonical id and one coverage status per frozen source class, read
+#: from the atlas roster and the measured coverage report. See `countries/_institutional.py`.
+try:
+    from .. import _institutional  # noqa: TID252 -- reached from two sys.path shapes
+    INSTITUTIONAL_FOOTPRINT: dict = _institutional.institutional_footprint(__name__)
+except ImportError:  # loaded by file path, outside the package: the schema is read elsewhere
+    INSTITUTIONAL_FOOTPRINT = {}
