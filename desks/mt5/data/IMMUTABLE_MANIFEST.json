@@ -1,8 +1,8 @@
 {
- "signed_utc": "2026-10-13T00:41:04.540131+00:00",
- "signed_by": "Codex, principal-authorized audited ledger reader repair",
+ "signed_utc": "2026-10-13T07:23:40.551268+00:00",
+ "signed_by": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "44505acc9652daf0",
+  "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
@@ -2489,7 +2489,6 @@
   "scripts/check_heat_floor_wiring.py": "Codex, principal-authorized repair",
   "scripts/run_deadman_switch.py": "Codex, principal-authorized repair",
   "libs/validation/replay2.py": "Codex, principal-authorized repair",
-  "desks/mt5/scripts/external_gauntlet.py": "Codex, principal-authorized input wiring repair",
   "desks/mt5/research/promoter.py": "Codex, principal-authorized audited ledger reader migration",
   "libs/ops/live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
   "libs/ops/live_ledger_migration.py": "Codex, principal-authorized audited ledger adoption handoff",
