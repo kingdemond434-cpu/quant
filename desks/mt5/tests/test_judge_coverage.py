@@ -23,6 +23,18 @@ NOW = datetime(2026, 9, 23, 12, 0, tzinfo=UTC)
 
 
 @pytest.fixture(autouse=True)
+def _no_live_rate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fence reads the judge's verdict clock; tests never see the checkout's copy. The
+    default clock is a live judge (a verdict an hour before NOW): an absent clock FAILS on the
+    box, so tests about other checks plant a healthy one."""
+    rate = tmp_path / "rate.json"
+    rate.write_text(json.dumps({"verdicts": {
+        "last_verdict_at": (NOW - timedelta(hours=1)).isoformat()}}), "utf-8")
+    monkeypatch.setattr(fence, "RATE", rate)
+    monkeypatch.setattr(fence, "RESIDENT", tmp_path / "no_resident.json")
+
+
+@pytest.fixture(autouse=True)
 def _desk_state_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The bank, its re-admission log, the ratchet, the report and the learned priors are desk
     state: a test writes them under tmp, never into the checkout (audit of PR #290)."""
@@ -542,6 +554,167 @@ def test_a_family_the_posterior_never_learned_is_backfilled(tmp_path: Path) -> N
     out = jc.learn_priors(ledger, since="2026-09-23T11:35:40+00:00", state_dir=tmp_path)
     assert out["backfilled_families"] == 1
     assert out["recorded"] == 1
+
+
+def _fresh_table(tmp_path: Path, *, at: datetime, **extra: object) -> Path:
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": at.isoformat(),
+        "families": {"alpha": {"unjudged": 30, "queued": 10, "judged_window": 20, "quota": 10,
+                               "window_h": 3.0, "oldest_unjudged_age_h": 2.0,
+                               "carried": 30, "prior_unjudged": 50, "drained": 20}},
+        "totals": {"unjudged_total": 30}, **extra}), "utf-8")
+    return report
+
+
+def test_a_stale_table_fails_on_the_box_even_when_every_other_check_passes(tmp_path) -> None:
+    """2026-10-13: a six-day-old table passed because freshness never entered `failures`."""
+    report = _fresh_table(tmp_path, at=NOW - timedelta(days=6), last_attempt={
+        "at": (NOW - timedelta(days=1)).isoformat(), "status": "STARTED",
+        "via": "judge_coverage leg", "why": "hourly leg building the table"})
+    box = fence.judge(report, require_state=True, now=NOW)
+    assert box["verdict"] == "FAIL"
+    assert "stale_report" in box["why"] and "STARTED" in box["why"]
+    off_box = fence.judge(report, now=NOW)
+    assert off_box["verdict"] == "PASS", "a clone with an old copy is not a breach"
+    assert any(c["metric"] == "freshness" and c["state"] == "WARN" for c in off_box["checks"])
+
+
+def test_a_fresh_table_is_not_failed_for_freshness(tmp_path) -> None:
+    doc = fence.judge(_fresh_table(tmp_path, at=NOW - timedelta(hours=2)), require_state=True,
+                      now=NOW)
+    assert doc["verdict"] == "PASS"
+
+
+def test_a_silent_judge_fails_on_the_box(tmp_path) -> None:
+    rate = tmp_path / "JUDGING_RATE.json"
+    rate.write_text(json.dumps({"verdicts": {
+        "last_verdict_at": (NOW - timedelta(hours=31)).isoformat()}}), "utf-8")
+    report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
+    doc = fence.judge(report, require_state=True, now=NOW, rate=rate)
+    assert doc["verdict"] == "FAIL" and "judge_silent" in doc["why"]
+    assert fence.judge(report, now=NOW, rate=rate)["verdict"] == "PASS"
+    rate.write_text(json.dumps({"verdicts": {
+        "last_verdict_at": (NOW - timedelta(hours=1)).isoformat()}}), "utf-8")
+    assert fence.judge(report, require_state=True, now=NOW, rate=rate)["verdict"] == "PASS"
+
+
+def test_an_attempt_stamp_leaves_the_table_and_its_clock(tmp_path) -> None:
+    report = _fresh_table(tmp_path, at=NOW)
+    before = json.loads(report.read_text("utf-8"))
+    jc.note_attempt("FAILED", "MemoryError: boom", via="merge_hypotheses", report=report)
+    after = json.loads(report.read_text("utf-8"))
+    assert after["last_attempt"]["status"] == "FAILED"
+    assert {k: v for k, v in after.items() if k != "last_attempt"} == before
+
+
+def test_order_docket_names_its_failure_on_the_table(tmp_path, monkeypatch) -> None:
+    report = _fresh_table(tmp_path, at=NOW)
+    monkeypatch.setattr(jc, "REPORT", report)
+
+    def _boom(*_a: object, **_k: object) -> dict:
+        raise MemoryError("docket too large")
+
+    monkeypatch.setattr(jc, "build", _boom)
+    rows = _rows({"alpha": 3})
+    ordered, doc = jc.order_docket(list(rows), now=NOW)
+    assert len(ordered) == 3 and doc["verdict"] == "UNMEASURED"
+    stamp = json.loads(report.read_text("utf-8"))["last_attempt"]
+    assert stamp["status"] == "FAILED" and "docket too large" in stamp["why"]
+    assert stamp["via"] == "merge_hypotheses"
+
+
+def test_a_dead_resident_fails_on_the_box(tmp_path) -> None:
+    """Audit of #333: a resident killed mid-sweep still reads SWEEPING; the heartbeat is truth."""
+    res = tmp_path / "JUDGE_RESIDENT.json"
+    report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
+    res.write_text(json.dumps({"status": "SWEEPING", "pid": 7,
+                               "heartbeat_utc": (NOW - timedelta(minutes=20)).isoformat()}),
+                   "utf-8")
+    doc = fence.judge(report, require_state=True, now=NOW, resident=res)
+    assert doc["verdict"] == "FAIL" and "resident_dead" in doc["why"]
+    assert fence.judge(report, now=NOW, resident=res)["verdict"] == "PASS"
+    res.write_text(json.dumps({"status": "SWEEPING",
+                               "heartbeat_utc": (NOW - timedelta(seconds=40)).isoformat()}),
+                   "utf-8")
+    assert fence.judge(report, require_state=True, now=NOW, resident=res)["verdict"] == "PASS"
+    res.write_text(json.dumps({"status": "STOPPED", "why": "RESIDENT_STOP present",
+                               "heartbeat_utc": (NOW - timedelta(hours=3)).isoformat()}),
+                   "utf-8")
+    assert fence.judge(report, require_state=True, now=NOW, resident=res)["verdict"] == "PASS"
+
+
+def test_an_unread_judge_clock_fails_on_the_box_and_an_unknown_backlog_is_owed(tmp_path) -> None:
+    """Audit of #334: an absent JUDGING_RATE or a missing backlog never reads as PASS."""
+    report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
+    doc = fence.judge(report, require_state=True, now=NOW, rate=tmp_path / "absent.json")
+    assert doc["verdict"] == "FAIL" and "judge_silent" in doc["why"]
+    assert fence.judge(report, now=NOW, rate=tmp_path / "absent.json")["verdict"] == "PASS"
+    rate = tmp_path / "old_rate.json"
+    rate.write_text(json.dumps({"verdicts": {
+        "last_verdict_at": (NOW - timedelta(hours=31)).isoformat()}}), "utf-8")
+    no_total = tmp_path / "no_total" / "JUDGE_COVERAGE.json"
+    no_total.parent.mkdir()
+    no_total.write_text(json.dumps({"at": NOW.isoformat(), "families": {"alpha": {
+        "unjudged": 3, "queued": 3, "judged_window": 1, "quota": 3}}}), "utf-8")
+    doc = fence.judge(no_total, require_state=True, now=NOW, rate=rate)
+    assert doc["verdict"] == "FAIL" and "judge_silent" in doc["why"]
+
+
+def test_an_undated_table_fails_on_the_box(tmp_path) -> None:
+    """Audit of #334: a table whose `at` is missing or unparseable skipped freshness and passed."""
+    for bad in (None, "not-a-time"):
+        report = _fresh_table(tmp_path, at=NOW)
+        doc = json.loads(report.read_text("utf-8"))
+        doc["at"] = bad
+        report.write_text(json.dumps(doc), "utf-8")
+        box = fence.judge(report, require_state=True, now=NOW)
+        assert box["verdict"] == "FAIL" and "stale_report" in box["why"], bad
+        assert fence.judge(report, now=NOW)["verdict"] == "PASS"
+
+
+def test_a_resident_in_a_kill_loop_fails_on_the_box(tmp_path) -> None:
+    """Audit of #350: two consecutive hung kills with a live heartbeat still fail the fence."""
+    report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
+    res = tmp_path / "JUDGE_RESIDENT.json"
+    res.write_text(json.dumps({"heartbeat_utc": NOW.isoformat(), "status": "SWEEPING",
+                               "consecutive_hangs": 2, "last_hung_utc": NOW.isoformat(),
+                               "killed_in_phase": {"phase": "merge_and_publish"}}), "utf-8")
+    doc = fence.judge(report, require_state=True, now=NOW, resident=res)
+    assert doc["verdict"] == "FAIL" and "resident_hangs" in doc["why"]
+    assert any("merge_and_publish" in c["why"] for c in doc["checks"]
+               if c["metric"] == "resident_hangs")
+    one = json.loads(res.read_text("utf-8"))
+    one["consecutive_hangs"] = 1
+    res.write_text(json.dumps(one), "utf-8")
+    assert fence.judge(report, require_state=True, now=NOW, resident=res)["verdict"] == "PASS"
+
+
+def test_unreadable_or_future_stamps_and_bad_counts_never_pass_on_the_box(tmp_path) -> None:
+    """Audit of #334: an unparseable or future heartbeat, a future table stamp, a NaN backlog and
+    a non-numeric hang count each fail on the box instead of passing or crashing."""
+    report = _fresh_table(tmp_path, at=NOW - timedelta(hours=1))
+    res = tmp_path / "JUDGE_RESIDENT.json"
+    for beat in ("not-a-time", (NOW + timedelta(hours=3)).isoformat()):
+        res.write_text(json.dumps({"heartbeat_utc": beat, "status": "SWEEPING"}), "utf-8")
+        doc = fence.judge(report, require_state=True, now=NOW, resident=res)
+        assert doc["verdict"] == "FAIL" and "resident_dead" in doc["why"], beat
+    res.write_text(json.dumps({"heartbeat_utc": NOW.isoformat(), "status": "SWEEPING",
+                               "consecutive_hangs": "lots"}), "utf-8")
+    doc = fence.judge(report, require_state=True, now=NOW, resident=res)
+    assert doc["verdict"] == "FAIL" and "resident_hangs" in doc["why"]
+    future = _fresh_table(tmp_path, at=NOW + timedelta(days=2))
+    assert "stale_report" in fence.judge(future, require_state=True, now=NOW)["why"]
+    nan = tmp_path / "nan" / "JUDGE_COVERAGE.json"
+    nan.parent.mkdir()
+    doc = json.loads(report.read_text("utf-8"))
+    doc["totals"]["unjudged_total"] = float("nan")
+    nan.write_text(json.dumps(doc), "utf-8")
+    rate = tmp_path / "old_rate.json"
+    rate.write_text(json.dumps({"verdicts": {
+        "last_verdict_at": (NOW - timedelta(hours=31)).isoformat()}}), "utf-8")
+    out = fence.judge(nan, require_state=True, now=NOW, rate=rate)
+    assert out["verdict"] == "FAIL" and "judge_silent" in out["why"]
 
 
 def test_every_judging_failure_has_a_route_out_and_none_is_terminal() -> None:

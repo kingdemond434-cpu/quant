@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
@@ -63,6 +64,16 @@ DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "JUDGE_COVERAGE.json"
 RATCHET = DESK / "data" / "judge_backlog_ratchet.json"
 AUDIT = DESK / "reports" / "judge_coverage_fence.json"
+#: The judge's own verdict clock (`research/judging_throughput.py`, core hourly leg): the time of
+#: the newest row in gate_verdict_ledger.jsonl, read without re-parsing the ledger here.
+RATE = DESK / "reports" / "JUDGING_RATE.json"
+#: The resident judge's heartbeat (`scripts/run_sharded_gauntlet.py`), re-stamped every 30s while
+#: a sweep runs. Older than RESIDENT_DEAD_MIN with no operator stop means the resident is dead:
+#: the one-minute trigger should already have started a fresh one.
+RESIDENT = DESK / "reports" / "JUDGE_RESIDENT.json"
+RESIDENT_DEAD_MIN = 5.0
+#: Consecutive hung-sweep kills (`run_sharded_gauntlet.RESIDENT_HANG_RC`) that fail the fence.
+RESIDENT_HANG_FAIL = 2
 
 #: A report older than this is stale: the organ runs at intake, hourly, so three hours of silence
 #: means the clock stopped. Generous because a box reboot or a long sweep is not a law breach.
@@ -100,11 +111,15 @@ def _age_h(stamp: object, now: datetime) -> float | None:
         at = datetime.fromisoformat(txt.replace("Z", "+00:00")).astimezone(UTC)
     except ValueError:
         return None
-    return max(0.0, (now.timestamp() - at.timestamp()) / 3600.0)
+    age = (now.timestamp() - at.timestamp()) / 3600.0
+    # A STAMP FROM THE FUTURE PROVES NOTHING IS FRESH (audit of #334): past five minutes of clock
+    # skew it is unreadable, never "zero hours old" forever.
+    return max(0.0, age) if age > -5.0 / 60.0 else None
 
 
 def judge(report: Path | None = None, *, require_state: bool = False,
-          now: datetime | None = None) -> dict[str, Any]:
+          now: datetime | None = None, rate: Path | None = None,
+          resident: Path | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     path = report or REPORT
     doc = _read(path)
@@ -117,15 +132,114 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                          else "; this tree holds no judge-coverage state (L1.28a)"))
         return out
 
+    # A STALE TABLE IS A FAILURE ON THE BOX, NOT A NOTE (2026-10-13). This check used to append
+    # a FAIL row without entering `failures`, so the verdict stayed PASS: the report sat frozen at
+    # 2026-10-07 20:54Z for six days, 40 families showed mined cells with zero judged, and the
+    # fence kept passing on the frozen copy. Every other check below re-reads that same frozen
+    # table, so freshness has to bind on its own.
+    stale: list[str] = []
     age = _age_h(doc.get("at"), at)
-    if age is not None and age > STALE_H:
+    if age is None:
+        # AN UNDATED TABLE PROVES NOTHING IS FRESH (audit of #334): it fails like a stale one.
         out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
-                              "why": f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"})
+                              "why": f"report `at` is missing or unparseable ({doc.get('at')!r})"})
+        if require_state:
+            stale.append("stale_report")
+    elif age > STALE_H:
+        why = f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"
+        attempt = doc.get("last_attempt")
+        if isinstance(attempt, dict) and attempt.get("at"):
+            why += (f"; the writer's last attempt was {attempt.get('status')} at "
+                    f"{attempt.get('at')} via {attempt.get('via')}: {attempt.get('why')}")
+        else:
+            why += "; the writer left no attempt stamp, so it did not reach a build at all"
+        out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
+                              "why": why})
+        if require_state:
+            stale.append("stale_report")
+    # THE JUDGE'S OWN CLOCK. Unjudged cells with no verdict recorded inside the lease means the
+    # sweep itself stopped -- measured 2026-10-13: the last verdict was 2026-10-12 06:59Z with
+    # ~1.2M cells unjudged. This is the gauntlet's clock, so it fails here only on the box.
+    # THE RESIDENT'S PULSE (audit of #333): a resident killed mid-sweep leaves SWEEPING on disk,
+    # so liveness is the heartbeat's age, never the status it last wrote.
+    res = _read(resident or RESIDENT)
+    if not isinstance(res, dict) or not res.get("heartbeat_utc"):
+        out["checks"].append({"metric": "resident_alive", "state": "UNMEASURED",
+                              "why": f"{(resident or RESIDENT).name} carries no heartbeat"})
+    elif str(res.get("status")) == "STOPPED":
+        out["checks"].append({"metric": "resident_alive", "state": "WARN",
+                              "why": f"operator stop: {res.get('why')}"})
+    else:
+        beat_h = _age_h(res.get("heartbeat_utc"), at)
+        if beat_h is None:
+            # AN UNREADABLE PULSE IS NOT A PULSE (audit of #334).
+            out["checks"].append({
+                "metric": "resident_alive", "state": "FAIL" if require_state else "UNMEASURED",
+                "why": f"heartbeat_utc {res.get('heartbeat_utc')!r} is unparseable or future"})
+            if require_state:
+                stale.append("resident_dead")
+        elif beat_h * 60.0 > RESIDENT_DEAD_MIN:
+            out["checks"].append({
+                "metric": "resident_alive", "state": "FAIL" if require_state else "WARN",
+                "why": (f"DEAD: the resident judge's heartbeat is {beat_h * 60.0:.0f} min old "
+                        f"(last status {res.get('status')}, pid {res.get('pid')}); nothing has "
+                        f"restarted it")})
+            if require_state:
+                stale.append("resident_dead")
+        else:
+            out["checks"].append({"metric": "resident_alive", "state": "OK",
+                                  "why": f"heartbeat {res.get('heartbeat_utc')}, status "
+                                         f"{res.get('status')}"})
+    # A KILL LOOP IS A SILENT JUDGE WITH A PULSE (audit of #350): the resident kills a sweep past
+    # its ceiling and starts the next, so a sweep that always overruns beats every 30s and rules
+    # nothing. Two consecutive hung kills fail here, naming the phase the last one died in.
+    try:
+        hangs = int(res.get("consecutive_hangs") or 0) if isinstance(res, dict) else 0
+    except (TypeError, ValueError):
+        hangs = RESIDENT_HANG_FAIL                     # an unreadable count is not a clean one
+    if hangs >= RESIDENT_HANG_FAIL:
+        died = (res.get("killed_in_phase") or {}).get("phase") \
+            if isinstance(res.get("killed_in_phase"), dict) else None
+        out["checks"].append({
+            "metric": "resident_hangs", "state": "FAIL" if require_state else "WARN",
+            "why": (f"{hangs} consecutive sweeps were killed as hung (last in phase "
+                    f"{died or 'UNMEASURED'}, {res.get('last_hung_utc')}): the judge beats and "
+                    "rules nothing")})
+        if require_state:
+            stale.append("resident_hangs")
+    rate_doc = _read(rate or RATE)
+    verdicts = rate_doc.get("verdicts") if isinstance(rate_doc, dict) else None
+    last_verdict = verdicts.get("last_verdict_at") if isinstance(verdicts, dict) else None
+    v_age = _age_h(last_verdict, at)
+    _raw_backlog = (doc.get("totals") or {}).get("unjudged_total")
+    # An absent backlog is not "nothing waits" (audit of #334): unknown counts as owed.
+    backlog: int | None = (int(_raw_backlog) if isinstance(_raw_backlog, (int, float))
+                           and math.isfinite(_raw_backlog) else None)
+    if v_age is None:
+        # THE JUDGE'S CLOCK UNREADABLE ON THE BOX IS A CLAIM THE DESK CANNOT CASH (L1.49).
+        out["checks"].append({"metric": "judge_silent",
+                              "state": "FAIL" if require_state else "UNMEASURED",
+                              "why": (f"{(rate or RATE).name} is absent or carries no "
+                                      "last_verdict_at: the judge's clock is unread")})
+        if require_state:
+            stale.append("judge_silent")
+    elif v_age > STALE_H and (backlog is None or backlog > 0):
+        out["checks"].append({"metric": "judge_silent",
+                              "state": "FAIL" if require_state else "WARN",
+                              "why": (f"no verdict recorded for {v_age:.1f}h (last "
+                                      f"{last_verdict}) while "
+                                      f"{'an unknown number of' if backlog is None else backlog} "
+                                      "cell(s) wait unjudged")})
+        if require_state:
+            stale.append("judge_silent")
+    else:
+        out["checks"].append({"metric": "judge_silent", "state": "OK",
+                              "why": f"last verdict {v_age:.1f}h ago"})
 
     fams: dict[str, Any] = {f: r for f, r in (doc.get("families") or {}).items()
                             if isinstance(r, dict)}
     judged_any = sum(int(r.get("judged_window") or 0) for r in fams.values())
-    failures: list[str] = []
+    failures: list[str] = list(stale)
 
     # 1. STARVATION: unjudged cells and no place in the queue.
     starved = sorted((f for f, r in fams.items()
@@ -376,6 +490,13 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                   + ", ".join(sorted(set(failures))[:6])) if failures else (
         "every family holding unjudged cells is queued, its carried backlog fell, and none sits "
         "past its own window")
+    if stale:
+        out["why"] = ("THE COVERAGE CLOCK STOPPED (" + ", ".join(stale) + "): "
+                      + "; ".join(c["why"] for c in out["checks"]
+                                  if c.get("metric") in ("freshness", "judge_silent", "resident_alive",
+                                                          "resident_hangs")
+                                  and c.get("state") == "FAIL")
+                      + " -- " + out["why"])
     return out
 
 
@@ -438,7 +559,7 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["RATCHET", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
+__all__ = ["RATCHET", "RATE", "REPORT", "RESIDENT", "RESIDENT_DEAD_MIN", "RESIDENT_HANG_FAIL", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

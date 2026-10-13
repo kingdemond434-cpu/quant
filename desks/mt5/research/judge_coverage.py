@@ -86,6 +86,7 @@ import argparse
 import contextlib
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter
@@ -2197,9 +2198,14 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
     backlog. A failure here returns the rows untouched, because an ordering organ must never be
     able to cost the desk a docket (L1.28a).
     """
+    if publish:
+        note_attempt("STARTED", f"ordering {len(rows)} docket row(s)", via="merge_hypotheses")
     try:
         doc = build(rows, now=now)
         if not doc.get("families"):
+            if publish:
+                note_attempt("EMPTY", str(doc.get("why") or "no family table"),
+                             via="merge_hypotheses")
             return rows, doc
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
         banned = banned_from_capital()
@@ -2278,8 +2284,42 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         if publish:
             write(doc)
         return ordered, doc
-    except Exception as exc:                                             # pragma: no cover
+    except Exception as exc:
+        if publish:
+            note_attempt("FAILED", f"{type(exc).__name__}: {exc}", via="merge_hypotheses")
         return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
+def note_attempt(status: str, why: str, *, via: str, report: Path | None = None) -> None:
+    """Stamp the writer's latest attempt onto the published table, leaving the table itself.
+
+    WHY (2026-10-13): the table froze at 2026-10-07 20:54Z for six days and nothing off the box
+    could say why -- both writers (this module's hourly leg and `merge_hypotheses`' intake call)
+    either were not reached, were killed by their cycle cap mid-build, or returned without
+    writing. A STARTED stamp that is never followed by WROTE names the kill; FAILED and EMPTY name
+    the return. The family table, its `at` and the ratchet are untouched, so a stale table still
+    reads stale (`scripts/check_judge_coverage.py` fails it) and no baseline moves.
+    """
+    target = report or REPORT
+    try:
+        doc = json.loads(target.read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    if not isinstance(doc, dict):
+        doc = {}
+    doc["last_attempt"] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                           "status": status, "via": via, "why": str(why)[:500]}
+    # ATOMIC (audit of #334): a reader never sees half a report, and a failed write never
+    # truncates the table it was stamping.
+    tmp = target.with_name(f"{target.name}.{os.getpid()}.attempt.tmp")
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        os.replace(tmp, target)
+    except OSError:
+        # a stamp is a report; it never costs the docket or the table -- and leaves no debris
+        with contextlib.suppress(OSError):
+            tmp.unlink()
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,
@@ -2295,6 +2335,9 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                 dk.publish(keff)
             except OSError as exc:
                 doc.setdefault("keff_order", {})["publish_error"] = f"{type(exc).__name__}"
+    if report is None:
+        doc["last_attempt"] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                               "status": "WROTE", "via": "write", "why": "table published"}
     target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     fams = doc.get("families") or {}
     state = {
@@ -2358,7 +2401,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-write", action="store_true", help="measure without advancing the ratchet")
     args = ap.parse_args(argv)
     t0 = time.time()
-    doc = build()
+    if not args.no_write:
+        note_attempt("STARTED", "hourly leg building the table", via="judge_coverage leg")
+    try:
+        doc = build()
+    except Exception as exc:
+        if not args.no_write:
+            note_attempt("FAILED", f"{type(exc).__name__}: {exc}", via="judge_coverage leg")
+        raise
     doc["elapsed_s"] = round(time.time() - t0, 2)
     doc["budget_s"] = args.budget_s
     if not args.no_write:
@@ -2387,6 +2437,7 @@ __all__ = [
     "main",
     "measured_capacity",
     "name_unknowns",
+    "note_attempt",
     "order_docket",
     "rank_by_value",
     "render",
