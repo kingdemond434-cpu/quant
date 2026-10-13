@@ -188,3 +188,20 @@ def test_judge_coverage_publishes_the_unmeasured_cost_fields(tmp_path):
     assert block["by_field"]["spread"]["ZERO"] == ["USDJPY"]
     missing = jc._cost_fields_unmeasured(tmp_path / "absent.json")
     assert missing["status"].startswith("UNMEASURED") and missing["n_symbols"] is None
+
+
+def test_accuracy_report_compares_the_fill_quote_to_the_modelled_charge():
+    from research import cost_surface_accuracy as acc
+    surf = _surface({str(h): {"status": "MEASURED", "p50": 20.0, "p90": 40.0, "n_nonzero": 999}
+                     for h in range(24)})
+    fills = [{"symbol": "X", "fill_price": 1.0, "quote_bid": 1.0, "quote_ask": 1.0004,
+              "filled_at": "2026-09-16T04:45:53+00:00"} for _ in range(3)]
+    doc = acc.build(fills=fills, registry={"X": META}, surface=surf)
+    row = doc["symbols"]["X"]
+    assert row["realized_spread_pts_p50"] == pytest.approx(40.0)
+    assert row["modelled_spread_pts_p50"] == 20.0
+    assert row["realized_over_modelled"] == pytest.approx(2.0)
+    assert "X" in doc["undercharged_symbols"]
+    assert acc.broker_slot("2026-09-16T04:45:53+00:00") == (2, 7), "summer: broker = UTC+3"
+    empty = acc.build(fills=[], registry={}, surface=surf)
+    assert empty["status"].startswith("UNMEASURED")
