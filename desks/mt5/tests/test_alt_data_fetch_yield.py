@@ -692,3 +692,17 @@ def test_the_yield_artifact_reports_outcomes_causes_rules_and_the_conversion_lad
     assert "absent" in doc2["vectors"]["conversion"]["unmeasured"]["cell_generating"]
     assert doc2["vectors"]["rows_by_vector"]["story"]["conversion"]["cell_generating"] \
         == "UNMEASURED"
+
+
+@pytest.mark.parametrize("robots, path, allowed", [
+    ("User-agent: *\nDisallow: /*-index\n", "/CC-MAIN-1-index?url=a/*", False),
+    ("User-agent: *\nDisallow: /*-index\nAllow: /CC-MAIN-1-index?url\n",
+     "/CC-MAIN-1-index?url=a/*", True),
+    ("User-agent: *\nDisallow: /\n", "/x", False),
+    ("User-agent: *\nDisallow:\n", "/x", True),
+    ("User-agent: quant-desk-deep-forest\nDisallow: /\nUser-agent: *\nAllow: /\n", "/x", False),
+    ("User-agent: *\nDisallow: /*.json$\n", "/collinfo.json", False),
+    ("", "/x", True),
+])
+def test_robots_wildcards_are_read(robots, path, allowed) -> None:
+    assert dfm.robots_allows(robots, dfm.CCINDEX_AGENT, path) is allowed

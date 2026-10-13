@@ -387,11 +387,8 @@ def ccindex_robots() -> tuple[bool, str]:
             return _CC_STATE["robots"]
         r = _cc_get(f"https://{CCINDEX_HOST}/robots.txt")
         if r.ok:
-            from urllib.robotparser import RobotFileParser
-            rp = RobotFileParser()
-            rp.parse(r.text.splitlines())
-            probe = f"https://{CCINDEX_HOST}/CC-MAIN-0000-00-index?url=example.org/*&output=json"
-            ok = bool(rp.can_fetch(CCINDEX_AGENT, probe))
+            ok = robots_allows(r.text, CCINDEX_AGENT,
+                               "/CC-MAIN-0000-00-index?url=example.org/*&output=json")
             out = (ok, "robots.txt allows the CDX path" if ok else
                    "TERMS_HELD: robots.txt disallows the CDX query path for this agent")
         elif r.status == 404:
@@ -401,6 +398,44 @@ def ccindex_robots() -> tuple[bool, str]:
             out = (False, f"robots.txt unreadable ({r.error or r.status}); route stands down")
         _CC_STATE["robots"] = out
         return out
+
+
+def robots_allows(robots: str, agent: str, path: str) -> bool:
+    """RFC 9309 reading of a robots.txt for `agent` on `path` (path + query), WITH the `*` and
+    `$` wildcards the standard library's parser ignores: the group naming the agent, else `*`;
+    the longest matching rule wins and Allow wins a tie. No rule matching means allowed."""
+    groups: list[tuple[list[str], list[tuple[str, str]]]] = []
+    agents: list[str] = []
+    rules: list[tuple[str, str]] = []
+    for raw in (robots or "").splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if ":" not in line:
+            continue
+        key, val = (x.strip() for x in line.split(":", 1))
+        key = key.lower()
+        if key == "user-agent":
+            if rules:
+                groups.append((agents, rules))
+                agents, rules = [], []
+            agents.append(val.lower())
+        elif key in ("allow", "disallow") and agents:
+            rules.append((key, val))
+    if agents:
+        groups.append((agents, rules))
+    mine = [r for a, r in groups if any(x != "*" and x in agent.lower() for x in a)]
+    chosen = [rule for rs in (mine or [r for a, r in groups if "*" in a]) for rule in rs]
+    best: tuple[int, bool] | None = None
+    for kind, pat in chosen:
+        if not pat:
+            continue                      # an empty Disallow allows everything
+        rx = "^" + re.escape(pat).replace(r"\*", ".*")
+        if rx.endswith(r"\$"):
+            rx = rx[:-2] + "$"
+        if re.match(rx, path):
+            cand = (len(pat), kind == "allow")
+            if best is None or cand > best:
+                best = cand
+    return True if best is None else best[1]
 
 
 def ccindex_collection() -> tuple[str, str | None]:
