@@ -88,6 +88,16 @@ def _desk_tree(root: Path) -> Path:
     dst = root / REL
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(SEALED, dst)
+    # THE REPLAY-CODE IDENTITY READS ITS SOURCES FROM THE TREE IT RUNS IN (`_replay_code_identity`
+    # hashes the judge, the sweep inputs, the engine and every family module into each cache
+    # key), so the sandbox carries the same files the real desk does.
+    real = SEALED.parents[1]
+    for rel in ("research/orthogonal_sweep.py", "mt5desk/engine.py", "mt5desk/cell_modifiers.py",
+                "mt5desk/data.py", "mt5desk/legacy_family_inputs.py",
+                *(f"mt5desk/{p.name}" for p in (real / "mt5desk").glob("famil*.py"))):
+        if (real / rel).exists():
+            (root / "desks" / "mt5" / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(real / rel, root / "desks" / "mt5" / rel)
     uni = root / "desks" / "mt5" / "data" / "universe"
     uni.mkdir(parents=True, exist_ok=True)
     syms = [f"SYN{s:03d}" for s in range(24)] + ["NOBARS"]

@@ -1,8 +1,8 @@
 {
- "signed_utc": "2026-10-13T07:23:40.551268+00:00",
- "signed_by": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved",
+ "signed_utc": "2026-10-13T17:27:43.011433+00:00",
+ "signed_by": "zuck",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
+  "desks/mt5/scripts/external_gauntlet.py": "bc806fc94cdf74f8",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
@@ -2493,7 +2493,6 @@
   "libs/ops/live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
   "libs/ops/live_ledger_migration.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/migrate_live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
-  "scripts/check_immutable_evaluator.py": "Codex, principal-authorized audited verification fixture declaration",
-  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved"
+  "scripts/check_immutable_evaluator.py": "Codex, principal-authorized audited verification fixture declaration"
  }
 }
