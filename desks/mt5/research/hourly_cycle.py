@@ -1303,7 +1303,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
                      # every dated forced-flow kind, kind x mode x polarity on the UTC clock
-                     "calendar_flow_cells"),
+                     "calendar_flow_cells",
+                     # retail crowd long share, recorded PIT from Myfxbook's API, faded
+                     "crowd_positioning"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
@@ -2135,6 +2137,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "cross_sectional_breadth": 1_000,
     # Stops itself at --budget-s 900 and re-measures each cell at most once a day.
     "calendar_flow_cells": 1_000,
+    # One API call (at most hourly, the free tier's 100 a day) and a parquet append.
+    "crowd_positioning": 300,
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
@@ -4284,6 +4288,11 @@ def main() -> None:
     # door. The breadth sweep reaches forced_flow only at its month_end/bars-clock defaults.
     cfc = _costed("calendar_flow_cells", lambda: _producer(
         "calendar_flow_cells", "research/calendar_flow_cells.py", "--budget-s", "900"))
+    # CROWD POSITIONING (principal 2026-10-13, retail-behaviour ideas): Myfxbook's community
+    # outlook through its official API, one PIT row an hour into the pack's lake frame, and the
+    # contrarian fade + crowd-regime cells donated per symbol once its history is long enough.
+    crp = _costed("crowd_positioning", lambda: _producer(
+        "crowd_positioning", "research/crowd_positioning.py"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -6141,7 +6150,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "calendar_flow_cells": cfc,
+                    "calendar_flow_cells": cfc, "crowd_positioning": crp,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
