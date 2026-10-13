@@ -613,11 +613,12 @@ def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
 
 
 def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
-    """SKIP every row on a terms-fenced lineage (libs/data/terms_fence.py: Reddit and its mirrors,
-    StockTwits, X), counted by platform. The docket build quarantines too; this is the second
-    lock, because `test_grid.json` (the bridge) and the merged results file reach this stage
-    without passing through the docket build. A fence that cannot load raises: no backtest runs
-    on an unfenced grid."""
+    """THE LIVE-INPUT CHECK (libs/data/terms_fence.py, rule 4 of the 2026-10-13 ruling): SKIP a row
+    only when its DECLARED LIVE INPUT DATA comes from an IDEAS_ONLY or held source, counted by
+    source. A row's idea lineage (Reddit, X, a forum) never skips it. The docket build checks
+    too; this is the second lock, because `test_grid.json` (the bridge) and the merged results
+    file reach this stage without passing through the docket build. A policy that cannot load
+    raises: no backtest runs on an unchecked grid."""
     from libs.data import terms_fence as tf
     kept: list[dict] = []
     by_platform: Counter = Counter()
@@ -628,14 +629,15 @@ def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
             continue
         kept.append(r)
     return kept, {"skipped": sum(by_platform.values()), "by_platform": dict(by_platform),
-                  "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable"}
+                  "reason": ("live input data from an IDEAS_ONLY or held source "
+                             "(libs/data/terms_fence.py)")}
 
 
 def run_all() -> list[dict]:
     raw_grid = _docket_rows()
     raw_grid, terms_q = quarantine_terms_fenced(raw_grid)
     if terms_q["skipped"]:
-        print(f"  terms fence: {terms_q['skipped']} fenced row(s) QUARANTINED, not backtested "
+        print(f"  live-input check: {terms_q['skipped']} row(s) QUARANTINED, not backtested "
               f"{terms_q['by_platform']}")
     if not raw_grid:
         print("No candidates: neither the docket nor test_grid.json yielded a row.")
@@ -696,12 +698,11 @@ def run_all() -> list[dict]:
         prior_by_key = {_cell_key(r): r for r in prior} if isinstance(prior, list) else {}
     except (OSError, ValueError):
         prior_by_key = {}
-    # RESULTS ALREADY BANKED FROM A FENCED LINEAGE LEAVE THE ARTIFACT TOO (the merge consumes it
-    # as a producer): counted beside the grid's own quarantine.
+    # BANKED RESULTS PASS THE SAME LIVE-INPUT CHECK (the merge consumes them as a producer).
     _kept_prior, _q_prior = quarantine_terms_fenced(list(prior_by_key.values()))
     if _q_prior["skipped"]:
         prior_by_key = {_cell_key(r): r for r in _kept_prior}
-        print(f"  terms fence: {_q_prior['skipped']} banked result row(s) from a fenced lineage "
+        print(f"  live-input check: {_q_prior['skipped']} banked result row(s) "
               f"dropped {_q_prior['by_platform']}")
     terms_q["banked_results_dropped"] = _q_prior["skipped"]
 

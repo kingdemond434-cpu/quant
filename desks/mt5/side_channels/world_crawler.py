@@ -198,8 +198,9 @@ def _ascii_url(url: str) -> str:
 
 def fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
-    # THE PLATFORM TERMS FENCE (2026-09-30): Reddit / StockTwits are never requested; the reason
-    # is the refusal's own text, so the frontier records a named blocker, not a transport error.
+    # THE METHOD FENCE (libs/data/terms_fence.py): a HELD source (METHOD_BLOCKED, or NEEDS_KEY
+    # until its key exists) is never requested; the reason is the refusal's own text, so the
+    # frontier records a named blocker, not a transport error. No source is banned.
     try:
         from libs.data import terms_fence as _tf
         _p = _tf.platform_of_url(url)
@@ -215,7 +216,7 @@ def fetch(url: str) -> tuple[bytes | None, str]:
             # cover the world quietly stops covering most of it.
             "Accept-Language": "*",
         })
-        # THE REDIRECT GUARD: a 30x into a fenced platform is refused, never followed.
+        # THE REDIRECT GUARD: a 30x into a held source or a login wall is refused, never followed.
         with _tf.guarded_urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
             ctype = str(resp.headers.get("Content-Type", ""))
             if "html" not in ctype and "text" not in ctype and "json" not in ctype:
@@ -662,7 +663,7 @@ SEEDS = (
     "https://www.mql5.com/zh/code",
     "https://www.mql5.com/ja/code",
     "https://www.forexfactory.com/forums",
-    # r/algotrading LEFT THE SEEDS 2026-09-30: Reddit is terms-fenced (libs/data/terms_fence.py).
+    "https://www.reddit.com/r/algotrading/top/?t=week",   # IDEAS_ONLY (libs/data/terms_fence.py)
     "https://quantocracy.com/",
     "https://www.quantstart.com/articles/",
     "https://xueqiu.com/",

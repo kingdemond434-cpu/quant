@@ -105,15 +105,17 @@ def _tf() -> Any:
     return terms_fence
 
 
-#: The status `_probe` returns for a URL the terms fence refused: never requested, never a repair.
+#: The status `_probe` returns for a URL on a HELD source (libs/data/terms_fence.py:
+#: METHOD_BLOCKED or NEEDS_KEY) or a redirect into a login wall: never requested, never a repair.
 TERMS_FENCED = "terms_fenced"
 
 
 def _probe(url: str) -> tuple[int | None, str, bytes]:
     """(status, content-type, first bytes) for a GET; status None when unreachable.
 
-    TERMS FENCE (principal 2026-09-30): a fenced URL -- or a redirect into one -- is never
-    requested or followed; it answers (None, "terms_fenced:<platform>", b"")."""
+    METHOD FENCE (libs/data/terms_fence.py): a HELD URL -- or a redirect into one or into a
+    login wall -- is never requested or followed; it answers (None, "terms_fenced:<source>",
+    b"")."""
     tf = _tf()
     p = tf.platform_of_url(url)
     if p:
@@ -150,8 +152,8 @@ def _acceptable(expect: str, ctype: str, head: bytes) -> tuple[bool, str]:
 
 
 def _wayback(url: str) -> str | None:
-    """The newest archived copy of `url`, or None. An archived copy of a terms-fenced page IS
-    the fenced page, so a fenced URL is never looked up and a fenced snapshot never returned."""
+    """The newest archived copy of `url`, or None. An archived copy of a HELD page is the held
+    page, so a held URL is never looked up and a held snapshot never returned."""
     tf = _tf()
     if tf.platform_of_url(url):
         return None
@@ -215,7 +217,7 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
         base_url = str(src.get("url_override") or src.get("url") or "")
         fenced = _tf().platform_of_url(base_url) or _tf().fenced_source(sid)
         if fenced:
-            # NEVER REPAIRED, NEVER PROBED: a terms-fenced source is not a dead route.
+            # NEVER REPAIRED, NEVER PROBED: a HELD source is not a dead route.
             terms_fenced[fenced] = terms_fenced.get(fenced, 0) + 1
             results.append({"id": sid, "outcome": "TERMS_FENCED", "platform": fenced,
                             "why": _tf().refusal(fenced)["why"]})

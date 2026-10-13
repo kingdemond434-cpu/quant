@@ -134,10 +134,11 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
     landing pages. Reading the header costs nothing and turns a confusing parse failure into an
     accurate one -- "this was a web page" rather than "this data was malformed".
     """
-    # THE TERMS FENCE, BEFORE ANY REQUEST (principal 2026-09-30: no Reddit, StockTwits or X at
-    # all). A fenced URL is never requested and a 30x INTO a fenced host is never followed
-    # (`guarded_urlopen`); either comes back as `terms_fenced:<platform>`, which `acquire` counts.
-    platform = _tf.platform_of_url(url)
+    # THE LIVE-INPUT CHECK, BEFORE ANY REQUEST (libs/data/terms_fence.py, ruling of 2026-10-13):
+    # an acquired dataset is live input, so a URL on an IDEAS_ONLY or held source is never
+    # requested here, and a 30x into a held host or a login wall is never followed
+    # (`guarded_urlopen`); either comes back as `terms_fenced:<source>`, which `acquire` counts.
+    platform = _tf.input_source(url)   # live input: IDEAS_ONLY or held
     if platform:
         return None, f"terms_fenced:{platform}"
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
@@ -266,14 +267,14 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
     return out
 
 
-#: Endpoints the last `_endpoints` pass left unselected because they sit on a terms-fenced
-#: platform, by platform. A fenced URL never takes an hourly seat, and the count says so.
+#: Endpoints the last `_endpoints` pass left unselected because they sit on an IDEAS_ONLY or held
+#: source (never live input), by source. Such a URL never takes an hourly seat; the count says so.
 _ENDPOINT_FENCED: dict[str, int] = {}
 
 
 def _fenced_pick(url: str) -> bool:
-    """True (and counted) when `url` is on a terms-fenced platform: it is never selected."""
-    p = _tf.platform_of_url(url)
+    """True (and counted) when `url` is on an IDEAS_ONLY or held source: never selected."""
+    p = _tf.input_source(url)
     if p:
         _ENDPOINT_FENCED[p] = _ENDPOINT_FENCED.get(p, 0) + 1
     return bool(p)
@@ -528,7 +529,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         "endpoints_tried": tried, "datasets_kept": kept,
         "new_series": new_series, "total_series": len(reg["series"]),
         "refusals": refusals,
-        # FENCED ENDPOINTS, COUNTED (libs/data/terms_fence.py): refused before any request.
+        # ENDPOINTS FAILING THE LIVE-INPUT CHECK, COUNTED (libs/data/terms_fence.py).
         "terms_fenced": {"by_platform": terms_fenced, "total": sum(terms_fenced.values()),
                          "endpoints_skipped_at_selection": dict(_ENDPOINT_FENCED)},
         "rule": ("point-in-time or nothing: a frame with no usable date column is refused rather "

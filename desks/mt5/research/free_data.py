@@ -5,8 +5,9 @@ Sources (all lawful, public, first-party):
     vintage_date param => point-in-time history (no API key needed)
   - Yahoo Finance via yfinance (DXY, VIX, TNX, GC=F, CL=F, indices; no key)
   - Official government RSS feeds (Fed, BLS, ...; parsed with stdlib)
-  - GitHub search + Wikipedia pageviews (crowding/adoption proxies; no key). Reddit JSON
-    is terms-fenced since 2026-09-30 (libs/data/terms_fence.py); reddit_hot returns [].
+  - GitHub search + Reddit public JSON + Wikipedia pageviews (crowding/adoption proxies; no
+    key). Reddit is IDEAS_ONLY in the per-source policy (libs/data/terms_fence.py, ruling of
+    2026-10-13): read politely as a research proxy, never as a cell's live input data.
 
 Every collector is isolated: one failing source never blocks the others.
 Network timeouts are short; results are cached to data/free_data_cache/.
@@ -42,12 +43,12 @@ def _terms_fence():
 
 
 def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
-    # THE PLATFORM TERMS FENCE (2026-09-30): raises TermsFenced for Reddit / StockTwits hosts
-    # before any request is built (libs/data/terms_fence.py).
+    # THE METHOD FENCE (libs/data/terms_fence.py): raises TermsFenced for a HELD source
+    # (METHOD_BLOCKED, or NEEDS_KEY until its key exists) before any request is built.
     tf = _terms_fence()
     tf.check_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
-    # A 30x into a fenced platform raises TermsFenced instead of being followed.
+    # A 30x into a held source or a login wall raises TermsFenced instead of being followed.
     with tf.guarded_urlopen(req, timeout=timeout) as r:
         return r.read()
 
@@ -246,18 +247,27 @@ def github_search(query: str) -> dict:
 
 
 def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
-    """FENCED 2026-09-30 -- returns [] and requests nothing.
+    """The public hot listing of one subreddit (crowding_miner's retail-adoption proxy).
 
-    Reddit's User Agreement and Data API terms cover the anonymous JSON listings this used to read
-    and require an agreement for commercial use, which the desk does not hold
-    (libs/data/terms_fence.py). Its one consumer, crowding_miner's retail-adoption proxy, now
-    reads `attention_proxy` (Wikipedia pageviews, keyless) instead.
-    """
-    return []
+    Reddit is IDEAS_ONLY in the per-source policy (libs/data/terms_fence.py; the 2026-10-13
+    ruling retired the 2026-09-30 category fence): a public page read politely, one request per
+    cycle, never a cell's live input data. [] on any failure."""
+    url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
+    try:
+        data = json.loads(_get(url, headers={"User-Agent": "research-crowding/1.0"}))
+        posts = []
+        for c in data.get("data", {}).get("children", []):
+            p = c.get("data", {})
+            posts.append({"title": p.get("title", ""), "score": p.get("score", 0),
+                          "num_comments": p.get("num_comments", 0),
+                          "created_utc": p.get("created_utc", 0)})
+        return posts
+    except Exception:
+        return []
 
 
 #: Wikipedia articles that stand for "retail attention to systematic trading" -- the information
-#: class r/algotrading hot used to proxy for crowding_miner. English edition, user agents only.
+#: class r/algotrading hot proxies for crowding_miner, from a second source. English edition, user agents only.
 ATTENTION_ARTICLES = ("Algorithmic_trading", "Day_trading", "Foreign_exchange_market",
                       "Technical_analysis", "Retail_forex")
 
@@ -287,7 +297,7 @@ def wiki_pageviews(article: str, project: str = "en.wikipedia", days: int = 60,
 
 def attention_proxy(articles: tuple[str, ...] = ATTENTION_ARTICLES) -> dict:
     """Retail attention to systematic trading, from Wikipedia pageviews: the lawful substitute for
-    the r/algotrading hot listing. `latest_views` is the sum of the last full day, `z_7d` the
+    and complement to the r/algotrading hot listing. `latest_views` is the sum of the last full day, `z_7d` the
     last seven days against the prior fifty-three. UNMEASURED (never 0) when nothing answered."""
     per: dict[str, list[tuple[str, int]]] = {a: wiki_pageviews(a) for a in articles}
     got = {a: v for a, v in per.items() if v}

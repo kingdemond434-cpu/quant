@@ -88,9 +88,10 @@ def _ctx():
 
 from libs.data import terms_fence as _tf  # noqa: E402
 
-#: What the terms fence kept out of this pass, by platform: addresses never handed to the
-#: frontier and fetches never sent; FENCED_HOSTS names each registry host never queried (host ->
-#: platform). Reset by `main`; published in the report.
+#: What the per-source policy (libs/data/terms_fence.py) HELD out of this pass, by source:
+#: addresses never handed to the frontier and fetches never sent; FENCED_HOSTS names each registry
+#: host never queried (host -> source). Only METHOD_BLOCKED / NEEDS_KEY sources are held; no
+#: source is banned (ruling of 2026-10-13). Reset by `main`; published in the report.
 TERMS_FENCED: dict[str, dict[str, int]] = {"addresses": {}, "fetches": {}}
 FENCED_HOSTS: dict[str, str] = {}
 
@@ -100,7 +101,7 @@ def _count_fenced(kind: str, platform: str) -> None:
 
 
 def _clean(addresses: list[str]) -> list[str]:
-    """Drop every address on a terms-fenced platform (counted): the frontier never sees it."""
+    """Drop every address on a HELD source (counted): the frontier never sees it."""
     out: list[str] = []
     for u in addresses:
         p = _tf.platform_of_url(u)
@@ -112,8 +113,9 @@ def _clean(addresses: list[str]) -> list[str]:
 
 
 def _get(url: str, timeout: float = 25.0, cap: int = 2_000_000) -> tuple[bytes | None, str]:
-    # THE TERMS FENCE (principal 2026-09-30): never request a fenced URL, never follow a redirect
-    # into one. Both come back as a named refusal rather than a transport error.
+    # THE METHOD FENCE (libs/data/terms_fence.py): never request a HELD source, never follow a
+    # redirect into one or into a login wall. Both come back as a named refusal, not a transport
+    # error.
     p = _tf.platform_of_url(url)
     if p:
         _count_fenced("fetches", p)
@@ -146,8 +148,7 @@ def _hosts_from_registry(limit: int = 12) -> list[str]:
             continue
         url = str(s.get("url") or "")
         host = urllib.parse.urlsplit(url).netloc
-        # A TERMS-FENCED HOST IS NEVER QUERIED (api.stocktwits.com sat on this list): asking an
-        # index for every URL on it is the first step of scraping it.
+        # A HELD HOST IS NEVER QUERIED (METHOD_BLOCKED, or a keyed API whose key is absent).
         p = _tf.platform_of_url(url) or _tf.fenced_source(str(s.get("id") or ""))
         if p:
             if host:
@@ -410,7 +411,7 @@ def main(argv: list[str] | None = None) -> int:
         "routes": {r["route"]: len(r.get("addresses") or []) for r in results},
         "errors": {r["route"]: r.get("errors") or {} for r in results},
         "refused_routes": REFUSED,
-        # THE TERMS FENCE (libs/data/terms_fence.py), counted: hosts never queried, addresses
+        # HELD SOURCES (libs/data/terms_fence.py), counted: hosts never queried, addresses
         # never handed to the frontier, fetches never sent.
         "terms_fenced": {"hosts_not_queried": dict(FENCED_HOSTS),
                          "addresses_dropped": dict(TERMS_FENCED["addresses"]),

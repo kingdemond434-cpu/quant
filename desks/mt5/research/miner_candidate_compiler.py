@@ -1596,12 +1596,12 @@ def main() -> int:
             print(f"compiler: compile stopped at {COMPILE_SHARE:.0%} of the budget after "
                   f"{_row_k:,} of {len(rows):,} row(s); the rest resume next pass")
             break
-        # THE PLATFORM TERMS FENCE (2026-09-30). A row from a platform whose own agreement bars
-        # the desk's automated use -- `data/intelligence/reddit/`, a deep_forest `route: reddit`
-        # claim, any row whose url is on Reddit or StockTwits (libs/data/terms_fence.py) -- mints
-        # no NEW cell and queues no deepening. It is a VALID REFUSAL with a named, counted reason
-        # (`per_source[...].terms_fenced`, top-level `terms_fence`), never a silent skip. Cells
-        # already judged from such rows keep their verdicts; the docket labels them.
+        # THE LIVE-INPUT CHECK (libs/data/terms_fence.py; rule 4 of the 2026-10-13 ruling: idea
+        # provenance never blocks a cell). A row whose IDEA came from Reddit, X, StockTwits or a
+        # forum compiles like any other -- its cell trades on MT5 data. Only a row whose DECLARED
+        # LIVE INPUT DATA comes from an IDEAS_ONLY or held source mints no cell; that is a VALID
+        # REFUSAL with a named, counted reason (`per_source[...].terms_fenced`, top-level
+        # `terms_fence`), never a silent skip.
         fenced = _tf.fenced_row(row, source)
         if fenced:
             stats = per_source.setdefault(source, _new_stats())
@@ -1946,11 +1946,11 @@ def main() -> int:
         "graph": graph_note,
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
-        # Rows refused by the platform terms fence, per platform (libs/data/terms_fence.py).
+        # Rows refused by the live-input check, per source (libs/data/terms_fence.py).
         "terms_fence": {"refused_rows": terms_fenced,
                         "refused_total": sum(terms_fenced.values()),
-                        "rule": ("a row from a terms-fenced platform mints no new cell and "
-                                 "queues no deepening; it is a counted valid refusal"),
+                        "rule": ("only a row declaring LIVE INPUT DATA from an IDEAS_ONLY or "
+                                 "held source is refused (counted); idea provenance never is"),
                         "reasons": {p: _tf.PLATFORMS[p]["reason"] for p in terms_fenced}},
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),

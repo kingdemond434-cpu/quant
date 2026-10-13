@@ -115,10 +115,11 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
             skipped[sid] = "no roster row"
             continue
         from libs.data import terms_fence as _tf
-        platform = (_tf.fenced_source(sid) or _tf.fenced_source(str(src.get("kind") or ""))
-                    or _tf.platform_of_url(str(src.get("url") or "")))
+        platform = _tf.input_source(sid, str(src.get("kind") or ""),
+                                    str(src.get("url") or ""))
         if platform:
-            # A series already stored from a fenced platform mints nothing (2026-09-30 ruling).
+            # A stored series is LIVE INPUT: one from an IDEAS_ONLY or held source mints nothing
+            # (libs/data/terms_fence.py; idea provenance alone never blocks a cell).
             skipped[sid] = f"terms-fenced: {platform}"
             continue
         if not series_exists(sid):

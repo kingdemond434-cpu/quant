@@ -1,12 +1,10 @@
-"""ATTENTION SUBSTITUTES -- retail-attention research without Reddit, from lawful keyless doors.
+"""ATTENTION SUBSTITUTES -- retail-attention research as LIVE INPUT, from open keyless doors.
 
-WHY (2026-09-30). Reddit is terms-fenced (libs/data/terms_fence.py): its User Agreement and Data
-API terms cover every automated reader, RSS and anonymous JSON included, and require an agreement
-for commercial use the desk does not hold. Reddit carried one information class for the desk --
-RETAIL ATTENTION to an instrument -- through three readers (side_channels/reddit_miner,
-deep_forest_miner's `route: reddit` grounds, and crowding_miner via free_data.reddit_hot). Fencing
-them must not lower the desk's attention research volume, so this organ backfills the class from
-doors whose terms permit it:
+WHY. RETAIL ATTENTION to an instrument is an information class the desk wants as a cell's live
+input. Reddit carries it, but in the per-source policy (libs/data/terms_fence.py, ruling of
+2026-10-13: no source is banned) Reddit's public pages are IDEAS_ONLY -- read for mechanism
+ideas, never a cell's live input data -- and its Data API is NEEDS_KEY until the REDDIT keys
+exist. So this organ carries the class as live input from doors whose terms permit it:
 
   wikipedia_pageviews  Wikimedia REST pageviews API, keyless. The pageview data is CC0 and the API
                        asks only for an identifying User-Agent, which every request here sends.
@@ -16,9 +14,9 @@ doors whose terms permit it:
                        run_all_miners and its rows reach the compiler; this organ only COUNTS them
                        in the before/after volume so the class is measured whole.
 
-  Considered and NOT added: StockTwits (its Terms s.5 forbid automated extraction without written
-  authorization -- fenced in terms_fence.py on the same basis as Reddit), and public Telegram
-  channels (deep_forest_miner's `route: telegram` already mines them; nothing is duplicated here).
+  Considered and NOT added: StockTwits pages (its Terms s.5 forbid automated extraction without
+  written authorization -- IDEAS_ONLY in terms_fence.py; its API is NEEDS_KEY), and public
+  Telegram channels (IDEAS_ONLY; deep_forest_miner's `route: telegram` mines them for ideas).
 
 ONE PASS, inside `--budget-s`:
 
@@ -36,9 +34,9 @@ ONE PASS, inside `--budget-s`:
      `data/intelligence/attention_substitutes/discoveries_*.json` with `tests_run` = cells minted,
      so every one is charged to the trial census. The compiler reads that directory like any seat.
   4. Write `reports/ATTENTION_SUBSTITUTES.json`: per-door status, cells minted, and the attention
-     cell VOLUME PER DAY before and after the fence -- Reddit-derived rows per day (from the
-     reddit intelligence directory, which stops growing at the fence) beside substitute cells per
-     day -- so "volume did not drop" is a measured claim, never an assertion.
+     cell VOLUME PER DAY -- Reddit-derived idea rows per day (from the reddit intelligence
+     directory) beside substitute cells per day -- so "volume did not drop" is a measured claim,
+     never an assertion.
 
 An unreachable door is its own named status (NO_DATA / HTTP <code>), never 0 and never a reason to
 mint cells on a series that does not exist.
@@ -128,7 +126,7 @@ ROSTER: dict[str, dict[str, Any]] = {
 MECHANISM = {
     "wikipedia_pageviews": ("retail attention: an extreme in public lookups of an instrument marks "
                             "a crowd arriving (continuation) or a crowd already in (exhaustion); "
-                            "the lawful substitute for the Reddit mention counts"),
+                            "the open-data door for what Reddit mention counts would carry"),
     "gdelt_doc_timeline": ("news attention: an extreme in world news volume about an instrument "
                            "precedes a repricing as the marginal trader reacts to the coverage"),
 }
@@ -223,7 +221,7 @@ def series_plan() -> list[dict[str, Any]]:
 
 def fetch_series(row: Mapping[str, Any], now: datetime, fetch: Fetch) -> tuple[dict[str, float],
                                                                                str]:
-    """(points, status) for one series. The URL passes the terms fence first."""
+    """(points, status) for one series. The URL passes the method fence first."""
     if row["door"] == "wikipedia_pageviews":
         end = now - timedelta(days=1)
         url = wiki_url(str(row["project"]), str(row["article"]),
@@ -336,7 +334,7 @@ def build_grid(plan: list[dict[str, Any]], lake_points: Mapping[str, int], now: 
                            "threshold": thr, "side_when_high": side, "lag_hours": 24},
                           mech, f"{sid} ({t} {thr}) -> {sym} [{row['door']}]",
                           {"series": sid, "door": row["door"], "points": n,
-                           "substitutes_for": "reddit (terms-fenced 2026-09-30)"})
+                           "substitutes_for": "reddit mention counts as live input (reddit is IDEAS_ONLY)"})
             c.update({"symbols": [sym], "available_time": stamp, "event_time": stamp,
                       "attention_door": row["door"], "information_class": "retail_attention",
                       "required_data": [f"desks/mt5/data/lake/series/{sid}.csv"],
@@ -402,8 +400,8 @@ def volume_by_day(intel: Path, seat: str, days: int, now: datetime) -> dict[str,
 
 
 def attention_volume(paths: Paths, now: datetime) -> dict[str, Any]:
-    """BEFORE / AFTER, measured from the donation files: the Reddit directory (the old attention
-    donor, frozen at the fence) against this seat and the Google Trends miner."""
+    """Measured from the donation files: the Reddit directory (idea rows) against this seat and
+    the Google Trends miner."""
     before = volume_by_day(paths.intel, "reddit", 60, now)
     after = volume_by_day(paths.intel, SEAT, 7, now)
     trends = volume_by_day(paths.intel, "google_trends", 7, now)
@@ -503,8 +501,8 @@ def substitute_summary(plan: list[dict[str, Any]], recs: dict[str, dict[str, Any
                        ) -> dict[str, dict[str, Any]]:
     """ONE ROW PER SUBSTITUTE DOOR, the run artifact's headline: its status this pass (MEASURED
     when at least one series answered, else the named statuses -- never a bare 0), the lake
-    series it has published, the cells it minted this pass, and the terms fence it replaces
-    (each fenced platform whose `substitutes` name this door, with that platform's reason)."""
+    series it has published, the cells it minted this pass, and the policy rows it stands in
+    for as live input (each listed source whose permitted route names this door)."""
     out: dict[str, dict[str, Any]] = {}
     for door in MECHANISM:
         rows = [r for r in plan if r.get("door") == door]

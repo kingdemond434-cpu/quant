@@ -236,11 +236,13 @@ def mine() -> dict:
             items = json.loads(inbox.read_text(encoding="utf-8"))
         except Exception:
             items = []
-    # REDDIT WAS THE SOURCE HERE UNTIL 2026-09-30 (r/algotrading and r/quant top.json). It is
-    # terms-fenced now -- Reddit's User Agreement and Data API terms require an agreement for
-    # commercial use (libs/data/terms_fence.py) -- so the seeds come from GDELT's DOC API
-    # (keyless, open for any use with citation): recent news articles on systematic trading.
+    # IDEA SEEDS: the weekly top posts of r/algotrading and r/quant (a public page, IDEAS_ONLY in
+    # the per-source policy -- libs/data/terms_fence.py, ruling of 2026-10-13: read for ideas,
+    # never live input) and GDELT's DOC API (keyless, open for any use with citation) for recent
+    # news articles on systematic trading.
     urls = [
+        "https://www.reddit.com/r/algotrading/top.json?t=week&limit=15",
+        "https://www.reddit.com/r/quant/top.json?t=week&limit=15",
         "https://api.gdeltproject.org/api/v2/doc/doc?query=%22algorithmic%20trading%22"
         "&mode=artlist&format=json&maxrecords=25&timespan=7d&sort=hybridrel",
         "https://api.gdeltproject.org/api/v2/doc/doc?query=%22quant%20fund%22"
@@ -252,10 +254,16 @@ def mine() -> dict:
             import urllib.request
 
             from libs.data import terms_fence as _tf
-            _tf.check_url(u)
             req = urllib.request.Request(u, headers={"User-Agent": "quant-research-desk/1.0"})
-            with urllib.request.urlopen(req, timeout=20) as r:
+            # The method fence: a held source or a redirect into a login wall raises.
+            with _tf.guarded_urlopen(req, timeout=20) as r:
                 data = json.loads(r.read().decode("utf-8", "ignore") or "{}")
+            for child in (data.get("data") or {}).get("children", [])[:15]:
+                d = child.get("data", {})
+                hits.append({"src": u.split("/")[2], "title": d.get("title", "")[:200],
+                             "url": "https://www.reddit.com" + (d.get("permalink") or ""),
+                             "score": d.get("score", 0), "ts": d.get("created_utc"),
+                             "source_policy": "IDEAS_ONLY"})
             for a in (data.get("articles") or [])[:25]:
                 if _tf.platform_of_url(str(a.get("url") or "")):
                     continue
@@ -263,9 +271,11 @@ def mine() -> dict:
                              "url": a.get("url") or "", "ts": a.get("seendate"),
                              "domain": a.get("domain"), "language": a.get("language")})
         except Exception as e:
-            hits.append({"src": u, "error": str(e)[:120], "bypass_tried": True})
+            hits.append({"src": u, "error": str(e)[:120]})
     seen = {x.get("url") for x in items}
-    fresh = [h for h in hits if h.get("url") and h["url"] not in seen]
+    # A reddit post needs 20 upvotes to seed; a GDELT article carries no score and seeds as-is.
+    fresh = [h for h in hits if h.get("url") and h["url"] not in seen
+             and (h.get("src") == "gdelt" or h.get("score", 0) >= 20)]
     items.extend(fresh)
     inbox.write_text(json.dumps(items[-500:], indent=1), encoding="utf-8")
     return {"sources_tried": len(urls), "new_seeds": len(fresh), "inbox": len(items)}
@@ -5334,10 +5344,10 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
-    # RETAIL ATTENTION WITHOUT REDDIT (2026-09-30). Reddit is terms-fenced (libs/data/
-    # terms_fence.py); Wikipedia pageviews and GDELT news volume carry the class as PIT lake
-    # series and charged exogenous_conditioner cells, and the report measures attention cell
-    # volume per day before and after the fence (reports/ATTENTION_SUBSTITUTES.json).
+    # RETAIL ATTENTION FROM KEYLESS OPEN DOORS (2026-09-30). Wikipedia pageviews and GDELT news
+    # volume carry the class as PIT lake series and charged exogenous_conditioner cells; Reddit
+    # is IDEAS_ONLY (libs/data/terms_fence.py), so its counts are never a cell's live input
+    # (reports/ATTENTION_SUBSTITUTES.json).
     ats = _costed("attention_substitutes", lambda: _producer(
         "attention_substitutes", "research/attention_substitutes.py", "--once",
         "--budget-s", "240"))

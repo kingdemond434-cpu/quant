@@ -352,16 +352,19 @@ def seed() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
 
 
 def stamp_terms_fences(rows: dict[str, dict[str, Any]]) -> int:
-    """PLATFORM TERMS FENCES ON THE REGISTRY (2026-09-30). A source on a platform whose own
-    agreement bars the desk's automated use (libs/data/terms_fence.py: Reddit, StockTwits) is
-    registered, never dropped -- its row carries `access_status` BLOCKED_WITH_SUBSTITUTE, the
-    ruling and the substitutes, and `build` gives it no budget share. Returns how many rows."""
+    """HELD SOURCES ON THE REGISTRY (libs/data/terms_fence.py, ruling of 2026-10-13: no source is
+    banned). Only a HELD source -- METHOD_BLOCKED (its only route bypasses a login, paywall,
+    CAPTCHA, rate limit or region lock) or NEEDS_KEY (its official API's key is absent) -- is
+    stamped: registered, never dropped, its row carrying `access_status`, the policy's why and
+    the permitted route, and `build` gives it no budget share until it is no longer held. Reddit,
+    StockTwits, X pages and other IDEAS_ONLY sources are not held. Returns how many rows."""
     from libs.data import terms_fence as tf
     n = 0
     for sid, r in rows.items():
         plat = (tf.platform_of_url(str(r.get("url") or ""))
-                or (str(r.get("route") or "").lower() if str(r.get("route") or "").lower()
-                    in tf.PLATFORMS else None)
+                or (str(r.get("route") or "").lower()
+                    if str(r.get("route") or "").lower() in tf.SOURCE_POLICY
+                    and tf.status(str(r.get("route") or "").lower()) in tf.HOLDING else None)
                 or (tf.fenced_source(sid.split(":", 1)[1]) if sid.startswith("seat:") else None))
         if not plat:
             continue
@@ -819,7 +822,7 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
                           if not isinstance((r.get("source_quality") or {}).get(f), dict))
                       / max(1, len(rows)), 4) for f in q_fields}
     sh = shares(rows)
-    # A terms-fenced source is never fetched, so it gets no share; the rest are renormalised.
+    # A HELD source is never fetched, so it gets no share; the rest are renormalised.
     fenced_ids = sorted(sid for sid, r in rows.items() if r.get("terms_fence"))
     if fenced_ids:
         live = sum(v for k, v in sh.items() if k not in fenced_ids)
@@ -868,7 +871,8 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
                             "dE[logW], and says so rather than renaming one as the other"),
         "judged": meta["judged"], "seed": seed_meta,
         "terms_fenced": {"n": len(fenced_ids), "sources": fenced_ids[:200],
-                         "rule": "libs/data/terms_fence.py: registered, never fetched, no share"},
+                         "rule": ("libs/data/terms_fence.py: a HELD source (METHOD_BLOCKED / "
+                                  "NEEDS_KEY) is registered, never fetched, no share")},
         # CLOSED-LOOP WORLDWIDE DISCOVERY (Tier-1 #10, 2026-09-29): the cube's reach, and how
         # much of each per-source quality field is actually measured. Both may only rise.
         "discovery_cube": cube,

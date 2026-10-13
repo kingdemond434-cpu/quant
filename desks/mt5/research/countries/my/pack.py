@@ -574,7 +574,8 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "the market through this layer before they reach any official series, and the "
                "three surveyors' DISAGREEMENT is discussed here and nowhere else"),
     _src("MY-S5", "retail investor forums", layer="retail_ecology",
-         roots=("https://klse.i3investor.com/", "https://forum.lowyat.net/topic/"),
+         roots=("https://klse.i3investor.com/", "https://forum.lowyat.net/topic/",
+                "https://www.reddit.com/r/MalaysianPF/"),
          languages=("ms", "en", "zh"), licence="public web; platform terms apply",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
          predictive_state="NARRATIVE_FEATURE",

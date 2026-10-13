@@ -336,10 +336,11 @@ Fetcher = Callable[[str, float], bytes]
 
 
 def urllib_fetch(url: str, timeout: float) -> bytes:
-    """Default transport: urllib, a named UA, one polite retry on 429. TERMS-FENCED: a fenced
-    URL is refused before any request and a 30x into one is never followed."""
+    """Default transport: urllib, a named UA, one polite retry on 429. LIVE-INPUT CHECK
+    (libs/data/terms_fence.py): a URL on an IDEAS_ONLY or held source is refused before any
+    request, and a 30x into a held source or a login wall is never followed."""
     from libs.data import terms_fence as _tf
-    if _tf.platform_of_url(url):
+    if _tf.input_source(url):
         raise FetchError("terms_fenced", url)
     for attempt in (0, 1):
         req = urllib.request.Request(url, headers={"User-Agent": UA,

@@ -162,10 +162,10 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
     stops matching.
     """
     global _used
-    # THE TERMS FENCE (libs/data/terms_fence.py; audit of #162, 2026-10-07). A headless browser
-    # is a fetch like any other: a fenced URL is refused before Chromium is launched, and every
+    # THE METHOD FENCE (libs/data/terms_fence.py). A headless browser is a fetch like any other:
+    # a HELD URL (METHOD_BLOCKED / NEEDS_KEY) is refused before Chromium is launched, and every
     # request the page then makes -- each redirect hop and subresource included -- is checked
-    # by the route handler below and aborted when it is fenced.
+    # by the route handler below and aborted when it is held. No source is banned.
     from libs.data import terms_fence as _tf
     fenced = _tf.platform_of_url(url)
     if fenced:

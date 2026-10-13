@@ -108,7 +108,7 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
                                  method="POST" if body is not None else "GET")
     from libs.data import terms_fence as _tf
     try:
-        # THE REDIRECT GUARD: a 30x into a terms-fenced platform raises instead of being followed.
+        # THE REDIRECT GUARD: a 30x into a held source or a login wall raises, never followed.
         with _tf.guarded_urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
             raw: bytes = resp.read(MAX_BYTES + 1)
     except _tf.TermsFenced as exc:
@@ -145,8 +145,8 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
-    # THE TERMS FENCE, BEFORE ANY REQUEST (principal 2026-09-30: no Reddit or StockTwits at all).
-    # A fenced URL is refused closed and counted; it is never a request and never a failure.
+    # THE METHOD FENCE, BEFORE ANY REQUEST (libs/data/terms_fence.py; no source is banned): a
+    # HELD URL (METHOD_BLOCKED, or NEEDS_KEY until its key exists) is refused and counted.
     from libs.data import terms_fence as _tf
     platform = _tf.platform_of_url(url)
     if platform:

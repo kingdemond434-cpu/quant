@@ -3,12 +3,12 @@
 Perpetual supervised desk. Every cycle (hourly):
   1. GitHub public search (unauthenticated, rate-limited ~10/min -> one query
      per cycle, rotating) for adoption/star growth of mechanism keywords
-  2. Retail-adoption proxy: Wikipedia pageviews of the systematic-trading articles
-     (free_data.attention_proxy). Until 2026-09-30 this was r/algotrading hot + comments;
-     Reddit is terms-fenced (libs/data/terms_fence.py) and `reddit` now records the fence.
+  2. Retail-adoption proxies: Reddit r/algotrading hot + comments (a public page, IDEAS_ONLY in
+     libs/data/terms_fence.py: a research proxy, never a cell's live input) and Wikipedia
+     pageviews of the systematic-trading articles (free_data.attention_proxy)
   3. keyword frequency counters in our OWN captured news (news_captures.jsonl)
      as the mechanism-topic current
-  4. data/crowding_state.json: {query, stars_top5, count, attention, reddit (fence),
+  4. data/crowding_state.json: {query, stars_top5, count, attention, reddit_activity,
      delta_vs_prev} + EDGE_PUBLICITY/EXPECTED_DECAY flags for our active
      mechanism families (rft_retrack etc.)
 
@@ -69,19 +69,8 @@ def news_topic_counts() -> dict[str, int]:
     return topics
 
 
-def reddit_fence() -> dict:
-    """What the `reddit` field says now: the fence, by name -- never an empty activity reading
-    that a reader could take for "retail went quiet"."""
-    try:
-        tf = fd._terms_fence()
-        return tf.refusal("reddit", substitute="attention (free_data.attention_proxy)")
-    except Exception as exc:
-        return {"status": "BLOCKED_WITH_SUBSTITUTE", "platform": "reddit",
-                "why": f"terms fence (import failed: {type(exc).__name__})"}
-
-
 def main() -> None:
-    log("crowding miner started (GitHub search + Wikipedia attention, no keys)")
+    log("crowding miner started (GitHub search + Reddit + Wikipedia attention, no keys)")
     hist = []
     if HIST_F.exists():
         try:
@@ -96,7 +85,11 @@ def main() -> None:
             i += 1
             gh = fd.github_search(query)
             attention = fd.attention_proxy()
-            reddit_activity = reddit_fence()
+            reddit = fd.reddit_hot("algotrading")
+            reddit_activity = {"posts": len(reddit),
+                               "avg_score": round(sum(r["score"] for r in reddit) /
+                                                  max(1, len(reddit)), 1),
+                               "comments": sum(r["num_comments"] for r in reddit)}
             topics = news_topic_counts()
             prev = None
             if hist:

@@ -802,9 +802,10 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
               "promotional. KEPT AT LOW WEIGHT RATHER THAN DROPPED: ramping episodes are a real "
               "microstructure phenomenon with dates and this is where they are visible"),
     source_class(
-        "au_retail_forums", "Aussie Stock Forums retail threads",
+        "au_reddit", "Reddit r/AusFinance and r/ASX_Bets, Aussie Stock Forums",
         layer="retail_ecology",
-        roots=("https://www.aussiestockforums.com/",),
+        roots=("https://www.reddit.com/r/AusFinance/", "https://www.reddit.com/r/ASX_Bets/",
+               "https://www.aussiestockforums.com/"),
         queries=("switching to cash", "the super switch", "salary sacrifice", "franking refund",
                  "ASX bets", "YOLO", "offset account", "fixed vs variable"),
         languages=("en",), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",

@@ -478,10 +478,10 @@ def run_source(row: dict[str, Any], store: Store, fetch: fs.Fetch, cstate: dict[
     kind = str(row["kind"])
     fn = fs.FETCHERS.get(kind)
     from libs.data import terms_fence as _tf
-    platform = (_tf.fenced_source(kind) or _tf.fenced_source(str(row["id"]))
-                or _tf.platform_of_url(str(row.get("url") or "")))
+    platform = _tf.input_source(kind, str(row["id"]), str(row.get("url") or ""))
     if platform:
-        # Terms-fenced (principal 2026-09-30): no request, no raw, no series, nothing to mint.
+        # LIVE INPUT from an IDEAS_ONLY or held source (libs/data/terms_fence.py): this organ
+        # builds live input series, so no request, no raw, no series, nothing to mint.
         ref = _tf.refusal(platform)
         return fs.Harvest(str(row["id"]), status=str(ref["status"]), detail=ref["why"]), {}
     if fn is None:

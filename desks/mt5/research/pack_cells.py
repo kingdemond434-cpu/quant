@@ -103,7 +103,7 @@ def _fenced_pack(p: dict[str, Any]) -> str | None:
         from libs.data import terms_fence as tf
     except Exception:
         return "terms_fence unimportable"            # fail CLOSED: a fence that cannot load
-    return tf.fenced_ground(p) or tf.fenced_source(str(p.get("id") or ""))
+    return tf.fenced_ground(p) or tf.input_source(str(p.get("id") or ""), str(p.get("url") or ""))
 
 
 def packs() -> list[dict[str, Any]]:
@@ -949,8 +949,9 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         targets = targets_of(p)
         row: dict[str, Any] = {"id": pid, "stage": stage, "targets": targets,
                                "cadence": p.get("cadence")}
-        # THE PLATFORM TERMS FENCE (2026-09-30): a pack on a fenced platform (StockTwits'
-        # stocktwits_macro; libs/data/terms_fence.py) mints no NEW cell from its lake series.
+        # THE LIVE-INPUT CHECK (libs/data/terms_fence.py): a pack whose lake series is LIVE INPUT
+        # from an IDEAS_ONLY or held source (StockTwits' stocktwits_macro page) mints no NEW cell
+        # from it. Idea provenance never blocks a cell; only the input data is checked.
         fenced = _fenced_pack(p)
         if fenced:
             row.update({"reason": f"BLOCKED_WITH_SUBSTITUTE: terms fence ({fenced})",

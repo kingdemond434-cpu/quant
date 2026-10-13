@@ -21,10 +21,11 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
     UNCONFIGURED    the source declares `access: key` or `paid` and no key is present. NOT a
                     failure and NOT a silent skip: a named state, so a missing subscription can
                     never be mistaken for a dead endpoint.
-    BLOCKED_WITH_SUBSTITUTE  the source is on a platform whose own agreement bars the desk's
-                    automated use (StockTwits Terms s.5 -- `stocktwits_macro`; Reddit's Data API
-                    terms), a NAMED ruling in libs/data/terms_fence.py, not a label: nothing is
-                    requested, and the row carries the reason and the lawful substitutes.
+    IDEAS_ONLY / METHOD_BLOCKED / NEEDS_KEY  the per-source policy (libs/data/terms_fence.py,
+                    ruling of 2026-10-13: no source is banned). This collector builds LIVE INPUT
+                    series, so a source that is IDEAS_ONLY (StockTwits' pages, whose Terms s.5
+                    bar automated extraction -- `stocktwits_macro`) or held is not requested; the
+                    row carries the status, the why and the permitted route.
     (BLOCKED_BY_ROBOTS is RETIRED, 2026-09-23.) A robots.txt Disallow was a refusal here and is
                     now a LABEL: the reading is recorded on the row as `robots_disallows` and
                     `terms_note`, it routes what the desk may REDISTRIBUTE, and the page is
@@ -369,13 +370,12 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
-    # THE PLATFORM TERMS FENCE (2026-09-30) -- NOT a robots or licence label (those stay labels,
-    # LAWS 5e). A source on a platform whose own agreement bars the desk's automated use
-    # (StockTwits Terms s.5; Reddit's Data API terms -- libs/data/terms_fence.py) is never
-    # requested, not even for robots.txt. The row names the ruling and the substitutes.
+    # THE LIVE-INPUT CHECK (libs/data/terms_fence.py) -- NOT a robots or licence label (those
+    # stay labels, LAWS 5e). A collected series is live input, so a source that is IDEAS_ONLY or
+    # held is never requested, not even for robots.txt. The row names the policy row.
     try:
         from libs.data import terms_fence as _tf
-        fenced = _tf.platform_of_url(url) or _tf.fenced_source(sid)
+        fenced = _tf.input_source(url, sid)   # live input: IDEAS_ONLY or held
     except Exception as exc:                 # fail CLOSED: a fence that cannot load fetches nothing
         rec.update({"status": "BLOCKED_TERMS", "why": f"terms fence unavailable: {exc!r}"})
         return rec
@@ -414,7 +414,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     req = urllib.request.Request(url, data=body_out, headers=headers)
     from libs.data import terms_fence as _tfg
     try:
-        # THE REDIRECT GUARD: a 30x into a terms-fenced platform is refused, never followed.
+        # THE REDIRECT GUARD: a 30x into a held source or a login wall is refused, never followed.
         with _tfg.guarded_urlopen(req, timeout=timeout, context=_TLS) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()

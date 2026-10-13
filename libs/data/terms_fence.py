@@ -1,186 +1,179 @@
-"""PLATFORM TERMS FENCES -- the named platforms whose own agreement bars this desk's automated use.
+"""PER-SOURCE POLICY -- how this desk may reach each source. NO SOURCE IS BANNED.
 
-WHY THIS FILE EXISTS (2026-09-30, the project coordinator's Reddit ruling). Reddit's User Agreement
-and its Data API terms govern ALL automated access -- the OAuth API, the anonymous `.json`
-listings and the `.rss` feeds alike -- and require a separate agreement for commercial use. This
-desk is commercial and holds no such agreement, so no Reddit-derived data may feed a cell, the
-lake, trading or allocation. It is the same basis as the earlier Discord ruling (bot token only,
-never a user token) and the keyed-sources fence on #144 (`machine_use_allowed=false` on the Reddit
-OAuth rows). StockTwits is fenced on the same basis: its Terms s.5 forbid extracting data "by
-automated means except as expressly authorized by us in writing or through an approved API", and
-it licenses that data commercially instead.
+THE RULING (principal 2026-10-13, verbatim: "no its not banned wtv dont ban it i never banned it"
+/ "no source should be banned"). This module used to hold a list of fenced PLATFORMS (Reddit,
+StockTwits, X, the Discord user token) refused as a category. That list is retired. Every source
+is now one row of `SOURCE_POLICY`, with a status and a one-line `why`:
 
-HOW THIS SITS WITH LAWS s.5e, stated so a later session does not read it as a re-introduced brake.
-s.5e deleted SELF-IMPOSED discovery brakes -- a robots Disallow, a generic `machine_use_allowed`
-label, a quarantine on ACCESS_UNCLEAR -- because none of them "was ever a legal requirement". This
-is not a label read as a refusal: it is a short, NAMED list of platforms whose contract with every
-automated reader requires an agreement the desk does not hold, each with the ruling that put it
-here. Nothing else is fenced by it, it never generalises from a label, and an entry leaves the
-list the day an agreement exists (set `agreement` on the entry, with its reference).
+    API_PERMITTED   an official API or free tier, within its published limits; NEEDS_KEY when the
+                    row's key is absent from the environment (presence is checked, never read);
+    PUBLIC_PAGE     fetch the public page politely (any host not listed);
+    IDEAS_ONLY      read public posts for mechanism IDEAS; never live input data -- a cell built
+                    from the idea trades on the desk's own MT5 data;
+    METHOD_BLOCKED  only when the ONLY route would bypass a login, paywall, CAPTCHA, rate limit
+                    or region lock (the reason is named; a permitted route is offered).
 
-THE FENCE IS AT THE SOURCE, and it is one function per question:
+WHAT STAYS OFF IS THE METHOD, NOT THE SOURCE: bypassing a login, paywall, CAPTCHA, rate limit or
+region lock; stolen data; MNPI. So the fetch guard (`check_url`, `guarded_urlopen`, the redirect
+handler) refuses only a HELD source (METHOD_BLOCKED, or NEEDS_KEY until its key exists) and a
+redirect INTO a login wall; an anti-bot or CAPTCHA page is recorded and never routed around.
 
-    fenced_url(url)      -> the terms reason when the URL is on a fenced platform, else None
-    fenced_row(row, src) -> the platform when a discovery row came from one, else None
-    check_url(url)       -> raises TermsFenced; the one guard every fetch helper calls
-    check_request(u, h)  -> check_url plus the Discord rule (bot token only, never a user token)
-    guarded_urlopen(req) -> urlopen whose REDIRECTS are fenced too (FencedRedirectHandler)
-    quarantined_row(row) -> the platform when a row must not be judged (docket, backtest)
-    quarantined_certificate(key) -> the refusal for a certificate judged under a fenced lineage
+IDEA PROVENANCE NEVER BLOCKS A CELL (rule 4). `fenced_row` / `quarantined_row` answer only for a
+row whose LIVE INPUT DATA is declared from an IDEAS_ONLY or held source; a row whose idea came from
+Reddit, X or any forum is labelled (`label_row`) and judged like any other. No certificate is
+quarantined for its idea lineage (the 2026-10-07 certificate quarantine and its re-certification
+queue are retired with the fence).
 
-The fenced platforms (2026-09-30 ruling): Reddit and its mirrors (pushshift, pullpush,
-photon-reddit), StockTwits, X/Twitter (no paid X, no scraping), and the Discord user token.
-Wikipedia pageviews and GDELT are the substitutes; the gate fails closed.
+The function names are kept from the fence this replaces, so every caller reads the new policy:
 
-NO BYPASS (audit of #162, 2026-10-07). A fence that matches one spelling of one host is walked
-around, so the platform is matched however it is addressed: every Reddit FRONT-END (redlib,
-libreddit, teddit, reveddit, unddit -- any host label naming one) is Reddit, every nitter mirror
-and fork (any host label containing "nitter", xcancel, ...) is X, and a WRAPPER of a fenced URL
--- web.archive.org, archive.ph/.today/.is/.li/.vn/.md, r.jina.ai, 12ft.io, Google cache,
-`*.translate.goog` and translate.google.com -- is the URL it wraps. Hosts are compared only after
-`normalize_host` (NFKC, IDNA, lowercase, trailing dot stripped), so a fullwidth `reddit.com`
-and REDDIT.COM. are reddit.com. The redirect guard calls the same `check_url`, so all of it
-holds for every hop of a redirect chain too.
-
-Every refusal carries its reason and its status, BLOCKED_WITH_SUBSTITUTE when the information
-class it served has a lawful substitute wired (`substitutes`), so no fenced route ever reads as
-silent, dead or UNMEASURED.
-
-FENCED ROWS ARE QUARANTINED, NOT JUDGED (audit of #162, 2026-10-06). The organs that write
-docket and candidate rows stamp `provenance_label` with the entry's `label` (`reddit_fenced`)
-through `label_row`, and the docket build (merge_hypotheses) and the backtest stage
-(run_external_backtest) then SKIP every `quarantined_row` with a counted reason, so no fenced
-row reaches a judge. A certificate already earned under a fenced lineage is refused promotion
-until re-certified on a clean one (`quarantined_certificate`).
+    policy_of_url(url)   -> the effective row for a URL (wrappers resolve to what they wrap)
+    platform_of_url(url) -> the HELD source key for a URL, else None
+    check_url / check_request / guarded_urlopen -> raise TermsFenced for a held source or a
+                            redirect into a login wall (the Discord rule: a user token driving the
+                            API is a self-bot -> METHOD_BLOCKED; a bot token is the official API)
 """
 from __future__ import annotations
 
 import contextlib
 import json
+import os
 import re
 import unicodedata
 import urllib.request
 from collections.abc import Mapping
-from datetime import datetime
 from typing import Any
 from urllib.parse import ParseResult, parse_qs, unquote, urlparse
 
+API_PERMITTED = "API_PERMITTED"
+PUBLIC_PAGE = "PUBLIC_PAGE"
+IDEAS_ONLY = "IDEAS_ONLY"
+METHOD_BLOCKED = "METHOD_BLOCKED"
+NEEDS_KEY = "NEEDS_KEY"
+#: The statuses that HOLD a source (nothing is fetched from it).
+HOLDING: frozenset[str] = frozenset({METHOD_BLOCKED, NEEDS_KEY})
+#: Kept names: older artifacts and callers spell a refusal with these.
 BLOCKED_WITH_SUBSTITUTE = "BLOCKED_WITH_SUBSTITUTE"
 BLOCKED_TERMS = "BLOCKED_TERMS"
 
-#: The Reddit ruling, verbatim in every artifact that refuses a Reddit route.
-REDDIT_TERMS_REASON = (
-    "Reddit's User Agreement and Data API terms cover all automated access, including RSS and the "
-    "anonymous JSON listings, and require a separate agreement for commercial use; this desk is "
-    "commercial and holds none, so no Reddit data may feed cells, the lake, trading or allocation "
-    "(project coordinator ruling 2026-09-30, same basis as the Discord ruling)")
-
-STOCKTWITS_TERMS_REASON = (
-    "StockTwits Terms s.5 forbid extracting data from the Service by automated means except as "
-    "expressly authorized in writing or through an approved API, and s.8 reserves commercial "
-    "licensing of that data to StockTwits; the desk holds no authorization, so no StockTwits data "
-    "may feed cells, the lake, trading or allocation (checked 2026-09-30 at "
-    "stocktwits.com/about/legal/terms)")
-
-X_PAID_REASON = (
-    "X's Developer Agreement makes its paid API the only authorized automated access and its Terms "
-    "forbid crawling or scraping without prior written consent; the principal ruled no paid X "
-    "(2026-09-30), so no X/Twitter data is fetched by any route -- API, web or mirror -- and none "
-    "may feed cells, the lake, trading or allocation")
-
-DISCORD_USER_REASON = (
-    "Discord's Terms and Developer Policy permit automation only through a bot account; a user "
-    "token driving the API is a self-bot and is barred (the Discord ruling: bot token only, never "
-    "a user token; principal 2026-09-30). A discord.com API request is refused unless it is "
-    "authorized as `Bot <token>` or carries no credential at all")
-
-#: platform -> the fence. `hosts` match the registrable domain and every subdomain. `sources` are
-#: the discovery-row source names (intelligence directory / `source` field) the platform wrote.
-PLATFORMS: dict[str, dict[str, Any]] = {
-    "reddit": {
-        # pushshift / pullpush / photon-reddit are Reddit MIRRORS: the data is Reddit's and the
-        # ruling covers it wherever it is served from.
-        # redlib / libreddit / teddit / reveddit / unddit are Reddit FRONT-ENDS: every page they
-        # serve is fetched from Reddit, so they are Reddit under the same ruling (audit of #162,
-        # 2026-10-07). `host_labels` fences ANY host with a DNS label containing one of them, so
-        # an instance nobody listed yet is fenced too.
-        "hosts": ("reddit.com", "redd.it", "redditmedia.com", "redditstatic.com",
-                  "reddituploads.com", "redditblog.com", "pushshift.io", "pullpush.io",
-                  "photon-reddit.com", "reveddit.com", "unddit.com", "libredd.it",
-                  "safereddit.com", "troddit.com", "removeddit.com", "ceddit.com",
-                  "resavr.com"),
-        "host_labels": ("redlib", "libreddit", "teddit", "reveddit", "unddit"),
-        "sources": ("reddit", "miner:reddit", "pushshift", "pullpush", "photon_reddit",
-                    "redlib", "libreddit", "teddit", "reveddit", "unddit"),
-        "source_prefixes": ("ext_reddit_", "reddit_", "pushshift_", "pullpush_", "redlib_",
-                            "libreddit_", "teddit_"),
-        "routes": ("reddit", "redlib", "libreddit", "teddit"),
-        "reason": REDDIT_TERMS_REASON,
-        "status": BLOCKED_WITH_SUBSTITUTE,
-        "label": "reddit_fenced",
-        "fenced_at": "2026-09-30T00:00:00+00:00",
-        "agreement": None,
-        # The information class Reddit served -- retail attention and practitioner chatter -- and
-        # the lawful doors that now carry it (desks/mt5/research/attention_substitutes.py).
-        "substitutes": ("wikipedia_pageviews", "gdelt_doc_timeline", "google_trends"),
-    },
-    "stocktwits": {
-        "hosts": ("stocktwits.com",),
-        "sources": ("stocktwits", "miner:stocktwits"),
-        "source_prefixes": ("stocktwits_",),
-        "routes": ("stocktwits",),
-        "reason": STOCKTWITS_TERMS_REASON,
-        "status": BLOCKED_WITH_SUBSTITUTE,
-        "label": "stocktwits_fenced",
-        "fenced_at": "2026-09-30T00:00:00+00:00",
-        "agreement": None,
-        "substitutes": ("wikipedia_pageviews", "gdelt_doc_timeline", "google_trends"),
-    },
-    "x_paid": {
-        # Nitter and its forks are X MIRRORS: every page is X's data fetched from X, so no
-        # mirror is a lawful route to it (audit of #162, 2026-10-07: deep_forest's `nitter`
-        # route still reached X through nitter.privacydev.net and nitter.poast.org). Any host
-        # with a DNS label containing "nitter" is fenced, plus the forks that dropped the name.
-        "hosts": ("x.com", "twitter.com", "api.twitter.com", "api.x.com", "twimg.com",
-                  "nitter.net", "nitter.privacydev.net", "nitter.poast.org", "nitter.cz",
-                  "nitter.it", "nitter.1d4.us", "nitter.kavin.rocks", "nitter.unixfox.eu",
-                  "nitter.moomoo.me", "nitter.fdn.fr", "nitter.lacontrevoie.fr",
-                  "nitter.esmailelbob.xyz", "nitter.woodland.cafe", "nitter.space",
-                  "xcancel.com", "twiiit.com", "fxtwitter.com", "vxtwitter.com",
-                  "fixupx.com", "fixvx.com", "twstalker.com", "sotwe.com"),
-        "host_labels": ("nitter",),
-        "sources": ("twitter", "x_twitter", "twitter_api", "x_api", "miner:twitter", "nitter",
-                    "xcancel"),
-        "source_prefixes": ("twitter_", "nitter_"),
-        "routes": ("twitter", "x_api", "nitter"),
-        "reason": X_PAID_REASON,
-        "status": BLOCKED_WITH_SUBSTITUTE,
-        "label": "x_paid_fenced",
-        "fenced_at": "2026-09-30T00:00:00+00:00",
-        "agreement": None,
-        "substitutes": ("gdelt_doc_timeline", "wikipedia_pageviews"),
-    },
-    # A REQUEST-LEVEL fence, not a host fence: a bot token is allowed, so discord.com itself is
-    # not refused -- a discord API request authorized by anything but `Bot <token>` is
-    # (`check_request`). `hosts` here are only the hosts that rule reads.
-    "discord_user": {
-        "hosts": ("discord.com", "discordapp.com"),
-        "url_fenced": False,
-        "sources": (),
-        "source_prefixes": (),
-        "routes": ("discord_user",),
-        "reason": DISCORD_USER_REASON,
-        "status": BLOCKED_TERMS,
-        "label": "discord_user_fenced",
-        "fenced_at": "2026-09-30T00:00:00+00:00",
-        "agreement": None,
-        "substitutes": ("discord_bot_token",),
-    },
+#: THE TABLE. One row per source (or host family). `hosts` match the domain and every subdomain;
+#: `host_labels` match any DNS label containing the fragment; `sources` / `source_prefixes` are
+#: discovery-row source names; `routes` are deep-forest ground routes. `why` is one line.
+SOURCE_POLICY: dict[str, dict[str, Any]] = {
+    "x_api": {"hosts": ("api.x.com", "api.twitter.com"), "status": API_PERMITTED,
+              "key_env": ("X_BEARER_TOKEN",), "routes": ("x_api", "twitter_api"),
+              "sources": ("x_api", "twitter_api"),
+              "why": "X's official API: the permitted route to X posts, within its tier limits"},
+    "x_web": {"hosts": ("x.com", "twitter.com", "twimg.com", "t.co", "fxtwitter.com",
+                        "vxtwitter.com", "fixupx.com", "fixvx.com"),
+              "status": IDEAS_ONLY, "sources": ("twitter", "x_twitter", "miner:twitter"),
+              "source_prefixes": ("twitter_",), "routes": ("twitter",),
+              "why": "public X posts may be read for ideas; never live input data"},
+    "nitter": {"hosts": ("xcancel.com", "twiiit.com", "twstalker.com", "sotwe.com"),
+               "host_labels": ("nitter",), "routes": ("nitter",),
+               "sources": ("nitter", "xcancel"), "source_prefixes": ("nitter_",),
+               "status": METHOD_BLOCKED, "reason": "login", "permitted_route": "x_api",
+               "why": ("a third-party front-end that exists to get around X's login wall; the "
+                       "permitted route is X's official API")},
+    "reddit_api": {"hosts": ("oauth.reddit.com",), "status": API_PERMITTED,
+                   "key_env": ("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"),
+                   "why": "Reddit's official Data API within its free-tier limits"},
+    "reddit": {"hosts": ("reddit.com", "redd.it", "redditmedia.com", "redditstatic.com",
+                         "reddituploads.com", "redditblog.com", "pushshift.io", "pullpush.io",
+                         "photon-reddit.com", "reveddit.com", "unddit.com", "libredd.it",
+                         "safereddit.com", "troddit.com", "removeddit.com", "ceddit.com",
+                         "resavr.com"),
+               "host_labels": ("redlib", "libreddit", "teddit", "reveddit", "unddit"),
+               "sources": ("reddit", "miner:reddit", "pushshift", "pullpush", "photon_reddit",
+                           "redlib", "libreddit", "teddit", "reveddit", "unddit"),
+               "source_prefixes": ("ext_reddit_", "reddit_", "pushshift_", "pullpush_"),
+               "routes": ("reddit", "redlib", "libreddit", "teddit"), "status": IDEAS_ONLY,
+               "why": "public subreddit pages, feeds and archives read politely for ideas"},
+    "stocktwits_api": {"hosts": ("api.stocktwits.com",), "status": API_PERMITTED,
+                       "key_env": ("STOCKTWITS_ACCESS_TOKEN",),
+                       "why": "StockTwits' approved API (its Terms s.5 name it the automated "
+                              "route)"},
+    "stocktwits": {"hosts": ("stocktwits.com",), "status": IDEAS_ONLY,
+                   "sources": ("stocktwits", "miner:stocktwits"),
+                   "source_prefixes": ("stocktwits_",), "routes": ("stocktwits",),
+                   "why": ("its Terms s.5 bar automated extraction of its pages, so public "
+                           "posts are read for ideas only; data goes through its API")},
+    "telegram": {"hosts": ("t.me", "telegram.me"), "routes": ("telegram",),
+                 "status": IDEAS_ONLY,
+                 "why": "public channel previews (t.me/s/...) need no account; read for ideas"},
+    "discord_bot": {"hosts": ("discord.com", "discordapp.com", "discord.gg"),
+                    "status": API_PERMITTED, "key_env": ("DISCORD_BOT_TOKEN",),
+                    "url_level": False,
+                    "why": ("Discord's API with a bot token is the permitted route; a user "
+                            "token driving it is a self-bot (METHOD_BLOCKED, check_request)")},
+    "mql5": {"hosts": ("mql5.com",), "status": IDEAS_ONLY,
+             "why": "public articles, codebase and forum pages read for mechanism ideas"},
+    "yahoo": {"hosts": ("yahoo.com", "yahoo.co.jp"), "status": IDEAS_ONLY,
+              "why": "public finance pages read for ideas; prices come from MT5"},
+    "paywall_proxy": {"hosts": ("12ft.io",), "status": METHOD_BLOCKED, "reason": "paywall",
+                      "why": "a proxy whose purpose is to get around paywalls"},
+}
+#: A redirect INTO one of these paths is a login / CAPTCHA wall; it is refused, never followed.
+LOGIN_WALL = re.compile(r"(?i)/(?:i/flow/)?(?:log-?in|sign-?in|signin|accounts?/login|"
+                        r"session/new|oauth/authorize|captcha|cdn-cgi/challenge-platform)"
+                        r"(?:[/?#.]|$)")
+#: The method rows a refusal can name that are not sources.
+METHOD_ROWS: dict[str, dict[str, Any]] = {
+    "login_wall": {"status": METHOD_BLOCKED, "reason": "login",
+                   "why": "a redirect into a login or CAPTCHA wall is never followed"},
+    "discord_user": {"status": METHOD_BLOCKED, "reason": "login",
+                     "why": "a user token driving Discord's API is a self-bot; bot token only"},
 }
 
-#: Hosts whose path or query WRAPS another URL: an archive, cache, reader or proxy copy of a
-#: fenced page IS that page (audit of #162, 2026-10-07). Each wraps its target its own way; the
-#: target is extracted (`_wrapped_url`) and fenced exactly as if it had been asked for directly.
+
+def _row(key: str) -> dict[str, Any]:
+    return SOURCE_POLICY.get(key) or METHOD_ROWS[key]
+
+
+def status(key: str) -> str:
+    """The EFFECTIVE status of a policy row: API_PERMITTED becomes NEEDS_KEY when any of its
+    keys is absent. Only presence is checked; no key is read or printed."""
+    row = _row(key)
+    st = str(row["status"])
+    if st == API_PERMITTED and not all(os.environ.get(k) for k in row.get("key_env") or ()):
+        return NEEDS_KEY
+    return st
+
+
+def _view(key: str) -> dict[str, Any]:
+    row = _row(key)
+    perm = row.get("permitted_route")
+    return {**row, "status": status(key), "reason": row["why"], "label": f"{key}_policy",
+            "substitutes": (perm,) if perm else ()}
+
+
+class _Platforms(Mapping[str, dict[str, Any]]):
+    """`PLATFORMS[key]` as the callers of the old fence read it: status (effective), reason
+    (the row's why), label, substitutes (the permitted route)."""
+
+    def __getitem__(self, key: str) -> dict[str, Any]:
+        return _view(key)
+
+    def __iter__(self) -> Any:
+        return iter([*SOURCE_POLICY, *METHOD_ROWS])
+
+    def __len__(self) -> int:
+        return len(SOURCE_POLICY) + len(METHOD_ROWS)
+
+
+PLATFORMS: Mapping[str, dict[str, Any]] = _Platforms()
+
+
+class TermsFenced(RuntimeError):
+    """A fetch was asked for a HELD source, or a redirect led into a login wall."""
+
+    def __init__(self, platform: str, url: str) -> None:
+        self.platform = platform
+        v = _view(platform)
+        self.reason = str(v["reason"])
+        self.status = str(v["status"])
+        super().__init__(f"{self.status}:{platform}: {url[:120]} -- {self.reason}")
+
+
 _ARCHIVE_HOSTS = ("web.archive.org", "archive.org")
 _ARCHIVE_TODAY = ("archive.ph", "archive.today", "archive.is", "archive.li", "archive.vn",
                   "archive.md", "archive.fo")
@@ -193,19 +186,6 @@ _TRANSLATE_GOOG = "translate.goog"
 #: Full stops that IDNA treats as label separators (ideographic, fullwidth, halfwidth).
 _DOTS = ("\u3002", "\uff0e", "\uff61")
 
-
-class TermsFenced(RuntimeError):
-    """A fetch was asked for a URL on a fenced platform. Carries the platform and its reason."""
-
-    def __init__(self, platform: str, url: str) -> None:
-        self.platform = platform
-        self.reason = str(PLATFORMS[platform]["reason"])
-        self.status = str(PLATFORMS[platform]["status"])
-        super().__init__(f"{self.status}:{platform}: {url[:120]} -- {self.reason}")
-
-
-def _active(platform: str) -> bool:
-    return not PLATFORMS[platform].get("agreement")
 
 
 def normalize_host(host: str) -> str:
@@ -256,11 +236,13 @@ def _host(url: str) -> str:
     return normalize_host(raw)
 
 
-def _host_platform(h: str, *, request_level: bool = False) -> str | None:
+
+def _host_source(h: str) -> str | None:
+    """The policy row a host belongs to (URL-level rows only), or None (PUBLIC_PAGE)."""
     h = normalize_host(h)
     labels = h.split(".") if h else []
-    for name, p in PLATFORMS.items():
-        if not _active(name) or bool(p.get("url_fenced", True)) == request_level:
+    for name, p in SOURCE_POLICY.items():
+        if p.get("url_level") is False:
             continue
         for dom in p["hosts"]:
             if h == dom or h.endswith("." + dom):
@@ -354,31 +336,57 @@ def _wrapped_url(url: str) -> str | None:
     return None
 
 
-def platform_of_url(url: str, _depth: int = 0) -> str | None:
-    """The fenced platform a URL belongs to, or None. Subdomains match (old.reddit.com), and so
-    does an archive copy (web.archive.org/web/2026/https://www.reddit.com/...). Request-level
-    platforms (discord_user) never fence a bare URL; `check_request` reads them."""
+
+def source_of_url(url: str, _depth: int = 0) -> str | None:
+    """The policy row a URL belongs to, or None (unlisted: PUBLIC_PAGE). A wrapper (archive,
+    cache, reader, translate proxy) resolves to what it wraps when that is held."""
     h = _host(url)
     if not h:
         return None
-    p = _host_platform(h)
-    if p:
-        return p
+    k = _host_source(h)
+    if k and status(k) in HOLDING:
+        return k
     inner = _wrapped_url(url) if _depth < 4 else None
-    return platform_of_url(inner, _depth + 1) if inner else None
+    if inner:
+        k2 = source_of_url(inner, _depth + 1)
+        if k2 and status(k2) in HOLDING:
+            return k2
+    return k
+
+
+def policy_of_url(url: str) -> dict[str, Any]:
+    """{source, status, why, ...} for a URL; PUBLIC_PAGE for an unlisted host."""
+    k = source_of_url(url)
+    if not k:
+        return {"source": _host(url), "status": PUBLIC_PAGE, "why": "unlisted host: public page"}
+    return {"source": k, **{x: y for x, y in _view(k).items()
+                             if x in ("status", "why", "reason", "permitted_route")}}
+
+
+def platform_of_url(url: str, _depth: int = 0) -> str | None:
+    """The HELD source a URL belongs to (METHOD_BLOCKED, or NEEDS_KEY until its key exists), or
+    None. A source that is merely listed (IDEAS_ONLY, PUBLIC_PAGE, a keyed API) is not held."""
+    k = source_of_url(url, _depth)
+    return k if k and status(k) in HOLDING else None
 
 
 def fenced_url(url: str) -> str | None:
-    """The terms reason when `url` is on a fenced platform, else None."""
+    """The hold reason when `url` is on a held source, else None."""
     p = platform_of_url(url)
-    return str(PLATFORMS[p]["reason"]) if p else None
+    return str(_view(p)["reason"]) if p else None
 
 
 def check_url(url: str) -> None:
-    """Raise `TermsFenced` for a URL on a fenced platform. EVERY fetch helper calls this first."""
+    """Raise `TermsFenced` for a URL on a held source. Every fetch helper calls this first."""
     p = platform_of_url(url)
     if p:
         raise TermsFenced(p, str(url))
+
+
+def login_wall(url: str) -> bool:
+    """A URL that is a login / CAPTCHA wall (a redirect target the desk never follows)."""
+    parts = _parse(url)
+    return bool(parts is not None and LOGIN_WALL.search(parts.path or ""))
 
 
 def _header(headers: Any, name: str) -> str:
@@ -390,21 +398,20 @@ def _header(headers: Any, name: str) -> str:
     return ""
 
 
+
 def fenced_request(url: str, headers: Any = None) -> str | None:
-    """The fenced platform a REQUEST belongs to: `platform_of_url`, plus the Discord rule -- a
-    discord.com / discordapp.com API request authorized by anything but `Bot <token>` (a user
-    token, `/users/@me` driven as a person) is a self-bot and is refused. No credential at all is
-    not a user token, so a public, unauthenticated endpoint stays open."""
+    """The held source a REQUEST belongs to: `platform_of_url`, plus the Discord rule -- a
+    discord API request authorized by anything but `Bot <token>` (a user token) is a self-bot
+    and is METHOD_BLOCKED. No credential at all is not a user token."""
     p = platform_of_url(url)
     if p:
         return p
     h = _host(url)
-    d = _host_platform(h, request_level=True) if h else None
-    if d == "discord_user":
+    if h and any(h == d or h.endswith("." + d) for d in SOURCE_POLICY["discord_bot"]["hosts"]):
         auth = _header(headers, "Authorization").strip()
         path = urlparse(url if "://" in url else "https://" + url).path.lower()
         if path.startswith("/api") and auth and not auth.startswith("Bot "):
-            return d
+            return "discord_user"
     return None
 
 
@@ -427,6 +434,9 @@ class FencedRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req: urllib.request.Request, fp: Any, code: int, msg: str,
                          headers: Any, newurl: str) -> urllib.request.Request | None:
         check_url(newurl)
+        # METHOD: a redirect into a login / CAPTCHA wall is refused, never followed.
+        if login_wall(newurl):
+            raise TermsFenced("login_wall", newurl)
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new is not None:
             check_request(new.full_url, _req_headers(new))
@@ -490,68 +500,80 @@ def _source_forms(source: str) -> list[str]:
     return forms
 
 
+
 def fenced_source(source: str) -> str | None:
-    """The platform a discovery SOURCE name belongs to ("reddit", "miner:reddit",
-    "ext_reddit_EURUSD_...", "asia:stocktwits_macro", "external_reddit"), or None."""
+    """The HELD source a discovery SOURCE name belongs to (used before FETCHING a source by
+    id), or None. A listed but unheld source (Reddit, StockTwits, X pages) is not held."""
+    k = source_key(source)
+    return k if k and status(k) in HOLDING else None
+
+
+def source_key(source: str) -> str | None:
+    """The policy row a source NAME belongs to ("miner:reddit", "ext_reddit_EURUSD_x"), or None."""
     forms = _source_forms(source)
-    if not forms:
-        return None
-    for name, p in PLATFORMS.items():
-        if not _active(name):
-            continue
+    for name, p in SOURCE_POLICY.items():
         for f in forms:
-            if f in p["sources"] or any(f.startswith(x) for x in p["source_prefixes"]):
+            if f in (p.get("sources") or ()) or any(
+                    f.startswith(x) for x in (p.get("source_prefixes") or ())):
                 return name
     return None
 
 
 _URL_FIELDS = ("url", "link", "source_url", "permalink", "canonical_url")
+#: Fields a row uses to DECLARE its live input data (a series or feed it reads at decision time).
+_INPUT_FIELDS = ("input_data", "input_sources", "data_source", "data_sources", "series_source",
+                 "live_inputs")
 
 
-def fenced_row(row: Mapping[str, Any], source: str = "") -> str | None:
-    """The fenced platform a discovery / candidate / docket row came from, or None.
-
-    A row is platform-derived when its intake source, its own `source`, any `contributing_sources`
-    entry, its `route` (deep_forest's ground route) or any of its URL fields names the platform.
-    `contributing_sources` makes a cell that ANOTHER miner also proposed count as touched; the
-    labeller stamps it, but the compiler refuses only the fenced ROW, so the other miner's
-    proposal still reaches the docket on its own evidence.
-    """
-    if not isinstance(row, Mapping):
-        return None
-    for s in (source, row.get("source"), row.get("origin"), row.get("miner")):
-        p = fenced_source(str(s or ""))
-        if p:
-            return p
-    route = str(row.get("route") or "").split(":", 1)[0].lower()
-    for name, spec in PLATFORMS.items():
-        if _active(name) and route in spec["routes"]:
-            return name
-    for f in _URL_FIELDS:
+def _input_refs(row: Mapping[str, Any]) -> list[str]:
+    out: list[str] = []
+    for f in _INPUT_FIELDS:
         v = row.get(f)
         if isinstance(v, str):
-            p2 = platform_of_url(v)
-            if p2:
-                return p2
+            out.append(v)
+        elif isinstance(v, (list, tuple)):
+            out.extend(str(x) for x in v if x)
+    return out
+
+
+def input_source(*refs: Any) -> str | None:
+    """THE LIVE-INPUT CHECK: the policy row that forbids using any of `refs` (source names or
+    URLs) as LIVE INPUT DATA -- an IDEAS_ONLY source (read for ideas, never data) or a held one --
+    else None. Data organs (acquirer, collectors, free stack, pack cells) call this; discovery and
+    idea organs call `platform_of_url` (held only)."""
+    for ref in refs:
+        r = str(ref or "").strip()
+        if not r:
+            continue
+        k = source_of_url(r) if ("/" in r or "." in r.split(":")[0]) else None
+        k = k or source_key(r)
+        if k and status(k) in (IDEAS_ONLY, *HOLDING):
+            return k
     return None
 
 
+def fenced_row(row: Mapping[str, Any], source: str = "") -> str | None:
+    """RULE 4: the source a row's declared LIVE INPUT DATA comes from, when that source is
+    IDEAS_ONLY or held -- else None. A row's IDEA provenance (its source name, route, url or
+    contributing sources) never makes it fenced: such a row is labelled and judged."""
+    if not isinstance(row, Mapping):
+        return None
+    return input_source(*_input_refs(row))
+
+
 def fenced_ground(g: Mapping[str, Any]) -> str | None:
-    """The fenced platform a registered GROUND belongs to -- its route, url, site or feeds -- or
-    None. Read by the deep-forest miner (never fetch it, never schedule it) and by
-    `research/forest_attempts.py` (a fenced ground is neither never-attempted nor overdue)."""
+    """The HELD source a registered deep-forest GROUND belongs to (its route, url, site, feeds or
+    mirrors), or None. Only a held ground is left unscheduled; IDEAS_ONLY grounds are mined."""
     if not isinstance(g, Mapping):
         return None
     route = str(g.get("route") or "").lower()
-    for name, spec in PLATFORMS.items():
-        if _active(name) and route in spec["routes"]:
+    for name, spec in SOURCE_POLICY.items():
+        if route in (spec.get("routes") or ()) and status(name) in HOLDING:
             return name
     for k in ("url", "site", "feed"):
         p = platform_of_url(str(g.get(k) or ""))
         if p:
             return p
-    # Every address the ground could be fetched from: its feeds and its MIRRORS (a nitter
-    # ground lists its mirrors bare: `nitter.poast.org`).
     for k in ("feeds", "mirrors", "urls", "seeds"):
         for f in g.get(k) or []:
             p = platform_of_url(str(f or ""))
@@ -561,161 +583,69 @@ def fenced_ground(g: Mapping[str, Any]) -> str | None:
 
 
 def touched_row(row: Mapping[str, Any]) -> str | None:
-    """`fenced_row`, plus any contributing source -- the LABELLER's test (a cell one fenced
-    platform helped propose carries the label even when another miner proposed it too)."""
-    p = fenced_row(row)
-    if p:
-        return p
-    cs = row.get("contributing_sources") if isinstance(row, Mapping) else None
+    """The listed source a row's IDEA came from (source, route, url, contributing source) -- for
+    the LABEL only. Never a reason to refuse or quarantine (rule 4)."""
+    if not isinstance(row, Mapping):
+        return None
+    for s in (row.get("source"), row.get("origin"), row.get("miner")):
+        k = source_key(str(s or ""))
+        if k:
+            return k
+    route = str(row.get("route") or "").split(":", 1)[0].lower()
+    for name, spec in SOURCE_POLICY.items():
+        if route and route in (spec.get("routes") or ()):
+            return name
+    for f in _URL_FIELDS:
+        v = row.get(f)
+        if isinstance(v, str):
+            k = source_of_url(v)
+            if k:
+                return k
+    cs = row.get("contributing_sources")
     for s in cs if isinstance(cs, list) else []:
-        p = fenced_source(str(s or ""))
-        if p:
-            return p
+        k = source_key(str(s or ""))
+        if k:
+            return k
     return None
 
 
 def label_row(row: dict[str, Any]) -> str | None:
-    """Stamp `provenance_label` (and `terms_fence`) on a row a fenced platform touched.
-
-    Returns the label it stamped, or None. Idempotent. `provenance` itself is NOT overwritten:
-    several readers treat it as a dict (`(row.get("provenance") or {}).get(...)`), so a string
-    there would crash them. Nothing about the row's verdict, identity or ordering changes.
-    """
-    p = touched_row(row)
-    if not p:
+    """Stamp `provenance_label` and `terms_fence` (the source's policy) on a row a listed source
+    touched. A LABEL: nothing about the row's verdict, identity, ordering or eligibility changes,
+    and no reader may refuse a row for it (rule 4). Idempotent; `provenance` is not touched."""
+    k = touched_row(row)
+    if not k:
         return None
-    lab = str(PLATFORMS[p]["label"])
+    lab = f"{k}_policy"
     row["provenance_label"] = lab
-    row["terms_fence"] = {"platform": p, "status": PLATFORMS[p]["status"],
-                          "reason": PLATFORMS[p]["reason"]}
+    row["terms_fence"] = {"platform": k, "status": status(k), "reason": _row(k)["why"],
+                          "blocks": False}
     return lab
 
 
-_LABELS = {str(p["label"]): name for name, p in PLATFORMS.items()}
-
-
 def quarantined_row(row: Mapping[str, Any]) -> str | None:
-    """THE QUARANTINE TEST (fails closed): the platform when a docket / candidate / backtest row
-    is fenced by its own source, route or URL, was touched by a fenced contributing source, or
-    already carries a fenced `provenance_label`. A quarantined row is NOT judged: the docket
-    build and the backtest stage skip it and count it. None for a clean row."""
-    if not isinstance(row, Mapping):
-        return None
-    p = touched_row(row)
-    if p:
-        return p
-    lab = str(row.get("provenance_label") or "")
-    if lab in _LABELS:
-        return _LABELS[lab]
-    tfv = row.get("terms_fence")
-    if isinstance(tfv, Mapping) and str(tfv.get("platform") or "") in PLATFORMS:
-        return str(tfv["platform"])
-    return None
-
-
-#: CERTIFICATES JUDGED UNDER A FENCED LINEAGE (audit of #162, 2026-10-06). The three STANDBY
-#: USDJPY session_range_breakout sleeves were certified from `ext_reddit_USDJPY_session_range_
-#: breakout` (Reddit-sourced external_backtest_results.json rows). They are refused promotion and
-#: capital until the cell is RE-CERTIFIED on the Forex Factory / central-bank lineage alone: the
-#: re-certification rows sit in desks/mt5/data/hypotheses/terms_recert_queue.json, which
-#: merge_hypotheses admits to the docket on every run, and a certificate counts as re-earned only
-#: when its `gated_at` is AFTER `requeued_at` -- judged from a docket every fenced row is now
-#: quarantined out of. The rr=2.5 certificate came from the same lineage and has no sleeve; it is
-#: held the same way so it cannot become one.
-QUARANTINED_CERTIFICATES: dict[str, dict[str, Any]] = {
-    f"external.USDJPY.session_range_breakout{sfx}": {
-        "platform": "reddit", "lineage": "ext_reddit_USDJPY_session_range_breakout",
-        "symbol": "USDJPY", "family": "session_range_breakout", "selector": "asia",
-        "params": params, "sleeve": sleeve,
-        "recert_lineage": ("forexfactory", "central_bank"),
-        "requeued_at": "2026-10-06T00:00:00+00:00"}
-    for sfx, params, sleeve in (
-        ("", {}, "usdjpy_session_range_breakout_asia_session_range_breakout"),
-        (".rr=1.5_wb=12", {"rr": 1.5, "wait_bars": 12},
-         "usdjpy_session_range_breakout_asia_5_wb_12"),
-        (".rr=2.0_wb=12", {"rr": 2.0, "wait_bars": 12},
-         "usdjpy_session_range_breakout_asia_0_wb_12"),
-        (".rr=2.5_wb=12", {"rr": 2.5, "wait_bars": 12}, None))
-}
-
-
-def _after_iso(a: Any, b: Any) -> bool:
-    try:
-        x, y = datetime.fromisoformat(str(a)), datetime.fromisoformat(str(b))
-    except (TypeError, ValueError):
-        return False
-    if x.tzinfo is None or y.tzinfo is None:
-        return False
-    return x > y
-
-
-def _norm_params(p: Any) -> dict[str, float | str]:
-    out: dict[str, float | str] = {}
-    for k, v in (p.items() if isinstance(p, Mapping) else []):
-        if k == "timeframe":
-            continue
-        try:
-            out[str(k)] = float(v)
-        except (TypeError, ValueError):
-            out[str(k)] = str(v)
-    return out
-
-
-def quarantined_certificate(key: str = "", *, spec: Mapping[str, Any] | None = None,
-                            sleeve: str = "", gated_at: Any = None) -> str | None:
-    """The refusal when a certificate -- named by key, by sleeve, or by its spec's symbol /
-    family / selector / params -- was judged under a fenced lineage and has NOT been re-certified
-    since its re-certification was queued; None otherwise. Read by the promoter and the
-    allocator (sealed: through the patches under /mnt/project-files/patches/pr162_*)."""
-    k = str(key or "")
-    for ck, q in QUARANTINED_CERTIFICATES.items():
-        hit = bool(k) and (k == ck or k == ck.split(".", 1)[1])
-        hit = hit or (bool(sleeve) and sleeve == q.get("sleeve"))
-        if not hit and isinstance(spec, Mapping):
-            hit = (str(spec.get("symbol") or spec.get("sym") or "").upper() == q["symbol"]
-                   and str(spec.get("family") or "") == q["family"]
-                   and str(spec.get("selector") or spec.get("window") or "") == q["selector"]
-                   and _norm_params(spec.get("params")) == _norm_params(q["params"]))
-        if not hit:
-            continue
-        if gated_at is not None and _after_iso(gated_at, q["requeued_at"]):
-            return None
-        p = PLATFORMS[q["platform"]]
-        return (f"{p['status']}:{q['platform']}: certificate {ck} was judged under the fenced "
-                f"lineage {q['lineage']}; refused promotion and capital until re-certified on the "
-                f"{' / '.join(q['recert_lineage'])} lineage alone (queued {q['requeued_at']} in "
-                f"data/hypotheses/terms_recert_queue.json)")
-    return None
-
-
-def recert_queue_rows() -> list[dict[str, Any]]:
-    """The docket rows that re-certify each quarantined certificate on its clean lineage --
-    the content of data/hypotheses/terms_recert_queue.json, derived here so the file and the
-    quarantine can never disagree."""
-    return [{"symbol": q["symbol"], "family": q["family"], "selector": q["selector"],
-             "params": dict(q["params"]),
-             "source": "terms_recert:" + "+".join(q["recert_lineage"]),
-             "lineage": list(q["recert_lineage"]), "recertifies": ck,
-             "replaces_lineage": q["lineage"], "sleeve": q["sleeve"],
-             "requeued_at": q["requeued_at"], "status": "QUEUED"}
-            for ck, q in QUARANTINED_CERTIFICATES.items()]
+    """RULE 4: a docket / backtest row is withheld from a judge ONLY when its declared live input
+    data comes from an IDEAS_ONLY or held source (`fenced_row`). Idea provenance and an older
+    `provenance_label` never quarantine a row."""
+    return fenced_row(row)
 
 
 def registry_rows() -> list[dict[str, Any]]:
-    """One row per fenced platform, for the source registry and the roster reports."""
-    return [{"platform": name, "status": p["status"] if _active(name) else "AGREEMENT_HELD",
-             "reason": p["reason"], "label": p["label"], "fenced_at": p["fenced_at"],
-             "hosts": list(p["hosts"]), "substitutes": list(p["substitutes"]),
-             "agreement": p.get("agreement")}
-            for name, p in PLATFORMS.items()]
+    """One row per policy entry: source, effective status, why, hosts, permitted route."""
+    return [{"platform": name, "source": name, "status": status(name), "why": p["why"],
+             "reason": p["why"], "label": f"{name}_policy", "hosts": list(p["hosts"]),
+             "permitted_route": p.get("permitted_route"),
+             "substitutes": [p["permitted_route"]] if p.get("permitted_route") else []}
+            for name, p in SOURCE_POLICY.items()]
 
 
 def refusal(platform: str, **extra: Any) -> dict[str, Any]:
-    """The artifact a fenced route writes instead of data: status, platform, reason, substitutes."""
-    p = PLATFORMS[platform]
-    return {"status": p["status"], "platform": platform, "reason": p["reason"],
-            "why": f"terms fence ({platform}): {p['reason']}",
-            "substitutes": list(p["substitutes"]), "fetched": 0, **extra}
+    """The artifact a HELD route writes instead of data: status, source, reason, permitted
+    route. Only METHOD_BLOCKED and NEEDS_KEY sources ever produce one."""
+    v = _view(platform)
+    return {"status": v["status"], "platform": platform, "source": platform,
+            "reason": v["reason"], "why": f"source policy ({platform}): {v['reason']}",
+            "substitutes": list(v["substitutes"]), "fetched": 0, **extra}
 
 
 if __name__ == "__main__":
