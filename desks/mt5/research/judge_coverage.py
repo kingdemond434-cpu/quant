@@ -1705,6 +1705,11 @@ def judging_failures(path: Path | None = None,
                 if isinstance(v, dict):
                     st = str(v.get("downstream_status") or "")
                     in_rows[st] = in_rows.get(st, 0) + 1
+            # The sealed loop turns a pool BUILD_FAILED whose reason names a modifier into
+            # a NOT_RUN_MODIFIER row, so MODIFIER rows the pool's own MODIFIER count does not
+            # explain are BUILD_FAILED cells already booked once; never book them twice.
+            spare_mod = max(0, in_rows.get("NOT_RUN_MODIFIER", 0)
+                            - int(fails.get("NOT_RUN_MODIFIER") or 0))
             for k, n in fails.items():
                 # A NOT_RUN_* kind the verdict rows already carry is booked once. But a cell the
                 # POOL failed is deferred by the main loop once the pool has spent the build
@@ -1714,7 +1719,10 @@ def judging_failures(path: Path | None = None,
                 # vanishes from every count while it fails again at the head of every sweep.
                 n_i = int(n or 0)
                 if str(k).startswith(NOT_JUDGED_PREFIX):
-                    n_i = max(0, n_i - in_rows.get(str(k), 0))
+                    seen = in_rows.get(str(k), 0)
+                    if str(k) == "NOT_RUN_BUILD_FAILED":
+                        seen += spare_mod
+                    n_i = max(0, n_i - seen)
                 if n_i:
                     _book(str(k), sweep, n_i)
         out["last_sweep"] = dict(sorted(sweep.items()))

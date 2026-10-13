@@ -617,3 +617,15 @@ def test_prewarm_failures_publish_kinds_and_named_reasons(tmp_path: Path) -> Non
     assert pw["top_reasons"][0] == {"why": "UNMEASURED: SAVE_FAILED", "n": 4}
     assert f["last_sweep"]["build_fail"] == 2           # the pool's, never in the rows
     assert jc.prewarm_failures({})["status"] == "UNMEASURED"
+
+
+def test_a_pool_build_failure_ruled_as_a_modifier_is_booked_once(tmp_path: Path) -> None:
+    """The sealed loop rules a pool BUILD_FAILED whose reason names a modifier as a
+    NOT_RUN_MODIFIER row; that row and the pool's BUILD_FAILED count are one cell, not two."""
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": [
+        {"cell": "a", "downstream_status": "NOT_RUN_MODIFIER"},
+        {"cell": "b", "downstream_status": "NOT_RUN_BUILD_FAILED"}],
+        "prewarm": {"failures": {"NOT_RUN_BUILD_FAILED": 3}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"] == {"build_fail": 2, "modifier_refused": 1}
