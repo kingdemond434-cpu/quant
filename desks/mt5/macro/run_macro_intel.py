@@ -131,10 +131,11 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
     held: list[dict[str, str]] = []
     scored: list[Any] = []
     for s in srcs:
-        if getattr(s, "terms_status", "HOLD") != "CLEARED":
-            # Fail closed (#262): a feed without a quoted CLEARED terms row is never requested.
+        st = str(getattr(s, "terms_status", "") or "")
+        if st in sources.HOLDING:
+            # Only a METHOD_BLOCKED / NEEDS_KEY row of terms_fence.SOURCE_POLICY stops a feed.
             held.append({"id": str(getattr(s, "source_id", "?")), "url": str(getattr(s, "url", "")),
-                         "status": "HOLD", "why": str(getattr(s, "terms_reason", ""))})
+                         "status": st, "why": str(getattr(s, "terms_reason", ""))})
             continue
         try:
             items = s.fetch()
@@ -197,6 +198,8 @@ def one_pass(*, ledger: EventLedger | None = None, fetch: bool = True,
         "items_seen": n_seen, "rows_written": n_new,
         "source_failures": failures,
         "feeds_cleared": len(srcs) - len(held), "feeds_held": len(held), "terms_held": held,
+        "feeds_ideas_only": sorted(str(getattr(s, "source_id", "?")) for s in srcs
+                                   if getattr(s, "terms_status", "") == "IDEAS_ONLY"),
         "categories_minted": [c.label for c in minted],
         "taxonomy": tax.report(),
         "credibility": cred.report(),

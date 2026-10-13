@@ -1,5 +1,5 @@
 {
-  "_about": "Macro event ledger RSS feeds (desks/mt5/macro/sources.py _OFFICIAL_FEEDS). Keyed by source_id, the id terms_hold (#211) reads. Fail closed: a feed is fetched only when its row is CLEARED with a terms_url, a verbatim terms_quote from the publisher's own terms page, and a feed_url equal to the configured URL. '[...]' marks an elision between two verbatim sentences of the same page.",
+  "_about": "EVIDENCE ONLY (2026-10-13, PR162_357 MF1): the publisher's own terms URL and a verbatim permitting clause for each macro RSS feed (desks/mt5/macro/sources.py _OFFICIAL_FEEDS) that was read as CLEARED. It gates nothing. The fetch POLICY of every feed is a row of libs/data/terms_fence.SOURCE_POLICY (`feed_policy`): restricted-reuse feeds (BOJ, BOE, SNB, IMF, UN_NEWS, SP_INDICES) are IDEAS_ONLY and still fetched; unread ones (OPEC, USTR, TREASURY_OFAC, US_TREASURY, IMO_SHIPPING) are PUBLIC_PAGE. '[...]' marks an elision between two verbatim sentences of the same page.",
   "FED": {
     "status": "CLEARED",
     "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
@@ -30,36 +30,6 @@
     "feed_url": "https://www.ecb.europa.eu/rss/press.html",
     "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
   },
-  "BOJ": {
-    "status": "HOLD",
-    "terms_url": "https://www.boj.or.jp/en/about/copyright.htm",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "Bank of Japan",
-    "feed_url": "https://www.boj.or.jp/en/announcements/rss.rdf",
-    "reason": "terms read: copying permitted EXCEPT 'The copying or reproduction of the content for commercial purposes.' -- a trading desk's use is commercial; no permitting clause"
-  },
-  "BOE": {
-    "status": "HOLD",
-    "terms_url": "https://www.bankofengland.co.uk/legal",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "Bank of England",
-    "feed_url": "https://www.bankofengland.co.uk/rss/news",
-    "reason": "terms read: 'You may download, display or print the Resources for personal use or internal use within an individual organisation for non-commercial purposes.' -- non-commercial only; the OGL clause covers the statistical Database, not the news feed"
-  },
-  "SNB": {
-    "status": "HOLD",
-    "terms_url": "https://www.snb.ch/en/srv/disclaimer_copyright",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "Swiss National Bank",
-    "feed_url": "https://www.snb.ch/en/node/10532/rss",
-    "reason": "terms read: '... used in other ways, for non-commercial purposes, compatible with the purpose of such information or data.' -- non-commercial only"
-  },
   "EIA": {
     "status": "CLEARED",
     "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
@@ -69,36 +39,6 @@
     "publisher": "U.S. Energy Information Administration",
     "feed_url": "https://www.eia.gov/rss/todayinenergy.xml",
     "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
-  },
-  "OPEC": {
-    "status": "HOLD",
-    "terms_url": "",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "Organization of the Petroleum Exporting Countries",
-    "feed_url": "https://www.opec.org/opec_web/en/press_room/28.htm",
-    "reason": "terms page not read: opec.org terms URL returned HTTP 402 and the configured feed URL is a 2006 speech page, not a feed"
-  },
-  "USTR": {
-    "status": "HOLD",
-    "terms_url": "https://ustr.gov/privacy-legal",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "Office of the U.S. Trade Representative",
-    "feed_url": "https://ustr.gov/rss.xml",
-    "reason": "clause not found: the Privacy & Legal page as read carries no reuse/copyright/automated-access sentence (read may be truncated)"
-  },
-  "TREASURY_OFAC": {
-    "status": "HOLD",
-    "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "U.S. Treasury, Office of Foreign Assets Control",
-    "feed_url": "https://ofac.treasury.gov/system/files/126/ofac.xml",
-    "reason": "clause not found: Treasury's site policies and privacy pages carry no reuse/copyright statement"
   },
   "USDA_WASDE": {
     "status": "CLEARED",
@@ -130,26 +70,6 @@
     "feed_url": "https://www.ons.gov.uk/releasecalendar?rss",
     "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
   },
-  "US_TREASURY": {
-    "status": "HOLD",
-    "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "U.S. Department of the Treasury",
-    "feed_url": "https://home.treasury.gov/rss/press.xml",
-    "reason": "clause not found: Treasury's site policies and privacy pages carry no reuse/copyright statement"
-  },
-  "IMF": {
-    "status": "HOLD",
-    "terms_url": "https://www.imf.org/external/terms.htm",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "International Monetary Fund",
-    "feed_url": "https://www.imf.org/en/News/RSS?Language=ENG",
-    "reason": "terms read: content may be copied 'for personal, noncommercial usage only'; 'The IMF reserves the right to terminate access to its Sites or Content by automated technology'. The commercial grant covers 'Data', not news content"
-  },
   "NOAA_NHC": {
     "status": "CLEARED",
     "terms_url": "https://www.nhc.noaa.gov/disclaimer.shtml",
@@ -159,16 +79,6 @@
     "publisher": "NOAA / National Weather Service, National Hurricane Center",
     "feed_url": "https://www.nhc.noaa.gov/index-at.xml",
     "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
-  },
-  "UN_NEWS": {
-    "status": "HOLD",
-    "terms_url": "https://www.un.org/en/about-us/copyright",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "United Nations (UN News)",
-    "feed_url": "https://news.un.org/feed/subscribe/en/news/region/all/feed/rss.xml",
-    "reason": "terms read: 'News-related material can be used as long as the appropriate credit is given and the United Nations is advised.' -- conditional on advising the UN (not done); Terms of Use limit to 'personal, non-commercial use'"
   },
   "IEA": {
     "status": "CLEARED",
@@ -249,26 +159,6 @@
     "publisher": "International Labour Organization",
     "feed_url": "https://www.ilo.org/rss/news.xml",
     "scope": "automated fetch of this one feed for the desk's internal research; no redistribution"
-  },
-  "IMO_SHIPPING": {
-    "status": "HOLD",
-    "terms_url": "",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "International Maritime Organization",
-    "feed_url": "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news",
-    "reason": "terms page not read: imo.org refused the fetch (robots.txt redirect loop)"
-  },
-  "SP_INDICES": {
-    "status": "HOLD",
-    "terms_url": "https://www.spglobal.com/en/terms-of-use",
-    "terms_quote": "",
-    "by": "claude (WebFetch read of the publisher's own terms page, 2026-10-07)",
-    "checked_at": "2026-10-07",
-    "publisher": "S&P Dow Jones Indices (S&P Global)",
-    "feed_url": "https://www.spglobal.com/spdji/en/rss/index-announcements/",
-    "reason": "terms read: 'You shall not distribute, transfer, sub-license, ... copy, ... or change all or any portion of the Content.' -- restrictive; page also only partly read (100000 of 116843 chars)"
   },
   "SEC_EDGAR": {
     "status": "CLEARED",

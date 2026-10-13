@@ -194,6 +194,81 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
     "paywall_proxy": {"hosts": ("12ft.io",), "status": METHOD_BLOCKED, "reason": "paywall",
                       "why": "a proxy whose purpose is to get around paywalls"},
 }
+
+
+def _feed_row(feed_url: str, status_: str, why: str, terms_url: str, read: str,
+              clause: str = "") -> dict[str, Any]:
+    """One macro event-ledger RSS feed's row (desks/mt5/macro/sources.py `_OFFICIAL_FEEDS`),
+    keyed `macro_feed:<ID>`. Reached by `feed_policy(source_id, url)` only: no hosts, sources or
+    routes, so the publisher's OTHER routes (an IMF data API, a BOE statistics page) are judged by
+    their own rows, never by this feed's terms."""
+    terms: dict[str, Any] = {"url": terms_url, "checked_at": "2026-10-07"}
+    if clause:
+        terms["clauses"] = {"reuse": clause}
+    else:
+        terms["unread"] = {terms_url or feed_url: read}
+    return {"hosts": (), "url_level": False, "feed_url": feed_url, "status": status_,
+            "why": why, "terms": terms}
+
+
+#: THE MACRO FEEDS (folded in from #262's `data/macro_feed_terms.json` gate, 2026-10-13 audit
+#: PR162_357 MF1). A feed whose own terms restrict reuse to non-commercial use is IDEAS_ONLY:
+#: still fetched, its headlines read as events and ideas, never redistributed or used as a data
+#: series. A feed whose terms page was unread, or carries no reuse clause, is a PUBLIC_PAGE. No
+#: macro feed is held, so nothing LIVE fetched stops. Feeds absent here are PUBLIC_PAGE too
+#: (their permitting clauses stay quoted in data/macro_feed_terms.json as evidence).
+_NONCOMMERCIAL = ("its terms restrict reuse to non-commercial use (clause quoted), so headlines "
+                  "are read as events and ideas, never redistributed or used as a data series")
+_UNREAD = "terms page UNREAD or without a reuse clause: a public page, fetched politely"
+SOURCE_POLICY.update({
+    "macro_feed:BOJ": _feed_row(
+        "https://www.boj.or.jp/en/announcements/rss.rdf", IDEAS_ONLY, _NONCOMMERCIAL,
+        "https://www.boj.or.jp/en/about/copyright.htm", "",
+        "The copying or reproduction of the content for commercial purposes."),
+    "macro_feed:BOE": _feed_row(
+        "https://www.bankofengland.co.uk/rss/news", IDEAS_ONLY, _NONCOMMERCIAL,
+        "https://www.bankofengland.co.uk/legal", "",
+        "You may download, display or print the Resources for personal use or internal use "
+        "within an individual organisation for non-commercial purposes."),
+    "macro_feed:SNB": _feed_row(
+        "https://www.snb.ch/en/node/10532/rss", IDEAS_ONLY, _NONCOMMERCIAL,
+        "https://www.snb.ch/en/srv/disclaimer_copyright", "",
+        "... used in other ways, for non-commercial purposes, compatible with the purpose of such "
+        "information or data."),
+    "macro_feed:IMF": _feed_row(
+        "https://www.imf.org/en/News/RSS?Language=ENG", IDEAS_ONLY, _NONCOMMERCIAL,
+        "https://www.imf.org/external/terms.htm", "",
+        "for personal, noncommercial usage only"),
+    "macro_feed:UN_NEWS": _feed_row(
+        "https://news.un.org/feed/subscribe/en/news/region/all/feed/rss.xml", IDEAS_ONLY,
+        _NONCOMMERCIAL, "https://www.un.org/en/about-us/copyright", "",
+        "News-related material can be used as long as the appropriate credit is given and the "
+        "United Nations is advised."),
+    "macro_feed:SP_INDICES": _feed_row(
+        "https://www.spglobal.com/spdji/en/rss/index-announcements/", IDEAS_ONLY,
+        "its terms restrict copying and distribution of the Content (clause quoted), so "
+        "announcements are read as events and ideas, never redistributed",
+        "https://www.spglobal.com/en/terms-of-use", "",
+        "You shall not distribute, transfer, sub-license, ... copy, ... or change all or any "
+        "portion of the Content."),
+    "macro_feed:OPEC": _feed_row(
+        "https://www.opec.org/opec_web/en/press_room/28.htm", PUBLIC_PAGE, _UNREAD, "",
+        "terms page not read: opec.org terms URL returned HTTP 402 (2026-10-07)"),
+    "macro_feed:USTR": _feed_row(
+        "https://ustr.gov/rss.xml", PUBLIC_PAGE, _UNREAD, "https://ustr.gov/privacy-legal",
+        "no reuse / automated-access clause found on the page as read (2026-10-07)"),
+    "macro_feed:TREASURY_OFAC": _feed_row(
+        "https://ofac.treasury.gov/system/files/126/ofac.xml", PUBLIC_PAGE, _UNREAD,
+        "https://home.treasury.gov/subfooter/site-policies-and-notices",
+        "no reuse / copyright statement found (2026-10-07)"),
+    "macro_feed:US_TREASURY": _feed_row(
+        "https://home.treasury.gov/rss/press.xml", PUBLIC_PAGE, _UNREAD,
+        "https://home.treasury.gov/subfooter/site-policies-and-notices",
+        "no reuse / copyright statement found (2026-10-07)"),
+    "macro_feed:IMO_SHIPPING": _feed_row(
+        "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news", PUBLIC_PAGE,
+        _UNREAD, "", "terms page not read: imo.org refused the fetch (robots.txt redirect loop)"),
+})
 #: A redirect INTO one of these paths is a login / CAPTCHA wall; it is refused, never followed.
 LOGIN_WALL = re.compile(r"(?i)/(?:i/flow/)?(?:log[-_]?in|sign[-_]?in|signin|accounts?/login|"
                         r"session/new|oauth2?/authorize|authorize|sso|captcha|"
@@ -801,6 +876,17 @@ def registry_rows() -> list[dict[str, Any]]:
              "terms_url": (p.get("terms") or {}).get("url"),
              "substitutes": [p["permitted_route"]] if p.get("permitted_route") else []}
             for name, p in SOURCE_POLICY.items()]
+
+
+def feed_policy(source_id: str, url: str) -> dict[str, Any]:
+    """The policy for one macro RSS feed: its `macro_feed:<ID>` row when it has one (and the row
+    was read for this exact URL), else the URL's own policy (PUBLIC_PAGE when unlisted). Only a
+    HOLDING status (METHOD_BLOCKED / NEEDS_KEY) stops a fetch."""
+    key = f"macro_feed:{source_id}"
+    row = SOURCE_POLICY.get(key)
+    if row is not None and row.get("feed_url") == url:
+        return {"source": key, **_view(key)}
+    return policy_of_url(url)
 
 
 def refusal(platform: str, **extra: Any) -> dict[str, Any]:
