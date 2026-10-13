@@ -535,11 +535,15 @@ class TaskQueue:
         self.last_spawned = self._spawn(t, produced)
         return True
 
-    def fail(self, task_id: str, worker: str = "", *, why: str = "") -> Task | None:
+    def fail(self, task_id: str, worker: str = "", *, why: str = "",
+             retry_after: datetime | None = None) -> Task | None:
         """Record a failure. Back to READY while attempts remain, DEAD when they do not.
 
         A POISON TASK MUST STOP. Retrying forever is indistinguishable from working, and the
         queue's own census is what an operator reads to tell the difference.
+
+        `retry_after` is a BACKOFF: a task going back to READY is not claimable before it, so a
+        drain loop cannot spend every attempt on the same transient fault within one pass.
         """
         t = self.tasks().get(str(task_id))
         if t is None:
@@ -548,6 +552,8 @@ class TaskQueue:
             return None
         exhausted = int(t.attempts) >= int(t.max_attempts)
         t.state = "DEAD" if exhausted else "READY"
+        if not exhausted and retry_after is not None:
+            t.not_before = _iso(retry_after)
         t.worker, t.lease_until = "", ""
         t.why = str(why)
         t.updated_at = _iso(_now())

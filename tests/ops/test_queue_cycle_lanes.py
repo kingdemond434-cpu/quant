@@ -235,3 +235,155 @@ def test_queue_json_lists_unconsumed_kinds(tmp_path):
     doc = queue_cycle.run(tmp_path, queue=q)
     assert [r["kind"] for r in doc["unconsumed_kinds"]] == ["wire"]
     assert "invalidate" in doc["claimed_kinds"]
+
+
+# ------------------------------------------ every submitted kind is consumed or declared (#289)
+
+def _dynamic_sites():
+    """Submit sites whose kind is computed: (file, enclosing function) -> the kinds it can
+    produce. Each list is derived from the source of the values, never typed as a promise."""
+    from libs.ops import wiring_campaign as WC
+    from libs.ops.org import DESK_ROLES, ESCALATION_KIND, HUMAN_INBOX
+    return {
+        # forwards its caller's kind; every delegate() caller is a checked site below
+        ("libs/ops/org.py", "delegate"): (),
+        ("libs/ops/org.py", "escalate"): (HUMAN_INBOX, *{
+            f"{ESCALATION_KIND}:{r.escalates_to}" for r in DESK_ROLES if r.escalates_to}),
+        # the strategy kind of a link(); every link() caller is a checked site below
+        ("libs/ops/task_queue.py", "_spawn"): (),
+        # `kind` defaults to "invalidate" and no production caller overrides it
+        ("libs/ops/task_queue.py", "invalidate"): ("invalidate",),
+        # a subscribe() task_kind; the test asserts no production code subscribes
+        ("libs/ops/task_queue.py", "drain_events"): (),
+        ("libs/ops/wiring_campaign.py", "enqueue"): (WC.WIRE_KIND, WC.RETIRE_KIND),
+    }
+
+
+def _const_str(node, strings, imported):
+    import ast
+    import importlib
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.Name):
+        if node.id in strings:
+            return strings[node.id]
+        if node.id in imported:
+            mod, name = imported[node.id]
+            val = getattr(importlib.import_module(mod), name, None)
+            return val if isinstance(val, str) else None
+    return None
+
+
+def test_every_submitted_kind_is_claimed_or_declared_consumer_less():
+    """AUDITOR MUST on #289: a kind a producer submits that no consumer claims and nobody
+    declared consumer-less is a queue. Every production submit / delegate / link site in a file
+    that touches the task queue is read by AST; its kind must be in CLAIMED_KINDS |
+    NO_CONSUMER_KINDS, and a computed kind must sit at a declared dynamic site whose possible
+    kinds are themselves in that set."""
+    import ast
+    import subprocess
+    allowed = set(queue_cycle.CLAIMED_KINDS) | set(queue_cycle.NO_CONSUMER_KINDS)
+    dynamic = _dynamic_sites()
+    files = subprocess.run(
+        ["git", "grep", "-l", "-E", r"task_queue|desk_org|TaskQueue", "--", "libs/*.py",
+         "desks/mt5/*.py", "scripts/*.py"], cwd=_ROOT, capture_output=True, text=True,
+        check=True).stdout.split()
+    files = [f for f in files if "/tests/" not in f and "/_retired/" not in f
+             and not f.rsplit("/", 1)[-1].startswith("test_")]
+    seen: dict[str, str] = {}
+    for rel in files:
+        tree = ast.parse((_ROOT / rel).read_text("utf-8"))
+        strings = {t.id: n.value.value for n in tree.body if isinstance(n, ast.Assign)
+                   and isinstance(n.value, ast.Constant) and isinstance(n.value.value, str)
+                   for t in n.targets if isinstance(t, ast.Name)}
+        imported = {a.asname or a.name: (n.module, a.name) for n in ast.walk(tree)
+                    if isinstance(n, ast.ImportFrom) and n.module and n.level == 0
+                    for a in n.names}
+        funcs = {n.name for n in ast.walk(tree)
+                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+        parent = {c: p for p in ast.walk(tree) for c in ast.iter_child_nodes(p)}
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+                continue
+            if node.func.attr == "subscribe" and "task_queue.py" not in rel:
+                raise AssertionError(f"{rel}:{node.lineno}: a production subscribe() -- its "
+                                     f"task_kind must be added to this test's checked sites")
+            if node.func.attr == "invalidate":
+                for kw in node.keywords:
+                    if kw.arg == "kind":
+                        k = _const_str(kw.value, strings, imported)
+                        assert k is not None, f"{rel}:{node.lineno}: computed invalidate kind"
+                        seen[k] = f"{rel}:{node.lineno}"
+            pos = {"submit": 0, "delegate": 1, "link": 1}.get(node.func.attr)
+            if pos is None or len(node.args) <= pos:
+                continue
+            arg = node.args[pos]
+            if node.func.attr == "submit" and (
+                    isinstance(arg, (ast.Lambda, ast.Attribute))
+                    or (isinstance(arg, ast.Name) and arg.id in funcs)):
+                continue                          # an executor's pool.submit(fn, ...)
+            kind = _const_str(arg, strings, imported)
+            if kind is not None:
+                seen[kind] = f"{rel}:{node.lineno}"
+                continue
+            fn = node
+            while fn in parent and not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                fn = parent[fn]
+            site = (rel, getattr(fn, "name", "<module>"))
+            if node.func.attr == "submit" and site not in dynamic and not (
+                    isinstance(arg, ast.Name) and arg.id in ("kind", "k", "task_kind")):
+                continue                          # pool.submit(worker) in a queue-aware file
+            assert site in dynamic, f"{rel}:{node.lineno}: computed kind at an undeclared site"
+            for k in dynamic[site]:
+                seen[k] = f"{rel}:{node.lineno} (dynamic)"
+    stray = {k: where for k, where in seen.items() if k not in allowed}
+    assert stray == {}, f"kinds with no consumer and no declared reason: {stray}"
+    assert {"recertify", "acquire_class", "screen_class", "wire", "generate",
+            "ingest_version", "invalidate"} <= set(seen)
+    assert all(queue_cycle.NO_CONSUMER_KINDS.values())
+    assert not set(queue_cycle.NO_CONSUMER_KINDS) & set(queue_cycle.CLAIMED_KINDS)
+
+
+def test_screen_min_rows_is_the_acquirers_min_rows():
+    import importlib
+    ad = importlib.import_module("desks.mt5.research.acquire_datasets")
+    assert queue_cycle.SCREEN_MIN_ROWS == ad.MIN_ROWS
+
+
+def test_class_terms_are_matched_literally_never_compiled(tmp_path, monkeypatch):
+    """AUDITOR SHOULD on #289: the payload's terms were compiled as a regex. They are now word
+    sequences: the class's own `\\bpolicy\\W+rate\\b` form still matches, and a pathological
+    pattern is inert data -- re.compile is never called on it."""
+    assert queue_cycle.class_terms(r"\bpolicy\W+rate\b|bank\W+rate") == (
+        ("policy", "rate"), ("bank", "rate"))
+    assert queue_cycle._names_term("jp_policy_rate_1m", queue_cycle.class_terms(
+        r"\bpolicy\W+rate\b"))
+    assert not queue_cycle._names_term("policy_x_rate", queue_cycle.class_terms(
+        r"\bpolicy\W+rate\b"))
+    _class_registry(tmp_path, rows=500)
+    import re as _re
+    compiled = []
+    real = _re.compile
+    monkeypatch.setattr(queue_cycle.re, "compile",
+                        lambda *a, **k: compiled.append(a) or real(*a, **k))
+    res = queue_cycle.screen_class(tmp_path, {"key": "k", "terms": "(a+)+$" + "|bank_rate"})
+    assert compiled == [] and res["outcome"] == "SCREENED"
+    assert [r["series"] for r in res["series"]] == ["bank_rate_jp"]
+
+
+def test_a_failed_consume_backs_off_before_its_next_attempt(tmp_path):
+    """AUDITOR SHOULD on #289: a failure went straight back to READY, so one drain pass could
+    spend all three attempts on one transient fault and send the task DEAD. It now waits 1 h,
+    then 4 h, before its next attempt."""
+    from datetime import UTC, datetime, timedelta
+    q = TaskQueue(tmp_path / "q.jsonl")
+    t = q.submit("invalidate", lane=STRATEGY, payload={})          # no artifact_id: fails
+    now = datetime(2026, 10, 13, 12, tzinfo=UTC)
+    res = queue_cycle.consume(tmp_path, queue=q, now=now)
+    assert res["claimed"] == 1 and len(res["failed"]) == 1          # ONE attempt this pass
+    got = q.tasks()[t.id]
+    assert got.state == "READY" and got.attempts == 1
+    assert datetime.fromisoformat(got.not_before) >= now + timedelta(hours=1) - timedelta(
+        seconds=1)
+    assert queue_cycle.retry_backoff(1) == timedelta(hours=1)
+    assert queue_cycle.retry_backoff(2) == timedelta(hours=4)

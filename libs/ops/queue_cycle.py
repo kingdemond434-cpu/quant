@@ -52,7 +52,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from libs.ops.org import HUMAN_INBOX, desk_org  # noqa: E402
+from libs.ops.org import DESK_ROLES, ESCALATION_KIND, HUMAN_INBOX, desk_org  # noqa: E402
 from libs.ops.task_queue import INFORMATION, TaskQueue  # noqa: E402
 
 #: The desk's one queue. Relative to the repo root so a worktree, the box and CI each get their
@@ -302,6 +302,35 @@ CONSUMED_KINDS = (INVALIDATE_KIND, SCREEN_KIND)
 RECERTIFY_CLAIMS = ("recertify",)
 LANES_CLAIMS = (INGEST_KIND,)
 CLAIMED_KINDS = frozenset((*RECERTIFY_CLAIMS, *LANES_CLAIMS, *CONSUMED_KINDS))
+
+#: The leg that drains each claimed kind -- the `owner_leg` the no-queues fence names when that
+#: kind backs up (it named `queue_consumers` for every kind, including ones it never claims).
+KIND_OWNER_LEG: dict[str, str] = {
+    **dict.fromkeys(RECERTIFY_CLAIMS, "recertify_canon"),
+    **dict.fromkeys(LANES_CLAIMS, "queue_cycle"),
+    **dict.fromkeys(CONSUMED_KINDS, "queue_consumers"),
+}
+
+#: KINDS THAT INTENTIONALLY HAVE NO AUTOMATED CONSUMER, each with its reason (auditor MUST on
+#: #289). A READY row of one of these is reported in `unconsumed_kinds` and never fails. A READY
+#: row of ANY OTHER unclaimed kind past the bound is PARKED and fails the no-queues fence: an
+#: unknown kind is a producer whose consumer was never written, which is exactly a queue.
+#: `tests/ops/test_queue_cycle_lanes.py` fails if a `submit()` names a kind outside
+#: CLAIMED_KINDS | NO_CONSUMER_KINDS.
+NO_CONSUMER_KINDS: dict[str, str] = {
+    "wire": ("an ops work order from wiring_campaign: wiring a module is a code change a session "
+             "makes, not a task a worker can perform"),
+    "retire_module": ("an ops work order from wiring_campaign to delete dead code: a code change "
+                      "a session makes, not a task a worker can perform"),
+    "generate": ("a coverage_governor hunt brief for a dark axis: read by the research seats and "
+                 "sessions as a brief, never claimed by a worker"),
+    "acquire_class": ("an information-lane mission completed by discovery_loop when a matching "
+                      "source is acquired: it waits on the world, not on a worker"),
+    HUMAN_INBOX: "work that reached the top of the chart: a person answers it",
+    **{f"{ESCALATION_KIND}:{r.escalates_to}": (
+        f"an escalation to the {r.escalates_to!r} role, which no worker runs as: a person reads "
+        f"it on QUEUE.json") for r in DESK_ROLES if r.escalates_to},
+}
 #: Tasks one pass may consume. Each is a few file reads; the bound only stops a pathological
 #: journal from holding the hourly cycle, and the leftover is the next pass's first work.
 CONSUME_MAX = 500
@@ -418,6 +447,35 @@ def _norm_host(h: str) -> str:
     return s[4:] if s.startswith("www.") else s
 
 
+def class_terms(raw: Any) -> tuple[tuple[str, ...], ...]:
+    """A class's terms as LITERAL word sequences, never a compiled pattern (auditor SHOULD on
+    #289): the payload is queue data that a fetched page can shape, and a regex compiled from it
+    is a catastrophic-backtracking surface. Classes write their terms as `\\bnight\\W+lights\\b`
+    (`unknowns._terms`) and may join alternatives with `|`; each alternative becomes the tuple
+    of its alphanumeric words, and every other metacharacter is dropped, never interpreted."""
+    parts = [str(x) for x in raw] if isinstance(raw, (list, tuple)) else str(raw or "").split("|")
+    out: list[tuple[str, ...]] = []
+    for p in parts:
+        flat = p.replace("\\W+", " ").replace("\\W", " ").replace("\\b", " ").lower()
+        words = tuple(_WORDS.findall(flat))
+        if words and words not in out:
+            out.append(words)
+    return tuple(out)
+
+
+_WORDS = re.compile(r"[a-z0-9]+")
+
+
+def _names_term(name: str, terms: tuple[tuple[str, ...], ...]) -> bool:
+    """True when the series name's words contain one term's words contiguously, in order."""
+    words = _WORDS.findall(str(name).lower())
+    for t in terms:
+        n = len(t)
+        if any(tuple(words[i:i + n]) == t for i in range(len(words) - n + 1)):
+            return True
+    return False
+
+
 def screen_class(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
     """Screen a met class through the acquired-data screen. PURE over the registry.
 
@@ -438,17 +496,13 @@ def screen_class(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
     raw = payload.get("produced")
     produced: dict[str, Any] = raw if isinstance(raw, dict) else {}
     host = _norm_host(str(produced.get("source") or ""))
-    try:
-        rx = re.compile(str(payload.get("terms") or ""), re.IGNORECASE) \
-            if payload.get("terms") else None
-    except re.error:
-        rx = None
+    terms = class_terms(payload.get("terms"))
     rows: list[dict[str, Any]] = []
     for name, meta in sorted((reg.get("series") or {}).items()):
         if not isinstance(meta, dict):
             continue
         by_host = bool(host) and _norm_host(str(meta.get("host") or "")) == host
-        by_terms = rx is not None and bool(rx.search(str(name)))
+        by_terms = _names_term(str(name), terms)
         if not (by_host or by_terms):
             continue
         why = []
@@ -489,6 +543,18 @@ def _record_class_screen(root: Path, key: str, res: dict[str, Any], at: str) -> 
                               "family_discovered run hourly; no trial charge is written here")})
 
 
+#: First retry delay after a failed consume; each further attempt waits RETRY_BACKOFF_X longer.
+RETRY_BACKOFF_H = 1.0
+RETRY_BACKOFF_X = 4.0
+
+
+def retry_backoff(attempts: int) -> timedelta:
+    """1 h after the first failure, 4 h after the second: a transient fault (a registry being
+    rewritten, a lock held) gets two later chances before the task goes DEAD and escalates,
+    instead of all three attempts being spent inside one drain pass."""
+    return timedelta(hours=RETRY_BACKOFF_H * RETRY_BACKOFF_X ** max(0, int(attempts) - 1))
+
+
 def consume(root: Path | None = None, *, queue: TaskQueue | None = None,
             max_tasks: int = CONSUME_MAX, now: datetime | None = None) -> dict[str, Any]:
     """Claim and do every ready `invalidate` and `screen_class` task (up to `max_tasks`).
@@ -505,7 +571,7 @@ def consume(root: Path | None = None, *, queue: TaskQueue | None = None,
     rearmed = 0
     n = 0
     while n < max_tasks:
-        task = q.claim(QUEUE_WORKER, kinds=CONSUMED_KINDS)
+        task = q.claim(QUEUE_WORKER, kinds=CONSUMED_KINDS, now=now)
         if task is None:
             break
         n += 1
@@ -540,7 +606,8 @@ def consume(root: Path | None = None, *, queue: TaskQueue | None = None,
             outcomes[f"{task.kind}:{outcome}"] = outcomes.get(f"{task.kind}:{outcome}", 0) + 1
         except Exception as exc:  # one bad task never stops the drain
             why = f"{type(exc).__name__}: {exc}"[:200]
-            q.fail(task.id, QUEUE_WORKER, why=why)
+            q.fail(task.id, QUEUE_WORKER, why=why,
+                   retry_after=(now or datetime.now(tz=UTC)) + retry_backoff(task.attempts))
             failed.append({"id": task.id, "kind": task.kind, "why": why})
     left = sum(1 for t in q.tasks().values()
                if t.kind in CONSUMED_KINDS and t.state == "READY" and t.is_ready(
@@ -582,18 +649,25 @@ def ready_ages(tasks: Any, now: datetime) -> dict[str, list[float | None]]:
 
 def unconsumed_kinds(by_kind: dict[str, list[float | None]],
                      bound_h: float = READY_BOUND_H) -> list[dict[str, Any]]:
-    """The READY rows of kinds NO automated consumer claims (not in CLAIMED_KINDS), with counts
-    and ages: visible on QUEUE.json and the no-queues fence, never a breach."""
+    """The READY rows of the DECLARED no-consumer kinds (NO_CONSUMER_KINDS), with counts, ages
+    and the declared reason: visible on QUEUE.json and the no-queues fence, never a breach.
+    An unclaimed kind that is NOT declared is not listed here; see `undeclared_kinds`."""
     rows = []
     for kind, ages in sorted(by_kind.items()):
-        if kind in CLAIMED_KINDS:
+        if kind in CLAIMED_KINDS or kind not in NO_CONSUMER_KINDS:
             continue
         known = [a for a in ages if a is not None]
         rows.append({"kind": kind, "ready": len(ages),
                      "past_bound": sum(1 for a in known if a > bound_h),
                      "oldest_age_h": round(max(known), 3) if known else None,
-                     "undated": len(ages) - len(known), "bound_h": bound_h})
+                     "undated": len(ages) - len(known), "bound_h": bound_h,
+                     "why_no_consumer": NO_CONSUMER_KINDS[kind]})
     return rows
+
+
+def undeclared_kinds(by_kind: dict[str, list[float | None]]) -> list[str]:
+    """READY kinds that nothing claims AND nobody declared consumer-less: each is a queue."""
+    return sorted(k for k in by_kind if k not in CLAIMED_KINDS and k not in NO_CONSUMER_KINDS)
 
 
 def human_inbox(queue: TaskQueue) -> list[dict[str, Any]]:
@@ -639,6 +713,7 @@ def run(root: Path | None = None, *, queue: TaskQueue | None = None) -> dict[str
         "needs_a_person": len(inbox),
         "claimed_kinds": sorted(CLAIMED_KINDS),
         "unconsumed_kinds": unconsumed_kinds(ready_ages(q.tasks().values(), at)),
+        "undeclared_kinds": undeclared_kinds(ready_ages(q.tasks().values(), at)),
         "why": ("producers queue, the sweep escalates what died, and the inbox is where work "
                 "that reached the top of the chart waits -- a non-empty inbox is the desk asking "
                 "for a decision, not a backlog"),

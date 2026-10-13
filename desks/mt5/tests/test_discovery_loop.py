@@ -318,3 +318,67 @@ def test_the_leg_is_wired_into_the_hourly_cycle():
     assert '"discovery_loop": 600' in src
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["discovery_loop"] == "meta"
+
+
+def test_a_future_dated_prior_is_expired_never_fresh_forever(world):
+    """AUDITOR SHOULD on #289: a prior stamped in the future read as fresh for as long as the
+    clock stayed behind it. Beyond a one-hour skew allowance it is now expired."""
+    _run(world)
+    p = world["state"] / "priors.json"
+    _stamp_prior(world, NOW + timedelta(hours=DL.PRIOR_FUTURE_SKEW_H + 5))
+    gone, why = DL.current_priors(p, now=NOW)
+    assert gone == {} and "future" in why
+    _stamp_prior(world, NOW + timedelta(minutes=10))             # ordinary skew is tolerated
+    assert DL.current_priors(p, now=NOW)[0]
+
+
+def _rec(outcome: str, at: str, **f: str) -> dict:
+    return {"outcome": outcome, "outcome_history": [{"outcome": outcome, "at": at}],
+            "stages": {"OUTCOME": at}, **f}
+
+
+def test_each_endpoints_evidence_ages_in_the_prior():
+    """AUDITOR SHOULD on #289: the prior aged as a file, not per endpoint. A host judged USEFUL a
+    year ago now lifts its neighbours far less than one judged this week, and an outcome with no
+    readable time carries no weight at all."""
+    now = NOW
+    week = (now - timedelta(days=7)).isoformat()
+    year = (now - timedelta(days=365)).isoformat()
+    recent = DL.build_priors({"a": _rec("USEFUL", week, country="DE"),
+                              "b": _rec("REJECTED", week, country="FR")}, now=now)
+    stale = DL.build_priors({"a": _rec("USEFUL", year, country="DE"),
+                             "b": _rec("REJECTED", week, country="FR")}, now=now)
+    de = DL.features_of("x.example.de", country="DE")
+    assert DL.prior_for(de, recent) > DL.prior_for(de, stale)
+    assert stale["features"]["country"]["DE"]["weight"] < 0.01
+    assert DL.evidence_weight(_rec("USEFUL", week), now) == pytest.approx(
+        0.5 ** (7 / DL.PRIOR_EVIDENCE_HALF_LIFE_D))
+    undated = {"outcome": "USEFUL", "country": "DE"}
+    assert DL.evidence_weight(undated, now) == 0.0
+    doc = DL.build_priors({"u": undated}, now=now)
+    assert doc["undated_evidence"] == 1 and doc["base"] == 0.5
+
+
+def test_a_short_or_common_series_name_earns_no_credit_from_a_cell_token(tmp_path):
+    """AUDITOR SHOULD on #289: a series named `close` was credited with every cell whose id has
+    a `close` token -- every price cell on the desk. A short or stoplisted bare name now credits
+    only through its `ext_` primitive names or a structured field naming it whole."""
+    ver = tmp_path / "v.jsonl"
+    rows = [{"at": "2026-10-01T00:00:00+00:00", "cell": "tsmom|EURUSD|close|h4", "passed": True},
+            {"at": "2026-10-01T00:00:00+00:00", "cell": "macro|EURUSD|gdp|z2", "passed": True}]
+    ver.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    got, _ = DL.judged_cells({"close": "h.example.org", "gdp": "g.example.org"}, ver)
+    assert got == {}
+    rows += [{"at": "2026-10-02T00:00:00+00:00", "cell": "macro|EURUSD|ext_close_z|z2",
+              "passed": False},
+             {"at": "2026-10-02T00:00:00+00:00", "cell": "x.y", "series": "gdp", "passed": True},
+             {"at": "2026-10-02T00:00:00+00:00", "cell": "macro|EURUSD|industrial_output|z1",
+              "passed": True}]
+    ver.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    got, _ = DL.judged_cells({"close": "h.example.org", "gdp": "g.example.org",
+                              "industrial_output": "i.example.org"}, ver)
+    assert got["h.example.org"]["cells"] == {"macro|EURUSD|ext_close_z|z2": False}
+    assert got["g.example.org"]["cells"] == {"x.y": True}
+    assert got["i.example.org"]["cells"] == {"macro|EURUSD|industrial_output|z1": True}
+    assert not DL.bare_series_token_ok("close") and not DL.bare_series_token_ok("gdp")
+    assert DL.bare_series_token_ok("industrial_output")

@@ -392,11 +392,31 @@ def acquisition_view(registry: Mapping[str, Any] | None,
 _CELL_DELIMS = re.compile(r"[|:,=\s]+")
 
 
+#: Bare series names below this length, or in CREDIT_STOPLIST, never earn credit on their own.
+MIN_CREDIT_TOKEN_LEN = 5
+CREDIT_STOPLIST = frozenset({
+    "open", "high", "low", "close", "price", "prices", "value", "values", "volume", "rate",
+    "rates", "index", "level", "total", "spread", "return", "returns", "series", "data", "date",
+    "time", "count", "mean", "change", "ratio", "yield", "score", "signal", "z", "ret", "vol"})
+
+
+def bare_series_token_ok(name: str) -> bool:
+    """True when a series' bare name is specific enough to credit a cell by itself."""
+    n = str(name).strip().lower()
+    return len(n) >= MIN_CREDIT_TOKEN_LEN and n not in CREDIT_STOPLIST
+
+
 def verdict_series_tokens(row: Mapping[str, Any]) -> set[str]:
     """The exact series tokens a gauntlet verdict row names: each token of its cell id split on
     the id's structural delimiters (`|`, `:`, `,`, `=`, whitespace), plus its structured
     `series` / `series_key` / `inputs` fields taken whole. Never a substring of a token."""
     toks = {t for t in _CELL_DELIMS.split(str(row.get("cell") or "")) if t}
+    return toks | structured_series_tokens(row)
+
+
+def structured_series_tokens(row: Mapping[str, Any]) -> set[str]:
+    """The series a verdict row names in its structured fields, each taken whole."""
+    toks: set[str] = set()
     for k in ("series", "series_key", "inputs"):
         v = row.get(k)
         vals = v if isinstance(v, (list, tuple)) else ([v] if v else [])
@@ -423,11 +443,19 @@ def judged_cells(series_to_host: Mapping[str, str], verdicts: Path = VERDICTS
     # now belongs to a series only when one of its delimited id tokens IS the series (or
     # `ext_<series>` / `ext_<series>_z`, the primitive names `build_primitives` gives it), or a
     # structured `series` / `series_key` / `inputs` field names it exactly.
+    # A SHORT OR COMMON BARE NAME IS NEVER A CREDIT TOKEN (auditor SHOULD on #289): a series
+    # named `close` or `value` would otherwise be credited with every price cell on the desk.
+    # Such a series still matches through its `ext_` primitive names, which are specific.
+    # A structured `series` / `series_key` / `inputs` field names its series whole and is never
+    # ambiguous, so it matches every name; only cell-id tokens are held to the stoplist.
     by_token: dict[str, str] = {}
+    by_field: dict[str, str] = {}
     for name in series_to_host:
         for tok in (name, f"ext_{name}", f"ext_{name}_z"):
-            by_token.setdefault(tok, name)
-    rx = re.compile("|".join(re.escape(t) for t in sorted(by_token, key=len, reverse=True)))
+            by_field.setdefault(tok, name)
+            if tok != name or bare_series_token_ok(name):
+                by_token.setdefault(tok, name)
+    rx = re.compile("|".join(re.escape(t) for t in sorted(by_field, key=len, reverse=True)))
     rows = 0
     try:
         with verdicts.open("r", encoding="utf-8", errors="replace") as fh:
@@ -440,8 +468,10 @@ def judged_cells(series_to_host: Mapping[str, str], verdicts: Path = VERDICTS
                     continue
                 if not isinstance(r, dict) or not r.get("cell"):
                     continue
-                hosts = {series_to_host[by_token[t]] for t in verdict_series_tokens(r)
-                         if t in by_token}
+                in_cell = {t for t in _CELL_DELIMS.split(str(r["cell"])) if t}
+                hosts = {series_to_host[by_token[t]] for t in in_cell if t in by_token}
+                hosts |= {series_to_host[by_field[t]]
+                          for t in structured_series_tokens(r) if t in by_field}
                 cell = str(r["cell"])
                 for h in hosts:
                     rows += 1
@@ -662,38 +692,74 @@ def _score(outcome: str | None) -> tuple[float, float] | None:
         str(outcome)) if outcome else None
 
 
+#: Half-life, in days, of one source's outcome as evidence in the prior (auditor SHOULD on
+#: #289: the prior aged as a FILE but not per endpoint, so a host judged USEFUL a year ago lifted
+#: its neighbours exactly as much as one judged this week). Each outcome is weighted
+#: 0.5 ** (age / half-life) from the time it was reached.
+PRIOR_EVIDENCE_HALF_LIFE_D = 30.0
+
+
+def _evidence_at(r: Mapping[str, Any]) -> datetime | None:
+    """When a record's CURRENT outcome was reached: its last outcome-history entry, else the
+    OUTCOME stage stamp. None when neither is readable."""
+    hist = r.get("outcome_history") or []
+    if hist and isinstance(hist[-1], Mapping):
+        at = _when(hist[-1].get("at"))
+        if at is not None:
+            return at
+    return _when((r.get("stages") or {}).get("OUTCOME"))
+
+
+def evidence_weight(r: Mapping[str, Any], now: datetime,
+                    half_life_d: float = PRIOR_EVIDENCE_HALF_LIFE_D) -> float:
+    """0.5 ** (age_days / half_life). An UNDATED outcome weighs 0: an outcome whose time cannot
+    be read is never trusted as current evidence (L1.28a). A future stamp is clipped to now."""
+    at = _evidence_at(r)
+    if at is None:
+        return 0.0
+    age_d = max(0.0, (now - at).total_seconds() / 86400.0)
+    return float(0.5 ** (age_d / half_life_d))
+
+
 def build_priors(recs: Mapping[str, Mapping[str, Any]], *, now: datetime,
                  missions: Sequence[Mapping[str, Any]] = (),
                  backlog_alarm: bool = False) -> dict[str, Any]:
     """Per feature value: a shrunk posterior of (useful, acquirable). The prior a similar source
-    inherits is the base rate plus the mean lift of the feature values it shares."""
+    inherits is the base rate plus the mean lift of the feature values it shares. Every outcome
+    is weighted by its own age (`evidence_weight`), so old endpoints fade from the prior."""
     scored = [(r, _score(r.get("outcome"))) for r in recs.values()]
     scored = [(r, s) for r, s in scored if s is not None]
     n = len(scored)
-    base_u = sum(s[0] for _, s in scored) / n if n else 0.0
-    base_a = sum(s[1] for _, s in scored) / n if n else 0.0
-    base = round(W_USEFUL * base_u + (1 - W_USEFUL) * base_a, 6) if n else 0.5
-    acc: dict[str, dict[str, list[float]]] = {f: defaultdict(lambda: [0.0, 0.0, 0.0])
+    weights = [evidence_weight(r, now) for r, _ in scored]
+    wsum = sum(weights)
+    base_u = sum(w * s[0] for w, (_, s) in zip(weights, scored, strict=True)) / wsum if wsum else 0.0
+    base_a = sum(w * s[1] for w, (_, s) in zip(weights, scored, strict=True)) / wsum if wsum else 0.0
+    base = round(W_USEFUL * base_u + (1 - W_USEFUL) * base_a, 6) if wsum else 0.5
+    acc: dict[str, dict[str, list[float]]] = {f: defaultdict(lambda: [0.0, 0.0, 0.0, 0.0])
                                               for f in FEATURES}
-    for r, (u, a) in scored:
+    for w, (r, (u, a)) in zip(weights, scored, strict=True):
         for f in FEATURES:
             v = str(r.get(f) or UNMEASURED)
             if v == UNMEASURED:
                 continue
             row = acc[f][v]
-            row[0] += 1
-            row[1] += u
-            row[2] += a
+            row[0] += w
+            row[1] += w * u
+            row[2] += w * a
+            row[3] += 1
     table: dict[str, dict[str, Any]] = {}
     for f, vals in acc.items():
         table[f] = {}
-        for v, (k, u, a) in vals.items():
+        for v, (k, u, a, cnt) in vals.items():
             pu = (u + PRIOR_STRENGTH * base_u) / (k + PRIOR_STRENGTH)
             pa = (a + PRIOR_STRENGTH * base_a) / (k + PRIOR_STRENGTH)
             score = W_USEFUL * pu + (1 - W_USEFUL) * pa
-            table[f][v] = {"n": int(k), "useful": round(pu, 4), "acquirable": round(pa, 4),
-                           "lift": round(score - base, 6)}
-    return {"generated_at": _iso(now), "base": base, "evidence": n, "features": table,
+            table[f][v] = {"n": int(cnt), "weight": round(k, 4), "useful": round(pu, 4),
+                           "acquirable": round(pa, 4), "lift": round(score - base, 6)}
+    return {"generated_at": _iso(now), "base": base, "evidence": n,
+            "evidence_weight": round(wsum, 4),
+            "undated_evidence": sum(1 for w in weights if w == 0.0),
+            "evidence_half_life_d": PRIOR_EVIDENCE_HALF_LIFE_D, "features": table,
             "missions": [{"key": m.get("key"), "terms": m.get("terms")} for m in missions
                          if m.get("terms")],
             "mission_lift": MISSION_LIFT, "backlog_alarm": bool(backlog_alarm),
@@ -714,6 +780,10 @@ def load_priors(path: Path | None = None) -> dict[str, Any]:
 PRIOR_MAX_AGE_H = 72.0
 
 
+#: Clock skew a prior's generated_at may sit ahead of now before it is treated as expired.
+PRIOR_FUTURE_SKEW_H = 1.0
+
+
 def current_priors(path: Path | None = None, *, now: datetime | None = None,
                    max_age_h: float = PRIOR_MAX_AGE_H) -> tuple[dict[str, Any], str]:
     """(priors, "") while the prior is inside its age bound; ({}, why) when it is absent,
@@ -725,6 +795,10 @@ def current_priors(path: Path | None = None, *, now: datetime | None = None,
     if at is None:
         return {}, "prior carries no readable generated_at; treated as expired"
     age_h = ((now or datetime.now(UTC)) - at).total_seconds() / 3600.0
+    if age_h < -PRIOR_FUTURE_SKEW_H:
+        # A prior stamped in the future cannot be aged at all: it would read fresh forever.
+        return {}, (f"prior dated {-age_h:.1f} h in the future (beyond the "
+                    f"{PRIOR_FUTURE_SKEW_H:g} h clock-skew allowance); treated as expired")
     if age_h > max_age_h:
         return {}, f"prior expired: {age_h:.1f} h old against a {max_age_h:g} h bound"
     return doc, ""
