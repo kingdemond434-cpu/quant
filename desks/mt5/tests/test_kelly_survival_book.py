@@ -112,3 +112,14 @@ def test_a_cell_only_reddit_proposed_never_enters_the_book(desk, tmp_path, monke
     fence.write_text(json.dumps({"cells": ["BBB.carry"]}), encoding="utf-8")
     monkeypatch.setattr(desk, "TERMS_FENCED_CELLS", fence)
     assert desk.terms_fenced_cells()[0] == {"BBB.carry"}
+
+
+def test_the_m15_ban_is_one_sleeve_not_a_timeframe() -> None:
+    """Principal 2026-10-13 17:15Z: only xau_m15_anti_breakout is banned; other M15 certs solve."""
+    assert ks.m15_banned("XAUUSD", "anti_breakout", "M15")
+    assert ks.m15_banned("xauusd", "anti_breakout", "m15")
+    assert ks.m15_banned("XAUUSD", "anti_donchian_breakout", "M15")
+    assert not ks.m15_banned("XAUUSD", "anti_three_bar_momentum", "M15")
+    assert not ks.m15_banned("XAUUSD", "anti_breakout", "M5")
+    assert not ks.m15_banned("EURZAR", "carry", "M15")
+    assert not ks.m15_banned("XAUUSD", "carry", "M15")
