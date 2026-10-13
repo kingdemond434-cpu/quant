@@ -235,10 +235,50 @@ def _median_spread_write(prev: dict, h1_rates, info, now) -> dict:
         value = float(spreads.median())
     except (KeyError, TypeError, ValueError, IndexError):
         value = float(getattr(info, "spread", 0) or 0)
+    source = MEDIAN_SPREAD_SOURCE
+    if not value > 0:
+        # A ZERO CENTRAL VALUE IS NEVER WRITTEN (2026-10-13). This is the organ that wrote
+        # USDJPY's 0.0: on this commission account the majors quote bid == ask on ~96% of H1
+        # bars since 2026-08-17, so the median of the window lands on 0 and every clock on the
+        # symbol ran on the engine's 0.05 floor. The replacement is the cost surface's own
+        # priced-book level for the symbol; with no surface row nothing is written and the held
+        # value (and its stamp) stand. (`merge` still preserves a zero another producer writes --
+        # test_universe_registry pins that -- so the PRICING side is what refuses it:
+        # `entry_hour_cost.field_status` reads a zero as UNMEASURED and the surface table, not
+        # this field, is what every clock is charged.)
+        value, source = _surface_symbol_p50(str(getattr(info, "name", "") or ""))
+        if value is None:
+            return {}
+        allowed, _why = may_write_median_spread(prev if isinstance(prev, dict) else {}, source)
+        if not allowed:
+            return {}
     prov = dict((prev or {}).get("_provenance") or {})
-    prov["median_spread_pts"] = {"source": MEDIAN_SPREAD_SOURCE,
+    prov["median_spread_pts"] = {"source": source,
                                  "at": now.isoformat(timespec="seconds")}
     return {"median_spread_pts": value, "_provenance": prov}
+
+
+def _surface_symbol_p50(sym: str) -> tuple[float | None, str]:
+    """`cost_surface`'s symbol-level priced p50 for `sym`, or (None, why) -- never zero."""
+    try:
+        doc = json.loads((BASE / "data" / "cost_surface.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return None, "no cost surface"
+    row = ((doc.get("symbols") or {}).get(sym) or {}) if isinstance(doc, dict) else {}
+    lvl = row.get("symbol_level") or {}
+    v = lvl.get("p50") if lvl.get("status") == "MEASURED" else None
+    if v is None:
+        # A schema-1 surface carries no symbol level: the median of its MEASURED hour p50s is the
+        # same priced-book statistic one level down (never zero -- those cells are priced bars).
+        hp = sorted(float(c["p50"]) for c in (row.get("hours") or {}).values()
+                    if isinstance(c, dict) and c.get("status") == "MEASURED"
+                    and isinstance(c.get("p50"), (int, float)) and c["p50"] > 0)
+        v = hp[len(hp) // 2] if hp else None
+    try:
+        f = float(v) if v is not None else None
+    except (TypeError, ValueError):
+        f = None
+    return (f, "cost_surface_symbol_p50") if f and f > 0 else (None, "no priced level")
 
 
 def min_bars(timeframe: str) -> int:

@@ -393,7 +393,10 @@ def main(argv: list[str] | None = None) -> None:
             "tick_value": float(info.trade_tick_value),
             "min_volume": float(info.volume_min),
             "volume_step": float(info.volume_step),
-            "median_spread_pts": med_spread,
+            # A zero central value is never written (2026-10-13): on this commission account the
+            # majors quote 0 on most H1 bars, and a stored 0.0 priced USDJPY's clock at nothing.
+            # Omitted, the held value stands.
+            **({"median_spread_pts": med_spread} if med_spread > 0 else {}),
             # WHAT THE BROKER WILL ACTUALLY LET US DO. Measured 2026-09-03: Fusion offers 250
             # symbols of which only 237 are SYMBOL_TRADE_MODE_FULL; the other 13 (DocuSign,
             # EOSUSD, EURRUB, EURTRY, GBPTRY, OJ, SUGAR, UKCOCOA, UKGILT, USDRUB, USDTRY,

@@ -14,7 +14,7 @@ for value in (BASE, BASE / "research"):
         sys.path.insert(0, str(value))
 
 from gate_policy import all_ten_pass, is_exact_policy  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from mt5desk.engine import run_backtest  # noqa: E402
 from run_hunt12 import day_states  # noqa: E402
 from run_hunt16 import FAMILIES, WINDOWS  # noqa: E402
 
@@ -146,7 +146,12 @@ def main() -> int:
             ]
         forward_signals = [s for s in signals if pd.Timestamp(s.time) > frozen_at]
         meta = _read(BASE / "data" / "universe" / "universe.json")
-        costs = Costs.from_symbol(meta.get(str(spec["symbol"]), {}), mult=2.0)
+        # The hour of entry and of exit, from the one cost surface (`research/entry_hour_cost`):
+        # the flat registry spread undercharges every rollover fill on the exotics and prices a
+        # zero-spread registry row at nothing. `mult=2.0` keeps this clock's own convention.
+        from research.entry_hour_cost import costs_at_entry_hour
+        costs, _spread_basis = costs_at_entry_hour(
+            str(spec["symbol"]), meta.get(str(spec["symbol"]), {}), mult=2.0)
         result = run_backtest(h1, signals, costs)
         trades = [trade for trade in result.trades
                   if pd.Timestamp(trade.entry_time).tz_convert("UTC") > frozen_at]
