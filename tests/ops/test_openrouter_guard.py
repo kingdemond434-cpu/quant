@@ -148,3 +148,40 @@ def test_seat_budget_scales_with_the_measured_limit(tmp_path: Path,
     assert llm_seat.free_daily_max() < 50
     g.key_info(refresh=True, fetch=lambda u: {"data": {"is_free_tier": False}})
     assert 900 < llm_seat.free_daily_max() < 1000
+
+
+def test_default_deny_covers_every_openrouter_post() -> None:
+    """Follow-up to #353's audit: not only /completions -- any OpenRouter request with a body."""
+    assert g.refusal("https://openrouter.ai/api/v1/images/generations",
+                     {"model": "openai/gpt-image-2"})
+    assert g.refusal("https://openrouter.ai/api/v1/auth/keys", {"name": "new"})
+    assert g.refusal("https://openrouter.ai/api/v1/models", b"{}"), "a body is never a read"
+    for read in ("/models", "/key", "/credits", "/models/qwen/qwen3:free/endpoints"):
+        assert g.refusal("https://openrouter.ai/api/v1" + read, None) is None
+
+
+def test_the_wire_backstop_catches_a_url_built_in_pieces(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A caller the source fence cannot see is still stopped at urlopen itself."""
+    reached: list[str] = []
+    monkeypatch.setattr(g, "_ORIG_URLOPEN", lambda *a, **k: reached.append("sent"))
+    monkeypatch.setattr(urllib.request, "urlopen", g._guarded_urlopen)
+    host = "".join(["open", "router", ".ai"])
+    req = urllib.request.Request(f"https://{host}/api/v1/chat/" + "completions",
+                                 data=json.dumps({"model": "openai/gpt-6"}).encode())
+    with pytest.raises(g.PaidModelRefused):
+        urllib.request.urlopen(req, timeout=1)
+    with pytest.raises(g.PaidModelRefused):
+        urllib.request.urlopen(f"https://{host}/api/v1/chat/completions",
+                               json.dumps({"model": "x/y"}).encode())
+    urllib.request.urlopen(f"https://{host}/api/v1/models")
+    assert reached == ["sent"]
+
+
+def test_importing_the_guard_installs_the_backstop() -> None:
+    import importlib
+    importlib.reload(g)
+    assert getattr(urllib.request.urlopen, "_openrouter_guard", False)
+
+
+def test_the_account_file_never_reaches_the_public_repo() -> None:
+    assert "desks/mt5/data/llm_lab/openrouter_key.json" in (ROOT / ".gitignore").read_text()
