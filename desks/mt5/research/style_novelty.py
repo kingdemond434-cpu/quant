@@ -271,13 +271,14 @@ def project(y: np.ndarray, X: np.ndarray) -> dict[str, Any]:
                                if k and r2_adj >= DOMINANT_MIN_R2 else None)}
 
 
-def _builder() -> Callable[..., dict | None]:
+def _builder() -> Callable[..., dict[str, Any] | None]:
     import external_gauntlet as eg  # type: ignore[import-not-found]
-    return eg.build_cell
+    fn: Callable[..., dict[str, Any] | None] = eg.build_cell
+    return fn
 
 
 def score_certificate(cert: Mapping[str, Any], meta: Mapping[str, Any],
-                      build: Callable[..., dict | None] | None,
+                      build: Callable[..., dict[str, Any] | None] | None,
                       classes: Mapping[str, str]) -> dict[str, Any]:
     spec = cert.get("shadow_spec") or {}
     sym = str(spec.get("symbol") or cert.get("sym") or "")
@@ -375,7 +376,7 @@ def family_novelty(family: str, measured: Mapping[str, float],
 def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path = REPORT,
         weekly_path: Path = WEEKLY, universe: Path = UNIVERSE,
         budget_s: float = DEFAULT_BUDGET_S, force: bool = False,
-        build: Callable[..., dict | None] | None = None,
+        build: Callable[..., dict[str, Any] | None] | None = None,
         now: float | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     clock = time.time() if now is None else now
@@ -391,7 +392,7 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
     if not force and old.get("complete") is True and age < REFRESH_S:
         return {"status": "FRESH", "age_h": round(age / 3600.0, 1), "report": str(report_path)}
     deadline = t0 + float(budget_s)
-    certs: dict[str, dict] = {}
+    certs: dict[str, dict[str, Any]] = {}
     source = ""
     for p in (certs_path, fallback):
         surv = _json(p).get("survivors")
@@ -486,9 +487,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--force", action="store_true", help="re-measure even when fresh")
     args = ap.parse_args(argv)
     try:
-        from job_lock import exclusive_job
+        from job_lock import exclusive_job  # type: ignore[import-not-found]
     except Exception:
-        exclusive_job = None                                              # type: ignore[assignment]
+        exclusive_job = None
     if exclusive_job is not None:
         with exclusive_job("style_novelty", need_mb=NEED_MB) as go:
             if not go:
