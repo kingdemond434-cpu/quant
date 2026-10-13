@@ -995,7 +995,8 @@ def _fx_option_expiry_events(year: int, month: int) -> list[Event]:
 
 #: (tenor, weekday, which week) for the monthly US coupon auctions. 3y/10y/30y sit in the week
 #: after the refunding-style mid-month slot (Tue/Wed/Thu of the second full week); 2y/5y/7y sit
-#: in the last full week (Tue/Wed/Thu after the fourth Monday). A PATTERN, labelled VERIFY.
+#: in the week of the month's last Thursday (Tue/Wed/Thu), never spilling into the next month.
+#: A PATTERN, labelled VERIFY.
 _COUPON_AUCTIONS = (("3y", TUESDAY, "mid"), ("10y", WEDNESDAY, "mid"), ("30y", THURSDAY, "mid"),
                     ("2y", TUESDAY, "late"), ("5y", WEDNESDAY, "late"), ("7y", THURSDAY, "late"))
 
@@ -1009,9 +1010,9 @@ _DEALER_MECH = ("A dealer's bid is a contractual obligation of its primary deale
 def _coupon_auction_events(year: int, month: int) -> list[Event]:
     rows: list[Event] = []
     second_mon = nth_weekday(year, month, MONDAY, 2)
-    fourth_mon = nth_weekday(year, month, MONDAY, 4)
+    last_week_mon = last_weekday(year, month, THURSDAY) - timedelta(days=THURSDAY - MONDAY)
     for tenor, weekday, slot in _COUPON_AUCTIONS:
-        anchor = second_mon if slot == "mid" else fourth_mon
+        anchor = second_mon if slot == "mid" else last_week_mon
         day = anchor + timedelta(days=weekday - MONDAY)
         while not is_business_day(day):
             day += timedelta(days=1)
@@ -1021,7 +1022,7 @@ def _coupon_auction_events(year: int, month: int) -> list[Event]:
             _keep(_venue("rates", "sp") + _gold() + _fx_majors()), _DEALER_ACTOR, _DEALER_MECH,
             f"US Treasury {tenor} coupon auction, 13:00 America/New_York, window -60/+60 min: "
             f"{VERIFY_SCHEDULE}. Encoded as the {('Tue', 'Wed', 'Thu')[weekday - 1]} of the "
-            f"week of the {'second' if slot == 'mid' else 'fourth'} Monday"))
+            f"{'week of the second Monday' if slot == 'mid' else 'week of the last Thursday'}"))
     return rows
 
 
