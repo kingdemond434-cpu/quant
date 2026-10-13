@@ -1494,12 +1494,15 @@ def test_an_exit_only_symbol_never_manages_an_untagged_position() -> None:
     a manual or untagged position sitting on it is left alone."""
     sent: list = []
     mt5 = _manage_mt5(f"DW{_NAME}", sent)
-    manual = SimpleNamespace(ticket=777, type=0, price_open=1.1100, sl=1.1050, tp=1.1150,
-                             comment="", time=1_800_000_000, symbol="EURUSD")
-    mt5.positions_get = lambda symbol=None: [manual]
+    tagged = SimpleNamespace(ticket=501, type=0, price_open=1.1100, sl=1.1050, tp=1.1150,
+                             comment=f"DW{_NAME}", time=1_800_000_000, symbol="CHFNOK")
+    manual = SimpleNamespace(**{**vars(tagged), "ticket": 777, "comment": ""})
+    book = [tagged, manual]
+    mt5.positions_get = lambda symbol=None: [p for p in book if symbol in (None, p.symbol)]
     ns = _manage_ns(mt5)
     ns["manage_open_positions"]({"armed": True, "generic": {_NAME: {"trail_k": 0.0}}}, [])
-    assert sent == [] and not any("777" in x or "bars since entry" in x for x in ns["_logs"])
+    seen = [x for x in ns["_logs"] if "bars since entry" in x]
+    assert sent == [] and len(seen) == 1           # the tagged position only, never the manual
 
 
 def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> None:
