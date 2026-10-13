@@ -30,7 +30,7 @@ this module's flag from every row before anything reads the docket's order.
 WHAT IS MEASURED AND WHAT IS NOT (L1.28a: an unmeasured term is 1.0 and NAMED, never faked).
 Training must use features a never-judged row can also produce, so every feature is derived from
 the judge's own cell identity (`<sym>[@TF].<family>.p=<digest>`) plus the broker registry:
-family, symbol, asset class (`universe_policy.asset_class_of`), chart, the leave-one-out pass
+family, symbol, asset class (`universe_policy.asset_class_of`), chart, the out-of-fold pass
 rates of those keys and their crosses (family x chart, family x asset class, family x symbol --
 the "similarity to past failures"), the evidence depth of each, and the stored family posterior
 (`libs/research/research_priors`). Session, source, mechanism and the cheap backtest diagnostics
@@ -92,6 +92,8 @@ MIN_TRAIN, MIN_CLASS = 200, 10
 REFIT_MIN_S = 3000
 #: Pseudo-counts of the parent rate mixed into every table rate.
 SMOOTH = 20.0
+#: Out-of-fold folds for the rate features the booster is trained on.
+N_FOLDS = 5
 TF_ORDER = {"M1": 0, "M5": 1, "M15": 2, "M30": 3, "H1": 4, "H4": 5, "D1": 6}
 FEATURES = ("family_rate", "symbol_rate", "asset_rate", "tf_rate", "fam_tf_rate",
             "fam_asset_rate", "fam_sym_rate", "log_n_family", "log_n_fam_sym", "tf_ordinal",
@@ -99,12 +101,12 @@ FEATURES = ("family_rate", "symbol_rate", "asset_rate", "tf_rate", "fam_tf_rate"
 
 #: The principal's input list, and what this module can honestly feed the model today.
 FEATURE_TERMS: dict[str, str] = {
-    "family": "MEASURED (cell id; leave-one-out family pass rate)",
+    "family": "MEASURED (cell id; out-of-fold family pass rate)",
     "asset_class": "MEASURED (universe_policy.asset_class_of)",
     "timeframe": "MEASURED (cell id @TF)",
     "historical_family_pass_rate": "MEASURED (ledger rates + research_priors family posterior)",
     "novelty": "MEASURED (judged depth of the family x symbol neighbourhood)",
-    "similarity_to_past_failures": "MEASURED (leave-one-out family x symbol / chart / class rates)",
+    "similarity_to_past_failures": "MEASURED (out-of-fold family x symbol / chart / class rates)",
     "session": UNMEASURED + " (ledger rows carry only a params digest)",
     "source": UNMEASURED + " (not on the gate ledger row)",
     "mechanism": UNMEASURED + " (not on the gate ledger row)",
@@ -178,34 +180,34 @@ class Tables:
             v[0] += sign
             v[1] += sign * y
 
-    def n_k(self, kind: str, key: str, loo: int | None = None) -> tuple[int, int]:
+    def n_k(self, kind: str, key: str) -> tuple[int, int]:
         n, k = self.c.get(f"{kind}:{key}", (0, 0))
-        if loo is not None and n > 0:
-            n, k = n - 1, k - loo
         return max(n, 0), max(k, 0)
 
-    def rate(self, kind: str, key: str, parent: float, loo: int | None = None) -> float:
-        n, k = self.n_k(kind, key, loo)
+    def rate(self, kind: str, key: str, parent: float) -> float:
+        n, k = self.n_k(kind, key)
         return (k + SMOOTH * parent) / (n + SMOOTH)
 
-    def global_rate(self, loo: int | None = None) -> float | None:
-        n, k = self.n_k("g", "", loo)
+    def global_rate(self) -> float | None:
+        n, k = self.n_k("g", "")
         return (k + 1.0) / (n + 2.0) if n > 0 else None
 
-    def features(self, keys: Mapping[str, str], family_prior: float,
-                 loo: int | None = None) -> list[float]:
-        g = self.global_rate(loo)
+    def copy(self) -> Tables:
+        return Tables({k: list(v) for k, v in self.c.items()})
+
+    def features(self, keys: Mapping[str, str], family_prior: float) -> list[float]:
+        g = self.global_rate()
         g = family_prior if g is None else g
-        fr = self.rate("f", keys["f"], g, loo)
+        fr = self.rate("f", keys["f"], g)
         return [fr,
-                self.rate("s", keys["s"], g, loo),
-                self.rate("a", keys["a"], g, loo),
-                self.rate("t", keys["t"], g, loo),
-                self.rate("ft", keys["ft"], fr, loo),
-                self.rate("fa", keys["fa"], fr, loo),
-                self.rate("fs", keys["fs"], fr, loo),
-                math.log1p(self.n_k("f", keys["f"], loo)[0]),
-                math.log1p(self.n_k("fs", keys["fs"], loo)[0]),
+                self.rate("s", keys["s"], g),
+                self.rate("a", keys["a"], g),
+                self.rate("t", keys["t"], g),
+                self.rate("ft", keys["ft"], fr),
+                self.rate("fa", keys["fa"], fr),
+                self.rate("fs", keys["fs"], fr),
+                math.log1p(self.n_k("f", keys["f"])[0]),
+                math.log1p(self.n_k("fs", keys["fs"])[0]),
                 float(TF_ORDER.get(keys["t"], 4)),
                 family_prior]
 
@@ -302,14 +304,30 @@ def _holdout(cell: str) -> bool:
     return int(hashlib.sha256(cell.encode("utf-8")).hexdigest()[:8], 16) % 5 == 0
 
 
+def _fold(cell: str) -> int:
+    return int(hashlib.sha256(cell.encode("utf-8")).hexdigest()[8:16], 16) % N_FOLDS
+
+
 def _matrix(sample: list[tuple[str, str, str, str, int, float]], tables: Tables
             ) -> tuple[list[list[float]], list[int], list[float]]:
+    """OUT-OF-FOLD rate features: a row is encoded by tables its own fold's labels have left.
+
+    Leave-one-out encoding was tried first and is a known trap: removing a row's own label shifts
+    its rate in the direction opposite to that label, so a booster learns the shift and inverts
+    on rows that were never in the tables (measured on the synthetic ledger: holdout AUC 0.50).
+    Fold-level removal moves every row of a fold together, so no row can see its own label."""
     xs, ys, ws = [], [], []
-    for _cell, fam, sym, tf, y, w in sample:
-        keys = _keys(fam, sym, tf, _asset(sym))
-        xs.append(tables.features(keys, family_prior(fam), loo=y))   # leave-one-out
-        ys.append(y)
-        ws.append(w)
+    for f in range(N_FOLDS):
+        part = [s for s in sample if _fold(s[0]) == f]
+        if not part:
+            continue
+        t = tables.copy()
+        for _cell, fam, sym, tf, y, _w in part:
+            t.add(_keys(fam, sym, tf, _asset(sym)), y, sign=-1)
+        for _cell, fam, sym, tf, y, w in part:
+            xs.append(t.features(_keys(fam, sym, tf, _asset(sym)), family_prior(fam)))
+            ys.append(y)
+            ws.append(w)
     return xs, ys, ws
 
 
@@ -355,7 +373,7 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
             hold = [s for s in sample if _holdout(s[0])]
             fit_rows = [s for s in sample if not _holdout(s[0])]
             if hold and fit_rows and 0 < sum(s[4] for s in hold) < len(hold):
-                t_fit = Tables({k: list(v) for k, v in tables.c.items()})
+                t_fit = tables.copy()
                 for _cell, fam, sym, tf, y, _w in hold:      # holdout labels leave the tables
                     t_fit.add(_keys(fam, sym, tf, _asset(sym)), y, sign=-1)
                 xf, yf, wf = _matrix(fit_rows, t_fit)
