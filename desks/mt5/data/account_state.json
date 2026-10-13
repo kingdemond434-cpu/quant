@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-10-13T11:00:49+00:00",
+ "updated_at": "2026-10-13T11:15:37+00:00",
  "source": "ops/publish_account_state.py",
  "venue": "Fusion Markets Pty Ltd",
  "server": "FusionMarkets-Live",
@@ -8,8 +8,8 @@
  "balance": 484.83,
  "equity": 484.83,
  "margin_free": 484.83,
- "today_pnl": -76.2,
- "today_closed_pnl": -76.2,
+ "today_pnl": -76.43,
+ "today_closed_pnl": -76.43,
  "today_floating_pnl": 0,
  "open_positions": 0
 }
