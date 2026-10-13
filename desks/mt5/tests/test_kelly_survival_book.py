@@ -112,3 +112,37 @@ def test_a_cell_only_reddit_proposed_never_enters_the_book(desk, tmp_path, monke
     fence.write_text(json.dumps({"cells": ["BBB.carry"]}), encoding="utf-8")
     monkeypatch.setattr(desk, "TERMS_FENCED_CELLS", fence)
     assert desk.terms_fenced_cells()[0] == {"BBB.carry"}
+
+
+def test_the_m15_ban_is_one_sleeve_not_a_timeframe() -> None:
+    """Principal 2026-10-13 17:15Z: only xau_m15_anti_breakout is banned; other M15 certs solve."""
+    assert ks.m15_banned("XAUUSD", "anti_breakout", "M15")
+    assert ks.m15_banned("xauusd", "anti_breakout", "m15")
+    assert ks.m15_banned("XAUUSD", "anti_donchian_breakout", "M15")
+    assert not ks.m15_banned("XAUUSD", "anti_three_bar_momentum", "M15")
+    assert not ks.m15_banned("XAUUSD", "anti_breakout", "M5")
+    assert not ks.m15_banned("EURZAR", "carry", "M15")
+    assert not ks.m15_banned("XAUUSD", "carry", "M15")
+
+
+def _gauntlet_m15_cert(with_spec: bool) -> dict:
+    """Shaped as external_gauntlet writes it: the chart rides in shadow_spec.params and the key."""
+    c: dict = {"cell": "XAUUSD@M15.anti_donchian_breakout.p=ab12",
+               "gates": {"stress_costs": {"exp_x3": 0.2}}}
+    if with_spec:
+        c["shadow_spec"] = {"family": "anti_donchian_breakout", "symbol": "XAUUSD",
+                            "params": {"timeframe": "M15", "lookback": 20}}
+    return c
+
+
+def test_certified_roster_bans_a_gauntlet_shaped_m15_cert(desk, tmp_path, monkeypatch):
+    """Audit #383 must-fix: params/key timeframe must not read as H1 and escape the M15 ban."""
+    key = "external.XAUUSD@M15.anti_donchian_breakout.p=ab12"
+    for with_spec in (True, False):
+        canon = tmp_path / f"canon_gauntlet_{with_spec}.json"
+        canon.write_text(json.dumps({"gate_policy": {"version": "v2"}, "survivors": {
+            key: _gauntlet_m15_cert(with_spec)}}), encoding="utf-8")
+        monkeypatch.setattr(desk, "CERT_CANON", canon)
+        _, rows = desk.certified_roster([])
+        assert rows[0]["symbol"] == "XAUUSD"
+        assert str(rows[0].get("excluded")).startswith("M15 banned"), (with_spec, rows[0])
