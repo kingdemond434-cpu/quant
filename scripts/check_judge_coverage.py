@@ -289,8 +289,15 @@ def judge(report: Path | None = None, *, require_state: bool = False,
         # would go red for the crime of being asked twice in one hour, which is precisely how the
         # coverage-drain fence learned that an unsatisfiable gate gets switched off. A RISE still
         # fails unguarded: a share cannot rise without new verdicts arriving.
+        # AND ONLY IF A NEW SWEEP LANDED BETWEEN THE TWO READINGS (audit of #374): `judged_any`
+        # counts the last HOUR, so two readings of one verdict file inside an hour of a sweep
+        # read as a stall. Equal gates-report stamps are the same sweep read twice.
+        stamp_now, stamp_was = (tot.get("gates_report_stamp"),
+                                tot.get("prior_gates_report_stamp"))
+        same_sweep = stamp_now is not None and stamp_now == stamp_was
         has_stalled = (abs(float(share_now) - float(was_unknown)) <= 1e-9
-                       and float(share_now) > 0 and parked > 0 and judged_any > 0)
+                       and float(share_now) > 0 and parked > 0 and judged_any > 0
+                       and not same_sweep)
         if rose or has_stalled:
             failures.append("unknown_share")
             out["checks"].append({

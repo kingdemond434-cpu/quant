@@ -486,3 +486,49 @@ def test_a_publisher_that_hangs_or_is_missing_never_takes_the_judge_down() -> No
     assert state["publishers"]["occupancy_map"]["rc"] == "TIMEOUT"
     assert state["publishers"]["judge_coverage"]["rc"] == "FileNotFoundError"
     assert not lock.locked()
+
+
+def test_the_chain_reads_coverage_only_after_a_new_sweep_and_kills_trees(
+        tmp_path, monkeypatch) -> None:
+    """Audit of #374: two coverage readings of one verdict file read as a stall; and the
+    producers run on the tree-killing runner by default."""
+    import threading
+    gates = tmp_path / "universal_gates_external.json"
+    gates.write_text("{}", "utf-8")
+    monkeypatch.setattr(runner, "GATES_REPORT", gates)
+    calls: list[str] = []
+
+    class _R:
+        returncode = 0
+
+    def fake_run(cmd, **kw):
+        calls.append(Path(cmd[1]).stem)
+        return _R()
+
+    state: dict = {}
+    lock = threading.Lock()
+    for _ in range(2):
+        lock.acquire()
+        runner._run_publishers(state, lock, runner=fake_run)
+    assert calls.count("judge_coverage") == 1
+    assert state["publishers"]["judge_coverage"]["rc"] == "SKIPPED_SAME_SWEEP"
+    import inspect
+
+    from libs.ops import proctree
+    assert inspect.signature(runner._run_publishers).parameters["runner"].default is proctree.run
+
+
+def test_a_chain_that_cannot_start_releases_its_lock(monkeypatch) -> None:
+    import threading
+
+    import pytest
+
+    class _NoStart(threading.Thread):
+        def start(self) -> None:
+            raise RuntimeError("can't start new thread")
+
+    monkeypatch.setattr(runner.threading, "Thread", _NoStart)
+    lock = threading.Lock()
+    with pytest.raises(RuntimeError):
+        runner._start_publishers({}, lock)
+    assert not lock.locked()

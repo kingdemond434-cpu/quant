@@ -539,13 +539,36 @@ def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> 
             _write_state(dict(state))
 
 
+#: The sealed judge's verdict file: the chain re-reads coverage only when a new sweep wrote it.
+GATES_REPORT = DESK / "reports" / "universal_gates_external.json"
+
+
+def _gates_stamp() -> str | None:
+    try:
+        return str(GATES_REPORT.stat().st_mtime_ns)
+    except OSError:
+        return None
+
+
 def _run_publishers(state: dict[str, Any], lock: threading.Lock,
-                    runner: Callable[..., Any] = subprocess.run) -> None:
-    """Run the post-sweep publishers in order; record each one's rc and seconds in the state."""
+                    runner: Callable[..., Any] = run) -> None:
+    """Run the post-sweep publishers in order; record each one's rc and seconds in the state.
+
+    `runner` is the tree-killing `proctree.run` (72-orphans lesson): a producer that overruns its
+    timeout dies with its whole tree. judge_coverage runs only when the sealed judge's verdict
+    file changed since the chain last read it -- a failed sweep wrote nothing new, and two
+    readings of one sweep are one reading (audit of #374)."""
     try:
         out: dict[str, Any] = {}
+        stamp = _gates_stamp()
         for name, script, args in POST_SWEEP_PUBLISHERS:
             t0 = time.monotonic()
+            if name == "judge_coverage" and stamp is not None \
+                    and stamp == state.get("publishers_gates_stamp"):
+                out[name] = {"rc": "SKIPPED_SAME_SWEEP", "seconds": 0.0,
+                             "at": datetime.now(UTC).isoformat(timespec="seconds")}
+                state["publishers"] = dict(out)
+                continue
             try:
                 rc = runner([sys.executable, script, *args], cwd=str(DESK),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -556,6 +579,8 @@ def _run_publishers(state: dict[str, Any], lock: threading.Lock,
                 rc = f"{type(exc).__name__}"
             out[name] = {"rc": rc, "seconds": round(time.monotonic() - t0, 1),
                          "at": datetime.now(UTC).isoformat(timespec="seconds")}
+            if name == "judge_coverage" and rc == 0:
+                state["publishers_gates_stamp"] = stamp
             state["publishers"] = dict(out)
     finally:
         lock.release()
@@ -566,8 +591,19 @@ def _start_publishers(state: dict[str, Any], lock: threading.Lock) -> bool:
     if not lock.acquire(blocking=False):
         state["publishers_skipped"] = int(state.get("publishers_skipped") or 0) + 1
         return False
-    threading.Thread(target=_run_publishers, args=(state, lock), daemon=True).start()
+    try:
+        t = threading.Thread(target=_run_publishers, args=(state, lock), daemon=True)
+        t.start()
+    except BaseException:
+        lock.release()               # a chain that never started must not skip every later one
+        raise
+    _PUBLISHER_THREADS[:] = [t]
     return True
+
+
+#: The running chain, so the resident's exit can wait for it instead of orphaning its child.
+_PUBLISHER_THREADS: list[threading.Thread] = []
+PUBLISHER_EXIT_WAIT_S = 30.0
 
 
 def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
@@ -606,6 +642,10 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
     finally:
         stop.set()
         beat.join(timeout=5)
+        for _t in list(_PUBLISHER_THREADS):
+            _t.join(timeout=PUBLISHER_EXIT_WAIT_S)
+            if _t.is_alive():
+                state["publishers_left_running"] = True
         if state.get("status") in ("RUNNING", "SWEEPING", "BACKOFF"):
             # Anything that ends the loop without naming why (an exception, an interrupt) still
             # leaves an EXITED record rather than a SWEEPING one.
