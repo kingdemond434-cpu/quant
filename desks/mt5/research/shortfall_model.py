@@ -50,7 +50,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 INTENTS = DESK / "data" / "order_intents.jsonl"
-DEALS = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+DEALS = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 OUT = DESK / "reports" / "SHORTFALL_MODEL.json"
 
 MIN_CELL = 5              # fills below this: the cell is UNMEASURED and the pooled number is used
