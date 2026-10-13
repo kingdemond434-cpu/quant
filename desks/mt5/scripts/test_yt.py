@@ -2,7 +2,6 @@ import subprocess
 
 r = subprocess.run(["ssh", "quant@95.216.191.70",
     "cd /home/quant/quant-platform/desks/mt5/side_channels && "
-    "YOUTUBE_API_KEY=AIzaSyAIudkX3epD1dJZKNPMIr5x6J_9ayTGBoc "
     "/home/quant/quant-platform/.venv/bin/python -c '"
     "from youtube_miner import _search_youtube, QUERIES; "
     "print(\"queries:\", QUERIES[:3]); "

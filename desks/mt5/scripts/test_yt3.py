@@ -2,7 +2,6 @@ import subprocess, textwrap
 
 code = textwrap.dedent("""\
 import os, json
-os.environ["YOUTUBE_API_KEY"] = "AIzaSyAIudkX3epD1dJZKNPMIr5x6J_9ayTGBoc"
 import requests
 url = "https://www.googleapis.com/youtube/v3/search"
 params = {
