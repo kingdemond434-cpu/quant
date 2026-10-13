@@ -357,11 +357,12 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     seed["os"] = os                  # MIN_STOP_SPREAD_MULT reads its env override
     # Every lane matches positions through `position_tags` (2026-10-13), so the tag helpers,
     # their roster map and their constant come with every exec.
-    seed.update({"hashlib": hashlib, "TAG_HASH": 6, "_ROSTER_LEGACY": {},
+    seed.update({"hashlib": hashlib, "TAG_HASH": 6, "_ROSTER_LEGACY": {}, "_TICKET_OWNER": {},
                  "QUIET_STAGES": ("no_signal", "no_signal_bar"), "BLOCKED":
                  Path(tempfile.gettempdir()) / "scalp_test_blocked_entries.jsonl"})
     seed.update(ns)
-    names = (*names, "order_comment", "legacy_order_comment", "position_tags", "_record_block")
+    names = (*names, "order_comment", "legacy_order_comment", "position_tags", "tag_owner",
+             "owns", "_record_block")
     keep = [n for n in _GW_TREE.body
             if (isinstance(n, ast.FunctionDef) and n.name in names)
             or (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in names

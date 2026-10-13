@@ -42,7 +42,8 @@ def test_a_tradable_sleeve_passes_every_fusion_check() -> None:
 def test_each_reason_a_sleeve_cannot_place_fails_loudly() -> None:
     assert _fusion(refuse=lambda r, p: "outside live_symbols")["admitted"]["status"] == clt.FAIL
     assert _fusion(gap="no constructor")["executor"]["status"] == clt.FAIL
-    assert _fusion(universe={})["priceable"]["status"] == clt.FAIL
+    assert _fusion(universe={"EURUSD": {}})["priceable"]["status"] == clt.FAIL
+    assert _fusion(universe={})["priceable"]["status"] == clt.UNMEASURED   # snapshot absent
     unsized = {**ROW, "symbol": "AUDCHF", "risk_frac": 0.0, "family": "carry"}
     assert _fusion(unsized)["sized"]["status"] == clt.FAIL
     twin = {clt.order_comment(ROW["name"]): [ROW["name"], ROW["name"] + "_twin"]}
@@ -60,7 +61,7 @@ def test_the_tag_mirror_matches_the_gateway() -> None:
     fn = next(n for n in ast.parse(src).body
               if isinstance(n, ast.FunctionDef) and n.name == "order_comment")
     ns: dict = {"hashlib": hashlib, "COMMENT_MAX": clt.COMMENT_MAX, "TAG_HASH": clt.TAG_HASH}
-    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<gw>", "exec"), ns)  # noqa: S102
+    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<gw>", "exec"), ns)
     for name in ("gold_asia", "a" * 27, ROW["name"], ROW["name"] + "_twin"):
         assert clt.order_comment(name) == ns["order_comment"](name)
     assert clt.order_comment(ROW["name"]) != clt.order_comment(ROW["name"] + "_twin")
@@ -102,3 +103,21 @@ def test_trace_fails_on_a_close_with_no_intent_and_on_an_intent_missing_its_ids(
     pending = {**intent, "ticket": 8}
     assert clt.trace([intent, pending], [close], now=NOW)["status"] == clt.PASS, \
         "an unfilled pending twin has no close and is not an orphan"
+
+
+def test_absent_journals_are_unmeasured_and_e8_trace_is_said_unmeasured() -> None:
+    now = datetime(2026, 10, 13, 16, 0, tzinfo=UTC)
+    assert clt.trace(None, [], now=now)["status"] == clt.UNMEASURED
+    assert clt.trace([], None, now=now)["status"] == clt.UNMEASURED
+
+
+def test_a_hold_across_the_window_boundary_is_traced_not_an_orphan() -> None:
+    now = datetime(2026, 10, 13, 16, 0, tzinfo=UTC)
+    old = {"ticket": 7, "retcode": 10009, "time": "2026-09-28T10:00:00+00:00", "sleeve": "s",
+           "intent_id": "i", "release_id": "r", "state_vector_id": "v"}
+    close = {"time": "2026-10-01T10:00:00+00:00", "position_id": 7, "sleeve": "s"}
+    assert clt.trace([old], [close], now=now)["orphan_closes"] == []
+
+
+def test_e8_symbols_compare_through_the_venue_normaliser() -> None:
+    assert clt.norm_symbol("EURUSD+") == "EURUSD" == clt.norm_symbol("eur/usd")

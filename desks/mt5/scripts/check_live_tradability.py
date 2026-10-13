@@ -87,7 +87,18 @@ def order_comment(name: str) -> str:
     if len(tag) <= COMMENT_MAX:
         return tag
     digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:TAG_HASH]
-    return f"DW{name[:COMMENT_MAX - 3 - TAG_HASH]}~{digest}"
+    return f"DW{name[:COMMENT_MAX - 3 - TAG_HASH]}_{digest}"
+
+
+def norm_symbol(symbol: str) -> str:
+    """`prop.tradelocker_venue._normalise`, mirrored: E8 names every instrument with a `+` suffix
+    (`EURUSD+`), so a catalogue compared raw matches none of the desk's symbols."""
+    s = str(symbol).upper()
+    for sep in ("/", "-", "_", " "):
+        s = s.replace(sep, "")
+    if "." in s:
+        s = s.split(".", 1)[0]
+    return s.rstrip("+")
 
 
 def _json(path: Path) -> Any:
@@ -97,8 +108,8 @@ def _json(path: Path) -> Any:
         return None
 
 
-def _jsonl(path: Path) -> list[dict]:
-    rows: list[dict] = []
+def _jsonl(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
     try:
         with path.open(encoding="utf-8") as fh:
             for line in fh:
@@ -131,7 +142,7 @@ def book_key(row: Mapping[str, Any]) -> str:
 
 
 def live_rows(sleeves: Iterable[Mapping[str, Any]], cert: Mapping[str, Any],
-              gateway_state: Mapping[str, Any] | None) -> list[dict]:
+              gateway_state: Mapping[str, Any] | None) -> list[dict[str, Any]]:
     """Every sleeve that can hold capital now: LIVE roster rows plus the gold bracket windows the
     certified book funds or the gateway placed."""
     out = [dict(s) for s in sleeves if str(s.get("status") or "").upper() == "LIVE"]
@@ -144,15 +155,15 @@ def live_rows(sleeves: Iterable[Mapping[str, Any]], cert: Mapping[str, Any],
     return out
 
 
-def _check(ok: bool | None, why: str) -> dict:
+def _check(ok: bool | None, why: str) -> dict[str, Any]:
     return {"status": UNMEASURED if ok is None else PASS if ok else FAIL, "why": why}
 
 
 def fusion_checks(row: Mapping[str, Any], *, policy: Any, refuse: Any, executor_gap: Any,
                   universe: Mapping[str, Any], cert: Mapping[str, Any],
-                  tags: Mapping[str, list[str]]) -> dict[str, dict]:
+                  tags: Mapping[str, list[str]]) -> dict[str, dict[str, Any]]:
     name, sym = str(row.get("name") or ""), str(row.get("symbol") or "").upper()
-    out: dict[str, dict] = {}
+    out: dict[str, dict[str, Any]] = {}
     why = refuse(row, policy)
     out["admitted"] = _check(not why, why or "the live policy admits it")
     if row.get("exec") == "family_market":
@@ -165,7 +176,9 @@ def fusion_checks(row: Mapping[str, Any], *, policy: Any, refuse: Any, executor_
     else:
         out["executor"] = _check(False, f"exec lane {row.get('exec')!r} has no live executor")
     meta = universe.get(sym) if isinstance(universe, Mapping) else None
-    if not isinstance(meta, Mapping):
+    if not universe:
+        out["priceable"] = _check(None, "universe snapshot absent: tick economics unmeasured")
+    elif not isinstance(meta, Mapping):
         out["priceable"] = _check(False, f"{sym} absent from the universe snapshot")
     else:
         ok = all(float(meta.get(f) or 0) > 0 for f in ("tick_size", "tick_value", "volume_step"))
@@ -184,9 +197,9 @@ def fusion_checks(row: Mapping[str, Any], *, policy: Any, refuse: Any, executor_
 
 def e8_checks(row: Mapping[str, Any], *, catalogue: set[str] | None,
               cert: Mapping[str, Any], e8_book: Any,
-              declared: Mapping[str, Any] | None = None) -> dict[str, dict]:
-    sym = str(row.get("symbol") or "").upper()
-    out: dict[str, dict] = {}
+              declared: Mapping[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    sym = norm_symbol(str(row.get("symbol") or ""))
+    out: dict[str, dict[str, Any]] = {}
     unlisted = (sym not in catalogue) if catalogue is not None else (sym in (declared or {}))
     if unlisted:
         why = (f"{sym} is not in E8's measured {len(catalogue)}-instrument catalogue"
@@ -216,22 +229,33 @@ def e8_checks(row: Mapping[str, Any], *, catalogue: set[str] | None,
                                f"the certified book's e8 block does not fund {key}; E8_BOOK.json "
                                f"absent here")
     else:
-        out["booked"] = _check(bool(selected), f"E8_BOOK.json {'selects' if selected else 'does not select'} "
-                               f"{key}")
+        verb = "selects" if selected else "does not select"
+        out["booked"] = _check(bool(selected), f"E8_BOOK.json {verb} {key}")
     return out
 
 
-def trace(intents: list[dict], ledger: list[dict], *, now: datetime,
-          days: int = TRACE_DAYS) -> dict[str, Any]:
-    """Join live intents to live-ledger closes by ticket over the window; orphans either way."""
+def trace(intents: list[dict[str, Any]] | None, ledger: list[dict[str, Any]] | None, *,
+          now: datetime, days: int = TRACE_DAYS) -> dict[str, Any]:
+    """Join live intents to live-ledger closes by ticket over the window; orphans either way.
+
+    An absent intent journal or ledger is UNMEASURED, never a clean join (L1.28a): with no
+    file there is nothing to be an orphan of, and that is not evidence of traceability.
+    """
+    if intents is None or ledger is None:
+        return {"status": UNMEASURED, "window_days": days,
+                "why": ("order_intents.jsonl" if intents is None else "live_ledger.jsonl")
+                       + " absent: the intent <-> close join was not measured"}
     since = now - timedelta(days=days)
+    # Every live intent's ticket, whatever its age: a close inside the window whose intent was
+    # sent just before it (a hold across the boundary) is traced, not an orphan.
+    all_tickets = {int(r.get("ticket") or 0) for r in intents
+                   if r.get("account_kind", "live") == "live"} - {0}
     live_i = [r for r in intents if r.get("account_kind", "live") == "live"
               and int(r.get("retcode") or 0) == 10009 and int(r.get("ticket") or 0) > 0
               and (_ts(r.get("time")) or since) >= since]
     live_l = [r for r in ledger if r.get("account_kind", "live") == "live"
               and (_ts(r.get("time")) or since) >= since]
-    tickets = {int(r["ticket"]) for r in live_i}
-    closes: dict[int, dict] = {}
+    closes: dict[int, dict[str, Any]] = {}
     for r in live_l:
         for k in ("position_id", "entry_order", "order"):
             v = int(r.get(k) or 0)
@@ -245,7 +269,7 @@ def trace(intents: list[dict], ledger: list[dict], *, now: datetime,
     orphan_closes = [{"position_id": r.get("position_id"), "sleeve": r.get("sleeve"),
                       "time": r.get("time"), "pl": r.get("pl_quote")}
                      for r in live_l
-                     if not any(int(r.get(k) or 0) in tickets
+                     if not any(int(r.get(k) or 0) in all_tickets
                                 for k in ("position_id", "entry_order", "order"))]
     # A pending stop that never filled has no close and is not an orphan; a market intent with no
     # close is still open or lost. The gateway's own state names what is open; here the count is
@@ -272,11 +296,11 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     exc_doc = _json(VENUE_EXCEPTIONS)
     declared = ((exc_doc or {}).get("e8") or {}).get("unlisted") if isinstance(exc_doc, dict) \
         else None
-    declared = {str(k).upper(): v for k, v in declared.items()} \
+    declared = {norm_symbol(str(k)): v for k, v in declared.items()} \
         if isinstance(declared, dict) else {}
     cat_doc = _json(E8_CATALOGUE)
     inst = cat_doc.get("instruments") if isinstance(cat_doc, dict) else None
-    catalogue = {str(i).upper() for i in inst} if isinstance(inst, list) and inst else None
+    catalogue = {norm_symbol(str(i)) for i in inst} if isinstance(inst, list) and inst else None
     pol = policy()
     standing = [s for s in sleeves if str(s.get("status") or "").upper() in ("LIVE", "STANDBY")]
     tags: dict[str, list[str]] = {}
@@ -295,10 +319,17 @@ def build(now: datetime | None = None) -> dict[str, Any]:
                      UNMEASURED if UNMEASURED in verdicts else
                      VENUE_UNLISTED if VENUE_UNLISTED in verdicts else PASS})
     collisions = {t: n for t, n in tags.items() if len(n) > 1}
-    tr = trace(_jsonl(INTENTS), _jsonl(LEDGER), now=now)
+    tr = trace(_jsonl(INTENTS) if INTENTS.exists() else None,
+               _jsonl(LEDGER) if LEDGER.exists() else None, now=now)
+    # E8 carries no order comment and nothing here reads an E8 close ledger, so the E8 half of
+    # "traceable" is UNMEASURED in this report, said so rather than implied by the Fusion join.
+    tr["e8"] = {"status": UNMEASURED,
+                "why": "TradeLocker orders carry no comment and this check reads only the Fusion "
+                       "ledger; E8 closes are traced by prop/e8_close_ledger.py (PR #336)"}
     failed = [r["name"] for r in rows if r["status"] == FAIL]
     verdict = FAIL if failed or tr["status"] == FAIL else \
-        UNMEASURED if any(r["status"] == UNMEASURED for r in rows) else PASS
+        UNMEASURED if tr["status"] == UNMEASURED \
+        or any(r["status"] == UNMEASURED for r in rows) else PASS
     lapsed = sorted(s for s in declared if catalogue is not None and s in catalogue)
     return {"at": now.isoformat(timespec="seconds"), "verdict": verdict,
             "live_sleeves": len(rows), "failed": failed, "sleeves": rows,

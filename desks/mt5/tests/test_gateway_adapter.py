@@ -55,7 +55,7 @@ def _is_literal(node: ast.AST) -> bool:
 
 
 _TAG_HELPERS = ("order_comment", "legacy_order_comment", "position_tags", "note_roster_tags",
-                "_record_block")
+                "_record_block", "note_ticket_owners", "tag_owner", "owns")
 
 
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
@@ -1584,3 +1584,34 @@ def test_a_blocked_entry_is_recorded_once_per_bar_and_stage(tmp_path) -> None:
     ns["_record_block"](st, "eurzar_x", "EURZAR", "desk_stale", "desk state stale", "b2")
     rows = [json.loads(x) for x in (tmp_path / "blocked.jsonl").read_text().splitlines()]
     assert [r["bar"] for r in rows] == ["b1", "b2"] and rows[0]["release_id"] == "rel"
+
+
+def test_an_ambiguous_legacy_tag_is_resolved_by_the_ticket_s_own_intent(tmp_path) -> None:
+    """Audit 2026-10-13: a legacy tag several roster names share was nobody's, so its position
+    got the gold trail, no TTL exit and no already-open guard. The intent that opened the ticket
+    names the sleeve exactly."""
+    ns = _exec((), {})
+    live = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    twin = "audchf_overnight_gap_decay_asia_p_99999999999999_principal_20261007"
+    legacy = ns["legacy_order_comment"](live)
+    ns["note_roster_tags"]([{"name": live}, {"name": twin}])
+    intents = tmp_path / "order_intents.jsonl"
+    intents.write_text(json.dumps({"sleeve": live, "ticket": 234810421}) + "\n"
+                       + "not json\n", encoding="utf-8")
+    ns["note_ticket_owners"](intents)
+    assert ns["owns"](legacy, 234810421, live)
+    assert not ns["owns"](legacy, 234810421, twin)
+    assert not ns["owns"](legacy, 999, live)                  # an unknown ticket stays nobody's
+    assert ns["tag_owner"](legacy, 234810421, {}) == live
+    # a ticket never hands a position to a sleeve whose tag it does not wear
+    assert ns["tag_owner"]("DWgold_asia", 234810421, {}) is None
+    # a retired sleeve's unique tag resolves to its FULL name for the ledger
+    tag = ns["order_comment"](live)
+    assert ns["tag_owner"](tag, 234810421, {}) == live
+    ns["note_ticket_owners"](tmp_path / "absent.jsonl")
+    assert not ns["owns"](legacy, 234810421, live)
+
+
+def test_the_long_tag_uses_only_characters_the_terminal_has_accepted() -> None:
+    tag = _exec((), {})["order_comment"]("x" * 40)
+    assert "~" not in tag and len(tag) == 29 and tag[22] == "_"
