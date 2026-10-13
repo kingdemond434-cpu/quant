@@ -434,13 +434,19 @@ def sleeve_ablation(worlds: Worlds, mapping: Mapping[str, Mapping[str, Any]], *,
         universe = [f for f in INFORMATION_SOURCES if f != "UNKNOWN"]
     except Exception:
         universe = []
-    fams = list(families) if families is not None else sorted(set(universe) | set(by_fam))
+    # THE UNMAPPED GROUP IS NOT A FAMILY. Sleeves whose source the desk cannot name are ablated
+    # (their capital weight is real) but published apart as `unmapped`, never listed, counted or
+    # credited as a data family -- an unknown source carrying value is not a measured family.
+    fams = [f for f in (list(families) if families is not None
+                        else sorted(set(universe) | set(by_fam))) if f != UNMEASURED]
     full = solve_variant(worlds, names, mapping, cfg=cfg, law=law, dd=dd)
     price = by_fam.get(BASELINE_FAMILY, [])
     base_price = solve_variant(worlds, price, mapping, cfg=cfg, law=law, dd=dd)
     rows: dict[str, Any] = {}
-    for fam in fams:
+    for fam in [*fams, UNMEASURED]:
         members = by_fam.get(fam, [])
+        if fam == UNMEASURED and not members:
+            continue
         row: dict[str, Any] = {"family_status": UNMEASURED if fam == UNMEASURED else MEASURED,
                                "n_sleeves": len(members), "sleeves": members}
         if not members:
@@ -462,8 +468,13 @@ def sleeve_ablation(worlds: Worlds, mapping: Mapping[str, Mapping[str, Any]], *,
             add = solve_variant(worlds, price + members, mapping, cfg=cfg, law=law, dd=dd)
             row["add_to_price_only"] = {"book": _public(add), **compare(add, base_price)}
         rows[fam] = row
+    unmapped = rows.pop(UNMEASURED, None)
     return {"full_book": _public(full), "price_only_book": _public(base_price),
-            "families": rows}
+            "families": rows,
+            "unmapped": ({**unmapped, "status": UNMEASURED,
+                          "why": "sleeves with no mapped data family: their delta is published "
+                                 "for completeness and is never counted as a family's"}
+                         if unmapped else {"status": "NONE", "n_sleeves": 0, "sleeves": []})}
 
 
 # ------------------------------------------------------------------------- the state ablation
@@ -571,6 +582,10 @@ def build(*, worlds_path: Path = WORLDS, daily_path: Path = DAILY, seed: int = 0
                      "is added to the price-only baseline"),
         "report_only": True, "trials_charged": 0,
         "writes": ["desks/mt5/reports/ALLOCATOR_FAMILY_ABLATION.json"],
+        "basis": ("IN-SAMPLE: every delta is measured on the allocator's own cached world "
+                  "population (its posterior draws over the same history it was fitted on), not "
+                  "on out-of-sample forward returns. It says what the allocator believes each "
+                  "family is worth; forward value is UNMEASURED here"),
         "units": ("delta_elog_* are paired per-world differences in the mandated book's mean "
                   "daily log growth (variant minus reference); median_annual_pct annualises "
                   "the median at 252 days; delta_breach_p is the change in "
@@ -611,12 +626,18 @@ def build(*, worlds_path: Path = WORLDS, daily_path: Path = DAILY, seed: int = 0
     doc["mapping_unmeasured"] = unm
     doc["states"] = state_ablation(daily_path, mapping, law=law, seed=seed)
     doc["table"] = _table(doc.get("sleeves") or {})
-    measured = [r for r in doc["table"] if r["status"] == MEASURED]
+    measured = [r for r in doc["table"]
+                if r["status"] == MEASURED and r["family"] != UNMEASURED]
+    _um = ((doc.get("sleeves") or {}).get("unmapped") or {})
+    _um_d = ((_um.get("drop") or {}).get("delta_elog_per_world") or {})
     doc["summary"] = {
         "n_families_measured": len(measured),
         "n_families_not_in_population": sum(r["status"] == NOT_IN_POPULATION
                                             for r in doc["table"]),
         "n_sleeves_mapping_unmeasured": len(unm),
+        # Published apart and labelled: never a family, never in the counts above or below.
+        "unmapped": {"status": UNMEASURED, "n_sleeves": len(unm),
+                     "drop_delta_elog_median": _um_d.get("p50")},
         "n_states_measured": sum((v or {}).get("status") == MEASURED
                                  for k, v in doc["states"].items() if not k.startswith("_")),
         # A family "carries capital value" when removing it lowers the median world's growth.

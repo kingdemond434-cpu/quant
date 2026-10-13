@@ -76,7 +76,8 @@ def test_ablation_on_the_same_worlds_reports_paired_deltas(iso):
     assert fams["positioning"]["status"] == afa.NOT_IN_POPULATION
     assert "drop" not in fams["positioning"]
     # Unknown sleeves form their own UNMEASURED group.
-    assert fams[afa.UNMEASURED]["family_status"] == afa.UNMEASURED
+    assert afa.UNMEASURED not in fams
+    assert doc["sleeves"]["unmapped"]["family_status"] == afa.UNMEASURED
     assert doc["mapping_unmeasured"] == ["mystery_sleeve"]
     assert fams["price_only"]["add_to_price_only"]["status"] == "IS_BASELINE"
     # States cannot be removed from a baked tensor: UNMEASURED with the missing input named.
@@ -141,3 +142,38 @@ def test_state_ablation_redraws_with_the_same_seed_when_evidence_exists(iso):
     assert out["macro_kernel"]["family"] == "macro"
     assert out["regime_labels"]["family"] == "price_only"
 
+
+
+def test_unmapped_sleeves_are_never_counted_as_a_measured_family(iso):
+    # The unknown sleeve is made the richest, so a bug that counted it would credit it.
+    rng = np.random.default_rng(7)
+    r = (rng.normal(0, 0.4, size=(48, 64, 5))
+         + np.array([0.01, 0.01, 0.0, 0.0, 0.12])).astype(np.float32)
+    np.savez_compressed(iso / "w.npz", r=r, names=np.array(NAMES),
+                        crisis=np.zeros(48, bool), mu=np.zeros((48, 5)))
+    doc = afa.build(worlds_path=iso / "w.npz", daily_path=iso / "none.parquet")
+    s = doc["summary"]
+    # Case 1: UNMEASURED appears in no family list and in no count.
+    assert afa.UNMEASURED not in doc["sleeves"]["families"]
+    assert afa.UNMEASURED not in s["families_carrying_value"]
+    assert all(row["family"] != afa.UNMEASURED for row in doc["table"])
+    measured = sorted(row["family"] for row in doc["table"] if row["status"] == "MEASURED")
+    assert s["n_families_measured"] == len(measured) == 3     # price_only, carry, macro
+    # Case 2: it is published apart, labelled UNMEASURED, with its own delta.
+    um = doc["sleeves"]["unmapped"]
+    assert um["status"] == afa.UNMEASURED and um["sleeves"] == ["mystery_sleeve"]
+    assert um["drop"]["delta_elog_per_world"]["p50"] < 0
+    assert s["unmapped"] == {"status": afa.UNMEASURED, "n_sleeves": 1,
+                             "drop_delta_elog_median": um["drop"]["delta_elog_per_world"]["p50"]}
+    assert doc["basis"].startswith("IN-SAMPLE")
+
+
+def test_a_population_of_only_unmapped_sleeves_measures_no_family(iso):
+    r = np.random.default_rng(2).normal(0.05, 0.4, size=(32, 48, 1)).astype(np.float32)
+    np.savez_compressed(iso / "u.npz", r=r, names=np.array(["mystery_sleeve"]),
+                        crisis=np.zeros(32, bool), mu=np.zeros((32, 1)))
+    doc = afa.build(worlds_path=iso / "u.npz", daily_path=iso / "none.parquet")
+    # The contract's falsifier (fewer than two families) must fire: an unknown is not a family.
+    assert doc["summary"]["n_families_measured"] == 0
+    assert doc["summary"]["families_carrying_value"] == []
+    assert doc["sleeves"]["unmapped"]["status"] == afa.UNMEASURED
