@@ -158,12 +158,13 @@ def test_price_nights_uses_each_nights_price_and_counts_triples() -> None:
     idx_ns = np.asarray(idx.as_unit("ns").asi8, dtype="int64")
     t0, t1 = idx[10], idx[-1]                    # Mon 10:00 -> Thu 23:00
     got = rollover_price_nights(idx_ns, px, 10, len(idx) - 1, t0, t1)
-    # Rollovers Mon/Tue/Wed/Thu 21:00; the bar that opened before each is 20:00 of that day.
-    want = sum(w * px[24 * d + 20] for d, w in enumerate([1, 1, 3, 1]))
+    # Rollovers at server midnight ending Mon/Tue/Wed (Thu's falls after t1); the bar that opened
+    # before each is 23:00 of that day, and Wednesday night counts three.
+    want = sum(w * px[24 * d + 23] for d, w in enumerate([1, 1, 3]))
     assert got == pytest.approx(want)
-    assert rollovers_between(t0, t1) == 6.0
+    assert rollovers_between(t0, t1) == 5.0
     flat = np.full(len(idx), 7.0)
-    assert rollover_price_nights(idx_ns, flat, 10, len(idx) - 1, t0, t1) == pytest.approx(42.0)
+    assert rollover_price_nights(idx_ns, flat, 10, len(idx) - 1, t0, t1) == pytest.approx(35.0)
 
 
 def test_backtest_charges_mode5_at_the_nightly_price() -> None:

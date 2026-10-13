@@ -32,12 +32,31 @@ def test_financing_is_charged_at_an_instant_not_pro_rata():
     This is the whole reason `(t1 - t0).days` is the wrong implementation: it gets both of these
     backwards, and it is the version that looks obviously correct.
     """
-    short_but_crosses = rollovers_between(pd.Timestamp("2026-09-14 20:00"),
-                                          pd.Timestamp("2026-09-14 22:00"))
-    long_but_inside = rollovers_between(pd.Timestamp("2026-09-14 22:00"),
-                                        pd.Timestamp("2026-09-15 18:00"))
+    # Server stamps: the rollover is 00:00 (17:00 New York), not 21:00 (2026-10-13).
+    short_but_crosses = rollovers_between(pd.Timestamp("2026-09-14 23:00"),
+                                          pd.Timestamp("2026-09-15 01:00"))
+    long_but_inside = rollovers_between(pd.Timestamp("2026-09-15 00:00"),
+                                        pd.Timestamp("2026-09-15 23:00"))
     assert short_but_crosses == 1.0
     assert long_but_inside == 0.0
+
+
+def test_the_rollover_is_server_midnight_which_is_17_new_york_across_dst():
+    """Audit of #269: the bars are broker stamps (New York + 7 h), and the engine charged the night
+    at 21:00 server -- 18:00 UTC in summer, three hours before the venue. Server midnight is the
+    17:00 New York rollover on both sides of both DST changes, so no date needs special-casing."""
+    from libs.regime.session_clock import server_to_utc
+    for day, utc_hour in (("2026-10-28", 21),    # EU already on winter time, NY still summer
+                          ("2026-11-04", 22),    # both on winter time
+                          ("2026-03-11", 21),    # NY on summer time, EU not yet
+                          ("2026-01-14", 22), ("2026-07-15", 21)):
+        stamp = pd.Timestamp(day) + pd.Timedelta(days=1)      # 00:00 server, ending `day`
+        assert server_to_utc([stamp])[0].hour == utc_hour
+        assert server_to_utc([stamp])[0].tz_convert("America/New_York").hour == 17
+        # one night across server midnight, none across the old 21:00 server stamp
+        assert rollovers_between(stamp - pd.Timedelta(hours=1), stamp + pd.Timedelta(hours=1)) >= 1
+        assert rollovers_between(pd.Timestamp(day) + pd.Timedelta(hours=20),
+                                 pd.Timestamp(day) + pd.Timedelta(hours=22)) == 0.0
 
 
 def test_wednesday_rollover_carries_three_nights():
