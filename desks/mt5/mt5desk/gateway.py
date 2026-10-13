@@ -139,6 +139,8 @@ mt5 = _door.guard(mt5, caller="gateway", log=lambda m: log(m))
 #: built -- the comment is also the tag that matches a sleeve to its open positions, and a
 #: truncation that differs between the send path and the match path would orphan positions.
 COMMENT_MAX = 29
+#: Hex characters of the name's sha1 a long name's tag carries (`order_comment`).
+TAG_HASH = 6
 
 
 def order_comment(name: str) -> str:
@@ -149,7 +151,49 @@ def order_comment(name: str) -> str:
     truncated differently the desk would open a position it could never afterwards recognise as
     its own -- and would then re-open it on the next pass, forever.
     """
+    tag = f"DW{name}"
+    if len(tag) <= COMMENT_MAX:
+        return tag
+    # A UNIQUE TAG FOR A LONG NAME (2026-10-13). Plain truncation kept "DW" + the first 27
+    # characters, and every sibling of one family cell on one symbol shares those 27: measured
+    # that day, four groups of roster rows (up to nine names each) carried ONE tag, so a TTL or
+    # retired-close for one sleeve would close its sibling's position, and the 731 certified rows
+    # the policy-lifted restore returns to STANDBY would put more such groups in front of the
+    # allocator. The long form keeps a readable 20-character prefix and adds 6 hex of the name's
+    # sha1: "DW" + 20 + "~" + 6 = 29, the terminal's bound.
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:TAG_HASH]
+    return f"DW{name[:COMMENT_MAX - 3 - TAG_HASH]}~{digest}"
+
+
+def legacy_order_comment(name: str) -> str:
+    """The tag positions opened before 2026-10-13 carry: plain truncation at COMMENT_MAX."""
     return f"DW{name}"[:COMMENT_MAX]
+
+
+#: How many roster names carry each LEGACY tag, refreshed from the roster on every pass by
+#: `note_roster_tags`. A legacy tag is accepted as a sleeve's own only when no other roster name
+#: carries it; a shared legacy tag cannot say whose position it is, so it is never acted on as
+#: anyone's (an empty map, before the first pass, accepts every legacy tag as before).
+_ROSTER_LEGACY: dict[str, int] = {}
+
+
+def note_roster_tags(sleeves: list[dict]) -> None:
+    _ROSTER_LEGACY.clear()
+    for s in sleeves:
+        n = str(s.get("name") or "")
+        if n:
+            t = legacy_order_comment(n)
+            _ROSTER_LEGACY[t] = _ROSTER_LEGACY.get(t, 0) + 1
+
+
+def position_tags(name: str, *, in_roster: bool = True) -> frozenset[str]:
+    """Every comment that marks a position as `name`'s: its tag, and its legacy tag while that
+    is unambiguous (held by `name` alone in the roster, or by nobody when `name` has left it)."""
+    tag, legacy = order_comment(name), legacy_order_comment(name)
+    if legacy == tag:
+        return frozenset({tag})
+    others = _ROSTER_LEGACY.get(legacy, 0) - (1 if in_roster and _ROSTER_LEGACY else 0)
+    return frozenset({tag, legacy}) if others <= 0 else frozenset({tag})
 
 #: How far back record_trades looks for closed deals it has not yet written. Deals are deduped
 #: by the venue's own ticket, so a wider window costs a list scan and cannot double-count. It
@@ -1670,8 +1714,9 @@ def scalp_position_tags(sleeves: list[dict]) -> frozenset[str]:
     """The order-comment tags of the scalp lane's positions: the ones the gold book's end-of-day
     close must leave alone. Every lane tags its positions `DW<sleeve name>` (`place_bracket`,
     `run_scalp_sleeves`), so the tag is the lane."""
-    return frozenset(order_comment(s["name"]) for s in sleeves
-                     if s.get("exec") == "scalp_market" and s.get("name"))
+    return frozenset(t for s in sleeves
+                     if s.get("exec") == "scalp_market" and s.get("name")
+                     for t in (order_comment(s["name"]), legacy_order_comment(s["name"])))
 
 
 def family_position_tags(sleeves: list[dict]) -> frozenset[str]:
@@ -1679,8 +1724,9 @@ def family_position_tags(sleeves: list[dict]) -> frozenset[str]:
     end-of-day close must leave alone. Same tag, same reason as `scalp_position_tags`: a family
     sleeve's exit is its certified `ttl_bars`, run by the TTL housekeeping in
     `run_family_sleeves`, never the 19:30 UTC backstop."""
-    return frozenset(order_comment(s["name"]) for s in sleeves
-                     if s.get("exec") == "family_market" and s.get("name"))
+    return frozenset(t for s in sleeves
+                     if s.get("exec") == "family_market" and s.get("name")
+                     for t in (order_comment(s["name"]), legacy_order_comment(s["name"])))
 
 
 def close_positions(st: dict, symbol: str, keep_tags: frozenset[str] = frozenset()) -> None:
@@ -1806,8 +1852,9 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     this idempotent and acknowledgement-driven rather than merely hopeful.
     """
     symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"})
-    _fixed_tags = {order_comment(str(s.get("name") or "")): str(s.get("name") or "")
-                   for s in sleeves if s.get("exec") == "family_market" and s.get("name")}
+    _fixed_tags = {t: str(s["name"]) for s in sleeves
+                   if s.get("exec") == "family_market" and s.get("name")
+                   for t in position_tags(str(s["name"]))}
     for symbol in symbols:
         positions = mt5.positions_get(symbol=symbol) or []
         if not positions:
@@ -2067,6 +2114,8 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
     """
     if not st["armed"]:
         return
+    _tag_names = {t: str(s["name"]) for s in sleeves if s.get("name")
+                  for t in position_tags(str(s["name"]))}
 
     # ALREADY-RECORDED DEALS, so the window below can be widened without duplicating rows.
     # The ledger is append-only JSONL and `deal` is the venue's own ticket, unique per fill.
@@ -2164,6 +2213,13 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # name is taken from the comment when it is there and marked unattributed when it is not,
         # which is a recoverable gap, unlike never recording the fill at all.
         sleeve = sleeve_from_comment(comment, "UNATTRIBUTED")
+        # THE LEDGER KEEPS ITS 27-CHARACTER STEM (2026-10-13). A long name's tag is now unique
+        # (`order_comment`), and ~90 ledger readers join on the name or its first 27 characters,
+        # so a tag resolved against the roster is written as that stem, and the full name rides
+        # alongside in `sleeve_full` -- the exact identity the stem could never carry.
+        sleeve_full = _tag_names.get(comment)
+        if sleeve_full:
+            sleeve = sleeve_full[:COMMENT_MAX - 2]
         sym_info = mt5.symbol_info(d.symbol)
         if sym_info is None:
             continue
@@ -2187,7 +2243,7 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                                                                 0.0) or 0.0),
                                        tick_size=float(getattr(sym_info, "trade_tick_size",
                                                                0.0) or 0.0))
-        rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
+        rec = {"time": now(), "sleeve": sleeve, "sleeve_full": sleeve_full, "symbol": d.symbol,
                # Preserve the legacy close-deal side, but expose the actual position side
                # separately: a closing BUY belongs to a SHORT position.
                "entry_side": ctx["entry_side"], "entry_time": ctx["entry_time"],
@@ -2482,7 +2538,7 @@ def _record_closed_market_book(deal, ctx: dict, sleeves: list[dict]) -> None:
         return
     candidates = [s for s in sleeves if s.get("exec") in ("family_market", "scalp_market")
                   and s.get("symbol") == symbol
-                  and order_comment(s["name"]) == str(ctx.get("comment") or "")]
+                  and str(ctx.get("comment") or "") in position_tags(s["name"])]
     if len(candidates) != 1 or not ctx.get("entry_cost_measured"):
         return
     volume = float(ctx.get("entry_volume") or 0.0)
@@ -3167,7 +3223,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         _deals = mt5.history_deals_get(_from_s, _from_s + _bar_min * 60) or []
     except Exception:
         _deals = []                                  # UNMEASURED: the state mark still stands
-    _traded = bar_already_traded(_deals, order_comment(name))
+    _traded = next((t for t in (bar_already_traded(_deals, tag)
+                                for tag in sorted(position_tags(name))) if t is not None), None)
     if _traded is not None:
         return {"ok": False, "stage": "bar_traded", "considered": True, "sep": " ",
                 "mark": True, "last_bar": last_bar,
@@ -3541,9 +3598,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
 
 def _sleeve_positions(symbol: str, name: str) -> list:
     """Open positions this sleeve owns: the order comment is the sleeve's tag."""
-    tag = order_comment(name)
+    tags = position_tags(name)
     return [p for p in (mt5.positions_get(symbol=symbol) or [])
-            if str(getattr(p, "comment", "") or "") == tag]
+            if str(getattr(p, "comment", "") or "") in tags]
 
 
 def close_retired_positions(st: dict) -> None:
@@ -3566,9 +3623,11 @@ def close_retired_positions(st: dict) -> None:
         return
     remaining: list[str] = []
     for name in names:
-        tag = order_comment(name)
+        # A retired name's legacy tag is read only when no roster sleeve still carries it: a
+        # shared 27-character stem is how a retired sibling's close could take a LIVE position.
+        tags = position_tags(name, in_roster=False)
         held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+                if str(getattr(p, "comment", "") or "") in tags]
         if not held:
             log(f"[{name}] RETIRED: no open position under its tag; dropped from the close queue")
             continue
@@ -4150,6 +4209,7 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+    note_roster_tags(sleeves)
 
     # RESTART HOLDING A POSITION (2026-09-30). Every pass is a fresh process, so every pass is a
     # restart: before management and before anything new is placed, the venue's own book under
