@@ -205,6 +205,20 @@ LEG_LAYER: dict[str, str] = {
     # Planted point-in-time canaries measure whether the desk can read the future: meta.
     "pit_canaries": "meta",
     "sensor_ledger": "information",
+    "ws_vol_conditioner": "information",
+    "ws_option_chains": "information",
+    "ws_priced_in": "information",
+    "ws_name_sentiment": "information",
+    "ws_model_disagreement": "information",
+    "ws_regime_probabilities": "information",
+    "ws_news_hawkes": "information",
+    "ws_latent_states": "information",
+    "ws_implied_move": "information",
+    "ws_own_risk_index": "information",
+    "ws_taiwan_options": "information",
+    "ws_fetch_alfred": "information",
+    # whether every data path carries its time facts measures the desk itself: meta
+    "ws_pit_audit": "meta",
     # Whether the desk has stopped placing without saying so is a measurement of its own
     # execution wiring, not an act on the book: meta.
     "placement_interlock": "meta",

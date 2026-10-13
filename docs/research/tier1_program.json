@@ -2018,7 +2018,7 @@
     "tests/research/test_causal_graph.py — the nonlinear conditional REFUSES below its stated floor (1,280 aligned bars for one admitted parent at four bins, against MIN_N=500) rather than answering from too few cells, which is why it annotates the linear test and does not replace it (MEASURED)"
    ],
    "scheduled_by": "hourly_cycle:causal_graph",
-   "artifact": "desks/mt5/reports/CAUSAL_GRAPH.json",
+   "artifact": "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json; desks/mt5/data/world_causal_graph.json",
    "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.conditioning; libs/research/search_populations.causal_derived; miner_candidate_compiler (anomalies)",
    "gap": "",
    "next_step": "",
