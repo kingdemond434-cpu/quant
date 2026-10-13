@@ -39,12 +39,13 @@ TRIPLE_WEEKDAYS: tuple[int, ...] = (2, 4)            # Wednesday and Friday
 #: early in the bars' own clock; the stress keeps its Wednesday-and-Friday triple on day d.
 ROLLOVER_HOUR_SERVER = 24
 ROLLOVER_HOUR_UTC = ROLLOVER_HOUR_SERVER   # kept for importers; never a UTC hour
-#: The two server-clock bars that straddle the rollover: the last hour before it and the first after.
+#: The two server-clock bars that straddle the rollover: the hour before it and the hour after.
 ROLLOVER_BAR_HOURS: tuple[int, ...] = (23, 0)
 ROLLOVER_SPREAD_MULT = 6.0
 WHAT = ("per-bar swap/rollover stress: each rollover stamp a trade holds through charged at 3x the "
         "worse-side swap with BOTH Wednesday and Friday triple, and a leg filled on a 23:00/00:00 "
-        "server-clock rollover bar pays the spread x6; the engine's baseline financing is subtracted first")
+        "server-clock rollover bar pays the spread x6; the engine's baseline financing is "
+        "subtracted first")
 
 
 def _utc_naive(t: Any) -> pd.Timestamp:
