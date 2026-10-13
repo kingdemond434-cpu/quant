@@ -1,0 +1,41 @@
+{
+ "note": "Boards whose public post LISTS feed research/cn_retail_posts.py. A target is an MT5 instrument; each board is one public discussion board on one site. `codes` are tried in order and the first that answers with posts is the board's live code (recorded in the report); every code here is a PRIOR until the box's own first pass reads it -- the build session could not reach either site (see libs/data/cn_sources.RETAIL_SITES). Adding a board is adding a row.",
+ "targets": {
+  "CN50": {
+   "why": "FTSE China A50: the index board (上证50 as the listed A50 analogue on Guba) and the largest A50 constituents' boards",
+   "boards": [
+    {"site": "guba", "board": "sz50_index", "role": "index", "codes": ["zssh000016"]},
+    {"site": "guba", "board": "a50_kweichow_moutai", "role": "constituent", "codes": ["600519"]},
+    {"site": "guba", "board": "a50_ping_an", "role": "constituent", "codes": ["601318"]},
+    {"site": "guba", "board": "a50_cmb", "role": "constituent", "codes": ["600036"]},
+    {"site": "guba", "board": "a50_catl", "role": "constituent", "codes": ["300750"]},
+    {"site": "guba", "board": "a50_zijin", "role": "constituent", "codes": ["601899"]},
+    {"site": "guba", "board": "a50_midea", "role": "constituent", "codes": ["000333"]},
+    {"site": "xueqiu", "board": "xq_sz50_index", "role": "index", "codes": ["SH000016"]},
+    {"site": "xueqiu", "board": "xq_kweichow_moutai", "role": "constituent", "codes": ["SH600519"]}
+   ]
+  },
+  "HK50": {
+   "why": "Hang Seng Index: the index board and the largest HSI constituents' boards",
+   "boards": [
+    {"site": "guba", "board": "hsi_index", "role": "index", "codes": ["zsHKHSI", "hk"]},
+    {"site": "guba", "board": "hsi_tencent", "role": "constituent", "codes": ["hk00700"]},
+    {"site": "guba", "board": "hsi_alibaba", "role": "constituent", "codes": ["hk09988"]},
+    {"site": "guba", "board": "hsi_meituan", "role": "constituent", "codes": ["hk03690"]},
+    {"site": "guba", "board": "hsi_hsbc", "role": "constituent", "codes": ["hk00005"]},
+    {"site": "guba", "board": "hsi_aia", "role": "constituent", "codes": ["hk01299"]},
+    {"site": "guba", "board": "hsi_ccb", "role": "constituent", "codes": ["hk00939"]},
+    {"site": "xueqiu", "board": "xq_hsi_index", "role": "index", "codes": ["HKHSI"]},
+    {"site": "xueqiu", "board": "xq_tencent", "role": "constituent", "codes": ["00700"]}
+   ]
+  },
+  "USDCNH": {
+   "why": "offshore renminbi: the 人民币 / 离岸人民币 FX boards",
+   "boards": [
+    {"site": "guba", "board": "cnh_offshore", "role": "fx", "codes": ["USDCNH", "whUSDCNH"]},
+    {"site": "guba", "board": "cny_fx", "role": "fx", "codes": ["whfx", "forex"]},
+    {"site": "xueqiu", "board": "xq_usdcnh", "role": "fx", "codes": ["USDCNH"]}
+   ]
+  }
+ }
+}

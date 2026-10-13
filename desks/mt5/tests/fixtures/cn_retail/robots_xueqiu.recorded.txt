@@ -1,0 +1,12 @@
+# rules as read from https://xueqiu.com/robots.txt on 2026-10-13 (User-agent: * block and one named block)
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: *
+Disallow: /*.json
+Disallow: /k?
+Disallow: /upload/
+Disallow: /v5/stock/
+Disallow: /stock/
+Disallow: /query/
+Disallow: /mpaas/

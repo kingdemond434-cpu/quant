@@ -77,6 +77,13 @@ POLICY_CELLS: tuple[tuple[str, str, int], ...] = (
 )
 #: Instruments the attention-shock reversal is donated on (share CFDs excluded by mandate).
 ATTENTION_SYMBOLS: tuple[str, ...] = ("JPN225", "USDJPY", "USDKRW", "CHINAH", "HK50", "USDCNH")
+#: CN retail POST VOLUME per MT5 target, from `cn_retail_posts` (Guba/Xueqiu board lists, hourly,
+#: point-in-time): `lake/series/cn_retail_<T>.parquet`, column `post_volume_z`. Judged by the same
+#: shuffled-date gain test as every other index here; the cell is pre-declared below with its sign
+#: fixed before any data (an attention spike on a CN retail board fades: Da-Engelberg-Gao price
+#: pressure then reversal). CN50 is named although the account may not quote it -- its tests then
+#: read UNMEASURED (no bars), which is the honest answer, never a dropped row.
+CN_RETAIL_SYMBOLS: tuple[str, ...] = ("CN50", "HK50", "USDCNH")
 
 #: Tier S orthogonality schema per culture: who trades there, and why its version of the
 #: mechanism should fail at different times than the English-language one.
@@ -115,7 +122,7 @@ CULTURE: dict[str, dict[str, Any]] = {
                                        "shows before the decision and fails on split votes")},
 }
 _SYMBOL_CULTURE = {"JPN225": "JP", "USDJPY": "JP", "USDKRW": "KR", "CHINAH": "CN", "HK50": "CN",
-                   "USDCNH": "CN"}
+                   "USDCNH": "CN", "CN50": "CN"}
 
 
 # --------------------------------------------------------------------------------------- data
@@ -194,6 +201,17 @@ def build_grid(series_dir: Path = SERIES_DIR) -> tuple[dict[str, pd.Series],
             indices[name] = s
             history[name] = _recent(s)
             pairs.append((name, sym))
+    for sym in CN_RETAIL_SYMBOLS:
+        frame = load_lake(f"cn_retail_{sym}", series_dir)
+        if frame is None:
+            continue
+        s = _index(frame, "post_volume_z")
+        if s is None:
+            continue
+        name = f"cnr:{sym}.post_volume_z"
+        indices[name] = s
+        history[name] = _recent(s)
+        pairs.append((name, sym))
     return indices, pairs, history
 
 
@@ -264,6 +282,25 @@ def declared_cells(history: dict[str, int], grid: dict[str, Any]) -> tuple[list[
             "economic_actor": "overextended_liquidity_taker",
             "constraint": ("retail flow concentrates in hours and on one side; dealers' inventory "
                            "limits force them to widen and fade it"),
+            "information_source": "event",
+            **culture,
+        }
+        _sort(cell, name, sym, history, grid, ready, waiting)
+    for sym in CN_RETAIL_SYMBOLS:
+        name = f"cnr:{sym}.post_volume_z"
+        culture = CULTURE["CN"]
+        cell = {
+            "cell_name": "cn_retail_post_volume_reversal", "symbol": sym, "index": name,
+            "params": {"source": f"cn_retail_{sym}", "signal": "post_volume_z",
+                       "transform": "level_z", "threshold": 1.5, "side_when_high": -1,
+                       "ttl_bars": 24, "lag_hours": 24},
+            "mechanism": (f"a spike in CN retail board post volume on {sym} (Guba/Xueqiu) marks "
+                          "attention-driven buying pressure that reverses once the crowd's "
+                          "flow is absorbed"),
+            "payer": "attention-driven CN retail traders piling into the day's story",
+            "economic_actor": "overextended_liquidity_taker",
+            "constraint": ("T+1 and daily limits stop the crowd unwinding same-day; liquidity "
+                           "providers fade the one-sided flow"),
             "information_source": "event",
             **culture,
         }

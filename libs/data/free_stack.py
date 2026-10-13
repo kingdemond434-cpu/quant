@@ -62,7 +62,7 @@ import zipfile
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta, timezone
 from itertools import pairwise
 from typing import Any
 
@@ -639,29 +639,21 @@ def parse_xueqiu(raw: bytes | None) -> list[dict[str, Any]]:
 
 
 def parse_guba(raw: bytes | None, now: datetime) -> list[dict[str, Any]]:
-    """Eastmoney Guba board listing: the page embeds `var article_list={...}` JSON."""
-    if not raw:
-        return []
-    text = raw.decode("utf-8", "replace")
-    m = re.search(r"var\s+article_list\s*=\s*(\{.*?\});", text, re.S)
+    """Eastmoney Guba board listing. ONE GUBA PARSER: `libs.data.cn_sources.parse_guba_list`
+    (both the embedded `var article_list` JSON and the HTML table layout) is the parser the
+    board-level PIT organ `research/cn_retail_posts.py` uses too; this keeps the forum fetcher's
+    row shape on top of it."""
+    from libs.data.cn_sources import parse_guba_list
+
     out: list[dict[str, Any]] = []
-    if m:
-        try:
-            doc = json.loads(m.group(1))
-        except ValueError:
-            doc = {}
-        for r in doc.get("re") or []:
-            if not isinstance(r, dict):
-                continue
-            ts = str(r.get("post_publish_time") or "")
-            try:
-                created = (datetime.strptime(f"{ts} +0800", "%Y-%m-%d %H:%M:%S %z")
-                           .astimezone(UTC).isoformat())
-            except ValueError:
-                created = None
-            out.append({"id": f"gb{r.get('post_id')}", "text": str(r.get("post_title") or ""),
-                        "author": author_hash(r.get("user_id")),
-                        "followers": None, "statuses": None, "created": created})
+    for r in parse_guba_list(raw, now):
+        if r.get("post_id") is None:
+            continue
+        created = (r.get("published_time")
+                   if "time_is_last_update" not in (r.get("parse_flags") or []) else None)
+        out.append({"id": f"gb{r['post_id']}", "text": str(r.get("title") or ""),
+                    "author": author_hash(r.get("user") or None),
+                    "followers": None, "statuses": None, "created": created})
     return out
 
 
@@ -1638,6 +1630,230 @@ def fetch_catalogue(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, A
     return h
 
 
+# ============================================================ 5f. CN public state pages
+#: The MT5 targets a China stress / flow state is declared to touch. The hunter's
+#: `hypothesis_filter` keeps only what the account quotes and the two-lane order allows, so a
+#: target the broker does not list (CN50 on some accounts) is dropped there, by name, not here.
+CN_STATE_TARGETS: tuple[str, ...] = ("CN50", "CHINAH", "HK50", "USDCNH")
+#: One request per this many seconds per host, the method rule for every CN public page.
+CN_HOST_GAP_S = 3.0
+_CN_LAST: dict[str, float] = {}
+
+
+def _cn_pace(url: str) -> None:
+    import time as _time
+
+    host = urllib.parse.urlsplit(url).netloc
+    last = _CN_LAST.get(host)
+    if last is not None and CN_HOST_GAP_S > 0:
+        wait = last + CN_HOST_GAP_S - _time.monotonic()
+        if wait > 0:
+            _time.sleep(wait)
+    _CN_LAST[host] = _time.monotonic()
+
+
+def _cn_robots(fetch: Fetch, h: Harvest, url: str, memo: dict[str, Any]) -> str | None:
+    """None when robots.txt lets `url` be fetched; otherwise the reason it may not be. A 404 is
+    the standard "no rules"; any other failure to read the file fetches nothing."""
+    from libs.data.cn_sources import robots_allows
+
+    parts = urllib.parse.urlsplit(url)
+    host = parts.netloc
+    if host not in memo:
+        _cn_pace(f"{parts.scheme}://{host}/robots.txt")
+        h.requests += 1
+        try:
+            raw = fetch(f"{parts.scheme}://{host}/robots.txt", None, None)
+            text = raw.decode("utf-8", "replace")
+            memo[host] = ("OK", text if "user-agent" in text.lower() else "")
+        except FetchError as exc:
+            memo[host] = ("ABSENT", "") if exc.reason == "http_404" else ("ERR", exc.reason)
+        except Exception as exc:
+            memo[host] = ("ERR", classify(exc))
+    state, text = memo[host]
+    if state == "ERR":
+        return f"robots.txt for {host} unreadable ({text}); nothing fetched"
+    if state == "OK" and text and not robots_allows(text, url):
+        return f"robots.txt for {host} disallows {parts.path}"
+    return None
+
+
+def _cn_get(fetch: Fetch, h: Harvest, url: str, memo: dict[str, Any],
+            body: bytes | None = None) -> bytes | None:
+    """Robots first, then a paced request. A robots refusal or a challenge page is recorded as
+    METHOD_BLOCKED evidence on the harvest and never worked around."""
+    from libs.data.cn_sources import challenge_of
+
+    why = _cn_robots(fetch, h, url, memo)
+    if why:
+        h.notes.append(why)
+        memo.setdefault("_blocked", []).append(why)
+        return None
+    _cn_pace(url)
+    raw = _get(fetch, h, url, {"Accept-Language": "zh-CN,zh;q=0.9"}, body)
+    hit = challenge_of(raw)
+    if hit:
+        ev = (f"{url[:100]} answered {len(raw or b'')} B sha256 "
+              f"{hashlib.sha256(raw or b'').hexdigest()[:16]}: {hit}")
+        h.notes.append(ev)
+        memo.setdefault("_blocked", []).append(ev)
+        return None
+    if raw is None and any(k in ("http_401", "http_403", "http_451") for k in h.failures):
+        memo.setdefault("_blocked", []).append(f"{url[:100]}: refused "
+                                               f"({', '.join(h.failures)})")
+    return raw
+
+
+def _cn_close(h: Harvest, memo: dict[str, Any], what: str) -> Harvest:
+    if h.obs:
+        h.status = "OK"
+        return h
+    if memo.get("_blocked"):
+        h.status, h.detail = "METHOD_BLOCKED", "; ".join(memo["_blocked"])[:600]
+    elif any(str(k).startswith(("proxy", "dns", "timeout", "tls", "reset", "refused"))
+             for k in h.failures):
+        h.status = UNMEASURED
+        h.detail = ("network: " + ", ".join(f"{k}x{v}" for k, v in h.failures.items())
+                    + " (not a verdict on the site)")
+    else:
+        h.status, h.detail = "EMPTY", f"no {what} parsed " + (
+            ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "(route answered, no rows)")
+    return h
+
+
+def _cn_col(h: Harvest, key: str, why: str, targets: Sequence[str] = CN_STATE_TARGETS) -> None:
+    h.columns.setdefault(key, {"hypothesis": list(targets), "event": [], "why": why})
+
+
+def fetch_cn_public_state(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
+                          now: datetime) -> Harvest:
+    """China stress / flow states from public pages (`row["route"]` picks which): Eastmoney's
+    Stock Connect flows, limit-up / limit-down pools and institutional holdings, JiSiLu's
+    convertible-bond index and list. Robots respected, one request per 3 s per host, a login,
+    CAPTCHA or WAF answer recorded METHOD_BLOCKED with its evidence."""
+    from libs.data import cn_sources as cn
+
+    sid = str(row["id"])
+    h = Harvest(sid)
+    memo: dict[str, Any] = {}
+    route = str(row.get("route") or "")
+    if route == "em_connect":
+        for chan, mt in cn.EM_CONNECT_TYPES.items():
+            raw = _cn_get(fetch, h, cn.em_connect_url(mt), memo)
+            rows, problem = cn.parse_em_datacenter(raw) if raw is not None else ([], None)
+            if problem:
+                h.notes.append(f"{chan}: {problem}")
+            pts, missing = cn.connect_flow_points(rows)
+            if missing:
+                h.notes.append(f"{chan}: {missing} day(s) with no disclosed net figure "
+                               "(UNMEASURED, not zero)")
+            key = f"{chan}_net"
+            for pd_, pv in pts:
+                h.obs.append({"key": key, "period_end": pd_, "value": pv})
+            if pts:
+                _cn_col(h, key, f"Stock Connect {chan} net deal amount (source=eastmoney)",
+                        ("HK50", "CHINAH", "USDCNH") if "south" in chan else CN_STATE_TARGETS)
+            h.raw += [{"source": "eastmoney", "channel": chan, "trade_date": r.get("TRADE_DATE"),
+                       "net_deal_amt": r.get("NET_DEAL_AMT"), "fund_inflow": r.get("FUND_INFLOW"),
+                       "buy_amt": r.get("BUY_AMT"), "sell_amt": r.get("SELL_AMT"),
+                       "available_time": now.isoformat()} for r in rows]
+        return _cn_close(h, memo, "Connect flow day")
+    if route == "em_limit_pools":
+        cst = now.astimezone(timezone(timedelta(hours=8)))
+        done = set(cursor.get("dates_done") or [])
+        days = [cst.date() - timedelta(days=i) for i in range(0, 28)]
+        todo = [d for d in days if d.weekday() < 5 and d.isoformat() not in done][
+            : int(row.get("dates_per_pass") or 8)]
+        for dd in todo:
+            ymd = dd.strftime("%Y%m%d")
+            up = cn.parse_em_pool(_cn_get(fetch, h, cn.EM_ZT_POOL.format(date=ymd), memo))
+            down = cn.parse_em_pool(_cn_get(fetch, h, cn.EM_DT_POOL.format(date=ymd), memo))
+            h.raw.append({"source": "eastmoney", "date": dd.isoformat(), "limit_up_n": up,
+                          "limit_down_n": down, "available_time": now.isoformat()})
+            if up is None or down is None:
+                continue                     # a day with no pool is UNMEASURED, never 0
+            for key, n in (("limit_up_n", up), ("limit_down_n", down),
+                           ("limit_net", up - down)):
+                h.obs.append({"key": key, "period_end": dd.isoformat(), "value": float(n)})
+            if dd != cst.date():
+                done.add(dd.isoformat())      # today's pool still moves; re-read until closed
+        for key, why in (("limit_up_n", "A-share limit-up pool size"),
+                         ("limit_down_n", "A-share limit-down pool size"),
+                         ("limit_net", "limit-up minus limit-down (A-share stress breadth)")):
+            if any(o["key"] == key for o in h.obs):
+                _cn_col(h, key, f"{why} (source=eastmoney)")
+        h.cursor = {"dates_done": sorted(done)[-60:]}
+        return _cn_close(h, memo, "limit pool")
+    if route == "em_orghold":
+        totals: dict[str, float] = defaultdict(float)
+        counts: dict[str, int] = defaultdict(int)
+        for code in row.get("codes") or ():
+            raw = _cn_get(fetch, h, cn.em_orghold_url(str(code)), memo)
+            rows, problem = cn.parse_em_datacenter(raw) if raw is not None else ([], None)
+            if problem:
+                h.notes.append(f"{code}: {problem}")
+            for r in rows:
+                rd = str(r.get("REPORT_DATE") or "")[:10]
+                val = next((x for k in ("HOLD_MARKET_CAP", "HOLD_VALUE", "FREE_MARKET_CAP",
+                                      "TOTAL_MARKET_CAP") if (x := cn._num(r.get(k))) is not None),
+                         None)
+                if rd and val is not None:
+                    totals[rd] += val
+                    counts[rd] += 1
+            h.raw += [{"source": "eastmoney", "code": code, **{k: r.get(k) for k in list(r)[:20]},
+                       "available_time": now.isoformat()} for r in rows[:20]]
+        for rd, tot in sorted(totals.items()):
+            h.obs.append({"key": "orghold_value", "period_end": rd, "value": tot})
+            h.obs.append({"key": "orghold_rows", "period_end": rd, "value": float(counts[rd])})
+        if h.obs:
+            _cn_col(h, "orghold_value", "institutional holding value across the A50 leaders "
+                    "(source=eastmoney, quarterly)")
+        else:
+            h.notes.append("route RPT_MAIN_ORGHOLD is UNVERIFIED from the build session")
+        return _cn_close(h, memo, "institutional holding")
+    if route == "jsl_cb_index":
+        raw = _cn_get(fetch, h, cn.JSL_INDEX, memo)
+        prob = cn.jsl_problem(raw)
+        if prob:
+            memo.setdefault("_blocked", []).append(f"{cn.JSL_INDEX}: {prob}")
+            return _cn_close(h, memo, "index day")
+        for r in cn.parse_jsl_index(raw):
+            for src, key in (("mid_premium_rt", "cb_mid_premium"),
+                             ("avg_premium_rt", "cb_avg_premium"),
+                             ("avg_ytm_rt", "cb_avg_ytm"), ("price", "cb_index")):
+                num = cn._num(r.get(src))
+                if num is not None:
+                    h.obs.append({"key": key, "period_end": r["price_dt"], "value": num})
+        for key, why in (("cb_mid_premium", "median convertible conversion premium"),
+                         ("cb_avg_premium", "mean convertible conversion premium"),
+                         ("cb_avg_ytm", "mean convertible yield to maturity"),
+                         ("cb_index", "JiSiLu convertible equal-weight index level")):
+            if any(o["key"] == key for o in h.obs):
+                _cn_col(h, key, f"{why} (source=jisilu, China stress state)")
+        return _cn_close(h, memo, "index day")
+    if route == "jsl_cb_list":
+        import time as _time
+
+        url = cn.JSL_LIST.format(ms=int(_time.time() * 1000))
+        raw = _cn_get(fetch, h, url, memo, body=b"rp=50")
+        prob = cn.jsl_problem(raw)
+        if prob:
+            memo.setdefault("_blocked", []).append(f"{url[:60]}: {prob}")
+            return _cn_close(h, memo, "convertible row")
+        cells = cn.parse_jsl_list(raw)
+        stress = cn.jsl_list_stress(cells) if cells else {}
+        day = _day(now)
+        for key, sv in stress.items():
+            h.obs.append({"key": f"cbl_{key}", "period_end": day, "value": float(sv)})
+            _cn_col(h, f"cbl_{key}", f"convertible list cross-section: {key} (source=jisilu)")
+        h.raw += [{"source": "jisilu", **{k: c.get(k) for k in ("bond_id", "price",
+                                                                "premium_rt", "ytm_rt")},
+                   "available_time": now.isoformat()} for c in cells]
+        return _cn_close(h, memo, "convertible row")
+    h.status, h.detail = "NO_ROUTE", f"unknown cn_public_state route {route!r}"
+    return h
+
+
 from libs.data.free_stack_cnx import fetch_cn_exchange  # noqa: E402  (imports Harvest lazily)
 
 FETCHERS: dict[str, Callable[..., Harvest]] = {
@@ -1646,5 +1862,5 @@ FETCHERS: dict[str, Callable[..., Harvest]] = {
     "coinpaprika": fetch_coinpaprika, "reddit": fetch_reddit, "telegram": fetch_telegram,
     "akshare": fetch_akshare_package, "tushare": fetch_tushare,
     "package": fetch_package_route, "catalogue": fetch_catalogue,
-    "cn_exchange": fetch_cn_exchange,
+    "cn_exchange": fetch_cn_exchange, "cn_public_state": fetch_cn_public_state,
 }

@@ -1236,6 +1236,9 @@ LEG_DEPARTMENT: dict[str, str] = {
     # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
     # a global layer, like the forests above; its proposer mints their direct/indirect cells.
     "free_stack_hunt": "regions", "free_stack_proposer": "regions",
+    # CN retail boards (Guba / Xueqiu post lists -> PIT post-volume and post-text series for
+    # CN50 / HK50 / USDCNH): a regional ingestion layer, beside the free stack's CN forums.
+    "cn_retail_posts": "regions",
     # the factory's own throughput benchmark sits with the factory it measures
     "factory_throughput": "mathlab",
     # the world dataset hunter: DBnomics' ~80 providers plus the direct public doors, one
@@ -2070,6 +2073,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "free_stack_hunt": 720,
     # Its proposer mints a 1,500-row ring slice; the registry write is the long part.
     "free_stack_proposer": 900,
+    # CN retail boards stop themselves at --budget-s 300 (~20 boards at one request per 3 s per
+    # host, a few backfill pages each); the cap sits above so the report is always written.
+    "cn_retail_posts": 420,
     # A reader of the factory's report and journal tail; seconds.
     "factory_throughput": 180,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
@@ -4603,6 +4609,14 @@ def main() -> None:
     # donated to the one gauntlet with every minted cell charged. Writes FREE_STACK_PROPOSER.json.
     fsp = _costed("free_stack_proposer", lambda: _producer(
         "free_stack_proposer", "research/free_stack_proposer.py", "--once"))
+    # CN RETAIL BOARDS (principal-approved 2026-10-13): Guba and Xueqiu public post LISTS for
+    # CN50 / HK50 / USDCNH, robots respected, one request per 3 s per host, a login/CAPTCHA/WAF
+    # page recorded METHOD_BLOCKED and never worked around. Raw rows land PIT in
+    # text_store/cn_retail (the tone corpus the LLM lab scores), hourly post-volume frames in
+    # lake/series/cn_retail_<T>*.parquet (judged by nlp_social_cells' attention gain test), and
+    # the per-board status in reports/CN_RETAIL_POSTS.json.
+    crp = _costed("cn_retail_posts", lambda: _producer(
+        "cn_retail_posts", "research/cn_retail_posts.py", "--once", "--budget-s", "300"))
     # THE WORLD DATASET HUNTER: discovers, fetches, quality-checks, PIT-stamps and registers
     # thousands of public datasets (DBnomics backbone + BIS bulk, CFTC, Treasury, FRED, and the
     # registry's own DISCOVERED rows), then publishes the per-symbol exposure that
@@ -5814,6 +5828,7 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "free_stack_hunt": fsh,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
+                    "cn_retail_posts": crp,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
