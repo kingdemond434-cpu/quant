@@ -1032,6 +1032,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # WHICH DATA FAMILIES CARRY CAPITAL VALUE (ALLOC-25, 2026-10-13): the allocator's cached
+    # world population re-solved with each data family removed / added alone. Seconds; a report.
+    "allocator_family_ablation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
@@ -1172,6 +1175,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
+                     # ALLOC-25: the data-family ablation of the allocator's own worlds.
+                     "allocator_family_ablation",
                      "forward_calibration"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
@@ -1788,6 +1793,9 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # ALLOC-25 data-family ablation: measured 6 s on the 128x256x28 cached population with no
+    # evidence matrix; the state re-draws on the box's matrix add three sample_worlds + solves.
+    "allocator_family_ablation": 300,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -5654,6 +5662,12 @@ def main() -> None:
     # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
         "kelly_survival", "research/kelly_survival.py", "--book"))
+    # WHICH DATA FAMILIES CARRY CAPITAL VALUE (ALLOC-25): each data family dropped from (and
+    # added alone to the price-only part of) the allocator's cached world population, re-solved
+    # on the same worlds -- paired dE[log W], breach-probability and fraction shifts. Report
+    # only: reads pf_allocator_cache, writes reports/ALLOCATOR_FAMILY_ABLATION.json, no trials.
+    afa = _costed("allocator_family_ablation", lambda: _producer(
+        "allocator_family_ablation", "research/allocator_family_ablation.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -5908,7 +5922,7 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
-                    "kelly_survival": kls,
+                    "kelly_survival": kls, "allocator_family_ablation": afa,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,

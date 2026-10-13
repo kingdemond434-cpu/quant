@@ -190,6 +190,21 @@
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
    }
+  },
+  "allocator_family_ablation": {
+   "hypothesis": "Re-solving the allocator's own cached world population with each data family's sleeves (and states) removed, and with each family alone added to the price-only sleeves, measures which data families actually carry robust forward E[log W] and survival headroom, so acquisition and research effort can be pointed at the families that pay.",
+   "metric": {
+    "gain": "INFO_PER_COMPUTE",
+    "metric": "summary.n_families_measured",
+    "better": "up",
+    "organ": "report:ALLOCATOR_FAMILY_ABLATION.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_families_measured",
+    "op": "<",
+    "threshold": 2,
+    "after": "30 days of readings with fewer than two data families in the allocator's population: the ablation cannot rank anything against the price-only baseline and the leg is measuring nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
