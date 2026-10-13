@@ -548,7 +548,9 @@ def run(now: datetime | None = None, *, fetch: Fetch | None = None, fetching: bo
         if not fetching or dry_run:
             pass_rows[key] = {"status": state.get(key, {}).get("status", UNMEASURED),
                               "evidence": (state.get(key, {}).get("evidence")
-                                           or "no fetch this pass (--no-fetch / --dry-run)"),
+                                           or "no fetch this pass (--no-fetch / --dry-run); "
+                                           "build-session prior: " + str(
+                                               cn.RETAIL_SITES[b["site"]]["probe_2026_10_13"])),
                               "new": 0, "raw": 0, "skipped": True}
             continue
         if time.monotonic() - t0 >= budget_s:
