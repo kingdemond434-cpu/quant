@@ -1,8 +1,8 @@
 """L3 (2026-10-13): gateway_state.json's placement_pass is broker time under a UTC label.
 
 At 15:20 UTC it read 18:20 "+00:00". Every reader now goes through one converter: a stamp marked
-`placement_pass_clock: "utc"` is taken as written, a legacy stamp loses the broker offset, and an
-unknown offset is UNMEASURED (None), never a guessed zero.
+`placement_pass_clock: "utc"` is taken as written, a legacy stamp is the venue clock (New York
+wall time + 7 h) converted with its DST dates, and an unreadable stamp is UNMEASURED (None).
 """
 from __future__ import annotations
 
@@ -23,29 +23,42 @@ UTC_NOW = datetime(2026, 10, 13, 15, 20, tzinfo=UTC)
 BROKER_STAMP = "2026-10-13T18:20:00+00:00"   # what the gateway writes at 15:20 UTC, EEST
 
 
-def test_a_legacy_broker_stamp_loses_the_offset() -> None:
-    got = gc.placement_pass_utc({"placement_pass": BROKER_STAMP}, offset=lambda: 3)
-    assert got == UTC_NOW
+def test_a_legacy_broker_stamp_is_three_hours_ahead_in_october() -> None:
+    assert gc.placement_pass_utc({"placement_pass": BROKER_STAMP}) == UTC_NOW
+
+
+@pytest.mark.parametrize(("stamp", "utc"), [
+    # New York changes clocks on 2026-11-01, a week AFTER Europe (10-25): the venue follows NY.
+    ("2026-10-28T18:20:00+00:00", "2026-10-28T15:20:00+00:00"),   # EU winter, NY summer: +3
+    ("2026-11-03T18:20:00+00:00", "2026-11-03T16:20:00+00:00"),   # both winter: +2
+    ("2026-01-15T09:00:00+00:00", "2026-01-15T07:00:00+00:00"),
+    ("2026-07-15T09:00:00+00:00", "2026-07-15T06:00:00+00:00"),
+])
+def test_the_offset_follows_new_york_daylight_time(stamp: str, utc: str) -> None:
+    got = gc.placement_pass_utc({"placement_pass": stamp})
+    assert got == datetime.fromisoformat(utc)
+
+
+def test_the_converter_does_not_lean_on_the_zero_offset_resolver(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import session_phase  # type: ignore[import-not-found]
+    # the audit found this resolver answering 0 on every host; the converter must not care
+    monkeypatch.setattr(session_phase, "broker_utc_offset_h", lambda: (0, "pinned"))
+    assert gc.placement_pass_utc({"placement_pass": BROKER_STAMP}) == UTC_NOW
 
 
 def test_a_stamp_marked_utc_is_taken_as_written() -> None:
     doc = {"placement_pass": "2026-10-13T15:20:00+00:00", "placement_pass_clock": "utc"}
-    assert gc.placement_pass_utc(doc, offset=lambda: 3) == UTC_NOW
-
-
-def test_an_unknown_offset_is_unmeasured_never_zero() -> None:
-    assert gc.placement_pass_utc({"placement_pass": BROKER_STAMP}, offset=lambda: None) is None
+    assert gc.placement_pass_utc(doc) == UTC_NOW
 
 
 @pytest.mark.parametrize("doc", [None, {}, {"placement_pass": "not a time"}, []])
 def test_absent_or_unreadable_is_none(doc: object) -> None:
-    assert gc.placement_pass_utc(doc, offset=lambda: 3) is None
+    assert gc.placement_pass_utc(doc) is None
 
 
 def test_live_system_state_reports_the_utc_age(monkeypatch: pytest.MonkeyPatch) -> None:
     import live_system_state as lss  # type: ignore[import-not-found]
-    monkeypatch.setattr(gc, "broker_offset_h", lambda: 3)
-    monkeypatch.setattr(gc.placement_pass_utc, "__defaults__", (lambda: 3,))
     out = lss._execution_section({"placement_pass": BROKER_STAMP}, None,
                                  UTC_NOW + timedelta(hours=2))
     assert out["last_pass_at"] == "2026-10-13T15:20:00+00:00"
@@ -60,14 +73,15 @@ def test_the_host_role_check_no_longer_sees_a_future_pass(
 
     sys.path.insert(0, str(ROOT / "scripts"))
     import check_self_repair as csr  # type: ignore[import-not-found]
-    monkeypatch.setattr(gc.placement_pass_utc, "__defaults__", (lambda: 3,))
     gw = tmp_path / "desks" / "mt5" / "data" / "gateway_state.json"
     gw.parent.mkdir(parents=True)
-    # a pass that really happened 2h ago, stamped in broker time (+3): it reads 1h in the FUTURE
+    from libs.regime.session_clock import utc_offset_h
+    off = timedelta(hours=utc_offset_h())
+    # a pass that really happened 2h ago, stamped in broker time: it reads 1h in the FUTURE
     real = datetime.now(UTC) - timedelta(hours=2)
-    gw.write_text(json.dumps({"placement_pass": (real + timedelta(hours=3)).isoformat()}), "utf-8")
+    gw.write_text(json.dumps({"placement_pass": (real + off).isoformat()}), "utf-8")
     os.utime(gw, (time.time(), time.time()))
     assert csr._trading_host(tmp_path) is True        # 2h < 3h: still the trading host
     real = datetime.now(UTC) - timedelta(hours=4)
-    gw.write_text(json.dumps({"placement_pass": (real + timedelta(hours=3)).isoformat()}), "utf-8")
+    gw.write_text(json.dumps({"placement_pass": (real + off).isoformat()}), "utf-8")
     assert csr._trading_host(tmp_path) is False       # was True: a 4h-cold host read as live

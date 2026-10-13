@@ -14,33 +14,21 @@ marks it `placement_pass_clock: "utc"`. Until that lands, and for every legacy f
 is the one place a reader turns the stamp into UTC:
 
   * `placement_pass_clock == "utc"`  -> the stamp is UTC already, taken as written;
-  * otherwise (legacy, broker time)  -> minus the broker's UTC offset from
-    `session_phase.broker_utc_offset_h()` (live terminal, recorded measurement, then the bars);
-  * offset unknown                   -> None. UNMEASURED, never a guessed zero: a zero offset is
-    exactly the three-hour error this module exists to remove.
+  * otherwise (legacy, broker time)  -> `libs.regime.session_clock.server_to_utc`, the desk's one
+    conversion of the venue clock (New York wall time + 7 h, so +3 while New York is on daylight
+    time and +2 otherwise, DST dates included).
+
+WHY NOT `session_phase.broker_utc_offset_h()` (audit of #328, 2026-10-13). It answers 0 on every
+host: `h1_source.broker_utc_offset_hours` is pinned to 0.0 and `data/broker_clock.json` records 0,
+so subtracting it was a no-op that left every reader three hours wrong. The venue clock is a
+calendar rule measured on the desk's own bars, so it needs no live terminal to answer.
 """
 from __future__ import annotations
 
-import sys
-from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import Any
 
-_RESEARCH = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "research"
 UTC_MARK = "utc"
-
-
-def broker_offset_h() -> int | None:
-    """The broker's UTC offset in hours, from the desk's one resolver; None when unknown."""
-    try:
-        if str(_RESEARCH) not in sys.path:
-            sys.path.insert(0, str(_RESEARCH))
-        import session_phase  # type: ignore[import-not-found]
-        off, _src = session_phase.broker_utc_offset_h()
-    except Exception:
-        return None
-    return None if off is None else int(off)
 
 
 def _parse(value: Any) -> datetime | None:
@@ -51,8 +39,14 @@ def _parse(value: Any) -> datetime | None:
     return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
 
 
-def placement_pass_utc(state: Any,
-                       offset: Callable[[], int | None] = broker_offset_h) -> datetime | None:
+def broker_stamp_to_utc(ts: datetime) -> datetime:
+    """A venue-clock stamp (naive or UTC-labelled) as the true UTC instant."""
+    from libs.regime.session_clock import server_to_utc
+    out: datetime = server_to_utc([ts.astimezone(UTC).replace(tzinfo=None)])[0].to_pydatetime()
+    return out
+
+
+def placement_pass_utc(state: Any) -> datetime | None:
     """`gateway_state.json`'s last placement pass as a real UTC instant, or None (UNMEASURED)."""
     if not isinstance(state, dict):
         return None
@@ -61,7 +55,4 @@ def placement_pass_utc(state: Any,
         return None
     if str(state.get("placement_pass_clock") or "").lower() == UTC_MARK:
         return ts.astimezone(UTC)
-    off = offset()
-    if off is None:
-        return None
-    return (ts - timedelta(hours=off)).astimezone(UTC)
+    return broker_stamp_to_utc(ts)

@@ -7,8 +7,9 @@ in the repo reads one canonical picture of the MT5 desk.
 ## What this desk is
 
 A swap-free (Islamic, halal) XAUUSD session-range-breakout book on
-VantageMarkets-Live 14 (login 34049153, 633.89 EUR, 1:500), currently
-**armed** with 0.01 lot per sleeve.
+a since-retired Vantage account, armed at 0.01 lot per sleeve. HISTORICAL (2026-08): the live
+desk now trades Fusion Markets; read its account and sleeves from
+`desks/mt5/data/account_state.json` and `desks/mt5/data/sleeves.json`.
 
 Four decorrelated daily windows place brackets (buy-stop/sell-stop, SL 1.2xATR
 or range span, TP 2R) at 07:00 / 13:00 / 14:00 / 17:00 UTC. Unfilled brackets
