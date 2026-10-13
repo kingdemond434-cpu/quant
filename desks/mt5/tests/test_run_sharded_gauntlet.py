@@ -130,4 +130,22 @@ def test_actual_child_stderr_survives_retries_and_shard_cleanup(monkeypatch, tmp
     assert len(receipts) == 2
     assert attempts == [0, 0]
     assert all("real child error" in p.read_text() for p in receipts)
+    assert all("CHILD_FAILED type=CalledProcessError returncode=7" in p.read_text()
+               for p in receipts)
     assert "child log=" in str(failed.value.__cause__)
+
+
+def test_silent_native_failure_has_exit_evidence(monkeypatch, tmp_path):
+    import subprocess
+
+    def silent_failure(argv, **kwargs):
+        raise subprocess.CalledProcessError(3221225477, argv)
+
+    monkeypatch.setenv("GAUNTLET_SHARD_RETRIES", "0")
+    monkeypatch.setattr(runner, "run", silent_failure)
+    with pytest.raises(RuntimeError, match="refusing partial merge"):
+        runner.dispatch(tmp_path / "shards", 1, "build")
+    receipts = list((tmp_path / "shards-logs").glob("*.log"))
+    assert len(receipts) == 1
+    assert "CHILD_FAILED type=CalledProcessError returncode=3221225477" in receipts[0].read_text()
+    assert "CHILD_EXIT_OK" not in receipts[0].read_text()
