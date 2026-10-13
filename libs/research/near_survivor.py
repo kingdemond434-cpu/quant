@@ -154,7 +154,8 @@ def hurdle(ns: NearSurvivor, *, new: int = 1) -> float:
     The twentieth variant of a near-miss faces a harder bar than the first independent hypothesis,
     and that is correct rather than unfair: by the twentieth, the desk has looked twenty times more.
     """
-    return math.sqrt(2.0 * math.log(family_trials(ns, new=new)))
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    return math.sqrt(2.0 * math.log(bar_n(family_trials(ns, new=new))))
 
 
 def report(ns: NearSurvivor, *, new: int = 1) -> str:

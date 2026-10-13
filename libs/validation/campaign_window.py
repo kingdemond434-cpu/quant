@@ -190,7 +190,8 @@ def detection_power(n_trials: int, n_obs: int,
     """
     if n_obs <= 1 or n_trials < 1 or not 0.0 < alpha < 1.0:
         return 0.0
-    sr0 = expected_max_sharpe(n_trials, 1.0 / n_obs)
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    sr0 = expected_max_sharpe(bar_n(n_trials), 1.0 / n_obs)
     hurdle = (sr0 + float(norm.ppf(1.0 - alpha)) / np.sqrt(n_obs - 1)) * np.sqrt(PPY)
     se = float(np.sqrt(PPY / n_obs))
     return float(1.0 - norm.cdf((hurdle - true_ann_sharpe) / se))

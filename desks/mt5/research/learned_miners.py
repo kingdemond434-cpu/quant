@@ -69,6 +69,7 @@ from mt5desk import family_learned_propagation as FLP  # noqa: E402
 
 from libs.models import learned_propagation as LP  # noqa: E402
 from libs.research import trial_ledger as TL  # noqa: E402
+from libs.research.trial_count_guard import bar_n  # noqa: E402  (the bar's N is fixed; counts are reported only)
 from research import proposer_common as pc  # noqa: E402
 
 REPORT = _DESK / "reports" / "learned_miners.json"
@@ -212,7 +213,7 @@ def _redeflate(rows: list[dict[str, Any]], n_attempted: int) -> list[dict[str, A
     if n_attempted > len(rows):
         for r in rows:
             r["n_tests_sweep"] = n_attempted
-            r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), n_attempted), 3)
+            r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), bar_n(n_attempted)), 3)
             r["proposed"] = bool(r.get("clears_cost") and r["t_deflated_sweep"] > pc.PROPOSE_T
                                  and int(r.get("n_independent", 0)) >= pc.MIN_TRADES)
     return rows
@@ -545,7 +546,7 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
                                     "score them (the symbol's bar history in git is shorter than "
                                     "the panel's)"),
             "best": best,
-            "best_t_deflated_by_attempted": (round(float(deflate_t(float(best["t_gross"]), n)), 3)
+            "best_t_deflated_by_attempted": (round(float(deflate_t(float(best["t_gross"]), bar_n(n))), 3)
                                              if best and best.get("t_gross") is not None
                                              else None),
             "proposed": sum(1 for r in rows if r.get("proposed")),
@@ -554,7 +555,7 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
     out["union_headline"] = {
         "m": m_union,
         "rule": "each miner's best t deflated over the UNION of every test both miners ran",
-        **{model: (round(float(deflate_t(float(v["best"]["t_gross"]), m_union)), 3)
+        **{model: (round(float(deflate_t(float(v["best"]["t_gross"]), bar_n(m_union))), 3)
                    if v.get("best") and v["best"].get("t_gross") is not None else None)
            for model, v in out.items() if isinstance(v, dict) and "best" in v}}
     return out
@@ -613,7 +614,7 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
             "best_of_grid_by_ic_t": best_k,
             "best_of_grid_ic_t": best_t,
             "best_of_grid_ic_t_deflated": (None if best_t is None
-                                           else round(deflate_t(float(best_t), len(keys)), 3)),
+                                           else round(deflate_t(float(best_t), bar_n(len(keys))), 3)),
             "configs_tried_trials_charged": len(keys),
         }
 

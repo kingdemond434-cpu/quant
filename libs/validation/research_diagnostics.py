@@ -239,7 +239,8 @@ def conditional_validation(claim: ConditionalClaim, *, min_state_n: int = 30) ->
     a, b = stats(active), stats(inactive)
     # Bonferroni is deliberately conservative here: the branch is a new preregistered family and
     # inherits every ancestry trial.  This measurement does not promote it.
-    inherited_hurdle = math.sqrt(2.0 * math.log(max(2, claim.ancestry_trials + 1)))
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    inherited_hurdle = math.sqrt(2.0 * math.log(bar_n(claim.ancestry_trials + 1)))
     return {
         "status": "MEASURED",
         "claim_id": claim.claim_id,

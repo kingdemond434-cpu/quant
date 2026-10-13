@@ -186,7 +186,9 @@ def dsr_hurdle_annual(n_trials: int, n_obs: int, *, var_sharpes: float | None = 
     ``expected_max_sharpe`` scales linearly in that dispersion, so the live hurdle is higher than
     this, never lower. Reporting the floor keeps the verdict conservative in the safe direction.
     """
-    sr0 = expected_max_sharpe(n_trials, (1.0 / n_obs) if var_sharpes is None else var_sharpes)
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    sr0 = expected_max_sharpe(bar_n(n_trials),
+                              (1.0 / n_obs) if var_sharpes is None else var_sharpes)
     # dsr >= threshold  <=>  z >= Phi^-1(threshold), and z = (sr - sr0)*sqrt(T-1)/sqrt(denom)
     # with denom -> 1 for near-normal returns. Solve for sr, then annualise.
     z = float(_norm.ppf(_DSR_THRESHOLD))

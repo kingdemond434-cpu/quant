@@ -708,7 +708,8 @@ def validate(
     # The LEGACY path keeps the full deflation: nothing else corrects for multiplicity there.
     # `pc_p` is FWER-adjusted by construction (libs/validation/per_candidate), so the R0224 rule
     # applies to that seam identically: the multiplicity penalty is paid once, in Romano-Wolf.
-    dsr_trials = 1 if (per_candidate or pc_supplied) else n_trials
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    dsr_trials = 1 if (per_candidate or pc_supplied) else bar_n(n_trials)
     dsr = deflated_sharpe_ratio(arr, n_trials=dsr_trials, sharpe_estimates=sharpe_estimates,
                                 threshold=_DSR_THRESHOLD)
     if per_candidate:

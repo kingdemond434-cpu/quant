@@ -73,8 +73,9 @@ def with_exit(sigs):
 
 def main() -> int:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
-    h12.E_MAX = deflation(sweep_size(len(meta), len(h12.WINDOWS),
-                                     len(h12.STATES)))
+    from libs.research.trial_count_guard import bar_n  # fixed N; the grid is reported
+    h12.E_MAX = deflation(bar_n(sweep_size(len(meta), len(h12.WINDOWS),
+                                           len(h12.STATES))))
     print(f"HUNT 14 — hunt12's grid, stall-tightening exit")
     print(f"{len(meta)} symbols x {len(h12.WINDOWS)} windows x "
           f"{len(h12.STATES)} states, E[max t] = {h12.E_MAX:.2f}, "
