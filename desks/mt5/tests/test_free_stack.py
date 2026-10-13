@@ -355,11 +355,13 @@ def test_families_are_registered_where_the_gauntlet_looks() -> None:
 def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tmp_path) -> None:
     import free_stack_proposer as P
     monkeypatch.setattr(P, "series_exists", lambda sid: True)
+    for k in ("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"):
+        monkeypatch.delenv(k, raising=False)
     cols = {"gtrends": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}},
             "reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
     grid, skipped = P.build_grid(cols, P.roster_rows())
-    # The free stack builds LIVE INPUT; Reddit's pages are IDEAS_ONLY (per-source policy).
-    assert skipped == {"reddit": "not live input (IDEAS_ONLY): reddit"}
+    # The free stack builds LIVE INPUT; Reddit's live route is its Data API (NEEDS_KEY here).
+    assert skipped == {"reddit": "not live input (NEEDS_KEY): reddit_api"}
     fams = {c["family"] for c in grid}
     assert fams == {"exogenous_conditioner", "alt_series_momentum", "alt_conditioned"}
     assert len(grid) == len(P.CHARTS) * (8 + 8 + len(P.BASES) * len(P.REGIMES))

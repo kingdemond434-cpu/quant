@@ -27,7 +27,6 @@ No secret is read or sent. Stdlib only (certifi is optional).
 """
 from __future__ import annotations
 
-import contextlib
 import random
 import re
 import ssl

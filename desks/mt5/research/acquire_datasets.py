@@ -149,6 +149,11 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
                 return None, "html"
             return r.read(MAX_BYTES + 1), ctype
     except _tf.TermsFenced as exc:
+        # A redirect INTO a login / sign-in / CAPTCHA wall is METHOD_BLOCKED: the wall is never
+        # requested, never read, and the endpoint is recorded as blocked by method, not as
+        # unreachable (a wall is an access control, not an outage).
+        if exc.platform == "login_wall":
+            return None, f"{_tf.METHOD_BLOCKED}:login_wall"
         return None, f"terms_fenced:{exc.platform}"
     except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
         return None, "unreachable"
@@ -428,6 +433,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
     tried = kept = 0
     refusals: dict[str, int] = {}
     terms_fenced: dict[str, int] = {}
+    method_blocked: dict[str, int] = {}
     new_series: list[str] = []
 
     def _refuse(why: str) -> None:
@@ -448,6 +454,12 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                 terms_fenced[ctype.split(":", 1)[1]] = \
                     terms_fenced.get(ctype.split(":", 1)[1], 0) + 1
                 _refuse_url(f"terms fence ({ctype.split(':', 1)[1]}): never requested")
+                continue
+            if ctype.startswith(f"{_tf.METHOD_BLOCKED}:"):
+                why = ctype.split(":", 1)[1]
+                method_blocked[why] = method_blocked.get(why, 0) + 1
+                _refuse_url(f"{_tf.METHOD_BLOCKED} ({why}): redirect not followed")
+                reg["by_url"][url]["status"] = _tf.METHOD_BLOCKED
                 continue
             _refuse_url("served HTML, not data" if ctype == "html" else "unreachable")
             continue
@@ -532,6 +544,8 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         # ENDPOINTS FAILING THE LIVE-INPUT CHECK, COUNTED (libs/data/terms_fence.py).
         "terms_fenced": {"by_platform": terms_fenced, "total": sum(terms_fenced.values()),
                          "endpoints_skipped_at_selection": dict(_ENDPOINT_FENCED)},
+        # A redirect into a login / CAPTCHA wall: refused by METHOD, never followed or read.
+        "method_blocked": {"by_reason": method_blocked, "total": sum(method_blocked.values())},
         "rule": ("point-in-time or nothing: a frame with no usable date column is refused rather "
                  "than stamped with now, because backfilling today's value across history "
                  "manufactures an edge that never existed"),

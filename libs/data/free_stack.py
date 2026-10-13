@@ -1308,13 +1308,48 @@ def _social(h: Harvest, posts: list[dict[str, Any]], now: datetime, sid: str) ->
                           "score": round(float(tone), 4), "method": method})
 
 
+#: Reddit's Data API (libs/data/terms_fence.py `reddit_api`): "Reddit requires OAuth for
+#: authentication" and "Traffic not using OAuth or login credentials will be blocked" (Data API
+#: wiki, read 2026-10-13), so LIVE INPUT from Reddit is the application-only OAuth route, within
+#: its 100 queries per minute per client id. The public .json pages are IDEAS_ONLY.
+REDDIT_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"  # noqa: S105 (a URL)
+REDDIT_API = "https://oauth.reddit.com"
+REDDIT_UA = "python:quant-research-desk.free-stack:v1 (internal research; aggregates only)"
+
+
+def reddit_token(fetch: Fetch, h: Harvest) -> str | None:
+    """An application-only OAuth bearer token, or None (NEEDS_KEY when the keys are absent). The
+    keys are read from the environment and sent only to Reddit's token endpoint; never logged."""
+    import base64
+    cid = os.environ.get("REDDIT_CLIENT_ID") or ""
+    secret = os.environ.get("REDDIT_CLIENT_SECRET") or ""
+    if not (cid and secret):
+        h.failures["NEEDS_KEY"] += 1
+        h.notes.append("reddit_api: REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET absent (NEEDS_KEY)")
+        return None
+    basic = base64.b64encode(f"{cid}:{secret}".encode()).decode("ascii")
+    raw = _get(fetch, h, REDDIT_TOKEN_URL,
+               headers={"Authorization": f"Basic {basic}", "User-Agent": REDDIT_UA,
+                        "Content-Type": "application/x-www-form-urlencoded"},
+               body=b"grant_type=client_credentials")
+    doc = _json(raw)
+    tok = doc.get("access_token") if isinstance(doc, dict) else None
+    if not tok:
+        h.failures["reddit_token"] += 1
+        return None
+    return str(tok)
+
+
 def fetch_reddit(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                  now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
     seen = set(cursor.get("seen_ids") or [])
     posts: list[dict[str, Any]] = []
-    for sub in row.get("subreddits") or ():
-        raw = _get(fetch, h, f"https://www.reddit.com/r/{sub}/new.json?limit=100&raw_json=1")
+    subs = list(row.get("subreddits") or ())
+    token = reddit_token(fetch, h) if subs else None
+    for sub in subs if token else ():
+        raw = _get(fetch, h, f"{REDDIT_API}/r/{sub}/new?limit=100&raw_json=1",
+                   headers={"Authorization": f"bearer {token}", "User-Agent": REDDIT_UA})
         for p in parse_reddit(raw):
             if p["id"] not in seen:
                 seen.add(p["id"])

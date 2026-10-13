@@ -50,11 +50,28 @@ PUBLIC_PAGE = "PUBLIC_PAGE"
 IDEAS_ONLY = "IDEAS_ONLY"
 METHOD_BLOCKED = "METHOD_BLOCKED"
 NEEDS_KEY = "NEEDS_KEY"
+#: A source whose own terms page has not been read into its row (`terms`). For LIVE INPUT this is
+#: never read as permitted: only a row's quoted clause, or the desk's PUBLIC_PAGE default for an
+#: unlisted host, is the evidence a live-input organ acts on.
+UNREAD = "UNREAD"
 #: The statuses that HOLD a source (nothing is fetched from it).
 HOLDING: frozenset[str] = frozenset({METHOD_BLOCKED, NEEDS_KEY})
 #: Kept names: older artifacts and callers spell a refusal with these.
 BLOCKED_WITH_SUBSTITUTE = "BLOCKED_WITH_SUBSTITUTE"
 BLOCKED_TERMS = "BLOCKED_TERMS"
+
+#: Reddit's Data API wiki, read 2026-10-13 (the User Agreement page was SITE_BLOCKED to the reader).
+_REDDIT_DATA_API_WIKI = ("https://support.reddithelp.com/hc/en-us/articles/"
+                         "16160319875092-Reddit-Data-API-Wiki")
+_REDDIT_DATA_API_CLAUSES: dict[str, str] = {
+    "rate_limits": ("We enforce rate limits for those eligible for free access usage of our "
+                    "Data API."),
+    "qpm": "100 queries per minute (QPM) per OAuth client id",
+    "oauth": ("Reddit requires OAuth for authentication. Clients must authenticate with a "
+              "registered OAuth token."),
+    "unauthenticated": ("Traffic not using OAuth or login credentials will be blocked, and the "
+                        "default rate limit will not apply."),
+}
 
 #: THE TABLE. One row per source (or host family). `hosts` match the domain and every subdomain;
 #: `host_labels` match any DNS label containing the fragment; `sources` / `source_prefixes` are
@@ -77,7 +94,11 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                        "permitted route is X's official API")},
     "reddit_api": {"hosts": ("oauth.reddit.com",), "status": API_PERMITTED,
                    "key_env": ("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"),
-                   "why": "Reddit's official Data API within its free-tier limits"},
+                   "sources": ("reddit_api",),
+                   "why": ("Reddit's official Data API (OAuth, application-only) within its "
+                           "free-access limit of 100 queries per minute per client id"),
+                   "terms": {"url": _REDDIT_DATA_API_WIKI, "checked_at": "2026-10-13",
+                             "clauses": _REDDIT_DATA_API_CLAUSES}},
     "reddit": {"hosts": ("reddit.com", "redd.it", "redditmedia.com", "redditstatic.com",
                          "reddituploads.com", "redditblog.com", "pushshift.io", "pullpush.io",
                          "photon-reddit.com", "reveddit.com", "unddit.com", "libredd.it",
@@ -88,7 +109,14 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                            "redlib", "libreddit", "teddit", "reveddit", "unddit"),
                "source_prefixes": ("ext_reddit_", "reddit_", "pushshift_", "pullpush_"),
                "routes": ("reddit", "redlib", "libreddit", "teddit"), "status": IDEAS_ONLY,
-               "why": "public subreddit pages, feeds and archives read politely for ideas"},
+               "live_route": "reddit_api", "permitted_route": "reddit_api",
+               "why": ("public subreddit pages, feeds and archives read politely for ideas; "
+                       "Reddit's Data API terms block traffic not using OAuth, so LIVE INPUT "
+                       "from Reddit goes through reddit_api only (NEEDS_KEY until its keys exist)"),
+               "terms": {"url": _REDDIT_DATA_API_WIKI, "checked_at": "2026-10-13",
+                         "clauses": _REDDIT_DATA_API_CLAUSES,
+                         "unread": {"https://redditinc.com/policies/user-agreement":
+                                    "SITE_BLOCKED to the reader on 2026-10-13: UNREAD"}}},
     "stocktwits_api": {"hosts": ("api.stocktwits.com",), "status": API_PERMITTED,
                        "key_env": ("STOCKTWITS_ACCESS_TOKEN",),
                        "why": "StockTwits' approved API (its Terms s.5 name it the automated "
@@ -99,8 +127,31 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                    "why": ("its Terms s.5 bar automated extraction of its pages, so public "
                            "posts are read for ideas only; data goes through its API")},
     "telegram": {"hosts": ("t.me", "telegram.me"), "routes": ("telegram",),
-                 "status": IDEAS_ONLY,
-                 "why": "public channel previews (t.me/s/...) need no account; read for ideas"},
+                 "sources": ("telegram",), "status": PUBLIC_PAGE,
+                 "why": ("public channel web previews (t.me/s/<channel>) are served to anyone "
+                         "with no account, login, CAPTCHA or region lock; fetched politely at "
+                         "the free stack's 4h cadence, aggregated to daily counts, no content "
+                         "reproduced and nothing used for model training"),
+                 "terms": {"url": "https://telegram.org/tos/content-licensing",
+                           "checked_at": "2026-10-13",
+                           "clauses": {
+                               "intro": ("Telegram provides a platform where users can upload, "
+                                         "share and view content in public and private chats."),
+                               "llm_ai": ("For clarity, Telegram firmly prohibits the scraping, "
+                                          "indexing, harvesting, aggregation or use of data "
+                                          "obtained from its platform to train, fine-tune, "
+                                          "validate or otherwise engage in the development, "
+                                          "enhancement, benchmarking or deployment of artificial "
+                                          "intelligence, machine learning models and similar "
+                                          "technologies."),
+                               "use": ("Access to user-generated content for any purpose other "
+                                       "than ordinary, legitimate, and intended use of the "
+                                       "Telegram platform as its user is prohibited.")},
+                           "reading": ("PUBLIC_PAGE on the coordinator's 2026-10-13 ruling: the "
+                                       "t.me/s preview is the platform's own public web view. "
+                                       "The 'use' clause is restrictive and is kept verbatim so "
+                                       "the principal can overrule; the AI/ML clause is why the "
+                                       "series is a count, never a training corpus.")}},
     "discord_bot": {"hosts": ("discord.com", "discordapp.com", "discord.gg"),
                     "status": API_PERMITTED, "key_env": ("DISCORD_BOT_TOKEN",),
                     "url_level": False,
@@ -122,7 +173,18 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                                    "through any automated means, including use of scripts, "
                                    "crawlers, or similar technologies.")}}},
     "yahoo": {"hosts": ("yahoo.com", "yahoo.co.jp"), "status": IDEAS_ONLY,
-              "why": "public finance pages read for ideas; prices come from MT5"},
+              "sources": ("yahoo", "yahoo_finance"),
+              "why": ("public finance pages read for ideas; its Terms 2.d bar automated "
+                      "collection without express permission, so prices come from MT5"),
+              "terms": {"url": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
+                        "checked_at": "2026-10-13",
+                        "clauses": {
+                            "2.d.9": ("access or collect data, or attempt to access or collect "
+                                      "data, from our Services using any automated means, "
+                                      "devices, programs, algorithms or methodologies, including "
+                                      "but not limited to robots, spiders, scrapers, data mining "
+                                      "tools, or data gathering or extraction tools, for any "
+                                      "purpose without our express, prior permission.")}}},
     "paywall_proxy": {"hosts": ("12ft.io",), "status": METHOD_BLOCKED, "reason": "paywall",
                       "why": "a proxy whose purpose is to get around paywalls"},
 }
@@ -151,6 +213,21 @@ def status(key: str) -> str:
     if st == API_PERMITTED and not all(os.environ.get(k) for k in row.get("key_env") or ()):
         return NEEDS_KEY
     return st
+
+
+def terms_state(key: str) -> str:
+    """READ when the row carries its own terms page and at least one verbatim clause, else
+    UNREAD. Presence of a quote is evidence; its absence is never read as permission."""
+    t = (_row(key).get("terms") or {})
+    return "READ" if t.get("url") and t.get("clauses") else UNREAD
+
+
+def live_input_status(key: str) -> str:
+    """The status that governs LIVE INPUT from a row: its `live_route` row's effective status
+    when it names one (Reddit pages -> reddit_api: NEEDS_KEY until its keys exist), else its
+    own effective status."""
+    route = _row(key).get("live_route")
+    return status(str(route)) if route else status(key)
 
 
 def _view(key: str) -> dict[str, Any]:
@@ -593,9 +670,25 @@ def input_source(*refs: Any) -> str | None:
         r = str(ref or "").strip()
         if not r:
             continue
-        k = source_of_url(r) if ("/" in r or "." in r.split(":")[0]) else None
-        k = k or source_key(r)
-        if k and status(k) in (IDEAS_ONLY, *HOLDING):
+        is_url = "/" in r or "." in r.split(":")[0]
+        k = source_of_url(r) if is_url else None
+        if k:
+            # A URL is the route it names: an IDEAS_ONLY page is never live input, even when
+            # the same source has a permitted API route (www.reddit.com is not oauth.reddit.com).
+            if status(k) in (IDEAS_ONLY, *HOLDING):
+                return k
+            continue
+        k = source_key(r)
+        if not k:
+            continue
+        # A source NAME is live input through its `live_route` when it has one (the free
+        # stack's reddit row fetches oauth.reddit.com): permitted once that route is.
+        route = _row(k).get("live_route")
+        if route:
+            if status(str(route)) in (IDEAS_ONLY, *HOLDING):
+                return str(route)
+            continue
+        if status(k) in (IDEAS_ONLY, *HOLDING):
             return k
     return None
 
@@ -682,7 +775,9 @@ def registry_rows() -> list[dict[str, Any]]:
     """One row per policy entry: source, effective status, why, hosts, permitted route."""
     return [{"platform": name, "source": name, "status": status(name), "why": p["why"],
              "reason": p["why"], "label": f"{name}_policy", "hosts": list(p["hosts"]),
-             "permitted_route": p.get("permitted_route"),
+             "permitted_route": p.get("permitted_route"), "live_route": p.get("live_route"),
+             "terms_state": terms_state(name),
+             "terms_url": (p.get("terms") or {}).get("url"),
              "substitutes": [p["permitted_route"]] if p.get("permitted_route") else []}
             for name, p in SOURCE_POLICY.items()]
 

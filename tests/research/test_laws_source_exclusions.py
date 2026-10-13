@@ -59,7 +59,7 @@ POLICY = (
     ("https://nitter.net/x", "nitter", tf.METHOD_BLOCKED),
     ("https://nitter.some-new-instance.example/x", "nitter", tf.METHOD_BLOCKED),
     ("https://xcancel.com/L1vsun/rss", "nitter", tf.METHOD_BLOCKED),
-    ("https://t.me/s/forexsignals", "telegram", tf.IDEAS_ONLY),
+    ("https://t.me/s/forexsignals", "telegram", tf.PUBLIC_PAGE),
     ("https://www.mql5.com/en/code", "mql5", tf.IDEAS_ONLY),
     ("https://finance.yahoo.com/quote/GC=F", "yahoo", tf.IDEAS_ONLY),
     ("https://12ft.io/https://www.ft.com/x", "paywall_proxy", tf.METHOD_BLOCKED),
@@ -343,15 +343,16 @@ def test_the_free_stack_fetch_helper_never_calls_out_for_a_held_host(url: str) -
 
 
 def test_the_free_stack_reddit_row_is_not_live_input() -> None:
-    """The free stack builds LIVE INPUT series; Reddit's public pages are IDEAS_ONLY, so its row
-    is refused here before its fetcher, with the policy status -- never as a ban."""
+    """The free stack builds LIVE INPUT series; Reddit's live route is its Data API, NEEDS_KEY
+    until REDDIT_CLIENT_ID / _SECRET exist, so with no keys the row is refused here before its
+    fetcher, with the policy status -- never as a ban."""
     from research import free_stack_hunter as H
     roster = json.loads((DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
     row = next(r for r in roster["sources"] if r.get("id") == "reddit")
     called: list[str] = []
     h, extra = H.run_source(row, None, lambda u, hd, b: called.append(u) or b"{}",  # type: ignore[arg-type]
                             {}, datetime(2026, 10, 6, tzinfo=UTC))
-    assert called == [] and extra == {} and h.status == tf.IDEAS_ONLY
+    assert called == [] and extra == {} and h.status == tf.NEEDS_KEY
     assert not h.raw and not h.obs
 
 
@@ -365,7 +366,7 @@ def test_stored_ideas_only_series_mint_no_cell_but_a_public_page_series_does(
               "stocktwits_x": {"id": "stocktwits_x", "kind": "x", "url": ""}}
     grid, skipped = P.build_grid(cols, roster)
     assert grid == []
-    assert skipped == {"reddit": "not live input (IDEAS_ONLY): reddit",
+    assert skipped == {"reddit": "not live input (NEEDS_KEY): reddit_api",
                        "stocktwits_x": "not live input (IDEAS_ONLY): stocktwits"}
 
 
