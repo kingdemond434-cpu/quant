@@ -1731,11 +1731,22 @@ def judging_failures(path: Path | None = None,
                     if str(v.get("why") or "").startswith("NOT_RUN_BUILD_FAILED: BLOCKED_"):
                         continue
                     in_rows[st] = in_rows.get(st, 0) + 1
-            # The sealed loop turns a pool BUILD_FAILED whose reason names a modifier into
-            # a NOT_RUN_MODIFIER row, so MODIFIER rows the pool's own MODIFIER count does not
-            # explain are BUILD_FAILED cells already booked once; never book them twice.
-            spare_mod = max(0, in_rows.get("NOT_RUN_MODIFIER", 0)
-                            - _count(fails.get("NOT_RUN_MODIFIER")))
+            # The sealed loop turns a pool BUILD_FAILED whose reason names a modifier into a
+            # NOT_RUN_MODIFIER row; that row and the pool's BUILD_FAILED count are one cell. Only
+            # a MODIFIER row whose reason the POOL itself recorded (the pool keys its reasons by
+            # the first 300 chars) is traceable to it -- a preflight refusal never reached the
+            # pool -- and no more of them than the pool recorded for that reason.
+            pool_reasons = pw.get("failure_reasons") if isinstance(
+                pw.get("failure_reasons"), dict) else {}
+            mod_left = {str(r): _count(n) for r, n in pool_reasons.items()
+                        if str(r).startswith("NOT_RUN_MODIFIER")}
+            spare_mod = 0
+            for v in verdicts:
+                if isinstance(v, dict) and v.get("downstream_status") == "NOT_RUN_MODIFIER":
+                    key = str(v.get("why") or "")[:300]
+                    if mod_left.get(key, 0) > 0:
+                        mod_left[key] -= 1
+                        spare_mod += 1
             excess = 0
             for k, n in fails.items():
                 # A NOT_RUN_* kind the verdict rows already carry is booked once. But a cell the

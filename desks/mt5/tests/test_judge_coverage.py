@@ -625,11 +625,26 @@ def test_a_pool_build_failure_ruled_as_a_modifier_is_booked_once(tmp_path: Path)
     NOT_RUN_MODIFIER row; that row and the pool's BUILD_FAILED count are one cell, not two."""
     rep = tmp_path / "gates.json"
     rep.write_text(json.dumps({"verdicts": [
-        {"cell": "a", "downstream_status": "NOT_RUN_MODIFIER"},
-        {"cell": "b", "downstream_status": "NOT_RUN_BUILD_FAILED"}],
-        "prewarm": {"failures": {"NOT_RUN_BUILD_FAILED": 3}}}), "utf-8")
+        {"cell": "a", "downstream_status": "NOT_RUN_MODIFIER", "why": "NOT_RUN_MODIFIER: regime"},
+        {"cell": "b", "downstream_status": "NOT_RUN_BUILD_FAILED", "why": "BLOCKED_x"}],
+        "prewarm": {"failures": {"NOT_RUN_BUILD_FAILED": 3},
+                    "failure_reasons": {"NOT_RUN_MODIFIER: regime": 1, "BLOCKED_x": 2}}}),
+        "utf-8")
     f = jc.judging_failures(rep, bank={})
     assert f["last_sweep"] == {"build_fail": 2, "modifier_refused": 1}
+
+
+def test_an_unrelated_modifier_refusal_never_hides_a_pool_failure(tmp_path: Path) -> None:
+    """A preflight modifier refusal never reached the pool, so it cancels none of its failures:
+    one such row plus one pool failure books build_fail 1 and modifier_refused 1."""
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": [
+        {"cell": "a", "downstream_status": "NOT_RUN_MODIFIER",
+         "why": "NOT_RUN_MODIFIER: side_mode unsupported"}],
+        "prewarm": {"failures": {"NOT_RUN_BUILD_FAILED": 1},
+                    "failure_reasons": {"BLOCKED_x: no column": 1}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"] == {"build_fail": 1, "modifier_refused": 1}
 
 
 def test_preflight_blocks_never_hide_pool_failures_and_each_cell_has_one_class(
