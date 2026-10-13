@@ -506,6 +506,7 @@ SOURCE_FEEDS: dict[str, tuple[str, ...]] = {
 #: Options-implied state needs a listed options market on the asset class.
 OPTIONED = frozenset({"fx", "metals", "energy", "indices", "bonds"})
 TOP_GAPS = 25
+MAX_PER_ASSET = 5
 
 
 def clusters_fed(source: str, actor: str, asset: str) -> tuple[str, ...]:
@@ -773,8 +774,9 @@ def build_map(rows: list[dict[str, Any]], regions: Mapping[str, Any],
                             "score": round(parts["asset_weight"] * parts["geo_relevance"]
                                            * (0.5 + parts["novelty"]) * parts["source_prior"],
                                            6)}
-    # ONE ROW PER GROUP, at most two per (source, geography) and four per source: a ranking that
-    # repeats one country forty times is a ranking nobody can spend.
+    # ONE ROW PER GROUP, at most two per (source, geography), four per source and MAX_PER_ASSET
+    # per asset class: a ranking that repeats one country or one asset forty times is a ranking
+    # nobody can spend.
     axes = ("source", "geography", "language", "actor", "asset", "horizon")
     order = sorted(gaps.items(), key=lambda kv: (-kv[1]["new_independent_families"],
                                                  -_num(kv[1]["new_indirect_families"]),
@@ -782,12 +784,14 @@ def build_map(rows: list[dict[str, Any]], regions: Mapping[str, Any],
                                                  -kv[1]["score"], kv[0]))
     per_sg: Counter[tuple[str, ...]] = Counter()
     per_s: Counter[str] = Counter()
+    per_a: Counter[str] = Counter()
     top: list[dict[str, Any]] = []
     for key, g in order:
-        if per_sg[key[:2]] >= 2 or per_s[key[0]] >= 4:
+        if per_sg[key[:2]] >= 2 or per_s[key[0]] >= 4 or per_a[key[4]] >= MAX_PER_ASSET:
             continue
         per_sg[key[:2]] += 1
         per_s[key[0]] += 1
+        per_a[key[4]] += 1
         top.append({"rank": len(top) + 1, "cell": dict(zip(axes[:5], key, strict=True)), **g,
                     "clusters": [{"cluster": c, "new": occupancy.get(c, 1.0)}
                                  for c in g["clusters"]]})
