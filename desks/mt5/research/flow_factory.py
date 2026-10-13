@@ -425,10 +425,17 @@ def day_buckets(path: Path) -> tuple[pd.DataFrame | None, int]:
 def buckets_from_ticks(ms: np.ndarray, mid: np.ndarray, spread: np.ndarray) -> pd.DataFrame:
     """The features of every bucket in a sorted tick run. Pure arithmetic, vectorised."""
     bid, ask = mid - spread / 2.0, mid + spread / 2.0
-    dmid = np.sign(np.diff(mid, prepend=mid[0]))
+
+    def sgn(x: np.ndarray) -> np.ndarray:
+        # bid/ask are rebuilt from mid and spread, so an unchanged quote can differ by float
+        # noise; a change below a billionth of the price is no change.
+        d = np.diff(x, prepend=x[0])
+        return np.where(np.abs(d) <= 1e-9 * np.abs(x), 0.0, np.sign(d))
+
+    dmid = sgn(mid)
     # The tick test on the mid: an unchanged mid inherits the last non-zero sign.
     s = pd.Series(np.where(dmid == 0, np.nan, dmid)).ffill().fillna(0.0).to_numpy()
-    ofi = np.sign(np.diff(bid, prepend=bid[0])) + np.sign(np.diff(ask, prepend=ask[0]))
+    ofi = sgn(bid) + sgn(ask)
     with np.errstate(divide="ignore", invalid="ignore"):
         sbp = np.where(mid > 0, spread / mid * 1e4, np.nan)
     b = (ms // BUCKET_MS) * BUCKET_MS
