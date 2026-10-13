@@ -302,7 +302,8 @@ def test_stressed_nights_charge_both_triple_days() -> None:
     assert swap_world.stressed_nights(wed, wed + pd.Timedelta(hours=2)) == 3
     fri = pd.Timestamp("2026-10-02 23:00")
     assert swap_world.stressed_nights(fri, fri + pd.Timedelta(hours=2)) == 3
-    assert swap_world.stressed_nights(fri, fri + pd.Timedelta(hours=26)) == 4
+    # Saturday's server day ends in no stamp: the weekend is inside Friday's stressed triple.
+    assert swap_world.stressed_nights(fri, fri + pd.Timedelta(hours=26)) == 3
     assert swap_world.baseline_nights(fri, fri + pd.Timedelta(hours=2)) == 1.0
     assert swap_world.stressed_nights(wed, wed) == 0
 

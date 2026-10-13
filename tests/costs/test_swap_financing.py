@@ -66,9 +66,13 @@ def test_wednesday_rollover_carries_three_nights():
     crossing = rollovers_between(wed + pd.Timedelta(hours=ROLLOVER_HOUR_SERVER - 1),
                                  wed + pd.Timedelta(hours=ROLLOVER_HOUR_SERVER + 1))
     assert crossing == 3.0
-    # A full week is seven rollovers with Wednesday counting three: 6 + 3 = 9, not 7.
+    # A full week is five rollovers (Monday-Friday server days; the venue is shut at the
+    # weekend) with Wednesday counting three: 4 + 3 = 7 -- the seven calendar nights, once each.
     assert rollovers_between(pd.Timestamp("2026-09-14 10:00"),
-                             pd.Timestamp("2026-09-21 10:00")) == 9.0
+                             pd.Timestamp("2026-09-21 10:00")) == 7.0
+    # Saturday's and Sunday's server days end in no rollover.
+    assert rollovers_between(pd.Timestamp("2026-09-19 10:00"),
+                             pd.Timestamp("2026-09-21 01:00")) == 0.0
 
 
 def test_intraday_holds_owe_nothing():

@@ -1321,10 +1321,12 @@ def compile_symbol(symbol: str, meta: Mapping[str, Any], broker: Venue, now: dat
                  "stops_level": None, "freeze_level": None, "stops_level_why": STOPS_LEVEL_WHY},
         "margin": margin,
         "settlement": {"state": st.settlement_state,
-                       "rollover_hour_utc": (roll.spec.get("rollover_hour_utc")
-                                             if roll is not None else None),
+                       "rollover_hour_server": (roll.spec.get("rollover_hour_server")
+                                                if roll is not None else None),
                        "triple_swap_weekday": (roll.spec.get("triple_swap_weekday")
                                                if roll is not None else None),
+                       "rollover_weekdays": (roll.spec.get("rollover_weekdays")
+                                             if roll is not None else None),
                        "swap_long": _num(meta.get("swap_long")),
                        "swap_short": _num(meta.get("swap_short")),
                        "currency_profit": meta.get("currency_profit"),

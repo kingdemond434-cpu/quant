@@ -206,7 +206,7 @@ class TestAnAbsentRateIsLOUDRatherThanZero:
             "an UNMEASURED verdict that still published a post-swap expectancy would be zero "
             "wearing a warning label -- the exact laundering L1.28a forbids")
         assert v.breakeven_per_lot == pytest.approx(0.0957 * 40.0 / 1.481)
-        assert "UNMEASURED" in v.why and "NOT read" in v.why
+        assert "UNMEASURED" in v.why and "not read" in v.why
 
     def test_a_supplied_rate_gives_MEASURED_with_both_halves_of_the_arithmetic(self) -> None:
         v = assess("XAUUSD.afternoon", expectancy_r=0.0957, mean_nights=1.481,
