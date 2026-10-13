@@ -39,6 +39,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, p)
 
 import promoter  # noqa: E402
+from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 from mt5desk import decision_core as _dc  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk import provenance  # noqa: E402
@@ -508,7 +509,9 @@ def test_armed_the_first_slice_is_placed_with_the_plans_levels_once_per_bar(tmp_
     assert intent["sleeve"] == _NAME and intent["slice_depth"] == 1
     basket = st["scalp"][_NAME]["basket"]
     assert basket["side"] == -1 and basket["mode"] == "bounded_structural"
-    assert st["scalp"][_NAME]["open_ttl_until"] == plan.ttl_until
+    # Stored on the WALL clock (true UTC); the plan's own ttl_until stays on the bar clock.
+    assert st["scalp"][_NAME]["open_ttl_until"] == sx.ttl_deadline(
+        broker_to_utc(plan.bar_time), "M15", 6)
     # The same bar again: nothing new is placed.
     mt5.positions_get = lambda symbol=None: [SimpleNamespace(comment=f"DW{_NAME}", ticket=7,
                                                              volume=0.03, type=1)]

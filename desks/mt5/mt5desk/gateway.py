@@ -47,7 +47,6 @@ from mt5desk import order_door as _door
 from mt5desk import decision_core as _core
 from mt5desk import position_manager as _pm
 from mt5desk import provenance as _prov
-from mt5desk.broker_clock import broker_to_utc
 from mt5desk.config import desk_root, gateway_paused, terminal_path
 from mt5desk.decision_core import (
     ATR_N,
@@ -3350,6 +3349,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             return {"ok": False, "stage": "risk_envelope", "considered": True,
                     "mark": False, "last_bar": last_bar,
                     "why": f"final risk envelope unmeasured ({type(exc).__name__}: {exc})"}
+    from mt5desk.broker_clock import broker_to_utc as _broker_to_utc
     return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
             "lot": float(lot), "dist": float(dist),
             "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
@@ -3357,7 +3357,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             "population": population,
             # TRUE UTC: `last_bar` is a broker stamp labelled UTC, and this deadline is compared
             # with the wall clock (broker_clock; it fired 2-3h late until 2026-10-13).
-            "ttl_until": family_ttl_until(broker_to_utc(last_bar), g.ttl_bars,
+            "ttl_until": family_ttl_until(_broker_to_utc(last_bar), g.ttl_bars,
                                           _BAR_MINUTES.get(tf, 60)),
             "leg_mult": float(leg_mult), "leg_why": leg_why,
             "macro_mult": float(macro_mult), "macro_why": macro_why,
@@ -4019,6 +4019,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         else:
             # The plan's `ttl_until` is on the BAR clock (the gauntlet replays against it);
             # the gateway compares with the wall clock, so it stores the true UTC instant.
+            from mt5desk.broker_clock import broker_to_utc
             from mt5desk.scalp_exec import ttl_deadline
             srec["open_ttl_until"] = ttl_deadline(broker_to_utc(plan["plan"].bar_time),
                                                   plan["plan"].tf, plan["plan"].max_hold)

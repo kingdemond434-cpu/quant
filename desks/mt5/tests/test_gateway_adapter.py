@@ -35,6 +35,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 from mt5desk import account_profile as _acct_real  # noqa: E402
 from mt5desk import config as _cfg  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
@@ -452,7 +453,8 @@ def test_unarmed_the_family_executor_logs_the_exact_order_and_marks_the_bar(tmp_
     _run_family(ns, st, [_sleeve()], 10_000.0)
     assert mt5.sent == []
     last_bar = dc.h1_frame(rows).index[-2]
-    ttl = dc.family_ttl_until(last_bar, 12)
+    # The deadline is TRUE UTC: the bar is a broker stamp (mt5desk.broker_clock).
+    ttl = dc.family_ttl_until(broker_to_utc(last_bar), 12)
     (line,) = [x for x in ns["_logs"] if "WOULD PLACE" in x]
     # THE LINE NAMES WHICH ARMING TERM IS FALSE, and pinning that is the point of this test.
     # "not armed" told an operator nothing: three independent terms gate a generic send and the
@@ -483,7 +485,8 @@ def test_armed_the_family_executor_sends_the_signals_levels_once_per_bar(tmp_pat
     # A roster row without identity keys places exactly as before and claims none.
     assert "certificate" not in intent and "sleeve_id" not in intent
     last_bar = dc.h1_frame(rows).index[-2]
-    assert st["generic"][_NAME]["open_ttl_until"] == dc.family_ttl_until(last_bar, 12)
+    assert st["generic"][_NAME]["open_ttl_until"] == dc.family_ttl_until(
+        broker_to_utc(last_bar), 12)
     assert [b[0] for b in ns["_book"]] == ["target", "fill", "outcome"]
     assert ns["_book"][1][3] == 0.12 and ns["_book"][1][4] == 1.1103      # the venue's fill
     assert any("FAMILY-EXEC ORDER -> retcode=10009" in x for x in ns["_logs"])
