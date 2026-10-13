@@ -204,3 +204,14 @@ def portable_gateway(monkeypatch, tmp_path):
     assert sdk._test_calls == [], 'Import must not contact or initialize a broker'
     module._test_sdk = sdk
     return module
+
+
+@pytest.fixture(autouse=True)
+def _openrouter_key_info_offline(tmp_path_factory: pytest.TempPathFactory,
+                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test reads the box's OpenRouter account file or asks OpenRouter for it: budgets read
+    the account's daily limit from it, so a box with credit would shift every budget a test pins."""
+    from libs.ops import openrouter_guard
+    monkeypatch.setattr(openrouter_guard, "KEY_INFO",
+                        tmp_path_factory.mktemp("openrouter") / "openrouter_key.json")
+    monkeypatch.setattr(openrouter_guard, "NETWORK", False)

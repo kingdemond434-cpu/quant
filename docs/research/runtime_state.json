@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 782,
+  "NEVER": 787,
   "UNMEASURED": 40
  },
  "scope": {
-  "attested": 1003,
+  "attested": 1008,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -336,7 +336,17 @@
     ]
    },
    {
-    "at": "2026-10-13T20:10:02+00:00",
+    "at": "2026-10-13T17:28:30+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:stop_geometry_derivation"
+    ]
+   },
+   {
+    "at": "2026-10-13T21:34:51+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -350,7 +360,18 @@
     ]
    },
    {
-    "at": "2026-10-13T20:34:51+00:00",
+    "at": "2026-10-13T21:40:27+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:discovery_loop",
+     "leg:queue_consumers"
+    ]
+   },
+   {
+    "at": "2026-10-13T21:40:56+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -358,8 +379,10 @@
     "organs": [
      "fence:check_research_only_data",
      "fence:check_untrusted_content",
+     "leg:measurer_registry",
      "leg:research_only_fence",
-     "leg:measurer_registry"
+     "library:scripts/doctrine.py",
+     "executable:scripts/run_micro_audit.py"
     ]
    }
   ]
@@ -25740,6 +25763,34 @@
    "measured_at": "2026-10-13T15:22:10+00:00"
   },
   {
+   "organ": "leg:stop_geometry_derivation",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/stop_geometry_derivation.py"
+   ],
+   "clock": "hourly_cycle:stop_geometry_derivation",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json",
+   "artifact_declared": "desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-13T17:28:30+00:00"
+  },
+  {
    "organ": "leg:attention_substitutes",
    "kind": "leg",
    "code": [
@@ -25765,7 +25816,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:10:02+00:00"
+   "measured_at": "2026-10-13T21:34:51+00:00"
   },
   {
    "organ": "leg:catalog_routes",
@@ -25793,7 +25844,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:10:02+00:00"
+   "measured_at": "2026-10-13T21:34:51+00:00"
   },
   {
    "organ": "leg:dataset_use_census",
@@ -25821,7 +25872,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:10:02+00:00"
+   "measured_at": "2026-10-13T21:34:51+00:00"
   },
   {
    "organ": "leg:discovery_audit",
@@ -25849,7 +25900,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:10:02+00:00"
+   "measured_at": "2026-10-13T21:34:51+00:00"
   },
   {
    "organ": "leg:forest_attempts",
@@ -25877,7 +25928,63 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:10:02+00:00"
+   "measured_at": "2026-10-13T21:34:51+00:00"
+  },
+  {
+   "organ": "leg:discovery_loop",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/discovery_loop.py"
+   ],
+   "clock": "hourly_cycle:discovery_loop",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DISCOVERY_LOOP.json",
+   "artifact_declared": "desks/mt5/reports/DISCOVERY_LOOP.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-13T21:40:27+00:00"
+  },
+  {
+   "organ": "leg:queue_consumers",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/queue_consumers.py"
+   ],
+   "clock": "hourly_cycle:queue_consumers",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/QUEUE_CONSUMERS.json",
+   "artifact_declared": "desks/mt5/reports/QUEUE_CONSUMERS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-13T21:40:27+00:00"
   },
   {
    "organ": "fence:check_research_only_data",
@@ -25897,9 +26004,9 @@
    "artifact_declared": "data/law_gate.json",
    "artifact_resolved_by": "declared",
    "artifact_declared_n": 1,
-   "artifact_age_s": 95,
-   "artifact_bytes": 9031,
-   "artifact_sha256": "dd8a0268842ea50a943fc0a0a30efc07efe6ebde215fec5ec410eddb9f858f05",
+   "artifact_age_s": 47,
+   "artifact_bytes": 9128,
+   "artifact_sha256": "34038934e3c1d495384256b17a4b13066fc7fc714afa28e38575cdf28709f978",
    "summary": {
     "ok": false
    },
@@ -25907,7 +26014,7 @@
    "consumer": "desks/mt5/research/plumbing_watchdog.py",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:34:51+00:00"
+   "measured_at": "2026-10-13T21:40:56+00:00"
   },
   {
    "organ": "fence:check_untrusted_content",
@@ -25927,9 +26034,9 @@
    "artifact_declared": "data/law_gate.json",
    "artifact_resolved_by": "declared",
    "artifact_declared_n": 1,
-   "artifact_age_s": 95,
-   "artifact_bytes": 9031,
-   "artifact_sha256": "dd8a0268842ea50a943fc0a0a30efc07efe6ebde215fec5ec410eddb9f858f05",
+   "artifact_age_s": 47,
+   "artifact_bytes": 9128,
+   "artifact_sha256": "34038934e3c1d495384256b17a4b13066fc7fc714afa28e38575cdf28709f978",
    "summary": {
     "ok": false
    },
@@ -25937,37 +26044,7 @@
    "consumer": "desks/mt5/research/plumbing_watchdog.py",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:34:51+00:00"
-  },
-  {
-   "organ": "leg:research_only_fence",
-   "kind": "leg",
-   "code": [
-    "desks/mt5/research/research_only_fence.py"
-   ],
-   "clock": "hourly_cycle:research_only_fence",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "UNMEASURED",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read STALE here)",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/RESEARCH_ONLY_DATA.json",
-   "artifact_declared": "desks/mt5/reports/RESEARCH_ONLY_DATA.json",
-   "artifact_resolved_by": "declared",
-   "artifact_declared_n": 1,
-   "artifact_age_s": 15577,
-   "artifact_bytes": 27938,
-   "artifact_sha256": "9aaf998872b1d0aa5067cb05c60e8713a193a38945632d5d2c3b0653a5973bce",
-   "summary": {
-    "status": "OK"
-   },
-   "progress_metric": "leg_completions",
-   "consumer": "UNMEASURED",
-   "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:34:51+00:00"
+   "measured_at": "2026-10-13T21:40:56+00:00"
   },
   {
    "organ": "leg:measurer_registry",
@@ -25995,7 +26072,93 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-13T20:34:51+00:00"
+   "measured_at": "2026-10-13T21:40:56+00:00"
+  },
+  {
+   "organ": "leg:research_only_fence",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/research_only_fence.py"
+   ],
+   "clock": "hourly_cycle:research_only_fence",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/RESEARCH_ONLY_DATA.json",
+   "artifact_declared": "desks/mt5/reports/RESEARCH_ONLY_DATA.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-13T21:40:56+00:00"
+  },
+  {
+   "organ": "library:scripts/doctrine.py",
+   "kind": "library",
+   "code": [
+    "scripts/doctrine.py"
+   ],
+   "clock": "import:scripts/meta_architect.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/meta_architect.json",
+   "artifact_declared": "data/meta_architect.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-13T21:40:56+00:00"
+  },
+  {
+   "organ": "executable:scripts/run_micro_audit.py",
+   "kind": "executable",
+   "code": [
+    "scripts/run_micro_audit.py"
+   ],
+   "clock": "invoked:scripts/check_untrusted_content.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read UNMEASURED here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 47,
+   "artifact_bytes": 9128,
+   "artifact_sha256": "34038934e3c1d495384256b17a4b13066fc7fc714afa28e38575cdf28709f978",
+   "summary": {
+    "ok": false
+   },
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-13T21:40:56+00:00"
   }
  ],
  "ratchet": {
