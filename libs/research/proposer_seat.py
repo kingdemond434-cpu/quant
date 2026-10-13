@@ -429,6 +429,8 @@ def breadth_steer_lines(path: Path | None = None) -> list[str]:
     if front:
         out.append("FRONTIER families (unknown or under-mined; propose for these FIRST): "
                    + ", ".join(front))
+    if isinstance(st.get("basket_policy"), str) and st["basket_policy"]:
+        out.append("BASKETS: " + st["basket_policy"])
     return out
 
 

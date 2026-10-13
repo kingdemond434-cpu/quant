@@ -115,6 +115,93 @@ def test_apportion_is_work_conserving_when_the_frontier_runs_dry() -> None:
     assert len(out) == len(rows)
 
 
+# ------------------------------------------------------------------ residual / RV baskets (L5)
+_CLASSES = {"EURUSD": "forex", "GBPUSD": "forex", "AUDCAD": "forex", "US500": "indices",
+            "XAUUSD": "commodities", "XTIUSD": "energy", "FOO": ""}
+
+
+@pytest.fixture()
+def classes(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(be, "_CLASS_CACHE", dict(_CLASSES))
+
+
+def _res(sym: str, factors: list[str], fam: str = "cross_asset_residual") -> dict[str, Any]:
+    return {"symbol": sym, "family": fam, "params": {"factor_symbols": factors}}
+
+
+def test_basket_kind_reads_every_leg_from_the_registry(classes: None) -> None:
+    assert be.basket_kind(_res("EURUSD", ["GBPUSD", "AUDCAD"])) == be.SAME_CLASS
+    assert be.basket_kind(_res("EURUSD", ["US500", "XAUUSD"])) == be.CROSS_CLASS
+    assert be.basket_kind({"symbol": "EURUSD", "family": "relative_value",
+                           "params": {"peer_symbol": "XTIUSD"}}) == be.CROSS_CLASS
+    assert be.basket_kind({"symbol": "EURUSD", "family": "triangle", "params": {
+        "leg_b_symbol": "GBPUSD", "leg_c_symbol": "AUDCAD"}}) == be.SAME_CLASS
+    assert be.basket_kind(_res("EURUSD", [])) == be.SINGLE
+    assert be.basket_kind(_res("EURUSD", ["FOO"])) == be.UNCLASSIFIED    # absence is no class
+    assert be.basket_kind({"symbol": "EURUSD", "family": "carry"}) == ""
+
+
+def test_same_class_residual_is_saturated_and_cross_class_is_frontier(classes: None) -> None:
+    st = _steer()
+    assert be.row_class(_res("EURUSD", ["GBPUSD"]), st) == be.SATURATED
+    assert be.row_class(_res("EURUSD", ["US500"]), st) == be.CROSS_CLASS
+    assert be.CROSS_CLASS in be.FRONTIER
+    assert be.row_class(_res("EURUSD", []), st) == be.SATURATED          # family's own class
+    assert be.row_class(_res("EURUSD", ["GBPUSD"], "lead_lag"), st) == be.UNDER_MINED
+    # A same-class basket of a family the steer has never certified is still known ground.
+    assert be.row_class(_res("EURUSD", ["GBPUSD"], "relative_value"), st) == be.SATURATED
+    assert be.row_class(_res("EURUSD", ["GBPUSD"]), None) == be.EXPLORED   # no steer: par
+
+
+def test_apportion_steers_residual_mining_to_cross_class_baskets(classes: None) -> None:
+    st = _steer()
+    rows = ([_res("EURUSD", ["GBPUSD", "AUDCAD"]) for _ in range(300)]
+            + [{"family": "explored_fam"} for _ in range(300)]
+            + [_res("EURUSD", ["US500", "XTIUSD"]) for _ in range(50)])
+    out = be.apportion(rows, 200, st)
+    assert sorted(map(id, out)) == sorted(map(id, rows))                # lossless
+    head = Counter(be.basket_kind(r) or r["family"] for r in out[:200])
+    assert head[be.CROSS_CLASS] == 50                                   # every mixed basket first
+    assert head[be.SAME_CLASS] == 20                                    # same-class at the floor
+
+
+def test_baskets_lens_measures_certified_share_and_docket_composition(
+        tmp_path: Path, classes: None) -> None:
+    sleeves = tmp_path / "s.json"
+    sleeves.write_text(json.dumps({"sleeves": [
+        *({"family": "cross_asset_residual", "certificate": {"i": i}} for i in range(4)),
+        *({"family": "carry", "certificate": {"i": i}} for i in range(6)),
+        {"family": "carry", "certificate": None}]}))
+    docket = tmp_path / "d.json"
+    docket.write_text(json.dumps([_res("EURUSD", ["GBPUSD"])] * 30
+                                 + [_res("EURUSD", ["US500"])] * 5 + [{"family": "newfam"}] * 5))
+    out = be.baskets_lens(_steer(), docket=docket, sleeves=sleeves, budget=20)
+    assert out["certified"]["cross_asset_residual_share"] == 0.4         # 4 of 10, measured
+    d = out["docket"]
+    assert d["same_class"] == 30 and d["cross_class"] == 5
+    assert d["head_20_before"]["saturated_share"] == 1.0
+    assert d["head_20_after"]["saturated_share"] == pytest.approx(0.5)  # nothing else to fill
+    assert d["head_20_after"]["cross_class_share"] == 0.25
+    absent = be.baskets_lens(_steer(), docket=tmp_path / "x.json", sleeves=tmp_path / "y.json")
+    assert absent["docket"]["status"] == be.UNMEASURED
+    assert absent["certified"]["status"] == be.UNMEASURED
+
+
+def test_fence_fails_when_same_class_ground_grows_in_the_head(tmp_path: Path) -> None:
+    p = _report(tmp_path, shipped_sat=0.08, frontier=0.6, unknown=0.3)
+    doc = json.loads(p.read_text())
+    doc["baskets"] = {"docket": {"status": "MEASURED", "same_class": 1, "cross_class": 1,
+                                 "head_9_before": {"saturated_share": 0.12},
+                                 "head_9_after": {"saturated_share": 0.10}}}
+    p.write_text(json.dumps(doc))
+    assert fence.judge(p)["verdict"] == "OK"
+    doc["baskets"]["docket"]["head_9_after"]["saturated_share"] = 0.30
+    p.write_text(json.dumps(doc))
+    out = fence.judge(p)
+    assert out["verdict"] == "FAIL"
+    assert any("same-class residual/RV ground grew" in f for f in out["failures"])
+
+
 # ------------------------------------------------------------------------------ judge hour
 def _ranking(fams: list[str]) -> list[dict[str, Any]]:
     return [{"family": f, "rank": i + 1, "ev_per_cell": 1.0, "p": 0.01}
@@ -267,6 +354,9 @@ def test_seat_brief_names_saturated_and_frontier_only_when_fresh(tmp_path: Path)
     p.write_text(json.dumps({"generated_utc": datetime.now(UTC).isoformat(), "steer": st}))
     lines = ps.breadth_steer_lines(p)
     assert "cross_asset_residual (346)" in lines[0] and "ghost_family" in lines[1]
+    p.write_text(json.dumps({"generated_utc": datetime.now(UTC).isoformat(),
+                             "steer": {**st, "basket_policy": be.BASKET_POLICY}}))
+    assert ps.breadth_steer_lines(p)[-1].startswith("BASKETS: residual")
     p.write_text(json.dumps({"generated_utc": (datetime.now(UTC) - timedelta(hours=9))
                              .isoformat(), "steer": st}))
     assert ps.breadth_steer_lines(p) == []

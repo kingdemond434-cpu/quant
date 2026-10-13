@@ -83,7 +83,10 @@ DOCKET = BASE / "data" / "hypotheses" / "external_survivors.json"
 
 UNMEASURED = "UNMEASURED"
 SATURATED, UNKNOWN, UNDER_MINED, EXPLORED = "SATURATED", "UNKNOWN", "UNDER_MINED", "EXPLORED"
-FRONTIER = frozenset({UNKNOWN, UNDER_MINED})
+#: A ROW-LEVEL class (GAP_MAP L5): a residual / relative-value basket that mixes asset classes.
+#: It is frontier ground whatever its family's certificate count -- see `row_class`.
+CROSS_CLASS = "CROSS_CLASS"
+FRONTIER = frozenset({UNKNOWN, UNDER_MINED, CROSS_CLASS})
 
 #: A family holding this many certificates is SATURATED ground: the next certificate there buys a
 #: fraction of an effective bet (k_eff = n/(1+(n-1)rho) is concave in n). The THRESHOLD is a
@@ -348,6 +351,84 @@ def load_steer(path: Path | None = None, *, max_age_h: float = 6.0) -> dict[str,
     return st
 
 
+# ------------------------------------------------------------- residual / RV baskets (L5)
+#: GAP_MAP L5 (2026-10-13): the residual and relative-value families are one mechanism -- a leg
+#: against a basket -- and their certificates are concentrated (cross_asset_residual alone holds
+#: 347 of 892 certified registry rows, 38.9%, measured 2026-10-13; the gap map's "41%" was an
+#: earlier reading). What is SATURATED inside them is the SAME-CLASS basket (an FX leg against FX
+#: factors); what is not is the basket that MIXES asset classes (FX against indices, commodities,
+#: metals, energy, crypto CFDs). So the class is decided per ROW for these families.
+RESIDUAL_RV_FAMILIES = frozenset({"cross_asset_residual", "pca_residual", "relative_value",
+                                  "correlation_regime", "triangle"})
+#: The params naming a basket's other legs, besides `factor_symbols`.
+BASKET_KEYS = ("peer_symbol", "leg_b_symbol", "leg_c_symbol")
+SAME_CLASS, SINGLE, UNCLASSIFIED = "SAME_CLASS", "SINGLE", "UNCLASSIFIED"
+BASKET_POLICY = (
+    "residual / relative-value families (" + ", ".join(sorted(RESIDUAL_RV_FAMILIES)) + "): a "
+    "SAME-CLASS basket (every leg in one asset class) is SATURATED ground and keeps only the "
+    "exploration floor; a basket that MIXES asset classes (FX, indices, commodities, metals, "
+    "energy, crypto CFDs) is FRONTIER ground -- mint those")
+_CLASS_CACHE: dict[str, str] = {}
+
+
+def _asset_class(sym: str) -> str:
+    """MetaTrader's own class for `sym` ('' when unregistered or the registry is unreadable)."""
+    if sym not in _CLASS_CACHE:
+        try:
+            from research.universe_policy import asset_class_of
+            _CLASS_CACHE[sym] = str(asset_class_of(sym) or "")
+        except Exception:
+            _CLASS_CACHE[sym] = ""
+    return _CLASS_CACHE[sym]
+
+
+def basket_symbols(row: Mapping[str, Any]) -> list[str]:
+    """Every leg a residual / RV row names: its symbol, its factors, its peer legs."""
+    p = row.get("params") if isinstance(row.get("params"), Mapping) else {}
+    p = p or {}
+    out = [row.get("symbol") or row.get("sym")]
+    fs = p.get("factor_symbols")
+    if isinstance(fs, (list, tuple)):
+        out.extend(fs)
+    out.extend(p.get(k) for k in BASKET_KEYS)
+    seen: list[str] = []
+    for s in out:
+        if isinstance(s, str) and s.strip() and s.strip() not in seen:
+            seen.append(s.strip())
+    return seen
+
+
+def basket_kind(row: Mapping[str, Any]) -> str:
+    """SAME_CLASS / CROSS_CLASS for a residual / RV basket; SINGLE when the row names one leg
+    (the family's default basket, unknown here); UNCLASSIFIED when any leg is unregistered --
+    absence is never a class (L1.28a). '' for a row outside the residual / RV families."""
+    if str(row.get("family") or "") not in RESIDUAL_RV_FAMILIES:
+        return ""
+    legs = basket_symbols(row)
+    if len(legs) < 2:
+        return SINGLE
+    classes = {_asset_class(s) for s in legs}
+    if "" in classes:
+        return UNCLASSIFIED
+    return SAME_CLASS if len(classes) == 1 else CROSS_CLASS
+
+
+def row_class(row: Any, steer: Mapping[str, Any] | None) -> str:
+    """A row's class under the steer: its family's, except that a residual / RV basket is
+    SATURATED when it is same-class and CROSS_CLASS (frontier) when it mixes classes. A single-leg
+    or unclassified basket keeps its family's class. No measured steer: EXPLORED, as `class_of`."""
+    fam = str((row or {}).get("family") or "") if isinstance(row, Mapping) else ""
+    base = class_of(fam, steer)
+    if not steer or steer.get("status") != "MEASURED" or fam not in RESIDUAL_RV_FAMILIES:
+        return base
+    kind = basket_kind(row)
+    if kind == SAME_CLASS:
+        return SATURATED
+    if kind == CROSS_CLASS:
+        return base if base in (UNKNOWN, UNDER_MINED) else CROSS_CLASS
+    return base
+
+
 # ------------------------------------------------------------------------------ the primitive
 def apportion(rows: list[Any], budget: int, steer: Mapping[str, Any] | None = None, *,
               family: Callable[[Any], str] | None = None) -> list[Any]:
@@ -363,18 +444,22 @@ def apportion(rows: list[Any], budget: int, steer: Mapping[str, Any] | None = No
     st = steer if steer is not None else load_steer()
     if not st or st.get("status") != "MEASURED" or budget <= 0 or not rows:
         return list(rows)
-    fam = family or (lambda r: str((r or {}).get("family") or ""))
+    # A family callable classifies by family alone; the default classifies each ROW, so a
+    # same-class residual / RV basket is saturated and a cross-class one is frontier (L5).
+    def cls_of(r: Any) -> str:
+        return class_of(family(r), st) if family is not None else row_class(r, st)
+
     fr: list[Any] = []
     ex: list[Any] = []
     sa: list[Any] = []
     for r in rows:
-        c = class_of(fam(r), st)
+        c = cls_of(r)
         (sa if c == SATURATED else fr if c in FRONTIER else ex).append(r)
     nonsat = fr + ex
     # A FLOOR THAT IS ALSO A CEILING, NEVER A QUOTA: the saturated set keeps what the producer's
     # own head already gave it, up to SAT_EXPLORE_SHARE -- the steer never ADDS saturated cells
     # to a head that had fewer -- and more only when nothing else can fill the budget.
-    natural = sum(1 for r in rows[:budget] if class_of(fam(r), st) == SATURATED)
+    natural = sum(1 for r in rows[:budget] if cls_of(r) == SATURATED)
     n_sat = min(len(sa), max(min(natural, math.ceil(SAT_EXPLORE_SHARE * budget)),
                              budget - len(nonsat)))
     head_ns = nonsat[:max(0, budget - n_sat)]
@@ -667,6 +752,67 @@ def mint_lens(steer: Mapping[str, Any], *, census: Path | None = None,
             "producers": producers}
 
 
+def baskets_lens(steer: Mapping[str, Any], *, docket: Path | None = None,
+                 sleeves: Path | None = None, budget: int = 40_000) -> dict[str, Any]:
+    """GAP_MAP L5, measured: the certified share of the residual / RV families, the basket
+    composition of the docket's residual / RV rows (same-class vs cross-class), and what a
+    `budget`-row head of the docket holds of each before and after `apportion`."""
+    out: dict[str, Any] = {"policy": BASKET_POLICY, "families": sorted(RESIDUAL_RV_FAMILIES)}
+    doc = _read(sleeves or SLEEVES)
+    srows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    certified = [r for r in (srows if isinstance(srows, list) else [])
+                 if isinstance(r, dict) and r.get("certificate") and r.get("family")]
+    if certified:
+        fc = Counter(str(r["family"]) for r in certified)
+        out["certified"] = {
+            "total": len(certified),
+            "by_family": {f: fc.get(f, 0) for f in sorted(RESIDUAL_RV_FAMILIES)},
+            "cross_asset_residual_share": round(fc.get("cross_asset_residual", 0)
+                                                / len(certified), 4),
+            "residual_rv_share": round(sum(fc.get(f, 0) for f in RESIDUAL_RV_FAMILIES)
+                                       / len(certified), 4),
+            "basket_composition": ("UNMEASURED here: a registry certificate carries the cell's "
+                                   "param digest, not its basket; the spec is joinable only "
+                                   "where the docket still holds it")}
+    else:
+        out["certified"] = {"status": UNMEASURED, "why": "no certified registry rows readable"}
+    path = docket or DOCKET
+    try:
+        size = path.stat().st_size
+    except OSError:
+        size = -1
+    if not 0 < size <= MAX_DOCKET_BYTES:
+        out["docket"] = {"status": UNMEASURED,
+                         "why": "docket absent" if size <= 0 else "docket over MAX_DOCKET_BYTES"}
+        return out
+    rows = _read(path)
+    rows = [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
+    comp: dict[str, Counter[str]] = {}
+    for r in rows:
+        k = basket_kind(r)
+        if k:
+            comp.setdefault(str(r.get("family")), Counter())[k] += 1
+
+    def _head(order: list[dict[str, Any]]) -> dict[str, Any]:
+        c = Counter(row_class(r, steer) for r in order[:budget])
+        n = sum(c.values()) or 1
+        rrv = Counter(basket_kind(r) for r in order[:budget] if basket_kind(r))
+        return {"n": sum(c.values()), "saturated_share": round(c[SATURATED] / n, 4),
+                "frontier_share": round(sum(c[k] for k in FRONTIER) / n, 4),
+                "cross_class_share": round(c[CROSS_CLASS] / n, 4),
+                "residual_rv_baskets": dict(rrv)}
+
+    out["docket"] = {
+        "status": "MEASURED", "rows": len(rows), "docket_mtime": _mtime(path),
+        "composition": {f: dict(c) for f, c in sorted(comp.items())},
+        "same_class": sum(c[SAME_CLASS] for c in comp.values()),
+        "cross_class": sum(c[CROSS_CLASS] for c in comp.values()),
+        f"head_{budget}_before": _head(rows),
+        f"head_{budget}_after": _head(apportion(rows, budget, steer)),
+    }
+    return out
+
+
 # ------------------------------------------------------------------------------ the pass
 def build(now: datetime | None = None) -> dict[str, Any]:
     at = now or _now()
@@ -692,6 +838,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     doc["verdicts"] = verdict_lens(jc, steer, now=at)
     doc["verdicts"]["steer_in_force"] = bool((doc["gauntlet"] or {}).get("steer_in_force"))
     doc["mint"] = mint_lens(steer)
+    doc["steer"]["basket_policy"] = BASKET_POLICY
+    doc["baskets"] = baskets_lens(steer)
     doc["missed_growth_lines"] = (doc["judge"].get("missed_growth_lines") or [])
     doc["verdict"] = "MEASURED"
     return doc
@@ -731,6 +879,19 @@ def render(doc: dict[str, Any]) -> list[str]:
     if m.get("status") == "MEASURED":
         lines.append(f"  mint all producers  saturated {m['saturated_share']:.3f}  frontier "
                      f"{m['frontier_share']:.3f}  (n={m['n']})")
+    b = doc.get("baskets") or {}
+    c = b.get("certified") or {}
+    if c.get("total"):
+        lines.append(f"  certified: cross_asset_residual {c['cross_asset_residual_share']:.3f}, "
+                     f"residual/RV {c['residual_rv_share']:.3f} of {c['total']}")
+    d = b.get("docket") or {}
+    if d.get("status") == "MEASURED":
+        lines.append(f"  residual/RV baskets in docket: same-class {d['same_class']}  "
+                     f"cross-class {d['cross_class']}")
+        for k in sorted(k for k in d if k.startswith("head_")):
+            h = d[k]
+            lines.append(f"  {k:18s} saturated {h['saturated_share']:.3f}  frontier "
+                         f"{h['frontier_share']:.3f}  cross-class {h['cross_class_share']:.3f}")
     return lines
 
 

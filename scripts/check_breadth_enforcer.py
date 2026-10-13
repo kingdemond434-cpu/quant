@@ -151,6 +151,23 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                    else "UNMEASURED", "all_producers": m.get("all_producers"),
                    "enforced": sorted(enforced), "basis": m.get("basis")})
 
+    # 3b. RESIDUAL / RV BASKETS (GAP_MAP L5): the apportioned docket head may not hold MORE
+    # saturated ground (same-class baskets included) than both the floor and what the producer's
+    # own order already gave it -- the steer can only redirect toward cross-class baskets.
+    bd = (doc.get("baskets") or {}).get("docket") or {}
+    heads = sorted(k for k in bd if k.startswith("head_") and k.endswith("_before"))
+    for kb in heads:
+        ka = kb[: -len("_before")] + "_after"
+        hb, ha = bd.get(kb) or {}, bd.get(ka) or {}
+        sb, sa_ = float(hb.get("saturated_share") or 0.0), float(ha.get("saturated_share") or 0.0)
+        if sa_ > max(floor, sb) + tol:
+            fail.append(f"baskets {ka}: saturated share {sa_:.3f} > max(floor {floor:.2f}, "
+                        f"before {sb:.3f}) + {tol:.2f} -- same-class residual/RV ground grew")
+    if bd.get("status") == "MEASURED":
+        checks.append({"metric": "residual_rv_baskets", "state": "OK",
+                       "same_class": bd.get("same_class"), "cross_class": bd.get("cross_class"),
+                       "certified": (doc.get("baskets") or {}).get("certified")})
+
     # 4. TOTAL NEVER REDUCED -- the replay must hand out exactly what the legacy walk did.
     tl, ts = j.get("total_cells_legacy"), j.get("total_cells_steered")
     if isinstance(tl, int) and isinstance(ts, int) and ts < tl:
