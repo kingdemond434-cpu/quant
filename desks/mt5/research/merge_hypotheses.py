@@ -30,6 +30,25 @@ HYP = BASE / "data" / "hypotheses"
 TARGET = HYP / "external_survivors.json"
 
 
+def _instant(raw: object) -> datetime | None:
+    """An ISO-8601 stamp as an aware UTC instant; None when absent or unparseable."""
+    try:
+        at = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return at if at.tzinfo is not None else at.replace(tzinfo=UTC)
+
+
+def keep_earliest_first_seen(row: dict[str, Any], banked: dict[str, Any], now: datetime) -> None:
+    """THE EARLIEST SIGHTING WINS (audit of #330): a re-minted row carrying a fresh first_seen
+    must not reset the age the pre-judge's flag bound and the burn-down's inflow read."""
+    old = banked.get("first_seen") or banked.get("merged_at")
+    t_old, t_cur = _instant(old), _instant(row.get("first_seen"))
+    if t_old is not None and (t_cur is None or t_old < t_cur):
+        row["first_seen"] = old
+    row.setdefault("first_seen", now.isoformat())
+
+
 def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, Any]) -> None:
     """Stream the large docket without a second, multi-gigabyte JSON string.
 
@@ -819,8 +838,7 @@ def main() -> int:
                 continue
             ident = _identity(row)
             if ident in merged:
-                merged[ident].setdefault("first_seen", row.get("first_seen")
-                                         or row.get("merged_at") or now.isoformat())
+                keep_earliest_first_seen(merged[ident], row, now)
                 continue
             # THE BANK MUST BE FILTERED TOO. Without this, every untradeable row ever minted is
             # re-admitted from the bank on every run and the filter above only catches the ones
