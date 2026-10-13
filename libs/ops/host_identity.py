@@ -56,6 +56,13 @@ OFF_BOX = "OFF_BOX"
 #: Only the fallback for a checkout whose config cannot be read (the Contabo trading box).
 DEFAULT_TRADING_HOSTNAME = "vmi3571445"
 _WIN_KEY = r"SOFTWARE\Microsoft\Cryptography"
+#: DNS domains under which a fully-qualified name may still name a declared host. EMPTY ON PURPOSE.
+#: Every hostname the trading box has ever recorded -- `config/trading_host.json`, the committed
+#: attestation and placement-interlock stamps -- is the bare label, `vmi3571445` or `VMI3571445`
+#: (Windows reports it upper-case); no stamp written on the box carries a domain. Dropping ANY
+#: suffix let `vmi3571445.evil.com` read as the box (audit of #267, 2026-10-07). Add a domain here
+#: only after a stamp written ON the box records it.
+TRUSTED_DOMAINS: tuple[str, ...] = ()
 
 
 def read_machine_id() -> str | None:
@@ -84,6 +91,30 @@ def read_hostname() -> str:
         return socket.gethostname() or ""
     except Exception:
         return ""
+
+
+def host_key(name: object) -> str:
+    """A hostname as an identity compares it -- THE one normalisation every hostname check shares
+    (`classify` here, `runtime_attestation.is_desk_host` and the drift / on-host checks in
+    `scripts/check_runtime_attestation.py`).
+
+    Stripped, casefolded and without a trailing root dot, because Windows reports the box as
+    `VMI3571445` while every config and stamp holds `vmi3571445`. A domain suffix is dropped ONLY
+    when it is in `TRUSTED_DOMAINS`; any other fully-qualified name keeps its whole spelling, so
+    `vmi3571445.evil.com` keys as itself, never as the box, and a stamp claiming it while measured
+    on `vmi3571445` reads as host drift rather than as the same machine.
+    """
+    full = str(name or "").strip().casefold().rstrip(".")
+    label, _, domain = full.partition(".")
+    return label if not domain or domain in TRUSTED_DOMAINS else full
+
+
+def names_host(name: object, declared: Any) -> bool:
+    """Does `name` name one of the `declared` hosts? Case-insensitive; a domain counts only when
+    trusted (`host_key`). An empty name names nothing."""
+    key = host_key(name)
+    hosts = (declared,) if isinstance(declared, str) else tuple(declared)
+    return bool(key) and key in {host_key(h) for h in hosts}
 
 
 def load_config(path: Path | None = None) -> dict[str, Any]:
@@ -137,7 +168,7 @@ def classify(machine_id: str | None, hostname: str,
     recorded = recorded_machine_id(cfg)
     thost = trading_hostname(cfg)
     mid = (machine_id or "").strip().lower() or None
-    host_match = bool(hostname) and hostname.lower().split(".")[0] == thost.lower()
+    host_match = names_host(hostname, thost)
     if mid and recorded:
         verdict = TRADING if mid == recorded else OFF_BOX
         why = ("machine id equals the recorded trading-box id" if verdict == TRADING

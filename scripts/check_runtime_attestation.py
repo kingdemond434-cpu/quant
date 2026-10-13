@@ -102,14 +102,15 @@ def measure(root: Path | None = None) -> dict[str, Any]:
     if claimed == ra.UNMEASURED or measured == ra.UNMEASURED:
         out["failures"].append("the attestation names no host: it must say which machine it "
                                "measured or it is describing none")
-    elif claimed != measured:
+    elif ra.host_key(claimed) != ra.host_key(measured):
         out["failures"].append(f"host drift: the document claims host {claimed!r} while the "
                                f"measurement inside it was taken on {measured!r}")
     if not str(host.get("role_evidence") or "").strip():
         out["failures"].append("the attestation's role is asserted, not measured: no "
                                "role_evidence")
 
-    out["on_attesting_host"] = (measured != ra.UNMEASURED and measured == here)
+    out["on_attesting_host"] = (measured != ra.UNMEASURED
+                              and ra.host_key(measured) == ra.host_key(here))
     try:
         gen = datetime.fromisoformat(out["generated_at"])
         age = (datetime.now(tz=UTC) - gen).total_seconds()

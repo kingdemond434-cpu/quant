@@ -75,6 +75,8 @@ ROOT = DESK.parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.ops import host_identity as _hid  # noqa: E402
+
 #: The one string for "this tree does not know" (L1.28a). Never a zero, never an empty cell.
 UNMEASURED = "UNMEASURED"
 
@@ -208,6 +210,30 @@ def _read_json(path: Path, max_bytes: int = MAX_PARSE_BYTES) -> dict[str, Any] |
 #: stamp's machine id matches this machine's AND this machine's name is declared here.
 DESK_HOSTS: tuple[str, ...] = ("vmi3571445",)
 
+
+def host_key(name: object) -> str:
+    """A hostname as an identity compares it: `libs.ops.host_identity.host_key`, the one shared
+    normalisation (casefolded, stripped, a domain dropped only when trusted).
+
+    Windows reports the box's name in UPPER CASE ("VMI3571445") while `DESK_HOSTS` and the
+    committed stamps hold it lower-case. A case-sensitive `in DESK_HOSTS` stamped the box itself
+    `desk_host: false`, and a non-desk attestation is never judged stale -- the fence failed OPEN
+    on exactly the machine it exists to watch. Dropping EVERY domain then let
+    `vmi3571445.evil.com` stamp itself a desk host, seed the ratchet floor and hide host drift
+    (audit of #267), so an untrusted domain now keeps the whole name. Every hostname comparison in
+    this module and in `scripts/check_runtime_attestation.py` goes through this key, the same one
+    `host_identity.classify` uses. The raw name is still what gets recorded.
+    """
+    return _hid.host_key(name)
+
+
+def is_desk_host(name: object) -> bool:
+    """Is `name` one of the declared desk hosts? Case-insensitive; a fully-qualified name only
+    under a trusted domain (`host_identity.TRUSTED_DOMAINS`), so a spoofed `<box>.evil.com` is
+    not a desk host and cannot seed the ratchet floor."""
+    return _hid.names_host(name, DESK_HOSTS)
+
+
 #: How a stamp with no machine id reads: written before identities were recorded, so nothing can
 #: confirm or refute that this machine wrote it. Not a defect in the document -- just unverifiable.
 UNVERIFIABLE = "UNVERIFIABLE (old-format host stamp: no machine_id)"
@@ -233,7 +259,7 @@ def host_identity_key() -> dict[str, Any]:
     """The identity recorded in every host stamp: name, machine id, and whether the name is one
     of the declared desk hosts."""
     name = socket.gethostname()
-    return {"hostname": name, "machine_id": _machine_id(), "desk_host": name in DESK_HOSTS}
+    return {"hostname": name, "machine_id": _machine_id(), "desk_host": is_desk_host(name)}
 
 
 def attesting_identity(doc: dict[str, Any]) -> tuple[bool, str]:
@@ -247,7 +273,8 @@ def attesting_identity(doc: dict[str, Any]) -> tuple[bool, str]:
     mid = h.get("machine_id")
     if not isinstance(mid, str) or not mid or mid == UNMEASURED:
         return False, f"{UNVERIFIABLE}; stamp names {name}"
-    if me["machine_id"] == UNMEASURED or mid != me["machine_id"] or name != me["hostname"]:
+    if (me["machine_id"] == UNMEASURED or mid != me["machine_id"]
+            or host_key(name) != host_key(me["hostname"])):
         return False, f"off-host: stamp is {name}/{mid[:12]}, this is " \
                       f"{me['hostname']}/{str(me['machine_id'])[:12]}"
     if not me["desk_host"]:
@@ -368,7 +395,7 @@ def run_index(paths: Paths, *, hostname: str | None = None,
         stamp = d.get("host")
         if stamp is None or stamp == "":
             return trust_unstamped
-        return hostname is None or str(stamp) == hostname
+        return hostname is None or host_key(stamp) == host_key(hostname)
 
     def put(name: str, at: str, outcome: str, source: str, extra: dict[str, Any]) -> None:
         if not name or not at:
