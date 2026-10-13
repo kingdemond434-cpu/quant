@@ -1564,7 +1564,10 @@ def _refused_ns(book, sent, logs, booked, tmp_path):
         positions_get=lambda *a, **k: [p for p in book
                                        if not k.get("symbol") or p.symbol == k["symbol"]],
         symbol_info_tick=lambda symbol: SimpleNamespace(bid=0.7130, ask=0.7132),
-        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009)))
+        # A filled close removes its position, as the venue does.
+        order_send=lambda req: (sent.append(req) or book.__setitem__(
+            slice(None), [p for p in book if p.ticket != req.get("position")])
+            or SimpleNamespace(retcode=10009)))
     flag = tmp_path / "GENERIC_EXEC_ENABLED"
     flag.write_text("1", "utf-8")
     return _exec(("close_refused_sleeve_ttls", "close_sleeve_positions", "_sleeve_positions",
