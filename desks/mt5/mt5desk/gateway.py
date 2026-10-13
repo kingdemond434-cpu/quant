@@ -3651,6 +3651,11 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        intended=entry_ref, sl=float(g.stop), tp=float(g.target),
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice, latency_ms=_lat_ms,
+                       # THE SIGNAL THIS SEND ACTS ON AND ITS CERTIFIED TIME EXIT (2026-10-13),
+                       # recorded so the trade autopsy can judge signal age, a missed time
+                       # exit and a second send on one bar. Broker-labelled, as the bars are.
+                       signal_bar=str(plan.get("last_bar")), ttl_until=ttl_until,
+                       bar_minutes=int(_BAR_MINUTES.get(str(plan.get("tf") or "H1"), 60)),
                        # A MARKET ORDER'S FILL IS KNOWN AT SEND TIME AND WAS THROWN AWAY. The
                        # venue answers `order_send` with the price it filled at; recording it
                        # here means slippage on this order is complete before it ever closes,

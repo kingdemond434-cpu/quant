@@ -36,10 +36,23 @@ CERT = {"enabled": True, "fusion": {"AUDCHF_overnight_gap_decay_asia": 0.1}}
 SLEEVES = {"sleeves": [{"name": NAME, "status": "LIVE", "shadow_exp": 0.2}]}
 
 
-def _build(deals, intents=(INTENT,), resolved=None, balance=484.83, e8=None, blocked=()):
-    return la.build(NOW, deals=list(deals), intents=list(intents), sleeves_doc=SLEEVES,
-                    cert=CERT, account={"balance": balance}, drift={},
-                    resolved=resolved or {}, e8_ledger=e8, e8_journals=[], blocked=blocked)
+#: The certificate's cost model for AUDCHF: one 10-point spread per side, 0.12R of an 86-point stop.
+UNIVERSE = {"AUDCHF": {"median_spread_pts": 10.0, "tick_size": 1e-05}}
+#: Stands in for git: the AUDCHF fix is a real commit in the running release, nothing else is.
+REAL_FIX = "441071a47"
+
+
+def _verified(v: object) -> bool:
+    return str(v).split()[0] == REAL_FIX if isinstance(v, str) and v.strip() else False
+
+
+def _build(deals, intents=(INTENT,), resolved=None, balance=484.83, e8=None, blocked=(),
+           sleeves=None, cert=None):
+    return la.build(NOW, deals=list(deals), intents=list(intents),
+                    sleeves_doc=sleeves or SLEEVES, cert=CERT if cert is None else cert,
+                    account={"balance": balance}, drift={}, resolved=resolved or {},
+                    e8_ledger=e8, e8_journals=[], blocked=blocked, universe=UNIVERSE,
+                    verify_fix=_verified)
 
 
 def test_the_audchf_loss_is_an_oversize_defect_until_its_fix_is_named() -> None:
@@ -190,3 +203,67 @@ def test_a_clock_entry_the_live_sleeve_never_sent_is_a_missed_trade() -> None:
                      sleeves_doc=roster, cert=CERT, account={}, drift={}, resolved={},
                      e8_ledger=[], e8_journals=[], blocked=[], shadow=shadow)
     assert [m["kind"] for m in early["clock_misses"]] == ["unclocked"]   # still in its grace
+
+
+# ------------------------------------------------- audit 2026-10-13: defects that read NATURAL
+
+CLEAN = {**AUDCHF, "pl_quote": -40.0, "r_multiple": -1.0, "commission": 0.0}
+
+
+def _kinds(deal, intent=INTENT, **kw):
+    row = _build([deal], intents=[intent], balance=400.0 - 40.0, **kw)["rows"][0]
+    return row, {f["defect"] for f in row["defects"]}
+
+
+def test_each_fault_the_audit_named_is_a_defect_not_natural() -> None:
+    row, kinds = _kinds(CLEAN)
+    assert row["verdict"] == la.NATURAL and not kinds          # the clean trade stays clean
+    pend = {**INTENT, "order_type": "pending_stop", "intended": 0.5808}
+    assert "entry_slippage" in _kinds({**CLEAN, "entry_price": 0.58110}, pend)[1]
+    assert "lot_mismatch" in _kinds({**CLEAN, "volume": 1.58})[1]
+    assert "no_stop" in _kinds(CLEAN, {**INTENT, "sl": None})[1]
+    # +2h where the venue runs EEST (+3h) that date: the old "either offset" rule passed it
+    assert "clock" in _kinds({**CLEAN, "entry_time": "2026-10-13T00:41:26+00:00"})[1]
+    stale = {**INTENT, "signal_bar": "2026-10-12 23:00:00+00:00"}      # closed 21:00 UTC
+    assert "stale_signal" in _kinds(CLEAN, stale)[1]
+    fresh = {**INTENT, "signal_bar": "2026-10-13 00:00:00+00:00"}      # closed 22:00 UTC
+    assert "stale_signal" not in _kinds(CLEAN, fresh)[1]
+    late = {**INTENT, "ttl_until": "2026-10-13 02:00:00+00:00"}        # 23:00 UTC; closed 03:07
+    assert "missed_time_exit" in _kinds({**CLEAN, "fill_price": 0.5803}, late)[1]
+    assert "missed_time_exit" not in _kinds(CLEAN, late)[1]           # closed AT its stop
+    twin = {**INTENT, "intent_id": "i2", "ticket": 1}
+    doc = _build([CLEAN], intents=[{**twin, "time": "2026-10-12T22:41:05+00:00"}, INTENT],
+                 balance=360.0)
+    assert "duplicate_order" in {f["defect"] for f in doc["rows"][0]["defects"]}
+
+
+def test_over_allocation_reads_the_roster_when_the_book_is_off() -> None:
+    big = {"sleeves": [{"name": NAME, "status": "LIVE", "risk_frac": 0.05}]}
+    row = _build([CLEAN], balance=360.0, sleeves=big, cert={"enabled": False})["rows"][0]
+    assert "over_allocation" in {f["defect"] for f in row["defects"]}
+    bare = {"sleeves": [{"name": NAME, "status": "LIVE"}]}
+    row = _build([CLEAN], balance=360.0, sleeves=bare, cert={"enabled": False})["rows"][0]
+    assert row["verdict"] == la.UNMEASURED and "over_allocation" in row["unmeasured"]
+
+
+def test_an_unmeasured_check_or_a_missing_r_is_never_natural() -> None:
+    blind = {k: v for k, v in INTENT.items() if k not in ("latency_ms",)}
+    row = _build([CLEAN], intents=[blind], balance=360.0)["rows"][0]
+    assert row["verdict"] == la.UNMEASURED and "stale_quote" in row["unmeasured"]
+    no_r = {**CLEAN, "r_multiple": None}
+    doc = _build([no_r], balance=360.0, e8=[])
+    assert doc["rows"][0]["verdict"] == la.UNMEASURED and doc["verdict"] == la.UNMEASURED
+
+
+def test_a_fix_closes_a_defect_only_as_a_real_commit_in_the_running_release() -> None:
+    for fake in ("x", True, "deadbeef0", ""):
+        bad = {"resolved": {"210461494": {"oversize": fake, "over_allocation": fake}}}
+        assert _build([AUDCHF], resolved=bad, balance=561.26 - 74.58)["rows"][0]["open"]
+    assert not la.fix_commit_ok("x", "HEAD") and not la.fix_commit_ok(True, "HEAD")
+    assert not la.fix_commit_ok("441071a47", None)                    # no release: unproven
+
+
+def test_the_broker_offset_follows_eu_summer_time() -> None:
+    assert la.broker_offset_h(datetime(2026, 10, 13, tzinfo=UTC)) == 3
+    assert la.broker_offset_h(datetime(2026, 10, 26, tzinfo=UTC)) == 2   # after 10-25
+    assert la.broker_offset_h(datetime(2026, 3, 30, tzinfo=UTC)) == 3    # after 03-29

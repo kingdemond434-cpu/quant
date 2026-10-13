@@ -27,6 +27,16 @@ questions of every losing close, every hour, and answers each with one of three 
                                     time shifted by the broker's +2h/+3h
                   untraced          no order intent joins the close by ticket
                   unattributed      the close carries no sleeve, or a stem two roster names share
+                  lot_mismatch      the position held more lots than its intent sent
+                  no_stop           the intent or the closing deal carries no stop
+                  stale_signal      sent more than one bar after its signal bar closed
+                  missed_time_exit  held past its certified time exit, closed at neither level
+                  duplicate_order   a second intent for the same sleeve and signal bar
+    Slippage is judged against the CERTIFICATE'S cost model (`median_spread_pts` x tick, the
+    spread engine.Costs charged per side), on market and pending orders alike; the clock
+    against the broker's offset ON THAT DATE (EEST +3 / EET +2), never either.
+    UNMEASURED  no defect found but a check could not run, or the close carries no R: a loss
+                is never NATURAL on checks that did not happen (audit 2026-10-13).
     EDGE_DECAY  no defect, and the sleeve's edge is going: drift_monitor's own hazard calls it
                 AT_RISK or BREAKING, or its live mean R sits more than DECAY_Z standard errors
                 under its certified expectancy. The allocator already prices that hazard as the
@@ -80,6 +90,8 @@ ACCOUNT = BASE / "data" / "account_state.json"
 DRIFT = BASE / "reports" / "DRIFT.json"
 RESOLVED = BASE / "data" / "loss_defects_resolved.json"
 FIX_QUEUE = BASE / "data" / "loss_fix_queue.jsonl"
+UNIVERSE = BASE / "data" / "universe" / "universe.json"
+RELEASE_IDENTITY = BASE / "data" / "release_identity.json"
 SHADOW_STATE = BASE / "reports" / "shadow" / "shadow_state.json"
 #: How far either side of the clock's entry a live send still counts as the same trade.
 CLOCK_MATCH_S = 5400.0
@@ -110,6 +122,9 @@ LATE_FILL_S = 60.0         # a market fill this long after its intent is a late 
 COST_SLIP_R = 0.05         # slippage between this and SLIP_R is a cost, not yet a fault
 SPREAD_R = 0.10            # a spread over a tenth of the stop is a costly entry
 DECAY_MIN_N = 8
+LOT_TOL = 1.05             # held over 105% of the sent lot (one volume step of rounding)
+TTL_GRACE_S = 900.0        # the TTL housekeeping runs every pass; past a quarter hour it missed
+SIGNAL_BAR_MIN = 60        # an intent with no `tf` was sent by an H1 lane
 STEM = 27                  # the ledger's sleeve stem (`gateway.COMMENT_MAX` - len("DW"))
 
 
@@ -221,9 +236,73 @@ def resolve_sleeve(deal: Mapping[str, Any], intent: Mapping[str, Any] | None,
     return None, f"stem {stem!r} is carried by {len(hits)} roster names"
 
 
+def broker_offset_h(t: datetime) -> int:
+    """The venue's offset from UTC at instant `t`: EET/EEST, so +3 from 01:00 UTC on the last
+    Sunday of March to 01:00 UTC on the last Sunday of October, else +2."""
+    def last_sunday(month: int) -> datetime:
+        d = datetime(t.year, month, 31, 1, 0, tzinfo=UTC)
+        return d - timedelta(days=(d.weekday() + 1) % 7)
+    return 3 if last_sunday(3) <= t.astimezone(UTC) < last_sunday(10) else 2
+
+
+def slip_allowance_r(symbol: str, dist: float, universe: Any) -> float | None:
+    """The entry slippage the certificate's cost model already paid, in R: one median spread
+    (`engine.Costs.from_symbol`, which charges the spread per side) over the stop distance."""
+    meta = universe.get(symbol) if isinstance(universe, Mapping) else None
+    if not isinstance(meta, Mapping) or not dist > 0:
+        return None
+    pts, tick = _f(meta.get("median_spread_pts")), _f(meta.get("tick_size"))
+    return pts * tick / dist if pts is not None and tick else None
+
+
+def duplicate_intents(intents: list[dict[str, Any]]) -> set[str]:
+    """Intent ids that are a SECOND live send for one sleeve's one signal bar (or, with no bar
+    recorded, the same sleeve, side and minute)."""
+    seen: set[tuple[str, ...]] = set()
+    dup: set[str] = set()
+    for i in sorted(intents, key=lambda r: str(r.get("time") or "")):
+        if int(_f(i.get("retcode")) or 0) != 10009 or str(i.get("order_type") or "").startswith(
+                "pending") or i.get("slice_depth", 1) not in (None, 1):
+            continue
+        key = (str(i.get("sleeve")), str(i.get("signal_bar"))) if i.get("signal_bar") else \
+            (str(i.get("sleeve")), str(i.get("side")), str(i.get("time") or "")[:16])
+        if key in seen:
+            dup.add(str(i.get("intent_id") or i.get("ticket")))
+        seen.add(key)
+    return dup
+
+
+def fix_commit_ok(value: Any, release: str | None, repo: Path = REPO) -> bool:
+    """A recorded fix closes a finding only when it names a REAL commit that is an ancestor of
+    the release the box is running (data/release_identity.json). Anything else -- "x", True, a
+    sha git does not know, a fix the running code does not contain -- leaves it open."""
+    import re
+    import subprocess
+    token = str(value).split()[0] if isinstance(value, str) and value.strip() else ""
+    if not re.fullmatch(r"[0-9a-f]{7,40}", token) or not release:
+        return False
+    try:
+        for args in (["cat-file", "-e", f"{token}^{{commit}}"],
+                     ["merge-base", "--is-ancestor", token, release]):
+            if subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
+                              timeout=20).returncode != 0:
+                return False
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return True
+
+
+def running_release() -> str | None:
+    doc = _json(RELEASE_IDENTITY)
+    if not isinstance(doc, Mapping):
+        return None
+    return str(doc.get("release_sha") or doc.get("running_sha") or "") or None
+
+
 def defects(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *,
             equity: float | None, funded: float | None, cap: float,
-            unresolved: str | None) -> tuple[list[dict[str, Any]], list[str]]:
+            unresolved: str | None, universe: Any = None, family: bool = False,
+            duplicates: set[str] | None = None) -> tuple[list[dict[str, Any]], list[str]]:
     """Every defect this close shows, and the checks that could not be measured."""
     out: list[dict[str, Any]] = []
     unmeasured: list[str] = []
@@ -239,14 +318,17 @@ def defects(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *,
         if frac > cap * CAP_TOL:
             hit("oversize", f"risked {frac:.1%} of equity against the {cap:.0%} envelope",
                 risk_frac=round(frac, 4), cap=cap, equity_derived=round(equity, 2))
-        if funded and funded > 0 and frac > funded * ALLOC_TOL:
+        if funded is None or funded <= 0:
+            unmeasured.append("over_allocation")
+        elif frac > funded * ALLOC_TOL:
             hit("over_allocation", f"risked {frac:.1%} against the book's {funded:.1%}",
                 risk_frac=round(frac, 4), funded=funded)
     if unresolved:
         hit("unattributed", unresolved)
     if intent is None:
         hit("untraced", "no order intent joins this close by ticket")
-        unmeasured += ["entry_slippage", "stale_quote", "stop_widened", "clock"]
+        unmeasured += ["entry_slippage", "stale_quote", "stop_widened", "clock", "lot",
+                       "no_stop"]
     else:
         side = 1.0 if int(_f(deal.get("side")) or 0) == 1 else -1.0   # closing sell = long
         # A MARKET ORDER IS JUDGED AGAINST THE QUOTE IT WAS SENT ON (the ask for a buy, the bid
@@ -254,15 +336,33 @@ def defects(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *,
         # gap from there to the quote is the market moving, not the venue filling badly.
         quote = _f(intent.get("decision_ask") if side > 0 else intent.get("decision_bid"))
         entry, isl = _f(deal.get("entry_price")), _f(intent.get("sl"))
-        want = quote if quote is not None else _f(intent.get("intended"))
         pending = str(intent.get("order_type") or "").startswith("pending")
-        if entry is None or want is None or isl is None or abs(want - isl) < 1e-12:
+        # A PENDING STOP is judged against its own trigger price: the venue fills it when price
+        # reaches `intended`, and anything worse than that is slippage like any other.
+        want = _f(intent.get("intended")) if pending or quote is None else quote
+        if isl is None or isl == 0 or _f(deal.get("sl")) in (None, 0.0):
+            hit("no_stop", "the intent or the closing deal carries no stop",
+                intent_sl=isl, closing_sl=_f(deal.get("sl")))
+        allow = (slip_allowance_r(str(deal.get("symbol") or ""), abs(want - isl), universe)
+                 if want is not None and isl else None)
+        if entry is None or want is None or not isl or abs(want - isl) < 1e-12 \
+                or allow is None:
             unmeasured.append("entry_slippage")
-        elif not pending:
+        else:
             slip = side * (want - entry) / abs(want - isl)
-            if slip < -SLIP_R:
-                hit("entry_slippage", f"filled {abs(slip):.2f}R worse than the intent",
-                    slip_r=round(slip, 4))
+            if slip < -allow:
+                hit("entry_slippage", f"filled {abs(slip):.2f}R worse than the "
+                    f"{'trigger' if pending else 'quote'}, past the {allow:.2f}R the "
+                    f"certificate's cost model charged", slip_r=round(slip, 4),
+                    allowance_r=round(allow, 4))
+        vol, lot = _f(deal.get("volume")), _f(intent.get("lot"))
+        if vol is None or lot is None or lot <= 0:
+            unmeasured.append("lot")
+        elif vol > lot * LOT_TOL:
+            hit("lot_mismatch", f"held {vol:g} lot against the {lot:g} the intent sent",
+                volume=vol, intent_lot=lot)
+        if str(intent.get("intent_id") or intent.get("ticket")) in (duplicates or set()):
+            hit("duplicate_order", "a second send for the same sleeve and signal bar")
         lat = _f(intent.get("latency_send_to_ack_ms") or intent.get("latency_ms"))
         if lat is None:
             unmeasured.append("stale_quote")
@@ -280,10 +380,36 @@ def defects(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *,
         elif it is None or et is None:
             unmeasured.append("clock")
         else:
-            gap = min(abs((et - it).total_seconds() - h * 3600) for h in BROKER_OFFSETS_H)
+            off = broker_offset_h(it)
+            gap = abs((et - it).total_seconds() - off * 3600)
             if gap > CLOCK_TOL_S:
                 hit("clock", f"broker entry stamp {et.isoformat()} is not the intent's UTC "
-                             f"{it.isoformat()} shifted by +2h/+3h ({gap:.0f}s off)")
+                             f"{it.isoformat()} shifted by the venue's +{off}h that date "
+                             f"({gap:.0f}s off)")
+        bar_min = int(_f(intent.get("bar_minutes")) or SIGNAL_BAR_MIN)
+        sig = _ts(intent.get("signal_bar"))
+        if it is not None and sig is not None:
+            closed = sig - timedelta(hours=broker_offset_h(it)) + timedelta(minutes=bar_min)
+            age = (it - closed).total_seconds()
+            if age > bar_min * 60 + TTL_GRACE_S:
+                hit("stale_signal", f"sent {age / 60:.0f} min after its signal bar closed; the "
+                    f"replay fills at the next bar's open", signal_age_s=round(age))
+        elif family:
+            unmeasured.append("signal_age")
+        # `ttl_until` is laid on the broker-labelled signal bar; the close is stamped in UTC.
+        ttl, xt = _ts(intent.get("ttl_until")), _ts(deal.get("time"))
+        if ttl is not None and xt is not None:
+            ttl -= timedelta(hours=broker_offset_h(xt))
+        fill, tp = _f(deal.get("fill_price")), _f(intent.get("tp"))
+        if ttl is not None and xt is not None:
+            at_level = fill is not None and want is not None and isl and any(
+                lvl is not None and abs(fill - lvl) <= 0.05 * abs(want - isl)
+                for lvl in (isl, _f(deal.get("sl")), tp, _f(deal.get("tp"))))
+            if (xt - ttl).total_seconds() > TTL_GRACE_S and not at_level:
+                hit("missed_time_exit", f"closed {xt.isoformat()}, past its certified time "
+                    f"exit {ttl.isoformat()}, at neither its stop nor its target")
+        elif family:
+            unmeasured.append("time_exit")
     risk_q = abs(_f(deal.get("risk_quote")) or 0.0)
     pl = _f(deal.get("pl_quote"))
     costs = (_f(deal.get("commission")) or 0.0) + (_f(deal.get("swap")) or 0.0)
@@ -303,7 +429,8 @@ def defects(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *,
 
 
 def suboptimal(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *, sleeve: str,
-               equity: float | None, funded: float | None) -> list[dict[str, Any]]:
+               equity: float | None, funded: float | None,
+               universe: Any = None) -> list[dict[str, Any]]:
     """What made a trade -- winner or loser -- worse than the certificate's own rules allowed,
     short of a fault: sized timidly, exited early at a tightened stop, sent slowly, filled late,
     paid more slippage or spread than the stop can carry."""
@@ -323,9 +450,12 @@ def suboptimal(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *, sle
     entry, fill = _f(deal.get("entry_price")), _f(deal.get("fill_price"))
     pending = str(intent.get("order_type") or "").startswith("pending")
     dist = abs(want - isl) if want is not None and isl is not None else 0.0
-    if dist > 0 and not pending and entry is not None and want is not None:
+    allow = slip_allowance_r(str(deal.get("symbol") or ""), dist, universe)
+    if dist > 0 and not pending and entry is not None and want is not None \
+            and allow is not None:
         slip = side * (want - entry) / dist
-        if -SLIP_R <= slip < -COST_SLIP_R:
+        # Inside the certificate's allowance but past a third of it: paid, not yet a fault.
+        if -allow <= slip < -allow / 3:
             out.append({"finding": "slippage_cost", "why": f"filled {abs(slip):.2f}R worse "
                         f"than the quote", "slip_r": round(slip, 4)})
     spread = _f(intent.get("spread_at_decision"))
@@ -406,7 +536,7 @@ def edge_decay(sleeve: str, history: list[dict[str, Any]], cert_exp: float | Non
 
 
 def e8_autopsy(ledger: list[dict[str, Any]] | None, *, cert: Mapping[str, Any],
-               since: datetime, res_map: Mapping[str, Any]
+               since: datetime, res_map: Mapping[str, Any], verify_fix: Any = None
                ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """The E8 half: every losing close in data/e8_ledger.jsonl. Every row there is one of this
     desk's own sends (the ledger writes nothing else), so `untraced` cannot arise; the sizing,
@@ -439,7 +569,8 @@ def e8_autopsy(ledger: list[dict[str, Any]] | None, *, cert: Mapping[str, Any],
         deal = f"e8:{d.get('position_id')}"
         res = res_map.get(deal) or {}
         for f in found:
-            f["resolved_by"] = res.get(f["defect"]) if isinstance(res, dict) else None
+            fix = res.get(f["defect"]) if isinstance(res, dict) else None
+            f["resolved_by"] = fix if fix and verify_fix and verify_fix(fix) else None
         open_ = t >= FIX_SINCE and any(not f.get("resolved_by") for f in found)
         rows.append({"venue": "e8", "deal": deal, "position_id": d.get("position_id"),
                      "time": d.get("time"), "sleeve": sleeve, "symbol": d.get("symbol"),
@@ -514,7 +645,8 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
           resolved: Any = None, e8_ledger: list[dict[str, Any]] | None = None,
           e8_journals: list[dict[str, Any]] | None = None,
           blocked: list[dict[str, Any]] | None = None,
-          shadow: Any = None) -> dict[str, Any]:
+          shadow: Any = None, universe: Any = None,
+          verify_fix: Any = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     deals = [d for d in (deals if deals is not None else _jsonl(LEDGER))
              if d.get("account_kind", "live") == "live"]
@@ -527,7 +659,20 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
     if e8_ledger is None:
         e8_ledger = _jsonl(E8_LEDGER) if E8_LEDGER.exists() else None
     cap = max_risk_frac()
+    universe = universe if universe is not None else (_json(UNIVERSE) or {})
+    if verify_fix is None:
+        _release = running_release()
+        _verified: dict[str, bool] = {}
+
+        def verify_fix(v: Any) -> bool:
+            k = str(v)
+            if k not in _verified:
+                _verified[k] = fix_commit_ok(v, _release)
+            return _verified[k]
+    dupes = duplicate_intents(intents)
     names = roster_names(sleeves_doc)
+    roster = {str(s.get("name")): s for s in ((sleeves_doc or {}).get("sleeves") or [])
+              if isinstance(s, dict)} if isinstance(sleeves_doc, dict) else {}
     exp = {str(s.get("name")): _f(s.get("shadow_exp"))
            for s in ((sleeves_doc or {}).get("sleeves") or []) if isinstance(s, dict)}
     by_ticket: dict[int, dict[str, Any]] = {}
@@ -550,7 +695,7 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
     for d in deals:
         t = _ts(d.get("time"))
         r = _f(d.get("r_multiple"))
-        if t is None or t < since or r is None:
+        if t is None or t < since:
             continue
         intent = join_intent(d, by_ticket)
         sleeve, why = resolve_sleeve(d, intent, names)
@@ -559,31 +704,43 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
         funded = next((float(v) for k, v in fusion_book.items()
                        if sleeve and (k == sleeve or key.startswith(k))
                        and isinstance(v, (int, float))), None)
+        row_s = roster.get(sleeve or "") or {}
+        if funded is None:
+            # The certified book is off or does not name this sleeve: the roster's own
+            # fraction is what the gateway sized against.
+            funded = _f(row_s.get("risk_frac"))
         found, unmeasured = defects(d, intent, equity=eq.get(str(d.get("deal"))),
-                                    funded=funded, cap=cap, unresolved=why)
+                                    funded=funded, cap=cap, unresolved=why, universe=universe,
+                                    family=row_s.get("exec") == "family_market",
+                                    duplicates=dupes)
+        if r is None:
+            unmeasured = sorted({*unmeasured, "r_multiple"})
         deal_res = res_map.get(str(d.get("deal"))) or {}
         for f in found:
             fix = deal_res.get(f["defect"]) if isinstance(deal_res, dict) else None
-            f["resolved_by"] = fix
+            f["resolved_by"] = fix if fix and verify_fix(fix) else None
+            if fix and not f["resolved_by"]:
+                f["claimed_fix_rejected"] = str(fix)[:80]
         sub = suboptimal(d, intent, sleeve=sleeve or "", equity=eq.get(str(d.get("deal"))),
-                         funded=funded)
+                         funded=funded, universe=universe)
         for f in sub:
             fix = deal_res.get(f["finding"]) if isinstance(deal_res, dict) else None
-            f["resolved_by"] = fix
+            f["resolved_by"] = fix if fix and verify_fix(fix) else None
         historical = t < FIX_SINCE
         open_defects = [] if historical else [f for f in found + sub
                                               if not f.get("resolved_by")]
-        decay = None if found or sub or r >= LOSS_R else edge_decay(
+        decay = None if found or sub or r is None or r >= LOSS_R else edge_decay(
             sleeve or "", history.get(str(d.get("sleeve") or ""), []), exp.get(sleeve or ""),
             drift)
         verdict = (DEFECT if found else SUBOPTIMAL if sub else EDGE_DECAY if decay
-                   else NATURAL)
+                   else UNMEASURED if unmeasured else NATURAL)
         rows.append({"venue": "fusion", "deal": str(d.get("deal")),
                      "position_id": d.get("position_id"), "time": d.get("time"),
                      "sleeve": sleeve, "symbol": d.get("symbol"), "r": r,
                      "pl": _f(d.get("pl_quote")), "verdict": verdict,
                      "open": bool(open_defects), "historical": historical,
-                     "outcome": "loss" if r < LOSS_R else "win" if r > -LOSS_R else "scratch",
+                     "outcome": ("unmeasured" if r is None else "loss" if r < LOSS_R
+                                 else "win" if r > -LOSS_R else "scratch"),
                      "defects": found, "suboptimal": sub, "edge_decay": decay,
                      "unmeasured": unmeasured,
                      "intent_id": (intent or {}).get("intent_id")})
@@ -609,14 +766,17 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
                   "class": SUBOPTIMAL, "deal": None, "sleeve": m["sleeve"],
                   "symbol": m["symbol"], "defect": "missed_send", "why": m["why"],
                   "pl": None, "time": m["time"]}
-                 for m in missed if not missed_res.get(str(m["id"]))]
+                 for m in missed if not (missed_res.get(str(m["id"]))
+                                                   and verify_fix(missed_res[str(m["id"])]))]
     shadow = shadow if shadow is not None else _json(SHADOW_STATE)
     clock_missed = clock_misses(sleeves_doc, shadow, intents, blocked, now)
     fix_rows += [{"fix_id": f"clock:{m['id']}", "venue": "fusion", "class": DEFECT,
                   "deal": None, "sleeve": m["sleeve"], "symbol": m["symbol"],
                   "defect": m["kind"], "why": m["why"], "pl": None, "time": m.get("entry")}
-                 for m in clock_missed if not missed_res.get(str(m["id"]))]
-    e8_rows, e8 = e8_autopsy(e8_ledger, cert=cert, since=since, res_map=res_map)
+                 for m in clock_missed if not (missed_res.get(str(m["id"]))
+                                                   and verify_fix(missed_res[str(m["id"])]))]
+    e8_rows, e8 = e8_autopsy(e8_ledger, cert=cert, since=since, res_map=res_map,
+                             verify_fix=verify_fix)
     rows += e8_rows
     fix_rows += [{"fix_id": f"loss:e8:{r['deal']}:{f['defect']}", "venue": "e8",
                   "deal": r["deal"], "sleeve": r["sleeve"], "symbol": r["symbol"],
@@ -631,9 +791,13 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
     for row in rows:
         counts[row["verdict"]] += 1
     open_n = sum(1 for row in rows if row["open"])
+    unmeasured_open = sum(1 for row in rows
+                          if row["verdict"] == UNMEASURED and not row.get("historical"))
     return {"at": now.isoformat(timespec="seconds"), "window_days": WINDOW_DAYS,
-            "verdict": "FAIL" if fix_rows else "PASS",
-            "trades": len(rows), "losses": sum(1 for r in rows if r["r"] < LOSS_R),
+            "verdict": ("FAIL" if fix_rows else UNMEASURED if unmeasured_open else "PASS"),
+            "unmeasured_trades": unmeasured_open,
+            "trades": len(rows),
+            "losses": sum(1 for r in rows if r["r"] is not None and r["r"] < LOSS_R),
             "by_verdict": dict(counts), "open_trades": open_n, "missed_sends": missed,
             "clock_misses": clock_missed,
             "blocked_decisions": [b for b in blocked if str(b.get("stage")) in DECISION_STAGES
