@@ -91,6 +91,8 @@ risk per trade (2% total per day). P(pass within 30d) 28%, median 38 days, 92% e
 Fallback if the halved-edge breach is unacceptable: 0.75% each (52-day median, breach <=5% both ways).
 Frontier table: /mnt/project-files/sizing/CERT_BOOK_2026-10-06.md.
 Final sizes for the desktop pass. Fusion: EURZAR 9.8%, USDZAR 10%, AUDCHF 10%, gold_asia 8.2%.
-E8: gold_asia 1.0%, AUDCHF 1.0%. Do not include USDJPY SRB.
+E8: gold_asia 1.0%, AUDCHF 1.0%. USDJPY SRB is not in this table, but it is no longer quarantined:
+the principal lifted the Reddit-origin ban on 2026-10-13 ("no its not banned ... dont ban it"), so it
+enters through the promoter's admission streak at the allocator's size, like any certified sleeve.
 Not admitted: CHFNOK carry (live -3.67R/17), nine gap-decay crosses the worlds price at or below 0,
 XAUUSD SRB (correlation 0.94 with gold_asia).
