@@ -20,6 +20,7 @@ for _p in (str(_ROOT / "desks" / "mt5"), str(_ROOT / "desks" / "mt5" / "research
         sys.path.insert(0, _p)
 
 from mt5desk.engine import Costs, Signal, run_backtest, spread_at  # noqa: E402
+
 from research import cost_surface as cs  # noqa: E402
 from research import entry_hour_cost as ehc  # noqa: E402
 
