@@ -336,6 +336,62 @@ def test_the_bounded_lookup_still_refuses_a_private_answer(
     assert why.startswith("REFUSED:")
 
 
+def test_a_resolver_try_again_is_transient(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit must-fix 1 on #381: EAI_AGAIN is an outage, not an unresolvable host."""
+    import socket
+
+    def again(*a: Any, **k: Any) -> Any:
+        raise socket.gaierror(socket.EAI_AGAIN, "Temporary failure in name resolution")
+    monkeypatch.setattr(socket, "getaddrinfo", again)
+    _, why = cl.fetch("https://data.example.org/x", "https://data.example.org/")
+    assert why == "UNREACHABLE:DNS_TRY_AGAIN" and cl.transient({"detail": why})
+
+
+def test_sources_that_always_time_out_cannot_starve_a_healthy_one(tmp_lab: Path) -> None:
+    """Audit must-fix 2 on #381: least recently attempted first, and a streak is charged."""
+    names = [f"bad{i}" for i in range(4)] + ["good"]
+    feed = tmp_lab / "feed5.jsonl"
+    feed.write_text("".join(json.dumps({"name": n, "url": f"https://{n}.example.org/s",
+                                        "reachable": True}) + "\n" for n in names))
+    fetched: list[str] = []
+
+    def g(url: str) -> tuple[int, bytes]:
+        if "//bad" in url:
+            raise TimeoutError("blackholed")
+        fetched.append(url)
+        return (404, b"") if url.endswith("robots.txt") else (200, _body())
+    passes = 0
+    while not any("good" in u for u in fetched) and passes < 3:
+        cl.run(chat=lambda *a, **k: _Reply("{}"), get=g, resolve=_public, feed=feed, uni=UNI,
+               max_llm=4)
+        passes += 1
+    assert passes == 2, "the healthy fifth source is reached on the second pass"
+    # Every bad source is charged once per TRANSIENT_CHARGE straight timeouts, and leaves the
+    # queue after MAX_ATTEMPTS charges.
+    rows = [{"source": "bad0", "status": "SOURCE_UNREADABLE", "detail": "UNREACHABLE:x",
+             "at": f"2026-10-13T0{i}:00:00"} for i in range(cl.TRANSIENT_CHARGE * cl.MAX_ATTEMPTS)]
+    left = {r["name"] for r in cl.candidates(feed, {}, rows)}
+    assert "bad0" not in left and "good" in left
+    cooling = [{**r, "detail": "COOLDOWN: rest"} for r in rows]
+    assert "bad0" in {r["name"] for r in cl.candidates(feed, {}, cooling)}
+
+
+def test_one_fetch_is_bounded_in_total(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Should-fix on #381: DNS, robots and the GET share one FETCH_S budget."""
+    import time as _t
+    budgets: list[float] = []
+
+    def g(url: str) -> tuple[int, bytes]:
+        _t.sleep(0.6)
+        return 404, b""
+    monkeypatch.setattr(cl, "_pinned_get",
+                        lambda addrs, until=None: budgets.append(until or 0.0) or g)
+    t0 = _t.monotonic()
+    cl.fetch("https://data.example.org/x", "https://data.example.org/", resolve=_public,
+             budget_s=1.0)
+    assert budgets and budgets[0] <= t0 + 1.01
+
+
 def test_all_transient_or_skipped_never_reads_green(tmp_lab: Path,
                                                     monkeypatch: pytest.MonkeyPatch) -> None:
     """MF2: an outage on every owed source is DARK; working specs all skipped are STALE."""

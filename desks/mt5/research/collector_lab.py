@@ -145,12 +145,20 @@ REQUEST_S = 25.0
 #: Wall time one DNS lookup may take (audit residual on #332: getaddrinfo ran before the request
 #: deadline started, so a resolver that never answers held the pass for the system's own timeout).
 DNS_S = 10.0
+#: Wall time one fetch may take in total: DNS, robots.txt, its crawl delay and the GET (audit
+#: should-fix on #381: the three stacked to 70 s). Each request gets min(REQUEST_S, what is left).
+FETCH_S = 45.0
 #: A host that answered 429 or 5xx rests this long before this organ asks it again.
 COOLDOWN_S = 6 * 3600.0
 HOST_STATE = STATE_DIR / "hosts.json"
 #: Transient outcomes: never counted against a source's attempts (audit should-fix: two outage
 #: passes used to drop a source for good).
 TRANSIENT = ("UNREACHABLE", "HTTP_5", "GATED:HTTP_429", "COOLDOWN", "ROBOTS_UNAVAILABLE")
+#: ...but a source that is transient this many passes IN A ROW is charged one attempt (audit
+#: must-fix on #381: a permanently timing-out source was never escalated and, holding its place
+#: at the head of the feed, starved every source behind it). COOLDOWN is our own rest, not an
+#: attempt on the source, and a dark chain is the model's outage, so neither counts.
+TRANSIENT_CHARGE = 3
 
 
 def same_site(url: str, source_url: str) -> bool:
@@ -185,7 +193,7 @@ def _shared_suffix(host: str) -> bool:
     return any(host == t or host.endswith("." + t) for t in _MULTI_TENANT)
 
 
-def _pinned_get(addrs: Sequence[str]) -> Getter:
+def _pinned_get(addrs: Sequence[str], until: float | None = None) -> Getter:
     """A GET that connects only to the addresses the SSRF check approved (audit M1: a second DNS
     resolution at connect time landed on 127.0.0.1), IPv4 first and each in turn (S3: a box with
     no IPv6 route must not fail every dual-stack source). http.client reads no ~/.netrc, no proxy
@@ -244,9 +252,12 @@ def _pinned_get(addrs: Sequence[str]) -> Getter:
         https = parts.scheme == "https"
         port = parts.port or (443 if https else 80)          # S2: explicit for IPv6 literals
         cls = _HTTPS if https else _HTTP
+        budget = REQUEST_S if until is None else min(REQUEST_S, until - time.monotonic())
+        if budget <= 0:
+            raise TimeoutError("the fetch's total budget was spent before this request")
         conn = cls(parts.hostname or "", port, timeout=10.0)
         expired = threading.Event()
-        conn.deadline = time.monotonic() + REQUEST_S
+        conn.deadline = time.monotonic() + budget
         conn.expired = expired
 
         def _kill() -> None:
@@ -256,7 +267,7 @@ def _pinned_get(addrs: Sequence[str]) -> Getter:
             if sock is not None:
                 with contextlib.suppress(OSError):
                     sock.shutdown(socket.SHUT_RDWR)
-        timer = threading.Timer(REQUEST_S, _kill)
+        timer = threading.Timer(budget, _kill)
         timer.daemon = True
         timer.start()
         try:
@@ -289,7 +300,7 @@ class DNSTimeout(OSError):
     """The resolver did not answer inside DNS_S: an outage, retried on a later pass."""
 
 
-def _bounded_resolve(host: str) -> list[str]:
+def _bounded_resolve(host: str, timeout: float | None = None) -> list[str]:
     """getaddrinfo on a daemon thread, abandoned after DNS_S. The thread may outlive the call
     (getaddrinfo cannot be interrupted), but the pass never waits for it."""
     import socket
@@ -303,9 +314,10 @@ def _bounded_resolve(host: str) -> list[str]:
             box["exc"] = exc
     th = threading.Thread(target=_look, daemon=True)
     th.start()
-    th.join(DNS_S)
+    wait = DNS_S if timeout is None else max(0.1, min(DNS_S, timeout))
+    th.join(wait)
     if th.is_alive():
-        raise DNSTimeout(f"no DNS answer for {host} within {DNS_S:.0f}s")
+        raise DNSTimeout(f"no DNS answer for {host} within {wait:.1f}s")
     if "exc" in box:
         raise box["exc"]
     return list(box.get("addrs") or [])
@@ -322,10 +334,20 @@ def _cool(host: str, now: float) -> None:
     _write_json(HOST_STATE, doc)
 
 
+def _try_again(exc: BaseException) -> bool:
+    """A resolver's own "temporary failure" (EAI_AGAIN; WSATRY_AGAIN 11002 on Windows)."""
+    import socket
+    codes = {getattr(socket, "EAI_AGAIN", -3), 11002}
+    return isinstance(exc, socket.gaierror) and exc.errno in codes
+
+
 def fetch(url: str, source_url: str, *, get: Getter | None = None,
-          resolve: Callable[[str], list[str]] | None = None) -> tuple[bytes, str]:
-    """(body, "") or (b"", why). Every refusal is named."""
+          resolve: Callable[[str], list[str]] | None = None,
+          budget_s: float | None = None) -> tuple[bytes, str]:
+    """(body, "") or (b"", why). Every refusal is named. The whole fetch -- DNS included -- ends
+    within `budget_s` (FETCH_S by default)."""
     from libs.ops.public_host import resolve_public
+    until = time.monotonic() + (FETCH_S if budget_s is None else max(1.0, budget_s))
     if not same_site(url, source_url):
         return b"", "OFF_SITE: the spec left the source's own host"
     parts = urllib.parse.urlsplit(url)
@@ -337,10 +359,12 @@ def fetch(url: str, source_url: str, *, get: Getter | None = None,
         return b"", f"BAD_PORT:{port}"
     if resolve is None:
         try:
-            looked = _bounded_resolve(parts.hostname or "")
+            looked = _bounded_resolve(parts.hostname or "", until - time.monotonic())
         except DNSTimeout:
             return b"", "UNREACHABLE:DNS_TIMEOUT"
-        except (OSError, UnicodeError, ValueError):
+        except (OSError, UnicodeError, ValueError) as exc:
+            if _try_again(exc):
+                return b"", "UNREACHABLE:DNS_TRY_AGAIN"
             looked = []
         resolve = lambda _h, _a=looked: _a  # noqa: E731 -- the one lookup, checked below
     addrs, why = resolve_public(url, resolve=resolve)
@@ -350,7 +374,7 @@ def fetch(url: str, source_url: str, *, get: Getter | None = None,
     now = time.time()
     if _cooling(host, now):
         return b"", "COOLDOWN: the host answered 429/5xx recently"
-    g = get or _pinned_get(addrs)
+    g = get or _pinned_get(addrs, until)
     try:
         code, robots = g(f"{parts.scheme}://{parts.netloc}/robots.txt")
         if code >= 500:
@@ -364,7 +388,7 @@ def fetch(url: str, source_url: str, *, get: Getter | None = None,
                 return b"", "ROBOTS_DISALLOW"
             delay = rp.crawl_delay(AGENT)
             if delay:
-                time.sleep(min(float(delay), 10.0))
+                time.sleep(max(0.0, min(float(delay), 10.0, until - time.monotonic() - 1.0)))
         code, body = g(url)
     except Exception as exc:
         return b"", f"UNREACHABLE:{type(exc).__name__}"
@@ -634,12 +658,25 @@ def transient(rec: dict[str, Any]) -> bool:
 
 def candidates(feed: Path, specs: dict[str, Any], attempts: list[dict[str, Any]]
                ) -> list[dict[str, Any]]:
-    """Unconverted sources. Only a DEFINITE failure counts toward MAX_ATTEMPTS; an outage, a 429,
-    a cooling host or a dark chain is retried on a later pass."""
+    """Unconverted sources, LEAST RECENTLY ATTEMPTED FIRST, so no source can hold the head of the
+    queue (audit must-fix on #381). A DEFINITE failure counts toward MAX_ATTEMPTS; an outage, a
+    429 or a cooling host is retried, and only TRANSIENT_CHARGE in a row are charged one attempt;
+    a dark chain is never charged."""
     tried: dict[str, int] = {}
+    streak: dict[str, int] = {}
+    last: dict[str, str] = {}
     for a in attempts:
+        src = str(a.get("source"))
+        last[src] = max(last.get(src, ""), str(a.get("at") or ""))
         if not transient(a):
-            tried[str(a.get("source"))] = tried.get(str(a.get("source")), 0) + 1
+            tried[src] = tried.get(src, 0) + 1
+            streak[src] = 0
+        elif a.get("status") != "CHAIN_DARK" and \
+                not str(a.get("detail") or "").startswith("COOLDOWN"):
+            streak[src] = streak.get(src, 0) + 1
+            if streak[src] >= TRANSIENT_CHARGE:
+                tried[src] = tried.get(src, 0) + 1
+                streak[src] = 0
     seen: set[str] = set()
     out = []
     for r in _jsonl(feed):
@@ -649,7 +686,7 @@ def candidates(feed: Path, specs: dict[str, Any], attempts: list[dict[str, Any]]
             continue
         seen.add(nm)
         out.append(r)
-    return out
+    return sorted(out, key=lambda r: last.get(str(r.get("name")), ""))
 
 
 class ChainDark(RuntimeError):
@@ -660,8 +697,11 @@ def author(row: dict[str, Any], uni: dict[str, str], *, chat: Any, get: Getter |
            resolve: Callable[[str], list[str]] | None, timeout: float) -> dict[str, Any]:
     """One source -> one attempt record (and a spec when it works). Raises only ChainDark."""
     rec: dict[str, Any] = {"source": row.get("name"), "url": row.get("url"), "at": _now()}
+    # Each fetch takes at most half the call's budget, so author() as a whole -- two fetches and
+    # one chat -- stays within 2 x timeout, never 2 x 70 s of stacked limits.
+    half = min(FETCH_S, max(5.0, timeout / 2))
     sample, why = fetch(str(row.get("url") or ""), str(row.get("url") or ""), get=get,
-                        resolve=resolve)
+                        resolve=resolve, budget_s=half)
     if why:
         rec.update(status="SOURCE_UNREADABLE", detail=why)
         return rec
@@ -690,7 +730,7 @@ def author(row: dict[str, Any], uni: dict[str, str], *, chat: Any, get: Getter |
         rec.update(status="NO_SPEC", detail=why)
         return rec
     body, why = (sample, "") if spec["url"] == row.get("url") else \
-        fetch(spec["url"], str(row.get("url")), get=get, resolve=resolve)
+        fetch(spec["url"], str(row.get("url")), get=get, resolve=resolve, budget_s=half)
     if why:
         rec.update(status="SPEC_UNREADABLE", detail=why)
         return rec
