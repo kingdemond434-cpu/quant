@@ -47,6 +47,16 @@ def network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
         return _Resp()
 
     monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    # THE ONE FETCH DOOR (libs/data/terms_fence.guarded_urlopen) builds its own opener, so the
+    # recorder stands in for it too; the fence's own pre-request check still runs first.
+    from libs.data import terms_fence as tf
+
+    def door(req: object, *a: object, **k: object) -> _Resp:
+        url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
+        tf.check_request(url)
+        return urlopen(req)
+
+    monkeypatch.setattr(tf, "guarded_urlopen", door)
     return asked
 
 
