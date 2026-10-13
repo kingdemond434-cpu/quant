@@ -410,49 +410,6 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
     return specs, zero, unmeasured
 
 
-#: Per-certificate replay cache (audit #346 should-fix): a replay is a pure function of the cell
-#: spec and the bars it reads, so it is keyed by both and rebuilt only when the bars move.
-def _replay_dir() -> Path:
-    return BASE / "data" / "pf_allocator_cache" / "cert_replays"
-
-
-def _replay_key(sym: str, fam: str, params: Any) -> str:
-    """sha of (symbol, family, params, newest bars mtime for the symbol)."""
-    try:
-        mt = max((p.stat().st_mtime for p in (BASE / "data" / "universe").glob(f"{sym}_*.parquet")),
-                 default=0.0)
-    except OSError:
-        mt = 0.0
-    blob = json.dumps([sym, fam, params or {}, round(mt, 3)], sort_keys=True, default=str)
-    return hashlib.sha256(blob.encode()).hexdigest()[:24]
-
-
-def _replay_cache_get(key: str) -> tuple[pd.Series, str] | None:
-    path = _replay_dir() / f"{key}.parquet"
-    try:
-        df = pd.read_parquet(path)
-    except Exception:  # absent or unreadable cache is a miss
-        return None
-    if df.empty or "r" not in df.columns:
-        return None
-    ser = pd.Series(df["r"].to_numpy(dtype=float), index=pd.to_datetime(df.index).date)
-    basis = str(df.attrs.get("basis") or (df["basis"].iloc[0] if "basis" in df.columns else ""))
-    return ser, basis
-
-
-def _replay_cache_put(key: str, ser: pd.Series, basis: str) -> None:
-    try:
-        rdir = _replay_dir()
-        rdir.mkdir(parents=True, exist_ok=True)
-        df = pd.DataFrame({"r": ser.to_numpy(dtype=float), "basis": basis},
-                          index=pd.to_datetime(pd.Index(ser.index)))
-        tmp = rdir / f"{key}.tmp.parquet"
-        df.to_parquet(tmp)
-        os.replace(tmp, rdir / f"{key}.parquet")
-    except Exception:  # an unwritable cache costs time, not truth
-        pass
-
-
 def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     """Daily-R series for every sleeve that has cleared the ten gates, replayed the gauntlet's way.
 
@@ -494,16 +451,6 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             # THE CERTIFICATE'S OWN PARAMS, not defaults. Replaying `{}` runs a different
             # strategy under the certified strategy's name -- the same substitution that put an
             # unconditioned +0.163R behind a conditioned sleeve's +0.276R promotion.
-            ckey = _replay_key(sym, fam, params)
-            cached = _replay_cache_get(ckey)
-            if cached is not None:
-                ser_c, basis = cached
-                if basis:
-                    acct.setdefault("cost_basis", {})[name] = basis
-                out[name] = ser_c
-                acct["priced"] += 1
-                acct["replay_cache_hits"] = acct.get("replay_cache_hits", 0) + 1
-                return
             cell = eg.build_cell(sym, fam, dict(params or {}), meta)
             if not cell or cell.get("sigs") is None:
                 why = getattr(eg, "LAST_BUILD_FAILURE", None) or "no reason recorded"
@@ -531,7 +478,6 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             basis = str(cell.get("_cost_basis") or "")
             if basis:
                 acct.setdefault("cost_basis", {})[name] = basis
-            _replay_cache_put(ckey, out[name], basis)
         except Exception as exc:
             acct["refused"][name] = f"{type(exc).__name__}: {exc}"
 
@@ -575,6 +521,15 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
          f"{len(acct['identity'])} STANDBY certificates under their own names) "
          f"({acct['certificates']} certificates), {len(acct['refused'])} refused")
     return out, acct
+
+
+def _book_unmeasured(cert_acct: dict[str, Any]) -> dict[str, Any]:
+    """The rostered-but-unpriced map, or an UNMEASURED verdict when it was never built."""
+    if "rostered_unmeasured" in cert_acct:
+        return dict(cert_acct.get("rostered_unmeasured") or {})
+    why = "; ".join(f"{k}: {v}" for k, v in (cert_acct.get("refused") or {}).items())
+    return {"verdict": "UNMEASURED",
+            "why": why or "the certified library returned before walking the roster"}
 
 
 #: The scalp lane's per-trade forward ledgers, one file per clock, written by `scalp_shadow`.
@@ -910,6 +865,26 @@ def align(daily: pd.DataFrame, certified: dict[str, pd.Series] | None) -> pd.Dat
                         index=idx, dtype=float)
 
 
+def cost_basis_after_align(daily: pd.DataFrame, certified: dict[str, pd.Series] | None,
+                           cost_basis: dict[str, str] | None) -> dict[str, str]:
+    """Keep a sleeve's certified `cost_basis` only where its certified series wins `align`.
+
+    Same rule as `align`: the certified series replaces a backtest column only when it holds
+    more observed days. Where the backtest column stays, the basis describes a series the solve
+    never sees, and carrying it would waive a `cost_bias_r` the backtest really owes.
+    """
+    out: dict[str, str] = {}
+    for name, basis in (cost_basis or {}).items():
+        ser = (certified or {}).get(name)
+        if ser is None:
+            continue
+        if name in daily.columns and \
+                int(pd.Series(ser).notna().sum()) <= int(daily[name].notna().sum()):
+            continue
+        out[name] = basis
+    return out
+
+
 def search_trials() -> dict[str, int]:
     """Trials each hunt searched, from the desk's own gate reports. The winner's-curse input.
 
@@ -1046,6 +1021,9 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
         # THE INSTRUMENT, not the lowercase roster token (audit #346): a STANDBY certificate
         # priced under its roster name carries its certificate's symbol in `identity`. The
         # loadings, the input key and the evidence all read this one value.
+        # A no-op on today's roster (every identity symbol equals the name's first token, and
+        # gold_* names carry no identity and resolve through `parts[0]`); it guards the case
+        # where a roster name and its certificate's symbol diverge.
         sym_of = identity[name][0] if identity and name in identity else parts[0]
         fl = mctx.loadings(hist, dates, sym_of)
         # FAMILY IS THE MECHANISM, NOT THE SYMBOL. The hierarchical posterior pools a sleeve
@@ -3578,6 +3556,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # therefore reached the roster at STANDBY and could never leave it, because `admission_of`
     # had nothing to join to and `_door_status` writes LIVE only on a MEASURED admission.
     scalp, scalp_acct = scalp_evidence()
+    # THE BASIS GOES WITH THE SERIES (audit S6): where the backtest column wins `align`, the
+    # sleeve is not priced on its fill-hour certified replay, so its cost_bias_r stands.
+    cert_acct["cost_basis"] = cost_basis_after_align(daily, certified,
+                                                     cert_acct.get("cost_basis"))
     daily = align(align(daily, certified), scalp)
     _log(f"aligned universe: {daily.shape[1]} sleeves on {daily.shape[0]} trading days "
          f"({len(scalp)} of them scalp clocks priced on forward ledgers)")
@@ -4836,8 +4818,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "book_zeroed": zeroed,
         # ROSTERED CERTIFICATES THIS PASS COULD NOT PRICE (BLOCKED_NO_BARS, unrecoverable spec,
         # replay failure), each with its reason: UNMEASURED, never a zero and never silent.
-        # Read by the promoter's admission view and the PROMOTION_LAG fence.
-        "book_unmeasured": dict(cert_acct.get("rostered_unmeasured") or {}),
+        # A report for audit (no organ reads it yet). When the library build failed before the
+        # roster was walked (import / universe unreadable), the map was never measured, so the
+        # artifact says UNMEASURED with the reason rather than an empty map that reads as clean.
+        "book_unmeasured": _book_unmeasured(cert_acct),
         "cost_basis": dict(cert_acct.get("cost_basis") or {}),
         # THE EXCHANGE'S ZEROS, AND WHERE THEIR HEAT WENT (see `exchange_zero`).
         "exchange_zero": exchange_zero_meta,
