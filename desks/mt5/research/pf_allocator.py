@@ -515,11 +515,14 @@ def live_days_by_sleeve() -> dict[str, int]:
     2026-09-01 (the gateway required a broker-rewritable comment prefix), so an empty answer here
     is expected for now and is reported as zero live evidence rather than hidden.
     """
-    path = BASE / "data" / "live_ledger.jsonl"
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    path = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
+    from libs.ops.live_ledger_view import ledger_path
+
     if not path.exists():
         return {}
     days: dict[str, set[str]] = {}
-    for line in path.read_text("utf-8").splitlines():
+    for line in ledger_path(path).read_text("utf-8").splitlines():
         try:
             row = json.loads(line)
         except ValueError:

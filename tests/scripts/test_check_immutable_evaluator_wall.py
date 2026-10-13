@@ -360,14 +360,16 @@ def test_a_declared_rewriter_is_named_rather_than_hidden(
     assert out["undeclared"] == [] and out["declared"] == ["scripts/backfill.py"]
 
 
-def test_the_real_desk_has_exactly_one_declared_rewriter_and_no_undeclared_one() -> None:
+def test_the_real_desk_names_guarded_rewriters_and_verification_fixture() -> None:
     """The enumeration is the claim (L1.49). `backfill_live_ledger_r.py` is a REAL whole-file
     rewriter -- it repaired `r_multiple` on 141 of 151 live rows the writer had floored at zero,
     reaching it through `--ledger`, which is why the scan follows a CLI default -- and the desk
     must be able to name every such organ on demand."""
     out = M.inplace_rewrite_scan()
     assert out["n_scanned"] >= 40, out["n_scanned"]
-    assert out["declared"] == ["scripts/backfill_live_ledger_r.py"], out["declared"]
+    assert out["declared"] == ["libs/ops/live_ledger_migration.py",
+                               "scripts/backfill_live_ledger_r.py",
+                               "scripts/migrate_live_ledger_view.py"], out["declared"]
     assert out["declared_missing"] == []
     assert out["undeclared"] == [], out["undeclared"]
 

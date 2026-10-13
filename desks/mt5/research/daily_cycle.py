@@ -208,8 +208,9 @@ def _decay() -> None:
 def _markout() -> None:
     from mt5desk.markout import compute, load_jsonl, render
     data = BASE / "data"
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
     m = compute(load_jsonl(data / "order_intents.jsonl"),
-                load_jsonl(data / "live_ledger.jsonl"))
+                load_jsonl(_audited_ledger_path(data / "live_ledger.jsonl")))
     for line in render(m).splitlines():
         dlog("  " + line)
     markout_path = BASE / "reports" / "markout.json"

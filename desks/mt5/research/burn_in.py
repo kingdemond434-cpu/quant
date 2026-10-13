@@ -132,7 +132,8 @@ def observe(now: datetime | None = None, *, base: Path | None = None,
     ident_age_s = (now - ident_at).total_seconds() if ident_at else None
     ident_fresh = ident_age_s is not None and ident_age_s <= IDENTITY_MAX_AGE_S
     paused = (base / "data" / "GATEWAY_PAUSED").exists()
-    deals = _recent(_read_jsonl(base / "data" / "live_ledger.jsonl"), since)
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    deals = _recent(_read_jsonl(_audited_ledger_path(base / "data" / "live_ledger.jsonl")), since)
     intents = _recent(_read_jsonl(base / "data" / "order_intents.jsonl"), since)
     hist = gw.get("placement_health") if isinstance(gw.get("placement_health"), dict) else {}
 
@@ -188,7 +189,8 @@ def summarise(rows: list[dict], now: datetime, base: Path | None = None) -> dict
     days = ((now - first).total_seconds() / 86400.0) if first else 0.0
     fills = 0
     if first:
-        fills = len(_recent(_read_jsonl(base / "data" / "live_ledger.jsonl"), first))
+        from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+        fills = len(_recent(_read_jsonl(_audited_ledger_path(base / "data" / "live_ledger.jsonl")), first))
     latest = rows[-1] if rows else None
     return {
         "at": now.isoformat(timespec="seconds"),

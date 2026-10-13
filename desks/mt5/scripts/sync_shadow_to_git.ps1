@@ -590,6 +590,8 @@ $relPaths = @(
     "desks/mt5/data/decision_ledger.jsonl",
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
+    "desks/mt5/data/live_ledger_corrections.jsonl",
+    "desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",
     "desks/mt5/reports/attribution_chain.json",
     # THE MARKOUT ITSELF (2026-09-30). The daily markout leg writes markout.json beside
     # attribution_chain.json, but only the chain crossed the wire, so the VPS's desk state read

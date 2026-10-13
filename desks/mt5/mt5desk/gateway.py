@@ -102,7 +102,8 @@ SLEEVES_FILE = BASE / "data" / "sleeves.json"
 #: Sleeves the decay monitor retired whose open positions must still be closed
 #: (`close_retired_positions` reads and drains it).
 RETIRED_CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LOG = BASE / "logs" / "gateway.log"
 #: The pause flag `gateway_paused()` reads. Named here so the desk can set the
 #: SAME file it already honours -- a second, private pause mechanism would be a
