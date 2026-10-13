@@ -968,7 +968,10 @@ def feed_lines(lab: Lab, extra: dict[str, list[str]]) -> list[str]:
     out: list[str] = []
     for f in lab.feeds:
         if f == "graveyard":
-            dead = [r for r in _jsonl(VERDICTS, limit=4000) if r.get("passed") is False]
+            import llm_lab_roles as roles
+            dead = [r for r in _jsonl(VERDICTS, limit=4000) if r.get("passed") is False
+                    and not roles.held_out(str(r.get("terminal_gate") or r.get("gate") or ""),
+                                           str(r.get("reason") or r.get("why") or ""))]
             for r in dead[-8:]:
                 out.append(f"graveyard: {str(r.get('cell'))[:70]} family={r.get('family')} "
                            f"died at gate {r.get('gate')}")
@@ -1296,18 +1299,19 @@ def lookahead_guard(model: str, *, at: str | None = None) -> dict[str, Any]:
     history the cell is about to be backtested on: anything before its training cutoff is
     contaminated -- the cell may go to the gauntlet, but that window is not evidence.
 
-    `evidence_from` is the first date whose data counts: the model's documented cutoff when one
-    is registered, otherwise the date the cell was generated, which is always at or after the
-    cutoff and therefore never too lenient. With no registered cutoff the honest reading is that
-    ONLY forward (post-generation) data is evidence -- which the forward clocks already require
-    before any promotion, so the guard tightens nothing that is live and loosens nothing.
+    `evidence_from` is the LATER of the model's documented cutoff and the date the cell was born
+    (audit must-fix 2, 2026-10-13: it was the earlier, so a 2023-12-01 cutoff let 34 months the
+    model had seen count). Only data after both counts: the model has not read it, and the cell
+    was not shaped by it. With no registered cutoff it is the birth date, so ONLY forward
+    (post-generation) data is evidence -- which the forward clocks already require before any
+    promotion, so the guard tightens nothing that is live and loosens nothing.
     """
     day = (at or _now())[:10]
     table = _read_json(MODEL_CUTOFFS, {}) or {}
     hit = next((str(d)[:10] for frag, d in table.items()
                 if isinstance(frag, str) and frag and frag.lower() in model.lower()), "")
     return {"model": model, "model_training_cutoff": hit or UNMEASURED,
-            "evidence_from": min(hit, day) if hit else day,
+            "evidence_from": max(hit, day) if hit else day,
             "basis": ("registered cutoff" if hit else
                       "cutoff UNMEASURED: generation date, so only post-generation data counts"),
             "rule": "backtest data before evidence_from is contaminated; it may be run, never "
@@ -1740,6 +1744,9 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         _append_jsonl(DATA_REQUESTS, outputs["data_requests"])
         known_q = {str(r.get("series")) for r in _jsonl(JEV_JOBS)}
         _append_jsonl(JEV_JOBS, [j for j in outputs["jev"] if j["series"] not in known_q])
+        # THE EVIDENCE MAP FIRST (audit must-fix 4): the compiler may read a donation the moment
+        # it lands, so the guard's start dates are on disk before any donation is.
+        roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
         if outputs["donate"]:
             DONATE_DIR.mkdir(parents=True, exist_ok=True)
             stamp = _now().replace(":", "").replace("-", "")[:15]
@@ -1753,9 +1760,12 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         pairs = [(a.lab.key, a.model) for a in asks] if seat_on else []
         pairs += [(k, "") for k, t in tallies.items()
                   for _ in range(max(0, t.asked - sum(1 for a in asks if a.lab.key == k)))]
-        credit = roles.verdict_loop(VERDICTS, DONATE_DIR, pairs[:calls_made] if calls_made else [],
-                                    STATE_DIR / "verdict_credit.json")
-        roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
+        try:
+            credit = roles.verdict_loop(VERDICTS, DONATE_DIR,
+                                        pairs[:calls_made] if calls_made else [],
+                                        STATE_DIR / "verdict_credit.json")
+        except Exception as exc:          # a broken credit file never loses the pass's report
+            credit = {"error": f"verdict_loop: {type(exc).__name__}: {str(exc)[:160]}"}
     now_iso = _now()
     for mkey in pass_cov:
         rotation[mkey] = now_iso

@@ -383,10 +383,13 @@ def test_sixteen_labs_with_distinct_mandates() -> None:
     assert lab.LAB_BY_KEY["P"] not in lab.INVENTORS
 
 
-def test_a_registered_cutoff_moves_evidence_from_and_never_past_today(state: Path) -> None:
-    lab._write_json(lab.MODEL_CUTOFFS, {"qwen3": "2025-03-31"})
+def test_evidence_starts_at_the_later_of_cutoff_and_birth(state: Path) -> None:
+    """Audit must-fix 2: never the earlier date, which counted history the model had read."""
+    lab._write_json(lab.MODEL_CUTOFFS, {"qwen3": "2025-03-31", "future": "2027-01-01"})
     g = lab.lookahead_guard("local0:qwen3:8b", at="2026-10-13T00:00:00+00:00")
-    assert g["evidence_from"] == "2025-03-31" and g["basis"] == "registered cutoff"
+    assert g["evidence_from"] == "2026-10-13" and g["basis"] == "registered cutoff"
+    assert lab.lookahead_guard("x:future-model", at="2026-10-13T00:00:00+00:00")[
+        "evidence_from"] == "2027-01-01"
     assert lab.lookahead_guard("groq:other", at="2026-10-13T00:00:00+00:00")[
         "evidence_from"] == "2026-10-13"
 

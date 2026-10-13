@@ -275,6 +275,8 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
             if r.get("passed"):
                 row["certified"] += 1
                 row["keff"] = round(row["keff"] + keff.get(cid, 0.0), 4)
+        if not r.get("passed") and held_out(gate, why):
+            continue                      # audit must-fix 7: a held-out death is never told
         line = (f"verdict on your cell {cid[:60]} ({own['family']} on {own['symbol']}): "
                 + (f"CERTIFIED, +{keff.get(cid, 0.0):.2f} effective bets" if r.get("passed")
                    else f"died at {gate}{(' -- ' + why) if why else ''}"))
@@ -364,6 +366,16 @@ MISSED_MANDATE = ("A large move happened that the desk's live book did not trade
                   "and a rule that would have been positioned before it. Every hypothesis must be "
                   "an exact cell that can be tested on EVERY past occurrence of the same "
                   "condition, not a story about this one day.")
+
+
+#: Gates whose outcome is held-out evidence (the lockbox and its kin). Their deaths never reach
+#: anything model-facing (audit must-fix 7): a model told "died at lockbox" learns the held-out
+#: segment, and the scrub then refuses the prompt that carried it, silencing the lab.
+HELD_OUT = re.compile(r"lock|hold.?out|held.?out|reserved", re.I)
+
+
+def held_out(gate: str, why: str = "") -> bool:
+    return bool(HELD_OUT.search(gate or "") or HELD_OUT.search(why or ""))
 
 
 # ============================================================================ R code lab
