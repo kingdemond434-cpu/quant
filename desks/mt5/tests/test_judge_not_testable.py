@@ -242,10 +242,12 @@ def test_a_rename_keeps_the_first_parked_at(tmp_path) -> None:
 
 def test_readmissions_are_logged_and_reach_the_burndown_inflow(tmp_path) -> None:
     path = tmp_path / "bank.json"
+    old = "2026-06-01T00:00:00+00:00"                   # past READMIT_MAX_DAYS
     path.write_text(json.dumps({"c": {"reason": "never_fires", "sym": "NOSUCHSYM",
-                                      "family": "a", "bar_bytes": -1},
+                                      "family": "a", "bar_bytes": 10, "parked_at": old},
                                 "d": {"reason": "series_exception", "sym": "NOSUCHSYM",
-                                      "family": "a", "bar_bytes": -1}}), "utf-8")
+                                      "family": "a", "bar_bytes": 10, "parked_at": old}}),
+                    "utf-8")
     at = (NOW - timedelta(hours=1)).isoformat()
     out = jc.update_unrunnable_bank({}, at=at, path=path)
     assert out["readmitted_not_testable"] == 1          # only the not-testable one is inflow
