@@ -78,6 +78,8 @@ def _ask(prompt: str) -> str:
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         method="POST",
     )
+    from libs.ops import openrouter_guard
+    openrouter_guard.check_request(request)
     with urllib.request.urlopen(
         request, timeout=240, context=ssl.create_default_context()
     ) as response:
