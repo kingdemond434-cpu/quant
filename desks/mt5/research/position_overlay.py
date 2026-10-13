@@ -181,14 +181,55 @@ def certified_sleeves(path: Path = SLEEVES) -> dict[str, dict[str, Any]] | None:
             if isinstance(r, dict) and r.get("name") and r.get("status") != "RETIRED"}
 
 
+def ledger_stems(row: dict[str, Any]) -> list[str]:
+    """Every ledger stem (`ledger_<stem>.json`) a sleeve row's forward clock can write.
+
+    Registry names (`gold_asia_v2`, `xauusd_session_range_breakout_asia_5_wb_12`) are NOT clock
+    keys. The clocks name their ledgers by identity: shadow_forward writes
+    `<SYM>_<window>` for session_range_breakout and `<SYM>_<family>_<window>` otherwise
+    (shadow_forward.py ledger path), scalp_shadow writes `<name>`, and a clock key `SYM.win`
+    becomes `SYM_win` (decay_monitor._shadow_ledger_rows)."""
+    out: list[str] = []
+    name = str(row.get("name") or "")
+    if name:
+        out += [name, name.replace(".", "_")]
+    sym = str(row.get("symbol") or "").upper()
+    sel = row.get("window") or row.get("selector") or row.get("session")
+    fam = row.get("family")
+    ident = str(row.get("canonical_identity") or "")
+    if ident.count("|") == 2 and not sel:
+        isym, fam, sel = ident.split("|")
+        sym = sym or isym.upper()
+    if sym and sel:
+        if row.get("window") or not fam or fam == "session_range_breakout":
+            out.append(f"{sym}_{sel}")
+        if fam:
+            out.append(f"{sym}_{fam}_{sel}")
+    return list(dict.fromkeys(out))
+
+
+def stem_index(registry: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """ledger stem -> the registry row it belongs to (first non-retired row by name order)."""
+    idx: dict[str, dict[str, Any]] = {}
+    for _name, row in sorted(registry.items()):
+        for st in ledger_stems(row):
+            idx.setdefault(st, row)
+    return idx
+
+
 def load_trades(shadow_dir: Path = SHADOW_DIR,
                 registry: dict[str, dict[str, Any]] | None = None) -> dict[str, list[Trade]]:
     out: dict[str, list[Trade]] = {}
-    for f in sorted(glob.glob(str(shadow_dir / "**" / "ledger_*.json"), recursive=True)):
+    index = stem_index(registry) if registry is not None else None
+    # Top level only: archived_runtime_windows/ and *.pre_* are snapshot copies of live
+    # ledgers; reading them would double-count trades and inflate T.
+    for f in sorted(glob.glob(str(shadow_dir / "ledger_*.json"))):
         p = Path(f)
+        if ".pre_" in p.name:
+            continue
         sleeve = p.stem[len("ledger_"):]
-        reg = (registry or {}).get(sleeve)
-        if registry is not None and reg is None:
+        reg = (index or {}).get(sleeve)
+        if index is not None and reg is None:
             continue
         symbol = str((reg or {}).get("symbol") or sleeve.split("_", 1)[0]).upper()
         try:
@@ -220,10 +261,16 @@ def load_trades(shadow_dir: Path = SHADOW_DIR,
 
 
 def _fill_risk(ts: list[Trade]) -> None:
-    known = [abs(t.exit - t.entry) / abs(t.r) for t in ts if abs(t.r) >= MIN_R_FOR_RISK]
-    med = statistics.median(known) if known else 0.0
+    """Risk per trade; where R is too small to invert, the median of risks from trades that
+    EXITED before this one entered (past only, never a later trade). `ts` is entry-sorted."""
+    known: list[tuple[datetime, float]] = [
+        (t.exit_time, abs(t.exit - t.entry) / abs(t.r)) for t in ts if abs(t.r) >= MIN_R_FOR_RISK]
     for t in ts:
-        t.risk = abs(t.exit - t.entry) / abs(t.r) if abs(t.r) >= MIN_R_FOR_RISK else med
+        if abs(t.r) >= MIN_R_FOR_RISK:
+            t.risk = abs(t.exit - t.entry) / abs(t.r)
+            continue
+        past = [r for x, r in known if x <= t.entry_time]
+        t.risk = statistics.median(past) if past else 0.0
 
 
 def load_bars(symbol: str, universe_dir: Path = UNIVERSE_DIR) -> Bars | None:
@@ -243,7 +290,8 @@ def load_bars(symbol: str, universe_dir: Path = UNIVERSE_DIR) -> Bars | None:
     idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
     sp = (d["spread"].to_numpy(dtype=float) if "spread" in d.columns
           else np.full(len(d), np.nan))
-    return Bars(t=np.asarray(idx.as_unit("s").asi8, dtype=np.int64), o=d["open"].to_numpy(dtype=float),
+    return Bars(t=np.asarray(idx.as_unit("s").asi8, dtype=np.int64),
+                o=d["open"].to_numpy(dtype=float),
                 h=d["high"].to_numpy(dtype=float), lo=d["low"].to_numpy(dtype=float),
                 c=d["close"].to_numpy(dtype=float), spread=sp, point=point)
 
@@ -419,21 +467,26 @@ def overlay_r(tr: Trade, ex: Exit | None, b: Bars, costs: CostModel) -> float:
 
 # ---------------------------------------------------------------- the judge
 
-def _dsr(d: Sequence[float], n_trials: int) -> dict[str, Any]:
+def _dsr(d: Sequence[float], n_forward: int = 0) -> dict[str, Any]:
+    """The fixed Tier S bar: N = TIER_S_MIN_N (5), Var(SR) = 1/(T-1), DSR >= 0.95 (t ~ 2.84).
+    The bar never rises with the number of cells tried; trials are charged once each, at their
+    true count, in the trial ledger -- that bookkeeping is separate from the bar."""
     a = np.asarray(d, dtype=float)
     if a.size < MIN_OOS or float(np.std(a, ddof=1)) == 0.0:
         return {"status": UNMEASURED, "n": int(a.size),
                 "why": f"{a.size} scored trades < {MIN_OOS}" if a.size < MIN_OOS
                 else "zero variance: the overlay never changed an exit"}
     from libs.validation.dsr import deflated_sharpe_ratio
-    n = max(TIER_S_MIN_N, n_trials)
+    n = TIER_S_MIN_N
     res = deflated_sharpe_ratio(a, n_trials=n, variance_of_sharpes=1.0 / (a.size - 1),
                                 threshold=DSR_THRESHOLD)
     return {"status": "MEASURED", "n": int(a.size), "n_trials": n,
             "sr": round(float(res.sr_observed), 4), "sr0": round(float(res.sr0_threshold), 4),
             "dsr": round(float(res.dsr), 4), "passed": bool(res.passed),
-            "rule": "PSR(d) vs E[max SR], N=max(5, cells charged for the sleeve), "
-                    "Var(SR)=1/(T-1), DSR>=0.95"}
+            "n_forward": int(n_forward), "n_historical": int(a.size) - int(n_forward),
+            "sample": "walk-forward OOS trades: historical-replay and forward-clock mixed "
+                      "(n_forward / n_historical give the split)",
+            "rule": "PSR(d) vs E[max SR], fixed Tier S bar N=5, Var(SR)=1/(T-1), DSR>=0.95"}
 
 
 def walk_forward(trades: Sequence[Trade], lifts: dict[float, list[float]]) -> tuple[
@@ -488,8 +541,8 @@ def judge_sleeve(sleeve: str, trades: list[Trade], bars: Bars | None, costs: Cos
                              "lift_r_per_trade_in_sample": round(float(np.mean(ls)), 4)
                              if ls else None}
         d, chosen, fwd = walk_forward(trades, lifts)
-        verdict = _dsr(d, n_cells)
         fwd_d = [x for x, f in zip(d, fwd, strict=True) if f]
+        verdict = _dsr(d, len(fwd_d))
         row["policies"][pol] = {
             "cells": cells, "cost_basis": sorted(costs.basis) or ["no exit changed"],
             "oos_lift_r_per_trade": round(float(np.mean(d)), 4) if d else UNMEASURED,
@@ -576,13 +629,14 @@ def run(shadow_dir: Path = SHADOW_DIR, out: Path | None = OUT, *,
     doc: dict[str, Any] = {
         "schema": SCHEMA, "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "status": "MEASURED" if rows else UNMEASURED,
-        "why": None if rows else "no certified sleeve ledger (reports/shadow/**/ledger_*.json) "
+        "why": None if rows else "no certified sleeve ledger (reports/shadow/ledger_*.json) "
                                  "is present on this checkout",
         "n_trades": sum(len(t) for t in by_sleeve.values()),
         "registry": "data/sleeves.json (non-RETIRED rows)" if registry is not None
         else "UNREADABLE: every ledger read",
         "grid": {k: list(v) for k, v in GRID.items()},
-        "bar": {"N": f"max({TIER_S_MIN_N}, cells charged per sleeve)", "var_sr": "1/(T-1)",
+        "bar": {"N": f"{TIER_S_MIN_N} (fixed Tier S bar; never rises with cells tried)",
+                "var_sr": "1/(T-1)",
                 "dsr": DSR_THRESHOLD, "embargo_h": EMBARGO_H, "min_train": MIN_TRAIN,
                 "min_oos": MIN_OOS},
         "trials": {"newly_charged": new, "lifetime_cells": union,

@@ -163,3 +163,53 @@ def test_run_end_to_end_finds_a_planted_breakeven_edge(tmp_path: Path) -> None:
                    charged=tmp_path / "c.json", trials=tmp_path / "t.jsonl", surface={},
                    load_frame=False)
     assert again["trials"]["newly_charged"] == 0
+
+
+def _ledger_row(h: int) -> dict:
+    return {"entry_time": str(T0 + timedelta(hours=h)),
+            "exit_time": str(T0 + timedelta(hours=h + 3)),
+            "side": 1, "entry": 1.0, "exit": 1.001, "r_multiple": 1.0, "phase": "forward"}
+
+
+def test_registry_names_join_to_clock_ledger_stems(tmp_path: Path) -> None:
+    """Real-style registry names never equal the ledger stems the clocks write; the join is on
+    identity (symbol + window / family + selector), and archives / .pre_ snapshots are skipped."""
+    shadow = tmp_path / "shadow"
+    (shadow / "archived_runtime_windows").mkdir(parents=True)
+    rows = json.dumps([_ledger_row(0), _ledger_row(10)])
+    for name in ("ledger_XAUUSD_asia.json", "ledger_AUDCHF_overnight_gap_decay_asia.json",
+                 "ledger_XAUUSD_asia.pre_20260901.json",
+                 "archived_runtime_windows/ledger_XAUUSD_london_am.json",
+                 "ledger_EURUSD_orphan.json"):
+        (shadow / name).write_text(rows)
+    (tmp_path / "sleeves.json").write_text(json.dumps({"sleeves": [
+        {"name": "gold_asia_v2", "symbol": "XAUUSD", "window": "asia", "status": "STANDBY",
+         "canonical_identity": "UNIDENTIFIABLE"},
+        {"name": "gold_london_am_v2", "symbol": "XAUUSD", "window": "london_am",
+         "status": "STANDBY"},
+        {"name": "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+         "symbol": "AUDCHF", "family": "overnight_gap_decay", "selector": "asia",
+         "canonical_identity": "audchf|overnight_gap_decay|asia", "status": "LIVE"},
+        {"name": "xauusd_session_range_breakout_asia_5_wb_12", "symbol": "XAUUSD",
+         "family": "session_range_breakout", "selector": "asia", "status": "LIVE",
+         "canonical_identity": "xauusd|session_range_breakout|asia"}]}))
+    reg = po.certified_sleeves(tmp_path / "sleeves.json")
+    assert "XAUUSD_asia" in po.ledger_stems(reg["xauusd_session_range_breakout_asia_5_wb_12"])
+    got = po.load_trades(shadow, reg)
+    assert sorted(got) == ["AUDCHF_overnight_gap_decay_asia", "XAUUSD_asia"]
+    assert all(len(v) == 2 for v in got.values())
+    assert got["AUDCHF_overnight_gap_decay_asia"][0].symbol == "AUDCHF"
+
+
+def test_survivor_bar_is_the_fixed_tier_s_n5() -> None:
+    d = list(np.random.default_rng(3).normal(0.3, 1.0, 60))
+    v = po._dsr(d, 20)
+    assert v["n_trials"] == 5 and v["n_forward"] == 20 and v["n_historical"] == 40
+
+
+def test_fill_risk_median_is_past_only() -> None:
+    a = po.Trade("s", "EURUSD", T0, T0 + timedelta(hours=1), 1, 1.0, 1.0, 0.0, False)
+    b = po.Trade("s", "EURUSD", T0 + timedelta(hours=2), T0 + timedelta(hours=3), 1,
+                 1.0, 1.002, 1.0, False)
+    po._fill_risk([a, b])
+    assert a.risk == 0.0 and abs(b.risk - 0.002) < 1e-12
