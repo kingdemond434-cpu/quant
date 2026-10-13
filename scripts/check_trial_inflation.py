@@ -155,7 +155,7 @@ class _Scan(ast.NodeVisitor):
 
 
 def _files(root: Path) -> list[Path]:
-    out = []
+    out: list[Path] = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in SKIP_PARTS and not d.startswith(".")]
         out.extend(Path(dirpath) / f for f in filenames
