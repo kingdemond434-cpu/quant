@@ -229,7 +229,9 @@ def test_recovery_closes_the_defect_and_a_row_alone_never_does() -> None:
     prior = {"prewarm_fail_share": 0.556, "prewarm_fail_best": 0.163}
     opened = jc.prewarm_sticky(prior, 0.556, "214", at)
     assert opened["prewarm_fail_defect"]["row"] == "214"
-    assert opened["prewarm_fail_baseline"] == 0.556 and opened["prewarm_fail_best"] == 0.163
+    # row 214 opens at its anchored opening, whatever the ratchet carried
+    assert opened["prewarm_fail_defect"]["opened_share"] == 0.555807
+    assert opened["prewarm_fail_baseline"] == 0.555807 and opened["prewarm_fail_best"] == 0.163
     # The row disappears from the register: the defect stays open (only a reading closes it).
     held = jc.prewarm_sticky({**prior, **opened}, 0.50, None, at)
     assert held["prewarm_fail_defect"]["row"] == "214" and held["prewarm_fail_baseline"] == 0.50
@@ -243,8 +245,8 @@ def test_best_never_rises_whatever_the_order() -> None:
         st: dict = {}
         best_seen = []
         for v in seq:
-            st = {**st, **jc.prewarm_sticky(st, v, None, NOW.isoformat()),
-                  "prewarm_fail_share": v}
+            st = {**st, **jc.prewarm_sticky(st, v, None, NOW.isoformat(), sample=10_000),
+                  "prewarm_fail_share": v, "prewarm_submitted": 10_000}
             best_seen.append(st["prewarm_fail_best"])
         assert all(b2 <= b1 for b1, b2 in itertools.pairwise(best_seen))
         assert best_seen[-1] == min(0.10, jc.PREWARM_FAIL_BEST_SEED)
@@ -257,3 +259,61 @@ def test_the_register_row_is_found_by_its_marker(tmp_path: Path) -> None:
                    "utf-8")
     assert jc.open_defect_row(reg) == "214"
     assert jc.open_defect_row(tmp_path / "absent.md") is None
+
+
+# ------------------------------------------------ audit of #372: nothing launders the regression
+def test_a_wiped_ratchet_reopens_row_214_at_its_anchor_not_today() -> None:
+    later = (NOW + timedelta(days=13)).isoformat()
+    st = jc.prewarm_sticky({}, 0.62, "214", later, sample=10_000)
+    assert st["prewarm_fail_defect"]["opened_utc"] == jc.PREWARM_DEFECT_ANCHORS["214"]["opened_utc"]
+    assert st["prewarm_fail_baseline"] == 0.555807            # 0.62 is a rise over it
+
+
+def test_a_wiped_ratchet_reading_a_rise_still_fails(tmp_path: Path) -> None:
+    st = jc.prewarm_sticky({}, 0.62, "214", NOW.isoformat(), sample=10_000)
+    c = _sticky_fence(tmp_path, {"prewarm_fail_share": 0.62, "prior_prewarm_fail_share": None,
+                                 **st})
+    assert c["prewarm_fail_baseline"]["state"] == "FAIL"
+
+
+def test_an_empty_reading_carries_the_sticky_values_forward(tmp_path: Path) -> None:
+    rt, rep = tmp_path / "ratchet.json", tmp_path / "JC.json"
+    sticky = {"prewarm_fail_best": 0.10, "prewarm_fail_baseline": 0.5559,
+              "prewarm_fail_defect": {"row": "214", "opened_utc": "x", "opened_share": 0.555807}}
+    rt.write_text(json.dumps(sticky), "utf-8")
+    jc.write({"families": {}, "totals": {}}, report=rep, ratchet=rt)
+    kept = json.loads(rt.read_text("utf-8"))
+    assert {k: kept[k] for k in sticky} == sticky
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_a_future_or_unreadable_opening_time_is_aged(tmp_path: Path) -> None:
+    for stamp in ("2027-01-01T00:00:00+00:00", "bogus"):
+        c = _sticky_fence(tmp_path, {
+            "prewarm_fail_share": 0.556, "prior_prewarm_fail_share": 0.556,
+            "prewarm_fail_best": 0.163, "prewarm_fail_baseline": 0.556,
+            "prewarm_fail_defect": {"row": "214", "opened_utc": stamp, "opened_share": 0.556}},
+            now=NOW + timedelta(days=30))
+        assert c["prewarm_fail_defect_aged"]["state"] == "FAIL", stamp
+
+
+def test_a_token_fall_after_14_days_is_still_the_regression(tmp_path: Path) -> None:
+    c = _sticky_fence(tmp_path, {"prewarm_fail_share": 0.5559, "prior_prewarm_fail_share": 0.556,
+                                 "prewarm_fail_best": 0.163, "prewarm_fail_baseline": 0.5559,
+                                 "prewarm_fail_defect": _owned(NOW - timedelta(days=60))})
+    assert c["prewarm_fail_defect_aged"]["state"] == "FAIL"
+
+
+def test_a_non_finite_best_fails(tmp_path: Path) -> None:
+    c = _sticky_fence(tmp_path, {"prewarm_fail_share": 0.30, "prior_prewarm_fail_share": 0.30,
+                                 "prewarm_fail_best": float("nan"),
+                                 "prewarm_fail_baseline": None, "prewarm_fail_defect": None})
+    assert c["prewarm_fail_sticky"]["state"] == "FAIL"
+
+
+def test_a_tiny_sweep_cannot_pin_best() -> None:
+    st = jc.prewarm_sticky({"prewarm_fail_best": 0.163}, 0.0, None, NOW.isoformat(), sample=12)
+    assert st["prewarm_fail_best"] == 0.163
+    st = jc.prewarm_sticky({"prewarm_fail_best": 0.163}, 0.05, None, NOW.isoformat(),
+                           sample=jc.PREWARM_MIN_SAMPLE)
+    assert st["prewarm_fail_best"] == 0.05

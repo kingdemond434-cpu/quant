@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
@@ -104,6 +105,16 @@ def _age_h(stamp: object, now: datetime) -> float | None:
 
 
 PREWARM_DEFECT_MAX_DAYS = 14.0
+#: A stamp more than this far ahead of the reader's clock is a future stamp, not clock skew.
+FUTURE_SKEW_S = 900.0
+
+
+def _parse_utc(stamp: object) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(stamp or "").strip().replace("Z", "+00:00")
+                                      ).astimezone(UTC)
+    except ValueError:
+        return None
 
 
 def _sticky_checks(out: dict[str, Any], failures: list[str], tot: dict[str, Any],
@@ -114,6 +125,13 @@ def _sticky_checks(out: dict[str, Any], failures: list[str], tot: dict[str, Any]
     if pw_now is None or not isinstance(best, (int, float)):
         out["checks"].append({"metric": "prewarm_fail_sticky", "state": "UNMEASURED",
                               "why": f"pre-warm share {pw_now}, best {best}: no sticky reading"})
+        return
+    if not all(math.isfinite(float(v)) for v in (pw_now, best, *(
+            [base] if isinstance(base, (int, float)) else []))):
+        failures.append("prewarm_fail_nonfinite")
+        out["checks"].append({"metric": "prewarm_fail_sticky", "state": "FAIL",
+                              "why": f"a non-finite sticky value (now {pw_now}, best {best}, "
+                                     f"baseline {base}) is no reading"})
         return
     now, tol = float(pw_now), PREWARM_TOLERANCE
     named = (f"now {now:.1%}, best {float(best):.1%}, baseline "
@@ -133,16 +151,23 @@ def _sticky_checks(out: dict[str, Any], failures: list[str], tot: dict[str, Any]
     if defect is None:
         out["checks"].append({"metric": "prewarm_fail_sticky", "state": "OK", "why": named})
         return
-    age_d = _age_h(defect.get("opened_utc"), at)
-    age_d = None if age_d is None else age_d / 24.0
-    opened = defect.get("opened_share")
-    if age_d is not None and age_d > PREWARM_DEFECT_MAX_DAYS and (
-            not isinstance(opened, (int, float)) or now >= float(opened)):
+    # AN OPENING TIME NOBODY CAN READ, OR ONE IN THE FUTURE, IS AGED (audit of #372): otherwise a
+    # bogus stamp would hold the defect in WARN forever.
+    opened_at = _parse_utc(defect.get("opened_utc"))
+    if opened_at is None or opened_at.timestamp() > at.timestamp() + FUTURE_SKEW_S:
+        age_d: float = math.inf
+    else:
+        age_d = (at.timestamp() - opened_at.timestamp()) / 86400.0
+    # Recovery is the SAME condition that closes the defect -- back to best + tolerance; any
+    # smaller fall is still the regression.
+    if age_d > PREWARM_DEFECT_MAX_DAYS and now > float(best) + tol:
         failures.append("prewarm_fail_defect_aged")
         out["checks"].append({
             "metric": "prewarm_fail_defect_aged", "state": "FAIL",
-            "why": (f"GAP row #{defect['row']} open {age_d:.0f}d (over "
-                    f"{PREWARM_DEFECT_MAX_DAYS:.0f}d) and not below where it opened ({named})")})
+            "why": (f"GAP row #{defect['row']} open "
+                    f"{'an unreadable/future time' if math.isinf(age_d) else f'{age_d:.0f}d'} "
+                    f"(over {PREWARM_DEFECT_MAX_DAYS:.0f}d) and not back to best + "
+                    f"{tol:.0%} ({named})")})
         return
     out["checks"].append({
         "metric": "prewarm_fail_sticky", "state": "WARN",
