@@ -393,6 +393,7 @@ desks/mt5/data/parity_hunt_targets.json
 !desks/mt5/reports/LIVE_TRADABILITY.json
 !desks/mt5/reports/TRADE_AUTOPSY.json
 !desks/mt5/reports/PROMOTION_LAG.json
+!desks/mt5/reports/E8_EXEC.json
 # THE TIER S PROMOTION DOOR'S REPORT-SIDE EVIDENCE (2026-09-30), published by $relPaths.
 # `**/reports/*` excludes the DIRECTORY reports/tier_s itself, and git cannot re-include a file
 # under an excluded directory -- so the directory is re-included, its contents re-excluded, and

@@ -35,10 +35,10 @@ CERT = {"enabled": True, "fusion": {"AUDCHF_overnight_gap_decay_asia": 0.1}}
 SLEEVES = {"sleeves": [{"name": NAME, "status": "LIVE", "shadow_exp": 0.2}]}
 
 
-def _build(deals, intents=(INTENT,), resolved=None, balance=484.83, e8=None):
+def _build(deals, intents=(INTENT,), resolved=None, balance=484.83, e8=None, blocked=()):
     return la.build(NOW, deals=list(deals), intents=list(intents), sleeves_doc=SLEEVES,
                     cert=CERT, account={"balance": balance}, drift={},
-                    resolved=resolved or {}, e8_ledger=e8, e8_journals=[])
+                    resolved=resolved or {}, e8_ledger=e8, e8_journals=[], blocked=blocked)
 
 
 def test_the_audchf_loss_is_an_oversize_defect_until_its_fix_is_named() -> None:
@@ -113,12 +113,12 @@ def test_e8_losses_are_autopsied_from_the_close_ledger_and_its_absence_is_a_fix_
             "pl_usd_est": -1000.0, "latency_send_to_ack_ms": 120.0}
     cert = {"enabled": True, "e8": {"gold_asia": 0.01}}
     doc = la.build(NOW, deals=[], intents=[], sleeves_doc=SLEEVES, cert=cert, account={},
-                   drift={}, resolved={}, e8_ledger=[gold], e8_journals=[])
+                   drift={}, resolved={}, e8_ledger=[gold], e8_journals=[], blocked=[])
     assert doc["e8"]["status"] == "MEASURED" and doc["rows"][0]["verdict"] == la.NATURAL
     assert doc["fix_queue"] == []
     big = {**gold, "position_id": 78, "risk_frac": 0.02}
     doc = la.build(NOW, deals=[], intents=[], sleeves_doc=SLEEVES, cert=cert, account={},
-                   drift={}, resolved={}, e8_ledger=[big], e8_journals=[])
+                   drift={}, resolved={}, e8_ledger=[big], e8_journals=[], blocked=[])
     assert [f["fix_id"] for f in doc["fix_queue"]] == ["loss:e8:e8:78:over_allocation"]
 
 
@@ -147,3 +147,12 @@ def test_a_refused_send_is_a_missed_trade() -> None:
     doc = _build([], intents=[INTENT, refused], e8=[])
     assert [m["id"] for m in doc["missed_sends"]] == ["miss1"]
     assert [f["fix_id"] for f in doc["fix_queue"]] == ["missed:fusion:miss1"]
+
+
+def test_a_fault_between_signal_and_venue_is_a_missed_trade_and_a_decision_is_not() -> None:
+    stale = {"time": "2026-10-13T05:00:00+00:00", "sleeve": NAME, "symbol": "AUDCHF",
+             "stage": "desk_stale", "why": "desk state 3h old", "bar": "2026-10-13 04:00"}
+    zero = {**stale, "stage": "no_heat", "why": "allocator gave this sleeve no heat"}
+    doc = _build([], intents=[], e8=[], blocked=[stale, zero])
+    assert [m["why"][:20] for m in doc["missed_sends"]] == ["blocked at desk_stal"]
+    assert [b["stage"] for b in doc["blocked_decisions"]] == ["no_heat"]

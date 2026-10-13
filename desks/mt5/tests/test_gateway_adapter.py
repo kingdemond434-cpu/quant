@@ -1570,3 +1570,14 @@ def test_a_legacy_tag_is_a_sleeves_own_only_while_nobody_else_carries_it() -> No
     # two roster sleeves sharing a legacy tag: neither may act on a legacy position
     ns["note_roster_tags"]([{"name": live}, {"name": twin}])
     assert ns["position_tags"](live) == {ns["order_comment"](live)}
+
+
+def test_a_blocked_entry_is_recorded_once_per_bar_and_stage(tmp_path) -> None:
+    ns = _exec(("_record_block",), {"BLOCKED": tmp_path / "blocked.jsonl",
+                                     "_release_id": lambda: "rel", "log": lambda *a: None})
+    st: dict = {}
+    for _ in range(3):
+        ns["_record_block"](st, "eurzar_x", "EURZAR", "desk_stale", "desk state stale", "b1")
+    ns["_record_block"](st, "eurzar_x", "EURZAR", "desk_stale", "desk state stale", "b2")
+    rows = [json.loads(x) for x in (tmp_path / "blocked.jsonl").read_text().splitlines()]
+    assert [r["bar"] for r in rows] == ["b1", "b2"] and rows[0]["release_id"] == "rel"

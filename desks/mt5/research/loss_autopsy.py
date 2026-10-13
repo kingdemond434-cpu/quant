@@ -68,6 +68,12 @@ from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path  # noq
 LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 INTENTS = BASE / "data" / "order_intents.jsonl"
 E8_LEDGER = BASE / "data" / "e8_ledger.jsonl"
+BLOCKED = BASE / "data" / "blocked_entries.jsonl"
+#: Blocked-entry stages that are the desk DECIDING (the allocator's zero, the certified state
+#: filter, the risk envelope, a venue minimum above the target, a spread guard): listed, never
+#: queued. Every other stage is a fault between a fired signal and the venue, and is queued.
+DECISION_STAGES = frozenset({"no_heat", "state_gate", "risk_envelope", "symbol_side_cap",
+                             "below_min", "quote_spread"})
 SLEEVES = BASE / "data" / "sleeves.json"
 CERT_BOOK = BASE / "data" / "CERT_BOOK_LIVE.json"
 ACCOUNT = BASE / "data" / "account_state.json"
@@ -343,7 +349,8 @@ def suboptimal(deal: Mapping[str, Any], intent: Mapping[str, Any] | None, *, sle
 
 
 def missed_sends(intents: list[dict[str, Any]], e8_journals: list[dict[str, Any]],
-                 since: datetime) -> list[dict[str, Any]]:
+                 since: datetime, blocked: list[dict[str, Any]] | None = None
+                 ) -> list[dict[str, Any]]:
     """A certified signal the desk decided to trade and the venue never took: a Fusion intent
     whose send came back without TRADE_RETCODE_DONE, or an E8 send journalled REJECTED."""
     out: list[dict[str, Any]] = []
@@ -361,6 +368,14 @@ def missed_sends(intents: list[dict[str, Any]], e8_journals: list[dict[str, Any]
         out.append({"venue": "e8", "time": j.get("at"), "sleeve": j.get("sleeve"),
                     "symbol": j.get("symbol"), "id": f"{j.get('at')}:{j.get('sleeve')}",
                     "why": str(j.get("why") or "E8 send rejected")[:200]})
+    for b in blocked or []:
+        t, stage = _ts(b.get("time")), str(b.get("stage") or "")
+        if t is None or t < since or stage in DECISION_STAGES:
+            continue
+        out.append({"venue": "fusion", "time": b.get("time"), "sleeve": b.get("sleeve"),
+                    "symbol": b.get("symbol"), "id": f"{b.get('sleeve')}|{stage}|"
+                    f"{b.get('bar') or str(b.get('time'))[:13]}",
+                    "why": f"blocked at {stage}: {str(b.get('why') or '')[:200]}"})
     return out
 
 
@@ -435,7 +450,8 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
           intents: list[dict[str, Any]] | None = None, sleeves_doc: Any = None,
           cert: Any = None, account: Any = None, drift: Any = None,
           resolved: Any = None, e8_ledger: list[dict[str, Any]] | None = None,
-          e8_journals: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+          e8_journals: list[dict[str, Any]] | None = None,
+          blocked: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     deals = [d for d in (deals if deals is not None else _jsonl(LEDGER))
              if d.get("account_kind", "live") == "live"]
@@ -522,7 +538,8 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
     from prop.e8_close_ledger import JOURNALS as _E8_JOURNALS
     e8_journal_rows = e8_journals if e8_journals is not None else \
         [r for p in _E8_JOURNALS for r in _jsonl(p)]
-    missed = missed_sends(intents, e8_journal_rows, max(since, FIX_SINCE))
+    blocked = blocked if blocked is not None else _jsonl(BLOCKED)
+    missed = missed_sends(intents, e8_journal_rows, max(since, FIX_SINCE), blocked)
     missed_res = res_map.get("missed") if isinstance(res_map.get("missed"), dict) else {}
     fix_rows += [{"fix_id": f"missed:{m['venue']}:{m['id']}", "venue": m["venue"],
                   "class": SUBOPTIMAL, "deal": None, "sleeve": m["sleeve"],
@@ -548,6 +565,8 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
             "verdict": "FAIL" if fix_rows else "PASS",
             "trades": len(rows), "losses": sum(1 for r in rows if r["r"] < LOSS_R),
             "by_verdict": dict(counts), "open_trades": open_n, "missed_sends": missed,
+            "blocked_decisions": [b for b in blocked if str(b.get("stage")) in DECISION_STAGES
+                                  and (_ts(b.get("time")) or since) >= since],
             "fix_queue": fix_rows, "e8": e8, "cap": cap, "rows": rows,
             "edge_decay_by_sleeve": {r["sleeve"]: r["edge_decay"] for r in rows
                                      if r["edge_decay"]},

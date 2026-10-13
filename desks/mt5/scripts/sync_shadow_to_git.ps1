@@ -637,6 +637,8 @@ $relPaths = @(
     "desks/mt5/reports/PROMOTION_LAG.json",
     "desks/mt5/data/loss_fix_queue.jsonl",
     "desks/mt5/data/e8_ledger.jsonl",
+    "desks/mt5/data/blocked_entries.jsonl",
+    "desks/mt5/reports/E8_EXEC.json",
     # THE REST OF THE TIER S PROMOTION DOOR'S EVIDENCE (2026-09-30). `promotion_authority` reads
     # six box-local files to decide whether a candidate may go LIVE: live_door (above), the door
     # verdicts, the immune system's PROMOTION_FREEZE, the regression stop's RELEASE_STOP, the
