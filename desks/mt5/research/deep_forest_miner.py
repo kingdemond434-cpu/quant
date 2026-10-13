@@ -119,6 +119,13 @@ DATASETS = _DESK / "data" / "deep_forest_datasets.jsonl"
 RAW_VAULT = _DESK / "data" / "lake" / "vault"
 RAW_PREFIX = "dfraw__"
 RAW_MAX_PER_RUN = 200
+#: The landing's BYTE bound per run (the count bound alone lets 200 bodies of polite_fetch's
+#: max_bytes each through; the build box runs with about 1 GB of free disk). A body that would
+#: cross it is not landed and is counted (`landed_raw_skipped_bytes_cap`).
+RAW_MAX_BYTES_PER_RUN = 64 * 1024 * 1024
+#: A short page that is a login / cookie / password form is not data: it is never landed
+#: (`landed_raw_skipped_login`), so it occupies no vault id.
+_PASSWORD_FORM = re.compile(rb"(?i)<input[^>]+type\s*=\s*[\"']?password")
 _NON_HTML_TYPE = re.compile(r"(?i)csv|excel|spreadsheet|officedocument|pdf|json|xml|zip|"
                             r"octet-stream|text/plain|tab-separated")
 SEEN = _DESK / "data" / "deep_forest_seen.json"
@@ -1199,9 +1206,16 @@ class _Run:
     def _land(self, url: str, raw: bytes, ctype: str, reason: str) -> None:
         if self.counts.get("landed_raw", 0) >= RAW_MAX_PER_RUN:
             return
+        if self.counts.get("landed_raw_bytes", 0) + len(raw) > RAW_MAX_BYTES_PER_RUN:
+            self.counts["landed_raw_skipped_bytes_cap"] = (
+                self.counts.get("landed_raw_skipped_bytes_cap", 0) + 1)
+            return
         got = land_raw(url, raw, ctype, ground=self.ground or {}, reason=reason)
         if got:
             self.counts["landed_raw"] = self.counts.get("landed_raw", 0) + 1
+            if got["new"]:
+                self.counts["landed_raw_bytes"] = (self.counts.get("landed_raw_bytes", 0)
+                                                   + len(raw))
             self.counts["landed_raw_new"] = (self.counts.get("landed_raw_new", 0)
                                              + int(bool(got["new"])))
 
@@ -1217,6 +1231,11 @@ class _Run:
         if ctype and "html" not in ctype.lower() and _NON_HTML_TYPE.search(ctype):
             self._land(url, raw, ctype, f"format:{ctype.split(';')[0].strip()}")
         elif len(html_text(body)) < MIN_PAGE_TEXT:
+            final = str(resp.url) if resp is not None and getattr(resp, "url", None) else url
+            if _tf.login_wall(url) or _tf.login_wall(final) or _PASSWORD_FORM.search(raw):
+                self.counts["landed_raw_skipped_login"] = (
+                    self.counts.get("landed_raw_skipped_login", 0) + 1)
+                return
             self._land(url, raw, ctype, "short_page")
 
     def rendered(self, url: str) -> str:

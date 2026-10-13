@@ -908,3 +908,44 @@ def test_the_deep_forest_reads_the_one_policy_table() -> None:
     assert "SOURCE_POLICY: dict[str, dict[str, Any]] = {" not in src
     # a wrapper of a held page is the held page, through the one table's resolution
     assert dfm.policy_of_url("https://r.jina.ai/https://nitter.net/x")["status"] == "METHOD_BLOCKED"
+
+
+# ---- PR357_gd S2 / S3: a login form is never landed; the landing is bounded in BYTES per run
+def _bare_run() -> dfm._Run:
+    r = object.__new__(dfm._Run)
+    r.counts = {"landed_raw": 0, "landed_raw_new": 0}
+    r.ground = {"name": "g", "region": "za", "language": "en"}
+    return r
+
+
+@pytest.mark.parametrize("url, body", [
+    ("https://a.test/users/sign_in", "<html><form>email</form></html>"),
+    ("https://a.test/members", "<html><form><input name=p type=\"password\"></form></html>"),
+])
+def test_a_short_login_page_is_never_landed(monkeypatch, tmp_path, url, body) -> None:
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
+    monkeypatch.setattr(dfm._LAST, "resp", None, raising=False)
+    r = _bare_run()
+    r._land_if_dropped(url, body, "PUBLIC_PAGE")
+    assert r.counts["landed_raw"] == 0 and r.counts["landed_raw_skipped_login"] == 1
+    assert not list((tmp_path / "vault").glob("*/*.gz"))
+
+
+def test_an_ordinary_short_page_still_lands(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
+    monkeypatch.setattr(dfm._LAST, "resp", None, raising=False)
+    r = _bare_run()
+    r._land_if_dropped("https://a.test/t", "<html><table><tr><td>1.5</td></tr></table></html>",
+                       "PUBLIC_PAGE")
+    assert r.counts["landed_raw"] == 1 and "landed_raw_skipped_login" not in r.counts
+
+
+def test_the_raw_landing_is_bounded_in_bytes_per_run(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
+    monkeypatch.setattr(dfm, "RAW_MAX_BYTES_PER_RUN", 100)
+    r = _bare_run()
+    r._land("https://a.test/1.csv", b"a" * 60, "text/csv", "format:text/csv")
+    r._land("https://a.test/2.csv", b"b" * 60, "text/csv", "format:text/csv")
+    assert r.counts["landed_raw"] == 1 and r.counts["landed_raw_bytes"] == 60
+    assert r.counts["landed_raw_skipped_bytes_cap"] == 1
+    assert len(list((tmp_path / "vault").glob("*/*.gz"))) == 1
