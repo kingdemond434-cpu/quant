@@ -346,6 +346,17 @@ def test_a_rotated_shorter_ledger_is_read_from_zero(tmp_path: Path) -> None:
     assert cs.judged_outcomes(led, cur) == {"n1": True, "n2": False}
 
 
+def test_a_rotated_longer_ledger_is_read_from_zero(tmp_path: Path) -> None:
+    """Audit of #347, S2: a NEW longer file at the path must not resume at the old offset."""
+    led, cur = tmp_path / "gate_verdict_ledger.jsonl", tmp_path / "cursor.json"
+    _ledger(led, [{"cell": f"c{i}", "terminal_gate": "G3", "passed": False} for i in range(50)])
+    assert len(cs.judged_outcomes(led, cur)) == 50
+    led.rename(tmp_path / "gate_verdict_ledger.jsonl.1")
+    _ledger(led, [{"cell": f"n{i}", "passed": True} for i in range(80)])
+    got = cs.judged_outcomes(led, cur)
+    assert len(got) == 80 and got["n0"] is True
+
+
 def test_a_same_size_rewrite_is_detected_by_its_head(tmp_path: Path) -> None:
     led, cur = tmp_path / "gate_verdict_ledger.jsonl", tmp_path / "cursor.json"
     _ledger(led, [{"cell": "aaa", "passed": True}])
@@ -401,3 +412,38 @@ def test_handoff_routes_are_judge_coverage_failure_routes() -> None:
         assert route["axes"] == jc.FAILURE_ROUTES[cls]["axes"], cls
     assert cs.HANDOFF_SCHEMA_VERSION == jc.CONVERSION_HANDOFF_SCHEMA
     assert cs.CONVERSION_HANDOFF.name == jc.CONVERSION_HANDOFF.name
+
+
+def test_each_handoff_writer_keeps_its_own_stamp_and_a_stopped_one_reads_unmeasured(
+        tmp_path: Path) -> None:
+    """Audit of #347: one shared generated_utc let each writer launder the other's staleness."""
+    from research import judge_coverage as jc
+    from research import judging_burndown as jb
+    out = tmp_path / "conversion_handoff.json"
+    t0 = datetime(2026, 10, 13, 0, 0, tzinfo=UTC)
+    bank = {"x": {"reason": "never_fires", "parked_at": t0.isoformat()}}
+    jc.write_conversion_handoff(bank, at=t0.isoformat(), path=out)
+    # The merge keeps running for 20h while judge_coverage has stopped.
+    for h in (1, 10, 20):
+        at = (t0 + timedelta(hours=h)).isoformat()
+        doc, _ = cs.fold_handoff(json.loads(out.read_text("utf-8")),
+                                 [{"cell": "g", "first_parked_utc": at}], at=at)
+        out.write_text(json.dumps(doc), "utf-8")
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["generated_by"]["judge_coverage"] == t0.isoformat()
+    assert doc["generated_utc"] == t0.isoformat()                  # the older stamp
+    r = jb.awaiting_conversion(out, now=t0 + timedelta(hours=20))
+    assert r["status"] == "UNMEASURED" and "judge_coverage" in r["why"]
+    # And the reverse: judge_coverage alone for 29h never refreshes cell_state's stamp.
+    for h in (21, 35, 49):
+        jc.write_conversion_handoff(bank, at=(t0 + timedelta(hours=h)).isoformat(), path=out)
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["generated_by"]["cell_state"] == (t0 + timedelta(hours=20)).isoformat()
+    assert {r["cell"] for r in doc["rows"]} == {"x", "g"}            # rows kept, never wiped
+    r = jb.awaiting_conversion(out, now=t0 + timedelta(hours=49))
+    assert r["status"] == "UNMEASURED" and "cell_state" in r["why"]
+    # Both fresh: MEASURED.
+    at = (t0 + timedelta(hours=49)).isoformat()
+    doc, _ = cs.fold_handoff(doc, [{"cell": "g", "first_parked_utc": at}], at=at)
+    out.write_text(json.dumps(doc), "utf-8")
+    assert jb.awaiting_conversion(out, now=t0 + timedelta(hours=49))["status"] == "MEASURED"

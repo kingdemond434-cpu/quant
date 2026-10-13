@@ -462,6 +462,22 @@ def awaiting_conversion(path: Path | None = None,
     doc = _read(p)
     if not isinstance(doc, dict) or not isinstance(doc.get("n"), int) or doc["n"] < 0:
         return {"status": UNMEASURED, "why": f"{p.name} is absent or unreadable"}
+    # EACH WRITER'S OWN STAMP (audit of #347): the file has two writers, and the count is only
+    # as fresh as the staler one. A writer that stopped is NAMED, never hidden by the other.
+    by = doc.get("generated_by")
+    if isinstance(by, dict) and by:
+        t_now = (now or datetime.now(tz=UTC)).timestamp()
+        stale = []
+        for w, v in sorted(by.items()):
+            ts = _ts(v)
+            age = None if ts is None else (t_now - ts) / 3600.0
+            if age is None or age > READMISSION_LOG_STALE_H:
+                stale.append(f"{w} {'undated' if age is None else f'{age:.1f}h old'}")
+        if stale:
+            return {"status": UNMEASURED,
+                    "why": (f"{p.name}: writer(s) stopped -- {', '.join(stale)} (over "
+                            f"{READMISSION_LOG_STALE_H:.0f}h); the other writer's rows are not "
+                            "today's count")}
     # A handoff the coverage pass stopped rewriting is not today's count (audit of PR #290).
     gen = _ts(doc.get("generated_utc"))
     age_h = None if gen is None else ((now or datetime.now(tz=UTC)).timestamp() - gen) / 3600.0

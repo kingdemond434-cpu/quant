@@ -86,6 +86,7 @@ import argparse
 import contextlib
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter
@@ -1717,7 +1718,7 @@ def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
-def _keep_cell_state_rows(rows: list[dict[str, Any]], target: Path) -> list[dict[str, Any]]:
+def _keep_cell_state_rows(rows: list[dict[str, Any]], doc: Any) -> list[dict[str, Any]]:
     """Carry the OTHER writer's rows (cell_state's Gate -2, `source: "cell_state"`) through.
 
     This file has two writers: this one (the parked bank) and cell_state.fold_handoff, which
@@ -1725,10 +1726,6 @@ def _keep_cell_state_rows(rows: list[dict[str, Any]], target: Path) -> list[dict
     every hourly judge_coverage leg until the next merge (#347). One row per cell: a cell in
     both keeps the bank's row with the earliest first_parked_utc, so a parent is handed over,
     and charged its trials, once."""
-    try:
-        doc = json.loads(target.read_text("utf-8"))
-    except (OSError, ValueError):
-        return rows
     prior = doc.get("rows") if isinstance(doc, dict) else None
     by_cell = {str(r["cell"]): r for r in rows}
     out = list(rows)
@@ -1739,9 +1736,10 @@ def _keep_cell_state_rows(rows: list[dict[str, Any]], target: Path) -> list[dict
         if mine is None:
             out.append(r)
             continue
-        theirs, ours = r.get("first_parked_utc"), mine.get("first_parked_utc")
-        if theirs and (not ours or str(theirs) < str(ours)):
-            mine["first_parked_utc"] = theirs
+        # PARSED, never string-compared (audit of #347, S4): offsets and precision differ.
+        theirs, ours = _ts(r.get("first_parked_utc")), _ts(mine.get("first_parked_utc"))
+        if theirs is not None and (ours is None or theirs < ours):
+            mine["first_parked_utc"] = r["first_parked_utc"]
     return out
 
 
@@ -1767,18 +1765,52 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                      "missing_input": _missing_input(cls, row), "why": row.get("why"),
                      "first_parked_utc": row.get("parked_at")})
     target = path or CONVERSION_HANDOFF
-    rows = _keep_cell_state_rows(rows, target)
+    existing = _read(target)
+    rows = _keep_cell_state_rows(rows, existing)
+    by = _stamp_writer(existing, at)
+    tmp = target.with_suffix(target.suffix + ".tmp")
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps({"schema_version": CONVERSION_HANDOFF_SCHEMA,
-                                      "generated_utc": at, "n": len(rows), "rows": rows},
-                                     indent=1, default=str), "utf-8")
+        tmp.write_text(json.dumps({"schema_version": CONVERSION_HANDOFF_SCHEMA,
+                                   "generated_utc": _oldest_stamp(by), "generated_by": by,
+                                   "n": len(rows), "rows": rows},
+                                  indent=1, default=str), "utf-8")
+        os.replace(tmp, target)
     except OSError:
-        # Never leave the previous pass's file to read as this pass's count.
+        # ATOMIC, AND NEVER UNLINKED ON FAILURE (audit of #347): the file now carries the other
+        # writer's rows, so deleting it would lose them. A failed write leaves this writer's
+        # OLD stamp in `generated_by`, which ages into UNMEASURED by the readers' own rule.
         with contextlib.suppress(OSError):
-            target.unlink()
+            tmp.unlink()
         return -1
     return len(rows)
+
+
+def _stamp_writer(existing: Any, at: str) -> dict[str, str]:
+    """judge_coverage's stamp beside cell_state's in the shared handoff.
+
+    The same rule as `cell_state.stamp_writer` (a pin test holds the two together): each writer
+    keeps the other's own stamp and adds its own, and a pre-stamp file's `generated_utc` is
+    attributed to the other writer when it carries that writer's rows."""
+    by: dict[str, str] = {}
+    if isinstance(existing, dict):
+        prev = existing.get("generated_by")
+        if isinstance(prev, dict):
+            by = {str(k): str(v) for k, v in prev.items() if isinstance(v, str)}
+        elif existing.get("generated_utc") and any(
+                isinstance(r, dict) and r.get("source") == "cell_state"
+                for r in existing.get("rows") or []):
+            by = {"cell_state": str(existing["generated_utc"])}
+    by["judge_coverage"] = at
+    return by
+
+
+def _oldest_stamp(by: dict[str, str]) -> str | None:
+    stamps = [_ts(v) for v in by.values()]
+    if not stamps or any(t is None for t in stamps):
+        return None
+    oldest = min(t for t in stamps if t is not None)
+    return next(v for v in by.values() if _ts(v) == oldest)
 
 
 def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,

@@ -1074,6 +1074,40 @@ def _earlier(a: Any, b: Any) -> bool:
     return ta is not None and (tb is None or ta < tb)
 
 
+def stamp_writer(existing: Any, me: str, at: str, *, other_writer: str) -> dict[str, str]:
+    """This writer's stamp beside the other writer's, in the one shared handoff file.
+
+    The handoff has TWO writers (this module's Gate -2 fold and judge_coverage's bank rewrite).
+    One `generated_utc` stamped by whichever wrote last let each launder the other's staleness:
+    judge_coverage stopped for 20h read MEASURED while the merge kept stamping (audit of #347).
+    So each writer keeps the other's own stamp and adds its own. A pre-stamp file's
+    `generated_utc` is attributed to the other writer, never to this pass."""
+    by: dict[str, str] = {}
+    if isinstance(existing, dict):
+        prev = existing.get("generated_by")
+        if isinstance(prev, dict):
+            by = {str(k): str(v) for k, v in prev.items() if isinstance(v, str)}
+        elif existing.get("generated_utc") and any(
+                isinstance(r, dict) and r.get("source") != me
+                for r in existing.get("rows") or []):
+            by = {other_writer: str(existing["generated_utc"])}
+    by[me] = at
+    return by
+
+
+def oldest_stamp(by: Mapping[str, Any]) -> str | None:
+    """The OLDER writer's stamp: the handoff is only as fresh as its stalest writer. An
+    unparseable stamp makes the whole file undated (None), which readers take as UNMEASURED."""
+    best: tuple[datetime, str] | None = None
+    for v in by.values():
+        t = _ts(v)
+        if t is None:
+            return None
+        if best is None or t < best[0]:
+            best = (t, str(v))
+    return best[1] if best else None
+
+
 def fold_handoff(existing: Any, rows: list[dict[str, Any]], *, at: str
                  ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Fold Gate -2's handoff rows into the one `conversion_handoff.json`.
@@ -1106,8 +1140,9 @@ def fold_handoff(existing: Any, rows: list[dict[str, Any]], *, at: str
             continue
         keep[c] = row
     out_rows = list(keep.values())
-    doc = {"schema_version": HANDOFF_SCHEMA_VERSION, "generated_utc": at, "n": len(out_rows),
-           "rows": out_rows}
+    by = stamp_writer(existing, "cell_state", at, other_writer="judge_coverage")
+    doc = {"schema_version": HANDOFF_SCHEMA_VERSION, "generated_utc": oldest_stamp(by),
+           "generated_by": by, "n": len(out_rows), "rows": out_rows}
     return doc, {"file": CONVERSION_HANDOFF.name, "rows_total": len(out_rows),
                  "from_other_writer": other, "from_cell_state": len(rows) - deduped,
                  "deduped_by_cell": deduped}
