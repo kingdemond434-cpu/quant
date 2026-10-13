@@ -361,6 +361,15 @@ def propose() -> list[dict]:
                           else "needs an input the desk does not yet hold"),
         })
 
+    # 1b. PRODUCER HEALTH's bottom quartile (research/producer_health.py, hourly): the lanes
+    #     producing least against their peers, each with its additive upgrade -- repair, wire,
+    #     convert, mutate, widen, or raise the winning structure. Never a cut.
+    try:
+        from research.producer_health import proposals as _health_proposals
+        props.extend(_health_proposals())
+    except Exception:
+        pass
+
     # 2. Built-but-unwired machinery. Zero build cost; the caller is the whole job.
     for mod in _orphans():
         props.append({

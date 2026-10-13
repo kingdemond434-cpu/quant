@@ -93,6 +93,7 @@ LEG_LAYER: dict[str, str] = {
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
     "breadth_enforcer": "meta",
+    "producer_health": "meta",
     # The video-derived anchor/exit grid mints claims about returns: prediction, like
     # `empty_cluster_forcer`, which it runs beside.
     "htf_anchor": "prediction",

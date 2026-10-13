@@ -979,6 +979,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    # PRODUCER HEALTH (principal 2026-10-13): every lane LIVE/STALE, WIRED/UNWIRED, its yield
+    # against its peers and an additive upgrade for the bottom quartile -- an artifact reader.
+    "producer_health",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -1194,7 +1197,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "search_paradigm_census", "producer_census", "productivity_census",
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
-                     "producer_breadth",
+                     "producer_breadth", "producer_health",
                      # THE BREADTH ENFORCER: the saturated set, the ranked frontier and the
                      # per-producer share of mining each went to.
                      "breadth_enforcer",
@@ -2024,6 +2027,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
     "breadth_enforcer": 180,
+    "producer_health": 180,
     # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
@@ -5712,6 +5716,11 @@ def main() -> None:
     # reader of the registry, the seats and the producers' own reports -- seconds, core clock.
     pbr = _costed("producer_breadth", lambda: _producer(
         "producer_breadth", "research/producer_breadth.py"))
+    # PRODUCER HEALTH, after the census, the yield and the dead-architecture reads it joins:
+    # LIVE/STALE, WIRED/UNWIRED, yield vs peers, and the bottom quartile's upgrade (additive, never
+    # a cut), which frontier_ceo turns into docket proposals. No LLM. Meta department.
+    phl = _costed("producer_health", lambda: _producer(
+        "producer_health", "research/producer_health.py"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -5930,6 +5939,7 @@ def main() -> None:
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
+                    "producer_health": phl,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,

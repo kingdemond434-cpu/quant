@@ -306,6 +306,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # share falls below its target, on every lens the steer governs. Portable: no report reads
     # UNMEASURED and passes; the box half rides in _STATE_FENCES with --require-state.
     ("check_breadth_enforcer.py", ()),
+    # PRODUCER HEALTH (principal 2026-10-13: "make sure all sources and producers produce,
+    # nothing is stale or unwired"). `research/producer_health.py` joins PRODUCER_YIELD, the
+    # dead-architecture census and certificate provenance per lane; this FAILS on a lane that
+    # went LIVE->STALE or WIRED->UNWIRED since the last reading, or on a clocked stale/unwired
+    # count above its falling ratchet. Portable: no report reads UNMEASURED and passes.
+    ("check_producer_health.py", ()),
     # THE WRITE-OR-EXPLAIN CONTRACT IS STILL WIRED (2026-09-23). Eight failures in one day shared
     # one shape: an organ that produced nothing was indistinguishable from an organ with nothing
     # to produce. `libs/ops/write_or_explain.py` stats each leg's DECLARED artifact either side of
@@ -565,6 +571,8 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # absent, stale or unmeasured BREADTH_ENFORCER.json means the steer stopped and every
     # consumer silently fell back to mining saturated ground.
     ("check_breadth_enforcer.py", ("--require-state",)),
+    # the live half of producer health: the census stopping is itself a stale producer.
+    ("check_producer_health.py", ("--require-state",)),
     # THE PLUMBING MAY NOT STOP SILENTLY (principal 2026-09-23). The `plumbing_watchdog` leg
     # proves by OBSERVATION every fifteen minutes that the adoption clock exists and is enabled
     # with a next run inside the hour, that HEAD descends from the branch tip it should have
