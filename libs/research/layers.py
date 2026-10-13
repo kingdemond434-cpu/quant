@@ -232,7 +232,7 @@ LEG_LAYER: dict[str, str] = {
     # experimental budget accounts for principal-override heat inside the book: portfolio. The
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
-    "kelly_survival": "sizing",
+    "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
@@ -267,6 +267,8 @@ LEG_LAYER: dict[str, str] = {
     "alpha_capture": "information",
     # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
     "alt_proxies": "information",
+    # weather / jobs / payments / NDVI factories: PIT series the desk knows before it predicts
+    "domain_factories": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",
@@ -588,6 +590,7 @@ LEG_LAYER: dict[str, str] = {
     "unknown_census": "meta",
     "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
+    "queue_consumers": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
     # machine is doing what desired state says, and it predicts, sizes and times nothing.
     "control_plane": "meta",
@@ -616,7 +619,8 @@ LEG_LAYER: dict[str, str] = {
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     # CRO D18 measured on recorded consumer reads: a measurement of the desk's own wiring, meta.
     "dataset_use_census": "meta",
-    "catalog_routes": "information", "discovery_audit": "meta",
+    "measurer_registry": "information", "research_only_fence": "meta",
+    "catalog_routes": "information", "discovery_audit": "meta", "discovery_loop": "meta",
     "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",

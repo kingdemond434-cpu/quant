@@ -3448,12 +3448,21 @@ def _sd(xs: list[float]) -> float | None:
     return math.sqrt(v) if v > 0 else None
 
 
-def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+def build_points(src: Source, store: dict[str, Any], *, lift_backfill: bool = False
+                 ) -> dict[str, list[dict[str, Any]]]:
     """Per series: PIT points carrying value, pace (the transform), surprise and surprise_z.
 
     Every statistic at point i uses only points before i in AVAILABILITY order -- strict prefix
     -- so nothing a point carries was unknowable at its own available_time. The first value seen
-    is used (value_first): a later revision is its own stamped fact, never back-dated."""
+    is used (value_first): a later revision is its own stamped fact, never back-dated.
+
+    `lift_backfill` (the domain factories pass it): EVERY row is stamped available at
+    max(release-rule time, first_seen_at) -- a backfilled row (first seen more than two days
+    after its release) most of all, but a live one first seen an hour late too.
+    Its value is whatever vintage the desk read months later, so dating it to the release would
+    hand a backtest a number nobody held then (auditor HOLD on #295: 186 of 200 Indeed/JOLTS
+    points were available before the desk first saw them). `published_time` keeps the release
+    stamp and `available_basis` says which one governs."""
     by: dict[str, list[dict[str, Any]]] = {}
     for row in store.values():
         if isinstance(row, dict) and row.get("series"):
@@ -3515,9 +3524,16 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
             published = _t(r.get("published_time"))
             quality = ("live" if first_seen and published
                        and first_seen <= published + timedelta(days=2) else "backfill")
+            available, basis = str(r["published_time"]), "release"
+            # EVERY ROW, NOT ONLY BACKFILL (auditor SHOULD on #295): a row first seen within the
+            # two-day live window still kept its release time, so it was "available" hours
+            # before the desk held it. available_time = max(release time, first_seen_at).
+            if lift_backfill and first_seen is not None and (
+                    published is None or first_seen > published):
+                available, basis = first_seen.isoformat(timespec="seconds"), "first_seen"
             pts.append({
                 "d": str(r["period"]), "event_time": str(r["period"]),
-                "available_time": str(r["published_time"]),
+                "available_time": available, "available_basis": basis,
                 "published_time": str(r["published_time"]),
                 "published_basis": r.get("published_basis"),
                 "first_seen_at": r.get("first_seen_at"),
@@ -3532,11 +3548,12 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
         out[name] = pts
     # FIRMS: a total across the declared footprints, per day, from the per-cluster counts.
     if src.id == "cn_firms_industrial":
-        out.update(_firms_total(src, out))
+        out.update(_firms_total(src, out, lift_backfill=lift_backfill))
     return out
 
 
-def _firms_total(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+def _firms_total(src: Source, per: dict[str, list[dict[str, Any]]], *,
+                 lift_backfill: bool = False) -> dict[str, Any]:
     days: dict[str, dict[str, Any]] = {}
     for name, pts in per.items():
         if not name.endswith("_count"):
@@ -3555,7 +3572,7 @@ def _firms_total(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str,
     if not store:
         return {}
     sub = Source(**{**src.__dict__, "id": src.id + "_total"})
-    got = build_points(sub, store)
+    got = build_points(sub, store, lift_backfill=lift_backfill)
     return {"total_count": got.get("total_count", [])}
 
 

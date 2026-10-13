@@ -155,6 +155,9 @@ web/*
 **/reports/shadow/*
 !**/reports/shadow/shadow_health.json
 lake/
+# domain_factories' axis docs are DERIVED every pass from its vintage store (~20 MB each for the
+# job-postings panels); the store under data/domain_factories/ is the record, these are views.
+desks/mt5/data/axes/alt_df[jnpw]_*.json
 docs/EXTERNAL_PANEL_DOSSIER.md
 # commit-audit payload: 425KB of `git log --since=24h` patches, REGENERATED on every run by
 # ops/run_commit_audit.sh. Same class as EXTERNAL_PANEL_DOSSIER.md above -- a derived panel
@@ -252,6 +255,16 @@ desks/mt5/data/task_queue.jsonl
 desks/mt5/data/dsr_trial_sharpes.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
+# The lanes' sidecars (DATA-50): links, per-host rate limits and token-bucket levels are as
+# box-local as the leases, and the data versions the lanes producer has already queued.
+desks/mt5/data/task_queue.links.json
+desks/mt5/data/task_queue.limits.json
+desks/mt5/data/task_queue.buckets.json
+desks/mt5/data/task_queue.buckets.tmp
+desks/mt5/data/queue_data_versions.json
+# The discovery loop's per-box state (ledger, priors, flow stamps, pass history); its fold is
+# desks/mt5/reports/DISCOVERY_LOOP.json.
+desks/mt5/data/discovery_loop/
 
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have
@@ -458,6 +471,7 @@ desks/mt5/data/import_stems_cache.json
 # check had no reader off the box at all.
 !desks/mt5/reports/BOX_STATE_FRESHNESS.json
 !desks/mt5/reports/DESK_HEALTH.json
+!desks/mt5/reports/process_health.json
 # THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
 # in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
 # read from the branch, and none had ever crossed the wire -- `**/reports/*` above ignored them,
@@ -479,6 +493,9 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+# Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
+desks/mt5/data/hypotheses/unrunnable_specs.json
+desks/mt5/data/hypotheses/conversion_handoff.json
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
