@@ -37,6 +37,7 @@ while and the chain moves on; the cooldown expires on its own.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import re
@@ -49,6 +50,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from libs.ops import openrouter_guard
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "desks" / "mt5" / "data" / "llm_lab" / "providers.json"
@@ -247,6 +250,13 @@ def providers() -> list[Provider]:
                                  bool(row.get("open_weights", True)))
         if name not in order:
             order.append(name)
+    # OpenRouter's free allowance is the ACCOUNT's (50/day without credit, 1,000 with), read from
+    # its own /key endpoint rather than assumed; no cap is set while that is UNMEASURED.
+    orf = by_name.get("openrouter_free")
+    if orf is not None and not orf.daily_cap:
+        lim = openrouter_guard.daily_limit(cached_only=True)
+        if lim:
+            by_name["openrouter_free"] = dataclasses.replace(orf, daily_cap=lim)
     cloud = [by_name[n] for n in order if n in by_name]
     return cloud + _local_providers()
 
@@ -318,6 +328,8 @@ def _request(url: str, key: str, payload: dict[str, Any] | None, timeout: float
     if key:
         headers["Authorization"] = f"Bearer {key}"
     data = json.dumps(payload).encode() if payload is not None else None
+    if data is not None and (why := openrouter_guard.refusal(url, data)):
+        return {}, why
     req = urllib.request.Request(url, data=data, headers=headers,
                                  method="POST" if data is not None else "GET")
     try:

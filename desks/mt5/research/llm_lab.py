@@ -1452,6 +1452,11 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     # The provider's own quota (a 429 cools the rung) is the binding daily limit; this cap only
     # stops a runaway loop, so it sits far above an hourly pass that covers every model.
     daily_cap = int(os.environ.get("QUANT_LLM_LAB_DAILY_CALLS", "3000"))
+    # Refresh OpenRouter's own account limits once a pass (cached an hour): every budget that
+    # reads them moves from 50 to 1,000 a day when credit lands, and the report shows whether a
+    # paid id could ever leave this box (it cannot unless QUANT_LLM_LAB_PAID=1).
+    from libs.ops import openrouter_guard
+    or_key = {} if dry_run else openrouter_guard.key_info()
     rng = random.Random(seed if seed is not None else int(started))  # noqa: S311 - not crypto
     reg = family_registry()
     uni = universe()
@@ -1729,6 +1734,13 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                 "daily call cap reached: the pass is owed"),
         "seat_enabled": seat_on, "free_chain": chain_status, "paid_enabled":
             os.environ.get("QUANT_LLM_LAB_PAID", "0") == "1",
+        "openrouter_account": {
+            "daily_free_limit": or_key.get("daily_limit") or UNMEASURED,
+            "limit_source": or_key.get("limit_source") or UNMEASURED,
+            "is_free_tier": or_key.get("is_free_tier", UNMEASURED),
+            "credit_limit_usd": or_key.get("credit_limit_usd", UNMEASURED),
+            "usage_usd": or_key.get("usage_usd", UNMEASURED),
+            "paid_ids_refused": not openrouter_guard.paid_allowed()},
         "budget": {"max_calls_per_pass": max_calls, "daily_calls_cap": daily_cap,
                    "calls_this_pass": calls_made, "calls_left_today": _calls_left(daily_cap),
                    "budget_s": budget_s, "elapsed_s": round(time.time() - started, 1)},
