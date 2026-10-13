@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-10-13T21:12:23+00:00",
-  "configured_sleeves": 702,
-  "represented_sleeves": 702,
+  "updated_at": "2026-10-13T22:57:30+00:00",
+  "configured_sleeves": 698,
+  "represented_sleeves": 698,
   "certified_sleeves_total": 974,
-  "forward_clocks_total": 702,
+  "forward_clocks_total": 698,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
-  "n_distinct_param_hashes": 216,
+  "n_distinct_param_hashes": 215,
   "n_mechanisms": 11,
-  "retired_shadow_sleeves": 144,
+  "retired_shadow_sleeves": 148,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 629,
+  "sleeves_with_forward_trades": 625,
   "zero_trade_clocks": {
     "count": 73,
     "by_status": {
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 10
     },
     "age_measured": 73,
-    "median_age_days": 6.375,
+    "median_age_days": 6.448,
     "mature_14d_without_trade": 18,
     "fresh_attempts": 63,
     "naturally_inactive": 62,
@@ -43,17 +43,13 @@
     "128 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 3115.524,
+  "seconds": 4009.805,
   "gateway_armed": true,
   "promoted_live_sleeves": [
-    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
   ],
   "promoted_live_certificate_rows": [
-    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
   ],
   "live_exposure_aliases": {},
   "status": "ENROLMENT_GAP"
