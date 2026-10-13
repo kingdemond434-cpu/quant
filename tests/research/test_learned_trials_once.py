@@ -196,3 +196,39 @@ def test_a_due_contract_is_paid_for_inside_budget_s(tmp_path: Path, monkeypatch)
     assert max(d for _m, _p, d in calls) - t0 <= 300.0 * (1 - LM.CONTRACT_SHARE) + 1.0
     assert res["contract"]["status"] == "MEASURED"
     assert 0 < seen["cell_budget_s"] <= LM.CONTRACT_CELL_BUDGET_S
+
+
+def test_editing_the_declared_panel_never_reuses_the_bare_ids(monkeypatch) -> None:
+    """Audit of #354 v4, M1': a member added to PANEL makes the new full panel a new trial, a
+    box missing a member is not the bare-id panel either, and retail is hashed even when full."""
+    import learned_miners as LM
+    ck = "gnn:adjacency=lead_lag,layers=1"
+    bare = LM._trial_id("core", LM.PANEL, "EURUSD", ck, 1.0)
+    monkeypatch.setattr(LM, "PANEL", (*LM.PANEL, "USDSGD"))
+    monkeypatch.setitem(LM.PANELS, "core", LM.PANEL)
+    grown = LM._trial_id("core", LM.PANEL, "EURUSD", ck, 1.0)
+    assert grown != bare and ":p" in grown
+    short = LM._trial_id("core", [s for s in LM.PANEL if s not in ("USDSGD", "AUDCAD")],
+                         "EURUSD", ck, 1.0)
+    assert short not in (bare, grown) and ":p" in short
+    assert ":p" in LM._trial_id("retail_heavy", LM.RETAIL_PANEL, "BTCUSD", ck, 1.0)
+
+
+def test_a_stale_contract_verdict_reads_unmeasured(tmp_path: Path) -> None:
+    import json
+
+    import learned_miners as LM
+    p = tmp_path / "c.json"
+    p.write_text(json.dumps({"miners": {"gnn": {"verdict": "GAIN"}}}), "utf-8")
+    assert LM._contract_verdicts(p) == {"gnn": "GAIN"}
+    old = LM._contract_verdicts(p, now=time.time() + LM.CONTRACT_EVERY_S + 3600)
+    assert old["gnn"].startswith("UNMEASURED")
+    intel = LM.allocation_intel({"gnn": {"rows": []}}, contract=p)
+    assert intel["models"]["gnn"]["allocation_eligible"] is True
+
+
+def test_a_small_budget_still_pays_for_a_due_contract() -> None:
+    import learned_miners as LM
+    assert LM._contract_carve(300.0) == LM.CONTRACT_MIN_S
+    assert LM._contract_carve(60.0) == 60.0
+    assert LM._contract_carve(900.0) == 300.0

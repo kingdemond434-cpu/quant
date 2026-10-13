@@ -97,6 +97,14 @@ RETAIL_PANEL: tuple[str, ...] = (
     "ADAUSD", "AVAXUSD", "BCHUSD", "BNBUSD", "BTCUSD", "CHINAH", "DOGEUSD", "DOTUSD", "EOSUSD",
     "ETHUSD", "HK50", "LNKUSD", "LTCUSD", "MATICUSD", "SOLUSD", "USDCNH", "XAUUSD", "XLMUSD")
 PANELS: dict[str, tuple[str, ...]] = {"core": PANEL, "retail_heavy": RETAIL_PANEL}
+#: THE ONLY MEMBERSHIP THAT EVER WROTE BARE TRIAL IDS, FROZEN (audit of #354 v4, M1'): the core
+#: panel as it stood on live when the ledger began. Compared against this literal, never against
+#: the editable PANEL, so adding a member to PANEL re-charges every re-tested cell instead of
+#: re-using the old bare ids. The retail panel never wrote a bare id and is always hashed.
+_BARE_ID_PANEL: frozenset[str] = frozenset((
+    "AUDCAD", "AUDJPY", "AUDNZD", "AUDUSD", "BTCUSD", "CADJPY", "CHFJPY", "ETHUSD", "EURAUD",
+    "EURCHF", "EURGBP", "EURJPY", "EURUSD", "GBPAUD", "GBPJPY", "GBPUSD", "NZDCAD", "NZDJPY",
+    "NZDUSD", "USDCAD", "USDCHF", "USDJPY", "XAGUSD", "XAUUSD"))
 MIN_PANEL = 6
 
 #: Entry thresholds on forecast strength (|pred| / trailing RMS). Each is a trial.
@@ -321,10 +329,11 @@ def _redeflate(rows: list[dict[str, Any]], n_attempted: int) -> list[dict[str, A
 def _trial_id(panel_name: str, panel_syms: Sequence[str], sym: str, ck: str, z: float) -> str:
     """One trial = (panel members, symbol, config, threshold). The forecast pools across the
     peers, so a panel that gained or lost a symbol re-tests every cell as a NEW trial (audit
-    2026-10-13). The full declared panel keeps the historical id, so the ledger already on the
-    box is not re-charged; any other membership carries a short hash of its peers."""
+    2026-10-13). Only the frozen membership that wrote the ledger already on the box keeps the
+    bare id; every other membership -- an edited PANEL, a box missing a member, any retail
+    panel -- carries a short hash of its peers."""
     head = sym if panel_name == "core" else f"{panel_name}:{sym}"
-    if sorted(panel_syms) != sorted(PANELS.get(panel_name, ())):
+    if panel_name != "core" or frozenset(panel_syms) != _BARE_ID_PANEL:
         import hashlib
         tag = hashlib.sha1(",".join(sorted(panel_syms)).encode()).hexdigest()[:8]
         head = f"{head}:p{tag}"
@@ -476,12 +485,21 @@ def forecast_axis(model: str, bars: Mapping[str, pd.DataFrame] | None = None,
 INTEL_REPORT = _DESK / "reports" / "GNN_ATTENTION_ALLOCATION_INTEL.json"
 
 
-def _contract_verdicts(path: Path = CONTRACT_REPORT) -> dict[str, str]:
+def _contract_verdicts(path: Path = CONTRACT_REPORT,
+                       now: float | None = None) -> dict[str, str]:
+    """The contract's verdict per model, or UNMEASURED once the report is older than its clock:
+    a GAIN measured more than CONTRACT_EVERY_S ago (a deferred or failed refresh) is no longer a
+    measurement and never makes a model allocation-eligible (audit of #354 v4, SF1)."""
     try:
         doc = json.loads(path.read_text("utf-8"))
-        return {m: str(b.get("verdict")) for m, b in (doc.get("miners") or {}).items()}
+        verdicts = {m: str(b.get("verdict")) for m, b in (doc.get("miners") or {}).items()}
     except (OSError, ValueError, AttributeError):
         return {}
+    age = _contract_age(path, now)
+    if age >= CONTRACT_EVERY_S:
+        stale = f"UNMEASURED: contract report {age / 3600.0:.0f}h old, past its weekly clock"
+        return dict.fromkeys(verdicts, stale)
+    return verdicts
 
 
 def allocation_intel(axis_docs: Mapping[str, Mapping[str, Any]],
@@ -615,7 +633,7 @@ def run(budget_s: float = BUDGET_S,
     # the SAME budget first, so the pass never runs past budget_s.
     due = (contract if contract is not None else not injected) and _contract_due()
     start = time.monotonic()
-    mine_end = deadline - (float(budget_s) * CONTRACT_SHARE if due else 0.0)
+    mine_end = deadline - (_contract_carve(budget_s) if due else 0.0)
     order = list(dict.fromkeys(p for _m, p, _b in jobs))
     pdeadline = {p: start + (mine_end - start) * (i + 1) / len(order)
                  for i, p in enumerate(order)}
@@ -673,8 +691,8 @@ def run(budget_s: float = BUDGET_S,
     # frozen at the day the model was added. An injected (test) run never triggers it.
     if due:
         left = deadline - time.monotonic()
-        out["contract"] = (_refresh_contract(cell_budget_s=0.5 * left) if left >= 120.0 else
-                           {"status": f"DEFERRED: {left:.0f}s left of budget_s, contract due"})
+        out["contract"] = (_refresh_contract(budget_s=left) if left >= 0.5 * _contract_carve(
+            budget_s) else {"status": f"DEFERRED: {left:.0f}s left of budget_s, contract due"})
     if axis_docs:
         ip = intel_path or INTEL_REPORT
         ip.parent.mkdir(parents=True, exist_ok=True)
@@ -702,6 +720,13 @@ CONTRACT_SHARE = 1.0 / 3.0
 #: Measured primary-config fit seconds on an 18-symbol, 900-day panel (2026-10-13): signature
 #: 0.1, gnn 0.3, autoencoder 1.0, rocket 1.8, attention 2.5.
 MODEL_COST_RANK = {"signature": 0, "gnn": 1, "autoencoder": 2, "rocket": 3, "attention": 4}
+#: The floor of the contract's carve-out, so a small budget_s still pays for it on the day it is
+#: due instead of deferring forever (audit of #354 v4, SF2); never more than budget_s itself.
+CONTRACT_MIN_S = 120.0
+
+
+def _contract_carve(budget_s: float) -> float:
+    return min(float(budget_s), max(float(budget_s) * CONTRACT_SHARE, CONTRACT_MIN_S))
 
 
 def _contract_age(path: Path | None = None, now: float | None = None) -> float:
@@ -716,14 +741,17 @@ def _contract_due(path: Path | None = None, now: float | None = None) -> bool:
 
 
 def _refresh_contract(path: Path | None = None, now: float | None = None,
-                      cell_budget_s: float = CONTRACT_CELL_BUDGET_S) -> dict[str, Any]:
+                      budget_s: float = 2.0 * CONTRACT_CELL_BUDGET_S) -> dict[str, Any]:
+    """Half the budget goes to the cell screen, and the walk-forward scoring stops at the whole
+    budget's deadline, so a refresh never runs past what it was given."""
     p = path or CONTRACT_REPORT
     age = _contract_age(p, now)
     if age < CONTRACT_EVERY_S:
         return {"status": "FRESH", "age_h": round(age / 3600.0, 1)}
     try:
         doc = measure_contract(out_path=p,
-                               cell_budget_s=min(CONTRACT_CELL_BUDGET_S, float(cell_budget_s)))
+                               cell_budget_s=min(CONTRACT_CELL_BUDGET_S, 0.5 * float(budget_s)),
+                               deadline=time.monotonic() + float(budget_s))
         return {"status": "MEASURED", "verdicts": {m: b.get("verdict")
                                                     for m, b in doc["miners"].items()}}
     except Exception as exc:
@@ -800,8 +828,13 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
 
 @_single_threaded
 def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
-                     cell_budget_s: float | None = None) -> dict[str, Any]:
-    """Walk-forward OOS metrics for both miners against their baselines on the bars in git."""
+                     cell_budget_s: float | None = None,
+                     deadline: float | None = None) -> dict[str, Any]:
+    """Walk-forward OOS metrics for both miners against their baselines on the bars in git.
+
+    With a `deadline`, any model or control not yet scored when it passes is recorded as
+    UNMEASURED and a block whose primary or baseline is missing reads UNMEASURED, never NO_GAIN
+    (audit of #354 v4, SF3)."""
     from research.multiplicity import deflate_t
     meta = _git_meta()
     bars = load_bars(PANEL, base)
@@ -811,7 +844,14 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
     results: dict[str, Any] = {}
     timings: dict[str, float] = {}
 
+    def late() -> bool:
+        return deadline is not None and time.monotonic() >= deadline
+
     def score(name: str, model: str, cfg: Mapping[str, Any]) -> None:
+        if late():
+            results[name] = {"model": model, "config": dict(cfg),
+                             "status": "UNMEASURED: contract budget spent before this model"}
+            return
         t0 = time.monotonic()
         p = LP.predictions(des, model, cfg)
         timings[name] = round(time.monotonic() - t0, 2)
@@ -834,7 +874,9 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
             score(_config_key(m, cfg), m, cfg)
     shuf = _shuffled(panel)
     sdes = LP.design(shuf)
-    control = LP.evaluate(LP.predictions(sdes, "gnn", LP.GNN_GRID[0]), shuf, sdes)
+    _late_ctl = {"status": "UNMEASURED: contract budget spent before this control"}
+    control = (_late_ctl if late() else
+               LP.evaluate(LP.predictions(sdes, "gnn", LP.GNN_GRID[0]), shuf, sdes))
 
     def block(model: str, grid: Sequence[Mapping[str, Any]], baseline: str) -> dict[str, Any]:
         keys = [_config_key(model, c) for c in grid]
@@ -871,6 +913,9 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
                for m in ("rocket", "autoencoder", "signature")}
 
     def verdict(b: dict[str, Any]) -> str:
+        if any("status" in results.get(k, {}) for k in (b["primary_config (declared before "
+                                                          "any result)"], b["baseline"])):
+            return "UNMEASURED: contract budget spent before the primary or its baseline"
         p = b["primary"]
         gain = b["primary_minus_baseline"]
         ic_ok = (p.get("ic_t") or 0) >= 2.0 and (gain.get("ic_mean") or 0) > 0
@@ -894,7 +939,7 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
     # controls on the primary config, never trials, and they are reported beside the verdict.
     for m, b in extra_b.items():
         prim_cfg = MINERS[m]["grid"][0]
-        sc = LP.evaluate(LP.predictions(sdes, m, prim_cfg), shuf, sdes)
+        sc = _late_ctl if late() else LP.evaluate(LP.predictions(sdes, m, prim_cfg), shuf, sdes)
         b["falsifier_time_shuffled"] = {k: sc.get(k) for k in ("ic_mean", "ic_t", "rank_ic_t",
                                                                "ls_sharpe_net")}
         if m == "autoencoder":
@@ -928,6 +973,7 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
         "miners": {"gnn": gnn_b, "attention": att_b, **extra_b},
         "falsification_control": {
             "what": "gnn primary on a panel with each instrument's returns permuted in time",
+            **({"status": control["status"]} if "status" in control else {}),
             **{k: control.get(k) for k in ("ic_mean", "ic_t", "rank_ic_t", "hit_rate",
                                            "ls_sharpe_net")}},
         "all_models": results,

@@ -148,3 +148,23 @@ def test_the_contract_measures_every_learned_model(tmp_path: Path, monkeypatch) 
     for m in ("rocket", "autoencoder", "signature"):
         assert "ic_t" in doc["miners"][m]["falsifier_time_shuffled"]
     assert doc["miners"]["autoencoder"]["falsifier_linear_code"]["model"] == "pca_latent3"
+
+
+def test_a_spent_contract_budget_reads_unmeasured_not_no_gain(tmp_path, monkeypatch) -> None:
+    """Audit of #354 v4, SF3: the walk-forward scoring stops at the deadline."""
+    import time
+
+    import learned_miners as LM
+    rng = np.random.default_rng(3)
+    idx = pd.date_range("2020-01-01", periods=900 * 24, freq="h", tz="UTC")
+    bars = {s: pd.DataFrame({"open": c, "high": c, "low": c, "close": c, "spread": 10.0},
+                            index=idx)
+            for s in LM.PANEL[:6]
+            for c in [100 * np.exp(np.cumsum(rng.normal(0, 0.001, len(idx))))]}
+    monkeypatch.setattr(LM, "load_bars", lambda panel, base: bars)
+    monkeypatch.setattr(LM, "_git_meta", lambda: {})
+    monkeypatch.setattr(LM, "_cell_screen", lambda b, m, d, **_k: {})
+    doc = LM.measure_contract(out_path=tmp_path / "c.json", deadline=time.monotonic() - 1)
+    for m in ("gnn", "attention", "rocket", "autoencoder", "signature"):
+        assert doc["miners"][m]["verdict"].startswith("UNMEASURED"), m
+    assert doc["falsification_control"]["status"].startswith("UNMEASURED")
