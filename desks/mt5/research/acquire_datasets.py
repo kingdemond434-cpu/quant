@@ -120,6 +120,11 @@ _SEED_ENDPOINTS: tuple[str, ...] = (
     "https://data.bis.org/static/bulk/WS_CBPOL_csv_col.zip",
     # EIA WTI spot -- the energy leg.
     "https://www.eia.gov/dnav/pet/hist_xls/RWTCd.xls",
+    # EIA weekly inventories (breadth_frontier, 2026-10-13): the scheduled-surprise and
+    # physical-lead gap on US energy. Terms PERMITTED by TERMS_EVIDENCE (www.eia.gov); each URL is
+    # the publisher's own "Download Data (XLS File)" link, read 2026-10-13.
+    "https://www.eia.gov/dnav/pet/hist_xls/WCESTUS1w.xls",
+    "https://www.eia.gov/dnav/ng/hist_xls/NW2_EPG0_SWO_R48_BCFw.xls",
 ) + tuple(
     f"https://data-api.ecb.europa.eu/service/data/EXR/D.{ccy}.EUR.SP00.A?format=csvdata"
     for ccy in _ECB_CROSSES

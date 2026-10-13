@@ -118,16 +118,55 @@ def test_legacy_crypto_native_categories_are_set_aside(monkeypatch, tmp_path) ->
     assert cm["rows_by_origin"] == {"universe_map": 1}
 
 
-def test_top_empty_is_ranked_diverse_and_argued(monkeypatch, tmp_path) -> None:
+def test_gaps_rank_by_new_independent_then_indirect_families(monkeypatch, tmp_path) -> None:
     _point(monkeypatch, tmp_path)
+    monkeypatch.setattr(bf, "EFFECTIVE_BREADTH", tmp_path / "reports" / "EFFECTIVE_BREADTH.json")
     _forest(tmp_path, [{"name": "g", "region": "jp", "language": "ja", "kind": "forum"}])
-    top = bf.run()["coverage_map"]["top_empty"]
-    assert top and all(set(t["factors"]) == {"asset_weight", "geo_relevance", "novelty",
-                                             "source_prior"} for t in top)
-    scores = [t["score"] for t in top]
-    assert scores == sorted(scores, reverse=True)
-    keys = [tuple(t["cell"].values()) for t in top]
-    assert len(keys) == len(set(keys)), "one row per cell, horizons listed inside it"
+    _w(tmp_path / "data" / "universe" / "universe.json", {
+        "EURUSD": {"asset_class": "Forex"}, "XAUUSD": {"asset_class": "Commodities"}})
+    _w(tmp_path / "reports" / "EFFECTIVE_BREADTH.json", {
+        "clusters": {"occupied_certified": ["macro_rates"], "occupied_traded": ["macro_rates",
+                                                                               "trend"],
+                     "empty_in_both": ["positioning_flow", "event_surprise"]},
+        "sleeve_clusters": {"EURUSD_trend_asia": "trend", "EURUSD_carry_continuous": "x",
+                            "XAUUSD_trend_asia": "trend"}})
+    cm = bf.run()["coverage_map"]
+    assert cm["cluster_occupancy"]["macro_rates"] == 0.0     # certified: no new payer
+    assert cm["cluster_occupancy"]["positioning_flow"] == 1.0
+    assert cm["indirect_templates_by_asset"]["fx"] == 2
+    top = cm["top_gaps"]
+    assert top and all({"new_independent_families", "new_indirect_families", "next_action",
+                        "state", "clusters"} <= set(t) for t in top)
+    keys = [(t["new_independent_families"], t["new_indirect_families"]) for t in top]
+    assert keys == sorted(keys, reverse=True), "direct families first, then indirect"
+    fx_empty = next(t for t in top if t["cell"]["asset"] == "fx" and t["state"] == "EMPTY")
+    assert fx_empty["new_indirect_families"] == 2.0
+    for t in top:
+        na = t["next_action"]
+        assert na["route"] and na["access"] in bf.ACCESS_STATUSES
+    cells = [tuple(t["cell"].values()) for t in top]
+    assert len(cells) == len(set(cells)), "one row per cell, horizons listed inside it"
+
+
+def test_indirect_reads_unmeasured_without_the_breadth_report(monkeypatch, tmp_path) -> None:
+    _point(monkeypatch, tmp_path)
+    monkeypatch.setattr(bf, "EFFECTIVE_BREADTH", tmp_path / "absent.json")
+    _forest(tmp_path, [{"name": "g", "region": "jp", "language": "ja", "kind": "forum"}])
+    cm = bf.run()["coverage_map"]
+    assert cm["indirect_templates_source"] == bf.UNMEASURED
+    assert cm["cluster_occupancy_source"] == bf.UNMEASURED
+    assert all(t["new_indirect_families"] == bf.UNMEASURED for t in cm["top_gaps"])
+
+
+def test_registered_rows_are_verified_and_reach_the_acquirer() -> None:
+    sys.path.insert(0, str(REPO))
+    from libs.research.equivalence_ontology import PERMITTED, terms_verdict
+    from research import acquire_datasets as acq
+    for r in bf.REGISTERED:
+        assert r["url"] in acq._SEED_ENDPOINTS, r["id"]
+        assert terms_verdict(r["url"]) == PERMITTED, r["id"]
+        assert not acq._KEYED.search(r["url"])
+        assert r["access"] in bf.ACCESS_STATUSES
 
 
 # ------------------------------------------------------------------------------ fringe terms

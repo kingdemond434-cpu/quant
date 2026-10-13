@@ -94,6 +94,7 @@ DATASET_HUNT = REPORTS / "DATASET_HUNT.json"
 WORLD_CATALOG = DATA / "world_datasets" / "catalog.json"
 WORLD_DISCOVERIES = DATA / "intelligence" / "world"
 FORGE_REPORT = REPORTS / "REPRESENTATION_FORGE.json"
+EFFECTIVE_BREADTH = REPORTS / "EFFECTIVE_BREADTH.json"
 FRINGE = DATA / "fringe_families.json"
 UNIVERSE = DATA / "universe" / "universe.json"
 OUT = REPORTS / "BREADTH_FRONTIER.json"
@@ -481,6 +482,177 @@ def rows_from_registry(doc: Mapping[str, Any] | None) -> list[dict[str, Any]]:
     return out
 
 
+# ------------------------------------------------------------- independence: which payer is new
+
+#: Which alpha clusters (libs/research/alpha_clusters: one PAYER each, the desk's definition of an
+#: independent family) a source kind's information can feed. Declared, so it can be argued with.
+#: A cell's value to breadth is the clusters it feeds that the book does not yet occupy.
+SOURCE_FEEDS: dict[str, tuple[str, ...]] = {
+    "official_statistics": ("event_surprise", "macro_rates", "cross_asset_lead_lag"),
+    "central_bank": ("macro_rates", "event_surprise", "news_reaction"),
+    "regulator_filing": ("positioning_flow", "event_surprise"),
+    "exchange_venue": ("positioning_flow", "options_implied", "fixing_roll_calendar",
+                       "relative_value"),
+    "academic_research": (),
+    "practitioner_media": ("news_reaction", "positioning_flow"),
+    "community_forum": ("positioning_flow", "news_reaction"),
+    "competition_leaderboard": ("positioning_flow", "execution_entry"),
+    "code_repository": ("execution_entry",),
+    "app_attention": ("positioning_flow", "news_reaction"),
+    "physical_sensor": ("cross_asset_lead_lag", "event_surprise"),
+    "open_catalogue": ("macro_rates", "cross_asset_lead_lag"),
+    "news_events": ("news_reaction", "event_surprise"),
+}
+#: Options-implied state needs a listed options market on the asset class.
+OPTIONED = frozenset({"fx", "metals", "energy", "indices", "bonds"})
+TOP_GAPS = 25
+
+
+def clusters_fed(source: str, actor: str, asset: str) -> tuple[str, ...]:
+    out = [c for c in SOURCE_FEEDS.get(source, ())
+           if c != "options_implied" or asset in OPTIONED]
+    if actor == "professional_trader" and source in ("exchange_venue",
+                                                     "competition_leaderboard"):
+        out.append("execution_entry")
+    if actor == "retail" and "positioning_flow" not in out:
+        out.append("positioning_flow")
+    return tuple(dict.fromkeys(out))
+
+
+def cluster_occupancy() -> tuple[dict[str, float], str]:
+    """How NEW each alpha cluster is to the book, from reports/EFFECTIVE_BREADTH.json: empty in
+    both the traded and the certified book 1.0, traded but uncertified 0.5, certified 0.0. When
+    the report is absent every cluster reads 1.0 and the source says UNMEASURED."""
+    doc = _read(EFFECTIVE_BREADTH)
+    cl = (doc or {}).get("clusters") if isinstance(doc, Mapping) else None
+    if not isinstance(cl, Mapping):
+        return {}, UNMEASURED
+    certified = set(cl.get("occupied_certified") or [])
+    traded = set(cl.get("occupied_traded") or []) | set(cl.get("occupied_either") or [])
+    keys = set(SOURCE_FEEDS_ALL) | certified | traded | set(cl.get("empty_in_both") or [])
+    return ({k: 0.0 if k in certified else 0.5 if k in traded else 1.0 for k in keys},
+            "measured")
+
+
+def _num(v: Any) -> float:
+    return float(v) if isinstance(v, (int, float)) else 0.0
+
+
+def price_templates() -> tuple[dict[str, int] | None, str]:
+    """Per asset class, how many distinct price-family templates (sleeve name minus its symbol)
+    the book runs: the parents a new conditioner or regime state spawns indirect children over.
+    From reports/EFFECTIVE_BREADTH.json `sleeve_clusters`; absent reads UNMEASURED."""
+    doc = _read(EFFECTIVE_BREADTH)
+    sc = (doc or {}).get("sleeve_clusters") if isinstance(doc, Mapping) else None
+    uni = _read(UNIVERSE)
+    if not isinstance(sc, Mapping) or not isinstance(uni, Mapping):
+        return None, UNMEASURED
+    by: dict[str, set[str]] = defaultdict(set)
+    for name in sc:
+        sym, _, template = str(name).partition("_")
+        cls = UNIVERSE_CLASS_TO_ASSET.get(str((uni.get(sym) or {}).get("asset_class")))
+        if cls and template:
+            by[cls].add(template)
+    return {a: len(by[a]) for a in ASSETS}, "measured"
+
+
+SOURCE_FEEDS_ALL = frozenset(c for v in SOURCE_FEEDS.values() for c in v) | {"execution_entry"}
+
+
+# ------------------------------------------------------------------- next actions for the gaps
+
+#: Rows this organ REGISTERED with an existing generic route, each verified twice: its terms are
+#: PERMITTED by `libs.research.equivalence_ontology.TERMS_EVIDENCE` (www.eia.gov, quoted there),
+#: and the URL is the publisher's own "Download Data (XLS File)" link, read with WebFetch on
+#: 2026-10-13. They are seeds in `research/acquire_datasets._SEED_ENDPOINTS`, whose BIFF8 reader
+#: already parses the EIA history workbooks; the test pins both facts.
+REGISTERED: tuple[dict[str, Any], ...] = (
+    {"id": "eia_weekly_crude_stocks", "url": "https://www.eia.gov/dnav/pet/hist_xls/WCESTUS1w.xls",
+     "name": "EIA weekly U.S. ending stocks of crude oil (excl. SPR)",
+     "cell": {"source": "physical_sensor", "geography": "us", "asset": "energy"},
+     "clusters": ("event_surprise", "cross_asset_lead_lag"),
+     "route": "acquire_datasets (seed endpoint)", "access": "PUBLIC_PAGE"},
+    {"id": "eia_weekly_ng_storage",
+     "url": "https://www.eia.gov/dnav/ng/hist_xls/NW2_EPG0_SWO_R48_BCFw.xls",
+     "name": "EIA Lower 48 natural gas working underground storage (weekly)",
+     "cell": {"source": "physical_sensor", "geography": "us", "asset": "energy"},
+     "clusters": ("event_surprise", "cross_asset_lead_lag"),
+     "route": "acquire_datasets (seed endpoint)", "access": "PUBLIC_PAGE"},
+)
+DBNOMICS_KINDS = frozenset({"official_statistics", "central_bank", "open_catalogue"})
+
+
+def _instrument_assets(instruments: Iterable[str]) -> set[str]:
+    doc = _read(UNIVERSE)
+    if not isinstance(doc, Mapping):
+        return set(ASSETS)
+    return {UNIVERSE_CLASS_TO_ASSET[c] for i in instruments
+            if (c := str((doc.get(i) or {}).get("asset_class"))) in UNIVERSE_CLASS_TO_ASSET}
+
+
+def next_actions(top: list[dict[str, Any]], fringe_doc: Mapping[str, Any] | None,
+                 fringe_st: Mapping[str, Any], free_stack: Mapping[str, Any] | None,
+                 forest: Mapping[str, Any] | None) -> None:
+    """Give every ranked gap a concrete candidate source, its access state and the EXISTING
+    route it plugs into, best first: a row registered here, a fringe source with live access, a
+    free-stack roster row, a deep-forest ground to deepen, DBnomics through world_dataset_hunt,
+    and only then a new deep-forest search ground. An UNREAD source is IDEAS_ONLY."""
+    access = {s["id"]: s for f in fringe_st.get("families") or [] for s in f["sources"]}
+    fringe = []
+    for f in (fringe_doc or {}).get("families") or []:
+        assets = _instrument_assets((f.get("mt5_mapping") or {}).get("instruments") or [])
+        for s in f.get("sources") or []:
+            st = access.get(s.get("id")) or {}
+            fringe.append((f, s, assets, st))
+    for t in top:
+        c = t["cell"]
+        src, geo, lang, asset = c["source"], c["geography"], c["language"], c["asset"]
+        cands: list[dict[str, Any]] = []
+        for r in REGISTERED:
+            rc = r["cell"]
+            if (rc["source"], rc["geography"], rc["asset"]) == (src, geo, asset):
+                cands.append({"candidate": r["name"], "url": r["url"], "access": r["access"],
+                              "route": r["route"], "registered": True})
+        for f, s, assets, st in fringe:
+            if (f.get("source_kind") == src and s.get("geo") in (geo, "global")
+                    and asset in assets and st.get("access") != "IDEAS_ONLY"):
+                cands.append({"candidate": s.get("name"), "url": s.get("url"),
+                              "access": st.get("access"), "fringe_family": f.get("id"),
+                              "route": (f"collector {s['owner']}" if st.get("stage") in
+                                        ("COLLECTOR_EXISTS", "INGESTED") and s.get("owner")
+                                        else "free_stack_hunt roster row (data/"
+                                             "free_stack_sources.json) -- a new kind needs its "
+                                             "fetcher there")})
+        for r in (free_stack or {}).get("sources") or []:
+            if (KIND_TO_SOURCE.get(str(r.get("kind"))) == src
+                    and str(r.get("region")) == geo):
+                acc = ("API_PERMITTED" if r.get("machine_use_allowed") is True
+                       else "IDEAS_ONLY")
+                cands.append({"candidate": r.get("name") or r.get("id"), "url": r.get("url"),
+                              "access": acc, "route": "free_stack_hunt (existing roster row: "
+                                                      "widen its targets to this asset)"})
+        grounds = [g for g in (forest or {}).get("grounds") or []
+                   if g.get("region") == geo and KIND_TO_SOURCE.get(
+                       str(g.get("dataset_class") or g.get("kind"))) == src]
+        for g in grounds[:1]:
+            cands.append({"candidate": g.get("name"), "url": g.get("url"),
+                          "access": "IDEAS_ONLY",
+                          "route": "deep_forest (deepen this existing ground toward "
+                                   f"{asset}; terms UNREAD here, so ideas until read)"})
+        if src in DBNOMICS_KINDS:
+            cands.append({"candidate": f"DBnomics provider(s) for {geo}", "url":
+                          "https://db.nomics.world/", "access": "IDEAS_ONLY",
+                          "route": "world_dataset_hunt (DBnomics backbone; terms UNREAD by "
+                                   "this organ, the hunter owns the door)"})
+        cands.append({"candidate": f"new {src.replace('_', ' ')} ground, {geo} ({lang})",
+                      "url": None, "access": "IDEAS_ONLY",
+                      "route": ("deep_forest search ground (route=search) in "
+                                f"data/deep_forest_sources.json: '{src.replace('_', ' ')} "
+                                f"{asset} {geo}' in {lang}")})
+        t["next_action"] = cands[0]
+        t["alternatives"] = cands[1:4]
+
+
 # ------------------------------------------------------------------------- the coverage map
 
 def _frame(regions: Mapping[str, Any]) -> dict[str, tuple[str, ...]]:
@@ -493,8 +665,10 @@ def _frame(regions: Mapping[str, Any]) -> dict[str, tuple[str, ...]]:
 
 
 def build_map(rows: list[dict[str, Any]], regions: Mapping[str, Any],
-              asset_weight: Mapping[str, float], source_prior: Mapping[str, float]
-              ) -> dict[str, Any]:
+              asset_weight: Mapping[str, float], source_prior: Mapping[str, float],
+              occupancy: Mapping[str, float] | None = None,
+              templates: Mapping[str, int] | None = None) -> dict[str, Any]:
+    occupancy = occupancy or {}
     frame = _frame(regions)
     # an occupied pair the frame did not declare is evidence, so the frame grows to hold it
     for r in rows:
@@ -556,55 +730,86 @@ def build_map(rows: list[dict[str, Any]], regions: Mapping[str, Any],
     def novelty(cell: tuple[str, ...]) -> float:
         return sum(1.0 - occ[i][v] / max(1, tot[i][v]) for i, v in enumerate(cell)) / 6.0
 
-    groups: dict[tuple[str, ...], tuple[float, dict[str, float], list[str]]] = {}
+    # EVERY GROUP (source, geo, language, actor, asset) with no FILLED horizon is a GAP: EMPTY when
+    # nothing reaches any horizon, THIN otherwise. Gaps are ranked by how many NEW INDEPENDENT
+    # families they would open -- the alpha clusters (one payer each, libs/research/alpha_clusters)
+    # their data feeds that the book does not yet occupy -- and never by raw cell count.
+    gaps: dict[tuple[str, ...], dict[str, Any]] = {}
     n_empty = 0
     for geo, langs in frame.items():
         for lang in langs:
             for source, actors in SOURCE_ACTORS.items():
                 for actor in actors:
                     for asset in ASSETS:
+                        states = []
                         for hz in HORIZONS:
                             cell = (source, geo, lang, actor, asset, hz)
-                            if cell in filled or cell in thin:
-                                continue
-                            n_empty += 1
-                            parts = {"asset_weight": round(asset_weight.get(asset, 0.0), 4),
-                                     "geo_relevance": round(geo_rel.get(geo, 0.1), 4),
-                                     "novelty": round(novelty(cell), 4),
-                                     "source_prior": round(source_prior.get(source, 0.5), 4)}
-                            score = (parts["asset_weight"] * parts["geo_relevance"]
-                                     * (0.5 + parts["novelty"]) * parts["source_prior"])
-                            g = groups.get(cell[:5])
-                            if g is None or score > g[0]:
-                                groups[cell[:5]] = (score, parts, [*(g[2] if g else []), hz])
-                            else:
-                                g[2].append(hz)
-    # ONE ROW PER (source, geo, language, actor, asset) with its empty horizons listed, and at
-    # most two rows per (source, geography) and four per source: a ranking that repeats one cell
-    # four times, or one country forty, is a ranking nobody can spend.
+                            st = ("FILLED" if cell in filled else "THIN" if cell in thin
+                                  else "EMPTY")
+                            n_empty += st == "EMPTY"
+                            states.append(st)
+                        if "FILLED" in states:
+                            continue
+                        key: tuple[str, ...] = (source, geo, lang, actor, asset)
+                        parts = {"asset_weight": round(asset_weight.get(asset, 0.0), 4),
+                                 "geo_relevance": round(geo_rel.get(geo, 0.1), 4),
+                                 "novelty": round(novelty((*key, HORIZONS[0])), 4),
+                                 "source_prior": round(source_prior.get(source, 0.5), 4)}
+                        feeds = clusters_fed(source, actor, asset)
+                        gaps[key] = {
+                            "state": "EMPTY" if all(s == "EMPTY" for s in states) else "THIN",
+                            "horizons": dict(zip(HORIZONS, states, strict=True)),
+                            "clusters": feeds,
+                            "new_independent_families": round(sum(
+                                occupancy.get(c, 1.0) for c in feeds), 2),
+                            # every dataset also spawns regime / conditioner CHILDREN over the
+                            # price families already trading the asset: all new for an EMPTY
+                            # cell, half for a THIN one (its information is partly reached)
+                            "new_indirect_families": (
+                                round(templates[asset] * (1.0 if all(
+                                    s == "EMPTY" for s in states) else 0.5), 1)
+                                if templates is not None else UNMEASURED),
+                            "factors": parts,
+                            "score": round(parts["asset_weight"] * parts["geo_relevance"]
+                                           * (0.5 + parts["novelty"]) * parts["source_prior"],
+                                           6)}
+    # ONE ROW PER GROUP, at most two per (source, geography) and four per source: a ranking that
+    # repeats one country forty times is a ranking nobody can spend.
     axes = ("source", "geography", "language", "actor", "asset", "horizon")
+    order = sorted(gaps.items(), key=lambda kv: (-kv[1]["new_independent_families"],
+                                                 -_num(kv[1]["new_indirect_families"]),
+                                                 kv[1]["state"] != "EMPTY",
+                                                 -kv[1]["score"], kv[0]))
     per_sg: Counter[tuple[str, ...]] = Counter()
     per_s: Counter[str] = Counter()
     top: list[dict[str, Any]] = []
-    for key, (score, parts, hzs) in sorted(groups.items(), key=lambda kv: (-kv[1][0], kv[0])):
+    for key, g in order:
         if per_sg[key[:2]] >= 2 or per_s[key[0]] >= 4:
             continue
         per_sg[key[:2]] += 1
         per_s[key[0]] += 1
-        top.append({"cell": dict(zip(axes[:5], key, strict=True)),
-                    "empty_horizons": [h for h in HORIZONS if h in hzs],
-                    "score": round(score, 6), "factors": parts,
-                    "next_move": (f"hunt a {key[0].replace('_', ' ')} source in {key[1]} "
-                                  f"({key[2]}) carrying {key[3].replace('_', ' ')} information "
-                                  f"on {key[4]}")})
-        if len(top) >= 25:
+        top.append({"rank": len(top) + 1, "cell": dict(zip(axes[:5], key, strict=True)), **g,
+                    "clusters": [{"cluster": c, "new": occupancy.get(c, 1.0)}
+                                 for c in g["clusters"]]})
+        if len(top) >= TOP_GAPS:
             break
     marginals = {axes[i]: {v: {"reached": occ[i][v], "of": tot[i][v]}
                            for v in sorted(tot[i])} for i in range(6)}
-    assert len(filled) + len(thin) + n_empty == size, "the frame must partition"
+    if len(filled) + len(thin) + n_empty != size:
+        raise AssertionError("the frame must partition into filled, thin and empty")
     return {"axes": list(axes), "size": size, "filled": len(filled), "thin": len(thin),
             "empty": n_empty, "frame_pairs": sum(len(v) for v in frame.values()),
-            "top_empty": top, "marginals": marginals,
+            "gap_groups": len(gaps),
+            "gap_groups_opening_a_new_family": sum(1 for g in gaps.values()
+                                                   if g["new_independent_families"] > 0),
+            "top_gaps": top, "top_empty": [t for t in top if t["state"] == "EMPTY"],
+            "marginals": marginals,
+            "rank": ("new_independent_families desc (empty alpha cluster 1.0, traded but "
+                     "uncertified 0.5, certified 0), then new_indirect_families desc (regime/"
+                     "conditioner children over the price-family templates trading the asset; "
+                     "EMPTY 1.0, THIN 0.5), then EMPTY before THIN, then score"),
+            "indirect_templates_by_asset": (dict(templates) if templates is not None
+                                            else UNMEASURED),
             "score": "asset_weight x geo_relevance x (0.5 + novelty) x source_prior"}
 
 
@@ -952,8 +1157,12 @@ def run(*, out: Path | None = None, state_path: Path | None = None,
                                 "empty": UNMEASURED, "top_empty": []}
     else:
         weights, wstat = asset_weights()
+        occ, ostat = cluster_occupancy()
+        tmpl, tstat = price_templates()
         cmap = {"status": "measured", "asset_weight_source": wstat,
-                **build_map(rows, regions, weights, source_priors(rows))}
+                "cluster_occupancy_source": ostat, "cluster_occupancy": occ,
+                "indirect_templates_source": tstat,
+                **build_map(rows, regions, weights, source_priors(rows), occ, tmpl)}
     cmap["rows_by_origin"] = dict(Counter(r["origin"] for r in rows))
     cmap["access_census"] = {a: sum(1 for r in rows if r["access"] == a)
                              for a in ACCESS_STATUSES}
@@ -963,6 +1172,11 @@ def run(*, out: Path | None = None, state_path: Path | None = None,
     cmap["inputs_unmeasured"] = [k for k, v in inputs.items() if v["status"] == UNMEASURED]
 
     fringe = fringe_status(docs["fringe_families"])
+    if cmap.get("status") == "measured":
+        next_actions(cmap["top_gaps"], docs["fringe_families"], fringe, docs["free_stack"],
+                     docs["deep_forest"])
+        cmap["top_empty"] = [t for t in cmap["top_gaps"] if t["state"] == "EMPTY"]
+    cmap["registered_this_organ"] = [dict(r, clusters=list(r["clusters"])) for r in REGISTERED]
     disc_rows, n_files = discoveries()
     unknown = unknown_frontier(disc_rows, unmapped,
                                _known_vocabulary(docs["fringe_families"], docs["data_registry"]),

@@ -47,7 +47,8 @@
      "owner": "desks/mt5/research/countries/pacific/pack.py",
      "evidence_globs": [],
      "terms_read": "READ",
-     "access_status": "API_PERMITTED"
+     "access_status": "API_PERMITTED",
+     "geo": "global"
     },
     {
      "id": "copernicus_sentinel1_sar",
@@ -61,7 +62,8 @@
      ],
      "conditions": "the operator's own terms grant free, full and open access; its official APIs are used within their published limits (ruling 2026-10-13)",
      "owner": null,
-     "evidence_globs": []
+     "evidence_globs": [],
+     "geo": "global"
     },
     {
      "id": "asf_sar_archive",
@@ -70,7 +72,8 @@
      "terms_url": "https://asf.alaska.edu/information/data-use-guidelines/",
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "terms page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only"
+     "status_reason": "terms page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     },
     {
      "id": "nasa_emit_hyperspectral",
@@ -80,7 +83,8 @@
      "key_env": "EARTHDATA_TOKEN",
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "terms page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only"
+     "status_reason": "terms page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     },
     {
      "id": "rf_spectrum_occupancy",
@@ -89,7 +93,8 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "no source with a readable terms page named yet; the family stays NAMED until one is; never fetched as live input, read for ideas only"
+     "status_reason": "no source with a readable terms page named yet; the family stays NAMED until one is; never fetched as live input, read for ideas only",
+     "geo": "global"
     },
     {
      "id": "ocean_acoustic_hydrophone",
@@ -98,9 +103,11 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "no source with a readable terms page named yet; never fetched as live input, read for ideas only"
+     "status_reason": "no source with a readable terms page named yet; never fetched as live input, read for ideas only",
+     "geo": "global"
     }
-   ]
+   ],
+   "source_kind": "physical_sensor"
   },
   {
    "id": "fringe_industrial_telemetry",
@@ -127,7 +134,8 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "IR-deck reuse terms not read; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "IR-deck reuse terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     },
     {
      "id": "machine_tool_orders",
@@ -136,9 +144,11 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     }
-   ]
+   ],
+   "source_kind": "physical_sensor"
   },
   {
    "id": "fringe_credit_plumbing",
@@ -170,7 +180,8 @@
      "owner": null,
      "evidence_globs": [],
      "terms_read": "READ",
-     "access_status": "API_PERMITTED"
+     "access_status": "API_PERMITTED",
+     "geo": "us"
     },
     {
      "id": "nyfed_markets_api",
@@ -179,7 +190,8 @@
      "terms_url": "https://markets.newyorkfed.org/static/docs/markets-api.html",
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "neither the API documentation nor the data hub carries a clause permitting programmatic use (read 2026-10-13); never fetched as live input, read for ideas only"
+     "status_reason": "neither the API documentation nor the data hub carries a clause permitting programmatic use (read 2026-10-13); never fetched as live input, read for ideas only",
+     "geo": "us"
     },
     {
      "id": "sec_fails_to_deliver",
@@ -188,9 +200,11 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "not EDGAR; its own terms page not read; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "not EDGAR; its own terms page not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "us"
     }
-   ]
+   ],
+   "source_kind": "official_statistics"
   },
   {
    "id": "fringe_capital_formation",
@@ -221,9 +235,11 @@
      "owner": "desks/mt5/research/sandboxes/edgar_transmission.py",
      "evidence_globs": [],
      "terms_read": "READ",
-     "access_status": "API_PERMITTED"
+     "access_status": "API_PERMITTED",
+     "geo": "us"
     }
-   ]
+   ],
+   "source_kind": "regulator_filing"
   },
   {
    "id": "fringe_enterprise_dependency",
@@ -251,7 +267,8 @@
      ],
      "conditions": "the official PyPI API, used within the published Terms of Service and rate limits (ruling 2026-10-13)",
      "owner": null,
-     "evidence_globs": []
+     "evidence_globs": [],
+     "geo": "global"
     },
     {
      "id": "saas_status_pages",
@@ -260,7 +277,8 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "per-vendor terms not read; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "per-vendor terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     },
     {
      "id": "supplier_graph_filings",
@@ -269,9 +287,11 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "no source chosen; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "no source chosen; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     }
-   ]
+   ],
+   "source_kind": "code_repository"
   },
   {
    "id": "fringe_public_infrastructure",
@@ -303,7 +323,8 @@
      "owner": "desks/mt5/research/countries/atlantic_energy/pack.py",
      "evidence_globs": [],
      "terms_read": "READ",
-     "access_status": "NEEDS_KEY"
+     "access_status": "NEEDS_KEY",
+     "geo": "us"
     },
     {
      "id": "entsoe_transparency",
@@ -312,7 +333,8 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "de"
     },
     {
      "id": "port_call_statistics",
@@ -321,9 +343,11 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "per-port terms not read; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "per-port terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     }
-   ]
+   ],
+   "source_kind": "physical_sensor"
   },
   {
    "id": "fringe_scientific_instrumentation",
@@ -356,7 +380,8 @@
      "owner": null,
      "evidence_globs": [],
      "terms_read": "READ",
-     "access_status": "API_PERMITTED"
+     "access_status": "API_PERMITTED",
+     "geo": "us"
     },
     {
      "id": "noaa_ncei_access",
@@ -365,9 +390,11 @@
      "terms_url": "https://www.ncei.noaa.gov/access/services/data/v1",
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only"
+     "status_reason": "page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     }
-   ]
+   ],
+   "source_kind": "physical_sensor"
   },
   {
    "id": "fringe_knowledge_production",
@@ -401,7 +428,8 @@
       "data/intelligence/academic/*.json"
      ],
      "terms_read": "READ",
-     "access_status": "API_PERMITTED"
+     "access_status": "API_PERMITTED",
+     "geo": "global"
     },
     {
      "id": "crossref_rest",
@@ -415,7 +443,8 @@
      "owner": "libs/research/source_alternatives.py",
      "evidence_globs": [],
      "terms_read": "READ",
-     "access_status": "API_PERMITTED"
+     "access_status": "API_PERMITTED",
+     "geo": "global"
     },
     {
      "id": "uspto_patents",
@@ -424,7 +453,8 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "us"
     },
     {
      "id": "standards_bodies",
@@ -433,9 +463,11 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     }
-   ]
+   ],
+   "source_kind": "academic_research"
   },
   {
    "id": "fringe_attention_intent",
@@ -467,7 +499,8 @@
      "owner": null,
      "evidence_globs": [],
      "terms_read": "READ",
-     "access_status": "API_PERMITTED"
+     "access_status": "API_PERMITTED",
+     "geo": "global"
     },
     {
      "id": "search_trends",
@@ -476,9 +509,11 @@
      "terms_url": null,
      "terms_read": "UNREAD",
      "access_status": "IDEAS_ONLY",
-     "status_reason": "terms not read for automated access; HELD; never fetched as live input, read for ideas only"
+     "status_reason": "terms not read for automated access; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
     }
-   ]
+   ],
+   "source_kind": "app_attention"
   },
   {
    "id": "fringe_ownership_control",
@@ -510,7 +545,8 @@
      "owner": "desks/mt5/research/countries/institutional/pack.py",
      "evidence_globs": [],
      "terms_read": "READ",
-     "access_status": "API_PERMITTED"
+     "access_status": "API_PERMITTED",
+     "geo": "us"
     },
     {
      "id": "gleif_lei_relationships",
@@ -525,9 +561,11 @@
      ],
      "conditions": "the official free Access Service under CC0, used within its published limits (ruling 2026-10-13)",
      "owner": null,
-     "evidence_globs": []
+     "evidence_globs": [],
+     "geo": "global"
     }
-   ]
+   ],
+   "source_kind": "regulator_filing"
   }
  ],
  "access_statuses": [
