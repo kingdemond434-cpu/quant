@@ -297,16 +297,28 @@ def save_history(samples: list[dict[str, Any]], path: Path | None = None) -> Pat
 
 
 def _prior_sample(samples: list[dict[str, Any]], key: str,
-                  now: datetime, threshold_h: float) -> tuple[int | None, datetime | None]:
-    """The oldest recorded count for `key` that is at least `threshold_h` old.
+                  now: datetime, threshold_h: float,
+                  epoch: datetime | None = None) -> tuple[int | None, datetime | None]:
+    """The oldest recorded count for `key` that is at least `threshold_h` old, in THIS epoch.
 
     Oldest-within-window rather than most-recent: the question is whether the clock moved across
     the whole window, and the most recent sample is minutes old on an hourly cadence.
+
+    THE EPOCH IS THE CLOCK'S CURRENT `forward_start` (2026-10-13). When a clock's forward window
+    is re-begun (a session-filter correction, a cost rebase, the 2026-10-07 re-freeze), `n`
+    restarts at zero and earlier trades become HISTORICAL. A sample taken before that boundary
+    counts a different series, so diffing against it read 302 clocks that had accrued 1-20
+    observations since the boundary as FROZEN_ROWS ("has not moved off 3", against a pre-reset
+    24). No sample before the epoch is used. At the epoch itself the forward count is 0 by
+    construction, so once the epoch is `threshold_h` old and no later sample is, (0, epoch) is
+    the prior: a clock still at 0 is frozen, one above 0 accumulated.
     """
     best: tuple[int, datetime] | None = None
     for s in samples:
         t = _parse_ts(s.get("at"))
         if t is None or (now - t).total_seconds() / 3600.0 < threshold_h:
+            continue
+        if epoch is not None and t < epoch:
             continue
         counts = s.get("counts")
         if not isinstance(counts, dict) or key not in counts:
@@ -316,6 +328,8 @@ def _prior_sample(samples: list[dict[str, Any]], key: str,
             continue
         if best is None or t < best[1]:
             best = (n, t)
+    if best is None and epoch is not None and (now - epoch).total_seconds() / 3600.0 >= threshold_h:
+        return 0, epoch
     return best if best is not None else (None, None)
 
 
@@ -425,7 +439,8 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
                          f"decided. Reported, never breached (L1.28a)")
         return _seal(entry)
 
-    prior_n, prior_at = _prior_sample(samples, key, now, threshold_h)
+    epoch = _parse_ts(row.get("forward_start"))
+    prior_n, prior_at = _prior_sample(samples, key, now, threshold_h, epoch)
     if prior_n is not None and n > prior_n:
         entry.update(verdict="ACCUMULATING", breach=False, prior_n=prior_n,
                      prior_at=prior_at.isoformat() if prior_at else UNMEASURED,
