@@ -369,43 +369,93 @@ MISSED_MANDATE = ("A large move happened that the desk's live book did not trade
 # ============================================================================ R code lab
 SAFE_CALLS = frozenset({"abs", "min", "max", "len", "range", "float", "int", "round", "sum",
                         "enumerate", "zip", "bool"})
-BANNED_NAMES = frozenset({"open", "exec", "eval", "compile", "__import__", "globals", "locals",
-                          "vars", "getattr", "setattr", "delattr", "input", "breakpoint", "help",
-                          "exit", "quit", "memoryview", "type", "object", "super", "dir",
-                          "os", "sys", "subprocess", "socket", "pathlib", "shutil", "requests",
-                          "pickle", "builtins"})
-BANNED_ATTRS = re.compile(r"^(_|to_(csv|parquet|pickle|json|hdf|sql|excel|feather|clipboard)$|"
-                          r"read_|save|load|tofile|fromfile|dump)")
+#: AN ALLOWLIST, NOT A DENY-LIST (audit must-fix 1, 2026-10-13). A deny-list of names was beaten
+#: by an attribute CHAIN: `pd.io.common.os.system(...)` never names `os` as a bare Name. So every
+#: attribute anywhere in the source must be on one of the lists below, whatever its base: a
+#: chain through `io`, `lib`, `ctypeslib`, `common` or any reader/writer cannot be spelled at all.
+NP_ATTRS = frozenset({
+    "abs", "arctan", "arange", "asarray", "clip", "cos", "cumsum", "cumprod", "diff", "exp",
+    "float64", "full", "full_like", "inf", "int64", "isfinite", "isnan", "log", "log1p",
+    "maximum", "mean", "median", "minimum", "nan", "nanmean", "nanmedian", "nanstd", "nansum",
+    "nan_to_num", "ones", "ones_like", "percentile", "quantile", "sign", "sin", "sqrt", "square",
+    "std", "sum", "tanh", "var", "where", "zeros", "zeros_like", "pi", "e", "max", "min", "round",
+    "floor", "ceil", "hypot", "power", "abs"})
+PD_ATTRS = frozenset({"Series", "DataFrame", "concat", "isna", "notna", "NA", "Timedelta"})
+#: Methods and properties on the frame, its columns and their results.
+VALUE_ATTRS = frozenset({
+    "abs", "all", "any", "astype", "bfill", "clip", "close", "copy", "count", "cummax",
+    "cummin", "cumprod", "cumsum", "day", "dayofweek", "diff", "dropna", "dt", "ewm", "ffill",
+    "fillna", "high", "hour", "iloc", "index", "isna", "kurt", "loc", "low", "max", "mean",
+    "median", "min", "minute", "month", "notna", "open", "pct_change", "quantile", "rank",
+    "replace", "rolling", "round", "shape", "shift", "skew", "std", "sum", "values", "var",
+    "volume", "weekday", "where", "mask", "expanding", "corr", "cov", "between", "eq", "ne",
+    "gt", "ge", "lt", "le", "add", "sub", "mul", "div", "clip_lower", "clip_upper", "sign",
+    "year", "date", "size", "empty", "reindex_like", "align", "to_numpy", "tolist"})
 
 
 def code_refusal(code: str) -> str:
-    """'' when the source is inside the whitelist, else the reason it is refused."""
+    """'' when the source is inside the allowlist, else the reason it is refused."""
     if len(code) > 6000:
         return "longer than 6000 characters"
     try:
         tree = ast.parse(code)
     except SyntaxError as exc:
         return f"syntax error: {exc.msg}"
+    local: set[str] = {"feature"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.arg):
+            local.add(node.arg)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            local.add(node.id)
+        elif isinstance(node, ast.FunctionDef):
+            local.add(node.name)
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             return "import is not allowed (np and pd are provided)"
         if isinstance(node, (ast.Global, ast.Nonlocal, ast.With, ast.AsyncFunctionDef,
                              ast.Await, ast.Yield, ast.YieldFrom, ast.Try, ast.Raise,
-                             ast.ClassDef, ast.Lambda)):
+                             ast.ClassDef, ast.Lambda, ast.Starred, ast.NamedExpr)):
             return f"{type(node).__name__} is not allowed"
-        if isinstance(node, ast.Name) and node.id in BANNED_NAMES:
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and not (
+                node.id in local or node.id in SAFE_CALLS or node.id in ("np", "pd", "True",
+                                                                          "False", "None")):
             return f"name {node.id!r} is not allowed"
-        if isinstance(node, ast.Attribute) and BANNED_ATTRS.match(node.attr):
-            return f"attribute {node.attr!r} is not allowed"
+        if isinstance(node, ast.Attribute):
+            if node.attr.startswith("_"):
+                return f"attribute {node.attr!r} is not allowed"
+            base = node.value
+            if isinstance(base, ast.Name) and base.id == "np":
+                ok = node.attr in NP_ATTRS
+            elif isinstance(base, ast.Name) and base.id == "pd":
+                ok = node.attr in PD_ATTRS
+            else:
+                ok = node.attr in VALUE_ATTRS
+            if not ok:
+                return f"attribute {node.attr!r} is not on the allowlist"
         if isinstance(node, ast.Constant) and isinstance(node.value, str) and (
-                "/" in node.value or "\\" in node.value):
+                "/" in node.value or "\\" in node.value or ":" in node.value):
             return "string constants may not carry paths"
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and \
-                node.func.id not in SAFE_CALLS and node.func.id != "feature":
+                node.func.id not in SAFE_CALLS and node.func.id not in local:
             return f"call to {node.func.id!r} is not allowed (use np./pd. functions)"
     funcs = [n for n in tree.body if isinstance(n, ast.FunctionDef)]
     if len(tree.body) != 1 or not funcs or funcs[0].name != "feature":
         return "the source must be exactly one function named feature(df)"
+    return ""
+
+
+def code_lab_isolated() -> str:
+    """'' when the sandbox can cap the child, else why role R stands down.
+
+    Audit must-fix 1: rlimits are POSIX-only, so on Windows the child has no memory or CPU cap
+    beyond the wall-clock timeout. Role R therefore runs only where the caps exist, unless the
+    principal sets QUANT_LLM_CODE_LAB=1 (the allowlist above still binds).
+    """
+    if os.environ.get("QUANT_LLM_CODE_LAB", "") == "1":
+        return ""
+    if os.name != "posix":
+        return ("DISABLED_NO_ISOLATION: no rlimit on this OS; set QUANT_LLM_CODE_LAB=1 to run "
+                "under the allowlist and timeout alone")
     return ""
 
 
@@ -539,6 +589,9 @@ def code_lab(debt_path: Path, uni: dict[str, str], *, max_items: int, deadline: 
              chat: Callable[..., Any] | None = None, bars_dir: Path | None = None
              ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Write, sandbox-test and run feature code for rule-shaped debt. Returns (donations, tally)."""
+    why = code_lab_isolated()
+    if why:
+        return [], {"state": why}
     bd = bars_dir or BARS_DIR
     doc = _read_json(debt_path, {}) or {}
     rows: dict[str, dict[str, Any]] = doc.get("rows") or {}
@@ -917,6 +970,8 @@ def coverage_report(models: dict[str, Any], pass_cov: dict[str, dict[str, Any]],
     for key in ("R", "S"):
         rr = (role_report or {}).get(key)
         roles[key] = "RAN" if isinstance(rr, dict) else "NOT_RUN"
+        if isinstance(rr, dict) and str(rr.get("state", "")).startswith("DISABLED"):
+            roles[key] = str(rr["state"]).split(":")[0]       # deliberate, named, not silent
         if roles[key] == "NOT_RUN":
             red.append(f"role {key}: not run this cycle")
     cb_state = str((cb_tone or {}).get("state") or ("RAN" if (cb_tone or {}).get("docs") is not

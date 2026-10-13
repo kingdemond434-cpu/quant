@@ -138,7 +138,7 @@ def test_code_lab_whitelist_refuses_before_running() -> None:
     assert roles.code_refusal(CAUSAL) == ""
     bad = {
         "import os\ndef feature(df):\n    return df['close']\n": "import",
-        "def feature(df):\n    return open('x').read()\n": "open",
+        "def feature(df):\n    return open('x').read()\n": "not",
         "def feature(df):\n    return df.__class__\n": "__class__",
         "def feature(df):\n    df.to_csv('C:/x.csv')\n    return df['close']\n": "to_csv",
         "def feature(df):\n    return getattr(df, 'close')\n": "getattr",
@@ -146,6 +146,31 @@ def test_code_lab_whitelist_refuses_before_running() -> None:
     }
     for src, needle in bad.items():
         assert needle in roles.code_refusal(src), src
+
+
+@pytest.mark.parametrize("src", [
+    # the auditor's measured escapes (2026-10-13): attribute CHAINS that never name a banned word
+    "def feature(df):\n    pd.io.common.os.system('id')\n    return df['close']\n",
+    "def feature(df):\n    np.ctypeslib.ctypes.CDLL(None)\n    return df['close']\n",
+    "def feature(df):\n    np.genfromtxt('secrets')\n    return df['close']\n",
+    "def feature(df):\n    np.lib.format.open_memmap('x', mode='w+')\n    return df['close']\n",
+    "def feature(df):\n    x = df.close.values.tofile\n    return df['close']\n",
+    "def feature(df):\n    return pd.read_csv('x')\n",
+    "def feature(df):\n    return df.pipe(print)\n",
+    "def feature(df):\n    s = __builtins__\n    return df['close']\n",
+])
+def test_attribute_chains_cannot_reach_the_os(src: str) -> None:
+    assert roles.code_refusal(src)
+
+
+def test_role_r_stands_down_without_isolation(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("QUANT_LLM_CODE_LAB", raising=False)
+    monkeypatch.setattr(roles.os, "name", "nt")
+    assert roles.code_lab_isolated().startswith("DISABLED_NO_ISOLATION")
+    dons, tally = roles.code_lab(Path("absent.json"), {}, max_items=3, deadline=1e18)
+    assert dons == [] and tally["state"].startswith("DISABLED")
+    monkeypatch.setenv("QUANT_LLM_CODE_LAB", "1")
+    assert roles.code_lab_isolated() == ""
 
 
 def test_sandbox_runs_the_causality_test() -> None:
