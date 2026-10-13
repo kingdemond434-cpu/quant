@@ -182,6 +182,10 @@ def test_the_acquirer_orders_its_discovered_share_by_the_prior(world, tmp_path, 
     monkeypatch.setattr(AD, "REGISTRY", tmp_path / "absent_registry.json")
     monkeypatch.setattr(AD, "_SEED_ENDPOINTS", [])
     monkeypatch.setattr(AD.country_lab, "resolve_pack", lambda code: None)
+    # #192 seats a catalog-route URL only on a host whose terms were quoted as permitting;
+    # both fixture hosts carry that evidence so the test measures the prior, not the fence.
+    monkeypatch.setattr(AD, "_terms_permitted",
+                        lambda: frozenset({"useful.example.de", "other.example.fr"}))
     monkeypatch.setattr(DL, "PRIORS", world["state"] / "priors.json")
     _stamp_prior(world, datetime.now(UTC))                 # this hour's prior
     out = [u for u, _ in AD._endpoints(40)]
