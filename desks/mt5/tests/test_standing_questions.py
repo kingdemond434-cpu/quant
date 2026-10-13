@@ -86,11 +86,14 @@ def _build(base: Path) -> dict:
         gold[s:s + 2] *= 30.0
         aud[s - 24:s + 1] *= 8.0
 
-    # Q3: one axis's daily CHANGE is inside CADJPY's daily return. Q4: CADJPY gaps at 08:00.
+    # Q3: one axis's daily CHANGE is inside CADJPY's daily return. Q4: CADJPY gaps at the first
+    # server hour of the desk's own "london" window (`family_call.SESSIONS`, read through
+    # `sq.SESSIONS`): 08 before the market-clock pass, 10 -- London's real 08:00 -- after it.
+    london_open = int(sq.SESSIONS["london"][0])
     axis_level = np.cumsum(rng.normal(0.0, 1.0, len(days)))
     axis_diff = np.diff(axis_level, prepend=axis_level[0])
     cad_body = rng.normal(0.0, 1e-4, N) + 5e-4 * axis_diff[day_ix] / 24.0
-    cad_gap = rng.normal(0.0, 2e-5, N) + np.where(hour == 8, 3e-3, 0.0)
+    cad_gap = rng.normal(0.0, 2e-5, N) + np.where(hour == london_open, 3e-3, 0.0)
 
     for sym in ALL_SYMBOLS:
         if sym in BASKET:
