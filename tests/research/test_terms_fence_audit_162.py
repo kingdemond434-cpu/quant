@@ -1,12 +1,13 @@
-"""The #162 audit's fixes, pinned one route at a time (principal ruling 2026-09-30).
+"""The #162 audit's method protections, kept under the per-source policy (ruling 2026-10-13).
 
-No Reddit (or its mirrors), no StockTwits, no paid X, no Discord user token; the gate fails
-closed. Pinned here: the hourly dataset acquirer and the country-pack roots it reads, the source
-fixer, index discovery's Common Crawl host list, the hunter prompt, the Reddit mirrors, prefixed
-source names, the redirect guard on every fetch helper, the X and Discord fences, the docket and
-backtest quarantine, the USDJPY certificate quarantine with its re-certification queue, and the
-attention substitutes' run artifact. NO NETWORK: every connection is intercepted, and a redirect
-is served by an in-process handler.
+The ruling retired the category fence ("no source should be banned") and kept the METHOD rules:
+no login, paywall, CAPTCHA, rate-limit or region-lock bypass. Pinned here, one route at a time:
+the wrapper and spelling resolution, prefixed source names, the X and Discord rows (a user token
+driving Discord's API is a self-bot), the redirect guard on every fetch helper (a 30x into a held
+source or a login wall is refused), the live-input check at the acquirer, the source fixer and
+index discovery holding only HELD sources, the docket and backtest checking only declared live
+input (rule 4), and the attention doors' run artifact. NO NETWORK: every connection is
+intercepted, and a redirect is served by an in-process handler.
 """
 from __future__ import annotations
 
@@ -15,6 +16,7 @@ import io
 import json
 import socket
 import sys
+import urllib.error
 import urllib.request
 import urllib.response
 from datetime import UTC, datetime
@@ -33,8 +35,10 @@ from libs.data import polite_fetch as pf  # noqa: E402
 from libs.data import terms_fence as tf  # noqa: E402
 from libs.research import access_classifier as ac  # noqa: E402
 
-FENCED_HOSTS = ("reddit.com", "redd.it", "stocktwits.com", "pushshift.io", "pullpush.io",
-                "photon-reddit.com", "x.com", "twitter.com")
+HELD_HOSTS = ("nitter", "xcancel.com", "12ft.io", "api.stocktwits.com", "oauth.reddit.com",
+              "api.x.com")
+KEYS = ("X_BEARER_TOKEN", "REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET", "STOCKTWITS_ACCESS_TOKEN",
+        "DISCORD_BOT_TOKEN")
 
 
 class _Tripwire:
@@ -49,8 +53,14 @@ class _Tripwire:
         self.hosts.append(str(addr[0]))
         raise OSError("network disabled in tests")
 
-    def fenced(self) -> list[str]:
-        return [h for h in self.hosts if any(f in h.lower() for f in FENCED_HOSTS)]
+    def held(self) -> list[str]:
+        return [h for h in self.hosts if any(f in h.lower() for f in HELD_HOSTS)]
+
+
+@pytest.fixture(autouse=True)
+def _no_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    for k in KEYS:
+        monkeypatch.delenv(k, raising=False)
 
 
 @pytest.fixture
@@ -93,8 +103,10 @@ class _FakeWeb(urllib.request.BaseHandler):
 @pytest.fixture
 def web(monkeypatch: pytest.MonkeyPatch, wire: _Tripwire) -> _FakeWeb:
     fake = _FakeWeb({
-        "http://data.example.test/moved.csv": (302, "https://www.reddit.com/r/Gold/top.json"),
-        "http://data.example.test/mirror.csv": (301, "https://api.pushshift.io/reddit/search"),
+        "http://data.example.test/moved.csv": (302, "https://nitter.net/x/rss"),
+        "http://data.example.test/mirror.csv": (301, "https://xcancel.com/x/rss"),
+        "http://data.example.test/login.csv": (302, "http://data.example.test/login?next=/a.csv"),
+        "http://data.example.test/idea.csv": (302, "https://www.reddit.com/r/Gold/top.json"),
         "http://data.example.test/ok.csv": (302, "http://data.example.test/final.csv"),
         "http://data.example.test/final.csv": (200, "date,value\n2026-01-01,1\n"),
     })
@@ -109,62 +121,72 @@ def web(monkeypatch: pytest.MonkeyPatch, wire: _Tripwire) -> _FakeWeb:
     "https://api.pushshift.io/reddit/search/submission?subreddit=Gold",
     "https://api.pullpush.io/reddit/search/comment/", "https://pullpush.io/",
     "https://www.photon-reddit.com/r/Forex",
-    "https://web.archive.org/web/2025/https://www.reddit.com/r/Gold/",
-    "https://archive.org/wayback/available?url=https%3A%2F%2Fstocktwits.com%2Fsymbol%2FSPY"])
-def test_reddit_mirrors_and_archive_copies_are_fenced(url: str) -> None:
-    assert tf.platform_of_url(url) in ("reddit", "stocktwits")
-    with pytest.raises(tf.TermsFenced):
-        tf.check_url(url)
+    "https://web.archive.org/web/2025/https://www.reddit.com/r/Gold/"])
+def test_reddit_mirrors_and_archive_copies_read_the_reddit_row(url: str) -> None:
+    assert tf.source_of_url(url) == "reddit"
+    assert tf.platform_of_url(url) is None, "IDEAS_ONLY is not held"
+    assert tf.input_source(url) == "reddit", "and never live input"
 
 
-def test_an_archive_of_a_clean_page_is_not_fenced() -> None:
-    assert tf.platform_of_url("https://web.archive.org/web/2025/https://www.ecb.europa.eu/") \
+def test_an_archive_of_a_clean_page_is_unlisted() -> None:
+    assert tf.source_of_url("https://web.archive.org/web/2025/https://www.ecb.europa.eu/") is None
+    assert tf.source_of_url("https://archive.org/wayback/available?url=https%3A%2F%2Fbis.org") \
         is None
-    assert tf.platform_of_url("https://archive.org/wayback/available?url=https%3A%2F%2Fbis.org")\
-        is None
+
+
+def test_an_archive_of_a_held_page_is_held() -> None:
+    for url in ("https://web.archive.org/web/2025/https://nitter.net/x",
+                "https://archive.ph/newest/https://xcancel.com/x"):
+        assert tf.platform_of_url(url) == "nitter"
+        with pytest.raises(tf.TermsFenced):
+            tf.check_url(url)
 
 
 # ------------------------------------------------------------- 6. prefixed source names ----
-@pytest.mark.parametrize("name,platform", [
+@pytest.mark.parametrize("name,source", [
     ("asia:stocktwits_macro", "stocktwits"), ("miner:asia:stocktwits_macro", "stocktwits"),
     ("external_reddit", "reddit"), ("ext_reddit_USDJPY_session_range_breakout", "reddit"),
-    ("miner_pushshift", "reddit"), ("seat:reddit", "reddit"), ("external_twitter", "x_paid")])
-def test_prefixed_source_names_are_recognised(name: str, platform: str) -> None:
-    assert tf.fenced_source(name) == platform
+    ("miner_pushshift", "reddit"), ("seat:reddit", "reddit"), ("external_twitter", "x_web"),
+    ("nitter_fx", "nitter")])
+def test_prefixed_source_names_read_their_row(name: str, source: str) -> None:
+    assert tf.source_key(name) == source
+    assert tf.fenced_source(name) == (source if source == "nitter" else None)
 
 
 @pytest.mark.parametrize("name", [
     "redditch_weather", "external_redditch", "miner:forexfactory", "asia:google_trends",
     "ext_forexfactory_USDJPY_session_range_breakout", "miner:asia:boj_timeseries",
-    "terms_recert:forexfactory+central_bank", "x", "external_gdelt", "ext_xauusd_stocks",
-    "miner:asia:myfxbook_outlook", ""])
+    "x", "external_gdelt", "ext_xauusd_stocks", "miner:asia:myfxbook_outlook", ""])
 def test_unrelated_names_never_match(name: str) -> None:
-    assert tf.fenced_source(name) is None
+    assert tf.source_key(name) is None and tf.fenced_source(name) is None
 
 
-def test_the_48_unlabelled_shapes_now_count_as_fenced_rows() -> None:
-    assert tf.fenced_row({"source": "miner:asia:stocktwits_macro"}) == "stocktwits"
-    assert tf.fenced_row({"source": "external_reddit", "id": "ext_reddit_XAUUSD_x"}) == "reddit"
+def test_idea_shapes_are_never_fenced_rows() -> None:
+    assert tf.fenced_row({"source": "miner:asia:stocktwits_macro"}) is None
+    assert tf.fenced_row({"source": "external_reddit", "id": "ext_reddit_XAUUSD_x"}) is None
     shared = {"source": "miner:asia:myfxbook_outlook",
               "contributing_sources": ["asia:myfxbook_outlook", "asia:stocktwits_macro"]}
-    assert tf.fenced_row(shared) is None and tf.quarantined_row(shared) == "stocktwits"
+    assert tf.fenced_row(shared) is None and tf.quarantined_row(shared) is None
+    assert tf.touched_row(shared) == "stocktwits"
 
 
-# --------------------------------------------------------------- should-fix: X, Discord ----
-def test_paid_x_and_the_discord_user_token_are_fenced_platforms_with_reasons() -> None:
+# ---------------------------------------------------------------------- X and Discord ----
+def test_x_and_discord_are_rows_with_their_permitted_routes() -> None:
     rows = {r["platform"]: r for r in tf.registry_rows()}
-    assert {"reddit", "stocktwits", "x_paid", "discord_user"} <= set(rows)
-    assert "paid API" in rows["x_paid"]["reason"]
-    assert "bot" in rows["discord_user"]["reason"] and "user" in rows["discord_user"]["reason"]
-    for u in ("https://x.com/whale_alert", "https://twitter.com/x", "https://api.twitter.com/2/",
-              "https://api.x.com/2/tweets/search/recent"):
-        assert tf.platform_of_url(u) == "x_paid", u
-    assert len(ac.HARD_BOUNDARY) == 5, "the exclusions are sources, never a sixth act"
+    assert {"reddit", "stocktwits", "x_api", "x_web", "nitter", "discord_bot"} <= set(rows)
+    assert rows["x_api"]["status"] == tf.NEEDS_KEY and rows["x_web"]["status"] == tf.IDEAS_ONLY
+    assert rows["nitter"]["permitted_route"] == "x_api"
+    assert "bot" in tf.METHOD_ROWS["discord_user"]["why"]
+    for u in ("https://x.com/whale_alert", "https://twitter.com/x"):
+        assert tf.source_of_url(u) == "x_web", u
+    for u in ("https://api.twitter.com/2/", "https://api.x.com/2/tweets/search/recent"):
+        assert tf.platform_of_url(u) == "x_api", u           # held until X_BEARER_TOKEN exists
+    assert len(ac.HARD_BOUNDARY) == 5, "the policy names sources, never a sixth act"
 
 
 def test_discord_api_refuses_a_user_token_and_allows_a_bot_token() -> None:
     me = "https://discord.com/api/v10/users/@me"
-    assert tf.platform_of_url(me) is None, "discord.com itself is not a fenced host"
+    assert tf.platform_of_url(me) is None, "discord.com itself is not held"
     assert tf.fenced_request(me, {"Authorization": "mfa.user-token"}) == "discord_user"
     assert tf.fenced_request(me, {"authorization": "Bearer oauth"}) == "discord_user"
     assert tf.fenced_request(me, {"Authorization": "Bot abc"}) is None
@@ -182,27 +204,34 @@ def test_the_guarded_opener_refuses_a_user_token_before_any_connection(web: _Fak
 
 
 # ------------------------------------------------------------------ 7. the redirect guard ----
-def test_the_redirect_handler_refuses_a_30x_into_a_fenced_host() -> None:
+def test_the_redirect_handler_refuses_a_30x_into_a_held_host_or_a_login_wall() -> None:
     h = tf.FencedRedirectHandler()
     req = urllib.request.Request("http://data.example.test/x.csv")
-    with pytest.raises(tf.TermsFenced):
-        h.redirect_request(req, io.BytesIO(), 302, "Found", email.message.Message(),
-                           "https://old.reddit.com/r/x.json")
-    ok = h.redirect_request(req, io.BytesIO(), 302, "Found", email.message.Message(),
-                            "http://data.example.test/y.csv")
-    assert ok is not None and ok.full_url.endswith("/y.csv")
+    for target in ("https://nitter.net/x/rss", "https://www.reddit.com/login/?dest=%2Fr%2Fx",
+                   "http://data.example.test/accounts/login?next=/x.csv"):
+        with pytest.raises(tf.TermsFenced):
+            h.redirect_request(req, io.BytesIO(), 302, "Found", email.message.Message(), target)
+    for target in ("http://data.example.test/y.csv", "https://old.reddit.com/r/x.json"):
+        ok = h.redirect_request(req, io.BytesIO(), 302, "Found", email.message.Message(),
+                                target)
+        assert ok is not None and ok.full_url == target
 
 
-def test_guarded_urlopen_follows_a_clean_redirect_and_refuses_a_fenced_one(web: _FakeWeb) -> None:
+def test_guarded_urlopen_follows_clean_and_listed_redirects_and_refuses_held_ones(
+        web: _FakeWeb) -> None:
     with tf.guarded_urlopen("http://data.example.test/ok.csv", timeout=5) as r:
         assert r.read().startswith(b"date,value")
-    with pytest.raises(tf.TermsFenced):
-        tf.guarded_urlopen("http://data.example.test/moved.csv", timeout=5)
-    assert not [u for u in web.asked if tf.platform_of_url(u)], "a fenced URL was requested"
+    for url in ("http://data.example.test/moved.csv", "http://data.example.test/login.csv"):
+        with pytest.raises(tf.TermsFenced):
+            tf.guarded_urlopen(url, timeout=5)
+    with pytest.raises(urllib.error.HTTPError):       # followed (the fake web 404s it)
+        tf.guarded_urlopen("http://data.example.test/idea.csv", timeout=5)
+    assert "https://www.reddit.com/r/Gold/top.json" in web.asked
+    assert not [u for u in web.asked if tf.platform_of_url(u) or tf.login_wall(u)]
 
 
-def test_every_fetch_helper_refuses_a_redirect_into_a_fenced_host(web: _FakeWeb,
-                                                                 wire: _Tripwire) -> None:
+def test_every_fetch_helper_refuses_a_redirect_into_a_held_host(web: _FakeWeb,
+                                                               wire: _Tripwire) -> None:
     import acquire_datasets as ad
     import free_data as fd
     import source_fixer as sf
@@ -212,27 +241,29 @@ def test_every_fetch_helper_refuses_a_redirect_into_a_fenced_host(web: _FakeWeb,
     from libs.data import free_stack as fs
 
     r = pf.get("http://data.example.test/moved.csv", leg="test_redirect", retries=0)
-    assert not r.ok and r.error.startswith(tf.BLOCKED_WITH_SUBSTITUTE) and r.attempts == 1
-    assert ad._fetch("http://data.example.test/mirror.csv") == (None, "terms_fenced:reddit")
+    assert not r.ok and r.error.startswith(tf.METHOD_BLOCKED) and r.attempts == 1
+    assert ad._fetch("http://data.example.test/mirror.csv") == (None, "terms_fenced:nitter")
     with pytest.raises(fs.FetchError) as ei:
         fs.http_fetch("http://data.example.test/moved.csv")
-    assert ei.value.reason == tf.BLOCKED_WITH_SUBSTITUTE
+    assert ei.value.reason == tf.METHOD_BLOCKED
     with pytest.raises(tf.TermsFenced):
         fd._get("http://data.example.test/moved.csv")
     raw, why = wc.fetch("http://data.example.test/moved.csv")
-    assert raw is None and why.startswith(tf.BLOCKED_WITH_SUBSTITUTE)
-    assert sf._probe("http://data.example.test/moved.csv")[1] == "terms_fenced:reddit"
+    assert raw is None and why.startswith(tf.METHOD_BLOCKED)
+    assert sf._probe("http://data.example.test/moved.csv")[1] == "terms_fenced:nitter"
     with pytest.raises(wdh.FetchError):
         wdh.urllib_fetch("http://data.example.test/moved.csv", 5)
     # A clean redirect still works through the same helpers.
     assert ad._fetch("http://data.example.test/ok.csv")[0] is not None
     assert not [u for u in web.asked if tf.platform_of_url(u)]
-    assert wire.fenced() == [], wire.fenced()
+    assert wire.held() == [], wire.held()
 
 
 # ------------------------------------------------------------ 1. the hourly acquirer ----
-def test_acquire_refuses_a_fenced_endpoint_before_any_request_and_counts_it(
+def test_acquire_refuses_an_ideas_only_endpoint_as_live_input_and_counts_it(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, wire: _Tripwire) -> None:
+    """An acquired dataset is LIVE INPUT: Reddit and StockTwits pages are IDEAS_ONLY, so the
+    acquirer never requests them -- counted by source, never a ban."""
     import acquire_datasets as ad
     monkeypatch.setattr(ad, "STORE", tmp_path / "acq")
     monkeypatch.setattr(ad, "REGISTRY", tmp_path / "acq" / "registry.json")
@@ -243,27 +274,26 @@ def test_acquire_refuses_a_fenced_endpoint_before_any_request_and_counts_it(
     rep = ad.acquire(limit=5)
     assert rep["terms_fenced"]["total"] == 2
     assert rep["terms_fenced"]["by_platform"] == {"reddit": 1, "stocktwits": 1}
-    assert wire.hosts == [], "a fenced endpoint reached the network"
+    assert wire.hosts == [], "an IDEAS_ONLY endpoint was requested as live input"
     assert ad._fetch("https://old.reddit.com/r/options/") == (None, "terms_fenced:reddit")
 
 
-def test_no_country_pack_declares_a_fenced_root() -> None:
+def test_country_pack_roots_are_readmitted_and_none_is_held() -> None:
     from libs.research import country_lab
-    bad: list[str] = []
+    held: list[str] = []
+    listed = 0
     for pack_py in sorted((DESK / "research" / "countries").glob("*/pack.py")):
-        text = pack_py.read_text("utf-8").lower()
-        for token in ("reddit.com", "stocktwits.com", "pushshift", "pullpush", "redd.it"):
-            if token in text:
-                bad.append(f"{pack_py.parent.name}: {token}")
         pack = country_lab.resolve_pack(pack_py.parent.name)
         if pack is None:
             continue
         for src in country_lab.source_rows(pack):
-            bad += [f"{pack_py.parent.name}: {r}" for r in src.roots if tf.platform_of_url(r)]
-    assert bad == [], bad
+            held += [f"{pack_py.parent.name}: {r}" for r in src.roots if tf.platform_of_url(r)]
+            listed += sum(1 for r in src.roots if tf.source_of_url(r) == "reddit")
+    assert held == [], held
+    assert listed > 0, "the Reddit roots the 2026-09-30 fence removed are back"
 
 
-def test_the_endpoint_selector_never_seats_a_fenced_url(
+def test_the_endpoint_selector_never_seats_an_ideas_only_url(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import acquire_datasets as ad
     monkeypatch.setattr(ad, "REGISTRY", tmp_path / "none.json")
@@ -274,17 +304,17 @@ def test_the_endpoint_selector_never_seats_a_fenced_url(
                        "https://data.example.test/a.csv"], "host": "x"}]), "utf-8")
     monkeypatch.setattr(ad, "WORLD", world)
     picked = [u for u, _h in ad._endpoints(100_000)]
-    assert not [u for u in picked if tf.platform_of_url(u)]
+    assert not [u for u in picked if tf.input_source(u)]
     assert "https://data.example.test/a.csv" in picked
     assert ad._ENDPOINT_FENCED.get("reddit") == 1
 
 
 # ------------------------------------------------------------------ 2. the source fixer ----
-def test_the_source_fixer_never_probes_or_repairs_a_fenced_source(
+def test_the_source_fixer_never_probes_or_repairs_a_held_source(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, wire: _Tripwire) -> None:
     import source_fixer as sf
     reg = {"sources": [{"id": "stocktwits_macro", "url": "https://api.stocktwits.com/api/2/x"},
-                       {"id": "pushshift_dump", "url": "https://files.pushshift.io/reddit/"}]}
+                       {"id": "fx_tweets", "url": "https://nitter.net/x/rss"}]}
     monkeypatch.setattr(sf, "REGISTRY", tmp_path / "reg.json")
     monkeypatch.setattr(sf, "COLLECTOR_REPORT", tmp_path / "rep.json")
     monkeypatch.setattr(sf, "COLLECTOR_STATE", tmp_path / "state.json")
@@ -293,151 +323,83 @@ def test_the_source_fixer_never_probes_or_repairs_a_fenced_source(
     (tmp_path / "reg.json").write_text(json.dumps(reg), "utf-8")
     (tmp_path / "rep.json").write_text(json.dumps({"rows": [
         {"id": "stocktwits_macro", "status": "HTTP_ERROR", "http": 500},
-        {"id": "pushshift_dump", "status": "UNREACHABLE"}]}), "utf-8")
+        {"id": "fx_tweets", "status": "UNREACHABLE"}]}), "utf-8")
     doc = sf.run(budget_s=30)
-    assert doc["n_terms_fenced"] == 2 and doc["terms_fenced"] == {"stocktwits": 1, "reddit": 1}
+    assert doc["n_terms_fenced"] == 2
+    assert doc["terms_fenced"] == {"stocktwits_api": 1, "nitter": 1}
     assert {r["outcome"] for r in doc["results"]} == {"TERMS_FENCED"}
     assert wire.hosts == []
-    assert sf._wayback("https://www.reddit.com/r/x") is None and wire.hosts == []
+    assert sf._wayback("https://nitter.net/x") is None and wire.hosts == []
 
 
 # --------------------------------------------------------------- 3. index discovery ----
-def test_index_discovery_never_queries_a_fenced_host(
+def test_index_discovery_never_queries_a_held_host(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, wire: _Tripwire) -> None:
     import index_discovery as idx
     reg = tmp_path / "asia_sources.json"
     reg.write_text(json.dumps({"sources": [
-        {"id": "stocktwits_macro", "url": "https://api.stocktwits.com/api/2/streams/x.json"},
+        {"id": "stocktwits_api", "url": "https://api.stocktwits.com/api/2/streams/x.json"},
         {"id": "ecb", "url": "https://data-api.ecb.europa.eu/service/data/EXR"}]}), "utf-8")
     monkeypatch.setattr(idx, "REGISTRY", reg)
     idx.FENCED_HOSTS.clear()
     assert idx._hosts_from_registry() == ["data-api.ecb.europa.eu"]
-    assert idx.FENCED_HOSTS == {"api.stocktwits.com": "stocktwits"}
+    assert idx.FENCED_HOSTS == {"api.stocktwits.com": "stocktwits_api"}
     body, why = idx._get("https://api.stocktwits.com/api/2/x")
-    assert body is None and why.startswith(tf.BLOCKED_WITH_SUBSTITUTE)
-    assert idx._clean(["https://www.reddit.com/r/x", "https://www.bis.org/a"]) == \
-        ["https://www.bis.org/a"]
+    assert body is None and why.startswith(tf.NEEDS_KEY)
+    assert idx._clean(["https://nitter.net/x", "https://www.reddit.com/r/x",
+                       "https://www.bis.org/a"]) == ["https://www.reddit.com/r/x",
+                                                     "https://www.bis.org/a"]
     assert wire.hosts == []
-    src = (DESK / "data" / "asia_sources.json").read_text("utf-8")
-    if "stocktwits" in src:            # the live registry still lists it; it is never queried
-        monkeypatch.setattr(idx, "REGISTRY", DESK / "data" / "asia_sources.json")
-        assert not [h for h in idx._hosts_from_registry(10_000) if "stocktwits" in h]
 
 
 # ------------------------------------------------------------------- 4. the hunter prompt ----
-def test_the_hunter_prompt_directs_no_fenced_mining_and_names_the_substitutes() -> None:
+def test_the_hunter_prompt_carries_no_category_ban() -> None:
     text = (ROOT / "ops" / "gpt_video_hunter_prompt.txt").read_text("utf-8")
-    hunt = text.split("Hunt globally", 1)[1].split("TERMS-FENCED, NEVER MINED", 1)[0]
-    assert "Reddit" not in hunt and "StockTwits" not in hunt and ", X," not in hunt
-    assert "Wikipedia pageviews" in text and "GDELT" in text and "TERMS-FENCED" in text
-    assert "Reddit-maximal" not in (ROOT / "ops" / "run_cro_ai.sh").read_text("utf-8")
+    assert "TERMS-FENCED, NEVER MINED" not in text
 
 
-# --------------------------------------------------------------------- the quarantine ----
-def test_the_docket_build_skips_fenced_rows_with_a_counted_reason() -> None:
+# ------------------------------------------------------- rule 4: only live input is checked ----
+def test_the_docket_build_checks_only_declared_live_input() -> None:
     import merge_hypotheses as mh
     rows = [{"symbol": "EURUSD", "family": "session_range_breakout",
              "source": "ext_reddit_EURUSD_session_range_breakout"},
             {"symbol": "BTCUSD", "family": "failed_breakout",
              "source": "miner:asia:stocktwits_macro"},
-            {"symbol": "EURUSD", "family": "failed_breakout", "source": "miner:asia:myfxbook",
-             "contributing_sources": ["asia:myfxbook", "asia:stocktwits_macro"]},
             {"symbol": "XAUUSD", "family": "x", "source": "miner:forexfactory",
              "provenance_label": "reddit_fenced"},
+            {"symbol": "USDJPY", "family": "exogenous_conditioner", "source": "miner:asia:x",
+             "input_data": "https://stocktwits.com/symbol/USDJPY"},
             {"symbol": "GBPUSD", "family": "overnight_gap_decay", "source": "miner:forexfactory"}]
     mh.label_terms_fenced(rows)
     kept, rep = mh.quarantine_terms_fenced(rows)
-    assert [r["symbol"] for r in kept] == ["GBPUSD"]
-    assert rep["skipped"] == 4 and rep["by_platform"] == {"reddit": 2, "stocktwits": 2}
-    assert "not judgeable" in rep["reason"]
+    assert [r["symbol"] for r in kept] == ["EURUSD", "BTCUSD", "XAUUSD", "GBPUSD"]
+    assert rep["skipped"] == 1 and rep["by_platform"] == {"stocktwits": 1}
+    assert "live input" in rep["reason"]
 
 
-def test_the_backtest_stage_skips_fenced_rows_with_a_counted_reason() -> None:
+def test_the_backtest_stage_checks_only_declared_live_input() -> None:
     from side_channels import run_external_backtest as reb
     rows = [{"symbol": "USDJPY", "family": "session_range_breakout",
              "source": "ext_reddit_USDJPY_session_range_breakout"},
             {"symbol": "XAUUSD", "family": "adx_channel_hybrid", "source": "external_reddit"},
-            {"symbol": "USDJPY", "family": "session_range_breakout",
-             "source": "terms_recert:forexfactory+central_bank"}]
+            {"symbol": "XAUUSD", "family": "exogenous_conditioner", "source": "x",
+             "data_source": "https://www.reddit.com/r/Gold/new.json"}]
     kept, rep = reb.quarantine_terms_fenced(rows)
-    assert [r["source"] for r in kept] == ["terms_recert:forexfactory+central_bank"]
-    assert rep == {"skipped": 2, "by_platform": {"reddit": 2},
-                   "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable"}
+    assert [r["family"] for r in kept] == ["session_range_breakout", "adx_channel_hybrid"]
+    assert rep["skipped"] == 1 and rep["by_platform"] == {"reddit": 1}
 
 
-def test_the_live_artifacts_hold_no_judgeable_fenced_row_after_quarantine() -> None:
-    """The audit's counts -- 81 fenced/touched rows in external_survivors, 11 in
-    deepened_candidates, 12 in external_backtest_results -- all fall to the quarantine."""
+def test_no_certificate_or_cell_is_refused_for_its_idea_lineage() -> None:
+    import kelly_survival as ks
     import merge_hypotheses as mh
-    hyp = DESK / "data" / "hypotheses"
-    for name, key in (("external_survivors.json", None), ("deepened_candidates.json",
-                                                          "candidates"),
-                      ("external_backtest_results.json", None)):
-        p = hyp / name
-        if not p.exists():
-            continue
-        doc = json.loads(p.read_text("utf-8"))
-        rows = [r for r in (doc[key] if key else doc) if isinstance(r, dict)]
-        kept, _rep = mh.quarantine_terms_fenced(rows)
-        blob = [json.dumps({k: r.get(k) for k in ("source", "contributing_sources", "id",
-                                                  "provenance_label")}).lower() for r in kept]
-        assert not [b for b in blob if "reddit" in b or "stocktwits" in b], name
-
-
-# ------------------------------------------------- the USDJPY certificates and the re-cert ----
-SLEEVES = ("usdjpy_session_range_breakout_asia_session_range_breakout",
-           "usdjpy_session_range_breakout_asia_5_wb_12",
-           "usdjpy_session_range_breakout_asia_0_wb_12")
-
-
-def test_the_three_usdjpy_sleeves_are_refused_until_recertified() -> None:
-    doc = json.loads((DESK / "data" / "sleeves.json").read_text("utf-8"))
-    rows = {r["name"]: r for r in doc["sleeves"] if r.get("name") in SLEEVES}
-    assert set(rows) == set(SLEEVES)
-    for name, row in rows.items():
-        cell = row["certificate"]["cell"]
-        assert tf.quarantined_certificate(cell, sleeve=name), name
-        assert tf.quarantined_certificate(cell, gated_at=row["certificate"]["gated_at"]), name
-        assert tf.quarantined_certificate(cell, gated_at="2026-10-07T00:00:00+00:00") is None
-    assert tf.quarantined_certificate("external.EURJPY.session_range_breakout") is None
-    assert tf.quarantined_certificate(spec={"symbol": "USDJPY", "family": "session_range_breakout",
-                                            "window": "asia", "params": {"rr": 2,
-                                                                        "wait_bars": 12}})
-
-
-def test_the_recert_queue_file_matches_the_quarantine_and_reaches_the_docket(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import merge_hypotheses as mh
-    q = json.loads((DESK / "data" / "hypotheses" / mh.RECERT_QUEUE).read_text("utf-8"))
-    assert q["rows"] == json.loads(json.dumps(tf.recert_queue_rows()))
-    assert {r["recertifies"] for r in q["rows"]} == set(tf.QUARANTINED_CERTIFICATES)
-    assert all(r["status"] == "QUEUED" and r["lineage"] == ["forexfactory", "central_bank"]
-               and not tf.quarantined_row(r) for r in q["rows"])
-    monkeypatch.setattr(mh, "HYP", tmp_path)
-    (tmp_path / mh.RECERT_QUEUE).write_text(json.dumps(q), "utf-8")
-    fenced = {"symbol": "USDJPY", "family": "session_range_breakout",
-              "params": {"rr": 1.5, "wait_bars": 12},
-              "source": "ext_reddit_USDJPY_session_range_breakout"}
-    merged = {mh._identity(fenced): fenced}
-    rep = mh.admit_recert_queue(merged, datetime(2026, 10, 6, 21, tzinfo=UTC))
-    assert rep["admitted"] == 4 and rep["replaced_same_identity"] == 1
-    row = merged[mh._identity(fenced)]
-    assert row["source"] == "terms_recert:forexfactory+central_bank"
-    kept, qrep = mh.quarantine_terms_fenced(list(merged.values()))
-    assert len(kept) == 4 and qrep["skipped"] == 0
-
-
-def test_the_allocator_feed_carries_gated_at_for_the_quarantine() -> None:
-    from research.portfolio_gap import load_survivors
-    rows = load_survivors()
-    usd = [r for r in rows if r["symbol"] == "USDJPY" and r["family"] == "session_range_breakout"
-           and r["window"] == "asia"]
-    assert usd and all(r.get("gated_at") for r in usd)
-    assert all(tf.quarantined_certificate(spec=r, gated_at=r["gated_at"]) for r in usd)
+    assert ks.terms_fenced_cells()[0] == set()
+    assert not hasattr(tf, "quarantined_certificate")
+    assert not hasattr(mh, "admit_recert_queue")
+    assert not (DESK / "data" / "hypotheses" / "terms_recert_queue.json").exists()
 
 
 # ------------------------------------------------------------------ the substitutes ----
-def test_the_substitutes_artifact_names_status_series_cells_and_the_fence_replaced(
+def test_the_substitutes_artifact_names_status_series_and_cells(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import attention_substitutes as A
     monkeypatch.setattr(A, "ROSTER", {"XAUUSD": A.ROSTER["XAUUSD"]})
@@ -450,7 +412,7 @@ def test_the_substitutes_artifact_names_status_series_cells_and_the_fence_replac
     for door, row in subs.items():
         assert row["status"].startswith("UNMEASURED") and "HTTP 503" in row["status"], door
         assert row["series_published"] == 0 and row["cells_minted"] == 0
-        assert {"reddit", "stocktwits", "x_paid"} <= {r["platform"] for r in row["replaces"]}
+        assert isinstance(row["replaces"], list)   # policy rows naming this door as a route
     assert A.REPORT.name == "ATTENTION_SUBSTITUTES.json"
 
 

@@ -349,7 +349,9 @@ def source_of_url(url: str, _depth: int = 0) -> str | None:
     inner = _wrapped_url(url) if _depth < 4 else None
     if inner:
         k2 = source_of_url(inner, _depth + 1)
-        if k2 and status(k2) in HOLDING:
+        # A wrapper reads as what it wraps: always when the target is held, and whenever the
+        # wrapper itself is unlisted (an archive copy of a Reddit page is a Reddit page).
+        if k2 and (status(k2) in HOLDING or k is None):
             return k2
     return k
 
