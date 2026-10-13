@@ -235,8 +235,17 @@ def test_a_pass_collects_mints_and_reports_every_family(isolated: dict[str, Any]
     assert fams["own_execution_state"]["status"] == "COLLECTING"
     assert fams["own_execution_state"]["cells_generated"] == 0
     for key in ("options_tape", "dealer_hedge_pressure_minus_realized_move",
-                "crypto_reference_options", "off_exchange_short_volume", "depth_queue_l2_l3"):
+                "crypto_reference_options", "depth_queue_l2_l3"):
         assert fams[key]["status"] == "HELD" and fams[key]["why"]
+    # per source, never a category: the crypto reference is held on the purity fence, FINRA on a
+    # credential, and the SEC's public files are permitted but not yet collected
+    assert "mt5_purity fence; principal ruling pending" in fams["crypto_reference_options"]["why"]
+    assert "banned" not in json.dumps(doc["families"]).lower()
+    assert fams["off_exchange_short_volume"]["status"] == "NEEDS_KEY"
+    assert fams["fails_and_borrow"]["status"] == "UNMEASURED"
+    assert "no collector built" in fams["fails_and_borrow"]["why"]
+    for r in fams.values():
+        assert set(r["access"].values()) <= set(ff.ACCESS_STATES)
     for r in fams.values():
         for s in r["sources"]:
             assert r["pit"][s] and r["publication_lag"][s]
@@ -287,6 +296,11 @@ def test_terms_fail_closed() -> None:
         if s["verdict"] == ff.HELD:
             assert s.get("why_held")
             assert s.get("collector") is None
+        assert s["access"] in ff.ACCESS_STATES, sid
+        if s["verdict"] == ff.PERMITTED:
+            assert s["access"] in ff.INGESTIBLE, sid
+        if s["access"] in ("UNREAD", "METHOD_BLOCKED", "IDEAS_ONLY", "NEEDS_KEY"):
+            assert s["verdict"] == ff.HELD, sid
 
 
 def test_the_leg_is_wired_into_the_hourly_cycle() -> None:

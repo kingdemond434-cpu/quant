@@ -8,7 +8,7 @@ it point-in-time, the MT5 instruments it maps to, how many cells it generated th
 whether those cells reach the existing judge. A family the desk cannot feed says which source,
 which terms clause or which venue fact blocks it.
 
-WHAT IS BUILT AND JUDGED NOW -- first-party data only, which is always allowed:
+WHAT IS BUILT AND JUDGED NOW -- first-party data, which is always allowed:
 
   THE TICK TAPE. `recorders/tick_recorder.py` / `mt5desk/tape.py` record Fusion's quote stream
   under data/tape/ticks/<SYM>/. Each pass folds every completed five-minute bucket into
@@ -28,9 +28,16 @@ mt5desk/fetch_cot.py and judged through the existing cot families and run_cot_ma
 bar-spread states (microstructure_miner -> spread_state), options-implied state (PR #234's
 options_implied, itself HELD on FRED/CBOE terms). No second lane: each names its owner organ.
 
-TERMS FAIL CLOSED. `SOURCES` carries the verbatim clause read from each source's OWN terms page
-on the date given. A source without a permitting clause is HELD and is never fetched by this
-organ -- it fetches nothing at all; collection runs in the owner organs.
+TERMS FAIL CLOSED, PER SOURCE (principal ruling, 2026-10-13 16:10Z). No source is banned as a
+category; every source is judged on its own terms. Allowed: official APIs and free tiers within
+their published limits (NEEDS_KEY when the desk holds no key), public pages the desk is permitted
+to fetch, and public posts read for ideas. Off: METHOD only -- bypassing logins, paywalls,
+CAPTCHAs, rate limits or region locks, stolen data, and MNPI. Idea provenance never blocks a cell.
+Each source carries an `access` state from ACCESS_STATES (API_PERMITTED / NEEDS_KEY / PUBLIC_PAGE
+/ IDEAS_ONLY / METHOD_BLOCKED / UNREAD) and a `verdict`: PERMITTED or FIRST_PARTY when this desk
+may ingest it now, else HELD with the reason by name. `SOURCES` carries the verbatim clause read
+from each source's OWN page on the date given; UNREAD is never a permission. This organ fetches
+nothing at all; collection runs in the owner organs.
 
 THE UNKNOWN-UNKNOWN MICROSTRUCTURE MINER runs in the same pass. It classifies anything the
 grammar does not yet name -- a tape symbol the registry does not list, a tick field or tick flag
@@ -128,12 +135,18 @@ DERIVATIONS: tuple[str, ...] = (
 PERMITTED = "PERMITTED"
 HELD = "HELD"
 FIRST_PARTY = "FIRST_PARTY"
+#: The per-source access vocabulary (principal ruling 2026-10-13 16:10Z). Only API_PERMITTED and
+#: PUBLIC_PAGE (and first-party data) may be ingested; IDEAS_ONLY may be read, never ingested.
+ACCESS_STATES: tuple[str, ...] = ("API_PERMITTED", "NEEDS_KEY", "PUBLIC_PAGE", "IDEAS_ONLY",
+                                  "METHOD_BLOCKED", "UNREAD")
+INGESTIBLE = frozenset({"API_PERMITTED", "PUBLIC_PAGE"})
 #: Terms, verbatim from each source's OWN page as read with WebFetch on `checked_at`. A source
 #: whose page could not be read, or carries no clause permitting automated internal research use,
 #: is HELD and never fetched. Fail closed: nothing here is inferred.
 SOURCES: dict[str, dict[str, Any]] = {
     "mt5_tick_tape": {
         "publisher": "Fusion Markets via this desk's own MT5 terminal", "verdict": FIRST_PARTY,
+        "access": "API_PERMITTED",
         "terms_url": "", "terms_quote": "first-party: the desk's own recorded quote stream",
         "checked_at": "2026-10-13", "collector": "recorders/tick_recorder.py, mt5desk/tape.py",
         "pit": "bucket [start, start+5m) on the broker clock (MT5 time_msc, the bars' clock); "
@@ -141,12 +154,14 @@ SOURCES: dict[str, dict[str, Any]] = {
         "publication_lag": "0 (bucket end)"},
     "own_fills": {
         "publisher": "this desk's gateway and fill_recorder", "verdict": FIRST_PARTY,
+        "access": "API_PERMITTED",
         "terms_url": "", "terms_quote": "first-party: the desk's own orders and deals",
         "checked_at": "2026-10-13", "collector": "research/fill_recorder.py",
         "pit": "a row is knowable at its own decided_at / filled_at; appended hourly",
         "publication_lag": "<= 1h (fill_recorder cadence)"},
     "cftc_cot": {
         "publisher": "U.S. Commodity Futures Trading Commission", "verdict": PERMITTED,
+        "access": "PUBLIC_PAGE",
         "terms_url": "https://www.cftc.gov/webpolicy/index.htm",
         "terms_quote": ("Government information at the CFTC website is in the public domain. "
                         "Public domain information may be freely distributed and copied, but it "
@@ -166,20 +181,25 @@ SOURCES: dict[str, dict[str, Any]] = {
         "checked_at": "2026-10-13", "collector": None,
         "pit": "daily short-sale volume files, same-day evening ET (not collected)",
         "publication_lag": "~0-1 day (not collected)",
-        "why_held": "the terms prohibit robots and building a database from the site"},
+        "access": "NEEDS_KEY",
+        "api_url": "https://developer.finra.org/docs",
+        "api_quote": ("An API Credential is required to make API requests on the FINRA API "
+                      "platform. [...] Synchronous requests: 1200 requests per minute per IP "
+                      "address."),
+        "why_held": ("the website terms prohibit robots and building a database from the site, "
+                     "so the site is not a route; the official FINRA API is, and it needs an "
+                     "OAuth API credential the desk does not hold (NEEDS_KEY)")},
     "sec_fails_to_deliver": {
-        "publisher": "U.S. Securities and Exchange Commission", "verdict": HELD,
-        "terms_url": "https://www.sec.gov/privacy",
-        "terms_quote": ("Information presented on sec.gov is considered public information and "
-                        "may be copied or further distributed by users of the web site without "
-                        "the SEC's permission. [...] The SEC does not allow \"unclassified\" bots "
-                        "or automated tools to crawl the site."),
+        "publisher": "U.S. Securities and Exchange Commission", "verdict": PERMITTED,
+        "access": "PUBLIC_PAGE",
+        "terms_url": "https://www.sec.gov/about/webmaster-frequently-asked-questions",
+        "terms_quote": ("We allow scripted access to sec.gov content [...] Please declare your "
+                        "user agent in request headers [...] Note that our current maximum "
+                        "access rate is 10 requests per second."),
+        "conditions": "declared User-Agent naming the desk and a contact; at most 10 requests/s",
         "checked_at": "2026-10-13", "collector": None,
         "pit": "twice-monthly files, roughly two weeks after the settlement dates they cover",
-        "publication_lag": "~14 days (not collected)",
-        "why_held": ("copying is permitted but automated access is conditioned on a bot "
-                     "classification this page does not define; no clause on this page clearly "
-                     "permits the automated pull, so fail closed")},
+        "publication_lag": "~14 days (not collected)"},
     "occ_daily_stats": {
         "publisher": "The Options Clearing Corporation", "verdict": HELD,
         "terms_url": "https://www.theocc.com/terms-of-use",
@@ -187,6 +207,7 @@ SOURCES: dict[str, dict[str, Any]] = {
         "checked_at": "2026-10-13", "collector": None,
         "pit": "daily volume/OI statistics, D+1 (not collected)",
         "publication_lag": "1 day (not collected)",
+        "access": "UNREAD",
         "why_held": "no terms clause could be read, so none permits the use"},
     "cboe_market_stats": {
         "publisher": "Cboe Global Markets", "verdict": HELD,
@@ -197,7 +218,9 @@ SOURCES: dict[str, dict[str, Any]] = {
         "checked_at": "2026-10-13", "collector": None,
         "pit": "daily options statistics, D+1 (not collected)",
         "publication_lag": "1 day (not collected)",
-        "why_held": "use requires a signed licence"},
+        "access": "IDEAS_ONLY",
+        "why_held": ("use requires a signed licence the desk does not hold; the public pages "
+                     "may be read for ideas, never ingested")},
     "cme_volume_oi_bulletin": {
         "publisher": "CME Group", "verdict": HELD,
         "terms_url": "https://www.cmegroup.com/terms-of-use.html",
@@ -205,24 +228,32 @@ SOURCES: dict[str, dict[str, Any]] = {
         "checked_at": "2026-10-13", "collector": None,
         "pit": "daily volume and open interest bulletin, D+1 morning CT (not collected)",
         "publication_lag": "1 day (not collected)",
+        "access": "UNREAD",
         "why_held": "no terms clause could be read, so none permits the use"},
     "crypto_reference_options": {
         "publisher": "crypto-exchange option venues", "verdict": HELD,
-        "terms_url": "", "terms_quote": "(not read: the venue class is forbidden)",
+        "access": "UNREAD",
+        "terms_url": "",
+        "terms_quote": ("(not read: no venue's own market-data API terms are on file; an "
+                        "official public market-data API is allowable in principle under the "
+                        "2026-10-13 ruling)"),
         "checked_at": "2026-10-13", "collector": None, "pit": "n/a", "publication_lag": "n/a",
-        "why_held": ("the MT5 universe mandate forbids crypto-exchange venues as a data ground; "
-                     "Fusion's BTCUSD/SOLUSD CFDs are traded, their reference options are not "
-                     "read")},
+        "why_held": ("mt5_purity fence; principal ruling pending on the fence "
+                     "(scripts/check_mt5_purity.py fails CI on crypto-exchange hostnames). Not a "
+                     "category ban: Fusion's BTCUSD/SOLUSD CFDs are traded, and the reference "
+                     "options would inform them only")},
     "auction_imbalance_feeds": {
         "publisher": "listing-exchange auction imbalance feeds", "verdict": HELD,
         "terms_url": "", "terms_quote": "(no terms page read: vendor feeds, no public route)",
         "checked_at": "2026-10-13", "collector": None,
         "pit": "intraday imbalance messages (not collected)", "publication_lag": "n/a",
+        "access": "UNREAD",
         "why_held": "no public source with a permitting clause"},
     "benchmark_fixings": {
         "publisher": "benchmark administrators (gold/silver fix, WM/R)", "verdict": HELD,
         "terms_url": "", "terms_quote": "(no terms page read: licensed benchmarks)",
         "checked_at": "2026-10-13", "collector": None, "pit": "n/a", "publication_lag": "n/a",
+        "access": "UNREAD",
         "why_held": "licensed benchmark data; no permitting clause on file"},
     "external_futures_tape": {
         "publisher": "CME/COMEX/NYMEX futures prints", "verdict": HELD,
@@ -230,8 +261,8 @@ SOURCES: dict[str, dict[str, Any]] = {
         "terms_quote": "(not readable: the terms page returned a fetch error on 2026-10-13)",
         "checked_at": "2026-10-13", "collector": None, "pit": "n/a", "publication_lag": "n/a",
         "why_held": ("no CME clause could be read; the existing futures_lead_lag leg reads a "
-                     "Yahoo route, which the desk's source rules forbid, so it is not counted "
-                     "as collection here")},
+                     "Yahoo route whose own terms are not on file here (per source, not a "
+                     "category ban), so it is not counted as collection here")},
 }
 
 # ----------------------------------------------------------------------------- the families
@@ -844,8 +875,11 @@ def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path
                           "would model the synthesis")
             row["history"] = None
         elif held:
-            row["status"] = HELD
-            row["why"] = "; ".join(f"{s}: {v.get('why_held', 'no permitting clause')}"
+            # NEEDS_KEY when every blocked source is only waiting on a credential
+            row["status"] = ("NEEDS_KEY" if all(v.get("access") == "NEEDS_KEY" for _, v in held)
+                             else HELD)
+            row["why"] = "; ".join(f"{s} [{v.get('access', 'UNREAD')}]: "
+                                   f"{v.get('why_held', 'no permitting clause')}"
                                    for s, v in held)
             row["history"] = None
         elif spec["sources"] == ["mt5_tick_tape"]:
@@ -861,7 +895,13 @@ def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path
         else:
             row["status"] = "UNMEASURED"
             row["history"] = None
-        row["terms"] = [{"source": s, "verdict": v["verdict"], "terms_url": v["terms_url"],
+            uncollected = [s for s in spec["sources"] if not SOURCES[s].get("collector")]
+            if uncollected:
+                row["why"] = (f"permitted, no collector built yet: {', '.join(uncollected)} "
+                              "(UNWIRED, not blocked)")
+        row["access"] = {s: SOURCES[s].get("access", "UNREAD") for s in spec["sources"]}
+        row["terms"] = [{"source": s, "verdict": v["verdict"], "access": v.get("access"),
+                         "terms_url": v["terms_url"],
                          "quote": v["terms_quote"], "checked_at": v["checked_at"]}
                         for s, v in zip(spec["sources"], srcs, strict=True)]
         if spec["owner"] == SEAT:
@@ -882,8 +922,10 @@ def run(*, dry_run: bool = False, tape_dir: Path | None = None, series_dir: Path
         "at": now_iso(), "writer": "research/flow_factory.py", "seat": SEAT,
         "status": "DRY_RUN" if dry_run else "RAN",
         "rule": ("first-party tape and fills are collected point-in-time and turned into judged "
-                 "cells; every external source is fetched only with a verbatim permitting "
-                 "clause, else HELD; nothing here promotes, sizes or conditions capital"),
+                 "cells; every external source is judged per source (2026-10-13 ruling): "
+                 "ingested only when its access state is API_PERMITTED or PUBLIC_PAGE with a "
+                 "verbatim clause, else HELD/NEEDS_KEY by name; nothing here promotes, sizes or "
+                 "conditions capital"),
         "grammar": {"axes": grammar, "derivations": list(DERIVATIONS),
                     "open": "every axis is open; the miner appends discovered values"},
         "families": fams, "status_counts": status_counts,
