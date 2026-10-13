@@ -976,7 +976,11 @@ class _MacroContext:
             self._leg_factors = leg_factors
             self.fs = leg_factors.factor_set(leg_factors.daily_factor_returns())
             self.meta["factors"] = ({"status": "MEASURED", "note": self.fs.note,
-                                     "names": list(self.fs.names)} if self.fs is not None
+                                     "names": list(self.fs.names),
+                                     # a held/empty macro archive is named, never silent
+                                     "macro": {m: {"status": "UNMEASURED", "why": why}
+                                               for m, why in self.fs.unmeasured.items()}}
+                                    if self.fs is not None
                                     else {"status": "UNMEASURED",
                                           "why": "no factor history could be built from the "
                                                  "universe bars"})
