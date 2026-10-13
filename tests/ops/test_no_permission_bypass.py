@@ -8,10 +8,11 @@ is not listed below, so the next organ cannot quietly bring it back.
 
 ALLOWLIST holds lines that genuinely cannot change, each with its reason. It is EMPTY.
 
-PENDING_SCOPING is NOT an allowlist. It names the shell agent lanes that still carry the flag
-because each needs its own prompt read and its own scoped list (their prompts run to ~9,000
-lines between them). It only shrinks: a NEW occurrence anywhere fails, and an entry that no
-longer matches a line (because the lane was scoped) fails until it is deleted here.
+PENDING_SCOPING is NOT an allowlist. It named the shell agent lanes that still carried the flag
+and only ever shrank. It is now EMPTY: the ten ops/run_*.sh lanes run through
+ops/scoped_claude.sh on the per-lane allowlists in libs/ops/vps_lane_scopes.py
+(tests/ops/test_vps_shell_agents_scoped.py).
+A NEW occurrence anywhere fails.
 """
 from __future__ import annotations
 
@@ -28,18 +29,7 @@ FLAG = "--dangerously" + "-skip-permissions"
 ALLOWLIST: dict[tuple[str, str], str] = {}
 
 #: path -> number of occurrences still to scope. Shrinks only; see the module docstring.
-PENDING_SCOPING: dict[str, int] = {
-    "ops/run_blindrediscovery_dig.sh": 1,
-    "ops/run_brain_hunter.sh": 1,
-    "ops/run_cro_ai.sh": 1,
-    "ops/run_dataaxis_dig.sh": 1,
-    "ops/run_frontier_miner.sh": 1,
-    "ops/run_gap_wirer.sh": 1,
-    "ops/run_litminer_dig.sh": 1,
-    "ops/run_prospector_dig.sh": 1,
-    "ops/run_recommendation_worker.sh": 1,
-    "ops/run_video_hunter.sh": 1,
-}
+PENDING_SCOPING: dict[str, int] = {}
 
 
 def _scan(root: Path, files: list[str]) -> dict[str, list[str]]:
@@ -107,10 +97,9 @@ def test_the_fence_catches_a_planted_flag(tmp_path: Path) -> None:
     (tmp_path / "scripts/new_organ.py").write_text(f"argv = ['claude', '-p', 'x', '{FLAG}']\n",
                                                    "utf-8")
     (tmp_path / "ops").mkdir()
-    (tmp_path / "ops/run_cro_ai.sh").write_text(f"claude -p x {FLAG}\nclaude -p y {FLAG}\n",
-                                                "utf-8")
+    (tmp_path / "ops/run_cro_ai.sh").write_text(f"claude -p x {FLAG}\n", "utf-8")
     found = _scan(tmp_path, ["scripts/new_organ.py", "ops/run_cro_ai.sh", "absent.ps1"])
     bad = dict(_violations(found))
     assert "scripts/new_organ.py" in bad
-    # a pending lane may not GROW: a second bypass in it fails too
+    # a scoped lane may not take the bypass back
     assert "ops/run_cro_ai.sh" in bad
