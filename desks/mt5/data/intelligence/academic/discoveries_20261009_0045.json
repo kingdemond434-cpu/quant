@@ -1,0 +1,28 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Null string holography in AdS from local BRST descent",
+    "summary": "We show that the radial sector of a Carroll-Weyl gauged null string in Poincar\u00e9 $\\mathrm{AdS}_D$ is locally trivial in BRST cohomology. In a quotient-adapted BFV basis, the radial coordinate, its conj",
+    "url": "https://arxiv.org/abs/2610.10540v1",
+    "published": "2026-10-07T17:59:59Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "MORCA: Offline-to-Online Reinforcement Learning for Adaptive Cache Reuse in Video Diffusion Acceleration",
+    "summary": "Diffusion Transformers (DiTs) achieve remarkable performance in video synthesis, but their iterative denoising process suffers from high inference latency. To address this, caching has emerged as an e",
+    "url": "https://arxiv.org/abs/2610.10457v1",
+    "published": "2026-10-07T17:25:35Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
