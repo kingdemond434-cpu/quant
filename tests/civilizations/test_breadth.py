@@ -153,8 +153,19 @@ def test_the_screen_never_sees_the_candidates_returns_so_it_is_not_a_trial(
     the candidate's own returns. Pinned on the REAL docket_keff path: the only thing the screen
     hands docket_keff is the (family, symbol) pair, so two different rules on one slot get the
     same verdict, and no P&L, Sharpe or return series of the rule exists anywhere in it."""
+    import importlib.util
+    import sys
     root = Path(__file__).resolve().parents[2]
-    real = B._desk_module(root, "docket_keff").score
+    for d in (root / "desks" / "mt5", root / "desks" / "mt5" / "research"):
+        monkeypatch.syspath_prepend(str(d))
+    # the REAL file, loaded by path: other suites plant stubs under the bare name in sys.modules
+    path = root / "desks" / "mt5" / "research" / "docket_keff.py"
+    spec_ = importlib.util.spec_from_file_location("docket_keff", path)
+    assert spec_ is not None and spec_.loader is not None
+    real_mod = importlib.util.module_from_spec(spec_)
+    monkeypatch.setitem(sys.modules, "docket_keff", real_mod)
+    spec_.loader.exec_module(real_mod)
+    real = real_mod.score
     seen: list[list[dict[str, Any]]] = []
 
     def spy(rows: list[dict[str, Any]], **kw: Any) -> dict[str, Any]:
@@ -162,7 +173,6 @@ def test_the_screen_never_sees_the_candidates_returns_so_it_is_not_a_trial(
         out: dict[str, Any] = real(rows, **kw)
         return out
 
-    real_mod = B._desk_module(root, "docket_keff")
     monkeypatch.setattr(real_mod, "score", spy)
     m = B.BreadthMap(root, asset_class_of=CLASSES, shares=SHARES, slots=SLOTS)
     a = m.assess([spec("carry", "EURUSD", hold_bars=24)], set())
