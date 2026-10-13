@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-13",
-  "last_reconcile": "2026-10-13T21:19:32+00:00",
+  "last_reconcile": "2026-10-13T21:35:10+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -136,7 +136,6 @@
     },
     "chfnok_carry_asia_p_98d776f3e210d3e2": {
       "last_signal_bar": "2026-09-16 23:00:00+00:00",
-      "open_ttl_until": "2026-09-21T23:00:00+00:00",
       "trail_k": 0.0
     },
     "eurchf_discovered_asia_p_16bd35526c7f3515": {
@@ -288,8 +287,7 @@
     },
     "xauusd_macro_conditional_asia_p_5fa26e224170b851": {
       "last_signal_bar": "2026-09-30 09:50:00+00:00",
-      "trail_k": 0.0,
-      "open_ttl_until": "2026-09-30T17:55:00+00:00"
+      "trail_k": 0.0
     },
     "xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4": {
       "last_signal_bar": "2026-09-30 09:50:00+00:00"
@@ -491,7 +489,7 @@
     "234917497": 39.029999999999745
   },
   "restart_reconcile": {
-    "at": "2026-10-13T21:20:03+00:00",
+    "at": "2026-10-13T21:35:03+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
