@@ -237,6 +237,28 @@ def test_without_a_mirror_git_history_is_the_witness(tmp_path):
     state.unlink()
     out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, budget=1, seed=1, state_path=state)
     assert out["status"] == "EXHAUSTED" and out["state_error"] is None   # git kept the charge
+    # the mirror reborn from that read holds git's whole history, not just the new row: a second
+    # restore of both tracked files, with git never asked again, still reads spent
+    state.unlink()
+    reg.write_text(stub)
+    again = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, budget=3, seed=2,
+                            state_path=state)
+    assert again["status"] == "EXHAUSTED" and again["answers"]["x"] is None
+
+
+def test_a_register_deleted_in_a_checkout_is_reborn_with_its_history(tmp_path):
+    import subprocess
+    git = ["git", "-c", "user.email=t@t", "-c", "user.name=t"]
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    state = _state(tmp_path)
+    rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0, state_path=state)
+    subprocess.run([*git, "add", rh.register_path(state).name], cwd=tmp_path, check=True)
+    subprocess.run([*git, "commit", "-qm", "spent"], cwd=tmp_path, check=True)
+    for f in (state, rh.register_path(state), rh.mirror_path(state)):
+        f.unlink()
+    rh.init_state(state)
+    out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, budget=1, seed=1, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
 
 
 def test_a_torn_mirror_is_named_in_the_error(tmp_path):

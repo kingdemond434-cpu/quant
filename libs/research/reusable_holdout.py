@@ -171,6 +171,14 @@ def _register_read(state_path: Path) -> tuple[list[dict[str, Any]] | None, str]:
         if extra is None:
             return None, (f"{mirror.name} missing or empty and git holds no readable history of "
                           f"{reg.name}: UNMEASURED, never read as fresh")
+        # RE-SEED THE MIRROR WITH EVERYTHING GIT PROVED (audit, 2026-10-13). A mirror reborn by
+        # the next `_append` with only the new row would be a non-empty witness that never asks
+        # git again, so a second restore of both tracked files would refill the study.
+        try:
+            _seed_mirror(mirror, tracked + extra)
+        except OSError as exc:
+            return None, (f"{mirror.name} could not be re-seeded from git history "
+                          f"({type(exc).__name__}): UNMEASURED, never read as fresh")
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
     for r in tracked + extra:
@@ -179,6 +187,15 @@ def _register_read(state_path: Path) -> tuple[list[dict[str, Any]] | None, str]:
             seen.add(key)
             out.append(r)
     return out, ""
+
+
+def _seed_mirror(mirror: Path, rows: list[dict[str, Any]]) -> None:
+    """Write `rows` as the mirror, atomically, so a torn write never reads as a short witness."""
+    mirror.parent.mkdir(parents=True, exist_ok=True)
+    tmp = mirror.with_name(mirror.name + f".{os.getpid()}.tmp")
+    tmp.write_text("".join(json.dumps(r) + "\n" for r in rows) or
+                   json.dumps({"_seeded_from": "git"}) + "\n", encoding="utf-8")
+    os.replace(tmp, mirror)
 
 
 def _register(state_path: Path) -> list[dict[str, Any]] | None:
@@ -217,10 +234,16 @@ def init_state(path: Path | None = None) -> bool:
         # A register born here has no history to lose, so its mirror is born with it. Nothing
         # else creates a mirror from scratch: an absent one beside an existing register is read
         # from git's history, never as fresh.
+        # A register DELETED in a checkout whose git history holds rows is not a birth: the
+        # mirror is seeded with that history (audit, 2026-10-13), never with a blank page.
+        history = _git_witness(reg) or []
         for f in (reg, mirror_path(p)):
             f.parent.mkdir(parents=True, exist_ok=True)
             if not f.exists() or not f.stat().st_size:
                 f.write_text(json.dumps({"_created": stamp}) + "\n", encoding="utf-8")
+        if history:
+            m = mirror_path(p)
+            _seed_mirror(m, _rows(m) + history)
         made = True
     return made
 
