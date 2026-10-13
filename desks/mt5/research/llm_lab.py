@@ -1577,9 +1577,15 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     for key, lines in (credit.get("feedback") or {}).items():
         extra[f"verdicts:{key}"] = list(lines)
     order = prioritised(rng, credit)
+    # Under a measured share the labs draw models from the rotation queue (least recently asked
+    # first), so a capped pass never spends its few calls on models the last pass already asked;
+    # with room to spare the verdict loop's yield ranking picks.
+    queue = sorted((k for k, r in models.items() if r.get("status") == "REGISTERED"),
+                   key=lambda k: (str(rotation.get(k) or ""), k)) if share else []
     for lab in order:
         coord, why = choose_coordinate(lab, ontology, cov, rng)
-        model = assign_model(models, rng, used_models, credit)
+        model = (next((k for k in queue if k not in used_models), None) if share
+                 else assign_model(models, rng, used_models, credit))
         if model:
             used_models.add(model)
         recent = own_recent.get((lab.key, coord["mechanism_class"]), [])[-5:]
