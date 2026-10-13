@@ -42,7 +42,8 @@ def test_a_tradable_sleeve_passes_every_fusion_check() -> None:
 def test_each_reason_a_sleeve_cannot_place_fails_loudly() -> None:
     assert _fusion(refuse=lambda r, p: "outside live_symbols")["admitted"]["status"] == clt.FAIL
     assert _fusion(gap="no constructor")["executor"]["status"] == clt.FAIL
-    assert _fusion(universe={})["priceable"]["status"] == clt.FAIL
+    assert _fusion(universe={"EURUSD": {}})["priceable"]["status"] == clt.FAIL
+    assert _fusion(universe={})["priceable"]["status"] == clt.UNMEASURED   # snapshot absent
     unsized = {**ROW, "symbol": "AUDCHF", "risk_frac": 0.0, "family": "carry"}
     assert _fusion(unsized)["sized"]["status"] == clt.FAIL
     twin = {clt.order_comment(ROW["name"]): [ROW["name"], ROW["name"] + "_twin"]}
