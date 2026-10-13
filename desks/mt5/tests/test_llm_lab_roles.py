@@ -333,3 +333,15 @@ def test_the_coverage_leg_is_wired() -> None:
     assert '"llm_coverage", "research/llm_coverage_fence.py"' in src
     from libs.research import layers
     assert "llm_coverage" in str(layers.__dict__)
+
+
+def test_the_local_model_installer_checks_what_it_runs() -> None:
+    """Audit must-fix 9: a pinned version, Authenticode on every binary, models pinned by digest,
+    a locked ACL and a LOCAL SERVICE server (no PowerShell here, so the text is the contract)."""
+    src = (_DESK / "scripts" / "install_local_llm.ps1").read_text(encoding="utf-8")
+    assert "--version $ver" in src and "install.lock.json" in src
+    assert src.count("Assert-Signed $") >= 2 and "Get-AuthenticodeSignature" in src
+    assert "NT AUTHORITY\\LOCALSERVICE" in src and "-UserId 'SYSTEM'" not in src
+    assert "/inheritance:r" in src and "S-1-5-19" in src
+    assert "pinned ${pinned}" in src and "& $ollama rm $m" in src
+    assert "6 GB floor" in src
