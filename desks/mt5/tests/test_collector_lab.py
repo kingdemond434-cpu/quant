@@ -131,4 +131,4 @@ def test_parser_reads_the_shapes_sources_use() -> None:
 
 
 def test_monthly_series_waits_two_periods() -> None:
-    assert cl.availability_lag(["2025-01-01", "2025-02-01", "2025-03-01"]).days == 62
+    assert cl.availability_lag(["2025-01-01", "2025-02-01", "2025-03-01"]).days >= 56

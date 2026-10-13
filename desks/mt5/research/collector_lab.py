@@ -92,8 +92,8 @@ SYSTEM = (
     '"symbols": ["<MT5 symbols this series should lead, from the list given>"], '
     '"side_when_high": 1 or -1, '
     '"mechanism": "<why a high reading moves those symbols, <=25 words>"}\n'
-    "Rules: use only fields you can SEE in the sample; never invent one. No API keys, no login "
-    "pages: if the history needs a key, return {}. Keyless public endpoints only."
+    "Rules: use only fields you can SEE in the sample; never invent one. Open public endpoints "
+    "only: if the history needs a sign-in or a registered key, return {}."
 )
 
 Getter = Callable[[str], tuple[int, bytes]]
