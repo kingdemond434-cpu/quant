@@ -96,11 +96,53 @@ def test_burndown_counts_a_first_not_testable_reading_as_drain(tmp_path) -> None
     ]
     led = tmp_path / "gate.jsonl"
     led.write_text("".join(json.dumps({**r, "at": at}) + "\n" for r in rows), "utf-8")
-    d = jb.drain(NOW, led)
+    bank = tmp_path / "unrunnable_specs.json"
+    bank.write_text(json.dumps({"a": {"reason": "no_signals"}, "b": {"reason": "too_rare"}}),
+                    "utf-8")
+    d = jb.drain(NOW, led, bank)
     assert d["first_rulings"]["24h"] == 2               # d, b
     assert d["first_settled"]["24h"] == 3               # a, b (once), d -- never c
     assert d["rows"]["24h"]["not_testable"] == 2
     assert d["rows"]["24h"]["unknown"] == 1
+
+
+def test_a_not_testable_reading_the_bank_never_took_is_not_drain(tmp_path) -> None:
+    """Audit of PR #290: parking is drain only through the bank that removes it."""
+    at = (NOW - timedelta(hours=1)).isoformat()
+    led = tmp_path / "gate.jsonl"
+    led.write_text("".join(json.dumps({**r, "at": at}) + "\n" for r in [
+        {"cell": "a", "terminal_gate": "UNKNOWN", "unknown_reason": "no_signals"},
+        {"cell": "b", "terminal_gate": "UNKNOWN", "unknown_reason": "too_rare"}]), "utf-8")
+    bank = tmp_path / "unrunnable_specs.json"
+    bank.write_text(json.dumps({"a": {"reason": "no_signals"},
+                                "b": {"reason": "series_exception"}}), "utf-8")
+    assert jb.drain(NOW, led, bank)["first_settled"]["24h"] == 1
+    gone = jb.drain(NOW, led, tmp_path / "absent.json")
+    assert gone["first_settled"]["24h"] == 0 and gone["parking_basis"].startswith("UNMEASURED")
+
+
+def test_a_missing_or_stale_readmission_log_is_unmeasured_never_zero(tmp_path) -> None:
+    """Audit of PR #290 (M1): a measured zero here would tip the burn-down to DRAINING."""
+    log = tmp_path / "not_testable_readmissions.jsonl"
+    assert jb.readmissions(NOW, log)["status"] == jb.UNMEASURED
+    log.write_text(json.dumps({"at": (NOW - timedelta(hours=30)).isoformat(),
+                               "readmitted": 0}) + "\n", "utf-8")
+    assert jb.readmissions(NOW, log)["status"] == jb.UNMEASURED
+    with log.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"at": (NOW - timedelta(hours=1)).isoformat(),
+                             "readmitted": 0}) + "\n")
+    assert jb.readmissions(NOW, log)["status"] == "MEASURED"
+
+
+def test_draining_on_unknown_readmissions_is_unmeasured() -> None:
+    b = {"status": "MEASURED", "unjudged": 1000}
+    d = {"status": "MEASURED", "first_rulings_per_hour": {"7d": 50.0},
+         "first_settled_per_hour": {"7d": 50.0}}
+    i = {"status": "MEASURED", "created_per_hour": {"7d": 10.0},
+         "readmitted": {"status": jb.UNMEASURED, "why": "log absent"}}
+    assert jb.verdict(b, d, i)["status"] == jb.UNMEASURED
+    i["readmitted"] = {"status": "MEASURED", "readmitted": {"7d": 0}}
+    assert jb.verdict(b, d, i)["status"] == "DRAINING"
 
 
 def test_classify_names_only_data_scarcity_as_not_testable() -> None:
@@ -112,7 +154,8 @@ def test_classify_names_only_data_scarcity_as_not_testable() -> None:
 
 def test_the_verdict_divides_by_the_backlogs_own_outflow() -> None:
     b = {"status": "MEASURED", "unjudged": 1000}
-    i = {"status": "MEASURED", "created_per_hour": {"7d": 10.0, "24h": 10.0}}
+    i = {"status": "MEASURED", "created_per_hour": {"7d": 10.0, "24h": 10.0},
+         "readmitted": {"status": "MEASURED", "readmitted": {"7d": 0, "24h": 0}}}
     d = {"status": "MEASURED", "first_rulings_per_hour": {"7d": 5.0, "24h": 5.0},
          "first_settled_per_hour": {"7d": 20.0, "24h": 20.0}}
     v = jb.verdict(b, d, i, "7d")
@@ -267,7 +310,8 @@ def test_rejection_throughput_names_not_testable() -> None:
 
 def test_the_verdicts_needed_rate_is_in_its_divisors_unit() -> None:
     b = {"status": "MEASURED", "unjudged": 1000}
-    i = {"status": "MEASURED", "created_per_hour": {"7d": 10.0, "24h": 10.0}}
+    i = {"status": "MEASURED", "created_per_hour": {"7d": 10.0, "24h": 10.0},
+         "readmitted": {"status": "MEASURED", "readmitted": {"7d": 0, "24h": 0}}}
     d = {"status": "MEASURED", "first_rulings_per_hour": {"7d": 5.0, "24h": 5.0},
          "first_settled_per_hour": {"7d": 20.0, "24h": 20.0}}
     v = jb.verdict(b, d, i, "7d")

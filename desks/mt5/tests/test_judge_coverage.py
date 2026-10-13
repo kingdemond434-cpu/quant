@@ -22,6 +22,17 @@ import check_judge_coverage as fence  # noqa: E402
 NOW = datetime(2026, 9, 23, 12, 0, tzinfo=UTC)
 
 
+@pytest.fixture(autouse=True)
+def _desk_state_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The bank, its re-admission log, the ratchet, the report and the learned priors are desk
+    state: a test writes them under tmp, never into the checkout (audit of PR #290)."""
+    from libs.research import research_priors
+    monkeypatch.setattr(jc, "UNRUNNABLE_BANK", tmp_path / "unrunnable_specs.json")
+    monkeypatch.setattr(jc, "RATCHET", tmp_path / "judge_backlog_ratchet.json")
+    monkeypatch.setattr(jc, "REPORT", tmp_path / "JUDGE_COVERAGE.json")
+    monkeypatch.setattr(research_priors, "STATE_DIR", tmp_path / "research_priors")
+
+
 def _rows(spec: dict[str, int], *, age_h: float = 5.0) -> list[dict]:
     seen = (NOW - timedelta(hours=age_h)).isoformat()
     out: list[dict] = []

@@ -1061,16 +1061,18 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     except OSError:
         pass
     n_re = sum(readmitted_nt.values())
-    if n_re:
-        try:
-            # Beside the bank it describes, so a test's bank never writes the desk's log.
-            lp = log or target.parent / READMISSION_LOG.name
-            lp.parent.mkdir(parents=True, exist_ok=True)
-            with lp.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps({"at": at, "readmitted": n_re,
-                                     "by_reason": readmitted_nt_reason}) + "\n")
-        except OSError:
-            pass
+    # ONE LINE EVERY PASS, ZEROS INCLUDED (audit of PR #290, M1): the burn-down reads a missing
+    # or stale log as UNMEASURED, so a quiet pass must still say "0" by writing it.
+    # A failed write is caught by that staleness rule rather than raised here.
+    try:
+        # Beside the bank it describes, so a test's bank never writes the desk's log.
+        lp = log or target.parent / READMISSION_LOG.name
+        lp.parent.mkdir(parents=True, exist_ok=True)
+        with lp.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": at, "readmitted": n_re,
+                                 "by_reason": readmitted_nt_reason}) + "\n")
+    except OSError:
+        pass
     return {"parked_this_pass": added, "readmitted_on_bar_growth": len(readmitted),
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,

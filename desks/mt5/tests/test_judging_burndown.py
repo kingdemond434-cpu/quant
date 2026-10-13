@@ -63,7 +63,8 @@ def test_inflow_is_the_dockets_first_seen_clock(tmp_path: Path) -> None:
 def test_the_verdict_is_growing_when_creation_outruns_first_rulings() -> None:
     b = {"status": "MEASURED", "unjudged": 1_400_000}
     d = {"status": "MEASURED", "first_rulings_per_hour": {"7d": 220.0, "24h": 220.0}}
-    i = {"status": "MEASURED", "created_per_hour": {"7d": 345.0, "24h": 345.0}}
+    i = {"status": "MEASURED", "created_per_hour": {"7d": 345.0, "24h": 345.0},
+         "readmitted": {"status": "MEASURED", "readmitted": {"7d": 0, "24h": 0}}}
     v = JB.verdict(b, d, i)
     assert v["status"] == "GROWING" and v["net_per_day"] == pytest.approx(-3000.0)
     assert v["needed_first_rulings_per_hour"] == pytest.approx(345.0 + 1_400_000 / 720.0, 0.01)

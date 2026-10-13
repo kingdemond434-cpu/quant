@@ -475,7 +475,7 @@ def _burndown() -> dict[str, Any]:
             "burndown_net_per_day": bd.get("net_per_day", UNMEASURED),
             # The burn-down names its outflow unit (settled = rulings + parkings since PR #290);
             # the needed rate is read in whichever unit it published.
-            "burndown_needed_first_rulings_per_hour":
+            "burndown_needed_per_hour":
                 bd.get("needed_settled_per_hour",
                        bd.get("needed_first_rulings_per_hour", UNMEASURED)),
             "burndown_outflow_unit": bd.get("outflow_unit", UNMEASURED),

@@ -85,12 +85,15 @@ def _read(path: Path) -> dict[str, Any]:
 #: a defect, never data scarcity, and never drain.
 try:
     from judge_coverage import NOT_TESTABLE_REASONS as NOT_TESTABLE_UNKNOWN
-    from judge_coverage import READMISSION_LOG
+    from judge_coverage import READMISSION_LOG, UNRUNNABLE_BANK
 except ImportError:                                            # pragma: no cover - import context
     from research.judge_coverage import (  # type: ignore[no-redef]
         NOT_TESTABLE_REASONS as NOT_TESTABLE_UNKNOWN,
     )
-    from research.judge_coverage import READMISSION_LOG  # type: ignore[no-redef]
+    from research.judge_coverage import (  # type: ignore[no-redef]
+        READMISSION_LOG,
+        UNRUNNABLE_BANK,
+    )
 
 
 def classify(row: dict[str, Any]) -> str:
@@ -106,16 +109,38 @@ def classify(row: dict[str, Any]) -> str:
     return "unknown"
 
 
-def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
+def _parked_cells(bank: Path | None = None) -> tuple[set[str], str]:
+    """Cells the unrunnable bank holds with a NOT_TESTABLE reason, and where that came from."""
+    p = UNRUNNABLE_BANK if bank is None else bank
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return set(), f"UNMEASURED: {p.name} unreadable ({type(exc).__name__})"
+    if not isinstance(doc, dict):
+        return set(), f"UNMEASURED: {p.name} is not a cell table"
+    cells = {str(c) for c, r in doc.items()
+             if isinstance(r, dict) and r.get("reason") in NOT_TESTABLE_UNKNOWN}
+    return cells, f"{p.name}: {len(cells)} cell(s) parked not-testable"
+
+
+def drain(now: datetime, path: Path | None = None,
+          bank: Path | None = None) -> dict[str, Any]:
     """First rulings and rows by kind per window, streamed from the judge's own ledger.
 
     A cell counts as a FIRST ruling in a window when its earliest real verdict in the whole
     ledger lands inside it. The ledger is append-only in sweep order; a cell ruled before the
     window is remembered and never counted again, however many rows it gathers later.
+
+    A NOT_TESTABLE reading is drain only when the bank actually holds that cell as not-testable
+    (audit of PR #290): `judge_coverage` removes a cell from the backlog through the bank, so a
+    ledger reading the bank never took is not drain. An unreadable bank counts no parking at
+    all -- the drain is understated, never overstated, because an overstated drain reads as
+    DRAINING and stops the judge gaining workers.
     """
     p = GATE_LEDGER if path is None else path
     if not p.exists():
         return {"status": UNMEASURED, "why": f"{p.name} absent: the drain is UNMEASURED"}
+    banked, parking_basis = _parked_cells(bank)
     cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
             for w, h in WINDOWS_H.items()}
     earliest = min(cuts.values())
@@ -149,7 +174,8 @@ def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
                 if at < earliest:
                     if kind == "ruled" and cell:
                         ruled_before.add(cell)
-                    if kind in ("ruled", "not_testable") and cell:
+                    if cell and (kind == "ruled" or (kind == "not_testable"
+                                                     and cell in banked)):
                         settled_before.add(cell)
                     continue
                 for w, cut in cuts.items():
@@ -160,7 +186,8 @@ def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
                     for w, cut in cuts.items():
                         if at >= cut:
                             first[w] += 1
-                if kind in ("ruled", "not_testable") and cell and cell not in settled_before:
+                if (kind == "ruled" or (kind == "not_testable" and cell in banked)) \
+                        and cell and cell not in settled_before:
                     settled_before.add(cell)
                     for w, cut in cuts.items():
                         if at >= cut:
@@ -170,6 +197,7 @@ def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     return {"status": "MEASURED", "rows_total": total, "first_rulings": first, "rows": rows,
+            "parking_basis": parking_basis,
             "first_rulings_per_hour": {w: round(first[w] / WINDOWS_H[w], 3) for w in cuts},
             "first_settled": settled,
             "first_not_testable": parked,
@@ -232,16 +260,24 @@ def inflow(now: datetime, path: Path | None = None,
     return out
 
 
+#: The bank writes one log line on EVERY pass (zeros included) and runs hourly, so a newest line
+#: older than this means the writer stopped and the zeros since are unknown, not zero.
+READMISSION_LOG_STALE_H = 6.0
+
+
 def readmissions(now: datetime, path: Path | None = None) -> dict[str, Any]:
     """Not-testable cells the bank returned to the backlog in each window
-    (`judge_coverage.READMISSION_LOG`, one line per pass that re-admitted any). An absent log is
-    a real zero only in the sense that nothing has been re-admitted since the class shipped; it
-    is reported as such, by name."""
+    (`judge_coverage.READMISSION_LOG`, one line per bank pass, zeros included).
+
+    AN ABSENT OR STALE LOG IS UNMEASURED, NEVER ZERO (audit of PR #290, M1): a measured zero here
+    understates inflow, which tips the burn-down toward DRAINING, which stops judging_throughput
+    adding workers -- while up to 90 days of parked cells can return at once."""
     p = READMISSION_LOG if path is None else path
     cuts = {w: (now - timedelta(hours=h)).timestamp() for w, h in WINDOWS_H.items()}
     counts = dict.fromkeys(cuts, 0)
     if not p.exists():
-        return {"status": "MEASURED", "readmitted": counts, "why": f"{p.name} absent: none yet"}
+        return {"status": UNMEASURED, "why": f"{p.name} absent: re-admissions are unknown"}
+    newest: datetime | None = None
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
             for line in fh:
@@ -253,12 +289,19 @@ def readmissions(now: datetime, path: Path | None = None) -> dict[str, Any]:
                     n = int(row.get("readmitted") or 0)
                 except (ValueError, KeyError, TypeError, AttributeError):
                     continue
+                newest = at if newest is None or at > newest else newest
                 for w, cut in cuts.items():
                     if at.timestamp() >= cut:
                         counts[w] += n
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
-    return {"status": "MEASURED", "readmitted": counts}
+    age_h = None if newest is None else (now - newest).total_seconds() / 3600.0
+    if age_h is None or age_h > READMISSION_LOG_STALE_H:
+        return {"status": UNMEASURED,
+                "why": (f"{p.name} has no readable line" if age_h is None else
+                        f"{p.name} newest line is {age_h:.1f}h old (past "
+                        f"{READMISSION_LOG_STALE_H:.0f}h): the bank stopped logging")}
+    return {"status": "MEASURED", "readmitted": counts, "newest_at": newest.isoformat()}
 
 
 def _norm(ts: str) -> str:
@@ -439,8 +482,14 @@ def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
                            "needed_multiple_of_today": (round(need_h / out_h, 2) if out_h > 0
                                                         else None),
                            "target_days": TARGET_DAYS}
+    readm = i.get("readmitted") if isinstance(i.get("readmitted"), dict) else {}
     if n == 0:
         doc.update(status="DRAINED", days_to_zero=0.0)
+    elif net_day > 0 and readm.get("status") != "MEASURED":
+        # The inflow above is a LOWER bound (re-admissions unknown), so "draining" is not shown.
+        # GROWING on a lower bound stays GROWING; DRAINING on one is UNMEASURED.
+        doc.update(status=UNMEASURED, days_to_zero=None,
+                   why=f"inflow excludes re-admissions: {readm.get('why')}")
     elif net_day > 0:
         doc.update(status="DRAINING", days_to_zero=round(n / net_day, 1))
     else:
