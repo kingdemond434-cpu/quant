@@ -272,6 +272,7 @@ LEG_LAYER: dict[str, str] = {
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
     "calendar_flow_cells": "prediction",
+    "crowd_positioning": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",
