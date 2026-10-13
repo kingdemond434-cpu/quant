@@ -29,8 +29,9 @@ PER LANE:
       the compute hours the ledger attributes), each against the median of its LIVE peers.
   (d) the BOTTOM QUARTILE of LIVE lanes by that yield, plus every STALE or UNWIRED lane that has a
       clock, gets an automatic UPGRADE action: REPAIR (stale on a clock), WIRE (no clock, no
-      reach, or no consumer), CONVERT (it produces, but nothing reaches the judge), MUTATE (cells collapse to a few uniques), WIDEN (no orthogonality
-      added: new queries / regions / timeframes), or BUDGET_SHIFT (raise the top-quartile peer of
+      reach, or no consumer), CONVERT (it produces, but nothing reaches the judge), MUTATE
+      (cells collapse to a few uniques), WIDEN (no orthogonality added: new queries / regions /
+      timeframes), or BUDGET_SHIFT (raise the top-quartile peer of
       the same structure). The actions reach `frontier_ceo` as docket proposals, which is the
       desk's existing implement-and-measure loop.
 
@@ -80,6 +81,10 @@ def _read(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
+
+
+def _rel(p: Path) -> str:
+    return p.relative_to(BASE).as_posix() if p.is_relative_to(BASE) else str(p)
 
 
 def base_name(key: str) -> str:
@@ -199,9 +204,9 @@ def build(now: datetime | None = None, *, previous: Mapping[str, Any] | None = N
     co = (py or {}).get("cells_owed") if isinstance(py, dict) else None
     rows = (co or {}).get("producers") if isinstance(co, dict) else None
     doc: dict[str, Any] = {"generated_utc": at.isoformat(timespec="seconds"),
-                           "sources": {"producer_yield": str(PRODUCER_YIELD.relative_to(BASE)),
-                                       "dead_architecture": str(DEAD_ARCH.relative_to(BASE)),
-                                       "certificates": str(PROVENANCE.relative_to(BASE))}}
+                           "sources": {"producer_yield": _rel(PRODUCER_YIELD),
+                                       "dead_architecture": _rel(DEAD_ARCH),
+                                       "certificates": _rel(PROVENANCE)}}
     if not isinstance(rows, list) or not rows:
         doc.update(verdict=UNMEASURED, why="PRODUCER_YIELD.json absent or has no cells_owed roster")
         return doc
@@ -246,7 +251,7 @@ def build(now: datetime | None = None, *, previous: Mapping[str, Any] | None = N
         ln["bottom_quartile"] = True
     targets = bottom + [ln for ln in lanes if ln["clock"] and (
         ln["live"] == STALE or ln["wired"] == UNWIRED) and not ln.get("bottom_quartile")]
-    actions = [_action(ln, {**{k: v for k, v in winners.items()},
+    actions = [_action(ln, {**winners,
                             ln["structure"]: winners.get(ln["structure"]) or winners.get("*", "")})
                for ln in targets]
     counts = {"lanes": len(lanes), "live": len(live), "stale": len(lanes) - len(live),
