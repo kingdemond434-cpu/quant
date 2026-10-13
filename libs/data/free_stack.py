@@ -106,9 +106,13 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
     hdr.update(dict(headers or {}))
     req = urllib.request.Request(url, headers=hdr, data=body,
                                  method="POST" if body is not None else "GET")
+    from libs.data import terms_fence as _tf
     try:
-        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+        # THE REDIRECT GUARD: a 30x into a held source or a login wall raises, never followed.
+        with _tf.guarded_urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
             raw: bytes = resp.read(MAX_BYTES + 1)
+    except _tf.TermsFenced as exc:
+        raise FetchError(str(exc.status), f"terms fence ({exc.platform}): {url}") from exc
     except urllib.error.HTTPError as exc:
         raise FetchError(f"http_{exc.code}", url) from exc
     except Exception as exc:
@@ -141,6 +145,14 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
+    # THE METHOD FENCE, BEFORE ANY REQUEST (libs/data/terms_fence.py; no source is banned): a
+    # HELD URL (METHOD_BLOCKED, or NEEDS_KEY until its key exists) is refused and counted.
+    from libs.data import terms_fence as _tf
+    platform = _tf.platform_of_url(url)
+    if platform:
+        h.failures[_tf.PLATFORMS[platform]["status"]] += 1
+        h.notes.append(f"terms fence ({platform}): {url[:120]}")
+        return None
     h.requests += 1
     try:
         return fetch(url, headers, body)

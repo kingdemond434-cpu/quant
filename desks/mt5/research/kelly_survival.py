@@ -378,12 +378,12 @@ BOOK_MARGIN = 0.04            # solve against 4% so an independent sample still 
 BOOK_STEPS = (0.04, 0.02, 0.01, 0.005, 0.0025)
 BOOK_STARTS = 6
 BOOK_PATHS = 2000
-#: Terms fence (PR #162): a cell only Reddit/StockTwits proposed never enters the book. The merge's
-#: published index wins; until it exists, the docket's own genealogy decides (every row naming the
-#: cell came from a fenced platform). USDJPY.session_range_breakout is the case that put this here.
+#: IDEA PROVENANCE NEVER BLOCKS A CELL (principal ruling 2026-10-13, rule 4). The 2026-09-30
+#: genealogy fence (a cell only Reddit/StockTwits proposed never enters the book) is retired: a
+#: certificate is judged on the desk's own MT5 data, so where its idea came from is a label, never
+#: a door. `terms_fenced_cells` stays as the name e8_book calls and answers the empty set.
 TERMS_FENCED_CELLS = BASE / "data" / "hypotheses" / "terms_fenced_cells.json"
 RESEARCH_QUEUE = BASE / "data" / "research_queue.json"
-FENCED_GENEALOGY = ("ext_reddit_", "ext_stocktwits_")
 
 
 def _world_column(cell: str, sym: str, family: str, selector: str, names: list[str]) -> str | None:
@@ -394,23 +394,10 @@ def _world_column(cell: str, sym: str, family: str, selector: str, names: list[s
 
 
 def terms_fenced_cells() -> tuple[set[str], str]:
-    """(fenced `SYM.family` cells, where the verdict came from)."""
-    idx = _read_json(TERMS_FENCED_CELLS)
-    if isinstance(idx, dict) and idx.get("cells") is not None:
-        return {str(c) for c in idx["cells"]}, TERMS_FENCED_CELLS.name
-    q = _read_json(RESEARCH_QUEUE)
-    rows = q if isinstance(q, list) else next(
-        (v for v in (q or {}).values() if isinstance(v, list)), [])
-    seen: dict[str, bool] = {}
-    for r in rows:
-        gid = str((r or {}).get("geneology_id") or "")
-        tail = gid.split(":", 1)[-1]
-        parts = tail.split("_", 2)
-        if not tail.startswith("ext_") or len(parts) < 3:
-            continue
-        cell = f"{parts[2].split('_', 1)[0]}.{parts[2].split('_', 1)[-1]}"
-        seen[cell] = seen.get(cell, True) and tail.startswith(FENCED_GENEALOGY)
-    return {c for c, only in seen.items() if only}, f"{RESEARCH_QUEUE.name} genealogy"
+    """(cells refused for their idea lineage, why): always empty (rule 4, 2026-10-13). Only a
+    cell's LIVE INPUT DATA is checked, and that check lives at the data organs
+    (libs/data/terms_fence.input_source), never here."""
+    return set(), "rule 4 (2026-10-13): idea provenance never blocks a cell"
 
 
 def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]:

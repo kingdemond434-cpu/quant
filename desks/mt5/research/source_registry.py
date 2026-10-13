@@ -345,8 +345,36 @@ def seed() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
                              aliases=[p.name, f"miner:{p.name}", sid])
             files, first, last = _seat_activity(p)
             rows[sid]["n_donation_files"], rows[sid]["_seen"] = files, (first, last)
+    fenced = stamp_terms_fences(rows)
     return rows, {"n_grounds": len(grounds), "n_clusters": len(clusters),
-                  "n_regions": len(regions), "n_seat_roots": len(SEAT_ROOTS)}
+                  "n_regions": len(regions), "n_seat_roots": len(SEAT_ROOTS),
+                  "n_terms_fenced": fenced}
+
+
+def stamp_terms_fences(rows: dict[str, dict[str, Any]]) -> int:
+    """HELD SOURCES ON THE REGISTRY (libs/data/terms_fence.py, ruling of 2026-10-13: no source is
+    banned). Only a HELD source -- METHOD_BLOCKED (its only route bypasses a login, paywall,
+    CAPTCHA, rate limit or region lock) or NEEDS_KEY (its official API's key is absent) -- is
+    stamped: registered, never dropped, its row carrying `access_status`, the policy's why and
+    the permitted route, and `build` gives it no budget share until it is no longer held. Reddit,
+    StockTwits, X pages and other IDEAS_ONLY sources are not held. Returns how many rows."""
+    from libs.data import terms_fence as tf
+    n = 0
+    for sid, r in rows.items():
+        plat = (tf.platform_of_url(str(r.get("url") or ""))
+                or (str(r.get("route") or "").lower()
+                    if str(r.get("route") or "").lower() in tf.SOURCE_POLICY
+                    and tf.status(str(r.get("route") or "").lower()) in tf.HOLDING else None)
+                or (tf.fenced_source(sid.split(":", 1)[1]) if sid.startswith("seat:") else None))
+        if not plat:
+            continue
+        p = tf.PLATFORMS[plat]
+        r["access_status"] = p["status"]
+        r["terms_fence"] = {"platform": plat, "reason": p["reason"],
+                            "substitutes": list(p["substitutes"]), "label": p["label"]}
+        r["licence_note"] = f"{p['status']} -- {p['reason']}"
+        n += 1
+    return n
 
 
 
@@ -794,6 +822,12 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
                           if not isinstance((r.get("source_quality") or {}).get(f), dict))
                       / max(1, len(rows)), 4) for f in q_fields}
     sh = shares(rows)
+    # A HELD source is never fetched, so it gets no share; the rest are renormalised.
+    fenced_ids = sorted(sid for sid, r in rows.items() if r.get("terms_fence"))
+    if fenced_ids:
+        live = sum(v for k, v in sh.items() if k not in fenced_ids)
+        sh = {k: (0.0 if k in fenced_ids else (v / live if live > 0 else v))
+              for k, v in sh.items()}
     by_kind: dict[str, int] = {}
     for sid, r in rows.items():
         r["share"], r["last_registered"] = sh.get(sid, 0.0), now
@@ -836,6 +870,9 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
                             "`dElogW_per_lead` is realised R per lead -- the desk measures R, not "
                             "dE[logW], and says so rather than renaming one as the other"),
         "judged": meta["judged"], "seed": seed_meta,
+        "terms_fenced": {"n": len(fenced_ids), "sources": fenced_ids[:200],
+                         "rule": ("libs/data/terms_fence.py: a HELD source (METHOD_BLOCKED / "
+                                  "NEEDS_KEY) is registered, never fetched, no share")},
         # CLOSED-LOOP WORLDWIDE DISCOVERY (Tier-1 #10, 2026-09-29): the cube's reach, and how
         # much of each per-source quality field is actually measured. Both may only rise.
         "discovery_cube": cube,

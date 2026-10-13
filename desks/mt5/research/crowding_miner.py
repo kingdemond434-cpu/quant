@@ -3,10 +3,12 @@
 Perpetual supervised desk. Every cycle (hourly):
   1. GitHub public search (unauthenticated, rate-limited ~10/min -> one query
      per cycle, rotating) for adoption/star growth of mechanism keywords
-  2. Reddit r/algotrading hot + comments as retail-adoption proxy
+  2. Retail-adoption proxies: Reddit r/algotrading hot + comments (a public page, IDEAS_ONLY in
+     libs/data/terms_fence.py: a research proxy, never a cell's live input) and Wikipedia
+     pageviews of the systematic-trading articles (free_data.attention_proxy)
   3. keyword frequency counters in our OWN captured news (news_captures.jsonl)
      as the mechanism-topic current
-  4. data/crowding_state.json: {query, stars_top5, count, reddit_activity,
+  4. data/crowding_state.json: {query, stars_top5, count, attention, reddit_activity,
      delta_vs_prev} + EDGE_PUBLICITY/EXPECTED_DECAY flags for our active
      mechanism families (rft_retrack etc.)
 
@@ -68,7 +70,7 @@ def news_topic_counts() -> dict[str, int]:
 
 
 def main() -> None:
-    log("crowding miner started (GitHub search + Reddit, no keys)")
+    log("crowding miner started (GitHub search + Reddit + Wikipedia attention, no keys)")
     hist = []
     if HIST_F.exists():
         try:
@@ -82,6 +84,7 @@ def main() -> None:
             mech, query = MECHANISM_QUERIES[i % len(MECHANISM_QUERIES)]
             i += 1
             gh = fd.github_search(query)
+            attention = fd.attention_proxy()
             reddit = fd.reddit_hot("algotrading")
             reddit_activity = {"posts": len(reddit),
                                "avg_score": round(sum(r["score"] for r in reddit) /
@@ -93,7 +96,7 @@ def main() -> None:
                 prev = [h for h in reversed(hist) if h.get("query") == query]
                 prev = prev[0] if prev else None
             row = {"ts": fd.now_iso(), "query": query, "mechanism": mech,
-                   "github": gh, "reddit": reddit_activity,
+                   "github": gh, "attention": attention, "reddit": reddit_activity,
                    "github_stars_delta": ((gh.get("top_stars", [0])[0] or 0) -
                                           ((prev or {}).get("github", {}).get("top_stars", [0]) or [0])[0]
                                           if prev else None),
