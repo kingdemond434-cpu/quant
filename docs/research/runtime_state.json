@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 774,
+  "NEVER": 777,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 992,
+  "attested": 995,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -322,6 +322,27 @@
      "executable:scripts/migrate_live_ledger_view.py",
      "leg:alt_proxies",
      "leg:organ_battery"
+    ]
+   },
+   {
+    "at": "2026-10-13T15:22:10+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "battery:desks/mt5/research/limits_census.py",
+     "battery:scripts/run_desk_economics.py"
+    ]
+   },
+   {
+    "at": "2026-10-13T17:28:30+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:stop_geometry_derivation"
     ]
    }
   ]
@@ -25644,6 +25665,90 @@
    "measured_on": "vmi3571445",
    "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
    "measured_at": "2026-10-12T21:51:05+00:00"
+  },
+  {
+   "organ": "battery:desks/mt5/research/limits_census.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/limits_census.py"
+   ],
+   "clock": "hourly_cycle:organ_battery",
+   "cadence_s": 61200,
+   "max_silence_s": 122400,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_declared": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "battery_rotation_runs",
+   "consumer": "desks/mt5/research/wiring_ceo.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-13T15:22:10+00:00"
+  },
+  {
+   "organ": "battery:scripts/run_desk_economics.py",
+   "kind": "executable",
+   "code": [
+    "scripts/run_desk_economics.py"
+   ],
+   "clock": "hourly_cycle:organ_battery",
+   "cadence_s": 61200,
+   "max_silence_s": 122400,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_declared": "desks/mt5/reports/BATTERY_ORGANS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "battery_rotation_runs",
+   "consumer": "desks/mt5/research/wiring_ceo.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-13T15:22:10+00:00"
+  },
+  {
+   "organ": "leg:stop_geometry_derivation",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/stop_geometry_derivation.py"
+   ],
+   "clock": "hourly_cycle:stop_geometry_derivation",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json",
+   "artifact_declared": "desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-13T17:28:30+00:00"
   }
  ],
  "ratchet": {
