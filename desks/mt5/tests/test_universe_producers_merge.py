@@ -44,7 +44,7 @@ def _fake_mt5(offered: set[str]) -> types.ModuleType:
         n = 2000
         idx = pd.date_range("2020-01-01", periods=n, freq="h", tz="UTC")
         return pd.DataFrame({
-            "time": idx.astype("int64") // 10**9, "open": 1.0, "high": 1.1, "low": 0.9,
+            "time": idx.as_unit("s").asi8, "open": 1.0, "high": 1.1, "low": 0.9,
             "close": 1.0, "tick_volume": 1, "spread": 14, "real_volume": 0,
         }).to_records(index=False)
 

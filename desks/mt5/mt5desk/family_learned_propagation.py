@@ -94,7 +94,7 @@ def load_peer(sym: str) -> pd.DataFrame | None:
 def _fingerprint(df: pd.DataFrame) -> tuple[Any, ...]:
     h = hashlib.blake2b(np.ascontiguousarray(df["close"].to_numpy(dtype=float)).tobytes(),
                         digest_size=16)
-    h.update(np.ascontiguousarray(df.index.asi8).tobytes())
+    h.update(np.ascontiguousarray(df.index.as_unit("ns").asi8).tobytes())
     return (len(df), h.hexdigest())
 
 

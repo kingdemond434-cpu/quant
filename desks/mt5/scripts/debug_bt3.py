@@ -9,7 +9,7 @@ fn = get_family_func("session_range_breakout")
 sigs = fn(h1, range_start=7, wait_bars=8, atr_n=20, ttl_bars=12, rr=2.0, signal_at=7, trend_filter="aligned")
 
 idx = h1.index
-idx_ns = np.asarray(idx.asi8, dtype="int64")  # Engine method
+idx_ns = np.asarray(idx.as_unit("ns").asi8, dtype="int64")  # Engine method
 n = len(idx)
 
 print(f"Data: {idx[0]} to {idx[-1]}, n={n}")

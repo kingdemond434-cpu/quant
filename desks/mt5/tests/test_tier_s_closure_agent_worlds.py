@@ -64,7 +64,7 @@ def test_market_closure_removes_the_bars_and_reopens_gapped() -> None:
     assert out.applied == closure_worlds.CLOSURE_BARS
     assert len(out.bars) == len(bars) - closure_worlds.CLOSURE_BARS
     idx = pd.DatetimeIndex(out.bars.index)
-    hole = int(np.argmax(np.diff(idx.asi8)))
+    hole = int(np.argmax(np.diff(idx.as_unit("ns").asi8)))
     assert (idx[hole + 1] - idx[hole]) == pd.Timedelta(hours=closure_worlds.CLOSURE_BARS + 1)
     gap = abs(np.log(out.bars["open"].iloc[hole + 1] / out.bars["close"].iloc[hole]))
     sd = float(np.std(np.diff(np.log(bars["close"].to_numpy()))))

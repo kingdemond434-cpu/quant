@@ -393,7 +393,7 @@ def mechanism_arrays(family: str, frame: Any, params: Mapping[str, Any], *,
     idx = pd.DatetimeIndex(frame.index)
     hour = np.asarray(idx.hour)
     dow = np.asarray(idx.dayofweek)
-    day = np.asarray(idx.normalize().asi8)
+    day = np.asarray(idx.normalize().as_unit("ns").asi8)
     first_bar = np.concatenate([[True], day[1:] != day[:-1]])
     p = dict(params or {})
     atr_n = int(p.get("atr_n") or 20)
