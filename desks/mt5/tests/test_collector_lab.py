@@ -292,6 +292,25 @@ def test_a_trickling_server_cannot_hold_the_call(monkeypatch: pytest.MonkeyPatch
     assert _t.monotonic() - t0 < 3.0
 
 
+def test_blackholed_addresses_share_one_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+    """MF1 connect phase: N blackholed answers cost REQUEST_S in total, never N x 10s."""
+    import socket
+    import time as _t
+    monkeypatch.setattr(cl, "REQUEST_S", 1.0)
+    timeouts: list[float] = []
+
+    def blackhole(addr: tuple[str, int], timeout: float | None = None) -> socket.socket:
+        timeouts.append(float(timeout or 0))
+        _t.sleep(float(timeout or 0))
+        raise TimeoutError("timed out")
+    monkeypatch.setattr(socket, "create_connection", blackhole)
+    t0 = _t.monotonic()
+    with pytest.raises(TimeoutError):
+        cl._pinned_get(["93.184.216.1", "93.184.216.2", "93.184.216.3"])("http://x.org/a")
+    assert _t.monotonic() - t0 < 2.0
+    assert timeouts and all(t <= 1.0 for t in timeouts)
+
+
 def test_all_transient_or_skipped_never_reads_green(tmp_lab: Path,
                                                     monkeypatch: pytest.MonkeyPatch) -> None:
     """MF2: an outage on every owed source is DARK; working specs all skipped are STALE."""

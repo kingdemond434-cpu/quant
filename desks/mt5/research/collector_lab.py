@@ -37,6 +37,7 @@ still refresh.
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import io
 import itertools
@@ -198,23 +199,42 @@ def _pinned_get(addrs: Sequence[str]) -> Getter:
 
     order = sorted(addrs, key=lambda a: (":" in a, a))
 
-    def _dial(port: int, timeout: float | None) -> socket.socket:
+    def _dial(port: int, deadline: float, expired: threading.Event) -> socket.socket:
+        # Audit MF1 (connect phase): every address shares the call's one deadline, so N
+        # blackholed answers cost REQUEST_S in total, never N x the connect timeout.
         last: OSError | None = None
         for ip in order:
+            left = deadline - time.monotonic()
+            if expired.is_set() or left <= 0:
+                raise TimeoutError("request exceeded its total budget while connecting")
             try:
-                return socket.create_connection((ip, port), timeout)
+                return socket.create_connection((ip, port), min(10.0, left))
             except OSError as exc:
                 last = exc
         raise last or OSError("no approved address")
 
     class _HTTP(http.client.HTTPConnection):
+        deadline = 0.0
+        expired = threading.Event()
+
         def connect(self) -> None:
-            self.sock = _dial(self.port, self.timeout)
+            self.sock = _dial(self.port, self.deadline, self.expired)
+            if self.expired.is_set():
+                raise TimeoutError("request exceeded its total budget while connecting")
 
     class _HTTPS(http.client.HTTPSConnection):
+        deadline = 0.0
+        expired = threading.Event()
+
         def connect(self) -> None:
-            raw = _dial(self.port, self.timeout)
+            raw = _dial(self.port, self.deadline, self.expired)
+            if self.expired.is_set():
+                raw.close()
+                raise TimeoutError("request exceeded its total budget while connecting")
+            raw.settimeout(max(0.1, min(10.0, self.deadline - time.monotonic())))
             self.sock = ssl.create_default_context().wrap_socket(raw, server_hostname=self.host)
+            if self.expired.is_set():
+                raise TimeoutError("request exceeded its total budget while connecting")
 
     def get(url: str) -> tuple[int, bytes]:
         parts = urllib.parse.urlsplit(url)
@@ -223,16 +243,16 @@ def _pinned_get(addrs: Sequence[str]) -> Getter:
         cls = _HTTPS if https else _HTTP
         conn = cls(parts.hostname or "", port, timeout=10.0)
         expired = threading.Event()
+        conn.deadline = time.monotonic() + REQUEST_S
+        conn.expired = expired
 
         def _kill() -> None:
+            # shutdown() only: it wakes a blocked recv; close() is left to the main thread.
             expired.set()
             sock = conn.sock
             if sock is not None:
-                try:
+                with contextlib.suppress(OSError):
                     sock.shutdown(socket.SHUT_RDWR)
-                except OSError:
-                    pass
-                sock.close()
         timer = threading.Timer(REQUEST_S, _kill)
         timer.daemon = True
         timer.start()
