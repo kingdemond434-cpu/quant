@@ -992,7 +992,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
-    "fill_recorder", "cost_surfaces",
+    "fill_recorder", "cost_surfaces", "meta_label",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1166,7 +1166,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology",
+                     "meta_label"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -1811,6 +1812,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Review + promotion-door verdicts take seconds on the live box. The full Tier S run can
     # time out before its final door organ, leaving E8's fail-closed input stale for >6h.
     "tier_s_door": 180,
+    # Meta-label conditioner: a few hundred small ridge fits; seconds on the cloud checkout.
+    "meta_label": 300,
     # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
     # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
     # the cap sits above both and the document is checkpointed, so a kill still publishes.
@@ -5567,6 +5570,11 @@ def main() -> None:
     # API, and COST_SURFACES.json lists the consumers that have NOT adopted it yet. ~0.1 s.
     csf = _costed("cost_surfaces", lambda: _producer(
         "cost_surfaces", "research/cost_surfaces.py", "--once"))
+    # THE META-LABEL CONDITIONER (2026-10-13): a purged walk-forward take/skip model over every
+    # sleeve ledger's signals on point-in-time cross-asset/macro state, judged on forward trades
+    # under the Tier S DSR bar. REPORT ONLY -> reports/META_LABEL.json; no money path reads it.
+    mlab = _costed("meta_label", lambda: _producer(
+        "meta_label", "research/meta_label.py", "--once"))
     apr = _costed("actor_pressure", lambda: _producer(
         "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
     dpo = _costed("destroyer_pool", lambda: _producer(
@@ -5916,6 +5924,7 @@ def main() -> None:
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
+                    "meta_label": mlab,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
