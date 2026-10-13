@@ -204,6 +204,49 @@ def test_restoring_both_stubs_together_cannot_refill(tmp_path):
     assert rh.mirror_path(state).exists()
 
 
+@pytest.mark.parametrize("mirror", ["missing", "empty"])
+def test_a_fresh_clone_without_the_mirror_never_refills_a_spent_study(tmp_path, mirror):
+    """Stub state, stub register and no mirror (or a 0-byte one) is what a fresh clone looks like
+    after a restore: it reads UNMEASURED, never as a fresh budget (audit, 2026-10-13)."""
+    state = _state(tmp_path)
+    stub_s, stub_r = state.read_text(), rh.register_path(state).read_text()
+    rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0, state_path=state)
+    state.write_text(stub_s)
+    rh.register_path(state).write_text(stub_r)
+    m = rh.mirror_path(state)
+    m.unlink() if mirror == "missing" else m.write_text("")
+    out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, budget=3, seed=1, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["answers"]["x"] is None
+    assert "never read as fresh" in out["state_error"]
+
+
+def test_without_a_mirror_git_history_is_the_witness(tmp_path):
+    import subprocess
+    git = ["git", "-c", "user.email=t@t", "-c", "user.name=t"]
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    state = _state(tmp_path)
+    reg, stub = rh.register_path(state), rh.register_path(state).read_text()
+    subprocess.run([*git, "add", reg.name], cwd=tmp_path, check=True)
+    subprocess.run([*git, "commit", "-qm", "stub"], cwd=tmp_path, check=True)
+    rh.mirror_path(state).unlink()                    # a clone: the register with no mirror
+    assert rh.thresholdout("s", {"x": (0.0, 10.0)}, scale=1.0, budget=1, seed=0,
+                           state_path=state)["state_error"] is None   # history: never opened
+    subprocess.run([*git, "commit", "-qam", "spent"], cwd=tmp_path, check=True)
+    reg.write_text(stub)                               # restored to the stub, mirror lost
+    rh.mirror_path(state).unlink()
+    state.unlink()
+    out = rh.thresholdout("s", {"x": (0.0, 0.0)}, scale=1.0, budget=1, seed=1, state_path=state)
+    assert out["status"] == "EXHAUSTED" and out["state_error"] is None   # git kept the charge
+
+
+def test_a_torn_mirror_is_named_in_the_error(tmp_path):
+    state = _state(tmp_path)
+    rh.mirror_path(state).write_text("{torn")
+    out = rh.thresholdout("s", {"x": (1.0, 1.0)}, scale=1.0, seed=0, state_path=state)
+    assert out["status"] == "EXHAUSTED"
+    assert out["state_error"].startswith(rh.mirror_path(state).name)
+
+
 def test_the_desks_mirror_lives_under_the_gitignored_data_dir():
     m = rh.mirror_path(rh.STATE)
     assert m.parent == rh.MIRROR_DIR and rh.MIRROR_DIR.parts[-2] == "data"

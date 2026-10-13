@@ -658,6 +658,11 @@ $relPaths = @(
 # each must stay a small JSON summary: a file over $ReportCapBytes is skipped and said so, never
 # silently truncated and never allowed to turn this wire into a data lake.
 $ReportCapBytes = 4MB
+# AN APPEND-ONLY LEDGER IS NEVER SKIPPED (audit, 2026-10-13). The holdout register is the proof of
+# what the budget spent; dropping it at the cap would let the next adoption restore an older copy
+# and refill the study off the box. It grows by one short row per charge, so the exemption cannot
+# turn the wire into a data lake.
+$ReportCapExempt = @("desks/mt5/data/reusable_holdout_studies.jsonl")
 $reportPaths = @(
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
@@ -699,7 +704,7 @@ foreach ($rel in $reportPaths) {
     $full = Join-Path $RepoRoot ($rel -replace "/", "\")
     if (-not (Test-Path $full -PathType Leaf)) { continue }
     $bytes = (Get-Item -LiteralPath $full).Length
-    if ($bytes -gt $ReportCapBytes) {
+    if ($bytes -gt $ReportCapBytes -and $ReportCapExempt -notcontains $rel) {
         Write-SyncLog ("SKIP report {0}: {1:N0} bytes exceeds the {2:N0}-byte cap for this wire" -f $rel, $bytes, $ReportCapBytes)
         continue
     }

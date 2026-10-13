@@ -573,7 +573,9 @@ def falsifier_looks(s: Subject, outcome: Mapping[str, Any]) -> set[str]:
         cell = node_id(s.symbol, s.family, s.params)
     except Exception:
         cell = s.subject_id
-    return {f"{cell}|falsifier:{n}" for n, r in (outcome.get("results") or {}).items()
+    # THE SAME KEY committee_ensembles writes for the same look (`<cell>|<falsifier>`), so a
+    # falsifier both legs run on one cell is one line in the shared union, charged once.
+    return {f"{cell}|{n}" for n, r in (outcome.get("results") or {}).items()
             if isinstance(r, Mapping) and r.get("verdict") in ("PASS", "FAIL")}
 
 

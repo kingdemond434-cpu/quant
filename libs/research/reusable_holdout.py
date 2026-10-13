@@ -26,7 +26,9 @@ say -- so restoring either file from git, deleting the state, or an older snapsh
 never refill a study. A missing or unreadable register answers nothing. The register has an
 untracked twin under the gitignored `data/` (`mirror_path`), and the register read is the union
 of both: restoring the state AND the tracked register to their stubs together still cannot
-refill a study, because no git operation touches the mirror.
+refill a study, because no git operation touches the mirror. A MISSING OR EMPTY MIRROR is
+never read as fresh: it is born only with a register born beside it, and otherwise git's history
+of the tracked register (every row ever committed) stands in; with no history it answers nothing.
 The noise is drawn from OS entropy: seeding it from the committed state made a repeated question
 get an identical answer, which is exactly the leak the noise is there to close.
 
@@ -113,19 +115,62 @@ def _rows(path: Path) -> list[dict[str, Any]]:
     return [r for r in rows if isinstance(r, dict)]
 
 
-def _register(state_path: Path) -> list[dict[str, Any]] | None:
-    """The UNION of the tracked register and its untracked mirror, each row once; None when the
-    tracked register is missing or either copy is unreadable (callers fail closed). A mirror that
-    does not exist yet is an empty witness, never an error."""
+def _git_witness(reg: Path) -> list[dict[str, Any]] | None:
+    """Every register row ever committed, read from git's own history of the file. None when
+    the file is outside a repository, the clone is shallow, or git cannot answer."""
+    import subprocess
     try:
-        tracked = _rows(register_path(state_path))
-    except (OSError, ValueError):
+        root = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=reg.parent,
+                                   capture_output=True, text=True, check=True,
+                                   timeout=60).stdout.strip())
+        shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"], cwd=root,
+                                 capture_output=True, text=True, check=True, timeout=60)
+        if shallow.stdout.strip() != "false":
+            return None
+        log = subprocess.run(["git", "log", "--all", "--format=", "-p", "--",
+                              reg.resolve().relative_to(root.resolve()).as_posix()],
+                             cwd=root, capture_output=True, text=True, check=True,
+                             encoding="utf-8", timeout=120).stdout
+    except (OSError, ValueError, subprocess.SubprocessError):
         return None
+    rows: list[dict[str, Any]] = []
+    for ln in log.splitlines():
+        if ln.startswith("+{"):
+            try:
+                r = json.loads(ln[1:])
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                rows.append(r)
+    return rows
+
+
+def _register_read(state_path: Path) -> tuple[list[dict[str, Any]] | None, str]:
+    """(the register rows, why it answers nothing). The rows are the UNION of the tracked
+    register and its untracked mirror, each row once.
+
+    A MISSING OR EMPTY MIRROR IS NEVER AN EMPTY WITNESS (audit, 2026-10-13). On a fresh clone the
+    tracked register can be a stub that a restore put there, and reading the absent mirror as
+    "nothing was spent" refilled a spent study. The mirror is born only beside a register born in
+    the same `init_state` call. Without it, the third witness is git's history of the tracked
+    register, every row ever committed; with no history to read (no repository, a shallow
+    clone, git failing) the register answers nothing and callers fail closed."""
+    reg = register_path(state_path)
+    try:
+        tracked = _rows(reg)
+    except (OSError, ValueError) as exc:
+        return None, f"{reg.name} missing or unreadable ({type(exc).__name__})"
     mirror = mirror_path(state_path)
     try:
-        extra = _rows(mirror) if mirror.exists() else []
-    except (OSError, ValueError):
-        return None
+        extra = _rows(mirror) if mirror.exists() and mirror.stat().st_size else None
+    except (OSError, ValueError) as exc:
+        return None, (f"{mirror.name} unreadable ({type(exc).__name__}): a torn mirror "
+                      "proves nothing")
+    if extra is None:
+        extra = _git_witness(reg)
+        if extra is None:
+            return None, (f"{mirror.name} missing or empty and git holds no readable history of "
+                          f"{reg.name}: UNMEASURED, never read as fresh")
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
     for r in tracked + extra:
@@ -133,7 +178,12 @@ def _register(state_path: Path) -> list[dict[str, Any]] | None:
         if key not in seen:
             seen.add(key)
             out.append(r)
-    return out
+    return out, ""
+
+
+def _register(state_path: Path) -> list[dict[str, Any]] | None:
+    """The register rows, or None when they cannot be proven (callers fail closed)."""
+    return _register_read(state_path)[0]
 
 
 def _append(state_path: Path, row: Mapping[str, Any]) -> None:
@@ -164,8 +214,13 @@ def init_state(path: Path | None = None) -> bool:
         made = True
     reg = register_path(p)
     if not reg.exists():
-        reg.parent.mkdir(parents=True, exist_ok=True)
-        reg.write_text(json.dumps({"_created": stamp}) + "\n", encoding="utf-8")
+        # A register born here has no history to lose, so its mirror is born with it. Nothing
+        # else creates a mirror from scratch: an absent one beside an existing register is read
+        # from git's history, never as fresh.
+        for f in (reg, mirror_path(p)):
+            f.parent.mkdir(parents=True, exist_ok=True)
+            if not f.exists() or not f.stat().st_size:
+                f.write_text(json.dumps({"_created": stamp}) + "\n", encoding="utf-8")
         made = True
     return made
 
@@ -190,10 +245,10 @@ def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scal
         return {"study": study, "answers": dict.fromkeys(queries), "overfit": [],
                 "budget_left": 0, "budget": budget, "questions_total": asked,
                 "status": "EXHAUSTED", "state_error": why}
-    reg = _register(path)
+    reg, why = _register_read(path)
     if reg is None:
-        return closed(f"{register_path(path).name} missing or unreadable: the budget fails "
-                      "closed (the register, not the state file, proves what was spent)")
+        return closed(f"{why}: the budget fails closed (the register, not the state file, "
+                      "proves what was spent)")
     loaded = _load(path)
     if loaded is None and path.exists():
         return closed(f"{path.name} malformed: the budget fails closed")

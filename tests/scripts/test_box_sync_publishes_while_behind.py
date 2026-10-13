@@ -63,6 +63,12 @@ def test_the_report_list_carries_every_audited_artifact() -> None:
     assert not missing, f"$reportPaths does not publish {missing}"
 
 
+def test_the_holdout_register_is_never_dropped_at_the_size_cap() -> None:
+    src = _src()
+    assert '$ReportCapExempt = @("desks/mt5/data/reusable_holdout_studies.jsonl")' in src
+    assert "$ReportCapExempt -notcontains $rel" in src
+
+
 def test_every_report_is_state_to_the_seal() -> None:
     """A published path the seal reads as code would refuse new risk on the next sync."""
     code = [p for p in _report_paths() if not release.is_state_path(p)]

@@ -904,7 +904,11 @@ def challenger(symbols: list[str] | None = None, budget_s: float = H2H_BUDGET_S,
     models, _aside = healthy_zoo_models(None)
     row: dict[str, Any] = {"status": "UNMEASURED", "why": "no instrument with enough bars"}
     if todo and models:
-        sym = todo[(seed + int(time.time() // 3600)) % len(todo)]
+        # A FRESH DRAW EACH HOUR (audit, 2026-10-13): one fixed seed replayed the same paired
+        # search whenever the rotation came back to a symbol, and the arena would score those
+        # repeats as independent runs.
+        hour = int(time.time() // 3600)
+        sym = todo[(seed + hour) % len(todo)]
         d = pc.bars(sym)
         if d is not None and len(d) >= MIN_BARS:
             with warnings.catch_warnings():
@@ -912,9 +916,10 @@ def challenger(symbols: list[str] | None = None, budget_s: float = H2H_BUDGET_S,
                 prog: dict[str, int] = {}
                 try:
                     row = head_to_head(d.tail(N_BARS), store=fs.FeatureStore(FEATURE_ROOT),
-                                       budget_s=budget_s, seed=seed, horizon=HORIZON,
+                                       budget_s=budget_s, seed=seed + hour,
+                                       horizon=HORIZON,
                                        models=models, symbol=sym, progress=prog)
-                    row["status"] = "RAN"
+                    row["status"], row["seed"] = "RAN", seed + hour
                 except Exception as exc:
                     # A run that raised still spent evaluations: charged exactly the ones it
                     # started (audit, 2026-10-07), never the stage's cap.
