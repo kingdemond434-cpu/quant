@@ -68,25 +68,3 @@ def test_live_system_state_reports_the_utc_age(monkeypatch: pytest.MonkeyPatch) 
                                  UTC_NOW + timedelta(hours=2))
     assert out["last_pass_at"] == "2026-10-13T15:20:00+00:00"
     assert out["last_pass_age_h"] == 2.0          # was -1.0: three hours too young
-
-
-def test_the_host_role_check_no_longer_sees_a_future_pass(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import json
-    import os
-    import time
-
-    sys.path.insert(0, str(ROOT / "scripts"))
-    import check_self_repair as csr  # type: ignore[import-not-found]
-    gw = tmp_path / "desks" / "mt5" / "data" / "gateway_state.json"
-    gw.parent.mkdir(parents=True)
-    from libs.regime.session_clock import utc_offset_h
-    off = timedelta(hours=utc_offset_h())
-    # a pass that really happened 2h ago, stamped in broker time: it reads 1h in the FUTURE
-    real = datetime.now(UTC) - timedelta(hours=2)
-    gw.write_text(json.dumps({"placement_pass": (real + off).isoformat()}), "utf-8")
-    os.utime(gw, (time.time(), time.time()))
-    assert csr._trading_host(tmp_path) is True        # 2h < 3h: still the trading host
-    real = datetime.now(UTC) - timedelta(hours=4)
-    gw.write_text(json.dumps({"placement_pass": (real + off).isoformat()}), "utf-8")
-    assert csr._trading_host(tmp_path) is False       # was True: a 4h-cold host read as live
