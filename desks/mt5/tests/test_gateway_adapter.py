@@ -328,7 +328,9 @@ def _fake_mt5(rows: list[dict]) -> SimpleNamespace:
         TIMEFRAME_H1=16385, TRADE_ACTION_DEAL=1, ORDER_TYPE_BUY=0, ORDER_TYPE_SELL=1, sent=sent,
         copy_rates_from_pos=lambda symbol, tf, start, count: rows,
         symbol_info_tick=lambda symbol: SimpleNamespace(bid=1.1100, ask=1.1102),
-        symbol_info=lambda symbol: SimpleNamespace(volume_min=0.01, volume_step=0.01),
+        symbol_info=lambda symbol: SimpleNamespace(volume_min=0.01, volume_step=0.01,
+                                                   trade_tick_size=0.00001,
+                                                   trade_tick_value=1.0),
         # single-position discipline (2026-09-15) reads the open book before sizing
         positions_get=lambda *a, **k: [],
         order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, order=9,
