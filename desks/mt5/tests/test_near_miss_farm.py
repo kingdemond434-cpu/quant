@@ -24,8 +24,8 @@ def _row(sym: str, fam: str, params: dict) -> dict:
 
 def test_a_short_cell_keeps_its_side_and_carries_no_authority() -> None:
     rows, refused = nmf.farm_rows({
-        "external.a": _row("EURUSD", "turn_of_month", {"side": -1}),
-        "external.b": _row("EURUSD", "turn_of_month", {}),
+        "external.a": _row("EURUSD", "forced_flow", {"side": -1, "event_kind": "fixing"}),
+        "external.b": _row("EURUSD", "forced_flow", {"event_kind": "fixing"}),
         "external.c": {"cell": "c"}})
     assert [r[4] for r in rows] == ["SHORT", "LONG"]
     assert all("side" not in r[2] for r in rows)
@@ -73,3 +73,10 @@ def test_a_farm_pass_writes_its_own_ledger_with_authority_withheld(
     assert rows and not any(v.get("promotion_authority") for v in rows)
     assert doc["authority_leaks"] == 0 and doc["cells_farmed"] == 1
     assert not (tmp_path / "shadow" / "shadow_state.json").exists()
+
+
+def test_hourly_leg_is_wired() -> None:
+    text = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '_costed("near_miss_farm"' in text
+    from libs.research.layers import LEG_LAYER
+    assert LEG_LAYER["near_miss_farm"] == "timing"
