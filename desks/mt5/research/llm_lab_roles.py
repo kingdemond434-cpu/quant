@@ -736,13 +736,20 @@ def scout_rows(text: str, plane: tuple[str, str], known_hosts: set[str], uni: di
     return out, why
 
 
-def probe(row: dict[str, Any], get: Callable[[str], tuple[int, bytes]] | None = None) -> str:
+def probe(row: dict[str, Any], get: Callable[[str], tuple[int, bytes]] | None = None,
+          *, resolve: Callable[[str], list[str]] | None = None) -> str:
     """One polite look: robots.txt, then one GET. Returns REACHABLE or the named reason not."""
     def _get(url: str) -> tuple[int, bytes]:
         import requests
-        r = requests.get(url, timeout=20, headers={"User-Agent": "quant-desk-source-scout/1.0"})
+        # No redirects: a public URL that 302s to a private one would skip the host check.
+        r = requests.get(url, timeout=20, allow_redirects=False,
+                         headers={"User-Agent": "quant-desk-source-scout/1.0"})
         return r.status_code, r.content[:20000]
     g = get or _get
+    from libs.ops.public_host import public_url
+    why = public_url(row.get("url", ""), resolve=resolve)
+    if why:
+        return f"REFUSED:{why}"
     parts = urllib.parse.urlsplit(row["url"])
     try:
         code, body = g(f"{parts.scheme}://{parts.netloc}/robots.txt")

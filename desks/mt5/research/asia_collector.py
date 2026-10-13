@@ -527,8 +527,12 @@ def main(argv: list[str] | None = None) -> int:
     # polite probe reached. They join as plane `llm_scout`, collected exactly like a declared row.
     known = {str(s.get("id")) for s in sources}
     scouted = _read(SCOUTED, {})
+    # The host is re-checked here, not trusted from the probe: a name that resolved public when
+    # scouted may resolve private now (audit must-fix 8).
+    from libs.ops.public_host import public_url
     sources += [s for s in (scouted.get("sources") or []) if isinstance(s, dict)
-                and s.get("probe") == "REACHABLE" and str(s.get("id")) not in known]
+                and s.get("probe") == "REACHABLE" and str(s.get("id")) not in known
+                and not public_url(str(s.get("url") or ""))]
     derived = _derived_sources(sources)
     if derived:
         print(f"asia collector: {len(derived)} endpoint(s) handed back by the parser "

@@ -87,6 +87,12 @@ class Provider:
     terms: str = "confirmed"                    #: confirmed | to_confirm | refused
     terms_url: str = ""
     open_weights: bool = True                   #: serves open-weight models (Llama, Qwen, ...)
+    #: ACCOUNT-TIER PROVIDERS ARE CLOSED UNTIL THE PRINCIPAL SAYS THE ACCOUNT IS FREE-ONLY (audit
+    #: must-fix 6, 2026-10-13). Whether a Groq/Cerebras/Cloudflare/HF/Mistral/Gemini call is free
+    #: depends on that account's billing, which no code here can see, and a daily cap counts
+    #: requests, not money. Opened per provider by `"free_only_account": true` in providers.json
+    #: or by naming it in QUANT_FREE_ONLY_ACCOUNTS (comma list, or "all").
+    free_only_account: bool = False
 
     def key(self) -> str:
         return os.environ.get(self.key_env, "").strip() if self.key_env else ""
@@ -104,7 +110,14 @@ class Provider:
     def usable(self) -> bool:
         if self.terms != "confirmed" or not self.url():
             return False
+        if self.tier == "account_free" and not self.account_opened():
+            return False
         return self.tier == "local" or bool(self.key())
+
+    def account_opened(self) -> bool:
+        named = {x.strip().lower() for x in
+                 os.environ.get("QUANT_FREE_ONLY_ACCOUNTS", "").split(",") if x.strip()}
+        return self.free_only_account or "all" in named or self.name.lower() in named
 
 
 #: The defaults. Endpoints are each provider's own documented OpenAI-compatible base URL. The
@@ -250,6 +263,11 @@ def providers() -> list[Provider]:
                                  bool(row.get("open_weights", True)))
         if name not in order:
             order.append(name)
+    for row in cfg.get("providers") or []:
+        if (isinstance(row, dict) and row.get("free_only_account") is True
+                and str(row.get("name")) in by_name):
+            by_name[str(row["name"])] = dataclasses.replace(by_name[str(row["name"])],
+                                                            free_only_account=True)
     # OpenRouter's free allowance is the ACCOUNT's (50/day without credit, 1,000 with), read from
     # its own /key endpoint rather than assumed; no cap is set while that is UNMEASURED.
     orf = by_name.get("openrouter_free")
@@ -519,6 +537,8 @@ def status() -> dict[str, Any]:
             # lab runs on OpenRouter's :free models plus the local rung without any of them.
             "skipped_no_key": [r["name"] for r in rows
                                if r["key_present"] is False and r["terms"] == "confirmed"],
+            "account_closed": [p.name for p in providers()
+                               if p.tier == "account_free" and not p.account_opened()],
             "local_models_that_fit": local_fit(),
             "verdict": "RAN" if usable else UNMEASURED,
             "why": ("" if usable else "no free cloud key in env; local servers are probed on call")}

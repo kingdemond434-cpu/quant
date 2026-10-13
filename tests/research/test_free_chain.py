@@ -28,6 +28,9 @@ def _isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             monkeypatch.delenv(p.key_env, raising=False)
     monkeypatch.setenv("QUANT_LOCAL_LLM_URLS", "http://127.0.0.1:11434/v1")
     monkeypatch.setenv("QUANT_LOCAL_LLM_GUARD", "0")
+    # The chain's behaviour across rungs is what these tests pin; account-tier rungs are opened
+    # here, and test_account_tier_rungs_are_closed_by_default pins the real default.
+    monkeypatch.setenv("QUANT_FREE_ONLY_ACCOUNTS", "all")
     return tmp_path
 
 
@@ -242,3 +245,20 @@ def test_a_busy_box_skips_the_local_rung_in_the_chain(monkeypatch: pytest.Monkey
     with pytest.raises(fc.ChainExhausted, match="busy"):
         fc.chat("s", "u", timeout=10)
     assert not seen, "no request reached the local server"
+
+
+def test_account_tier_rungs_are_closed_by_default(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit must-fix 6: an account-tier rung is free only if that ACCOUNT is, which no code can
+    see, so it stays closed until the principal names it."""
+    monkeypatch.delenv("QUANT_FREE_ONLY_ACCOUNTS", raising=False)
+    monkeypatch.setenv("GROQ_API_KEY", "k")
+    groq = next(p for p in fc.providers() if p.name == "groq")
+    assert groq.tier == "account_free" and not groq.usable()
+    assert "groq" in fc.status()["account_closed"]
+    monkeypatch.setenv("QUANT_FREE_ONLY_ACCOUNTS", "groq")
+    assert next(p for p in fc.providers() if p.name == "groq").usable()
+    monkeypatch.delenv("QUANT_FREE_ONLY_ACCOUNTS")
+    fc.CONFIG.write_text(json.dumps({"providers": [{"name": "groq",
+                                                    "free_only_account": True}]}))
+    assert next(p for p in fc.providers() if p.name == "groq").usable()

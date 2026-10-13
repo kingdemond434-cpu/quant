@@ -231,15 +231,43 @@ def test_source_scout_rows_are_filtered_and_probed_politely() -> None:
     for body, code, want in [(b"1,2,3", 200, "REACHABLE"), (b"", 403, "GATED:HTTP_403"),
                              (b"<div>captcha</div>", 200, "GATED:CHALLENGE")]:
         pages["https://stat.example.go.jp/data.csv"] = (code, body)
-        assert roles.probe(rows[0], get=lambda u: pages.get(u, (404, b""))) == want
+        assert roles.probe(rows[0], get=lambda u: pages.get(u, (404, b"")),
+                           resolve=_public) == want
     pages["https://stat.example.go.jp/robots.txt"] = (200, b"User-agent: *\nDisallow: /")
-    assert roles.probe(rows[0], get=lambda u: pages.get(u, (404, b""))) == "ROBOTS_DISALLOW"
+    assert roles.probe(rows[0], get=lambda u: pages.get(u, (404, b"")),
+                       resolve=_public) == "ROBOTS_DISALLOW"
+
+
+def _public(host: str) -> list[str]:
+    return ["93.184.216.34"]
+
+
+@pytest.mark.parametrize(("url", "addrs"), [
+    ("http://127.0.0.1:11434/api/pull", ["127.0.0.1"]),
+    ("http://ollama.local/", ["192.168.1.5"]),
+    ("http://metadata/", ["169.254.169.254"]),
+    ("http://[::1]/", ["::1"]),
+    ("http://10.0.0.1/", ["10.0.0.1"]),
+    ("file:///etc/passwd", ["93.184.216.34"]),
+    ("https://user:pw@example.com/", ["93.184.216.34"]),
+    ("https://rebinds.example/", ["93.184.216.34", "127.0.0.1"]),
+])
+def test_scout_never_fetches_a_private_host(url: str, addrs: list[str]) -> None:
+    """Audit must-fix 8: a model-named URL may not reach loopback, the LAN or link-local."""
+    from libs.ops.public_host import public_url
+    assert public_url(url, resolve=lambda h: addrs)
+
+    def never(u: str) -> tuple[int, bytes]:
+        raise AssertionError("fetched a refused URL")
+    assert roles.probe({"url": url}, get=never, resolve=lambda h: addrs).startswith("REFUSED")
+    assert public_url("https://www.boj.or.jp/en/", resolve=_public) == ""
 
 
 def test_collector_reads_only_reachable_scouted_rows() -> None:
     src = (_DESK / "research" / "asia_collector.py").read_text(encoding="utf-8")
     assert 'SCOUTED = BASE / "data" / "llm_lab" / "scouted_sources.json"' in src
     assert 's.get("probe") == "REACHABLE"' in src
+    assert "not public_url(" in src
 
 
 def test_sleeve_red_team_is_advisory_and_typed() -> None:
