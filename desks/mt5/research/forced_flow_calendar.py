@@ -898,7 +898,7 @@ def _jp_calendar() -> Any:
     except ImportError:
         try:
             sys.path.insert(0, str(BASE))
-            from mt5desk import flowcal  # type: ignore[no-redef]
+            from mt5desk import flowcal
             return flowcal
         except ImportError:
             return None
@@ -1056,7 +1056,7 @@ def _cn_holidays(year: int) -> dict[date, str]:
     except ImportError:
         try:
             sys.path.insert(0, str(BASE))
-            from research.countries.cn.pack import _CN_HOLIDAYS  # type: ignore[no-redef]
+            from research.countries.cn.pack import _CN_HOLIDAYS
         except ImportError:
             return {}
     table = _CN_HOLIDAYS.get(year) or {}
@@ -1065,7 +1065,7 @@ def _cn_holidays(year: int) -> dict[date, str]:
 
 def _cn_instruments() -> tuple[str, ...]:
     return _keep(("USDCNH", "HK50", "CHINAH", "XCUUSD", "AUDUSD", "NZDUSD", "AUDJPY",
-                  "USDHKD", "AUS200") + _gold())
+                  "USDHKD", "AUS200", *_gold()))
 
 
 def _cn_holiday_events(year: int) -> list[Event]:
@@ -1095,7 +1095,8 @@ def _cn_holiday_events(year: int) -> list[Event]:
             f"{table[day]}: State Council holiday notice (country pack cn table)"))
     starts = [d for d in days if (d - timedelta(days=1)) not in table]
     for start in starts:
-        pre, probe = [], start - timedelta(days=1)
+        pre: list[date] = []
+        probe = start - timedelta(days=1)
         while len(pre) < 2:
             if probe.weekday() < 5 and probe not in table:
                 pre.append(probe)

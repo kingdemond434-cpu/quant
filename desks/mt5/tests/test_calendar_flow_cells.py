@@ -63,13 +63,12 @@ def test_seed_donates_once_per_identity_and_names_the_scarce(
     assert refunding["observation_scarce"] == 4
     assert fixing["grid"] == 8 and fixing["no_bars"] == 4  # M15 absent here, counted
     assert fixing["clears_floor"] == 4                     # daily fix, 900 days of bars
-    if True:
-        rows = donated[0]
-        assert all(r["family"] == "forced_flow" and r["params"]["symbol"] == "USDJPY"
-                   for r in rows)
-        assert all(r["params"]["clock"] == "utc" for r in rows)
-        again = cfc.seed(budget_s=600, today=date(2026, 10, 13))
-        assert again["candidates_this_pass"] == 0          # never donated twice
+    rows = donated[0]
+    assert all(r["family"] == "forced_flow" and r["params"]["symbol"] == "USDJPY" for r in rows)
+    assert all(r["params"]["clock"] == "utc" for r in rows)
+    again = cfc.seed(budget_s=600, today=date(2026, 10, 13))
+    assert again["candidates_this_pass"] == 0              # never donated twice
+    assert not hasattr(fff.calendar_windows, "cache_info")  # the pass leaves no global behind
     state = json.loads((tmp_path / "state.json").read_text())
     assert state["cells"]
 

@@ -120,13 +120,13 @@ def _bars(symbol: str, chart: str) -> pd.DataFrame | None:
         return None
 
 
-def firing(sigs: list, d: pd.DataFrame) -> dict[str, int]:
+def firing(sigs: list[Any], d: pd.DataFrame) -> dict[str, int]:
     """Distinct signal days and the lower bound on trade days -- one shared definition."""
     from research.cross_sectional_breadth import firing as xs_firing
     return xs_firing(sigs, d)
 
 
-def _cached_windows() -> None:
+def _cached_windows() -> Any:
     """One calendar computation per (kind, span) in this process, not one per cell.
 
     `family_forced_flow` recomputes the whole rule calendar on every call when the artifact does
@@ -134,8 +134,12 @@ def _cached_windows() -> None:
     here changes no signal and turns a per-cell cost into a per-kind one.
     """
     from mt5desk import family_forced_flow as fff
-    if getattr(fff.calendar_windows, "cache_info", None) is None:
-        fff.calendar_windows = lru_cache(maxsize=512)(fff.calendar_windows)
+    original = fff.calendar_windows
+    fff.calendar_windows = lru_cache(maxsize=512)(original)
+
+    def restore() -> None:
+        fff.calendar_windows = original
+    return restore
 
 
 def _load_state() -> dict[str, Any]:
@@ -163,7 +167,6 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False, kinds: list[str] | N
     """Measure firing over the preregistered grid and donate every cell that clears the floor."""
     started = time.monotonic()
     anchor = today or datetime.now(tz=UTC).date()
-    stamp = anchor.isoformat()
     lo, hi = anchor - timedelta(days=400), anchor + timedelta(days=60)
     try:
         targets = kind_instruments(lo, hi)
@@ -171,15 +174,26 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False, kinds: list[str] | N
         from mt5desk.family_forced_flow import family_forced_flow
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"calendar unreadable: {type(exc).__name__}: {exc}"}
-    _cached_windows()
+    restore = _cached_windows()
+    try:
+        return _seed(budget_s=budget_s, dry_run=dry_run, kinds=kinds, stamp=anchor.isoformat(),
+                     targets=targets, text=text, family_forced_flow=family_forced_flow,
+                     started=started)
+    finally:
+        restore()
+
+
+def _seed(*, budget_s: float, dry_run: bool, kinds: list[str] | None, stamp: str,
+          targets: dict[str, tuple[str, ...]], text: dict[str, tuple[str, str]],
+          family_forced_flow: Any, started: float) -> dict[str, Any]:
     from mt5desk.family_call import signals as call_signals
 
     state = _load_state()
     cells: dict[str, Any] = state["cells"]
-    by_kind: dict[str, Counter] = {}
+    by_kind: dict[str, Counter[str]] = {}
     cands: list[dict[str, Any]] = []
     no_bars: set[str] = set()
-    errors: Counter = Counter()
+    errors: Counter[str] = Counter()
     stopped = "grid exhausted"
     bars_cache: dict[tuple[str, str], pd.DataFrame | None] = {}
     for kind, symbols in sorted(targets.items()):
@@ -249,7 +263,7 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False, kinds: list[str] | N
                 SOURCE, c["symbol"], FAMILY, {**p, "symbol": c["symbol"]},
                 f"{c['kind']}: {actor}. {mech}",
                 f"{c['symbol']} forced_flow {c['kind']} {p['mode']} "
-                f"{'+' if p['side'] > 0 else '-'}{' ' + p['timeframe'] if 'timeframe' in p else ''}",
+                f"{'+' if p['side'] > 0 else '-'} {p.get('timeframe', 'H1')}",
                 {"firing": c["firing"], "seed_floor": SEED_FLOOR, "gauntlet_floor": FIRE_FLOOR,
                  "calendar_kind": c["kind"], "clock": "utc",
                  "preregistered_grid": "kind x mode x polarity, fixed in calendar_flow_cells.py"}))
