@@ -1567,10 +1567,13 @@ def _refused_ns(book, sent, logs, booked, tmp_path):
         order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009)))
     flag = tmp_path / "GENERIC_EXEC_ENABLED"
     flag.write_text("1", "utf-8")
+    intents = tmp_path / "order_intents.jsonl"
+    if not intents.exists():
+        intents.write_text("", "utf-8")
     return _exec(("close_refused_sleeve_ttls", "close_sleeve_positions", "_sleeve_positions",
-                  "order_comment"),
+                  "order_comment", "_intent_tickets", "_close_position"),
                  {"mt5": mt5, "log": logs.append, "MAGIC": 1, "GENERIC_EXEC_ENABLED": flag,
-                  "_book_target": lambda *a: booked.append(a)})
+                  "INTENTS": intents, "_book_target": lambda *a: booked.append(a)})
 
 
 def test_a_refused_sleeve_still_gets_its_time_exit(tmp_path) -> None:
@@ -1610,6 +1613,34 @@ def test_an_off_roster_name_sharing_a_live_rows_tag_is_never_ttl_closed(tmp_path
     ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
     assert sent == [] and booked == []
     assert any("shared with a roster sleeve" in x for x in logs)
+    # audit of #325: the deadline is KEPT, so the twin is retried every pass, never orphaned
+    assert st["generic"][retired]["open_ttl_until"]
+
+
+def test_a_shared_tag_twin_is_closed_by_its_own_recorded_ticket(tmp_path) -> None:
+    """The intent ledger knows which ticket the retired twin was sent under: that one position
+    is closed on its deadline, and the live sleeve's position on the same tag is untouched."""
+    live = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    retired = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a"
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    (tmp_path / "order_intents.jsonl").write_text(
+        json.dumps({"sleeve": retired, "symbol": "AUDCHF", "ticket": 911}) + "\n"
+        + json.dumps({"sleeve": live, "symbol": "AUDCHF", "ticket": 912}) + "\n", "utf-8")
+    ns = _refused_ns([], sent, logs, booked, tmp_path)
+    tag = ns["order_comment"](live)
+    book = [SimpleNamespace(ticket=911, identifier=911, type=0, volume=0.02, symbol="AUDCHF",
+                            comment=tag),
+            SimpleNamespace(ticket=912, identifier=912, type=0, volume=0.02, symbol="AUDCHF",
+                            comment=tag)]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    st = {"armed": True, "generic": {retired: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
+    (req,) = sent
+    assert req["position"] == 911 and req["type"] == 1
+    assert booked == [(retired, "AUDCHF", 0.0, "ttl")]
+    assert "open_ttl_until" not in st["generic"][retired]
 
 
 def test_a_refused_sleeve_before_its_deadline_or_unarmed_is_left_alone(tmp_path) -> None:
