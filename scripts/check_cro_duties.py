@@ -173,7 +173,9 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
         named = list(dict.fromkeys([*row["artifacts"], *(cfg.get("artifacts") or [])]))
         arts: dict[str, Any] = {}
         docs: list[Any] = []
+        per_art = cfg.get("artifact_max_age_h") or {}
         for rel in named:
+            art_age = float(per_art.get(rel, max_age))
             path = resolve(rel, root)
             if not path.exists():
                 arts[rel] = {"status": "UNMEASURED", "why": "absent on this host"}
@@ -189,9 +191,9 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
                                     "its mtime is reset by adoption and proves nothing"}
                 continue
             age_h = (now - stamp).total_seconds() / 3600
-            arts[rel] = {"status": "STALE" if age_h > max_age else "FRESH",
-                         "age_h": round(age_h, 2), "max_age_h": max_age, "stamp_basis": basis}
-            if age_h <= max_age:
+            arts[rel] = {"status": "STALE" if age_h > art_age else "FRESH",
+                         "age_h": round(age_h, 2), "max_age_h": art_age, "stamp_basis": basis}
+            if age_h <= art_age:
                 docs.append(doc)
         metrics: dict[str, Any] = {}
         for key in cfg.get("metrics") or []:
@@ -274,11 +276,70 @@ def apply_to_review(review: Path, measured: Mapping[str, Any],
         return out
     for duty in _changed(duties, measured.get("duties") or {}):
         out["changed"].append(duty)
+    missed_q = score_pass_questions(latest)
+    out["pass_questions_missed"] = missed_q
+    out["judging_sweep_missed"] = score_judging_sweep(latest)
     latest["artifact_check"] = {"at": measured.get("at"), "missed": measured.get("missed"),
                                 "source": "scripts/check_cro_duties.py"}
     write_text_resilient(review, json.dumps(doc, indent=1, ensure_ascii=False))
     out["applied"] = True
     return out
+
+
+#: ARCH-30 pass questions every pass must answer (CRO_CYCLE.md STEP 4B, PASS QUESTIONS)
+PASS_QUESTIONS = tuple(f"Q{i}" for i in range(1, 8))
+#: the JUDGING BOTTLENECK SWEEP items every pass must record (CRO_CYCLE.md STEP 4B)
+JUDGING_SWEEP = tuple("abcdefg")
+
+
+def _entry_miss(q: Any, text_key: str) -> str | None:
+    """Why a pass-question or sweep entry counts as MISSED, or None when it is cited."""
+    if not isinstance(q, Mapping):
+        return "absent"
+    answer = q.get(text_key)
+    if not isinstance(answer, str) or not answer.strip():
+        return f"no_{text_key}"
+    if "UNMEASURED" in answer.upper() or str(q.get("status") or "").upper() == "UNMEASURED":
+        return "unmeasured"
+    ev = q.get("evidence")
+    if not ev or (isinstance(ev, str) and not ev.strip()):
+        return "no_evidence"
+    return None
+
+
+def _score_block(latest: dict[str, Any], block: str, keys: Iterable[str], text_key: str,
+                 ok_status: str) -> list[str]:
+    raw = latest.get(block)
+    entries: dict[str, Any] = dict(raw) if isinstance(raw, Mapping) else {}
+    missed: list[str] = []
+    for key in keys:
+        cur = entries.get(key)
+        why = _entry_miss(cur, text_key)
+        entry: dict[str, Any] = dict(cur) if isinstance(cur, Mapping) else {}
+        if why is None:
+            entry.setdefault("status", ok_status)
+        else:
+            missed.append(key)
+            prior = str(entry.get("status") or "")
+            if prior and prior != "MISSED":
+                entry["status_claimed"] = prior
+            entry["status"] = "MISSED"
+            entry["reason"] = why
+        entries[key] = entry
+    latest[block] = entries
+    latest[f"{block}_missed"] = missed
+    return missed
+
+
+def score_pass_questions(latest: dict[str, Any]) -> list[str]:
+    """Rewrite `pass_questions` so an absent, unanswered, UNMEASURED or uncited answer reads
+    MISSED (claim kept under `status_claimed`); set `pass_questions_missed`. Returns the misses."""
+    return _score_block(latest, "pass_questions", PASS_QUESTIONS, "answer", "ANSWERED")
+
+
+def score_judging_sweep(latest: dict[str, Any]) -> list[str]:
+    """The same for the judging sweep's items (a)-(g): `judging_sweep_missed`."""
+    return _score_block(latest, "judging_sweep", JUDGING_SWEEP, "finding", "MEASURED")
 
 
 def _changed(duties: dict[str, Any], measured: Mapping[str, Any]) -> Iterable[str]:
