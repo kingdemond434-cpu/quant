@@ -63,7 +63,8 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 OUT = _DESK / "data" / "action_counterfactuals.jsonl"
 REPORT = _DESK / "reports" / "ACTION_COUNTERFACTUALS.json"
-LIVE = _DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(_DESK / "data" / "live_ledger.jsonl")
 FORECASTS = _DESK / "data" / "pf_forecast_log.jsonl"
 LEDGER_DIRS = (_DESK / "reports" / "shadow", _ROOT / "backups" / "moat" / "shadow_ledgers")
 

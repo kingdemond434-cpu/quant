@@ -3,7 +3,10 @@
  "by": "principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
  "live_symbols": [
   "XAUUSD",
-  "USDJPY"
+  "USDJPY",
+  "EURZAR",
+  "USDZAR",
+  "AUDCHF"
  ],
  "banned_timeframes": {
   "XAUUSD": [
@@ -14,10 +17,8 @@
   "discovered"
  ],
  "live_sleeves": {
-  "USDJPY": [
-   "USDJPY.asia#rr=2.5",
-   "usdjpy_session_range_breakout_asia_rr25_wb12"
-  ]
+  "USDJPY": [],
+  "CHFNOK": []
  },
  "why_this_cross": "USDJPY, on maximum growth (Growth Governance Rule 1: robust forward E[log W]), NOT on mean R. Ranked on E[log W] per trade at this book's own fraction, computed from each cell's MEASURED distribution over ~2,100 backtested trades (win_rate, exp_r and profit_factor fit a two-point payoff exactly) and then charged the certified 3x cost stress: USDJPY 0.000876, EURJPY 0.000826, GBPJPY 0.000805, CADJPY 0.000674 (best variant of each). USDJPY also leads all four on every held-out axis -- CPCV mean OOS Sharpe 0.1629 (0.1405/0.1153/0.1573), lockbox 0.1755 (0.1566/0.1240/0.1602), deflated Sharpe 1.0000 (0.9979/0.9522/0.9999) -- so the max-of-four selection is not what produced its lead.",
  "why_not_the_raw_ranking": "THE HONEST RANKING DIFFERS FROM THE RAW ONE AND THIS ROW FOLLOWS THE HONEST ONE. CADJPY was SECOND on raw shadow mean R (+0.4103R) and is LAST of the four on growth: its expectancy falls 0.1631 -> 0.0624 under 3x costs, a 62% haircut against USDJPY's 48%, making it the most cost-fragile of the four at exactly the moment the cost model is least trustworthy. GBPJPY's quoted +0.1624R is contradicted by the desk's own shadow_state.json, which records GBPJPY.asia as n=1, exp_r=-0.0577 after its clock was reset on 2026-09-15; the +0.1624 reads 13 stale phase='forward' tags the state file no longer honours. Forward t-stats: USDJPY 2.608, CADJPY 1.361, EURJPY 0.637, GBPJPY 0.000 -- only USDJPY clears 2.",
@@ -25,5 +26,8 @@
  "evidence_caveat": "ZERO realised fills on the live Fusion account for any yen cross, ever -- verified four ways (live_ledger.jsonl had 151/151 deals across 12 symbols, none JPY; autopsies.jsonl and fill_corpus.jsonl agreed). This row is sized off certified 2,107-day backtest evidence under 3x cost stress, NOT off realised fills, and NOT off the frozen 2026-09-16 shadow ledgers. The desk's own multiplicity charge at n_trials=203 already takes USDJPY's gross edge 0.1641 to a net 0.08175 with verdict NET_POSITIVE_UNCONFIRMED and net_is_bound=true -- a heavier charge than max-of-four, already applied, which USDJPY clears and GBPJPY nearly fails (DSR 0.9522).",
  "why_not_all_four": "EURJPY against GBPJPY measures +0.891 and the pairwise block runs +0.81 to +0.89, so libs/validation/effective_sample.cross_dependence_deflator(4, 0.891) = 0.273 -- the four crosses are about 1.1 independent bets, not four. EFFECTIVE_BREADTH.json puts all four in one cluster (session_liquidity). Gold against the block is -0.117 (the mean of four rhos spanning -0.39 to +0.08, n=12-14, not distinguishable from zero), so gold plus ONE cross is diversification and gold plus four is one bet bought four times.",
  "rule": "no sleeve outside live_symbols may hold capital or place an order in the live account; no sleeve on a banned timeframe for its symbol may either; and where live_sleeves names a symbol, only the sleeves it lists may hold capital on that symbol -- a symbol absent from live_sleeves is unrestricted. Enforced in desks/mt5/mt5desk/live_policy.py at the gateway's roster admission (decision_core.load_sleeves_verbose) and the promoter's writer (research/promoter._apply_live_policy); this file is the live override the box reads without a redeploy.",
- "name_note": "USDJPY.asia#rr=2.5 is the forward clock's own key for rr=2.5, wait_bars=12 (wait_bars 12 is the asia window default, so the key omits it) and the name the promoter writes on the LIVE row; the explicit rr25_wb12 alias is kept for any writer that uses it. Added 2026-10-01: with only the alias listed, no writer could ever produce an admitted row and Fusion could not trade the approved sleeve."
+ "name_note": "USDJPY.asia#rr=2.5 is the forward clock's own key for rr=2.5, wait_bars=12 (wait_bars 12 is the asia window default, so the key omits it) and the name the promoter writes on the LIVE row; the explicit rr25_wb12 alias is kept for any writer that uses it. Added 2026-10-01: with only the alias listed, no writer could ever produce an admitted row and Fusion could not trade the approved sleeve.",
+ "reddit_lineage_quarantine": "USDJPY session_range_breakout rr=2.5 wb=12 has Reddit as its only proposer (ext_reddit_USDJPY_session_range_breakout) and is off the live list until it is re-certified from a clean lineage. Restore USDJPY.asia#rr=2.5 and usdjpy_session_range_breakout_asia_rr25_wb12 only then.",
+ "carry_lookahead_quarantine": "2026-10-07, principal: the two LIVE CHFNOK carry rows of certificate external.CHFNOK.carry.p=98d776f3e210d3e2 (chfnok_carry_asia_p_98d776f3e210d3e2 and CHFNOK.carry.asia#input_symbol=CHFNOK, risk_frac 0.03 each) take NO new entries: carry lookahead, pending re-judge (reports/carry_lookahead_certs_2026-10-07.md, PR #269). The EMPTY list means nothing on CHFNOK may take new live capital (CHFNOK is also outside live_symbols). Restore the two names only after the re-judge certifies a lookahead-free version.",
+ "cert_book_admission": "2026-10-07, principal: EURZAR, USDZAR and AUDCHF admitted to live_symbols for the max-growth certified book (context/CERT_BOOK_PROMOTION_DESKTOP_SPEC.md; sizes in desks/mt5/data/CERT_BOOK_LIVE.json). The discovered-family ban and the M15 bans stand."
 }

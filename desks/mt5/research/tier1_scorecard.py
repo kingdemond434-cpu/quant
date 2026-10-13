@@ -48,7 +48,8 @@ TIMEFRAME_COVERAGE = REPORTS / "TIMEFRAME_COVERAGE.json"
 SESSION_CHART_EXPANSION = REPORTS / "SESSION_CHART_EXPANSION.json"
 UNIVERSAL_SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
 PIT_CENSUS, LAKE_PROMOTION = REPORTS / "PIT_CENSUS.json", REPORTS / "LAKE_PROMOTION.json"
-LIVE_LEDGER, SLEEVES = DATA / "live_ledger.jsonl", DATA / "sleeves.json"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER, SLEEVES = _audited_ledger_path(DATA / "live_ledger.jsonl"), DATA / "sleeves.json"
 PROCESS_HEALTH, SYNC_MARKER = REPORTS / "process_health.json", DATA / "sync_marker.json"
 #: THE RECONCILED ATTRIBUTION (Tier-1 W0). The exact-name join below reads 4.6% on this box's
 #: own ledger because MetaTrader truncates the sleeve into the position comment;

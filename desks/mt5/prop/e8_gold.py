@@ -63,7 +63,11 @@ from mt5desk.decision_core import (  # noqa: E402
     window_end_hour,
     window_session_ended,
 )
-from mt5desk.kelly_sizing import load_kelly_survival  # noqa: E402
+from mt5desk.kelly_sizing import (  # noqa: E402
+    CERT_BOOK_FILE,
+    load_cert_book,
+    load_kelly_survival,
+)
 
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).
@@ -119,6 +123,11 @@ def log(msg: str) -> None:
 
 
 # ------------------------------------------------------------------ pure decisions
+
+def cert_gold_windows(cert: dict[str, float] | None) -> dict[str, float]:
+    """The certified book's gold keys (`gold_asia`) as this lane's window names (`asia`). Pure."""
+    return {k.removeprefix("gold_"): v for k, v in (cert or {}).items() if k.startswith("gold_")}
+
 
 def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
     """(risk fraction of equity for window `name`, where it came from). Pure.
@@ -589,7 +598,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
     kelly = load_kelly_survival(KELLY_FILE, "e8")
+    # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
+    # 2026-10-07). Its gold keys are the gateway's (`gold_asia`); this lane names windows bare.
+    cert = cert_gold_windows(load_cert_book(CERT_BOOK_FILE, "e8"))
+    if cert:
+        kelly = {**(kelly or {}), **cert}
     doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
+                "cert_book_windows": cert or None,
                 "sizing_source": "kelly_survival" if kelly is not None else "policy RISK_FRAC",
                 "kelly_risk": kelly})
     guard = _read_json(GUARD, {})
