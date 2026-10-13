@@ -271,11 +271,41 @@ Baseline (2026-09-30, `/mnt/project-files/reports/tier1_breadth_gap_2026-09-30.m
 | D43 | **Allocator integrity** | solver optimality gap, pending events lost, scenario-cache fingerprint freshness, two-sided calibrated decay, hard-coded symbol or bracket rules, gateway-consumed decision trace, event-to-decision p95 (`reports/ALLOCATOR_PROOF.json`, `reports/ALLOCATOR_LIVENESS.json`, `reports/pf_allocation.json`) | gap reported, 0 lost events, fresh fingerprint, no hard-coded rule, trace consumed, p95 measured | Allocator and gateway code is money path: BLOCKED to the desktop "Growth allocator overhaul" session. Write the finding there with its evidence; never patch it from this lane. |
 | D44 | **Self-evolution** | evidence-backed machinery improvements landed this pass, each with its before and after metric (`machinery_improvements` in `reports/TIER1_BREADTH_REVIEW.json`, this pass) | ≥ 1 every pass, never by weakening a gate | Pick the measured worst bottleneck in D38-D43 and land one improvement with its after-metric before the pass ends. |
 
+**Judging bottleneck sweep (principal, 2026-10-07).** D3, D4, D34 and D38 are checked through seven items every pass. Each failing item is fixed in the same pass, or marked BLOCKED with its refusal. The sweep is about throughput only: it adds no trial charge or penalty, never cuts mining, and never lowers a gate.
+
+| # | Item | Read from | Target |
+|---|---|---|---|
+| a | First real rulings per hour against cells created per hour | `reports/JUDGING_BURNDOWN.json` on the box, never a stale `reports/JUDGE_COVERAGE.json` (a burndown older than 2h is itself a gap) | rulings/h above created/h |
+| b | Share of the backlog that is UNKNOWN never-fire or too-rare cells, and whether they are re-queued forever | `reports/JUDGING_BURNDOWN.json`, docket dispositions | every such cell gets a terminal recorded verdict; no endless requeue, no deletion |
+| c | Prewarm warm rate, cold-build seconds per cell, failed builds by cause | `reports/WARM_GAUNTLET.json` (`warmed`, `failed`, `missing`, `seconds`, `cells_per_min`, `warm_share_before`, `deferral_census`) and `data/hypotheses/warm_deferrals.json` for each failure's cause and age | warm rate near 100%; failures falling by cause |
+| d | Busy judge cores against planned workers, and what uses the rest of the CPU and RAM | box process table, `stall_watch.json` | every planned worker busy; capacity added and waste cut, never mining cut |
+| e | Judge fences `coverage_drain` and `judge_coverage` | their artifacts' age and source | fresh, and reading the live judge |
+| f | Failed `schtasks /Change` cadence changes | box task history | each one re-applied, or BLOCKED with the refusal |
+| g | `swap_cost` failing closed | judge logs | judging proceeds with the correct cost, never by skipping the cost |
+
+Baseline (box, 2026-10-07 01:40Z): 1,389,434 unjudged and +90k a day (`reports/JUDGE_COVERAGE.json`), 0 first rulings per hour over 24h (`reports/JUDGING_BURNDOWN.json`), about 1-2 effective judge cores (box process table), 0 cells warmed in 3,662s (`reports/WARM_GAUNTLET.json` `warmed` and `seconds`). Each item is reported against this baseline and against the previous pass, under `judging_sweep` in the review and the ledger row.
+
+**Pass questions (ARCH-30).** Every pass answers seven questions from box data, each answer naming the artifact or number it rests on. UNMEASURED is an allowed answer, but it counts as MISSED and is fixed under NEVER JUST NOTICE.
+
+| Q | Question |
+|---|---|
+| Q1 | Best useful work waiting: the highest expected-value item not yet done, and why it ranks first |
+| Q2 | Producers that added distinct validated information since the last pass, measured by new certificates or verdicts that raised k_eff or filled an empty cluster, never by raw cell count |
+| Q3 | Missed opportunities since the last pass and why: passing cells not certified, certified cells not clocked, signals that fired with no live sleeve, datasets or sources not used |
+| Q4 | The live allocator's realised and replayed E[log W] against equal-risk, inverse-volatility and best-single-sleeve baselines on the same executable book, after lot rounding and costs. A loss to any baseline is a gap, routed under D43 |
+| Q5 | Losses from stale information, costs or defects since the last pass (stale inputs or artifacts, mispriced costs or swaps, failed jobs, code defects), each with its size and its fix |
+| Q6 | Removable components: no consumer, no weight or no measured contribution, each with its evidence and a disposition of retire, wire, or keep at zero weight. A producer, miner or crawler whose cells are not yet judged is UNMEASURED, not zero-contribution, and producers are only ever wired or kept, never retired (mining is never cut) |
+| Q7 | Most valuable new capability: the one that would raise robust forward E[log W] most, why, and whether this pass built it |
+
+**Limitation record (ARCH-29).** For each material limitation the pass names, it records what limits capability, the improvement tested, the measured result with its uncertainty, the resources needed and the next experiment, and it keeps the best-supported incumbent until a challenger beats it on the same evidence. These go under `limitations` in the review.
+
+Standing: trial counts are never inflated. There are no lifetime, extra or penalty trial charges, and every charge stays at its original count (principal, 2026-10-07).
+
 **The duty artifacts are measured by the launcher, not by the pass (2026-10-06).** `scripts/check_cro_duties.py` reads every artifact a row above names, on the host the pass runs on, and writes `desks/mt5/reports/CRO_DUTIES.json` before the agent starts; the counters each duty must carry are listed in `docs/cro/cro_duty_metrics.json`. An artifact absent, unreadable or older than its window, or a counter no fresh artifact carries, is UNMEASURED and counts as MISSED. After the pass it re-runs with `--review`, and any duty the pass scored MET or OPTIMAL that it cannot back is rewritten MISSED, with the claim kept under `status_claimed`. A new duty row is checked the moment it names its artifact.
 
 Standing rules for every duty: never cut mining, ingestion or research generation, and never lower a validation gate to raise a number. The duty work competes in STEP 7 and usually wins when capital-path integrity is clean.
 
-Write the table, the duty statuses, the tier verdict, the ranked gaps, the change since the last pass and each fix's wiring proof to `desks/mt5/reports/TIER1_BREADTH_REVIEW.json` (append to its `history` array). Carry `tier_verdict`, `k_eff`, `top_breadth_gaps`, `duties_missed`, `gaps_named` and `gaps_closed` in the cycle ledger row; each `gaps_closed` entry names its fix commit, its wiring proof and its after-metric.
+Write the table, the duty statuses, the tier verdict, the ranked gaps, the change since the last pass and each fix's wiring proof to `desks/mt5/reports/TIER1_BREADTH_REVIEW.json` (append to its `history` array). Carry `tier_verdict`, `k_eff`, `top_breadth_gaps`, `duties_missed`, `gaps_named` and `gaps_closed` in the cycle ledger row; each `gaps_closed` entry names its fix commit, its wiring proof and its after-metric. The row also carries `judging_sweep` (first_rulings_per_hour, created_per_hour, backlog_total, never_fire_share, warm_rate, busy_judge_cores, planned_workers, items_fixed, items_blocked) and `pass_questions` (one short answer each for Q1-Q7).
 
 ## STEP 4C — SIX-EVENT REALITY TRACE (principal's standing test, 2026-09-30)
 
