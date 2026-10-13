@@ -72,13 +72,14 @@ ALLOCATOR_PROOF_SEAL_ROTATION = {
     "signed_by": "owner-approved-codex-2026-10-08",
 }
 
-# Authorized replay geometry/cache and input wiring repair; QB-002's historical pin
+# Authorized replay geometry/cache, input wiring and build preflight repair; the historical pin
 # stays intact. Require the exact reviewed bytes and their file-only authorization.
 GAUNTLET_SEAL_ROTATION = {
     "path": "desks/mt5/scripts/external_gauntlet.py",
     "from": "d0919bfc921dac2c1bab40b821429d34e7fab056af4a66f02840da4877d1bc01",
-    "to": "44505acc9652daf074acc90702c279fac77e0dc8af51dfa1fd81093f5335922c",
-    "signed_by": "Codex, principal-authorized input wiring repair",
+    "to": "f56bc72fc5532a67924ac0a26eaff0e392702549c1b2c5a4d4ef75e72aec96de",
+    "signed_by": ("Codex under principal instruction: maximise and repair build bottleneck "
+                  "canonically; policy and record seals preserved"),
 }
 
 
