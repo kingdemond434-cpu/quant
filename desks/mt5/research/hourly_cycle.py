@@ -1095,7 +1095,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
-                     "source_frontier", "data_scout", "external_federation",
+                     "source_frontier", "breadth_frontier", "data_scout",
+                     "external_federation",
                      "understanding_seat", "archaeology", "sares", "shadow_institutional",
                      "source_civilizations", "evidence_watchtower", "prediction_markets",
                      "latent_actors", "residual_hunt", "evidence_router",
@@ -1796,6 +1797,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
     "world_dataset_hunt": 1_020,
+    # THE BREADTH FRONTIER reads artifacts on this tree (no network): the six-axis coverage map,
+    # the fringe-family terms ledger and the unknown-unknown terms. Under a second measured on the
+    # build box; the cap allows a crawler estate a hundred times larger.
+    "breadth_frontier": 300,
     # ITS CONSUMER mints world_macro_state cells from the hunter's exposure and stops itself at
     # --budget-s 900; a symbol cursor carries the sweep across hours.
     "world_macro_proposer": 1_020,
@@ -4609,6 +4614,14 @@ def main() -> None:
     # `edge_search.resolve_inputs` reads. Writes reports/DATASET_HUNT.json.
     wdh = _costed("world_dataset_hunt", lambda: _producer(
         "world_dataset_hunt", "research/world_dataset_hunter.py", "--once", "--budget-s", "900"))
+    # THE BREADTH FRONTIER (principal 2026-10-10): the source x geography x language x actor x
+    # asset x horizon coverage map over the grounds, the alt-data yield, the free stack, the
+    # acquired registry and the legacy universe map (empty cells ranked as hunt targets); the
+    # fringe families' terms and conversion stages; the unknown-unknown frontier of field names,
+    # feed types and publisher kinds the ontology cannot name; and the cross-door dataset and
+    # representation counts. Reads only. Writes reports/BREADTH_FRONTIER.json.
+    bfr = _costed("breadth_frontier", lambda: _producer(
+        "breadth_frontier", "research/breadth_frontier.py", "--once"))
     # ITS CONSUMER: mints `world_macro_state` cells (a z band on one named world series x
     # direction x hold) from the exposure the hunter just published, screens and donates them to
     # the docket; the sealed gauntlet judges them via ORTHOGONAL_FAMILIES. Writes
@@ -5815,6 +5828,7 @@ def main() -> None:
                     "acquire_datasets": acq, "free_stack_hunt": fsh,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
                     "world_dataset_hunt": wdh,
+                    "breadth_frontier": bfr,
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,

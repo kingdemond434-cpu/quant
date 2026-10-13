@@ -1,0 +1,641 @@
+{
+ "note": "THE FRINGE FAMILIES (principal 2026-10-10; statuses per the principal's ruling of 2026-10-13: no source is banned as a category, only METHODS are). Ten information families placed explicitly in the universe: a family id, named public/licensed candidate sources, an MT5 economic mapping (instruments + channel) and a conversion stage that research/breadth_frontier.py DERIVES every hour from the tree. Every source carries `terms_read` (READ, with the verbatim clause quoted and the date it was read via WebFetch, or UNREAD) and `access_status`: API_PERMITTED (an official API or free tier, used within its published limits), NEEDS_KEY (the same, waiting on a key the box holds as an env var), PUBLIC_PAGE (a public page we are permitted to fetch), IDEAS_ONLY (read for ideas, never fetched as live input -- every UNREAD source is here) or METHOD_BLOCKED (reaching it would need bypassing a login, paywall, CAPTCHA, rate limit or region lock; the reason is named). Idea provenance never blocks a cell.",
+ "terms_rule": "API_PERMITTED / NEEDS_KEY / PUBLIC_PAGE require a READ terms page with a verbatim quote; an UNREAD source is IDEAS_ONLY and never fetched as live input; METHOD_BLOCKED names the method that would be needed.",
+ "terms_read_utc": "2026-10-13",
+ "stage_ladder": [
+  "NAMED",
+  "TERMS_CLEARED",
+  "COLLECTOR_EXISTS",
+  "INGESTED"
+ ],
+ "families": [
+  {
+   "id": "fringe_remote_physical_sensing",
+   "name": "Hyperspectral, radar (SAR), RF, acoustic and seismic sensing",
+   "information_type": "physical_exhaust",
+   "mt5_mapping": {
+    "instruments": [
+     "XAUUSD",
+     "XCUUSD",
+     "XNIUSD",
+     "XTIUSD",
+     "XNGUSD",
+     "JPN225",
+     "USDJPY",
+     "AUDUSD",
+     "USDCAD",
+     "WHEAT",
+     "CORN",
+     "SOYBEAN"
+    ],
+    "channel": "a seismic event or SAR-visible disruption at a mine, port, refinery or LNG train is a supply shock: metals and energy reprice first, then the exporter's currency (AUD, CAD, JPY after domestic quakes) and the exposed index; hyperspectral crop vigour leads the softs."
+   },
+   "sources": [
+    {
+     "id": "usgs_eq_geojson",
+     "name": "USGS Earthquake Hazards Program real-time GeoJSON feeds",
+     "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php",
+     "terms_url": "https://earthquake.usgs.gov/fdsnws/event/1/",
+     "quote": [
+      "automated applications should use Real-time GeoJSON Feeds for displaying earthquake information whenever possible"
+     ],
+     "supporting_quote_url": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+     "supporting_quote": [
+      "USGS-authored or produced data and information are considered to be in the U.S. Public Domain."
+     ],
+     "conditions": "the GeoJSON feeds, not the FDSN query service, for automated use",
+     "owner": "desks/mt5/research/countries/pacific/pack.py",
+     "evidence_globs": [],
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "geo": "global"
+    },
+    {
+     "id": "nasa_firms_oil_flaring",
+     "name": "NASA FIRMS VIIRS thermal detections over oil fields and refineries (industrial-activity proxy)",
+     "url": "https://firms.modaps.eosdis.nasa.gov/api/area/",
+     "terms_url": "https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-use-fully-and-without-restrictions",
+     "terms_read": "READ",
+     "read_by": "the desk's TERMS evidence in research/alt_proxies.py (checked 2026-09-30)",
+     "quote": [
+      "NASA's data policy ensures that all NASA data are available fully, openly, and without restrictions."
+     ],
+     "access_status": "NEEDS_KEY",
+     "key_env": "FIRMS_MAP_KEY",
+     "conditions": "documented keyed area API, within its transaction limits",
+     "owner": "desks/mt5/research/alt_proxies.py",
+     "evidence_globs": [],
+     "geo": "global"
+    },
+    {
+     "id": "copernicus_sentinel1_sar",
+     "name": "Copernicus Data Space Sentinel-1 SAR / Sentinel-2 imagery (ship queues, port congestion by computer vision)",
+     "url": "https://dataspace.copernicus.eu/",
+     "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "quote": [
+      "The access and use of Copernicus Sentinel data is available on a free, full and open basis"
+     ],
+     "conditions": "the operator's own terms grant free, full and open access; its official APIs are used within their published limits (ruling 2026-10-13); no computer-vision collector exists yet: a new route, not an extension",
+     "owner": null,
+     "evidence_globs": [],
+     "geo": "global"
+    },
+    {
+     "id": "asf_sar_archive",
+     "name": "Alaska Satellite Facility SAR archive",
+     "url": "https://asf.alaska.edu/",
+     "terms_url": "https://asf.alaska.edu/information/data-use-guidelines/",
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "terms page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    },
+    {
+     "id": "nasa_emit_hyperspectral",
+     "name": "NASA EMIT imaging spectrometer (via Earthdata)",
+     "url": "https://earth.jpl.nasa.gov/emit/",
+     "terms_url": "https://www.earthdata.nasa.gov/engage/open-data-services-software-policies/data-use-guidance",
+     "key_env": "EARTHDATA_TOKEN",
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "terms page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    },
+    {
+     "id": "rf_spectrum_occupancy",
+     "name": "Public RF spectrum-occupancy / AIS-ADS-B receiver networks",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "no source with a readable terms page named yet; the family stays NAMED until one is; never fetched as live input, read for ideas only",
+     "geo": "global"
+    },
+    {
+     "id": "ocean_acoustic_hydrophone",
+     "name": "Public hydrophone / ocean-acoustic observatories",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "no source with a readable terms page named yet; never fetched as live input, read for ideas only",
+     "geo": "global"
+    }
+   ],
+   "source_kind": "physical_sensor"
+  },
+  {
+   "id": "fringe_industrial_telemetry",
+   "name": "Industrial machine telemetry",
+   "information_type": "physical_exhaust",
+   "mt5_mapping": {
+    "instruments": [
+     "XCUUSD",
+     "XALUSD",
+     "XNIUSD",
+     "JPN225",
+     "GER40",
+     "AUDUSD",
+     "USDCNH",
+     "CHINAH"
+    ],
+    "channel": "fleet operating hours (excavators, machine tools, compressors) are a real-time read of construction and factory activity: industrial metals and the machinery-heavy indices (JPN225, GER40) move with it, and so do the commodity currencies that sell into it."
+   },
+   "sources": [
+    {
+     "id": "oem_fleet_hours_ir",
+     "name": "OEM fleet operating-hours disclosures (machinery makers' IR decks)",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "IR-deck reuse terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    },
+    {
+     "id": "machine_tool_orders",
+     "name": "Machine-tool builders' association monthly orders",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    }
+   ],
+   "source_kind": "physical_sensor"
+  },
+  {
+   "id": "fringe_credit_plumbing",
+   "name": "Credit plumbing: repo, funding and settlement fails",
+   "information_type": "official_macro",
+   "mt5_mapping": {
+    "instruments": [
+     "UST05Y",
+     "UST10Y",
+     "USDX",
+     "EURUSD",
+     "USDJPY",
+     "XAUUSD",
+     "US500"
+    ],
+    "channel": "repo rate spikes, funding-volume shifts and settlement fails are balance-sheet stress: front-end Treasuries and the dollar bid first (funding squeeze), risk indices and gold respond to the liquidity drain or its relief."
+   },
+   "sources": [
+    {
+     "id": "ofr_stfm_api",
+     "name": "OFR Short-term Funding Monitor API (repo rates and volumes)",
+     "url": "https://data.financialresearch.gov/v1/",
+     "terms_url": "https://www.financialresearch.gov/short-term-funding-monitor/api/",
+     "quote": [
+      "We have provided this open interface for public use.",
+      "This API does not require tokens or registration, so feel free to use it immediately."
+     ],
+     "conditions": "keyless",
+     "owner": null,
+     "evidence_globs": [],
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "geo": "us"
+    },
+    {
+     "id": "nyfed_markets_api",
+     "name": "NY Fed Markets Data API (SOFR, reverse repo)",
+     "url": "https://markets.newyorkfed.org/static/docs/markets-api.html",
+     "terms_url": "https://markets.newyorkfed.org/static/docs/markets-api.html",
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "neither the API documentation nor the data hub carries a clause permitting programmatic use (read 2026-10-13); never fetched as live input, read for ideas only",
+     "geo": "us"
+    },
+    {
+     "id": "sec_fails_to_deliver",
+     "name": "SEC fails-to-deliver data",
+     "url": "https://www.sec.gov/data-research/sec-markets-data/fails-deliver-data",
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "not EDGAR; its own terms page not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "us"
+    }
+   ],
+   "source_kind": "official_statistics"
+  },
+  {
+   "id": "fringe_capital_formation",
+   "name": "Capital-formation exhaust: IPO / bond issuance pipelines, prospectus filings",
+   "information_type": "corporate",
+   "mt5_mapping": {
+    "instruments": [
+     "NAS100",
+     "US500",
+     "US2000",
+     "UST10Y",
+     "USDX"
+    ],
+    "channel": "an IPO and follow-on calendar that swells is supply and a late-cycle risk-appetite gauge for the indices; a heavy investment-grade issuance week weighs on duration (UST10Y) and pulls dollars in."
+   },
+   "sources": [
+    {
+     "id": "sec_edgar_s1_424b",
+     "name": "SEC EDGAR S-1/F-1/424B filings via data.sec.gov and full-text search",
+     "url": "https://data.sec.gov/",
+     "terms_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
+     "quote": [
+      "To ensure everyone has equitable access to SEC EDGAR content, please use efficient scripting.",
+      "Current max request rate: 10 requests/second.",
+      "Please declare your user agent in request headers:"
+     ],
+     "conditions": "declared user agent, at most 10 requests per second; the same page forbids botnets and crawling the site outside this policy",
+     "owner": "desks/mt5/research/sandboxes/edgar_transmission.py",
+     "evidence_globs": [],
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "geo": "us"
+    }
+   ],
+   "source_kind": "regulator_filing"
+  },
+  {
+   "id": "fringe_enterprise_dependency",
+   "name": "Enterprise dependency exhaust: package registries, SaaS status pages, supplier graphs",
+   "information_type": "innovation",
+   "mt5_mapping": {
+    "instruments": [
+     "NAS100",
+     "US500",
+     "USDJPY",
+     "USDCNH"
+    ],
+    "channel": "dependency adoption and outage cascades are an operating read of the software economy: the tech-weighted indices respond, and a supplier-graph shock into Asian manufacturing reaches the funding and exporter currencies."
+   },
+   "sources": [
+    {
+     "id": "pypi_json_api",
+     "name": "PyPI JSON API (package release and dependency metadata)",
+     "url": "https://pypi.org/pypi/{project}/json",
+     "terms_url": "https://policies.python.org/pypi.org/Terms-of-Service/",
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "quote": [
+      "All use of the PyPI API is subject to these Terms of Service and the PyPI Privacy Policy."
+     ],
+     "conditions": "the official PyPI API, used within the published Terms of Service and rate limits (ruling 2026-10-13)",
+     "owner": null,
+     "evidence_globs": [],
+     "geo": "global"
+    },
+    {
+     "id": "saas_status_pages",
+     "name": "Public SaaS status pages",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "per-vendor terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    },
+    {
+     "id": "supplier_graph_filings",
+     "name": "Supplier / major-customer graphs",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "no source chosen; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    }
+   ],
+   "source_kind": "code_repository"
+  },
+  {
+   "id": "fringe_public_infrastructure",
+   "name": "Public-infrastructure telemetry: grid, ports, traffic, water",
+   "information_type": "physical_exhaust",
+   "mt5_mapping": {
+    "instruments": [
+     "XNGUSD",
+     "XTIUSD",
+     "XBRUSD",
+     "USDCAD",
+     "US500",
+     "EURUSD"
+    ],
+    "channel": "grid load and generation mix move gas burn and therefore XNGUSD; port and traffic throughput are a real-time trade-volume read for the exporters' currencies; a water-level shock on an inland waterway reprices the barge-borne softs and energy."
+   },
+   "sources": [
+    {
+     "id": "eia_api_grid",
+     "name": "EIA API v2 (Hourly Electric Grid Monitor, petroleum, natural gas)",
+     "url": "https://api.eia.gov/v2/",
+     "terms_url": "https://www.eia.gov/opendata/",
+     "quote": [
+      "The U.S. Energy Information Administration is committed to its free and open data by making it available through an Application Programming Interface (API)",
+      "EIA data is provided free of charge and should be used in compliance with our Copyrights and Reuse Policy."
+     ],
+     "conditions": "registered key",
+     "key_env": "EIA_API_KEY",
+     "owner": "desks/mt5/research/countries/atlantic_energy/pack.py",
+     "evidence_globs": [],
+     "terms_read": "READ",
+     "access_status": "NEEDS_KEY",
+     "geo": "us"
+    },
+    {
+     "id": "imf_portwatch_ports",
+     "name": "IMF PortWatch daily port calls and chokepoint transits (AIS-derived ship counts)",
+     "url": "https://portwatch.imf.org/",
+     "terms_url": "https://www.imf.org/external/terms.htm",
+     "terms_read": "READ",
+     "read_by": "the desk's TERMS evidence in research/alt_proxies.py (checked 2026-09-30)",
+     "quote": [
+      "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes"
+     ],
+     "access_status": "API_PERMITTED",
+     "conditions": "documented ArcGIS API",
+     "owner": "desks/mt5/research/alt_proxies.py",
+     "evidence_globs": [],
+     "geo": "global"
+    },
+    {
+     "id": "entsoe_transparency",
+     "name": "ENTSO-E Transparency Platform",
+     "url": "https://transparency.entsoe.eu/",
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "de"
+    },
+    {
+     "id": "port_call_statistics",
+     "name": "Port authority vessel-call statistics",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "per-port terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    }
+   ],
+   "source_kind": "physical_sensor"
+  },
+  {
+   "id": "fringe_scientific_instrumentation",
+   "name": "Scientific and environmental instrumentation",
+   "information_type": "physical_exhaust",
+   "mt5_mapping": {
+    "instruments": [
+     "XNGUSD",
+     "CORN",
+     "WHEAT",
+     "SOYBEAN",
+     "USCOCOA",
+     "COFARA",
+     "SUGAR",
+     "OJ"
+    ],
+    "channel": "observed temperature, precipitation and storm warnings drive heating/cooling gas demand and crop stress: XNGUSD and the softs reprice ahead of the official crop and storage reports."
+   },
+   "sources": [
+    {
+     "id": "nws_api",
+     "name": "US National Weather Service API (observations, alerts, forecasts)",
+     "url": "https://api.weather.gov/",
+     "terms_url": "https://www.weather.gov/documentation/services-web-api",
+     "quote": [
+      "All of the information presented via the API is intended to be open data, free to use for any purpose.",
+      "A User Agent is required to identify your application."
+     ],
+     "conditions": "identifying user agent",
+     "owner": null,
+     "evidence_globs": [],
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "geo": "us"
+    },
+    {
+     "id": "noaa_ncei_access",
+     "name": "NOAA NCEI Access Data Service",
+     "url": "https://www.ncei.noaa.gov/access/services/data/v1",
+     "terms_url": "https://www.ncei.noaa.gov/access/services/data/v1",
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "page could not be read on 2026-10-13 (client error); unread terms are HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    }
+   ],
+   "source_kind": "physical_sensor"
+  },
+  {
+   "id": "fringe_knowledge_production",
+   "name": "Knowledge-production signals: papers, patents, preprints, standards",
+   "information_type": "innovation",
+   "mt5_mapping": {
+    "instruments": [
+     "NAS100",
+     "US500",
+     "JPN225",
+     "GER40",
+     "XAGUSD",
+     "XCUUSD",
+     "XPTUSD"
+    ],
+    "channel": "a surge in preprints and patents on a material or technology is a demand prior: silver (photovoltaics), copper and platinum (electrification, hydrogen) and the tech-heavy indices carry it before any order book shows it."
+   },
+   "sources": [
+    {
+     "id": "arxiv_api",
+     "name": "arXiv API / OAI-PMH metadata",
+     "url": "https://export.arxiv.org/api/query",
+     "terms_url": "https://info.arxiv.org/help/api/tou.html",
+     "quote": [
+      "Retrieve, store, transform, and share descriptive metadata about arXiv e-prints.",
+      "When using the legacy APIs (including OAI-PMH, RSS, and the arXiv API), make no more than one request every three seconds,"
+     ],
+     "conditions": "one request every three seconds, one connection",
+     "owner": "desks/mt5/side_channels/academic_miner.py",
+     "evidence_globs": [
+      "data/intelligence/academic/*.json"
+     ],
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "geo": "global"
+    },
+    {
+     "id": "crossref_rest",
+     "name": "Crossref REST API (works metadata)",
+     "url": "https://api.crossref.org/works",
+     "terms_url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+     "quote": [
+      "No sign-up is required to use the REST API, and almost none of the metadata is subject to copyright"
+     ],
+     "conditions": "abstracts may carry publisher copyright and are not used",
+     "owner": "libs/research/source_alternatives.py",
+     "evidence_globs": [],
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "geo": "global"
+    },
+    {
+     "id": "uspto_patents",
+     "name": "USPTO patent full-text / bulk data",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "us"
+    },
+    {
+     "id": "standards_bodies",
+     "name": "Standards-body publication calendars",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "terms not read; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    }
+   ],
+   "source_kind": "academic_research"
+  },
+  {
+   "id": "fringe_attention_intent",
+   "name": "Attention and intent microstructure",
+   "information_type": "attention",
+   "mt5_mapping": {
+    "instruments": [
+     "XAUUSD",
+     "BTCUSD",
+     "USDJPY",
+     "EURUSD",
+     "NAS100",
+     "USDTRY"
+    ],
+    "channel": "a spike in attention to a currency, gold or a crisis term precedes retail flow; the retail-heavy instruments (gold, the crypto CFDs, the yen crosses) absorb it with a lag institutions ignore."
+   },
+   "sources": [
+    {
+     "id": "mediawiki_action_api_pageviews",
+     "name": "MediaWiki Action API (prop=pageviews)",
+     "url": "https://en.wikipedia.org/w/api.php?action=query&prop=pageviews",
+     "terms_url": "https://www.mediawiki.org/wiki/API:Etiquette",
+     "quote": [
+      "There is no hard and fast limit on read requests, but we ask that you be considerate and try not to take a site down.",
+      "If your task is not interactive (i.e. a user is not waiting for the result) you should use the maxlag parameter.",
+      "Use a descriptive User-Agent header that includes your application's name"
+     ],
+     "conditions": "serial requests, maxlag, descriptive user agent. This record covers the Action API only: the REST pageviews endpoint alt_proxies uses is a different door whose terms this record does not read",
+     "owner": null,
+     "evidence_globs": [],
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "geo": "global"
+    },
+    {
+     "id": "search_trends",
+     "name": "Search-trend indices",
+     "url": null,
+     "terms_url": null,
+     "terms_read": "UNREAD",
+     "access_status": "IDEAS_ONLY",
+     "status_reason": "terms not read for automated access; HELD; never fetched as live input, read for ideas only",
+     "geo": "global"
+    }
+   ],
+   "source_kind": "app_attention"
+  },
+  {
+   "id": "fringe_ownership_control",
+   "name": "Ownership and control graphs",
+   "information_type": "corporate",
+   "mt5_mapping": {
+    "instruments": [
+     "US500",
+     "NAS100",
+     "UK100",
+     "HK50",
+     "CHINAH",
+     "EURUSD",
+     "USDCNH"
+    ],
+    "channel": "beneficial-ownership filings, insider and activist stakes and cross-border control chains are positioning: concentrated stake-building moves the indices' heavy names, and cross-border acquisition chains are a currency flow."
+   },
+   "sources": [
+    {
+     "id": "sec_edgar_ownership",
+     "name": "SEC EDGAR ownership filings (13D/13G, Forms 3/4/5, 13F) via data.sec.gov",
+     "url": "https://data.sec.gov/",
+     "terms_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
+     "quote": [
+      "To ensure everyone has equitable access to SEC EDGAR content, please use efficient scripting.",
+      "Current max request rate: 10 requests/second."
+     ],
+     "conditions": "declared user agent, at most 10 requests per second",
+     "owner": "desks/mt5/research/countries/institutional/pack.py",
+     "evidence_globs": [],
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "geo": "us"
+    },
+    {
+     "id": "gleif_lei_relationships",
+     "name": "GLEIF LEI and relationship (parent/child) records",
+     "url": "https://api.gleif.org/api/v1/",
+     "terms_url": "https://www.gleif.org/en/meta/lei-data-terms-of-use",
+     "terms_read": "READ",
+     "access_status": "API_PERMITTED",
+     "quote": [
+      "The Access Service on the website http(s)://www.gleif.org is provided for free.",
+      "The data available through the Access Service are provided under the CC0 licence"
+     ],
+     "conditions": "the official free Access Service under CC0, used within its published limits (ruling 2026-10-13)",
+     "owner": null,
+     "evidence_globs": [],
+     "geo": "global"
+    }
+   ],
+   "source_kind": "regulator_filing"
+  },
+  {
+   "id": "fringe_cross_border_flows",
+   "name": "Cross-border portfolio flow exhaust (Stock Connect northbound / southbound)",
+   "information_type": "positioning",
+   "source_kind": "exchange_venue",
+   "mt5_mapping": {
+    "instruments": [
+     "USDCNH",
+     "HK50",
+     "CHINAH"
+    ],
+    "channel": "a large northbound day is offshore CNH demand (T+1 cash settlement) and mainland buying of A-shares; southbound is mainland money into Hong Kong: USDCNH, HK50 and CHINAH carry it. CN50 is not in this broker's registry, so CHINAH stands in."
+   },
+   "sources": [
+    {
+     "id": "hkex_stock_connect_daily",
+     "name": "HKEX Stock Connect daily northbound/southbound turnover",
+     "url": "https://www.hkex.com.hk/Mutual-Market/Stock-Connect/Statistics/Historical-Daily",
+     "terms_url": "https://www.hkex.com.hk/Global/Exchange/Terms-of-Use?sc_lang=en",
+     "terms_read": "READ",
+     "quote": [
+      "(iii) use any programmatic, scripted or other mechanical means to access this Website or any Information;",
+      "You are not permitted to conduct, facilitate, enable, authorise or permit any text or data mining or web scraping in relation to this Website"
+     ],
+     "access_status": "METHOD_BLOCKED",
+     "status_reason": "HKEX's own terms forbid programmatic, scripted or mechanical access and data mining without HKEX's express written permission (read 2026-10-13); no collector is built, the series is read for ideas only",
+     "geo": "hk"
+    }
+   ]
+  }
+ ],
+ "access_statuses": [
+  "API_PERMITTED",
+  "NEEDS_KEY",
+  "PUBLIC_PAGE",
+  "IDEAS_ONLY",
+  "METHOD_BLOCKED"
+ ]
+}

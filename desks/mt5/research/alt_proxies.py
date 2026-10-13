@@ -1748,6 +1748,22 @@ FIRMS_CLUSTERS: dict[str, tuple[float, float, float, float]] = {
     "rizhao_linyi_steel": (118.3, 34.9, 119.7, 35.6),
     "baotou_steel_alu": (109.6, 40.4, 110.3, 40.8),
 }
+#: Oil production and refining footprints (breadth_frontier, 2026-10-13): gas flaring and
+#: refinery flares are thermal activity from orbit, daily, ahead of monthly production prints.
+OIL_FLARING_CLUSTERS: dict[str, tuple[float, float, float, float]] = {
+    "permian_basin": (-104.5, 31.0, -101.0, 33.5),
+    "bakken": (-104.0, 47.3, -102.0, 48.8),
+    "us_gulf_refining": (-95.4, 29.3, -93.7, 30.1),
+    "alberta_oil_sands": (-112.0, 56.5, -110.5, 58.0),
+    "west_siberia_oil": (68.0, 59.5, 78.0, 63.0),
+    "niger_delta": (5.0, 4.2, 7.6, 5.9),
+    "saudi_eastern": (48.5, 24.5, 50.5, 27.5),
+}
+#: Every FIRMS-backed source and its footprints; one request builder serves them all.
+FIRMS_SETS: dict[str, dict[str, tuple[float, float, float, float]]] = {
+    "cn_firms_industrial": FIRMS_CLUSTERS,
+    "oil_firms_flaring": OIL_FLARING_CLUSTERS,
+}
 FIRMS_URL = ("https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/{product}/{bbox}/{days}/"
              "{day}")
 PORTWATCH_BASE = ("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
@@ -1874,6 +1890,31 @@ SOURCES: tuple[Source, ...] = (
                                  "winter heating season, and under persistent cloud cover"),
         crowding_prior="low",
         note="asia_sources `nasa_firms` fetches the bare API root; this builds the area queries"),
+    Source(
+        id="oil_firms_flaring", name="NASA FIRMS thermal detections over oil fields and refineries",
+        url=FIRMS_URL, region="GLOBAL", language="en", cadence="daily", parse=parse_firms,
+        rule=_lag_rule(1, 12), transform="anomaly_daily", key_env="FIRMS_MAP_KEY",
+        instruments={"XTIUSD": 1, "XBRUSD": 1},
+        series_instruments={
+            "permian_basin": {"XTIUSD": 1, "XNGUSD": 1},
+            "bakken": {"XTIUSD": 1},
+            "us_gulf_refining": {"XTIUSD": 1, "XBRUSD": 1},
+            "alberta_oil_sands": {"XTIUSD": 1, "USDCAD": -1},
+            "west_siberia_oil": {"XBRUSD": 1},
+            "niger_delta": {"XBRUSD": 1},
+            "saudi_eastern": {"XBRUSD": 1}},
+        signal_series=("total_count",),
+        mechanism=("VIIRS thermal detections inside declared oil-field and refinery footprints "
+                   "are flaring and refinery-flare activity, observed daily from orbit before any "
+                   "monthly production or refinery-run print"),
+        payer="crude and CAD holders who wait for monthly production and weekly refinery data",
+        constraint="official production data arrive monthly and weeks late",
+        licence="NASA open data (free MAP_KEY; no restriction on use; cite FIRMS)",
+        source_culture="GLOBAL/en", participant_structure=("physical_flow",),
+        failure_mode_hypothesis=("fails when flaring regulation or gas-capture projects change "
+                                 "the flare-to-output ratio, and under persistent cloud cover"),
+        crowding_prior="low",
+        note="same keyed FIRMS area API and parser as cn_firms_industrial (breadth_frontier gap)"),
     Source(
         id="imf_portwatch_ports", name="IMF PortWatch daily port calls",
         url=PORTWATCH_BASE.format(svc="Daily_Ports_Data"),
@@ -2593,6 +2634,7 @@ TERMS: dict[str, tuple[str, str]] = {
                          "published works (incl. databases) is copyright infringement"),
     "jp_tokyo_cpi": ("confirmed", "e-Stat documented API, Government of Japan statistics"),
     "cn_firms_industrial": ("confirmed", "NASA open data, documented API"),
+    "oil_firms_flaring": ("confirmed", "NASA open data, documented API"),
     "imf_portwatch_ports": ("confirmed", "IMF PortWatch public statistics, documented ArcGIS API"),
     "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
                                   "ArcGIS API"),
@@ -2910,6 +2952,13 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "api.e-stat.go.jp is the documented API (free appId)",
         "checked_at": _CHK},
     "cn_firms_industrial": {
+        "terms_url": ("https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-"
+                      "use-fully-and-without-restrictions"),
+        "terms_quote": ("NASA's data policy ensures that all NASA data are available fully, "
+                        "openly, and without restrictions."),
+        "robots": "firms.modaps.eosdis.nasa.gov/api is the documented keyed API (MAP_KEY)",
+        "checked_at": _CHK},
+    "oil_firms_flaring": {
         "terms_url": ("https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-"
                       "use-fully-and-without-restrictions"),
         "terms_quote": ("NASA's data policy ensures that all NASA data are available fully, "
@@ -3264,11 +3313,12 @@ class Request:
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
     """The requests one pass makes for a source. Paged and area sources expand here."""
     key = os.environ.get(src.key_env or "", "") if src.key_env else ""
-    if src.id == "cn_firms_industrial":
+    if src.id in FIRMS_SETS:
+        clusters = FIRMS_SETS[src.id]
         out: list[Request] = []
         end = (now - timedelta(days=1)).date()
         start = end - timedelta(days=9)
-        for name, box in FIRMS_CLUSTERS.items():
+        for name, box in clusters.items():
             bbox = ",".join(str(x) for x in box)
             out.append(Request(FIRMS_URL.format(key=key, product="VIIRS_SNPP_NRT", bbox=bbox,
                                                 days=10, day=start.isoformat()),
@@ -3279,7 +3329,7 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         bf_end = date.fromisoformat(cur) if cur else start - timedelta(days=1)
         if bf_end > (now - timedelta(days=3 * 365)).date():
             bf_start = bf_end - timedelta(days=9)
-            for name, box in FIRMS_CLUSTERS.items():
+            for name, box in clusters.items():
                 bbox = ",".join(str(x) for x in box)
                 out.append(Request(FIRMS_URL.format(key=key, product="VIIRS_SNPP_SP", bbox=bbox,
                                                     days=10, day=bf_start.isoformat()),
@@ -3531,7 +3581,7 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 "surprise_z": None if z is None else round(z, 4)})
         out[name] = pts
     # FIRMS: a total across the declared footprints, per day, from the per-cluster counts.
-    if src.id == "cn_firms_industrial":
+    if src.id in FIRMS_SETS:
         out.update(_firms_total(src, out))
     return out
 
@@ -3545,7 +3595,7 @@ def _firms_total(src: Source, per: dict[str, list[dict[str, Any]]]) -> dict[str,
             e = days.setdefault(p["d"], {"n": 0, "v": 0.0, "p": p})
             e["n"] += 1
             e["v"] += float(p["value"])
-    ncl = len(FIRMS_CLUSTERS)
+    ncl = len(FIRMS_SETS.get(src.id, FIRMS_CLUSTERS))
     store = {f"total_count|{d}": {"series": "total_count", "period": d, "value_first": e["v"],
                                    "value_last": e["v"],
                                    "first_seen_at": e["p"]["first_seen_at"],
@@ -4100,7 +4150,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["merge"]["revised"] += m["revised"]
         if src.id.startswith("imf_portwatch") and not obs:
             break                                              # paging exhausted
-    if src.id == "cn_firms_industrial" and "firms_backfill_to_next" in sst and not errors:
+    if src.id in FIRMS_SETS and "firms_backfill_to_next" in sst and not errors:
         sst["firms_backfill_to"] = sst.pop("firms_backfill_to_next")
     for k in ("backfill_to_next", "full_done_next"):
         if k in sst:
@@ -4484,7 +4534,7 @@ def digest_section(report: dict[str, Any]) -> dict[str, Any]:
 
 
 def _cursor(s: Source) -> str:
-    if s.id == "cn_firms_industrial":
+    if s.id in FIRMS_SETS:
         return "firms_backfill_to (10 days/cluster/pass, archive product)"
     if s.id.startswith("imf_portwatch"):
         return "resultOffset paging; 800-day window"
