@@ -294,6 +294,39 @@ def score_certificate(cert: Mapping[str, Any], meta: Mapping[str, Any],
     return out
 
 
+def per_family(per: Mapping[str, Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
+    """The SATURATION SIGNAL, per family (principal 2026-10-13: "saturated mechanisms families we
+    have as certis dont get hunted"). A family is SATURATED when it already holds a certificate and
+    none of its measured certificates is novel: another cell of it re-buys a style the desk owns.
+    Breadth's enforcer reads this block; this organ only publishes it."""
+    fams: dict[str, dict[str, Any]] = {}
+    for e in per.values():
+        if not isinstance(e, dict) or not e.get("family"):
+            continue
+        f = fams.setdefault(str(e["family"]), {"n_certificates": 0, "n_measured": 0,
+                                               "n_novel": 0, "_nov": [], "_dom": {},
+                                               "mechanism_class": e.get("mechanism_class"),
+                                               "genealogy": e.get("genealogy")})
+        f["n_certificates"] += 1
+        if e.get("novelty") is not None:
+            f["n_measured"] += 1
+            f["_nov"].append(float(e["novelty"]))
+            f["n_novel"] += int(bool(e.get("novel")))
+            d = (e.get("return_projection") or {}).get("dominant_style")
+            if d:
+                f["_dom"][d] = f["_dom"].get(d, 0) + 1
+    out: dict[str, dict[str, Any]] = {}
+    for fam, f in sorted(fams.items()):
+        nov = f.pop("_nov")
+        dom = f.pop("_dom")
+        f["mean_novelty"] = round(sum(nov) / len(nov), 4) if nov else None
+        f["dominant_styles"] = dict(sorted(dom.items(), key=lambda kv: -kv[1]))
+        f["saturation"] = ("UNMEASURED" if not nov else
+                           "SATURATED" if f["n_novel"] == 0 else "OPEN")
+        out[fam] = f
+    return out
+
+
 def family_values(path: Path = REPORT) -> dict[str, float]:
     """Per family, its measured mean novelty, else its genealogy: the docket's tilt input.
 
@@ -372,6 +405,7 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
         "mean_novelty": (round(sum(float(e["novelty"]) for e in measured) / len(measured), 4)
                          if measured else None),
         "novel_certificates": novel,
+        "per_family": per_family(per),
         "consumer": ("merge_hypotheses.breadth_order: spend / (1 + family novelty); re-orders "
                      "the docket only, no bar, trial count or row changes"),
         "per_certificate": per,

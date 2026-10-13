@@ -128,3 +128,15 @@ def test_the_docket_fallback_judges_a_novel_family_first_at_equal_spend(monkeypa
     ordered = mh.breadth_order(rows, {"carry": 8, "zz_unclassified_style": 8})
     assert ordered[0]["family"] == "zz_unclassified_style"
     assert len(ordered) == len(rows)
+
+
+def test_a_family_with_certificates_and_nothing_novel_is_saturated() -> None:
+    per = {"a": {"family": "carry", "novelty": 0.03, "novel": False, "mechanism_class": "carry",
+                 "genealogy": 0.0, "return_projection": {"dominant_style": "passive_window"}},
+           "b": {"family": "pca_residual", "novelty": 0.7, "novel": True},
+           "c": {"family": "discovered", "novelty": None}}
+    fam = sn.per_family(per)
+    assert fam["carry"]["saturation"] == "SATURATED"
+    assert fam["carry"]["dominant_styles"] == {"passive_window": 1}
+    assert fam["pca_residual"]["saturation"] == "OPEN"
+    assert fam["discovered"]["saturation"] == "UNMEASURED"
