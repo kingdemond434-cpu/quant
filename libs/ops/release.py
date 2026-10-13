@@ -129,6 +129,8 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/decision_ledger.jsonl",
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
+    "desks/mt5/data/live_ledger_corrections.jsonl",
+    "desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",
     "desks/mt5/reports/attribution_chain.json",
     # The markout the same leg writes beside the chain (2026-09-30): the VPS's desk state reads
     # `matched_fills` from it, and without publication it read a 2026-09-08 stub forever.

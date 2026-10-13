@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-12T18:09:13.247438+00:00",
+  "privacy_tests_passed": 5,
+  "live_runtime_mutated": false,
+  "execution_fields_changed": false,
+  "public_snapshot_note_redactions": 1,
+  "permanent_writer": "Existing private-index state publisher sanitizes only honest_note prose in the published blob; live files are untouched.",
+  "order_identity": "Per-intent authenticated account/server stamps retained for reconciliation; explicit privacy debt recorded with migration plan.",
+  "account_snapshot_time": "2026-10-11T22:00:52+00:00",
+  "remaining_release_blocker": "Historical sealed 151-row ledger prefix requires preserved-history reconciliation.",
+  "deployed": false
+}

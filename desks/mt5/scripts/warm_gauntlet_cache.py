@@ -311,6 +311,10 @@ def _warm_one(spec: dict) -> tuple[str, str]:
     try:
         if ckey and (G.CACHE_DIR / f"{ckey}.npz").exists():
             return ckey, "hit"
+        from mt5desk.legacy_family_inputs import input_preflight
+        why = input_preflight(spec.get("family"), spec.get("params"))
+        if why:
+            return ckey, "failed|" + why
         tf = str(spec.get("tf") or "H1")
         frame = G._bars_for(spec["sym"], tf)
         if frame is None or len(frame) == 0:
@@ -494,6 +498,24 @@ def split_deferred(specs: list[dict], stamps: dict[str, str],
     return due + send, held, rows
 
 
+def capture_failed_spec(spec: dict, observed_at: float) -> dict:
+    """Freeze worker inputs at result collection; this is not source provenance."""
+    import hashlib
+
+    required = ("sym", "family", "tf", "params")
+    if not all(k in spec for k in required):
+        return {"source_spec_capture_error": "UNMEASURED: worker specification unavailable"}
+    identity = {k: spec[k] for k in (*required, "day") if k in spec}
+    try:
+        encoded = json.dumps(identity, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        return {"source_spec_capture_error": f"INVALID: {type(exc).__name__}: {exc}"}
+    return {"source_spec": json.loads(encoded),
+            "source_spec_sha256": hashlib.sha256(encoded.encode("utf-8")).hexdigest(),
+            "source_spec_observed_at": observed_at,
+            "source_spec_clock_basis": "build-result collection only; not publication or preregistration"}
+
+
 def publish_deferrals(rows: dict, held: list[dict], now: float, extra: dict) -> dict:
     """Write the deferral ledger and return its census, ages included."""
     from collections import Counter
@@ -506,6 +528,10 @@ def publish_deferrals(rows: dict, held: list[dict], now: float, extra: dict) -> 
         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
         "n_deferred": len(rows),
         "n_held_this_pass": len(held),
+        "n_with_frozen_spec": sum(isinstance(r, dict) and "source_spec" in r
+                                  for r in rows.values()),
+        "n_without_frozen_spec": sum(not isinstance(r, dict) or "source_spec" not in r
+                                     for r in rows.values()),
         "oldest_hours": round(ages[-1], 2) if ages else 0.0,
         "median_hours": round(ages[len(ages) // 2], 2) if ages else 0.0,
         "top_build_failures": dict(reasons.most_common(12)),
@@ -825,6 +851,7 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
                                 "bars": stamps.get(f"{sp.get('sym')}|{sp.get('tf')}", ""),
                                 "sym": sp.get("sym"), "family": sp.get("family"),
                                 "tf": sp.get("tf"), "why": reason or state,
+                                **capture_failed_spec(sp, time.time()),
                             }
                         if done_n % REPORT_EVERY == 0:
                             rate = done_n / max(1e-9, time.time() - t0) * 60.0

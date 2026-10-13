@@ -6,7 +6,7 @@
 
 - Measured at **2026-09-30T19:42:05+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `e01cbdb1f3f9` on `live-control-room`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **987** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **1000** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 1.39s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
@@ -14,7 +14,7 @@
 | **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 46 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
-| **NEVER** | 769 | no artifact and no run record on this host |
+| **NEVER** | 782 | no artifact and no run record on this host |
 | **UNMEASURED** | 37 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (769)
+## NEVER (782)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -621,7 +621,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:clock_ledger` | `hourly_cycle:clock_ledger` | UNMEASURED UNMEASURED | `desks/mt5/reports/FORWARD_CLOCK_LEDGER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:closed_loop` | `hourly_cycle:closed_loop` | UNMEASURED UNMEASURED | `desks/mt5/data/architecture/closed_loop_attestation.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:coevolution` | `hourly_cycle:coevolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_BANDIT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:committees` | `hourly_cycle:committees` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:committees` | `hourly_cycle:committees` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEE_IDEA_MINER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:compute_economics` | `hourly_cycle:compute_economics` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMPUTE_ECONOMICS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:constrained_book` | `hourly_cycle:constrained_book` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONSTRAINED_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:control_plane` | `hourly_cycle:control_plane` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -983,11 +983,24 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:desks/mt5/research/dormant_components.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/DORMANT_COMPONENTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:libs/ops/intelligence_inputs.py` | `import:scripts/run_intelligence_cycle.py` | UNMEASURED UNMEASURED | `web/intelligence_cycle.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/lessons.py` | `invoked:libs/ops/agent_denials.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/NIGHTLY_CATCHUP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:dataset_use_census` | `hourly_cycle:dataset_use_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/DATASET_USE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:recovery_drills` | `hourly_cycle:recovery_drills` | UNMEASURED UNMEASURED | `desks/mt5/reports/RECOVERY_DRILLS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:E8-Book` | `E8-Book` | UNMEASURED UNMEASURED | `desks/mt5/reports/E8_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:catalog_routes` | `hourly_cycle:catalog_routes` | UNMEASURED UNMEASURED | `desks/mt5/reports/CATALOG_ROUTES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:discovery_audit` | `hourly_cycle:discovery_audit` | UNMEASURED UNMEASURED | `desks/mt5/reports/DISCOVERY_AUDIT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:committee_ensembles` | `hourly_cycle:committee_ensembles` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:regional_parity` | `hourly_cycle:regional_parity` | UNMEASURED UNMEASURED | `desks/mt5/reports/REGIONAL_PARITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/fetch_universe.py` | `daily_cycle:weekly_hunt_refresh` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/run_hunt10.py` | `daily_cycle:weekly_hunt_refresh` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/run_hunt7.py` | `daily_cycle:weekly_hunt_refresh` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/run_hunt8.py` | `daily_cycle:weekly_hunt_refresh` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/run_hunt9.py` | `daily_cycle:weekly_hunt_refresh` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:scripts/migrate_live_ledger_view.py` | `invoked:desks/mt5/scripts/Adopt-And-Seal.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/LEDGER_VIEW_ADOPTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:alt_proxies` | `hourly_cycle:alt_proxies` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALT_PROXIES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:organ_battery` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/data/latent/latent_cn_industrial.vintages.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `battery:desks/mt5/research/limits_census.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `battery:scripts/run_desk_economics.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:attention_substitutes` | `hourly_cycle:attention_substitutes` | UNMEASURED UNMEASURED | `desks/mt5/reports/ATTENTION_SUBSTITUTES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:catalog_routes` | `hourly_cycle:catalog_routes` | UNMEASURED UNMEASURED | `desks/mt5/reports/CATALOG_ROUTES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:dataset_use_census` | `hourly_cycle:dataset_use_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/DATASET_USE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:discovery_audit` | `hourly_cycle:discovery_audit` | UNMEASURED UNMEASURED | `desks/mt5/reports/DISCOVERY_AUDIT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_attempts` | `hourly_cycle:forest_attempts` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_ATTEMPTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:domain_factories` | `hourly_cycle:domain_factories` | UNMEASURED UNMEASURED | `desks/mt5/reports/DOMAIN_FACTORIES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
