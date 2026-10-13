@@ -29,6 +29,22 @@ columns the item declares), first-discovery delay (hours from the item's entry t
 to the first row naming it), and downstream use (series named in `data/dataset_use` or registry
 consumers when either exists, else UNMEASURED -- an absent ledger is not a zero).
 
+THE SIX BUCKETS, NEVER ONE NUMBER (DATA-13, 2026-10-07). The same pass writes
+`reports/DISCOVERY_BUCKETS.json` (+ a committed digest) with six SEPARATE answers, because a
+single "coverage" figure lets a big catalogue hide a dead acquirer and a good benchmark hide an
+unread one:
+
+    known_catalog_coverage   share of each walked catalogue enumerated (catalog_routes cursors)
+    benchmark_recall         this audit's withheld-benchmark recall (or why it is UNMEASURED)
+    unexplored_regions       roster countries/regions with no discovery row, never-visited
+                             portals, and source_frontier's cold cells
+    access_blocked           rows/portals/URLs held by a key, the terms fence, robots or format
+    acquisition_backlog      discovered data endpoints the acquirer has never attempted
+    verified_consumption     datasets a consumer demonstrably READ inside the window
+
+plus ARRIVALS, COMPLETION and BACKLOG AGE per cohort -- discovery week, region, language and
+type -- so a cohort that arrives and never completes is visible by name.
+
 No network. Cheap: one read of the discoveries files and the registry per pass.
 
     python desks/mt5/research/discovery_audit.py
@@ -65,6 +81,18 @@ SALT_FILE = DESK / "data" / "secrets" / "discovery_audit_salt"
 SALT_ENV = "QUANT_DISCOVERY_SALT"
 SEALED_KEEP = ("type", "region", "country", "language", "columns", "benchmark_since")
 REPORT = DESK / "reports" / "DISCOVERY_AUDIT.json"
+BUCKETS_REPORT = DESK / "reports" / "DISCOVERY_BUCKETS.json"
+BUCKETS_DIGEST = DESK / "data" / "digests" / "discovery_buckets_digest.json"
+ROUTES_DIR = DESK / "data" / "catalog_routes"
+CATALOG_REPORT = DESK / "reports" / "CATALOG_ROUTES.json"
+FRONTIER_REPORT = DESK / "reports" / "SOURCE_FRONTIER.json"
+#: Acquirer statuses that COMPLETE a discovered endpoint (bytes fetched and parsed, or unchanged).
+COMPLETED = frozenset({"SUCCESS", "PARTIAL", "UNCHANGED", "NOT_MODIFIED"})
+#: Discovery-row access states that are BLOCKED rather than backlog: nothing the acquirer can
+#: fetch until a key, a parser or a terms clause changes.
+BLOCKED_ACCESS = frozenset({"NEEDS_KEY", "CATALOGUED_NOT_ACQUIRABLE", "UNPARSED_FORMAT",
+                            "NO_DATA_ENDPOINT"})
+BLOCKED_PORTAL = ("TERMS_UNVERIFIED", "BLOCKED_HOST", "NEEDS_KEY", "ROBOTS")
 WORLD = DESK / "data" / "intelligence" / "world"
 REGISTRY = DESK / "data" / "acquired" / "registry.json"
 DATASET_USE = DESK / "data" / "dataset_use"
@@ -189,7 +217,7 @@ def _pack_urls() -> list[str]:
     """Every URL the country packs declare -- the same collection `acquire_datasets` walks."""
     try:
         from libs.research import country_lab
-    except Exception:  # noqa: BLE001 - an unimportable lab is reported, not read as clean
+    except Exception:
         return []
     urls: list[str] = []
     for pack_py in sorted((DESK / "research" / "countries").glob("*/pack.py")):
@@ -198,7 +226,7 @@ def _pack_urls() -> list[str]:
             continue
         try:
             pack = country_lab.resolve_pack(code)
-        except Exception:  # noqa: BLE001, S112 - one unresolvable pack never hides the rest
+        except Exception:
             continue
         if pack is None:
             continue
@@ -213,7 +241,7 @@ def _pack_urls() -> list[str]:
 def _seed_endpoints() -> list[str]:
     try:
         from acquire_datasets import _SEED_ENDPOINTS
-    except Exception:  # noqa: BLE001
+    except Exception:
         return []
     return [str(u) for u in _SEED_ENDPOINTS]
 
@@ -334,6 +362,13 @@ def load_discoveries(world: Path) -> list[dict[str, Any]]:
                 "all_urls": {norm_url(u).lower() for u in eps + other},
                 "blob": "\n".join([str(r.get("dataset_id") or ""), *eps, *other]),
                 "observation_class": bool(r.get("observation_class")),
+                "cohort": {"region": str(r.get("region") or UNMEASURED),
+                           "language": str(r.get("lang") or r.get("language") or UNMEASURED),
+                           "type": str(r.get("producer_type") or r.get("kind")
+                                       or _row_route(r, f.name)),
+                           "country": str(r.get("country") or UNMEASURED)},
+                "access": str(r.get("access") or ""),
+                "mirror": bool(r.get("mirror_of")),
             })
     return out
 
@@ -344,7 +379,7 @@ def match(item: Mapping[str, Any], rows: Iterable[dict[str, Any]],
     if _sealed(item):
         out = []
         for r in rows:
-            urls, eps, ids = _row_hashes(r, salt)
+            urls, _eps, ids = _row_hashes(r, salt)
             by = ("url" if item.get("url_h") in urls else
                   "dataset_id" if item.get("id_h") in ids else None)
             if by:
@@ -513,18 +548,216 @@ def audit(benchmark: Mapping[str, Any], *, now: datetime, rows: list[dict[str, A
     }
 
 
+# ------------------------------------------------------------------------- the buckets ----
+def _age_h(at: str, now: datetime) -> float | None:
+    try:
+        t = datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    t = t if t.tzinfo else t.replace(tzinfo=UTC)
+    return round((now - t).total_seconds() / 3600.0, 1)
+
+
+def _pct(xs: list[float], q: float) -> float | None:
+    if not xs:
+        return None
+    ys = sorted(xs)
+    return ys[min(len(ys) - 1, int(q * (len(ys) - 1) + 0.5))]
+
+
+def buckets(rows: list[dict[str, Any]], registry: Mapping[str, Any] | None, audit_rep: Mapping[
+        str, Any], now: datetime, *, catalog_state: Mapping[str, Any] | None = None,
+            catalog_report: Mapping[str, Any] | None = None, roster: Mapping[str, Any] | None
+            = None, frontier: Mapping[str, Any] | None = None,
+            use_dir: Path | None = None) -> dict[str, Any]:
+    """DATA-13: the six buckets, each measured or UNMEASURED by name, and the cohort table."""
+    by_url = {norm_url(u).lower(): (m or {}) for u, m in
+              ((registry or {}).get("by_url") or {}).items()}
+    # 1. KNOWN CATALOG COVERAGE ------------------------------------------------------------
+    portals = dict((catalog_state or {}).get("portals") or {})
+    for pid, row in ((catalog_report or {}).get("portals") or {}).items():
+        portals.setdefault(pid, row)
+    cov_rows, enumerated, total = [], 0, 0
+    for pid, st in sorted(portals.items()):
+        if not isinstance(st, Mapping):
+            continue
+        t, rem = st.get("total"), st.get("remainder")
+        if isinstance(t, int) and isinstance(rem, int) and t > 0:
+            enumerated += max(t - rem, 0)
+            total += t
+            cov_rows.append({"portal": pid, "coverage": round(max(t - rem, 0) / t, 4),
+                             "total": t, "remainder": rem})
+        else:
+            cov_rows.append({"portal": pid, "coverage": UNMEASURED,
+                             "why": f"total={t!r} remainder={rem!r}"})
+    catalog_cov = ({"status": "MEASURED", "enumerated": enumerated, "declared_total": total,
+                    "share": round(enumerated / total, 4) if total else None,
+                    "portals_measured": sum(1 for r in cov_rows if r["coverage"] != UNMEASURED),
+                    "portals_unmeasured": sum(1 for r in cov_rows if r["coverage"] == UNMEASURED),
+                    "portals": cov_rows}
+                   if cov_rows else {"status": UNMEASURED,
+                                     "why": "no catalog_routes cursor state or report on this "
+                                            "host"})
+    # 2. BENCHMARK RECALL ---------------------------------------------------------------------
+    bench = ({"status": "MEASURED", "label": LABEL, "recall": audit_rep.get("recall"),
+              "full_benchmark_recall": audit_rep.get("full_benchmark_recall"),
+              "iso_week": audit_rep.get("iso_week"), "measured": audit_rep.get("measured")}
+             if audit_rep.get("verdict") == "OK" else
+             {"status": UNMEASURED if audit_rep.get("verdict") != "CONTAMINATED"
+              else "CONTAMINATED", "why": audit_rep.get("why") or audit_rep.get("verdict")})
+    # 3. UNEXPLORED REGIONS -------------------------------------------------------------------
+    seen_c = {r["cohort"]["country"] for r in rows if r.get("cohort")}
+    seen_r = {r["cohort"]["region"] for r in rows if r.get("cohort")}
+    rp = [p for p in ((roster or {}).get("portals") or []) if isinstance(p, Mapping)]
+    unexplored = {
+        "status": "MEASURED" if rp or frontier else UNMEASURED,
+        "roster_countries_without_a_row": sorted({str(p.get("country")) for p in rp}
+                                                 - seen_c),
+        "roster_regions_without_a_row": sorted({str(p.get("region")) for p in rp} - seen_r),
+        "portals_never_visited": sorted(str(p.get("id")) for p in rp
+                                        if not (portals.get(str(p.get("id"))) or {})
+                                        .get("last_visit_at")
+                                        and not (portals.get(str(p.get("id"))) or {})
+                                        .get("status")),
+        "frontier_cold_cells": (frontier or {}).get("n_cold_cells", UNMEASURED),
+        "frontier_unseen_by_language": (frontier or {}).get("unseen_by_language", UNMEASURED),
+    }
+    # 4. ACCESS BLOCKED -----------------------------------------------------------------------
+    blocked_rows: dict[str, int] = {}
+    for r in rows:
+        if r.get("access") in BLOCKED_ACCESS:
+            blocked_rows[r["access"]] = blocked_rows.get(r["access"], 0) + 1
+    blocked_portals = sorted((pid, str(st.get("status"))) for pid, st in portals.items()
+                             if isinstance(st, Mapping)
+                             and str(st.get("status") or "").startswith(BLOCKED_PORTAL))
+    keyed = [m for m in ((registry or {}).get("access") or {}).values() if isinstance(m, dict)]
+    refused: dict[str, int] = {}
+    for m in by_url.values():
+        if m.get("status") == "REFUSED":
+            why = str(m.get("refusal") or "refused").split(":")[0][:60]
+            refused[why] = refused.get(why, 0) + 1
+    access_blocked = {
+        "status": "MEASURED" if (rows or portals or registry) else UNMEASURED,
+        "discovery_rows_by_access": blocked_rows,
+        "portals": [{"portal": p, "status": s} for p, s in blocked_portals],
+        "acquirer_keyed": {k: sum(1 for m in keyed if str(m.get("state")).split(":")[0] == k)
+                           for k in sorted({str(m.get("state")).split(":")[0] for m in keyed})},
+        "acquirer_refused_by_reason": refused,
+    }
+    # 5. ACQUISITION BACKLOG + 6. cohorts ------------------------------------------------------
+    cohorts: dict[str, dict[str, dict[str, Any]]] = {k: {} for k in
+                                                     ("week", "region", "language", "type")}
+    backlog_ages: list[float] = []
+    n_backlog = n_done = n_refused = n_arrivals = 0
+    for r in rows:
+        if r.get("mirror") or not r.get("endpoints"):
+            continue
+        n_arrivals += 1
+        states = [str((by_url.get(u) or {}).get("status") or "") for u in r["endpoints"]]
+        done = any(s in COMPLETED for s in states)
+        tried = any(s for s in states)
+        age = _age_h(r.get("at") or "", now)
+        try:
+            week = iso_week(datetime.fromisoformat(str(r.get("at")).replace("Z", "+00:00")))
+        except ValueError:
+            week = UNMEASURED
+        coh = r.get("cohort") or {}
+        if done:
+            n_done += 1
+        elif tried:
+            n_refused += 1
+        else:
+            n_backlog += 1
+            if age is not None:
+                backlog_ages.append(age)
+        for axis, key in (("week", week), ("region", coh.get("region", UNMEASURED)),
+                          ("language", coh.get("language", UNMEASURED)),
+                          ("type", coh.get("type", UNMEASURED))):
+            c = cohorts[axis].setdefault(str(key), {"arrivals": 0, "completed": 0,
+                                                    "attempted_not_completed": 0, "backlog": 0,
+                                                    "_ages": []})
+            c["arrivals"] += 1
+            if done:
+                c["completed"] += 1
+            elif tried:
+                c["attempted_not_completed"] += 1
+            else:
+                c["backlog"] += 1
+                if age is not None:
+                    c["_ages"].append(age)
+    for table in cohorts.values():
+        for c in table.values():
+            ages = c.pop("_ages")
+            c["completion"] = round(c["completed"] / c["arrivals"], 4) if c["arrivals"] else None
+            c["backlog_age_h_median"] = _pct(ages, 0.5)
+            c["backlog_age_h_max"] = max(ages) if ages else None
+    backlog = ({"status": "MEASURED", "open_endpoint_rows": n_backlog,
+                "oldest_age_h": max(backlog_ages) if backlog_ages else None,
+                "median_age_h": _pct(backlog_ages, 0.5)}
+               if registry is not None else
+               {"status": UNMEASURED, "why": "the acquirer's registry is not on this host",
+                "open_endpoint_rows": UNMEASURED})
+    # 6. VERIFIED CONSUMPTION -----------------------------------------------------------------
+    try:
+        from libs.data import dataset_use as U
+        reads = U.census(use_dir, now=now)
+        fed = sorted(ds for ds, e in reads.items() if e.get("live_consumers", 0) > 0)
+        consumption = ({"status": "MEASURED", "datasets_read_in_window": len(fed),
+                        "datasets_ever_read": len(reads), "sample": fed[:20]}
+                       if reads else
+                       {"status": UNMEASURED, "why": "no consumer has recorded a read on this "
+                                                     "host (libs/data/dataset_use)"})
+    except Exception as exc:
+        consumption = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    return {
+        "generated_at": now.isoformat(timespec="seconds"),
+        "row": "DATA-13: six separate buckets; arrivals, completion and backlog age by cohort",
+        "known_catalog_coverage": catalog_cov,
+        "benchmark_recall": bench,
+        "unexplored_regions": unexplored,
+        "access_blocked": access_blocked,
+        "acquisition_backlog": backlog,
+        "verified_consumption": consumption,
+        "flow": {"arrivals": n_arrivals, "completed": n_done,
+                 "attempted_not_completed": n_refused, "backlog": n_backlog,
+                 "basis": ("a discovery row with at least one data endpoint; completed when "
+                           "the acquirer fetched any of its endpoints")},
+        "cohorts": cohorts,
+    }
+
+
 def run() -> dict[str, Any]:
     now = datetime.now(UTC)
     bench = _read_json(BENCHMARK, {})
     reg = _read_json(REGISTRY, None)
     sources, missing = seed_sources()
-    rep = audit(bench if isinstance(bench, dict) else {}, now=now, rows=load_discoveries(WORLD),
+    rows = load_discoveries(WORLD)
+    rep = audit(bench if isinstance(bench, dict) else {}, now=now, rows=rows,
                 registry=reg if isinstance(reg, dict) else None, sources=sources,
                 missing_sources=missing, use_dir=DATASET_USE, salt=load_salt())
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     tmp = REPORT.with_name(REPORT.name + ".tmp")
     tmp.write_text(json.dumps(rep, indent=1, default=str), encoding="utf-8")
     tmp.replace(REPORT)
+    try:
+        bk = buckets(rows, reg if isinstance(reg, dict) else None, rep, now,
+                     catalog_state=_read_json(ROUTES_DIR / "state.json", None),
+                     catalog_report=_read_json(CATALOG_REPORT, None),
+                     roster=_read_json(ROUTES_DIR / "roster.json", None),
+                     frontier=_read_json(FRONTIER_REPORT, None), use_dir=DATASET_USE)
+        for path, doc in ((BUCKETS_REPORT, bk),
+                          (BUCKETS_DIGEST, {k: v for k, v in bk.items() if k != "cohorts"}
+                           | {"cohorts_by_week": bk["cohorts"]["week"],
+                              "report": "desks/mt5/reports/DISCOVERY_BUCKETS.json"})):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_name(path.name + ".tmp")
+            tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+            tmp.replace(path)
+        rep["buckets"] = {k: (bk[k] or {}).get("status") for k in (
+            "known_catalog_coverage", "benchmark_recall", "unexplored_regions",
+            "access_blocked", "acquisition_backlog", "verified_consumption")}
+    except Exception as exc:
+        rep["buckets"] = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
     rep["stages_measured"] = int(rep.get("measured") or 0)
     return rep
 
@@ -550,6 +783,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"   CONTAMINATED {h['id']} by {h['by']} in {h['in']}")
     for m in r.get("missed") or []:
         print(f"   missed {m['id']} ({m['type']}, {m['region']})")
+    print(f"discovery buckets: {r.get('buckets')} -> {BUCKETS_REPORT}")
     return 0 if r["verdict"] != "CONTAMINATED" else 1
 
 

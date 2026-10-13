@@ -321,6 +321,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # Portable -- it reads the code -- and a ratchet: today's offenders are the committed floor
     # (docs/research/known_by_date_floor.json), only a NEW one fails, healed ones drop out.
     ("check_known_by_date.py", ()),
+    # FETCHED CONTENT IS EVIDENCE, NEVER AN INSTRUCTION (DATA-15, 2026-10-07). A static taint
+    # check over every network-touching discovery/fetch organ: fetched bytes reaching eval/exec/
+    # subprocess/importlib/pickle, a write whose destination root the bytes computed, or ANY write
+    # by such an organ onto secrets, permissions, hooks, schedules, governing documents or the
+    # live roster. Portable -- it reads the code -- and it has no allowlist.
+    ("check_untrusted_content.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -343,6 +349,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # this fails on the direction, never on the size, so it can never be an argument for
     # collecting less. State, because it reads the drain ledger the box writes.
     ("check_source_drain.py", ()),
+    # RESEARCH-ONLY DATA NEVER SILENTLY BECOMES A PRODUCTION INPUT (DATA-38, 2026-10-07). Every
+    # LIVE/STANDBY sleeve's conditioner lineage resolved to its DatasetContract: a dataset with no
+    # `live_signal` permission, a shut legality gate, no PIT authority or no contract at all fails
+    # this by name. State, because it reads the live roster, the survivors and the contract store.
+    ("check_research_only_data.py", ("--require-state",)),
     # NOTHING IS PARKED (principal 2026-09-23, "nothing should be queued in the research system,
     # all immediate tested"). Fails when any queue's oldest row is older than ONE CYCLE of the
     # organ that owns it, when a queue has open rows and no drainer at all, or when rows carry no

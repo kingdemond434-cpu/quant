@@ -129,18 +129,25 @@ def specification(card: dict[str, Any]) -> str:
     desk has already paid for repeatedly, so the contract names its consumer before any code is
     written rather than after.
     """
+    from libs.research.untrusted import fenced_line
     cap = str(card.get("capability") or "")
     known = ontology.BY_NAME.get(cap)
     mechanism = str(card.get("mechanism") or card.get("claim") or "")
     falsifier = str(card.get("falsifier") or "")
+    # THE CARD IS FETCHED TEXT (a firm's page, a paper, a forum claim) and this contract is the
+    # body of an LLM seat prompt: every card field is fenced -- neutralised, single-line, quoted
+    # and bounded -- so a card cannot pose as the desk's own instruction (auditor MUST on #292).
     return "\n".join([
-        f"CAPABILITY   {cap} ({known.level if known else 'unknown level'})",
+        f"CAPABILITY   {fenced_line(cap, limit=120)} "
+        f"({known.level if known else 'unknown level'})",
         f"WE HAVE      {known.owner or 'NOTHING -- no module on this tree owns it'}"
         if known else "WE HAVE      unknown",
-        f"MECHANISM    {mechanism}",
-        f"FALSIFIER    {falsifier or 'NOT RECORDED -- refuse to build without one'}",
-        f"PROVENANCE   {card.get('firm', '?')} / {card.get('source', '?')} "
-        f"(grade {card.get('grade', '?')})",
+        f"MECHANISM    {fenced_line(mechanism, limit=1200)}",
+        f"FALSIFIER    "
+        f"{fenced_line(falsifier, limit=600) if falsifier else 'NOT RECORDED -- refuse to build without one'}",
+        f"PROVENANCE   {fenced_line(card.get('firm', '?'), limit=120)} / "
+        f"{fenced_line(card.get('source', '?'), limit=300)} "
+        f"(grade {fenced_line(card.get('grade', '?'), limit=20)})",
         "AUTHORITY    ZERO -- challenger only; the ten gates and a forward clock decide",
         "WIRED MEANS  producer -> storage -> consumer -> decision path -> telemetry",
         "RENT         net dE[log W] after complexity rent, or it is removed",
