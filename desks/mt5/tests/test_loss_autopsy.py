@@ -57,7 +57,7 @@ def test_the_audchf_loss_is_an_oversize_defect_until_its_fix_is_named() -> None:
 
 def test_a_clean_minus_one_r_inside_the_envelope_is_natural() -> None:
     small = {**AUDCHF, "pl_quote": -40.0, "r_multiple": -1.0, "commission": -0.8}
-    row = _build([small], balance=1000.0 - 40.0)["rows"][0]
+    row = _build([small], balance=400.0 - 40.0)["rows"][0]      # 10% of 400, the book's size
     assert row["verdict"] == la.NATURAL and not row["defects"]
 
 
@@ -128,7 +128,7 @@ def test_a_winner_sized_timidly_is_suboptimal_and_queued() -> None:
     assert row["outcome"] == "win" and row["verdict"] == la.SUBOPTIMAL
     assert [f["finding"] for f in row["suboptimal"]] == ["undersize"]
     full = {**win, "pl_quote": 100.0}
-    assert _build([full], balance=1000.0, e8=[])["rows"][0]["verdict"] == la.NATURAL
+    assert _build([full], balance=1100.0, e8=[])["rows"][0]["verdict"] == la.NATURAL
 
 
 def test_slow_sends_late_fills_and_wide_spreads_are_suboptimal() -> None:
