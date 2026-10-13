@@ -119,15 +119,18 @@ BLOCKED_ON_TERMS = frozenset({"MYFXBOOK_EMAIL", "MYFXBOOK_PASSWORD", "MYFXBOOK_S
 #: API credentials (bearer token, client id/secret) are carried like any key. What stays refused
 #: on those platforms is login-bypass material -- a session cookie or account password -- because
 #: using it is the refused METHOD, not the source.
-REFUSED_PREFIXES: tuple[str, ...] = ("STOCKTWITS_", "DISCORD_")
-OFFICIAL_API_PREFIXES: tuple[str, ...] = ("X_", "TWITTER_", "REDDIT_")
-LOGIN_MATERIAL = ("COOKIE", "PASSWORD", "SESSION", "USERNAME")
+#: The same holds for StockTwits and Discord: an API or bot token is official access; a user
+#: token, cookie or password is login material and stays refused.
+REFUSED_PREFIXES: tuple[str, ...] = ()
+OFFICIAL_API_PREFIXES: tuple[str, ...] = ("X_", "TWITTER_", "REDDIT_", "STOCKTWITS_",
+                                          "DISCORD_")
+LOGIN_MATERIAL = ("COOKIE", "PASSWORD", "SESSION", "USERNAME", "USER_TOKEN")
 PAID_BLOCKED = frozenset({"TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "CLOUDFLARE_API_TOKEN",
                           "GFW_API_TOKEN", "XUEQIU_COOKIE", "WIND_KEY"})
 
 
 def _hard_refused(up: str) -> bool:
-    return (up in BLOCKED_ON_TERMS or up in PAID_BLOCKED or up.startswith(REFUSED_PREFIXES)
+    return (up in BLOCKED_ON_TERMS or up in PAID_BLOCKED or (bool(REFUSED_PREFIXES) and up.startswith(REFUSED_PREFIXES))
             or (up.startswith(OFFICIAL_API_PREFIXES) and any(m in up for m in LOGIN_MATERIAL)))
 
 
