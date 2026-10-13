@@ -120,7 +120,8 @@ def _ts(v: Any) -> datetime | None:
     if t is pd.NaT:
         return None
     t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
-    return t.to_pydatetime()
+    out: datetime = t.to_pydatetime()
+    return out
 
 
 def load_trades(shadow_dir: Path = SHADOW_DIR) -> list[Trade]:
@@ -141,7 +142,7 @@ def load_trades(shadow_dir: Path = SHADOW_DIR) -> list[Trade]:
                 continue
             e, x = _ts(row.get("entry_time")), _ts(row.get("exit_time"))
             try:
-                r = float(row.get("r_multiple"))
+                r = float(row.get("r_multiple"))  # type: ignore[arg-type]
                 side = int(row.get("side") or 0)
             except (TypeError, ValueError):
                 continue
