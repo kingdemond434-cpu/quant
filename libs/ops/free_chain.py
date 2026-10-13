@@ -489,6 +489,11 @@ def status() -> dict[str, Any]:
     usable = [r for r in rows if r["usable"] and r["tier"] != "local"]
     return {"providers": rows, "cloud_usable": len(usable),
             "terms_closed": [r["name"] for r in rows if r["terms"] != "confirmed"],
+            # OPTIONAL BY DESIGN (principal 2026-10-13: no more keys are coming). A rung with no
+            # key is skipped and listed here; it is a state of the box, never a failure, and the
+            # lab runs on OpenRouter's :free models plus the local rung without any of them.
+            "skipped_no_key": [r["name"] for r in rows
+                               if r["key_present"] is False and r["terms"] == "confirmed"],
             "local_models_that_fit": local_fit(),
             "verdict": "RAN" if usable else UNMEASURED,
             "why": ("" if usable else "no free cloud key in env; local servers are probed on call")}

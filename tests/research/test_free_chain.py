@@ -183,3 +183,12 @@ def test_the_rotation_spreads_load_and_keeps_local_last() -> None:
 def test_local_fit_is_measured_on_this_machine() -> None:
     doc = fc.local_fit()
     assert doc.get("verdict") == fc.UNMEASURED or {"total_gb", "fit"} <= set(doc)
+
+
+def test_with_only_openrouter_the_rest_are_skipped_not_failed(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
+    doc = fc.status()
+    assert doc["verdict"] == "RAN" and doc["cloud_usable"] == 1
+    assert "openrouter_free" not in doc["skipped_no_key"]
+    assert {"groq", "cerebras", "huggingface", "gemini"} <= set(doc["skipped_no_key"])
