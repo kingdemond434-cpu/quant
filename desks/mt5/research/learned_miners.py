@@ -242,7 +242,7 @@ def make_candidate(model: str, row: dict[str, Any], *, panel: Sequence[str],
     mech = spec["mechanism"].format(sym=sym, hops=cfg.get("layers"), adj=cfg.get("adjacency"),
                                     lookback=cfg.get("lookback"), heads=cfg.get("heads"),
                                     kernels=cfg.get("kernels"), latent=cfg.get("latent"),
-                                    hidden=cfg.get("hidden"))
+                                    hidden=cfg.get("hidden"), depth=cfg.get("depth"))
     title = (f"{sym}.{spec['family']} {_config_key(model, cfg)} z>={row['entry_z']} "
              f"hold={FIXED['hold_bars']}")
     # The miner's own walk-forward IC stays in its REPORT and off the row: `libs.tiers.blinding`
@@ -689,6 +689,9 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
         score(_config_key("gnn", cfg), "gnn", cfg)
     for cfg in LP.ATTENTION_GRID:
         score(_config_key("attention", cfg), "attention", cfg)
+    for m in ("rocket", "autoencoder", "signature"):
+        for cfg in MINERS[m]["grid"]:
+            score(_config_key(m, cfg), m, cfg)
     shuf = _shuffled(panel)
     sdes = LP.design(shuf)
     control = LP.evaluate(LP.predictions(sdes, "gnn", LP.GNN_GRID[0]), shuf, sdes)
@@ -722,6 +725,10 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
     gnn_b = block("gnn", LP.GNN_GRID, "ridge_own_lags")
     att_b = block("attention", LP.ATTENTION_GRID,
                   f"ridge_lags_L{int(LP.ATTENTION_GRID[0]['lookback'])}")
+    # ROCKET, the autoencoder and the signature readouts all regress on the node's own features
+    # plus their transform, so their baseline is ridge on those own features alone.
+    extra_b = {m: block(m, MINERS[m]["grid"], "ridge_own_lags")
+               for m in ("rocket", "autoencoder", "signature")}
 
     def verdict(b: dict[str, Any]) -> str:
         p = b["primary"]
@@ -740,6 +747,8 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
 
     gnn_b["verdict"] = verdict(gnn_b)
     att_b["verdict"] = verdict(att_b)
+    for b in extra_b.values():
+        b["verdict"] = verdict(b)
     doc = {
         "generated_at": datetime.now(tz=UTC).isoformat(),
         "data": {"bars": "desks/mt5/universe/*_H1.parquet (in git)", "resample": "broker-date "
@@ -758,7 +767,7 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
             "no_tuning": "every constant and both grids were fixed before the first run; every "
                          "configuration is reported and charged",
         },
-        "miners": {"gnn": gnn_b, "attention": att_b},
+        "miners": {"gnn": gnn_b, "attention": att_b, **extra_b},
         "falsification_control": {
             "what": "gnn primary on a panel with each instrument's returns permuted in time",
             **{k: control.get(k) for k in ("ic_mean", "ic_t", "rank_ic_t", "hit_rate",
@@ -768,6 +777,8 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
         "fit_seconds": timings,
         "trials_charged": {"gnn_configs": len(LP.GNN_GRID),
                            "attention_configs": len(LP.ATTENTION_GRID),
+                           **{f"{m}_configs": len(MINERS[m]["grid"])
+                              for m in ("rocket", "autoencoder", "signature")},
                            "baselines_not_charged": ["zero", "naive_last", "ridge_own_lags"] +
                            [k for k in results if k.startswith("ridge_lags")],
                            "cell_level": ("the miner charges configs x symbols x "
@@ -796,6 +807,21 @@ def main() -> int:
     ap.add_argument("--no-axes", action="store_true",
                     help="do not publish the forecast axes or the allocation-intel artifact")
     a = ap.parse_args()
+    with _one_native_thread():
+        return _main(a)
+
+
+def _one_native_thread() -> Any:
+    """BLAS/OpenMP capped at one thread: the miner runs beside the gateway and the judge, and a
+    ridge or einsum that grabs every core starves them. A no-op where threadpoolctl is absent."""
+    try:
+        from threadpoolctl import threadpool_limits
+    except ImportError:
+        return contextlib.nullcontext()
+    return threadpool_limits(limits=1)
+
+
+def _main(a: argparse.Namespace) -> int:
     if a.contract:
         doc = measure_contract()
         print(f"LEARNED MINERS CONTRACT  {doc['data']['n_symbols']} symbols, "

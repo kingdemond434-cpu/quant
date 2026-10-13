@@ -112,3 +112,36 @@ def test_sig_path_is_registered_charged_and_refuses_bare_proposals() -> None:
     assert FO.ORTHOGONAL_FAMILIES["sig_path"](pd.DataFrame(), symbol="", peer_symbols=[]) == []
     assert FO.ORTHOGONAL_FAMILIES["sig_path"](pd.DataFrame(), symbol="", peer_symbols=[],
                                               depth=5) == []
+
+
+@pytest.mark.parametrize("model", ["gnn", "attention", "rocket", "autoencoder", "signature"])
+def test_every_miner_builds_a_candidate_from_every_config(model: str) -> None:
+    """The mechanism template names config keys; a key make_candidate does not pass is a
+    KeyError outside any try that aborts the whole daily pass (audit 2026-10-13, #354 MF1)."""
+    import learned_miners as LM
+    assert set(LM.MINERS) == {"gnn", "attention", "rocket", "autoencoder", "signature"}
+    for cfg in LM.MINERS[model]["grid"]:
+        row = {"symbol": "EURUSD", "config": dict(cfg), "entry_z": 1.0, "n_independent": 120,
+               "gross_per_trade": 0.0004, "net_per_trade": 0.0002, "cost_frac": 0.0002,
+               "t_gross": 3.1, "t_deflated_sweep": 0.5, "n_tests_sweep": 192}
+        c = LM.make_candidate(model, row, panel=list(LM.PANEL), tests_run=192, n_effective=2.4)
+        assert "None" not in c["mechanism"], c["mechanism"]
+        assert c["family"] == LM.MINERS[model]["family"]
+
+
+def test_the_contract_measures_every_learned_model(tmp_path: Path, monkeypatch) -> None:
+    import learned_miners as LM
+    rng = np.random.default_rng(2)
+    idx = pd.date_range("2020-01-01", periods=900 * 24, freq="h", tz="UTC")
+    bars = {s: pd.DataFrame({"open": c, "high": c * 1.001, "low": c * 0.999, "close": c,
+                             "spread": 10.0}, index=idx)
+            for s in LM.PANEL[:6]
+            for c in [100 * np.exp(np.cumsum(rng.normal(0, 0.001, len(idx))))]}
+    monkeypatch.setattr(LM, "load_bars", lambda panel, base: bars)
+    monkeypatch.setattr(LM, "_git_meta", lambda: {})
+    monkeypatch.setattr(LM, "_cell_screen", lambda b, m, d: {})
+    doc = LM.measure_contract(out_path=tmp_path / "c.json")
+    for m in ("gnn", "attention", "rocket", "autoencoder", "signature"):
+        assert m in doc["miners"], m
+        assert doc["miners"][m]["verdict"].startswith(("GAIN", "NO_GAIN")), doc["miners"][m]
+        assert doc["trials_charged"].get(f"{m}_configs", 1) >= 1

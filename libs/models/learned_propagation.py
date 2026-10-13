@@ -91,8 +91,6 @@ ROCKET_GRID: tuple[dict[str, Any], ...] = (
 )
 ROCKET_KLEN = 9
 ROCKET_SEED = 13
-#: Deep autoencoder over the whole panel's own features on a date: tanh encoder -> linear latent
-#: code -> linear decoder, trained on the walk-forward training window only.
 #: Rough-path signatures (Lyons; Chevyrev-Kormilitzin 2016) of each node's recent path in
 #: (own cumulative z, panel-mean cumulative z, time): the iterated integrals are a fixed,
 #: data-free transform that encodes order and area (who moved first, by how much); only the
@@ -103,6 +101,8 @@ SIG_GRID: tuple[dict[str, Any], ...] = (
     {"depth": 2, "lookback": 20},
     {"depth": 3, "lookback": 20},
 )
+#: Deep autoencoder over the whole panel's own features on a date: tanh encoder -> linear latent
+#: code -> linear decoder, trained on the walk-forward training window only.
 AE_GRID: tuple[dict[str, Any], ...] = (
     {"latent": 3, "hidden": 16},
     {"latent": 6, "hidden": 16},
