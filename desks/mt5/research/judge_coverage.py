@@ -86,6 +86,7 @@ import argparse
 import contextlib
 import json
 import math
+import re
 import sys
 import time
 from collections import Counter
@@ -1644,6 +1645,23 @@ def failure_class(raw: Any) -> str | None:
     return FAILURE_CLASS.get(str(raw or ""))
 
 
+_BOX_ROOTS = re.compile(r"(?i)(?:[a-z]:[\\/]opt[\\/]quant[\\/]|/home/quant/quant-platform/)")
+
+
+def _strip_box_paths(text: str) -> str:
+    """JUDGE_COVERAGE.json is tracked, so a box path inside exception text would reach origin;
+    the repo-relative remainder names the file just as well."""
+    return _BOX_ROOTS.sub("", text)
+
+
+def _count(raw: Any) -> int:
+    """A count from the box's report; a malformed one reads 0 rather than killing the leg."""
+    try:
+        return max(0, int(raw or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
 def prewarm_failures(doc: Any) -> dict[str, Any]:
     """What the sealed judge's pre-warm pool failed on, by kind and by named reason.
 
@@ -1656,12 +1674,16 @@ def prewarm_failures(doc: Any) -> dict[str, Any]:
     if not isinstance(pw, dict):
         return {"status": "UNMEASURED", "why": "the last sweep's report carries no pre-warm block"}
     reasons = pw.get("failure_reasons") if isinstance(pw.get("failure_reasons"), dict) else {}
-    top = sorted(((str(r), int(n or 0)) for r, n in reasons.items()), key=lambda kv: -kv[1])
+    merged: dict[str, int] = {}
+    for r, n in reasons.items():
+        key = _strip_box_paths(str(r))
+        merged[key] = merged.get(key, 0) + _count(n)
+    top = sorted(merged.items(), key=lambda kv: -kv[1])
     fails = pw.get("failures") if isinstance(pw.get("failures"), dict) else {}
     return {"status": "MEASURED", "submitted": pw.get("submitted"), "warmed": pw.get("warmed"),
             "hit": pw.get("hit"), "failed": pw.get("failed"), "unreached": pw.get("unreached"),
             "workers": pw.get("workers"), "seconds": pw.get("seconds"),
-            "failures": {str(k): int(v or 0) for k, v in sorted(fails.items())},
+            "failures": {str(k): _count(v) for k, v in sorted(fails.items())},
             "top_reasons": [{"why": r[:300], "n": n} for r, n in top[:12]],
             "distinct_reasons": len(top)}
 
@@ -1704,12 +1726,17 @@ def judging_failures(path: Path | None = None,
             for v in verdicts:
                 if isinstance(v, dict):
                     st = str(v.get("downstream_status") or "")
+                    # A build-PREFLIGHT block (`_modifier_blocked`) is ruled before the pool and
+                    # never reaches it, so it explains none of the pool's own failures.
+                    if str(v.get("why") or "").startswith("NOT_RUN_BUILD_FAILED: BLOCKED_"):
+                        continue
                     in_rows[st] = in_rows.get(st, 0) + 1
             # The sealed loop turns a pool BUILD_FAILED whose reason names a modifier into
             # a NOT_RUN_MODIFIER row, so MODIFIER rows the pool's own MODIFIER count does not
             # explain are BUILD_FAILED cells already booked once; never book them twice.
             spare_mod = max(0, in_rows.get("NOT_RUN_MODIFIER", 0)
-                            - int(fails.get("NOT_RUN_MODIFIER") or 0))
+                            - _count(fails.get("NOT_RUN_MODIFIER")))
+            excess = 0
             for k, n in fails.items():
                 # A NOT_RUN_* kind the verdict rows already carry is booked once. But a cell the
                 # POOL failed is deferred by the main loop once the pool has spent the build
@@ -1717,7 +1744,7 @@ def judging_failures(path: Path | None = None,
                 # measured 2026-10-13, 55.6% of pre-warm builds failed while the rows named 0
                 # NOT_RUN data/build cells. The excess over the rows is booked here, or it
                 # vanishes from every count while it fails again at the head of every sweep.
-                n_i = int(n or 0)
+                n_i = _count(n)
                 if str(k).startswith(NOT_JUDGED_PREFIX):
                     seen = in_rows.get(str(k), 0)
                     if str(k) == "NOT_RUN_BUILD_FAILED":
@@ -1725,11 +1752,21 @@ def judging_failures(path: Path | None = None,
                     n_i = max(0, n_i - seen)
                 if n_i:
                     _book(str(k), sweep, n_i)
+                    excess += n_i
+            # ONE CELL, ONE CLASS: a cell booked above from the pool reached the rows as
+            # BUDGET_DEFERRED (the pool had spent the budget), so it leaves that class here and
+            # last_sweep stays additive -- each cell counted once, under the door that failed it.
+            deferred = failure_class("NOT_RUN_BUILD_BUDGET_DEFERRED")
+            if deferred and excess and deferred in sweep:
+                sweep[deferred] -= min(excess, sweep[deferred])
+                if not sweep[deferred]:
+                    del sweep[deferred]
         out["last_sweep"] = dict(sorted(sweep.items()))
         out["prewarm"] = prewarm_failures(doc)
         out["last_sweep_status"] = "MEASURED"
     else:
         out["last_sweep"] = None
+        out["prewarm"] = prewarm_failures(doc)
         out["last_sweep_status"] = "UNMEASURED"
         out["last_sweep_why"] = "the sealed judge has written no verdicts here"
     parked: dict[str, int] = {}

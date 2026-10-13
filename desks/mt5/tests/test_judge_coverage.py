@@ -573,8 +573,9 @@ def test_judging_failures_counts_per_class_and_names_the_unrouted(tmp_path: Path
     f = jc.judging_failures(rep, bank=bank)
     assert f["last_sweep_status"] == "MEASURED"
     # 2 data-missing cells in the rows; the pool failed 9, so the 7 the rows never named are
-    # booked too (a pool failure reaches the rows as BUDGET_DEFERRED, not as its own kind).
-    assert f["last_sweep"] == {"budget_deferred": 1, "fail_3x": 4, "no_bars": 9}
+    # booked too (a pool failure reaches the rows as BUDGET_DEFERRED, not as its own kind), and
+    # the one deferred row is one of those pool cells, so it leaves budget_deferred: additive.
+    assert f["last_sweep"] == {"fail_3x": 4, "no_bars": 9}
     assert f["unrouted"] == {"NOT_RUN_SOMETHING_NEW": 1} and f["verdict"] == "UNROUTED"
     assert f["parked"] == {"build_fail": 1, "no_bars": 1, "untestable_as_specified": 1}
     assert f["parked_to_converter"] == 3 and f["terminal_classes"] == []
@@ -629,3 +630,26 @@ def test_a_pool_build_failure_ruled_as_a_modifier_is_booked_once(tmp_path: Path)
         "prewarm": {"failures": {"NOT_RUN_BUILD_FAILED": 3}}}), "utf-8")
     f = jc.judging_failures(rep, bank={})
     assert f["last_sweep"] == {"build_fail": 2, "modifier_refused": 1}
+
+
+def test_preflight_blocks_never_hide_pool_failures_and_each_cell_has_one_class(
+        tmp_path: Path) -> None:
+    """Audit of #369: a build-PREFLIGHT block never reaches the pool, so it must not cancel a
+    pool failure (10 pool + 8 preflight = 18, not 10); and a pool cell the loop then deferred
+    is counted once, under build_fail, never also under budget_deferred."""
+    pre = [{"cell": f"p{i}", "downstream_status": "NOT_RUN_BUILD_FAILED",
+            "why": "NOT_RUN_BUILD_FAILED: BLOCKED_MODIFIER x"} for i in range(8)]
+    dfr = [{"cell": f"d{i}", "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED"}
+           for i in range(12)]
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": pre + dfr, "prewarm": {
+        "failures": {"NOT_RUN_BUILD_FAILED": 10, "FAIL_3X": "bad"},
+        "failure_reasons": {"BLOCKED_x at C:\\opt\\quant\\desks\\mt5\\a.py": 6,
+                            "BLOCKED_x at desks\\mt5\\a.py": 4}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"] == {"budget_deferred": 2, "build_fail": 18}
+    assert f["prewarm"]["failures"]["FAIL_3X"] == 0
+    assert f["prewarm"]["top_reasons"] == [{"why": "BLOCKED_x at desks\\mt5\\a.py", "n": 10}]
+    empty = tmp_path / "empty.json"
+    empty.write_text(json.dumps({"prewarm": {"failures": {}}}), "utf-8")
+    assert jc.judging_failures(empty, bank={})["prewarm"]["status"] == "MEASURED"
