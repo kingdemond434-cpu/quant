@@ -579,6 +579,7 @@ LEG_LAYER: dict[str, str] = {
     "unknown_census": "meta",
     "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
+    "queue_consumers": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
     # machine is doing what desired state says, and it predicts, sizes and times nothing.
     "control_plane": "meta",

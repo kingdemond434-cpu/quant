@@ -564,7 +564,10 @@ def _loop_reorder(found: list[tuple[str, str]], feats: list[dict[str, str]],
         if str(DESK / "research") not in sys.path:
             sys.path.insert(0, str(DESK / "research"))
         import discovery_loop as DL
-        priors = DL.load_priors()
+        priors, stale = DL.current_priors()
+        if stale:
+            _LOOP_PRIOR.update({"applied": False, "why": stale})
+            return found, dict(_LOOP_PRIOR)
         rows = [DL.features_of(f["host"], country=f["country"], language=f["language"],
                                producer_type=f["producer_type"], text=f["text"]) for f in feats]
         out, info = DL.order_by_prior(found, rows, priors, ages=ages)

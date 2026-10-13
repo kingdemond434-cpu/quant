@@ -183,9 +183,58 @@ def test_the_acquirer_orders_its_discovered_share_by_the_prior(world, tmp_path, 
     monkeypatch.setattr(AD, "_SEED_ENDPOINTS", [])
     monkeypatch.setattr(AD.country_lab, "resolve_pack", lambda code: None)
     monkeypatch.setattr(DL, "PRIORS", world["state"] / "priors.json")
+    _stamp_prior(world, datetime.now(UTC))                 # this hour's prior
     out = [u for u, _ in AD._endpoints(40)]
     assert out == ["https://useful.example.de/new.csv", "https://other.example.fr/d0.csv"]
     assert AD._LOOP_PRIOR["applied"] and AD._LOOP_PRIOR["items"] == 2
+
+    # AN EXPIRED PRIOR REORDERS NOTHING (auditor SHOULD on #289): same endpoints, file order
+    _stamp_prior(world, datetime.now(UTC) - timedelta(hours=DL.PRIOR_MAX_AGE_H + 1))
+    stale = [u for u, _ in AD._endpoints(40)]
+    assert stale == ["https://other.example.fr/d0.csv", "https://useful.example.de/new.csv"]
+    assert AD._LOOP_PRIOR["applied"] is False and "expired" in AD._LOOP_PRIOR["why"]
+
+
+def _stamp_prior(world: dict[str, Path], at: datetime) -> None:
+    p = world["state"] / "priors.json"
+    doc = json.loads(p.read_text("utf-8"))
+    doc["generated_at"] = at.isoformat()
+    p.write_text(json.dumps(doc), "utf-8")
+
+
+def test_a_prior_past_its_age_bound_is_expired(world):
+    _run(world)
+    p = world["state"] / "priors.json"
+    fresh, why = DL.current_priors(p, now=NOW + timedelta(hours=1))
+    assert fresh and why == ""
+    gone, why = DL.current_priors(p, now=NOW + timedelta(hours=DL.PRIOR_MAX_AGE_H + 1))
+    assert gone == {} and "expired" in why
+    doc = json.loads(p.read_text("utf-8"))
+    doc.pop("generated_at")
+    p.write_text(json.dumps(doc), "utf-8")
+    assert DL.current_priors(p, now=NOW)[0] == {}           # undated = expired, never trusted
+
+
+def test_useful_credit_needs_an_exact_series_token_never_a_substring(tmp_path):
+    """A series named `rate` must not be credited with a cell that merely contains `..._rate_...`
+    or `ext_rate_diff`; it IS credited by an exact cell token or a structured field."""
+    ver = tmp_path / "v.jsonl"
+    rows = [{"at": "2026-10-01T00:00:00+00:00", "cell": "macro|EURUSD|ext_rate_diff|z2",
+             "passed": True},
+            {"at": "2026-10-01T00:00:00+00:00", "cell": "EURUSD.policy_rate_gap.p=ab12",
+             "passed": True},
+            {"at": "2026-10-01T00:00:00+00:00", "cell": "c_recipe", "recipe": "uses rate",
+             "passed": True}]
+    ver.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    got, src = DL.judged_cells({"rate": "h.example.org"}, ver)
+    assert got == {} and src["status"] == "READ"
+    rows += [{"at": "2026-10-02T00:00:00+00:00", "cell": "macro|EURUSD|ext_rate|z2",
+              "passed": True},
+             {"at": "2026-10-02T00:00:00+00:00", "cell": "x.y.z", "series": "rate",
+              "passed": False}]
+    ver.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    got, _ = DL.judged_cells({"rate": "h.example.org"}, ver)
+    assert got["h.example.org"]["cells"] == {"macro|EURUSD|ext_rate|z2": True, "x.y.z": False}
 
 
 def test_catalog_routes_credits_staleness_by_the_prior_within_a_bound(world, monkeypatch):

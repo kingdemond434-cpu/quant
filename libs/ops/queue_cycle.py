@@ -41,8 +41,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -269,6 +271,267 @@ def _lanes(root: Path, queue: TaskQueue) -> dict[str, Any]:
 
 #: The worker name the lanes producer claims under (the hourly cycle's own).
 QUEUE_WORKER = "hourly_cycle"
+
+
+# ---------------------------------------------------------------------- strategy-lane consumers
+# THE TWO STRATEGY KINDS THE LANES QUEUE, AND THE WORK EACH ONE NAMES (auditor HOLD, PR #289).
+# `_lanes` queues `invalidate` (one per lineage dependent of a new data version) and the
+# `acquire_class` -> `screen_class` link queues a class screen when a mission is met. Until these
+# consumers existed nothing claimed either kind, so every row sat READY forever: a queue nothing
+# drains is a list of regrets. The hourly leg `queue_consumers` calls `consume()` beside the
+# `recertify` claim; `scripts/check_no_queues.py` fails when READY rows of any kind age past
+# its bound, so a consumer that stops is a red fence, not a quiet backlog.
+
+INVALIDATE_KIND = "invalidate"
+SCREEN_KIND = "screen_class"
+CONSUMED_KINDS = (INVALIDATE_KIND, SCREEN_KIND)
+#: Tasks one pass may consume. Each is a few file reads; the bound only stops a pathological
+#: journal from holding the hourly cycle, and the leftover is the next pass's first work.
+CONSUME_MAX = 500
+#: Every invalidation this consumer performed, append-only, so "what was dropped and why" is a
+#: record rather than an absence in genomes.json.
+INVALIDATIONS_REL = "desks/mt5/data/feature_genome/invalidations.jsonl"
+#: Per-class screen outcomes (latest per class).
+CLASS_SCREEN_REL = "desks/mt5/reports/CLASS_SCREEN.json"
+#: A class whose series are acquired but not yet research-eligible is re-screened a day later,
+#: at most this many times; after that the screen completes as NOT_ELIGIBLE with the reasons.
+SCREEN_REARM_MAX = 7
+SCREEN_REARM_H = 24
+
+
+def _rel(root: Path, rel: str) -> Path:
+    return root / Path(*rel.split("/"))
+
+
+def _atomic_json(path: Path, doc: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    os.replace(tmp, path)
+
+
+def _end_lease_in_lineage_db(root: Path, artifact_id: str, at: str) -> bool:
+    """End the control-plane lease of `artifact_id`: its latest lineage row's `valid_until` is
+    set to now, so `lease.valid` / `check_no_staleness` read it STALE until its producer writes
+    a new run. False when the store does not hold the artifact."""
+    db = root / "desks" / "mt5" / "data" / "lineage.sqlite"
+    if not db.exists():
+        return False
+    import sqlite3
+    try:
+        conn = sqlite3.connect(str(db), timeout=10)
+        try:
+            row = conn.execute(
+                "SELECT rowid FROM lineage_artifacts WHERE artifact_id = ? "
+                "ORDER BY created_at DESC, rowid DESC LIMIT 1", (artifact_id,)).fetchone()
+            if row is None:
+                return False
+            conn.execute("UPDATE lineage_artifacts SET valid_until = ? WHERE rowid = ?",
+                         (at, row[0]))
+            conn.commit()
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return False
+    return True
+
+
+def invalidate_artifact(root: Path, artifact_id: str, *, because: str = "", version: str = "",
+                        now: datetime | None = None) -> dict[str, Any]:
+    """Invalidate ONE artifact a new data version made stale. Returns what was invalidated where.
+
+    * `feature:<id>` -- the feature genome's record is dropped from `feature_genome/genomes.json`
+      (the compiler re-types it from the new version on its next pass) and, when the feature is a
+      minted representation, its manifest row and stored file are dropped so the forge re-mints
+      it from the new inputs (`propose` skips ids already in the manifest).
+    * anything else -- its lease in the control-plane lineage store ends now.
+
+    An artifact no store on this host holds is NOT_HELD: there was nothing stale to drop.
+    """
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    aid = str(artifact_id)
+    where: list[str] = []
+    if aid.startswith("feature:"):
+        fid = aid.split(":", 1)[1]
+        store = root / "desks" / "mt5" / "data" / "feature_genome"
+        gp = store / "genomes.json"
+        try:
+            gdoc = json.loads(gp.read_text("utf-8"))
+        except (OSError, ValueError):
+            gdoc = None
+        genomes = gdoc.get("genomes") if isinstance(gdoc, dict) else None
+        if isinstance(genomes, dict) and fid in genomes:
+            genomes.pop(fid)
+            gdoc["n"] = len(genomes)
+            _atomic_json(gp, gdoc)
+            where.append("feature_genome")
+        rstore = root / "desks" / "mt5" / "data" / "representations"
+        mp = rstore / "manifest.json"
+        try:
+            mdoc = json.loads(mp.read_text("utf-8"))
+        except (OSError, ValueError):
+            mdoc = None
+        rows = mdoc.get("representations") if isinstance(mdoc, dict) else None
+        if isinstance(rows, list):
+            hit = [r for r in rows if isinstance(r, dict) and str(r.get("id")) == fid]
+            if hit:
+                mdoc["representations"] = [r for r in rows if r not in hit]
+                mdoc["n"] = len(mdoc["representations"])
+                _atomic_json(mp, mdoc)
+                for r in hit:
+                    name = str(r.get("file") or "")
+                    if name and "/" not in name and "\\" not in name and name not in (".", ".."):
+                        (rstore / name).unlink(missing_ok=True)
+                where.append("representation_store")
+    if _end_lease_in_lineage_db(root, aid, at):
+        where.append("lineage_lease")
+    rec = {"at": at, "artifact_id": aid, "because": str(because), "version": str(version),
+           "invalidated_in": where, "outcome": "INVALIDATED" if where else "NOT_HELD"}
+    if where:
+        lp = _rel(root, INVALIDATIONS_REL)
+        lp.parent.mkdir(parents=True, exist_ok=True)
+        with lp.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec, sort_keys=True) + "\n")
+    return rec
+
+
+def _norm_host(h: str) -> str:
+    s = str(h or "").strip().lower()
+    s = s.split("://", 1)[-1].split("/", 1)[0].split(":", 1)[0]
+    return s[4:] if s.startswith("www.") else s
+
+
+def screen_class(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    """Screen a met class through the acquired-data screen. PURE over the registry.
+
+    The class's series are the registry series acquired from the source that met it (`produced
+    .source`) plus any whose name matches the class's own `terms`. Each is put through the gate
+    `acquire_datasets.acquired_series` applies before a series enters the `ext_<name>`
+    vocabulary -- PIT authority and at least `MIN_ROWS` rows -- because that vocabulary is what
+    the anomaly miner scans and `family_discovered` executes every hour. A series that passes is
+    SCREENED into that search; one that does not is named with its reason. This writes no trial
+    charge: the scans that evaluate cells charge their own.
+    """
+    from desks.mt5.research.acquire_datasets import MIN_ROWS
+    reg_p = root / "desks" / "mt5" / "data" / "acquired" / "registry.json"
+    try:
+        reg = json.loads(reg_p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"outcome": "UNMEASURED", "why": f"acquired registry unreadable at {reg_p.name}",
+                "series": []}
+    raw = payload.get("produced")
+    produced: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    host = _norm_host(str(produced.get("source") or ""))
+    try:
+        rx = re.compile(str(payload.get("terms") or ""), re.IGNORECASE) \
+            if payload.get("terms") else None
+    except re.error:
+        rx = None
+    rows: list[dict[str, Any]] = []
+    for name, meta in sorted((reg.get("series") or {}).items()):
+        if not isinstance(meta, dict):
+            continue
+        by_host = bool(host) and _norm_host(str(meta.get("host") or "")) == host
+        by_terms = rx is not None and bool(rx.search(str(name)))
+        if not (by_host or by_terms):
+            continue
+        why = []
+        if meta.get("pit_authority") is not True:
+            why.append("no PIT authority")
+        try:
+            n = int(meta.get("rows") or 0)
+        except (TypeError, ValueError):
+            n = 0
+        if n < MIN_ROWS:
+            why.append(f"{n} rows < {MIN_ROWS}")
+        rows.append({"series": str(name), "matched_by": "host" if by_host else "terms",
+                     "eligible": not why, "why": "; ".join(why)})
+    eligible = [r["series"] for r in rows if r["eligible"]]
+    if eligible:
+        outcome = "SCREENED"
+    elif rows:
+        outcome = "NOT_YET_ELIGIBLE"
+    else:
+        outcome = "UNRESOLVED"
+    return {"outcome": outcome, "class": payload.get("key"), "source": host or None,
+            "series": rows, "vocabulary": [f"ext_{s}" for s in eligible],
+            "screens": ["anomaly_miner", "family_discovered"] if eligible else []}
+
+
+def _record_class_screen(root: Path, key: str, res: dict[str, Any], at: str) -> None:
+    p = _rel(root, CLASS_SCREEN_REL)
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    classes = doc.get("classes") if isinstance(doc, dict) else None
+    classes = classes if isinstance(classes, dict) else {}
+    classes[str(key)] = {**res, "at": at}
+    _atomic_json(p, {"at": at, "n": len(classes), "classes": classes,
+                     "rule": ("a met class's series pass the acquired-data vocabulary gate (PIT "
+                              "authority, MIN_ROWS) into the ext_ search the anomaly miner and "
+                              "family_discovered run hourly; no trial charge is written here")})
+
+
+def consume(root: Path | None = None, *, queue: TaskQueue | None = None,
+            max_tasks: int = CONSUME_MAX, now: datetime | None = None) -> dict[str, Any]:
+    """Claim and do every ready `invalidate` and `screen_class` task (up to `max_tasks`).
+
+    Each task is completed with its outcome or failed with its reason; a failure returns it to
+    READY until its attempts run out, then the org sweep escalates it.
+    """
+    root = Path(root or _ROOT)
+    q = queue if queue is not None else TaskQueue(queue_path(root))
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    done: dict[str, int] = dict.fromkeys(CONSUMED_KINDS, 0)
+    failed: list[dict[str, str]] = []
+    outcomes: dict[str, int] = {}
+    rearmed = 0
+    n = 0
+    while n < max_tasks:
+        task = q.claim(QUEUE_WORKER, kinds=CONSUMED_KINDS)
+        if task is None:
+            break
+        n += 1
+        p = dict(task.payload or {})
+        try:
+            if task.kind == INVALIDATE_KIND:
+                if not p.get("artifact_id"):
+                    raise ValueError("invalidate task names no artifact_id")
+                res = invalidate_artifact(root, str(p["artifact_id"]),
+                                          because=str(p.get("because") or ""),
+                                          version=str(p.get("version") or ""), now=now)
+            else:
+                res = screen_class(root, p)
+                if res["outcome"] == "UNMEASURED":
+                    raise RuntimeError(res["why"])
+                _record_class_screen(root, str(p.get("key") or task.id), res, at)
+                rearm = int(p.get("rearm") or 0)
+                if res["outcome"] == "NOT_YET_ELIGIBLE" and rearm < SCREEN_REARM_MAX:
+                    again = q.submit(
+                        SCREEN_KIND, lane=task.lane or "strategy",
+                        payload={**p, "rearm": rearm + 1},
+                        priority=float(task.priority),
+                        dedupe_key=f"{SCREEN_KIND}|{p.get('key')}|rearm{rearm + 1}",
+                        not_before=(now or datetime.now(tz=UTC))
+                        + timedelta(hours=SCREEN_REARM_H), parent=task.id)
+                    rearmed += int(again is not None)
+            outcome = str(res.get("outcome"))
+            q.complete(task.id, QUEUE_WORKER, why=outcome,
+                       produced={k: res.get(k) for k in ("outcome", "invalidated_in",
+                                                         "vocabulary") if k in res})
+            done[task.kind] = done.get(task.kind, 0) + 1
+            outcomes[f"{task.kind}:{outcome}"] = outcomes.get(f"{task.kind}:{outcome}", 0) + 1
+        except Exception as exc:  # one bad task never stops the drain
+            why = f"{type(exc).__name__}: {exc}"[:200]
+            q.fail(task.id, QUEUE_WORKER, why=why)
+            failed.append({"id": task.id, "kind": task.kind, "why": why})
+    left = sum(1 for t in q.tasks().values()
+               if t.kind in CONSUMED_KINDS and t.state == "READY" and t.is_ready(
+                   now or datetime.now(tz=UTC)))
+    return {"at": at, "claimed": n, "completed": done, "outcomes": outcomes,
+            "failed": failed, "rearmed": rearmed, "ready_left": left,
+            "status": "STOOD_DOWN" if n == 0 else "CONSUMED"}
 
 
 _IMPL = {"wiring_campaign": _wiring_campaign, "coverage_governor": _coverage_governor,

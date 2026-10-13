@@ -389,6 +389,21 @@ def acquisition_view(registry: Mapping[str, Any] | None,
 
 
 # ----------------------------------------------------------------------------------- uses ----
+_CELL_DELIMS = re.compile(r"[|:,=\s]+")
+
+
+def verdict_series_tokens(row: Mapping[str, Any]) -> set[str]:
+    """The exact series tokens a gauntlet verdict row names: each token of its cell id split on
+    the id's structural delimiters (`|`, `:`, `,`, `=`, whitespace), plus its structured
+    `series` / `series_key` / `inputs` fields taken whole. Never a substring of a token."""
+    toks = {t for t in _CELL_DELIMS.split(str(row.get("cell") or "")) if t}
+    for k in ("series", "series_key", "inputs"):
+        v = row.get(k)
+        vals = v if isinstance(v, (list, tuple)) else ([v] if v else [])
+        toks.update(str(x).strip() for x in vals if str(x).strip())
+    return toks
+
+
 def judged_cells(series_to_host: Mapping[str, str], verdicts: Path = VERDICTS
                  ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """host -> {cells: {cell: passed}, gates: Counter, first_at} from the gauntlet's own ledger.
@@ -402,14 +417,22 @@ def judged_cells(series_to_host: Mapping[str, str], verdicts: Path = VERDICTS
         return out, {**src, "status": "NO_SERIES_TO_MATCH"}
     if not verdicts.exists():
         return out, {**src, "status": UNMEASURED, "why": "gate verdict ledger absent on this host"}
-    names = sorted(series_to_host, key=len, reverse=True)
-    rx = re.compile(r"(?<![A-Za-z0-9])(?:ext_)?(" + "|".join(map(re.escape, names))
-                    + r")(?![A-Za-z0-9])")
+    # EXACT TOKENS, NEVER A SUBSTRING (auditor SHOULD on #289). The first build matched a series
+    # name anywhere in the row's text, so a series called `gdp` was credited with every cell whose
+    # id merely contained `..._gdp_...` -- a USEFUL verdict for a source that fed nothing. A cell
+    # now belongs to a series only when one of its delimited id tokens IS the series (or
+    # `ext_<series>` / `ext_<series>_z`, the primitive names `build_primitives` gives it), or a
+    # structured `series` / `series_key` / `inputs` field names it exactly.
+    by_token: dict[str, str] = {}
+    for name in series_to_host:
+        for tok in (name, f"ext_{name}", f"ext_{name}_z"):
+            by_token.setdefault(tok, name)
+    rx = re.compile("|".join(re.escape(t) for t in sorted(by_token, key=len, reverse=True)))
     rows = 0
     try:
         with verdicts.open("r", encoding="utf-8", errors="replace") as fh:
             for line in fh:
-                if not rx.search(line):
+                if not rx.search(line):        # a cheap prefilter only; the match is below
                     continue
                 try:
                     r = json.loads(line)
@@ -417,9 +440,8 @@ def judged_cells(series_to_host: Mapping[str, str], verdicts: Path = VERDICTS
                     continue
                 if not isinstance(r, dict) or not r.get("cell"):
                     continue
-                blob = " ".join(str(r.get(k) or "") for k in
-                                ("cell", "series", "series_key", "inputs", "data", "recipe"))
-                hosts = {series_to_host[m.group(1)] for m in rx.finditer(blob)}
+                hosts = {series_to_host[by_token[t]] for t in verdict_series_tokens(r)
+                         if t in by_token}
                 cell = str(r["cell"])
                 for h in hosts:
                     rows += 1
@@ -684,6 +706,28 @@ def build_priors(recs: Mapping[str, Mapping[str, Any]], *, now: datetime,
 def load_priors(path: Path | None = None) -> dict[str, Any]:
     doc = _read_json(path or PRIORS, {})
     return doc if isinstance(doc, dict) else {}
+
+
+#: A prior older than this is EXPIRED and changes no order (auditor SHOULD on #289). The loop
+#: rewrites it every hour, so three days old means the leg has stopped; a reorder built on the
+#: outcomes of a desk that has moved on is advice nobody is still giving.
+PRIOR_MAX_AGE_H = 72.0
+
+
+def current_priors(path: Path | None = None, *, now: datetime | None = None,
+                   max_age_h: float = PRIOR_MAX_AGE_H) -> tuple[dict[str, Any], str]:
+    """(priors, "") while the prior is inside its age bound; ({}, why) when it is absent,
+    undated or expired. An empty prior is the old order: nothing is reordered on stale advice."""
+    doc = load_priors(path)
+    if not doc:
+        return {}, "no prior on this host"
+    at = _when(doc.get("generated_at"))
+    if at is None:
+        return {}, "prior carries no readable generated_at; treated as expired"
+    age_h = ((now or datetime.now(UTC)) - at).total_seconds() / 3600.0
+    if age_h > max_age_h:
+        return {}, f"prior expired: {age_h:.1f} h old against a {max_age_h:g} h bound"
+    return doc, ""
 
 
 def features_of(host: str = "", *, country: str = "", language: str = "",

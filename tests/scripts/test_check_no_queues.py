@@ -182,3 +182,48 @@ def test_the_census_organ_has_a_clock_and_a_layer() -> None:
     cycle = (_REPO / "desks" / "mt5" / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '_costed("queue_census"' in cycle
     assert '"queue_census": qcn' in cycle
+
+
+# ------------------------------------------------- the desk task queue (auditor HOLD on #289)
+
+def _task_queue(root: Path, rows: list[dict[str, Any]]) -> None:
+    from libs.ops.task_queue import TaskQueue
+    q = TaskQueue(root / "desks" / "mt5" / "data" / "task_queue.jsonl")
+    for r in rows:
+        t = q.submit(r["kind"], payload={}, lane=r.get("lane", ""),
+                     not_before=r.get("not_before"))
+        assert t is not None
+        if r.get("created_at"):
+            t.created_at = r["created_at"]
+            q._append(t.to_dict())
+
+
+def test_ready_task_queue_rows_past_the_bound_fail_the_fence(tmp_path: Path) -> None:
+    """`invalidate` / `screen_class` rows once piled up READY with no consumer and the fence was
+    green, because task_queue.jsonl was not watched. A READY row of ANY kind past the bound now
+    breaches."""
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    old = (datetime.now(tz=UTC) - timedelta(hours=fence.TASK_QUEUE_MAX_READY_AGE_H + 2)
+           ).isoformat(timespec="seconds")
+    _task_queue(root, [{"kind": "invalidate", "lane": "strategy", "created_at": old},
+                       {"kind": "screen_class", "lane": "strategy"}])
+    rep = build_report(root)
+    assert rep["status"] == "QUEUED"
+    ids = {b["id"] for b in rep["breaches"]}
+    assert ids == {"task_queue:invalidate"}                  # the fresh row is carry, not a park
+    assert rep["task_queue"]["ready"] == 2
+
+
+def test_a_task_not_yet_released_is_not_aged(tmp_path: Path) -> None:
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    later = datetime.now(tz=UTC) + timedelta(hours=20)
+    old = (datetime.now(tz=UTC) - timedelta(days=3)).isoformat(timespec="seconds")
+    _task_queue(root, [{"kind": "screen_class", "not_before": later, "created_at": old}])
+    rep = build_report(root)
+    assert rep["status"] == "CLEAN" and rep["task_queue"]["ready"] == 0
+
+
+def test_an_absent_task_queue_holds_no_rows(tmp_path: Path) -> None:
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    rep = build_report(root)
+    assert rep["status"] == "CLEAN" and rep["task_queue"]["state"] == "ABSENT"

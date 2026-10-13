@@ -1526,7 +1526,7 @@ def _loop_priors() -> dict[str, Any]:
     """The discovery loop's measured priors (research/discovery_loop.py); {} when unreadable."""
     try:
         import discovery_loop as DL
-        return DL.load_priors()
+        return DL.current_priors()[0]          # {} once the prior has expired
     except Exception:  # noqa: BLE001 - advice only; the pass runs stalest-first without it
         return {}
 
