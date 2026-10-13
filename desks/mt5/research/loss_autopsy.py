@@ -32,8 +32,8 @@ OWNERSHIP ledger and builds. A fix is recorded in data/loss_defects_resolved.jso
 defect with the commit that fixed it; resolution is never inferred from silence.
 
 UNMEASURED IS A VERDICT (L1.28a): a check whose input is absent says so and is never read as
-clean. E8 has no closed-trade ledger on this side (e8_intents.jsonl records sends only), so its
-losses are UNMEASURED and that gap is itself a standing fix row.
+clean. E8's losses come from data/e8_ledger.jsonl (prop/e8_close_ledger.py, written on every E8
+pass); until that file exists on the box the E8 half is UNMEASURED and that is a standing fix row.
 
 Artifact: desks/mt5/reports/LOSS_AUTOPSY.json. Exit 1 while any DEFECT is unresolved.
 """
@@ -59,7 +59,7 @@ from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path  # noq
 
 LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 INTENTS = BASE / "data" / "order_intents.jsonl"
-E8_INTENTS = BASE / "data" / "e8_intents.jsonl"
+E8_LEDGER = BASE / "data" / "e8_ledger.jsonl"
 SLEEVES = BASE / "data" / "sleeves.json"
 CERT_BOOK = BASE / "data" / "CERT_BOOK_LIVE.json"
 ACCOUNT = BASE / "data" / "account_state.json"
@@ -299,10 +299,56 @@ def edge_decay(sleeve: str, history: list[dict[str, Any]], cert_exp: float | Non
     return None
 
 
+def e8_autopsy(ledger: list[dict[str, Any]] | None, *, cert: Mapping[str, Any],
+               since: datetime, res_map: Mapping[str, Any]
+               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """The E8 half: every losing close in data/e8_ledger.jsonl. Every row there is one of this
+    desk's own sends (the ledger writes nothing else), so `untraced` cannot arise; the sizing,
+    stop and quote checks can."""
+    if ledger is None:
+        return [], {"status": UNMEASURED,
+                    "why": ("data/e8_ledger.jsonl absent: no E8 pass has recorded what came "
+                            "back from the venue, so an E8 loss cannot be autopsied")}
+    book = (cert.get("e8") or {}) if cert.get("enabled") is True else {}
+    rows: list[dict[str, Any]] = []
+    for d in ledger:
+        t, r = _ts(d.get("time")), _f(d.get("r_multiple"))
+        if t is None or t < since or r is None or r >= LOSS_R:
+            continue
+        sleeve = str(d.get("sleeve") or "")
+        found: list[dict[str, Any]] = []
+        frac = _f(d.get("risk_frac"))
+        funded = next((float(v) for k, v in book.items() if isinstance(v, (int, float))
+                       and (k == sleeve or k.lower().startswith(
+                           f"{str(d.get('symbol') or '').lower()}_"))), None)
+        if frac is not None and funded and frac > funded * ALLOC_TOL:
+            found.append({"defect": "over_allocation",
+                          "why": f"charged {frac:.2%} against the E8 book's {funded:.2%}"})
+        if r < EXIT_R:
+            found.append({"defect": "exit_beyond_stop",
+                          "why": f"{r:.2f}R: the stop did not hold"})
+        lat = _f(d.get("latency_send_to_ack_ms"))
+        if lat is not None and lat > STALE_MS:
+            found.append({"defect": "stale_quote", "why": f"{lat:.0f} ms send to ack"})
+        deal = f"e8:{d.get('position_id')}"
+        res = res_map.get(deal) or {}
+        for f in found:
+            f["resolved_by"] = res.get(f["defect"]) if isinstance(res, dict) else None
+        open_ = t >= FIX_SINCE and any(not f.get("resolved_by") for f in found)
+        rows.append({"venue": "e8", "deal": deal, "position_id": d.get("position_id"),
+                     "time": d.get("time"), "sleeve": sleeve, "symbol": d.get("symbol"),
+                     "r": r, "pl": _f(d.get("pl_usd_est")),
+                     "verdict": DEFECT if found else NATURAL, "open": open_,
+                     "historical": t < FIX_SINCE, "defects": found, "edge_decay": None,
+                     "unmeasured": ["oversize", "entry_slippage", "clock"],
+                     "intent_id": None})
+    return rows, {"status": "MEASURED", "closes": len(ledger), "losses": len(rows)}
+
+
 def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = None,
           intents: list[dict[str, Any]] | None = None, sleeves_doc: Any = None,
           cert: Any = None, account: Any = None, drift: Any = None,
-          resolved: Any = None, e8_intents: list[dict[str, Any]] | None = None
+          resolved: Any = None, e8_ledger: list[dict[str, Any]] | None = None
           ) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     deals = [d for d in (deals if deals is not None else _jsonl(LEDGER))
@@ -313,7 +359,8 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
     account = account if account is not None else (_json(ACCOUNT) or {})
     drift = drift if drift is not None else _json(DRIFT)
     resolved = resolved if resolved is not None else (_json(RESOLVED) or {})
-    e8_intents = e8_intents if e8_intents is not None else _jsonl(E8_INTENTS)
+    if e8_ledger is None:
+        e8_ledger = _jsonl(E8_LEDGER) if E8_LEDGER.exists() else None
     cap = max_risk_frac()
     names = roster_names(sleeves_doc)
     exp = {str(s.get("name")): _f(s.get("shadow_exp"))
@@ -370,14 +417,17 @@ def build(now: datetime | None = None, *, deals: list[dict[str, Any]] | None = N
                  "deal": r["deal"], "sleeve": r["sleeve"], "symbol": r["symbol"],
                  "defect": f["defect"], "why": f["why"], "pl": r["pl"], "time": r["time"]}
                 for r in rows if r["open"] for f in r["defects"] if not f.get("resolved_by")]
-    e8_closes = [i for i in e8_intents if i.get("closed_positions")]
-    e8 = {"status": UNMEASURED,
-          "why": ("no E8 closed-trade ledger: e8_intents.jsonl records sends and closes by id, "
-                  "never fills, P&L or R, so an E8 loss cannot be autopsied here"),
-          "intents_with_closes": len(e8_closes)}
-    fix_rows.append({"fix_id": "loss:e8:no_close_ledger", "venue": "e8", "deal": None,
-                     "sleeve": None, "symbol": None, "defect": "untraced",
-                     "why": e8["why"], "pl": None, "time": None})
+    e8_rows, e8 = e8_autopsy(e8_ledger, cert=cert, since=since, res_map=res_map)
+    rows += e8_rows
+    fix_rows += [{"fix_id": f"loss:e8:{r['deal']}:{f['defect']}", "venue": "e8",
+                  "deal": r["deal"], "sleeve": r["sleeve"], "symbol": r["symbol"],
+                  "defect": f["defect"], "why": f["why"], "pl": r["pl"], "time": r["time"]}
+                 for r in e8_rows if r["open"] for f in r["defects"]
+                 if not f.get("resolved_by")]
+    if e8["status"] == UNMEASURED:
+        fix_rows.append({"fix_id": "loss:e8:no_close_ledger", "venue": "e8", "deal": None,
+                         "sleeve": None, "symbol": None, "defect": "untraced",
+                         "why": e8["why"], "pl": None, "time": None})
     counts = defaultdict(int)
     for r in rows:
         counts[r["verdict"]] += 1

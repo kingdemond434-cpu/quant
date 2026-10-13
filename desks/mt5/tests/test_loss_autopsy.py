@@ -18,6 +18,9 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK.parent.parent)):
 
 import loss_autopsy as la  # noqa: E402
 
+#: The box publishes data/e8_ledger.jsonl; these tests decide E8's state themselves.
+la.E8_LEDGER = DESK / "tests" / "__no_e8_ledger__.jsonl"
+
 NOW = datetime(2026, 10, 13, 16, 0, tzinfo=UTC)
 NAME = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
 AUDCHF = {"time": "2026-10-13T03:07:30+00:00", "sleeve": NAME[:27], "symbol": "AUDCHF",
@@ -33,10 +36,10 @@ CERT = {"enabled": True, "fusion": {"AUDCHF_overnight_gap_decay_asia": 0.1}}
 SLEEVES = {"sleeves": [{"name": NAME, "status": "LIVE", "shadow_exp": 0.2}]}
 
 
-def _build(deals, intents=(INTENT,), resolved=None, balance=484.83):
+def _build(deals, intents=(INTENT,), resolved=None, balance=484.83, e8=None):
     return la.build(NOW, deals=list(deals), intents=list(intents), sleeves_doc=SLEEVES,
                     cert=CERT, account={"balance": balance}, drift={},
-                    resolved=resolved or {}, e8_intents=[])
+                    resolved=resolved or {}, e8_ledger=e8)
 
 
 def test_the_audchf_loss_is_an_oversize_defect_until_its_fix_is_named() -> None:
@@ -50,6 +53,7 @@ def test_the_audchf_loss_is_an_oversize_defect_until_its_fix_is_named() -> None:
     after = _build([AUDCHF], resolved=fixed, balance=561.26 - 74.58)
     assert not after["rows"][0]["open"]
     assert [f["fix_id"] for f in after["fix_queue"]] == ["loss:e8:no_close_ledger"]
+    assert _build([AUDCHF], resolved=fixed, balance=561.26 - 74.58, e8=[])["fix_queue"] == []
 
 
 def test_a_clean_minus_one_r_inside_the_envelope_is_natural() -> None:
@@ -102,3 +106,18 @@ def test_the_fix_queue_is_appended_once_per_fix(tmp_path: Path) -> None:
     assert first == len(doc["fix_queue"]) and la.publish(doc, out, queue) == 0
     assert json.loads(out.read_text())["verdict"] == "FAIL"
     assert len(queue.read_text().splitlines()) == first
+
+
+def test_e8_losses_are_autopsied_from_the_close_ledger_and_its_absence_is_a_fix_row() -> None:
+    gold = {"time": "2026-10-13T08:00:00+00:00", "venue": "e8", "position_id": 77,
+            "sleeve": "gold_asia", "symbol": "XAUUSD", "r_multiple": -1.0, "risk_frac": 0.01,
+            "pl_usd_est": -1000.0, "latency_send_to_ack_ms": 120.0}
+    cert = {"enabled": True, "e8": {"gold_asia": 0.01}}
+    doc = la.build(NOW, deals=[], intents=[], sleeves_doc=SLEEVES, cert=cert, account={},
+                   drift={}, resolved={}, e8_ledger=[gold])
+    assert doc["e8"]["status"] == "MEASURED" and doc["rows"][0]["verdict"] == la.NATURAL
+    assert doc["fix_queue"] == []
+    big = {**gold, "position_id": 78, "risk_frac": 0.02}
+    doc = la.build(NOW, deals=[], intents=[], sleeves_doc=SLEEVES, cert=cert, account={},
+                   drift={}, resolved={}, e8_ledger=[big])
+    assert [f["fix_id"] for f in doc["fix_queue"]] == ["loss:e8:e8:78:over_allocation"]
