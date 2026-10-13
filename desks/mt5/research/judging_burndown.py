@@ -78,14 +78,19 @@ def _read(path: Path) -> dict[str, Any]:
         return {}
 
 
-#: The judge's own UNKNOWN reasons that mean "under 60 daily observations" (`external_gauntlet.
-#: classify_unknown`). Such a row is NOT TESTABLE on today's history: the cell leaves the backlog
-#: (`judge_coverage.NOT_TESTABLE_REASONS`, parked in the unrunnable bank) and comes back when the
-#: bank re-admits it. `series_exception`, `no_series` and an unnamed UNKNOWN stay `unknown` --
-#: those are defects, not data scarcity.
-NOT_TESTABLE_UNKNOWN: frozenset[str] = frozenset({
-    "no_signals", "signals_no_trades", "no_trades", "too_rare", "observations_under_60_days",
-    "short_history_after_cut", "lockbox_consumed_history"})
+#: The judge's UNKNOWN reasons that mean NOT TESTABLE on today's history, read from the ONE
+#: table `judge_coverage.UNKNOWN_REASON_CLASS` owns (audit of PR #290: this module kept its own
+#: set and the two organs disagreed in both directions). Every reason not classed `not_testable`
+#: there -- `series_exception`, `no_series`, an unnamed or unlisted reason -- stays `unknown`:
+#: a defect, never data scarcity, and never drain.
+try:
+    from judge_coverage import NOT_TESTABLE_REASONS as NOT_TESTABLE_UNKNOWN
+    from judge_coverage import READMISSION_LOG
+except ImportError:                                            # pragma: no cover - import context
+    from research.judge_coverage import (  # type: ignore[no-redef]
+        NOT_TESTABLE_REASONS as NOT_TESTABLE_UNKNOWN,
+    )
+    from research.judge_coverage import READMISSION_LOG  # type: ignore[no-redef]
 
 
 def classify(row: dict[str, Any]) -> str:
@@ -120,6 +125,8 @@ def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
     # FIRST SETTLED: a cell's first real ruling OR its first NOT_TESTABLE reading, counted once.
     # Both take a cell out of the backlog `judge_coverage` counts, so both are drain.
     settled: dict[str, int] = dict.fromkeys(cuts, 0)
+    # PARKING, BY NAME: the part of `settled` that was a first NOT_TESTABLE reading, not a ruling.
+    parked: dict[str, int] = dict.fromkeys(cuts, 0)
     rows: dict[str, dict[str, int]] = {w: {"ruled": 0, "not_testable": 0, "unknown": 0,
                                            "not_run": 0} for w in cuts}
     total = 0
@@ -158,15 +165,20 @@ def drain(now: datetime, path: Path | None = None) -> dict[str, Any]:
                     for w, cut in cuts.items():
                         if at >= cut:
                             settled[w] += 1
+                            if kind == "not_testable":
+                                parked[w] += 1
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     return {"status": "MEASURED", "rows_total": total, "first_rulings": first, "rows": rows,
             "first_rulings_per_hour": {w: round(first[w] / WINDOWS_H[w], 3) for w in cuts},
             "first_settled": settled,
+            "first_not_testable": parked,
+            "first_not_testable_per_hour": {w: round(parked[w] / WINDOWS_H[w], 3) for w in cuts},
             "first_settled_per_hour": {w: round(settled[w] / WINDOWS_H[w], 3) for w in cuts}}
 
 
-def inflow(now: datetime, path: Path | None = None) -> dict[str, Any]:
+def inflow(now: datetime, path: Path | None = None,
+           readmission_log: Path | None = None) -> dict[str, Any]:
     """Docket rows whose `first_seen` falls in each window -- the cells joining the queue.
 
     Streams the docket text for the stamp alone (the trading box's docket is over a million rows;
@@ -206,8 +218,47 @@ def inflow(now: datetime, path: Path | None = None) -> dict[str, Any]:
                         counts[w] += 1
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
-    return {"status": "MEASURED", "stamped_rows": n, "created": counts,
-            "created_per_hour": {w: round(counts[w] / WINDOWS_H[w], 3) for w in cuts}}
+    readm = readmissions(now, readmission_log)
+    out: dict[str, Any] = {"status": "MEASURED", "stamped_rows": n, "created": counts,
+                           "created_per_hour": {w: round(counts[w] / WINDOWS_H[w], 3)
+                                                for w in cuts},
+                           "readmitted": readm}
+    # A RE-ADMITTED CELL IS INFLOW: the bank returned it to the backlog this window, and the
+    # outflow above already counted its first NOT_TESTABLE reading. Leaving it out would book
+    # the parking as drain and never book the return.
+    _rd = readm.get("readmitted") if readm.get("status") == "MEASURED" else None
+    out["inflow_per_hour"] = {w: round((counts[w] + int((_rd or {}).get(w, 0))) / WINDOWS_H[w], 3)
+                              for w in cuts}
+    return out
+
+
+def readmissions(now: datetime, path: Path | None = None) -> dict[str, Any]:
+    """Not-testable cells the bank returned to the backlog in each window
+    (`judge_coverage.READMISSION_LOG`, one line per pass that re-admitted any). An absent log is
+    a real zero only in the sense that nothing has been re-admitted since the class shipped; it
+    is reported as such, by name."""
+    p = READMISSION_LOG if path is None else path
+    cuts = {w: (now - timedelta(hours=h)).timestamp() for w, h in WINDOWS_H.items()}
+    counts = dict.fromkeys(cuts, 0)
+    if not p.exists():
+        return {"status": "MEASURED", "readmitted": counts, "why": f"{p.name} absent: none yet"}
+    try:
+        with p.open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    row = json.loads(line)
+                    at = datetime.fromisoformat(str(row["at"]).replace("Z", "+00:00"))
+                    if at.tzinfo is None:
+                        at = at.replace(tzinfo=UTC)
+                    n = int(row.get("readmitted") or 0)
+                except (ValueError, KeyError, TypeError, AttributeError):
+                    continue
+                for w, cut in cuts.items():
+                    if at.timestamp() >= cut:
+                        counts[w] += n
+    except OSError as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    return {"status": "MEASURED", "readmitted": counts}
 
 
 def _norm(ts: str) -> str:
@@ -366,15 +417,25 @@ def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
     # THE BACKLOG'S OWN OUTFLOW: first rulings plus first NOT_TESTABLE readings, because
     # `judge_coverage` takes both out of the count this is divided into. Older drains without
     # the field fall back to first rulings.
-    out_h = float((d.get("first_settled_per_hour") or d["first_rulings_per_hour"])[window])
-    in_h = float(i["created_per_hour"][window])
+    # ONE UNIT ON BOTH SIDES (audit of PR #290): the outflow is SETTLED cells (rulings plus
+    # parkings), so the "needed" rate and its multiple are settled cells too -- the old label said
+    # first rulings over a settled divisor. The inflow is minted plus re-admitted cells.
+    settled_rates = d.get("first_settled_per_hour")
+    unit = "settled" if settled_rates else "first_rulings"
+    out_h = float((settled_rates or d["first_rulings_per_hour"])[window])
+    in_h = float((i.get("inflow_per_hour") or i["created_per_hour"])[window])
     n = int(b["unjudged"])
     net_day = round((out_h - in_h) * 24.0, 1)
     need_h = round(in_h + n / (TARGET_DAYS * 24.0), 1)
-    doc: dict[str, Any] = {"window": window, "first_settled_per_hour": out_h,
+    doc: dict[str, Any] = {"window": window, "outflow_unit": unit,
+                           "outflow_per_hour": out_h,
+                           "first_settled_per_hour": out_h if settled_rates else None,
                            "first_rulings_per_hour": float(d["first_rulings_per_hour"][window]),
-                           "created_per_hour": in_h, "net_per_day": net_day,
-                           "needed_first_rulings_per_hour": need_h,
+                           "first_not_testable_per_hour": (
+                               (d.get("first_not_testable_per_hour") or {}).get(window)),
+                           "created_per_hour": float(i["created_per_hour"][window]),
+                           "inflow_per_hour": in_h, "net_per_day": net_day,
+                           f"needed_{unit}_per_hour": need_h,
                            "needed_multiple_of_today": (round(need_h / out_h, 2) if out_h > 0
                                                         else None),
                            "target_days": TARGET_DAYS}
@@ -384,8 +445,9 @@ def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
         doc.update(status="DRAINING", days_to_zero=round(n / net_day, 1))
     else:
         doc.update(status="GROWING", days_to_zero=None,
-                   why=(f"{out_h:.1f} first rulings/h against {in_h:.1f} new cells/h: the "
-                        f"backlog grows {-net_day:.0f} cells a day at this rate"))
+                   why=(f"{out_h:.1f} {unit.replace('_', ' ')}/h against {in_h:.1f} new or "
+                        f"re-admitted cells/h: the backlog grows {-net_day:.0f} cells a day "
+                        "at this rate"))
     return doc
 
 
@@ -397,9 +459,12 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             "warm_side": w, "sweep": s, "capacity": capacity(d, w, s),
             "burn_down": verdict(b, d, i, "7d"),
             "burn_down_24h": verdict(b, d, i, "24h"),
-            "rule": ("drain = cells whose FIRST real verdict landed in the window (UNKNOWN and "
-                     "NOT_RUN rows are not rulings; a re-judge is not a drain); inflow = docket "
-                     "rows first seen in the window; nothing here throttles a miner")}
+            "rule": ("outflow = cells SETTLED for the first time in the window: a first real "
+                     "verdict, or a first NOT_TESTABLE reading (judge_coverage."
+                     "UNKNOWN_REASON_CLASS), each also published on its own; other UNKNOWN and "
+                     "NOT_RUN rows are not settled and a re-judge is not a drain; inflow = docket "
+                     "rows first seen in the window plus not-testable cells the bank re-admitted; "
+                     "nothing here throttles a miner")}
 
 
 def write(doc: dict[str, Any]) -> Path:
@@ -417,9 +482,10 @@ def main(argv: list[str] | None = None) -> int:
     doc = build()
     bd = doc["burn_down"]
     print(f"judging burn-down: {bd.get('status')} backlog={doc['backlog'].get('unjudged')} "
-          f"out/h={bd.get('first_rulings_per_hour')} in/h={bd.get('created_per_hour')} "
+          f"out/h={bd.get('outflow_per_hour')} ({bd.get('outflow_unit')}) "
+          f"in/h={bd.get('inflow_per_hour')} "
           f"net/day={bd.get('net_per_day')} days_to_zero={bd.get('days_to_zero')} "
-          f"needed/h={bd.get('needed_first_rulings_per_hour')}")
+          f"needed/h={bd.get('needed_settled_per_hour', bd.get('needed_first_rulings_per_hour'))}")
     if not a.dry_run:
         print(f"-> {write(doc)}")
     return 0

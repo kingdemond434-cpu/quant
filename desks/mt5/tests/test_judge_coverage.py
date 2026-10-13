@@ -368,8 +368,10 @@ def test_every_unknown_gets_a_named_reason(tmp_path: Path) -> None:
         {"cell": "A.f.p=1", "sym": "NOSUCHSYM", "family": "f", "days": 0, "unmeasured": True,
          "stages": {"observations": {"why": "no daily series"}}},
         {"cell": "B.f.p=2", "sym": "XAUUSD", "family": "f", "days": 0, "unmeasured": True,
+         "unknown_reason": "no_signals",
          "stages": {"observations": {"why": "no daily series"}}},
         {"cell": "C.f.p=3", "sym": "XAUUSD", "family": "f", "days": 20, "unmeasured": True,
+         "unknown_reason": "too_rare",
          "stages": {"observations": {"why": "only 20 daily observations"}}},
         {"cell": "D.f.p=4", "sym": "XAUUSD", "family": "f", "days": 900, "passed": True})
     named = jc.name_unknowns(gates)

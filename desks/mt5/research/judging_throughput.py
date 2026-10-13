@@ -438,8 +438,12 @@ def _burndown() -> dict[str, Any]:
                 "burndown_why": f"{BURNDOWN.name} absent: the burn-down is UNMEASURED"}
     return {"burndown_status": bd.get("status", UNMEASURED),
             "burndown_net_per_day": bd.get("net_per_day", UNMEASURED),
+            # The burn-down names its outflow unit (settled = rulings + parkings since PR #290);
+            # the needed rate is read in whichever unit it published.
             "burndown_needed_first_rulings_per_hour":
-                bd.get("needed_first_rulings_per_hour", UNMEASURED),
+                bd.get("needed_settled_per_hour",
+                       bd.get("needed_first_rulings_per_hour", UNMEASURED)),
+            "burndown_outflow_unit": bd.get("outflow_unit", UNMEASURED),
             "burndown_source": BURNDOWN.name}
 
 
