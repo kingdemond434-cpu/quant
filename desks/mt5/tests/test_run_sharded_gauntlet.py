@@ -33,6 +33,8 @@ def _isolated_state(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "SHARD_PEAKS", tmp_path / "judge_shard_peaks.json")
     monkeypatch.setattr(runner, "RESIDENT_STATE", tmp_path / "JUDGE_RESIDENT.json")
     monkeypatch.setattr(runner, "RESIDENT_STOP", tmp_path / "RESIDENT_STOP")
+    monkeypatch.setattr(runner, "SWEEP_PHASE", tmp_path / "JUDGE_SWEEP_PHASE.json")
+    monkeypatch.setattr(runner, "_PHASE_DOC", {})
 
 
 def test_parallelism_is_bounded_and_configurable(monkeypatch) -> None:
@@ -351,3 +353,25 @@ def test_a_hung_sweep_is_killed_recorded_and_the_next_one_starts(monkeypatch, tm
     doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
     assert doc["hung_kills"] == 1 and doc["last_hung_utc"] and doc["sweeps"] == 2
     assert slept == [runner.RESIDENT_BACKOFF_S[0]]
+
+
+def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
+    """The 33h stall could not say which part of the sweep the core was in: each phase is now
+    stamped, folded into the resident's heartbeat, and named on a hung kill."""
+    import json
+
+    clock = iter([100.0, 160.0, 400.0])
+    with monkeypatch.context() as m:
+        m.setattr(runner.time, "time", lambda: next(clock))
+        runner._phase("plan")
+        runner._phase("build_shards")
+        runner._phase("merge_and_publish")
+    doc = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    assert doc["phase"] == "merge_and_publish"
+    assert doc["phases"] == {"plan": 60.0, "build_shards": 240.0}
+
+    seq = iter([runner.RESIDENT_HANG_RC, 0])
+    runner.resident(sweep=lambda: next(seq), sleep=lambda s: None, clock=_Clock(),
+                    limit_s=None, max_sweeps=2, heartbeat_s=60)
+    st = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert st["killed_in_phase"]["phase"] == "merge_and_publish"
