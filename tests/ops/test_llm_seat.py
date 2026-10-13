@@ -235,6 +235,9 @@ def test_openrouter_prefixed_ids_are_understood(monkeypatch) -> None:
     the free-tier behaviour has its own file.
     """
     monkeypatch.setenv("QUANT_FREE_TIER", "0")
+    # Paid OpenRouter ids also need the principal's own switch since 2026-10-13
+    # (libs/ops/openrouter_guard.py); without it the free id wins whatever QUANT_FREE_TIER says.
+    monkeypatch.setenv("QUANT_LLM_LAB_PAID", "1")
     monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
     monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: ({"data": [{"id": i} for i in (
         "openai/gpt-5", "openai/gpt-5-mini", "anthropic/claude-opus-4",
