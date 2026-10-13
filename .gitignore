@@ -472,6 +472,7 @@ desks/mt5/data/sensors/
 # vol_archive's public 10y reference history: rewritten every cycle, never the desk's vintage.
 desks/mt5/data/vol_archive/reference/
 !desks/mt5/reports/SENSOR_LEDGER.json
+!desks/mt5/reports/WORLD_SENSOR_GAPS.json
 # the world-sensor engines' reports (state, contracts, terms status) ride the box push
 !desks/mt5/reports/WORLD_SENSOR_INTAKE.json
 !desks/mt5/reports/MARKET_STATE.json

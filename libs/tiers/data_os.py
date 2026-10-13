@@ -604,6 +604,11 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
     "libs/research/measurement.py": {
         "route": "mention", "sources": ("cot_fx",),
         "basis": "declares data/cot/*.parquet as a measurement's data_source label"},
+    "desks/mt5/research/world_sensor_gaps.py": {
+        "route": "live_read", "sources": ("gdelt",),
+        "basis": "counts GDELT rows in the sensor ledger and the age of the newest received_at "
+                 "for an intake-health gap reading, and lists alt_proxies.GDELT_IDS; reads no "
+                 "values and joins nothing to a bar"},
 }
 
 
