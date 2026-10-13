@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-import run_alerts  # noqa: E402
+import run_alerts
 
 
 def _doc(path: Path, last_age_h: float) -> Path:
