@@ -2402,6 +2402,36 @@ FAMILY_INPUTS["alt_conditioned"] = (
     "a price-only base family's bars plus an alt series' regime on its available_time clock",
     "data/universe/*_H1.parquet + data/lake/series/fs_<source>.parquet")
 
+# THE OPTIONS-IMPLIED FAMILIES (2026-10-06, completion audit repair rank 2). `options_implied` was
+# an empty alpha cluster that `empty_cluster_forcer` filed as unreachable by venue: Fusion quotes
+# no options. The UNDERLYINGS are quoted, and a trade on the underlying CONDITIONED on the implied
+# state needs the implied series, not an options venue. `research/options_implied.py` publishes
+# that series per mapped instrument (IV level/percentile/change, VIX term slope and inversion,
+# IV minus this broker's realised vol) under data/lake/series/oi_<SYMBOL>.parquet with a
+# conservative available_time; both families load it from `source`/`feature` on the recipe, so
+# the sealed gauntlet's `fn(h1, **params)` call rebuilds them unchanged. `source`, `feature`,
+# `op` and `threshold` are REQUIRED: the producer names them and charges its own grid.
+from mt5desk.family_implied_vol import (  # noqa: E402
+    family_implied_vol_conditioned,
+    family_implied_vol_state,
+)
+
+ORTHOGONAL_FAMILIES["implied_vol_state"] = family_implied_vol_state
+ORTHOGONAL_FAMILIES["implied_vol_conditioned"] = family_implied_vol_conditioned
+FAMILY_INPUTS["implied_vol_state"] = (
+    "one options-implied feature of the instrument's own CBOE vol index, on its available_time "
+    "clock (research/options_implied.py)", "data/lake/series/oi_<SYMBOL>.parquet")
+FAMILY_INPUTS["implied_vol_conditioned"] = (
+    "a price-only base family's bars plus one options-implied feature on its available_time "
+    "clock", "data/universe/*_H1.parquet + data/lake/series/oi_<SYMBOL>.parquet")
+for _iv_name in ("implied_vol_state", "implied_vol_conditioned"):
+    FAMILY_TIMEFRAMES[_iv_name] = (
+        ("H1", "H4", "D1"),
+        "the implied state is a DAILY close, knowable once a day at D+1 04:00 UTC; below the "
+        "hour every bar of a day reads the same value, so a sub-hourly cell would be the hourly "
+        "claim re-charged as a different trial")
+del _iv_name
+
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
 # certificate: `family_cross_sectional` takes its peers as an argument and the sealed gauntlet's

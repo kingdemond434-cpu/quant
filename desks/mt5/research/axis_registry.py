@@ -206,6 +206,10 @@ _FAMILY_GROUPS: dict[str, str] = {
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
+    # The options-implied families (2026-10-06): the payer is the option dealer hedging gamma
+    # and the seller paid the variance risk premium. The information is a PUBLISHED exogenous
+    # series (a CBOE index close), which this vocabulary files as `macro` beside world_macro_state.
+    "gamma_hedging_state macro market": "implied_vol_state implied_vol_conditioned",
     "inventory_shock microstructure market": "volume_spike",
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec

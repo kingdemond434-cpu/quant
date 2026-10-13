@@ -131,40 +131,60 @@ def test_the_symbol_is_resolved_against_the_universe_and_never_invented(
 
 # ---------------------------------------------------------------- term structure --
 def test_the_term_curve_refuses_to_mix_as_of_dates(tmp_path: Path) -> None:
-    """MEASURED AGAINST THE LIVE ENDPOINT, 2026-09-05: Yahoo's long-range route returns ^VIX
-    current and ^VIX9D/^VIX3M/^VIX6M seven weeks stale. A stale 9-day tenor beside a fresh 30-day
-    one manufactures a term slope out of a publication lag, and a term-structure signal would
-    fire on exactly that."""
+    """MEASURED AGAINST THE LIVE ENDPOINT, 2026-09-05: the then-source returned ^VIX current and
+    ^VIX9D/^VIX3M/^VIX6M seven weeks stale. A stale 9-day tenor beside a fresh 30-day one
+    manufactures a term slope out of a publication lag, and a term-structure signal would fire
+    on exactly that."""
     stale = _series(16.85, day="2026-07-17")
     obs = va.observe(_full_source(**{"^VIX9D": stale, "^VIX3M": stale, "^VIX6M": stale}),
                      REGISTRY, tmp_path)
     row = next(o for o in obs if o.vol_ticker == "^VIX")
-    assert row.term_slope_short is None and row.term_shape == ""
+    assert all(v is None for v in row.term_slopes.values()) and row.term_shape == ""
+    assert set(row.term_unmeasured) == {"slope_9d_30d", "slope_30d_3m", "slope_3m_6m"}
     assert "refusing to build a slope across as-of dates" in row.term_reason
     assert "2026-07-17" in row.term_reason, "the reason must name what was stale and how stale"
 
 
-def test_a_contemporaneous_curve_produces_a_slope_and_a_shape(tmp_path: Path) -> None:
+def test_a_contemporaneous_curve_produces_every_named_slope_and_a_shape(tmp_path: Path) -> None:
     obs = va.observe(_full_source(), REGISTRY, tmp_path)
     row = next(o for o in obs if o.vol_ticker == "^VIX")
     assert set(row.term) == {"^VIX9D", "^VIX", "^VIX3M", "^VIX6M"}
     assert row.term_shape == "contango", "12 < 14.5 < 17.6 < 19.9 is an upward-sloping curve"
-    assert row.term_slope_short is not None and row.term_slope_short > 0
+    assert set(row.term_slopes) == {"slope_9d_30d", "slope_30d_3m", "slope_3m_6m"}
+    assert all(v is not None and v > 0 for v in row.term_slopes.values())
+    assert row.term_unmeasured == []
     assert row.skew_proxy == pytest.approx(151.6)
+    assert row.source_route == "FakeVolSource:fixture" and row.source_admitted is True
 
 
 def test_the_slope_is_per_log_tenor_so_a_longer_calendar_gap_is_not_more_informative() -> None:
     """Tenors are multiplicative (9d, 30d, 91d, 182d). A raw difference makes the 3M-to-6M step
     look four times more informative than the 9D-to-30D one purely because the gap is longer."""
-    short, long_, shape = va.term_metrics({"^VIX9D": 10.0, "^VIX": 20.0,
-                                           "^VIX3M": 30.0, "^VIX6M": 40.0})
-    assert shape == "contango"
-    assert short == pytest.approx(10.0 / np.log(30 / 9), abs=1e-3)
-    assert long_ == pytest.approx(10.0 / np.log(182 / 91), abs=1e-3)
+    curve = {"^VIX9D": 10.0, "^VIX": 20.0, "^VIX3M": 30.0, "^VIX6M": 40.0}
+    slopes, missing = va.term_slopes(curve)
+    assert va.term_shape(curve) == "contango" and missing == []
+    assert slopes["slope_9d_30d"] == pytest.approx(10.0 / np.log(30 / 9), abs=1e-3)
+    assert slopes["slope_30d_3m"] == pytest.approx(10.0 / np.log(91 / 30), abs=1e-3)
+    assert slopes["slope_3m_6m"] == pytest.approx(10.0 / np.log(182 / 91), abs=1e-3)
 
 
 def test_a_single_point_curve_yields_no_slope_rather_than_a_zero() -> None:
-    assert va.term_metrics({"^GVZ": 26.0}) == (None, None, "")
+    slopes, missing = va.term_slopes({"^GVZ": 26.0})
+    assert all(v is None for v in slopes.values()) and len(missing) == 3
+    assert va.term_shape({"^GVZ": 26.0}) == ""
+
+
+def test_a_fred_only_curve_measures_30d_3m_and_never_relabels_it_9d_30d(tmp_path: Path) -> None:
+    """FRED carries VIXCLS and VXVCLS (30D, 3M) and no VIX9D or VIX6M. The positional slope this
+    replaced put the 30D->3M slope under the 9D->30D name on exactly this curve."""
+    data = {"^VIX": _series(14.5), "^VIX3M": _series(17.6), "^GVZ": _series(26.6)}
+    src = va.FakeVolSource(data, missing={"^VIX9D", "^VIX6M", "^SKEW"})
+    row = next(o for o in va.observe(src, REGISTRY, tmp_path) if o.vol_ticker == "^VIX")
+    assert row.term_slopes["slope_9d_30d"] is None
+    assert row.term_slopes["slope_3m_6m"] is None
+    assert row.term_slopes["slope_30d_3m"] == pytest.approx(3.1 / np.log(91 / 30), abs=1e-3)
+    assert set(row.term_unmeasured) == {"slope_9d_30d", "slope_3m_6m"}
+    assert "term_slope_short" not in va.asdict(row)
 
 
 # --------------------------------------------------------------- realised vol --
@@ -268,3 +288,114 @@ def test_the_ground_only_names_instruments_this_desk_could_trade() -> None:
         assert g.what and g.vol_ticker.startswith("^")
         for tenor in g.term:
             assert tenor in va.TENOR_DAYS, f"{tenor} has no declared tenor"
+
+
+# ------------------------------------------- the per-source register (ruling 2026-10-13) --
+FRED_FIXTURE = "observation_date,GVZCLS\n2026-10-01,18.20\n2026-10-02,.\n2026-10-05,19.05\n"
+POLICIES = {"API_PERMITTED", "NEEDS_KEY", "PUBLIC_PAGE", "IDEAS_ONLY", "METHOD_BLOCKED"}
+
+
+def test_every_register_row_names_a_policy_a_why_and_its_quotes() -> None:
+    for key, row in va.TERMS_EVIDENCE.items():
+        assert row["policy"] in POLICIES, key
+        assert row["why"] and row["quotes"] and row["pages"], key
+        assert row["permits_use"] is False, f"{key}: the quotes grant no permission; say so"
+    assert va.TERMS_EVIDENCE["yahoo"]["policy"] == "PUBLIC_PAGE"
+    assert va.TERMS_EVIDENCE["yahoo"]["route_kept"] is True          # LIVE's route, kept
+    assert "robots, spiders, scrapers" in va.TERMS_EVIDENCE["yahoo"]["quotes"][0]
+    assert va.TERMS_EVIDENCE["fred"]["route_kept"] is True           # LIVE's fallback, kept
+    assert va.TERMS_EVIDENCE["cboe"]["policy"] == "IDEAS_ONLY"
+    assert va.TERMS_EVIDENCE["cboe"]["route_kept"] is False
+
+
+def test_route_admitted_holds_only_method_blocked_or_needs_key() -> None:
+    assert va.route_admitted(va.YAHOO_TERMS) and va.route_admitted(va.FRED_TERMS)
+    assert not va.route_admitted(va.CBOE_TERMS)
+    for held in ("METHOD_BLOCKED", "NEEDS_KEY"):
+        assert not va.route_admitted({**va.YAHOO_TERMS, "policy": held})
+    assert not va.route_admitted(None) and not va.route_admitted({})
+    assert not va.route_admitted({"permits_use": True, "quotes": []}), \
+        "a permission with no quoted clause is not a permission"
+    assert va.route_admitted({"permits_use": True, "quotes": ["clause"]})
+
+
+def test_the_kept_fred_route_parses_and_routes() -> None:
+    asked: list[str] = []
+
+    def fetch(url: str, timeout: int) -> str:
+        asked.append(url)
+        return FRED_FIXTURE
+
+    src = va.FredVolSource(fetch=fetch)
+    assert src.admitted
+    assert src.series("^GVZ") == {"2026-10-01": 18.2, "2026-10-05": 19.05}
+    assert src.series("^VIX9D") is None
+    assert asked == ["https://fred.stlouisfed.org/graph/fredgraph.csv?id=GVZCLS"]
+    assert src.routes["^VIX9D"]["status"] == "UNMEASURED"
+
+
+def test_a_held_row_sends_no_request_and_every_ground_reads_held(tmp_path: Path) -> None:
+    asked: list[str] = []
+    held = {**va.FRED_TERMS, "policy": "NEEDS_KEY"}
+    src = va.FredVolSource(fetch=lambda u, t: asked.append(u) or FRED_FIXTURE, evidence=held)
+    obs = va.observe(src, REGISTRY, tmp_path)
+    assert asked == [] and {o.status for o in obs} == {"HELD"}
+    assert all(o.source_route == "FredVolSource:fred_csv" and o.source_admitted is False
+               for o in obs)
+    rep = va.report([], obs, sources=src.provenance())
+    assert set(rep["held_by_source_policy"]) == {g.vol_ticker for g in va.GROUND}
+
+
+def test_the_yahoo_route_is_live_and_merges_history_with_the_fresh_tail(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import contextlib
+    import io as _io
+    import json
+
+    asked: list[str] = []
+
+    def fake_urlopen(req: object, timeout: int = 0) -> object:
+        url = req.full_url  # type: ignore[attr-defined]
+        asked.append(url)
+        if "range=10y" in url:
+            stamps, closes = [1759276800, 1759363200], [16.0, 16.2]      # 2025-10-01, -02
+        else:
+            stamps, closes = [1759363200, 1759449600], [16.4, 16.8]      # -02 restated, -03
+        body = json.dumps({"chart": {"result": [{"timestamp": stamps, "indicators": {
+            "quote": [{"close": closes}]}}]}}).encode()
+        return contextlib.closing(_io.BytesIO(body))
+
+    monkeypatch.setattr(va.urllib.request, "urlopen", fake_urlopen)
+    y = va.YahooVolSource()
+    got = y.series("^VIX")
+    assert got == {"2025-10-01": 16.0, "2025-10-02": 16.4, "2025-10-03": 16.8}
+    assert len(asked) == 2 and all("finance.yahoo.com/v8/finance/chart/" in u for u in asked)
+    assert y.routes["^VIX"]["route"] == "yahoo_chart" and y.admitted
+    assert y.provenance()["register"]["yahoo"]["route_kept"] is True
+    src = (_DESK / "recorders" / "vol_archive.py").read_text("utf-8")
+    assert "source = YahooVolSource()" in src, "MT5-VolArchive runs LIVE's Yahoo route"
+    assert "daily_prices/{" not in src, "no request template for CBOE's IDEAS_ONLY files"
+
+
+def test_a_held_yahoo_row_sends_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    def no_network(*_a: object, **_k: object) -> None:
+        raise AssertionError("a held route opened a connection")
+
+    monkeypatch.setattr(va.urllib.request, "urlopen", no_network)
+    y = va.YahooVolSource(evidence={**va.YAHOO_TERMS, "policy": "METHOD_BLOCKED"},
+                          fred_evidence={**va.FRED_TERMS, "policy": "NEEDS_KEY"})
+    assert y.series("^VIX") is None and y.routes["^VIX"]["status"] == "HELD"
+    assert y.admitted is False
+
+
+def test_the_user_agent_names_the_desk_and_claims_no_browser() -> None:
+    assert not va.UA.startswith("Mozilla") and "research-desk" in va.UA
+
+
+def test_terms_note_rides_on_every_row_and_the_report(tmp_path: Path) -> None:
+    obs = va.observe(_full_source(), REGISTRY, tmp_path)
+    assert all(o.terms_note == va.TERMS_NOTE for o in obs)
+    rep = va.report([], obs, sources=va.FredVolSource(fetch=lambda u, t: "").provenance())
+    assert rep["terms_note"] == va.TERMS_NOTE
+    assert set(rep["sources"]["register"]) == {"fred", "cboe"}
+    assert va.report([], obs)["sources"]["admitted"] is True
