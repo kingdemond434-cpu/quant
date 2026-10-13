@@ -229,8 +229,8 @@ def tagged(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_forced_first_rows_lead_the_head_ahead_of_saturated_and_frontier(tagged: None) -> None:
     st = _steer()
-    rows = ([{"symbol": "EURUSD", "family": "newfam"} for _ in range(300)]
-            + [{"symbol": "EURUSD", "family": "carry"} for _ in range(300)]
+    rows = ([{"symbol": "EURUSD", "family": "carry"} for _ in range(300)]  # natural head: carry
+            + [{"symbol": "EURUSD", "family": "newfam"} for _ in range(300)]
             + [{"symbol": "XAUUSD", "family": "explored_fam", "params": {"session": "london"}}
                for _ in range(50)]
             + [{"symbol": "XAUUSD", "family": "explored_fam", "params": {"session": "asia"}}
