@@ -125,6 +125,28 @@ def test_the_m15_ban_is_one_sleeve_not_a_timeframe() -> None:
     assert not ks.m15_banned("XAUUSD", "carry", "M15")
 
 
+def test_a_different_selector_of_the_banned_family_is_not_banned() -> None:
+    """Audit #378 should-fix: the ban is the "all" selector sleeve, not every M15 variant."""
+    assert ks.m15_banned("XAUUSD", "anti_donchian_breakout", "M15", "all")
+    assert not ks.m15_banned("XAUUSD", "anti_donchian_breakout", "M15", "overlap")
+
+
+def test_certified_roster_excludes_only_the_banned_m15_sleeve(desk, tmp_path, monkeypatch):
+    def cert(sym, fam, sel):
+        return {"sym": sym, "cell": f"{sym}.{fam}", "gates": {"stress_costs": {"exp_x3": 0.2}},
+                "shadow_spec": {"family": fam, "selector": sel, "symbol": sym,
+                                "timeframe": "M15"}}
+    canon = tmp_path / "canon_m15.json"
+    canon.write_text(json.dumps({"gate_policy": {"version": "v2"}, "survivors": {
+        "banned": cert("XAUUSD", "anti_donchian_breakout", "all"),
+        "sibling": cert("XAUUSD", "anti_donchian_breakout", "overlap"),
+        "fx": cert("EURZAR", "carry", "asia")}}), encoding="utf-8")
+    monkeypatch.setattr(desk, "CERT_CANON", canon)
+    _, rows = desk.certified_roster([])
+    why = {r["certificate"]: r.get("excluded") for r in rows}
+    assert str(why["banned"]).startswith("M15 banned")
+    assert not str(why["sibling"] or "").startswith("M15 banned")
+    assert not str(why["fx"] or "").startswith("M15 banned")
 def _gauntlet_m15_cert(with_spec: bool) -> dict:
     """Shaped as external_gauntlet writes it: the chart rides in shadow_spec.params and the key."""
     c: dict = {"cell": "XAUUSD@M15.anti_donchian_breakout.p=ab12",
