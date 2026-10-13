@@ -600,3 +600,18 @@ def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
     # EMPTY IS WRITTEN: absence must never read as zero cells awaiting conversion.
     assert jc.write_conversion_handoff({}, at="t", path=out) == 0
     assert json.loads(out.read_text("utf-8"))["rows"] == []
+
+
+def test_the_bank_writer_keeps_gate_minus2_rows(tmp_path: Path) -> None:
+    """#347: the hourly bank rewrite must not drop cell_state's rows from the shared handoff."""
+    out = tmp_path / "handoff.json"
+    out.write_text(json.dumps({"schema_version": 1, "generated_utc": "t0", "n": 3, "rows": [
+        {"cell": "g", "source": "cell_state", "first_parked_utc": "2026-10-02T00:00:00+00:00"},
+        {"cell": "x", "source": "cell_state", "first_parked_utc": "2026-09-01T00:00:00+00:00"},
+        {"cell": "old_bank", "first_parked_utc": "2026-09-01T00:00:00+00:00"}]}), "utf-8")
+    bank = {"x": {"reason": "never_fires", "parked_at": "2026-10-01T00:00:00+00:00"}}
+    assert jc.write_conversion_handoff(bank, at="t1", path=out) == 2
+    rows = {r["cell"]: r for r in json.loads(out.read_text("utf-8"))["rows"]}
+    assert set(rows) == {"g", "x"}                    # the bank's stale row goes, Gate -2's stays
+    assert rows["x"]["first_parked_utc"] == "2026-09-01T00:00:00+00:00"   # one row, earliest
+    assert "source" not in rows["x"]                  # the bank owns a cell both name

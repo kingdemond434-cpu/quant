@@ -454,6 +454,10 @@ desks/mt5/data/import_stems_cache.json
 # check had no reader off the box at all.
 !desks/mt5/reports/BOX_STATE_FRESHNESS.json
 !desks/mt5/reports/DESK_HEALTH.json
+# the no-limbo cell state ledger and its gate-ledger cursor: box-local (merge runs on the box),
+# never synced. Kept above the allowlists and the open-book lines, which must stay LAST.
+desks/mt5/data/hypotheses/cell_state_ledger.json
+desks/mt5/data/hypotheses/cell_state_judged_cursor.json
 !desks/mt5/reports/process_health.json
 # THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
 # in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
@@ -465,6 +469,7 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/JUDGING_THROUGHPUT.json
 !desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
 !desks/mt5/reports/JUDGE_COVERAGE.json
+!desks/mt5/reports/CELL_STATE.json
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json

@@ -961,6 +961,17 @@ def main() -> int:
     # family-balanced. Whatever slice the judge's budget reaches, that slice holds every family
     # with backlog. Nothing is dropped; `breadth_order` remains the fallback, and a failure in
     # the allocator can only cost the ORDER, never a row.
+    # LAST PASS'S GATE -2 FLAGS NEVER CARRY OVER (research/cell_state.strip_stale): banked rows
+    # come back with their `gate_minus2:*` flags and `cell_state` stamp, so both are taken off
+    # BEFORE anything reads `prejudge.flags`, and re-derived below from this pass's evidence.
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research import cell_state as _cst0
+        _cst0.strip_stale(rows_out)
+    except Exception as exc:
+        print(f"   gate -2 strip unavailable ({type(exc).__name__}: {exc})")
     judged = judged_by_family()
     _rl_fam, _rl_why = alpha_rl_family_values()
     print(f"   alpha_rl family values: {_rl_why}")
@@ -999,6 +1010,53 @@ def main() -> int:
     except Exception as exc:
         prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # GATE -2 AND THE NO-LIMBO LEDGER (research/cell_state.py). Cheap deterministic checks --
+    # twins, PIT stamp, bars, registry mapping, possible observations, cost terms, family,
+    # inputs, already judged -- stamp every row's `cell_state` and add `gate_minus2:<check>` to a
+    # HOLD or terminal row's prejudge flags, which the SAME stable in-family demotion then reads.
+    # Route only: no row leaves, no gate moves, no trial is charged. A fault, or any change in
+    # the row count, costs the stamp and keeps the docket exactly as the screen above left it.
+    gate_minus2: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from libs.tiers import prejudge_screen as _pj2
+        from research import cell_state as _cst
+        _n = len(rows_out)
+        # SHALLOW COPIES are stamped, so a fault leaves `rows_out` exactly as it was.
+        # the gate ledger is read INCREMENTALLY (byte-offset cursor beside it), never in full
+        _ctx2 = _cst.Context(gate_ledger=TARGET.parent / _cst.GATE_LEDGER.name,
+                             judged_cursor=TARGET.parent / _cst.JUDGED_CURSOR.name)
+        _stamped, gate_minus2 = _cst.stamp([dict(r) for r in rows_out], _ctx2)
+        _ordered, _dm = _pj2.demote_flagged(_stamped, {})
+        if len(_ordered) != _n:
+            raise ValueError(f"row count changed {_n} -> {len(_ordered)}")
+        rows_out = _ordered
+        gate_minus2.update(status="APPLIED", moved=_dm.get("moved"), removed=0)
+        print(f"   gate -2: {gate_minus2.get('flagged')} row(s) held or terminal "
+              f"{gate_minus2.get('by_check')}, demoted within their family "
+              f"({_dm.get('moved')} position(s) changed, 0 removed)")
+        try:
+            _cap = int(((coverage or {}).get("totals") or {}).get("capacity_measured") or 0)
+            _default = TARGET == BASE / "data" / "hypotheses" / "external_survivors.json"
+            gate_minus2["kpi"] = _cst.publish(
+                rows_out, capacity=_cap, gate2=dict(gate_minus2),
+                ledger_path=TARGET.parent / _cst.LEDGER.name,
+                report_path=_cst.REPORT if _default else TARGET.parent / _cst.REPORT.name,
+                **({} if _default else {"bank": {}}))
+            gate_minus2["report"] = "desks/mt5/reports/CELL_STATE.json"
+            print(f"   cell state: unexplained waiting cells "
+                  f"{gate_minus2['kpi'].get('unexplained_waiting_cells')}, waiting "
+                  f"{gate_minus2['kpi'].get('waiting')}, repairing "
+                  f"{gate_minus2['kpi'].get('repairing')}")
+        except Exception as exc:
+            gate_minus2["ledger"] = f"FAILED: {type(exc).__name__}: {exc}"
+            print(f"   cell state ledger unavailable ({type(exc).__name__}: {exc})")
+    except Exception as exc:
+        gate_minus2 = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   gate -2 unavailable ({type(exc).__name__}: {exc}); order unchanged")
     # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
     # Every docket row -- fresh, carried over or already judged -- whose own words say its result
     # was the best of N searched variations is stamped with its claim family, so the 25,520 cells
@@ -1142,6 +1200,7 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "gate_minus2": gate_minus2,
         "preregistration": prereg,
         "triangle_legs": {k: triangle_legs.get(k) for k in
                           ("status", "legless_before", "filled", "unfilled",

@@ -3111,8 +3111,27 @@ def refresh_bars() -> dict:
 BARS_WANTED_PER_HOUR = 25
 
 
-def bars_wanted_symbols(report: Path | None = None) -> list[str]:
-    """The symbols whose missing charts hold the most parked cells, from JUDGE_COVERAGE."""
+def bars_wanted_symbols(report: Path | None = None,
+                        cell_state: Path | None = None) -> list[str]:
+    """The symbols whose missing charts unlock the most, best first.
+
+    PREFERRED: the no-limbo ledger's DEPENDENCY_QUEUE (`reports/CELL_STATE.json`, written by
+    merge_hypotheses through research/cell_state.py), whose `bars` dependencies are ranked by
+    UnlockValue -- the summed priority of every cell blocked on that chart, docket and
+    unrunnable bank alike. FALLBACK, unchanged: the parked-cell count in JUDGE_COVERAGE's
+    `bars_wanted`, whenever the ledger is absent, unreadable, stale or names no chart.
+    """
+    try:
+        sys.path.insert(0, str(BASE))
+        from research import cell_state as _cst
+        # the ledger beside the coverage report a caller names, else the desk's own
+        _path = cell_state or (report.parent / _cst.REPORT.name if report else _cst.REPORT)
+        _doc = json.loads(_path.read_text("utf-8"))
+        ranked = _cst.bars_queue_symbols(_doc, BARS_WANTED_PER_HOUR)
+        if ranked:
+            return [s.upper() for s in ranked]
+    except Exception:
+        pass
     try:
         doc = json.loads((report or (BASE / "reports" / "JUDGE_COVERAGE.json"))
                          .read_text("utf-8"))
