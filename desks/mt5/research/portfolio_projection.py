@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -46,9 +47,43 @@ def cell_trades(sym: str, win: str, state: str | None, h1: pd.DataFrame,
     return r.trades
 
 
+def _completed_h12_fallback() -> dict | None:
+    """Use the last complete evaluation during refresh, never a new publication timestamp.
+
+    Legacy full reports omitted evaluation age and completion coverage. They cannot prove
+    freshness: repeated no-work producer passes used to refresh only ``swept_at``.
+    """
+    from research.run_hunt12 import MAX_AGE_H, routed_universe
+
+    try:
+        doc = json.loads((BASE / "reports" / "hunt12.json").read_text("utf-8"))
+        meta = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
+        routed, _ = routed_universe(meta)
+        started = datetime.fromisoformat(doc["started_at"])
+        age_h = (datetime.now(UTC) - started).total_seconds() / 3600
+        if not 0 <= age_h <= MAX_AGE_H:
+            return None
+        if doc.get("complete") is not True or doc.get("n_routed") != len(routed):
+            return None
+        if sorted(doc["routed"]) != sorted(routed) or sorted(doc["done"]) != sorted(routed):
+            return None
+        if not isinstance(doc["all"], list) or any(
+            not isinstance(row, dict) or row.get("sym") not in routed for row in doc["all"]
+        ):
+            return None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    print(f"hunt12 portfolio input: last COMPLETE sweep, {len(routed)} symbols; "
+          f"evaluation started {doc['started_at']} ({age_h:.1f}h old); refresh continues")
+    return doc
+
+
 def load_h12_survivors() -> list[dict]:
     p = BASE / "reports" / "hunt12_partial.json"
     if not p.exists():
+        completed = _completed_h12_fallback()
+        if completed is not None:
+            return [c for c in completed["all"] if c.get("gate")]
         # AN ABSENT REPORT IS A REFUSAL, NOT A SMALLER BOOK. This returned [] on every fresh
         # clone (the report is gitignored), main() then built a GOLD-ONLY four-sleeve book and
         # overwrote the committed nine-sleeve artifact -- recomputing mean_corr, n_eff and
@@ -61,6 +96,9 @@ def load_h12_survivors() -> list[dict]:
     try:
         saved = json.loads(p.read_text(encoding="utf-8"))
     except ValueError as exc:
+        completed = _completed_h12_fallback()
+        if completed is not None:
+            return [c for c in completed["all"] if c.get("gate")]
         # A HALF-WRITTEN REPORT IS THE SAME REFUSAL AS AN ABSENT ONE. `run_hunt12` is stopped by
         # a deadline between symbols now, so an interrupted write is routine; unhandled it
         # arrives here as a bare JSONDecodeError from inside a portfolio builder, which is the
@@ -78,6 +116,9 @@ def load_h12_survivors() -> list[dict]:
     # key and WAS complete when it was written; treating its absence as incomplete would refuse
     # every artifact already on the box, which is a regression dressed as a safety check.
     if saved.get("complete") is False:
+        completed = _completed_h12_fallback()
+        if completed is not None:
+            return [c for c in completed["all"] if c.get("gate")]
         done, routed = len(saved.get("done") or []), int(saved.get("n_routed") or 0)
         raise SystemExit(
             f"REFUSING to project a portfolio from an unfinished sweep: {p} has covered "

@@ -242,7 +242,11 @@ ORGANS: tuple[Entry, ...] = (
     _e("desks/mt5/research/institutional_cards.py", "mechanism cards for never-certified axes"),
     _e("desks/mt5/research/local_converter.py", "mined rows -> candidates, no seat, no network"),
     _e("desks/mt5/research/index_discovery.py", "index-driven discovery: addresses, not crawls"),
-    _e("desks/mt5/research/asia_transmission.py", "the Asian production-chain transmission graph"),
+    # --propose (2026-10-06, Asia audit gap 10): measured, non-REFUTED edges donate their
+    # lead_lag cells through proposer_common with every screen charged as a trial, and every
+    # chain's measurement -- failures included -- is appended to data/asia_transmission_edges.
+    _e("desks/mt5/research/asia_transmission.py", "the Asian production-chain transmission "
+       "graph, measured, donated and remembered", "--propose"),
     _e("desks/mt5/research/middle_east_interaction.py", "six mechanism families, two triples"),
     _e("desks/mt5/research/south_america_interaction.py", "local state as a SENSOR, not a trade"),
     _e("desks/mt5/research/countries/kr/miners.py", "the Korea miner registry: twelve agents"),

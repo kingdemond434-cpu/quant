@@ -308,7 +308,8 @@ def spread_pts(surface: dict, symbol: str, hour: int | None) -> float | None:
 # ===================================================================================
 
 #: The recorded execution evidence. Absent on a research box, present on the trading box.
-_LIVE_LEDGER = _DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+_LIVE_LEDGER = _audited_ledger_path(_DESK / "data" / "live_ledger.jsonl")
 _FILL_CORPUS = _DESK / "data" / "fill_corpus.jsonl"
 _SURVIVORS = _DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 _POSTERIOR_ALPHA = _DESK / "reports" / "POSTERIOR_ALPHA.json"

@@ -18,6 +18,11 @@ import offsite_backup as ob  # noqa: E402
 NOW = datetime(2026, 9, 30, 12, tzinfo=UTC)
 
 
+def _restored_fixture_path(target: Path, source: Path) -> Path:
+    """A restic archive path under its restore root, including a Windows drive."""
+    return target / source.as_posix().lstrip("/").replace(":", "")
+
+
 def _cfg(tmp: Path, **extra: Any) -> Path:
     p = tmp / "offsite_backup.json"
     p.write_text(json.dumps({"repository": "s3:https://x/bucket/q?key=CRED",
@@ -49,7 +54,7 @@ def test_backup_prune_check_and_nothing_secret_written(tmp_path: Path) -> None:
             out = json.dumps({"struct_type": "node", "type": "file", "path": str(src),
                               "size": src.stat().st_size})
         if cmd[1] == "restore":
-            tgt = Path(cmd[cmd.index("--target") + 1]) / str(src).lstrip("/")
+            tgt = _restored_fixture_path(Path(cmd[cmd.index("--target") + 1]), src)
             tgt.parent.mkdir(parents=True, exist_ok=True)
             tgt.write_text(src.read_text())
         return subprocess.CompletedProcess(cmd, 0, out, "")
@@ -105,8 +110,8 @@ def test_restore_drill_names_missing_and_corrupt_files(tmp_path: Path) -> None:
     def runner(cmd: list[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
         if cmd[1] == "restore":
             root = Path(cmd[cmd.index("--target") + 1])
-            (root / str(good).lstrip("/")).parent.mkdir(parents=True, exist_ok=True)
-            (root / str(good).lstrip("/")).write_text("{not json")     # restored but corrupt
+            (_restored_fixture_path(root, good)).parent.mkdir(parents=True, exist_ok=True)
+            (_restored_fixture_path(root, good)).write_text("{not json")     # restored but corrupt
         return subprocess.CompletedProcess(cmd, 0, nodes if cmd[1] == "ls" else "", "")
 
     rep = ob.restore_drill("restic", {}, runner, NOW)
@@ -137,7 +142,7 @@ def test_restore_drill_identical_is_by_content_and_full_path(tmp_path: Path) -> 
         if cmd[1] == "restore":
             root = Path(cmd[cmd.index("--target") + 1]) / "C"      # a drive component
             for p in (a, b):
-                q = root / str(p).lstrip("/")
+                q = _restored_fixture_path(root, p)
                 q.parent.mkdir(parents=True, exist_ok=True)
                 q.write_bytes(p.read_bytes())
         return subprocess.CompletedProcess(cmd, 0, nodes if cmd[1] == "ls" else "", "")
@@ -147,7 +152,7 @@ def test_restore_drill_identical_is_by_content_and_full_path(tmp_path: Path) -> 
 
     def swapped(cmd: list[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
         if cmd[1] == "restore":                       # only GBPUSD's file comes back
-            q = Path(cmd[cmd.index("--target") + 1]) / "C" / str(b).lstrip("/")
+            q = _restored_fixture_path(Path(cmd[cmd.index("--target") + 1]) / "C", b)
             q.parent.mkdir(parents=True, exist_ok=True)
             q.write_bytes(b.read_bytes())
         return subprocess.CompletedProcess(cmd, 0, nodes if cmd[1] == "ls" else "", "")
