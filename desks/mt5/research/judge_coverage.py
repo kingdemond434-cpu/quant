@@ -1026,6 +1026,18 @@ def producer_signals(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return {}
 
 
+def _breadth_steer() -> dict[str, Any] | None:
+    """The breadth enforcer's published steer, or None (absent, unmeasured, stale, unimportable)
+    -- in which case the allocation is exactly what it was before the enforcer existed."""
+    for mod in ("research.breadth_enforcer", "breadth_enforcer"):
+        try:
+            st: dict[str, Any] | None = __import__(mod, fromlist=["load_steer"]).load_steer()
+            return st
+        except Exception:
+            continue
+    return None
+
+
 def _docket_keff() -> Any:
     """The marginal-k_eff scorer (research/docket_keff.py), or None when it cannot import."""
     for mod in ("research.docket_keff", "docket_keff"):
@@ -1209,7 +1221,8 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
 
 def allocate(backlog: dict[str, int], capacity: int,
              floor_share: float = FLOOR_SHARE,
-             ranking: list[dict[str, Any]] | None = None) -> dict[str, int]:
+             ranking: list[dict[str, Any]] | None = None,
+             steer: dict[str, Any] | None = None) -> dict[str, int]:
     """Quota per family: an equal FLOOR for every family holding backlog, then BY VALUE.
 
     THE FLOOR IS THE BREADTH MANDATE AND IT NEVER MOVES. Every family holding an unjudged cell
@@ -1227,6 +1240,14 @@ def allocate(backlog: dict[str, int], capacity: int,
     Two properties are load-bearing and both are tested. EVERY family with backlog gets at least
     one cell of the hour, and no family is given more than its own backlog (a quota is a promise
     to drain, not a licence to re-judge).
+
+    THE BREADTH STEER (research/breadth_enforcer.py, principal 2026-10-13). With a MEASURED steer
+    the remainder walk changes order and nothing else: the frontier (unknown, then under-mined
+    families, in the steer's rank) is walked first, explored families next in value order, and
+    the SATURATED families -- the ones already holding most certificates -- share at most
+    `SAT_EXPLORE_SHARE` of the hour beyond their floor. It is work-conserving: if anything is
+    left after every non-saturated family is full, saturated families take it, so the hour's
+    total is never reduced. The floor above is untouched. No steer: exactly the walk below.
     """
     live = {f: n for f, n in backlog.items() if n > 0}
     if not live or capacity <= 0:
@@ -1237,6 +1258,9 @@ def allocate(backlog: dict[str, int], capacity: int,
     spare = capacity - sum(quota.values())
     if spare <= 0:
         return quota
+    if steer and steer.get("status") == "MEASURED":
+        from research.breadth_enforcer import steer_quota
+        return steer_quota(quota, live, capacity, list(ranking or []), steer)
     if ranking:
         for row in ranking:
             fam = str(row.get("family") or "")
@@ -1500,7 +1524,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
     occ = occupancy_stamp(rows)
     ranking = rank_by_value(backlog, rows, capacity)
-    quota = allocate(backlog, capacity, ranking=ranking)
+    # THE BREADTH STEER (research/breadth_enforcer.py): saturated families held to their floor
+    # plus the exploration share, the frontier walked first. Absent or stale: None, old walk.
+    steer = _breadth_steer()
+    quota = allocate(backlog, capacity, ranking=ranking, steer=steer)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
     # Mark the variants BEFORE the order is taken, so the head this table reports is the head
@@ -1621,6 +1648,14 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         row["remainder"] = max(0, row["quota"] - row["floor"])
         row["value_at_risk"] = row["ev_per_cell"] * row["unjudged"]
         row["value_deferred"] = row["ev_per_cell"] * max(0, row["unjudged"] - row["quota"])
+    if steer:
+        # PUBLISHED IN THE ORDER THE REMAINDER WAS ACTUALLY WALKED, so `check_judge_coverage`'s
+        # "remainder follows the ranking" reads the walk that ran. `rank` keeps the value rank.
+        from research.breadth_enforcer import class_of, steer_walk
+        _walk = {f: i for i, f in enumerate(steer_walk(ranking, backlog, steer))}
+        ranking.sort(key=lambda r: _walk.get(str(r["family"]), len(_walk)))
+        for row in ranking:
+            row["breadth_class"] = class_of(str(row["family"]), steer)
     for fam, row in table.items():
         rk = next((r for r in ranking if r["family"] == fam), None)
         if rk is not None:
@@ -1706,6 +1741,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "families": table,
         "totals": totals,
         "quota": quota,
+        # WHETHER THE BREADTH STEER SHAPED THIS HOUR (research/breadth_enforcer.py reads it back).
+        "breadth_steer": ({"in_force": True, "saturated": list(steer.get("saturated") or []),
+                           "frontier_head": list(steer.get("frontier") or [])[:20]}
+                          if steer else {"in_force": False}),
         "starved": starved[:20],
         "unmined_live_families": unmined[:40],
         # THE RANKING IS PUBLISHED SO THE CHOICE IS INSPECTABLE -- and so the fence can check that

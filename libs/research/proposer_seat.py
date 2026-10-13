@@ -388,9 +388,55 @@ def build_prompt(factory: str, task: str, *, grammar: str, context: Sequence[str
     if context:
         lines += ["CONTEXT (public facts about the search, nothing held out):",
                   *[f"  - {c}" for c in context[:40]], ""]
+    steer = breadth_steer_lines()
+    if steer:
+        lines += ["BREADTH (measured hourly; family names only):", *[f"  - {c}" for c in steer],
+                  ""]
     lines += [f"Return at most {int(n)} proposal(s), one JSON object per line, no prose, "
               "no markdown fence."]
     return scrub("\n".join(lines))
+
+
+#: The breadth enforcer's hourly artifact (desks/mt5/research/breadth_enforcer.py).
+BREADTH_ENFORCER = DESK / "reports" / "BREADTH_ENFORCER.json"
+BREADTH_STEER_MAX_AGE_H = 6.0
+
+
+def breadth_steer_lines(path: Path | None = None) -> list[str]:
+    """THE SEATS OBEY THE BREADTH STEER (principal 2026-10-13): saturated families are named as
+    exploration-floor-only ground and the ranked frontier as the target. FACTS ONLY -- family
+    names and certificate counts, never a score -- and nothing at all when the artifact is
+    absent, unmeasured or older than BREADTH_STEER_MAX_AGE_H, so an unmeasured steer never
+    narrows a seat (L1.28a)."""
+    try:
+        doc = json.loads((path or BREADTH_ENFORCER).read_text(encoding="utf-8"))
+        st = doc.get("steer") or {}
+        at = datetime.fromisoformat(str(doc.get("generated_utc")).replace("Z", "+00:00"))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        if (st.get("status") != "MEASURED"
+                or (datetime.now(tz=UTC) - at).total_seconds() > BREADTH_STEER_MAX_AGE_H * 3600):
+            return []
+    except (OSError, ValueError, TypeError, AttributeError):
+        return []
+    sat = st.get("saturated_certificates") or {}
+    front = [str(f) for f in (st.get("frontier") or [])][:20]
+    out: list[str] = []
+    if sat:
+        out.append("SATURATED families (the desk already holds many certificates here; only a "
+                   "small exploration share of new cells goes to them): "
+                   + ", ".join(f"{f} ({n})" for f, n in list(sat.items())[:12]))
+    if front:
+        out.append("FRONTIER families (unknown or under-mined; propose for these FIRST): "
+                   + ", ".join(front))
+    if isinstance(st.get("basket_policy"), str) and st["basket_policy"]:
+        out.append("BASKETS: " + st["basket_policy"])
+    _ff = st.get("forced_first")
+    ff: dict[str, Any] = _ff if isinstance(_ff, dict) else {}
+    if ff.get("rules"):
+        out.append("FORCED FIRST (mine these markets ahead of every saturated family): "
+                   + "; ".join(str(r) for r in ff["rules"]))
+    return out
 
 
 # ------------------------------------------------------------------------------ verdict stripping

@@ -245,6 +245,46 @@ RULE = ("a cell is UNMEASURED until a source says otherwise, the strongest sourc
         "counted, and the prior ranks regions it may never gate")
 
 
+# ------------------------------------------------------------- participant structure (a tag)
+#: WHO TRADES A MARKET, AS AN AXIS TAG (GAP_MAP rows 24-27, principal's yes 2026-10-13). The
+#: same vocabulary the source layer already uses for a SOURCE's culture (`alt_proxies`
+#: `participant_structure`, `alpha_capture`), applied here to a MARKET in a SESSION. A rule names
+#: either MetaTrader's registry asset class (read through `universe_policy.asset_class_of`, so a
+#: newly registered crypto CFD is tagged with no edit) or a market by name, and the sessions it
+#: holds in ("all" = every session). Consumers SELECT BY TAG (`participant_structure`); none of
+#: them carries a symbol list. CN50 is named for the day the broker registers it; CHINAH is the
+#: China index the registry holds today.
+PARTICIPANT_STRUCTURE_RULES: tuple[dict[str, Any], ...] = (
+    {"tag": "retail_heavy", "asset_class": "crypto", "sessions": ("all",),
+     "why": "crypto CFDs: retail flow dominates every session"},
+    {"tag": "retail_heavy", "symbols": ("CN50", "CHINAH", "HK50", "USDCNH"), "sessions": ("all",),
+     "why": "China / Hong Kong index and offshore-yuan markets: retail-heavy participation"},
+    {"tag": "retail_heavy", "symbols": ("XAUUSD",), "sessions": ("asia",),
+     "why": "gold in the Asia session: Asian retail bullion flow"},
+)
+
+
+def participant_structure(symbol: Any, session: Any = None) -> tuple[str, ...]:
+    """The participant-structure tags of `symbol` in `session` (None or "all" = any session the
+    rule holds in counts only for an all-session rule). Empty when no rule names it -- no tag is
+    not a tag (L1.28a)."""
+    sym = str(symbol or "").strip().upper()
+    if not sym:
+        return ()
+    sess = normalise_session(session)
+    try:
+        from research.universe_policy import asset_class_of
+        klass = str(asset_class_of(sym) or "")
+    except Exception:
+        klass = ""
+    tags: list[str] = []
+    for rule in PARTICIPANT_STRUCTURE_RULES:
+        hit = (bool(klass) and klass == rule.get("asset_class")) or sym in rule.get("symbols", ())
+        sessions = rule.get("sessions") or ("all",)
+        if hit and ("all" in sessions or sess in sessions) and rule["tag"] not in tags:
+            tags.append(str(rule["tag"]))
+    return tuple(tags)
+
 # ------------------------------------------------------------------ tolerant reading
 def _read_json(path: Path, note: dict[str, str]) -> Any:
     """Parse `path`, or record exactly why it produced nothing. Never raises."""
