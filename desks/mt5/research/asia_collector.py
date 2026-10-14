@@ -527,6 +527,20 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def last_status_before_hold(prev: Any, rec: dict[str, Any]) -> str:
+    """The status of the last pass that REACHED a source now held on terms, kept across passes:
+    the persisted `last_status_before_hold` when collector_state carries one, else the previous
+    pass's status when that pass was not itself the hold (pass-6 audit SHOULD-FIX: the record
+    used to vanish after the first held pass). Empty when the source was never reached."""
+    if not isinstance(prev, dict):
+        return ""
+    kept = str(prev.get("last_status_before_hold") or "")
+    if kept:
+        return kept
+    last = str(prev.get("last_status") or "")
+    return last if last and last != str(rec.get("status") or "") else ""
+
+
 def held_missed_growth_lines(rows: list[dict[str, Any]],
                              prior: dict[str, Any]) -> list[dict[str, Any]]:
     """GROWTH GOVERNANCE: one missed-growth line per registry row this pass held on terms (a
@@ -543,10 +557,9 @@ def held_missed_growth_lines(rows: list[dict[str, Any]],
             continue
         seen.add(key)
         prev = prior.get(str(r.get("id"))) if isinstance(prior, dict) else None
-        past: dict[str, Any] = {}
-        if isinstance(prev, dict) and prev.get("last_status") not in (None, "", r.get("status")):
-            past = {"registry_id": str(r.get("id")),
-                    "last_status_before_hold": str(prev.get("last_status"))}
+        before = last_status_before_hold(prev, r)
+        past: dict[str, Any] = ({"registry_id": str(r.get("id")),
+                                 "last_status_before_hold": before} if before else {})
         line = _tf.held_missed_growth(key, past or None)
         line["registry_id"] = str(r.get("id"))
         out.append(line)
@@ -649,6 +662,16 @@ def main(argv: list[str] | None = None) -> int:
                               validators=prev.get("validators") if isinstance(prev, dict) else None)
         rows[i] = rec
         keep = {"last_attempt_epoch": time.time(), "last_status": rec.get("status")}
+        try:
+            from libs.data import terms_fence as _tfh
+            held = _tfh.held_on_terms(str(rec.get("source") or ""))
+        except Exception:                      # the fence is read again by the report below
+            held = False
+        if held:
+            # persist the pre-hold record so every held pass's missed-growth line carries it
+            before = last_status_before_hold(prev, rec)
+            if before:
+                keep["last_status_before_hold"] = before
         # A 304 keeps the OLD validators: they are what proved the page unchanged, and replacing
         # them with nothing would make the next pass unconditional for no reason.
         keep["validators"] = (rec.get("validators")

@@ -303,3 +303,76 @@ def test_us_pack_finra_margin_route_is_never_live_input() -> None:
     assert tf.platform_of_url(row["root"]) is None
     line = tf.held_missed_growth("us_finra_margin_statistics")
     assert line["delta_elogw"] == "UNMEASURED" and line["cause"]
+
+
+# ============================================================================ audit 27d186241
+_GOLD = "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls"
+
+
+@pytest.mark.parametrize("url,row", [
+    ("https://www.cmegroup.com//delivery_reports/Gold_Stocks.xls", "comex_warehouse_stocks"),
+    ("https://www.cmegroup.com/./delivery_reports/Gold_Stocks.xls", "comex_warehouse_stocks"),
+    ("https://www.cmegroup.com/x/../delivery_reports/Gold_Stocks.xls", "comex_warehouse_stocks"),
+    ("https://www.cmegroup.com/delivery%5Freports/Gold_Stocks.xls", "comex_warehouse_stocks"),
+    ("https://www.cmegroup.com/%64elivery_reports/Gold_Stocks.xls", "comex_warehouse_stocks"),
+    ("https://www.cmegroup.com/delivery%255Freports/Gold_Stocks.xls", "comex_warehouse_stocks"),
+    ("https://www.jpx.co.jp/markets/statistics-equities/short-selling",
+     "jpx_short_selling_ratio"),
+    ("https://www.jpx.co.jp/markets/statistics-equities/margin", "jpx_margin_balances"),
+    ("https://www.jpx.co.jp/english/markets/derivatives", "jp_tocom_settlements"),
+    ("https://www.cmegroup.com/notices//clearing/2026/10/Chadv26-312.html", "cme_margin_changes"),
+])
+def test_a_route_cannot_escape_its_pattern_by_spelling(url: str, row: str) -> None:
+    """MUST-FIX 1: the path is percent-decoded, `//` collapsed, dot segments removed and a
+    folder with no trailing slash matched as the folder, so every spelling of the same
+    resource names the held row."""
+    assert tf.input_source(url) == row
+    assert tf.input_source(f"https://web.archive.org/web/2026/{url}") == row
+
+
+def test_normalization_does_not_widen_a_route() -> None:
+    for url in ("https://www.cmegroup.com/delivery_reports/../markets/metals.html",
+                "https://www.jpx.co.jp/markets/statistics-equities/margin-x/index.html",
+                "https://www.jpx.co.jp/markets/statistics-equities/short-selling/../index.html"):
+        assert tf.input_source(url) is None, url
+
+
+def test_the_lme_hold_is_site_wide_by_clause_3_1_11() -> None:
+    """SHOULD-FIX (documented choice): clause 3.1.11 bars automated download of Information
+    'from any LME website', so every lme.com route is held as live input -- and, IDEAS_ONLY,
+    still readable for ideas."""
+    q = tf.SOURCE_POLICY["lme_warehouse_stocks"]["terms"]["clauses"]["3.1.11"]
+    assert "from any LME website" in q
+    for url in ("https://www.lme.com/en/market-data/reports-and-data/warehouse-and-stocks-reports",
+                "https://www.lme.com/en/metals/non-ferrous/lme-copper",
+                "https://lme.com/", "https://www.lme.com/en/news"):
+        assert tf.input_source(url) == "lme_warehouse_stocks", url
+        assert tf.platform_of_url(url) is None, url              # ideas still mined
+    assert tf.input_source("https://www.lmecopper.example/") is None
+
+
+def test_asia_collector_keeps_the_pre_hold_record_on_every_held_pass(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """SHOULD-FIX: `last_status_before_hold` is persisted in collector_state, so the second and
+    later held passes still carry the past conversion."""
+    import asia_collector as ac
+    monkeypatch.setattr(urllib.request, "urlopen", _no_network)
+    monkeypatch.setattr(ac, "fenced_urlopen", _no_network)
+    monkeypatch.setattr(ac, "_robots_allows", _no_network)
+    reg, state, out = tmp_path / "reg.json", tmp_path / "state.json", tmp_path / "out.json"
+    reg.write_text(json.dumps({"sources": [{"id": "comex_warehouse", "url": _GOLD,
+                                            "expect": "csv", "access": "public",
+                                            "cadence": "daily"}]}), "utf-8")
+    state.write_text(json.dumps({"comex_warehouse": {"last_status": "COLLECTED"}}), "utf-8")
+    monkeypatch.setattr(ac, "REGISTRY", reg)
+    monkeypatch.setattr(ac, "STATE", state)
+    monkeypatch.setattr(ac, "OUT", out)
+    for _ in range(3):
+        assert ac.main(["--id", "comex_warehouse"]) == 0
+        doc = json.loads(out.read_text("utf-8"))
+        ln = next(x for x in doc["missed_growth_lines"] if x["registry_id"] == "comex_warehouse")
+        assert ln["past_conversion"]["last_status_before_hold"] == "COLLECTED"
+        assert ln["delta_elogw"] == "UNMEASURED"
+        st = json.loads(state.read_text("utf-8"))["comex_warehouse"]
+        assert st["last_status"] == tf.IDEAS_ONLY
+        assert st["last_status_before_hold"] == "COLLECTED"

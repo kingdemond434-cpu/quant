@@ -525,6 +525,10 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
     "lme_warehouse_stocks": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
         "sources": ("lme_warehouse_stocks",),
+        # A SITE-WIDE hold, deliberately (pass-6 audit SHOULD-FIX, documented): clause 3.1.11
+        # bars an API or automated mechanism downloading Information "from any LME website", and
+        # 1.1 defines Information as any information on any LME website, so no lme.com route is
+        # live input. IDEAS_ONLY, so pages are still read for ideas (platform_of_url is None).
         "url_patterns": (r"^(?:[^/]*\.)?lme\.com/",),
         "wanted": ("LME warehouse stocks and the cancelled-warrant share of live tonnage: the "
                    "deliverable float for copper and the base complex (XCUUSD, XAGUSD)"),
@@ -931,18 +935,46 @@ def _wrapped_url(url: str) -> str | None:
 
 
 
+def _route_path(path: str) -> str:
+    """The path a route is matched on, as the server resolves it: percent-decoded (repeatedly,
+    so a double-encoded `%255F` cannot hide `_`), NFKC-folded, every run of `/` collapsed, and the
+    `.` / `..` dot segments removed (RFC 3986 5.2.4). Always starts with `/`."""
+    p = str(path or "")
+    for _ in range(3):
+        q = unquote(p)
+        if q == p:
+            break
+        p = q
+    p = unicodedata.normalize("NFKC", p).replace("\\", "/")
+    out: list[str] = []
+    for seg in re.sub(r"/+", "/", p).split("/"):
+        if seg == ".":
+            continue
+        if seg == "..":
+            if out:
+                out.pop()
+            continue
+        out.append(seg)
+    trail = p.endswith(("/", "/.", "/.."))
+    norm = "/" + "/".join(x for x in out if x)
+    return norm + "/" if trail and norm != "/" else norm
+
+
 def _pattern_source(url: str) -> str | None:
     """The ROUTE row whose `url_patterns` match this URL's normalized `host + path`, else None.
     A route row (e.g. a held route) governs exactly that route; the rest of its host keeps
-    whatever row or default it had."""
+    whatever row or default it had. The path is normalized first (`_route_path`), and it is
+    matched both as it stands and with a trailing `/`, so `.../short-selling` is the folder
+    `.../short-selling/` (pass-6 audit MUST-FIX 1)."""
     parts = _parse(url)
     h = _host(url)
     if parts is None or not h:
         return None
-    target = h + (parts.path or "/")
+    path = _route_path(parts.path or "/")
+    targets = (h + path, h + path.rstrip("/") + "/")
     for name, p in SOURCE_POLICY.items():
         for pat in p.get("url_patterns") or ():
-            if re.search(pat, target, re.I):
+            if any(re.search(pat, t, re.I) for t in targets):
                 return name
     return None
 
