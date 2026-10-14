@@ -687,7 +687,7 @@ def build() -> dict[str, Any]:
             "purpose": "the pager every other row depends on to be heard",
         })
 
-    disk = disk_state()
+    disk = disk_state(floor_gb=DISK_FLOOR_GB)
     if disk.get("verdict") == "DISK_LOW":
         rows.append({
             "name": "DISK FREE",

@@ -38,6 +38,12 @@ def _load(name: str, rel: str) -> ModuleType:
 oc = _load("_ph_stamps_organ_contract", "ops/organ_contract.py")
 ph = _load("_ph_stamps_process_health", "ops/process_health.py")
 ns = _load("_ph_stamps_never_stale", "ops/never_stale.py")
+
+
+@pytest.fixture(autouse=True)
+def _host_disk_is_not_the_subject(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The board's rows are the subject here, not this machine's free space."""
+    monkeypatch.setattr(ph, "DISK_FLOOR_GB", 0.0)
 dh = _load("_ph_stamps_desk_health", "desks/mt5/scripts/check_desk_health.py")
 
 NOW = datetime(2026, 10, 14, 6, 0, tzinfo=UTC)
@@ -322,11 +328,11 @@ def test_disk_under_the_floor_is_a_red_row_that_lists_and_never_deletes(tmp_path
     du = namedtuple("du", "total used free")
     monkeypatch.setattr(shutil, "disk_usage", lambda _p: du(100 * 1024 ** 3, 95 * 1024 ** 3,
                                                            5 * 1024 ** 3))
-    d = ph.disk_state(tmp_path)
+    d = ph.disk_state(tmp_path, floor_gb=10.0)
     assert d["verdict"] == "DISK_LOW" and d["free_gb"] == 5.0
     assert d["reclaimable"][0]["path"].endswith("old.log") and big.exists()
     assert "DISK_LOW" in ph.ATTENTION
     monkeypatch.setattr(shutil, "disk_usage", lambda _p: du(100 * 1024 ** 3, 50 * 1024 ** 3,
                                                            50 * 1024 ** 3))
-    assert ph.disk_state(tmp_path)["verdict"] == "OK"
+    assert ph.disk_state(tmp_path, floor_gb=10.0)["verdict"] == "OK"
     assert "DISK_LOW" in ns.VERDICT_DIAGNOSIS
