@@ -240,8 +240,8 @@ def test_the_yahoo_contract_fetch_is_refused_at_its_first_url(no_socket: list[An
 
 def test_eia_workbooks_parse_to_real_dates() -> None:
     got = ffc.parse_eia_daily(_eia_xls(46000, 10, 70.0))
-    assert len(got) == 10 and min(got) == date(2025, 12, 9)
-    assert got[date(2025, 12, 18)] == pytest.approx(70.10)
+    assert len(got) == 10 and min(got) == date(2025, 12, 10)
+    assert got[date(2025, 12, 19)] == pytest.approx(70.10)
 
 
 def test_the_cl_rule_derives_expiries_in_rank_order() -> None:
