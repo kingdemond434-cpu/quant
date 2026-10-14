@@ -304,6 +304,7 @@ def _congress_pass(tmp_path: Path, cursor: dict[str, Any] | None = None) -> dict
     from free_stack_hunter import Store, run
     doc = json.loads((DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
     row = next(r for r in doc["sources"] if r["id"] == "congress_trades")
+    tmp_path.mkdir(parents=True, exist_ok=True)
     roster = tmp_path / "roster.json"
     roster.write_text(json.dumps({"sources": [row]}), "utf-8")
     store = Store(tmp_path)
