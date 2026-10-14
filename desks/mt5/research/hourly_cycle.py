@@ -1080,8 +1080,6 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "dukascopy_backfill", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
-                     # free public POS/card/location/satellite proxies as PIT series
-                     "alt_proxies",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1107,6 +1105,13 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_tree", "residual_map", "frontier_ceo",
                      "federation_ops", "sandbox_runner", "sandbox_provision",
                      "sandbox_roster", "proposer_seat", "kimi_hunt",
+                     # MOVED FROM data 2026-10-14: free public POS/card/location/satellite
+                     # proxies as PIT series. The data department's last leg with measured
+                     # compute on the box's PRODUCER_YIELD (7d) sits at line ~4530 of this file;
+                     # this leg sits at ~5290, behind lake_promote/asia_*. The intel department
+                     # measurably reaches ~5430 (deep_forest, proposer_seat), so its pass reaches
+                     # this leg. The GEOINT hazard reader rides beside it.
+                     "alt_proxies", "geoint_hazards",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure"),
@@ -1947,6 +1952,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "novel_style_lanes": 120,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # USGS live feed + a one-time FDSN backfill per box + NHC CurrentStorms; stops at 120 s.
+    "geoint_hazards": 180,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -5283,6 +5290,11 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # GEOINT HAZARDS (2026-10-14, novel-style lanes N3/N4): USGS M6+ quakes near JP/TW/CL and NHC
+    # Gulf storm cones as PIT events (lake natural_hazard_events -> mt5desk.family_hazard_shock
+    # cells), plus the GEOINT source ledger (FIRMS, PortWatch, Sentinel-5P NEEDS_KEY).
+    geo = _costed("geoint_hazards", lambda: _producer(
+        "geoint_hazards", "research/geoint_hazards.py", "--once", "--budget-s", "120"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -5889,6 +5901,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "geoint_hazards": geo,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

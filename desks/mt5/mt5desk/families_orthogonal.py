@@ -2463,3 +2463,18 @@ FAMILY_TIMEFRAMES["fx_expiry_pin"] = (
     ("H1",),
     "the cut is one instant a day (10:00 New York) and the pin is read a few bars before it; "
     "the lead and release windows are counted in H1 bars")
+
+# NATURAL-HAZARD SHOCK (2026-10-14, the novel-style lane N3). Loads its own point-in-time event
+# frame (`natural_hazard_events`, written by research/geoint_hazards.py: USGS M6+ near JP/TW/CL,
+# NHC Gulf cones) given `symbol` and `kind`, both REQUIRED keyword arguments, so the gauntlet
+# rebuilds it from the cell's params and the sweep names it unsuppliable.
+from mt5desk.family_hazard_shock import family_hazard_shock  # noqa: E402
+
+ORTHOGONAL_FAMILIES["hazard_shock"] = family_hazard_shock
+FAMILY_INPUTS["hazard_shock"] = (
+    "public hazard notices (USGS quakes, NHC cones) at their publication instant, plus price",
+    "data/lake/series/natural_hazard_events.csv")
+FAMILY_TIMEFRAMES["hazard_shock"] = (
+    ("H1",),
+    "a notice is one instant; entry is the first H1 bar opening after it and the hold is "
+    "counted in H1 bars")

@@ -362,7 +362,9 @@ def _style_novelty_module() -> Any:
         return None
 
 
-def novelty(report_path: Path = STYLE_NOVELTY) -> dict[str, Any]:
+def novelty(report_path: Path = STYLE_NOVELTY,
+            declared: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Each declared lane against the book's dominant styles; `declared` defaults to N1/N2."""
     try:
         doc = json.loads(report_path.read_text("utf-8"))
     except (OSError, ValueError):
@@ -374,7 +376,7 @@ def novelty(report_path: Path = STYLE_NOVELTY) -> dict[str, Any]:
     dom = doc.get("dominant_style_counts") if isinstance(doc, dict) else None
     out["dominant_style_counts"] = dom if isinstance(dom, dict) else UNMEASURED
     lanes: dict[str, Any] = {}
-    for lane, dec in DECLARED.items():
+    for lane, dec in (DECLARED if declared is None else declared).items():
         row: dict[str, Any] = {"family": dec["family"], "declared_closest": dec["closest_styles"],
                                "why": dec["why"], "return_novelty": UNMEASURED,
                                "return_novelty_why": ("no certificate: style_novelty measures a "

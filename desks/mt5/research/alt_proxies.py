@@ -1985,8 +1985,12 @@ SOURCES: tuple[Source, ...] = (
         url=PORTWATCH_BASE.format(svc="Daily_Chokepoints_Data"),
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_chokepoints,
         rule=_lag_rule(10, 0), transform="anomaly_daily",
-        instruments={"XTIUSD": -1, "XBRUSD": -1},
-        signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits"),
+        # N4 (2026-10-14): the transit anomaly also feeds gold (a chokepoint shock is a
+        # risk-off bid) and USDJPY (yen repatriation on the same shock). Priors only: a PASSING
+        # release-gain test's measured IC sign replaces them wherever a cell is minted.
+        instruments={"XTIUSD": -1, "XBRUSD": -1, "XAUUSD": -1, "USDJPY": 1},
+        signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits",
+                       "suez_canal_transits", "malacca_strait_transits"),
         mechanism=("fewer transits through oil chokepoints is supply friction; the tanker count "
                    "moves before any inventory report"),
         payer="short-dated crude holders pricing weekly inventories",

@@ -65,6 +65,7 @@ MECHANISM_CLASS: dict[str, str] = {
     "regime_transition": "regime", "drawdown_conditional": "regime", "ensemble": "ensemble",
     "discovered": "discovered", "generic": "generic", "fair_value_gap": "reversion",
     "dav_range_filter_adx": "breakout", "fx_expiry_pin": "positioning",
+    "hazard_shock": "event",
 }
 
 DIRECTION_BIAS = {"trend": "with", "breakout": "with", "reversion": "against",

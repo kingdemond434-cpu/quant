@@ -244,6 +244,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     "cb_tone": "news_reaction",
     "news_reaction": "news_reaction",
     "analyst_revision_drift": "news_reaction",
+    "hazard_shock": "news_reaction",
     # -- cross-sectional selection
     "cross_sectional": "cross_sectional_fx",
     "style_premia": "cross_sectional_fx",
