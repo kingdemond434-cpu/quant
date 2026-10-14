@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import sys
+import urllib.error
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -527,7 +528,8 @@ def test_rerouted_pages_are_fetched_with_the_index_agent(monkeypatch: pytest.Mon
     assert out["fetched"] == 1 and pages
     for _, h in pages:
         assert h["User-Agent"] == D.INDEX_UA
-        assert h["User-Agent"] != D._UA["User-Agent"] and "Mozilla" not in h["User-Agent"]
+        # one honest constant serves every route: never a browser string
+        assert h["User-Agent"] == D._UA["User-Agent"] and "Mozilla" not in h["User-Agent"]
 
 
 def test_a_subdomain_page_needs_its_own_hosts_robots() -> None:
@@ -866,7 +868,7 @@ def test_a_refusal_older_than_the_retry_clock_still_blocks_every_request(
         {"ground": "g", "status": D.ACCESS_REFUSED, "language": "en",
          "why": "HTTP 403 from ex.example: site held for the run"},
         {"ground": "bare", "status": D.ACCESS_REFUSED, "language": "en",
-         "why": "HTTP 429 from other.example: site held for the run"}], [g, bare])
+         "why": "HTTP 429: refused (no site named)"}], [g, bare])
     old = (datetime.now(tz=UTC) - timedelta(days=30)).isoformat()
     raw = json.loads(path.read_text("utf-8"))
     vecs = raw["vectors"]
@@ -894,13 +896,15 @@ def test_a_refusal_older_than_the_retry_clock_still_blocks_every_request(
     monkeypatch.setattr(D.time, "sleep", lambda *_: None)
     r = D._Run(60.0, True, None, None)
     D.seed_persisted_holds(r, [g, bare], state)
-    assert set(r.holds.sites) >= {"ex.example", "other.example"}
+    assert "ex.example" in r.holds.sites and "bare" in r.held_grounds   # fail closed by name
     for gg in ({**g, "route": "http", "url": "https://www.ex.example/a"},
                {**g, "route": "search"}, bare,
-               {"name": "sibling", "route": "http", "url": "https://other.example/p"}):
+               {"name": "sibling", "route": "http", "url": "https://m.ex.example/p"}):
         r.work(gg)
     assert calls == []
     assert r.page("https://sub.ex.example/x") == "" and calls == []
+    # a Wayback capture of the held site is held too
+    assert r.page("https://web.archive.org/web/2019/https://ex.example/x") == "" and calls == []
     rows = {s["ground"]: s for s in r.status if "ground" in s}
     assert {rows[n]["status"] for n in ("g", "bare", "sibling")} == {"SITE_HELD"}
     assert all(rows[n]["missed_growth"]["delta_elogw"] == "UNMEASURED"
@@ -922,6 +926,85 @@ def test_a_refusal_older_than_the_retry_clock_still_blocks_every_request(
     assert "g" not in D.person_held_grounds([g], released)
 
 
+def test_a_hold_is_persisted_under_the_refusing_domain_and_survives_the_ground(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit PASS5_feb86fa30 MF2: ground g (ex.example) refused by other.example holds
+    other.example next run, never the innocent ex.example; the hold is written as its own
+    `site:<domain>` vector, so g's next outcome cannot erase it."""
+    from libs.research import hunt_frontier as hf
+    path = tmp_path / "frontier.json"
+    monkeypatch.setattr(D, "_frontier_path", lambda: path)
+    g = {"name": "g", "site": "ex.example", "language": "en"}
+    D._record_frontier([{"ground": "g", "status": D.ACCESS_REFUSED, "language": "en",
+                         "why": "HTTP 403 from other.example: site held for the run"}], [g],
+                       {"other.example": {"status": 403, "ground": "g"}})
+    held = D.persisted_site_holds([g], hf.load(path))
+    assert "other.example" in held and "ex.example" not in held
+    assert D.person_held_grounds([g], hf.load(path)) == {}         # the ground is not held
+    # g yields on its next run: its own vector moves on, the site hold stays
+    D._record_frontier([{"ground": "g", "status": "PRODUCTIVE", "claims": 2}], [g],
+                       {"other.example": {"status": 403, "ground": "g", "persisted": True}})
+    st = hf.load(path)
+    assert st.vectors["g"].outcome == "YIELDED"
+    assert set(D.persisted_site_holds([g], st)) == {"other.example"}
+    assert st.vectors["site:other.example"].person_held
+
+
+def test_a_damaged_frontier_fails_closed_and_is_never_overwritten(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = tmp_path / "frontier.json"
+    path.write_text("{not json", "utf-8")
+    monkeypatch.setattr(D, "_frontier_path", lambda: path)
+    g = {"name": "g", "site": "ex.example", "language": "en"}
+    assert D.frontier_damaged(path)
+    assert "ex.example" in D.persisted_site_holds([g], None)
+    r = D._Run(60.0, True, None, None)
+    D.seed_persisted_holds(r, [g], None)
+    monkeypatch.setattr(D, "_http", lambda *a, **k: (_ for _ in ()).throw(AssertionError(a)))
+    r.work({"name": "s", "route": "search", "queries": ["q"], "language": "en"})
+    assert r.status[-1]["status"] == "SITE_HELD"
+    out = D._record_frontier([{"ground": "g", "status": "PRODUCTIVE"}], [g])
+    assert out["status"] == "UNMEASURED" and path.read_text("utf-8") == "{not json"
+
+
+def test_held_site_urls_never_reach_the_crawler_frontier() -> None:
+    """Audit PASS5_feb86fa30 MF3: follow() refuses a held site's URL (and a Wayback capture
+    of it), and a hold placed AFTER a URL was followed purges it."""
+    r = D._Run(60.0, True, None, None)
+    r.ground = {"name": "g"}
+    r.follow("https://ex.example/a.html", "a", via="t")
+    r.follow("https://web.archive.org/web/2019/https://ex.example/b", "b", via="t")
+    r.follow("https://ok.example/c", "c", via="t")
+    assert len(r.frontier) == 3
+    r._hold_site("https://www.ex.example/z", 403)
+    assert [u for u, _, _ in r.frontier] == ["https://ok.example/c"]
+    r.follow("https://m.ex.example/d", "d", via="t")
+    assert [u for u, _, _ in r.frontier] == ["https://ok.example/c"]
+
+
+def test_an_ip_host_is_held_whole() -> None:
+    assert D.registrable_domain("http://10.1.2.3:8080/x") == "10.1.2.3"
+    h = D.SiteHolds()
+    h.hold("http://10.1.2.3/x", 403)
+    assert h.held("http://10.1.2.3/y") and not h.held("http://99.1.2.3/y")
+
+
+def test_page_and_search_routes_send_no_browser_string_and_never_retry(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+    seen: dict[str, Any] = {}
+
+    def get(url: str, **k: Any) -> Any:
+        seen.update(k)
+        return SimpleNamespace(ok=False, status=429, error="HTTP 429", text="")
+    monkeypatch.setattr(D.pf, "get", get)
+    with pytest.raises(urllib.error.HTTPError):
+        D._http("https://ex.example/a")
+    assert seen["retries"] == 0
+    ua = seen["headers"]["User-Agent"]
+    assert "Mozilla" not in ua and "Chrome" not in ua and ua == D.INDEX_UA
+
+
 def test_registrable_domain_groups_a_site() -> None:
     assert D.registrable_domain("https://www.ex.example/a") == "ex.example"
     assert D.registrable_domain("sub.ex.example") == "ex.example"
@@ -930,8 +1013,8 @@ def test_registrable_domain_groups_a_site() -> None:
 
 
 # HKMA: a multi-day weather closure before 2024 is covered by the untabled-year slack (+3) plus
-# the weather day (+1); since 2024-09-23 HK no longer closes for weather, and the HKMA is assumed
-# to publish on a typhoon day, so the stamp is the plain next business day -- never early.
+# the weather day (+1). Since 2024-09-23 HK markets no longer close for weather; that the HKMA
+# also PUBLISHES on a typhoon day is an ASSUMPTION (audit PASS5_feb86fa30 SF), not evidence.
 @pytest.mark.parametrize(("period", "closed", "true_next"), [
     # Mangkhut-style closure stretched to two days, Mon-Tue
     (date(2018, 9, 14), (date(2018, 9, 17), date(2018, 9, 18)), date(2018, 9, 19)),
@@ -956,6 +1039,9 @@ def test_hkma_multi_day_weather_closure_before_2024_is_never_early(
 ])
 def test_hkma_publishes_on_typhoon_days_after_the_2024_rule(period: date,
                                                             typhoon_day: date) -> None:
+    """PINS AN ASSUMPTION, NOT EVIDENCE: the rule assumes the HKMA publishes on a post-2024
+    typhoon day like any business day. No HKMA release from such a day has been checked; if
+    one shows a later publication, this test and the rule change together."""
     src = A.BY_ID["hk_hkma_liquidity"]
     t = src.rule(period)
     # the typhoon day is a business day now; the stamp is its END (20:00 HKT), never before it
