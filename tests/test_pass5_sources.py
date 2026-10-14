@@ -8,6 +8,8 @@ GAP1 USAJOBS posting counts (key and e-mail in headers only, first-seen PIT); Ad
 F2  FINRA Reg SHO short volume HELD on FINRA's own terms.
 GAP2 congressional PTR trades parsed (ticker, side, band, transaction and filing dates) and the
     congress row HELD on the statute the disclosure gate prints.
+The three holds are rows of ONE register (libs/data/terms_fence.SOURCE_POLICY, held_route), read
+by alt_proxies.HELD_ROUTES and by free_stack_hunter; each carries a missed-growth line.
 GAP3 deep_forest's non-Bing site-index route (sitemap, else Common Crawl CDX), robots-gated.
 
 Every fixture is SYNTHETIC (values illustrative, never the publisher's).
@@ -36,6 +38,8 @@ FIX = ROOT / "tests" / "fixtures" / "alt_proxies"
 NOW = datetime(2026, 10, 14, 12, tzinfo=UTC)
 LIVE = ("hk_hkma_liquidity", "us_usajobs_postings")
 HELD = ("us_finra_regsho_short_volume", "gb_adzuna_vacancies")
+#: Every pass-5 hold, as a terms_fence held-route row (the congress row is the free stack's).
+FENCE_HELD = (*HELD, "congress_trades")
 
 
 def _by(obs: list[A.Obs], series: str) -> dict[date, float]:
@@ -46,33 +50,69 @@ def _by(obs: list[A.Obs], series: str) -> dict[date, float]:
 def test_pass5_rows_carry_their_terms_verdicts_and_verbatim_quotes() -> None:
     for sid in LIVE:
         assert A.BY_ID[sid].terms == "confirmed", sid
-    for sid in HELD:
-        src = A.BY_ID[sid]
-        assert src.terms == "refused" and src.parse is None, sid
-        assert A.status_of(src).startswith("BLOCKED_ON_TERMS"), sid
-        assert "HELD, NEVER FETCHED" in src.note, sid
-    for sid in (*LIVE, *HELD):
         ev = A.TERMS_EVIDENCE[sid]
         assert ev["terms_url"].startswith("https://") and len(ev["terms_quote"]) > 60, sid
         assert ev["checked_at"] == "2026-10-14", sid
     assert "commercial or noncommercial" in A.TERMS_EVIDENCE["us_usajobs_postings"]["terms_quote"]
-    assert "non-commercial" in A.TERMS_EVIDENCE["us_finra_regsho_short_volume"]["terms_quote"]
-    assert "14 day trial" in A.TERMS_EVIDENCE["gb_adzuna_vacancies"]["terms_quote"]
     wiki = A.TERMS_EVIDENCE["wiki_asia_attention"]
     assert "User-Agent" in wiki["api_terms_quote"] and "contact" in wiki["ua_policy_quote"]
 
 
-def test_held_rows_are_never_fetched(tmp_path: Path) -> None:
-    paths = A.Paths(tmp_path / "desk")
+def test_each_hold_is_one_fence_row_with_a_quoted_clause_and_no_hosts() -> None:
+    from libs.data import terms_fence as tf
+    for sid in FENCE_HELD:
+        row = tf.SOURCE_POLICY[sid]
+        assert row["held_route"] is True and row["status"] == tf.IDEAS_ONLY, sid
+        assert row["hosts"] == () and row["url_level"] is False, sid
+        assert row["wanted"] and row["why"] and row["unblock"] and row["robots"], sid
+        t = row["terms"]
+        assert t["url"].startswith("https://") and t["checked_at"] == "2026-10-14", sid
+        assert t["clauses"] and all(len(c) > 40 for c in t["clauses"].values()), sid
+        assert tf.terms_state(sid) == "READ" and tf.held_on_terms(sid), sid
+        assert sid in tf.HELD_ROUTE_KEYS and sid in A.HELD_ROUTES, sid
+    q = {sid: " ".join(tf.SOURCE_POLICY[sid]["terms"]["clauses"].values()) for sid in FENCE_HELD}
+    assert "non-commercial personal or professional use" in q["us_finra_regsho_short_volume"]
+    assert "14 day trial" in q["gb_adzuna_vacancies"]
+    assert "for any commercial purpose" in q["congress_trades"]
+
+
+def test_no_second_register_for_the_holds() -> None:
+    """The alt_proxies Source/TERMS rows and the roster's terms fields are gone: the fence row
+    is the only record, and alt_proxies names the holds only through HELD_ROUTES."""
     for sid in HELD:
-        rec = A.collect(paths, A.BY_ID[sid], {}, NOW, fetch=True, fixtures=None, deadline=1e18,
-                        getter=lambda *a: (_ for _ in ()).throw(AssertionError("fetched")))
-        assert rec["requests"] == 0 and rec["status"].startswith("BLOCKED_ON_TERMS"), sid
+        assert sid not in A.BY_ID and sid not in A.TERMS and sid not in A.TERMS_EVIDENCE, sid
+    doc = json.loads((DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
+    row = next(r for r in doc["sources"] if r["id"] == "congress_trades")
+    assert not {"terms", "terms_url", "terms_quote", "terms_judgement"} & set(row)
+
+
+def test_held_rows_are_never_fetched(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.request
+
+    def _no_network(*a: Any, **k: Any) -> Any:
+        raise AssertionError("network touched")
+    monkeypatch.setattr(urllib.request, "urlopen", _no_network)
+    paths = A.Paths(tmp_path / "desk")
+    rep = A.run(paths, fixtures=FIX, donate=False, dry_run=True, now=NOW)
+    for sid in HELD:
+        assert sid not in rep["sources"] and rep["held_routes"][sid]["verdict"] == "HELD", sid
+    assert not any("finra.org" in s.url or "adzuna" in s.url for s in A.SOURCES)
+
+
+def test_alt_proxies_report_carries_a_missed_growth_line_per_hold(tmp_path: Path) -> None:
+    rep = A.run(A.Paths(tmp_path / "desk"), fixtures=FIX, donate=False, dry_run=True, now=NOW)
+    lines = {ln["source"]: ln for ln in rep["missed_growth_lines"]}
+    assert set(lines) == set(A.HELD_ROUTES) >= set(FENCE_HELD)
+    for sid in HELD:
+        ln = lines[sid]
+        assert ln["kind"] == "terms_hold" and ln["status"] == "HELD_ON_TERMS", sid
+        assert ln["delta_elogw"] == "UNMEASURED", sid
+        assert "no measured conversion on record" in ln["cause"], sid
 
 
 def test_pass5_instruments_exist_and_no_crypto_exchange_host() -> None:
     uni = json.loads((DESK / "data" / "universe" / "universe.json").read_text("utf-8"))
-    for sid in (*LIVE, *HELD, "wiki_asia_attention"):
+    for sid in (*LIVE, "wiki_asia_attention"):
         src = A.BY_ID[sid]
         for m in (src.instruments, *src.series_instruments.values()):
             assert set(m) <= set(uni), sid
@@ -216,7 +256,7 @@ def test_fixture_pass_publishes_the_hkma_axis(tmp_path: Path) -> None:
     doc = json.loads((paths.axes / "alt_hk_hkma_liquidity.json").read_text("utf-8"))
     assert doc["series"]
     for sid in HELD:
-        assert sid in rep["blocked_on_terms"]
+        assert sid in rep["held_routes"]
 
 
 # ============================================================================ GAP2 congress
@@ -260,18 +300,49 @@ def test_ptr_trade_series_are_filing_dated_and_single_names_event_only() -> None
             assert meta["hypothesis"] == [] and meta["event"], k
 
 
-def test_congress_row_is_held_on_the_disclosure_statute(tmp_path: Path) -> None:
+def _congress_pass(tmp_path: Path, cursor: dict[str, Any] | None = None) -> dict[str, Any]:
     from free_stack_hunter import Store, run
     doc = json.loads((DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
     row = next(r for r in doc["sources"] if r["id"] == "congress_trades")
-    assert row["terms"] == "refused" and "commercial purpose" in row["terms_quote"]
     roster = tmp_path / "roster.json"
     roster.write_text(json.dumps({"sources": [row]}), "utf-8")
     store = Store(tmp_path)
-    rep = run(budget_s=30, fetch=lambda *a: (_ for _ in ()).throw(AssertionError("fetched")),
-              store=store, roster=roster, now=NOW, live=False)
+    if cursor is not None:
+        store.cursor.parent.mkdir(parents=True, exist_ok=True)
+        store.cursor.write_text(json.dumps(cursor), "utf-8")
+    return run(budget_s=30, fetch=lambda *a: (_ for _ in ()).throw(AssertionError("fetched")),
+               store=store, roster=roster, now=NOW, live=False)
+
+
+def test_congress_row_is_held_because_of_its_fence_row(tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.data import terms_fence as tf
+    rep = _congress_pass(tmp_path / "a")
     per = rep["per_source"]["congress_trades"]
     assert per["status"] == "HELD_ON_TERMS" and "commercial purpose" in per["last_error"]
+    assert "terms_fence congress_trades" in per["last_error"]
+    # the hold IS the fence row: lift the row and the hunter no longer holds on terms
+    monkeypatch.setitem(tf.SOURCE_POLICY, "congress_trades",
+                        {**tf.SOURCE_POLICY["congress_trades"], "held_route": False,
+                         "status": tf.PUBLIC_PAGE})
+    assert not tf.held_on_terms("congress_trades")
+    rep2 = _congress_pass(tmp_path / "b")
+    assert rep2["per_source"]["congress_trades"]["status"] != "HELD_ON_TERMS"
+
+
+def test_congress_hold_carries_its_missed_growth_line(tmp_path: Path) -> None:
+    rep = _congress_pass(tmp_path / "a")
+    ln = next(x for x in rep["missed_growth_lines"] if x["source"] == "congress_trades")
+    assert ln["kind"] == "terms_hold" and ln["status"] == "HELD_ON_TERMS"
+    assert ln["delta_elogw"] == "UNMEASURED"
+    assert "no measured conversion on record" in ln["cause"] and "past_conversion" not in ln
+    # a fetch that USED to run: the organ's own pre-hold record is carried as past conversion
+    rep = _congress_pass(tmp_path / "b", {"congress_trades": {
+        "attempts": 9, "successes": 4, "obs_total": 120, "last_success": "2026-10-01T00:00:00Z"}})
+    ln = next(x for x in rep["missed_growth_lines"] if x["source"] == "congress_trades")
+    assert ln["past_conversion"] == {"attempts": 9, "successes": 4, "obs_total": 120,
+                                     "last_success": "2026-10-01T00:00:00Z"}
+    assert ln["delta_elogw"] == "UNMEASURED"
 
 
 # ============================================================================ GAP3 deep forest

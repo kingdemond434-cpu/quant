@@ -53,6 +53,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.data import free_stack as fs  # noqa: E402
+from libs.data import terms_fence as _tf  # noqa: E402
 
 ROSTER = DESK / "data" / "free_stack_sources.json"
 #: The leg's own artifact (the runtime attestation reads this binding).
@@ -477,7 +478,6 @@ def run_source(row: dict[str, Any], store: Store, fetch: fs.Fetch, cstate: dict[
                now: datetime) -> tuple[fs.Harvest, dict[str, Any]]:
     kind = str(row["kind"])
     fn = fs.FETCHERS.get(kind)
-    from libs.data import terms_fence as _tf
     platform = _tf.input_source(kind, str(row["id"]), str(row.get("url") or ""))
     if platform:
         # LIVE INPUT from an IDEAS_ONLY or held source (libs/data/terms_fence.py): this organ
@@ -549,6 +549,26 @@ def derive_exchange(store: Store, row: dict[str, Any], h: fs.Harvest, now: datet
     return {"rows": len(rows), **counts, "signal_columns": len(h.columns)}
 
 
+def terms_hold_lines(rows: list[dict[str, Any]], cursor: dict[str, Any],
+                     columns: dict[str, Any]) -> list[dict[str, Any]]:
+    """GROWTH GOVERNANCE: every roster row held on terms carries a missed-growth line. Its past
+    conversion is this organ's own record from before the hold (attempts, successes,
+    observations, published columns); with none on record the line says so. delta E[log W] is
+    UNMEASURED, never zero."""
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        sid = str(row["id"])
+        if not _tf.held_on_terms(sid):
+            continue
+        st = cursor.get(sid) or {}
+        past = {k: st[k] for k in ("attempts", "successes", "obs_total", "last_success")
+                if st.get(k)}
+        if columns.get(sid):
+            past["past_columns"] = len(columns[sid])
+        out.append(_tf.held_missed_growth(sid, past or None))
+    return out
+
+
 def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         store: Store | None = None, roster: Path = ROSTER, now: datetime | None = None,
         only: list[str] | None = None, live: bool = True) -> dict[str, Any]:
@@ -571,10 +591,20 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         spent = time.monotonic() - t0
         if spent >= budget_s:
             break
-        # TERMS FAIL CLOSED (2026-10-14): a row that RECORDS its publisher's terms as refused or
-        # unconfirmed (`terms`, with the verbatim `terms_quote`) is HELD and never fetched. A
-        # row with no `terms` field is untouched: this reads the evidence a row carries, it does
-        # not invent a verdict for rows nobody has reviewed.
+        # TERMS FAIL CLOSED, ONE REGISTER (2026-10-14): a source whose row in the terms register
+        # (libs/data/terms_fence.SOURCE_POLICY, keyed by this roster id) is a held route or
+        # IDEAS_ONLY for live input is HELD and never fetched; the clause quoted is the fence's.
+        if _tf.held_on_terms(sid):
+            pol = _tf.SOURCE_POLICY[sid]
+            quote = " | ".join(str(v) for v in ((pol.get("terms") or {}).get("clauses")
+                                                or {}).values())
+            st.update({"last_status": _tf.HELD_ON_TERMS, "last_attempt": _iso(now),
+                       "last_error": (f"terms_fence {sid} ({pol['status']}): {pol['why']}"
+                                      + (f" -- quoted: {quote[:240]}" if quote else ""))})
+            continue
+        # The exchange rows that carry their own reviewed `terms` (cn_exchange, with
+        # `terms_evidence`) stay held on that evidence too. A row with no `terms` field is
+        # untouched: this reads the evidence a row carries, it never invents a verdict.
         terms = str(row.get("terms") or "")
         if terms in ("refused", "to_confirm"):
             st.update({"last_status": "HELD_ON_TERMS", "last_attempt": _iso(now),
@@ -635,6 +665,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     alloc = build_alt_state(store, columns, now)
     report = build_report(rows, complaints, cursor, columns, ran, store, now,
                           seconds=time.monotonic() - t0, alloc=alloc, live=live)
+    report["missed_growth_lines"] = terms_hold_lines(rows, cursor, columns)
     write_json(store.report, report)
     return report
 

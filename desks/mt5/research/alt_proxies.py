@@ -14,7 +14,8 @@ closing Aggregate Balance and HIBOR -- for USDHKD, HK50, CHINAH, USDCNH; USAJOBS
 counts (first-seen PIT; key and e-mail in headers only) for the USD crosses and US500; and the
 Wikipedia attention row extended to ja/tr/es/pt/ko currency and crisis articles (USDJPY, USDTRY,
 USDMXN, USDBRL, USDKRW) under the Wikimedia User-Agent policy. FINRA Reg SHO short volume and
-Adzuna vacancy counts are HELD on their publishers' own terms (quoted in PASS5_TERMS_EVIDENCE).
+Adzuna vacancy counts are HELD on their publishers' own terms: held-route rows of the one register
+(libs/data/terms_fence.SOURCE_POLICY), reported through HELD_ROUTES, never fetched.
 
 BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched. SUBSTITUTED_BY names the
 CANDIDATE lawful rows that may stand in for it (e-Stat immigration for JNTO, HK Immigration
@@ -3356,7 +3357,9 @@ AXIS_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
 #: PASS 5 (2026-10-14). HKMA interbank liquidity (F4: Convertibility Undertaking flows, the
 #: Aggregate Balance and HIBOR) and USAJOBS federal posting counts (GAP 1) ride this organ's
 #: hourly leg and its one exogenous_conditioner path unchanged. FINRA Reg SHO daily short volume
-#: (F2) and Adzuna job counts (GAP 1) are HELD on their publishers' own terms, quoted below.
+#: (F2) and Adzuna job counts (GAP 1) are HELD on their publishers' own terms: they are rows of
+#: the one register (terms_fence.SOURCE_POLICY, held_route) and reach this organ only through
+#: HELD_ROUTES below -- a held route has no fetcher, so a Source row for it was a second register.
 HKMA_LIQUIDITY_URL = ("https://api.hkma.gov.hk/public/market-data-and-statistics/"
                       "daily-monetary-statistics/daily-figures-interbank-liquidity")
 USAJOBS_SEARCH_URL = "https://data.usajobs.gov/api/search"
@@ -3369,8 +3372,6 @@ USAJOBS_CUTS: tuple[tuple[str, str], ...] = (
     ("new_1d_nurse", "DatePosted=1&JobCategoryCode=0610"),
     ("new_1d_contracting", "DatePosted=1&JobCategoryCode=1102"),
     ("new_1d_engineering", "DatePosted=1&JobCategoryCode=0801"))
-#: The note prefix of a row held on its publisher's terms (the macro-flow rows use the same words).
-_HELD_P5 = "HELD, NEVER FETCHED: "
 _HKD_LIQ = {"USDHKD": -1, "HK50": 1, "CHINAH": 1, "USDCNH": -1}
 _HKD_RATE = {"USDHKD": -1, "HK50": -1, "CHINAH": -1}
 
@@ -3441,49 +3442,6 @@ PASS5_SOURCES: tuple[Source, ...] = (
               "UNCONFIGURED:USAJOBS_USER_AGENT -- never a zero. Region cuts are not read: the "
               "federal series is national. Credit line when published: 'Source: USAJOBS "
               "(OPM); not endorsed by OPM'")),
-    # ---- HELD on the publisher's own terms: no parser, never fetched, named every pass.
-    Source(
-        id="us_finra_regsho_short_volume",
-        name="FINRA Reg SHO daily short-sale volume (CNMS consolidated file)",
-        url="https://cdn.finra.org/equity/regsho/daily/CNMSshvol{yyyymmdd}.txt",
-        region="US", language="en", cadence="daily", parse=None,
-        rule=_lag_rule(1, 0), transform="given",
-        instruments={"US500": -1, "NAS100": -1, "US2000": -1},
-        signal_series=("short_volume_ratio_z",),
-        mechanism=("an extreme market-wide short-volume ratio is mostly market-maker hedging of "
-                   "retail buying; at extremes it mean-reverts over 1-5 days"),
-        payer="late shorts at a capitulation extreme",
-        constraint="short volume includes market-maker hedges, not only directional shorts",
-        licence="FINRA Terms of Use: non-commercial personal or professional use only; no "
-                "data-mining or robots; no database built from the site",
-        source_culture="US/en", participant_structure=("retail_heavy", "institutional"),
-        failure_mode_hypothesis="short volume is dominated by market-making, not conviction",
-        crowding_prior="high",
-        note=_HELD_P5 + "FINRA's Terms of Use govern finra.org content including FINRA Data: "
-             "'shall be used ONLY for your own non-commercial personal or professional use' "
-             "and users may not 'use any data mining, scraping or harvesting tools (including "
-             "robots)' or 'develop or create a database of data using the FINRA Website'; the "
-             "Reg SHO file page carries no separate licence"),
-    Source(
-        id="gb_adzuna_vacancies",
-        name="Adzuna job-advert counts (UK/EU/AU/CA) as labour-demand nowcast",
-        url="https://api.adzuna.com/v1/api/jobs/gb/search/1", region="GB", language="en",
-        cadence="daily", parse=None, rule=_lag_rule(1, 0), transform="level_dev",
-        instruments={"GBPUSD": 1, "EURUSD": 1, "AUDUSD": 1, "USDCAD": -1},
-        signal_series=("adzuna_ads_total",), key_env="ADZUNA_APP_KEY",
-        mechanism="advertised vacancies lead the official labour-market releases",
-        payer="positions marked to the monthly labour-market consensus",
-        constraint="official vacancy data is monthly or quarterly",
-        licence=("Adzuna API terms: commercial use only within a 14-day trial; vacancy counts "
-                 "may not be used in aggregation for ongoing research without written consent"),
-        source_culture="GB/en", participant_structure=("institutional",),
-        failure_mode_hypothesis="aggregator coverage changes move the count",
-        crowding_prior="medium",
-        note=_HELD_P5 + "the Adzuna API terms permit commercial use only for 'a 14 day trial "
-             "period' during which the data 'may not be used in its original format or in "
-             "aggregation (including but not limited to vacancy counts, average salaries etc) "
-             "to deliver any ongoing work or research ... without written consent'; the key on "
-             "the box does not change that. Written consent from Adzuna lifts the hold"),
 )
 
 PASS5_TERMS: dict[str, tuple[str, str]] = {
@@ -3492,10 +3450,6 @@ PASS5_TERMS: dict[str, tuple[str, str]] = {
     "us_usajobs_postings": ("confirmed", "USAJOBS API ToS s.2: Public Data may be stored, "
                             "analysed and used for lawful commercial purposes; no approval "
                             "needed"),
-    "us_finra_regsho_short_volume": ("refused", "FINRA Terms of Use: non-commercial use only; "
-                                     "no data-mining tools or robots; no database"),
-    "gb_adzuna_vacancies": ("refused", "Adzuna API terms: 14-day commercial trial; no "
-                            "aggregated vacancy counts for ongoing research without consent"),
 }
 _P5_CHK = "2026-10-14"
 PASS5_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
@@ -3522,28 +3476,6 @@ PASS5_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                         "other technical safeguards"),
         "robots": "data.usajobs.gov/api is the documented, key-authenticated Search API",
         "credit": "Source: USAJOBS (OPM); not operated, sponsored or endorsed by OPM",
-        "checked_at": _P5_CHK},
-    "us_finra_regsho_short_volume": {
-        "terms_url": "https://www.finra.org/terms-of-use",
-        "terms_quote": ("shall be used ONLY for your own non-commercial personal or professional "
-                        "use. / use any data mining, scraping or harvesting tools (including "
-                        "robots) / develop or create a database of data using the FINRA "
-                        "Website"),
-        "robots": "not consulted: the source is held on terms and never fetched",
-        "judgement": ("REFUSED: non-commercial use only, robots and database-building "
-                      "prohibited; the daily-files page (finra.org/finra-data/browse-catalog/"
-                      "short-sale-volume-data/daily-short-sale-volume-files) adds no licence"),
-        "checked_at": _P5_CHK},
-    "gb_adzuna_vacancies": {
-        "terms_url": "https://developer.adzuna.com/docs/terms_of_service",
-        "terms_quote": ("Any other use of the Adzuna API by a commercial, government or academic "
-                        "organisation ... is permitted subject to a 14 day trial period. / It "
-                        "may not be used in its original format or in aggregation (including but "
-                        "not limited to vacancy counts, average salaries etc) to deliver any "
-                        "ongoing work or research, apart from the purpose stated prior, without "
-                        "written consent."),
-        "robots": "not consulted: the source is held on terms and never fetched",
-        "judgement": "REFUSED until Adzuna grants written consent for ongoing aggregate use",
         "checked_at": _P5_CHK},
 }
 #: The Wikimedia pageviews row (N6) re-read on 2026-10-14 against the Analytics API's own access
@@ -3590,6 +3522,18 @@ def _held_route_view(key: str) -> dict[str, str]:
 
 HELD_ROUTES: dict[str, dict[str, str]] = {k: _held_route_view(k)
                                           for k in sorted(_tf.HELD_ROUTE_KEYS)}
+
+
+def held_missed_growth_lines(paths: Any) -> list[dict[str, Any]]:
+    """One missed-growth line per held route (GROWTH GOVERNANCE: a hold carries its line). The
+    past conversion is this organ's own record of the route -- observations stored under its id
+    before the hold -- else the line says none is on record; delta E[log W] is UNMEASURED."""
+    out: list[dict[str, Any]] = []
+    for k in sorted(HELD_ROUTES):
+        store = _read_json(paths.obs_dir / f"{k}.json", {})
+        past = {"past_obs": len(store)} if isinstance(store, dict) and store else None
+        out.append(_tf.held_missed_growth(k, past))
+    return out
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PASS5_SOURCES))
@@ -5053,6 +4997,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
         "held_routes": {k: {"verdict": v["verdict"], "reason": v["reason"],
                             "terms_url": v["terms_url"]} for k, v in sorted(HELD_ROUTES.items())},
+        "missed_growth_lines": held_missed_growth_lines(paths),
         "blocked_substituted": {sid: list(v) for sid in sorted(SUBSTITUTED_BY)
                                 if (v := verified_substitutes(sid))},
         "blocked_unsubstituted": unsubstituted(),

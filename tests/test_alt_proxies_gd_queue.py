@@ -180,7 +180,8 @@ def test_terms_quote_all_three_publishers() -> None:
 def test_held_routes_carry_a_quote_and_have_no_source_row(tmp_path: Path) -> None:
     assert not any("cmegroup.com" in s.url or "cboe.com" in s.url for s in A.SOURCES)
     assert set(A.HELD_ROUTES) == {"cme_margin_changes", "cn_credit_contagion",
-                                  "cboe_delayed_index_values"}
+                                  "cboe_delayed_index_values", "us_finra_regsho_short_volume",
+                                  "gb_adzuna_vacancies", "congress_trades"}
     for rid, h in A.HELD_ROUTES.items():
         assert h["verdict"] == "HELD" and h["terms_url"].startswith("https://"), rid
         assert h["terms_quote"] and h["reason"] and h["unblock"], rid

@@ -334,6 +334,70 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                             "publish, rent, sublicense, distribute, or otherwise use in whole "
                             "or in part in any other manner the Materials without Cboe's prior "
                             "written consent")}}},
+    # ---- PASS 5 holds (2026-10-14; auditor: one register). Each USED to be a second register
+    # (an alt_proxies Source/TERMS row, a `terms` field on the free-stack roster); the clauses
+    # are the ones pass 5 quoted, moved here verbatim. Nothing is fetched for any of them.
+    "us_finra_regsho_short_volume": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "wanted": ("FINRA Reg SHO daily short-sale volume (CNMS consolidated file): an extreme "
+                   "market-wide short-volume ratio as a 1-5 day mean-reversion state for US500, "
+                   "NAS100, US2000"),
+        "why": ("FINRA's Terms of Use allow only non-commercial personal or professional use and "
+                "bar data-mining tools, robots and building a database from the site; the Reg "
+                "SHO daily-files page adds no licence: no permitting clause"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": "a FINRA data licence or written permission for internal commercial research",
+        "terms": {"url": "https://www.finra.org/terms-of-use", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "use": ("shall be used ONLY for your own non-commercial personal or "
+                              "professional use."),
+                      "robots": ("use any data mining, scraping or harvesting tools (including "
+                                 "robots)"),
+                      "database": "develop or create a database of data using the FINRA Website"}}},
+    "gb_adzuna_vacancies": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "wanted": ("Adzuna job-advert counts (UK/EU/AU/CA) as a labour-demand nowcast for "
+                   "GBPUSD, EURUSD, AUDUSD, USDCAD"),
+        "why": ("the Adzuna API terms permit commercial use only inside a 14-day trial and bar "
+                "aggregated vacancy counts for ongoing research without written consent; the key "
+                "on the box does not change that"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": "Adzuna's written consent to ongoing aggregate use of vacancy counts",
+        "terms": {"url": "https://developer.adzuna.com/docs/terms_of_service",
+                  "checked_at": "2026-10-14",
+                  "clauses": {
+                      "trial": ("Any other use of the Adzuna API by a commercial, government or "
+                                "academic organisation ... is permitted subject to a 14 day "
+                                "trial period."),
+                      "aggregation": ("It may not be used in its original format or in "
+                                      "aggregation (including but not limited to vacancy counts, "
+                                      "average salaries etc) to deliver any ongoing work or "
+                                      "research, apart from the purpose stated prior, without "
+                                      "written consent.")}}},
+    "congress_trades": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "wanted": ("US congressional periodic transaction reports (House Clerk index, Senate eFD) "
+                   "and their community S3 mirror: filing-dated legislator net buying as informed-"
+                   "flow evidence (free_stack_hunter row congress_trades)"),
+        "why": ("the Ethics in Government Act restriction (now 5 U.S.C. 13107(c)) printed on the "
+                "Senate eFD gate bars obtaining or using a report for any commercial purpose, "
+                "binds House and Senate reports alike, and trading on them is a commercial "
+                "purpose; the S3 mirror republishes the same reports with no licence of its own"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": ("counsel or the principal clears the use; the PTR parser "
+                    "(libs.data.free_stack.parse_ptr_trades) is built, so the lane is one terms "
+                    "decision from running. Ideas from public news coverage stay mined"),
+        "terms": {"url": "https://efdsearch.senate.gov/search/home/", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "5 U.S.C. 13107(c)": (
+                          "It shall be unlawful for any person to obtain or use a report: ... "
+                          "for any commercial purpose, other than by news and communications "
+                          "media for dissemination to the general public; ... for determining "
+                          "or establishing the credit rating of any individual")},
+                  "unread": {
+                      "disclosures-clerk.house.gov": (
+                          "the House Clerk page links a Terms of Service PDF that was not "
+                          "readable from the authoring container on 2026-10-14: UNREAD")}}},
 }
 SOURCE_POLICY.update(_HELD_ROUTES)
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
@@ -966,6 +1030,42 @@ def refusal(platform: str, **extra: Any) -> dict[str, Any]:
     return {"status": v["status"], "platform": platform, "source": platform,
             "reason": v["reason"], "why": f"source policy ({platform}): {v['reason']}",
             "substitutes": list(v["substitutes"]), "fetched": 0, **extra}
+
+
+#: The status a live-input organ records for a source this register holds on its terms.
+HELD_ON_TERMS = "HELD_ON_TERMS"
+
+
+def held_on_terms(key: str) -> bool:
+    """True when `key` names a row of this register that forbids LIVE INPUT on its terms: a
+    held route, or a row whose live-input status is IDEAS_ONLY. A row that is only short of its
+    key (NEEDS_KEY) is not held on terms; an unlisted key is not held here (its organ's own
+    checks still apply)."""
+    row = SOURCE_POLICY.get(key)
+    if row is None:
+        return False
+    return bool(row.get("held_route")) or live_input_status(key) == IDEAS_ONLY
+
+
+def held_missed_growth(key: str, past: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """GROWTH GOVERNANCE: the missed-growth line a terms hold carries. A hold stops a fetch, so
+    it names what that fetch converted before (`past`, the organ's own record) or says that no
+    conversion is on record; delta E[log W] is UNMEASURED either way, never zero."""
+    row = SOURCE_POLICY[key]
+    line: dict[str, Any] = {"source": key, "kind": "terms_hold", "status": HELD_ON_TERMS,
+                            "policy_status": str(row["status"]), "delta_elogw": "UNMEASURED",
+                            "terms_url": str((row.get("terms") or {}).get("url") or ""),
+                            "unblock": str(row.get("unblock") or "")}
+    if past:
+        line["past_conversion"] = dict(past)
+        line["cause"] = (f"held on terms ({row['why']}); the conversion recorded before the hold "
+                         "is in past_conversion; the growth forgone is UNMEASURED until the "
+                         "unblock arrives and the cells are judged")
+    else:
+        line["cause"] = (f"held on terms ({row['why']}); no measured conversion on record (no "
+                         "observation, cell or gain test of this source exists in the organ's "
+                         "record), so the growth forgone is UNMEASURED, never zero")
+    return line
 
 
 if __name__ == "__main__":
