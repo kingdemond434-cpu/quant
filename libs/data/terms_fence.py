@@ -76,6 +76,12 @@ _REDDIT_DATA_API_CLAUSES: dict[str, str] = {
 #: THE TABLE. One row per source (or host family). `hosts` match the domain and every subdomain;
 #: `host_labels` match any DNS label containing the fragment; `sources` / `source_prefixes` are
 #: discovery-row source names; `routes` are deep-forest ground routes. `why` is one line.
+#: `permits_live_input` (optional, default False) is the row's explicit claim that its own terms
+#: permit AUTOMATED LIVE INPUT for internal research (series-level readers such as
+#: `recorders/vol_archive.py` act on it). It is VALIDATED at import (`validate_permits_live_input`):
+#: a row may carry it True only with status API_PERMITTED or PUBLIC_PAGE AND its own terms page
+#: (`terms.url`) AND at least one verbatim clause (`terms.clauses`). Absent or False is never
+#: read as permission; a True without that evidence fails the import, never silently admits.
 SOURCE_POLICY: dict[str, dict[str, Any]] = {
     "x_api": {"hosts": ("api.x.com", "api.twitter.com"), "status": API_PERMITTED,
               "key_env": ("X_BEARER_TOKEN",), "routes": ("x_api", "twitter_api"),
@@ -301,6 +307,38 @@ SOURCE_POLICY.update({
         "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news", PUBLIC_PAGE,
         _UNREAD, "", "terms page not read: imo.org refused the fetch (robots.txt redirect loop)"),
 })
+
+
+def validate_permits_live_input(policy: Mapping[str, Mapping[str, Any]] | None = None) -> None:
+    """Raise ValueError for any row carrying `permits_live_input` that its evidence cannot carry:
+    a non-bool value, or True without status API_PERMITTED / PUBLIC_PAGE, its own terms page and
+    a verbatim permitting clause. Run at import, so a bad row never reaches a reader."""
+    bad: list[str] = []
+    for key, row in (SOURCE_POLICY if policy is None else policy).items():
+        if "permits_live_input" not in row:
+            continue
+        v = row["permits_live_input"]
+        if not isinstance(v, bool):
+            bad.append(f"{key}: permits_live_input must be a bool, got {type(v).__name__}")
+            continue
+        if not v:
+            continue
+        terms = row.get("terms") or {}
+        if str(row.get("status")) not in (API_PERMITTED, PUBLIC_PAGE):
+            bad.append(f"{key}: permits_live_input with status {row.get('status')}")
+        if not terms.get("url") or not terms.get("clauses"):
+            bad.append(f"{key}: permits_live_input without its own terms url and a quoted clause")
+    if bad:
+        raise ValueError("terms_fence.SOURCE_POLICY: " + "; ".join(bad))
+
+
+def permits_live_input(key: str) -> bool:
+    """The row's validated `permits_live_input` claim (False when absent)."""
+    return SOURCE_POLICY.get(key, {}).get("permits_live_input") is True
+
+
+validate_permits_live_input()
+
 #: A redirect INTO one of these paths is a login / CAPTCHA wall; it is refused, never followed.
 LOGIN_WALL = re.compile(r"(?i)/(?:i/flow/)?(?:log[-_]?in|sign[-_]?in|signin|accounts?/login|"
                         r"session/new|oauth2?/authorize|authorize|sso|captcha|"

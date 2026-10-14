@@ -451,3 +451,49 @@ def test_the_terms_hold_carries_its_missed_growth_line(tmp_path: Path,
     assert all(ln["verdict"] == "UNMEASURED" and ln["value"] is None for ln in lines)
     ok = va.report([], va.observe(_full_source(), REGISTRY, tmp_path))["missed_growth_lines"]
     assert [ln["verdict"] for ln in ok] == ["NOT_BINDING"] and ok[0]["value"] == 0.0
+
+
+def test_the_terms_hold_lines_are_carried_into_missed_growth(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """#234 SF: the hold's lines are carried into MISSED_GROWTH.json beside the stop-geometry
+    gate's (missed_growth.published_gate_lines pattern), never appended to the ledger. An absent
+    or stale report is UNMEASURED, never a clean zero."""
+    import json
+
+    if str(_DESK / "research") not in sys.path:
+        sys.path.insert(0, str(_DESK / "research"))
+    import missed_growth as mg
+    monkeypatch.setattr(va.urllib.request, "urlopen",
+                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("network")))
+    path = tmp_path / "VOL_ARCHIVE.json"
+    monkeypatch.setattr(mg, "VOL_ARCHIVE", path)
+    assert mg.published_terms_hold_lines()["verdict"] == mg.UNMEASURED      # absent
+    doc = va.report([], va.observe(va.YahooVolSource(), REGISTRY, tmp_path))
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    got = mg.published_terms_hold_lines()
+    assert got["verdict"] == mg.UNMEASURED and got["n_held"] == len(va.GROUND)
+    assert got["lines"] == doc["missed_growth_lines"]
+    path.write_text(json.dumps({**doc, "generated_utc": "2020-01-01T00:00:00+00:00"}),
+                    encoding="utf-8")
+    stale = mg.published_terms_hold_lines()
+    assert stale["verdict"] == mg.UNMEASURED and stale["lines"] == []
+    src = (_DESK / "research" / "missed_growth.py").read_text("utf-8")
+    assert '"vol_archive_terms_hold": published_terms_hold_lines()' in src
+
+
+def test_permits_live_input_is_documented_and_validated() -> None:
+    """#234 SF: terms_fence documents `permits_live_input` and refuses a row that claims it
+    without its own terms page, a verbatim clause and a live-input status."""
+    from libs.data import terms_fence as tf
+    src = Path(tf.__file__).read_text("utf-8")
+    assert "`permits_live_input`" in src
+    tf.validate_permits_live_input()                    # the real table is valid
+    good = {"status": tf.PUBLIC_PAGE, "permits_live_input": True,
+            "terms": {"url": "https://example.org/terms", "clauses": {"a": "quoted"}}}
+    tf.validate_permits_live_input({"ok": good})
+    for bad in ({**good, "status": tf.IDEAS_ONLY}, {**good, "terms": {"url": "u"}},
+                {**good, "permits_live_input": "yes"}):
+        with pytest.raises(ValueError):
+            tf.validate_permits_live_input({"bad": bad})
+    assert tf.permits_live_input("yahoo") is False
+    assert va.register_row("yahoo")["permits_use"] is False

@@ -158,7 +158,7 @@ def test_reference_history_fresh_cache_fetch_stale_and_unmeasured(tmp_path) -> N
 
 
 def test_the_desks_own_vintage_overrides_the_restated_reference() -> None:
-    ok = {"source_admitted": True}
+    ok = {"source_admitted": True, "source_route": "FakeVolSource:fixture"}
     rows = [{"observed_at": "2026-10-02T21:40:00+00:00", "value_date": "2026-10-02",
              "vol_ticker": "^VIX", "implied_vol": 16.4, "term": {"^VIX9D": 15.1}, **ok},
             {"observed_at": "2026-10-02T22:40:00+00:00", "value_date": "2026-10-02",
@@ -168,15 +168,52 @@ def test_the_desks_own_vintage_overrides_the_restated_reference() -> None:
             # A row stamped as served by a route the register holds is never a vintage.
             {"observed_at": "2026-10-03T01:40:00+00:00", "value_date": "2026-10-03",
              "vol_ticker": "^OVX", "implied_vol": 40.0, "term": {}, "source_admitted": False},
-            # A row from before the route stamp came through LIVE's kept Yahoo route: it counts.
+            # A row from before the route stamp came through LIVE's Yahoo chart route, which the
+            # fence reads IDEAS_ONLY today: re-judged on read, it is not a vintage (#234 MF1).
             {"observed_at": "2026-10-01T21:40:00+00:00", "value_date": "2026-10-01",
              "vol_ticker": "^EVZ", "implied_vol": 7.5, "term": {}}]
-    v = P.desk_vintages(rows)
+    excluded: dict = {}
+    v = P.desk_vintages(rows, excluded)
     assert v["^VIX"] == {"2026-10-02": 16.5}            # the newest read of a date wins
     assert v["^VIX9D"] == {"2026-10-02": 15.1}
     assert "^GVZ" not in v                               # an absence is not a value
     assert "^OVX" not in v                               # a held route, no vintage
-    assert v["^EVZ"] == {"2026-10-01": 7.5}              # pre-stamp row: LIVE's kept route
+    assert "^EVZ" not in v                               # pre-stamp row: Yahoo, not admitted
+    assert excluded["^EVZ"]["rows"] == 1 and excluded["^OVX"]["rows"] == 1
+    assert excluded["^EVZ"]["status"] == va.UNMEASURED_TERMS
+
+
+def test_archive_rows_a_yahoo_route_served_are_rejudged_on_read_and_never_reach_the_forge(
+        monkeypatch, tmp_path) -> None:
+    """#234 audit 2026-10-14 MF1: 28 archive rows stamped `source_admitted: True` by the Yahoo
+    chart route reached forge_feed and published US500.iv_level. The route is re-judged on READ
+    through terms_fence: the rows stay on disk, are excluded, and are counted UNMEASURED-terms."""
+    sent = _point(monkeypatch, tmp_path)
+    uni = tmp_path / "universe"
+    _bars(uni, "US500", seed=6)
+    archive = tmp_path / "vol_archive.jsonl"
+    days = _days(28)
+    planted = [{"observed_at": f"{d}T21:40:00+00:00", "value_date": d, "vol_ticker": "^VIX",
+                "implied_vol": 16.0 + i * 0.1, "term": {"^VIX9D": 15.0, "^VIX3M": 18.0},
+                "source_route": "YahooVolSource:yahoo_chart", "source_status": "OBSERVED",
+                "source_admitted": True} for i, d in enumerate(days)]
+    before = "\n".join(json.dumps(r) for r in planted) + "\n"
+    archive.write_text(before, encoding="utf-8")
+    assert not va.route_admitted(va.YAHOO_TERMS)
+    doc = P.run(source=None, registry={"US500": {}}, universe_dir=uni, archive=archive, now=NOW)
+    assert doc["symbols"]["US500"]["status"] == "UNMEASURED"
+    assert not (tmp_path / "lake" / "series" / "oi_US500.parquet").exists()
+    assert doc["forge_feed"] == {"status": "NO_FRAMES"} and sent == []
+    ex = doc["vintages_excluded_terms"]
+    assert ex["status"] == va.UNMEASURED_TERMS and ex["rows"] == 28
+    assert ex["by_ticker"]["^VIX"]["rows"] == 28
+    assert archive.read_text(encoding="utf-8") == before          # kept on disk, as written
+    # An admitted route's rows would count: the rule is the fence, not the vendor's name.
+    monkeypatch.setitem(va.TERMS_EVIDENCE, "yahoo",
+                        {**va.YAHOO_TERMS, "policy": "PUBLIC_PAGE", "permits_use": True,
+                         "quotes": ["fixture clause"]})
+    assert va.row_route_admitted(planted[0])[0] is True
+    assert va.row_route_admitted({"source_route": "Mystery:route"})[0] is False
 
 
 def test_a_held_source_is_never_asked_and_an_unadmitted_cache_is_never_served(tmp_path) -> None:

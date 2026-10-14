@@ -54,8 +54,8 @@ register, `libs/data/terms_fence.SOURCE_POLICY` -- admits it. Today none does (Y
 CBOE series and CBOE are IDEAS_ONLY there), so reference history reads UNMEASURED-terms and the
 leg mints nothing until a direct permitted route exists. A source not admitted is never asked;
 a reference cache is used only if an admitted source wrote it; a
-desk vintage counts unless its row was stamped as served by a held route. Every series row, the
-reference cache, the forge feed and the report carry `terms_note`.
+desk vintage counts only if its row's route is admitted by the fence when it is READ.
+Every series row, the reference cache, the forge feed and the report carry `terms_note`.
 
     python desks/mt5/research/options_implied.py --once [--offline] [--dry-run]
 """
@@ -261,19 +261,33 @@ def reference_history(ticker: str, source: va.VolSource | None, *, cache_dir: Pa
                 "measured_by": "a pass on a host that can reach the CBOE history source"}
 
 
-def desk_vintages(rows: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
+def desk_vintages(rows: list[dict[str, Any]],
+                  excluded: dict[str, dict[str, Any]] | None = None
+                  ) -> dict[str, dict[str, float]]:
     """{ticker: {value_date: value}} -- what each index READ when vol_archive observed it.
 
     The newest observation of a date wins: the archive is append-only, and a later row for the
     same value date is the source restating itself, which is what the desk would have seen then.
+
+    EVERY ROW'S ROUTE IS RE-JUDGED ON READ (#234 audit 2026-10-14 MF1) through the one terms
+    fence (`vol_archive.row_route_admitted`): a row a non-admitted route served -- including the
+    pre-stamp rows LIVE's Yahoo chart route wrote, and any row whose route the register holds
+    today -- is never a vintage. It stays on disk; when `excluded` is given it is counted there
+    per ticker as UNMEASURED-terms (never zero, never silently dropped).
     """
     out: dict[str, dict[str, float]] = {}
     for r in sorted(rows, key=lambda x: str(x.get("observed_at") or "")):
         vdate = str(r.get("value_date") or "")[:10]
-        # NEVER A ROW A HELD ROUTE SERVED. Rows before the route stamp (2026-10-06) came through
-        # LIVE's Yahoo route, which the register keeps, so they count; a row stamped
-        # `source_admitted: False` was served (or held) by a route the register holds.
-        if not vdate or r.get("source_admitted") is False:
+        if not vdate:
+            continue
+        ok, why = va.row_route_admitted(r)
+        if not ok:
+            if excluded is not None:
+                t = str(r.get("vol_ticker"))
+                e = excluded.setdefault(t, {"status": va.UNMEASURED_TERMS, "rows": 0,
+                                            "routes": {}})
+                e["rows"] += 1
+                e["routes"][why] = e["routes"].get(why, 0) + 1
             continue
         iv = r.get("implied_vol")
         if isinstance(iv, (int, float)) and math.isfinite(float(iv)):
@@ -479,7 +493,8 @@ def run(*, source: va.VolSource | None, dry_run: bool = False,
     if registry is None:
         registry = _read(UNIVERSE_JSON, {}) or {}
     mapped = grounds(registry)
-    desk = desk_vintages(va.read_archive(archive or va.ARCHIVE))
+    excluded: dict[str, dict[str, Any]] = {}
+    desk = desk_vintages(va.read_archive(archive or va.ARCHIVE), excluded)
     provenance: dict[str, Any] = {}
     histories: dict[str, dict[str, float]] = {}
     for g, _sym in mapped:
@@ -566,6 +581,14 @@ def run(*, source: va.VolSource | None, dry_run: bool = False,
         "terms_note": va.TERMS_NOTE,
         "sources": va.source_record(source),
         "desk_vintages_min": least,
+        # Archive rows a non-admitted route served: kept on disk, never a vintage (#234 MF1).
+        "vintages_excluded_terms": {
+            "status": va.UNMEASURED_TERMS if excluded else "NONE_EXCLUDED",
+            "rows": sum(int(e["rows"]) for e in excluded.values()),
+            "by_ticker": excluded,
+            "rule": ("each archive row's route is re-judged on read through libs/data/"
+                     "terms_fence (vol_archive.row_route_admitted); rows from a route not "
+                     "admitted today stay on disk and are excluded, counted UNMEASURED-terms")},
         "min_vintages_for_backtestable": va.MIN_VINTAGES,
         "backtestable_on_desk_vintages": bool(desk_n) and least >= va.MIN_VINTAGES,
         "promotion_authority": False,

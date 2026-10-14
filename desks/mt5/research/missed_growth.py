@@ -643,6 +643,47 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: The vol archive's terms hold (#234). `recorders/vol_archive.py` holds every CBOE vol route
+#: on libs/data/terms_fence and registers no rail (rails.py is signed), so it publishes its
+#: missed-growth lines on its own report in the same shape; they are carried here beside the
+#: stop-geometry gate's, never appended to LEDGER.
+VOL_ARCHIVE = BASE / "reports" / "VOL_ARCHIVE.json"
+#: The archive is an hourly recorder: six hours is six missed passes.
+VOL_ARCHIVE_MAX_AGE_H = 6.0
+
+
+def published_terms_hold_lines() -> dict[str, Any]:
+    """The vol archive's terms-hold missed-growth lines, read from VOL_ARCHIVE.json.
+
+    One row per series the terms fence holds (verdict UNMEASURED, value None: never fetched,
+    so the forgone dE[log W] is unknown, never a zero), or one NOT_BINDING row when nothing was
+    held. A missing, stale or line-less report is UNMEASURED, said with its age."""
+    doc = _json(VOL_ARCHIVE)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/VOL_ARCHIVE.json on this host: the vol archive recorder has "
+                       "not written one"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_utc")))
+        age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    if not age_h <= VOL_ARCHIVE_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": [],
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"VOL_ARCHIVE.json is older than {VOL_ARCHIVE_MAX_AGE_H:g}h or unstamped: "
+                       f"the terms hold's state today is unknown"}
+    lines = [x for x in (doc.get("missed_growth_lines") or []) if isinstance(x, dict)]
+    if not lines:
+        return {"verdict": UNMEASURED, "lines": [], "age_h": round(age_h, 2),
+                "why": "the report carries no missed_growth_lines (a pre-#234 build)"}
+    held = [x for x in lines if x.get("verdict") in (COSTS, UNMEASURED)]
+    verdict = (UNMEASURED if any(x.get("verdict") == UNMEASURED for x in lines)
+               else COSTS if any(x.get("verdict") == COSTS for x in lines) else NOT_BINDING)
+    return {"verdict": verdict, "source": "reports/VOL_ARCHIVE.json", "age_h": round(age_h, 2),
+            "lines": lines, "n_held": len(held)}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +801,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "vol_archive_terms_hold": published_terms_hold_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

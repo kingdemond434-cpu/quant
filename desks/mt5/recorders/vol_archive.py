@@ -167,9 +167,10 @@ def register_row(name: str) -> dict[str, Any]:
     row = _tf.SOURCE_POLICY[key]
     terms = row.get("terms") or {}
     policy = _tf.live_input_status(key)
-    # A fence row may carry `permits_live_input: True` only beside a quoted permitting clause;
-    # none of these three does, and absence is never read as permission.
-    permits = bool(row.get("permits_live_input")) and bool(terms.get("clauses"))
+    # A fence row may carry `permits_live_input: True` only beside a quoted permitting clause
+    # (terms_fence.validate_permits_live_input enforces it at import); none of these three does,
+    # and absence is never read as permission.
+    permits = _tf.permits_live_input(key) and bool(terms.get("clauses"))
     kept = policy in _LIVE_OK and permits
     return {"source": source, "fence_key": key, "policy": policy,
             "status": "ROUTE_ADMITTED" if kept else UNMEASURED_TERMS,
@@ -462,6 +463,51 @@ def route_of(source: Any, ticker: str) -> dict[str, Any]:
     return {"source_route": f"{type(source).__name__}:{r.get('route', 'direct')}",
             "source_status": str(r.get("status", "")),
             "source_admitted": bool(getattr(source, "admitted", False))}
+
+
+#: THE ROUTE A STORED ROW CAME THROUGH, RE-JUDGED ON READ (#234 audit 2026-10-14 MF1). A row's
+#: own `source_admitted` stamp records what the register said WHEN it was written; the register
+#: can hold a route later, and rows written before the 2026-10-06 route stamp carry no stamp at
+#: all (they came through LIVE's MT5-VolArchive Yahoo chart route). So a reader asks the fence
+#: about the row's route NOW: the route's register row must be admitted (`route_admitted`) today.
+#: The fixture route is a test source, admitted by construction like FakeVolSource itself; any
+#: route this table cannot name is UNKNOWN and fails closed.
+_ROUTE_REGISTER: tuple[tuple[str, str], ...] = (
+    ("yahoo", "yahoo"), ("fred", "fred"), ("cboe", "cboe"))
+#: The route a row with no `source_route` stamp came through (LIVE's pre-stamp archive rows).
+LEGACY_ROUTE = "YahooVolSource:yahoo_chart"
+
+
+def row_route(row: dict[str, Any]) -> tuple[str, str | None]:
+    """(the row's route string, the register name governing it -- None when unknown)."""
+    route = str(row.get("source_route") or "") or LEGACY_ROUTE
+    cls, _, step = route.partition(":")
+    if cls == "FakeVolSource" and step == "fixture":
+        return route, "fixture"
+    low = (step or cls).lower()
+    for token, name in _ROUTE_REGISTER:
+        if token in low:
+            return route, name
+    return route, None
+
+
+def row_route_admitted(row: dict[str, Any]) -> tuple[bool, str]:
+    """Is a STORED row's route admitted by the terms fence NOW? Returns (admitted, why).
+
+    Fails closed: a row stamped `source_admitted: False`, a route the register holds today, and
+    a route this table cannot name are all not admitted. The row stays on disk either way; a
+    reader excludes it from live input and counts it UNMEASURED-terms."""
+    route, name = row_route(row)
+    if row.get("source_admitted") is False:
+        return False, f"{route}: stamped not admitted when written"
+    if name == "fixture":
+        return True, f"{route}: test fixture"
+    if name is None:
+        return False, f"{route}: route unknown to the register -- fail closed"
+    if not route_admitted(TERMS_EVIDENCE[name]):
+        return False, (f"{route}: terms_fence row {TERMS_EVIDENCE[name]['fence_key']} reads "
+                       f"{TERMS_EVIDENCE[name]['policy']} without a permitting clause")
+    return True, f"{route}: admitted by terms_fence"
 
 
 class FakeVolSource:
