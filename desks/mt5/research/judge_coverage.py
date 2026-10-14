@@ -114,8 +114,9 @@ WINDOW_H = 1.0
 #: winner-take-all rule that rediscovers the exact starvation this organ was built to end.
 FLOOR_SHARE = 0.25
 #: The share of the measured hour handed to TAPE families (`tape_families`, derived from code)
-#: AFTER the breadth floor and BEFORE the value remainder. Bounded: the 25% floor is untouched (every family keeps its floor) and the
-#: value walk keeps at least 1 - FLOOR_SHARE - TAPE_PRIORITY_SHARE of the hour.
+#: AFTER the breadth floor and BEFORE the value remainder. Bounded: the 25% floor is untouched
+#: (every family keeps its floor) and the value walk keeps at least
+#: 1 - FLOOR_SHARE - TAPE_PRIORITY_SHARE of the hour.
 TAPE_PRIORITY_SHARE = 0.20
 
 #: The judge's capacity is MEASURED from its own ledger (the busiest recent hour), never assumed
