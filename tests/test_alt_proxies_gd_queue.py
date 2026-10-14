@@ -147,8 +147,9 @@ def test_net_liquidity_combines_on_wednesdays_at_the_latest_stamp(tmp_path: Path
     p = nl[w.isoformat()]
     want = totals[w] / 1e3 - (800 + 2 * 5) - (400 - 3 * 5)
     assert p["value"] == pytest.approx(want)
-    # available only once all three were: the H.4.1 Thursday 21:30 stamp is the latest
-    assert p["available_time"] == f"{(w + timedelta(days=1)).isoformat()}T21:30:00+00:00"
+    # available only once all three were: the Wednesday TGA's next-weekday 22:00 stamp is later
+    # than the H.4.1's Thursday 21:30 and the RRP's Wednesday 19:00, so it governs
+    assert p["available_time"] == f"{(w + timedelta(days=1)).isoformat()}T22:00:00+00:00"
     assert weeks[3].isoformat() not in nl                         # missing component, no point
     # pace is the WEEKLY change, and a gap is never a two-week change called weekly
     assert nl[weeks[5].isoformat()]["pace"] == pytest.approx(9 - 2 + 3)
@@ -162,7 +163,7 @@ def test_net_liquidity_combines_on_wednesdays_at_the_latest_stamp(tmp_path: Path
 
 def test_the_regime_conditioner_names_the_lake_file() -> None:
     spec = A.conditioner_spec(SRC, "net_liquidity", "pace", "gt", 0.0)
-    assert spec == f"alt:{A.lake_file(SRC, 'net_liquidity')}:pace:gt:0.0"
+    assert spec == f"alt:{A.lake_file(SRC, 'net_liquidity')}:pace:gt:0"
     assert set(SRC.instruments) >= {"US500", "NAS100", "XAUUSD", "EURUSD", "USDJPY"}
 
 
