@@ -5,7 +5,9 @@ Sources (all lawful, public, first-party):
     vintage_date param => point-in-time history (no API key needed)
   - Yahoo Finance via yfinance (DXY, VIX, TNX, GC=F, CL=F, indices; no key)
   - Official government RSS feeds (Fed, BLS, ...; parsed with stdlib)
-  - GitHub search + Reddit JSON (crowding/adoption proxies; no key)
+  - GitHub search + Reddit public JSON + Wikipedia pageviews (crowding/adoption proxies; no
+    key). Reddit is IDEAS_ONLY in the per-source policy (libs/data/terms_fence.py, ruling of
+    2026-10-13): read politely as a research proxy, never as a cell's live input data.
 
 Every collector is isolated: one failing source never blocks the others.
 Network timeouts are short; results are cached to data/free_data_cache/.
@@ -30,9 +32,24 @@ CACHE.mkdir(parents=True, exist_ok=True)
 UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
 
 
+def _terms_fence():
+    """libs.data.terms_fence, importable from a desk-rooted process too."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data import terms_fence
+    return terms_fence
+
+
 def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
+    # THE METHOD FENCE (libs/data/terms_fence.py): raises TermsFenced for a HELD source
+    # (METHOD_BLOCKED, or NEEDS_KEY until its key exists) before any request is built.
+    tf = _terms_fence()
+    tf.check_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    # A 30x into a held source or a login wall raises TermsFenced instead of being followed.
+    with tf.guarded_urlopen(req, timeout=timeout) as r:
         return r.read()
 
 
@@ -230,6 +247,11 @@ def github_search(query: str) -> dict:
 
 
 def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
+    """The public hot listing of one subreddit (crowding_miner's retail-adoption proxy).
+
+    Reddit is IDEAS_ONLY in the per-source policy (libs/data/terms_fence.py; the 2026-10-13
+    ruling retired the 2026-09-30 category fence): a public page read politely, one request per
+    cycle, never a cell's live input data. [] on any failure."""
     url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
     try:
         data = json.loads(_get(url, headers={"User-Agent": "research-crowding/1.0"}))
@@ -242,6 +264,61 @@ def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
         return posts
     except Exception:
         return []
+
+
+#: Wikipedia articles that stand for "retail attention to systematic trading" -- the information
+#: class r/algotrading hot proxies for crowding_miner, from a second source. English edition, user agents only.
+ATTENTION_ARTICLES = ("Algorithmic_trading", "Day_trading", "Foreign_exchange_market",
+                      "Technical_analysis", "Retail_forex")
+
+
+def wiki_pageviews(article: str, project: str = "en.wikipedia", days: int = 60,
+                   end: datetime | None = None) -> list[tuple[str, int]]:
+    """Daily user pageviews for one article from the Wikimedia REST API (keyless; the Wikimedia
+    pageview data is CC0). Returns [(YYYYMMDD, views)] oldest first, or [] on any failure."""
+    from datetime import timedelta
+    e = (end or datetime.now(UTC)) - timedelta(days=1)
+    b = e - timedelta(days=max(1, days) - 1)
+    url = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
+           f"{project}/all-access/user/{urllib.parse.quote(article, safe='')}/daily/"
+           f"{b:%Y%m%d}/{e:%Y%m%d}")
+    try:
+        data = json.loads(_get(url, headers={
+            "User-Agent": "quant-research-desk/1.0 (attention research; keyless REST client)"}))
+    except Exception:
+        return []
+    out = []
+    for it in data.get("items", []) or []:
+        ts = str(it.get("timestamp") or "")[:8]
+        if ts:
+            out.append((ts, int(it.get("views") or 0)))
+    return sorted(out)
+
+
+def attention_proxy(articles: tuple[str, ...] = ATTENTION_ARTICLES) -> dict:
+    """Retail attention to systematic trading, from Wikipedia pageviews: the lawful substitute for
+    and complement to the r/algotrading hot listing. `latest_views` is the sum of the last full day, `z_7d` the
+    last seven days against the prior fifty-three. UNMEASURED (never 0) when nothing answered."""
+    per: dict[str, list[tuple[str, int]]] = {a: wiki_pageviews(a) for a in articles}
+    got = {a: v for a, v in per.items() if v}
+    if not got:
+        return {"status": "UNMEASURED", "why": "no Wikimedia pageview series answered",
+                "source": "wikipedia_pageviews", "articles": list(articles)}
+    days: dict[str, int] = {}
+    for rows in got.values():
+        for d, v in rows:
+            days[d] = days.get(d, 0) + v
+    series = [days[d] for d in sorted(days)]
+    recent, base = series[-7:], series[:-7]
+    z = None
+    if len(base) >= 14:
+        mu = sum(base) / len(base)
+        sd = (sum((x - mu) ** 2 for x in base) / len(base)) ** 0.5
+        z = round(((sum(recent) / len(recent)) - mu) / sd, 3) if sd > 0 else None
+    return {"status": "MEASURED", "source": "wikipedia_pageviews",
+            "articles": sorted(got), "articles_missing": sorted(set(articles) - set(got)),
+            "latest_day": sorted(days)[-1], "latest_views": series[-1],
+            "mean_7d": round(sum(recent) / len(recent), 1), "z_7d": z, "n_days": len(series)}
 
 
 def now_iso() -> str:
