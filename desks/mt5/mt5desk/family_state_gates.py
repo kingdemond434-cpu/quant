@@ -68,6 +68,7 @@ ungated fallback -- when the base is unwrappable, the panel is short or the stat
 from __future__ import annotations
 
 import bisect
+import contextlib
 import math
 import sys
 from collections.abc import Callable, Sequence
@@ -407,6 +408,10 @@ def family_entropy_gated(
 T_NU_DEFAULT = 5.0
 #: EM iterations for the fixed-nu Student-t location-scale MLE (started at median / MAD).
 T_EM_ITERS = 30
+#: A window with more than this share of exactly-zero returns is a frozen feed: no fit.
+T_FROZEN_ZERO_SHARE = 0.5
+#: A fitted scale at or below this (log-return units) is a degenerate fit: no fit.
+T_SIGMA_FLOOR = 1e-10
 
 
 def t_fit(windows: np.ndarray, *, nu: float = T_NU_DEFAULT, iters: int = T_EM_ITERS
@@ -416,11 +421,15 @@ def t_fit(windows: np.ndarray, *, nu: float = T_NU_DEFAULT, iters: int = T_EM_IT
     Started at the median and the MAD / 0.6745; each step weights x_i by
     w_i = (nu + 1) / (nu + ((x_i - mu) / sigma)^2), then mu = sum w x / sum w and
     sigma^2 = mean(w (x - mu)^2) -- the EM for the t as a scale mixture of normals (Lange,
-    Little & Taylor 1989). A row whose spread is zero returns sigma NaN.
+    Little & Taylor 1989). A row whose spread is zero returns sigma NaN, and so does a FROZEN
+    feed: more than half the returns exactly zero, or a fitted sigma at or below
+    `T_SIGMA_FLOOR`. There the EM weights collapse onto the few moves and the distance is
+    a property of the stale quote, not of the market (audit SF-1: 21.1 instead of NaN).
     """
     x = np.asarray(windows, dtype="float64")
     if x.ndim == 1:
         x = x[None, :]
+    frozen = (x == 0.0).mean(axis=1) > T_FROZEN_ZERO_SHARE
     v = float(nu)
     mu = np.median(x, axis=1)
     sigma = np.median(np.abs(x - mu[:, None]), axis=1) / 0.6744897501960817
@@ -434,6 +443,7 @@ def t_fit(windows: np.ndarray, *, nu: float = T_NU_DEFAULT, iters: int = T_EM_IT
         sigma = np.sqrt((w * (x - mu[:, None]) ** 2).mean(axis=1))
         bad |= ~(sigma > 0)
         sigma = np.where(sigma > 0, sigma, 1.0)
+    bad |= frozen | ~(sigma > T_SIGMA_FLOOR)
     return mu, np.where(bad, np.nan, sigma)
 
 
@@ -643,6 +653,26 @@ def aligned_returns(panel: dict[str, tuple[np.ndarray, np.ndarray]], t: Any, *,
     return np.column_stack(cols)
 
 
+_BLAS: Any = None
+
+
+def _one_blas_thread() -> Any:
+    """Pin BLAS to one thread for the eigen-decomposition (audit SF-2: threaded BLAS inside a
+    process pool oversubscribes the cores, 61 ms against 6.5 ms at N=140). Scoped to the call,
+    so no other organ in the process is re-threaded; a box without threadpoolctl runs as before.
+    """
+    global _BLAS
+    if _BLAS is None:
+        try:
+            from threadpoolctl import ThreadpoolController  # type: ignore[import-untyped]
+            _BLAS = ThreadpoolController()
+        except Exception:                          # optional on a stripped box
+            _BLAS = False
+    if _BLAS is False:
+        return contextlib.nullcontext()
+    return _BLAS.limit(limits=1, user_api="blas")
+
+
 def absorption_ratio_of(returns: np.ndarray, *, k_divisor: int = 5) -> float | None:
     """AR = share of total variance on the top k = ceil(N / k_divisor) eigenvectors of the
     members' correlation matrix (Kritzman, Li, Page & Rigobon 2011). A flat member is dropped."""
@@ -653,7 +683,8 @@ def absorption_ratio_of(returns: np.ndarray, *, k_divisor: int = 5) -> float | N
     n = x.shape[1]
     if n < 2:
         return None
-    eig = np.clip(np.linalg.eigvalsh(np.corrcoef(x, rowvar=False)), 0.0, None)[::-1]
+    with _one_blas_thread():
+        eig = np.clip(np.linalg.eigvalsh(np.corrcoef(x, rowvar=False)), 0.0, None)[::-1]
     tot = float(eig.sum())
     if not tot > 0:
         return None

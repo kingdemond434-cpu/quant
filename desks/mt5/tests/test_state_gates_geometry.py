@@ -351,3 +351,43 @@ def test_geometry_families_are_registered_where_the_gauntlet_looks() -> None:
         assert fam in _UNWRAPPABLE and fam in NOT_SOURCED_HERE
         assert FAMILY_TIMEFRAMES[fam][0] == ("H1",)
         assert ag.MECHANISM_CLASS[fam] == "regime"
+
+
+def test_a_frozen_feed_is_no_fit_not_a_distance() -> None:
+    """Audit SF-1: a window mostly of exactly-zero returns collapsed sigma and read a 21.1
+    distance that the reversion arm kept; it must be NaN, which keeps no signal."""
+    rng = np.random.default_rng(3)
+    live = rng.standard_t(5, size=240) * 1e-3
+    frozen = live.copy()
+    frozen[rng.random(240) < 0.85] = 0.0
+    mu, sig = fsg.t_fit(np.vstack([live, frozen, np.zeros(240)]))
+    assert np.isfinite(sig[0]) and sig[0] > 0
+    assert np.isnan(sig[1]) and np.isnan(sig[2])
+    d = fsg.fisher_rao_t(mu[0], sig[0], mu[1], sig[1])
+    assert np.all(np.isnan(d))
+
+
+def test_absorption_pins_blas_to_one_thread_for_the_call_only() -> None:
+    """Audit SF-2: the eigen-decomposition runs single-threaded inside its own scope, and the
+    process's BLAS threading is left exactly as it was afterwards."""
+    threadpoolctl = pytest.importorskip("threadpoolctl")
+    seen: list[int] = []
+    real = np.linalg.eigvalsh
+
+    def spy(a: np.ndarray) -> np.ndarray:
+        seen.extend(i["num_threads"] for i in threadpoolctl.threadpool_info()
+                    if i["user_api"] == "blas")
+        return real(a)
+
+    before = [i["num_threads"] for i in threadpoolctl.threadpool_info() if i["user_api"] == "blas"]
+    r = np.random.default_rng(4).standard_normal((360, 12))
+    mp = pytest.MonkeyPatch()
+    mp.setattr(np.linalg, "eigvalsh", spy)
+    try:
+        ar = fsg.absorption_ratio_of(r)
+    finally:
+        mp.undo()
+    after = [i["num_threads"] for i in threadpoolctl.threadpool_info() if i["user_api"] == "blas"]
+    assert ar is not None and 0 < ar <= 1
+    assert all(n == 1 for n in seen)
+    assert after == before
