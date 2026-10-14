@@ -12,7 +12,7 @@
  "consecutive_hangs": 0,
  "sweep_started_utc": "2026-10-14T18:11:13+00:00",
  "hang_limit_s": 17280.0,
- "heartbeat_utc": "2026-10-14T21:04:58+00:00",
+ "heartbeat_utc": "2026-10-14T21:20:00+00:00",
  "sweep_phase": {
   "pid": 15980,
   "sweep_started_utc": "2026-10-14T18:11:14+00:00",
