@@ -4184,16 +4184,29 @@ def main() -> None:
         _DESK_STALE = None
         log(f"desk staleness unreadable ({type(_exc).__name__}: {_exc}); pass continues")
 
+    # `tnow` is the BROKER's wall clock (New York + 7h) under a UTC label, and `today`, `hour`,
+    # `day_key` and CLOSE_HOUR stay in it on purpose: the bars and the certified windows are
+    # written in that clock. Anything compared with the wall clock uses `tick_utc` instead.
     tnow = pd.Timestamp(tick.time, unit="s", tz="UTC")
+    from mt5desk.broker_clock import broker_to_utc
+    tick_utc = broker_to_utc(tnow)
     today = tnow.date()
     hour = tnow.hour + tnow.minute / 60.0
     day_key = str(today)
     # ONE PASS, ONE IDENTITY: `note_placement` counts rejection PASSES, and every sleeve placed in
     # this pass carries this stamp so two sleeves refused in one minute are one pass, not two.
-    st["placement_pass"] = tnow.isoformat()
+    # REAL UTC, MARKED SO (ledger L3, 2026-10-13): it was the broker stamp under a +00:00 label,
+    # three hours "in the future" to every reader. `libs.ops.gateway_clock` reads the mark.
+    _now_utc = datetime.now(tz=UTC)
+    st["placement_pass"] = _now_utc.isoformat(timespec="seconds")
+    st["placement_pass_clock"] = "utc"
+    st["placement_tick_broker"] = tnow.tz_localize(None).isoformat()
+    st["broker_utc_offset_h"] = round((tnow - tick_utc) / pd.Timedelta(hours=1))
 
-    # stale tick (weekend/holiday/terminal dead): never trade a closed market
-    age_sec = (datetime.now(tz=UTC) - tnow).total_seconds()
+    # stale tick (weekend/holiday/terminal dead): never trade a closed market. On the TICK's true
+    # UTC instant: a broker stamp read as UTC made every tick three hours younger than it was, so
+    # a quote up to ~3.5h old passed this 30-minute gate.
+    age_sec = (_now_utc - tick_utc).total_seconds()
     if age_sec > 1800:
         st = reconcile(st)
         save_state(st)
