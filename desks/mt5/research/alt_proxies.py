@@ -3520,8 +3520,9 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
     for o in obs:
         k = f"{o.series}|{o.period.isoformat()}"
         rule_at = src.rule(o.period)
+        basis = "release_rule"
         if src.stamp_floor_fetch and rule_at < seen_at:
-            rule_at = seen_at                    # max(stated release, the read): never earlier
+            rule_at, basis = seen_at, "first_read"   # max(stated release, the read): never earlier
         pub = o.published_at
         # A page stamp far after the period is a LATER document quoting an old value (a release
         # citing last year's figure), not that value's release: the calendar rule governs it.
@@ -3533,7 +3534,7 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                         "value_first": o.value, "value_last": o.value,
                         "first_seen_at": stamp, "last_seen_at": stamp,
                         "published_time": (pub or rule_at).isoformat(timespec="seconds"),
-                        "published_basis": "page" if pub else "release_rule",
+                        "published_basis": "page" if pub else basis,
                         "revision_time": None, "n_revisions": 0}
             added += 1
             continue

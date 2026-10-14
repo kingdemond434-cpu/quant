@@ -111,6 +111,7 @@ def test_pit_stamp_is_never_earlier_than_period_plus_the_stated_release_or_the_r
     late = [A.Obs("suez_canal_transits", date(2024, 1, 2), 12.0)]           # a backfilled row
     A.merge_vintages(store, SRC, late, NOW)
     assert store["suez_canal_transits|2024-01-02"]["published_time"] == NOW.isoformat()
+    assert store["suez_canal_transits|2024-01-02"]["published_basis"] == "first_read"
 
 
 # ============================================================================ pass outcomes
