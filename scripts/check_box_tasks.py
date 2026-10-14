@@ -155,10 +155,13 @@ def _ps_period_min(text: str) -> int | None:
 
 
 def _literal_task_name(text: str, var: str) -> str | None:
-    """`$var`'s value when the file assigns it exactly one string literal (a `param()` default or
-    a plain `$TaskName = 'MT5-X'`), else None: a loop variable never resolves."""
-    vals = set(re.findall(r"\$" + re.escape(var) + r"\s*=\s*[\"']([^\"'$]+)[\"']", text))
-    return vals.pop() if len(vals) == 1 else None
+    """`$var`'s value when every assignment to it in the file is the same string literal (a
+    `param()` default or a plain `$TaskName = 'MT5-X'`), else None: a loop variable, or one also
+    assigned a computed value, never resolves."""
+    rhs = re.findall(r"\$" + re.escape(var) + r"\s*=(?!=)\s*([^\n]*)", text)
+    lits = [re.match(r"[\"']([^\"'$]+)[\"']", r) for r in rhs]
+    vals = {m.group(1) for m in lits if m}
+    return vals.pop() if lits and all(lits) and len(vals) == 1 else None
 
 
 def installer_scan(root: Path | None = None) -> tuple[dict[str, list[tuple[str, int | None]]],
