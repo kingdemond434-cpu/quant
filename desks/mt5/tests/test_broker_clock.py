@@ -90,3 +90,13 @@ def test_the_family_intent_declares_its_time_exit_clock() -> None:
     end = src.index("[{name}] FAMILY-EXEC ORDER")
     seg = src[end - 2500:end]
     assert 'ttl_clock="utc"' in seg
+
+
+def test_every_reader_of_ttl_until_honours_its_clock() -> None:
+    """Since the intent's `ttl_until` became true UTC, any reader that shifts it by the broker
+    offset must first check `ttl_clock`, or it moves every time exit 2-3h early and calls
+    normal exits missed. Pins the trade autopsy (#336) the moment it lands beside this."""
+    for path in (DESK / "research").glob("*.py"):
+        src = path.read_text(encoding="utf-8")
+        if '"ttl_until"' in src and "broker" in src and "intent" in src:
+            assert "ttl_clock" in src, f"{path.name} reads ttl_until without its ttl_clock"
