@@ -594,6 +594,154 @@ def parse_portwatch_chokepoints(body: bytes, ctx: Ctx) -> list[Obs]:
     return out
 
 
+# ---------------------------------------------------------------------------- pass-8 novel styles
+#: P8-N1 EU DAY-AHEAD POWER (Energy-Charts / Fraunhofer ISE, `api.energy-charts.info/price`).
+#: The SDAC auction for delivery day D closes at 12:00 CET on D-1; NEMO Committee timings (in
+#: force from delivery 2021-06-18, Nord Pool exchange message 2021-05-26): preliminary results
+#: "12:45 CET", Full-Decoupling deadline "14:00 CET", shadow allocation results "no later than
+#: 14:00 CET". The rule takes the LATEST of these, 14:00 Brussels local time on D-1, so a
+#: decoupled day is never dated before it was published; the merge then floors it at the read
+#: (`stamp_floor_fetch`). Brussels time is computed by the EU DST rule (last Sunday of March /
+#: October, 01:00 UTC) so no tz database is needed on the Windows box.
+POWER_URL = "https://api.energy-charts.info/price"
+#: Bidding zone -> series slug. Only zones the API's /price description lists as "licensed as CC
+#: BY 4.0 from Bundesnetzagentur | SMARD.de" are read; every other zone is "for private and
+#: internal use only" there and is never requested.
+POWER_ZONES: dict[str, str] = {"DE-LU": "de_lu", "FR": "fr"}
+POWER_LICENCE_NAME = "CC BY 4.0"
+POWER_PUBLISH_HOUR_LOCAL = 14
+POWER_DEPTH_D = 365                     # first pass reaches this far back
+POWER_CHUNK_D = 92                      # one request covers at most this many delivery days
+POWER_RECENT_D = 7                      # a caught-up zone re-reads its last week
+#: The API's stated default limit is "2 requests per minute with a burst of 4": one data request
+#: per zone a pass, spaced by this, keeps every pass under it.
+POWER_MIN_INTERVAL_S = 31.0
+POWER_PEAK_HOURS = range(8, 20)         # 08:00-20:00 local, the exchange peak block
+
+
+def _last_sunday(y: int, m: int) -> date:
+    d = _month_end(y, m)
+    while d.weekday() != 6:
+        d -= timedelta(days=1)
+    return d
+
+
+def cet_offset_h(t: datetime) -> int:
+    """Brussels/Berlin UTC offset at instant `t` (UTC): +2 inside EU summer time, else +1."""
+    t = t.astimezone(UTC)
+    on = datetime.combine(_last_sunday(t.year, 3), datetime.min.time(), UTC) + timedelta(hours=1)
+    off = datetime.combine(_last_sunday(t.year, 10), datetime.min.time(), UTC) + timedelta(hours=1)
+    return 2 if on <= t < off else 1
+
+
+def cet_local(t: datetime) -> datetime:
+    """The naive Brussels wall-clock time of UTC instant `t`."""
+    return (t.astimezone(UTC) + timedelta(hours=cet_offset_h(t))).replace(tzinfo=None)
+
+
+def cet_day_hours(d: date) -> int:
+    """Hours in Brussels local day `d`: 23 on the spring change, 25 on the autumn one."""
+    return 24 - (d == _last_sunday(d.year, 3)) + (d == _last_sunday(d.year, 10))
+
+
+def rule_power_dayahead(period: date) -> datetime:
+    """Delivery day `period` is known from 14:00 Brussels time on the day before (the SDAC
+    Full-Decoupling / shadow-results deadline, the latest stated publication), in UTC."""
+    d1 = period - timedelta(days=1)
+    guess = _utc(d1.year, d1.month, d1.day, POWER_PUBLISH_HOUR_LOCAL)
+    return guess - timedelta(hours=cet_offset_h(guess - timedelta(hours=1)))
+
+
+def power_licence_error(body: bytes) -> str | None:
+    """None when the answer is the licensed day-ahead series, else the cause. FAIL CLOSED: a
+    body whose `license_info` does not name CC BY 4.0 is never merged (the licence changed, or
+    the zone is one the API restricts to private use)."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return "NOT_JSON: the body is not an Energy-Charts JSON answer (WAF or HTML page)"
+    if not isinstance(doc, dict) or not isinstance(doc.get("unix_seconds"), list):
+        return "NO_SERIES: the answer carries no unix_seconds array"
+    lic = str(doc.get("license_info") or "")
+    if POWER_LICENCE_NAME not in lic:
+        return f"LICENCE_CHANGED: license_info does not name {POWER_LICENCE_NAME} ({lic[:80]!r})"
+    return None
+
+
+def parse_power_dayahead(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Energy-Charts /price: `unix_seconds` (slot start) and `price` (EUR/MWh), hourly or 15-min.
+
+    Folded per Brussels DELIVERY day into `<zone>_dayahead_base` (mean of every slot) and
+    `<zone>_dayahead_peak` (08-20 local). A day is published only when every local hour of it
+    (23, 24 or 25) carries a price: a partial day is never averaged. `ctx.part` is the zone slug.
+    Nothing is read unless the licence check passes."""
+    if power_licence_error(body) is not None:
+        return []
+    doc = json.loads(body.decode("utf-8", errors="replace"))
+    ts, px = doc.get("unix_seconds") or [], doc.get("price") or []
+    slug = ctx.part or "zone"
+    hours: dict[date, set[int]] = {}
+    base: dict[date, list[float]] = {}
+    peak: dict[date, list[float]] = {}
+    for t, p in zip(ts, px, strict=False):
+        if not isinstance(t, (int, float)) or isinstance(t, bool) or p is None:
+            continue
+        v = _num(str(p))
+        if v is None:
+            continue
+        loc = cet_local(datetime.fromtimestamp(float(t), tz=UTC))
+        d = loc.date()
+        hours.setdefault(d, set()).add(int(float(t) // 3600))
+        base.setdefault(d, []).append(v)
+        if loc.hour in POWER_PEAK_HOURS:
+            peak.setdefault(d, []).append(v)
+    out: list[Obs] = []
+    for d, vals in sorted(base.items()):
+        if len(hours[d]) < cet_day_hours(d):
+            continue
+        out.append(Obs(f"{slug}_dayahead_base", d, round(sum(vals) / len(vals), 4)))
+        if peak.get(d):
+            out.append(Obs(f"{slug}_dayahead_peak", d, round(sum(peak[d]) / len(peak[d]), 4)))
+    return out
+
+
+#: P8-N2 OPENSKY DEPARTURES. Airport (ICAO) -> country slug. The departures endpoint is filled
+#: by a nightly batch ("only data from the previous day or earlier" on its sibling endpoints), so
+#: day D is dated no earlier than D+2 00:00 UTC, then floored at the read.
+OPENSKY_URL = "https://opensky-network.org/api/flights/departure"
+OPENSKY_AIRPORTS: dict[str, str] = {
+    "ZBAA": "cn", "ZSPD": "cn", "ZGGG": "cn",
+    "LTFM": "tr", "LTFJ": "tr",
+    "MMMX": "mx", "MMUN": "mx",
+    "FAOR": "za", "FACT": "za",
+    "RJTT": "jp", "RJAA": "jp", "RJBB": "jp"}
+
+
+def rule_opensky(period: date) -> datetime:
+    return _utc(period.year, period.month, period.day) + timedelta(days=2)
+
+
+def parse_opensky_departures(body: bytes, ctx: Ctx) -> list[Obs]:
+    """GET /flights/departure: a JSON list of flights; each `firstSeen` (unix seconds) is a
+    departure from `estDepartureAirport`. Counted per UTC day per COUNTRY (OPENSKY_AIRPORTS) into
+    `<country>_departures`. An airport not in the map is discarded, never guessed."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    counts: dict[tuple[str, date], float] = {}
+    for f in doc if isinstance(doc, list) else []:
+        if not isinstance(f, dict):
+            continue
+        cc = OPENSKY_AIRPORTS.get(str(f.get("estDepartureAirport") or ctx.part or ""))
+        t = f.get("firstSeen")
+        if cc is None or not isinstance(t, (int, float)) or isinstance(t, bool):
+            continue
+        k = (cc, datetime.fromtimestamp(float(t), tz=UTC).date())
+        counts[k] = counts.get(k, 0.0) + 1.0
+    return [Obs(f"{cc}_departures", d, v) for (cc, d), v in sorted(counts.items())]
+
+
 _MONTHS = {m: i for i, m in enumerate(
     ("january", "february", "march", "april", "may", "june", "july", "august", "september",
      "october", "november", "december"), start=1)}
@@ -2022,6 +2170,59 @@ SOURCES: tuple[Source, ...] = (
                                  "before the transit counts publish"),
         crowding_prior="low"),
     Source(
+        id="eu_power_dayahead", name="EU day-ahead power prices, DE-LU and FR (Energy-Charts)",
+        url=POWER_URL, region="EU", language="en", cadence="daily",
+        parse=parse_power_dayahead, rule=rule_power_dayahead, stamp_floor_fetch=True,
+        transform="level_dev",
+        instruments={"EURUSD": -1, "EURCHF": -1, "GER40": -1, "FRA40": -1, "XNGUSD": 1},
+        # Declared priors, untested: the gain test decides and charges every cell. Dear power
+        # is a terms-of-trade and margin stress on the euro area (EUR down against USD and the
+        # haven CHF, the domestic index down) and is gas-set at the margin (XNGUSD up).
+        series_instruments={
+            "de_lu": {"GER40": -1, "EURUSD": -1, "EURCHF": -1, "XNGUSD": 1},
+            "fr": {"FRA40": -1, "EURUSD": -1, "EURCHF": -1, "XNGUSD": 1}},
+        signal_series=("de_lu_dayahead_base", "fr_dayahead_base", "de_lu_dayahead_peak",
+                       "fr_dayahead_peak"),
+        mechanism=("the day-ahead auction prices tomorrow's power by 14:00 CET today: a "
+                   "power-price shock is an input-cost and terms-of-trade stress on euro-area "
+                   "industry, known a day before it is paid and weeks before PMIs or trade data"),
+        payer="FX and index holders pricing the euro area from monthly surveys and trade prints",
+        constraint=("the stress reaches PPI, PMIs and the trade balance only monthly; the "
+                    "auction is daily and public"),
+        licence="CC BY 4.0 (Bundesnetzagentur | SMARD.de via Energy-Charts), attribution",
+        source_culture="EU/en", participant_structure=("physical_flow", "institutional"),
+        failure_mode_hypothesis=("fails when the shock is renewable intermittency (a windless "
+                                 "day) rather than fuel or capacity, so it reverts before it "
+                                 "reaches any cost line, or when the gas price already carried "
+                                 "it"),
+        crowding_prior="low",
+        note=("PASS-8 N1 (novel style). Only zones the /price description licenses as CC BY 4.0 "
+              "are requested; a body whose license_info drops that is FAILED and held")),
+    Source(
+        id="opensky_departures", name="OpenSky Network daily departures by country",
+        url=OPENSKY_URL, region="GLOBAL", language="en", cadence="daily",
+        parse=parse_opensky_departures, rule=rule_opensky, stamp_floor_fetch=True,
+        transform="anomaly_daily", key_env="OPENSKY_CLIENT_ID",
+        instruments={"USDCNH": -1, "USDTRY": -1, "USDMXN": -1, "USDZAR": -1, "USDJPY": -1},
+        series_instruments={"cn_": {"USDCNH": -1}, "tr_": {"USDTRY": -1},
+                            "mx_": {"USDMXN": -1}, "za_": {"USDZAR": -1},
+                            "jp_": {"USDJPY": -1}},
+        signal_series=("cn_departures", "tr_departures", "mx_departures", "za_departures",
+                       "jp_departures"),
+        mechanism=("ADS-B counted departures are a daily activity nowcast for an economy whose "
+                   "official activity data is monthly and late"),
+        payer="EM FX holders pricing activity from monthly releases",
+        constraint="official activity prints lag by four to eight weeks",
+        licence=("OpenSky General Terms of Use & Data License Agreement: non-profit research, "
+                 "education, government, commercial internal testing and evaluation only"),
+        source_culture="GLOBAL/en", participant_structure=("physical_flow",),
+        failure_mode_hypothesis=("fails when receiver coverage changes move the counts, or "
+                                 "when flights are driven by tourism seasonality, not activity"),
+        crowding_prior="low",
+        note=("PASS-8 N2 (novel style). IDEAS_ONLY: the terms grant no for-profit use and the "
+              "departures endpoint needs an OAuth2 client; never fetched until a person files "
+              "both")),
+    Source(
         id="in_gold_imports", name="India monthly gold and silver imports (PIB trade release)",
         url=os.environ.get("ALT_PIB_TRADE_URL", "https://pib.gov.in/PressReleasePage.aspx"),
         region="IN", language="en", cadence="monthly", parse=parse_pib_trade,
@@ -2759,6 +2960,13 @@ TERMS: dict[str, tuple[str, str]] = {
     "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
                             "commercial and non-commercial use, with attribution; data.gov.in "
                             "documented OGD API (free key)"),
+    "eu_power_dayahead": ("confirmed", "Energy-Charts API /price: DE-LU and FR 'licensed as CC "
+                          "BY 4.0 from Bundesnetzagentur | SMARD.de'; documented REST API with "
+                          "stated rate limits (read 2026-10-14)"),
+    "opensky_departures": ("refused", "OpenSky General Terms of Use & Data License Agreement: "
+                           "licence 'solely for the purpose of non-profit research, non-profit "
+                           "education', 'No license is granted for any other purpose'; the "
+                           "departures API needs an OAuth2 client (read 2026-10-14). IDEAS_ONLY"),
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),
@@ -2823,6 +3031,76 @@ _IMF_EV: dict[str, str] = {
                "by the desk (anomaly vs trailing baseline)."),
     "checked_at": _CHK,
     "rechecked_at": "2026-10-14",
+    "register": "alt_proxies.TERMS (moves to libs/data/terms_fence.SOURCE_POLICY when it lands)",
+}
+#: P8-N1 Energy-Charts, READ 2026-10-14 with WebFetch. LIVE for DE-LU and FR only. The API's
+#: own OpenAPI document (api.energy-charts.info/openapi.json) licenses those zones CC BY 4.0 and
+#: publishes the rate limits automated clients must keep; every other zone is "for private and
+#: internal use only" and is never requested. The site's /charts/ JSON and llms.txt carry the
+#: EPEX/EEX restriction ("may not be redistributed"): this organ reads neither. robots.txt of
+#: www.energy-charts.info allows all agents except on three EPEX/EEX /charts/ paths (and names
+#: AI crawlers only there); api.energy-charts.info/robots.txt could not be read from the
+#: authoring container, so `collect_power` reads it on the box every pass, fail closed.
+#: THIS IS THE REGISTER UNTIL `libs/data/terms_fence.SOURCE_POLICY` LANDS: the row moves there.
+_P8_CHK = "2026-10-14"
+_ENERGY_CHARTS_EV: dict[str, str] = {
+    "terms_url": "https://api.energy-charts.info/openapi.json",
+    "terms_quote": ("licensed as CC BY 4.0 from Bundesnetzagentur | SMARD.de and is published "
+                    "without changes"),
+    "zones_quote": ("AT, BE, CH, CZ, DE-LU, DE-AT-LU, DK1, DK2, FR, HU, IT-North, NL, NO2, PL, "
+                    "SE4, SI (the zones the /price description licenses as above)"),
+    "restriction_quote": ("The data for the other bidding zones is for private and internal use "
+                          "only."),
+    "api_licence_quote": ("Unless stated otherwise, the data provided by the Energy-Charts API "
+                          "is licensed under the CC BY 4.0 license."),
+    "attribution_quote": "Proper attribution to Energy-Charts.info as the source is required.",
+    "rate_limit": ("2 requests per minute with a burst of 4; HTTP 429 with Retry-After when "
+                   "exceeded (this organ treats a 429 as a hard stop held for a person)"),
+    "schedule_url": ("https://nordpoolgroup.com/en/message-center-container/newsroom/exchange-"
+                     "message-list/2021/q2/26-may-2021-starting-with-17-june-2021-new-"
+                     "operational-timings-to-be-applied-for-daily--market-coupling-process"),
+    "schedule_quote": ("Preliminary Results publication 12:45 CET; Full-Decoupling deadline "
+                       "14:00 CET; Shadow Allocation Results no later than 14:00 CET"),
+    "judgement": ("LIVE for DE-LU and FR. CC BY 4.0 permits reproduction and adaptation for any "
+                  "purpose, commercial included, with attribution; the API is published for "
+                  "programmatic access with stated limits. Every response's license_info is "
+                  "re-checked and a body that drops CC BY 4.0 is never merged (held)"),
+    "robots": ("www.energy-charts.info/robots.txt: all agents allowed except three EPEX/EEX "
+               "/charts/ paths; api.energy-charts.info/robots.txt unread from the authoring "
+               "container -- read on the box every pass, fail closed"),
+    "credit": ("Source: Energy-Charts.info (Fraunhofer ISE), data Bundesnetzagentur | SMARD.de, "
+               "CC BY 4.0; daily means computed by the desk."),
+    "checked_at": _P8_CHK,
+    "register": "alt_proxies.TERMS (moves to libs/data/terms_fence.SOURCE_POLICY when it lands)",
+}
+#: P8-N2 OpenSky, READ 2026-10-14. IDEAS_ONLY. opensky-network.org/about/terms-of-use refused
+#: our reader (ROBOTS_DISALLOWED), so the clause is quoted from OpenSky's own "General Terms of
+#: Use & Data License Agreement" as the association publishes it with its datasets (Zenodo record
+#: 6325961, LICENSE.txt). A trading desk's research is for-profit: none of the granted purposes
+#: covers it ("commercial internal testing and evaluation of the data" is evaluating the data,
+#: not trading on it). Separately the REST departures endpoint is OAuth2 client credentials only
+#: (openskynetwork.github.io/opensky-api/rest.html): NEEDS_KEY, never a workaround.
+_OPENSKY_EV: dict[str, str] = {
+    "terms_url": "https://zenodo.org/records/6325961/files/LICENSE.txt?download=1",
+    "terms_quote": ("solely for the purpose of non-profit research, non-profit education [...] "
+                    "No license is granted for any other purpose."),
+    "terms_page": ("https://opensky-network.org/about/terms-of-use (ROBOTS_DISALLOWED to the "
+                   "reader 2026-10-14: unread)"),
+    "api_url": "https://openskynetwork.github.io/opensky-api/rest.html",
+    "api_quote": ("OpenSky supports only OAuth2 client credentials; historical data beyond one "
+                  "hour points to the Trino interface"),
+    "judgement": ("IDEAS_ONLY: no verbatim clause permits automated access for a for-profit "
+                  "desk's internal research, and the endpoint needs an OAuth2 client "
+                  "(NEEDS_KEY). Never fetched; no ideas fetch either -- the API body IS the "
+                  "data, and the terms page refuses robots"),
+    "robots": "opensky-network.org refused the terms-page read (robots); the API is never called",
+    "missed_growth_delta_elogw": UNMEASURED,
+    "missed_growth_cause": ("opensky_departures IDEAS_ONLY: the departures activity nowcast for "
+                            "USDCNH/USDTRY/USDMXN/USDZAR/USDJPY is never tested or traded"),
+    "release": ("a PERSON files OpenSky's written licence for a for-profit desk's internal "
+                "research, sets TERMS['opensky_departures'] to confirmed with that clause "
+                "quoted, and provisions OPENSKY_CLIENT_ID / OPENSKY_CLIENT_SECRET on the box"),
+    "checked_at": _P8_CHK,
     "register": "alt_proxies.TERMS (moves to libs/data/terms_fence.SOURCE_POLICY when it lands)",
 }
 _OI_EV: dict[str, str] = {
@@ -3058,6 +3336,8 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
     "imf_portwatch_ports": {**_IMF_EV},
     "imf_portwatch_chokepoints": {**_IMF_EV},
+    "eu_power_dayahead": {**_ENERGY_CHARTS_EV},
+    "opensky_departures": {**_OPENSKY_EV},
     "in_gold_imports": {
         "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
         "terms_quote": ("Material featured on this website may be reproduced free of charge and "
@@ -3530,7 +3810,11 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
         k = f"{o.series}|{o.period.isoformat()}"
         rule_at = src.rule(o.period)
         basis = "release_rule"
+        backfill = False
         if src.stamp_floor_fetch and rule_at < seen_at:
+            # A read more than two days after the stated release is a BACKFILL: its stamp is the
+            # read, so it would otherwise pass for a live first release in build_points.
+            backfill = seen_at - rule_at > timedelta(days=2)
             rule_at, basis = seen_at, "first_read"   # max(stated release, the read): never earlier
         pub = o.published_at
         # A page stamp far after the period is a LATER document quoting an old value (a release
@@ -3545,6 +3829,8 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                         "published_time": (pub or rule_at).isoformat(timespec="seconds"),
                         "published_basis": "page" if pub else basis,
                         "revision_time": None, "n_revisions": 0}
+            if backfill:
+                store[k]["pit_quality"] = "backfill"
             added += 1
             continue
         row["last_seen_at"] = stamp
@@ -3647,7 +3933,8 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 prior_x.append(x)
             first_seen = _t(r.get("first_seen_at"))
             published = _t(r.get("published_time"))
-            quality = ("live" if first_seen and published
+            quality = ("backfill" if r.get("pit_quality") == "backfill" else
+                       "live" if first_seen and published
                        and first_seen <= published + timedelta(days=2) else "backfill")
             pts.append({
                 "d": str(r["period"]), "event_time": str(r["period"]),
@@ -3849,6 +4136,29 @@ def _meta(src: Source) -> dict[str, Any]:
 
 DIRECT_FAMILY = "exogenous_conditioner"
 
+#: PASS-8 NOVEL STYLES, DECLARED before any data. `research/style_novelty.py` (style-novelty-lane,
+#: not on LIVE) counts a certificate NOVEL only from its own MEASURED return projection, scaled by
+#: `genealogy(family)`, which reads `alpha_genome.MECHANISM_CLASS[family]`; `discovered` /
+#: `generic` score 1.0. Every alt-proxies cell's family is `exogenous_conditioner`, which that
+#: map does not classify (neutral 0.0), and re-classing it would re-label every source this
+#: organ owns, so the tag is carried per CELL here (provenance.style) and the family-wide
+#: class is left to the coordinator. No verdict is NOVEL until a certificate exists.
+NOVEL_STYLE: dict[str, dict[str, Any]] = {
+    "eu_power_dayahead": {
+        "style_tag": "novel", "lane": "P8-N1", "declared_class": "discovered",
+        "closest_known": ["trend_20d", "value_250d"],
+        "why": ("an exogenous input-cost auction (power) conditioning FX and indices: no price "
+                "window of the traded instrument names it; if its direction tracks the "
+                "trailing month it is trend in disguise"),
+        "verdict": UNMEASURED,
+        "verdict_why": "declared only: style_novelty measures certificates and none exists"},
+    "opensky_departures": {
+        "style_tag": "novel", "lane": "P8-N2", "declared_class": "discovered",
+        "closest_known": ["trend_20d"],
+        "why": "an ADS-B activity nowcast for EM FX; held IDEAS_ONLY, so never measured",
+        "verdict": UNMEASURED, "verdict_why": "IDEAS_ONLY: no cell, no certificate"},
+}
+
 
 def may_mint(sym: str, family: str = DIRECT_FAMILY) -> bool:
     """THE TWO-LANE ORDER, by ASSET CLASS from `universe_policy` (never a symbol list). A share
@@ -3950,7 +4260,8 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
                                                "placebo_abs_ic_p95", "backfill_share",
                                                "horizon_bars", "min_detectable_ic", "why")},
             "provenance": {"organ": "alt_proxies", "use": "direct_cells", "source_id": sid,
-                           "series": series, **_meta(src)}})
+                           "series": series, **_meta(src),
+                           **({"style": NOVEL_STYLE[sid]} if sid in NOVEL_STYLE else {})}})
     return out
 
 
@@ -4179,6 +4490,11 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                     "why": (f"terms {src.terms}: not fetched until a human confirms the "
                             f"licence ({TERMS.get(src.id, ('', 'unknown'))[1]})"),
                     "store_rows": len(store)})
+        ev = TERMS_EVIDENCE.get(src.id, {})
+        if ev.get("missed_growth_cause"):
+            rec.update({"ideas_only": True, "release": ev.get("release"),
+                        "missed_growth": {"delta_elogw": ev.get("missed_growth_delta_elogw"),
+                                          "cause": ev["missed_growth_cause"]}})
         return rec
     if src.parse is None:                  # a local read of a series another organ fetches
         obs = src.reader(paths) if src.reader is not None else []
@@ -4201,6 +4517,12 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     if src.id in PORTWATCH_FIELDS:
         rec.update(collect_portwatch(paths, src, sst, store, now, fetch=fetch,
                                      fixtures=fixtures, deadline=deadline))
+        _atomic(store_p, store)
+        rec["store_rows"] = len(store)
+        return rec
+    if src.id == "eu_power_dayahead":
+        rec.update(collect_power(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
+                                 deadline=deadline, getter=getter))
         _atomic(store_p, store)
         rec["store_rows"] = len(store)
         return rec
@@ -4296,6 +4618,156 @@ def robots_verdict(url: str, getter: Callable[[str], tuple[bytes, str]] = http_g
             "note": "robots.txt consulted" if ok else "robots.txt disallows this path"}
 
 
+def person_hold(sst: dict[str, Any], src: Source, cause: str, now: datetime,
+                what: str) -> dict[str, Any]:
+    """Record a 401/403/429/WAF (or licence-change) refusal as a hold that WAITS FOR A PERSON:
+    no expiry, no retry clock, a missed_growth line, and the release named."""
+    sst["hard_stop"] = {
+        "since": now.isoformat(timespec="seconds"), "cause": cause,
+        "release": PORTWATCH_HOLD_RELEASE, "released_by": None,
+        "missed_growth": {"delta_elogw": UNMEASURED,
+                          "cause": (f"{src.id} held after {cause}: {what} read no new rows "
+                                    "until a person releases the hold")}}
+    return dict(sst["hard_stop"])
+
+
+def held_by_person(sst: dict[str, Any], now: datetime, out: dict[str, Any]) -> bool:
+    """True (and `out` filled) while an unreleased hold stands. A hold a person released is
+    archived as hard_stop_released and the pass proceeds."""
+    held = sst.get("hard_stop")
+    if isinstance(held, dict) and not held.get("released_by"):
+        # NO AGE TEST, ON PURPOSE: a refusal is answered by a person, never by a clock.
+        out["status"] = "HELD:HARD_STOP"
+        out["outcome"] = out["status"]
+        out["hard_stop"] = held
+        out["why"] = (f"hard stop since {held.get('since')}: {held.get('cause')}; "
+                      f"release: {held.get('release')}")
+        return True
+    if isinstance(held, dict):
+        sst["hard_stop_released"] = {**held, "released_seen_at": now.isoformat(
+            timespec="seconds")}
+        sst.pop("hard_stop", None)
+    return False
+
+
+def power_request(zone: str, start: date, end: date, fetched_at: datetime) -> Request:
+    q = urllib.parse.urlencode({"bzn": zone, "start": start.isoformat(), "end": end.isoformat()})
+    return Request(f"{POWER_URL}?{q}", Ctx(part=POWER_ZONES[zone], start=start, end=end,
+                                           fetched_at=fetched_at))
+
+
+def collect_power(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
+                  now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
+                  getter: Callable[[str], tuple[bytes, str]] = http_get,
+                  sleep: Callable[[float], None] = time.sleep,
+                  clock: Callable[[], datetime] = lambda: datetime.now(UTC)) -> dict[str, Any]:
+    """Energy-Charts day-ahead prices (DE-LU, FR) into the PIT vintage store.
+
+    Per zone the cursor `power_from[zone]` walks forward in POWER_CHUNK_D windows until the
+    window reaches tomorrow (the source is done when it has served the delivery day after
+    today); a caught-up zone re-reads its last POWER_RECENT_D days. Each response is stamped at
+    ITS OWN fetch instant (`clock()`), never the pass start. robots.txt of the API host decides
+    every pass (fail closed). 401/403/429, a non-JSON body or a licence change is a hard stop
+    held for a person. outcome: OK | UNCHANGED | FAILED:<cause> | HELD:HARD_STOP | UNMEASURED."""
+    out: dict[str, Any] = {"requests": 0, "fetched": 0, "parsed": 0, "errors": [],
+                           "merge": {"added": 0, "revised": 0}}
+
+    def fail(cause: str, *, hold: bool = False) -> dict[str, Any]:
+        out["errors"].append(cause)
+        out["status"] = f"FAILED:{cause.split(':', 1)[0]}"
+        out["outcome"] = out["status"]
+        out["why"] = cause
+        if hold:
+            out["hard_stop"] = person_hold(sst, src, cause, now, "its power-stress cells")
+        return out
+
+    def take(body: bytes, ctx: Ctx, seen: datetime) -> None:
+        obs = parse_power_dayahead(body, ctx)
+        out["parsed"] += len(obs)
+        m = merge_vintages(store, src, obs, seen)
+        out["merge"]["added"] += m["added"]
+        out["merge"]["revised"] += m["revised"]
+
+    if fixtures is not None:
+        for slug in POWER_ZONES.values():
+            fp = fixtures / "energy_charts" / f"price_{slug}.json"
+            if not fp.exists():
+                continue
+            body = fp.read_bytes()
+            err = power_licence_error(body)
+            if err:
+                return fail(err)
+            take(body, Ctx(part=slug, fetched_at=now), now)
+        if not out["parsed"]:
+            return fail("EMPTY: no fixture parsed to a complete delivery day")
+        out["outcome"] = "OK"
+        return out
+    if not fetch:
+        out["why"] = "no fetch this pass (--no-fetch): UNMEASURED, not zero"
+        out["outcome"] = "UNMEASURED"
+        return out
+    if held_by_person(sst, now, out):
+        return out
+    rb = robots_verdict(POWER_URL, getter)
+    out["robots"] = rb
+    if rb["verdict"] == "hard_stop":
+        return fail(f"HARD_STOP: {rb['note']}", hold=True)
+    if rb["verdict"] != "allow":
+        return fail(f"ROBOTS_{rb['verdict'].upper()}: {rb['note']}")
+    delay = max(POWER_MIN_INTERVAL_S, float(rb.get("crawl_delay") or 0.0))
+    cursors: dict[str, str] = sst.setdefault("power_from", {})
+    tomorrow = (now + timedelta(days=1)).date()
+    done: dict[str, bool] = {}
+    first = True
+    for zone in POWER_ZONES:
+        try:
+            since = date.fromisoformat(str(cursors.get(zone)))
+        except ValueError:
+            since = (now - timedelta(days=POWER_DEPTH_D)).date()
+        done[zone] = False
+        while not done[zone]:
+            if not first:
+                if time.monotonic() + delay > deadline:
+                    out["errors"].append(f"budget reached at {zone} {since}: the rest is owed "
+                                         "to the next pass (cursor kept)")
+                    break
+                sleep(delay)
+            first = False
+            end = min(since + timedelta(days=POWER_CHUNK_D - 1), tomorrow)
+            req = power_request(zone, since, end, now)
+            out["requests"] += 1
+            try:
+                body, ctype = getter(req.url)
+            except Exception as exc:
+                code = _http_code(exc)
+                if code in PORTWATCH_HARD_STOP:
+                    return fail(f"HARD_STOP: HTTP {code} on {zone}", hold=True)
+                if code == 404:                  # the API's answer for a range with no data
+                    out["errors"].append(f"{zone} {since}..{end}: HTTP 404 (no data)")
+                    break
+                return fail(f"HTTP_ERROR: {type(exc).__name__}: {str(exc)[:120]}")
+            seen = clock()
+            out["fetched"] += 1
+            err = power_licence_error(body)
+            if err:
+                return fail(err, hold=err.startswith(("NOT_JSON", "LICENCE_CHANGED")))
+            vault(paths, src, body, req.url, ctype, seen)
+            take(body, Ctx(part=POWER_ZONES[zone], start=since, end=end, fetched_at=seen), seen)
+            if end >= tomorrow:
+                done[zone] = True
+                cursors[zone] = (end - timedelta(days=POWER_RECENT_D)).isoformat()
+            else:
+                since = end + timedelta(days=1)
+                cursors[zone] = since.isoformat()
+    out["caught_up"] = done
+    if not out["parsed"]:
+        return fail("EMPTY: the API answered with no complete delivery day" if out["fetched"]
+                    else "BUDGET: no request completed inside the budget")
+    out["outcome"] = ("UNCHANGED" if not (out["merge"]["added"] or out["merge"]["revised"])
+                      else "OK")
+    return out
+
+
 def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
                       now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
                       getter: Callable[[str], tuple[bytes, str]] = http_get,
@@ -4316,14 +4788,7 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
         out["outcome"] = out["status"]
         out["why"] = cause
         if hold:
-            sst["hard_stop"] = {
-                "since": now.isoformat(timespec="seconds"), "cause": cause,
-                "release": PORTWATCH_HOLD_RELEASE, "released_by": None,
-                "missed_growth": {"delta_elogw": UNMEASURED,
-                                  "cause": (f"{src.id} held after {cause}: its chokepoint "
-                                            "cells read no new rows until a person releases "
-                                            "the hold")}}
-            out["hard_stop"] = sst["hard_stop"]
+            out["hard_stop"] = person_hold(sst, src, cause, now, "its chokepoint cells")
         return out
 
     def take(body: bytes, ctx: Ctx) -> int:
@@ -4352,19 +4817,8 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
         out["why"] = "no fetch this pass (--no-fetch): UNMEASURED, not zero"
         out["outcome"] = "UNMEASURED"
         return out
-    held = sst.get("hard_stop")
-    if isinstance(held, dict) and not held.get("released_by"):
-        # NO AGE TEST, ON PURPOSE: a refusal is answered by a person, never by a clock.
-        out["status"] = "HELD:HARD_STOP"
-        out["outcome"] = out["status"]
-        out["hard_stop"] = held
-        out["why"] = (f"hard stop since {held.get('since')}: {held.get('cause')}; "
-                      f"release: {held.get('release')}")
+    if held_by_person(sst, now, out):
         return out
-    if isinstance(held, dict):
-        sst["hard_stop_released"] = {**held, "released_seen_at": now.isoformat(
-            timespec="seconds")}
-        sst.pop("hard_stop", None)
     since = portwatch_since(now, sst)
     first = portwatch_request(src.id, src.url, since, 0, now)
     rb = robots_verdict(first.url, getter)
@@ -4447,11 +4901,36 @@ def chokepoints_asof(decision_at: datetime, store_path: Path | None = None,
     instant this desk first read it) is at or before the decision, and its period is strictly
     before the decision's own UTC day: a same-day value is never seen. The value is the FIRST
     vintage read, never a later revision back-dated. An absent or empty store is UNMEASURED."""
+    want = [PORTWATCH_PACK_SERIES.get(n, n) for n in names] if names is not None else None
+    got = series_asof("imf_portwatch_chokepoints", decision_at, store_path, want)
+    p, best = Path(got["store"]), got["series"]
     if decision_at.tzinfo is None:
         decision_at = decision_at.replace(tzinfo=UTC)
-    p = store_path or (DEFAULT_PATHS.obs_dir / "imf_portwatch_chokepoints.json")
+    if not best:
+        return {"status": "UNMEASURED", "series": {}, "store": str(p),
+                "why": ("no IMF PortWatch chokepoint row known at "
+                        f"{decision_at.isoformat(timespec='seconds')} in {p.name}")}
+    inv = {v: k for k, v in PORTWATCH_PACK_SERIES.items()}
+    return {"status": "MEASURED", "series": dict(sorted(best.items())),
+            "by_pack_name": {inv[k]: v for k, v in sorted(best.items()) if k in inv},
+            "store": str(p), "decision_at": decision_at.isoformat(timespec="seconds")}
+
+
+def series_asof(source_id: str, decision_at: datetime, store_path: Path | None = None,
+                names: Iterable[str] | None = None) -> dict[str, Any]:
+    """The latest value per series of `source_id`'s vintage store KNOWN at `decision_at`.
+
+    THE ONE PIT READER every alt-proxies consumer uses (chokepoints, power stress, ...). A row
+    is visible only when its `published_time` (max of the stated release and the instant this
+    desk first read it) is at or before the decision AND its period is strictly before the
+    decision's own UTC day: a same-day value is never seen, even a day-ahead price already
+    auctioned (late, never early). The value is the FIRST vintage read; a revision is never
+    back-dated. An absent or empty store is UNMEASURED."""
+    if decision_at.tzinfo is None:
+        decision_at = decision_at.replace(tzinfo=UTC)
+    p = store_path or (DEFAULT_PATHS.obs_dir / f"{source_id}.json")
     store = _read_json(p, {})
-    want = {PORTWATCH_PACK_SERIES.get(n, n) for n in names} if names is not None else None
+    want = set(names) if names is not None else None
     best: dict[str, dict[str, Any]] = {}
     for row in store.values() if isinstance(store, dict) else ():
         if not isinstance(row, dict) or not row.get("series"):
@@ -4469,15 +4948,30 @@ def chokepoints_asof(decision_at: datetime, store_path: Path | None = None,
         cur = best.get(name)
         if cur is None or period.isoformat() > cur["period"]:
             best[name] = {"period": period.isoformat(), "value": float(row["value_first"]),
-                          "known_at": known.isoformat(timespec="seconds")}
+                          "known_at": known.isoformat(timespec="seconds"),
+                          "pit_quality": row.get("pit_quality") or "live"}
     if not best:
         return {"status": "UNMEASURED", "series": {}, "store": str(p),
-                "why": ("no IMF PortWatch chokepoint row known at "
+                "why": (f"no {source_id} row known at "
                         f"{decision_at.isoformat(timespec='seconds')} in {p.name}")}
-    inv = {v: k for k, v in PORTWATCH_PACK_SERIES.items()}
-    return {"status": "MEASURED", "series": dict(sorted(best.items())),
-            "by_pack_name": {inv[k]: v for k, v in sorted(best.items()) if k in inv},
-            "store": str(p), "decision_at": decision_at.isoformat(timespec="seconds")}
+    return {"status": "MEASURED", "series": dict(sorted(best.items())), "store": str(p),
+            "decision_at": decision_at.isoformat(timespec="seconds")}
+
+
+def power_stress_asof(decision_at: datetime, store_path: Path | None = None) -> dict[str, Any]:
+    """P8-N1 consumer: the power-stress vector per MT5 instrument known at `decision_at`.
+
+    For each instrument the source maps, the latest known base-load price per zone with its
+    declared prior sign (untested: the gain test, not this reader, decides any cell)."""
+    got = series_asof("eu_power_dayahead", decision_at, store_path)
+    src = BY_ID["eu_power_dayahead"]
+    vec: dict[str, list[dict[str, Any]]] = {}
+    for series, row in got["series"].items():
+        if series not in src.signal_series:
+            continue
+        for sym, sign in src.instruments_for(series).items():
+            vec.setdefault(sym, []).append({"series": series, "prior_sign": sign, **row})
+    return {**got, "instruments": dict(sorted(vec.items())), "style": NOVEL_STYLE[src.id]}
 
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
@@ -4804,6 +5298,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
+        "novel_styles": NOVEL_STYLE,
         "keys": {s.key_env: bool(os.environ.get(s.key_env)) for s in SOURCES if s.key_env},
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
@@ -4854,6 +5349,10 @@ def _cursor(s: Source) -> str:
     if s.id.startswith("imf_portwatch"):
         return (f"resultOffset paging ({PORTWATCH_PAGE}/page) from state.pw_from; first pass "
                 f"{PORTWATCH_DEPTH_D}d deep, then the last {PORTWATCH_RECENT_D}d re-read")
+    if s.id == "eu_power_dayahead":
+        return (f"state.power_from[zone] walks {POWER_CHUNK_D}-day windows forward from "
+                f"{POWER_DEPTH_D}d back until tomorrow is served, then re-reads the last "
+                f"{POWER_RECENT_D}d")
     if s.id == "gdelt_events_country":
         return (f"fwd/back 15-minute slot cursors ({GDELT_FWD_PER_PASS}+{GDELT_BACK_PER_PASS} "
                 f"slots/pass, {GDELT_BACK_DEPTH_D}d deep); open days held in state.acc")
