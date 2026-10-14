@@ -200,7 +200,7 @@ def test_proposer_mints_one_cell_per_wrapper_base_symbol_and_charges_it(monkeypa
     keys = [(c["family"], c["params"]["base_family"], c["symbol"]) for c in grid]
     assert len(keys) == len(set(keys))
     expect = sum(len(P.bases_for(w)) for w in P.WRAPPERS) * 2
-    assert len(grid) == expect == 2 * 2 * len(P.BASES)
+    assert len(grid) == expect == 2 * len(P.WRAPPERS) * len(P.BASES)
     assert refused == {w: len(P.bases_for(w)) for w in P.WRAPPERS}
     assert {c["chart"] for c in grid} == {"H1"}
     for c in grid:
@@ -379,7 +379,7 @@ def test_an_unreadable_asset_class_is_unmeasured_not_off_session(monkeypatch) ->
     monkeypatch.setattr(P, "allowed", lambda sym, fam: True)
     monkeypatch.setattr(P, "sync_applies", lambda sym: None)
     _, refused = P.build_grid(["EURUSD"])
-    assert refused == {"sync_gated:class_UNMEASURED": len(P.bases_for("sync_gated"))}
+    assert refused == {f"{w}:class_UNMEASURED": len(P.bases_for(w)) for w in P.PANEL_WRAPPERS}
 
 
 def test_sync_is_never_minted_on_a_weekend_trading_crypto_cfd(monkeypatch) -> None:
