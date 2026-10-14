@@ -72,7 +72,7 @@ def test_only_the_vote_date_is_taken() -> None:
     assert ec.extract("The general election was announced on 20 January 2024.", "en",
                       today=today) == []
     assert ec.extract("衆議院 総選挙 公示 2024年10月15日", "ja", today=today) == []
-    assert [e["date"] for e in ec.extract("参議院議員通常選挙 2025年7月20日（日）投票", "ja",
+    assert [e["date"] for e in ec.extract("参議院議員通常選挙 2025年7月20日\uff08日\uff09投票", "ja",
                                           today=today)] == ["2025-07-20"]
 
 
