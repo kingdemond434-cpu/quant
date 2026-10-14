@@ -112,7 +112,9 @@ JA_HOUSES = ("衆議院", "参議院")
 EXCLUDE: dict[str, tuple[str, ...]] = {
     "en": ("by-election", "by election", "local election", "municipal", "mayor", "governor",
            "gubernatorial", "referendum", "primary", "council election", "state election",
-           "regional election", "leadership election", "party election", "provincial election"),
+           "regional election", "leadership election", "party election", "provincial election",
+           "by-elections", "local elections", "mayoral", "council elections", "state elections",
+           "regional elections", "provincial elections", "primaries", "referendums"),
     "es": ("local", "municipal", "gubernatura", "estatal", "consulta", "revocación",
            "ayuntamiento"),
     "ja": ("知事", "市長", "区長", "町長", "村長", "統一地方", "補欠", "補選", "住民投票", "地方選",

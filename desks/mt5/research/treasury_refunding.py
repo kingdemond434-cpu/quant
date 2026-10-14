@@ -107,12 +107,14 @@ _COUPON = re.compile(r"\bcoupon", re.I)
 _NOMINAL = re.compile(r"\bnominal coupon", re.I)
 _OTHER_SUPPLY = re.compile(r"\bTIPS\b|inflation[- ]protected|\bFRNs?\b|floating rate|\bbills?\b",
                            re.I)
-_NEGATED = re.compile(
-    r"(?:\bnot\b(?!\s+only)|\bno longer\b|n't\b|\bwithout\b|\bcannot\b|\bnever\b|"
-    r"\bunlikely\b)[^.;]{0,40}?\b(?:increase|reduce|reduction|decrease|cut)"
-    r"|\b(?:increases?|reductions?|decreases?|cuts?)\b[^.;]{0,60}?"
-    r"\b(?:not|no longer|unlikely to)\b(?:\s+be)?\s+(?:needed|necessary|required|warranted)",
-    re.I)
+#: Negation binds to the GUIDED VERB only: a negation word in the 40 characters before it, or
+#: "... will not be needed" after it, never one in a reason clause ("because it can no longer
+#: rely on bills") -- audit should-fix on #394 v3.
+_NEG_BEFORE = re.compile(r"\bnot\b(?!\s+only)|\bno longer\b|n't\b|\bwithout\b|\bcannot\b"
+                         r"|\bnever\b|\bunlikely\b", re.I)
+_NEG_AFTER = re.compile(r"\b(?:not|no longer|unlikely to)\b(?:\s+be)?\s+"
+                        r"(?:needed|necessary|required|warranted)", re.I)
+_REASON = re.compile(r"\b(?:because|since|as|given|due to)\b", re.I)
 #: Clause boundaries: a separator, or a bare "and"/"while" that starts a new verb phrase, so
 #: "maintaining nominal coupon sizes and will increase TIPS" is two clauses (audit #394 v2).
 _CLAUSE = re.compile(r";|,\s*(?:while|but|and|whereas)\b|\bwhile\b|\bwhereas\b"
@@ -120,11 +122,12 @@ _CLAUSE = re.compile(r";|,\s*(?:while|but|and|whereas)\b|\bwhile\b|\bwhereas\b"
                      r"also)\b)", re.I)
 _LINK = re.compile(r"""<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a\s*>""", re.I | re.S)
 _ABOUT = re.compile(r"coupon|auction sizes?|issuance sizes?", re.I)
-_UP = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?\bincrease"
-                 r"|\bincreases? (?:to|in) (?:nominal )?coupon", re.I)
+_UP = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?\b(increas)"
+                 r"|\b(increas)(?:es?|ing) (?:to|in) (?:nominal )?coupon", re.I)
 _DOWN = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?"
-                   r"\b(?:reduce|reduction|decrease|cut)"
-                   r"|\b(?:reductions?|decreases?|cuts?) (?:to|in) (?:nominal )?coupon", re.I)
+                   r"\b(reduc|decreas|cut)"
+                   r"|\b(reduc|decreas|cut)(?:es?|tions?|ing|s)? (?:to|in) (?:nominal )?coupon",
+                   re.I)
 _FLAT = re.compile(r"at least the next several quarters|\bmaintain|\bunchanged\b"
                    r"|\bno changes?\b|\bkeep\b[^.]{0,60}\bsteady", re.I)
 
@@ -196,12 +199,20 @@ def _sizes_in(seg: str) -> dict[str, float]:
     return found
 
 
+def _without_reopenings(sent: str) -> str:
+    """The sentence minus every comma/semicolon clause that names a reopening, so a full list
+    sentence that also mentions one keeps its list (audit should-fix on #394 v3)."""
+    if not _REOPEN.search(sent):
+        return sent
+    return ", ".join(c for c in re.split(r"[;,]", sent) if not _REOPEN.search(c))
+
+
 def sizes(text: str) -> dict[str, float]:
     """Tenor -> $bn, read ONLY from the refunding list: the first block or sentence that
     sizes all three of the 3/10/30-year tenors, else the first that sizes two; a sentence about a
     reopening is never read (audit must-fix 4 on #394 and its v2 follow-up). Empty when
     the statement has no such list -- UNMEASURED, never a size read elsewhere."""
-    segs = [(seg, _sizes_in(seg)) for seg in _sentences(text) if not _REOPEN.search(seg)]
+    segs = [(seg, _sizes_in(seg)) for seg in map(_without_reopenings, _sentences(text))]
     for need in (len(TENORS), 2):        # the sentence that sizes all three wins, then two
         for _seg, found in segs:
             if sum(t in found for t in TENORS) >= need:
@@ -213,12 +224,17 @@ def _clause_reading(clause: str) -> int | None:
     nominal = bool(_NOMINAL.search(clause))
     if not nominal and (not _COUPON.search(clause) or _OTHER_SUPPLY.search(clause)):
         return None
-    if _NEGATED.search(clause):
-        return 0            # "does not anticipate needing to increase": sizes held
     up, down = _UP.search(clause), _DOWN.search(clause)
     for mt, v in ((up, 1), (down, -1)):
+        if mt is None:
+            continue
+        verb = next(mt.start(g) for g in range(1, 3) if mt.group(g)) if mt.lastindex else 0
+        before = _REASON.split(clause[max(0, verb - 40):verb])[-1]
+        after = _REASON.split(clause[mt.end():mt.end() + 60])[0]
+        if _NEG_BEFORE.search(before) or _NEG_AFTER.search(after):
+            return 0        # "does not anticipate needing to increase": sizes held
         # the object of the verb must be nominal coupons, not TIPS / FRN / bills
-        if mt is not None and not _OTHER_SUPPLY.search(clause[mt.start():mt.end() + 40]):
+        if not _OTHER_SUPPLY.search(after[:40]):
             return v
     if up or down:
         return None
@@ -261,12 +277,18 @@ def _change(prev: dict[str, Any], cur: dict[str, Any]) -> float | None:
     return sum(float(cur["sizes"][t]) for t in common) / before - 1.0
 
 
+def _prior_step(pair_changes: Sequence[tuple[str, float | None]], before: str) -> float | None:
+    """The size of a missed step: the median measured |move| over statement pairs dated
+    strictly BEFORE `before` -- never a later quarter (audit must-fix on #394 v3: the
+    whole-record median re-scored history every quarter)."""
+    moves = sorted(abs(c) for d, c in pair_changes if d < before and c)
+    return moves[len(moves) // 2] if moves else None
+
+
 def surprises(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     """Each statement with its two surprises against the one before it (None = UNMEASURED)."""
     rows = sorted((s for s in statements if s.get("date")), key=lambda s: s["date"])
-    changes = [abs(c) for c in (_change(p, c) for p, c in pairwise(rows)) if c]
-    # The size of a missed step: the median measured move, derived from the record itself.
-    step = sorted(changes)[len(changes) // 2] if changes else None
+    pair_changes = [(c["date"], _change(p, c)) for p, c in pairwise(rows)]
     out: list[dict[str, Any]] = []
     for prev, cur in zip([None, *rows][:len(rows)], rows, strict=True):
         size_s: float | None = None
@@ -280,7 +302,7 @@ def surprises(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                     size_s = 0.0
                 elif sign != 0:
                     size_s = round(change, 6)
-                elif step is not None:
+                elif (step := _prior_step(pair_changes, cur["date"])) is not None:
                     # guided increases (or cuts) that did not come: less (more) supply than
                     # promised, by one typical step (audit should-fix on #394 v2)
                     size_s = round(-guided * step, 6)
@@ -454,6 +476,13 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
             continue
         links = statement_links(body, url)
         queue.extend(u for u in links if u not in store and u not in queue)
+    # A listed statement the desk holds no DATED reading of (refused, gated, 404, undated) is
+    # retried once per REFETCH_S and, until it reads, blocks every 0.0 (audit must-fix #394 v3).
+    undated = sorted(u for u, st in store.items() if not (isinstance(st, dict) and st.get("date")))
+    for u in undated:
+        if (u not in queue and time.time() - float((fetched.get(u) or {}).get("at_epoch") or 0)
+                >= REFETCH_S):
+            queue.append(u)
         per.append({"url": url, "status": "OK", "links": len(links)})
     read = 0
     for url in list(queue):
@@ -464,9 +493,12 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
         if why:
             fetched[url] = {"at_epoch": time.time(), "status": why}
             if not why.startswith("UNREACHABLE"):
-                queue.remove(url)        # a refusal is permanent; an outage is retried
+                queue.remove(url)        # a refusal waits REFETCH_S; an outage retries now
+                if not (store.get(url) or {}).get("date"):
+                    store[url] = {"url": url, "status": UNMEASURED, "why": why}
             continue
         queue.remove(url)
+        fetched[url] = {"at_epoch": time.time(), "status": "OK"}
         st = parse(page_text(body), url, _now(), today=today)
         store[url] = st or {"url": url, "status": UNMEASURED, "why": "no statement date"}
     fetched["_queue"] = queue
@@ -477,8 +509,10 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     # What the desk can vouch for: no listed statement unread, and the most-recent index read
     # successfully at ok_epoch. Past that, a day without a statement is UNMEASURED.
     ok_epoch = (fetched.get(INDEXES[0]) or {}).get("ok_epoch")
+    unread = sorted({*queue, *(u for u, st in store.items()
+                               if not (isinstance(st, dict) and st.get("date")))})
     measured_until = (datetime.fromtimestamp(float(ok_epoch), UTC)
-                      if ok_epoch and not queue else None)
+                      if ok_epoch and not unread else None)
     rows = series_rows(scored, today=today, measured_until=measured_until)
     if rows:
         write_series(rows)
@@ -518,6 +552,7 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
            "statements_on_record": len(good), "queued": len(queue),
            "measured": measured, "rows": len(rows),
            "measured_until": measured_until.isoformat() if measured_until else None,
+           "blocking_zeros": unread[:20],
            "rows_unmeasured": sum(1 for r in rows if r["stamp_basis"] == UNMEASURED),
            "cells_total": len(donate),
            "cells_donated": len(fresh), "seconds": round(time.time() - started, 1),

@@ -301,3 +301,76 @@ def test_sizes_skip_reopenings_and_misattached_amounts() -> None:
     assert tr.sizes(before) == {"3": 58.0, "10": 42.0, "30": 25.0}
     assert tr.sizes("Treasury will sell a 3-year note, a 5-year note, and a $42 billion "
                     "10-year note and a $25 billion 30-year bond.") == {"10": 42.0, "30": 25.0}
+
+
+def test_the_missed_step_is_measured_from_earlier_quarters_only() -> None:
+    """Audit must-fix on #394 v3: later +50% quarters must not re-score July 2024."""
+    base = [{"date": "2024-01-31", "sizes": {"3": 50}, "guidance": 0},
+            {"date": "2024-05-01", "sizes": {"3": 55}, "guidance": 1},
+            {"date": "2024-07-31", "sizes": {"3": 55}, "guidance": 0}]
+    later = [*base, {"date": "2024-10-30", "sizes": {"3": 82.5}, "guidance": 0},
+             {"date": "2025-02-05", "sizes": {"3": 123.75}, "guidance": 0}]
+    end = datetime(2026, 1, 1, tzinfo=UTC)
+    a, b = tr.surprises(base), tr.surprises(later)
+    assert a[2]["size_surprise"] == b[2]["size_surprise"] == pytest.approx(-0.1, abs=1e-6)
+    ra = tr.series_rows(a, today=date(2024, 8, 1), measured_until=end)
+    rb = tr.series_rows(b, today=date(2024, 8, 1), measured_until=end)
+    assert [r["vintage_id"] for r in ra] == [r["vintage_id"] for r in rb]
+    first = tr.surprises([{"date": "2024-01-31", "sizes": {"3": 50}, "guidance": 1},
+                          {"date": "2024-05-01", "sizes": {"3": 50}, "guidance": 0}])
+    assert first[1]["size_surprise"] is None, "no earlier move measured: UNMEASURED"
+
+
+@pytest.mark.parametrize("why", ["HTTP_404", "GATED", "ROBOTS", None])
+def test_a_listed_statement_never_read_blocks_every_zero(tmp_path: Path,
+                                                         monkeypatch: pytest.MonkeyPatch,
+                                                         why: str | None) -> None:
+    """Audit must-fix on #394 v3: a refused or undated listed statement left 0.0 behind."""
+    for name, sub in (("STATE_DIR", "state"), ("SERIES_DIR", "series"),
+                      ("DONATE_DIR", "donate")):
+        monkeypatch.setattr(tr, name, tmp_path / sub)
+    monkeypatch.setattr(tr, "STATEMENTS", tmp_path / "state" / "statements.json")
+    monkeypatch.setattr(tr, "FETCHED", tmp_path / "state" / "fetched.json")
+    monkeypatch.setattr(tr, "REPORT", tmp_path / "REPORT.json")
+    pages = {tr.INDEXES[0]: (b'<a href="/s1">Quarterly Refunding Statement</a>'
+                             b'<a href="/s2">Quarterly Refunding Statement</a>', ""),
+             tr.INDEXES[1]: (b"", ""),
+             "https://home.treasury.gov/s1": (_statement("May 1, 2026", 58, 42, 25, HOLD), ""),
+             "https://home.treasury.gov/s2": ((b"", why) if why else
+                                              (b"<p>no date on this page</p>", ""))}
+    import collector_lab
+    monkeypatch.setattr(collector_lab, "fetch", lambda url, _s, **_k: pages[url])
+    doc = tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2026, 8, 10))
+    assert doc["measured_until"] is None
+    assert doc["blocking_zeros"] == ["https://home.treasury.gov/s2"]
+    with (tmp_path / "series" / "treasury_refunding.csv").open() as fh:
+        rows = {r["published_time"][:10]: r for r in csv.DictReader(fh)}
+    assert rows["2026-08-05"]["size_surprise"] == ""
+    assert rows["2026-08-05"]["stamp_basis"] == tr.UNMEASURED
+    calls: list[str] = []
+    monkeypatch.setattr(collector_lab, "fetch",
+                        lambda url, _s, **_k: (calls.append(url), pages[url])[1])
+    tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2026, 8, 10))
+    assert "https://home.treasury.gov/s2" not in calls, "retried once per REFETCH_S, not hammered"
+    monkeypatch.setattr(tr, "REFETCH_S", 0.0)
+    pages["https://home.treasury.gov/s2"] = (_statement("August 5, 2026", 58, 42, 25, HOLD), "")
+    again = tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2026, 8, 10))
+    assert again["blocking_zeros"] == [] and again["measured_until"] is not None
+
+
+@pytest.mark.parametrize(("text", "want"), [
+    ("Treasury will increase nominal coupon auction sizes because it can no longer rely on "
+     "bills.", 1),
+    ("Treasury will increase nominal coupon auction sizes, since bills alone cannot absorb any "
+     "increase.", 1),
+    ("Treasury anticipates increasing nominal coupon auction sizes.", 1),
+    ("Treasury does not anticipate needing to increase nominal coupon auction sizes.", 0),
+])
+def test_negation_binds_to_the_guided_verb(text: str, want: int) -> None:
+    assert tr.guidance(text) == want
+
+
+def test_a_list_sentence_that_mentions_a_reopening_keeps_its_list() -> None:
+    text = ("Treasury will sell a $58 billion 3-year note, a $42 billion 10-year note, the "
+            "$39 billion 10-year reopening, and a $25 billion 30-year bond.")
+    assert tr.sizes(text) == {"3": 58.0, "10": 42.0, "30": 25.0}

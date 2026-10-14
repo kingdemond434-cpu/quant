@@ -251,3 +251,10 @@ def test_what_was_held_on_the_date_must_be_the_vote() -> None:
     got = ec.extract("The general election on 29 May 2024 was held nationwide.", "en",
                      today=date(2026, 1, 1))
     assert [e["date"] for e in got] == ["2024-05-29"]
+
+
+@pytest.mark.parametrize("what", ["local elections were", "a mayoral election was"])
+def test_plural_and_adjective_exclusions(what: str) -> None:
+    """Audit should-fix on #394 v3."""
+    assert ec.extract(f"Before the general election, on 3 March 2025 {what} held.", "en",
+                      today=date(2026, 1, 1)) == []
