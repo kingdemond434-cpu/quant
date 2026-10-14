@@ -600,3 +600,24 @@ def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
     # EMPTY IS WRITTEN: absence must never read as zero cells awaiting conversion.
     assert jc.write_conversion_handoff({}, at="t", path=out) == 0
     assert json.loads(out.read_text("utf-8"))["rows"] == []
+
+
+def test_a_lookahead_held_cell_is_named_never_parked_as_never_fires(tmp_path: Path) -> None:
+    """Auditor should-fix on llm_lookahead v3: the guard empties a held cell's series on purpose,
+    and that empty series was being read as an unrunnable spec."""
+    held = ("look-ahead guard: LLM-born cell with no readable evidence start (stamp unparseable "
+            "or map unreadable); held, not judged")
+    late = ("look-ahead guard: evidence start 2099-01-01 is after the last day; no post-guard "
+            "days; held, not judged")
+    gates = _gates(
+        tmp_path,
+        {"cell": "H.f.p=1", "sym": "XAUUSD", "family": "f", "days": 0, "unmeasured": True,
+         "unknown_reason": "no_signals", "series_error": held},
+        {"cell": "L.f.p=2", "sym": "XAUUSD", "family": "f", "days": 0, "unmeasured": True,
+         "unknown_reason": "no_signals", "series_error": late})
+    named = jc.name_unknowns(gates)
+    assert named["H.f.p=1"]["reason"] == "lookahead_held"
+    assert named["L.f.p=2"]["reason"] == "lookahead_after_last_day"
+    assert jc.unknown_reason_class("lookahead_held") == jc.DEFECT
+    assert jc.unknown_reason_class("lookahead_after_last_day") == jc.NOT_TESTABLE
+    assert jc.FAILURE_ROUTES[jc.failure_class("lookahead_held") or ""]["owner"] == "judge"

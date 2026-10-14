@@ -157,6 +157,11 @@ UNKNOWN_REASON_CLASS: dict[str, str] = {
     # the LLM lab's style screen read days at or past this cell's lockbox cut (`lab_style`,
     # gauntlet_screen_read_until): judgeable once the cut moves past `screen_read_until`
     "screened_past_cut": NOT_TESTABLE,
+    # the gauntlet's LLM look-ahead guard (llm_lookahead_gauntlet v3): a start after the last
+    # day leaves no post-guard day yet (scarcity, re-admitted as history grows); a HELD cell has
+    # no readable start at all (a stamp or map the desk owes a fix for)
+    "lookahead_after_last_day": NOT_TESTABLE,
+    "lookahead_held": DEFECT,
     "series_exception": DEFECT,
     "no_series": DEFECT,
     "observations_under_60_days": DEFECT,
@@ -891,7 +896,20 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
         declared = str(v.get("unknown_reason") or "")
         params = v.get("params") if isinstance(v.get("params"), dict) else None
         need = REQUIRED_INPUT_KEY.get(fam)
-        if declared == "series_exception":
+        guard = str(v.get("series_error") or "")
+        if guard.startswith("look-ahead guard:"):
+            # THE GUARD EMPTIED THIS SERIES ON PURPOSE (auditor, LLM_LOOKAHEAD_v3): the sweep
+            # sees an empty series, and without this branch every held lab cell was parked as
+            # `never_fires` -- an unrunnable spec -- and counted in never_fire_pairs.
+            if "after the last day" in guard:
+                reason, route = "lookahead_after_last_day", (
+                    "the LLM that proposed this cell had read every day on disk: judged once "
+                    "history grows past its evidence start")
+            else:
+                reason, route = "lookahead_held", (
+                    "LLM-born cell with no readable evidence start (stamp unparseable or the "
+                    "lab's evidence-start map unreadable): held until the start is readable")
+        elif declared == "series_exception":
             reason, route = "series_exception", (
                 "the backtest raised while building this cell's daily series: a code defect, "
                 f"re-admitted after {BUILD_FAILED_RETRY_DAYS:.0f} days like a build failure")
@@ -1610,6 +1628,8 @@ FAILURE_CLASS: dict[str, str] = {
     "short_history_after_cut": "short_history",
     "lockbox_consumed_history": "short_history",
     "screened_past_cut": "short_history",
+    "lookahead_after_last_day": "short_history",
+    "lookahead_held": "lookahead_held",
     "no_signals": "untestable_as_specified",
     "signals_no_trades": "untestable_as_specified",
     "no_trades": "untestable_as_specified",
@@ -1641,6 +1661,8 @@ FAILURE_ROUTES: dict[str, dict[str, Any]] = {
     "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
     "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
     "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
+    "lookahead_held": {"owner": "judge",
+                       "axes": ["readable_evidence_start", "restore_evidence_start_map"]},
 }
 
 #: Where cells for the converter are handed over, rewritten every pass from the bank (the bank
