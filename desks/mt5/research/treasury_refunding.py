@@ -40,6 +40,7 @@ WHAT IS NOT YET READ, said rather than hidden: the TBAC minutes and the primary-
 expectations they summarise. They would sharpen the surprise (dealer consensus vs outcome) and
 are the next step; until then the surprise is measured against Treasury's own prior guidance.
 """
+
 from __future__ import annotations
 
 import csv
@@ -91,30 +92,63 @@ INDEXES: tuple[str, ...] = (
 MECHANISMS: dict[str, int] = {"UST10Y": -1, "USDJPY": 1, "US500": -1, "XAUUSD": -1}
 SIGNALS = ("size_surprise", "guidance_shift")
 
-_MONTHS = {m: i + 1 for i, m in enumerate(
-    ("january", "february", "march", "april", "may", "june", "july", "august", "september",
-     "october", "november", "december"))}
+_MONTHS = {
+    m: i + 1
+    for i, m in enumerate(
+        (
+            "january",
+            "february",
+            "march",
+            "april",
+            "may",
+            "june",
+            "july",
+            "august",
+            "september",
+            "october",
+            "november",
+            "december",
+        )
+    )
+}
 _DATE = re.compile(r"\b(" + "|".join(_MONTHS) + r")\s+(\d{1,2}),?\s+(\d{4})\b", re.I)
-_SIZE = re.compile(r"\$\s?(\d+(?:\.\d+)?)\s+billion\s+(?:of\s+)?(?:(?:the|a|new)\s+)*"
-                   r"(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b", re.I)
+_SIZE = re.compile(
+    r"\$\s?(\d+(?:\.\d+)?)\s+billion\s+(?:of\s+)?(?:(?:the|a|new)\s+)*"
+    r"(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b",
+    re.I,
+)
 #: The statement's own phrasing: "a 10-year note in the amount of $42 billion".
-_SIZE_AFTER = re.compile(r"\b(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b"
-                         r"(?:(?!\d+[-\s]year)[^.$]){0,60}?"
-                         r"\$\s?(\d+(?:\.\d+)?)\s+billion", re.I)
+_SIZE_AFTER = re.compile(
+    r"\b(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b"
+    r"(?:(?!\d+[-\s]year)[^.$]){0,60}?"
+    r"\$\s?(\d+(?:\.\d+)?)\s+billion",
+    re.I,
+)
 #: A reopening sentence sizes one auction, never the refunding list (audit #394 v2).
 _REOPEN = re.compile(r"\breopen", re.I)
 #: A clause about NOMINAL coupon sizes: TIPS, FRN and bill sizes are other supply.
 _COUPON = re.compile(r"\bcoupon", re.I)
 _NOMINAL = re.compile(r"\bnominal coupon", re.I)
-_OTHER_SUPPLY = re.compile(r"\bTIPS\b|inflation[- ]protected|\bFRNs?\b|floating rate|\bbills?\b",
-                           re.I)
+_OTHER_SUPPLY = re.compile(
+    r"\bTIPS\b|inflation[- ]protected|\bFRNs?\b|floating rate|\bbills?\b", re.I
+)
 #: Negation binds to the GUIDED VERB only: a negation word in the 40 characters before it, or
 #: "... will not be needed" after it, never one in a reason clause ("because it can no longer
 #: rely on bills") -- audit should-fix on #394 v3.
-_NEG_BEFORE = re.compile(r"\bnot\b(?!\s+only)|\bno longer\b|n't\b|\bwithout\b|\bcannot\b"
-                         r"|\bnever\b|\bunlikely\b|\bno\b(?!\s+(?:changes?|longer)\b)", re.I)
-_NEG_AFTER = re.compile(r"\b(?:not|no longer|unlikely to)\b(?:\s+be)?\s+"
-                        r"(?:needed|necessary|required|warranted)", re.I)
+_NEG_BEFORE = re.compile(
+    r"\bnot\b(?!\s+only)|\bno longer\b|n't\b|\bwithout\b|\bcannot\b"
+    r"|\bnever\b|\bunlikely\b"
+    # a bare "no" negates only when the guided word follows within two
+    # words ("no increase", "no need to"), never "no later than", "no doubt"
+    r"|\bno\s+(?:[a-z]+\s+){0,2}?(?:increas|reduc|decreas|cuts?\b|need"
+    r"|expectation|intention|plans?\b|anticipat)",
+    re.I,
+)
+_NEG_AFTER = re.compile(
+    r"\b(?:not|no longer|unlikely to)\b(?:\s+be)?\s+"
+    r"(?:needed|necessary|required|warranted)",
+    re.I,
+)
 _VERB = re.compile(r"\b(?:increas|reduc|decreas|cut(?:s|ting)?\b)", re.I)
 #: Only a CAUSAL clause ends the negation's reach: a parenthetical (", as of now,", ", given
 #: current projections,") never does (audit must-fix on #394 v4).
@@ -123,20 +157,31 @@ _REASON = re.compile(r"\b(?:because|since|due to|owing to)\b", re.I)
 NEG_LEAD = 25
 #: Clause boundaries: a separator, or a bare "and"/"while" that starts a new verb phrase, so
 #: "maintaining nominal coupon sizes and will increase TIPS" is two clauses (audit #394 v2).
-_CLAUSE = re.compile(r";|,\s*(?:while|but|and|whereas)\b|\bwhile\b|\bwhereas\b"
-                     r"|\s\band\s+(?=(?:will|plans?|anticipates?|expects?|intends?|is|are|"
-                     r"also)\b)", re.I)
+_CLAUSE = re.compile(
+    r";|,\s*(?:while|but|and|whereas)\b|\bwhile\b|\bwhereas\b"
+    r"|\s\band\s+(?=(?:will|plans?|anticipates?|expects?|intends?|is|are|"
+    r"also)\b)",
+    re.I,
+)
 _LINK = re.compile(r"""<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a\s*>""", re.I | re.S)
 _ABOUT = re.compile(r"coupon|auction sizes?|issuance sizes?", re.I)
-_UP = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?\b(increas)"
-                 r"|\b(increas)(?:es?|ing) (?:to|in) (?:nominal )?coupon", re.I)
-_DOWN = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?"
-                   r"\b(reduc|decreas|cut(?=s?\b|ting\b))"
-                   r"|\b(reduc|decreas|cut)(?:es?|tions?|ing|s)? (?:to|in) (?:nominal )?coupon",
-                   re.I)
-_FLAT = re.compile(r"at least the next several quarters|\bmaintain|\bunchanged\b"
-                   r"|\bno changes?\b|\bkeep\b[^.]{0,60}\bsteady"
-                   r"|(?:\bnot\b|n't\b)[^.;]{0,40}\bany (?:changes?|adjustments?)\b", re.I)
+_UP = re.compile(
+    r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?\b(increas)"
+    r"|\b(increas)(?:es?|ing) (?:to|in) (?:nominal )?coupon",
+    re.I,
+)
+_DOWN = re.compile(
+    r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?"
+    r"\b(reduc|decreas|cut(?=s?\b|ting\b))"
+    r"|\b(reduc|decreas|cut)(?:es?|tions?|ing|s)? (?:to|in) (?:nominal )?coupon",
+    re.I,
+)
+_FLAT = re.compile(
+    r"at least the next several quarters|\bmaintain|\bunchanged\b"
+    r"|\bno changes?\b|\bkeep\b[^.]{0,60}\bsteady"
+    r"|(?:\bnot\b|n't\b)[^.;]{0,40}\bany (?:changes?|adjustments?)\b",
+    re.I,
+)
 
 
 def _now() -> str:
@@ -161,6 +206,7 @@ def statement_links(body: bytes, base_url: str) -> list[str]:
     """Every link on an index page whose text names a refunding statement, on a treasury.gov
     host. A link elsewhere is never followed."""
     import html
+
     out: list[str] = []
     for href, text in _LINK.findall(body.decode("utf-8", errors="replace")):
         label = html.unescape(re.sub(r"(?s)<[^>]+>", " ", text)).lower()
@@ -220,7 +266,7 @@ def sizes(text: str) -> dict[str, float]:
     reopening is never read (audit must-fix 4 on #394 and its v2 follow-up). Empty when
     the statement has no such list -- UNMEASURED, never a size read elsewhere."""
     segs = [(seg, _sizes_in(seg)) for seg in map(_without_reopenings, _sentences(text))]
-    for need in (len(TENORS), 2):        # the sentence that sizes all three wins, then two
+    for need in (len(TENORS), 2):  # the sentence that sizes all three wins, then two
         for _seg, found in segs:
             if sum(t in found for t in TENORS) >= need:
                 return {t: found[t] for t in TENORS if t in found}
@@ -232,6 +278,10 @@ def _clause_reading(clause: str) -> int | None:
     if not nominal and (not _COUPON.search(clause) or _OTHER_SUPPLY.search(clause)):
         return None
     up, down = _UP.search(clause), _DOWN.search(clause)
+    # BOTH DIRECTIONS ARE READ BEFORE ANY ANSWER (audit must-fix on #394 v6): "anticipates
+    # reductions ..., with no increases" is -1, not the held 0 of its negated increase.
+    held = affirmed_amb = False
+    affirmed: set[int] = set()
     for mt, v in ((up, 1), (down, -1)):
         if mt is None:
             continue
@@ -241,25 +291,27 @@ def _clause_reading(clause: str) -> int | None:
         # not, given current projections, increase"); one earlier in the clause that this
         # window cannot bind makes the clause UNMEASURED, never the wrong sign.
         prefix = _REASON.split(clause[:verb])[-1]
-        phrase = clause[max(0, mt.start() - NEG_LEAD):verb]
-        phrase = _REASON.split(phrase)[-1]
-        after = _REASON.split(clause[mt.end():mt.end() + 60])[0]
+        phrase = _REASON.split(clause[max(0, mt.start() - NEG_LEAD) : verb])[-1]
+        after = _REASON.split(clause[mt.end() : mt.end() + 60])[0]
         if _NEG_BEFORE.search(phrase) or _NEG_AFTER.search(after):
-            return 0        # "does not anticipate needing to increase": sizes held
-        if _NEG_BEFORE.search(prefix):
-            return None
-        if any(not re.search(r"\bnot only\s*$", clause[:f.start()], re.I)
-               for f in _FLAT.finditer(clause)):
-            return None     # "maintain ... despite reduced demand": two readings, none taken
-        # the object of the verb must be nominal coupons, not TIPS / FRN / bills
-        if not _OTHER_SUPPLY.search(after[:40]):
-            return v
+            held = True  # "does not anticipate needing to increase": that direction held
+        elif _NEG_BEFORE.search(prefix) or any(
+            not re.search(r"\bnot only\s*$", clause[: f.start()], re.I)
+            for f in _FLAT.finditer(clause)
+        ):
+            affirmed_amb = True  # an unbound negation, or "maintain ... despite reduced"
+        elif not _OTHER_SUPPLY.search(after[:40]):
+            affirmed.add(v)  # the object is nominal coupons, not TIPS / FRN / bills
     if up or down:
-        return None
+        if affirmed_amb or len(affirmed) > 1:
+            return None
+        if affirmed:
+            return affirmed.pop()
+        return 0 if held else None
     bare = _VERB.search(clause)
-    lead = clause[max(0, bare.start() - 40):bare.start()] if bare else ""
+    lead = clause[max(0, bare.start() - 40) : bare.start()] if bare else ""
     if bare and _NEG_BEFORE.search(_REASON.split(lead)[-1]):
-        return 0            # "cannot foresee a need to increase", with no guidance verb
+        return 0  # "cannot foresee a need to increase", with no guidance verb
     if _FLAT.search(clause):
         return 0
     return None
@@ -285,14 +337,18 @@ def parse(text: str, url: str, seen: str, *, today: date | None = None) -> dict[
     d = release_date(text, today=today)
     if d is None:
         return None
-    return {"date": d.isoformat(), "url": url, "first_seen": seen, "sizes": sizes(text),
-            "guidance": guidance(text)}
+    return {
+        "date": d.isoformat(),
+        "url": url,
+        "first_seen": seen,
+        "sizes": sizes(text),
+        "guidance": guidance(text),
+    }
 
 
 def _change(prev: dict[str, Any], cur: dict[str, Any]) -> float | None:
     """Fractional change in coupon sizes over the tenors both statements size, or None."""
-    common = [t for t in TENORS if t in (cur.get("sizes") or {})
-              and t in (prev.get("sizes") or {})]
+    common = [t for t in TENORS if t in (cur.get("sizes") or {}) and t in (prev.get("sizes") or {})]
     before = sum(float(prev["sizes"][t]) for t in common)
     if not common or before <= 0:
         return None
@@ -313,8 +369,9 @@ def _one_per_date(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     readings UNMEASURED -- never the later page silently overriding with a 0.0 change (audit
     should-fix on #394 v4)."""
     by_day: dict[str, dict[str, Any]] = {}
-    for st in sorted((x for x in statements if x.get("date")),
-                     key=lambda x: (x["date"], str(x.get("url") or ""))):
+    for st in sorted(
+        (x for x in statements if x.get("date")), key=lambda x: (x["date"], str(x.get("url") or ""))
+    ):
         have = by_day.get(st["date"])
         if have is None:
             by_day[st["date"]] = dict(st)
@@ -327,21 +384,30 @@ def _one_per_date(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     return [by_day[d] for d in sorted(by_day)]
 
 
-def surprises(statements: Sequence[dict[str, Any]],
-              gaps: Sequence[tuple[date | None, date | None]] = ()) -> list[dict[str, Any]]:
+def _spans_gap(
+    prev: dict[str, Any], cur: dict[str, Any], gaps: Sequence[tuple[date | None, date | None]]
+) -> bool:
+    p_day, c_day = date.fromisoformat(prev["date"]), date.fromisoformat(cur["date"])
+    return any((lo is None or lo < c_day) and (hi is None or hi > p_day) for lo, hi in gaps)
+
+
+def surprises(
+    statements: Sequence[dict[str, Any]], gaps: Sequence[tuple[date | None, date | None]] = ()
+) -> list[dict[str, Any]]:
     """Each statement with its two surprises against the one before it (None = UNMEASURED).
     A pair an unread statement could fall between (a `gaps` window that overlaps it) is not a
     pair: its surprises are UNMEASURED, never a diff that skipped a quarter (audit #394 v5)."""
     rows = _one_per_date(statements)
-    pair_changes = [(c["date"], _change(p, c)) for p, c in pairwise(rows)]
+    # a pair an unread statement could split is no measured move either (audit #394 v6)
+    pair_changes = [
+        (c["date"], None if _spans_gap(p, c, gaps) else _change(p, c)) for p, c in pairwise(rows)
+    ]
     out: list[dict[str, Any]] = []
-    for prev, cur in zip([None, *rows][:len(rows)], rows, strict=True):
+    for prev, cur in zip([None, *rows][: len(rows)], rows, strict=True):
         size_s: float | None = None
         shift: float | None = None
-        if prev is not None:
-            p_day, c_day = date.fromisoformat(prev["date"]), date.fromisoformat(cur["date"])
-            if any((lo is None or lo < c_day) and (hi is None or hi > p_day) for lo, hi in gaps):
-                prev = None
+        if prev is not None and _spans_gap(prev, cur, gaps):
+            prev = None
         if prev is not None:
             change = _change(prev, cur)
             guided = prev.get("guidance")
@@ -363,8 +429,15 @@ def surprises(statements: Sequence[dict[str, Any]],
     return out
 
 
-SERIES_COLUMNS = ("available_time", "published_time", "retrieval_time", "source_id",
-                  "vintage_id", "stamp_basis", *SIGNALS)
+SERIES_COLUMNS = (
+    "available_time",
+    "published_time",
+    "retrieval_time",
+    "source_id",
+    "vintage_id",
+    "stamp_basis",
+    *SIGNALS,
+)
 
 
 def _seen_at(ev: dict[str, Any]) -> datetime | None:
@@ -387,7 +460,7 @@ def _stamp(d: date, ev: dict[str, Any] | None) -> tuple[datetime, str]:
     rel = date.fromisoformat(str(ev["date"]))
     hold_end = datetime(rel.year, rel.month, rel.day, tzinfo=UTC) + timedelta(days=POST_DAYS)
     if seen is None:
-        return pub, "unstamped"          # fail closed: its values are written blank
+        return pub, "unstamped"  # fail closed: its values are written blank
     if seen < hold_end:
         return max(pub, seen), "first_sight"
     return pub, "published_history"
@@ -396,16 +469,28 @@ def _stamp(d: date, ev: dict[str, Any] | None) -> tuple[datetime, str]:
 def _vintage(s: dict[str, Any] | None) -> str:
     """One statement's content hash: a re-read (corrected size or guidance) is a visible
     revision of THAT row, and a new quarter never re-vintages history (audit #394 v2)."""
-    body = (["none"] if s is None else
-            [s["date"], s.get("sizes"), s.get("guidance"), s.get("size_surprise"),
-             s.get("guidance_shift")])
+    body = (
+        ["none"]
+        if s is None
+        else [
+            s["date"],
+            s.get("sizes"),
+            s.get("guidance"),
+            s.get("size_surprise"),
+            s.get("guidance_shift"),
+        ]
+    )
     return hashlib.sha256(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()[:12]
 
 
-def series_rows(scored: Sequence[dict[str, Any]], *, today: date | None = None,
-                measured_until: datetime | None = None, now: datetime | None = None,
-                blocked: Sequence[tuple[date | None, date | None]] = ()
-                ) -> list[dict[str, Any]]:
+def series_rows(
+    scored: Sequence[dict[str, Any]],
+    *,
+    today: date | None = None,
+    measured_until: datetime | None = None,
+    now: datetime | None = None,
+    blocked: Sequence[tuple[date | None, date | None]] = (),
+) -> list[dict[str, Any]]:
     """One row a day from the first statement to today; each surprise is held POST_DAYS days.
     A day with no statement is 0.0 only when published at or before `measured_until` (the last
     read of the most-recent index), not after `now`, and outside every `blocked` window (the
@@ -421,34 +506,44 @@ def series_rows(scored: Sequence[dict[str, Any]], *, today: date | None = None,
     while d <= end:
         ev = next((s for e, s in reversed(events) if 0 <= (d - e).days < POST_DAYS), None)
         avail, basis = _stamp(d, ev)
-        row: dict[str, Any] = {"available_time": avail.isoformat(),
-                               "published_time": datetime(d.year, d.month, d.day,
-                                                          RELEASE_HOUR_UTC,
-                                                          tzinfo=UTC).isoformat(),
-                               "retrieval_time": ev.get("first_seen", "") if ev else "",
-                               "source_id": SOURCE_ID, "vintage_id": _vintage(ev),
-                               "stamp_basis": basis}
-        known_none = (measured_until is not None and avail <= measured_until
-                      and avail <= clock
-                      and not any((lo is None or lo <= d) and (hi is None or d <= hi)
-                                  for lo, hi in blocked))
+        row: dict[str, Any] = {
+            "available_time": avail.isoformat(),
+            "published_time": datetime(
+                d.year, d.month, d.day, RELEASE_HOUR_UTC, tzinfo=UTC
+            ).isoformat(),
+            "retrieval_time": ev.get("first_seen", "") if ev else "",
+            "source_id": SOURCE_ID,
+            "vintage_id": _vintage(ev),
+            "stamp_basis": basis,
+        }
+        known_none = (
+            measured_until is not None
+            and avail <= measured_until
+            and avail <= clock
+            and not any((lo is None or lo <= d) and (hi is None or d <= hi) for lo, hi in blocked)
+        )
         if ev is None and not known_none:
             row["stamp_basis"] = UNMEASURED
         for sig in SIGNALS:
-            v = (ev.get(sig) if basis != "unstamped" else None) if ev else (
-                0.0 if known_none else None)
+            v = (
+                (ev.get(sig) if basis != "unstamped" else None)
+                if ev
+                else (0.0 if known_none else None)
+            )
             row[sig] = "" if v is None else v
         rows.append(row)
         d += timedelta(days=1)
     return rows
 
 
-def unread_windows(unread: Sequence[str], fetched: dict[str, Any], store: dict[str, Any]
-                   ) -> list[dict[str, Any]]:
+def unread_windows(
+    unread: Sequence[str], fetched: dict[str, Any], store: dict[str, Any]
+) -> list[dict[str, Any]]:
     """For each listed-but-unread statement, the dates it could carry: between its nearest DATED
     neighbours in the order an index lists them (the order's direction read from the dated
     links themselves). Unbounded on a side with no neighbour that bounds it; wholly unbounded
     when no index lists it with two dated links to orient by (audit should-fix on #394 v4)."""
+
     def day(u: str) -> date | None:
         st = store.get(u)
         try:
@@ -474,12 +569,13 @@ def unread_windows(unread: Sequence[str], fetched: dict[str, Any], store: dict[s
             before = [d for j, d in dated if j < i]
             after = [d for j, d in dated if j > i]
             b, a = (before[-1] if before else None), (after[0] if after else None)
-            lo, hi = ((b, a) if ascending else (a, b))
+            lo, hi = (b, a) if ascending else (a, b)
             if lo is not None and hi is not None and lo > hi:
                 lo = hi = None
             break
-        out.append({"url": u, "from": lo.isoformat() if lo else None,
-                    "to": hi.isoformat() if hi else None})
+        out.append(
+            {"url": u, "from": lo.isoformat() if lo else None, "to": hi.isoformat() if hi else None}
+        )
     return out
 
 
@@ -495,8 +591,11 @@ def write_series(rows: Sequence[dict[str, Any]]) -> Path:
     return path
 
 
-def cells(scored: Sequence[dict[str, Any]], uni: dict[str, str] | None = None,
-          lane_ok: Callable[[str, str], bool] | None = None) -> list[dict[str, Any]]:
+def cells(
+    scored: Sequence[dict[str, Any]],
+    uni: dict[str, str] | None = None,
+    lane_ok: Callable[[str, str], bool] | None = None,
+) -> list[dict[str, Any]]:
     """The pre-registered cells, once at least two surprises of a signal are measured non-zero."""
     out: list[dict[str, Any]] = []
     for sig in SIGNALS:
@@ -508,39 +607,71 @@ def cells(scored: Sequence[dict[str, Any]], uni: dict[str, str] | None = None,
                 continue
             if lane_ok is not None and not lane_ok(sym, "exogenous_conditioner"):
                 continue
-            params = {"source": SOURCE_ID, "signal": sig, "transform": "level_z",
-                      "threshold": 1.0, "side_when_high": side}
-            ident = hashlib.sha256(json.dumps(
-                {"family": "exogenous_conditioner", "params": params, "symbol": sym},
-                sort_keys=True).encode()).hexdigest()[:16]
-            what = ("coupon sizes moved against Treasury's own prior guidance"
-                    if sig == "size_surprise" else "Treasury's size guidance shifted")
-            out.append({
-                "kind": "hypothesis", "family": "exogenous_conditioner", "params": params,
-                "symbols": [sym], "symbol": sym, "cell_id": f"refunding_{ident}",
-                "mechanism": (f"duration-supply surprise at the Quarterly Refunding: when {what}, "
-                              f"the term premium reprices; {sym} is taken "
-                              f"{'long' if side > 0 else 'short'} on more supply than guided "
-                              f"({n} measured surprises)"),
-                "falsifier": (f"{sym} returns in the {POST_DAYS} days after a refunding "
-                              f"{sig.replace('_', ' ')} are no different from unconditioned "
-                              f"returns, or carry the opposite sign"),
-                "title": f"treasury refunding: {sym} on the {sig.replace('_', ' ')}",
-                "mechanism_class": "event", "novelty_class": "GENUINELY_NOVEL",
-                "lineage": {"root": f"treasury_refunding:{sig}", "operator": "fixed_rule"},
-                "producer": "treasury_refunding", "url": f"lake://{SOURCE_ID}",
-                "copy_trade": False, "credibility_inherited": False,
-                "gauntlet_bypass": False})
+            params = {
+                "source": SOURCE_ID,
+                "signal": sig,
+                "transform": "level_z",
+                "threshold": 1.0,
+                "side_when_high": side,
+            }
+            ident = hashlib.sha256(
+                json.dumps(
+                    {"family": "exogenous_conditioner", "params": params, "symbol": sym},
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest()[:16]
+            what = (
+                "coupon sizes moved against Treasury's own prior guidance"
+                if sig == "size_surprise"
+                else "Treasury's size guidance shifted"
+            )
+            out.append(
+                {
+                    "kind": "hypothesis",
+                    "family": "exogenous_conditioner",
+                    "params": params,
+                    "symbols": [sym],
+                    "symbol": sym,
+                    "cell_id": f"refunding_{ident}",
+                    "mechanism": (
+                        f"duration-supply surprise at the Quarterly Refunding: when {what}, "
+                        f"the term premium reprices; {sym} is taken "
+                        f"{'long' if side > 0 else 'short'} on more supply than guided "
+                        f"({n} measured surprises)"
+                    ),
+                    "falsifier": (
+                        f"{sym} returns in the {POST_DAYS} days after a refunding "
+                        f"{sig.replace('_', ' ')} are no different from unconditioned "
+                        f"returns, or carry the opposite sign"
+                    ),
+                    "title": f"treasury refunding: {sym} on the {sig.replace('_', ' ')}",
+                    "mechanism_class": "event",
+                    "novelty_class": "GENUINELY_NOVEL",
+                    "lineage": {"root": f"treasury_refunding:{sig}", "operator": "fixed_rule"},
+                    "producer": "treasury_refunding",
+                    "url": f"lake://{SOURCE_ID}",
+                    "copy_trade": False,
+                    "credibility_inherited": False,
+                    "gauntlet_bypass": False,
+                }
+            )
     return out
 
 
-def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
-        uni: dict[str, str] | None = None, lane_ok: Callable[[str, str], bool] | None = None,
-        today: date | None = None) -> dict[str, Any]:
+def run(
+    *,
+    budget_s: float = 60.0,
+    get: Any = None,
+    resolve: Any = None,
+    uni: dict[str, str] | None = None,
+    lane_ok: Callable[[str, str], bool] | None = None,
+    today: date | None = None,
+) -> dict[str, Any]:
     """Refresh the index pages at most once per REFETCH_S, read up to MAX_NEW_PER_PASS new
     statements, rebuild the series and donate new cells."""
     import collector_lab
     from election_calendar import page_text
+
     started = time.time()
     deadline = started + max(5.0, budget_s)
     store: dict[str, Any] = _read_json(STATEMENTS, {}) or {}
@@ -561,11 +692,19 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
             continue
         body, why = collector_lab.fetch(url, url, get=get, resolve=resolve, budget_s=left())
         prior = fetched.get(url) or {}
-        fetched[url] = {"at_epoch": time.time(), "status": why or "OK",
-                        **({"ok_epoch": time.time()} if not why else
-                           {"ok_epoch": prior["ok_epoch"]} if prior.get("ok_epoch") else {}),
-                        # the last good listing stays the order unread statements are bounded by
-                        **({"links": prior["links"]} if why and prior.get("links") else {})}
+        fetched[url] = {
+            "at_epoch": time.time(),
+            "status": why or "OK",
+            **(
+                {"ok_epoch": time.time()}
+                if not why
+                else {"ok_epoch": prior["ok_epoch"]}
+                if prior.get("ok_epoch")
+                else {}
+            ),
+            # the last good listing stays the order unread statements are bounded by
+            **({"links": prior["links"]} if why and prior.get("links") else {}),
+        }
         if why:
             per.append({"url": url, "status": why})
             continue
@@ -577,8 +716,10 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     # retried once per REFETCH_S and, until it reads, blocks every 0.0 (audit must-fix #394 v3).
     undated = sorted(u for u, st in store.items() if not (isinstance(st, dict) and st.get("date")))
     for u in undated:
-        if (u not in queue and time.time() - float((fetched.get(u) or {}).get("at_epoch") or 0)
-                >= REFETCH_S):
+        if (
+            u not in queue
+            and time.time() - float((fetched.get(u) or {}).get("at_epoch") or 0) >= REFETCH_S
+        ):
             queue.append(u)
     read = 0
     for url in list(queue):
@@ -589,7 +730,7 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
         if why:
             fetched[url] = {"at_epoch": time.time(), "status": why}
             if not why.startswith("UNREACHABLE"):
-                queue.remove(url)        # a refusal waits REFETCH_S; an outage retries now
+                queue.remove(url)  # a refusal waits REFETCH_S; an outage retries now
                 if not (store.get(url) or {}).get("date"):
                     store[url] = {"url": url, "status": UNMEASURED, "why": why}
             continue
@@ -604,12 +745,18 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     # What the desk can vouch for: no listed statement unread, and the most-recent index read
     # successfully at ok_epoch. Past that, a day without a statement is UNMEASURED.
     ok_epoch = (fetched.get(INDEXES[0]) or {}).get("ok_epoch")
-    unread = sorted({*queue, *(u for u, st in store.items()
-                               if not (isinstance(st, dict) and st.get("date")))})
+    unread = sorted(
+        {*queue, *(u for u, st in store.items() if not (isinstance(st, dict) and st.get("date")))}
+    )
     measured_until = datetime.fromtimestamp(float(ok_epoch), UTC) if ok_epoch else None
     windows = unread_windows(unread, fetched, store)
-    blocked = [(date.fromisoformat(w["from"]) if w["from"] else None,
-                date.fromisoformat(w["to"]) if w["to"] else None) for w in windows]
+    blocked = [
+        (
+            date.fromisoformat(w["from"]) if w["from"] else None,
+            date.fromisoformat(w["to"]) if w["to"] else None,
+        )
+        for w in windows
+    ]
     scored = surprises(good, gaps=blocked)
     rows = series_rows(scored, today=today, measured_until=measured_until, blocked=blocked)
     if rows:
@@ -617,23 +764,32 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     if lane_ok is None:
         try:
             import llm_lab
+
             lane_ok = llm_lab._lane_ok
         except Exception:
-            def lane_ok(_s: str, _f: str) -> bool:    # no lane policy, no permission
+
+            def lane_ok(_s: str, _f: str) -> bool:  # no lane policy, no permission
                 return False
+
     donate = cells(scored, uni, lane_ok)
     known = set(_read_json(STATE_DIR / "donated.json", []) or [])
     fresh = [r for r in donate if r["cell_id"] not in known]
     if fresh:
         DONATE_DIR.mkdir(parents=True, exist_ok=True)
         stamp = _now().replace(":", "").replace("-", "")[:15]
-        _write_json(DONATE_DIR / f"discoveries_{stamp}.json",
-                    {"source": "treasury_refunding", "generated_at": _now(),
-                     "rule": "fixed-code extraction; pre-registered sides; the gauntlet judges",
-                     "discoveries": fresh})
+        _write_json(
+            DONATE_DIR / f"discoveries_{stamp}.json",
+            {
+                "source": "treasury_refunding",
+                "generated_at": _now(),
+                "rule": "fixed-code extraction; pre-registered sides; the gauntlet judges",
+                "discoveries": fresh,
+            },
+        )
         _write_json(STATE_DIR / "donated.json", sorted(known | {r["cell_id"] for r in fresh}))
-    measured = {sig: sum(1 for s in scored if isinstance(s.get(sig), (int, float)))
-                for sig in SIGNALS}
+    measured = {
+        sig: sum(1 for s in scored if isinstance(s.get(sig), (int, float))) for sig in SIGNALS
+    }
     ran = read > 0 or any(p["status"] == "OK" for p in per)
     fresh_all = all(p["status"] == "FRESH" for p in per)
     # UNMEASURED IS A STATE (the #388 audit's rule, applied here too): no statement on record,
@@ -643,20 +799,29 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
         why = "no refunding statement with a readable date is on record"
     elif not any(measured.values()):
         why = "no statement pair yields a measurable size or guidance surprise"
-    state = ("DARK" if not ran and not fresh_all else UNMEASURED if why
-             else "RAN" if ran else "FRESH")
-    doc = {"generated_at": _now(), "state": state, **({"why": why} if why else {}),
-           "indexes": per, "statements_read": read,
-           "statements_on_record": len(good), "queued": len(queue),
-           "measured": measured, "rows": len(rows),
-           "measured_until": measured_until.isoformat() if measured_until else None,
-           "blocking_zeros": windows[:20],
-           "rows_unmeasured": sum(1 for r in rows if r["stamp_basis"] == UNMEASURED),
-           "cells_total": len(donate),
-           "cells_donated": len(fresh), "seconds": round(time.time() - started, 1),
-           "not_yet_read": "TBAC minutes / primary-dealer expectations (surprise is vs "
-                           "Treasury's own prior guidance until they are)",
-           "pit": f"release-day row stamped {RELEASE_HOUR_UTC}:00 UTC (after the 08:30 ET "
-                  f"release), held {POST_DAYS} days; first sight kept in retrieval_time"}
+    state = (
+        "DARK" if not ran and not fresh_all else UNMEASURED if why else "RAN" if ran else "FRESH"
+    )
+    doc = {
+        "generated_at": _now(),
+        "state": state,
+        **({"why": why} if why else {}),
+        "indexes": per,
+        "statements_read": read,
+        "statements_on_record": len(good),
+        "queued": len(queue),
+        "measured": measured,
+        "rows": len(rows),
+        "measured_until": measured_until.isoformat() if measured_until else None,
+        "blocking_zeros": windows[:20],
+        "rows_unmeasured": sum(1 for r in rows if r["stamp_basis"] == UNMEASURED),
+        "cells_total": len(donate),
+        "cells_donated": len(fresh),
+        "seconds": round(time.time() - started, 1),
+        "not_yet_read": "TBAC minutes / primary-dealer expectations (surprise is vs "
+        "Treasury's own prior guidance until they are)",
+        "pit": f"release-day row stamped {RELEASE_HOUR_UTC}:00 UTC (after the 08:30 ET "
+        f"release), held {POST_DAYS} days; first sight kept in retrieval_time",
+    }
     _write_json(REPORT, doc)
     return doc
