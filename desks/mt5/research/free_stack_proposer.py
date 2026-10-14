@@ -155,10 +155,12 @@ def cn_exchange_block(grid: list[dict[str, Any]], roster: dict[str, dict[str, An
         if str(ev.get("source_row", "")).startswith("cnx_"):
             ax = by.setdefault(str(ev["source_row"]), {})
             ax[str(ev.get("axis"))] = ax.get(str(ev.get("axis")), 0) + 1
-    for sid, row in sorted(roster.items()):
+    for sid in sorted(roster):
         if not sid.startswith("cnx_"):
             continue
-        terms = str(row.get("terms") or "to_confirm")
+        # the terms word is the ONE register's (terms_fence), never a roster field
+        from libs.data import terms_fence as _tf
+        terms = _tf.terms_verdict(sid)
         if terms != "confirmed":
             out["blocked_on_terms"].append(sid)
         out["sources"][sid] = {"terms": terms, "signal_columns": len(columns.get(sid) or {}),

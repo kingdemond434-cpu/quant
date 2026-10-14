@@ -6,8 +6,12 @@ F2  COMEX registered vs eligible warehouse stocks (CME ToU s.12, s.8(vi) and the
 F4  JPX short-selling ratio and margin balances are HELD on JPX's site terms (secondary use and
     redistribution barred for any purpose without permission; automated retrieval discouraged).
     The OSE settlements route the asia collector pointed at jpx.co.jp is held on the same terms.
-SF1 the free-stack exchange roster holds (cnx_*, held on the roster's own `terms`) carry
-    missed-growth lines, past conversion from the cursor.
+SF1 the free-stack exchange holds (cnx_*) are fence rows (the roster's own `terms` /
+    `terms_evidence` fields, a second register, are gone; auditor ruling 2026-10-14); the hold
+    comes from the fence row, lifting the row lifts it, and each carries a missed-growth line
+    with past conversion from the cursor.
+CME the cme_margin_changes row's url_patterns cover the clearing-advisory and performance-bond
+    routes and no other cmegroup.com page.
 SF2 the FINRA margin-statistics route (US pack) is HELD on FINRA's site-wide ToU: IDEAS_ONLY,
     never live input.
 Every hold is ONE terms_fence row (held_route) with a verbatim clause and a missed-growth line.
@@ -42,6 +46,9 @@ ROUTES = {
     "https://www.cmegroup.com/delivery_reports/Silver_stocks.xls": "comex_warehouse_stocks",
     "https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls": "comex_warehouse_stocks",
     "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls": "comex_warehouse_stocks",
+    "https://www.cmegroup.com/CmeWS/mvc/Metals/GetDepositary/GC/": "comex_warehouse_stocks",
+    "https://www.cmegroup.com/market-data/delayed-quotes/metals/warehouse-reports.html":
+        "comex_warehouse_stocks",
     "https://www.lme.com/en/market-data/reports-and-data/warehouse-and-stocks-reports":
         "lme_warehouse_stocks",
     "https://www.jpx.co.jp/markets/statistics-equities/short-selling/index.html":
@@ -95,6 +102,33 @@ def test_one_register_no_second_table() -> None:
         assert A.HELD_ROUTES[sid]["reason"] == tf.SOURCE_POLICY[sid]["why"], sid
     assert not any(h in s.url for s in A.SOURCES
                    for h in ("cmegroup.com", "lme.com", "jpx.co.jp", "finra.org"))
+
+
+CME_MARGIN = ("https://www.cmegroup.com/notices/clearing/2026/10/Chadv26-312.html",
+              "https://www.cmegroup.com/notices/clearing/2026/10/Chadv26-312.pdf",
+              "https://www.cmegroup.com/notices.html",
+              "https://www.cmegroup.com/clearing/margins/outright-vol-scans.html",
+              "https://www.cmegroup.com/clearing/risk-management/performance-bond-requirements.html",
+              "https://www.cmegroup.com/solutions/risk-management/performance-bonds-margins.html",
+              "https://www.cmegroup.com/CmeWS/mvc/Margins/OUTRIGHT?sortField=exchange")
+
+
+@pytest.mark.parametrize("url", CME_MARGIN)
+def test_cme_margin_advisory_routes_resolve_to_the_margin_row(url: str) -> None:
+    assert "url_patterns" in tf.SOURCE_POLICY["cme_margin_changes"]
+    assert tf.input_source(url) == "cme_margin_changes"
+    assert tf.policy_of_url(url)["status"] == tf.IDEAS_ONLY
+
+
+@pytest.mark.parametrize("url", [
+    "https://www.cmegroup.com/markets/metals.html",
+    "https://www.cmegroup.com/market-data/volume-open-interest.html",
+    "https://www.cmegroup.com/tools-information/calendars.html",
+    "https://www.cmegroup.com/insights/economic-research.html",
+    "https://www.cmegroup.com/notices/market-regulation/2026/10/x.html"])
+def test_other_cmegroup_pages_are_not_the_margin_row(url: str) -> None:
+    assert tf.input_source(url) is None
+    assert tf.policy_of_url(url)["status"] == tf.PUBLIC_PAGE
 
 
 @pytest.mark.parametrize("url,row", sorted(ROUTES.items()))
@@ -159,11 +193,66 @@ def test_alt_proxies_report_carries_a_missed_growth_line_per_pass6_hold(tmp_path
 
 
 # ============================================================================ SF1 cnx holds
+CNX = ("cnx_shfe", "cnx_ine", "cnx_dce", "cnx_czce", "cnx_gfex", "cnx_cffex")
+_TERMS_FIELDS = {"terms_url", "terms_quote", "terms_evidence", "terms_judgement"}
+
+
+def test_no_second_register_in_the_free_stack_roster() -> None:
+    """Auditor ruling 2026-10-14: no roster row holds a source on its own terms. A `terms` field
+    survives only as the Google Trends SEARCH-term list (not a licence word); every licence hold
+    is a fence row the roster points at with `terms_policy`."""
+    doc = json.loads((DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
+    for r in doc["sources"]:
+        assert not _TERMS_FIELDS & set(r), r["id"]
+        if "terms" in r:
+            assert r["kind"] == "gtrends" and isinstance(r["terms"], list), r["id"]
+        if "terms_policy" in r:
+            assert f"SOURCE_POLICY[{r['id']}]" in r["terms_policy"], r["id"]
+            assert tf.held_on_terms(r["id"]), r["id"]
+    held = {r["id"] for r in doc["sources"] if tf.held_on_terms(r["id"])}
+    assert held >= {*CNX, "congress_trades"}
+    for sid in CNX:
+        row = tf.SOURCE_POLICY[sid]
+        assert row["held_route"] and row["sources"] == (sid,) and row["hosts"] == (), sid
+        assert row["wanted"] and row["why"] and row["unblock"] and row["robots"], sid
+        assert row["terms"].get("clauses") or row["terms"].get("unread"), sid
+    assert tf.terms_verdict("cnx_shfe") == tf.terms_verdict("cnx_ine") == "refused"
+    assert {tf.terms_verdict(s) for s in CNX[2:]} == {"to_confirm"}
+    assert "电子抓取系统" in tf.SOURCE_POLICY["cnx_shfe"]["terms"]["clauses"]["commercial_bar"]
+    assert "slider-captcha" in tf.SOURCE_POLICY["cnx_ine"]["terms"]["unread"]["ine.cn"]
+
+
+def test_cnx_hold_comes_from_the_fence_row_and_lifting_it_lifts_the_hold(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.data import free_stack_cnx as cnx
+    rep = _cnx_pass(tmp_path / "a")
+    assert rep["per_source"]["cnx_dce"]["status"] == "HELD_ON_TERMS"
+    # the box's unblock: flip the FENCE row (no roster field exists to flip)
+    monkeypatch.setitem(tf.SOURCE_POLICY, "cnx_dce", {
+        **tf.SOURCE_POLICY["cnx_dce"], "held_route": False, "status": tf.PUBLIC_PAGE,
+        "terms": {"url": "http://www.dce.com.cn/", "checked_at": "2026-10-14",
+                  "clauses": {"grant": "SYNTHETIC TEST GRANT: automated research use permitted"}}})
+    assert not tf.held_on_terms("cnx_dce") and tf.terms_verdict("cnx_dce") == "confirmed"
+    assert cnx.terms_of({"id": "cnx_dce"}) == "confirmed"
+    from libs.data import free_stack as cnx_fs
+    calls: list[str] = []
+
+    def fetch(url: str, headers: Any = None, body: Any = None) -> bytes:
+        calls.append(url)
+        raise cnx_fs.FetchError("http_404", url)
+    h = cnx.fetch_cn_exchange(fetch, {"id": "cnx_dce", "exchange": "dce", "days_per_pass": 1},
+                              {}, NOW)
+    assert calls and h.status != "BLOCKED_ON_TERMS"            # the gate opened: it requested
+    lines = {ln["source"] for ln in _cnx_pass(tmp_path / "b")["missed_growth_lines"]}
+    assert "cnx_dce" not in lines and "cnx_shfe" in lines      # no hold, no hold line
+
+
+
 def _cnx_pass(tmp_path: Path, cursor: dict[str, Any] | None = None) -> dict[str, Any]:
     from free_stack_hunter import Store, run
     doc = json.loads((DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
-    rows = [r for r in doc["sources"] if r.get("terms") in ("refused", "to_confirm")]
-    assert {r["id"] for r in rows} >= {"cnx_shfe", "cnx_ine", "cnx_dce"}
+    rows = [r for r in doc["sources"] if r["id"] in CNX]
+    assert {r["id"] for r in rows} == set(CNX)
     tmp_path.mkdir(parents=True, exist_ok=True)
     roster = tmp_path / "roster.json"
     roster.write_text(json.dumps({"sources": rows}), "utf-8")
@@ -178,17 +267,16 @@ def _cnx_pass(tmp_path: Path, cursor: dict[str, Any] | None = None) -> dict[str,
 def test_cnx_roster_holds_carry_missed_growth_lines(tmp_path: Path) -> None:
     rep = _cnx_pass(tmp_path / "a")
     lines = {ln["source"]: ln for ln in rep["missed_growth_lines"]}
-    doc = json.loads((DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
-    held = {r["id"]: r for r in doc["sources"] if r.get("terms") in ("refused", "to_confirm")}
-    assert set(held) <= set(lines)
-    for sid, row in held.items():
+    for sid in CNX:
         ln = lines[sid]
         assert ln["kind"] == "terms_hold" and ln["status"] == "HELD_ON_TERMS", sid
         assert ln["delta_elogw"] == "UNMEASURED", sid
-        assert ln["policy_status"] == f"roster_terms:{row['terms']}", sid
-        assert ln["terms_url"] == row["terms_evidence"]["terms_url"], sid
+        assert ln["policy_status"] == tf.IDEAS_ONLY, sid
+        assert ln["terms_url"] == tf.SOURCE_POLICY[sid]["terms"]["url"], sid
         assert "no measured conversion on record" in ln["cause"], sid
-    assert "非商业" in lines["cnx_shfe"]["cause"] or "NON-COMMERCIAL" in lines["cnx_shfe"]["cause"]
+        assert rep["per_source"][sid]["status"] == "HELD_ON_TERMS", sid
+        assert f"terms_fence {sid}" in rep["per_source"][sid]["last_error"], sid
+    assert "NON-COMMERCIAL" in lines["cnx_shfe"]["cause"]
 
 
 def test_cnx_hold_past_conversion_comes_from_the_cursor(tmp_path: Path) -> None:

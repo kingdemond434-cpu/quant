@@ -287,6 +287,46 @@ _JPX_TERMS: dict[str, Any] = {
     "also_read": ("https://www.jpx.co.jp/english/term-of-use/index.html",
                   "https://www.jpx.co.jp/markets/statistics-equities/short-selling/index.html",
                   "https://www.jpx.co.jp/markets/statistics-equities/margin/index.html")}
+def _cnx_row(sid: str, exch: str, *, url: str, why: str = "", unblock: str = "",
+             clauses: dict[str, str] | None = None,
+             unread: dict[str, str] | None = None) -> dict[str, Any]:
+    """One China-exchange held route (the free-stack `cn_exchange` roster rows). Evidence read
+    2026-10-06; a row with no clause is UNREAD (to_confirm), never permitted."""
+    terms: dict[str, Any] = {"url": url, "checked_at": "2026-10-06"}
+    if clauses:
+        terms["clauses"] = dict(clauses)
+    if unread:
+        terms["unread"] = dict(unread)
+    return {"hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+            "sources": (sid,),
+            "wanted": (f"{exch} daily member rankings, warehouse receipts and quotes (free-stack "
+                       f"roster row {sid}): positioning, inventory and curve state for the "
+                       "copper, gold, silver, oil, iron-ore and index complexes"),
+            "why": why or (f"no terms read for {exch}, so to_confirm (fail closed; audit of PR "
+                           "#224): UNREAD terms never permit automated input"),
+            "robots": "not consulted: the terms already decide",
+            "unblock": unblock or (f"{exch}'s own terms page read with a clause permitting the "
+                                   "desk's use, quoted into this row, and the row flipped"),
+            "terms": terms}
+
+
+def terms_verdict(key: str) -> str:
+    """The terms word an organ gates a fetch on, read from THIS register (never a roster field):
+    `refused` -- a held route whose own clauses were read and do not grant the use; `to_confirm`
+    -- a held route with no clause read, or no row at all (fail closed); `confirmed` -- a row that
+    is not held, has a permitting status and quotes at least one clause. Flipping the row is the
+    only unblock."""
+    row = SOURCE_POLICY.get(key)
+    if not row:
+        return "to_confirm"
+    clauses = (row.get("terms") or {}).get("clauses")
+    if row.get("held_route"):
+        return "refused" if clauses else "to_confirm"
+    if row.get("status") in (PUBLIC_PAGE, API_PERMITTED) and clauses:
+        return "confirmed"
+    return "to_confirm"
+
+
 #: HELD ROUTES (2026-10-14, the GD queue rows; auditor: one register, so they live HERE). Routes
 #: the queue asked for whose OWN terms were read and carry no clause permitting automated access
 #: for internal research. Not URL-level (`hosts` is empty): the row governs the named ROUTE, so
@@ -298,6 +338,14 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
     "cme_margin_changes": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
         "sources": ("cme_margin_changes",),
+        # the clearing-advisory and performance-bond routes (pass 6 delta). No organ requests
+        # them today (grep 2026-10-14); the patterns make any future request name this row.
+        "url_patterns": (
+            r"^(?:[^/]*\.)?cmegroup\.com/notices/clearing/",
+            r"^(?:[^/]*\.)?cmegroup\.com/notices\.html$",
+            r"^(?:[^/]*\.)?cmegroup\.com/clearing/(?:margins|risk-management)/",
+            r"^(?:[^/]*\.)?cmegroup\.com/solutions/risk-management/performance-bond",
+            r"^(?:[^/]*\.)?cmegroup\.com/CmeWS/mvc/Margins/"),
         "wanted": ("CME Clearing performance-bond (margin) change advisories, PIT at notice "
                    "publication: a margin-hike regime for XAUUSD, XAGUSD, XTIUSD and indices"),
         "why": ("the licence (s.12) is personal and bars copying and derivative works, s.8(vi) "
@@ -436,7 +484,12 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
     "comex_warehouse_stocks": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
         "sources": ("comex_warehouse_stocks",),
-        "url_patterns": (r"^(?:[^/]*\.)?cmegroup\.com/delivery_reports/",),
+        "url_patterns": (r"^(?:[^/]*\.)?cmegroup\.com/delivery_reports/",
+                         # the same stocks through CME's depository web service and the
+                         # warehouse-reports page (side_channels/probe_free*.py name both)
+                         r"^(?:[^/]*\.)?cmegroup\.com/CmeWS/mvc/Metals/GetDepositary",
+                         r"^(?:[^/]*\.)?cmegroup\.com/market-data/delayed-quotes/metals/"
+                         r"warehouse-reports"),
         "wanted": ("COMEX registered vs eligible warehouse stocks (Gold_Stocks.xls, "
                    "Silver_stocks.xls, Copper_Stocks.xls): the registered share as the "
                    "deliverable float for XAUUSD, XAGUSD, XCUUSD"),
@@ -562,6 +615,55 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                       "database": "develop or create a database of data using the FINRA Website",
                       "page": ("FINRA does not provide the data outside of this webpage and "
                                "data feeds are not available.")}}},
+    # ---- THE CHINA EXCHANGE HOLDS (pass 6 delta, auditor ruling 2026-10-14: one register). The
+    # free-stack roster used to hold these on its own `terms` / `terms_evidence` fields, a second
+    # register; the clauses and unread reasons below are that evidence moved verbatim (read
+    # 2026-10-06, audit of PR #224). The roster row keeps only a `terms_policy` pointer here.
+    # free_stack_hunter holds each through `held_on_terms`; `free_stack_cnx` reads its gate from
+    # `terms_verdict` (refused: clauses read that do not grant the use; to_confirm: unread). THE
+    # UNBLOCK FLIPS THIS ROW (held_route off, a permitting status and the quoted grant), never a
+    # roster field. Missed growth: each exchange's delta E[log W] is UNMEASURED until it flips.
+    "cnx_shfe": _cnx_row(
+        "cnx_shfe", "SHFE",
+        why=("the SHFE site statement grants NON-COMMERCIAL browse/download only (基于非商业目的"
+             "浏览、下载) and bars use for profit without written permission; trading on the data "
+             "is commercial use, which is not granted (fail closed; audit of PR #224)"),
+        unblock="SHFE's written permission (书面许可), quoted into this row's terms",
+        url="https://www.shfe.com.cn/disclaimer/",
+        clauses={
+            "grant": ("在遵守中国有关法律与本声明的前提下，任何机构或者个人可基于非商业目的浏览、"  # noqa: RUF001 -- verbatim
+                      "下载本网站的内容。"),
+            "commercial_bar": (
+                "未经上海期货交易所书面许可，任何机构或者个人不得以向他人出售牟利为目的，使用本网站"  # noqa: RUF001 -- verbatim
+                "的任何内容，此种使用包括但不限于拷贝、下载、存贮、通过硬拷贝或电子抓取系统、发送、"  # noqa: RUF001 -- verbatim
+                "转换、出租、演示、转载、复制、修改、销售、传播、出版或任何其它形式的散发。")}),
+    "cnx_ine": _cnx_row(
+        "cnx_ine", "INE",
+        why=("INE's own disclaimer could not be read (slider-captcha WAF); the parent exchange's "
+             "statement (cnx_shfe) grants NON-COMMERCIAL use only and nothing read grants more "
+             "(fail closed; audit of PR #224)"),
+        unblock="INE's written permission, quoted into this row's terms",
+        url="https://www.ine.cn/disclaimer/",
+        clauses={"shfe_parent:grant": ("在遵守中国有关法律与本声明的前提下，任何机构或者个人可基于"  # noqa: RUF001 -- verbatim
+                                       "非商业目的浏览、下载本网站的内容。")},
+        unread={"ine.cn": ("not readable from the build sandbox: the host serves a "
+                           "slider-captcha WAF page to the sandbox")}),
+    "cnx_dce": _cnx_row(
+        "cnx_dce", "DCE", url="http://www.dce.com.cn/",
+        unread={"dce.com.cn": ("not readable from the build sandbox: robots.txt fetch timed out "
+                               "from the sandbox")}),
+    "cnx_czce": _cnx_row(
+        "cnx_czce", "CZCE", url="http://www.czce.com.cn/",
+        unread={"czce.com.cn": ("not readable from the build sandbox: the legal-statement link "
+                                "returned HTTP 412 to the sandbox")}),
+    "cnx_gfex": _cnx_row(
+        "cnx_gfex", "GFEX", url="http://www.gfex.com.cn/",
+        unread={"gfex.com.cn": ("not readable from the build sandbox: TLS hostname mismatch on "
+                                "the sandbox's robots.txt fetch")}),
+    "cnx_cffex": _cnx_row(
+        "cnx_cffex", "CFFEX", url="http://www.cffex.com.cn/",
+        unread={"cffex.com.cn": ("not readable from the build sandbox: robots.txt could not be "
+                                 "fetched or parsed from the sandbox")}),
 }
 SOURCE_POLICY.update(_HELD_ROUTES)
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
@@ -1245,10 +1347,8 @@ def held_missed_growth(key: str, past: Mapping[str, Any] | None = None) -> dict[
 def terms_hold_missed_growth(source: str, *, policy_status: str, why: str, terms_url: str,
                              unblock: str, past: Mapping[str, Any] | None = None
                              ) -> dict[str, Any]:
-    """The one shape of a terms hold's missed-growth line. `held_missed_growth` builds it from a
-    held-route row of this register; an organ that holds a source on terms evidence it carries
-    itself (the free-stack exchange roster's `terms` / `terms_evidence`, pass 6 should-fix)
-    builds it here from that evidence, so every hold's line reads the same."""
+    """The one shape of a terms hold's missed-growth line (`held_missed_growth` builds it from a
+    held-route row of this register; every hold is such a row since the pass-6 delta)."""
     line: dict[str, Any] = {"source": source, "kind": "terms_hold", "status": HELD_ON_TERMS,
                             "policy_status": policy_status, "delta_elogw": "UNMEASURED",
                             "terms_url": terms_url, "unblock": unblock}
