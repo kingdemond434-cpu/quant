@@ -3,10 +3,12 @@
 Every test here is a failure this desk has actually had, or one the organ could cause if it were
 written carelessly:
 
-  * ADDING A DISCOVERY BRAKE BACK. LAWS 5e (2026-09-23) deletes four of them BY NAME -- the
-    ACCESS_UNCLEAR quarantine, the machine-extraction veto on PUBLIC_WITH_TERMS, a robots
-    Disallow read as a refusal, and `machine_use_allowed=false` read as "registered, never
-    scraped" -- and says no session may re-introduce one "in any form, under any name". The
+  * ADDING A DISCOVERY BRAKE BACK. LAWS 5e (2026-09-23) deletes them BY NAME -- the
+    ACCESS_UNCLEAR quarantine, the machine-extraction veto on PUBLIC_WITH_TERMS, and
+    `machine_use_allowed=false` read as "registered, never scraped" -- and says no session may
+    re-introduce one "in any form, under any name". (A robots Disallow left that list when the
+    principal AMENDED 5e on 2026-10-14: it is respected at FETCH TIME by the collector, never as
+    a permanent registry refusal here.) The
     FIRST build of this organ did exactly that: it stamped 113 pack sources as refused in the
     same step it registered them, on a live pass, before this suite existed.
     `test_a_terms_label_*` and `test_robots_*` are what stop that coming back.
@@ -164,9 +166,10 @@ def test_a_terms_label_is_mined_and_never_refused() -> None:
     assert "never gates mining" in note
 
 
-def test_robots_and_route_labels_are_not_refusals() -> None:
-    """Two more deleted brakes. A robots Disallow is a publisher's crawl preference, not a
-    licence term, and the law says so; `route=unreachable` is a note about reachability."""
+def test_robots_and_route_labels_are_not_registry_refusals() -> None:
+    """A robots Disallow is respected at FETCH TIME since LAWS 5e was amended 2026-10-14, page by
+    page and re-read each time -- so it is never a permanent registry refusal here.
+    `route=unreachable` is a note about reachability, a deleted brake."""
     assert CD.refusal_for({"source_id": "r", "url": "https://robots.test/private/x"}, None) \
         == ("", "")
     note = CD.terms_note({"source_id": "r", "url": "https://r.test/", "route": "unreachable"})
@@ -498,22 +501,23 @@ def test_a_pack_that_mints_no_cells_is_a_named_gap() -> None:
 
 def test_a_deleted_brake_enforced_by_another_organ_is_named_not_swallowed() -> None:
     """This organ cannot edit `moat_collectors` -- that file has its own owner. What it must not
-    do is let the loss go uncounted: ground declined on a robots Disallow is ground the desk is
-    lawfully entitled to read and is not reading, and the only reason that stays invisible is
-    that nobody counts it."""
+    do is let the loss go uncounted: ground declined under a repealed rule is ground the desk is
+    entitled to read and is not reading. A ROBOTS hold is NOT that since the 2026-10-14
+    amendment -- it is the law being obeyed, and counting it would push a session to remove it."""
     collector = {"refused": [
         {"source": "a", "why": "example.com/x is Disallow in example.com/robots.txt"},
         {"source": "b", "why": "registry: machine_use_allowed=false"},
         {"source": "c", "why": "source row carries no url"}]}
     named = CD.deleted_brake_refusals(collector)
-    assert [r["source"] for r in named] == ["a", "b"], "a rootless row is not a deleted brake"
+    assert [r["source"] for r in named] == ["b"], "robots is obeyed; a rootless row is no brake"
     assert all(r["organ"] for r in named)
 
 
 def test_the_deleted_brake_family_is_the_cheapest_and_wins_the_morning() -> None:
     """One edit in one function buys all of it back, so it is charged at half a crawl and
     outranks everything else whenever it is non-empty. That ordering IS the point."""
-    collector = {"refused": [{"source": f"s{i}", "why": "robots Disallow"} for i in range(3)]}
+    collector = {"refused": [{"source": f"s{i}", "why": "machine_use_allowed=false"}
+                             for i in range(3)]}
     got = CD.largest_gap({"backlog_overdue": 4},
                          {"packs": {"aa": {"unverified": ["media"], "unmapped": []}}},
                          [], collector)
@@ -633,10 +637,23 @@ def test_the_refusal_function_names_the_deleted_brakes_so_they_stay_deleted() ->
     """LAWS 5e: "no session may re-introduce one, in any form, under any name". The list lives in
     the function's own docstring, where somebody about to add one back will read it."""
     doc = CD.refusal_for.__doc__ or ""
-    for brake in ("robots Disallow", "machine_use_allowed=false", "ACCESS_UNCLEAR",
-                  "snippets-only", "paywalled domain"):
+    for brake in ("machine_use_allowed=false", "ACCESS_UNCLEAR", "snippets-only",
+                  "paywalled domain"):
         assert brake in doc, brake
     assert "deleted brake" in doc
+    # Robots is named too, with its amended reason: respected at fetch time, never stamped here.
+    assert "robots Disallow" in doc and "FETCH TIME" in doc and "2026-10-14" in doc
+
+
+def test_a_robots_hold_is_not_counted_as_a_deleted_brake() -> None:
+    """LAWS 5e AMENDED 2026-10-14 07:35Z: a robots decline is the law obeyed. It must never win
+    the morning as DELETED_BRAKE_STILL_ENFORCED, which would invite a session to remove it."""
+    collector = {"refused": [{"source": "y", "why": "youtube.com/api/ is Disallow in "
+                                                    "youtube.com/robots.txt"},
+                             {"source": "z", "why": "robots.txt unreachable"}]}
+    assert CD.deleted_brake_refusals(collector) == []
+    got = CD.largest_gap({"backlog_overdue": 4}, {"packs": {}}, [], collector)
+    assert got["gap"] != "DELETED_BRAKE_STILL_ENFORCED"
 
 
 # --------------------------------------------------------------- the three parity axes

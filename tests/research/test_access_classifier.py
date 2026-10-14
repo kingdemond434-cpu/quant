@@ -147,12 +147,16 @@ def test_machine_use_disallowed_is_a_redistribution_label_and_is_still_mined() -
     assert "redistribution withheld, mining is not" in out.why
 
 
-def test_a_robots_disallow_is_the_same_fact_in_another_format() -> None:
-    """Both were refusals; both are labels now, and they still agree with each other."""
+def test_a_robots_disallow_is_labelled_alike_and_also_stops_that_page_fetch() -> None:
+    """Both carry the same label; since LAWS 5e was AMENDED 2026-10-14 07:35Z a robots Disallow
+    additionally means that page is not fetched (`fetch_allowed` False). The row is still mined."""
     v = ac.classify({"url": "https://example.com/x", "robots": "disallow"})
     assert v.access_label == "PUBLIC_WITH_TERMS" and v.machine_use_allowed is True
     assert v.may("machine_extract") and v.may("fetch_api")
     assert v.redistribute_allowed is False and "robots=disallow" in v.terms_note
+    assert v.fetch_allowed is False
+    assert ac.classify({"url": "https://example.com/x", "machine_use_allowed": False}
+                       ).fetch_allowed is True
 
 
 # ----------------------------------------------------------------------------- independence --

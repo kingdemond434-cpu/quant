@@ -37,7 +37,9 @@ desk mines and tests everything it can see on the open internet, that licence/ro
 class/credibility are routing and provenance labels on the row (what may be REDISTRIBUTED, and how
 much weight the evidence carries), and that they never stop discovery, ingestion, representation or
 testing. There is no ACCESS_UNCLEAR quarantine and no "public/licensed sources only" pre-filter
-anywhere in the corpus. Five ACTS remain refused — no credential theft or logging in as someone
+anywhere in the corpus. AMENDED 2026-10-14 07:35Z by the principal: robots.txt is respected at
+fetch time -- a disallowed page is not fetched and the skip is logged as a hold with a named cause
+-- while robots still never decides whether a source is mined. Five ACTS remain refused — no credential theft or logging in as someone
 else; no bypassing an access control or a paywall; no material non-public information; no stolen or
 leaked private data; no personal data harvesting or doxxing — and nothing else is a brake. Any
 older annex sentence implying a broader refusal is SUPERSEDED by §5e and is not to be re-derived.

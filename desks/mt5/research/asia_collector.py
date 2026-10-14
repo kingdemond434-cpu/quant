@@ -21,11 +21,16 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
     UNCONFIGURED    the source declares `access: key` or `paid` and no key is present. NOT a
                     failure and NOT a silent skip: a named state, so a missing subscription can
                     never be mistaken for a dead endpoint.
-    (BLOCKED_BY_ROBOTS is RETIRED, 2026-09-23.) A robots.txt Disallow was a refusal here and is
-                    now a LABEL: the reading is recorded on the row as `robots_disallows` and
-                    `terms_note`, it routes what the desk may REDISTRIBUTE, and the page is
-                    fetched like any other open page (LAWS 5e). The status name stays in the
-                    census tuple below so an OLD row already carrying it still prints.
+    BLOCKED_BY_ROBOTS
+                    a HOLD, not a drop (LAWS 5e, AMENDED 2026-10-14 07:35Z by the principal,
+                    decision card cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR). The host's
+                    robots.txt, read at the exact scheme://host:port under the User-Agent this
+                    collector actually sends, disallows the path -- or could not be read in a way
+                    RFC 9309 lets a crawler treat as consent -- so the page is NOT fetched. The
+                    row is still written with `hold_cause`, `robots`, `robots_disallows` and
+                    `terms_note`, so the source stays visible in every census. 404 on robots.txt
+                    means allow; 5xx or unreachable means disallow FOR NOW and the source is
+                    re-checked after ROBOTS_RECHECK_S; a 401/403 on robots.txt is a hold.
 
 EVERYTHING IS VAULTED POINT-IN-TIME. The raw bytes are written under their own content hash and
 never overwritten, so a claim made today can be re-read against exactly what the page said when
@@ -57,6 +62,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -94,6 +100,15 @@ DUE_AFTER = {
     "monthly announcement, daily execution": 20 * 3600,
 }
 DEFAULT_DUE_S = 24 * 3600
+#: THE User-Agent this collector SENDS on every page fetch, and therefore the one robots.txt is
+#: read under (RFC 9309 2.2.1 matches the product token, `quant-desk-collector`). Reading robots
+#: for one agent and fetching as another would obey a rule nobody wrote for us.
+USER_AGENT = "quant-desk-collector/1.0 (+public data collection)"
+#: Seconds before a robots HOLD that is not a served Disallow (robots.txt 5xx, unreachable, 401 or
+#: 403) is re-checked. RFC 9309 2.3.1.4: an unreachable robots.txt is a complete disallow, for now.
+ROBOTS_RECHECK_S = 3600.0
+#: Bytes of robots.txt parsed. RFC 9309 2.5 asks a crawler to parse at least 500 KiB.
+ROBOTS_MAX_BYTES = 512 * 1024
 
 #: Built once: a CA bundle lookup per fetch is wasted work on an 85-source pass.
 _TLS = None
@@ -151,31 +166,77 @@ def _key_present(src: dict[str, Any]) -> bool:
     return bool(env and os.environ.get(env))
 
 
-def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
-    """Ask the host's robots.txt and RECORD what it said. The answer is a LABEL, not a gate.
+@dataclass(frozen=True)
+class RobotsVerdict:
+    """What robots.txt said about ONE url for ONE user agent, and what the desk does with it.
 
-    LAWS 5e (rewritten 2026-09-23): licence, robots, source class and credibility route
-    REDISTRIBUTION and WEIGHT and never stop discovery, ingestion, representation or testing.
-    This helper used to return False on a served DISALLOW and `_fetch` turned that into
-    BLOCKED_BY_ROBOTS -- a discovery brake, and the last one left in the shared fetch path that
-    `event_surprise` and `data_acquisition_scientist` both call.
-
-    The reading is still MADE and still travels with the row, because provenance is the half of
-    the old behaviour worth keeping. What is gone is the refusal. The five refused ACTS are
-    untouched and none of them is robots.txt: a login, a paywall, a credential or an access
-    control is still never crossed (see the auth/subscription branch above this call).
+    `cause` is the named reason, so a hold is never a silent drop:
+      allowed             robots.txt was read and permits this path for this agent
+      robots_absent       robots.txt answered 404/410 (or another 4xx RFC 9309 reads as "no
+                          rules"): allow
+      disallow            robots.txt was read and DISALLOWS this path for this agent: no fetch
+      robots_5xx          robots.txt answered 5xx/429: disallow for now, re-check later
+      robots_unreachable  robots.txt could not be reached at all: disallow for now, re-check
+      robots_forbidden    robots.txt answered 401/403: a HOLD, re-checked later
     """
+
+    allowed: bool
+    cause: str
+    why: str
+    robots_url: str
+    recheck: bool = False
+
+
+def robots_verdict(url: str, agent: str = USER_AGENT) -> RobotsVerdict:
+    """Read the host's robots.txt and decide whether `url` may be fetched (RFC 9309).
+
+    LAWS 5e, AMENDED 2026-10-14 07:35Z by the principal (decision card
+    cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): a robots.txt Disallow is RESPECTED AT
+    FETCH TIME. A disallowed page is not fetched, and the caller logs the skip as a hold with
+    this verdict's named cause. Everything else in 5e stands: labels never stop mining, there is
+    no quarantine, and content about the page obtained lawfully by other means is still mined.
+
+    Semantics, RFC 9309: robots.txt is read at the EXACT origin (scheme, host and port) of the
+    url, under the SAME agent string the page fetch sends. 404 means allow. 5xx or unreachable
+    means treat as a complete disallow and re-check later -- the old "unreadable, treated as
+    allowing" was the opposite of the standard. A 403 on robots.txt is a hold.
+    """
+    from urllib.robotparser import RobotFileParser
+    parts = urllib.parse.urlsplit(url)
+    robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
+    req = urllib.request.Request(robots, headers={"User-Agent": agent})
     try:
-        from urllib.robotparser import RobotFileParser
-        parts = urllib.parse.urlsplit(url)
-        rp = RobotFileParser()
-        robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
-        req = urllib.request.Request(robots, headers={"User-Agent": agent})
         with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
-            rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
-        return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
+            body = r.read(ROBOTS_MAX_BYTES)
+    except urllib.error.HTTPError as e:
+        code = int(getattr(e, "code", 0) or 0)
+        if code in (401, 403):
+            return RobotsVerdict(False, "robots_forbidden",
+                                 f"{robots} answered HTTP {code}: held, re-checked later",
+                                 robots, recheck=True)
+        if code == 429 or code >= 500:
+            return RobotsVerdict(False, "robots_5xx",
+                                 f"{robots} answered HTTP {code}: treated as disallow for now "
+                                 f"(RFC 9309 2.3.1.4), re-checked later", robots, recheck=True)
+        return RobotsVerdict(True, "robots_absent",
+                             f"{robots} answered HTTP {code}: no rules, allow (RFC 9309 2.3.1.3)",
+                             robots)
     except Exception as exc:
-        return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
+        return RobotsVerdict(False, "robots_unreachable",
+                             f"{robots} unreachable ({type(exc).__name__}): treated as disallow "
+                             f"for now (RFC 9309 2.3.1.4), re-checked later", robots, recheck=True)
+    rp = RobotFileParser()
+    rp.parse(body.decode("utf-8", errors="replace").splitlines())
+    if rp.can_fetch(agent, url):
+        return RobotsVerdict(True, "allowed", f"{robots} consulted: allowed for {agent!r}",
+                             robots)
+    return RobotsVerdict(False, "disallow", f"{robots} disallows this path for {agent!r}", robots)
+
+
+def _robots_allows(url: str, agent: str = USER_AGENT) -> tuple[bool, str]:
+    """(allowed, why) -- the tuple shape older callers read. See `robots_verdict`."""
+    v = robots_verdict(url, agent)
+    return v.allowed, v.why
 
 
 def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
@@ -365,15 +426,24 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
-    # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading
-    # rides on the row as provenance -- it routes what the desk may REDISTRIBUTE -- and the fetch
-    # proceeds either way. The `BLOCKED_BY_ROBOTS` status it used to set is deleted.
-    allowed, why_robots = _robots_allows(url)
-    rec["robots"] = why_robots
-    rec["robots_disallows"] = not allowed
-    if not allowed:
-        rec["terms_note"] = ("robots.txt disallows this path: recorded as a REDISTRIBUTION "
-                             "label, mined and tested like any other open page")
+    # ROBOTS IS RESPECTED AT FETCH TIME (LAWS 5e, AMENDED 2026-10-14 07:35Z, decision card
+    # cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR). Read under the agent this fetch sends;
+    # a Disallow, or a robots.txt RFC 9309 does not let us read as consent, means NO FETCH. The
+    # skip is a HOLD with a named cause, written on the row like every other verdict, never a
+    # silent drop.
+    rv = robots_verdict(url, USER_AGENT)
+    rec["robots"] = rv.why
+    rec["robots_disallows"] = not rv.allowed
+    if not rv.allowed:
+        rec.update({
+            "status": "BLOCKED_BY_ROBOTS", "hold_cause": f"robots:{rv.cause}",
+            "robots_recheck": rv.recheck,
+            "terms_note": (f"robots.txt hold ({rv.cause}): this page is not fetched (LAWS 5e, "
+                           f"amended 2026-10-14); content about it obtained lawfully by other "
+                           f"means is still labelled and mined"),
+            "why": (f"HOLD, not a drop: {rv.why}"
+                    + ("; re-checked next pass" if rv.recheck else ""))})
+        return rec
 
     # CONDITIONAL GET. A 304 costs a round trip and no body, and most of these sources publish
     # daily or monthly against a pass that may run hourly -- so the default behaviour is to
@@ -384,8 +454,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # exactly what a point-in-time store wants to hear. It is recorded as UNCHANGED so a reader
     # can tell "nothing new" from "nothing fetched", which is the same distinction this file
     # draws everywhere else.
-    headers = {"User-Agent": "quant-desk-collector/1.0 (+public data collection)",
-               "Accept": "*/*"}
+    headers = {"User-Agent": USER_AGENT, "Accept": "*/*"}
     if isinstance(validators, dict):
         if validators.get("etag"):
             headers["If-None-Match"] = str(validators["etag"])
@@ -503,8 +572,14 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def due(src: dict[str, Any], state: dict[str, Any], now: float) -> bool:
-    last = (state.get(str(src.get("id"))) or {}).get("last_attempt_epoch")
+    row = state.get(str(src.get("id"))) or {}
+    last = row.get("last_attempt_epoch")
     if not isinstance(last, (int, float)):
+        return True
+    # A ROBOTS HOLD THAT IS NOT A SERVED DISALLOW (robots.txt 5xx, unreachable, 401/403) is a
+    # "not now", so it comes back on its own short clock, not the source's cadence.
+    recheck = row.get("recheck_after_epoch")
+    if isinstance(recheck, (int, float)) and now >= float(recheck):
         return True
     window = DUE_AFTER.get(str(src.get("cadence") or ""), DEFAULT_DUE_S)
     return (now - float(last)) >= window
@@ -597,6 +672,9 @@ def main(argv: list[str] | None = None) -> int:
                               validators=prev.get("validators") if isinstance(prev, dict) else None)
         rows[i] = rec
         keep = {"last_attempt_epoch": time.time(), "last_status": rec.get("status")}
+        if rec.get("robots_recheck"):
+            keep["recheck_after_epoch"] = time.time() + ROBOTS_RECHECK_S
+            keep["hold_cause"] = rec.get("hold_cause")
         # A 304 keeps the OLD validators: they are what proved the page unchanged, and replacing
         # them with nothing would make the next pass unconditional for no reason.
         keep["validators"] = (rec.get("validators")

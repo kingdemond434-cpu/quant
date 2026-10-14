@@ -36,7 +36,11 @@ WHAT IT DOES, IN ONE PASS, AND WHY IN THIS ORDER.
      -- which arrive as the three refused access labels (PRIVATE, CONFIDENTIAL_MNPI,
      STOLEN_UNAUTHORIZED), a declared authenticated surface or declared MNPI. Those are stamped
      with their reason and never queued again. THE REFUSAL IS STILL KNOWLEDGE: the row is kept,
-     because dropping it would lose the fact that the ground exists.
+     because dropping it would lose the fact that the ground exists. ROBOTS (LAWS 5e, AMENDED
+     2026-10-14 07:35Z by the principal, decision card
+     cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR) is respected AT FETCH TIME by the
+     collector this organ drives -- a disallowed page is not fetched and is logged as a hold --
+     and is never a permanent registry refusal here, because robots.txt changes and is re-read.
   4. DRAIN. What is left is crawled through the machinery that already exists --
      `research/moat_collectors.py`, which owns the robots probe, the media typing, the collectors,
      the point-in-time capture and the claim writer -- with the budget spent OLDEST AND HIGHEST
@@ -127,9 +131,13 @@ LEASE_H = 24.0
 #: principal's five refused ACTS (LAWS 5e), which reach this organ as the three refused access
 #: labels or a declared authenticated/MNPI surface. `refused-no-root` is not a legal refusal at
 #: all -- it is the factual statement that there is nothing to fetch. The statuses this organ
-#: USED to carry, `refused-machine-use` and `refused-robots`, are named in `REMOVED_BRAKES` and
-#: are kept in this tuple for ONE reason: rows stamped with them by an earlier build must still
-#: be recognised as refusals rather than read as successful crawls.
+#: USED to carry, `refused-machine-use` and `refused-robots`, are kept in this tuple for ONE
+#: reason: rows stamped with them by an earlier build must still be recognised as refusals rather
+#: than read as successful crawls. `refused-machine-use` is a deleted brake (`REMOVED_BRAKES`).
+#: `refused-robots` is retired for a different reason since LAWS 5e was AMENDED 2026-10-14 07:35Z
+#: (decision card cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): robots IS respected, but
+#: at FETCH TIME by the collector as a re-checked hold, never as a permanent registry stamp that
+#: would outlive the robots.txt that justified it.
 REFUSAL_STATUSES: tuple[str, ...] = ("refused-hard-boundary", "refused-no-root",
                                      "refused-machine-use", "refused-robots",
                                      "refused-unreachable")
@@ -155,8 +163,9 @@ SOURCE_LAYERS: tuple[str, ...] = (
 RULE = ("the uncrawled set falls every hour: overdue backlog and oldest wait ratchet DOWN, "
         "drained total ratchets UP, every refusal is a permanent registered fact with its rule "
         "and its date, and the only refusals are the principal's five ACTS (LAWS 5e) -- a "
-        "terms, licence, robots or machine_use_allowed label travels with the row and never "
-        "stops it being read")
+        "terms, licence or machine_use_allowed label travels with the row and never stops it "
+        "being read; a robots Disallow is respected at fetch time by the collector as a hold "
+        "(LAWS 5e amended 2026-10-14), never as a registry refusal")
 
 
 # --------------------------------------------------------------------------------- small tools
@@ -521,13 +530,19 @@ def refusal_for(row: Mapping[str, Any], shares: dict[str, Any] | None) -> tuple[
     of that law, so this organ can never drift from it. The second is not a legal refusal at all:
     a row with no url anywhere has nothing to fetch.
 
-    WHAT IS DELIBERATELY NOT A WALL HERE: a terms page, a licence note, a robots Disallow, a
-    paywalled domain, `machine_use_allowed=false`, `route=unreachable`, snippets-only, an
-    ACCESS_UNCLEAR label, a social or user-submitted ground. Every one of those is a ROUTING
-    LABEL: it withholds redistribution and changes nothing about reading. LAWS 5e names each as a
-    deleted brake that "no session may re-introduce, in any form, under any name", so a future
-    edit that adds one back to this function is a violation of the section and of growth
-    governance, not a tightening.
+    WHAT IS DELIBERATELY NOT A WALL HERE: a terms page, a licence note, a paywalled domain,
+    `machine_use_allowed=false`, `route=unreachable`, snippets-only, an ACCESS_UNCLEAR label, a
+    social or user-submitted ground. Every one of those is a ROUTING LABEL: it withholds
+    redistribution and changes nothing about reading. LAWS 5e names each as a deleted brake that
+    "no session may re-introduce, in any form, under any name", so a future edit that adds one
+    back to this function is a violation of the section and of growth governance, not a
+    tightening.
+
+    A robots Disallow is not a wall HERE either, for a different reason: since LAWS 5e was
+    AMENDED 2026-10-14 07:35Z (decision card cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR)
+    robots is respected at FETCH TIME, page by page, by the collector this organ drives
+    (`moat_collectors.robots_barred`), which declines the page with a recorded reason. A
+    permanent registry refusal would outlive the robots.txt that justified it.
     """
     url = str(row.get("url") or "").strip()
     if not url:
@@ -704,9 +719,11 @@ def _read_json_text(text: str) -> Any:
 
 
 # ------------------------------------------------------------------------------------ seeding
-#: Refusal statuses whose RULE NO LONGER EXISTS. LAWS 5e deleted the brakes that wrote them, so
-#: a row still carrying one is not a refusal -- it is a ground the desk stopped reading because
-#: of a law that was repealed, and leaving it stamped would make the repeal cosmetic.
+#: Refusal statuses whose RULE NO LONGER EXISTS AS A REGISTRY STAMP. LAWS 5e deleted the
+#: machine-use brake, so a row carrying `refused-machine-use` is a ground the desk stopped reading
+#: under a repealed law. `refused-robots` is reopened too: since the 2026-10-14 amendment robots
+#: is respected at FETCH TIME, so a reopened row goes back to the collector, whose robots check
+#: is where the amended law is enforced -- not to a permanent stamp here.
 DELETED_BRAKE_STATUSES: tuple[str, ...] = ("refused-machine-use", "refused-robots")
 
 
@@ -1434,26 +1451,32 @@ def no_lawful_ground(mod: Any) -> list[dict[str, str]]:
 
 # ----------------------------------------------------------------------------- the daily verdict
 #: Words that identify a refusal raised under a rule LAWS 5e DELETED. Matched against the
-#: reasons other organs hand back, never against anything this organ decides itself.
-_DELETED_BRAKE_WORDS: tuple[str, ...] = ("robots", "machine_use", "machine use", "disallow",
-                                         "snippets", "unreachable")
+#: reasons other organs hand back, never against anything this organ decides itself. "robots" and
+#: "disallow" LEFT this list on 2026-10-14: a robots hold is the amended law being obeyed.
+_DELETED_BRAKE_WORDS: tuple[str, ...] = ("machine_use", "machine use", "snippets", "unreachable")
 
 
 def deleted_brake_refusals(collector: Mapping[str, Any]) -> list[dict[str, str]]:
     """Refusals handed back by ANOTHER organ under a rule this desk repealed on 2026-09-23.
 
-    This organ cannot fix `moat_collectors.robots_barred` -- that file has its own owner and a
-    drain that edited every organ it touched would be a second desk. What it CAN do is refuse to
-    let the loss go unnamed: a ground the collector declined on a robots Disallow is ground the
-    desk is lawfully entitled to read and is not reading, and the only reason it stays invisible
-    is that nobody counts it. So it is counted, named with the organ that raised it, and offered
-    as a gap family in its own right.
+    This organ cannot fix another organ's refusals -- that file has its own owner and a drain
+    that edited every organ it touched would be a second desk. What it CAN do is refuse to let the
+    loss go unnamed: a ground the collector declined under a repealed rule is ground the desk is
+    entitled to read and is not reading, and the only reason it stays invisible is that nobody
+    counts it. So it is counted, named with the organ that raised it, and offered as a gap family
+    in its own right.
+
+    A ROBOTS HOLD IS NOT COUNTED (LAWS 5e, AMENDED 2026-10-14 07:35Z, decision card
+    cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): `moat_collectors.robots_barred` declining
+    a robots-disallowed page is the amended law being obeyed, not a deleted brake.
     """
     out: list[dict[str, str]] = []
     for row in list(collector.get("refused") or ()):
         if not isinstance(row, Mapping):
             continue
         why = str(row.get("why") or "").lower()
+        if "robots" in why:
+            continue                       # a robots hold is the 2026-10-14 amendment, obeyed
         if any(word in why for word in _DELETED_BRAKE_WORDS):
             out.append({"source": str(row.get("source") or ""), "why": str(row.get("why") or ""),
                         "organ": "research/moat_collectors.py"})
@@ -1538,8 +1561,8 @@ def largest_gap(backlog: Mapping[str, Any], layers: Mapping[str, Any],
             "gap": "DELETED_BRAKE_STILL_ENFORCED", "reach": len(stale_brakes), "value": 1.0,
             "cost": 0.5, "ev": round(len(stale_brakes) / 0.5, 3),
             "what": (f"{len(stale_brakes)} ground(s) declined this pass under a rule LAWS 5e "
-                     f"REPEALED on 2026-09-23 (robots Disallow, machine_use_allowed=false, "
-                     f"snippets-only, route=unreachable). Raised by {organs}. The desk is "
+                     f"REPEALED on 2026-09-23 (machine_use_allowed=false, snippets-only, "
+                     f"route=unreachable). Raised by {organs}. The desk is "
                      f"lawfully entitled to read every one of them."),
             "fix": (f"the owner of {organs} makes those labels travel with the row instead of "
                     "refusing the fetch, as `coverage_drain.refusal_for` does"),

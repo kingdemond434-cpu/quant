@@ -8248,7 +8248,7 @@
    "evidence": [
     "libs/research/access_classifier.py:66 - PRINCIPLE: labels never stop mining",
     "libs/research/access_classifier.py:74 - HARD_BOUNDARY, the five acts, with HARD_BOUNDARY_COUNT pinning the count at 5",
-    "libs/research/access_classifier.py:88 - REMOVED_BRAKES, all six named as data",
+    "libs/research/access_classifier.py:104 - REMOVED_BRAKES, the five still-deleted brakes named as data (robots left the list on the 2026-10-14 amendment)",
     "libs/research/access_classifier.py:196 - ROUTING ACCESS_UNCLEAR: the full mining vocabulary at cap 1.0, quarantine False",
     "libs/research/access_classifier.py:355 - AccessVerdict.redistribute_allowed and terms_note: where the terms fact went",
     "libs/research/access_classifier.py:389 - classify() reads `claim`: the boundary gap",
@@ -8258,16 +8258,17 @@
     "desks/mt5/research/evidence_router.py:452 - the quarantine ledger, empty by construction, with the five acts written into its rule",
     "docs/LAWS.md:431 - section 5e, rewritten in full",
     "tests/research/test_access_routing.py:1 - 27 tests: the three cases the principal named, the five acts, and one test per deleted brake",
-    "desks/mt5/research/asia_collector.py:151 - _robots_allows: the reading is a label, and the BLOCKED_BY_ROBOTS refusal is deleted",
+    "desks/mt5/research/asia_collector.py:190 - robots_verdict: AMENDED 2026-10-14, a robots Disallow is respected at fetch time (RFC 9309) and the skip is a BLOCKED_BY_ROBOTS hold with a named cause",
     "desks/mt5/research/ingestion_ledger.py:234 - QUARANTINED_ACCESS is empty",
     "desks/mt5/research/countries/__init__.py:277 - source_class() stops teaching the old convention; absent_layer() carries machine_use_allowed=True",
-    "tests/research/test_access_routing.py:213 - the structural test that keeps BLOCKED_BY_ROBOTS from being re-assigned in the shared fetch path"
+    "tests/research/test_access_routing.py:333 - behavioural tests, urllib stubbed: a robots-disallowed page is never requested by either shared fetch path; 404 allow, 5xx/unreachable disallow-for-now, 403 hold"
    ],
    "scheduled_by": "hourly_cycle:evidence_router (desks/mt5/research/hourly_cycle.py, hourly) -- it walks every registry source through these functions",
    "artifact": "desks/mt5/reports/EVIDENCE_ROUTER.json + desks/mt5/data/evidence_quarantine.json (now empty by construction)",
    "consumer": "desks/mt5/research/evidence_router.py, libs/moat/registry.py sources table (access_label / credibility / predictive_state / quarantine columns), libs/research/data_contract.py, libs/research/sandbox.py",
    "landed": [
-    "the access brakes removed and the law rewritten 2026-09-23"
+    "the access brakes removed and the law rewritten 2026-09-23",
+    "AMENDED 2026-10-14 07:35Z by the principal (decision card cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): robots.txt is respected at fetch time in the shared fetch path (asia_collector, data_acquisition_scientist); every other brake stays deleted"
    ],
    "notes": "Evidence WEIGHT caps (PUBLIC_SOCIAL 0.6, USER_SUBMITTED 0.5) deliberately STAY: they are statements about truth, never about permission, and they never stop a row being mined or tested. THE ORGAN SWEEP LANDED TOO: source_shares.machine_use_allowed() returns True for everything off the hard boundary (signature kept, so coverage_drain's call site is untouched); world_crawler's inherited registry pre-filter is gone and every row carries terms_note; deep_forest_miner no longer lets snippets_only stop a site fetch and re-routes legacy 'unreachable' grounds to search; event_surprise.admissible() refuses only NO_ADDRESS / NO_FIELD_MAP / a hard-boundary access string; prediction_markets' ACCESS_BEHAVIOUR is True for every non-refused label; data_acquisition_scientist dropped BLOCKED_BY_ROBOTS and REGISTERED_NO_MACHINE_EXTRACTION; evidence_watchtower no longer pins url_resolves to UNRESOLVED; ingestion_ledger's QUARANTINED_ACCESS is empty and ACCESS_UNCLEAR joined QUALIFIED_ACCESS; archaeology/snapshots' may_fetch refuses only the boundary markers and ACCESS_UNCLEAR's weight went 0.0 -> 1.00. asia_collector._robots_allows -- the LAST refusal in the shared fetch path that event_surprise and data_acquisition_scientist both call -- now records the robots reading as robots_disallows/terms_note and fetches either way; its BLOCKED_BY_ROBOTS status assignment is deleted and pinned deleted by a structural test. STILL OUTSTANDING, named rather than left silent: ~291 machine_use_allowed=False rows across 119 country pack files still carry the old value. The COUNT GREW from 211 during this work because countries/__init__.source_class() still taught the old convention in its docstring; that docstring and absent_layer()'s own False are now fixed, so new packs stop inheriting it. Flipping the existing rows is mechanical leaf-data follow-up; the law, the classifier and every organ are the authority and already agree."
   },

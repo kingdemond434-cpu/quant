@@ -14,12 +14,15 @@ priced off the scout's catalogue where a route is declared, and gated by a Datas
 traded against value. Since LAWS 5e (2026-09-23) that gate is FIVE ACTS WIDE and nothing else --
 a page whose terms restrict machine extraction is REGISTERED, MINED AND SAMPLED with the terms
 carried as a `terms_note` that routes REDISTRIBUTION; the old "registered and never fetched"
-reading, and the robots Disallow that returned BLOCKED_BY_ROBOTS, were discovery brakes and are
-deleted.
+reading was a discovery brake and is deleted. ROBOTS IS THE ONE EXCEPTION AT FETCH TIME (LAWS 5e,
+AMENDED 2026-10-14 07:35Z by the principal, decision card
+cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): a robots.txt Disallow means the sample page
+is NOT fetched, and the skip is recorded as a BLOCKED_BY_ROBOTS hold with its named cause.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
-SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
-`asia_collector._robots_allows` is READ and recorded, never a skip; never a new scraper),
+SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`, behind
+`asia_collector.robots_verdict` read under the SAME User-Agent that fetch sends -- a Disallow is a
+recorded hold and no fetch; never a new scraper),
 content-hashes it into a Vintage and a
 LineageRecord, and records a `dataset_request` discovery in `data/intelligence/<seat>/` carrying
 the contract and the expected value. Report: `reports/DATA_ACQUISITION.json`. Runs as the hourly
@@ -511,12 +514,17 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
 
 
 # --------------------------------------------------------------------------- the sample
-def _robots_allows(url: str) -> tuple[bool, str]:
+def _robots_verdict(url: str) -> Any:
+    """`asia_collector.robots_verdict` for `url`, read under the User-Agent that
+    `acquire_datasets._fetch` actually SENDS (RFC 9309: the rule obeyed is the rule written for
+    the agent presented)."""
     try:
+        from research import acquire_datasets as AQ
         from research import asia_collector as ACOL
     except ImportError:                                                      # pragma: no cover
+        import acquire_datasets as AQ  # type: ignore[no-redef]
         import asia_collector as ACOL  # type: ignore[no-redef]
-    return ACOL._robots_allows(url)
+    return ACOL.robots_verdict(url, agent=AQ._UA)
 
 
 def _fetch(url: str) -> tuple[bytes | None, str]:
@@ -549,10 +557,12 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
            at: str, code: str, marks: set[str]) -> dict[str, Any]:
     """A small sample, or the named reason there is none. NEVER a new scraper.
 
-    LAWS 5e (2026-09-23): a robots Disallow and a `machine_use_allowed=false` used to return
-    BLOCKED_BY_ROBOTS and REGISTERED_NO_MACHINE_EXTRACTION here, so the sample was never taken.
-    Both were discovery brakes; both are deleted. The robots verdict is still READ, because it is
-    worth recording, and it now travels on the sample as `terms_note`.
+    LAWS 5e (2026-09-23): `machine_use_allowed=false` used to return
+    REGISTERED_NO_MACHINE_EXTRACTION here; that was a discovery brake and stays deleted.
+    ROBOTS IS RESPECTED AT FETCH TIME (LAWS 5e, AMENDED 2026-10-14 07:35Z, decision card
+    cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): a Disallow -- or a robots.txt that
+    answered 5xx, 401/403 or could not be reached -- means the sample page is NOT fetched. The
+    row is returned as a BLOCKED_BY_ROBOTS HOLD naming its cause, so the request stays visible.
     """
     url = str(cand.get("url") or "")
     if verdict.refused:
@@ -565,14 +575,24 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
         return {"dataset": cand["dataset"], "status": "NO_PUBLIC_URL_ROUTE",
                 "why": (f"route is {cand.get('how_to_fetch') or 'undeclared'}: no URL to sample "
                         f"through the existing fetch path; the request is donated unsampled")}
-    allowed, robots_note = _robots_allows(url)
-    terms_note = (verdict.terms_note or "") + ("" if allowed else
-                                               f" | robots: {robots_note} -- recorded as a "
-                                               f"routing label, never a skip (LAWS 5e)")
+    rv = _robots_verdict(url)
+    robots_note = str(rv.why)
+    if not rv.allowed:
+        note = ((verdict.terms_note or "")
+                + f" | robots.txt hold ({rv.cause}): this page is not fetched (LAWS 5e, amended "
+                  f"2026-10-14); content about it obtained lawfully by other means is still "
+                  f"labelled and mined")
+        return {"dataset": cand["dataset"], "status": "BLOCKED_BY_ROBOTS", "url": url,
+                "hold_cause": f"robots:{rv.cause}", "robots": robots_note,
+                "robots_disallows": True, "robots_recheck": bool(rv.recheck),
+                "terms_note": note.strip(" |"),
+                "why": f"HOLD, not a drop: {robots_note}"}
+    terms_note = verdict.terms_note or ""
     raw, ctype = _fetch(url)
     if raw is None:
         return {"dataset": cand["dataset"], "status": "UNREACHABLE", "url": url,
-                "robots": robots_note, "terms_note": terms_note.strip(" |"),
+                "robots": robots_note, "robots_disallows": False,
+                "terms_note": terms_note.strip(" |"),
                 "why": f"fetch returned nothing ({ctype})"}
     raw = raw[:MAX_SAMPLE_BYTES]
     rows, columns = _rows_of(raw, url)
@@ -580,7 +600,8 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
     held_cols = [c for c in columns if _slug(c) in marks]
     return {"dataset": cand["dataset"], "status": "SAMPLED", "url": url, "bytes": len(raw),
             "content_type": ctype, "rows": len(rows), "columns": columns[:24],
-            "robots": robots_note, "terms_note": terms_note.strip(" |"),
+            "robots": robots_note, "robots_disallows": False,
+            "terms_note": terms_note.strip(" |"),
             "vintage": snap.vintage.to_json(),
             "lineage": snap.lineage.to_json(),
             "redundancy_against_held": {"columns_held": held_cols,
