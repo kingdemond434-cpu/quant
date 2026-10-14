@@ -142,7 +142,7 @@ def test_each_response_is_stamped_at_its_own_fetch_time(tmp_path: Path) -> None:
 
 # ============================================================================ pass outcomes
 def test_an_empty_power_pass_is_failed_never_zero(tmp_path: Path) -> None:
-    empty = json.dumps({"license_info": "CC BY 4.0 from Bundesnetzagentur | SMARD.de",
+    empty = json.dumps({"license_info": A.POWER_LICENCE_INFO,
                         "unix_seconds": [], "price": []}).encode()
     rec, store, _ = _run(Getter(_http(404), [empty, empty]), tmp_path, _caught_up_sst())
     assert rec["status"] == "FAILED:EMPTY" and rec["errors"] and not store
@@ -275,3 +275,76 @@ def test_the_fixture_pass_writes_the_power_store_axis_and_report(tmp_path: Path)
     assert rep["sources"]["opensky_departures"]["requests"] == 0
     assert set(rep["novel_styles"]) == {"eu_power_dayahead", "opensky_departures"}
     assert json.loads(paths.report.read_text("utf-8"))["sources"]["eu_power_dayahead"]
+
+
+# ============================================================================ audit 003fe110c
+@pytest.mark.parametrize("lic", [
+    "Not CC BY 4.0: for private and internal use only.",
+    "CC BY 4.0 (creativecommons.org/licenses/by/4.0) from Bundesnetzagentur | SMARD.de; "
+    "for private and internal use only",
+    " CC BY 4.0 (creativecommons.org/licenses/by/4.0) from Bundesnetzagentur | SMARD.de",
+])
+def test_the_licence_is_pinned_verbatim_and_any_difference_holds(lic: str,
+                                                                 tmp_path: Path) -> None:
+    doc = json.loads(DE_LU.read_bytes())
+    assert doc["license_info"] == A.POWER_LICENCE_INFO          # the fixture is the served clause
+    doc["license_info"] = lic
+    bad = json.dumps(doc).encode()
+    assert str(A.power_licence_error(bad)).startswith("LICENCE_CHANGED")
+    rec, store, sst = _run(Getter(_http(404), [bad, bad]), tmp_path, _caught_up_sst())
+    assert rec["status"] == "FAILED:LICENCE_CHANGED" and not store
+    assert sst["hard_stop"]["released_by"] is None
+
+
+def test_one_pit_predicate_labels_live_and_backfill_alike_everywhere(tmp_path: Path) -> None:
+    auction = date(2026, 10, 12)
+    rule = A.rule_power_dayahead(auction)
+    store: dict[str, Any] = {}
+    obs = [A.Obs("de_lu_dayahead_base", auction, 90.0)]
+    A.merge_vintages(store, POWER, obs, rule + timedelta(hours=1))          # an hour after
+    old = [A.Obs("de_lu_dayahead_base", date(2026, 8, 1), 70.0)]
+    A.merge_vintages(store, POWER, old, rule + timedelta(hours=1))          # months late
+    k_live, k_old = "de_lu_dayahead_base|2026-10-12", "de_lu_dayahead_base|2026-08-01"
+    assert A.pit_quality_of(store[k_live]) == "live"
+    assert A.pit_quality_of(store[k_old]) == "backfill"
+    pts = {p["d"]: p["pit_quality"] for p in A.build_points(POWER, store)["de_lu_dayahead_base"]}
+    assert pts == {"2026-10-12": "live", "2026-08-01": "backfill"}
+    fp = tmp_path / "eu_power_dayahead.json"
+    fp.write_text(json.dumps(store), "utf-8")
+    got = A.series_asof("eu_power_dayahead", datetime(2026, 10, 14, tzinfo=UTC), fp)
+    assert got["series"]["de_lu_dayahead_base"]["pit_quality"] == "live"
+    # PortWatch: a row read on the Tuesday it was published is live; the backfill is not
+    pw = A.BY_ID["imf_portwatch_chokepoints"]
+    pws: dict[str, Any] = {}
+    pub = A.rule_portwatch(date(2026, 10, 4))
+    A.merge_vintages(pws, pw, [A.Obs("suez_canal_transits", date(2026, 10, 4), 30.0)],
+                     pub + timedelta(hours=2))
+    A.merge_vintages(pws, pw, [A.Obs("suez_canal_transits", date(2024, 1, 2), 12.0)],
+                     pub + timedelta(hours=2))
+    q = {p["d"]: p["pit_quality"] for p in A.build_points(pw, pws)["suez_canal_transits"]}
+    assert q == {"2026-10-04": "live", "2024-01-02": "backfill"}
+    assert A.PIT_LIVE_READ_LAG == timedelta(hours=24)
+
+
+def test_a_budget_cut_pass_is_partial_never_ok(tmp_path: Path) -> None:
+    import time as _time
+    since = (NOW - timedelta(days=A.POWER_CHUNK_D + 10)).date().isoformat()
+    sst: dict[str, Any] = {"power_from": dict.fromkeys(A.POWER_ZONES, since)}
+    g = Getter(_http(404), [DE_LU.read_bytes()] * 4)
+    rec = A.collect_power(A.Paths(tmp_path / "desk"), POWER, sst, {}, NOW, fetch=True,
+                          fixtures=None, deadline=_time.monotonic() + 5.0, getter=g,
+                          sleep=lambda _s: None, clock=lambda: NOW)
+    assert len(g.data_urls) == 1 and rec["outcome"] == "PARTIAL:BUDGET"
+    assert rec["caught_up"] == {"DE-LU": False, "FR": False}
+
+
+def test_a_404_window_is_unmeasured_and_the_cursor_moves_past_it(tmp_path: Path) -> None:
+    body = DE_LU.read_bytes()
+    since = (NOW - timedelta(days=A.POWER_CHUNK_D + 10)).date()
+    sst: dict[str, Any] = {"power_from": dict.fromkeys(A.POWER_ZONES, since.isoformat())}
+    g = Getter(_http(404), [_http(404), body, body, body])
+    rec, _, sst = _run(g, tmp_path, sst)
+    (win,) = rec["unmeasured_windows"]
+    assert win["zone"] == "DE-LU" and win["status"] == "UNMEASURED"
+    assert win["from"] == since.isoformat() and sst["power_unmeasured"] == [win]
+    assert rec["caught_up"] == {"DE-LU": True, "FR": True} and rec["outcome"] == "OK"

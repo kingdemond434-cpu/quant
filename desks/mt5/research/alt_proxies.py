@@ -610,6 +610,13 @@ POWER_URL = "https://api.energy-charts.info/price"
 #: internal use only" there and is never requested.
 POWER_ZONES: dict[str, str] = {"DE-LU": "de_lu", "FR": "fr"}
 POWER_LICENCE_NAME = "CC BY 4.0"
+#: THE LICENCE PINNED VERBATIM, as api.energy-charts.info/price serves it for DE-LU and FR (read
+#: 2026-10-14 with WebFetch). A body whose `license_info` differs IN ANY WAY -- a prefix such as
+#: "Not CC BY 4.0: ...", an extra suffix, a changed source -- is never merged and holds the
+#: source for a person (audit NOVEL_ALT_P8_003fe110c: a substring test let "Not CC BY 4.0: for
+#: private and internal use only." through).
+POWER_LICENCE_INFO = ("CC BY 4.0 (creativecommons.org/licenses/by/4.0) from "
+                      "Bundesnetzagentur | SMARD.de")
 POWER_PUBLISH_HOUR_LOCAL = 14
 POWER_DEPTH_D = 365                     # first pass reaches this far back
 POWER_CHUNK_D = 92                      # one request covers at most this many delivery days
@@ -656,17 +663,18 @@ def rule_power_dayahead(period: date) -> datetime:
 
 def power_licence_error(body: bytes) -> str | None:
     """None when the answer is the licensed day-ahead series, else the cause. FAIL CLOSED: a
-    body whose `license_info` does not name CC BY 4.0 is never merged (the licence changed, or
-    the zone is one the API restricts to private use)."""
+    body whose `license_info` is not EXACTLY `POWER_LICENCE_INFO` is never merged (the licence
+    changed, or the zone is one the API restricts to private use)."""
     try:
         doc = json.loads(body.decode("utf-8", errors="replace"))
     except ValueError:
         return "NOT_JSON: the body is not an Energy-Charts JSON answer (WAF or HTML page)"
     if not isinstance(doc, dict) or not isinstance(doc.get("unix_seconds"), list):
         return "NO_SERIES: the answer carries no unix_seconds array"
-    lic = str(doc.get("license_info") or "")
-    if POWER_LICENCE_NAME not in lic:
-        return f"LICENCE_CHANGED: license_info does not name {POWER_LICENCE_NAME} ({lic[:80]!r})"
+    lic = doc.get("license_info")
+    if lic != POWER_LICENCE_INFO:
+        return (f"LICENCE_CHANGED: license_info is not the pinned CC BY 4.0 clause "
+                f"({str(lic)[:120]!r})")
     return None
 
 
@@ -3809,6 +3817,29 @@ def _atomic(p: Path, doc: Any) -> None:
     os.replace(tmp, p)
 
 
+#: A first read more than this long after the value's PUBLICATION (its release rule, or the
+#: page stamp) is a BACKFILL; within it, a live read. One threshold, one predicate
+#: (`pit_quality_of`), read by the merge, `build_points` and `series_asof` alike (audit
+#: NOVEL_ALT_P8_003fe110c): a day-ahead price read an hour after its auction is live; a
+#: PortWatch row read on the Tuesday it was published is live; the 800-day backfill is not.
+PIT_LIVE_READ_LAG = timedelta(hours=24)
+
+
+def pit_quality_of(row: dict[str, Any]) -> str:
+    """live | backfill for one stored row: backfill iff its first read came more than
+    PIT_LIVE_READ_LAG after the instant it was published. A `first_read` row's stamp IS the read,
+    so its publication is the release rule recorded beside it (`rule_time`); a legacy first_read
+    row with no `rule_time` cannot prove it was live and reads backfill."""
+    first = _t(row.get("first_seen_at"))
+    if row.get("published_basis") == "first_read":
+        pub = _t(row.get("rule_time"))
+    else:
+        pub = _t(row.get("published_time"))
+    if first is None or pub is None:
+        return "backfill"
+    return "backfill" if first - pub > PIT_LIVE_READ_LAG else "live"
+
+
 def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                    seen_at: datetime) -> dict[str, int]:
     """Append-only: a key's FIRST value and first-seen instant never change; a different later
@@ -3819,11 +3850,8 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
         k = f"{o.series}|{o.period.isoformat()}"
         rule_at = src.rule(o.period)
         basis = "release_rule"
-        backfill = False
+        stated = rule_at
         if src.stamp_floor_fetch and rule_at < seen_at:
-            # A read more than two days after the stated release is a BACKFILL: its stamp is the
-            # read, so it would otherwise pass for a live first release in build_points.
-            backfill = seen_at - rule_at > timedelta(days=2)
             rule_at, basis = seen_at, "first_read"   # max(stated release, the read): never earlier
         pub = o.published_at
         # A page stamp far after the period is a LATER document quoting an old value (a release
@@ -3838,8 +3866,9 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                         "published_time": (pub or rule_at).isoformat(timespec="seconds"),
                         "published_basis": "page" if pub else basis,
                         "revision_time": None, "n_revisions": 0}
-            if backfill:
-                store[k]["pit_quality"] = "backfill"
+            if basis == "first_read" and pub is None:
+                store[k]["rule_time"] = stated.isoformat(timespec="seconds")
+            store[k]["pit_quality"] = pit_quality_of(store[k])
             added += 1
             continue
         row["last_seen_at"] = stamp
@@ -3940,15 +3969,7 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                     z = surprise / sd if sd else None
                     surprises.append(surprise)
                 prior_x.append(x)
-            first_seen = _t(r.get("first_seen_at"))
-            published = _t(r.get("published_time"))
-            # A row stamped AT its first read because that read came after its release rule
-            # (`first_read`) is a backfill: it was not seen when it was released. A row the
-            # merge itself marked backfill (read > 2 days after its rule) stays one.
-            quality = ("backfill" if r.get("pit_quality") == "backfill" else
-                       "live" if first_seen and published
-                       and r.get("published_basis") != "first_read"
-                       and first_seen <= published + timedelta(days=2) else "backfill")
+            quality = pit_quality_of(r)              # the ONE predicate (PIT_LIVE_READ_LAG)
             pts.append({
                 "d": str(r["period"]), "event_time": str(r["period"]),
                 "available_time": str(r["published_time"]),
@@ -4759,9 +4780,24 @@ def collect_power(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
                 code = _http_code(exc)
                 if code in PORTWATCH_HARD_STOP:
                     return fail(f"HARD_STOP: HTTP {code} on {zone}", hold=True)
-                if code == 404:                  # the API's answer for a range with no data
-                    out["errors"].append(f"{zone} {since}..{end}: HTTP 404 (no data)")
-                    break
+                if code == 404:
+                    # The API's answer for a range with no data. The window is recorded
+                    # UNMEASURED (never a zero) and the cursor MOVES PAST it, so one empty
+                    # window cannot stall the zone on every later pass.
+                    win = {"zone": zone, "from": since.isoformat(), "to": end.isoformat(),
+                           "status": UNMEASURED, "why": "HTTP 404: no data for this window",
+                           "at": now.isoformat(timespec="seconds")}
+                    out.setdefault("unmeasured_windows", []).append(win)
+                    log = sst.setdefault("power_unmeasured", [])
+                    log.append(win)
+                    del log[:-50]
+                    if end >= tomorrow:
+                        done[zone] = True
+                        cursors[zone] = (end - timedelta(days=POWER_RECENT_D)).isoformat()
+                    else:
+                        since = end + timedelta(days=1)
+                        cursors[zone] = since.isoformat()
+                    continue
                 return fail(f"HTTP_ERROR: {type(exc).__name__}: {str(exc)[:120]}")
             seen = clock()
             out["fetched"] += 1
@@ -4780,6 +4816,13 @@ def collect_power(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
     if not out["parsed"]:
         return fail("EMPTY: the API answered with no complete delivery day" if out["fetched"]
                     else "BUDGET: no request completed inside the budget")
+    if not all(done.values()):
+        # NEVER OK ON A PARTIAL READ: the rows read stand (each stamped at its own fetch), the
+        # cursors resume next pass, and the pass says it was cut.
+        behind = ",".join(z for z, ok in done.items() if not ok)
+        out["outcome"] = "PARTIAL:BUDGET"
+        out["why"] = f"budget cut before {behind} caught up (cursor kept)"
+        return out
     out["outcome"] = ("UNCHANGED" if not (out["merge"]["added"] or out["merge"]["revised"])
                       else "OK")
     return out
@@ -5035,7 +5078,7 @@ def series_asof(source_id: str, decision_at: datetime, store_path: Path | None =
         if cur is None or period.isoformat() > cur["period"]:
             best[name] = {"period": period.isoformat(), "value": float(row["value_first"]),
                           "known_at": known.isoformat(timespec="seconds"),
-                          "pit_quality": row.get("pit_quality") or "live"}
+                          "pit_quality": pit_quality_of(row)}
     credit = credit_of(source_id)              # the attribution the publisher's terms require
     if not best:
         return {"status": "UNMEASURED", "series": {}, "store": str(p), "credit": credit,
