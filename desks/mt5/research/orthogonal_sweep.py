@@ -833,6 +833,10 @@ def sweep(budget_s: float | None = None) -> dict:
             # still fires; declared here so "needs an input" and "is wired" agree. Left without
             # `symbol` exactly as it ran before -- every event of the kind is used.
             "forced_flow": {},
+            # F1 loads its peer panel itself on the cell's own chart (`family_inputs.bars_named`,
+            # the gauntlet's reader); `symbol` names the instrument so the fill-hour spread is
+            # read off its own row of data/cost_surface.json.
+            "idio_volume_reversal": {"symbol": sym},
         }
         # Runtime objects cannot be JSON identities. Persist exact provenance needed to rebuild
         # the same candidate in the universal gauntlet; an empty params object previously made
