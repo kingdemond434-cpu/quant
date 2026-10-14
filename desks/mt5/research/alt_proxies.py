@@ -95,7 +95,10 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
 UNMEASURED = "UNMEASURED"
-UA = "quant-desk-alt-proxies/1.0 (+public statistics research)"
+#: The honest identifying UA: names the organ and a contact (pass-7 N4, 2026-10-14; it named
+#: no contact before). Every alt-proxies fetch, robots.txt included, sends it.
+UA = "quant-desk-alt-proxies/1.0 (+https://github.com/kingdemond434-cpu/quant)"
+UA_AGENT_NAME = "quant-desk-alt-proxies"
 TIMEOUT = 30.0
 MAX_BYTES = 16 * 1024 * 1024
 #: The prefix a conditioner spec carries; `mt5desk.cell_modifiers` applies only this form.
@@ -250,6 +253,27 @@ def _lag_rule(lag_days: int, hour: int = 0, weekday: bool = False) -> Callable[[
         t = t.replace(hour=hour, minute=0, second=0, microsecond=0)
         return _roll_weekday(t) if weekday else t
     return rule
+
+
+#: PortWatch's own statement, https://portwatch.imf.org/pages/data-and-methodology (read
+#: 2026-10-14): "Daily Chokepoint Transit Calls and Trade Volume Estimates: Updated Weekly,
+#: Tuesdays 9 AM ET" (the port layer says the same). No day-count lag is stated; measured the same
+#: day, the layer's dataLastEditDate was Tue 2026-10-06 12:09 UTC and its last row 2026-10-04.
+PORTWATCH_PUBLISH_WEEKDAY = 1                                   # Tuesday
+PORTWATCH_PUBLISH_HOUR_UTC = 14         # 09:00 ET is 13:00 UTC (EDT) or 14:00 (EST): the later
+PORTWATCH_MIN_LAG_D = 2                 # the Tuesday release carried data to the Sunday before
+
+
+def rule_portwatch(period: date) -> datetime:
+    """The first stated release that can carry `period`: the first Tuesday at least two days
+    after it, at 14:00 UTC (never before 09:00 ET in either daylight regime). The merge then
+    floors this at the fetch instant (`Source.stamp_floor_fetch`), so a value is never stamped
+    before the pass that actually read it."""
+    t = _utc(period.year, period.month, period.day, PORTWATCH_PUBLISH_HOUR_UTC)
+    t += timedelta(days=PORTWATCH_MIN_LAG_D)
+    while t.weekday() != PORTWATCH_PUBLISH_WEEKDAY:
+        t += timedelta(days=1)
+    return t
 
 
 def rule_tsa(period: date) -> datetime:
@@ -486,14 +510,41 @@ def parse_firms(body: bytes, ctx: Ctx) -> list[Obs]:
     return out
 
 
-def _arcgis_rows(body: bytes) -> list[dict[str, Any]]:
+def _arcgis_doc(body: bytes) -> dict[str, Any] | None:
     try:
         doc = json.loads(body.decode("utf-8", errors="replace"))
     except ValueError:
-        return []
-    feats = doc.get("features") if isinstance(doc, dict) else None
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def _arcgis_rows(body: bytes) -> list[dict[str, Any]]:
+    doc = _arcgis_doc(body)
+    feats = doc.get("features") if doc is not None else None
     return [f["attributes"] for f in feats or [] if isinstance(f, dict)
             and isinstance(f.get("attributes"), dict)]
+
+
+def arcgis_error(body: bytes) -> str | None:
+    """The cause an ArcGIS query reports IN A 200 RESPONSE, or None for a readable answer.
+
+    THIS IS WHY PORTWATCH NEVER YIELDED (measured 2026-10-14). ArcGIS answers a bad query with
+    HTTP 200 and `{"error": {"code": 400, "message": "Cannot perform query. Invalid query
+    parameters.", "details": ["'outFields' parameter is invalid"]}}`; the parser saw no
+    `features`, returned [], the pager read that as "paging exhausted", and the pass reported
+    "nothing parsed" with no error -- a zero wearing a clean face. A body that is not JSON at all
+    (a WAF or maintenance page) is named too."""
+    doc = _arcgis_doc(body)
+    if doc is None:
+        return "NOT_JSON: the body is not an ArcGIS JSON answer (WAF, maintenance or HTML page)"
+    err = doc.get("error")
+    if isinstance(err, dict):
+        det = err.get("details") or []
+        det_s = "; ".join(str(d) for d in det) if isinstance(det, list) else str(det)
+        return f"ARCGIS_{err.get('code')}: {err.get('message')} {det_s}".strip()[:240]
+    if not isinstance(doc.get("features"), list):
+        return "NO_FEATURES: the answer carries no features array"
+    return None
 
 
 def _arcgis_date(v: Any) -> date | None:
@@ -521,14 +572,21 @@ def parse_portwatch_ports(body: bytes, ctx: Ctx) -> list[Obs]:
 
 
 def parse_portwatch_chokepoints(body: bytes, ctx: Ctx) -> list[Obs]:
-    """IMF PortWatch Daily_Chokepoints_Data: transits per chokepoint per day."""
+    """IMF PortWatch Daily_Chokepoints_Data: transits per chokepoint per day (`n_total`), and the
+    tanker subset (`n_tanker`) where the layer carries it. `date` is an esriFieldTypeDateOnly
+    field served as 'YYYY-MM-DD'; epoch milliseconds are still read."""
     out: list[Obs] = []
     for a in _arcgis_rows(body):
         d = _arcgis_date(a.get("date"))
         name = str(a.get("portname") or "")
+        if not (d and name):
+            continue
         v = _num(str(a.get("n_total") if a.get("n_total") is not None else ""))
-        if d and name and v is not None:
+        if v is not None:
             out.append(Obs(f"{_slug(name)}_transits", d, v))
+        t = _num(str(a.get("n_tanker") if a.get("n_tanker") is not None else ""))
+        if t is not None:
+            out.append(Obs(f"{_slug(name)}_tanker_transits", d, t))
     return out
 
 
@@ -1731,6 +1789,10 @@ class Source:
     #: first (history) fetch is that vintage, not what was known at the time. Published with the
     #: series (axis file, roster) so no reader mistakes a backfill for a first release.
     vintage: str = ""
+    #: True when a value's stamp is max(release rule, the instant this desk first read it):
+    #: the publisher states a release SCHEDULE but no day-count lag, so the rule alone could
+    #: date a backfilled row before anyone here could have seen it. Never stamped earlier.
+    stamp_floor_fetch: bool = False
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -1753,7 +1815,36 @@ FIRMS_URL = ("https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/{product}/
 PORTWATCH_BASE = ("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
                   "{svc}/FeatureServer/0/query")
 PORTS = ("Shanghai", "Ningbo-Zhoushan", "Busan", "Port Hedland", "Singapore")
-CHOKEPOINTS = ("Strait of Hormuz", "Suez Canal", "Bab el-Mandeb Strait", "Malacca Strait")
+#: Names exactly as the layer serves them (distinct portname read 2026-10-14; 28 chokepoints).
+CHOKEPOINTS = ("Strait of Hormuz", "Suez Canal", "Bab el-Mandeb Strait", "Malacca Strait",
+               "Panama Canal", "Bosporus Strait", "Cape of Good Hope", "Gibraltar Strait")
+#: Fields each layer ACTUALLY has (FeatureServer/0?f=json, 2026-10-14). One shared list naming
+#: `portcalls` AND `n_total` was invalid on both layers, which is why no row was ever read.
+PORTWATCH_FIELDS: dict[str, str] = {
+    "imf_portwatch_ports": "date,portid,portname,portcalls",
+    "imf_portwatch_chokepoints": "date,portid,portname,n_total,n_tanker",
+}
+#: The layer's maxRecordCount (both layers: 1000). Asking 2000 and stepping the offset by 2000
+#: silently skipped every second thousand rows.
+PORTWATCH_PAGE = 1000
+PORTWATCH_MAX_PAGES = 20
+PORTWATCH_DEPTH_D = 800                 # first pass reaches this far back
+PORTWATCH_RECENT_D = 35                 # every later pass re-reads this window for revisions
+PORTWATCH_HARD_STOP = (401, 403, 429)
+PORTWATCH_HOLD_H = 24
+
+
+def portwatch_request(src_id: str, url: str, since: date, offset: int,
+                      fetched_at: datetime) -> Request:
+    names = PORTS if src_id == "imf_portwatch_ports" else CHOKEPOINTS
+    quoted = ",".join("'" + n.replace("'", "''") + "'" for n in names)
+    q = urllib.parse.urlencode({
+        "where": f"portname IN ({quoted}) AND date >= DATE '{since.isoformat()}'",
+        "outFields": PORTWATCH_FIELDS[src_id], "orderByFields": "date,portid",
+        "returnGeometry": "false", "resultOffset": offset,
+        "resultRecordCount": PORTWATCH_PAGE, "f": "json"})
+    return Request(f"{url}?{q}", Ctx(part=f"page{offset}", start=since, fetched_at=fetched_at))
+
 
 SOURCES: tuple[Source, ...] = (
     Source(
@@ -1878,7 +1969,7 @@ SOURCES: tuple[Source, ...] = (
         id="imf_portwatch_ports", name="IMF PortWatch daily port calls",
         url=PORTWATCH_BASE.format(svc="Daily_Ports_Data"),
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_ports,
-        rule=_lag_rule(10, 0), transform="anomaly_daily",
+        rule=rule_portwatch, stamp_floor_fetch=True, transform="anomaly_daily",
         instruments={"AUDUSD": 1},
         series_instruments={
             "port_hedland": {"AUDUSD": 1, "AUS200": 1},
@@ -1900,9 +1991,18 @@ SOURCES: tuple[Source, ...] = (
         id="imf_portwatch_chokepoints", name="IMF PortWatch daily chokepoint transits",
         url=PORTWATCH_BASE.format(svc="Daily_Chokepoints_Data"),
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_chokepoints,
-        rule=_lag_rule(10, 0), transform="anomaly_daily",
+        rule=rule_portwatch, stamp_floor_fetch=True, transform="anomaly_daily",
         instruments={"XTIUSD": -1, "XBRUSD": -1},
-        signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits"),
+        # Declared priors, untested: the gain test decides and charges every cell. Oil
+        # chokepoints bear on crude; Hormuz also on gold (a transit collapse there is the
+        # war-risk state). Panama, the Cape, Gibraltar and the Bosporus are STORED as the
+        # controls the red_sea and central_america packs name, and mint no cell here.
+        series_instruments={
+            "strait_of_hormuz": {"XTIUSD": -1, "XBRUSD": -1, "XAUUSD": -1},
+            "bab_el_mandeb_strait": {"XBRUSD": -1, "XTIUSD": -1},
+            "suez_canal": {"XBRUSD": -1, "XTIUSD": -1}},
+        signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits",
+                       "suez_canal_transits"),
         mechanism=("fewer transits through oil chokepoints is supply friction; the tanker count "
                    "moves before any inventory report"),
         payer="short-dated crude holders pricing weekly inventories",
@@ -2593,9 +2693,13 @@ TERMS: dict[str, tuple[str, str]] = {
                          "published works (incl. databases) is copyright infringement"),
     "jp_tokyo_cpi": ("confirmed", "e-Stat documented API, Government of Japan statistics"),
     "cn_firms_industrial": ("confirmed", "NASA open data, documented API"),
-    "imf_portwatch_ports": ("confirmed", "IMF PortWatch public statistics, documented ArcGIS API"),
-    "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
-                                  "ArcGIS API"),
+    "imf_portwatch_ports": ("confirmed", "IMF terms: 'Users may download, extract, copy [...] "
+                            "Data obtained from IMF Sites, including for commercial purposes'; "
+                            "PortWatch's documented ArcGIS API (re-read 2026-10-14)"),
+    "imf_portwatch_chokepoints": ("confirmed", "IMF terms: 'Users may download, extract, copy "
+                                  "[...] Data obtained from IMF Sites, including for commercial "
+                                  "purposes'; PortWatch's documented ArcGIS API (re-read "
+                                  "2026-10-14)"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
@@ -2670,20 +2774,47 @@ _ESTAT_API: dict[str, str] = {
                "サービスの内容は国によって保証されたものではありません。 / This service uses API "
                "functions from e-Stat, however its contents are not guaranteed by government."),
 }
+#: IMF PortWatch, RE-READ 2026-10-14 (pass-7 N4) with WebFetch. LIVE: the IMF's own terms grant
+#: download and extraction of Data, commercial use included; PortWatch's methodology page sends
+#: copyright and usage there and publishes an "Access API" per dataset. The bot clause reserves
+#: termination for bulk downloading of PUBLICATION FILES, not Data. The two robots.txt files:
+#: portwatch.imf.org asks a 60-second crawl delay and disallows /sites/ /admin/ /sessions/
+#: /groups/ /people/ /workspace/ (no data path); services9.arcgis.com/robots.txt could not be
+#: read from the authoring container, so `collect_portwatch` reads it on the box every pass and
+#: refuses to fetch when it cannot (fail closed), honouring any crawl-delay it states.
+#: THIS IS THE REGISTER UNTIL `libs/data/terms_fence.SOURCE_POLICY` LANDS (gd-queue-rows): the
+#: row moves there verbatim then; there is never a second table.
 _IMF_EV: dict[str, str] = {
     "terms_url": "https://www.imf.org/external/terms.htm",
     "terms_quote": ("Users may download, extract, copy, create derivative works, publish, "
                     "distribute, and sell Data obtained from IMF Sites, including for commercial "
                     "purposes"),
+    "attribution_quote": ("When Data is distributed or reproduced, it must appear accurately and "
+                          "attributed to the IMF as the source"),
+    "automation_quote": ("The IMF reserves the right to terminate access to its Sites or Content "
+                         "by automated technology (including but not limited to bots, spiders "
+                         "and crawlers) for the purposes of bulk downloading IMF publication "
+                         "files."),
     "policy_url": "https://portwatch.imf.org/pages/data-and-methodology",
-    "policy_quote": ("All data and content in the IMF PortWatch are provided by the IMF unless "
-                     "mentioned otherwise."),
-    "judgement": ("PortWatch points to the IMF terms for copyright and usage; the live terms "
-                  "read 2026-09-30 grant commercial reuse (an older copy asked commercial users "
-                  "to email copyright@imf.org). Attribution required"),
-    "robots": "services9.arcgis.com FeatureServer is PortWatch's documented ArcGIS API",
-    "credit": "Source: International Monetary Fund (IMF PortWatch).",
+    "policy_quote": ("For questions on copyright and usage, please refer to this page: "
+                     "https://www.imf.org/external/terms.htm / All data and content in the IMF "
+                     "PortWatch are provided by the IMF unless mentioned otherwise."),
+    "schedule_quote": ("Daily Chokepoint Transit Calls and Trade Volume Estimates: Updated "
+                       "Weekly, Tuesdays 9 AM ET"),
+    "judgement": ("LIVE. The IMF terms grant download and extraction of Data including for "
+                  "commercial purposes (internal research is inside that); PortWatch publishes "
+                  "the ArcGIS 'Access API' itself. The automation clause targets bulk downloading "
+                  "of publication files, not Data, and this organ is bounded (<=20 pages of 1000 "
+                  "rows a pass, robots.txt and its crawl-delay obeyed, 401/403/429 a 24h hard "
+                  "stop). Attribution required; a material transformation must say so"),
+    "robots": ("portwatch.imf.org/robots.txt: Crawl-delay 60, disallows /sites/ /admin/ "
+               "/sessions/ /groups/ /people/ /workspace/ only; services9.arcgis.com/robots.txt "
+               "unread from the authoring container -- read on the box every pass, fail closed"),
+    "credit": ("Source: International Monetary Fund (IMF PortWatch); daily counts transformed "
+               "by the desk (anomaly vs trailing baseline)."),
     "checked_at": _CHK,
+    "rechecked_at": "2026-10-14",
+    "register": "alt_proxies.TERMS (moves to libs/data/terms_fence.SOURCE_POLICY when it lands)",
 }
 _OI_EV: dict[str, str] = {
     "terms_url": "https://github.com/opportunityinsights/economictracker",
@@ -3286,18 +3417,9 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                                    Ctx(part=name, start=bf_start, end=bf_end, fetched_at=now)))
             state["firms_backfill_to_next"] = (bf_start - timedelta(days=1)).isoformat()
         return out
-    if src.id in ("imf_portwatch_ports", "imf_portwatch_chokepoints"):
-        names = PORTS if src.id.endswith("ports") else CHOKEPOINTS
-        since = (now - timedelta(days=800)).date().isoformat()
-        quoted = ",".join("'" + n.replace("'", "''") + "'" for n in names)
-        reqs = []
-        for offset in range(0, 20_000, 2_000):
-            q = urllib.parse.urlencode({
-                "where": f"portname IN ({quoted}) AND date >= timestamp '{since} 00:00:00'",
-                "outFields": "date,portname,portcalls,n_total", "orderByFields": "date",
-                "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
-            reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
-        return reqs
+    if src.id in PORTWATCH_FIELDS:
+        # The first page only: `collect_portwatch` pages on from it, honouring robots.txt.
+        return [portwatch_request(src.id, src.url, portwatch_since(now, state), 0, now)]
     if src.id == "gdelt_events_country":
         return _gdelt_requests(src, now, state)
     if src.id in DATED_SOURCES:
@@ -3398,6 +3520,8 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
     for o in obs:
         k = f"{o.series}|{o.period.isoformat()}"
         rule_at = src.rule(o.period)
+        if src.stamp_floor_fetch and rule_at < seen_at:
+            rule_at = seen_at                    # max(stated release, the read): never earlier
         pub = o.published_at
         # A page stamp far after the period is a LATER document quoting an old value (a release
         # citing last year's figure), not that value's release: the calendar rule governs it.
@@ -4064,6 +4188,12 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if src.id in PORTWATCH_FIELDS:
+        rec.update(collect_portwatch(paths, src, sst, store, now, fetch=fetch,
+                                     fixtures=fixtures, deadline=deadline))
+        _atomic(store_p, store)
+        rec["store_rows"] = len(store)
+        return rec
     if src.id == "gdelt_events_country":
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
@@ -4098,8 +4228,6 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec.setdefault("merge", {"added": 0, "revised": 0})
         rec["merge"]["added"] += m["added"]
         rec["merge"]["revised"] += m["revised"]
-        if src.id.startswith("imf_portwatch") and not obs:
-            break                                              # paging exhausted
     if src.id == "cn_firms_industrial" and "firms_backfill_to_next" in sst and not errors:
         sst["firms_backfill_to"] = sst.pop("firms_backfill_to_next")
     for k in ("backfill_to_next", "full_done_next"):
@@ -4113,6 +4241,222 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["why"] = "nothing parsed this pass (no fetch, or the page carried no rows)"
     _atomic(store_p, store)
     return rec
+
+
+def portwatch_since(now: datetime, sst: dict[str, Any]) -> date:
+    """Where this pass starts reading: the stored cursor, else PORTWATCH_DEPTH_D back."""
+    cur = sst.get("pw_from")
+    with contextlib.suppress(ValueError, TypeError):
+        return date.fromisoformat(str(cur))
+    return (now - timedelta(days=PORTWATCH_DEPTH_D)).date()
+
+
+def _http_code(exc: BaseException) -> int | None:
+    code = getattr(exc, "code", None)
+    return int(code) if isinstance(code, int) else None
+
+
+def robots_verdict(url: str, getter: Callable[[str], tuple[bytes, str]] = http_get
+                   ) -> dict[str, Any]:
+    """robots.txt DECIDES this fetch (fail closed). allow | disallow | hard_stop | unreadable.
+
+    A 404 is a host with no rules (allow). 401/403/429 is a hard stop. Any other failure to read
+    it is `unreadable`, and the pass does not fetch -- an unread robots.txt is not permission."""
+    from urllib.robotparser import RobotFileParser
+    parts = urllib.parse.urlsplit(url)
+    robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
+    try:
+        body, _ct = getter(robots)
+    except Exception as exc:
+        code = _http_code(exc)
+        if code == 404:
+            return {"verdict": "allow", "crawl_delay": 0.0, "robots": robots,
+                    "note": "robots.txt 404: no rules"}
+        if code in PORTWATCH_HARD_STOP:
+            return {"verdict": "hard_stop", "crawl_delay": 0.0, "robots": robots,
+                    "note": f"robots.txt HTTP {code}"}
+        return {"verdict": "unreadable", "crawl_delay": 0.0, "robots": robots,
+                "note": f"robots.txt unreadable ({type(exc).__name__}: {str(exc)[:80]})"}
+    rp = RobotFileParser()
+    rp.parse(body.decode("utf-8", errors="replace").splitlines())
+    delay = rp.crawl_delay(UA_AGENT_NAME)
+    ok = rp.can_fetch(UA_AGENT_NAME, url)
+    return {"verdict": "allow" if ok else "disallow", "robots": robots,
+            "crawl_delay": float(delay or 0.0),
+            "note": "robots.txt consulted" if ok else "robots.txt disallows this path"}
+
+
+def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
+                      now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
+                      getter: Callable[[str], tuple[bytes, str]] = http_get,
+                      sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
+    """IMF PortWatch chokepoint transits / port calls into the PIT vintage store.
+
+    `outcome` is OK, UNCHANGED (rows read, nothing new or revised) or FAILED:<cause>. A fetch pass
+    that parsed nothing is FAILED with its cause, never a zero. 401/403/429 or a non-JSON body
+    (WAF) is a HARD STOP: nothing more is requested and the source is held for 24h. robots.txt
+    of the data host decides every pass and its crawl-delay is honoured between pages."""
+    out: dict[str, Any] = {"requests": 0, "fetched": 0, "parsed": 0, "errors": [],
+                           "merge": {"added": 0, "revised": 0}}
+
+    def fail(cause: str, *, hold: bool = False) -> dict[str, Any]:
+        out["errors"].append(cause)
+        out["status"] = f"FAILED:{cause.split(':', 1)[0]}"
+        out["outcome"] = out["status"]
+        out["why"] = cause
+        if hold:
+            sst["hard_stop_until"] = (now + timedelta(hours=PORTWATCH_HOLD_H)).isoformat(
+                timespec="seconds")
+            sst["hard_stop_cause"] = cause
+        return out
+
+    def take(body: bytes, ctx: Ctx) -> int:
+        assert src.parse is not None
+        obs = src.parse(body, ctx)
+        out["parsed"] += len(obs)
+        m = merge_vintages(store, src, obs, now)
+        out["merge"]["added"] += m["added"]
+        out["merge"]["revised"] += m["revised"]
+        return len(_arcgis_rows(body))
+
+    if fixtures is not None:
+        fp = fixtures / f"{src.id}.json"
+        if not fp.exists():
+            return fail(f"NO_FIXTURE: {fp.name} absent")
+        body = fp.read_bytes()
+        err = arcgis_error(body)
+        if err:
+            return fail(err)
+        take(body, Ctx(part="fixture", fetched_at=now))
+        if not out["parsed"]:
+            return fail("EMPTY: the fixture parsed to no rows")
+        out["outcome"] = "OK"
+        return out
+    if not fetch:
+        out["why"] = "no fetch this pass (--no-fetch): UNMEASURED, not zero"
+        out["outcome"] = "UNMEASURED"
+        return out
+    held = sst.get("hard_stop_until")
+    if held and str(held) > now.isoformat(timespec="seconds"):
+        out["status"] = "HELD:HARD_STOP"
+        out["outcome"] = out["status"]
+        out["why"] = f"hard stop held until {held}: {sst.get('hard_stop_cause')}"
+        return out
+    sst.pop("hard_stop_until", None)
+    sst.pop("hard_stop_cause", None)
+    since = portwatch_since(now, sst)
+    first = portwatch_request(src.id, src.url, since, 0, now)
+    rb = robots_verdict(first.url, getter)
+    out["robots"] = rb
+    if rb["verdict"] == "hard_stop":
+        return fail(f"HARD_STOP: {rb['note']}", hold=True)
+    if rb["verdict"] != "allow":
+        return fail(f"ROBOTS_{rb['verdict'].upper()}: {rb['note']}")
+    delay = float(rb.get("crawl_delay") or 0.0)
+    complete = False
+    last_full: date | None = None
+    for page in range(PORTWATCH_MAX_PAGES):
+        if page and delay:
+            if time.monotonic() + delay > deadline:
+                out["errors"].append("budget reached: the remaining pages are owed to the next "
+                                     "pass (cursor kept)")
+                break
+            sleep(delay)
+        if time.monotonic() > deadline:
+            out["errors"].append("budget reached: the remaining pages are owed to the next pass")
+            break
+        req = portwatch_request(src.id, src.url, since, page * PORTWATCH_PAGE, now)
+        out["requests"] += 1
+        try:
+            body, ctype = getter(req.url)
+        except Exception as exc:
+            code = _http_code(exc)
+            if code in PORTWATCH_HARD_STOP:
+                return fail(f"HARD_STOP: HTTP {code} on page {page}", hold=True)
+            return fail(f"HTTP_ERROR: {type(exc).__name__}: {str(exc)[:120]}")
+        out["fetched"] += 1
+        err = arcgis_error(body)
+        if err:
+            return fail(err, hold=err.startswith("NOT_JSON"))
+        vault(paths, src, body, req.url, ctype, now)
+        n_rows = take(body, req.ctx)
+        dates = [d for a in _arcgis_rows(body) if (d := _arcgis_date(a.get("date")))]
+        if dates:
+            # The last date on a page may continue on the next one: only the day before it is
+            # known complete, which is where a cut-short pass resumes.
+            last_full = max(dates) - timedelta(days=1)
+        if n_rows < PORTWATCH_PAGE:
+            complete = True
+            break
+    if complete:
+        newest = max((date.fromisoformat(str(r["period"])) for r in store.values()
+                      if isinstance(r, dict) and r.get("period")), default=None)
+        if newest is not None:
+            sst["pw_from"] = (newest - timedelta(days=PORTWATCH_RECENT_D)).isoformat()
+    elif last_full is not None and last_full > since:
+        sst["pw_from"] = last_full.isoformat()
+    if not out["parsed"]:
+        return fail("EMPTY: the query answered with no rows" if complete else
+                    "BUDGET: no page completed inside the budget")
+    out["outcome"] = ("UNCHANGED" if not (out["merge"]["added"] or out["merge"]["revised"])
+                   else "OK")
+    out["complete"] = complete
+    return out
+
+
+#: The pack vocabulary (`PORTWATCH:<name>` in red_sea / central_america SERIES) -> the stored
+#: series this organ writes. One map, read by every pack.
+PORTWATCH_PACK_SERIES: dict[str, str] = {
+    "bab_el_mandeb_transits": "bab_el_mandeb_strait_transits",
+    "suez_transits": "suez_canal_transits",
+    "panama_transits": "panama_canal_transits",
+    "cape_of_good_hope_transits": "cape_of_good_hope_transits",
+    "hormuz_transits": "strait_of_hormuz_transits",
+    "malacca_transits": "malacca_strait_transits",
+    "bosporus_transits": "bosporus_strait_transits",
+    "gibraltar_transits": "gibraltar_strait_transits",
+}
+
+
+def chokepoints_asof(decision_at: datetime, store_path: Path | None = None,
+                     names: Iterable[str] | None = None) -> dict[str, Any]:
+    """The latest chokepoint transit count per series KNOWN at `decision_at`.
+
+    A row is visible only when its `published_time` (max of the stated Tuesday release and the
+    instant this desk first read it) is at or before the decision, and its period is strictly
+    before the decision's own UTC day: a same-day value is never seen. The value is the FIRST
+    vintage read, never a later revision back-dated. An absent or empty store is UNMEASURED."""
+    if decision_at.tzinfo is None:
+        decision_at = decision_at.replace(tzinfo=UTC)
+    p = store_path or (DEFAULT_PATHS.obs_dir / "imf_portwatch_chokepoints.json")
+    store = _read_json(p, {})
+    want = {PORTWATCH_PACK_SERIES.get(n, n) for n in names} if names is not None else None
+    best: dict[str, dict[str, Any]] = {}
+    for row in store.values() if isinstance(store, dict) else ():
+        if not isinstance(row, dict) or not row.get("series"):
+            continue
+        name = str(row["series"])
+        if want is not None and name not in want:
+            continue
+        known = _t(row.get("published_time"))
+        try:
+            period = date.fromisoformat(str(row.get("period")))
+        except ValueError:
+            continue
+        if known is None or known > decision_at or period >= decision_at.date():
+            continue
+        cur = best.get(name)
+        if cur is None or period.isoformat() > cur["period"]:
+            best[name] = {"period": period.isoformat(), "value": float(row["value_first"]),
+                          "known_at": known.isoformat(timespec="seconds")}
+    if not best:
+        return {"status": "UNMEASURED", "series": {}, "store": str(p),
+                "why": ("no IMF PortWatch chokepoint row known at "
+                        f"{decision_at.isoformat(timespec='seconds')} in {p.name}")}
+    inv = {v: k for k, v in PORTWATCH_PACK_SERIES.items()}
+    return {"status": "MEASURED", "series": dict(sorted(best.items())),
+            "by_pack_name": {inv[k]: v for k, v in sorted(best.items()) if k in inv},
+            "store": str(p), "decision_at": decision_at.isoformat(timespec="seconds")}
 
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
@@ -4487,7 +4831,8 @@ def _cursor(s: Source) -> str:
     if s.id == "cn_firms_industrial":
         return "firms_backfill_to (10 days/cluster/pass, archive product)"
     if s.id.startswith("imf_portwatch"):
-        return "resultOffset paging; 800-day window"
+        return (f"resultOffset paging ({PORTWATCH_PAGE}/page) from state.pw_from; first pass "
+                f"{PORTWATCH_DEPTH_D}d deep, then the last {PORTWATCH_RECENT_D}d re-read")
     if s.id == "gdelt_events_country":
         return (f"fwd/back 15-minute slot cursors ({GDELT_FWD_PER_PASS}+{GDELT_BACK_PER_PASS} "
                 f"slots/pass, {GDELT_BACK_DEPTH_D}d deep); open days held in state.acc")
