@@ -180,7 +180,8 @@ from research import rejection_throughput as rt  # noqa: E402
 #: vocabulary (classify_unknown / unknown_row_reason), a blank and a reason nobody has named yet.
 _JUDGE_VOCAB = ("no_signals", "signals_no_trades", "no_trades", "too_rare",
                 "lockbox_consumed_history", "short_history_after_cut", "series_exception",
-                "no_series", "observations_under_60_days", "no_terminal_gate_recorded")
+                "no_series", "observations_under_60_days", "no_terminal_gate_recorded",
+                "screened_past_cut")
 ALL_REASONS = sorted(set(jc.UNKNOWN_REASON_CLASS) | set(_JUDGE_VOCAB) | {"", "brand_new_cause"})
 
 

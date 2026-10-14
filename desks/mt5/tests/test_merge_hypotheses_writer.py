@@ -54,3 +54,19 @@ def test_a_duplicate_row_never_drops_the_later_screen_read():
     merger.keep_latest_screen_read(kept, {"screen_read_until": "2023-01-01"})
     merger.keep_latest_screen_read(kept, {})
     assert kept["screen_read_until"] == "2024-05-01"
+
+
+def test_a_folded_screen_read_keeps_the_payload_hash_true() -> None:
+    """Audit low-severity on #392: the fold edited a stamped row after its hash."""
+    from libs.data.pit import payload_hash, stamp
+    kept = stamp({"symbol": "EURUSD", "family": "formula", "params": {}}, "t")
+    merger.keep_latest_screen_read(kept, {"screen_read_until": "2024-05-01"})
+    assert kept["payload_hash"] == payload_hash(kept)
+
+
+def test_a_recovered_registry_row_keeps_the_unstamped_rows_screen_read() -> None:
+    from libs.data.pit import stamp
+    row = {"symbol": "EURUSD", "family": "formula", "params": {}}
+    merged = {merger._identity(row): {**row, "screen_read_until": "2024-05-01"}}
+    assert merger.admit_registry_row(merged, stamp(row, "registry")) == "recovered"
+    assert merged[merger._identity(row)]["screen_read_until"] == "2024-05-01"

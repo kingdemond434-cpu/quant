@@ -438,6 +438,8 @@ def admit_registry_row(merged: dict[str, dict], row: dict) -> str:
         for field in ("first_seen", "merged_at"):
             if prior.get(field):
                 emitted.setdefault(field, prior[field])
+        # the unstamped row's screen read still binds the cell (audit low-severity on #392)
+        keep_latest_screen_read(emitted, prior)
     merged[ident] = emitted
     return "recovered" if prior is not None else "new"
 
@@ -639,10 +641,15 @@ def _lease(path: Path) -> None:
 
 
 def keep_latest_screen_read(kept: dict, dup: dict) -> None:
-    """Fold a duplicate row's `screen_read_until` into the kept row: the later day wins."""
+    """Fold a duplicate row's `screen_read_until` into the kept row: the later day wins. A
+    stamped row's `payload_hash` is recomputed, so the hash still matches what it carries
+    (audit low-severity on #392)."""
     later = str(dup.get("screen_read_until") or "")
     if later > str(kept.get("screen_read_until") or ""):
         kept["screen_read_until"] = later
+        if kept.get("payload_hash"):
+            from libs.data.pit import payload_hash
+            kept["payload_hash"] = payload_hash(kept)
 
 
 def main() -> int:

@@ -154,6 +154,9 @@ UNKNOWN_REASON_CLASS: dict[str, str] = {
     "too_rare": NOT_TESTABLE,
     "lockbox_consumed_history": NOT_TESTABLE,
     "short_history_after_cut": NOT_TESTABLE,
+    # the LLM lab's style screen read days at or past this cell's lockbox cut (`lab_style`,
+    # gauntlet_screen_read_until): judgeable once the cut moves past `screen_read_until`
+    "screened_past_cut": NOT_TESTABLE,
     "series_exception": DEFECT,
     "no_series": DEFECT,
     "observations_under_60_days": DEFECT,
@@ -901,6 +904,11 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
             reason, route = "lockbox_consumed_history", (
                 "the cell fires, but its chart's history begins after the campaign lockbox cut, "
                 "so the carve left under 60 development days: re-admitted as history grows")
+        elif declared == "screened_past_cut":
+            reason, route = "screened_past_cut", (
+                "the LLM lab's style screen read days at or past this cell's lockbox cut, so its "
+                "lockbox is not unseen: refused, re-admitted once the cut moves past "
+                "screen_read_until as history grows")
         elif declared == "short_history_after_cut":
             reason, route = "short_history_after_cut", (
                 "the cell traded, but on under 60 days, all of them after the lockbox cut, so the "
@@ -1601,6 +1609,7 @@ FAILURE_CLASS: dict[str, str] = {
     "observations_under_60_days": "short_history",
     "short_history_after_cut": "short_history",
     "lockbox_consumed_history": "short_history",
+    "screened_past_cut": "short_history",
     "no_signals": "untestable_as_specified",
     "signals_no_trades": "untestable_as_specified",
     "no_trades": "untestable_as_specified",
