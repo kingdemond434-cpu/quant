@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-14T18:38:38.047282+00:00",
+ "generated_utc": "2026-10-14T19:42:48.852759+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -4915,7 +4915,7 @@
    }
   },
   "external.XAUAUD.cross_asset_residual.p=827c802f31e01d1e": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4926,7 +4926,7 @@
    }
   },
   "external.XAUEUR.cross_asset_residual.p=3bdb4615ec1ace71": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4937,7 +4937,7 @@
    }
   },
   "external.XBRUSD.cross_asset_residual.p=3bdb4615ec1ace71": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4948,7 +4948,7 @@
    }
   },
   "external.XTIUSD.cross_asset_residual.p=3bdb4615ec1ace71": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4959,7 +4959,7 @@
    }
   },
   "external.XAGEUR@M5.cross_asset_residual.p=0052fbfc522a4c69": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4970,7 +4970,7 @@
    }
   },
   "external.CHFSGD@M30.cross_asset_residual.p=994638ee9bb08b37": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4981,7 +4981,7 @@
    }
   },
   "external.CHFSGD@M30.cross_asset_residual.p=6f7e685b11cb2ccf": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4992,7 +4992,7 @@
    }
   },
   "external.XAGUSD@M30.cross_asset_residual.p=994638ee9bb08b37": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5003,7 +5003,7 @@
    }
   },
   "external.XAUAUD@M30.cross_asset_residual.p=6f7e685b11cb2ccf": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5014,7 +5014,7 @@
    }
   },
   "external.XAUUSD@M30.cross_asset_residual.p=994638ee9bb08b37": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5025,7 +5025,7 @@
    }
   },
   "external.XAUUSD@M30.cross_asset_residual.p=6f7e685b11cb2ccf": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5036,7 +5036,7 @@
    }
   },
   "external.XAUUSD@M15.cross_asset_residual.p=49eee8b22060afb7": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5047,7 +5047,7 @@
    }
   },
   "external.XTIUSD@M15.cross_asset_residual.p=456c4c3c1308e75a": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5058,7 +5058,7 @@
    }
   },
   "external.AUDNZD@M15.cross_asset_residual.p=0cc427ddfd20f447": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5069,7 +5069,7 @@
    }
   },
   "external.BTCUSD@M15.cross_asset_residual.p=76a842aadaf3bd86": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5080,7 +5080,7 @@
    }
   },
   "external.BTCUSD@M15.cross_asset_residual.p=0cc427ddfd20f447": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {

@@ -1,25 +1,25 @@
 {
  "schema": "gate_verdict_digest/1",
- "generated_at": "2026-10-14T13:20:31+00:00",
+ "generated_at": "2026-10-14T19:48:05+00:00",
  "status": "MEASURED",
  "producer": "desks/mt5/research/gate_verdict_digest.py (hourly, publish_state leg)",
  "ledger": {
   "source": {
    "path": "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl",
    "status": "READ",
-   "bytes": 240361138,
-   "modified_at": "2026-10-14T05:40:58+00:00"
+   "bytes": 240362106,
+   "modified_at": "2026-10-14T17:59:16+00:00"
   },
-  "rows": 864239,
+  "rows": 864242,
   "malformed_rows": 0,
   "passed_rows": 1222,
-  "rejected_rows": 863017,
+  "rejected_rows": 863020,
   "first_at": "2026-09-12T17:06:46+00:00",
-  "last_at": "2026-10-14T05:40:58+00:00",
+  "last_at": "2026-10-14T17:59:16+00:00",
   "note": "the ledger appends a row only when a cell's verdict CHANGES, so these count changes of mind, not judgements",
   "rejections_by_terminal_gate": {
-   "UNKNOWN": 549397,
-   "in_sample_screen": 269345,
+   "UNKNOWN": 549398,
+   "in_sample_screen": 269347,
    "deflated_sharpe": 41046,
    "economic_prior": 1213,
    "stress_costs": 709,
@@ -254,8 +254,8 @@
     "swap_cost": 1
    },
    "relative_value": {
-    "in_sample_screen": 4709,
-    "UNKNOWN": 2632,
+    "in_sample_screen": 4711,
+    "UNKNOWN": 2633,
     "deflated_sharpe": 911,
     "stress_costs": 22,
     "symbol_eligibility": 15,
@@ -417,7 +417,7 @@
   },
   "families_omitted": 14,
   "rejections_by_symbol_top": {
-   "XAUUSD": 12962,
+   "XAUUSD": 12965,
    "USDSGD": 11839,
    "AUDUSD": 10831,
    "AUDSGD": 10674,
@@ -459,6 +459,33 @@
    "XPTUSD": 6563
   },
   "latest": [
+   {
+    "at": "2026-10-14T17:59:16+00:00",
+    "cell": "XAUUSD@M5.relative_value.p=968e1c79caf70d13",
+    "family": "relative_value",
+    "sym": "XAUUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null
+   },
+   {
+    "at": "2026-10-14T17:59:16+00:00",
+    "cell": "XAUUSD@M15.relative_value.p=5e080515bb8001f5",
+    "family": "relative_value",
+    "sym": "XAUUSD",
+    "terminal_gate": "in_sample_screen",
+    "passed": false,
+    "downstream_status": null
+   },
+   {
+    "at": "2026-10-14T17:59:16+00:00",
+    "cell": "XAUUSD@M5.relative_value.p=1092e74aa59dd5b1",
+    "family": "relative_value",
+    "sym": "XAUUSD",
+    "terminal_gate": "in_sample_screen",
+    "passed": false,
+    "downstream_status": null
+   },
    {
     "at": "2026-10-14T05:40:58+00:00",
     "cell": "CHFSEK@M15.cross_asset_residual.p=419eed775bfab0bd",
@@ -881,33 +908,6 @@
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null
-   },
-   {
-    "at": "2026-10-14T05:40:58+00:00",
-    "cell": "EURSEK.relative_value.p=6ba9e88d9f7473d1",
-    "family": "relative_value",
-    "sym": "EURSEK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null
-   },
-   {
-    "at": "2026-10-14T05:40:58+00:00",
-    "cell": "CHFSGD.relative_value.p=e82db0007b4d80f4",
-    "family": "relative_value",
-    "sym": "CHFSGD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null
-   },
-   {
-    "at": "2026-10-14T05:40:58+00:00",
-    "cell": "XPBUSD.relative_value.p=7f3ed688ef3580ff",
-    "family": "relative_value",
-    "sym": "XPBUSD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null
    }
   ]
  },
@@ -915,39 +915,35 @@
   "source": {
    "path": "desks/mt5/reports/universal_gates_external.json",
    "status": "READ",
-   "bytes": 549551735,
-   "modified_at": "2026-10-14T05:41:42+00:00"
+   "bytes": 541504444,
+   "modified_at": "2026-10-14T18:01:16+00:00"
   },
-  "swept_at": "2026-10-14T04:37:39.055620+00:00",
-  "verdicts": 1001481,
+  "swept_at": "2026-10-14T17:01:44.636886+00:00",
+  "verdicts": 996962,
   "passed": 0,
-  "rejected": 1001481,
+  "rejected": 996962,
   "terminal_gates": {
-   "UNKNOWN": 977786,
+   "UNKNOWN": 975310,
    "symbol_eligibility": 21403,
-   "in_sample_screen": 1884,
    "economic_prior": 247,
-   "deflated_sharpe": 159,
-   "stress_costs": 2
+   "in_sample_screen": 2
   },
   "any_fail_by_gate": {
    "symbol_eligibility": 21403,
-   "deflated_sharpe": 2043,
-   "lockbox": 1997,
-   "cpcv": 1932,
-   "walk_forward": 1918,
-   "stress_costs": 1896,
-   "in_sample_screen": 1884,
-   "expected_value": 1884,
-   "observations": 585,
    "economic_prior": 247,
-   "swap_cost": 220
+   "in_sample_screen": 2,
+   "deflated_sharpe": 2,
+   "reality_check_spa": 2,
+   "cpcv": 2,
+   "walk_forward": 2,
+   "stress_costs": 2,
+   "lockbox": 2,
+   "expected_value": 2,
+   "observations": 1
   },
   "terminal_gates_by_family": {
    "cross_asset_residual": {
-    "UNKNOWN": 76451,
-    "in_sample_screen": 1259,
-    "deflated_sharpe": 104,
+    "UNKNOWN": 77814,
     "symbol_eligibility": 25
    },
    "execution_state": {
@@ -955,7 +951,7 @@
     "symbol_eligibility": 233
    },
    "formula": {
-    "UNKNOWN": 47739,
+    "UNKNOWN": 44079,
     "symbol_eligibility": 11
    },
    "overnight_drift": {
@@ -975,25 +971,21 @@
     "symbol_eligibility": 2219
    },
    "lead_lag": {
-    "UNKNOWN": 22171,
-    "symbol_eligibility": 99,
-    "in_sample_screen": 81,
-    "deflated_sharpe": 2
+    "UNKNOWN": 22254,
+    "symbol_eligibility": 99
    },
    "macro_conditional": {
     "UNKNOWN": 21751,
     "symbol_eligibility": 425
    },
-   "relative_value": {
-    "UNKNOWN": 20112,
-    "in_sample_screen": 544,
-    "deflated_sharpe": 53,
-    "symbol_eligibility": 27,
-    "stress_costs": 2
-   },
    "forced_flow": {
-    "UNKNOWN": 20382,
+    "UNKNOWN": 20383,
     "symbol_eligibility": 303
+   },
+   "relative_value": {
+    "UNKNOWN": 20649,
+    "symbol_eligibility": 27,
+    "in_sample_screen": 2
    },
    "carry": {
     "UNKNOWN": 20320,
@@ -1027,13 +1019,13 @@
     "UNKNOWN": 16426,
     "symbol_eligibility": 281
    },
-   "session_range_breakout": {
-    "UNKNOWN": 16211,
-    "symbol_eligibility": 283
-   },
    "vol_transition": {
     "UNKNOWN": 14268,
     "symbol_eligibility": 2211
+   },
+   "session_range_breakout": {
+    "UNKNOWN": 16115,
+    "symbol_eligibility": 283
    },
    "trend_ma_cross": {
     "UNKNOWN": 15958,
@@ -1052,7 +1044,7 @@
     "symbol_eligibility": 282
    },
    "vol_mean_reversion": {
-    "UNKNOWN": 13901,
+    "UNKNOWN": 13900,
     "symbol_eligibility": 285
    },
    "style_premia": {
@@ -1060,7 +1052,7 @@
     "symbol_eligibility": 58
    },
    "liquidity_gamma_reversal": {
-    "UNKNOWN": 13268,
+    "UNKNOWN": 13267,
     "symbol_eligibility": 275
    },
    "mean_reversion_bollinger": {
@@ -1076,47 +1068,47 @@
     "symbol_eligibility": 11
    },
    "regime_transition": {
-    "UNKNOWN": 12490,
+    "UNKNOWN": 12489,
     "symbol_eligibility": 275
    },
    "volume_spike": {
-    "UNKNOWN": 12345,
+    "UNKNOWN": 12344,
     "symbol_eligibility": 284
    },
    "multi_speed_trend": {
-    "UNKNOWN": 11902,
+    "UNKNOWN": 11901,
     "symbol_eligibility": 281
    },
    "asia_momentum": {
-    "UNKNOWN": 11501,
+    "UNKNOWN": 11500,
     "symbol_eligibility": 279
    },
    "triangle": {
-    "UNKNOWN": 11349,
+    "UNKNOWN": 11347,
     "symbol_eligibility": 280
    },
    "opening_range": {
-    "UNKNOWN": 10230,
+    "UNKNOWN": 10228,
     "symbol_eligibility": 225
    },
    "adx_channel_hybrid": {
-    "UNKNOWN": 9531,
+    "UNKNOWN": 9528,
     "symbol_eligibility": 284
    },
    "momentum_volgate": {
-    "UNKNOWN": 9281,
+    "UNKNOWN": 9278,
     "symbol_eligibility": 280
    },
    "hedging_demand_close": {
-    "UNKNOWN": 8949,
+    "UNKNOWN": 8945,
     "symbol_eligibility": 221
    },
    "monday_gap": {
-    "UNKNOWN": 8788,
+    "UNKNOWN": 8784,
     "symbol_eligibility": 277
    },
    "volatility_squeeze": {
-    "UNKNOWN": 8612,
+    "UNKNOWN": 8608,
     "symbol_eligibility": 286
    },
    "exogenous_conditioner": {
@@ -1132,7 +1124,7 @@
     "symbol_eligibility": 1111
    },
    "pullback_entry": {
-    "UNKNOWN": 7145,
+    "UNKNOWN": 7138,
     "symbol_eligibility": 282
    },
    "cot_net_fade": {
@@ -1148,47 +1140,47 @@
     "symbol_eligibility": 11
    },
    "pin_bar_reversal": {
-    "UNKNOWN": 5903,
+    "UNKNOWN": 5891,
     "symbol_eligibility": 283
    },
    "comex_settlement": {
-    "UNKNOWN": 5858,
+    "UNKNOWN": 5846,
     "symbol_eligibility": 276
    },
    "failed_breakout": {
-    "UNKNOWN": 5790,
+    "UNKNOWN": 5777,
     "symbol_eligibility": 280
    },
    "level_breakout": {
-    "UNKNOWN": 5305,
+    "UNKNOWN": 5288,
     "symbol_eligibility": 291
    },
    "turn_of_month": {
-    "UNKNOWN": 4776,
+    "UNKNOWN": 4756,
     "symbol_eligibility": 286
    },
-   "htf_anchor_trend": {
-    "UNKNOWN": 4561,
-    "symbol_eligibility": 275
-   },
    "cot_positioning": {
-    "UNKNOWN": 4692,
+    "UNKNOWN": 4667,
     "symbol_eligibility": 12
    },
    "ensemble": {
-    "UNKNOWN": 4632,
+    "UNKNOWN": 4607,
     "symbol_eligibility": 11
    },
+   "htf_anchor_trend": {
+    "UNKNOWN": 4265,
+    "symbol_eligibility": 275
+   },
    "london_close_momentum": {
-    "UNKNOWN": 4225,
+    "UNKNOWN": 4197,
     "symbol_eligibility": 277
    },
    "exit_operated": {
-    "UNKNOWN": 3945,
+    "UNKNOWN": 3912,
     "symbol_eligibility": 275
    },
    "joint_genome": {
-    "UNKNOWN": 3889,
+    "UNKNOWN": 3854,
     "symbol_eligibility": 275
    }
   },
@@ -1204,26 +1196,20 @@
    ],
    "in_sample_screen": [],
    "deflated_sharpe": [],
+   "reality_check_spa": [
+    "p_value=1.0"
+   ],
    "cpcv": [],
    "walk_forward": [],
    "stress_costs": [],
    "lockbox": [
-    "held-out window is 33 days, under the 40-day floor; no lockbox evidence exists",
-    "held-out window is 36 days, under the 40-day floor; no lockbox evidence exists",
     "held-out window is 0 days, under the 40-day floor; no lockbox evidence exists"
    ],
    "expected_value": [],
-   "swap_cost": [
-    "UNMEASURED cost fails closed: AUDUSD registry lacks median_spread_pts; live: terminal unreadable (ModuleNotFoundError)",
-    "UNMEASURED cost fails closed: CORN registry lacks median_spread_pts; live: terminal unreadable (ModuleNotFoundError)",
-    "UNMEASURED cost fails closed: EURUSD registry lacks median_spread_pts; live: terminal unreadable (ModuleNotFoundError)"
-   ],
    "observations": [
-    "only 6 daily observations; CPCV with purge+embargo and the walk-forward folds require 60. This is UNMEASURED, not a failure: the cell fires too rarely to be judged, which is a fact about the SEARCH th",
-    "only 9 daily observations; CPCV with purge+embargo and the walk-forward folds require 60. This is UNMEASURED, not a failure: the cell fires too rarely to be judged, which is a fact about the SEARCH th",
-    "only 5 daily observations; CPCV with purge+embargo and the walk-forward folds require 60. This is UNMEASURED, not a failure: the cell fires too rarely to be judged, which is a fact about the SEARCH th"
+    "only 45 daily observations; CPCV with purge+embargo and the walk-forward folds require 60. This is UNMEASURED, not a failure: the cell fires too rarely to be judged, which is a fact about the SEARCH t"
    ]
   },
-  "n_curable_by_forward": 5
+  "n_curable_by_forward": 0
  }
 }
