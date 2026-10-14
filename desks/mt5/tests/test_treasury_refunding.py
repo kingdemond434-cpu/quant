@@ -220,7 +220,8 @@ def test_a_statement_read_late_is_stamped_from_its_first_sight() -> None:
             0,
         ),
         (
-            "Treasury anticipates maintaining nominal coupon and FRN auction sizes for at least the "
+            "Treasury anticipates maintaining nominal coupon and FRN auction sizes for at "
+            "least the "
             "next several quarters. Treasury will increase the 5-year TIPS auction sizes.",
             0,
         ),
@@ -378,7 +379,8 @@ def test_a_guided_increase_that_did_not_come_is_a_surprise() -> None:
     ("text", "want"),
     [
         (
-            "Treasury anticipates maintaining nominal coupon and FRN auction sizes and will increase "
+            "Treasury anticipates maintaining nominal coupon and FRN auction sizes and will "
+            "increase "
             "the 5-year TIPS auction sizes.",
             0,
         ),
@@ -503,7 +505,8 @@ def test_a_listed_statement_never_read_blocks_every_zero(
             1,
         ),
         (
-            "Treasury will increase nominal coupon auction sizes, since bills alone cannot absorb any "
+            "Treasury will increase nominal coupon auction sizes, since bills alone cannot "
+            "absorb any "
             "increase.",
             1,
         ),
@@ -662,7 +665,8 @@ def test_a_pair_an_unread_statement_could_split_is_not_measured() -> None:
     [
         ("Treasury anticipates reductions to nominal coupon auction sizes, with no increases.", -1),
         (
-            "Treasury expects that no later than the next refunding it will need to increase nominal "
+            "Treasury expects that no later than the next refunding it will need to "
+            "increase nominal "
             "coupon auction sizes.",
             1,
         ),
@@ -672,7 +676,11 @@ def test_a_pair_an_unread_statement_could_split_is_not_measured() -> None:
             1,
         ),
         ("Treasury anticipates no increase in nominal coupon auction sizes.", 0),
-        ("Treasury will increase and will reduce nominal coupon auction sizes.", None),
+        (
+            "Treasury will increase nominal coupon auction sizes in some tenors and reduce them in "
+            "others.",
+            None,
+        ),
     ],
 )
 def test_both_directions_are_read_before_answering(text: str, want: int | None) -> None:

@@ -291,7 +291,7 @@ def _clause_reading(clause: str) -> int | None:
         # not, given current projections, increase"); one earlier in the clause that this
         # window cannot bind makes the clause UNMEASURED, never the wrong sign.
         prefix = _REASON.split(clause[:verb])[-1]
-        phrase = _REASON.split(clause[max(0, mt.start() - NEG_LEAD) : verb])[-1]
+        phrase = _REASON.split(clause[max(0, mt.start() - NEG_LEAD) : mt.end()])[-1]
         after = _REASON.split(clause[mt.end() : mt.end() + 60])[0]
         if _NEG_BEFORE.search(phrase) or _NEG_AFTER.search(after):
             held = True  # "does not anticipate needing to increase": that direction held
