@@ -154,6 +154,14 @@ UNKNOWN_REASON_CLASS: dict[str, str] = {
     "too_rare": NOT_TESTABLE,
     "lockbox_consumed_history": NOT_TESTABLE,
     "short_history_after_cut": NOT_TESTABLE,
+    # the LLM lab's style screen read days at or past this cell's lockbox cut (`lab_style`,
+    # gauntlet_screen_read_until): judgeable once the cut moves past `screen_read_until`
+    "screened_past_cut": NOT_TESTABLE,
+    # the gauntlet's LLM look-ahead guard (llm_lookahead_gauntlet v3): a start after the last
+    # day leaves no post-guard day yet (scarcity, re-admitted as history grows); a HELD cell has
+    # no readable start at all (a stamp or map the desk owes a fix for)
+    "lookahead_after_last_day": NOT_TESTABLE,
+    "lookahead_held": DEFECT,
     "series_exception": DEFECT,
     "no_series": DEFECT,
     "observations_under_60_days": DEFECT,
@@ -888,7 +896,22 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
         declared = str(v.get("unknown_reason") or "")
         params = v.get("params") if isinstance(v.get("params"), dict) else None
         need = REQUIRED_INPUT_KEY.get(fam)
-        if declared == "series_exception":
+        guard = str(v.get("series_error") or "")
+        if guard.startswith("look-ahead guard:"):
+            # THE GUARD EMPTIED THIS SERIES ON PURPOSE (auditor, LLM_LOOKAHEAD_v3): the sweep
+            # sees an empty series, and without this branch every held lab cell was parked as
+            # `never_fires` -- an unrunnable spec -- and counted in never_fire_pairs.
+            if "after the last day" in guard:
+                reason, route = "lookahead_after_last_day", (
+                    "the LLM that proposed this cell had read every day on disk: judged once "
+                    "history grows past its evidence start")
+            else:
+                reason, route = "lookahead_held", (
+                    "LLM-born cell held by the look-ahead guard: its evidence start is "
+                    "unreadable (stamp unparseable, the lab's evidence-start map unreadable) or "
+                    "the trim to it failed; re-asked after "
+                    f"{BUILD_FAILED_RETRY_DAYS:.0f} days, judged once the start applies")
+        elif declared == "series_exception":
             reason, route = "series_exception", (
                 "the backtest raised while building this cell's daily series: a code defect, "
                 f"re-admitted after {BUILD_FAILED_RETRY_DAYS:.0f} days like a build failure")
@@ -901,6 +924,11 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
             reason, route = "lockbox_consumed_history", (
                 "the cell fires, but its chart's history begins after the campaign lockbox cut, "
                 "so the carve left under 60 development days: re-admitted as history grows")
+        elif declared == "screened_past_cut":
+            reason, route = "screened_past_cut", (
+                "the LLM lab's style screen read days at or past this cell's lockbox cut, so its "
+                "lockbox is not unseen: refused, re-admitted once the cut moves past "
+                "screen_read_until as history grows")
         elif declared == "short_history_after_cut":
             reason, route = "short_history_after_cut", (
                 "the cell traded, but on under 60 days, all of them after the lockbox cut, so the "
@@ -928,7 +956,8 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
                                          "about the search, re-admitted when the history grows")
         out[cell] = {"reason": reason, "route": route, "sym": sym, "family": v.get("family"),
                      "tf": tf, "days": days, "bar_bytes": bars, "why": why[:200],
-                     **({"detail": declared} if declared else {})}
+                     **({"detail": declared} if declared else {}),
+                     **({"series_error": guard[:200]} if guard else {})}
     return out
 
 
@@ -985,8 +1014,12 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
         bars = bar_sizes[key]
     if parked_bytes <= 0:
         return bars > 0
+    if (row.get("reason") == "never_fires"
+            and str(row.get("series_error") or "").startswith("look-ahead guard:")):
+        return True        # parked before the guard was named: re-judge it, and name it right
     if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
-                             "observations_under_60_days", "no_terminal_gate_recorded"):
+                             "observations_under_60_days", "no_terminal_gate_recorded",
+                             "lookahead_held"):
         _at = _ts(row.get("parked_at"))
         _t = now or datetime.now(tz=UTC)
         if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
@@ -1601,6 +1634,9 @@ FAILURE_CLASS: dict[str, str] = {
     "observations_under_60_days": "short_history",
     "short_history_after_cut": "short_history",
     "lockbox_consumed_history": "short_history",
+    "screened_past_cut": "short_history",
+    "lookahead_after_last_day": "short_history",
+    "lookahead_held": "lookahead_held",
     "no_signals": "untestable_as_specified",
     "signals_no_trades": "untestable_as_specified",
     "no_trades": "untestable_as_specified",
@@ -1632,6 +1668,8 @@ FAILURE_ROUTES: dict[str, dict[str, Any]] = {
     "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
     "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
     "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
+    "lookahead_held": {"owner": "judge",
+                       "axes": ["readable_evidence_start", "restore_evidence_start_map"]},
 }
 
 #: Where cells for the converter are handed over, rewritten every pass from the bank (the bank

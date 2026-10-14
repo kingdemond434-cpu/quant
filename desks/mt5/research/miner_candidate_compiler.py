@@ -748,6 +748,12 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # would let the history the model was trained on read as an out-of-sample result.
         **({"lookahead_guard": row["lookahead_guard"]}
            if isinstance(row.get("lookahead_guard"), dict) else {}),
+        # AND SO DOES THE LAST DAY THE LAB'S STYLE SCREEN READ (2026-10-14, audit on #392). The
+        # screen reads the cell's own signals before a lockbox it can only estimate; the gauntlet,
+        # which knows the real cut, must refuse a cell whose cut is not after this day.
+        **({"screen_read_until": str(row["style_screen"]["read_until"])}
+           if isinstance(row.get("style_screen"), dict)
+           and row["style_screen"].get("read_until") else {}),
     }
 
 

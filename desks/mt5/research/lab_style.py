@@ -128,19 +128,90 @@ def _bars(sym: str, bars_dir: Path) -> Any:
         return None
 
 
-def _before_lockbox(df: Any) -> Any:
-    """The bars before the gauntlet's lockbox (gate_policy.LOCKBOX_FRAC of days, at least
-    LOCKBOX_MIN_DAYS): the screen never reads the window the lockbox gate will judge."""
-    try:
-        import math as _m
+#: Campaign-calendar cache: the union of every H1 chart's days, re-read once per UTC day.
+CALENDAR = STATE_DIR / "lockbox_calendar.json"
 
+
+def _union_days(bars_dir: Path) -> list[Any]:
+    """Every calendar day any H1 chart on this host holds: the union the gauntlet's campaign-wide
+    cut is taken over. Cached per UTC day and per chart count, so a pass reads it once."""
+    import pandas as pd
+    files = sorted(bars_dir.glob("*_H1.parquet"))
+    today = datetime.now(UTC).date().isoformat()
+    cache = _read_json(CALENDAR, {}) or {}
+    if (cache.get("day") == today and cache.get("charts") == len(files)
+            and cache.get("dir") == str(bars_dir) and isinstance(cache.get("days"), list)):
+        return [pd.Timestamp(d) for d in cache["days"]]
+    days: set[Any] = set()
+    for f in files:
+        try:
+            idx = pd.read_parquet(f, columns=["close"]).index
+            days.update(pd.DatetimeIndex(idx).normalize().unique())
+        except Exception:
+            continue
+    out = sorted(days)
+    _write_json(CALENDAR, {"day": today, "charts": len(files), "dir": str(bars_dir),
+                           "days": [d.isoformat() for d in out]})
+    return out
+
+
+def _last_day(df: Any) -> str | None:
+    """The last calendar day of bars the screen read (ISO date), or None when it read none."""
+    try:
         import pandas as pd
-        from research.gate_policy import LOCKBOX_FRAC, LOCKBOX_MIN_DAYS
-        days = pd.DatetimeIndex(df.index).normalize().unique()
-        tail = max(int(LOCKBOX_MIN_DAYS), _m.ceil(len(days) * float(LOCKBOX_FRAC)))
-        if tail >= len(days):
+        return str(pd.DatetimeIndex(df.index).max().date()) if len(df) else None
+    except Exception:
+        return None
+
+
+def _lockbox_frac() -> float:
+    """The held-out share of the constitution IN FORCE, read where the gauntlet reads it
+    (`truth_kernel.gauntlet_thresholds`), never only the policy default (audit should-fix on
+    #392). An unreadable constitution leaves the policy's own fraction, as in the gauntlet."""
+    from research.gate_policy import LOCKBOX_FRAC
+    try:
+        from libs.tiers.truth_kernel import gauntlet_thresholds
+        law = gauntlet_thresholds(BASE, dsr_threshold=0.0, gates_required=0.0,
+                                  lockbox_min_fraction=float(LOCKBOX_FRAC))
+        return max(float(LOCKBOX_FRAC), float(law.get("lockbox_min_fraction") or LOCKBOX_FRAC))
+    except Exception:
+        return float(LOCKBOX_FRAC)
+
+
+def _dev_end(df: Any, bars_dir: Path | None = None) -> Any:
+    """Where the screen stops reading: the EARLIER of a cut over the union of every chart's bar
+    days and the chart's own tail cut, both at the constitution's held-out share.
+
+    THIS IS A BEST EFFORT, NOT A PROOF (audit must-fix 1 on #392). The gauntlet cuts over the
+    campaign cells' TRADE days, which this screen cannot know before the campaign exists: a cell
+    whose trades are front-loaded is cut earlier than any bar-day calendar says. So the screen
+    stamps `read_until` (the last bar day it read) on the row, the compiler carries it onto the
+    candidate as `screen_read_until`, and the gauntlet must fail closed on any cell whose cut is
+    not after it (sealed-pass patch `reports/sealed_pass/gauntlet_screen_read_until.patch`).
+    None when no cut can be located: the screen then reads nothing."""
+    import pandas as pd
+
+    from research.gate_policy import lockbox_cut
+    own_days = pd.DatetimeIndex(df.index).normalize().unique()
+    frac = _lockbox_frac()
+    own = lockbox_cut([pd.Series(0.0, index=own_days)], frac=frac)
+    union = _union_days(bars_dir or BARS_DIR)
+    camp = (lockbox_cut([pd.Series(0.0, index=pd.DatetimeIndex(union))], frac=frac)
+            if union else None)
+    cuts = [c for c in (own, camp) if c is not None]
+    if own is None:
+        return None          # the chart is too short to hold a lockbox of its own: read nothing
+    return min(cuts)
+
+
+def _before_lockbox(df: Any, bars_dir: Path | None = None) -> Any:
+    """The bars before the gauntlet's lockbox: the screen never reads a window it will judge."""
+    try:
+        import pandas as pd
+        cut = _dev_end(df, bars_dir)
+        if cut is None:
             return df.iloc[0:0]
-        return df[pd.DatetimeIndex(df.index) < days[-tail]]
+        return df[pd.DatetimeIndex(df.index).normalize() < cut]
     except Exception:
         return df.iloc[0:0]       # a lockbox that cannot be located is UNMEASURED, never read
 
@@ -162,7 +233,7 @@ def measure(row: Mapping[str, Any], *, bars_dir: Path | None = None,
     df = _bars(sym, bars_dir or BARS_DIR)
     if df is None or len(df) == 0 or "close" not in getattr(df, "columns", ()):
         return {"status": UNMEASURED, "why": f"no H1 bars for {sym!r} on this host"}
-    df = _before_lockbox(df)
+    df = _before_lockbox(df, bars_dir)
     if len(df) == 0:
         return {"status": UNMEASURED, "why": "no bars before the lockbox"}
     try:
@@ -179,7 +250,8 @@ def measure(row: Mapping[str, Any], *, bars_dir: Path | None = None,
     return {"status": "MEASURED", "n": proj.get("n"),
             "novelty_return": proj.get("novelty_return"),
             "dominant_style": proj.get("dominant_style"),
-            "residual_t": proj.get("residual_t")}
+            "residual_t": proj.get("residual_t"),
+            "read_until": _last_day(df)}
 
 
 def verdict(reading: Mapping[str, Any], sat: Mapping[str, Any]) -> str:
@@ -224,12 +296,11 @@ def screen(rows: Iterable[dict[str, Any]], *, deadline: float | None = None,
                                    "saturated_styles": list(sat.get("saturated") or [])}}
         if held(reading, sat):
             tally["held"] += 1
-            key = str(r.get("cell_id") or "")
-            if not key or (key in store and store[key] != r):
-                import hashlib
-                key = (key or "anon") + "_" + hashlib.sha256(
-                    json.dumps(r, sort_keys=True, default=str).encode()).hexdigest()[:12]
-            r["style_screen"]["held_at"] = r["style_screen"]["at"]
+            key = _hold_key(r, store)
+            prior = (store.get(key) or {}).get("style_screen") or {}
+            # A re-screen of a row already held keeps its key AND its hold clock (should-fix E):
+            # resetting held_at would let a re-proposed cell be deferred forever.
+            r["style_screen"]["held_at"] = prior.get("held_at") or r["style_screen"]["at"]
             store[key] = r
             continue
         out.append(r)
@@ -240,25 +311,56 @@ def screen(rows: Iterable[dict[str, Any]], *, deadline: float | None = None,
                  "held_total": len(store)}
 
 
-def _age_days(stamp: Any, now: datetime) -> float:
+_VOLATILE = ("at", "held_at", "released", "release_reason", "held_days", "held_days_status")
+#: Clock skew a hold stamp may run ahead of this host before it is read as corrupt.
+SKEW_DAYS = 1.0 / 24.0
+
+
+def _content(r: Mapping[str, Any]) -> str:
+    """The row as its PROPOSER wrote it: the whole `style_screen` is left out, because the
+    reading moves with every new bar (n, novelty_return), and a key that moved with it gave one
+    cell a new hold and a new clock almost daily (audit must-fix 2 on #392)."""
+    return json.dumps({k: v for k, v in r.items() if k != "style_screen"}, sort_keys=True,
+                      default=str)
+
+
+def _hold_key(r: Mapping[str, Any], store: Mapping[str, Any]) -> str:
+    """cell_id, or cell_id plus a content hash when a DIFFERENT row already holds that id. The
+    same content always maps to the same key, so re-screening never adds a second one."""
+    import hashlib
+    cid = str(r.get("cell_id") or "")
+    body = _content(r)
+    if cid and (cid not in store or _content(store[cid]) == body):
+        return cid
+    return (cid or "anon") + "_" + hashlib.sha256(body.encode()).hexdigest()[:12]
+
+
+def _age_days(stamp: Any, now: datetime) -> float | None:
+    """Days a row has been held, or None when the stamp is unreadable or in the future (beyond
+    SKEW_DAYS): a corrupt stamp is never a reason to keep holding (should-fix C)."""
     try:
         t = datetime.fromisoformat(str(stamp))
     except (TypeError, ValueError):
-        return float("inf")       # an unreadable stamp is past any hold, so the row is donated
+        return None
     if t.tzinfo is None:
         t = t.replace(tzinfo=UTC)
-    return max(0.0, (now - t).total_seconds() / 86400.0)
+    age = (now - t).total_seconds() / 86400.0
+    if age < -SKEW_DAYS:
+        return None
+    return max(0.0, age)
 
 
 def release(*, report: Path | None = None, held_path: Path | None = None,
             now: datetime | None = None) -> tuple[dict[str, dict[str, Any]], int]:
     """({store key: row to donate}, rows still held). Nothing is removed here: the caller writes
     the donation FIRST and then calls `forget` (audit should-fix 4: a crash between the two
-    donates twice, which the compiler de-duplicates by cell id, and never loses a row).
+    donates twice and never loses a row; the compiler de-duplicates the repeat on its exact
+    content, which the two copies share).
 
     A row is freed when its style is no longer saturated (no re-measurement: the stored reading
     is judged against the CURRENT saturation) or when it has been held MAX_HOLD_DAYS (HELD_EXPIRED).
-    An unreadable report frees every row: holding is the exception."""
+    An unreadable report frees every row: holding is the exception. So does an unreadable or
+    future hold stamp, with `held_days` null and `held_days_status` UNMEASURED."""
     store = _read_json(held_path or HELD, {}) or {}
     if not store:
         return {}, 0
@@ -268,7 +370,12 @@ def release(*, report: Path | None = None, held_path: Path | None = None,
     for k, v in store.items():
         sc = dict(v.get("style_screen") or {})
         age = _age_days(sc.get("held_at") or sc.get("at"), clock)
-        if age >= MAX_HOLD_DAYS:
+        if age is None:
+            # Unknown duration: released as expired, and the days are UNMEASURED, never a number
+            # (should-fix D: an Infinity here made every downstream k_eff-days infinite).
+            sc.update(released=_now(), release_reason="HELD_EXPIRED", held_days=None,
+                      held_days_status=UNMEASURED)
+        elif age >= MAX_HOLD_DAYS:
             sc.update(released=_now(), release_reason="HELD_EXPIRED", held_days=round(age, 2))
         elif not held(sc, sat):
             sc.update(released=_now(), release_reason="STYLE_NO_LONGER_SATURATED",
@@ -288,8 +395,16 @@ def forget(keys: Iterable[str], *, held_path: Path | None = None) -> None:
         _write_json(path, {k: v for k, v in store.items() if k not in gone})
 
 
+def held_rows(held_path: Path | None = None) -> list[dict[str, Any]]:
+    """Every row the hold is keeping back (each a measured KNOWN_STYLE)."""
+    store = _read_json(held_path or HELD, {}) or {}
+    return [v for v in store.values() if isinstance(v, dict)] if isinstance(store, dict) else []
+
+
 def novel_share(rows: Iterable[Mapping[str, Any]]) -> float:
-    """The MEASURED novel share of screened rows: what an UNMEASURED row is credited at."""
+    """The MEASURED novel share of screened rows: what an UNMEASURED row is credited at. The
+    caller passes the held rows too (`held_rows`): leaving the KNOWN_STYLE cells the hold keeps
+    back out of the denominator overstates the share (should-fix F)."""
     seen = [str((r.get("style_screen") or {}).get("verdict") or "") for r in rows]
     measured = [v for v in seen if v in ("NOVEL", "KNOWN_STYLE")]
     return sum(v == "NOVEL" for v in measured) / len(measured) if measured else 0.0
@@ -309,16 +424,19 @@ def publish_holds(*, credit: Mapping[str, Any] | None = None, held_path: Path | 
     clock = now or datetime.now(UTC)
     ages = [_age_days((v.get("style_screen") or {}).get("held_at")
                       or (v.get("style_screen") or {}).get("at"), clock) for v in store.values()]
-    ages = [a for a in ages if math.isfinite(a)]
+    unreadable = sum(1 for a in ages if a is None)
+    known = [a for a in ages if a is not None]
     cost = dict((credit or {}).get("style_hold_cost") or {})
     doc = {"generated_at": _now(), "held": len(store),
            "trials_deferred": len(store),
-           "oldest_hold_days": round(max(ages), 2) if ages else None,
+           "oldest_hold_days": round(max(known), 2) if known else None,
+           "unreadable_hold_stamps": unreadable,
            "max_hold_days": MAX_HOLD_DAYS, "released_this_pass": released,
            "expired_this_pass": expired,
            "held_then_judged": cost.get("judged", 0),
            "held_then_certified": cost.get("certified", 0),
            "keff_days_deferred": cost.get("keff_days", 0.0),
+           "certified_days_unmeasured": cost.get("certified_days_unmeasured", 0),
            "verdict": ("UNMEASURED" if not cost.get("judged") else
                        "COSTS_GROWTH" if cost.get("certified") else "NOT_BINDING"),
            "rule": "Rule 1 missed-growth line: certified k_eff that waited in the hold, times the "

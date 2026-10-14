@@ -68,6 +68,7 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     import lab_style
     monkeypatch.setattr(lab_style, "HELD", sd / "style_held.json")
     monkeypatch.setattr(lab_style, "HOLDS_REPORT", tmp_path / "reports" / "LAB_STYLE_HOLDS.json")
+    monkeypatch.setattr(lab_style, "CALENDAR", tmp_path / "lockbox_calendar.json")
     monkeypatch.setattr(lab_style, "REPORT", tmp_path / "reports" / "STYLE_NOVELTY.json")
     return tmp_path
 

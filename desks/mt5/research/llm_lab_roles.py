@@ -211,7 +211,10 @@ def _donations(donate_dir: Path) -> dict[str, dict[str, Any]]:
         import lab_style
         weigh: Callable[[dict[str, Any], float], tuple[float, str]] = lab_style.credit_weight
         share: Callable[[Iterable[dict[str, Any]]], float] = lab_style.novel_share
+        still_held: list[dict[str, Any]] = lab_style.held_rows()
     except Exception:                                  # pragma: no cover - defensive
+        still_held = []
+
         def weigh(_r: dict[str, Any], _u: float = 0.0) -> tuple[float, str]:
             return 0.0, UNMEASURED
 
@@ -222,6 +225,10 @@ def _donations(donate_dir: Path) -> dict[str, dict[str, Any]]:
         for r in (_read_json(f, {}) or {}).get("discoveries") or []:
             if isinstance(r, dict) and r.get("cell_id"):
                 rows_by_lab.setdefault(str(r.get("lab") or "?"), []).append(r)
+    # The rows the hold keeps back are measured KNOWN_STYLE cells of their lab: they belong in
+    # the share's denominator (audit should-fix F on #385).
+    for r in still_held:
+        rows_by_lab.setdefault(str(r.get("lab") or "?"), []).append(r)
     # An UNMEASURED cell is credited at its lab's MEASURED novel share (audit must-fix 3).
     lab_share = {lab: share(rows) for lab, rows in rows_by_lab.items()}
     out: dict[str, dict[str, Any]] = {}
@@ -231,7 +238,11 @@ def _donations(donate_dir: Path) -> dict[str, dict[str, Any]]:
             if isinstance(r, dict) and r.get("cell_id"):
                 w, style = weigh(r, lab_share.get(str(r.get("lab") or "?"), 0.0))
                 sc = r.get("style_screen") or {}
-                out[str(r["cell_id"])] = {"held_days": float(sc.get("held_days") or 0.0),
+                days = sc.get("held_days")
+                waited = float(days) if isinstance(days, (int, float)) else None
+                out[str(r["cell_id"])] = {"was_held": bool(sc.get("held_at") or sc.get("released")
+                                                              or "held_days" in sc),
+                                          "held_days": waited,
                                           "lab": str(r.get("lab") or "?"),
                                           "model": str(r.get("model") or "lexicon"),
                                           "symbol": str(r.get("symbol") or ""),
@@ -286,15 +297,20 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
             row.update({"judged": 0, "certified": 0, "keff": 0.0, "novel_keff": 0.0,
                         "styles": {}, "gates": {}})
     feedback: dict[str, list[str]] = {}
-    hold_cost = {"judged": 0, "certified": 0, "keff_days": 0.0}
+    hold_cost: dict[str, Any] = {"judged": 0, "certified": 0, "keff_days": 0.0,
+                                 "certified_days_unmeasured": 0}
     for cid, r in latest.items():
         own = owners[cid]
-        if own.get("held_days"):
+        if own.get("was_held"):
             hold_cost["judged"] += 1
             if r.get("passed"):
                 hold_cost["certified"] += 1
-                hold_cost["keff_days"] = round(hold_cost["keff_days"] + keff.get(cid, 0.0)
-                                               * float(own["held_days"]), 4)
+                if own.get("held_days") is None:
+                    # How long it waited is UNMEASURED: counted, never priced (should-fix D).
+                    hold_cost["certified_days_unmeasured"] += 1
+                else:
+                    hold_cost["keff_days"] = round(hold_cost["keff_days"] + keff.get(cid, 0.0)
+                                                   * float(own["held_days"]), 4)
         gate = str(r.get("terminal_gate") or r.get("gate") or ("CERTIFIED" if r.get("passed")
                                                                  else "UNKNOWN"))
         why = str(r.get("reason") or r.get("why") or "")[:90]
