@@ -570,6 +570,10 @@ def stratified_campaign_gates(
     plan = plan_strata([len(r) for r in series])
     per_candidate: list[tuple[CampaignGates, int] | None] = [None] * len(series)
     k = max(1, len(plan.strata))
+    # Bonferroni across strata at the FIXED bar N (principal 2026-10-13): min(k, BAR_N), the
+    # same level plan_strata scored each stratum at; never above k, never above the fixed bar.
+    from libs.research.trial_count_guard import bar_n
+    k_bar = min(k, bar_n(k))
     # R0263 TIMED, PER STRATUM. Romano-Wolf's bootstrap is linear in retained observations, so
     # stratifying buys 180.8x the expected discoveries at roughly 5x the compute -- and that "5x"
     # was a prose comment carrying one hand-measured fixture number (campaign_window.py's COST
@@ -584,7 +588,7 @@ def stratified_campaign_gates(
     t0 = time.perf_counter()
     for s in plan.strata:
         t_s = time.perf_counter()
-        gates = campaign_gate_stats(stratum_matrix(series, s), alpha=CAMPAIGN_ALPHA / k)
+        gates = campaign_gate_stats(stratum_matrix(series, s), alpha=CAMPAIGN_ALPHA / k_bar)
         stratum_seconds.append(round(time.perf_counter() - t_s, 3))
         if gates is None:                      # cohort of <2 cannot carry multiplicity statistics
             continue

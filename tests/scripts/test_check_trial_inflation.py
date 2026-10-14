@@ -222,3 +222,70 @@ def test_the_min_form_never_rises_numerically() -> None:
         pinned = expected_max_sharpe(min(n, tcg.bar_n(n)), 0.01)
         assert pinned <= expected_max_sharpe(n, 0.01) + 1e-15      # never above today
         assert pinned <= expected_max_sharpe(tcg.BAR_N, 0.01) + 1e-15  # never above the bar
+
+
+# ---- fence widening (auditor, 2026-10-14): forms the pre-filter skipped, more count sources,
+# ---- multipletests, np.minimum, BH via arange, partial and **kwargs ---------------------------
+
+def _calls(got: dict) -> list[str]:
+    return [s["call"] for s in got["sites"]]
+
+
+def test_the_prefilter_no_longer_hides_these_forms(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("def f(x, p, a):\n"
+                          "    m = len(x)\n"
+                          "    return (min(1, len(x) * p), 0.1 / len(x), a / m,\n"
+                          "            1 - (1 - p) ** m)\n"))
+    assert got["state"] == "FAIL"
+    assert sorted(_calls(got)) == ["bonferroni_len", "bonferroni_len", "bonferroni_len",
+                                   "sidak_len"], got["sites"]
+
+
+def test_size_shape_and_counted_generators_are_growing_counts(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("def f(p, arr, rows, alpha):\n"
+                          "    return (alpha / p.size, alpha / arr.shape[0],\n"
+                          "            alpha / sum(1 for r in rows if r))\n"))
+    assert _calls(got) == ["bonferroni_len"] * 3, got["sites"]
+
+
+def test_multipletests_and_np_minimum_are_seen(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("import numpy as np\n"
+                          "from statsmodels.stats.multitest import multipletests\n"
+                          "def f(pv, p):\n"
+                          "    return multipletests(pv, method='holm'), "
+                          "np.minimum(1.0, p * pv.size)\n"))
+    assert sorted(_calls(got)) == ["bonferroni_len", "multipletests"], got["sites"]
+
+
+def test_bh_and_ebh_written_with_arange_fail(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("import numpy as np\n"
+                          "def bh(p, q):\n"
+                          "    return q * (np.arange(1, p.size + 1) / p.size)\n"
+                          "def ebh(e, alpha):\n"
+                          "    m = len(e)\n"
+                          "    ranks = np.arange(1, m + 1)\n"
+                          "    return m / (alpha * ranks)\n"))
+    assert _calls(got) == ["bh_len", "bh_len"], got["sites"]
+
+
+def test_bh_pinned_at_the_fixed_bar_passes_and_an_ecdf_is_not_bh(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("import numpy as np\n"
+                          "from libs.research.trial_count_guard import bar_n\n"
+                          "def bh(p, q):\n"
+                          "    m_bar = min(p.size, bar_n(p.size))\n"
+                          "    return q * (np.arange(1, p.size + 1) / m_bar)\n"
+                          "def ks(arr):\n"
+                          "    n = arr.size\n"
+                          "    i = np.arange(1, n + 1)\n"
+                          "    return max(i / n - arr)\n"))
+    assert got["state"] == "OK", got["sites"]
+
+
+def test_partial_and_kwargs_cannot_smuggle_a_count(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("from functools import partial\n"
+                          "from libs.validation.dsr import deflated_sharpe_ratio\n"
+                          "def f(arr, cells, kw):\n"
+                          "    g = partial(deflated_sharpe_ratio, n_trials=len(cells))\n"
+                          "    return g(arr), deflated_sharpe_ratio(arr, **kw)\n"))
+    assert _calls(got) == ["deflated_sharpe_ratio", "deflated_sharpe_ratio"], got["sites"]
+    assert "**kwargs" in got["sites"][1]["trials_arg"]

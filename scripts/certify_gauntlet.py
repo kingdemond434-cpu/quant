@@ -182,15 +182,16 @@ def dsr_hurdle_annual(n_trials: int, n_obs: int, *, var_sharpes: float | None = 
     tolerance. Inlining either as a literal would let the table drift silently away from the gate
     it claims to describe, which is the whole failure mode this script exists to catch.
 
-    ``var_sharpes`` defaults to the NULL dispersion 1/T -- the variance of sample Sharpes across
-    zero-edge candidates. That makes the result a FLOOR: a real cohort disperses more than noise,
+    ``var_sharpes`` defaults to the Tier S NULL dispersion 1/(T-1) -- the variance of sample
+    Sharpes across zero-edge candidates. That makes the result a FLOOR: a real cohort disperses more than noise,
     ``expected_max_sharpe`` scales linearly in that dispersion, so the live hurdle is higher than
     this, never lower. Reporting the floor keeps the verdict conservative in the safe direction.
     """
     # THE BAR'S N IS FIXED (principal 2026-10-13; owner's T8 ruling): `n_trials` is the count the
     # caller measured and is REPORTED by design_power; it never raises the hurdle.
     sr0 = expected_max_sharpe(min(n_trials, bar_n(n_trials)),
-                              (1.0 / n_obs) if var_sharpes is None else var_sharpes)
+                              # Tier S null variance 1/(T-1), the certifier's own (was 1/T)
+                              (1.0 / max(1, n_obs - 1)) if var_sharpes is None else var_sharpes)
     # dsr >= threshold  <=>  z >= Phi^-1(threshold), and z = (sr - sr0)*sqrt(T-1)/sqrt(denom)
     # with denom -> 1 for near-normal returns. Solve for sr, then annualise.
     z = float(_norm.ppf(_DSR_THRESHOLD))

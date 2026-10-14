@@ -32,9 +32,14 @@ def _control(pvalues: np.ndarray, alpha: float, *, dependent: bool) -> tuple[np.
     if m == 0:
         return np.zeros(0, dtype=bool), 0.0
     order = np.argsort(p)
-    ranks = np.arange(1, m + 1)
-    c_m = float(np.sum(1.0 / ranks)) if dependent else 1.0
-    crit = (ranks / (m * c_m)) * alpha
+    # THE FAMILY SIZE IS THE FIXED BAR'S AT MOST (principal 2026-10-13: no bar rises with a trial
+    # count). Rank i's critical value is alpha * min(i, m_bar) / (m_bar * c_mbar): never below
+    # alpha * i / (m * c_m), because m_bar <= m and BY's harmonic c_mbar <= c_m.
+    from libs.research.trial_count_guard import bar_n
+    m_bar = min(m, bar_n(m))
+    rank_bar = np.minimum(np.arange(1, m + 1), m_bar)
+    c_m = float(np.sum(1.0 / np.arange(1, m_bar + 1))) if dependent else 1.0
+    crit = (rank_bar / (m_bar * c_m)) * alpha
     sorted_p = p[order]
     below = sorted_p <= crit
     if not below.any():
@@ -109,9 +114,13 @@ def e_benjamini_hochberg(evalues: np.ndarray | list[float], *,
     e = np.maximum(e, 0.0)
     order = np.argsort(-e)                      # descending, stable -> deterministic on ties
     sorted_e = e[order]
-    ranks = np.arange(1, m + 1)
+    # Fixed bar N (principal 2026-10-13): crit_k = m_bar / (alpha * min(k, m_bar)), never above
+    # e-BH's m / (alpha * k) for any k.
+    from libs.research.trial_count_guard import bar_n
+    m_bar = min(m, bar_n(m))
+    rank_bar = np.minimum(np.arange(1, m + 1), m_bar)
     with np.errstate(divide="ignore", invalid="ignore"):
-        crit = m / (alpha * ranks)
+        crit = m_bar / (alpha * rank_bar)
     meets = sorted_e >= crit
     if not meets.any():
         return FDRResult(rejected=[False] * m, threshold=0.0, n_rejected=0,

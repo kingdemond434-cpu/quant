@@ -290,20 +290,20 @@ def block_bootstrap_ci(values: np.ndarray, rng: np.random.Generator, n: int = N_
 
 
 def bh_fdr(pvalues: Sequence[float], q: float = ALPHA) -> list[bool]:
-    """Benjamini-Hochberg, through `causal_lab`'s implementation when it imports."""
+    """Benjamini-Hochberg at the FIXED bar N (principal 2026-10-13).
+
+    The family size is min(m, BAR_N): rank i's threshold is q * min(i, m_bar) / m_bar, never
+    below BH's q * i / m (for i <= m_bar it is q*i/m_bar >= q*i/m; above it, q >= q*i/m), so no
+    number of hypotheses tested raises the bar. `causal_lab.bh_fdr` is no longer delegated to:
+    it divides by the full m."""
+    from libs.research.trial_count_guard import bar_n
     p = np.asarray([1.0 if v is None or not math.isfinite(v) else float(v) for v in pvalues])
     if p.size == 0:
         return []
-    lab = _mod("causal_lab")
-    if lab is not None and hasattr(lab, "bh_fdr"):
-        try:
-            keep, _ = lab.bh_fdr(p, q)
-            return [bool(k) for k in np.asarray(keep).ravel()]
-        except (TypeError, ValueError):
-            pass
     order = np.argsort(p)
     ranked = p[order]
-    thresh = q * (np.arange(1, p.size + 1) / p.size)
+    m_bar = min(p.size, bar_n(p.size))
+    thresh = q * (np.minimum(np.arange(1, p.size + 1), m_bar) / m_bar)
     passed = ranked <= thresh
     cut = int(np.max(np.nonzero(passed)[0]) + 1) if passed.any() else 0
     keep = np.zeros(p.size, dtype=bool)

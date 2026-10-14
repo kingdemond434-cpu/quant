@@ -17,7 +17,14 @@ lawful source of a bar's N. This fence walks the tree and goes RED on:
    `alpha / len(x)` (and `p * len(x)`), Sidak `1 - (1 - a) ** (1 / len(x))` (and
    `(1 - p) ** len(x)`), and Holm over a growing count `alpha / (len(x) - i)`. Pinned when the
    count is `bar_n(...)`, `BAR_N`, or `min(count, bar_n(...))` (never above the fixed bar, never
-   above the count it replaced).
+   above the count it replaced). Counts are len(x), x.size, np.size(x), x.shape[i],
+   sum(1 for ...), count_nonzero, wrappers of those, and locals assigned from them; also seen:
+   statsmodels `multipletests` (always), np.minimum(1, p * m), BH / BY step-up thresholds
+   `q * arange(1, m + 1) / (m [* c_m])` and e-BH `m / (alpha * ranks)`, and in rule 1 a
+   `partial(bar_fn, n_trials=...)` binding and a `bar_fn(..., **kwargs)` call that hides its count.
+   OUT OF REACH (no dataflow): a count that arrives as a parameter, a loop variable or an
+   attribute (`self.n`), a count computed in another module or function, rebinding through
+   containers/getattr, and thresholds built by any other vector idiom.
 2. LIFETIME UNION CHARGE in the sealed judge (`charged_lifetime_trials`). The sealed files cannot
    change without the laptop's re-sign, so a sealed site that the T8 patch owns is OWED: WARN
    until SEALED_DEADLINE, then FAIL. An owed sealed site with no named patch FAILs at once.
@@ -78,11 +85,15 @@ _MULT_HINTS: tuple[tuple[tuple[str, ...], re.Pattern[str]], ...] = (
     (("alpha", "fwer", "fdr", "level", "sig"),
      re.compile(r"(?:alpha|fwer|fdr|level|sig)\w*\s*/\s*\(?\s*[A-Za-z_]")),
     (("q /", "q/"), re.compile(r"[ (,=]q\s*/\s*\(?\s*[A-Za-z_]")),
-    (("a /", "a/"), re.compile(r"[ (,=]a\s*/\s*\(?\s*(?:len|max|int)\(")),
-    ((".0",), re.compile(r"\.0\d+\s*/\s*\(?\s*[A-Za-z_]")),
-    (("**",), re.compile(r"\*\*\s*\(?\s*(?:1(?:\.0)?\s*/|len\()")),
-    (("min(",), re.compile(r"min\(\s*1(?:\.0)?\s*,[^)\n]*\*")),
+    (("a /", "a/"), re.compile(r"[ (,=]a\s*/\s*\(?\s*[A-Za-z_]")),           # a / m, a / len(x)
+    ((".",), re.compile(r"(?<![\w.])0?\.\d+\s*/\s*\(?\s*[A-Za-z_]")),       # 0.1 / len(x)
+    ((")**", ") **"), re.compile(r"\)\s*\*\*\s*(?:\(\s*1(?:\.0)?\s*/|[A-Za-z_])")),  # (1-p)**m
+    (("min(", "minimum("), re.compile(r"min(?:imum)?\(\s*1(?:\.0)?\s*,")),  # min(1, len(x)*p)
+    (("arange", "multipletests"), re.compile(r"arange|multipletests")),
 )
+
+#: A file is only parsed for 1b when it can hold a growing count at all.
+_COUNT_HINTS = ("len(", ".size", ".shape[", "sum(1 for", "multipletests", "count_nonzero")
 
 
 def _mult_hint(text: str) -> bool:
@@ -119,6 +130,14 @@ SEALED_DEADLINE = datetime(2026, 10, 27, tzinfo=UTC)
 SKIP_PARTS = {".git", "tests", "_retired", "node_modules", "__pycache__", ".venv", "venv",
               "backups", "lesson_vault"}
 RERUN_TOL = 0.005
+
+
+def _callee_expr(e: ast.expr) -> str:
+    if isinstance(e, ast.Name):
+        return e.id
+    if isinstance(e, ast.Attribute):
+        return e.attr
+    return ""
 
 
 def _callee(node: ast.Call) -> str:
@@ -172,6 +191,10 @@ class _Scan(ast.NodeVisitor):
     visit_FunctionDef = _fn
     visit_AsyncFunctionDef = _fn
 
+    def _exempt(self) -> bool:
+        return bool(self.stack) and (self.stack[-1].name in BAR_FUNCS
+                                     or (self.rel, self.stack[-1].name) in REPORTED_ONLY)
+
     def _plumbing(self, arg: ast.expr) -> bool:
         """Inside a bar primitive's own body (a function named in BAR_FUNCS), passing its count
         on is plumbing: its CALLERS are the sites scanned."""
@@ -179,7 +202,21 @@ class _Scan(ast.NodeVisitor):
 
     def visit_Call(self, node: ast.Call) -> None:
         name = _callee(node)
-        if name == "min" and any(isinstance(a, ast.Constant) and a.value in (1, 1.0)
+        if name == "multipletests" and not self._exempt():
+            # statsmodels' corrections divide by len(pvals) internally: never at a fixed N
+            self.hits.append((node.lineno, "multipletests", ast.unparse(node)[:80]))
+        if name == "partial" and node.args and _callee_expr(node.args[0]) in BAR_FUNCS:
+            # partial(bar_fn, ..., n_trials=x): the bound count is the eventual call's count
+            inner = _callee_expr(node.args[0])
+            ppos, pkws = BAR_FUNCS[inner]
+            bound = node.args[1 + ppos] if len(node.args) > 1 + ppos else None
+            for kw in node.keywords:
+                if kw.arg in pkws:
+                    bound = kw.value
+            pscope = self.stack[-1] if self.stack else None
+            if bound is not None and not _pinned(bound, pscope) and not self._exempt():
+                self.hits.append((node.lineno, inner, ast.unparse(bound)[:80]))
+        if name in {"min", "minimum"} and any(isinstance(a, ast.Constant) and a.value in (1, 1.0)
                                  and not isinstance(a.value, bool) for a in node.args):
             self.capped.update(id(a) for a in node.args if isinstance(a, ast.BinOp))
         if name in BAR_FUNCS:
@@ -193,6 +230,10 @@ class _Scan(ast.NodeVisitor):
             if arg is not None and not _pinned(arg, scope) and not self._plumbing(arg) \
                     and not reported:
                 self.hits.append((node.lineno, name, ast.unparse(arg)[:80]))
+            elif arg is None and any(kw.arg is None for kw in node.keywords) \
+                    and not self._exempt():
+                # bar_fn(x, **kwargs): the count rides in a mapping the fence cannot read
+                self.hits.append((node.lineno, name, "**kwargs (count not visible)"))
         self.generic_visit(node)
 
     def visit_BinOp(self, node: ast.BinOp) -> None:
@@ -233,10 +274,18 @@ def _local_values(name: str, scope: ast.AST | None) -> list[ast.expr]:
 def _len_scaled(e: ast.expr, scope: ast.AST | None = None, depth: int = 0) -> bool:
     """A count that grows with a collection: len(x), or max/int/float/abs of one, or len(x) +- k,
     or a local name assigned from one (any assignment -- one moving path is enough)."""
+    if isinstance(e, ast.Attribute) and e.attr == "size":
+        return True                                         # x.size
+    if isinstance(e, ast.Subscript) and isinstance(e.value, ast.Attribute) \
+            and e.value.attr == "shape":
+        return True                                         # x.shape[0]
     if isinstance(e, ast.Call):
         name = _callee(e)
-        if name == "len":
-            return True
+        if name in {"len", "size", "count_nonzero"}:
+            return True                                     # len(x), np.size(x)
+        if name == "sum" and e.args and isinstance(e.args[0], ast.GeneratorExp) \
+                and isinstance(e.args[0].elt, ast.Constant) and e.args[0].elt.value == 1:
+            return True                                     # sum(1 for ...)
         if name in {"max", "int", "float", "abs", "round"}:
             return any(_len_scaled(a, scope, depth) for a in e.args)
         return False
@@ -244,6 +293,26 @@ def _len_scaled(e: ast.expr, scope: ast.AST | None = None, depth: int = 0) -> bo
         return _len_scaled(e.left, scope, depth)
     if isinstance(e, ast.Name) and depth < 3:
         return any(_len_scaled(v, scope, depth + 1) for v in _local_values(e.id, scope))
+    return False
+
+
+def _scaled_den(e: ast.expr, scope: ast.AST | None) -> bool:
+    """m, or m * c_m (BY's harmonic factor), with m a growing count."""
+    if _len_scaled(e, scope):
+        return True
+    return isinstance(e, ast.BinOp) and isinstance(e.op, ast.Mult) and (
+        _len_scaled(e.left, scope) or _len_scaled(e.right, scope))
+
+
+def _ranked(e: ast.expr, scope: ast.AST | None, depth: int = 0) -> bool:
+    """A rank vector: arange(...), a local assigned straight from one, or either scaled by a
+    constant/name one level up (q * arange(1, m + 1)). Deliberately shallow."""
+    if isinstance(e, ast.Call):
+        return _callee(e) == "arange"
+    if isinstance(e, ast.Name) and depth < 1:
+        return any(_ranked(v, scope, depth + 1) for v in _local_values(e.id, scope))
+    if isinstance(e, ast.BinOp) and depth < 1 and isinstance(e.op, (ast.Mult, ast.Div)):
+        return _ranked(e.left, scope, depth + 1) or _ranked(e.right, scope, depth + 1)
     return False
 
 
@@ -278,6 +347,17 @@ def _multiplicity(node: ast.BinOp, scope: ast.AST | None,
             if _named(p, _P_NAMES) and _len_scaled(m, scope):
                 return ("holm_len" if isinstance(m, ast.BinOp) and isinstance(m.op, ast.Sub)
                         else "bonferroni_len"), m
+    if isinstance(op, ast.Mult):
+        # BH step-up threshold: q * (ranks / m) or (ranks / (m * c_m)) * alpha
+        for a, d in ((left, right), (right, left)):
+            if _alpha_like(a) and isinstance(d, ast.BinOp) and isinstance(d.op, ast.Div) \
+                    and _ranked(d.left, scope) and _scaled_den(d.right, scope):
+                return "bh_len", d.right
+    if isinstance(op, ast.Div) and _len_scaled(left, scope) and isinstance(right, ast.BinOp) \
+            and isinstance(right.op, ast.Mult) and any(
+                _alpha_like(x) for x in (right.left, right.right)) \
+            and any(_ranked(x, scope) for x in (right.left, right.right)):
+        return "bh_len", left                      # e-BH: m / (alpha * ranks)
     if isinstance(op, ast.Pow) and _alpha_like(left):
         ex = right
         if isinstance(ex, ast.BinOp) and isinstance(ex.op, ast.Div) \
@@ -313,7 +393,7 @@ def scan(root: Path = ROOT) -> dict[str, Any]:
         except OSError:
             continue
         if not (any(f in text for f in (*BAR_FUNCS, "charged_lifetime_trials"))
-                or ("len(" in text and _mult_hint(text))):
+                or (any(h in text for h in _COUNT_HINTS) and _mult_hint(text))):
             continue                     # parse only files that can hold a bar call
         try:
             trees.append((rel, ast.parse(text)))

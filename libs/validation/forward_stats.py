@@ -76,6 +76,11 @@ def holm_alpha(m: int, rank: int = 1, *, alpha: float = 0.05) -> float:
     that let `run_axis_shadows` count m four different ways before slot_registry existed.
     """
     m, rank = max(1, int(m)), max(1, int(rank))
+    # THE COHORT SIZE IS THE FIXED BAR'S AT MOST (principal 2026-10-13: "make sure the bars never
+    # raise ... never inflation due to trials"): Holm over min(m, BAR_N). The step-down divisor
+    # m - rank + 1 is non-decreasing in m, so this is never stricter than Holm over m.
+    from libs.research.trial_count_guard import bar_n
+    m = min(m, bar_n(m))
     return alpha / max(1, m - min(rank, m) + 1)
 
 

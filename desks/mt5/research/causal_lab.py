@@ -232,16 +232,23 @@ except ImportError:  # pragma: no cover - only where the sibling module is absen
 
 
 def bh_fdr(p: np.ndarray, q: float) -> tuple[np.ndarray, np.ndarray]:
-    """Benjamini-Hochberg over ALL tests run. Returns (rejected, q-values)."""
+    """Benjamini-Hochberg over ALL tests run, at the FIXED bar N. Returns (rejected, q-values).
+
+    Every test is still run and returned; the family size the thresholds divide by is
+    min(m, BAR_N) (principal 2026-10-13: no bar rises with a trial count). Rank i's threshold is
+    q * min(i, m_bar) / m_bar, never below BH's q * i / m."""
+    from libs.research.trial_count_guard import bar_n
     m = int(p.size)
     if m == 0:
         return np.zeros(0, dtype=bool), np.zeros(0)
+    m_bar = min(m, bar_n(m))
     order = np.argsort(p, kind="stable")
     ranked = p[order]
-    qs = np.minimum.accumulate((m / np.arange(m, 0, -1, dtype="float64")) * ranked[::-1])[::-1]
+    rank_bar = np.minimum(np.arange(1, m + 1, dtype="float64"), m_bar)
+    qs = np.minimum.accumulate((m_bar / rank_bar[::-1]) * ranked[::-1])[::-1]
     qvals = np.empty(m, dtype="float64")
     qvals[order] = np.clip(qs, 0.0, 1.0)
-    below = ranked <= (np.arange(1, m + 1, dtype="float64") / m) * q
+    below = ranked <= (rank_bar / m_bar) * q
     k = int(np.nonzero(below)[0][-1]) + 1 if below.any() else 0
     rej = np.zeros(m, dtype=bool)
     rej[order[:k]] = True
