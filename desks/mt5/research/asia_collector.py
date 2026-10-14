@@ -68,6 +68,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 REGISTRY = BASE / "data" / "asia_sources.json"
+SCOUTED = BASE / "data" / "llm_lab" / "scouted_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
 SERIES = BASE / "data" / "lake" / "series"
 STATE = BASE / "data" / "lake" / "collector_state.json"
@@ -347,6 +348,31 @@ def _declared_headers(src: dict[str, Any]) -> dict[str, str]:
             if str(k).lower() not in banned}
 
 
+class _PublicOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """A model-scouted URL may redirect only to another public host (audit should-fix on #332):
+    `urlopen` follows redirects, so a public page that 302s to 169.254.169.254 would otherwise
+    skip the host check made at ingest."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        from libs.ops.public_host import public_url
+        why = public_url(newurl)
+        if why:
+            raise urllib.error.URLError(f"redirect refused: {why}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open(req: urllib.request.Request, src: dict[str, Any], timeout: float) -> Any:
+    if src.get("origin") != "llm_source_scout":
+        return urllib.request.urlopen(req, timeout=timeout, context=_TLS)
+    from libs.ops.public_host import public_url
+    why = public_url(req.full_url)          # re-resolved at fetch time, not trusted from ingest
+    if why:
+        raise urllib.error.URLError(f"refused: {why}")
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=_TLS),
+                                         _PublicOnlyRedirects())
+    return opener.open(req, timeout=timeout)
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
@@ -395,7 +421,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     body_out = _declared_form(src)
     req = urllib.request.Request(url, data=body_out, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        with _open(req, src, timeout) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
@@ -522,6 +548,18 @@ def main(argv: list[str] | None = None) -> int:
 
     registry = _read(REGISTRY, {})
     sources = [s for s in (registry.get("sources") or []) if isinstance(s, dict)]
+    # SCOUTED SOURCES (llm_lab role S, 2026-10-13): official public rows a model named and one
+    # polite probe reached. They join as plane `llm_scout`, collected exactly like a declared row.
+    known = {str(s.get("id")) for s in sources}
+    scouted = _read(SCOUTED, {})
+    # The host is re-checked here, not trusted from the probe: a name that resolved public when
+    # scouted may resolve private now (audit must-fix 8).
+    if str(BASE.parents[1]) not in sys.path:
+        sys.path.insert(0, str(BASE.parents[1]))    # the repo root, for libs/
+    from libs.ops.public_host import public_url
+    sources += [s for s in (scouted.get("sources") or []) if isinstance(s, dict)
+                and s.get("probe") == "REACHABLE" and str(s.get("id")) not in known
+                and not public_url(str(s.get("url") or ""))]
     derived = _derived_sources(sources)
     if derived:
         print(f"asia collector: {len(derived)} endpoint(s) handed back by the parser "
