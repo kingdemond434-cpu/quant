@@ -94,6 +94,10 @@ def _reason(row: dict) -> str:
 
 
 NON_CANON_CERTIFICATES = frozenset({"forward_clock"})
+#: The scalp lane NAMES its scalp_gauntlet ten-gate certificate (`ten_gate:scalp.<name>`) when one
+#: exists; the clock promotes either way and no canon spec stands behind it, so it is a lane marker
+#: too -- refusing it while passing "forward_clock" would hold the better-evidenced row.
+NON_CANON_PREFIXES: tuple[str, ...] = ("ten_gate:scalp.",)
 
 
 def _replication_refusal(row: dict, gate: object | None, waived: set[str]) -> str:
@@ -107,7 +111,8 @@ def _replication_refusal(row: dict, gate: object | None, waived: set[str]) -> st
     # scalp lane's literal "forward_clock" names a lane, not a certificate.
     if isinstance(cert, dict):
         cell = str(cert.get("cell") or "")
-    elif isinstance(cert, str) and cert.strip() not in NON_CANON_CERTIFICATES:
+    elif isinstance(cert, str) and cert.strip() not in NON_CANON_CERTIFICATES \
+            and not cert.strip().startswith(NON_CANON_PREFIXES):
         cell = cert.strip()
     else:
         cell = ""

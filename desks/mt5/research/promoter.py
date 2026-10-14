@@ -343,6 +343,10 @@ REPLICATION_WAIVER = BASE / "data" / "REPLICATION_WAIVER.json"
 #: literal "forward_clock" (its sleeves trade on their own clock and carry no canon spec the
 #: replication lane could re-run); a gold window carries no `certificate` at all.
 NON_CANON_CERTIFICATES: frozenset[str] = frozenset({"forward_clock"})
+#: The scalp lane NAMES its scalp_gauntlet ten-gate certificate (`ten_gate:scalp.<name>`) when one
+#: exists; the clock promotes either way and no canon spec stands behind it, so it is a lane marker
+#: too -- refusing it while passing "forward_clock" would hold the better-evidenced row.
+NON_CANON_PREFIXES: tuple[str, ...] = ("ten_gate:scalp.",)
 
 
 def live_certificate(row: dict) -> str:
@@ -356,7 +360,8 @@ def live_certificate(row: dict) -> str:
     cert = row.get("certificate")
     if isinstance(cert, dict):
         cell = str(cert.get("cell") or "")
-    elif isinstance(cert, str) and cert.strip() not in NON_CANON_CERTIFICATES:
+    elif isinstance(cert, str) and cert.strip() not in NON_CANON_CERTIFICATES \
+            and not cert.strip().startswith(NON_CANON_PREFIXES):
         cell = cert.strip()
     else:
         cell = ""

@@ -198,6 +198,7 @@ def test_the_healer_and_the_promoter_read_the_certificate_the_same_way(tmp_path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     assert mod.NON_CANON_CERTIFICATES == promoter.NON_CANON_CERTIFICATES
+    assert mod.NON_CANON_PREFIXES == promoter.NON_CANON_PREFIXES
     gate = _gate(tmp_path, {})
     for row in (_principal_row(), _lane_row("EURZAR.carry.asia@M15"), _lane_row("forward_clock"),
                 _lane_row({"cell": CERT}), {"name": "gold_asia_v4"}):
@@ -324,3 +325,10 @@ def test_the_healer_honours_the_waiver_and_its_mismatch_void(healer, tmp_path) -
     assert healer([dict(row)], {})["eurzar_carry_asia_p_8339edce23032d21"] == "LIVE"
     assert healer([dict(row)], {CERT: {"verdict": "MISMATCH"}})[
         "eurzar_carry_asia_p_8339edce23032d21"] == "STANDBY"
+
+
+def test_the_scalp_lanes_named_ten_gate_certificate_is_a_lane_marker_too() -> None:
+    """The scalp lane names `ten_gate:scalp.<name>` when scalp_gauntlet minted one; the clock
+    promotes either way, so it must not be held where the bare "forward_clock" row is not."""
+    assert promoter.live_certificate({"certificate": "ten_gate:scalp.xau_m5_x"}) == ""
+    assert promoter.live_certificate({"certificate": "EURZAR.carry.asia@M15"}) != ""
