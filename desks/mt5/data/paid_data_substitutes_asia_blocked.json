@@ -291,7 +291,7 @@
    "licence": "IMF PortWatch open data (free, attribution required)",
    "terms": "confirmed",
    "terms_quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
-   "credit": "Source: International Monetary Fund (IMF PortWatch).",
+   "credit": "Source: International Monetary Fund (IMF PortWatch); daily counts transformed by the desk (anomaly vs trailing baseline).",
    "consumer": "desks/mt5/research/alt_proxies.py",
    "owner": "asia_gap_thread",
    "substitutes_for_blocked": [
