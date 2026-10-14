@@ -3,7 +3,7 @@
 
 Reads desks/mt5/data/PRINCIPAL_STOPS.json and desks/mt5/data/sleeves.json and writes
 desks/mt5/reports/PRINCIPAL_STOPS_FENCE.json. Exit 1 (RED) when any active stop matches a LIVE
-row with risk_frac > 0, or the stops file is unreadable. The gateway already refuses to place for
+row with risk_frac > 0, or the stops file is unreadable; an absent stops file is UNMEASURED, exit 1. The gateway already refuses to place for
 such a row (`decision_core.load_sleeves_verbose`); this fence says which organ wrote it LIVE.
 An absent sleeves file is UNMEASURED and exits 1 too: it is never a clean reading.
 See desks/mt5/mt5desk/principal_stops.py for why a stop is a record and not a status.
@@ -36,7 +36,9 @@ def check(sleeves_path: Path = SLEEVES, stops_path: Path = STOPS) -> dict:
                  "active_stops": [s.get("identity") or s.get("name") for s in stops],
                  "breaches": [], "held_off_live": 0}
     if problem:
-        doc.update(status="RED", why=problem)
+        # Absent is UNMEASURED (no record to check against, and the healer is then holding every
+        # STANDBY row); present but unreadable is RED. Both exit 1: neither is a clean reading.
+        doc.update(status="UNMEASURED" if problem.endswith(" absent") else "RED", why=problem)
         return doc
     try:
         rows = json.loads(sleeves_path.read_text(encoding="utf-8-sig")).get("sleeves") or []

@@ -64,11 +64,11 @@ def test_the_gateway_roster_drops_a_stopped_live_row(tmp_path, monkeypatch) -> N
     assert len(dc.load_sleeves_verbose(sl)[0]) == 2
 
 
-def test_no_stops_file_changes_nothing(tmp_path, monkeypatch) -> None:
+def test_no_stops_file_holds_nothing_at_the_gateway_and_says_so(tmp_path, monkeypatch) -> None:
     import mt5desk.live_policy as lp
     monkeypatch.setattr(lp, "admit", lambda rows: (list(rows), []))
     keep, notes = dc.load_sleeves_verbose(_write(tmp_path, [AUD, CARRY], None))
-    assert len(keep) == 2 and not any("PRINCIPAL" in n for n in notes)
+    assert len(keep) == 2 and any("PRINCIPAL STOPS UNMEASURED" in n for n in notes)
 
 
 def _heal(tmp: Path, monkeypatch):
@@ -127,3 +127,14 @@ def test_the_fence_runs_hourly_and_its_red_is_a_verdict() -> None:
     from research import hourly_cycle as hc
     assert "principal_stops" in hc.CORE_LEGS
     assert hc.VERDICT_EXITS["principal_stops"] == (1,)
+
+
+def test_an_absent_stops_file_lifts_nothing_and_the_fence_reads_unmeasured(
+        tmp_path, monkeypatch) -> None:
+    from scripts import check_principal_stops as fence
+    sl = _write(tmp_path, [{**AUD, "status": "STANDBY", "risk_frac": 0.0}], None)
+    heal = _heal(tmp_path, monkeypatch)
+    assert heal.heal(apply=True) == 1
+    assert json.loads(sl.read_text())["sleeves"][0]["status"] == "STANDBY"
+    doc = fence.check(sl, tmp_path / "PRINCIPAL_STOPS.json")
+    assert doc["status"] == "UNMEASURED" and doc["why"].endswith("absent")

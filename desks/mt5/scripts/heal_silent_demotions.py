@@ -84,10 +84,11 @@ def heal(apply: bool) -> int:
     by_status = Counter(str(r.get("status") or "?") for r in rows)
     print(f"roster: {len(rows)} rows   {dict(by_status)}")
 
-    # A PRINCIPAL STOP IS NEVER HEALED (2026-10-14). The `*_reason` read above covers a stop that
-    # wrote its reason on the row; this covers the one that did not -- a re-mint, a rewritten
-    # roster, a field someone dropped. A stop in PRINCIPAL_STOPS.json holds the identity whatever
-    # the row records.
+    # A PRINCIPAL STOP IS NEVER HEALED (2026-10-14). Reading the row's reason fields covers a stop
+    # that wrote its reason in a field this fixer knows (#397 widens that to any `*_reason`); this
+    # covers the one that did not -- a re-mint, a rewritten roster, a field someone dropped. A stop
+    # in PRINCIPAL_STOPS.json holds the identity whatever the row records, and with no readable
+    # stops file this fixer restores nothing: it cannot tell a stop from an accident.
     import sys as _sys
     _desk = str(ROOT / "desks" / "mt5")
     if _desk not in _sys.path:

@@ -49,10 +49,11 @@ def resumed(entry: dict[str, Any]) -> bool:
 
 
 def load(path: Path) -> tuple[list[dict[str, Any]], str | None]:
-    """(active stop entries, problem). An absent file holds no stops. An unreadable or malformed
-    file returns its problem so the fence reads RED; it stops nothing it cannot name."""
+    """(active stop entries, problem). An absent, unreadable or malformed file returns its problem:
+    the healer then restores nothing and the fence reads UNMEASURED or RED. It stops nothing it
+    cannot name, so the gateway logs the problem and holds nothing by it."""
     if not path.exists():
-        return [], None
+        return [], f"{path.name} absent"
     try:
         doc = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
