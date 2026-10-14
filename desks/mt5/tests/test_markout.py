@@ -306,3 +306,24 @@ def test_broker_hour_is_new_york_plus_seven():
     assert broker_hour("2026-01-15T10:00:00Z") == 12           # EST: UTC+2
     assert broker_hour("2026-01-15T10:00:00") == 12            # naive read as UTC
     assert broker_hour("not a time") is None
+
+
+def test_a_row_with_no_symbol_or_hour_is_grouped_honestly_and_render_says_unmeasured():
+    rows = [{"sleeve": None, "symbol": None, "slip_quote": 0.1, "slip_pts": None,
+             "broker_hour": None, "quarantine": []},
+            {"sleeve": "a", "symbol": "XAUUSD", "slip_quote": 0.2, "slip_pts": None,
+             "broker_hour": None, "quarantine": []}]
+    b = slip_breakdown(rows)
+    assert list(b["by_sleeve"]) == ["a"]
+    assert list(b["by_symbol_hour"]["XAUUSD"]) == ["unknown"]
+    m = compute([{"ticket": 1, "intended": 2000.0, "side": "buy", "symbol": "ZZZ"}],
+                [_deal(1, 2000.5, BUY)], points={})
+    assert "clean mean slip      UNMEASURED" in render(m)
+
+
+def test_main_renders_from_the_desk_ledgers(monkeypatch, tmp_path, capsys):
+    import mt5desk.config as cfg
+    monkeypatch.setattr(cfg, "DATA", tmp_path)
+    from mt5desk import markout as mk
+    assert mk.main() == 0
+    assert "EXECUTION MARKOUT" in capsys.readouterr().out
