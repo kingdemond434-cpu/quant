@@ -44,3 +44,13 @@ def test_cli_keeps_writer_ownership_until_merge_returns(monkeypatch):
     monkeypatch.setattr(merger, "main", merge)
     assert merger.run_cli() == 7
     assert not active
+
+
+def test_a_duplicate_row_never_drops_the_later_screen_read():
+    """Audit must-fix 2 on the gauntlet patch for #392: the first row per identity is kept, so
+    the latest `screen_read_until` across the duplicates must be folded into it."""
+    kept = {"family": "f"}
+    merger.keep_latest_screen_read(kept, {"screen_read_until": "2024-05-01"})
+    merger.keep_latest_screen_read(kept, {"screen_read_until": "2023-01-01"})
+    merger.keep_latest_screen_read(kept, {})
+    assert kept["screen_read_until"] == "2024-05-01"

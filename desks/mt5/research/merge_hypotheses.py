@@ -638,6 +638,13 @@ def _lease(path: Path) -> None:
         pass
 
 
+def keep_latest_screen_read(kept: dict, dup: dict) -> None:
+    """Fold a duplicate row's `screen_read_until` into the kept row: the later day wins."""
+    later = str(dup.get("screen_read_until") or "")
+    if later > str(kept.get("screen_read_until") or ""):
+        kept["screen_read_until"] = later
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
@@ -700,6 +707,10 @@ def main() -> int:
                     row = {**row, ("symbol" if row.get("symbol") else "sym"): canon}
             ident = _identity(row)
             if ident in merged:
+                # THE LATEST DAY ANY STYLE SCREEN READ SURVIVES THE DEDUPE (2026-10-14, audit on
+                # #392). The first row per identity wins, so a same-cell row from an earlier
+                # source would otherwise drop the stamp the gauntlet refuses a peeked cell on.
+                keep_latest_screen_read(merged[ident], row)
                 continue
             enriched = dict(row)
             # A ROW WITH NO FAMILY IS UNROUTABLE, NOT A BREAKOUT. Defaulting to the desk's
