@@ -308,8 +308,17 @@ def readings(seat: str, row: dict[str, Any]) -> tuple[dict[str, float], str | No
             return {}, "NO_INFORMATION"
         return {}, "UNRECOGNISED_SHAPE"
     if seat == "youtube":
+        # A SIGHTING NEEDS A VIDEO. The count dedupes on the video, so a row that names none
+        # (a bare claim such as {"patterns": ["scalping"]}) cannot be counted once; it is a
+        # claim, and the prose path's deepening owns it.
+        if not _video_id(row):
+            return {}, "UNRECOGNISED_SHAPE"
         return {}, None
     return {}, "UNRECOGNISED_SHAPE"
+
+
+def _video_id(row: dict[str, Any]) -> str:
+    return str(row.get("url") or row.get("video_id") or "")
 
 
 def _youtube_column(symbol: str) -> str:
@@ -500,11 +509,10 @@ def build_series(seat: str, rows: Iterable[tuple[dict[str, Any], datetime | None
             # ONE VIDEO, ONE SIGHTING. The miner re-finds the same video on every pass inside
             # its 7-day search window, and each save carries fresh door stamps, so the row is
             # not an exact duplicate -- the video is. Counted on the pass it was first seen.
-            vid = str(row.get("url") or row.get("video_id") or row.get("title") or "")
-            if vid:
-                if vid in videos:
-                    continue
-                videos.add(vid)
+            vid = _video_id(row)
+            if not vid or vid in videos:
+                continue
+            videos.add(vid)
             syms, why = targets(row, universe)
             if why:
                 continue

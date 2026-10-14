@@ -209,3 +209,10 @@ def test_the_family_reads_the_seat_series_point_in_time(tmp_path: Path) -> None:
     assert sigs, "the extreme reading must fire"
     assert min(s.time for s in sigs) >= spike + timedelta(hours=24)
     assert all(s.side == -1 for s in sigs if s.time < spike + timedelta(days=2))
+
+
+def test_a_youtube_row_without_a_video_is_a_claim_not_a_sighting() -> None:
+    assert asc.readings("youtube", {"symbols": ["XAUUSD"], "patterns": ["scalping"]}) == (
+        {}, "UNRECOGNISED_SHAPE")
+    assert asc.readings("youtube", {"url": "https://youtube.com/watch?v=a",
+                                    "symbols": ["XAUUSD"]}) == ({}, None)
