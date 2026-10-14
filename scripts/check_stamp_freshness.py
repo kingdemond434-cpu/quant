@@ -69,21 +69,35 @@ DIVERGENCE_HOURS = 12.0
 SKIP_SUFFIXES = (".jsonl", ".parquet", ".npz", ".pkl", ".log", ".tmp")
 
 
-def _stamp_of(doc: Any) -> tuple[str, datetime] | None:
-    if not isinstance(doc, dict):
+def parse_stamp(v: Any) -> datetime | None:
+    """One ISO-8601 timestamp as an aware UTC datetime; None when it is not one.
+
+    Public because `ops/organ_contract.py` judges organ freshness by the same reading this check
+    uses -- two parsers would be two answers to "how old is this artifact"."""
+    if not isinstance(v, str) or len(v) < 10:
         return None
+    try:
+        t = datetime.fromisoformat(v.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t.replace(tzinfo=UTC) if t.tzinfo is None else t
+
+
+def stamps_of(doc: Any) -> list[tuple[str, datetime]]:
+    """Every parseable top-level STAMP_KEYS field, in STAMP_KEYS order."""
+    if not isinstance(doc, dict):
+        return []
+    out = []
     for k in STAMP_KEYS:
-        v = doc.get(k)
-        if not isinstance(v, str) or len(v) < 10:
-            continue
-        try:
-            t = datetime.fromisoformat(v.replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if t.tzinfo is None:
-            t = t.replace(tzinfo=UTC)
-        return k, t
-    return None
+        t = parse_stamp(doc.get(k))
+        if t is not None:
+            out.append((k, t))
+    return out
+
+
+def _stamp_of(doc: Any) -> tuple[str, datetime] | None:
+    got = stamps_of(doc)
+    return got[0] if got else None
 
 
 def scan(root: Path | None = None) -> dict[str, Any]:

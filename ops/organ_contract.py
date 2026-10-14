@@ -37,6 +37,8 @@ import argparse
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
@@ -379,27 +381,189 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 }
 
 
-def _age_min(p: Path, now: datetime) -> float | None:
+#: WHERE AN ARTIFACT KEEPS THE STAMP THAT SAYS ITS ORGAN DID ITS WORK (2026-10-14).
+#:
+#: THE FALSE GREENS THIS ENDS, measured on the box's published process_health.json at 05:45Z
+#: 2026-10-14: MT5-Gauntlet and its rotation row read OK at artifact ages of 2 and 65 minutes
+#: while UNIVERSAL_SURVIVORS.json said `swept_at: 2026-09-16` and the build cursor's newest entry
+#: was 2026-09-23; MT5-FusionDeadman read OK at 0.2 minutes over `checked_at: 2026-09-12`. Every
+#: one of those files was being REWRITTEN without its content advancing, and a file's mtime
+#: answers "did something touch this", never "did the organ do its work". So freshness is read
+#: from INSIDE the artifact, and the mtime is kept only as the second number beside it.
+#:
+#: Unlisted organs take the default for their artifact's type:
+#:   .json   the NEWEST parseable top-level key of check_stamp_freshness.STAMP_KEYS; none at all
+#:           is UNMEASURED -- never OK, because a document that carries no time cannot say it is
+#:           current, and its mtime is exactly the number that lied above
+#:   .jsonl  the last line's stamp (STAMP_KEYS or `ts`)
+#:   other   (logs) the file mtime, published as `age_basis: mtime` so a reader knows it is weak
+#:
+#: A spec here overrides that default:
+#:   "key:<dotted.path>"   that one field, e.g. "key:last_reconcile"
+#:   "newest:*"            the newest ISO stamp among the top-level VALUES (a symbol -> stamp map)
+#:   "newest:*.<field>"    the newest `<field>` across the top-level values (a symbol -> row map)
+#:   "mtime"               the artifact is DECLARED stampless; mtime is the honest best
+#:
+#: Each spec below was read off the artifact itself before it was written here.
+STAMP_SPEC: dict[str, str] = {
+    # gateway_state.json carries no top-level stamp; `last_reconcile` is written every pass
+    # (check_desk_health prints it as the gateway's own last word).
+    "MT5-Gateway": "key:last_reconcile",
+    # symbol -> the time the gauntlet last BUILT that symbol. The newest one IS the rotation.
+    "MT5-Gauntlet (rotation)": "newest:*",
+    "MT5-LocalConvert": "key:built_at",
+    "MT5-MoatMiner": "key:last_mined",
+    "MT5-MoatRecorder": "key:built_at",
+    # symbol -> registry row; expand_universe stamps every row it refreshes with `updated_at`.
+    "MT5-Universe": "newest:*.updated_at",
+}
+
+_JSONL_KEYS = ("ts",)
+#: How far into the end of a .jsonl the last line is looked for. Append logs grow without bound,
+#: and reading one whole to find its last line would make the monitor the slowest organ on the box.
+_TAIL_BYTES = 65536
+
+
+def _stamp_tools() -> ModuleType:
+    """check_stamp_freshness's parser and keys -- imported, never copied, so the two checks that
+    read an artifact's stamp cannot drift into two answers."""
+    import importlib.util
+    import sys
+    mod = sys.modules.get("check_stamp_freshness")
+    if mod is None:
+        spec = importlib.util.spec_from_file_location(
+            "check_stamp_freshness", ROOT / "scripts" / "check_stamp_freshness.py")
+        assert spec is not None and spec.loader is not None
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["check_stamp_freshness"] = mod
+        spec.loader.exec_module(mod)
+    return mod
+
+
+def _dig(doc: object, path: str) -> object:
+    cur = doc
+    for part in path.split("."):
+        if not isinstance(cur, dict):
+            return None
+        cur = cur.get(part)
+    return cur
+
+
+def _stamp_by_spec(doc: object, spec: str) -> tuple[str, datetime] | None:
+    sf = _stamp_tools()
+    if spec.startswith("key:"):
+        path = spec[4:]
+        t = sf.parse_stamp(_dig(doc, path))
+        return (path, t) if t is not None else None
+    if spec.startswith("newest:*"):
+        if not isinstance(doc, dict):
+            return None
+        field = spec[len("newest:*"):].lstrip(".")
+        best: datetime | None = None
+        for v in doc.values():
+            t = sf.parse_stamp(_dig(v, field) if field else v)
+            if t is not None and (best is None or t > best):
+                best = t
+        return (spec[len("newest:"):], best) if best is not None else None
+    return None
+
+
+def _last_jsonl_stamp(p: Path) -> tuple[str, datetime] | None:
+    sf = _stamp_tools()
+    with p.open("rb") as fh:
+        fh.seek(0, 2)
+        size = fh.tell()
+        fh.seek(max(0, size - _TAIL_BYTES))
+        tail = fh.read().decode("utf-8-sig", "replace")
+    for line in reversed(tail.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue     # the first line of a tail window is usually cut in half
+        got = sf.stamps_of(row)
+        if not got and isinstance(row, dict):
+            got = [(k, t) for k in _JSONL_KEYS if (t := sf.parse_stamp(row.get(k))) is not None]
+        return max(got, key=lambda kt: kt[1]) if got else None
+    return None
+
+
+def read_artifact_age(rel: str, organ: str | None = None, *, root: Path | None = None,
+                      now: datetime | None = None, spec: str | None = None) -> dict[str, Any]:
+    """How old an organ's artifact is, read from the STAMP INSIDE it, and on what basis.
+
+    Returns {"exists", "age_min", "age_basis", "stamp", "mtime_age_min", "why"}.
+    `age_basis` is "stamp:<key>", "mtime" or "none"; "none" with exists=True means the artifact
+    carries no stamp this can read, and the caller must report UNMEASURED, never OK.
+    """
+    now = now or datetime.now(UTC)
+    p = (root or ROOT) / rel
+    out: dict[str, Any] = {"exists": False, "age_min": None, "age_basis": "none", "stamp": None,
+                 "mtime_age_min": None, "why": ""}
     try:
-        return (now - datetime.fromtimestamp(p.stat().st_mtime, UTC)).total_seconds() / 60.0
+        mtime_age = (now - datetime.fromtimestamp(p.stat().st_mtime, UTC)).total_seconds() / 60.0
     except OSError:
-        return None
+        out["why"] = f"{rel} does not exist"
+        return out
+    out["exists"] = True
+    out["mtime_age_min"] = round(mtime_age, 1)
+    spec = spec or (STAMP_SPEC.get(organ) if organ else None)
+    if spec == "mtime" or (spec is None and p.suffix not in (".json", ".jsonl")):
+        out.update(age_min=mtime_age, age_basis="mtime",
+                   why="file mtime: this artifact carries no internal stamp, so a rewrite that "
+                       "did no work would still read fresh")
+        return out
+    got: tuple[str, datetime] | None
+    try:
+        if p.suffix == ".jsonl" and spec is None:
+            got = _last_jsonl_stamp(p)
+        else:
+            doc = json.loads(p.read_text(encoding="utf-8-sig"))
+            if spec:
+                got = _stamp_by_spec(doc, spec)
+            else:
+                stamps = _stamp_tools().stamps_of(doc)
+                got = max(stamps, key=lambda kt: kt[1]) if stamps else None
+    except (OSError, ValueError) as exc:
+        out["why"] = f"{rel} unreadable ({type(exc).__name__}) -- freshness UNMEASURED"
+        return out
+    if got is None:
+        where = f"its declared stamp {spec!r}" if spec else (
+            "any top-level " + "/".join(_stamp_tools().STAMP_KEYS))
+        out["why"] = (f"{rel} carries no parseable {where} -- its freshness is UNMEASURED, and "
+                      f"its mtime ({mtime_age:.0f} min) is not evidence the organ did its work. "
+                      f"Name the stamp in ops/organ_contract.STAMP_SPEC")
+        return out
+    key, t = got
+    # A stamp in the future (a broker-time field mislabelled UTC) is not "younger than now";
+    # it is clamped to zero and named, so it can neither go negative nor hide.
+    age = max(0.0, (now - t).total_seconds() / 60.0)
+    out.update(age_min=age, age_basis=f"stamp:{key}", stamp=t.isoformat(timespec="seconds"),
+               why=("stamp is in the future" if t > now else ""))
+    return out
 
 
-def check() -> dict:
+def check() -> dict[str, Any]:
     now = datetime.now(UTC)
     rows = []
     for organ, (rel, max_age, what) in sorted(CONTRACTS.items()):
-        p = ROOT / rel
-        age = _age_min(p, now)
-        if age is None:
+        r = read_artifact_age(rel, organ, now=now)
+        age = r["age_min"]
+        if not r["exists"]:
             verdict, why = "ABSENT", f"{rel} does not exist -- the organ has never produced it"
+        elif age is None:
+            verdict, why = "UNMEASURED", r["why"]
         elif age > max_age:
-            verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+            verdict, why = ("STALE", f"{age:.0f} min old by {r['age_basis']} against a "
+                                     f"{max_age} min contract")
         else:
-            verdict, why = "OK", f"{age:.0f} min old"
+            verdict, why = "OK", f"{age:.0f} min old by {r['age_basis']}"
         rows.append({"organ": organ, "artifact": rel, "max_age_min": max_age,
                      "age_min": None if age is None else round(age, 1),
+                     "age_basis": r["age_basis"], "stamp": r["stamp"],
+                     "mtime_age_min": r["mtime_age_min"],
                      "verdict": verdict, "why": why, "artifact_is": what})
     bad = [r for r in rows if r["verdict"] != "OK"]
     return {

@@ -108,6 +108,25 @@ TASK_DIAGNOSIS = {
 }
 
 
+#: VERDICTS A RESTART CANNOT CURE, with the reason a human needs. Reported, never started.
+VERDICT_DIAGNOSIS = {
+    "UNMEASURED": (
+        "the artifact carries no stamp process_health can read, so its freshness is UNMEASURED -- "
+        "not stale, not fine. A restart cannot cure a missing stamp and would loop: name the "
+        "artifact's stamp in ops/organ_contract.STAMP_SPEC (or make the organ write one)."),
+    "ALERTS_UNARMED": (
+        "no alert channel is armed, so every red row on the board reaches no one. Arming needs a "
+        "credential only the owner types on the box: create data/secrets/alert_channels.json "
+        "(shapes in libs/ops/alert_channels.py). Nothing here can or should invent one."),
+}
+
+#: ONE START PER ORGAN PER SHAPE PER WINDOW. A start that did not cure the verdict is evidence the
+#: cause is not "it stopped", and starting it again every pass is a loop, not a remedy. Inside the
+#: window the row is escalated with that finding instead.
+RESTART_COOLDOWN_H = 6.0
+STARTS = ROOT / "desks" / "mt5" / "logs" / "never_stale_starts.json"
+
+
 def _read(p: Path) -> Any:
     try:
         return json.loads(p.read_text(encoding="utf-8"))
@@ -226,9 +245,46 @@ def _safe(fn, fam: str) -> bool:
         return False
 
 
+def _health_age_min(doc: Any) -> float | None:
+    """The board's age by its own `at` stamp; the mtime only when it carries none."""
+    if isinstance(doc, dict):
+        try:
+            t = datetime.fromisoformat(str(doc.get("at")).replace("Z", "+00:00"))
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=UTC)
+            return max(0.0, (datetime.now(tz=UTC) - t).total_seconds() / 60.0)
+        except ValueError:
+            pass
+    return _age_min(HEALTH)
+
+
+def _rewritten_not_advancing(row: dict[str, Any]) -> bool:
+    """STALE by the stamp inside the artifact while the FILE was rewritten inside its contract:
+    the task is running and producing a file, just not doing its work. Starting it again starts
+    the same non-advancing writer -- so this shape is escalated, never restarted."""
+    basis = str(row.get("age_basis") or "")
+    mt = row.get("artifact_mtime_age_min")
+    lim = row.get("contract_max_age_min")
+    return (basis.startswith("stamp:") and isinstance(mt, (int, float))
+            and isinstance(lim, (int, float)) and mt <= lim)
+
+
+def _recent_start(starts: dict[str, Any], name: str, verdict: str) -> str | None:
+    prev = starts.get(name) if isinstance(starts, dict) else None
+    if not isinstance(prev, dict) or prev.get("verdict") != verdict:
+        return None
+    try:
+        at = datetime.fromisoformat(str(prev.get("at")))
+    except ValueError:
+        return None
+    if (datetime.now(tz=UTC) - at).total_seconds() / 3600 < RESTART_COOLDOWN_H:
+        return str(prev.get("at"))
+    return None
+
+
 def run(apply: bool) -> dict:
-    age = _age_min(HEALTH)
     doc = _read(HEALTH)
+    age = _health_age_min(doc) if doc is not None else None
     if doc is None or age is None:
         return {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                 "status": "UNMEASURED",
@@ -243,9 +299,12 @@ def run(apply: bool) -> dict:
                         f"that are already fine."),
                 "acted": [], "escalated": []}
 
-    acted: list[dict] = []
-    escalated: list[dict] = []
+    acted: list[dict[str, Any]] = []
+    escalated: list[dict[str, Any]] = []
+    unmeasured: list[dict[str, Any]] = []
     uncontracted: list[str] = []
+    starts = _read(STARTS)
+    starts = starts if isinstance(starts, dict) else {}
     for row in (doc.get("processes") or []):
         verdict = str(row.get("verdict") or "")
         name = str(row.get("name") or "")
@@ -259,12 +318,49 @@ def run(apply: bool) -> dict:
             uncontracted.append(name)
             continue
 
+        if verdict in VERDICT_DIAGNOSIS:
+            # REPORT-ONLY SHAPES. UNMEASURED is listed apart so it never reads as healthy and
+            # never escalates beside a dead gateway; ALERTS_UNARMED is the owner's step.
+            if verdict == "UNMEASURED":
+                unmeasured.append({"task": name, "why": row.get("why"),
+                                   "diagnosis": VERDICT_DIAGNOSIS[verdict]})
+            else:
+                escalated.append({"task": name, "verdict": verdict, "code": None,
+                                  "why": row.get("why"),
+                                  "diagnosis": VERDICT_DIAGNOSIS[verdict], "needs_human": True})
+            continue
+
+        if verdict in RESTARTABLE and _rewritten_not_advancing(row):
+            escalated.append({
+                "task": name, "verdict": verdict, "code": row.get("last_result_code"),
+                "why": row.get("why"),
+                "diagnosis": ("REWRITTEN BUT NOT ADVANCING: the artifact's file was rewritten "
+                              "inside its contract while the stamp inside it is old. The task "
+                              "runs; a start would run the same writer again. Read the organ's "
+                              "log for why its work is skipped (a lock, an early return, an "
+                              "input that never changes) -- never restarted from here."),
+                "needs_human": True})
+            continue
+
         if verdict in RESTARTABLE:
+            started_at = _recent_start(starts, name, verdict)
+            if started_at:
+                escalated.append({
+                    "task": name, "verdict": verdict, "code": row.get("last_result_code"),
+                    "why": row.get("why"),
+                    "diagnosis": (f"STARTED AT {started_at} FOR THIS SAME VERDICT AND IT DID NOT "
+                                  f"CURE IT. Not starting again inside {RESTART_COOLDOWN_H:g}h: "
+                                  f"a start that does not cure is a loop. Read the task's log."),
+                    "needs_human": True})
+                continue
             if not apply:
                 acted.append({"task": name, "verdict": verdict, "action": "would start",
                               "why": row.get("why")})
                 continue
             ok, msg = _start(name)
+            if ok:
+                starts[name] = {"verdict": verdict,
+                                "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
             acted.append({"task": name, "verdict": verdict,
                           "action": "started" if ok else "start FAILED",
                           "detail": msg, "why": row.get("why")})
@@ -287,14 +383,24 @@ def run(apply: bool) -> dict:
             "needs_human": True,
         })
 
+    if apply and starts:
+        try:
+            STARTS.parent.mkdir(parents=True, exist_ok=True)
+            STARTS.write_text(json.dumps(starts, indent=1), encoding="utf-8")
+        except OSError:
+            pass
     capital = _capital_faults()
+    # UNMEASURED IS NOT OK (L1.28a): a board with unmeasured rows and nothing else wrong says so.
+    status = ("NEEDS_HUMAN" if (escalated or capital) else
+              "UNMEASURED" if unmeasured else "OK")
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "health_age_min": round(age, 1),
-        "status": "OK" if not (escalated or capital) else "NEEDS_HUMAN",
+        "status": status,
         "n_acted": len(acted), "n_escalated": len(escalated),
+        "n_unmeasured": len(unmeasured),
         "applied": bool(apply),
-        "acted": acted, "escalated": escalated,
+        "acted": acted, "escalated": escalated, "unmeasured": unmeasured,
         "capital_faults": capital,
         "uncontracted": uncontracted,
         "uncontracted_note": ("these run but have no artifact contract, so nothing would notice "

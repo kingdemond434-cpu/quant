@@ -78,6 +78,13 @@ PROCS: tuple[tuple[str, str], ...] = (
 )
 
 #: artifact -> (what produced it, hours after which it is a finding)
+#: Age is read from the stamp INSIDE each artifact (ops/organ_contract.read_artifact_age), never
+#: the file mtime: UNIVERSAL_SURVIVORS.json read "1.1h old" here on 2026-10-13 while its own
+#: `swept_at` was 2026-09-16. ARTIFACT_STAMP names the field where it is not a top-level default.
+ARTIFACT_STAMP: dict[str, str] = {
+    "data/gateway_state.json": "key:last_reconcile",
+    "data/hypotheses/edge_search_results.json": "key:searched_at",
+}
 ARTIFACTS: tuple[tuple[str, str, float], ...] = (
     ("data/gateway_state.json", "the gateway, every pass", 1.0),
     ("data/hypotheses/edge_search_results.json", "the SEARCH leg", 3.0),
@@ -190,13 +197,34 @@ def _result_code(raw: str) -> int | None:
     return code + 0x1_0000_0000 if code < 0 else code
 
 
+#: What schtasks prints, and nothing else, when a task name genuinely does not exist.
+_ABSENT_MARKERS = ("cannot find the file specified", "does not exist", "cannot find the path")
+
+
+def _task_absent(rc: int, out: str) -> bool:
+    """True ONLY when the scheduler ANSWERED and said the task does not exist.
+
+    THE FALSE ALARM THIS ENDS (DESK_HEALTH.json 2026-10-13 22:11Z): Gateway, Hourly, Shadow and
+    Gauntlet all read "NOT INSTALLED" while process_health on the same box listed every one of
+    them -- because its scheduler query had timed out (Get-ScheduledTask after 45 s, schtasks
+    after 20 s) and `_run` returns 124 for a timeout. Any non-zero exit was read as absence. An
+    unreadable scheduler is UNMEASURED; only the scheduler's own "cannot find" is NOT INSTALLED.
+    """
+    return rc not in (0, 124) and any(m in out.lower() for m in _ABSENT_MARKERS)
+
+
 def check_tasks() -> None:
     _section("SCHEDULED TASKS  (what drives the desk)")
     for name, what in TASKS:
         rc, out = _run(["schtasks", "/Query", "/TN", name, "/FO", "LIST", "/V"])
-        if rc != 0:
+        if rc != 0 and _task_absent(rc, out):
             _bad(f"{name} is NOT INSTALLED on this machine -- {what}. Nothing runs it, so "
                  f"nothing it produces will ever appear.")
+            continue
+        if rc != 0:
+            _unknown(f"{name}: the scheduler could not be read (exit {rc}: "
+                     f"{out.strip().splitlines()[-1][:120] if out.strip() else 'no output'}) "
+                     f"-- whether it is installed is UNMEASURED, not absent -- {what}")
             continue
         fields = {}
         for line in out.splitlines():
@@ -267,17 +295,25 @@ def check_artifacts() -> None:
         if not p.exists():
             _bad(f"{rel} does not exist -- {producer} has never written it here")
             continue
-        try:
-            age_h = (now - p.stat().st_mtime) / 3600.0
-        except OSError as exc:
-            _unknown(f"{rel} could not be read ({_exc_reason(exc)}); UNREADABLE is not the same "
-                     f"as absent")
+        r = _artifact_age(p, ARTIFACT_STAMP.get(rel))
+        if r is None:
+            try:
+                age_h = (now - p.stat().st_mtime) / 3600.0
+            except OSError as exc:
+                _unknown(f"{rel} could not be read ({_exc_reason(exc)}); UNREADABLE is not the "
+                         f"same as absent")
+                continue
+            basis = "mtime (stamp reader unavailable)"
+        elif r.get("age_min") is None:
+            _unknown(f"{rel}: {r.get('why')} -- {producer}")
             continue
-        if age_h <= max_h:
-            _ok(f"{rel} is {age_h:.1f}h old -- {producer}")
         else:
-            _bad(f"{rel} is {age_h:.1f}h old (expected under {max_h:.0f}h) -- {producer} has "
-                 f"stopped producing")
+            age_h, basis = float(r["age_min"]) / 60.0, str(r["age_basis"])
+        if age_h <= max_h:
+            _ok(f"{rel} is {age_h:.1f}h old by {basis} -- {producer}")
+        else:
+            _bad(f"{rel} is {age_h:.1f}h old by {basis} (expected under {max_h:.0f}h) -- "
+                 f"{producer} has stopped producing")
     print()
 
 
@@ -373,6 +409,21 @@ def check_bars_state(path: Path | None = None, now: datetime | None = None) -> N
         else:
             _ok(line)
     print()
+def _artifact_age(p: Path, spec: str | None) -> dict[str, Any] | None:
+    """organ_contract.read_artifact_age on an absolute path; None if it cannot be imported."""
+    try:
+        import importlib.util
+        mod = sys.modules.get("organ_contract")
+        if mod is None:
+            sp = importlib.util.spec_from_file_location("organ_contract",
+                                                        ROOT / "ops" / "organ_contract.py")
+            assert sp is not None and sp.loader is not None
+            mod = importlib.util.module_from_spec(sp)
+            sys.modules["organ_contract"] = mod
+            sp.loader.exec_module(mod)
+        return dict(mod.read_artifact_age(p.name, root=p.parent, spec=spec))
+    except Exception:
+        return None
 
 
 def check_state_flow() -> None:

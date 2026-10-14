@@ -463,6 +463,39 @@ def account_key_backup() -> dict[str, Any]:
         return state
     except Exception as exc:
         return {"state": "UNMEASURED", "why": type(exc).__name__}
+def _reading(organ: str, artifact: str) -> dict[str, Any]:
+    """How old the organ's artifact is BY THE STAMP INSIDE IT (organ_contract.read_artifact_age).
+
+    WHY NOT THE MTIME (2026-10-14). This board read MT5-Gauntlet OK at 2 minutes while its
+    certificate registry said `swept_at: 2026-09-16`, and MT5-FusionDeadman OK at 0.2 minutes over
+    `checked_at: 2026-09-12`. Both files were being rewritten without their content advancing; an
+    mtime only proves something touched the file. `age_basis` says which number was read.
+    """
+    try:
+        sys.path.insert(0, str(ROOT / "ops"))
+        from organ_contract import read_artifact_age  # type: ignore[import-not-found]
+        r = dict(read_artifact_age(artifact, organ, root=ROOT))
+    except Exception as exc:
+        age = _age_min(ROOT / artifact)
+        return {"exists": age is not None, "age_min": None, "age_basis": "none", "stamp": None,
+                "mtime_age_min": None if age is None else round(age, 1),
+                "why": f"stamp reader unavailable ({type(exc).__name__}) -- UNMEASURED"}
+    return r
+
+
+#: Verdicts that page through the alert channels and count against the headline. A DISABLED
+#: task joins them unless it is EXPECTED_DISABLED (v5b ruling): see `needs_attention`.
+ATTENTION = ("ALERTS_UNARMED", "NOT_SCHEDULED", "SCHEDULER_UNMEASURED", "FAILING",
+             "NO_ARTIFACT", "STALE", "UNMEASURED")
+#: Rows read OFF the scheduler (the pager, ...): a definite fault whatever the scheduler read
+#: managed, so they headline ATTENTION even over a brief-only or unread scheduler.
+OFF_SCHEDULER_FAULTS = frozenset({"ALERTS_UNARMED"})
+
+
+def needs_attention(row: dict[str, Any]) -> bool:
+    """One rule for the headline and the pager: an ATTENTION verdict, or an unexcused DISABLED."""
+    v = row.get("verdict")
+    return v in ATTENTION or (v == "DISABLED" and not row.get("expected_disabled"))
 
 
 def build() -> dict[str, Any]:
@@ -487,7 +520,8 @@ def build() -> dict[str, Any]:
         if code_unreadable:
             result_unmeasured = f"last result {str(t.get('Last Result') or 'absent')!r} not a code"
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
-        age = _age_min(ROOT / artifact) if artifact else None
+        rd = _reading(name, artifact) if artifact else {}
+        age = rd.get("age_min")
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
@@ -510,15 +544,18 @@ def build() -> dict[str, Any]:
             verdict, why = "SCHEDULER_UNMEASURED", (
                 f"task state {sorted(_states) or 'blank'} not recognised: whether the scheduler "
                 "will start this is UNMEASURED")
-        elif artifact and age is None:
+        elif artifact and not rd.get("exists"):
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif artifact and max_age and age is not None and age > max_age:
-            verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+            verdict, why = "STALE", _stale_why(rd, max_age)
         elif code_unreadable:
             verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
                                                     "succeeded is UNMEASURED")
         elif code is not None and code not in (0, 267009, 267011) and not _running:
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
+        elif artifact and age is None:
+            # A stampless artifact is UNMEASURED, never OK: its mtime is the number that lied.
+            verdict, why = "UNMEASURED", str(rd.get("why") or "artifact freshness unmeasured")
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
                                             "nothing would notice")
@@ -538,6 +575,9 @@ def build() -> dict[str, Any]:
                             else RESULT_MEANING.get(code, f"code {code}")),
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
+            "age_basis": rd.get("age_basis") if artifact else None,
+            "artifact_stamp": rd.get("stamp"),
+            "artifact_mtime_age_min": rd.get("mtime_age_min"),
             "contract_max_age_min": max_age or None,
             "purpose": purpose or None,
             "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
@@ -552,7 +592,8 @@ def build() -> dict[str, Any]:
     for organ, (artifact, max_age, purpose) in contracts.items():
         if organ in seen:
             continue
-        age = _age_min(ROOT / artifact)
+        rd = _reading(organ, artifact)
+        age = rd.get("age_min")
         inventory_ok = scheduler_status.startswith("OK ")
         # Parenthesised contracts describe an artifact of an existing scheduled task, not a
         # second Windows task. Treating the name as a task manufactured 31 NOT_SCHEDULED alarms
@@ -561,10 +602,12 @@ def build() -> dict[str, Any]:
         is_component = bool(parent and parent in seen)
         if not inventory_ok:
             verdict, why = "SCHEDULER_UNMEASURED", scheduler_status
-        elif is_component and age is None:
+        elif is_component and not rd.get("exists"):
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif is_component and age is not None and max_age and age > max_age:
-            verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+            verdict, why = "STALE", _stale_why(rd, max_age)
+        elif is_component and age is None:
+            verdict, why = "UNMEASURED", str(rd.get("why") or "artifact freshness unmeasured")
         elif is_component:
             verdict, why = "OK", f"artifact of scheduled task {parent}"
         else:
@@ -580,21 +623,48 @@ def build() -> dict[str, Any]:
             "last_result_code": None, "last_result": "never run on this box",
             "artifact": artifact,
             "artifact_age_min": None if age is None else round(age, 1),
+            "age_basis": rd.get("age_basis"),
+            "artifact_stamp": rd.get("stamp"),
+            "artifact_mtime_age_min": rd.get("mtime_age_min"),
             "contract_max_age_min": max_age, "purpose": purpose,
         })
 
-    order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
-             "NO_ARTIFACT": 2, "STALE": 3,
+    # The rows read from the scheduler and the contracts; the rows below it are read elsewhere.
+    n_scheduler_rows = len(rows)
+
+    # A BOARD THAT PAGES NO ONE IS THE SAME SILENCE (2026-10-14). Every row above can be red and
+    # nobody hears it unless an alert channel is armed, so the unarmed pager is itself a row --
+    # the loudest one -- rather than a footnote in another report.
+    alerts = _alerts_armed()
+    if not alerts.get("armed"):
+        rows.append({
+            "name": "ALERT CHANNELS",
+            "verdict": "ALERTS_UNARMED",
+            "why": (str(alerts.get("line") or "ALERTS NOT ARMED")
+                    + " -- every FAILING/STALE/UNMEASURED row on this board reaches no one. "
+                    + OWNER_ARMING_ACTION),
+            "state": "UNARMED" if alerts.get("armed") == 0 else "UNMEASURED",
+            "last_run": "", "next_run": "", "last_result_code": None, "last_result": "",
+            "artifact": "data/secrets/alert_channels.json", "artifact_age_min": None,
+            "age_basis": None, "artifact_stamp": None, "artifact_mtime_age_min": None,
+            "contract_max_age_min": None,
+            "purpose": "the pager every other row depends on to be heard",
+        })
+
+    order = {"ALERTS_UNARMED": 0, "NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
+             "NO_ARTIFACT": 2, "STALE": 3, "UNMEASURED": 3,
              "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
+    basis: dict[str, int] = {}
     for r in rows:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
+        if r.get("age_basis"):
+            b = str(r["age_basis"]).split(":", 1)[0]
+            basis[b] = basis.get(b, 0) + 1
 
     # DISABLED IS A FAULT (v5b ruling) unless the task is EXPECTED_DISABLED.
-    bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
-                                             "FAILING", "NO_ARTIFACT", "STALE")
-           or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
+    bad = [r for r in rows if needs_attention(r)]
     run_history_read = scheduler_status == "OK schtasks"
     brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS
                     and not r.get("expected_disabled")]
@@ -602,11 +672,12 @@ def build() -> dict[str, Any]:
     backup = account_key_backup()
     key_fault = key.get("state") in KEY_FAULT_STATES
     backup_fault = backup.get("state") in BACKUP_FAULT_STATES
-    status = ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
+    off_scheduler_faults = [r for r in rows if r["verdict"] in OFF_SCHEDULER_FAULTS]
+    status = ("UNMEASURED" if not n_scheduler_rows or not scheduler_status.startswith("OK ")
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault or backup_fault:
+    if key_fault or backup_fault or off_scheduler_faults:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -614,6 +685,9 @@ def build() -> dict[str, Any]:
         "scheduler_status": scheduler_status,
         "n_processes": len(rows),
         "counts": counts,
+        # Which clock each contracted row was judged by: "stamp" (inside the artifact), "mtime"
+        # (a declared stampless artifact, weak) or "none" (unreadable -> UNMEASURED).
+        "age_basis_counts": basis,
         # The headline is the WORST row, never the proportion that are fine. "38 of 41 healthy"
         # is how a dead gateway hides behind a green majority. An unread scheduler, or a board
         # with no rows at all (UNMEASURED inventory and `_contracts()` swallowing a failed
@@ -636,8 +710,127 @@ def build() -> dict[str, Any]:
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),
         "scheduler_retry": {"state": "NOT_NEEDED"} if not TIMEOUTS else {"state": "PENDING"},
+        "alerts": alerts,
         "processes": rows,
     }
+
+
+def _stale_why(rd: dict[str, Any], max_age: int) -> str:
+    age = float(rd.get("age_min") or 0.0)
+    basis = str(rd.get("age_basis") or "none")
+    why = f"{age:.0f} min old by {basis} against a {max_age} min contract"
+    mt = rd.get("mtime_age_min")
+    if basis.startswith("stamp:") and isinstance(mt, (int, float)) and mt <= max_age:
+        # The contradiction IS the finding: the file is being rewritten, the work is not.
+        why += (f" -- the file was rewritten {mt:.0f} min ago without its stamp advancing "
+                f"(stamp {rd.get('stamp')}): the organ runs and does not do its work")
+    return why
+
+
+#: WHAT ONLY THE OWNER CAN DO. Arming needs a credential (a healthchecks.io ping URL, a Telegram
+#: bot token, an SMTP login or a webhook URL) typed into data/secrets/ on the box, which never
+#: leaves it. No session invents one.
+OWNER_ARMING_ACTION = (
+    "OWNER ACTION (on the trading box): create C:\\opt\\quant\\data\\secrets\\"
+    "alert_channels.json with at least one channel, e.g. "
+    '{"channels": [{"kind": "telegram", "token": "<bot token>", "chat_id": "<chat id>"}]} '
+    'or {"channels": [{"kind": "hc", "url": "https://hc-ping.com/<uuid>"}]} '
+    "(kinds: ntfy/telegram/webhook/email/hc, shapes in libs/ops/alert_channels.py); "
+    "the next MT5-ProcessHealth pass reads it and this row clears.")
+
+#: Box-local dedup state for the page (desks/mt5/logs/ is gitignored).
+ALERT_STATE = ROOT / "desks" / "mt5" / "logs" / "process_health_alert.json"
+REPAGE_H = 6.0
+
+
+def _alerts_armed(root: Path | None = None) -> dict[str, Any]:
+    """How many alert channels are armed, by kind only -- never a credential."""
+    base = root or ROOT
+    try:
+        if str(base) not in sys.path:
+            sys.path.insert(0, str(base))
+        from libs.ops import alert_channels
+        chans = alert_channels.load_channels(base / "data" / "secrets" / "alert_channels.json")
+    except Exception as exc:
+        return {"armed": None, "kinds": [],
+                "line": f"ALERTS UNMEASURED: {type(exc).__name__}"}
+    return {"armed": len(chans), "kinds": sorted({str(c.get("kind")) for c in chans}),
+            "line": None if chans else "ALERTS NOT ARMED: a stalled organ pages no one"}
+
+
+def _default_sender(root: Path):  # type: ignore[no-untyped-def]
+    def send(title: str, body: str) -> dict[str, Any]:
+        if str(root) not in sys.path:
+            sys.path.insert(0, str(root))
+        from libs.ops import alert_channels
+        # The EXISTING sender and delivery ledger: every attempt, armed or not, is a row in
+        # data/alert_delivery.jsonl -- an unarmed page is a recorded NOT-ARMED, never silence.
+        return alert_channels.send_all(title, body,
+                                       config=root / "data" / "secrets" / "alert_channels.json",
+                                       ledger=root / "data" / "alert_delivery.jsonl")
+    return send
+
+
+def page_attention(doc: dict[str, Any], *, state_path: Path | None = None,
+                   sender: Any = None, now: datetime | None = None,
+                   repage_h: float = REPAGE_H) -> dict[str, Any]:
+    """Page the rows needing attention off the box, deduplicated. Never raises.
+
+    Sends when a row ENTERS attention (a name/verdict pair not in the last page), again every
+    `repage_h` hours while any stands, and once on recovery to an empty set. The ALERTS_UNARMED
+    row is excluded from the trigger -- paging "the pager is unarmed" through that same pager
+    would only ever reach the NOT-ARMED ledger row -- but rides the body.
+    """
+    now = now or datetime.now(tz=UTC)
+    path = state_path or ALERT_STATE
+    rows = [r for r in (doc.get("processes") or [])
+            if needs_attention(r) and r.get("verdict") != "ALERTS_UNARMED"]
+    current = sorted(f"{r['name']}|{r['verdict']}" for r in rows)
+    try:
+        prev = json.loads(path.read_text("utf-8"))
+        prev = prev if isinstance(prev, dict) else {}
+    except (OSError, ValueError):
+        prev = {}
+    before = set(prev.get("signature") or [])
+    last = None
+    try:
+        last = datetime.fromisoformat(str(prev.get("paged_at")))
+    except (TypeError, ValueError):
+        last = None
+    new = [c for c in current if c not in before]
+    if new:
+        reason = f"{len(new)} row(s) entered attention"
+    elif current and (last is None or (now - last).total_seconds() / 3600 >= repage_h):
+        reason = f"still {len(current)} row(s) after {repage_h:g}h"
+    elif not current and before:
+        reason = "recovered: nothing needs attention"
+    else:
+        return {"sent": False, "reason": ("deduplicated" if current else "nothing to page")}
+    title = (f"MT5 box: {len(current)} process(es) need attention" if current
+             else "MT5 box: process health clear again")
+    lines = [f"{r['verdict']}: {r['name']} -- {str(r.get('why') or '')[:160]}"
+             for r in rows if f"{r['name']}|{r['verdict']}" in new] or \
+            [f"{r['verdict']}: {r['name']}" for r in rows[:20]]
+    if (doc.get("alerts") or {}).get("line"):
+        lines.append(str(doc["alerts"]["line"]))
+    lines.append(f"measured {doc.get('at')} (desks/mt5/reports/process_health.json)")
+    try:
+        res = (sender or _default_sender(ROOT))(title, "\n".join(lines[:40]))
+    except Exception as exc:  # the pager must never take down the board
+        res = {"armed": None, "delivered": 0, "error": f"{type(exc).__name__}: {exc}"}
+    out = {"sent": True, "reason": reason, "title": title, "new": new[:40],
+           "armed": res.get("armed"), "delivered": res.get("delivered")}
+    if res.get("error"):
+        out["error"] = res["error"]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"signature": current,
+                                    "paged_at": now.isoformat(timespec="seconds"),
+                                    "armed": out["armed"], "delivered": out["delivered"]},
+                                   indent=1), "utf-8")
+    except OSError as exc:
+        out["state_write_error"] = f"{type(exc).__name__}: {exc}"
+    return out
 
 
 def _rank(doc: dict[str, Any] | None) -> int:
@@ -838,6 +1031,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"process health retry: {retry_scheduler(for_at).get('state')}")
         return 0
     doc = build()
+    doc["page"] = page_attention(doc)
     if doc["scheduler_timeouts"]:
         # A READ TIMED OUT. Hand it to the detached retry and get off the hot path: this pass
         # never waits on the longer bound itself. The report is written BEFORE the spawn, so the
