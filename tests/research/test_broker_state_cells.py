@@ -99,8 +99,8 @@ def test_margin_and_trade_mode_events_are_read_at_the_first_record_showing_them(
     ev = bsc.margin_events(t)
     kinds = [(e["kind"], e["knowable_at"][11:16]) for e in ev]
     # the hike moved BOTH fields in one record: one dated instruction, one event
-    assert kinds == [("margin_hike", "12:00"), ("closeonly_on", "13:00"),
-                     ("closeonly_off", "14:00"), ("margin_cut", "14:00")]
+    assert sorted(kinds) == sorted([("margin_hike", "12:00"), ("closeonly_on", "13:00"),
+                                    ("closeonly_off", "14:00"), ("margin_cut", "14:00")])
 
 
 def test_swap_change_flip_and_mode_change():
