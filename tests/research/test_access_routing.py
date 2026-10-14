@@ -20,6 +20,7 @@ and write only under pytest's tmp_path.
 """
 from __future__ import annotations
 
+import json
 import sys
 import urllib.error
 import urllib.request
@@ -268,6 +269,7 @@ def test_the_boundary_is_read_before_any_permissive_label_can_rescue_it() -> Non
 
 _ROOT = Path(__file__).resolve().parents[2]
 _DESK = _ROOT / "desks" / "mt5"
+T0 = 1_800_000_000.0
 
 
 def _desk_modules() -> tuple[Any, Any]:
@@ -277,6 +279,27 @@ def _desk_modules() -> tuple[Any, Any]:
     from research import asia_collector as acol
     from research import data_acquisition_scientist as das
     return acol, das
+
+
+class _Clock:
+    def __init__(self) -> None:
+        self.t = T0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+@pytest.fixture
+def iso(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
+    """asia_collector with its state, robots cache, vault and clock all under tmp_path."""
+    acol, das = _desk_modules()
+    monkeypatch.setattr(acol, "STATE", tmp_path / "collector_state.json")
+    monkeypatch.setattr(acol, "ROBOTS_CACHE", tmp_path / "robots_cache.json")
+    monkeypatch.setattr(acol, "VAULT", tmp_path / "vault")
+    monkeypatch.setattr(acol, "SERIES", tmp_path / "series")
+    clock = _Clock()
+    monkeypatch.setattr(acol, "_now", clock)
+    return SimpleNamespace(acol=acol, das=das, clock=clock, tmp=tmp_path)
 
 
 class _Resp:
@@ -298,113 +321,186 @@ class _Resp:
 CSV = b"date,value\n2026-01-01,1\n2026-01-02,2\n2026-01-03,3\n2026-01-04,4\n"
 
 
-def _stub_urllib(monkeypatch: pytest.MonkeyPatch, robots: Any) -> list[tuple[str, str]]:
-    """Replace urlopen. `robots` is bytes (a 200 body), an int (an HTTP error code) or an
-    exception instance (unreachable). Returns every (url, user-agent) requested, in order."""
-    seen: list[tuple[str, str]] = []
+class _Net:
+    """A stub internet. `robots` is bytes (a 200 body), an int (an HTTP error code) or an
+    exception instance (unreachable); it can be changed between passes. `seen` records every
+    (url, user-agent) requested, in order."""
 
-    def fake(req: Any, *a: Any, **k: Any) -> _Resp:
+    def __init__(self, robots: Any) -> None:
+        self.robots = robots
+        self.seen: list[tuple[str, str]] = []
+
+    def __call__(self, req: Any, *a: Any, **k: Any) -> _Resp:
         url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
         ua = req.get_header("User-agent") if isinstance(req, urllib.request.Request) else ""
-        seen.append((url, str(ua or "")))
+        self.seen.append((url, str(ua or "")))
         if url.endswith("/robots.txt"):
-            if isinstance(robots, bytes):
-                return _Resp(robots, "text/plain")
-            if isinstance(robots, int):
-                raise urllib.error.HTTPError(url, robots, "stub", None, None)  # type: ignore[arg-type]
-            raise robots
+            if isinstance(self.robots, bytes):
+                return _Resp(self.robots, "text/plain")
+            if isinstance(self.robots, int):
+                raise urllib.error.HTTPError(url, self.robots, "stub", None, None)  # type: ignore[arg-type]
+            raise self.robots
         return _Resp(CSV)
 
-    monkeypatch.setattr(urllib.request, "urlopen", fake)
-    return seen
+    def urls(self) -> list[str]:
+        return [u for u, _ in self.seen]
+
+
+def _net(monkeypatch: pytest.MonkeyPatch, robots: Any) -> _Net:
+    net = _Net(robots)
+    monkeypatch.setattr(urllib.request, "urlopen", net)
+    return net
 
 
 PAGE = "https://data.robots.test:8443/series/x.csv"
+ROBOTS = "https://data.robots.test:8443/robots.txt"
+HOST = "data.robots.test:8443"
 DISALLOW = b"User-agent: *\nDisallow: /series/\n"
 
 
-def _collect(acol: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
-    monkeypatch.setattr(acol, "VAULT", tmp_path / "vault")
-    monkeypatch.setattr(acol, "SERIES", tmp_path / "series")
-    return dict(acol.collect_one({"id": "robots_probe", "url": PAGE, "expect": "csv",
-                                  "access": "public"}))
+def _collect(iso: Any) -> dict[str, Any]:
+    return dict(iso.acol.collect_one({"id": "robots_probe", "url": PAGE, "expect": "csv",
+                                      "access": "public"}))
+
+
+def test_the_desk_ua_is_exact_and_shared_by_the_robots_read_and_the_fetch(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    acol = iso.acol
+    assert acol.DESK_UA == ("quant-mt5-research-desk/1.0 (+https://github.com/kingdemond434-cpu/"
+                            "quant/issues; internal research; honours robots.txt)")
+    assert acol.USER_AGENT == acol.DESK_UA
+    assert acol.ROBOTS_PRODUCT_TOKEN == "quant-mt5-research-desk"
+    net = _net(monkeypatch, b"User-agent: *\nDisallow: /private/\n")
+    rec = _collect(iso)
+    assert net.urls() == [ROBOTS, PAGE]
+    assert {ua for _, ua in net.seen} == {acol.DESK_UA}
+    assert rec["robots_disallows"] is False and rec["status"] != "BLOCKED_BY_ROBOTS"
 
 
 def test_asia_collector_never_requests_a_robots_disallowed_page(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """BEHAVIOURAL, no network. A Disallow is a named HOLD and the page request never happens;
-    robots.txt is read at the EXACT origin (port included) under the UA the fetch sends."""
-    acol, _ = _desk_modules()
-    seen = _stub_urllib(monkeypatch, DISALLOW)
-    rec = _collect(acol, tmp_path, monkeypatch)
+    robots.txt is read at the EXACT origin (port included)."""
+    net = _net(monkeypatch, DISALLOW)
+    rec = _collect(iso)
 
-    assert [u for u, _ in seen] == ["https://data.robots.test:8443/robots.txt"]
-    assert seen[0][1] == acol.USER_AGENT
+    assert net.urls() == [ROBOTS]
     assert rec["status"] == "BLOCKED_BY_ROBOTS"
     assert rec["hold_cause"] == "robots:disallow"
     assert rec["robots_disallows"] is True and rec["robots"]
     assert "not fetched" in rec["terms_note"] and "HOLD" in rec["why"]
     assert rec["id"] == "robots_probe", "the source's row stays visible"
-    assert not (tmp_path / "vault").exists()
+    assert not (iso.tmp / "vault").exists()
 
 
-def test_asia_collector_fetches_an_allowed_page_under_the_same_agent(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    acol, _ = _desk_modules()
-    seen = _stub_urllib(monkeypatch, b"User-agent: *\nDisallow: /private/\n")
-    rec = _collect(acol, tmp_path, monkeypatch)
-    assert [u for u, _ in seen] == ["https://data.robots.test:8443/robots.txt", PAGE]
-    assert {ua for _, ua in seen} == {acol.USER_AGENT}
-    assert rec["robots_disallows"] is False and rec["status"] != "BLOCKED_BY_ROBOTS"
+def test_a_disallow_rereads_robots_at_most_once_per_24h(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, DISALLOW)
+    _collect(iso)
+    iso.clock.t = T0 + 23 * 3600
+    assert _collect(iso)["status"] == "BLOCKED_BY_ROBOTS"
+    assert net.urls() == [ROBOTS], "inside 24h the cached robots.txt answers; no request"
+    iso.clock.t = T0 + 25 * 3600
+    _collect(iso)
+    assert net.urls() == [ROBOTS, ROBOTS], "after 24h robots.txt is read again, page still not"
 
 
-def test_a_rule_written_for_our_agent_binds_even_when_star_allows(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    acol, _ = _desk_modules()
-    seen = _stub_urllib(monkeypatch, b"User-agent: quant-desk-collector\nDisallow: /\n\n"
-                                     b"User-agent: *\nAllow: /\n")
-    rec = _collect(acol, tmp_path, monkeypatch)
-    assert rec["status"] == "BLOCKED_BY_ROBOTS" and len(seen) == 1
+@pytest.mark.parametrize("group", [b"quant-mt5-research-desk", b"Quant-MT5-Research-Desk"])
+def test_a_rule_written_for_our_product_token_binds_even_when_star_allows(
+        group: bytes, iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, b"User-agent: " + group + b"\nDisallow: /\n\n"
+                            b"User-agent: *\nAllow: /\n")
+    rec = _collect(iso)
+    assert rec["status"] == "BLOCKED_BY_ROBOTS" and net.urls() == [ROBOTS]
 
 
-def test_robots_404_means_allow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    acol, _ = _desk_modules()
-    seen = _stub_urllib(monkeypatch, 404)
-    v = acol.robots_verdict(PAGE)
+def test_robots_404_means_allow(iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, 404)
+    v = iso.acol.robots_verdict(PAGE)
     assert v.allowed is True and v.cause == "robots_absent" and v.recheck is False
-    rec = _collect(acol, tmp_path, monkeypatch)
-    assert rec["status"] != "BLOCKED_BY_ROBOTS" and seen[-1][0] == PAGE
+    rec = _collect(iso)
+    assert rec["status"] != "BLOCKED_BY_ROBOTS" and net.urls()[-1] == PAGE
 
 
 @pytest.mark.parametrize("code", [500, 503])
-def test_robots_5xx_means_disallow_for_now_and_recheck(
-        code: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    acol, _ = _desk_modules()
-    seen = _stub_urllib(monkeypatch, code)
-    rec = _collect(acol, tmp_path, monkeypatch)
+def test_robots_5xx_is_a_timed_recheck_not_a_refusal(
+        code: int, iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, code)
+    rec = _collect(iso)
     assert rec["status"] == "BLOCKED_BY_ROBOTS" and rec["hold_cause"] == "robots:robots_5xx"
-    assert rec["robots_recheck"] is True
-    assert [u for u, _ in seen] == ["https://data.robots.test:8443/robots.txt"]
+    assert rec["robots_recheck"] is True and rec["site_hold"] is None
+    assert net.urls() == [ROBOTS]
+    assert iso.acol.active_site_hold(HOST) is None, "a 5xx is not a person hold"
+    # Re-read on the next pass, and fetched once robots.txt answers.
+    net.robots = b"User-agent: *\nAllow: /\n"
+    rec = _collect(iso)
+    assert net.urls() == [ROBOTS, ROBOTS, PAGE]
 
 
 def test_an_unreachable_robots_is_disallow_for_now_never_allowing(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """The old helper said "unreadable; treated as allowing". RFC 9309 says the opposite."""
-    acol, _ = _desk_modules()
-    seen = _stub_urllib(monkeypatch, urllib.error.URLError("no route"))
-    rec = _collect(acol, tmp_path, monkeypatch)
+    net = _net(monkeypatch, urllib.error.URLError("no route"))
+    rec = _collect(iso)
     assert rec["status"] == "BLOCKED_BY_ROBOTS"
     assert rec["hold_cause"] == "robots:robots_unreachable" and rec["robots_recheck"] is True
-    assert len(seen) == 1
+    assert net.urls() == [ROBOTS]
+    assert iso.acol.active_site_hold(HOST) is None
 
 
-def test_robots_403_is_a_hold(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    acol, _ = _desk_modules()
-    seen = _stub_urllib(monkeypatch, 403)
-    rec = _collect(acol, tmp_path, monkeypatch)
-    assert rec["status"] == "BLOCKED_BY_ROBOTS"
-    assert rec["hold_cause"] == "robots:robots_forbidden" and rec["robots_recheck"] is True
-    assert len(seen) == 1
+@pytest.mark.parametrize("code", [401, 403, 429])
+def test_a_401_403_429_on_robots_is_a_person_hold_no_timer_releases(
+        code: int, iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor's ruling 2026-10-14: released only by a person, never by a timer. Passes at +25h
+    and +11d send ZERO requests to that host; after release the next pass fetches."""
+    acol = iso.acol
+    net = _net(monkeypatch, code)
+    rec = _collect(iso)
+    assert net.urls() == [ROBOTS]
+    assert rec["status"] == "BLOCKED_BY_ROBOTS" and rec["hold_cause"] == "robots:person_hold"
+    assert rec["robots_recheck"] is False, "no timer"
+    hold = acol.active_site_hold(HOST)
+    assert hold == {"key": f"site:{HOST}", "verdict": "ROBOTS_HOLD", "status": code,
+                    "host": HOST, "url": PAGE[:300], "held_at": T0, "released_by": None,
+                    "released_at": None}
+    assert rec["site_hold"] == hold
+
+    net.robots = b"User-agent: *\nAllow: /\n"          # the site recovered; still held
+    for later in (T0 + 25 * 3600, T0 + 11 * 24 * 3600):
+        iso.clock.t = later
+        assert acol.due({"id": "robots_probe", "cadence": "daily"},
+                        {"robots_probe": {"last_attempt_epoch": T0}}, later) is True
+        rec = _collect(iso)
+        assert rec["status"] == "BLOCKED_BY_ROBOTS" and rec["hold_cause"] == "robots:person_hold"
+        assert net.urls() == [ROBOTS], f"zero requests to a held host at +{later - T0:.0f}s"
+        # The acquisition scientist's path honours the same hold.
+        assert iso.acol.robots_verdict(PAGE, "Mozilla/5.0").cause == "person_hold"
+        assert net.urls() == [ROBOTS]
+
+    with pytest.raises(ValueError):
+        acol.release_site_hold(HOST, "")
+    released = acol.release_site_hold(HOST, "zuck")
+    assert released["released_by"] == "zuck" and released["released_at"] == iso.clock.t
+    assert acol.active_site_hold(HOST) is None
+    rec = _collect(iso)
+    assert net.urls() == [ROBOTS, ROBOTS, PAGE], "after release the next pass fetches"
+    assert rec["status"] != "BLOCKED_BY_ROBOTS"
+
+
+def test_the_release_cli_releases_a_hold(iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    acol = iso.acol
+    _net(monkeypatch, 403)
+    _collect(iso)
+    assert acol.main(["--release-host", HOST, "--released-by", "auditor"]) == 0
+    row = json.loads((iso.tmp / "collector_state.json").read_text("utf-8"))[f"site:{HOST}"]
+    assert row["released_by"] == "auditor" and row["released_at"] == T0
+
+
+def test_the_site_hold_record_rejects_an_unknown_verdict(iso: Any) -> None:
+    rec = iso.acol.site_hold_record("h.test", "https://h.test/x", None, "HARD_STOP", at=1.0)
+    assert rec["verdict"] == "HARD_STOP" and rec["status"] is None
+    with pytest.raises(ValueError):
+        iso.acol.site_hold_record("h.test", "https://h.test/x", 403, "MAYBE")
 
 
 def test_a_robots_recheck_hold_is_due_again_before_its_cadence() -> None:
@@ -418,17 +514,17 @@ def test_a_robots_recheck_hold_is_due_again_before_its_cadence() -> None:
 
 
 def test_the_acquisition_scientist_never_requests_a_disallowed_sample(
-        monkeypatch: pytest.MonkeyPatch) -> None:
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """The second shared fetch path: robots read under `acquire_datasets`' own UA, and a
     Disallow means `_fetch` is never reached."""
-    _, das = _desk_modules()
+    das = iso.das
     from research import acquire_datasets as aq
-    seen = _stub_urllib(monkeypatch, DISALLOW)
+    net = _net(monkeypatch, DISALLOW)
     verdict = ac.classify({"url": PAGE, "source_class": "official"})
     contract = SimpleNamespace(admissible=lambda: True)
     out = das.sample({"dataset": "probe", "url": PAGE}, contract, verdict,
                      at="2026-10-14T08:00:00+00:00", code="test", marks=set())
-    assert [u for u, _ in seen] == ["https://data.robots.test:8443/robots.txt"]
-    assert seen[0][1] == aq._UA
+    assert net.urls() == [ROBOTS]
+    assert net.seen[0][1] == aq._UA
     assert out["status"] == "BLOCKED_BY_ROBOTS" and out["hold_cause"] == "robots:disallow"
     assert out["robots_disallows"] is True and "robots" in out and out["terms_note"]

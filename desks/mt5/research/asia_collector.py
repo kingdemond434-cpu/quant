@@ -30,7 +30,10 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
                     row is still written with `hold_cause`, `robots`, `robots_disallows` and
                     `terms_note`, so the source stays visible in every census. 404 on robots.txt
                     means allow; 5xx or unreachable means disallow FOR NOW and the source is
-                    re-checked after ROBOTS_RECHECK_S; a 401/403 on robots.txt is a hold.
+                    re-checked after ROBOTS_RECHECK_S; a 401/403/429 on robots.txt is a
+                    PERSON-RELEASED hold (`site:<host>` in the collector state; zero requests to
+                    that host until `--release-host HOST --released-by NAME`). A robots.txt that
+                    was read is re-read at most once per 24h per origin.
 
 EVERYTHING IS VAULTED POINT-IN-TIME. The raw bytes are written under their own content hash and
 never overwritten, so a claim made today can be re-read against exactly what the page said when
@@ -100,15 +103,37 @@ DUE_AFTER = {
     "monthly announcement, daily execution": 20 * 3600,
 }
 DEFAULT_DUE_S = 24 * 3600
-#: THE User-Agent this collector SENDS on every page fetch, and therefore the one robots.txt is
-#: read under (RFC 9309 2.2.1 matches the product token, `quant-desk-collector`). Reading robots
-#: for one agent and fetching as another would obey a rule nobody wrote for us.
-USER_AGENT = "quant-desk-collector/1.0 (+public data collection)"
-#: Seconds before a robots HOLD that is not a served Disallow (robots.txt 5xx, unreachable, 401 or
-#: 403) is re-checked. RFC 9309 2.3.1.4: an unreachable robots.txt is a complete disallow, for now.
+#: THE User-Agent the desk SENDS on every page fetch, and therefore the one robots.txt is read
+#: under. Reading robots for one agent and fetching as another would obey a rule nobody wrote for
+#: us. Robots groups are matched on the product token `ROBOTS_PRODUCT_TOKEN` (RFC 9309 2.2.1).
+DESK_UA = ("quant-mt5-research-desk/1.0 (+https://github.com/kingdemond434-cpu/quant/issues; "
+           "internal research; honours robots.txt)")
+ROBOTS_PRODUCT_TOKEN = DESK_UA.split("/", 1)[0]          # "quant-mt5-research-desk"
+#: Kept as an alias: older callers and tests read `USER_AGENT`.
+USER_AGENT = DESK_UA
+#: Seconds before a TIMED robots hold (robots.txt 5xx or unreachable) is re-read. RFC 9309
+#: 2.3.1.4: an unreachable robots.txt is a complete disallow FOR NOW -- not a refusal.
 ROBOTS_RECHECK_S = 3600.0
+#: A robots.txt that was READ (200, or a 4xx that means "no rules") is re-read at most once per
+#: this many seconds per origin (RFC 9309 2.4: caching up to 24 hours).
+ROBOTS_CACHE_S = 24 * 3600.0
+#: HTTP statuses on robots.txt that put a host under a PERSON-RELEASED hold (auditor's ruling
+#: 2026-10-14): no timer releases it, and the host gets ZERO requests until `release_site_hold`.
+PERSON_HOLD_STATUSES: frozenset[int] = frozenset({401, 403, 429})
+#: Verdicts a site-hold record may carry. Both are active while `released_by` is null.
+SITE_HOLD_VERDICTS: tuple[str, ...] = ("ROBOTS_HOLD", "HARD_STOP")
 #: Bytes of robots.txt parsed. RFC 9309 2.5 asks a crawler to parse at least 500 KiB.
 ROBOTS_MAX_BYTES = 512 * 1024
+#: The per-origin robots.txt cache (gitignored lake, beside the collector state).
+ROBOTS_CACHE = BASE / "data" / "lake" / "robots_cache.json"
+#: Serialises read-modify-write of STATE / ROBOTS_CACHE across the collector's worker threads.
+_STATE_LOCK = threading.Lock()
+
+
+def _now() -> float:
+    """The clock, one seam so tests can move it."""
+    return time.time()
+
 
 #: Built once: a CA bundle lookup per fetch is wasted work on an 85-source pass.
 _TLS = None
@@ -173,11 +198,12 @@ class RobotsVerdict:
     `cause` is the named reason, so a hold is never a silent drop:
       allowed             robots.txt was read and permits this path for this agent
       robots_absent       robots.txt answered 404/410 (or another 4xx RFC 9309 reads as "no
-                          rules"): allow
+                          rules", other than 401/403/429): allow
       disallow            robots.txt was read and DISALLOWS this path for this agent: no fetch
-      robots_5xx          robots.txt answered 5xx/429: disallow for now, re-check later
-      robots_unreachable  robots.txt could not be reached at all: disallow for now, re-check
-      robots_forbidden    robots.txt answered 401/403: a HOLD, re-checked later
+      robots_5xx          robots.txt answered 5xx: disallow for now, timed re-check
+      robots_unreachable  robots.txt could not be reached at all: disallow for now, timed re-check
+      person_hold         robots.txt answered 401/403/429, or the host already carries an
+                          unreleased site hold: ZERO requests until a person releases it
     """
 
     allowed: bool
@@ -185,9 +211,80 @@ class RobotsVerdict:
     why: str
     robots_url: str
     recheck: bool = False
+    #: The site-hold record (see `site_hold_record`) when cause is person_hold.
+    hold: dict[str, Any] | None = None
 
 
-def robots_verdict(url: str, agent: str = USER_AGENT) -> RobotsVerdict:
+def _host(url: str) -> str:
+    return urllib.parse.urlsplit(str(url or "")).netloc.lower()
+
+
+def site_hold_record(host: str, url: str, status: int | None, verdict: str = "ROBOTS_HOLD",
+                     at: float | None = None) -> dict[str, Any]:
+    """The agreed record shape (with Global data), one row per refusing host."""
+    if verdict not in SITE_HOLD_VERDICTS:
+        raise ValueError(f"site hold verdict must be one of {SITE_HOLD_VERDICTS}: {verdict!r}")
+    return {"key": f"site:{host}", "verdict": verdict, "status": status, "host": host,
+            "url": str(url or "")[:300], "held_at": float(_now() if at is None else at),
+            "released_by": None, "released_at": None}
+
+
+def active_site_hold(host: str) -> dict[str, Any] | None:
+    """The host's unreleased site hold, or None. Read from the collector STATE file."""
+    row = (_read(STATE, {}) or {}).get(f"site:{host.lower()}")
+    if isinstance(row, dict) and row.get("verdict") in SITE_HOLD_VERDICTS \
+            and row.get("released_by") is None:
+        return row
+    return None
+
+
+def _record_site_hold(rec: dict[str, Any]) -> None:
+    with _STATE_LOCK:
+        state = _read(STATE, {}) or {}
+        state[str(rec["key"])] = rec
+        _write_atomic(STATE, json.dumps(state, indent=1))
+
+
+def release_site_hold(host: str, released_by: str, at: float | None = None) -> dict[str, Any]:
+    """THE ONLY WAY A SITE HOLD ENDS: a named person releases it. No timer ever does.
+
+    Also drops the host's cached robots.txt, so the next pass reads it fresh."""
+    who = str(released_by or "").strip()
+    if not who:
+        raise ValueError("a site hold is released by a named person; released_by is empty")
+    host = host.lower()
+    with _STATE_LOCK:
+        state = _read(STATE, {}) or {}
+        row = state.get(f"site:{host}")
+        if not isinstance(row, dict):
+            raise KeyError(f"no site hold recorded for {host!r}")
+        row = {**row, "released_by": who,
+               "released_at": float(_now() if at is None else at)}
+        state[f"site:{host}"] = row
+        _write_atomic(STATE, json.dumps(state, indent=1))
+        cache = _read(ROBOTS_CACHE, {}) or {}
+        for k in [k for k in cache if _host(k) == host]:
+            del cache[k]
+        _write_atomic(ROBOTS_CACHE, json.dumps(cache, indent=1))
+    return row
+
+
+def _cached_robots(origin: str, now: float) -> dict[str, Any] | None:
+    row = (_read(ROBOTS_CACHE, {}) or {}).get(origin)
+    if isinstance(row, dict) and isinstance(row.get("fetched_at"), (int, float)) \
+            and now - float(row["fetched_at"]) < ROBOTS_CACHE_S:
+        return row
+    return None
+
+
+def _cache_robots(origin: str, row: dict[str, Any]) -> None:
+    with _STATE_LOCK:
+        cache = _read(ROBOTS_CACHE, {}) or {}
+        cache[origin] = row
+        _write_atomic(ROBOTS_CACHE, json.dumps(cache, indent=1))
+
+
+def robots_verdict(url: str, agent: str = DESK_UA) -> RobotsVerdict:
     """Read the host's robots.txt and decide whether `url` may be fetched (RFC 9309).
 
     LAWS 5e, AMENDED 2026-10-14 07:35Z by the principal (decision card
@@ -196,44 +293,73 @@ def robots_verdict(url: str, agent: str = USER_AGENT) -> RobotsVerdict:
     this verdict's named cause. Everything else in 5e stands: labels never stop mining, there is
     no quarantine, and content about the page obtained lawfully by other means is still mined.
 
-    Semantics, RFC 9309: robots.txt is read at the EXACT origin (scheme, host and port) of the
-    url, under the SAME agent string the page fetch sends. 404 means allow. 5xx or unreachable
-    means treat as a complete disallow and re-check later -- the old "unreadable, treated as
-    allowing" was the opposite of the standard. A 403 on robots.txt is a hold.
+    Semantics: robots.txt is read at the EXACT origin (scheme, host and port) of the url, under
+    the SAME agent string the page fetch sends, groups matched on its product token, and a read
+    robots.txt is re-read at most once per 24h per origin. 404 means allow. 5xx or unreachable
+    means a complete disallow FOR NOW, re-read on a timer -- not a refusal. A 401/403/429 on
+    robots.txt is a PERSON-RELEASED hold (auditor's ruling 2026-10-14): the host is recorded as
+    `site:<host>` and gets zero requests until `release_site_hold` names who released it.
     """
     from urllib.robotparser import RobotFileParser
     parts = urllib.parse.urlsplit(url)
-    robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
-    req = urllib.request.Request(robots, headers={"User-Agent": agent})
-    try:
-        with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
-            body = r.read(ROBOTS_MAX_BYTES)
-    except urllib.error.HTTPError as e:
-        code = int(getattr(e, "code", 0) or 0)
-        if code in (401, 403):
-            return RobotsVerdict(False, "robots_forbidden",
-                                 f"{robots} answered HTTP {code}: held, re-checked later",
+    host = parts.netloc.lower()
+    origin = f"{parts.scheme}://{parts.netloc}"
+    robots = f"{origin}/robots.txt"
+    held = active_site_hold(host)
+    if held is not None:
+        return RobotsVerdict(False, "person_hold",
+                             f"{host} carries an unreleased {held.get('verdict')} (HTTP "
+                             f"{held.get('status')}) since {held.get('held_at')}: zero requests "
+                             f"until a person releases it", robots, hold=held)
+    now = _now()
+    cached = _cached_robots(origin, now)
+    body: bytes | None = None
+    if cached is not None:
+        if cached.get("absent"):
+            return RobotsVerdict(True, "robots_absent",
+                                 f"{robots} answered HTTP {cached.get('status')} (cached): no "
+                                 f"rules, allow", robots)
+        body = str(cached.get("body") or "").encode("utf-8")
+    else:
+        req = urllib.request.Request(robots, headers={"User-Agent": agent})
+        try:
+            with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
+                body = r.read(ROBOTS_MAX_BYTES)
+        except urllib.error.HTTPError as e:
+            code = int(getattr(e, "code", 0) or 0)
+            if code in PERSON_HOLD_STATUSES:
+                rec = site_hold_record(host, url, code, "ROBOTS_HOLD", at=now)
+                _record_site_hold(rec)
+                return RobotsVerdict(False, "person_hold",
+                                     f"{robots} answered HTTP {code}: ROBOTS_HOLD on {host}, "
+                                     f"zero requests until a person releases it", robots,
+                                     hold=rec)
+            if code >= 500:
+                return RobotsVerdict(False, "robots_5xx",
+                                     f"{robots} answered HTTP {code}: treated as disallow for "
+                                     f"now (RFC 9309 2.3.1.4), re-checked later", robots,
+                                     recheck=True)
+            _cache_robots(origin, {"fetched_at": now, "status": code, "absent": True})
+            return RobotsVerdict(True, "robots_absent",
+                                 f"{robots} answered HTTP {code}: no rules, allow "
+                                 f"(RFC 9309 2.3.1.3)", robots)
+        except Exception as exc:
+            return RobotsVerdict(False, "robots_unreachable",
+                                 f"{robots} unreachable ({type(exc).__name__}): treated as "
+                                 f"disallow for now (RFC 9309 2.3.1.4), re-checked later",
                                  robots, recheck=True)
-        if code == 429 or code >= 500:
-            return RobotsVerdict(False, "robots_5xx",
-                                 f"{robots} answered HTTP {code}: treated as disallow for now "
-                                 f"(RFC 9309 2.3.1.4), re-checked later", robots, recheck=True)
-        return RobotsVerdict(True, "robots_absent",
-                             f"{robots} answered HTTP {code}: no rules, allow (RFC 9309 2.3.1.3)",
-                             robots)
-    except Exception as exc:
-        return RobotsVerdict(False, "robots_unreachable",
-                             f"{robots} unreachable ({type(exc).__name__}): treated as disallow "
-                             f"for now (RFC 9309 2.3.1.4), re-checked later", robots, recheck=True)
+        _cache_robots(origin, {"fetched_at": now, "status": 200,
+                               "body": body.decode("utf-8", errors="replace")})
+    token = agent.split("/")[0].strip() or agent
     rp = RobotFileParser()
     rp.parse(body.decode("utf-8", errors="replace").splitlines())
-    if rp.can_fetch(agent, url):
-        return RobotsVerdict(True, "allowed", f"{robots} consulted: allowed for {agent!r}",
+    if rp.can_fetch(token, url):
+        return RobotsVerdict(True, "allowed", f"{robots} consulted: allowed for {token!r}",
                              robots)
-    return RobotsVerdict(False, "disallow", f"{robots} disallows this path for {agent!r}", robots)
+    return RobotsVerdict(False, "disallow", f"{robots} disallows this path for {token!r}", robots)
 
 
-def _robots_allows(url: str, agent: str = USER_AGENT) -> tuple[bool, str]:
+def _robots_allows(url: str, agent: str = DESK_UA) -> tuple[bool, str]:
     """(allowed, why) -- the tuple shape older callers read. See `robots_verdict`."""
     v = robots_verdict(url, agent)
     return v.allowed, v.why
@@ -431,18 +557,19 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # a Disallow, or a robots.txt RFC 9309 does not let us read as consent, means NO FETCH. The
     # skip is a HOLD with a named cause, written on the row like every other verdict, never a
     # silent drop.
-    rv = robots_verdict(url, USER_AGENT)
+    rv = robots_verdict(url, DESK_UA)
     rec["robots"] = rv.why
     rec["robots_disallows"] = not rv.allowed
     if not rv.allowed:
         rec.update({
             "status": "BLOCKED_BY_ROBOTS", "hold_cause": f"robots:{rv.cause}",
-            "robots_recheck": rv.recheck,
+            "robots_recheck": rv.recheck, "site_hold": rv.hold,
             "terms_note": (f"robots.txt hold ({rv.cause}): this page is not fetched (LAWS 5e, "
                            f"amended 2026-10-14); content about it obtained lawfully by other "
                            f"means is still labelled and mined"),
             "why": (f"HOLD, not a drop: {rv.why}"
-                    + ("; re-checked next pass" if rv.recheck else ""))})
+                    + ("; re-checked next pass" if rv.recheck else "")
+                    + ("; released only by a person (release_site_hold)" if rv.hold else ""))})
         return rec
 
     # CONDITIONAL GET. A 304 costs a round trip and no body, and most of these sources publish
@@ -454,7 +581,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # exactly what a point-in-time store wants to hear. It is recorded as UNCHANGED so a reader
     # can tell "nothing new" from "nothing fetched", which is the same distinction this file
     # draws everywhere else.
-    headers = {"User-Agent": USER_AGENT, "Accept": "*/*"}
+    headers = {"User-Agent": DESK_UA, "Accept": "*/*"}
     if isinstance(validators, dict):
         if validators.get("etag"):
             headers["If-None-Match"] = str(validators["etag"])
@@ -593,7 +720,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--timeout", type=float, default=25.0)
     ap.add_argument("--budget", type=float, default=600.0, help="seconds for the whole pass")
     ap.add_argument("--dry-run", action="store_true", help="list what is due and fetch nothing")
+    ap.add_argument("--release-host", metavar="HOST",
+                    help="release a person-held site hold (site:<HOST>) and exit")
+    ap.add_argument("--released-by", metavar="NAME", help="who releases it (required)")
     args = ap.parse_args(argv)
+    if args.release_host:
+        row = release_site_hold(args.release_host, args.released_by or "")
+        print(f"asia collector: released {row['key']} ({row['verdict']}, HTTP {row['status']}) "
+              f"by {row['released_by']}")
+        return 0
 
     registry = _read(REGISTRY, {})
     sources = [s for s in (registry.get("sources") or []) if isinstance(s, dict)]
@@ -686,7 +821,14 @@ def main(argv: list[str] | None = None) -> int:
         list(pool.map(lambda t: _one(*t), list(enumerate(todo))))
     rows = [r for r in rows if r is not None]
 
-    _write_atomic(STATE, json.dumps(state, indent=1))
+    # SITE HOLDS LIVE ON DISK, NOT IN THIS PASS'S COPY: `robots_verdict` records them and
+    # `release_site_hold` releases them while a pass may be running, so the file's `site:` rows
+    # win over the copy loaded at the start of the pass.
+    with _STATE_LOCK:
+        disk = _read(STATE, {}) or {}
+        state = {k: v for k, v in state.items() if not str(k).startswith("site:")}
+        state.update({k: v for k, v in disk.items() if str(k).startswith("site:")})
+        _write_atomic(STATE, json.dumps(state, indent=1))
     census = Counter(str(r.get("status")) for r in rows)
     doc = {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),

@@ -449,8 +449,12 @@ page whose robots.txt disallows it is **NOT fetched**, and the skip is logged as
 named cause** (`BLOCKED_BY_ROBOTS`, `hold_cause`), never as a silent drop: the source's row stays
 visible with its `robots`, `robots_disallows` and `terms_note`. The semantics are RFC 9309's:
 robots.txt is read at the **exact host** (scheme, host and port) of the page, under the **User-Agent
-the fetch actually sends**; a **404** on robots.txt means **allow**; a **5xx or an unreachable**
-robots.txt means **treat as disallow and re-check later**; a **403** on robots.txt is a **hold**.
+the fetch actually sends** (groups matched on its product token), and a robots.txt that was read is
+re-read **at most once per 24h per host**; a **404** on robots.txt means **allow**; a **5xx or an
+unreachable** robots.txt means **treat as disallow and re-check on a timer** -- that is not a
+refusal; a **401, 403 or 429** on robots.txt is a **PERSON-RELEASED HOLD** (auditor's ruling
+2026-10-14): the host is recorded as `site:<host>` (`ROBOTS_HOLD`), receives **zero requests**, and
+no timer ever releases it -- only a named person does (`released_by`, `released_at`).
 Nothing else in this section changes: labels never stop mining, there is no quarantine, the
 `machine_use_allowed=false` veto stays deleted, there is no public-only pre-filter, and source
 class only weights evidence. Robots moved from "label only" to "respected at fetch time"; it

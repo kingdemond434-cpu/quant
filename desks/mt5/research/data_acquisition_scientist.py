@@ -561,7 +561,8 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
     REGISTERED_NO_MACHINE_EXTRACTION here; that was a discovery brake and stays deleted.
     ROBOTS IS RESPECTED AT FETCH TIME (LAWS 5e, AMENDED 2026-10-14 07:35Z, decision card
     cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): a Disallow -- or a robots.txt that
-    answered 5xx, 401/403 or could not be reached -- means the sample page is NOT fetched. The
+    answered 5xx or could not be reached (a timed re-check), or 401/403/429 (a person-released
+    site hold, zero requests to the host) -- means the sample page is NOT fetched. The
     row is returned as a BLOCKED_BY_ROBOTS HOLD naming its cause, so the request stays visible.
     """
     url = str(cand.get("url") or "")
@@ -585,6 +586,7 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
         return {"dataset": cand["dataset"], "status": "BLOCKED_BY_ROBOTS", "url": url,
                 "hold_cause": f"robots:{rv.cause}", "robots": robots_note,
                 "robots_disallows": True, "robots_recheck": bool(rv.recheck),
+                "site_hold": getattr(rv, "hold", None),
                 "terms_note": note.strip(" |"),
                 "why": f"HOLD, not a drop: {robots_note}"}
     terms_note = verdict.terms_note or ""
