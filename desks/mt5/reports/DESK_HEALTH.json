@@ -1,11 +1,11 @@
 {
   "schema": "desk_health/1",
-  "checked_at": "2026-10-12T07:16:57+00:00",
+  "checked_at": "2026-10-13T22:11:25+00:00",
   "desk_root": "C:\\opt\\quant\\desks\\mt5",
   "verdict": "PROBLEM",
   "counts": {
-    "OK": 6,
-    "PROBLEM": 12,
+    "OK": 8,
+    "PROBLEM": 10,
     "UNKNOWN": 0
   },
   "findings": [
@@ -16,23 +16,23 @@
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
-      "level": "OK",
-      "message": "MT5-Gateway: Enabled, last run 10/12/2026 9:16:01 AM, result 0 -- places and manages orders -- the money path"
+      "level": "PROBLEM",
+      "message": "MT5-Gateway is NOT INSTALLED on this machine -- places and manages orders -- the money path. Nothing runs it, so nothing it produces will ever appear."
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "PROBLEM",
-      "message": "MT5-Hourly last run 10/12/2026 9:00:01 AM and returned -2147020576 (non-zero = it failed) -- the hourly chain: health, mining, sync"
+      "message": "MT5-Hourly is NOT INSTALLED on this machine -- the hourly chain: health, mining, sync. Nothing runs it, so nothing it produces will ever appear."
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "PROBLEM",
-      "message": "MT5-Shadow last run 10/12/2026 8:55:01 AM and returned 1 (non-zero = it failed) -- forward evidence for candidate sleeves"
+      "message": "MT5-Shadow is NOT INSTALLED on this machine -- forward evidence for candidate sleeves. Nothing runs it, so nothing it produces will ever appear."
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "PROBLEM",
-      "message": "MT5-Gauntlet last run 10/12/2026 9:16:01 AM and returned -2147020576 (non-zero = it failed) -- judges the docket and mints certificates"
+      "message": "MT5-Gauntlet is NOT INSTALLED on this machine -- judges the docket and mints certificates. Nothing runs it, so nothing it produces will ever appear."
     },
     {
       "section": "RUNNING NOW",
@@ -41,8 +41,8 @@
     },
     {
       "section": "RUNNING NOW",
-      "level": "PROBLEM",
-      "message": "the gateway pass is NOT running (run_gateway_loop is absent from the process list)"
+      "level": "OK",
+      "message": "the gateway pass is running (run_gateway_loop|gateway_resident)"
     },
     {
       "section": "RUNNING NOW",
@@ -51,38 +51,38 @@
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
-      "level": "PROBLEM",
-      "message": "data/gateway_state.json is 9.1h old (expected under 1h) -- the gateway, every pass has stopped producing"
+      "level": "OK",
+      "message": "data/gateway_state.json is 0.0h old -- the gateway, every pass"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/hypotheses/edge_search_results.json is 17.5h old (expected under 3h) -- the SEARCH leg has stopped producing"
+      "message": "data/hypotheses/edge_search_results.json is 56.5h old (expected under 3h) -- the SEARCH leg has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/hypotheses/orthogonal_candidates.json is 18.3h old (expected under 3h) -- the SWEEP leg has stopped producing"
+      "message": "data/hypotheses/orthogonal_candidates.json is 8.2h old (expected under 3h) -- the SWEEP leg has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "OK",
-      "message": "reports/UNIVERSAL_SURVIVORS.json is 0.0h old -- the gauntlet's canon"
+      "message": "reports/UNIVERSAL_SURVIVORS.json is 1.1h old -- the gauntlet's canon"
+    },
+    {
+      "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
+      "level": "PROBLEM",
+      "message": "reports/pf_allocation.json is 0.6h old (expected under 0h) -- the allocator has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "OK",
-      "message": "reports/pf_allocation.json is 0.0h old -- the allocator"
+      "message": "reports/BOX_STATE_FLOW.json is 0.9h old -- publish_state's delivery meter"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
-      "level": "PROBLEM",
-      "message": "reports/BOX_STATE_FLOW.json is 2.1h old (expected under 2h) -- publish_state's delivery meter has stopped producing"
-    },
-    {
-      "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
-      "level": "PROBLEM",
-      "message": "reports/GATE_VERDICT_DIGEST.json is 2.4h old (expected under 2h) -- publish_state's gate verdict digest has stopped producing"
+      "level": "OK",
+      "message": "reports/GATE_VERDICT_DIGEST.json is 0.9h old -- publish_state's gate verdict digest"
     },
     {
       "section": "IS THE BOX'S STATE REACHING ORIGIN",
@@ -97,7 +97,7 @@
     {
       "section": "DOES A STALL PAGE ANYONE  (stall_watch.json, every ten minutes)",
       "level": "PROBLEM",
-      "message": "ALERTS NOT ARMED: STALLED pages reach no one (stall_watch 2026-10-12T06:50:34.7571502Z, watcher verdict FLOWING)"
+      "message": "ALERTS NOT ARMED: STALLED pages reach no one (stall_watch 2026-10-13T21:51:29.3436879Z, watcher verdict FLOWING)"
     }
   ]
 }

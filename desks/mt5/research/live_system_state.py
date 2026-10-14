@@ -405,10 +405,13 @@ def _ledger_24h(raw: bytes | None, now: datetime) -> dict[str, Any]:
 
 
 def _execution_section(gateway: Any, ledger: bytes | None, now: datetime) -> dict[str, Any]:
+    from libs.ops.gateway_clock import placement_pass_utc
     gw = gateway if isinstance(gateway, dict) else {}
     return {"status": _status(bool(gw), ledger is not None), **_fields(gw, *EXEC_FIELDS),
-            "last_pass_at": _pick(gw, "placement_pass"),
-            "last_pass_age_h": _age_h(gw.get("placement_pass"), now),
+            # broker time under a UTC label until the gateway writes UTC (L3): converted here
+            "last_pass_at": (_pass.isoformat(timespec="seconds")
+                             if (_pass := placement_pass_utc(gw)) else UNMEASURED),
+            "last_pass_age_h": _age_h(_pass.isoformat() if _pass else None, now),
             "positions": _len(gw.get("position")), "pending_orders": _len(gw.get("pending")),
             "live_24h": _ledger_24h(ledger, now)}
 

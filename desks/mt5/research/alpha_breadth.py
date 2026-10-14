@@ -432,6 +432,67 @@ def _tasks(empty: list[str], head: dict[str, Any], clusters: dict[str, Any]) -> 
     return tasks
 
 
+#: The allocator's own sleeve-by-day return matrix (`libs.research.alpha_fitness.SLEEVE_DAILY`).
+ALLOCATOR_DAILY = BASE / "data" / "pf_allocator_cache" / "daily_r.parquet"
+
+
+def allocator_history_reading(path: Path = ALLOCATOR_DAILY) -> dict[str, Any]:
+    """Realised breadth on the allocator's BACKTEST-REPLAY sleeve matrix. Informational only.
+
+    WHAT THE MATRIX IS (audit 2026-10-13). `daily_r.parquet` is written only by
+    `pf_allocator.build_evidence` and is 100% backtest replay: the gold windows plus hunt
+    survivors, not the funded book and not forward fills. A correlation read off it is an
+    in-sample, pre-selection number about candidates, so it can never stand in for the forward
+    reading and never enters the headline.
+
+    WHY PUBLISH IT AT ALL. It is the only long-overlap view of the same sleeves, measured with the
+    same estimator (`realised_breadth`), and it says whether their replayed returns look like
+    many bets or few. Its eventual lawful use is as a SHRINKAGE PRIOR on the forward rho, and only
+    once a provenance-stamped store of funded sleeves' post-selection days exists. Until then it
+    carries `in_headline: False` and no `would_raise_headline_to`. A flat (exact zero) or missing
+    day is ABSENT, never a zero, as in `daily_sleeve_returns`.
+    """
+    base: dict[str, Any] = {"name": "allocator_history_returns", "informational": True,
+            "in_headline": False,
+            "headline_unchanged": True, "source": str(path),
+            "provenance": "backtest_replay (pf_allocator.build_evidence): gold windows + hunt "
+                          "survivors, not the funded book; never a headline or capital input"}
+    try:
+        import pandas as pd
+        df = pd.read_parquet(path)
+    except Exception as exc:
+        return {**base, "status": UNMEASURED, "n_eff": None, "n_obs": 0,
+                "why": f"allocator daily matrix unreadable: {type(exc).__name__}: {exc}"}
+    try:
+        mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat()
+    except OSError:
+        mtime = None
+    # THE UNIT IS R, NOT A RETURN (checked 2026-10-13): `portfolio_projection.build_daily` fills
+    # the matrix with each sleeve's per-trade R multiples SUMMED per date, so the values are
+    # additive risk units (a 1.5R day is common), neither simple nor log returns. Several rows
+    # on one date are therefore SUMMED into that date, exactly as build_daily does, never
+    # compounded and never last-row-wins (a date key cut from a sub-daily index kept one row).
+    series: dict[str, dict[str, float]] = {}
+    collapsed = 0
+    for col in df.columns:
+        total: dict[str, float] = {}
+        rows: dict[str, int] = {}
+        for k, v in df[col].items():
+            if not (isinstance(v, (int, float)) and np.isfinite(v) and v != 0.0):
+                continue
+            day = str(k)[:10]
+            total[day] = total.get(day, 0.0) + float(v)
+            rows[day] = rows.get(day, 0) + 1
+        collapsed += sum(c - 1 for c in rows.values())
+        out = {d: t for d, t in total.items() if t != 0.0}
+        if out:
+            series[str(col)] = out
+    r = realised_breadth(series, name="allocator_history_returns")
+    return {**base, **r.as_dict(), "n_sleeves": len(series), "source_mtime": mtime,
+            "unit": "R (per-trade R multiples summed per date, as build_daily writes them)",
+            "rows_summed_into_a_day": collapsed}
+
+
 def run(write_queue: bool = True) -> dict[str, Any]:
     exp = book_exposure()
     exposure = exp["exposure"]
@@ -491,6 +552,7 @@ def run(write_queue: bool = True) -> dict[str, Any]:
     # the readings and OUTSIDE the headline minimum until the allocator consumes it, the same
     # discipline as timestamp_overlap.
     factor_rank = factor_rank_reading()
+    allocator_history = allocator_history_reading()
     overlap = timestamp_overlap(trading_minutes(), clusters["traded_labels"])
     k_head = head.get("effective_breadth")
     overlap["headline_unchanged"] = True
@@ -502,6 +564,7 @@ def run(write_queue: bool = True) -> dict[str, Any]:
         "gaps": gaps,
         "timestamp_overlap": overlap,
         "factor_rank": factor_rank,
+        "allocator_history": allocator_history,
         "nominal": {
             "sleeves_with_ledgers": exp["n_sleeves_total"],
             "sleeves_in_the_measurement": int(nominal_measured),
