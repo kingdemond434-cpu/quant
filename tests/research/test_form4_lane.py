@@ -183,3 +183,108 @@ def test_the_event_family_enters_the_first_bar_after_acceptance(
     assert len(sigs) == 1 and sigs[0].side == 1
     assert sigs[0].time == pd.Timestamp(at + timedelta(hours=2)).ceil("1h")
     assert fic.family_insider_cluster_drift(df, symbol="Adobe") == []
+
+
+# ------------------------------------------------------------------------------- the hard stop
+
+def _refusing(calls: list[str], status: int, on: str, retry_after: str | None = None):
+    """The fake EDGAR, except every URL containing `on` answers `status`."""
+    inner = _edgar([])
+
+    def get(url: str, headers: dict[str, str]):
+        calls.append(url)
+        if on in url:
+            return status, b"", ({"Retry-After": retry_after} if retry_after else {})
+        return inner(url, headers)
+    return get
+
+
+def _seed_register(path: Path) -> None:
+    path.write_text(json.dumps({"note": "n", "sources": {"other": {"diagnosis": "X"}}}),
+                    encoding="utf-8")
+
+
+def test_a_403_ends_the_pass_backs_off_an_hour_and_the_next_pass_requests_nothing(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL", "Zeta": "AAPL"})
+    reg = tmp_path / "blocked_sources.json"
+    _seed_register(reg)
+    calls: list[str] = []
+    rep = fl.run(get=_refusing(calls, 403, "doc0.xml"), now=NOW, state_dir=tmp_path / "f4",
+                 series_root=tmp_path / "s", dry_run=True, register=reg)
+    # ticker map, submissions, then the refused document -- and nothing after it
+    assert calls[-1].endswith("doc0.xml") and len(calls) == 3
+    assert rep["fetch"]["status"] == "METHOD_BLOCKED" and rep["status"] == fl.UNMEASURED
+    assert rep["new_data"] == fl.UNMEASURED
+    blk = rep["fetch"]["block"]
+    assert (blk["http_status"], blk["url_class"], blk["at"]) == (
+        403, "archive_document", NOW.isoformat(timespec="seconds"))
+    assert blk["backoff_source"] == "exponential" and blk["backoff_s"] == 3600.0
+    doc = json.loads(reg.read_text(encoding="utf-8"))
+    assert "other" in doc["sources"]                         # appended, never replaced
+    entry = doc["sources"][fl.REGISTER_KEY]
+    assert entry["diagnosis"] == "METHOD_BLOCKED" and "HTTP 403" in entry["error"]
+
+    calls.clear()
+    rep2 = fl.run(get=_refusing(calls, 403, "doc0.xml"), now=NOW + timedelta(minutes=59),
+                  state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
+                  register=reg)
+    assert calls == [] and rep2["fetch"]["skipped"] is True
+    assert rep2["fetch"]["status"] == "METHOD_BLOCKED" and rep2["status"] == fl.UNMEASURED
+
+    # expired: one more refusal doubles the wait
+    calls.clear()
+    rep3 = fl.run(get=_refusing(calls, 403, "doc0.xml"), now=NOW + timedelta(hours=2),
+                  state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
+                  register=reg)
+    assert len(calls) == 2 and calls[-1].endswith("doc0.xml")   # ciks cached: no ticker map
+    assert rep3["fetch"]["block"]["backoff_s"] == 7200.0
+    assert json.loads(reg.read_text())["sources"][fl.REGISTER_KEY]["attempts"] == 2
+
+
+def test_a_429_honours_retry_after_and_scoring_of_held_data_still_runs(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    reg = tmp_path / "blocked_sources.json"
+    sd = tmp_path / "f4"
+    fl.run(get=_edgar([]), now=NOW, state_dir=sd, series_root=tmp_path / "s", dry_run=True,
+           register=reg)                                     # one clean pass collects data
+    state = json.loads((sd / "state.json").read_text())
+    state["seen"] = []                                       # make the documents owed again
+    state["backfilled"] = []
+    (sd / "state.json").write_text(json.dumps(state))
+    calls: list[str] = []
+    rep = fl.run(get=_refusing(calls, 429, "submissions", retry_after="120"),
+                 now=NOW, state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert len(calls) == 1 and "submissions" in calls[0]
+    blk = rep["fetch"]["block"]
+    assert blk["status"] == "METHOD_BLOCKED" and blk["http_status"] == 429
+    assert blk["backoff_source"] == "retry_after" and blk["backoff_s"] == 120.0
+    assert rep["transactions"] == 3 and rep["clusters"] == 1   # held data still scored
+    calls.clear()
+    rep2 = fl.run(get=_refusing(calls, 429, "submissions"), now=NOW + timedelta(seconds=119),
+                  state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert calls == [] and rep2["clusters"] == 1
+    assert rep2["new_data"] == fl.UNMEASURED
+
+
+def test_a_401_reads_needs_key_and_a_clean_pass_clears_the_ladder(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    reg = tmp_path / "blocked_sources.json"
+    calls: list[str] = []
+    rep = fl.run(get=_refusing(calls, 401, "company_tickers"), now=NOW,
+                 state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
+                 register=reg)
+    assert len(calls) == 1 and rep["fetch"]["status"] == "NEEDS_KEY"
+    assert json.loads(reg.read_text())["sources"][fl.REGISTER_KEY]["diagnosis"] == "NEEDS_KEY"
+    rep2 = fl.run(get=_edgar([]), now=NOW + timedelta(hours=2), state_dir=tmp_path / "f4",
+                  series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert rep2["fetch"]["status"] == "FETCHED" and rep2["status"] == "OK"
+    assert "block" not in json.loads((tmp_path / "f4" / "state.json").read_text())
+
+
+def test_retry_after_reads_seconds_and_http_dates() -> None:
+    assert fl.retry_after_s("30", NOW) == 30.0
+    assert fl.retry_after_s("Wed, 14 Oct 2026 13:00:00 GMT", NOW) == 3600.0
+    assert fl.retry_after_s("soon", NOW) is None and fl.retry_after_s(None, NOW) is None

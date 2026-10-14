@@ -35,6 +35,14 @@ WHAT THIS DOES, EVERY HOUR, BOUNDED:
                       store (the news lane; `universe_policy.NEWS_LANE_FAMILIES`).
           One cell is one trial, charged at the docket; nothing is donated twice.
 
+A 401, 403 OR 429 IS A HARD STOP. The first one ends the pass's SEC fetching; the lane records
+METHOD_BLOCKED (403/429) or NEEDS_KEY (401) with the status, URL class and time, persists a
+backoff marker (Retry-After when the response names one, else 1h doubling per consecutive block)
+that makes later passes request nothing until it expires, and appends the block to the desk's
+register `data/intelligence/blocked_sources.json`. Scoring what is already held still runs, and
+the report reads UNMEASURED for new data. No retry around the block, no identity rotation, no
+other route to the same content.
+
     python desks/mt5/research/form4_lane.py --once [--budget-s 300]
 """
 from __future__ import annotations
@@ -95,7 +103,22 @@ MIN_EVENTS = 3
 EVENT_FAMILY = "insider_cluster_drift"
 EVENT_HOLD_DAYS = 5
 
-Getter = Callable[[str, dict[str, str]], tuple[int, bytes]]
+#: A getter returns (status, body) or (status, body, response headers); the headers are read
+#: only for Retry-After.
+Getter = Callable[[str, dict[str, str]], tuple[Any, ...]]
+
+#: THE HARD STOP (standing project rule). A 401, 403 or 429 ends the pass's SEC fetching on the
+#: spot: the lane backs off, marks itself with the reason and moves on to scoring what it already
+#: holds. It never retries around the block, rotates identity or takes another route to the same
+#: gated content. 401 asks for a key; 403/429 say this method is blocked for now.
+HARD_STOP: dict[int, str] = {401: "NEEDS_KEY", 403: "METHOD_BLOCKED", 429: "METHOD_BLOCKED"}
+#: Backoff when the response names no Retry-After: 1h, doubling per consecutive block, capped.
+BACKOFF_BASE_S = 3600.0
+BACKOFF_MAX_S = 7 * 86400.0
+#: The desk's one register of sources that stopped yielding (written by the regional survivor
+#: hunters too); the block is recorded there, never in a register of its own.
+BLOCKED_REGISTER = DESK / "data" / "intelligence" / "blocked_sources.json"
+REGISTER_KEY = "sec_edgar_form4"
 
 
 # ------------------------------------------------------------------------------- io helpers
@@ -148,7 +171,7 @@ def urllib_getter(ua: str) -> Getter:
     """A spaced GET with the declared User-Agent. Never logs the header."""
     last = [0.0]
 
-    def get(url: str, headers: dict[str, str]) -> tuple[int, bytes]:
+    def get(url: str, headers: dict[str, str]) -> tuple[int, bytes, dict[str, str]]:
         wait = SPACING_S - (time.monotonic() - last[0])
         if wait > 0:
             time.sleep(wait)
@@ -157,12 +180,73 @@ def urllib_getter(ua: str) -> Getter:
                                                    "Accept-Encoding": "identity", **headers})
         try:
             with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
-                return int(resp.status), resp.read(8 * 1024 * 1024)
+                return int(resp.status), resp.read(8 * 1024 * 1024), {}
         except urllib.error.HTTPError as exc:
-            return int(exc.code), b""
+            ra = exc.headers.get("Retry-After") if exc.headers is not None else None
+            return int(exc.code), b"", ({"Retry-After": str(ra)} if ra else {})
         except (urllib.error.URLError, TimeoutError, OSError):
-            return 0, b""
+            return 0, b"", {}
     return get
+
+
+def _call(get: Getter, url: str) -> tuple[int, bytes, dict[str, str]]:
+    out = get(url, {})
+    status, body = int(out[0]), out[1]
+    headers = out[2] if len(out) > 2 and isinstance(out[2], dict) else {}
+    return status, body, {str(k).lower(): str(v) for k, v in headers.items()}
+
+
+def retry_after_s(value: str | None, now: datetime) -> float | None:
+    """Retry-After as seconds from `now`: delta-seconds or an HTTP-date; None when absent/bad."""
+    if not value:
+        return None
+    v = value.strip()
+    if v.isdigit():
+        return float(v)
+    try:
+        from email.utils import parsedate_to_datetime
+        at = parsedate_to_datetime(v)
+    except (TypeError, ValueError, IndexError):
+        return None
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    return max(0.0, (at - now).total_seconds())
+
+
+def block_marker(status: int, url_class: str, headers: dict[str, str], now: datetime,
+                 prior: dict[str, Any] | None) -> dict[str, Any]:
+    """The persisted hard-stop marker: who refused, which URL class, when, and until when."""
+    consecutive = int((prior or {}).get("consecutive") or 0) + 1
+    ra = retry_after_s(headers.get("retry-after"), now)
+    wait = ra if ra is not None else min(BACKOFF_MAX_S,
+                                         BACKOFF_BASE_S * 2 ** (consecutive - 1))
+    return {"status": HARD_STOP[status], "http_status": status, "url_class": url_class,
+            "at": now.isoformat(timespec="seconds"),
+            "until": (now + timedelta(seconds=wait)).isoformat(timespec="seconds"),
+            "backoff_s": wait, "backoff_source": "retry_after" if ra is not None else
+            "exponential", "consecutive": consecutive}
+
+
+def record_block(marker: dict[str, Any], register: Path) -> None:
+    """Append the block to the desk's existing blocked-sources register (same schema as the
+    regional survivor hunters' entries)."""
+    reg = _read_json(register, None)
+    if not isinstance(reg, dict):
+        reg = {"note": "sources that returned no survivor records -- a WORK QUEUE, never a "
+                       "discovery.", "sources": {}}
+    e = reg.setdefault("sources", {}).setdefault(REGISTER_KEY, {"first_seen": marker["at"],
+                                                                 "region": "US"})
+    e.update({"last_seen": marker["at"], "url": f"sec.gov {marker['url_class']}",
+              "diagnosis": marker["status"],
+              "fix_hint": (f"HARD STOP: HTTP {marker['http_status']} -- backed off until "
+                           f"{marker['until']}; no retry around the block, no identity "
+                           "rotation, no other route to the same content"
+                           + ("; a key/credential is needed" if marker["status"] == "NEEDS_KEY"
+                              else "")),
+              "error": f"HTTP {marker['http_status']} on {marker['url_class']}",
+              "blocked_until": marker["until"],
+              "attempts": int(e.get("attempts", 0)) + 1})
+    _write_json(register, reg)
 
 
 # ------------------------------------------------------------------------------- instruments
@@ -290,11 +374,21 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
                issuers: dict[str, str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """New transactions this pass, and what the pass did. `state` is updated in place."""
     rep: dict[str, Any] = {"requests": 0, "errors": Counter(), "issuers_visited": 0,
-                           "filings_read": 0, "transactions": 0}
+                           "filings_read": 0, "transactions": 0, "block": None}
+
+    def stopped(status: int, url_class: str, headers: dict[str, str]) -> bool:
+        if status not in HARD_STOP:
+            return False
+        rep["block"] = block_marker(status, url_class, headers, now, state.get("block"))
+        return True
+
     ciks: dict[str, int] = {k: int(v) for k, v in (state.get("ciks") or {}).items()}
     if not ciks:
-        status, raw = get(TICKER_MAP_URL, {})
+        status, raw, hdr = _call(get, TICKER_MAP_URL)
         rep["requests"] += 1
+        if stopped(status, "ticker_map", hdr):
+            rep["errors"] = dict(rep["errors"])
+            return [], rep
         if status != 200:
             rep["errors"][f"ticker map HTTP {status}"] += 1
             return [], rep
@@ -319,8 +413,11 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             no_cik.append(sym)
             backfilled.add(sym)          # nothing to backfill: the SEC lists no such filer
             continue
-        status, raw = get(SUBMISSIONS_URL.format(cik=cik), {})
+        status, raw, hdr = _call(get, SUBMISSIONS_URL.format(cik=cik))
         rep["requests"] += 1
+        if stopped(status, "submissions", hdr):
+            visited -= 1                 # the refused issuer is first in line after the backoff
+            break
         if status != 200:
             rep["errors"][f"submissions HTTP {status}"] += 1
             continue
@@ -334,8 +431,11 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
                 break
             acc = f["accession"]
             url = ARCHIVE_URL.format(cik=cik, acc=acc.replace("-", ""), doc=f["document"])
-            status, body = get(url, {})
+            status, body, hdr = _call(get, url)
             rep["requests"] += 1
+            if stopped(status, "archive_document", hdr):
+                done_all = False
+                break
             if status != 200:
                 rep["errors"][f"document HTTP {status}"] += 1
                 done_all = False
@@ -347,6 +447,9 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
                             "filed_at": f["filed_at"], "form": f["form"],
                             "first_seen_at": now.isoformat(timespec="seconds")})
                 fresh.append(txn)
+        if rep["block"] is not None:
+            visited -= 1                 # the hard stop: no further SEC request this pass
+            break
         if done_all and len(index) <= DOCS_PER_ISSUER:
             backfilled.add(sym)
     state["cursor"] = (start + visited) % max(1, len(order))
@@ -509,7 +612,7 @@ def donate_new(cells: list[dict[str, Any]], state: dict[str, Any], *, dry_run: b
 
 def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | None = None,
         state_dir: Path | None = None, series_root: Path | None = None,
-        dry_run: bool = False) -> dict[str, Any]:
+        dry_run: bool = False, register: Path | None = None) -> dict[str, Any]:
     now = now or _now()
     sd = state_dir or STATE_DIR
     state_path, txn_path, cl_path = sd / "state.json", sd / "transactions.jsonl", \
@@ -520,7 +623,16 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
                               "issuers": len(issuers), "user_agent_configured": False}
     ua = os.environ.get(UA_ENV, "").strip()
     fetch: dict[str, Any]
-    if get is None and not ua:
+    prior = state.get("block") if isinstance(state.get("block"), dict) else None
+    until = _parse_time((prior or {}).get("until"))
+    if prior and until is not None and now < until:
+        # BACKING OFF: a refusal is honoured until it expires. Nothing is requested, and the
+        # data already held is still scored below.
+        fetch = {"status": prior.get("status"), "requests": 0, "skipped": True,
+                 "why": (f"backing off after HTTP {prior.get('http_status')} on "
+                         f"{prior.get('url_class')} at {prior.get('at')} until {prior['until']}"),
+                 "block": prior}
+    elif get is None and not ua:
         fetch = {"status": "UNCONFIGURED",
                  "why": f"no {UA_ENV}: the SEC's fair-access policy requires a declared "
                         "User-Agent, so nothing was fetched (a configuration gap, not a "
@@ -531,6 +643,12 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
         fresh, rep = fetch_pass(getter, state, time.monotonic() + budget_s * 0.8, now=now,
                                 issuers=issuers)
         fetch = {"status": "FETCHED" if rep["requests"] else "IDLE", **rep}
+        if rep["block"] is not None:
+            state["block"] = rep["block"]
+            fetch["status"] = rep["block"]["status"]
+            record_block(rep["block"], register or BLOCKED_REGISTER)
+        elif rep["requests"]:
+            state.pop("block", None)     # an unrefused pass ends the backoff ladder
         if fresh:
             sd.mkdir(parents=True, exist_ok=True)
             with txn_path.open("a", encoding="utf-8") as fh:
@@ -563,7 +681,9 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
         "event": {"family": EVENT_FAMILY, "cells": len(e_cells), "min_events": MIN_EVENTS,
                   "accruing": accruing},
         "donated": donated,
-        "status": ("OK" if fetch.get("status") != "UNCONFIGURED" or rows else UNMEASURED)})
+        "new_data": (UNMEASURED if fetch.get("status") in set(HARD_STOP.values())
+                     | {"UNCONFIGURED"} else "MEASURED"),
+        "status": ("OK" if fetch.get("status") in {"FETCHED", "IDLE"} else UNMEASURED)})
     return report
 
 
