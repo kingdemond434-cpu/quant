@@ -65,9 +65,10 @@ LIVE PARITY (follows #399). Every rank history is BOUNDED IN MARKET TIME: a sign
 against the states at the base's earlier signals inside the trailing RANK_SPAN_DAYS only, so the
 rule a certificate was earned under depends on a finite span of bars and the gateway can read it
 (`live_h1_bars` says how many; the gateway reads that count for these families and refuses a
-short read by name). A panel state is read only when the panel itself is CURRENT at t -- its
-newest bar within PANEL_CURRENT_HOURS of t -- in the backtest and live alike, so a lagging bar
-store reads None, never a stale state.
+short read by name). Each BASE's own read is measured on real bars (state_gate_base_parity) and
+a base without one is refused by name, never traded on a read its signals were not proven on.
+Live, a panel wrapper's bar store is checked against the terminal and a lagging store is
+refused by name; the replay is unchanged.
 
 R and the entropy are computed only where a base signal exists for sync (one panel read per
 signal time) and over the symbol's own closes for entropy. Every wrapper returns [] -- never an
@@ -78,6 +79,7 @@ from __future__ import annotations
 import bisect
 import contextlib
 import hashlib
+import json
 import math
 import sys
 from collections import deque
@@ -105,12 +107,17 @@ MAX_STALE_HOURS = 96
 #: enough for `min_history` readings from a base that fires weekly, finite so a live read can
 #: hold it. One constant for every wrapper, the backtest and the gateway.
 RANK_SPAN_DAYS = 365
-#: A panel state at t needs the panel's newest bar at or before t to be at most this old: one H1
-#: bar. A bar store lagging t reads None -- on the box and in the replay by the same rule.
-PANEL_CURRENT_HOURS = 1
-#: Bars the base family is assumed to need behind its earliest ranked signal: the read every
-#: H1 family has always had (gateway._FAMILY_H1_BARS).
+#: The floor of the base's read behind the earliest ranked signal: the read every H1 family has
+#: always had (gateway._FAMILY_H1_BARS). The base's own read is MEASURED on real bars by
+#: research/state_gate_base_parity.py and recorded in state_gate_base_reads.json; a base with no
+#: measured read is not live-reproducible (`live_refusal`).
 BASE_H1_BARS = 400
+#: The panel wrappers read their panel from the bar store. Live, a store that has not ingested
+#: the terminal's latest closed bars would hand the gate an older panel than the replay saw --
+#: the gateway checks the store against the terminal for these and refuses a lagging store by
+#: name (gateway._panel_store_lag). The replay is untouched: market closures keep the
+#: MAX_STALE_HOURS allowance on both sides (audit of #403, must-fix 2).
+PANEL_WRAPPERS: frozenset[str] = frozenset({"sync_gated", "absorption_gated"})
 
 #: Mechanism classes each gate admits; anything else is refused (returns []).
 SYNC_HIGH: frozenset[str] = frozenset({"trend", "breakout"})
@@ -282,19 +289,14 @@ def kuramoto_r(panel: dict[str, tuple[np.ndarray, np.ndarray]], t: Any, *, windo
         return None
     stale = int(MAX_STALE_HOURS * 3600 * 1e9)
     rows: list[np.ndarray] = []
-    newest = None
     for stamps, closes in panel.values():
         j = int(np.searchsorted(stamps, at, side="right"))
-        if j:
-            newest = int(stamps[j - 1]) if newest is None else max(newest, int(stamps[j - 1]))
         if j < w or at - int(stamps[j - 1]) > stale:
             continue
         seg = np.asarray(closes[j - w:j], dtype="float64")
         if not np.all(np.isfinite(seg)) or np.any(seg <= 0):
             continue
         rows.append(np.log(seg))
-    if newest is None or at - newest > PANEL_CURRENT_HOURS * HOUR_NS:
-        return None                               # the panel is not current at t
     if len(rows) < max(2, int(min_symbols)):
         return None
     phi = end_phases(np.vstack(rows))
@@ -674,8 +676,6 @@ def aligned_returns(panel: dict[str, tuple[np.ndarray, np.ndarray]], t: Any, *,
     cands, grid = _candidates(panel, at, w + 1)
     if len(cands) < int(min_members) or len(grid) < w + 1:
         return None
-    if at - int(grid[-1]) > PANEL_CURRENT_HOURS * HOUR_NS:
-        return None                               # the panel clock is not current at t
     cols: list[np.ndarray] = []
     for st, cl in cands:
         p = np.searchsorted(st, grid)
@@ -1255,17 +1255,59 @@ def state_lookback_bars(wrapper: str, params: dict[str, Any] | None = None) -> i
     return None
 
 
+_BASE_READS_PATH = Path(__file__).with_name("state_gate_base_reads.json")
+
+
+def base_reads() -> dict[str, Any]:
+    """The recorded measurement of each base's own read (see research/state_gate_base_parity)."""
+    try:
+        doc = json.loads(_BASE_READS_PATH.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def live_refusal(wrapper: str, params: dict[str, Any] | None = None) -> str | None:
+    """Why a certificate of `wrapper` at `params` cannot be traded on a live read, or None.
+
+    The base's signals inside the rank span must be the same on the live read as on the whole
+    history. That is MEASURED per base at the default params the proposer mints; any other base,
+    or base params, or a base the measurement could not match at any read, is refused by name."""
+    if wrapper not in STATE_GATE_FAMILIES:
+        return None
+    p = dict(params or {})
+    base = str(p.get("base_family") or "")
+    if p.get("base_params"):
+        return (f"state gate base {base!r} carries base_params {p.get('base_params')!r}; only the "
+                f"default parameterisation's live read is measured")
+    doc = base_reads()
+    if doc.get("status") != "MEASURED":
+        return "state gate base reads are UNMEASURED (run research/state_gate_base_parity.py)"
+    row = (doc.get("bases") or {}).get(base)
+    if not isinstance(row, dict):
+        return f"state gate base {base!r} has no measured live read"
+    if not isinstance(row.get("read"), int):
+        return (f"state gate base {base!r} is not live-reproducible: "
+                f"{row.get('first_mismatch') or 'no read matched'}")
+    if int(doc.get("rank_span_days") or 0) != int(RANK_SPAN_DAYS):
+        return "state gate base reads were measured at a different rank span"
+    return None
+
+
 def live_h1_bars(wrapper: str, params: dict[str, Any] | None = None) -> int | None:
     """H1 bars a live read must hold for the gate at its last bar to equal the certified one:
-    the base's own read behind the earliest ranked signal, every bar of the trailing rank span
-    (at most 24 a day), and the state's lookback behind that signal. None for a non-wrapper.
+    the base's own MEASURED read behind the earliest ranked signal, every bar of the trailing
+    rank span (at most 24 a day), and the state's lookback behind that signal. None for a
+    non-wrapper, or for a certificate `live_refusal` refuses.
 
     entropy_gated keeps on a fixed z threshold and has no rank history, so it needs no span."""
     look = state_lookback_bars(wrapper, params)
-    if look is None:
+    if look is None or live_refusal(wrapper, params) is not None:
         return None
+    base = str((params or {}).get("base_family") or "")
+    read = int(((base_reads().get("bases") or {}).get(base) or {}).get("read") or 0)
     span = 0 if wrapper == "entropy_gated" else 24 * int(RANK_SPAN_DAYS)
-    return BASE_H1_BARS + span + look
+    return max(BASE_H1_BARS, read) + span + look
 
 
 STATE_GATE_FAMILIES: dict[str, Callable[..., list[Signal]]] = {

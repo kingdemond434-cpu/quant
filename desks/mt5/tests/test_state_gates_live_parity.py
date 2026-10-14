@@ -117,7 +117,7 @@ def test_markov_gate_decides_the_same_on_the_live_read(monkeypatch) -> None:
     df = _bars(close, idx)
     times = list(idx[4000::23])
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
-    need = fsg.live_h1_bars("markov_vol_gated", params)
+    need = fsg.live_h1_bars("markov_vol_gated", {**params, "base_family": "trend_ma_cross"})
     assert need is not None and need < len(idx) - 2000
     full, live = _edge_decisions(fsg.family_markov_vol_gated, df, times, need,
                                  base_family="trend_ma_cross", **params)
@@ -144,7 +144,7 @@ def test_rough_gate_decides_the_same_on_the_live_read(monkeypatch) -> None:
     df = _bars(close, idx)
     times = list(idx[len(idx) // 2::31])
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
-    need = fsg.live_h1_bars("rough_vol_gated")
+    need = fsg.live_h1_bars("rough_vol_gated", {"base_family": "mean_reversion_rsi"})
     assert need is not None and need < len(idx) - 1000
     full, live = _edge_decisions(fsg.family_rough_vol_gated, df, times, need, every=8,
                                  base_family="mean_reversion_rsi")
@@ -156,7 +156,7 @@ def test_fisher_gate_decides_the_same_on_the_live_read(monkeypatch) -> None:
     df = _bars(_close(len(idx), 7), idx)
     times = list(idx[-3000::17])
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
-    need = fsg.live_h1_bars("fisher_rao_gated")
+    need = fsg.live_h1_bars("fisher_rao_gated", {"base_family": "trend_ma_cross"})
     assert need is not None and need < len(idx) - 1000
     full, live = _edge_decisions(fsg.family_fisher_rao_gated, df, times, need,
                                  base_family="trend_ma_cross")
@@ -168,90 +168,186 @@ def test_entropy_gate_decides_the_same_on_the_live_read(monkeypatch) -> None:
     df = _bars(_close(len(idx), 9), idx)
     times = list(idx[2500::7])
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
-    need = fsg.live_h1_bars("entropy_gated")
+    need = fsg.live_h1_bars("entropy_gated", {"base_family": "trend_ma_cross"})
     assert need is not None and need < len(idx) - 500
     full, live = _edge_decisions(fsg.family_entropy_gated, df, times, need,
                                  base_family="trend_ma_cross", threshold=0.0)
     assert full == live and any(full) and not all(full)
 
 
-# ----------------------------------------------------------------- (c) the panel is current ---
-def _panel(n: int, k: int, seed: int, end: pd.Timestamp | None = None
-           ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
-    rng = np.random.default_rng(seed)
-    idx = pd.date_range(end=end or (T0 + pd.Timedelta(hours=n - 1)), periods=n, freq="h")
-    st = idx.as_unit("ns").asi8
-    common = rng.normal(0, 0.001, n)
-    return {f"S{j:02d}": (st, np.exp(np.cumsum(0.7 * common + rng.normal(0, 0.001, n))))
-            for j in range(k)}
+# ------------------------------------------------- (c) REAL bases on REAL bars (audit of #403) ---
+UNIVERSE = _DESK / "data" / "universe"
 
 
-def test_a_lagging_panel_reads_no_state() -> None:
-    """Three hours behind t is a bar store that has not caught up, not a market at t. The replay
-    has the bar at t; a box whose store lags reads None rather than a three-hour-old state."""
-    panel = _panel(1200, 24, 11)
-    last = pd.Timestamp(int(panel["S00"][0][-1]), tz="UTC")
-    assert fsg.kuramoto_r(panel, last) is not None
-    assert fsg.kuramoto_r(panel, last + pd.Timedelta(hours=1)) is not None
-    assert fsg.kuramoto_r(panel, last + pd.Timedelta(hours=3)) is None
-    assert fsg.aligned_returns(panel, last, window=360, min_members=20) is not None
-    assert fsg.aligned_returns(panel, last + pd.Timedelta(hours=3), window=360,
-                               min_members=20) is None
+def _real(symbol: str) -> pd.DataFrame:
+    path = UNIVERSE / f"{symbol}_H1.parquet"
+    if not path.exists():
+        pytest.skip(f"no {symbol} bars on this host")
+    d = pd.read_parquet(path)
+    return d.sort_index()
+
+
+def _real_bases() -> list[str]:
+    import state_gate_proposer as sgp
+    return sorted({b for w in fsg.STATE_GATE_FAMILIES for b in sgp.bases_for(w)})
+
+
+OWN_BAR_WRAPPERS = ("fisher_rao_gated", "markov_vol_gated", "rough_vol_gated", "entropy_gated")
+
+
+@pytest.mark.parametrize("symbol", ["EURUSD", "BTCUSD"])
+@pytest.mark.parametrize("wrapper", OWN_BAR_WRAPPERS)
+def test_every_real_base_decides_the_same_on_the_live_read(wrapper: str, symbol: str) -> None:
+    """Must-fix 1: the synthetic base above hid a base family whose own warm-up outran 400 bars.
+    Here every base the proposer can wrap runs on real bars, and at eight frame ends over the
+    last 200 days the wrapper keeps exactly the same last signal on the full history as on the
+    `live_h1_bars` read alone -- the read the gateway now fetches."""
+    import state_gate_proposer as sgp
+    full = _real(symbol)
+    fn = fsg.STATE_GATE_FAMILIES[wrapper]
+    params = {k: v for k, v in sgp.DEFAULTS[wrapper].items()}
+    checked = kept = 0
+    for base in sgp.bases_for(wrapper):
+        need = fsg.live_h1_bars(wrapper, {"base_family": base, **params})
+        assert need is not None, (wrapper, base)
+        _d, sigs = fsg.base_signals(full, base, {})
+        times = sorted({pd.Timestamp(x.time) for x in sigs
+                        if pd.Timestamp(x.time) >= full.index[-1] - pd.Timedelta(days=200)})
+        for t_end in times[:: max(1, len(times) // 8)][:8]:
+            upto = full.loc[:t_end]
+            a = t_end in {x.time for x in fn(upto, base_family=base, **params)}
+            b = t_end in {x.time for x in fn(upto.iloc[-need:], base_family=base, **params)}
+            assert a == b, (wrapper, base, symbol, str(t_end))
+            checked += 1
+            kept += a
+    assert checked >= 20
+
+
+def test_the_recorded_base_reads_are_the_measured_ones() -> None:
+    """state_gate_base_reads.json changes what the gateway reads, so it must be what the
+    measurement says TODAY: re-measured here, on the same real bars, and compared."""
+    import state_gate_base_parity as sgbp
+    if not all((UNIVERSE / f"{s}_H1.parquet").exists() for s in sgbp.SYMBOLS):
+        pytest.skip("reference bars absent on this host")
+    now = sgbp.measure()
+    rec = fsg.base_reads()
+    assert now["status"] == rec.get("status") == "MEASURED"
+    assert now["bases"] == rec["bases"]
+    assert sorted(rec["bases"]) == _real_bases()
+    assert rec["rank_span_days"] == fsg.RANK_SPAN_DAYS
+
+
+def test_a_base_without_a_measured_read_is_refused_by_name() -> None:
+    """multi_speed_trend kept 16 signals on the full frame and 0 on a 400-bar read: a base the
+    measurement does not cover is never traded on a read it was not proven on."""
+    ex = pytest.importorskip("mt5desk.executables")
+    p = {"base_family": "multi_speed_trend"}
+    why = fsg.live_refusal("fisher_rao_gated", p)
+    assert why and "multi_speed_trend" in why
+    assert fsg.live_h1_bars("fisher_rao_gated", p) is None
+    assert ex.state_gate_gap("fisher_rao_gated", p) == why
+    assert fsg.live_refusal("fisher_rao_gated", {"base_family": "trend_ma_cross",
+                                                 "base_params": {"fast": 3}})
+    for base in _real_bases():
+        assert ex.state_gate_gap("fisher_rao_gated", {"base_family": base}) is None
+    assert ex.state_gate_gap("trend_ma_cross", {}) is None       # not a wrapper: untouched
+
+
+def test_the_promoter_asks_the_state_gate_question() -> None:
+    import promoter
+    assert promoter._state_gate_gap("fisher_rao_gated", {"base_family": "multi_speed_trend"})
+    assert promoter._state_gate_gap("fisher_rao_gated", {"base_family": "trend_ma_cross"}) is None
+    assert promoter._state_gate_gap("session_range_breakout", {}) is None
+    src = (_DESK / "research" / "promoter.py").read_text("utf-8")
+    assert src.count("_state_gate_gap(family,") == 2      # both promotion paths
 
 
 # ------------------------------------------------------------------- (d) the gateway's read ---
 def test_every_wrapper_declares_its_live_read() -> None:
     for fam in fsg.STATE_GATE_FAMILIES:
-        need = fsg.live_h1_bars(fam)
+        need = fsg.live_h1_bars(fam, {"base_family": "trend_ma_cross"})
         assert isinstance(need, int) and need > fsg.BASE_H1_BARS, fam
     assert fsg.live_h1_bars("trend_ma_cross") is None
     # A certificate's own params move its read: a longer fit window needs more bars.
-    assert fsg.live_h1_bars("markov_vol_gated", {"fit_window": 3000}) \
-        == fsg.live_h1_bars("markov_vol_gated") + 1000
+    base = {"base_family": "trend_ma_cross"}
+    assert fsg.live_h1_bars("markov_vol_gated", {**base, "fit_window": 3000}) \
+        == fsg.live_h1_bars("markov_vol_gated", base) + 1000
 
 
-def test_state_gates_are_executable_and_the_gateway_reads_their_span() -> None:
-    ex = pytest.importorskip("mt5desk.executables")
-    for fam in fsg.STATE_GATE_FAMILIES:
-        assert ex.executor_gap(fam) is None, fam
-    src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
-    tree = ast.parse(src)
-    fns = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
-    chart = ast.get_source_segment(src, fns["_family_chart"]) or ""
-    assert "_state_gate_bars(s)" in chart and "live_h1_bars" in \
-        (ast.get_source_segment(src, fns["_state_gate_bars"]) or "")
-    # and the short read is refused by name, never computed on a shorter history
-    assert '"short_history"' in src and "len(h1) < gate_need" in src
-
-
-_CHART_PROBE = """
+_GATEWAY_PROBE = """
 import sys, types, json
 sys.path[:0] = [sys.argv[1], sys.argv[2]]
 from unittest import mock
+import numpy as np
 stub = types.ModuleType("MetaTrader5")
 stub.__getattr__ = lambda name: mock.MagicMock(name="MetaTrader5." + name)
 sys.modules["MetaTrader5"] = stub
 import mt5desk.gateway as gw
 from mt5desk import family_state_gates as fsg
-p = {"base_family": "trend_ma_cross", "fit_window": 2000, "refit": 168}
-_tf, _c, gate = gw._family_chart({"family": "markov_vol_gated", "params": p})
-_tf, _c, other = gw._family_chart({"family": "trend_ma_cross", "params": {}})
-print(json.dumps([_tf, gate, fsg.live_h1_bars("markov_vol_gated", p), other]))
+out = {}
+base = {"base_family": "trend_ma_cross"}
+p = {**base, "fit_window": 2000, "refit": 168}
+out["chart"] = list(gw._family_chart({"family": "markov_vol_gated", "params": p}))[::2]
+out["want"] = fsg.live_h1_bars("markov_vol_gated", p)
+out["other"] = gw._family_chart({"family": "trend_ma_cross", "params": {}})[2]
+# MUST-FIX 3: a LOSSY row (chart only) is sized from the certificate's recovered params.
+rec = {**base, "fit_window": 3000, "refit": 168, "timeframe": "H1"}
+gw._params_match_certificate = lambda s, f, pr: False
+gw._params_from_certificate = lambda s: (rec, "")
+out["lossy"] = gw._state_gate_bars({"family": "markov_vol_gated", "params": {"timeframe": "H1"}})
+out["lossy_want"] = fsg.live_h1_bars("markov_vol_gated", rec)
+gw._params_match_certificate = lambda s, f, pr: True
+out["unmeasured"] = gw._state_gate_bars({"family": "fisher_rao_gated",
+                                         "params": {"base_family": "multi_speed_trend"}})
+# MUST-FIX 2: the panel store is checked against the terminal's last CLOSED bar.
+H = 3600 * 10**9
+st = np.arange(100, dtype="int64") * H
+panel = {"AAA": (st, np.ones(100)), "BBB": (st[:-2], np.ones(98))}
+fsg.load_panel = lambda: panel
+def rates(sym, tf, pos, n):
+    t = np.array([(99 * 3600,), (100 * 3600,)], dtype=[("time", "i8")])
+    return None if sym == "NONE" else t
+stub.copy_rates_from_pos = rates
+out["lag"] = gw._panel_store_lag({"family": "sync_gated"})
+panel.pop("BBB")
+out["current"] = gw._panel_store_lag({"family": "sync_gated"})
+out["own_bars"] = gw._panel_store_lag({"family": "fisher_rao_gated"})
+print(json.dumps(out, default=str))
 """
 
 
-def test_the_gateway_chart_returns_the_wrappers_read() -> None:
-    """Run against the real gateway module with the terminal stubbed (as the import probe
-    does), in a subprocess so the stub never leaks into this process."""
+def test_the_gateway_reads_what_the_certificate_needs() -> None:
+    """Against the real gateway module with the terminal stubbed, in a subprocess so the stub
+    never leaks: the chart read, a lossy row sized off its certificate, an unmeasured base
+    refused, and the panel store checked against the terminal."""
     import json
     import subprocess
-    proc = subprocess.run([sys.executable, "-c", _CHART_PROBE, str(_ROOT), str(_DESK)],
-                          cwd=str(_ROOT),
-                          capture_output=True, text=True, timeout=300, check=False)
+    proc = subprocess.run([sys.executable, "-c", _GATEWAY_PROBE, str(_ROOT), str(_DESK)],
+                          cwd=str(_ROOT), capture_output=True, text=True, timeout=300,
+                          check=False)
     assert proc.returncode == 0, proc.stderr[-3000:]
-    tf, gate, want, other = json.loads(proc.stdout.strip().splitlines()[-1])
-    assert tf == "H1" and gate == want and gate > 400
-    assert other == 400                              # every other family's read is unchanged
+    out = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert out["chart"][0] == "H1" and out["chart"][1] == out["want"] > 400
+    assert out["other"] == 400                       # every other family's read is unchanged
+    assert out["lossy"] == [True, out["lossy_want"], ""]
+    assert out["lossy_want"] == out["want"] + 1000
+    is_gate, need, why = out["unmeasured"]
+    assert is_gate and need is None and "multi_speed_trend" in why
+    assert out["lag"] and "BBB(2h)" in out["lag"] and "1 of 2" in out["lag"]
+    assert out["current"] is None and out["own_bars"] is None
+
+
+def test_the_gateway_refuses_by_name_and_never_shrinks_the_read() -> None:
+    src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    for stage in ('"not_live_reproducible"', '"short_history"', '"panel_store_lag"'):
+        assert stage in src, stage
+    assert "len(h1) < gate_need" in src
+    tree = ast.parse(src)
+    fns = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
+    call = ast.get_source_segment(src, fns["_family_call_params"]) or ""
+    gate = ast.get_source_segment(src, fns["_state_gate_bars"]) or ""
+    assert "_resolved_family_params(s, family)" in call
+    assert "_resolved_family_params(s, fam)" in gate
 
 
 def test_sync_gate_decides_the_same_on_the_live_read(monkeypatch) -> None:
@@ -268,7 +364,7 @@ def test_sync_gate_decides_the_same_on_the_live_read(monkeypatch) -> None:
     df = _bars(panel["S00"][1], idx)
     times = list(idx[n // 2::41])
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
-    need = fsg.live_h1_bars("sync_gated")
+    need = fsg.live_h1_bars("sync_gated", {"base_family": "trend_ma_cross"})
     assert need is not None and need < n - 1000
     full, live = _edge_decisions(fsg.family_sync_gated, df, times, need, every=3,
                                  base_family="trend_ma_cross")

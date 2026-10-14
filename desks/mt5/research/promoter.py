@@ -151,6 +151,22 @@ RETIRE_MIN_EXP = 0.05
 GOLD_WINDOWS = ["asia", "london_am", "ny_open", "afternoon"]
 
 
+
+def _state_gate_gap(family: str, params: object) -> str | None:
+    """A state-gated certificate whose base has no measured live read is refused by name, like any
+    executor gap (`executables.state_gate_gap`). Asked only for the six wrappers, so every other
+    row makes exactly the call it always has."""
+    if not str(family).endswith("_gated"):
+        return None
+    try:
+        from mt5desk import executables
+        fn = getattr(executables, "state_gate_gap", None)
+    except Exception as exc:
+        return f"executor registry unavailable ({type(exc).__name__}: {exc})"
+    if fn is None:
+        return "this box's executables predates state_gate_gap -- refusing the state-gated row"
+    return fn(str(family), params if isinstance(params, dict) else None)
+
 def _sleeve_timeframe(params: dict | None) -> str:
     """The chart a certificate was hunted on. Absent means H1 -- the desk-wide spelling, see
     `research/frontier_identity`: every certificate written before the M1..D1 ladder is an H1
@@ -454,6 +470,8 @@ def apply_principal_promotions(sleeves: list[dict], *, now: datetime | None = No
             continue
         family, tf = str(candidate.get("family") or ""), _sleeve_timeframe(candidate.get("params"))
         gap = executor_gap(family) if tf == "H1" else executor_gap(family, tf)
+        if not gap:
+            gap = _state_gate_gap(family, candidate.get("params"))
         if gap:
             plog(f"principal promotion {name}: executor missing; refusing")
             continue
@@ -2356,6 +2374,8 @@ def main() -> None:
                 # is refused by the handler below. Fail-closed on the one path that spends money.
                 gap = (executables.executor_gap(family) if _sleeve_timeframe(params) == "H1"
                        else executables.executor_gap(family, _sleeve_timeframe(params)))
+                if not gap:
+                    gap = _state_gate_gap(family, params)
             except Exception as exc:
                 gap = (f"executor registry unavailable on this box "
                        f"({type(exc).__name__}: {exc}) -- refusing the row, not the pass")

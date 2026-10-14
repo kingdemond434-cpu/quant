@@ -2665,31 +2665,75 @@ def _family_chart(s: dict) -> tuple[str, object, int]:
     attr = _FAMILY_TF_ATTR.get(tf)
     if attr is None or not hasattr(mt5, attr):
         return tf, None, 0                       # caller refuses the row by name; never guesses
-    need = _state_gate_bars(s)
-    if need is not None and tf == "H1":
+    is_gate, need, _why = _state_gate_bars(s)
+    if is_gate and need is not None and tf == "H1":
         return tf, getattr(mt5, attr), need
     minutes = _FAMILY_H1_BARS * 60                    # the market time an H1 read has always seen
     bars = int(min(_FAMILY_MAX_BARS, round(minutes / _BAR_MINUTES.get(tf, 60))))
     return tf, getattr(mt5, attr), max(bars, 60)
 
 
-def _state_gate_bars(s: dict) -> int | None:
-    """The H1 read a STATE-GATED family's certificate needs, or None for any other family.
+def _state_gate_bars(s: dict) -> tuple[bool, int | None, str]:
+    """(is a state gate, the H1 read its certificate needs, why it cannot be traded).
 
     A state gate ranks its state against the states at the base's earlier signals over the
     trailing `family_state_gates.RANK_SPAN_DAYS`, and each of those states needs its own
-    lookback. 400 bars holds neither, so the gate computed here would not be the gate that was
-    certified. `live_h1_bars` derives the read from the certificate's own params; the caller
-    refuses by name when the terminal returns fewer bars than that.
+    lookback; 400 bars holds neither, so the gate computed on it would not be the gate that was
+    certified. `live_h1_bars` derives the read from the SAME params the family is called with
+    (`_resolved_family_params`: a lossy row is read off its certificate, audit of #403
+    must-fix 3), and `live_refusal` names a base whose live read is not measured. The caller
+    refuses by name on a refusal or when the terminal returns fewer bars than the read.
     """
     try:
-        from mt5desk.family_state_gates import STATE_GATE_FAMILIES, live_h1_bars
-    except Exception:
-        return None
+        from mt5desk.family_state_gates import STATE_GATE_FAMILIES, live_h1_bars, live_refusal
+    except Exception as exc:
+        fam = str(s.get("family") or "")
+        if fam.endswith("_gated"):
+            return True, None, f"state gate registry unavailable ({type(exc).__name__}: {exc})"
+        return False, None, ""
     fam = str(s.get("family") or "")
     if fam not in STATE_GATE_FAMILIES:
+        return False, None, ""
+    params, why = _resolved_family_params(s, fam)
+    if params is None:
+        return True, None, why
+    refusal = live_refusal(fam, params)
+    if refusal:
+        return True, None, refusal
+    return True, live_h1_bars(fam, params), ""
+
+
+def _panel_store_lag(s: dict) -> str | None:
+    """For a PANEL state gate: why the bar store the panel is read from is behind the terminal,
+    or None when every member's last stored bar is the terminal's last CLOSED bar (or later).
+
+    The replay reads every member's bar at t; live, a store that has not ingested the latest
+    closed bars hands the gate an older panel under the certified name. Both stamps are the
+    terminal's own epoch, as `h1_frame` and the store both carry it. A member the terminal
+    cannot read is named, never assumed current (audit of #403, must-fix 2 and the should-fix
+    "one bar behind")."""
+    try:
+        from mt5desk import family_state_gates as fsg
+    except Exception as exc:
+        return f"state gate registry unavailable ({type(exc).__name__}: {exc})"
+    fam = str(s.get("family") or "")
+    if fam not in fsg.PANEL_WRAPPERS:
         return None
-    return live_h1_bars(fam, (s.get("params") or {}))
+    panel = fsg.load_panel() if fam == "sync_gated" else fsg.load_absorption_panel()
+    behind: list[str] = []
+    for sym, (stamps, _closes) in sorted(panel.items()):
+        rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 2)
+        if rates is None or len(rates) < 2:
+            behind.append(f"{sym}(terminal unreadable)")
+            continue
+        closed = int(rates[-2]["time"]) * 10**9
+        last = int(stamps[-1]) if len(stamps) else 0
+        if last < closed:
+            behind.append(f"{sym}({(closed - last) // (3600 * 10**9)}h)")
+    if behind:
+        return (f"panel bar store behind the terminal on {len(behind)} of {len(panel)} members: "
+                + ", ".join(behind[:8]))
+    return None
 
 
 def _family_constructor(family: str) -> tuple[object | None, str | None]:
@@ -2998,6 +3042,31 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     caller refuses the row by name. An empty dict is a valid answer -- a price-only family needs
     nothing beyond bars -- and is not a gap.
     """
+    params, why = _resolved_family_params(s, family)
+    if params is None:
+        return None, why
+    try:
+        from mt5desk.family_inputs import resolve, runtime_call_params
+    except Exception as exc:
+        return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
+    try:
+        call_params = runtime_call_params(family, params)
+        # `session` is not a family keyword, but family_call.signals consumes it to apply the
+        # exact session filter used by the gauntlet. Stripping it here made Asia/London/NY
+        # certificates execute the unrestricted signal stream on Fusion.
+        extra, why = resolve(str(s["symbol"]), family, params, bars)
+    except Exception as exc:
+        return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
+    if extra is None:
+        return None, why
+    call_params.update(extra)
+    return call_params, ""
+
+
+def _resolved_family_params(s: dict, family: str) -> tuple[dict | None, str]:
+    """The params a family sleeve's certificate is executed at, or (None, reason): the row's own
+    when they are the certified ones, else the certificate's recovered ones. One resolution for
+    the call and for the read a state gate is sized from, so the two can never disagree."""
     # An explicit empty mapping is the COMPLETE default parameterisation for a price-only
     # family.  Absence/None means the registry lost the parameters and must reconstruct them;
     # treating both shapes as falsy made valid `{}` rows enter certificate recovery and refuse.
@@ -3022,22 +3091,7 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
         recovered, _why = _params_from_certificate(s)
         if recovered is not None:
             params = dict(recovered)
-    try:
-        from mt5desk.family_inputs import resolve, runtime_call_params
-    except Exception as exc:
-        return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
-    try:
-        call_params = runtime_call_params(family, params)
-        # `session` is not a family keyword, but family_call.signals consumes it to apply the
-        # exact session filter used by the gauntlet. Stripping it here made Asia/London/NY
-        # certificates execute the unrestricted signal stream on Fusion.
-        extra, why = resolve(str(s["symbol"]), family, params, bars)
-    except Exception as exc:
-        return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
-    if extra is None:
-        return None, why
-    call_params.update(extra)
-    return call_params, ""
+    return params, ""
 
 
 def resolve_family_order(st: dict, s: dict, equity: float,
@@ -3086,13 +3140,17 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     h1 = mt5.copy_rates_from_pos(s["symbol"], tf_const, 0, n_bars)
     if h1 is None or len(h1) < 60:
         return {"ok": False, "stage": "no_bars", "why": f"{tf} bars unavailable; skipped"}
-    gate_need = _state_gate_bars(s)
-    if gate_need is not None and len(h1) < gate_need:
+    is_gate, gate_need, gate_why = _state_gate_bars(s)
+    if is_gate and gate_need is None:
+        return {"ok": False, "stage": "not_live_reproducible",
+                "sep": " ", "why": f"refused: {gate_why or 'state gate read unavailable'}"}
+    if is_gate and gate_need is not None and len(h1) < gate_need:
         # REFUSED BY NAME, never computed on a shorter history: the gate ranks against the
         # trailing rank span, and fewer bars rank against a different history than certified.
         return {"ok": False, "stage": "short_history",
                 "sep": " ", "why": f"refused: state gate needs {gate_need} {tf} bars, the "
                                    f"terminal returned {len(h1)} (raise Max bars in chart)"}
+
     # `frame` KEEPS THE FORMING BAR; `closed` drops it. Both are needed and they are not
     # interchangeable: every decision below is made on CLOSED data only, but the family's own
     # loop bound is `len(d) - 1`, so it can only emit on `last_bar` if one more bar exists after
@@ -3130,6 +3188,11 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                            f"`side` -- refusing to trade it LONG"}
     if last_bar is None:
         return {"ok": False, "stage": "no_signal_bar", "why": "no signal bar due on these bars"}
+    if is_gate:
+        # Checked only for a bar not yet considered, so a quiet pass costs no terminal reads.
+        lag = _panel_store_lag(s)
+        if lag:
+            return {"ok": False, "stage": "panel_store_lag", "sep": " ", "why": f"refused: {lag}"}
     # SINGLE-POSITION DISCIPLINE, BECAUSE THAT IS WHAT THE CERTIFICATE WAS EARNED UNDER.
     #
     # `engine.py` replays every cell with an explicit rule -- `last_exit_idx = -1  # single-
