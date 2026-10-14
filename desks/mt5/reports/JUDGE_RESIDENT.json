@@ -1,0 +1,23 @@
+{
+ "pid": 20660,
+ "started_utc": "2026-10-14T18:11:13+00:00",
+ "task_limit_s": 0.0,
+ "sweeps": 0,
+ "failures": 0,
+ "lane_held": 0,
+ "hung_kills": 0,
+ "busy_seconds": 0.0,
+ "status": "SWEEPING",
+ "longest_sweep_s": null,
+ "consecutive_hangs": 0,
+ "sweep_started_utc": "2026-10-14T18:11:13+00:00",
+ "hang_limit_s": 17280.0,
+ "heartbeat_utc": "2026-10-14T18:20:15+00:00",
+ "sweep_phase": {
+  "pid": 15980,
+  "sweep_started_utc": "2026-10-14T18:11:14+00:00",
+  "phases": {},
+  "phase": "plan",
+  "phase_started_utc": "2026-10-14T18:11:14+00:00"
+ }
+}

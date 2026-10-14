@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-14T18:00:16.140109+00:00",
+  "swept_at": "2026-10-14T18:15:11.350611+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -328,7 +328,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0415,
+      "shadow_exp_r": -0.0239,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_continuous": {
@@ -1428,7 +1428,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0008,
+      "shadow_exp_r": 0.0376,
       "woke_on_shadow": false
     },
     "EURMXN|macro_conditional_continuous": {
@@ -1516,7 +1516,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5036,
+      "shadow_exp_r": -0.4899,
       "woke_on_shadow": false
     },
     "EURNOK|overnight_gap_decay_asia": {
@@ -1615,7 +1615,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4695,
+      "shadow_exp_r": -0.4379,
       "woke_on_shadow": false
     },
     "EURSEK|spread_state_continuous": {
@@ -1824,7 +1824,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3108,
+      "shadow_exp_r": -0.3175,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
@@ -1933,8 +1933,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 88,
-      "shadow_exp_r": -2.5729,
+      "shadow_n": 90,
+      "shadow_exp_r": -2.5565,
       "woke_on_shadow": false
     },
     "GBPDKK|macro_conditional_asia": {
@@ -1945,7 +1945,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3044,
+      "shadow_exp_r": -0.3226,
       "woke_on_shadow": false
     },
     "GBPDKK|overnight_gap_decay_continuous": {
@@ -2033,7 +2033,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3519,
+      "shadow_exp_r": -0.3668,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_asia": {
@@ -2044,7 +2044,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0739,
+      "shadow_exp_r": 0.059,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_continuous": {
@@ -2242,7 +2242,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.652,
+      "shadow_exp_r": -0.6965,
       "woke_on_shadow": false
     },
     "GBPNOK|overnight_gap_decay_asia": {
@@ -3870,7 +3870,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4137,
+      "shadow_exp_r": -0.4092,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
@@ -3947,7 +3947,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.313,
+      "shadow_exp_r": -0.3004,
       "woke_on_shadow": false
     },
     "USDSEK|overnight_gap_decay_asia": {
@@ -4134,7 +4134,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2417,
+      "shadow_exp_r": -0.2351,
       "woke_on_shadow": false
     },
     "USDZAR|overnight_gap_decay_asia": {
@@ -4166,8 +4166,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 31,
-      "shadow_exp_r": -0.128,
+      "shadow_n": 32,
+      "shadow_exp_r": -0.18,
       "woke_on_shadow": false
     },
     "USDZAR|pca_residual_continuous": {
@@ -4540,8 +4540,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": -0.0233,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.0749,
       "woke_on_shadow": false
     },
     "XAUAUD|cross_asset_residual_continuous": {
@@ -4596,7 +4596,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1117,
+      "shadow_exp_r": -0.1196,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
