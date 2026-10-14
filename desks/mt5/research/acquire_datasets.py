@@ -31,9 +31,7 @@ import io
 import json
 import re
 import sys
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections import defaultdict, deque
 from datetime import UTC, datetime
 from pathlib import Path
@@ -46,6 +44,7 @@ _ROOT = DESK.parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.data import polite_fetch as pf  # noqa: E402
 from libs.data import terms_fence as _tf  # noqa: E402
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
@@ -56,10 +55,10 @@ STORE = DESK / "data" / "acquired"
 REGISTRY = STORE / "registry.json"
 REPORT = DESK / "reports" / "dataset_acquisition.json"
 
-#: A real browser UA. Measured on this box: the default urllib agent draws 403s from several
-#: statistics sites, which read downstream as dead sources rather than as a rejected header.
-_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-       "Chrome/124.0 Safari/537.36")
+#: THE DESK'S HONEST AGENT (auditor ruling 2026-10-14: no browser impersonation). A site that
+#: refuses this desk's own name has answered: the refusal is recorded and held by polite_fetch's
+#: HostAccess (401/403/429 hard stop, robots.txt per origin), never routed around.
+_UA = pf.DESK_UA
 
 FETCH_TIMEOUT_S = 25
 MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of MB
@@ -141,22 +140,33 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
     platform = _tf.input_source(url)   # live input: IDEAS_ONLY or held
     if platform:
         return None, f"terms_fenced:{platform}"
-    req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
-    try:
-        with _tf.guarded_urlopen(req, timeout=FETCH_TIMEOUT_S, live_input=True) as r:
-            ctype = str(r.headers.get("Content-Type") or "").lower()
-            if "html" in ctype:
-                return None, "html"
-            return r.read(MAX_BYTES + 1), ctype
-    except _tf.TermsFenced as exc:
-        # A redirect INTO a login / sign-in / CAPTCHA wall is METHOD_BLOCKED: the wall is never
-        # requested, never read, and the endpoint is recorded as blocked by method, not as
-        # unreachable (a wall is an access control, not an outage).
-        if exc.platform == "login_wall":
+    # THE POLITE DOOR (libs/data/polite_fetch.get): the desk's honest agent, robots.txt per
+    # origin and per redirect hop, the terms fence + the live-input rule on every hop, and a
+    # 401/403/429 hard stop that holds the whole site (no retry, no other route; persisted in
+    # HostAccess, so the next run does not ask again). retries=0: nothing is re-asked.
+    r = pf.get(url, headers={"User-Agent": _UA, "Accept": "*/*"}, timeout=FETCH_TIMEOUT_S,
+               retries=0, max_bytes=MAX_BYTES + 1, leg="acquire_datasets", live_input=True)
+    if r.ok:
+        if "html" in r.content_type.lower():
+            return None, "html"
+        return r.body, r.content_type.lower()
+    err = str(r.error or "")
+    if r.verdict:
+        # a refusal (401 NEEDS_KEY, 403/429/challenge METHOD_BLOCKED, robots): recorded by name
+        code = f"http_{r.status}" if r.status else r.verdict.lower()
+        return None, f"{r.verdict}:{code}"
+    if r.status is None and ":" in err:
+        # THE FENCE, first URL or a hop: "STATUS:platform: url -- why"
+        status, _, rest = err.partition(":")
+        plat = rest.split(":", 1)[0].strip()
+        if plat == "login_wall":
+            # A redirect INTO a login / sign-in / CAPTCHA wall is METHOD_BLOCKED: the wall is
+            # never requested, and the endpoint is recorded as blocked by method, not as
+            # unreachable (a wall is an access control, not an outage).
             return None, f"{_tf.METHOD_BLOCKED}:login_wall"
-        return None, f"terms_fenced:{exc.platform}"
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
-        return None, "unreachable"
+        if status in (_tf.IDEAS_ONLY, _tf.METHOD_BLOCKED, _tf.NEEDS_KEY):
+            return None, f"terms_fenced:{plat}"
+    return None, "unreachable"
 
 
 def _parse(raw: bytes, url: str) -> pd.DataFrame | None:
@@ -469,6 +479,11 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                 terms_fenced[ctype.split(":", 1)[1]] = \
                     terms_fenced.get(ctype.split(":", 1)[1], 0) + 1
                 _refuse_url(f"terms fence ({ctype.split(':', 1)[1]}): never requested")
+                continue
+            if ctype.startswith(("NEEDS_KEY:", "ROBOTS_")):
+                # refused by the site or its robots.txt: a hard stop, held, never re-asked
+                _refuse_url(f"refused ({ctype}): hard stop, not retried")
+                reg["by_url"][url]["status"] = ctype.split(":", 1)[0]
                 continue
             if ctype.startswith(f"{_tf.METHOD_BLOCKED}:"):
                 why = ctype.split(":", 1)[1]

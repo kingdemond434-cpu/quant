@@ -275,9 +275,11 @@ class Refused(OSError):
     """A fetch the site or its robots.txt refused (NEEDS_KEY / METHOD_BLOCKED / ROBOTS_*). A
     recorded answer: the caller never renders, mirrors or otherwise routes around it."""
 
-    def __init__(self, url: str, verdict: str, error: str = "") -> None:
+    def __init__(self, url: str, verdict: str, error: str = "", status: int | None = None) -> None:
         super().__init__(f"{verdict}: {error or verdict} for url: {url}")
         self.url, self.verdict = url, verdict
+        #: The HTTP status that carried the refusal (401/403/429), or None (robots, a challenge).
+        self.status = status
 
 
 def fenced_ground(g: dict[str, Any]) -> str | None:
@@ -301,7 +303,7 @@ def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "")
         return r.text
     verdict = str(getattr(r, "verdict", "") or "")
     if verdict:
-        raise Refused(url, verdict, r.error)
+        raise Refused(url, verdict, r.error, status=getattr(r, "status", None))
     if r.status is not None and r.status >= 400:
         raise urllib.error.HTTPError(url, r.status, r.error or f"HTTP {r.status}",
                                      None, None)  # type: ignore[arg-type]
@@ -1409,6 +1411,12 @@ class _Run:
             self._note_net(True)
             self.refused.add(url)
             self.status.append({"url": url, "refused": exc.verdict})
+            # THE HARD STOP REACHES THE RUN'S SITE HOLDS: polite_fetch's HostAccess has already
+            # held the site on disk (no retry, no other route); a 401/403/429 also holds it in
+            # this run's SiteHolds, so every route, the frontier and the persisted
+            # `site:<domain>` vector see it -- exactly as the index route's refusals do.
+            if exc.status in ACCESS_STOP:
+                self._hold_site(url, int(exc.status or 0))
             return ""
         except urllib.error.HTTPError as exc:
             self._note_net(True)

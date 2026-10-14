@@ -793,7 +793,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         retries: int = 2, backoff_s: float = 1.5, deadline: float | None = None,
         max_bytes: int = MAX_BYTES, leg: str = "default", gate: HostGate | None = GATE,
         opener: Callable[..., Any] | None = None, access: HostAccess | None = None,
-        sleep: Callable[[float], None] = time.sleep) -> Response:
+        sleep: Callable[[float], None] = time.sleep, live_input: bool = False) -> Response:
     """GET `url` once, politely, with bounded retries. NEVER RAISES: the Response carries the
     status or the error, so a caller can record what happened rather than a stack trace.
 
@@ -835,7 +835,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             break
         # THE METHOD FENCE ON EVERY HOP, before robots and holds: a held source (or a discord
         # user-token request) or a login / CAPTCHA wall is refused and named, never requested.
-        fenced = _tf.fenced_request(cur, hdr) or ("login_wall" if _tf.login_wall(cur) else None)
+        # `live_input=True` (an acquirer of live input) also refuses an IDEAS_ONLY or held route
+        # on the first URL and on every hop (`terms_fence.input_source`).
+        fenced = (_tf.fenced_request(cur, hdr) or ("login_wall" if _tf.login_wall(cur) else None)
+                  or (_tf.input_source(cur) if live_input else None))
         if fenced:
             refusal = _tf.TermsFenced(fenced, cur)
             resp.status, resp.error = None, str(refusal.reason)[:240]
