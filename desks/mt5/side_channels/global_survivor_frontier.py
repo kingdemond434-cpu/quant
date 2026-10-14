@@ -33,6 +33,13 @@ _dir = str(Path(__file__).resolve().parent)
 if _dir not in sys.path:
     sys.path.insert(0, _dir)
 from lang_intel import LEXICON  # noqa: E402
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
@@ -40,8 +47,7 @@ OUT = INTEL / "frontier"
 POPULATIONS = INTEL / "source_populations.json"
 FRONTIER = INTEL / "frontier_coverage.json"
 STATE = INTEL / "frontier_state.json"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                         "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
+HEADERS = {"User-Agent": DESK_UA}
 
 #: Every locale is a permanent cell. "open_frontier" cells are the ones no strong native
 #: survivor pool has been found for YET -- they get canary priority, never a "done" flag.

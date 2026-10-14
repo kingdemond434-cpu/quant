@@ -22,12 +22,19 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from pathlib import Path
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 CACHE = BASE / "data" / "free_data_cache"
 CACHE.mkdir(parents=True, exist_ok=True)
 
-UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
+UA = DESK_UA
 
 
 def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:

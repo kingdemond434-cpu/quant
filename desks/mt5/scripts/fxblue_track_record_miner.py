@@ -31,6 +31,13 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parents[1]
 OUT = BASE / "data" / "intelligence" / "fxblue"
@@ -39,7 +46,7 @@ CDX = (
     "http://web.archive.org/cdx/search/cdx?url=fxblue.com/users/*"
     "&output=text&fl=original&collapse=urlkey&limit=40000&filter=statuscode:200"
 )
-UA = "Mozilla/5.0 (compatible; quant-desk research; contact zararsyedv8@gmail.com)"
+UA = DESK_UA
 
 # The mechanism-bearing subset. Kept SMALL and named: each entry is here because it
 # reconstructs one axis of a black box (§4), not because the site offers it.

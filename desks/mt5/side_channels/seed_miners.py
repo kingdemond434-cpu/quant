@@ -19,14 +19,20 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 if str(BASE.parent.parent) not in sys.path:
     sys.path.insert(0, str(BASE.parent.parent))
 INTEL = BASE / "data" / "intelligence"
 STATE = INTEL / "seed_miners_state.json"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                         "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
+HEADERS = {"User-Agent": DESK_UA}
 LINK_RE = re.compile(r"https?://[^\s)\"'<>]+")
 
 

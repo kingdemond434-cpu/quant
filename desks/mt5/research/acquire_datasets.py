@@ -49,6 +49,7 @@ if str(_ROOT) not in sys.path:
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
+from libs.data.polite_fetch import DESK_UA
 
 WORLD = DESK / "data" / "intelligence" / "world"
 STORE = DESK / "data" / "acquired"
@@ -57,8 +58,7 @@ REPORT = DESK / "reports" / "dataset_acquisition.json"
 
 #: A real browser UA. Measured on this box: the default urllib agent draws 403s from several
 #: statistics sites, which read downstream as dead sources rather than as a rejected header.
-_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-       "Chrome/124.0 Safari/537.36")
+_UA = (DESK_UA)
 
 FETCH_TIMEOUT_S = 25
 MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of MB

@@ -19,6 +19,13 @@ from pathlib import Path
 
 import pandas as pd
 from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[2]))
+    from libs.data.polite_fetch import DESK_UA
 
 OUT = DATA / "cot_tff"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -47,7 +54,7 @@ ctx.verify_mode = ssl.CERT_NONE
 
 def load_year(year: int) -> pd.DataFrame | None:
     url = f"https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": DESK_UA})
     try:
         data = urllib.request.urlopen(req, timeout=180, context=ctx).read()
     except Exception:

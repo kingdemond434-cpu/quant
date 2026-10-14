@@ -36,6 +36,14 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import DESK_UA
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/hurdle_rate.json"
 
@@ -43,7 +51,7 @@ OUT = ROOT / "data/hurdle_rate.json"
 def _get(u, t=35):
     return json.loads(
         urllib.request.urlopen(
-            urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"}), timeout=t
+            urllib.request.Request(u, headers={"User-Agent": DESK_UA}), timeout=t
         )
         .read()
         .decode()

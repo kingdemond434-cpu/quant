@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.data import bilibili, cn_sources, foreign_sources, papers
+from libs.data.polite_fetch import DESK_UA
 from libs.research import conversion_ledger, source_health
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
@@ -48,8 +49,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "reports" / "research_queue.json"
 _LEDGER = _ROOT / "data" / "research_queue_seen.json"
 
-_UA = {"User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+_UA = {"User-Agent": (DESK_UA),
        "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8"}
 
 #: Channels whose output has actually converted on this desk, plus near neighbours. Ordered by
