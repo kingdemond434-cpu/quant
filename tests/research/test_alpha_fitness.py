@@ -177,11 +177,13 @@ def test_fragility_counts_losses_only_and_names_the_worst_parameter() -> None:
 
 def test_multiplicity_is_the_gauntlets_own_deflation() -> None:
     from libs.validation.dsr import expected_max_sharpe
+    # TRANSFORMED 2026-10-14 (principal: bars never rise with trials): the same deflation at
+    # min(count, BAR_N); the haystack is reported, and a wider one costs nothing more
     got, why = af.multiplicity_term(500, variance_of_sharpes=0.25)
-    assert got == pytest.approx(expected_max_sharpe(500, 0.25))
-    assert "E[max Sharpe" in why
+    assert got == pytest.approx(expected_max_sharpe(5, 0.25))
+    assert "E[max Sharpe" in why and "500" in why
     wider, _ = af.multiplicity_term(50_000, variance_of_sharpes=0.25)
-    assert wider > got                                     # a wider haystack costs more
+    assert wider == got
     assert af.multiplicity_term(1, variance_of_sharpes=0.25)[0] == 0.0
     measured, why = af.multiplicity_term(100, sharpes=[0.1, 0.5, -0.3, 0.9])
     assert measured > 0 and ("dispersion" in why or "gate_policy" in why

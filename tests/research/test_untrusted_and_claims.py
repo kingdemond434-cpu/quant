@@ -78,11 +78,16 @@ def test_A_MISSING_BENCHMARK_IS_A_DEFECT_AND_LOSING_TO_IT_IS_FATAL() -> None:
 
 
 def test_THE_REDDIT_SHARPE_FAILS_ONCE_SEARCH_IS_PRICED_IN() -> None:
-    """Sharpe 2.17 over 2.8 years: t = 1.98, and the interval on the Sharpe includes values at
-    which there is no edge."""
-    f = undeflated_sharpe(2.17, 2.8)
+    """TRANSFORMED 2026-10-14 (principal: bars never rise with trials). The search is priced at
+    min(assumed_configs, BAR_N): sqrt(2 ln 5) = 1.79. Sharpe 2.17 over 2.8 years (t = 1.98) now
+    clears it; the same Sharpe over 1.5 years (t = 1.45) still does not, and the bar is identical
+    whether 10 or 1,000 configurations are assumed."""
+    assert undeflated_sharpe(2.17, 2.8) is None
+    f = undeflated_sharpe(2.17, 1.5)
     assert f is not None and f.severity == "FATAL"
     assert "no edge" in f.detail
+    assert (undeflated_sharpe(2.17, 1.5, assumed_configs=1000).detail.split("is ")[1][:4]
+            == f.detail.split("is ")[1][:4])
 
 
 def test_A_LONG_ENOUGH_RECORD_SURVIVES_DEFLATION() -> None:

@@ -260,12 +260,16 @@ def test_deflation_charges_the_miners_selection_trials_on_top_of_the_sweep(monke
     narrow, wide = af.deflate([{**base, "selection_trials": 0},
                                {**base, "selection_trials": 100_000}])
     assert narrow["n_tests_sweep"] == 2 and wide["n_tests_sweep"] == 100_002
+    # TRANSFORMED 2026-10-14 (principal: bars never rise with trials): the selection trials are
+    # still COUNTED and reported, but the deflation charges min(count, BAR_N) -- a 100,002-test
+    # sweep faces the same bar as a 5-test one, and a 2-test sweep keeps its own.
     assert narrow["t_deflated_sweep"] == round(deflate_t(4.0, 2), 3)
-    assert wide["t_deflated_sweep"] == round(deflate_t(4.0, 100_002), 3)
-    assert narrow["proposed"] and not wide["proposed"]
+    assert wide["t_deflated_sweep"] == round(deflate_t(4.0, 5), 3)
+    assert narrow["proposed"] and wide["proposed"]
     monkeypatch.setattr(af, "_family_trials", lambda: 5000)
     (row,) = af.deflate([{**base, "selection_trials": 10}])
-    assert row["n_tests_lifetime"] == 5011 and row["t_deflated_lifetime"] < row["t_deflated_sweep"]
+    assert row["n_tests_lifetime"] == 5011
+    assert row["t_deflated_lifetime"] == row["t_deflated_sweep"]
 
 
 def _scan(rows: list[dict]) -> dict:
@@ -316,7 +320,7 @@ def test_the_factory_executes_what_resolves_and_queues_what_must_be_named(univer
     assert row["params"] == {"feature": "ret_24", "band": [0.9, 1.0], "horizon": 6, "side": 1}
     assert row["n_independent"] >= pc.MIN_TRADES, row
     assert row["selection_trials"] == 9000 and row["n_tests_sweep"] == 9001
-    assert row["t_deflated_sweep"] == round(deflate_t(row["t_gross"], 9001), 3)
+    assert row["t_deflated_sweep"] == round(deflate_t(row["t_gross"], 5), 3)  # fixed bar N
     assert rep["unexecutable"]["n"] == 2 and rep["unexecutable"]["tasks"] == 2
     assert rep["skipped"]["reasons"][f"below the |t| >= {af.MIN_T:g}, n >= {af.MIN_N} floor"] == 2
     tasks = _queue_rows(queue, af.SOURCE)

@@ -38,12 +38,14 @@ def test_A_DESCENDANT_INHERITS_THE_WHOLE_ANCESTRY_NOT_A_FRESH_SLATE() -> None:
 
 
 def test_THE_HURDLE_RISES_WITH_EVERY_SIBLING_ALREADY_SPAWNED() -> None:
-    """By the twentieth variant the desk has looked twenty times more, so the twentieth faces a
-    harder bar than the first. That is correct rather than unfair."""
+    """TRANSFORMED 2026-10-14 (principal: "make sure the bars never raise never ever penalty never
+    inflation due to trials"). The siblings are still COUNTED -- family_trials reports 401 and
+    420 -- but the twentieth faces the SAME bar as the first: sqrt(2 ln min(count, BAR_N))."""
     first = hurdle(_ns(ancestry=400, spawned=0))
     twentieth = hurdle(_ns(ancestry=400, spawned=19))
-    assert twentieth > first
-    assert first == math.sqrt(2 * math.log(401))
+    assert twentieth == first
+    assert first == math.sqrt(2 * math.log(5))
+    assert family_trials(_ns(ancestry=400, spawned=19), new=1) == 420
 
 
 def test_DEFLATING_ON_THE_NEW_TRIAL_ALONE_WOULD_BE_A_MUCH_WEAKER_BAR() -> None:
