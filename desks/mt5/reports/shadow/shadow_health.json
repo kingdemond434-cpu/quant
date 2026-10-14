@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-14T09:39:16+00:00",
+  "updated_at": "2026-10-14T11:00:31+00:00",
   "configured_sleeves": 697,
   "represented_sleeves": 697,
   "certified_sleeves_total": 974,
@@ -13,20 +13,17 @@
   "zero_trade_clocks": {
     "count": 72,
     "by_status": {
-      "ACTIVE": 58,
-      "BLOCKED_NO_BARS": 4,
+      "ACTIVE": 61,
+      "BLOCKED_NO_BARS": 1,
       "IDENTITY_BROKEN": 10
     },
     "age_measured": 72,
-    "median_age_days": 6.895,
+    "median_age_days": 6.951,
     "mature_14d_without_trade": 18,
     "fresh_attempts": 62,
-    "naturally_inactive": 58,
-    "suppressed_or_unproven": 14,
+    "naturally_inactive": 61,
+    "suppressed_or_unproven": 11,
     "suppressed_examples": [
-      "UNKNOWN",
-      "UNKNOWN",
-      "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
@@ -41,12 +38,12 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 14,
+  "evidence_blocked_sleeves": 11,
   "missing_sleeves": [
     "128 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 2561.297,
+  "seconds": 3896.295,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
