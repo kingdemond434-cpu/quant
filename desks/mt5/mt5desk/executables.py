@@ -160,6 +160,12 @@ def executor_gap(fam: str, timeframe: str = "H1") -> str | None:
     if pop not in GATEWAY_FAMILY_POPULATIONS:
         return (f"family {fam!r} lives in the {pop!r} population, which the gateway's family "
                 f"executor does not run yet (populations: {', '.join(GATEWAY_FAMILY_POPULATIONS)})")
+    try:
+        from mt5desk.family_state_gates import LIVE_READ_GAP, STATE_GATE_FAMILIES
+    except Exception:
+        LIVE_READ_GAP, STATE_GATE_FAMILIES = "", {}
+    if fam in STATE_GATE_FAMILIES:
+        return LIVE_READ_GAP
     tf = str(timeframe or "H1").upper()
     if tf not in GATEWAY_FAMILY_TIMEFRAMES:
         return (f"certificate is on the {tf} chart and the gateway's family executor runs "

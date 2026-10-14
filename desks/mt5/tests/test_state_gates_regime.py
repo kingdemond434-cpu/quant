@@ -101,19 +101,30 @@ def test_states_are_always_ordered_by_variance(monkeypatch) -> None:
     assert np.allclose(np.sort(th[2:4]), np.sort(ref[2:4]), rtol=1e-6)
 
 
-def test_degenerate_windows_are_floored_or_refused() -> None:
+def test_degenerate_windows_are_refused() -> None:
     assert np.isnan(fsg.ms_fit(np.zeros((1, 500)))).all()           # flat: no fit
     x, _ = _two_state(500, seed=2)
     holed = x.copy()
     holed[10] = np.nan
     assert np.isnan(fsg.ms_fit(holed[None, :])).all()               # unreadable: no fit
-    # Mostly zero returns with a few moves: the calm state would collapse onto zero variance.
+    # Mostly zero returns with a few moves: the calm state collapses onto its variance floor.
+    # That is a stalled feed, not a regime -- NO FIT (audit M-2), never a floored finite one
+    # whose likelihood ratio reads 1e6 after the next move.
     sparse = np.zeros(1000)
     sparse[::50] = np.random.default_rng(0).normal(0, 0.01, 20)
-    th = fsg.ms_fit(sparse[None, :])[0]
-    assert np.isfinite(th).all()
-    assert th[2] >= fsg.MS_VAR_FLOOR * sparse.var() * (1 - 1e-12)
-    assert fsg.MS_P_MIN <= th[4] <= 1 - fsg.MS_P_MIN and fsg.MS_P_MIN <= th[5] <= 1 - fsg.MS_P_MIN
+    assert np.isnan(fsg.ms_fit(sparse[None, :])).all()
+    # A real two-state window with ~10% stalls mixed in is refused the same way when (and only
+    # when) its calm state lands on the floor; a clean one keeps its stay probabilities inside.
+    x, _ = _two_state(2000, seed=12)
+    stalled = x.copy()
+    stalled[np.random.default_rng(1).random(2000) < 0.10] = 0.0
+    th = fsg.ms_fit(np.vstack([x, stalled]))
+    assert np.isfinite(th[0]).all()
+    assert fsg.MS_P_MIN <= th[0, 4] <= 1 - fsg.MS_P_MIN
+    floor = fsg.MS_VAR_FLOOR * stalled.var()
+    assert np.isnan(th[1]).all() or th[1, 2] > floor * (1 + 1e-6)
+    lo = fsg.ms_filter_logodds(stalled, th[1]) if np.isfinite(th[1]).all() else np.zeros(1)
+    assert np.nanmax(np.abs(lo)) < 1e3                 # never the 7e3..1e6 of a floored fit
 
 
 def test_a_row_fit_does_not_depend_on_its_batch() -> None:
@@ -144,24 +155,25 @@ def test_the_filtered_probability_is_point_in_time_across_a_refit_boundary() -> 
     x, _ = _two_state(1500, seed=7)
     close = _close_from(x)
     k, w = MS_FAST["refit"], MS_FAST["fit_window"]
-    g = 4 * k                                         # 672: a grid point with a full window
-    assert g >= w
-    pos = np.array([w - 1, g - 1, g, g + 1, 5 * k - 1, 5 * k, 1400])
-    full = fsg.markov_vol_state(close, pos, **MS_FAST)
+    # T0 is a Monday 00:00 UTC; the grid instants are Saturday 00:00 UTC, i.e. bar 120 + 168 m.
+    g = 120 + 3 * k                                   # 624: g - 1 still reads the full fit at 456
+    assert g >= w and fsg.ms_grid_bars(_stamps(1500).asi8, [g, g - 1])[0] == g
+    pos = np.array([w - 1, g - 1, g, g + 1, g + k - 1, g + k, 1400])
+    full = fsg.markov_vol_state(_stamps(len(close)), close, pos, **MS_FAST)
     assert np.isnan(full[0]) and np.all(np.isfinite(full[1:]))
     for p, v in zip(pos[1:], full[1:], strict=True):
-        cut = fsg.markov_vol_state(close[: p + 1], [p], **MS_FAST)
+        cut = fsg.markov_vol_state(_stamps(p + 1), close[: p + 1], [p], **MS_FAST)
         assert cut[0] == pytest.approx(v, abs=1e-10)
         shocked = close.copy()
         shocked[p + 1:] *= np.exp(np.random.default_rng(int(p)).normal(0, 0.05,
                                                                        len(close) - p - 1))
         fsg._MS_MEMO.clear()
-        assert fsg.markov_vol_state(shocked, [p], **MS_FAST)[0] == pytest.approx(v, abs=1e-10)
+        assert fsg.markov_vol_state(_stamps(len(shocked)), shocked, [p], **MS_FAST)[0] == pytest.approx(v, abs=1e-10)
     # Bar g - 1 reads the fit of the PREVIOUS grid point, bar g its own: a return at bar g moves
     # the reading at g and never the one at g - 1.
     moved = close.copy()
     moved[g:] *= 1.02
-    after = fsg.markov_vol_state(moved, [g - 1, g], **MS_FAST)
+    after = fsg.markov_vol_state(_stamps(len(moved)), moved, [g - 1, g], **MS_FAST)
     assert after[0] == pytest.approx(full[1], abs=1e-10) and after[1] != pytest.approx(full[2])
 
 
@@ -257,12 +269,12 @@ def test_markov_gate_keeps_its_class_tail_by_brute_force(monkeypatch, base) -> N
     x, _ = _two_state(3000, seed=8)
     close = _close_from(x)
     idx = _stamps(len(close))
-    pos = list(range(3 * MS_FAST["refit"], len(close), 37))   # 504: the first full fit
+    pos = list(range(120 + 2 * MS_FAST["refit"], len(close), 37))   # 456: the first full fit
     times = [idx[p] for p in pos]
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
     kept = [s.time for s in fsg.family_markov_vol_gated(_bars(close), base_family=base,
                                                         **MS_FAST)]
-    st = [float(fsg.markov_vol_state(close[: p + 1], [p], **MS_FAST)[0]) for p in pos]
+    st = [float(fsg.markov_vol_state(_stamps(p + 1), close[: p + 1], [p], **MS_FAST)[0]) for p in pos]
     assert np.all(np.isfinite(st))
     # trend/breakout keep the BOTTOM tail (calm), reversion the TOP tail (high variance)
     top = fsg.mechanism_class(base) in fsg.SYNC_LOW
@@ -349,3 +361,89 @@ def test_regime_families_are_registered_where_the_gauntlet_looks() -> None:
         assert fam in _UNWRAPPABLE and fam in NOT_SOURCED_HERE
         assert FAMILY_TIMEFRAMES[fam][0] == ("H1",)
         assert ag.MECHANISM_CLASS[fam] == "regime"
+
+
+# ------------------------------------------------------------------- audit of #399 (c19611bf9) ---
+def test_the_refit_grid_is_anchored_to_time_not_to_the_frame() -> None:
+    """M-1: cutting leading bars re-phased a frame-counted grid (0% of states identical after a
+    1-bar cut). On the time grid, every reading whose fit window still fits inside the cut frame
+    is BITWISE identical, whatever the cut."""
+    x, _ = _two_state(3000, seed=21)
+    close = _close_from(x)
+    idx = _stamps(len(close))
+    pos = np.arange(900, len(close), 7)
+    full = fsg.markov_vol_state(idx, close, pos, **MS_FAST)
+    assert np.isfinite(full).mean() > 0.95
+    for cut in (1, 37, 100, 168, 400):
+        fsg._MS_MEMO.clear()
+        got = fsg.markov_vol_state(idx[cut:], close[cut:], pos - cut, **MS_FAST)
+        both = np.isfinite(got)
+        assert both.mean() > 0.8, cut
+        assert np.array_equal(got[both], full[both]), cut
+        # and a reading the cut frame cannot hold is NaN, never a re-phased number
+        g = fsg.ms_grid_bars(idx.asi8, pos)
+        assert np.all(~both[g - cut < MS_FAST["fit_window"]])
+
+
+def test_the_grid_follows_stamps_across_a_gap() -> None:
+    """A weekend gap or a missing day moves bar COUNTS, never the grid instant."""
+    idx = _stamps(2000)
+    holed = idx.delete(np.arange(300, 340))           # 40 bars missing mid-file
+    g_full = fsg.ms_grid_bars(idx.asi8, [1900])[0]
+    g_holed = fsg.ms_grid_bars(holed.asi8, [1860])[0]
+    assert idx[g_full] == holed[g_holed]
+
+
+def test_the_fit_memo_holds_a_digest_not_the_window() -> None:
+    """SF-2: 50,000 keys of a raw 16 KB window were ~800 MB."""
+    fsg._MS_MEMO.clear()
+    x, _ = _two_state(1200, seed=22)
+    close = _close_from(x)
+    fsg.markov_vol_state(_stamps(len(close)), close, [1100], **MS_FAST)
+    assert fsg._MS_MEMO
+    for key in fsg._MS_MEMO:
+        assert isinstance(key[0], bytes) and len(key[0]) == 16
+
+
+def test_a_stalled_day_is_not_a_day_of_variance() -> None:
+    """SF-1: a day of unchanged closes but one tick read log RV -41 and moved H."""
+    idx, close = _daily_bars(np.full(40, np.log(0.006)), seed=23)
+    day = idx.as_unit("ns").asi8 // (24 * HOUR)
+    stalled = close.copy()
+    d = day[24 * 12]
+    rows = np.flatnonzero(day == d)
+    stalled[rows[1:]] = stalled[rows[0]]              # every return of day 12 after its first is 0
+    stalled[rows[-1] + 1:] *= stalled[rows[0]] / close[rows[-1]]
+    days, _ = fsg.daily_realised_variance(idx, stalled)
+    assert d not in set((days // (24 * HOUR)).tolist())
+    assert len(days) == 40 - 2
+
+
+def test_the_h1_only_wrappers_refuse_another_chart(monkeypatch) -> None:
+    """SF-4: the hour-counted grid and the 23:00 day close hold only on H1."""
+    x, _ = _two_state(3000, seed=24)
+    close = _close_from(x)
+    m15 = pd.date_range(T0, periods=len(close), freq="15min").as_unit("ns")
+    monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(list(m15[2000::50])))
+    bars = _bars(close, m15)
+    assert not fsg.is_h1(m15) and fsg.is_h1(_stamps(50))
+    for fn in (fsg.family_markov_vol_gated, fsg.family_rough_vol_gated):
+        assert fn(bars, base_family="trend_ma_cross") == []
+
+
+def test_no_state_gate_is_live_executable_until_its_history_is() -> None:
+    """SF-3: the gateway reads 400 H1 bars; every wrapper ranks against the whole frame's earlier
+    signals. A certificate would trade a gate it was not certified on, so the promoter's own
+    boundary names why instead of writing a LIVE row the gateway cannot reproduce."""
+    ex = pytest.importorskip("mt5desk.executables")
+    for fam in fsg.STATE_GATE_FAMILIES:
+        assert ex.population_of(fam) == "orthogonal"
+        gap = ex.executor_gap(fam)
+        assert gap == fsg.LIVE_READ_GAP and "400 H1" in gap
+        assert not ex.gateway_can_execute(fam)
+    # The reason quotes the gateway's own read: if that literal moves, this refusal is re-judged.
+    import ast
+    tree = ast.parse((_DESK / "mt5desk" / "gateway.py").read_text("utf-8"))
+    bars = [ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign)
+            and any(getattr(t, "id", "") == "_FAMILY_H1_BARS" for t in n.targets)]
+    assert bars == [400]
