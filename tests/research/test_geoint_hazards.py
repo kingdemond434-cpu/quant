@@ -83,6 +83,126 @@ def test_a_held_or_failing_source_is_named_not_zeroed(tmp_path: Path) -> None:
     assert rec["requests"] >= 2 and rec["errors"] and store == {}
 
 
+# ------------------------------------------------------------------------------ PIT magnitude
+def _pit_rows() -> dict[str, dict]:
+    rows = G.parse_quakeml((FIX / "quakeml_pit_cases.xml").read_bytes(), NOW)
+    assert rows is not None
+    return {r["event_id"]: r for r in rows}
+
+
+def test_fdsn_backfill_asks_for_every_magnitude_below_the_line() -> None:
+    url = G.fdsn_url("quake_jp", "2011-01-01", "2012-01-01")
+    assert "includeallmagnitudes=true" in url and "format=xml" in url
+    assert f"minmagnitude={G.BACKFILL_QUERY_MIN}" in url and G.BACKFILL_QUERY_MIN < G.MIN_MAGNITUDE
+
+
+def test_an_upgraded_quake_is_not_in_the_set_before_its_upgrade() -> None:
+    rows = _pit_rows()
+    up = rows["usgs:usup0001"]
+    assert up["pit_basis"] == "upgrade_creation_time" and up["first_sighting_magnitude"] == 5.8
+    upgrade = datetime(2024, 4, 3, 3, 0, tzinfo=UTC)
+    assert datetime.fromisoformat(up["available_time"]) == upgrade
+    origin_plus_slack = datetime.fromisoformat(up["event_time"]) + G.PUBLICATION_SLACK
+    assert "usgs:usup0001" not in G.members_as_of(rows, origin_plus_slack)
+    assert "usgs:usup0001" not in G.members_as_of(rows, upgrade - timedelta(seconds=1))
+    assert "usgs:usup0001" in G.members_as_of(rows, upgrade)
+
+
+def test_a_downgraded_quake_keeps_its_first_sighting_membership() -> None:
+    rows = _pit_rows()
+    dn = rows["usgs:usdn0001"]                       # reviewed 5.7 today: v1 dropped it entirely
+    assert dn["reviewed_magnitude"] == 5.7 and dn["magnitude"] == 6.1
+    assert dn["pit_basis"] == "first_sighting_creation_time"
+    assert dn["available_time"] == "2024-01-01T07:30:00+00:00"
+    assert "usgs:usdn0001" in G.members_as_of(rows, datetime(2024, 6, 1, tzinfo=UTC))
+
+
+def test_a_missing_creation_time_uses_the_magnitude_margin() -> None:
+    rows = _pit_rows()
+    assert "usgs:usnt0001" not in rows                 # M6.1, no creationTime: inside the margin
+    nt = rows["usgs:usnt0002"]                         # M6.6 >= MARGIN_MAGNITUDE
+    assert nt["pit_basis"] == "margin" and G.MARGIN_MAGNITUDE == 6.3
+    assert (datetime.fromisoformat(nt["available_time"])
+            == datetime.fromisoformat(nt["event_time"]) + G.PUBLICATION_SLACK)
+    assert "usgs:usob0001" not in rows                 # outside every box
+    assert G.parse_quakeml(b"<not xml", NOW) is None   # unparsable is None, never "no quakes"
+
+
+def _live(mag: float, updated: datetime, eid: str = "us7000live") -> bytes:
+    origin = datetime(2026, 10, 13, 22, 0, tzinfo=UTC)
+    return json.dumps({"type": "FeatureCollection", "features": [{
+        "type": "Feature", "id": eid,
+        "properties": {"mag": mag, "time": int(origin.timestamp() * 1000),
+                       "updated": int(updated.timestamp() * 1000), "type": "earthquake"},
+        "geometry": {"type": "Point", "coordinates": [142.3, 38.1, 10.0]}}]}).encode()
+
+
+def test_live_feed_records_the_first_sighting_and_never_revises_membership() -> None:
+    store: dict = {}
+    sightings: dict = {}
+    t1 = datetime(2026, 10, 13, 22, 20, tzinfo=UTC)
+    G.merge(store, G.parse_usgs(_live(5.8, t1), t1 + timedelta(minutes=5), sightings))
+    assert store == {} and sightings["usgs:us7000live"]["first_magnitude"] == 5.8
+    t2 = datetime(2026, 10, 14, 2, 0, tzinfo=UTC)                       # upgraded to 6.2 at t2
+    G.merge(store, G.parse_usgs(_live(6.2, t2), t2 + timedelta(minutes=30), sightings))
+    row = store["usgs:us7000live"]
+    assert row["available_time"] == t2.isoformat() and row["first_sighting_magnitude"] == 5.8
+    assert "usgs:us7000live" not in G.members_as_of(store, t2 - timedelta(seconds=1))
+    assert sightings["usgs:us7000live"]["first_magnitude"] == 5.8      # never revised
+
+    store2: dict = {}
+    sightings2: dict = {}
+    G.merge(store2, G.parse_usgs(_live(6.1, t1, "us7000dn"), t1, sightings2))
+    G.merge(store2, G.parse_usgs(_live(5.7, t2, "us7000dn"), t2, sightings2))   # downgraded
+    assert store2["usgs:us7000dn"]["magnitude"] == 6.1                   # membership kept
+
+
+def test_v1_state_with_reviewed_magnitude_rows_is_migrated() -> None:
+    state = {"events": {"usgs:old": {"source_id": "usgs_earthquakes",
+                                     "pit_basis": "origin+publication_slack"},
+                        "nhc:al01": {"source_id": "nhc_current_storms",
+                                     "pit_basis": "advisory_issuance"}},
+             "backfilled": {"quake_jp": "2026-10-14"}}
+    assert G.migrate(state) == 1
+    assert set(state["events"]) == {"nhc:al01"} and "backfilled" not in state
+    assert G.migrate(state) == 0
+
+
+# ------------------------------------------------------------------------------ donation, fixtures
+def test_cells_are_donated_once_per_identity_including_rolled_up_contracts(tmp_path: Path) -> None:
+    import gzip
+    cells = G.n3_cells({}, NOW)[:4]
+    sent: list[list[dict]] = []
+
+    def fake(source: str, rows: list[dict], tests_run: int) -> Path:
+        sent.append(rows)
+        seat = tmp_path / source
+        seat.mkdir(exist_ok=True)
+        out = seat / f"discoveries_{len(sent)}.json"
+        out.write_text(json.dumps({"discoveries": rows}), "utf-8")
+        return out
+
+    first = G.donate_new(cells, intel=tmp_path, donate_fn=fake)
+    assert first["donated"] == 4 and first["already_donated"] == 0
+    again = G.donate_new(cells, intel=tmp_path, donate_fn=fake)
+    assert again == {"donated": 0, "already_donated": 4} and len(sent) == 1
+    # disk_guard rolls aged contracts into rollup_<day>.jsonl.gz: still donated.
+    (tmp_path / G.SOURCE / "discoveries_1.json").unlink()
+    with gzip.open(tmp_path / G.SOURCE / "rollup_20261014.jsonl.gz", "wt",
+                   encoding="utf-8") as fh:
+        fh.write(json.dumps({"discoveries": cells[:3]}) + "\n")
+    third = G.donate_new(cells, intel=tmp_path, donate_fn=fake)
+    assert third["donated"] == 1 and sent[-1] == [cells[3]]
+
+
+def test_fixtures_never_write_into_production(tmp_path: Path) -> None:
+    with pytest.raises(G.FixturesIntoProduction):
+        G.run(fixtures=FIX, now=NOW, style_novelty_path=tmp_path / "absent.json")
+    assert G.main(["--once", "--fixtures", str(FIX)]) == 2
+    assert G.main(["--once", "--fixtures", str(FIX), "--out", str(tmp_path)]) == 0
+    assert (tmp_path / G.REPORT.name).exists() and (tmp_path / "state.json").exists()
+
+
 # ------------------------------------------------------------------------------ the family
 def _bars(start: datetime, n: int, drift: float = 0.0) -> pd.DataFrame:
     idx = pd.date_range(start, periods=n, freq="h", tz="UTC")

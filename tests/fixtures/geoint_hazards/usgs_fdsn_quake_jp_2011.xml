@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" xmlns:catalog="http://anss.org/xmlns/catalog/0.1" xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">
+<eventParameters publicID="quakeml:earthquake.usgs.gov/fdsnws/event/1/query">
+<event catalog:datasource="us" catalog:eventsource="us" catalog:eventid="p000hvnu" publicID="quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=usp000hvnu">
+<description><type>earthquake name</type><text>near the east coast of Honshu, Japan</text></description>
+<origin publicID="quakeml:us.anss.org/origin/p000hvnu"><time><value>2011-03-11T05:46:24.120Z</value></time><longitude><value>142.373</value></longitude><latitude><value>38.297</value></latitude></origin>
+<magnitude publicID="quakeml:us.anss.org/magnitude/p000hvnu/mb"><mag><value>7.9</value></mag><type>mb</type><creationInfo><agencyID>us</agencyID><creationTime>2011-03-11T06:01:00.000Z</creationTime></creationInfo></magnitude>
+<magnitude publicID="quakeml:us.anss.org/magnitude/p000hvnu/mww"><mag><value>9.1</value></mag><type>mww</type><creationInfo><agencyID>us</agencyID><creationTime>2016-06-10T00:00:00.000Z</creationTime></creationInfo></magnitude>
+<preferredOriginID>quakeml:us.anss.org/origin/p000hvnu</preferredOriginID>
+<preferredMagnitudeID>quakeml:us.anss.org/magnitude/p000hvnu/mww</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
+</eventParameters>
+</q:quakeml>

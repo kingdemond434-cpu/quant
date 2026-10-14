@@ -13,8 +13,20 @@ N3  NATURAL-HAZARD SHOCKS, executed by `mt5desk.family_hazard_shock`:
       storm_gulf                      an NHC Atlantic-basin forecast cone touching the Gulf of
                                       Mexico production box (first advisory per storm)
     Targets: USDJPY, JPN225 (JP, TW), XCUUSD (CL), XTIUSD, XNGUSD, USDMXN (Gulf).
-    PIT: `available_time` = USGS origin + PUBLICATION_SLACK (late-biased: USGS posts M6+ within
-    ~20 min), or the cone's own advisory `issuance`. `first_seen_at` = when this box read it.
+    PIT, AND THE M6+ LABEL IS PIT TOO (GD audit 2026-10-14). Origin + PUBLICATION_SLACK is a safe
+    stamp for the EVENT existing, never for its magnitude: USGS revises magnitudes for days, so a
+    filter on today's reviewed value admits a quake first reported at M5.8 at origin+1h (look-
+    ahead) and silently drops one first reported at M6.1 and later cut to M5.7. So:
+      backfill  FDSN QuakeML with includeallmagnitudes=true. Per event the magnitudes are ordered
+                by their own creationTime; the event enters at the creationTime of the first one
+                at M6+ (the first sighting when that is the first magnitude, else the upgrade).
+                A downgrade never removes it. With no creationTime on any magnitude the sighting
+                is unknowable: only a magnitude >= MARGIN_MAGNITUDE enters, at origin + slack,
+                pit_basis "margin".
+      live      the box records each in-box quake's FIRST-SIGHTING magnitude in state and never
+                revises it; an M6+ reading enters at max(origin + slack, the feed's `updated`)
+                -- the instant after which the magnitude it shows had not changed -- and stays.
+    A storm enters at its cone's own advisory `issuance`. `first_seen_at` = when this box read it.
 N4  CHOKEPOINT TRANSIT ANOMALY: alt_proxies' chokepoint transit series (7-day vs 90-day anomaly,
     its surprise_z) now map to XTIUSD, XBRUSD, XAUUSD and USDJPY; alt_proxies' release-gain test
     and direct cells do the rest. Reported here, not re-fetched.
@@ -29,7 +41,8 @@ TRIALS. Cells are donated through `proposer_common.donate` only for (kind, targe
 event count reaches MIN_EVENTS, with tests_run = 0: nothing here screened a cell on returns, so
 nothing here is a trial. The judge charges what it judges, as for every donated cell.
 
-    python desks/mt5/research/geoint_hazards.py --once [--dry-run] [--no-fetch] [--fixtures DIR]
+    python desks/mt5/research/geoint_hazards.py --once [--dry-run] [--no-fetch]
+        [--fixtures DIR (only with --dry-run or --out DIR)]
 """
 from __future__ import annotations
 
@@ -66,6 +79,16 @@ MAX_BYTES = 16 * 1024 * 1024
 #: USGS posts an M6+ solution within ~20 minutes; an hour can only be late.
 PUBLICATION_SLACK = timedelta(hours=1)
 MIN_MAGNITUDE = 6.0
+#: The backfill reads in-box events down to this PREFERRED magnitude so a quake first reported at
+#: M6+ and since downgraded is still read and kept at its first-sighting membership.
+BACKFILL_QUERY_MIN = 5.5
+#: No creationTime on any magnitude -> the first sighting is unknowable. Only a magnitude this far
+#: over the line is admitted (a 0.3 revision across 6.0 is the bound taken), at origin + slack.
+MARGIN_MAGNITUDE = 6.3
+#: State schema. v1 stored backfill rows filtered on the reviewed magnitude (the look-ahead).
+PIT_VERSION = 2
+#: Live first sightings are kept this long (the summary feed is a 1-day window).
+SIGHTING_TTL = timedelta(days=30)
 MIN_EVENTS = 8
 BACKFILL_START = "2010-01-01"
 
@@ -152,8 +175,19 @@ def _in(box: tuple[float, float, float, float], lat: float, lon: float) -> bool:
     return box[0] <= lat <= box[1] and box[2] <= lon <= box[3]
 
 
-def parse_usgs(body: bytes, first_seen: datetime) -> list[dict[str, Any]]:
-    """USGS GeoJSON (the live summary feed or an FDSN query): M6+ inside a declared box."""
+def _row(eid: str, kind: str, mag: float, lat: float, lon: float, origin: datetime,
+         avail: datetime, basis: str, first_seen: datetime, **extra: Any) -> dict[str, Any]:
+    return {"event_id": eid, "kind": kind, "region": kind[-2:].upper(),
+            "magnitude": round(mag, 2), "lat": lat, "lon": lon,
+            "event_time": origin.isoformat(timespec="seconds"),
+            "available_time": avail.isoformat(timespec="seconds"),
+            "pit_basis": basis, "first_seen_at": first_seen.isoformat(timespec="seconds"),
+            "source_id": "usgs_earthquakes", **extra}
+
+
+def usgs_sightings(body: bytes) -> list[dict[str, Any]]:
+    """Every in-box earthquake in a USGS GeoJSON summary feed, AT ANY MAGNITUDE (a sub-M6 sighting
+    is what makes a later upgrade an upgrade rather than a first sighting)."""
     try:
         doc = json.loads(body.decode("utf-8", errors="replace"))
     except ValueError:
@@ -170,21 +204,146 @@ def parse_usgs(body: bytes, first_seen: datetime) -> list[dict[str, Any]]:
         except (TypeError, ValueError, IndexError):
             continue
         origin = _iso(p.get("time"))
-        if origin is None or not mag >= MIN_MAGNITUDE or str(p.get("type") or "earthquake") != \
-                "earthquake":
+        if origin is None or mag != mag or str(p.get("type") or "earthquake") != "earthquake":
             continue
         kind = next((k for k, box in QUAKE_BOXES.items() if _in(box, lat, lon)), None)
         if kind is None:
             continue
-        avail = origin + PUBLICATION_SLACK
-        out.append({"event_id": f"usgs:{f.get('id')}", "kind": kind, "region": kind[-2:].upper(),
-                    "magnitude": round(mag, 2), "lat": lat, "lon": lon,
-                    "event_time": origin.isoformat(timespec="seconds"),
-                    "available_time": avail.isoformat(timespec="seconds"),
-                    "pit_basis": "origin+publication_slack",
-                    "first_seen_at": first_seen.isoformat(timespec="seconds"),
-                    "source_id": "usgs_earthquakes"})
+        out.append({"event_id": f"usgs:{f.get('id')}", "kind": kind, "mag": mag, "lat": lat,
+                    "lon": lon, "origin": origin, "updated": _iso(p.get("updated"))})
     return out
+
+
+def parse_usgs(body: bytes, first_seen: datetime,
+               sightings: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """The LIVE feed: M6+ in-box quakes as rows, each sighting's first magnitude kept in
+    `sightings` (state) and never revised. Membership is decided by what the feed shows NOW and
+    only ever ADDED (`merge` is append-only): a downgrade never removes a member, an upgrade
+    enters at its own instant."""
+    out: list[dict[str, Any]] = []
+    for q in usgs_sightings(body):
+        eid = q["event_id"]
+        first = {"first_magnitude": round(q["mag"], 2),
+                 "first_seen_at": first_seen.isoformat(timespec="seconds"),
+                 "origin": q["origin"].isoformat(timespec="seconds")}
+        if sightings is not None:
+            first = sightings.setdefault(eid, first)
+        if not q["mag"] >= MIN_MAGNITUDE:
+            continue
+        # `updated` is the last change to the event, so the magnitude shown has stood since then;
+        # without it, only this box's own read time is known.
+        shown_since = q["updated"] if q["updated"] is not None else first_seen
+        avail = max(q["origin"] + PUBLICATION_SLACK, shown_since)
+        out.append(_row(eid, q["kind"], q["mag"], q["lat"], q["lon"], q["origin"], avail,
+                        "live: max(origin+publication_slack, feed updated)", first_seen,
+                        first_sighting_magnitude=first["first_magnitude"],
+                        first_sighting_at=first["first_seen_at"]))
+    return out
+
+
+def _local(tag: Any) -> str:
+    return str(tag).rsplit("}", 1)[-1]
+
+
+def _kid(el: Any, name: str) -> Any:
+    return next((c for c in el if _local(c.tag) == name), None)
+
+
+def _val(el: Any, *path: str) -> str | None:
+    for name in path:
+        if el is None:
+            return None
+        el = _kid(el, name)
+    return None if el is None or el.text is None else el.text.strip()
+
+
+def _when(raw: str | None) -> datetime | None:
+    if not raw:
+        return None
+    try:
+        t = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def _event_id(ev: Any) -> str:
+    src = next((v for k, v in ev.attrib.items() if _local(k) == "eventsource"), None)
+    num = next((v for k, v in ev.attrib.items() if _local(k) == "eventid"), None)
+    if src and num:
+        return f"usgs:{src}{num}"
+    return "usgs:" + str(ev.attrib.get("publicID") or "").rsplit("/", 1)[-1]
+
+
+def parse_quakeml(body: bytes, first_seen: datetime) -> list[dict[str, Any]] | None:
+    """FDSN QuakeML queried with includeallmagnitudes=true -> PIT member rows (see the module
+    docstring). None when the document does not parse (never read as "no quakes")."""
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.fromstring(body)
+    except ET.ParseError:
+        return None
+    out: list[dict[str, Any]] = []
+    for ev in root.iter():
+        if _local(ev.tag) != "event":
+            continue
+        if (_val(ev, "type") or "earthquake") != "earthquake":
+            continue
+        origins = [c for c in ev if _local(c.tag) == "origin"]
+        pref_o = _val(ev, "preferredOriginID")
+        org = next((o for o in origins if o.attrib.get("publicID") == pref_o),
+                   origins[0] if origins else None)
+        if org is None:
+            continue
+        origin = _when(_val(org, "time", "value"))
+        try:
+            lat = float(_val(org, "latitude", "value") or "nan")
+            lon = float(_val(org, "longitude", "value") or "nan")
+        except ValueError:
+            continue
+        if origin is None or lat != lat or lon != lon:
+            continue
+        kind = next((k for k, box in QUAKE_BOXES.items() if _in(box, lat, lon)), None)
+        if kind is None:
+            continue
+        mags: list[tuple[datetime | None, float, str]] = []
+        for m in ev:
+            if _local(m.tag) != "magnitude":
+                continue
+            try:
+                v = float(_val(m, "mag", "value") or "nan")
+            except ValueError:
+                continue
+            if v == v:
+                mags.append((_when(_val(m, "creationInfo", "creationTime")), v,
+                             str(m.attrib.get("publicID") or "")))
+        if not mags:
+            continue
+        pref_m = _val(ev, "preferredMagnitudeID")
+        reviewed = next((v for _, v, pid in mags if pid == pref_m), mags[0][1])
+        timed = sorted((ct, v) for ct, v, _ in mags if ct is not None)
+        eid = _event_id(ev)
+        if timed:
+            hit = next(((ct, v) for ct, v in timed if v >= MIN_MAGNITUDE), None)
+            if hit is None:
+                continue
+            basis = ("first_sighting_creation_time" if hit == timed[0]
+                     else "upgrade_creation_time")
+            out.append(_row(eid, kind, hit[1], lat, lon, origin, max(hit[0], origin), basis,
+                            first_seen, first_sighting_magnitude=round(timed[0][1], 2),
+                            first_sighting_at=timed[0][0].isoformat(timespec="seconds"),
+                            reviewed_magnitude=round(reviewed, 2)))
+        elif reviewed >= MARGIN_MAGNITUDE:
+            out.append(_row(eid, kind, reviewed, lat, lon, origin, origin + PUBLICATION_SLACK,
+                            "margin", first_seen, first_sighting_magnitude=None,
+                            first_sighting_at=None, reviewed_magnitude=round(reviewed, 2)))
+    return out
+
+
+def members_as_of(store: dict[str, dict[str, Any]], t: datetime) -> set[str]:
+    """The event set a decision at `t` may see: available_time <= t."""
+    return {k for k, r in store.items()
+            if (_when(str(r.get("available_time"))) or t + timedelta(days=1)) <= t}
 
 
 def parse_nhc_current(body: bytes) -> list[dict[str, Any]]:
@@ -300,9 +459,11 @@ def http_get(url: str) -> bytes:
 
 
 def fdsn_url(kind: str, start: str, end: str) -> str:
+    """QuakeML with every magnitude and its creationTime (GeoJSON carries only the preferred,
+    reviewed value -- the look-ahead the GD audit found)."""
     lo_lat, hi_lat, lo_lon, hi_lon = QUAKE_BOXES[kind]
-    q = {"format": "geojson", "starttime": start, "endtime": end,
-         "minmagnitude": MIN_MAGNITUDE, "minlatitude": lo_lat, "maxlatitude": hi_lat,
+    q = {"format": "xml", "includeallmagnitudes": "true", "starttime": start, "endtime": end,
+         "minmagnitude": BACKFILL_QUERY_MIN, "minlatitude": lo_lat, "maxlatitude": hi_lat,
          "minlongitude": lo_lon, "maxlongitude": hi_lon, "orderby": "time-asc"}
     return f"{USGS_FDSN}?{urllib.parse.urlencode(q)}"
 
@@ -310,12 +471,14 @@ def fdsn_url(kind: str, start: str, end: str) -> str:
 def collect(store: dict[str, dict[str, Any]], state: dict[str, Any], now: datetime, *,
             fetch: bool, fixtures: Path | None, deadline: float,
             getter: Any = http_get) -> dict[str, Any]:
-    """One pass: the live USGS feed, a one-time FDSN backfill per box, the NHC storms."""
+    """One pass: the live USGS feed, a one-time FDSN backfill per box and year, the NHC storms."""
     rec: dict[str, Any] = {"requests": 0, "errors": [], "added": 0}
+    owed = "budget reached: owed to the next pass"
 
     def get(url: str, fixture: str) -> bytes | None:
         if time.monotonic() > deadline:
-            rec["errors"].append("budget reached: owed to the next pass")
+            if owed not in rec["errors"]:
+                rec["errors"].append(owed)
             return None
         if fixtures is not None:
             p = fixtures / fixture
@@ -329,20 +492,35 @@ def collect(store: dict[str, dict[str, Any]], state: dict[str, Any], now: dateti
             rec["errors"].append(f"{fixture}: {type(exc).__name__}: {str(exc)[:100]}")
             return None
 
+    sightings: dict[str, Any] = state.setdefault("sightings", {})
     body = get(USGS_LIVE, "usgs_4.5_day.geojson")
     if body:
-        rec["added"] += merge(store, parse_usgs(body, now))
-    done = state.setdefault("backfilled", {})
+        rec["added"] += merge(store, parse_usgs(body, now, sightings))
+    for eid in [k for k, v in sightings.items()
+                if k not in store and (_when(str(v.get("first_seen_at"))) or now)
+                < now - SIGHTING_TTL]:
+        del sightings[eid]
+    done = state.setdefault("backfilled_years", {})
+    start_year = int(BACKFILL_START[:4])
     for kind in QUAKE_BOXES:
-        if done.get(kind):
-            continue
-        body = get(fdsn_url(kind, BACKFILL_START, now.date().isoformat()),
-                   f"usgs_fdsn_{kind}.geojson")
-        if body is None:
-            continue
-        rec["added"] += merge(store, parse_usgs(body, now))
-        if fixtures is None and fetch:
-            done[kind] = now.isoformat(timespec="seconds")
+        done_k = done.setdefault(kind, {})
+        for year in range(start_year, now.year + 1):
+            if str(year) in done_k:
+                continue
+            end = min(datetime(year + 1, 1, 1, tzinfo=UTC), now).date().isoformat()
+            body = get(fdsn_url(kind, f"{year}-01-01", end), f"usgs_fdsn_{kind}_{year}.xml")
+            if body is None:
+                continue
+            if len(body) >= MAX_BYTES:
+                rec["errors"].append(f"usgs_fdsn_{kind}_{year}: truncated at {MAX_BYTES} bytes")
+                continue
+            rows = parse_quakeml(body, now)
+            if rows is None:
+                rec["errors"].append(f"usgs_fdsn_{kind}_{year}: QuakeML did not parse")
+                continue
+            rec["added"] += merge(store, rows)
+            if fixtures is None and fetch:
+                done_k[str(year)] = now.isoformat(timespec="seconds")
     body = get(NHC_CURRENT, "nhc_current_storms.json")
     storms = parse_nhc_current(body) if body else []
     rec["atlantic_storms"] = len(storms)
@@ -435,6 +613,42 @@ def geoint_sources() -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------------------- the pass
+class FixturesIntoProduction(ValueError):
+    """A fixtures run aimed at the production report, state or lake frame."""
+
+
+def migrate(state: dict[str, Any]) -> int:
+    """v1 -> v2: drop USGS rows admitted on the REVIEWED magnitude at origin+1h (the look-ahead)
+    and re-read the backfill with first-sighting magnitudes. Returns the rows dropped."""
+    if state.get("pit_version") == PIT_VERSION:
+        return 0
+    store = state.setdefault("events", {})
+    bad = [k for k, r in store.items() if isinstance(r, dict)
+           and r.get("source_id") == "usgs_earthquakes"
+           and r.get("pit_basis") == "origin+publication_slack"]
+    for k in bad:
+        del store[k]
+    state.pop("backfilled", None)
+    state["pit_version"] = PIT_VERSION
+    return len(bad)
+
+
+def donate_new(donatable: list[dict[str, Any]], *, intel: Path | None = None,
+               donate_fn: Any = None) -> dict[str, Any]:
+    """Donate each cell identity ONCE. The same cells are DONATABLE every hour once their kind
+    holds MIN_EVENTS; the seat's own contracts (and their gz rollups) are the record of what
+    already left, so an hourly re-donation of the same 48 cells never happens."""
+    from research import proposer_common as pc
+    seen = pc.prior_identities(SOURCE, intel)
+    fresh = [c for c in donatable
+             if pc.identity(str(c["symbol"]), str(c["family"]), dict(c["params"])) not in seen]
+    out: dict[str, Any] = {"donated": 0, "already_donated": len(donatable) - len(fresh)}
+    if fresh:
+        path = (donate_fn or pc.donate)(SOURCE, fresh, tests_run=0)
+        out.update(donated=len(fresh) if path else 0, path=str(path or ""))
+    return out
+
+
 def _read(p: Path, default: Any) -> Any:
     try:
         return json.loads(p.read_text("utf-8"))
@@ -453,18 +667,24 @@ def run(*, budget_s: float = 120.0, fetch: bool = True, fixtures: Path | None = 
         dry_run: bool = False, donate: bool = True, now: datetime | None = None,
         report: Path = REPORT, state_path: Path = STATE, series_dir: Path = SERIES_DIR,
         style_novelty_path: Path | None = None) -> dict[str, Any]:
+    if fixtures is not None and not dry_run and (
+            Path(report) == REPORT or Path(state_path) == STATE or Path(series_dir) == SERIES_DIR):
+        raise FixturesIntoProduction(
+            "--fixtures writes fixture events only with --dry-run or with --out redirecting the "
+            "report, state and lake frame; refused rather than written into production")
     now = now or datetime.now(UTC)
     deadline = time.monotonic() + budget_s * 0.7
     state = _read(state_path, {})
     store: dict[str, dict[str, Any]] = state.setdefault("events", {})
+    migrated = migrate(state)
     rec = collect(store, state, now, fetch=fetch, fixtures=fixtures, deadline=deadline)
+    if migrated:
+        rec["pit_migration_dropped"] = migrated
     cells = n3_cells(store, now)
     donatable = [c for c in cells if c["status"] == "DONATABLE"]
     donation: dict[str, Any] = {"donated": 0}
     if donate and not dry_run and fixtures is None and donatable:
-        from research import proposer_common
-        path = proposer_common.donate(SOURCE, donatable, tests_run=0)
-        donation = {"donated": len(donatable) if path else 0, "path": str(path or "")}
+        donation = donate_new(donatable)
     written = None if dry_run else write_series(store, series_dir)
     from research.novel_style_lanes import STYLE_NOVELTY, novelty
     nov = novelty(style_novelty_path or STYLE_NOVELTY, declared=DECLARED)
@@ -479,6 +699,12 @@ def run(*, budget_s: float = 120.0, fetch: bool = True, fixtures: Path | None = 
                "lake_written": written, "n_cells": len(cells),
                "n_donatable": len(donatable), "donation": donation,
                "cells_preview": cells[:8], "trials_charged_here": 0,
+               "pit_rule": ("M6+ membership is the first sighting at M6+ (FDSN creationTime, or "
+                            "the live feed's updated stamp), never today's reviewed magnitude; "
+                            f"no creationTime -> reviewed >= {MARGIN_MAGNITUDE} at origin+slack"),
+               "pit_basis_counts": {b: sum(1 for r in store.values() if r.get("pit_basis") == b)
+                                    for b in sorted({str(r.get("pit_basis")) for r in
+                                                     store.values()})},
                "nhc_backfill": ("UNMEASURED: CurrentStorms.json is live-only; storm history "
                                 "accrues forward from the first pass")},
         "N4": {"name": "chokepoint transit anomaly -> oil, gold, USDJPY", **n4_status()},
@@ -510,9 +736,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-fetch", action="store_true")
     ap.add_argument("--fixtures", type=Path, default=None)
+    ap.add_argument("--out", type=Path, default=None,
+                    help="write report, state and lake frame under this directory instead")
     ap.add_argument("--budget-s", type=float, default=120.0)
     a = ap.parse_args(argv)
-    doc = run(budget_s=a.budget_s, fetch=not a.no_fetch, fixtures=a.fixtures, dry_run=a.dry_run)
+    paths: dict[str, Any] = {}
+    if a.out is not None:
+        paths = {"report": a.out / REPORT.name, "state_path": a.out / "state.json",
+                 "series_dir": a.out / "series"}
+    try:
+        doc = run(budget_s=a.budget_s, fetch=not a.no_fetch, fixtures=a.fixtures,
+                  dry_run=a.dry_run, **paths)
+    except FixturesIntoProduction as exc:
+        print(json.dumps({"refused": str(exc)}))
+        return 2
     print(json.dumps({"events": doc["N3"]["events_by_kind"], "cells": doc["N3"]["n_cells"],
                       "donatable": doc["N3"]["n_donatable"], "errors": doc["collect"]["errors"],
                       "N4": doc["N4"].get("status"),
