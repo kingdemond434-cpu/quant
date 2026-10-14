@@ -135,6 +135,8 @@ def manifest_period_min(trigger: str) -> int | None:
     t = trigger.strip().lower()
     if re.match(r"daily\b", t):
         return 1440
+    if re.match(r"hourly\b", t):
+        return 60
     m = re.match(r"every (\d+) (minute|hour)s?\b", t)
     if m:
         return int(m.group(1)) * (60 if m.group(2) == "hour" else 1)
@@ -152,37 +154,60 @@ def _ps_period_min(text: str) -> int | None:
     return None
 
 
-def installer_triggers(root: Path | None = None) -> dict[str, list[tuple[str, int | None]]]:
-    """Task name -> [(installer, period in minutes, or -1 for "from the manifest")] for every
-    registration whose trigger this file can resolve: `Register-ScheduledTask -TaskName "<name>"
-    ... -Trigger $var` with `$var` built in the same file (and its `.Repetition` override), or a
-    task-table entry `Name = "<name>" ... Trigger = { ... }`."""
+def _literal_task_name(text: str, var: str) -> str | None:
+    """`$var`'s value when the file assigns it exactly one string literal (a `param()` default or
+    a plain `$TaskName = 'MT5-X'`), else None: a loop variable never resolves."""
+    vals = set(re.findall(r"\$" + re.escape(var) + r"\s*=\s*[\"']([^\"'$]+)[\"']", text))
+    return vals.pop() if len(vals) == 1 else None
+
+
+def installer_scan(root: Path | None = None) -> tuple[dict[str, list[tuple[str, int | None]]],
+                                                       list[str]]:
+    """(task name -> [(installer, period in minutes, or -1 for "from the manifest")],
+    registrations this file could NOT resolve, as "path:line").
+
+    Resolves `Register-ScheduledTask -TaskName "<name>"|$var ... -Trigger $t|(New-...Trigger ...)`
+    with `$var` a single string literal in the same file and `$t` built there (plus its
+    `.Repetition` override), and task-table entries `Name = "<name>" ... Trigger = { ... }`.
+    Everything else (a loop over a table of names, a trigger built elsewhere) is listed as
+    unresolved, so the blind spot is a measured, ratcheted number and never a silent one."""
     base = ROOT if root is None else root
     out: dict[str, list[tuple[str, int | None]]] = {}
+    unresolved: list[str] = []
     for path in sorted((base / "desks" / "mt5").rglob("*.ps1")):
         rel = path.relative_to(base).as_posix()
         try:
             text = path.read_text("utf-8", errors="ignore")
         except OSError:
             continue
-        for reg in re.finditer(r"Register-ScheduledTask" + _PS_STMT, text):
+        for reg in re.finditer(r"(?m)^[ \t]*Register-ScheduledTask" + _PS_STMT, text):
             stmt = reg.group(0)
-            name = re.search(r"-TaskName\s+[\"']([^\"']+)[\"']", stmt)
+            where = f"{rel}:{text.count(chr(10), 0, reg.start()) + 1}"
+            lit = re.search(r"-TaskName\s+[\"']([^\"']+)[\"']", stmt)
+            ref = re.search(r"-TaskName\s+\$(\w+)\b(?!\.)", stmt)
+            name = lit.group(1) if lit else (_literal_task_name(text, ref.group(1)) if ref else None)
+            inline = re.search(r"-Trigger\s+\((New-\w+Trigger[^)]*)\)", stmt)
             var = re.search(r"-Trigger\s+\$(\w+)", stmt)
-            if not name or not var:
+            if not name or not (inline or var):
+                unresolved.append(where)
                 continue
+            if inline:
+                out.setdefault(name, []).append((rel, _ps_period_min(inline.group(1))))
+                continue
+            assert var is not None
             before = text[:reg.start()]
             builds = list(re.finditer(r"\$" + var.group(1) + r"\s*=\s*(New-\w+Trigger" + _PS_STMT
                                       + ")", before))
             if not builds:
+                unresolved.append(where)
                 continue
             build = builds[-1]
             if build.group(1).startswith("New-ManifestTrigger"):
-                out.setdefault(name.group(1), []).append((rel, -1))
+                out.setdefault(name, []).append((rel, -1))
                 continue
             rep = re.search(r"\$" + var.group(1) + r"\.Repetition\s*=" + _PS_STMT,
                             before[build.end():])
-            out.setdefault(name.group(1), []).append(
+            out.setdefault(name, []).append(
                 (rel, _ps_period_min(build.group(1) + (rep.group(0) if rep else ""))))
         for entry in re.finditer(r"Name\s*=\s*[\"'](MT5-[A-Za-z0-9]+)[\"']", text):
             nxt = re.search(r"\bName\s*=", text[entry.end():])
@@ -190,21 +215,38 @@ def installer_triggers(root: Path | None = None) -> dict[str, list[tuple[str, in
             trig = re.search(r"Trigger\s*=\s*\{(" + _PS_STMT + ")", block)
             if trig:
                 out.setdefault(entry.group(1), []).append((rel, _ps_period_min(trig.group(1))))
-    return out
+    return out, unresolved
+
+
+def installer_triggers(root: Path | None = None) -> dict[str, list[tuple[str, int | None]]]:
+    """Task name -> [(installer, period in minutes, or -1 for "from the manifest")]."""
+    return installer_scan(root)[0]
 
 
 #: Installer/manifest cadence disagreements that were already on the tree when (e) was written
-#: (2026-10-14). Which side is right is a fact about the box, not something to settle here: the
-#: installer's 5-minute MT5-DeskState, for one, is deliberate (reboot_drill fails a desk_state
-#: older than 900 s). RATCHET: entries leave once the box's real trigger is read and one side
-#: corrected; a NEW disagreement is a breach.
-KNOWN_TRIGGER_DRIFT: dict[str, str] = {
-    "MT5-AllocatorFast": "installer 5 min, manifest 15 min",
-    "MT5-DeskState": "installer 5 min (reboot_drill's 900 s bound), manifest 15 min",
-    "MT5-MoatRecorder": "installer 10 min, manifest 30 min",
-    "MT5-ResearchSupervisor": "installer 5 min, manifest 30 min",
-    "MT5-Shadow": "installer 15 min, manifest 1 hour",
+#: (2026-10-14), as task -> the period in minutes the installer registers TODAY. Which side is right
+#: is a fact about the box, not something to settle here: the installer's 5-minute MT5-DeskState,
+#: for one, is deliberate (reboot_drill fails a desk_state older than 900 s). Manifest periods:
+#: AllocatorFast 15, DeskState 15, MoatRecorder 30, ResearchSupervisor 30, Shadow 60.
+#: DOWNWARD RATCHET: an entry exempts only that exact installer period, so a second change to a
+#: listed task is a breach; an entry that no longer resolves to its recorded drift (fixed, or the
+#: registration moved) is a breach until it is deleted; the list never grows past
+#: MAX_KNOWN_TRIGGER_DRIFT.
+KNOWN_TRIGGER_DRIFT: dict[str, int] = {
+    "MT5-AllocatorFast": 5,
+    "MT5-DeskState": 5,
+    "MT5-MoatRecorder": 10,
+    "MT5-ResearchSupervisor": 5,
+    "MT5-Shadow": 15,
 }
+MAX_KNOWN_TRIGGER_DRIFT = 5
+#: The fence's measured blind spot (2026-10-14), ratcheted so it can only shrink. UNRESOLVED:
+#: registrations whose name or trigger is built in a loop over a table (tape, CRO lanes, E8,
+#: register_absent, and Install-QuantWindows' own task-table loop, whose entries ARE compared
+#: through their `Name = ... Trigger = {}` blocks). UNCOMPARED: resolved tasks with no manifest
+#: period to compare against (resident, at startup, at logon, or no manifest row).
+MAX_UNRESOLVED_REGISTRATIONS = 5
+MAX_UNCOMPARED_TRIGGERS = 11
 
 
 def check(root: Path | None = None) -> dict[str, object]:
@@ -228,18 +270,41 @@ def check(root: Path | None = None) -> dict[str, object]:
     healed_uninstallable = sorted(set(healed) & set(no_installer))
 
     drift: list[str] = []
-    for name, regs in sorted(installer_triggers(base).items()):
+    uncompared: list[str] = []
+    still_drifting: set[str] = set()
+    triggers, unresolved = installer_scan(base)
+    for name, regs in sorted(triggers.items()):
         row = next((r for r in rows if r.get("name") == name), None)
         want = manifest_period_min(str(row.get("trigger", ""))) if row else None
         for rel, got in regs:
-            if (want is not None and got is not None and got != -1 and got != want
-                    and name not in KNOWN_TRIGGER_DRIFT):
-                drift.append(f"{name}: {rel} registers every {got} min, the manifest says "
-                             f"every {want} min")
+            if want is None or got is None:
+                uncompared.append(f"{name} ({rel}): installer "
+                                  f"{'unresolved' if got is None else f'{got} min'}, manifest "
+                                  f"{repr(row.get('trigger')) if row else 'has no row'}")
+            elif got != -1 and got != want:
+                if KNOWN_TRIGGER_DRIFT.get(name) == got:
+                    still_drifting.add(name)
+                else:
+                    drift.append(f"{name}: {rel} registers every {got} min, the manifest says "
+                                 f"every {want} min")
+    stale_drift = sorted(set(KNOWN_TRIGGER_DRIFT) - still_drifting)
 
     problems: list[str] = []
     for d in drift:
         problems.append(f"installer trigger disagrees with the manifest -- {d}")
+    for n in stale_drift:
+        problems.append(f"KNOWN_TRIGGER_DRIFT[{n!r}] no longer resolves to its recorded "
+                        f"{KNOWN_TRIGGER_DRIFT[n]}-min drift: delete the entry")
+    if len(KNOWN_TRIGGER_DRIFT) > MAX_KNOWN_TRIGGER_DRIFT:
+        problems.append(f"KNOWN_TRIGGER_DRIFT holds {len(KNOWN_TRIGGER_DRIFT)} entries, above "
+                        f"its ratchet of {MAX_KNOWN_TRIGGER_DRIFT}: fix the drift, never list it")
+    if len(unresolved) > MAX_UNRESOLVED_REGISTRATIONS:
+        problems.append(f"{len(unresolved)} Register-ScheduledTask sites the trigger check cannot "
+                        f"resolve, above the ratchet of {MAX_UNRESOLVED_REGISTRATIONS}: "
+                        f"{unresolved}")
+    if len(uncompared) > MAX_UNCOMPARED_TRIGGERS:
+        problems.append(f"{len(uncompared)} installer triggers with no manifest period to compare, "
+                        f"above the ratchet of {MAX_UNCOMPARED_TRIGGERS}: {uncompared}")
     for n in missing:
         problems.append(f"MT5 task {n} is referenced in {refs[n][0]} and has no manifest line: "
                         f"the DR floor does not know it exists")
@@ -258,7 +323,8 @@ def check(root: Path | None = None) -> dict[str, object]:
         "runs_not_in_repo": bad_runs, "installers_not_in_repo": bad_installers,
         "undeclared_triggers": undeclared, "undeclared_ratchet": MAX_UNDECLARED,
         "no_installer": no_installer, "installer_trigger_drift": drift,
-        "known_trigger_drift": KNOWN_TRIGGER_DRIFT,
+        "known_trigger_drift": KNOWN_TRIGGER_DRIFT, "stale_known_trigger_drift": stale_drift,
+        "unresolved_registrations": unresolved, "uncompared_triggers": uncompared,
         "healed_but_uninstallable": healed_uninstallable,
         "status": "BREACH" if problems else ("RATCHETED" if undeclared else "OK"),
         "problems": problems,
