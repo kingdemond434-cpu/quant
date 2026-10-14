@@ -99,8 +99,10 @@ sys.path.insert(0, str(ROOT))
 
 from miner_candidate_compiler import (  # noqa: E402
     DEEPEN,
+    _atomic_json,
     compile_row,
     known_symbols,
+    lane_split,
 )
 
 #: Append-only: one line per task ever decided, so a decision is paid for once. Deliberately not
@@ -360,6 +362,85 @@ def record(entry: dict) -> None:
     WORKED.parent.mkdir(parents=True, exist_ok=True)
     with WORKED.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
+
+
+def split_off_lane(tasks: list[dict]) -> tuple[list[dict], list[dict]]:
+    """(tasks the two-lane order admits, tasks it refuses) -- `lane_split` per task.
+
+    A task's held symbols (share CFDs, UNCLASSIFIED) are struck and named in `lane_held`; a task
+    left with no symbol is refused. A task that names no symbol yet is kept: the instrument is
+    what deepening extracts, and whatever it extracts meets the compiler's lane door again.
+    """
+    kept: list[dict] = []
+    refused: list[dict] = []
+    for task in tasks:
+        raw = task.get("symbols") or ([task["symbol"]] if task.get("symbol") else [])
+        syms = [str(s) for s in raw if str(s).strip()]
+        if not syms:
+            kept.append(task)
+            continue
+        allowed, held = lane_split(syms, task.get("family"))
+        if not held:
+            kept.append(task)
+        elif allowed:
+            kept.append({**task, "symbols": allowed, "lane_held": held})
+        else:
+            refused.append({**task, "lane_held": held})
+    return kept, refused
+
+
+def purge_off_lane(*, dry_run: bool = False) -> dict:
+    """ONE-SHOT PURGE of queued tasks the two-lane order forbids, run by this organ at start.
+
+    WHY IT EXISTS (audit 2026-10-14, INTEL_SHIP_SUSPECT_CONSUMERS 1d): the compiler queued
+    seasonality rows on the share CFDs Airbnb and Pfizer for statistical deepening, and the only
+    thing between them and a share-CFD cell was that no model key was configured. The compiler
+    now refuses such a task at enqueue (`miner_candidate_compiler.lane_split`); this clears what
+    was queued before that door existed. After one pass it finds nothing, which is the point.
+
+    Each refused task is DECIDED, not dropped: a `REFUSED_LANE` line per task in the worked
+    ledger (so neither this worker nor the compiler's terminal index ever works it again) and an
+    entry with its reasons in the queue's own `lane_refused` report. The queue file is rewritten
+    only if it is byte-identical to what was read, so a compiler pass that lands meanwhile wins.
+    """
+    try:
+        raw = DEEPEN.read_bytes()
+        queue = json.loads(raw.decode("utf-8"))
+    except (OSError, ValueError):
+        return {"purged": 0, "struck": 0, "status": "UNREADABLE"}
+    if not isinstance(queue, dict):
+        return {"purged": 0, "struck": 0, "status": "UNREADABLE"}
+    tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
+    kept, refused = split_off_lane(tasks)
+    struck = sum(1 for t in kept if t.get("lane_held"))
+    note = {"purged": len(refused), "struck": struck, "status": "CLEAN"}
+    if not refused and not struck:
+        return note
+    note["status"] = "DRY_RUN" if dry_run else "PURGED"
+    if dry_run:
+        return note
+    at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    for task in refused:
+        reasons = "; ".join(h["reason"] for h in task["lane_held"])
+        record({"id": task_id(task), "at": at, "source": task.get("source"),
+                "url": task.get("url"), "n_candidates": 0, "run": task_class(task),
+                "kind": task.get("kind"), "lane": "purge",
+                "disposition": f"REFUSED_LANE: {reasons}; remedy: none -- the two-lane order "
+                               "keeps share CFDs out of statistical discovery"})
+    report = list(queue.get("lane_refused") or [])
+    report += [{"source": t.get("source"), "title": str(t.get("title") or "")[:200],
+                "url": t.get("url"), "disposition": t.get("disposition"),
+                "held": t["lane_held"], "purged_by": "deepening_worker", "at": at}
+               for t in refused]
+    try:
+        if DEEPEN.read_bytes() == raw:
+            _atomic_json(DEEPEN, {**queue, "tasks": kept, "lane_refused": report,
+                                  "n_lane_refused": len(report), "lane_purged_at": at})
+        else:
+            note["status"] = "PURGED_LEDGER_ONLY: the compiler rewrote the queue meanwhile"
+    except OSError as exc:
+        note["status"] = f"PURGED_LEDGER_ONLY: {type(exc).__name__}"
+    return note
 
 
 def task_text(task: dict) -> str:
@@ -1261,8 +1342,16 @@ def _work(argv: list[str] | None = None) -> int:
     # most rule-lane rows, which is not a throughput.
     pass_started = time.monotonic()
 
+    # THE TWO-LANE PURGE RUNS FIRST, so nothing it refuses is ordered, counted or worked.
+    purge = purge_off_lane(dry_run=args.dry_run)
+    if purge["purged"] or purge["struck"]:
+        dlog(f"two-lane purge: {purge['purged']} task(s) refused, {purge['struck']} task(s) had "
+             f"share-CFD/UNCLASSIFIED symbols struck -- {purge['status']}")
     queue = json.loads(DEEPEN.read_text("utf-8")) if DEEPEN.exists() else {}
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
+    # Whatever the file says, a task the order forbids is never worked (a dry run, or a compiler
+    # rewrite that raced the purge, leaves it on disk).
+    tasks, _off_lane = split_off_lane(tasks)
     if not tasks:
         dlog("queue empty or unreadable -- nothing to work")
         return 0

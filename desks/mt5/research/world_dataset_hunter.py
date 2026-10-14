@@ -810,8 +810,9 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
          "mode": "json_records", "date_col": "report_date_as_yyyy_mm_dd", "lag_days": 4,
          "freq": "weekly", "stems": [], "currencies": ["EUR"],
          "url": ("https://publicreporting.cftc.gov/resource/gpe5-46if.json?"
-                 + urllib.parse.urlencode({"$where": "starts_with(market_and_exchange_names,"
-                                                     "'EURO FX')",
+                 # BY CONTRACT CODE (2026-10-14): `starts_with(..., 'EURO FX')` also took the
+                 # EUR/GBP (299741) and EUR/JPY (399741) cross-rate contracts on the same dates.
+                 + urllib.parse.urlencode({"$where": "cftc_contract_market_code='099741'",
                                            "$order": "report_date_as_yyyy_mm_dd",
                                            "$limit": "5000"}))},
         {"provider": "TREASURY", "dataset": "avg_interest_rates",

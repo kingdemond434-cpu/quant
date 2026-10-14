@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import sys
 import tempfile
 import time
@@ -654,6 +655,70 @@ def resolve_symbols(row: dict, universe: set[str]) -> list[str]:
             out.update(s for s in universe if len(s) == 6 and up in (s[:3].upper(),
                                                                      s[3:].upper()))
     return sorted(out)
+
+
+#: A trailing MetaTrader timeframe on a symbol token: `3M_H1`, `XAUUSD_M15`, `EURUSD_D1`. The
+#: seasonality miner names each instrument by the CHART it measured (`<SYMBOL>_<TF>`), and no
+#: registry key carries a timeframe, so every current row resolved to nothing (audit 2026-10-14,
+#: INTEL_SHIP_SUSPECT_CONSUMERS section 1b: 1,900 of 1,900 rows, 0 candidates).
+_TIMEFRAME_SUFFIX = re.compile(
+    r"_(?:M1|M2|M3|M4|M5|M6|M10|M12|M15|M20|M30|H1|H2|H3|H4|H6|H8|H12|D1|W1|MN1|MN)$",
+    re.IGNORECASE)
+
+#: Directional vocabulary a structured row may use, read as the side the calendar cell takes.
+_SIDE_WORDS: dict[str, int] = {"up": 1, "long": 1, "bullish": 1,
+                               "down": -1, "short": -1, "bearish": -1}
+
+
+def strip_timeframe(token: object) -> str:
+    """`XAUUSD_M15` -> `XAUUSD`. A token with no timeframe suffix is returned unchanged."""
+    return _TIMEFRAME_SUFFIX.sub("", str(token or "").strip())
+
+
+def _untimeframed(row: dict) -> dict:
+    """The row's instrument fields with any `_<TF>` suffix removed; nothing else is touched."""
+    out: dict = {}
+    for key in ("symbol", "currency"):
+        if row.get(key):
+            out[key] = strip_timeframe(row[key])
+    for key in ("symbols", "instruments"):
+        if isinstance(row.get(key), list):
+            out[key] = [strip_timeframe(v) for v in row[key]]
+    return out
+
+
+def _universe_policy():
+    try:
+        import universe_policy as up
+    except ImportError:                                    # pragma: no cover - path dependent
+        from research import universe_policy as up
+    return up
+
+
+def lane_split(symbols: list[str], family: object = None) -> tuple[list[str], list[dict]]:
+    """(symbols that may carry a STATISTICAL hypothesis in `family`, the held ones with reasons).
+
+    THE TWO-LANE ORDER AT THE COMPILER'S DOOR (principal 2026-09-06, amended 2026-09-30): a share
+    CFD may mint a hypothesis only in the cross-sectional class books or the news lane's own
+    families, and an UNCLASSIFIED symbol in none -- absence from the registry is not permission.
+    `family=None` asks the statistical question, which is what a calendar cell or a deepening task
+    is. Decided by `universe_policy.may_hypothesise`, never by a list kept here.
+    """
+    up = _universe_policy()
+    allowed: list[str] = []
+    held: list[dict] = []
+    for sym in symbols:
+        if up.may_hypothesise(sym, family):
+            allowed.append(sym)
+            continue
+        lane = up.lane(sym)
+        reason = (f"{sym} is a share CFD: event lane and cross-sectional class books only "
+                  f"(two-lane order 2026-09-06, amended 2026-09-30)" if lane == up.EVENT
+                  else f"{sym} is UNCLASSIFIED in the broker registry: absence is not permission"
+                  if lane == up.UNCLASSIFIED
+                  else f"{sym} may not carry family {family!r} in lane {lane}")
+        held.append({"symbol": sym, "lane": lane, "reason": reason})
+    return allowed, held
 
 
 def _lead_lag_lag(row: dict) -> int | None:
@@ -1388,16 +1453,26 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
                     ))
         return candidates, "STRUCTURED_RELATIVE_VALUE"
 
+    # THE CURRENT SEASONALITY ROW NEVER REACHED THIS BRANCH (audit 2026-10-14): it says
+    # `"direction": "bullish"` and names `"symbol": "3M_H1"` -- the chart it measured, not the
+    # instrument. Both are normalised here (the timeframe suffix stripped, bullish/bearish read
+    # as long/short), and the two-lane order is applied BEFORE a cell exists: a share CFD's
+    # monthly drift is the statistical hunt the order forbids, so it is HELD, not deepened.
     month = row.get("month")
-    direction = str(row.get("direction") or "").lower()
-    if source_l == "seasonality" and symbols and isinstance(month, int) and 1 <= month <= 12 \
-            and direction in {"up", "down", "long", "short"}:
-        side = 1 if direction in {"up", "long"} else -1
-        return ([_candidate(s, "calendar_month", {"active_month": month, "side_bias": side},
-                            source, row,
-                            "calendar-linked allocation and hedging flows can create "
-                            "monthly seasonality")
-                 for s in symbols], "STRUCTURED_CALENDAR")
+    direction = str(row.get("direction") or "").strip().lower()
+    if source_l == "seasonality" and isinstance(month, int) and 1 <= month <= 12 \
+            and direction in _SIDE_WORDS:
+        season_symbols = resolve_symbols(_untimeframed(row), universe)
+        if season_symbols:
+            allowed, _held = lane_split(season_symbols, "calendar_month")
+            if not allowed:
+                return [], "LANE_HELD"
+            side = _SIDE_WORDS[direction]
+            return ([_candidate(s, "calendar_month", {"active_month": month, "side_bias": side},
+                                source, row,
+                                "calendar-linked allocation and hedging flows can create "
+                                "monthly seasonality")
+                     for s in allowed], "STRUCTURED_CALENDAR")
 
     # A SEAT'S HYPOTHESIS NAMES ITS FAMILY OUTRIGHT (2026-09-08). The DeepSeek seat donates
     # `{"kind": "hypothesis", "family": "overnight_gap_decay", "symbols": ["USDJPY"], ...}`
@@ -1540,6 +1615,7 @@ def main() -> int:
     universe = known_symbols()
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
+    lane_refused: list[dict] = []
     per_source: dict[str, dict[str, object]] = {}
     source_candidates: dict[str, set[str]] = {}
     factory_receipts: list[dict[str, object]] = []
@@ -1605,8 +1681,10 @@ def main() -> int:
         fence_tally.add(source, _metric_fence(row) if impossible else [],
                         str(row.get("url") or row.get("title") or ""))
         refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY",
-                                   "IMPOSSIBLE_METRIC"}
+                                   "IMPOSSIBLE_METRIC", "LANE_HELD"}
                    or terminal_refusal)
+        if disposition == "LANE_HELD":
+            stats["lane_held"] = int(stats.get("lane_held") or 0) + 1
         if refusal:
             stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
             if terminal_refusal:
@@ -1666,7 +1744,10 @@ def main() -> int:
             stats["converted_rows"] = int(stats["converted_rows"]) + 1
         # An impossible-metric row is REFUSED, not deepened: deepening would re-extract a cell
         # from the very row the fence refused. It is counted in `impossible_metrics`.
-        if not produced and not terminal_refusal and not impossible:
+        # A LANE-HELD ROW IS NOT DEEPENED EITHER: deepening is a statistical extraction, so a
+        # share CFD's row would come back as exactly the cell the two-lane order forbids.
+        if not produced and not terminal_refusal and not impossible \
+                and disposition != "LANE_HELD":
             compact = {
                 "source": source,
                 "disposition": disposition,
@@ -1675,6 +1756,26 @@ def main() -> int:
                 "symbols": resolve_symbols(row, universe),
                 "mechanism_tags": row.get("mechanism_tags") or row.get("patterns") or [],
             }
+            # THE TWO-LANE ORDER AT ENQUEUE (audit 2026-10-14: Airbnb and Pfizer seasonality
+            # rows sat in this queue waiting for a model key). Held symbols are struck from the
+            # task; a task left with none is REFUSED BY NAME into `lane_refused`, never queued.
+            allowed, held = lane_split(list(compact["symbols"]), row.get("family"))
+            if held:
+                compact["symbols"] = allowed
+                compact["lane_held"] = held
+                if not allowed:
+                    lane_refused.append({"source": source, "title": compact["title"][:200],
+                                         "url": compact["url"], "disposition": disposition,
+                                         "held": held})
+                    stats["lane_refused"] = int(stats.get("lane_refused") or 0) + 1
+                    if not refusal:
+                        stats["unresolved_rows"] = int(stats["unresolved_rows"]) - 1
+                        stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
+                        refusal = True
+                    compact = {}
+        else:
+            compact = {}
+        if compact:
             key = hashlib.sha256(
                 json.dumps(compact, sort_keys=True, default=str).encode()).hexdigest()
             # FIRST WRITER WINS (theirs, 2026-09-10). A later row for the same key was
@@ -1955,6 +2056,12 @@ def main() -> int:
     _atomic_json(DEEPEN, {
         "built_at": now.isoformat(timespec="seconds"),
         "tasks": emitted_tasks,
+        # EVERY TASK THE TWO-LANE ORDER KEPT OUT, with its reason (one entry per held symbol).
+        "lane_refused": lane_refused,
+        "n_lane_refused": len(lane_refused),
+        "lane_rule": ("universe_policy.may_hypothesise(symbol, family) for a statistical family; "
+                      "share CFDs and UNCLASSIFIED symbols are struck, a task left with no "
+                      "symbol is refused here and never queued"),
         "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
     })
     # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
