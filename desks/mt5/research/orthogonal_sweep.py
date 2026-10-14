@@ -206,9 +206,62 @@ def _resample_rule(timeframe: str) -> str:
     return f"{timeframe_minutes(timeframe)}min"
 
 
-@lru_cache(maxsize=1)
-def _tape_minutes(symbol: str):
-    """This symbol's WHOLE tick tape as exact one-minute aggregates, or None. ONE symbol resident.
+#: THE TAPE CACHE IS PER SYMBOL AND BOUNDED BY BYTES (2026-10-14, audit of 4f28cd04). One symbol
+#: resident (`lru_cache(maxsize=1)`) re-read a symbol's WHOLE tape -- every day file -- each time
+#: the sweep came back to it after another symbol, and the sweep interleaves symbols (factor legs,
+#: the floor interleave's units). A minute aggregate is ~32 bytes x 1,440 rows a day (~17 MB a
+#: tape-year), so a few symbols fit easily; the bound is both a count and a byte budget so the
+#: 8 GB build box, which holds the live terminal, is never the one that pays for it. Least recently
+#: used goes first; the most recent entry is always kept, so a cache smaller than one symbol still
+#: serves that symbol's charts from one read, as before.
+TAPE_CACHE_MAX_SYMBOLS = 8
+TAPE_CACHE_MAX_BYTES = 256 * 1024 * 1024
+
+
+class _SymbolLRU:
+    """`fn(symbol)` cached per symbol, evicted least-recently-used past a count OR byte bound.
+    Keeps the `cache_clear()` / `cache_info()` surface of `functools.lru_cache`."""
+
+    def __init__(self, fn, max_items: int, max_bytes: int) -> None:
+        self._fn, self._max_items, self._max_bytes = fn, max_items, max_bytes
+        self._store: OrderedDict[str, tuple[object, int]] = OrderedDict()
+        self.hits = self.misses = 0
+        self.__doc__, self.__wrapped__ = fn.__doc__, fn
+
+    @staticmethod
+    def _size(v: object) -> int:
+        try:
+            return int(v.memory_usage(index=True, deep=False).sum())  # type: ignore[attr-defined]
+        except Exception:
+            return 0
+
+    def __call__(self, symbol: str):
+        if symbol in self._store:
+            self._store.move_to_end(symbol)
+            self.hits += 1
+            return self._store[symbol][0]
+        self.misses += 1
+        v = self._fn(symbol)
+        self._store[symbol] = (v, self._size(v))
+        while len(self._store) > 1 and (
+                len(self._store) > self._max_items
+                or sum(b for _, b in self._store.values()) > self._max_bytes):
+            self._store.popitem(last=False)
+        return v
+
+    def cache_clear(self) -> None:
+        self._store.clear()
+        self.hits = self.misses = 0
+
+    def cache_info(self) -> dict[str, int]:
+        return {"hits": self.hits, "misses": self.misses, "currsize": len(self._store),
+                "bytes": sum(b for _, b in self._store.values()),
+                "max_items": self._max_items, "max_bytes": self._max_bytes}
+
+
+def _tape_minutes_uncached(symbol: str):
+    """This symbol's WHOLE tick tape as exact one-minute aggregates, or None (cached per symbol
+    by `_tape_minutes`, bounded by TAPE_CACHE_MAX_SYMBOLS / TAPE_CACHE_MAX_BYTES).
 
     THE TAPE FAMILIES COULD NEVER BE JUDGED, AND THIS WAS THE CEILING (2026-10-14). The reader kept
     the last THIRTY day files (`sorted(...)[-30:]`) because it concatenated raw ticks and a month of
@@ -256,6 +309,9 @@ def _tape_minutes(symbol: str):
     if not parts:
         return None
     return pd.concat(parts).groupby(level=0).sum().sort_index()
+
+
+_tape_minutes = _SymbolLRU(_tape_minutes_uncached, TAPE_CACHE_MAX_SYMBOLS, TAPE_CACHE_MAX_BYTES)
 
 
 def _tape_series(symbol: str, index, timeframe: str = "H1"):
