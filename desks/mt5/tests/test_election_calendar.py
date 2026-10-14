@@ -158,8 +158,9 @@ def test_a_pass_writes_series_and_donates_each_cell_once(tmp_ec: Path) -> None:
         calls.append(url)
         if url.endswith("robots.txt"):
             return 404, b""
-        return 200, (PAGE_EN if ".org" in url else
-                     PAGE_JA + "\n前回の衆議院議員総選挙 投票日 2021年10月31日".encode())
+        page = (PAGE_EN if ".org" in url else
+                PAGE_JA + "\n前回の衆議院議員総選挙 投票日 2021年10月31日".encode())
+        return 200, page + (b"<p>the list page</p>" if "list." in url else b"")
     uni = {"USDZAR": "fx", "USDJPY": "fx"}
     doc = ec.run(get=get, resolve=lambda h: ["93.184.216.34"], uni=uni,
                  lane_ok=lambda s, f: True, today=date(2026, 10, 13))
@@ -209,3 +210,52 @@ def test_the_conditioner_reads_the_series_point_in_time(tmp_ec: Path) -> None:
     ec.write_series("za", ec.series_rows(ev, "za", today=date(2025, 1, 1)))
     s = conditioner("election_za", "pre_event", "level_z", root=tmp_ec / "series")
     assert s is not None and float(s.max()) > 1.0
+
+
+def test_a_mirror_or_a_query_string_is_never_a_second_source() -> None:
+    store: dict[str, Any] = {}
+    ec.merge_events(store, "za", [{"date": "2024-05-29", "quote": "q"}],
+                    "https://a.example/p", "t1", "h1")
+    ec.merge_events(store, "za", [{"date": "2024-05-29", "quote": "q"}],
+                    "https://A.example/p/?x=1#top", "t2", "h2")
+    ec.merge_events(store, "za", [{"date": "2024-05-29", "quote": "q"}],
+                    "https://mirror.example/p", "t3", "h1")
+    assert ec.confirmed(store["za"]) == []
+    ec.merge_events(store, "za", [{"date": "2024-05-29", "quote": "q"}],
+                    "https://b.example/list", "t4", "h4")
+    assert [r["confirmed_at"] for r in ec.confirmed(store["za"])] == ["t4"]
+
+
+@pytest.mark.parametrize(("text", "lang", "want"), [
+    ("La elección federal del 2 de junio de 2024 dio la mayoría a Morena.", "es",
+     ["2024-06-02"]),
+    ("The general election was held on 8 May 2019; separately, the mayor of Durban resigned "
+     "in a scandal that dominated the news for many weeks afterwards.", "en", ["2019-05-08"]),
+    ("On 8 May 2019 the general election was held across the country.", "en", ["2019-05-08"]),
+    ("第49回衆議院議員総選挙は2021年10月31日に投票が行われた。", "ja", ["2021-10-31"]),
+    ("2024 general election | 29 May 2024", "en", ["2024-05-29"]),
+    ("2024 general election | results declared 2 June 2024", "en", []),
+])
+def test_follow_ups_from_the_second_audit(text: str, lang: str, want: list[str]) -> None:
+    """Exclusions are per language, word-bounded and near the keyword; cues after the date are
+    read; a list-table cell naming another event is refused."""
+    assert [e["date"] for e in ec.extract(text, lang, today=date(2026, 10, 14))] == want
+
+
+def test_what_was_held_on_the_date_must_be_the_vote() -> None:
+    """Audit should-fix on #394: the "was held" cue named another event."""
+    assert ec.extract("The general election: on 30 May 2024 nominations were held.", "en",
+                      today=date(2026, 1, 1)) == []
+    assert ec.extract("Before the general election, on 3 March 2025 a by-election was held.",
+                      "en", today=date(2026, 1, 1)) == []
+    got = ec.extract("The general election on 29 May 2024 was held nationwide.", "en",
+                     today=date(2026, 1, 1))
+    assert [e["date"] for e in got] == ["2024-05-29"]
+
+
+@pytest.mark.parametrize("what", ["local elections were", "a mayoral election was",
+                                  "the governors' elections were"])
+def test_plural_and_adjective_exclusions(what: str) -> None:
+    """Audit should-fix on #394 v3."""
+    assert ec.extract(f"Before the general election, on 3 March 2025 {what} held.", "en",
+                      today=date(2026, 1, 1)) == []

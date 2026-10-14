@@ -659,6 +659,8 @@ $relPaths = @(
 # silently truncated and never allowed to turn this wire into a data lake.
 $ReportCapBytes = 4MB
 $reportPaths = @(
+    # the LLM lab's Treasury refunding surprise pass (2026-10-14)
+    "desks/mt5/reports/TREASURY_REFUNDING.json",
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",
