@@ -146,8 +146,8 @@ TERMS_NOTE = "CBOE copyright: internal research only, never redistributed"
 #: no request is sent and every vol series reads UNMEASURED-terms: never a zero, never dropped,
 #: and the archive's history is kept as written. No direct official route serves these indices
 #: (claude/yahoo-direct-sources lists the VIX family NO_DIRECT_SOURCE); when one is found it
-#: gets its own fence row and a source class here. The hold is billed on the missed-growth
-#: ledger as rail `source_terms_hold` (`libs/portfolio/rails.py`).
+#: gets its own fence row and a source class here. The hold's missed-growth line is published on
+#: the report (`missed_growth_lines`, one UNMEASURED row per held series).
 _FENCE_KEYS: dict[str, tuple[str, str]] = {
     "yahoo": ("yahoo", "Yahoo Finance chart API (query1.finance.yahoo.com)"),
     "fred": ("fred_cboe", "FRED (fred.stlouisfed.org), republishing CBOE indices"),
@@ -751,6 +751,34 @@ def source_record(source: VolSource | None) -> dict[str, Any]:
             "register": dict(TERMS_EVIDENCE)}
 
 
+def missed_growth_lines(cycle: list[Observation]) -> list[dict[str, Any]]:
+    """THE MISSED-GROWTH LINE FOR THE TERMS HOLD (GROWTH_GOVERNANCE: every refusal carries one).
+
+    One row per held series, published on this artifact -- the `forward_reconcile` /
+    `forward_slot_ranker` pattern: `libs/portfolio/rails.py` is a signed evaluator file, so no
+    rail is registered and nothing is appended to data/missed_growth.jsonl. A held series was
+    never fetched, so no cell on it was judged and the forgone dE[log W] is UNMEASURED (never a
+    zero); a pass that held nothing publishes one NOT_BINDING row, a measured zero.
+    """
+    now = datetime.now(tz=UTC)
+    held = [o for o in cycle if o.status in ("HELD", UNMEASURED_TERMS)]
+    base = {"day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
+            "kind": "opportunity_cost", "units": "E[log W] per day"}
+    if not held:
+        return [{**base, "rail": "source_terms_hold:vol_archive", "value": 0.0,
+                 "verdict": "NOT_BINDING", "n_held": 0,
+                 "why": "every vol series was served by an admitted route this pass"}]
+    return [{**base, "rail": f"source_terms_hold:{o.vol_ticker}", "value": None,
+             "verdict": "UNMEASURED", "mt5_symbol": o.mt5_symbol,
+             "why": ("held fail-closed by libs/data/terms_fence (no quoted clause permits "
+                     "automated live input); never fetched, so no cell on it was judged and "
+                     "the forgone dE[log W] is UNMEASURED until a permitted direct route "
+                     "serves it"),
+             "unblocks_when": ("a direct route with a quoted permitting clause is added to "
+                               "terms_fence and vol_archive")}
+            for o in held]
+
+
 def report(rows: list[dict[str, Any]], cycle: list[Observation],
            sources: dict[str, Any] | None = None) -> dict[str, Any]:
     """What the archive holds, and what it is and is not yet entitled to claim."""
@@ -800,13 +828,11 @@ def report(rows: list[dict[str, Any]], cycle: list[Observation],
         "held_by_source_policy": [o.vol_ticker for o in cycle
                                   if o.status in ("HELD", UNMEASURED_TERMS)],
         "unmeasured_terms": [o.vol_ticker for o in cycle if o.status == UNMEASURED_TERMS],
-        # THE MISSED-GROWTH LINE for this hold (rail `source_terms_hold`): what the fence keeps
-        # out of live input, read by research/missed_growth.measure_source_terms_hold.
-        "terms_hold": {"rail": "source_terms_hold",
-                       "held": [o.vol_ticker for o in cycle
+        "terms_hold": {"held": [o.vol_ticker for o in cycle
                                 if o.status in ("HELD", UNMEASURED_TERMS)],
                        "why": ("vol index routes held by libs/data/terms_fence (IDEAS_ONLY): "
                                "no quoted clause permits automated live input")},
+        "missed_growth_lines": missed_growth_lines(cycle),
         "not_tradeable_here": [o.vol_ticker for o in cycle if o.status == "NOT_TRADEABLE_HERE"],
     }
 

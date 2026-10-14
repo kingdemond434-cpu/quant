@@ -367,7 +367,6 @@ def test_the_fence_held_register_sends_no_request_and_every_ground_reads_unmeasu
         tickers = {g.vol_ticker for g in va.GROUND}
         assert set(rep["unmeasured_terms"]) == tickers
         assert set(rep["held_by_source_policy"]) == tickers
-        assert rep["terms_hold"]["rail"] == "source_terms_hold"
         assert set(rep["terms_hold"]["held"]) == tickers
 
 
@@ -441,23 +440,14 @@ def test_terms_note_rides_on_every_row_and_the_report(tmp_path: Path) -> None:
 
 def test_the_terms_hold_carries_its_missed_growth_line(tmp_path: Path,
                                                        monkeypatch: pytest.MonkeyPatch) -> None:
-    """A restriction carries a missed-growth line: rail `source_terms_hold`, measured from the
-    report's `terms_hold` block -- UNMEASURED with the names held, never a free zero."""
-    import json
-
-    from libs.portfolio import rails
-    from research import missed_growth as mg
-
-    assert rails.rail("source_terms_hold").measure in mg.MEASURES
-    monkeypatch.setattr(mg, "BASE", tmp_path)
-    assert mg.measure_source_terms_hold(None, {}, {})["verdict"] == mg.UNMEASURED
+    """A restriction carries a missed-growth line, published on the artifact: one UNMEASURED
+    row per held series (never a free zero), and a NOT_BINDING measured zero when none is held."""
     monkeypatch.setattr(va.urllib.request, "urlopen",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("network")))
     obs = va.observe(va.YahooVolSource(), REGISTRY, tmp_path)
-    (tmp_path / "reports").mkdir()
-    (tmp_path / "reports" / "VOL_ARCHIVE.json").write_text(json.dumps(va.report([], obs)))
-    got = mg.measure_source_terms_hold(None, {}, {})
-    assert got["verdict"] == mg.UNMEASURED and got["n_held"] == len(va.GROUND)
-    admitted = va.report([], va.observe(_full_source(), REGISTRY, tmp_path))
-    (tmp_path / "reports" / "VOL_ARCHIVE.json").write_text(json.dumps(admitted))
-    assert mg.measure_source_terms_hold(None, {}, {})["verdict"] == mg.NOT_BINDING
+    lines = va.report([], obs)["missed_growth_lines"]
+    assert {ln["rail"] for ln in lines} == {f"source_terms_hold:{g.vol_ticker}"
+                                            for g in va.GROUND}
+    assert all(ln["verdict"] == "UNMEASURED" and ln["value"] is None for ln in lines)
+    ok = va.report([], va.observe(_full_source(), REGISTRY, tmp_path))["missed_growth_lines"]
+    assert [ln["verdict"] for ln in ok] == ["NOT_BINDING"] and ok[0]["value"] == 0.0
