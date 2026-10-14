@@ -8,6 +8,7 @@ Uses Google Trends RSS/CSV (no API key needed).
 """
 
 import json
+import math
 import re
 import sys
 from datetime import datetime, timezone
@@ -76,9 +77,12 @@ def point_value(point: dict) -> float | None:
     try:
         raw = point.get("value")
         v = raw[0] if isinstance(raw, list | tuple) else raw
-        return None if v is None or isinstance(v, bool) else float(v)
+        if v is None or isinstance(v, bool):
+            return None
+        f = float(v)
     except (TypeError, ValueError, IndexError, AttributeError):
         return None
+    return f if math.isfinite(f) else None      # NaN/inf is no reading either (audit 0b66b08de)
 
 
 def complete_points(timeline: list[dict]) -> list[dict]:
@@ -133,6 +137,30 @@ def _load_block() -> dict | None:
     return doc if isinstance(doc, dict) else None
 
 
+def _persist_hold(marker: dict) -> None:
+    """Persist a hold (hard stop or robots) and record it in the register. A write that raises
+    costs the record, never another request: the caller has already decided to stop."""
+    LAST_PASS["block"] = marker
+    try:
+        BLOCK_STATE.parent.mkdir(parents=True, exist_ok=True)
+        BLOCK_STATE.write_text(json.dumps(marker, indent=1), encoding="utf-8")
+        hard_stop.record_block(marker, BLOCKED_REGISTER, key=REGISTER_KEY,
+                               host="trends.google.com")
+    except Exception as exc:
+        LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
+
+
+def _read_robots(url: str) -> tuple[int, str, dict]:
+    """robots.txt at `url`'s own host, under the SAME User-Agent the pass sends (L0221):
+    (status, body, response headers -- read only for Retry-After)."""
+    try:
+        resp = requests.get(hard_stop.robots_url(url), headers=HEADERS, timeout=15)
+    except Exception:
+        return 0, "", {}
+    return (int(getattr(resp, "status_code", 0) or 0), str(getattr(resp, "text", "") or ""),
+            dict(getattr(resp, "headers", None) or {}))
+
+
 def mine_google_trends(now: datetime | None = None) -> list[dict]:
     """Fetch Google Trends data for trading terms, under the hard stop."""
     now = now or datetime.now(timezone.utc)
@@ -147,10 +175,42 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
 
     blocked = False
     LAST_PASS["timelines_read"] = 0
+    robots: tuple[int, str, dict] | None = None
     for category, terms in SEARCH_TERMS.items():
         for term in terms:
             # Use Google Trends explore page (HTML scraping)
             url = f"https://trends.google.com/trends/explore?q={term.replace(' ', '+')}&date=today+12-m"
+            # ROBOTS (audit 0b66b08de MF5; principal's scope rule 2026-10-13). Read once a pass at
+            # the host, judged per exact path; a path it does not allow is not fetched and the
+            # pass is held exactly as a 401/403/429 holds it.
+            if robots is None:
+                robots = _read_robots(url)
+                LAST_PASS["requests"] += 1
+                if robots[0] in hard_stop.HARD_STOP:
+                    blocked = True
+                    LAST_PASS.update({"status": hard_stop.HARD_STOP[robots[0]],
+                                      "http_status": robots[0]})
+                    try:
+                        marker = hard_stop.block_marker(robots[0], "robots.txt", robots[2],
+                                                        now, prior)
+                    except Exception as exc:
+                        LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
+                    else:
+                        _persist_hold(marker)
+                    break
+            verdict = hard_stop.robots_verdict(url, DESK_UA, robots[0], robots[1])
+            LAST_PASS["robots"] = verdict
+            if not verdict["allowed"]:
+                blocked = True
+                LAST_PASS.update({"status": hard_stop.ROBOTS_HOLD,
+                                  "http_status": verdict.get("http_status")})
+                try:
+                    marker = hard_stop.robots_marker(verdict, "explore", now, prior)
+                except Exception as exc:
+                    LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
+                else:
+                    _persist_hold(marker)
+                break
             try:
                 resp = requests.get(url, headers=HEADERS, timeout=15)
             except Exception:
@@ -168,13 +228,10 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
                     marker = hard_stop.block_marker(
                         status, "explore", dict(getattr(resp, "headers", None) or {}), now,
                         prior)
-                    LAST_PASS["block"] = marker
-                    BLOCK_STATE.parent.mkdir(parents=True, exist_ok=True)
-                    BLOCK_STATE.write_text(json.dumps(marker, indent=1), encoding="utf-8")
-                    hard_stop.record_block(marker, BLOCKED_REGISTER, key=REGISTER_KEY,
-                                           host="trends.google.com")
                 except Exception as exc:
                     LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
+                else:
+                    _persist_hold(marker)
                 break
             if status != 200:
                 continue

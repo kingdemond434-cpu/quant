@@ -163,8 +163,10 @@ def test_the_breadth_sweep_does_not_charge_f1_a_second_time() -> None:
     from research import breadth_sweep as bs
 
     ok, blocked = bs.default_families()
-    assert set(bs.PREREGISTERED_ELSEWHERE) == {"idio_volume_reversal"}
+    assert set(bs.PREREGISTERED_ELSEWHERE) == {"idio_volume_reversal", "style_premia"}
     assert "idio_volume_reversal" not in ok
     assert blocked["idio_volume_reversal"].startswith("preregistered elsewhere")
-    for still_swept in ("lead_lag", "triangle", "exogenous_conditioner"):
-        assert still_swept in ok, still_swept
+    # The other NOT_SOURCED_HERE families are set aside only by NAME and only as void at their
+    # defaults (audit 0b66b08de), each with its reason -- never wholesale.
+    for void in ("lead_lag", "triangle", "exogenous_conditioner"):
+        assert void not in ok and blocked[void].startswith("void at defaults"), void

@@ -188,10 +188,14 @@ def test_the_event_family_enters_the_first_bar_after_acceptance(
 # ------------------------------------------------------------------------------- the hard stop
 
 def _refusing(calls: list[str], status: int, on: str, retry_after: str | None = None):
-    """The fake EDGAR, except every URL containing `on` answers `status`."""
+    """The fake EDGAR, except every URL containing `on` answers `status`. robots.txt answers 404
+    (no file: unrestricted) and is NOT counted in `calls`, which counts the SEC data requests;
+    the robots reads are pinned by the robots tests at the end of this file."""
     inner = _edgar([])
 
     def get(url: str, headers: dict[str, str]):
+        if url.endswith("/robots.txt"):
+            return 404, b"", {}
         calls.append(url)
         if on in url:
             return status, b"", ({"Retry-After": retry_after} if retry_after else {})
@@ -364,7 +368,8 @@ def test_every_submissions_request_5xx_is_unmeasured(tmp_path: Path,
     (sd / "state.json").write_text(json.dumps({"ciks": {"AAPL": 320193}}))
     rep = fl.run(get=_refusing([], 502, "submissions"), now=NOW, state_dir=sd,
                  series_root=tmp_path / "s", dry_run=True)
-    assert rep["fetch"]["requests"] == 2 and rep["fetch"]["ok_responses"] == 0
+    # data.sec.gov's robots.txt (one read a pass) and the two submissions requests
+    assert rep["fetch"]["requests"] == 3 and rep["fetch"]["ok_responses"] == 0
     assert rep["status"] == fl.UNMEASURED and rep["new_data"] == fl.UNMEASURED
 
 
@@ -454,3 +459,141 @@ def test_a_first_pass_with_every_submissions_request_failing_is_failed(
                  series_root=tmp_path / "s", dry_run=True)
     assert rep["fetch"]["ok_responses"] == 1                  # the ticker map answered
     assert rep["fetch"]["status"] == "FAILED" and rep["status"] == fl.UNMEASURED
+
+
+# ------------------------------------------------------------------------------- audit 0b66b08de
+
+BASELINE = [  # backfilled first: the issuer's earlier buying, which sets its baseline
+    ("0003-26-000001", "2026-05-02T17:00:00.000Z", "Ann A", "P", "2026-05-01"),
+    ("0003-26-000002", "2026-05-04T17:00:00.000Z", "Ben B", "P", "2026-05-03"),
+]
+BURST = [  # then a burst larger than DOCS_PER_ISSUER, after the backfill completed
+    ("0003-26-000003", "2026-06-02T17:00:00.000Z", "Cat C", "P", "2026-06-01"),
+    ("0003-26-000004", "2026-06-03T17:00:00.000Z", "Dan D", "P", "2026-06-02"),
+    ("0003-26-000005", "2026-06-04T17:00:00.000Z", "Eve E", "P", "2026-06-03"),
+    ("0003-26-000006", "2026-06-05T17:00:00.000Z", "Fay F", "P", "2026-06-04"),
+    ("0003-26-000007", "2026-06-06T17:00:00.000Z", "Gus G", "P", "2026-06-05"),
+]
+
+
+def _burst_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, per_pass: int
+                 ) -> tuple[list[dict], list[list[dict]]]:
+    """Backfill BASELINE, then read BURST `per_pass` filings a pass (newest first) until done.
+    Returns the final store and the store after every burst pass."""
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    sd = tmp_path / f"f4_{per_pass}"
+    now = datetime(2026, 7, 1, tzinfo=UTC)
+    monkeypatch.setattr(fl, "DOCS_PER_ISSUER", 100)
+    rep = fl.run(get=_edgar_listing(BASELINE, []), now=now, state_dir=sd,
+                 series_root=tmp_path / "s", dry_run=True)
+    assert rep["backfill"]["complete"] is True
+    monkeypatch.setattr(fl, "DOCS_PER_ISSUER", per_pass)
+    snaps: list[list[dict]] = []
+    for k in range(1, 10):
+        fl.run(get=_edgar_listing(BASELINE + BURST, []), now=now + timedelta(hours=k),
+               state_dir=sd, series_root=tmp_path / "s", dry_run=True)
+        snaps.append(fl._jsonl(sd / "clusters.jsonl"))
+        if not (fl._read_json(sd / "state.json", {}).get("unread_floor") or {}):
+            break
+    return fl._jsonl(sd / "clusters.jsonl"), snaps
+
+
+def test_a_post_backfill_burst_freezes_the_same_store_whatever_the_fetch_order(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The auditor's probe (residual MF2): a burst larger than DOCS_PER_ISSUER after the backfill,
+    read newest first, froze the NEWER cluster without its older filings -- a different buyer
+    set, score and rarity from the full replay. Freezing now stops at the acceptance time of the
+    oldest filing still unread, so the store, every score and every rarity are identical to a
+    store that read the whole burst in one pass, and to a full replay."""
+    piecewise, snaps = _burst_store(tmp_path, monkeypatch, per_pass=2)
+    whole, _ = _burst_store(tmp_path, monkeypatch, per_pass=100)
+    assert len(snaps) >= 3                       # the burst really took several passes
+    assert piecewise == whole
+    rows = fl._jsonl(tmp_path / "f4_2" / "transactions.jsonl")
+    assert piecewise == json.loads(json.dumps(fl.freeze_clusters(rows, [])))
+    key = [(c["knowable_at"], c["buyers"], c["score"], c["components"]["rarity"])
+           for c in piecewise]
+    assert key == [(c["knowable_at"], c["buyers"], c["score"], c["components"]["rarity"])
+                   for c in whole]
+    assert len(piecewise) >= 2
+    # and every intermediate store is a prefix of the final one: nothing frozen early and wrong
+    assert all(snap == whole[:len(snap)] for snap in snaps)
+
+
+def _edgar_with_robots(calls: list[str], robots: dict[str, tuple[int, bytes]]):
+    """The fake EDGAR, with each host's robots.txt answering as `robots` says (default 404)."""
+    inner = _edgar([])
+
+    def get(url: str, headers: dict[str, str]):
+        calls.append(url)
+        if url.endswith("/robots.txt"):
+            host = url.split("/")[2]
+            return robots.get(host, (404, b""))
+        return inner(url, headers)
+    return get
+
+
+def test_robots_is_read_per_host_before_the_first_request_to_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    calls: list[str] = []
+    rep = fl.run(get=_edgar_with_robots(calls, {}), now=NOW, state_dir=tmp_path / "f4",
+                 series_root=tmp_path / "s", dry_run=True)
+    robots = [u for u in calls if u.endswith("/robots.txt")]
+    assert robots == ["https://www.sec.gov/robots.txt", "https://data.sec.gov/robots.txt"]
+    assert calls[0] == "https://www.sec.gov/robots.txt"          # before any request to it
+    assert rep["fetch"]["status"] == "FETCHED"
+    assert rep["fetch"]["robots"] == {"www.sec.gov": "ABSENT", "data.sec.gov": "ABSENT"}
+
+
+def test_a_robots_disallow_for_our_agent_is_not_fetched_and_is_held(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """ROBOTS (principal's scope rule 2026-10-13): our agent's own group bars the submissions
+    path -- the '*' group allows it -- so it is never requested; the pass holds exactly as a
+    401/403/429 holds it, the next pass requests nothing, and the UA is never written."""
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    monkeypatch.setenv(fl.UA_ENV, "TestDesk research test@example.org")
+    reg = tmp_path / "blocked.json"
+    _seed_register(reg)
+    robots = {"data.sec.gov": (200, b"User-agent: *\nAllow: /\n\n"
+                                    b"User-agent: testdesk\nDisallow: /submissions/\n")}
+    calls: list[str] = []
+    sd = tmp_path / "f4"
+    rep = fl.run(get=_edgar_with_robots(calls, robots), now=NOW, state_dir=sd,
+                 series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert not any("submissions/CIK" in u for u in calls)
+    assert rep["fetch"]["status"] == "ROBOTS_HOLD"
+    assert rep["fetch"]["block"]["robots"]["state"] == "DISALLOWED"
+    assert json.loads(reg.read_text())["sources"][fl.REGISTER_KEY]["diagnosis"] == "ROBOTS_HOLD"
+    state_text = (sd / "state.json").read_text("utf-8")
+    assert "test@example.org" not in json.dumps(rep, default=str) + state_text
+    calls.clear()
+    rep2 = fl.run(get=_edgar_with_robots(calls, robots), now=NOW + timedelta(minutes=5),
+                  state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert calls == [] and rep2["fetch"]["skipped"] is True
+
+
+@pytest.mark.parametrize(("status", "state", "fetched"), [
+    (503, "UNAVAILABLE", False), (404, "ABSENT", True)])
+def test_a_5xx_robots_holds_and_a_404_robots_allows(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: int, state: str,
+        fetched: bool) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    calls: list[str] = []
+    rep = fl.run(get=_edgar_with_robots(calls, {"www.sec.gov": (status, b"")}), now=NOW,
+                 state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
+                 register=tmp_path / "r.json")
+    assert (fl.TICKER_MAP_URL in calls) is fetched
+    assert rep["fetch"]["robots"]["www.sec.gov"] == state
+
+
+def test_a_403_on_robots_itself_is_a_hold(tmp_path: Path,
+                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    calls: list[str] = []
+    rep = fl.run(get=_edgar_with_robots(calls, {"www.sec.gov": (403, b"")}), now=NOW,
+                 state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
+                 register=tmp_path / "r.json")
+    assert calls == ["https://www.sec.gov/robots.txt"]
+    assert rep["fetch"]["status"] == "METHOD_BLOCKED"
+    assert rep["fetch"]["block"]["url_class"] == "robots.txt"

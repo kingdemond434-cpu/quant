@@ -153,3 +153,64 @@ def test_a_refusal_whose_record_cannot_be_written_still_ends_the_pass(
     assert len(calls) == 1
     assert gtm.LAST_PASS["status"] == "METHOD_BLOCKED" and "disk full" in gtm.LAST_PASS[
         "persist_error"]
+
+
+# ------------------------------------------------------------------------------- audit 0b66b08de
+
+def test_a_nan_point_is_unmeasured_never_a_number() -> None:
+    assert gtm.point_value({"value": [float("nan")]}) is None
+    assert gtm.point_value({"value": [float("inf")]}) is None
+    assert gtm.point_value({"value": ["nan"]}) is None
+
+
+def _robots_site(calls: list[str], robots_status: int, robots_text: str):
+    class Robots:
+        status_code = robots_status
+        text = robots_text
+
+    class Page:
+        status_code = 200
+        text = "<html>no timeline</html>"
+
+    def get(url: str, headers: dict | None = None, **_k: object) -> object:
+        calls.append(url)
+        assert (headers or {}).get("User-Agent") == gtm.DESK_UA     # robots read under our UA
+        return Robots() if url.endswith("/robots.txt") else Page()
+    return get
+
+
+@pytest.mark.parametrize(("status", "text", "state"), [
+    (200, "User-agent: *\nAllow: /\n\nUser-agent: quant-desk-google-trends\n"
+          "Disallow: /trends/explore\n", "DISALLOWED"),
+    (503, "", "UNAVAILABLE"),
+])
+def test_a_robots_disallow_or_5xx_is_not_fetched_and_is_held(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: int, text: str,
+        state: str) -> None:
+    """ROBOTS (principal's scope rule 2026-10-13): a path robots does not allow under the desk's
+    own agent group -- or a robots.txt that is unavailable -- is never requested; the pass is held
+    the way a 401/403/429 holds it, and the next pass requests nothing."""
+    monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
+    reg = tmp_path / "r.json"
+    monkeypatch.setattr(gtm, "BLOCKED_REGISTER", reg)
+    calls: list[str] = []
+    monkeypatch.setattr(gtm.requests, "get", _robots_site(calls, status, text))
+    assert gtm.mine_google_trends(now=NOW) == []
+    assert calls == ["https://trends.google.com/robots.txt"]
+    assert gtm.LAST_PASS["status"] == "ROBOTS_HOLD"
+    assert gtm.LAST_PASS["block"]["robots"]["state"] == state
+    assert json.loads(reg.read_text())["sources"][gtm.REGISTER_KEY]["diagnosis"] == "ROBOTS_HOLD"
+    calls.clear()
+    gtm.mine_google_trends(now=NOW + timedelta(minutes=5))
+    assert calls == [] and gtm.LAST_PASS["skipped"] is True
+
+
+def test_a_404_robots_allows_and_the_pass_runs(tmp_path: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
+    calls: list[str] = []
+    monkeypatch.setattr(gtm.requests, "get", _robots_site(calls, 404, "not found"))
+    gtm.mine_google_trends(now=NOW)
+    n_terms = sum(len(t) for t in gtm.SEARCH_TERMS.values())
+    assert len(calls) == 1 + n_terms and calls.count("https://trends.google.com/robots.txt") == 1
+    assert gtm.LAST_PASS["robots"]["state"] == "ABSENT"

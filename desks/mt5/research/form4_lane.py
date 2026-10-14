@@ -55,10 +55,11 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -339,11 +340,20 @@ def parse_form4(raw: bytes) -> list[dict[str, Any]]:
 # ------------------------------------------------------------------------------- the fetch
 
 def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: datetime,
-               issuers: dict[str, str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """New transactions this pass, and what the pass did. `state` is updated in place."""
+               issuers: dict[str, str], ua: str = ""
+               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """New transactions this pass, and what the pass did. `state` is updated in place.
+
+    ROBOTS (audit 0b66b08de MF5; principal's scope rule 2026-10-13). Before the first request to
+    a host (www.sec.gov, data.sec.gov) its robots.txt is read through the same getter, so under
+    the same declared User-Agent, and every URL is judged by its exact path. A path robots does
+    not allow -- or a robots.txt that is unavailable -- is not fetched: the pass is held exactly
+    as a 401/403/429 holds it (`rep["block"]`, status ROBOTS_HOLD, the verdict attached). The
+    UA is used only for its product token and never recorded."""
     rep: dict[str, Any] = {"requests": 0, "errors": Counter(), "issuers_visited": 0,
                            "filings_read": 0, "transactions": 0, "block": None,
-                           "ok_responses": 0, "data_responses": 0}
+                           "ok_responses": 0, "data_responses": 0, "robots": {}}
+    robots: dict[str, tuple[int, bytes]] = {}
 
     def stopped(status: int, url_class: str, headers: dict[str, str]) -> bool:
         if status not in HARD_STOP:
@@ -351,8 +361,27 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
         rep["block"] = block_marker(status, url_class, headers, now, state.get("block"))
         return True
 
+    def held(url: str, url_class: str) -> bool:
+        """True when robots does not allow `url`: the hold is set and nothing is fetched."""
+        ru = _hs.robots_url(url)
+        if ru not in robots:
+            status, raw, hdr = _call(get, ru)
+            rep["requests"] += 1
+            robots[ru] = (status, raw)
+            if stopped(status, "robots.txt", hdr):
+                return True
+        verdict = _hs.robots_verdict(url, ua, *robots[ru])
+        rep["robots"][urllib.parse.urlsplit(url).netloc] = verdict["state"]
+        if verdict["allowed"]:
+            return False
+        rep["block"] = _hs.robots_marker(verdict, url_class, now, state.get("block"))
+        return True
+
     ciks: dict[str, int] = {k: int(v) for k, v in (state.get("ciks") or {}).items()}
     if not ciks:
+        if held(TICKER_MAP_URL, "ticker_map"):
+            rep["errors"] = dict(rep["errors"])
+            return [], rep
         status, raw, hdr = _call(get, TICKER_MAP_URL)
         rep["requests"] += 1
         rep["ok_responses"] += int(status == 200)
@@ -383,6 +412,9 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             no_cik.append(sym)
             backfilled.add(sym)          # nothing to backfill: the SEC lists no such filer
             continue
+        if held(SUBMISSIONS_URL.format(cik=cik), "submissions"):
+            visited -= 1                 # the held issuer is first in line after the hold
+            break
         status, raw, hdr = _call(get, SUBMISSIONS_URL.format(cik=cik))
         rep["requests"] += 1
         rep["ok_responses"] += int(status == 200)
@@ -403,6 +435,9 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
                 break
             acc = f["accession"]
             url = ARCHIVE_URL.format(cik=cik, acc=acc.replace("-", ""), doc=f["document"])
+            if held(url, "archive_document"):
+                done_all = False
+                break
             status, body, hdr = _call(get, url)
             rep["requests"] += 1
             rep["ok_responses"] += int(status == 200)
@@ -421,6 +456,17 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
                             "filed_at": f["filed_at"], "form": f["form"],
                             "first_seen_at": now.isoformat(timespec="seconds")})
                 fresh.append(txn)
+        # THE UNREAD FLOOR (audit 0b66b08de, MF4). EDGAR is read newest first, DOCS_PER_ISSUER a
+        # pass, so a post-backfill burst larger than that leaves its OLDER filings unread while
+        # its newer ones are in hand. A cluster is exact as of t only when every filing accepted
+        # by t is held, so `score` freezes this issuer only strictly before the acceptance time
+        # of the oldest filing still unread; the rest freeze on the pass that reads it.
+        unread = [_parse_time(f["filed_at"]) or floor for f in index if f["accession"] not in seen]
+        floors = state.setdefault("unread_floor", {})
+        if unread:
+            floors[sym] = min(unread).isoformat(timespec="seconds")
+        else:
+            floors.pop(sym, None)
         if rep["block"] is not None:
             visited -= 1                 # the hard stop: no further SEC request this pass
             break
@@ -468,8 +514,8 @@ def _keyed_txns(rows: list[dict[str, Any]]) -> list[tuple[str, Any]]:
     return out
 
 
-def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]]
-                    ) -> list[dict[str, Any]]:
+def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]],
+                    held: Mapping[str, datetime] | None = None) -> list[dict[str, Any]]:
     """The clusters NOT yet in `frozen`, each frozen at the first acceptance instant it qualified.
 
     APPEND-ONLY, AS OF EACH ACCEPTANCE (audit 2026-10-14, MUST-FIX 1). `form4.clusters` over the
@@ -481,6 +527,10 @@ def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]]
     `MIN_BUYERS` distinct buyers among transactions no frozen cluster already holds. It is then
     frozen: its rows, buyers, score (baseline strictly before t) and `knowable_at = t` never
     change. A later filing can start a NEW cluster; it never rewrites one.
+
+    `held` maps an issuer to the acceptance time of its oldest filing still UNREAD: the replay
+    for that issuer stops there, because from that instant on the store would be missing a
+    filing that was public (audit 0b66b08de, MF4).
     """
     from libs.research import form4
     used = {k for c in frozen for k in (c.get("rows") or [])}
@@ -495,8 +545,11 @@ def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]]
     for issuer, items in by_issuer.items():
         public: list[tuple[str, Any]] = []
         i = 0
+        cut = (held or {}).get(issuer)
         while i < len(items):
             t_now = items[i][1].filed_at
+            if cut is not None and t_now >= cut:
+                break                    # an older filing is unread: not exact from here on
             batch = []
             while i < len(items) and items[i][1].filed_at == t_now:
                 batch.append(items[i])
@@ -536,7 +589,7 @@ def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]]
 
 
 def score(rows: list[dict[str, Any]], frozen: list[dict[str, Any]] | None = None,
-          backfilled: set[str] | None = None
+          backfilled: set[str] | None = None, held: Mapping[str, datetime] | None = None
           ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """(every frozen cluster -- prior then new --, the new ones, the census).
 
@@ -548,13 +601,15 @@ def score(rows: list[dict[str, Any]], frozen: list[dict[str, Any]] | None = None
     `clusters_ephemeral`, never stored, never in the breadth series or the event store), and
     freeze for the first time on the pass their backfill completes -- with every filing in hand,
     so the store equals a full replay whatever the fetch order. `backfilled=None` freezes every
-    issuer (a store built from a complete history).
+    issuer (a store built from a complete history). `held` (issuer -> acceptance time of its
+    oldest filing still unread) stops a backfilled issuer's freezing there: see
+    `freeze_clusters`.
     """
     from libs.research import form4
     prior = [c for c in (frozen or []) if c.get("rows")]
     ready = rows if backfilled is None else [r for r in rows
                                              if str(r.get("symbol")) in backfilled]
-    new = freeze_clusters(ready, prior)
+    new = freeze_clusters(ready, prior, held)
     allc = sorted(prior + new, key=lambda r: (r["knowable_at"], r["symbol"]))
     census = form4.census(to_txns(rows))
     if backfilled is not None:
@@ -728,7 +783,7 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
         report["user_agent_configured"] = bool(ua) or get is not None
         getter = get or urllib_getter(ua)
         fresh, rep = fetch_pass(getter, state, time.monotonic() + budget_s * 0.8, now=now,
-                                issuers=issuers)
+                                issuers=issuers, ua=ua)
         # MEASURED ONLY ON AN ANSWER (audit MUST-FIX 2). A ticker-map 500, a dead network
         # (status 0) or 5xx on every request is a pass that learned nothing; it must not read
         # OK/MEASURED. At least one 200 is required.
@@ -750,8 +805,11 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
     report["fetch"] = fetch
     rows = _jsonl(txn_path)
     stored = _jsonl(cl_path)
+    held = {str(k): t for k, v in (state.get("unread_floor") or {}).items()
+            if (t := _parse_time(v)) is not None}
     clusters, new_clusters, census = score(rows, stored,
-                                           set(state.get("backfilled") or []))
+                                           set(state.get("backfilled") or []), held)
+    census["issuers_held_unread"] = len(held)
     sd.mkdir(parents=True, exist_ok=True)
     if any(not c.get("rows") for c in stored):
         # A store written before freezing carried no row identities, so it cannot be honoured

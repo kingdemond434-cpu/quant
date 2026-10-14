@@ -1040,25 +1040,107 @@ def parse_trends_multiline(raw: bytes | None) -> list[tuple[str, float]]:
     return out
 
 
+#: THE GTRENDS ROUTE'S OWN DECLARED IDENTITY (audit 0b66b08de MF2), the same posture as
+#: `side_channels/google_trends_miner.DESK_UA`. Deliberately NOT the module-wide `UA` above, which
+#: reads as a Chrome browser and is what every other source here still sends -- changing it would
+#: change all of them, so it is left to its owner. One fixed value: never rotated on a refusal.
+GTRENDS_UA = "quant-desk-free-stack-gtrends/1.0 (research; public trend queries only)"
+GTRENDS_HEADERS: dict[str, str] = {"User-Agent": GTRENDS_UA}
+#: Where a gtrends hold is registered; None = `research/hard_stop.BLOCKED_REGISTER`.
+GTRENDS_REGISTER: Any = None
+
+
+def _http_code(exc: BaseException) -> int:
+    """The HTTP status a failed fetch carried, 0 when it carried none (transport failure)."""
+    m = re.fullmatch(r"http_(\d{3})", classify(exc))
+    return int(m.group(1)) if m else 0
+
+
+def _retry_headers(exc: BaseException) -> dict[str, str]:
+    """Retry-After off the HTTPError `http_fetch` chained, when there is one."""
+    src = exc.__cause__ if exc.__cause__ is not None else exc
+    hdrs = getattr(src, "headers", None)
+    ra = hdrs.get("Retry-After") if hdrs is not None else None
+    return {"Retry-After": str(ra)} if ra else {}
+
+
 def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                   now: datetime) -> Harvest:
     """Interest over time for each term. THE PUBLISHED COLUMN IS THE LOG CHANGE, computed inside
     one response: Trends rescales every response to its own window maximum, so a LEVEL carries the
-    future through its normaliser, while a within-response ratio does not."""
+    future through its normaliser, while a within-response ratio does not.
+
+    UNDER THE HARD STOP AND ROBOTS (audit 0b66b08de MF2/MF5; principal's scope rule 2026-10-13).
+    The first 401/403/429 ends the pass on the spot -- no further request -- and persists a
+    `research/hard_stop.py` marker in this source's cursor; while it is in force a pass sends 0
+    requests. robots.txt is read once a pass at the host under GTRENDS_UA and every URL is judged
+    by its exact path; a path it does not allow is not fetched and is held the same way."""
+    from desks.mt5.research import hard_stop as hs
     h = Harvest(str(row["id"]))
+    prior = cursor.get("hard_stop") if isinstance(cursor.get("hard_stop"), dict) else None
+    if hs.active(prior, now):
+        assert prior is not None
+        h.status = str(prior.get("status") or "METHOD_BLOCKED")
+        h.detail = (f"held after {prior.get('url_class')} at {prior.get('at')} until "
+                    f"{prior.get('until')}: nothing requested")
+        return h
+
+    def hold(marker: dict[str, Any]) -> None:
+        h.cursor["hard_stop"] = marker
+        h.status = str(marker["status"])
+        h.detail = (f"{marker['status']} on {marker['url_class']} at {marker['at']}, held until "
+                    f"{marker['until']}")
+        try:
+            hs.record_block(marker, GTRENDS_REGISTER or hs.BLOCKED_REGISTER,
+                            key="free_stack_gtrends", host="trends.google.com")
+        except Exception as exc:              # the record can fail; the stop already happened
+            h.notes.append(f"hold not registered: {type(exc).__name__}")
+
+    def get(url: str, url_class: str) -> tuple[bytes | None, bool]:
+        """(body, stopped). Judged by robots first; a hard-stop status stops the pass."""
+        verdict = hs.robots_verdict(url, GTRENDS_UA, *robots)
+        if not verdict["allowed"]:
+            hold(hs.robots_marker(verdict, url_class, now, prior))
+            return None, True
+        h.requests += 1
+        try:
+            return fetch(url, GTRENDS_HEADERS, None), False
+        except Exception as exc:
+            h.failures[classify(exc)] += 1
+            h.notes.append(f"{classify(exc)}: {url[:120]}")
+            code = _http_code(exc)
+            if code in hs.HARD_STOP:
+                hold(hs.block_marker(code, url_class, _retry_headers(exc), now, prior))
+                return None, True
+            return None, False
+
     base = "https://trends.google.com/trends/api"
+    h.requests += 1
+    try:
+        robots: tuple[int, bytes] = (200, fetch(hs.robots_url(base), GTRENDS_HEADERS, None))
+    except Exception as exc:
+        robots = (_http_code(exc), b"")
+    if robots[0] in hs.HARD_STOP:
+        hold(hs.block_marker(robots[0], "robots.txt", {}, now, prior))
+        return h
     for term, targets in row.get("terms") or TRENDS_TERMS:
         req = {"comparisonItem": [{"keyword": term, "geo": "", "time": "today 3-m"}],
                "category": 0, "property": ""}
         url = (f"{base}/explore?hl=en-US&tz=0&req="
                f"{urllib.parse.quote(json.dumps(req, separators=(',', ':')))}")
-        widget = parse_trends_explore(_get(fetch, h, url))
+        raw, stopped = get(url, "explore")
+        if stopped:
+            break
+        widget = parse_trends_explore(raw)
         if not widget or not widget.get("token"):
             continue
         url2 = (f"{base}/widgetdata/multiline?hl=en-US&tz=0&req="
                 f"{urllib.parse.quote(json.dumps(widget['req'], separators=(',', ':')))}"
                 f"&token={urllib.parse.quote(str(widget['token']))}")
-        pts = parse_trends_multiline(_get(fetch, h, url2))
+        raw2, stopped = get(url2, "widgetdata")
+        if stopped:
+            break
+        pts = parse_trends_multiline(raw2)
         col = trends_col(term)
         h.columns[col] = {"hypothesis": list(targets), "event": [],
                           "why": f"search attention log-change, '{term}'"}
@@ -1066,6 +1148,10 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
             h.obs.append({"key": col, "period_end": d1,
                           "value": round(math.log((1.0 + v1) / (1.0 + v0)), 5)})
         h.raw += [{"term": term, "day": d, "value": v} for d, v in pts[-7:]]
+    if "hard_stop" in h.cursor:
+        return h
+    if prior is not None and h.obs:
+        h.cursor["hard_stop"] = None          # an answered, unrefused pass ends the ladder
     if not h.obs:
         h.status = "BLOCKED" if h.failures else "EMPTY"
         h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "no points"
