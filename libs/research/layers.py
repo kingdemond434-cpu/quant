@@ -206,6 +206,8 @@ LEG_LAYER: dict[str, str] = {
     "candidate_conservation": "meta",
     # Planted point-in-time canaries measure whether the desk can read the future: meta.
     "pit_canaries": "meta",
+    # Whether the cost artifacts every trade is priced against are current: meta.
+    "cost_state_fresh": "meta",
     # Whether the desk has stopped placing without saying so is a measurement of its own
     # execution wiring, not an act on the book: meta.
     "placement_interlock": "meta",

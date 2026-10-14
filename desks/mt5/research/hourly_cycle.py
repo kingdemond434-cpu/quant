@@ -1112,6 +1112,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # Whether the cost surface, the carry table and the triangle tape are current, read on the
+    # box that writes them: three small JSON reads, and every consumer prices against them.
+    "cost_state_fresh",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -3204,6 +3207,14 @@ def judge_alive() -> dict:
                      "--require-state")
 
 
+def cost_state_fresh() -> dict:
+    """`cost_state_fresh`: RED when `cost_surface.json`, `carry_state.json` or the triangle tape
+    is older than one cycle, or absent (UNMEASURED). `ops/run_cost_state.cmd` swallowed its exit
+    until 2026-10-14, so the scheduler could not say so; `scripts/check_cost_state_fresh.py`
+    writes `reports/COST_STATE_FRESHNESS.json`, which the box publishes."""
+    return _producer("cost_state_fresh", "scripts/check_cost_state_fresh.py")
+
+
 def pit_canaries() -> dict:
     """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
     when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
@@ -4111,6 +4122,7 @@ def main() -> None:
         "--budget-s", "240"))
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
+    csf = _costed("cost_state_fresh", cost_state_fresh)
     pil = _costed("placement_interlock", placement_interlock)
     jal = _costed("judge_alive", judge_alive)
     myd = _costed("mutation_yield", mutation_yield)
@@ -6085,6 +6097,7 @@ def main() -> None:
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
                     "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
+                    "cost_state_fresh": csf,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,

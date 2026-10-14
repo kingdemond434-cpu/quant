@@ -222,6 +222,14 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY_AUDIT.json", 45,
                              "does the running tree match a SIGNED release, and would the hourly "
                              "adopter overwrite unpushed money-path work"),
+    # THE COST PRODUCERS (2026-10-14). MT5-CostState fires daily at 04:20 and its runner ended
+    # `exit /b 0`, so a failing producer read as a green task and no contract named its artifact:
+    # cost_surface.json and carry_state.json aged unseen. The plain name is the task never_stale
+    # may restart; the parenthesised row is the second artifact of the same task.
+    "MT5-CostState":      ("desks/mt5/data/cost_surface.json", 1560,
+                           "the symbol x hour spread surface every trade is priced against"),
+    "MT5-CostState (carry)": ("desks/mt5/data/carry_state.json", 1560,
+                              "overnight financing per lot per night, per side"),
     "MT5-MoatCapture":    ("desks/mt5/reports/MOAT_CAPTURE.json", 90,
                            "per-day capture completeness -- which SYMBOLS a short day is "
                            "missing, while a targeted re-pull can still recover them"),

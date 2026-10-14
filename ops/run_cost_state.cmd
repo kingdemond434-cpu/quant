@@ -10,10 +10,24 @@ rem
 rem Daily, because both are distributional: a spread surface and a financing table move on the
 rem scale of a session calendar, not of an hour, and rebuilding them hourly would spend the box's
 rem parquet IO to re-derive the same numbers.
-setlocal
+rem
+rem THE EXIT IS THE WORST STEP'S, NOT A CONSTANT (2026-10-14). This file ended `exit /b 0`, so
+rem the scheduler read success whatever the producers returned, while carry_state was never seen
+rem published from the box and cost_surface's last stamp on origin was 2026-09-23. All three steps
+rem still run (one failing must not starve the others); each stamps its own exit code into the
+rem log as `MT5-CostState step=<name> rc=<n>`, which scripts/check_cost_state_fresh.py reads, and
+rem the task returns the first non-zero code so LastTaskResult names a failure.
+setlocal EnableDelayedExpansion
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-CostState.log"
-"C:\Program Files\Python314\python.exe" -u "C:\opt\quant\desks\mt5\research\cost_surface.py" >>"%LOG%" 2>&1
-"C:\Program Files\Python314\python.exe" -u "C:\opt\quant\desks\mt5\research\carry_state.py" >>"%LOG%" 2>&1
-"C:\Program Files\Python314\python.exe" -u "C:\opt\quant\desks\mt5\research\cost_honesty.py" --apply >>"%LOG%" 2>&1
-exit /b 0
+set "PY=C:\Program Files\Python314\python.exe"
+set "WORST=0"
+for %%S in (cost_surface carry_state cost_honesty) do (
+    set "ARGS="
+    if "%%S"=="cost_honesty" set "ARGS=--apply"
+    "%PY%" -u "C:\opt\quant\desks\mt5\research\%%S.py" !ARGS! >>"%LOG%" 2>&1
+    set "RC=!ERRORLEVEL!"
+    >>"%LOG%" echo MT5-CostState step=%%S rc=!RC! at=!DATE! !TIME!
+    if not "!RC!"=="0" if "!WORST!"=="0" set "WORST=!RC!"
+)
+exit /b %WORST%
