@@ -1053,22 +1053,33 @@ def held_on_terms(key: str) -> bool:
     return bool(row and row.get("held_route"))
 
 
-def held_missed_growth(key: str, past: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """GROWTH GOVERNANCE: the missed-growth line a terms hold carries. A hold stops a fetch, so
-    it names what that fetch converted before (`past`, the organ's own record) or says that no
-    conversion is on record; delta E[log W] is UNMEASURED either way, never zero."""
+def held_missed_growth(key: str, past: Mapping[str, Any] | None = None, *,
+                       source: str | None = None, live_input_refusal: bool = False
+                       ) -> dict[str, Any]:
+    """GROWTH GOVERNANCE: the missed-growth line a hold carries. A held route stops a fetch
+    (kind terms_hold, HELD_ON_TERMS); an IDEAS_ONLY row refused as LIVE INPUT stops a live series
+    while its ideas are still mined (kind ideas_only_refusal, IDEAS_ONLY). Either way the line
+    names what was converted before (`past`, the organ's own record) or says that no conversion
+    is on record; delta E[log W] is UNMEASURED, never zero. `source` is the organ's row id when it
+    differs from the policy key."""
     row = SOURCE_POLICY[key]
-    line: dict[str, Any] = {"source": key, "kind": "terms_hold", "status": HELD_ON_TERMS,
+    what = ("refused as live input, ideas still mined" if live_input_refusal
+            else "held on terms")
+    line: dict[str, Any] = {"source": source or key,
+                            "kind": "ideas_only_refusal" if live_input_refusal else "terms_hold",
+                            "status": IDEAS_ONLY if live_input_refusal else HELD_ON_TERMS,
+                            "policy_row": key,
                             "policy_status": str(row["status"]), "delta_elogw": "UNMEASURED",
                             "terms_url": str((row.get("terms") or {}).get("url") or ""),
-                            "unblock": str(row.get("unblock") or "")}
+                            "unblock": str(row.get("unblock") or row.get("permitted_route")
+                                           or "")}
     if past:
         line["past_conversion"] = dict(past)
-        line["cause"] = (f"held on terms ({row['why']}); the conversion recorded before the hold "
-                         "is in past_conversion; the growth forgone is UNMEASURED until the "
-                         "unblock arrives and the cells are judged")
+        line["cause"] = (f"{what} ({row['why']}); the conversion recorded before the hold is in "
+                         "past_conversion; the growth forgone is UNMEASURED until the unblock "
+                         "arrives and the cells are judged")
     else:
-        line["cause"] = (f"held on terms ({row['why']}); no measured conversion on record (no "
+        line["cause"] = (f"{what} ({row['why']}); no measured conversion on record (no "
                          "observation, cell or gain test of this source exists in the organ's "
                          "record), so the growth forgone is UNMEASURED, never zero")
     return line

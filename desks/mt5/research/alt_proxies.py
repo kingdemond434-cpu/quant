@@ -1812,26 +1812,52 @@ def hk_general_holidays(year: int) -> frozenset[date] | None:
     return frozenset(date.fromisoformat(d) for d in got) if got else None
 
 
-def _hk_roll(period: date) -> tuple[date, str]:
-    """The first Hong Kong business day after `period` and how it was reached. A day in a year
-    the holiday table does not cover is rolled one EXTRA weekday (late bias), and the basis says
-    so; a covered year rolls past weekends and the tabled general holidays only."""
-    d = period + timedelta(days=1)
-    uncovered: set[int] = set()
-    while True:
-        hol = hk_general_holidays(d.year)
-        if hol is None:
-            uncovered.add(d.year)
-        if d.weekday() < 5 and (hol is None or d not in hol):
-            break
+#: Weekdays added in a year the HK table does not cover: the longest run of consecutive WEEKDAY
+#: general holidays (Lunar New Year days 1-3, or Good Friday + Easter Monday + a Ching Ming moved
+#: off the Sunday) is three, so three extra weekdays is never early (audit 2026-10-14 MF-A).
+HK_UNTABLED_EXTRA_WEEKDAYS = 3
+#: Before this date a typhoon signal 8 or a black rainstorm warning shut Hong Kong for the day
+#: (since 2024-09-23 trading and settlement continue). Those closures are not tabulated here, so a
+#: stamp landing before it takes ONE extra business day (late bias; one closure is one day).
+HK_SEVERE_WEATHER_RULE_ENDS = date(2024, 9, 23)
+
+
+def _hk_closed(d: date) -> bool:
+    hol = hk_general_holidays(d.year)
+    return d.weekday() >= 5 or (hol is not None and d in hol)
+
+
+def _hk_next_open(d: date, n: int) -> date:
+    """`d` moved forward by `n` Hong Kong business days (weekends and tabled holidays skipped)."""
+    for _ in range(n):
         d += timedelta(days=1)
-    if uncovered:
-        d += timedelta(days=1)
-        while d.weekday() >= 5:
+        while _hk_closed(d):
             d += timedelta(days=1)
-        return d, ("late_bias:+1 HK weekday (no HK holiday table for "
-                   + ",".join(str(y) for y in sorted(uncovered)) + ")")
-    return d, "hk_business_day:countries.hk.pack.holidays"
+    return d
+
+
+def _hk_roll(period: date) -> tuple[date, str]:
+    """The first Hong Kong business day after `period` and how it was reached.
+    - a covered year rolls past weekends and the tabled general holidays;
+    - a day in a year the table does not cover rolls HK_UNTABLED_EXTRA_WEEKDAYS more weekdays;
+    - a stamp before HK_SEVERE_WEATHER_RULE_ENDS (untabled typhoon / black-rainstorm closures)
+      rolls one more business day.
+    Every bias is late, never early, and the basis names each one applied."""
+    d = period + timedelta(days=1)
+    while _hk_closed(d):
+        d += timedelta(days=1)
+    basis = ["hk_business_day:countries.hk.pack.holidays"]
+    uncovered = sorted({y for y in range(period.year, d.year + 1)
+                        if hk_general_holidays(y) is None})
+    if uncovered:
+        d = _hk_next_open(d, HK_UNTABLED_EXTRA_WEEKDAYS)
+        basis.append(f"late_bias:+{HK_UNTABLED_EXTRA_WEEKDAYS} HK weekdays (no HK holiday table "
+                     "for " + ",".join(str(y) for y in uncovered) + ")")
+    if period < HK_SEVERE_WEATHER_RULE_ENDS:
+        d = _hk_next_open(d, 1)
+        basis.append("late_bias:+1 HK business day (typhoon/black-rainstorm closures before "
+                     "2024-09-23 not tabulated)")
+    return d, "; ".join(basis)
 
 
 def rule_hkma_liquidity(period: date) -> datetime:

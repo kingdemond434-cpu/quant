@@ -168,10 +168,12 @@ def test_hkma_stamp_rolls_past_hong_kong_holidays() -> None:
     assert src.rule(date(2026, 2, 16)) == datetime(2026, 2, 20, 12, tzinfo=UTC)
     assert src.rule_basis is not None
     assert src.rule_basis(date(2026, 4, 2)).startswith("hk_business_day")
-    # a year the HK table does not cover: one EXTRA weekday, and the basis says so
+    # a year the HK table does not cover: three EXTRA weekdays, plus one for the untabled
+    # pre-2024-09-23 typhoon closures, and the basis names both
     assert A.hk_general_holidays(2019) is None
-    assert src.rule(date(2019, 3, 7)) == datetime(2019, 3, 11, 12, tzinfo=UTC)   # Thu -> Mon
-    assert src.rule_basis(date(2019, 3, 7)).startswith("late_bias")
+    assert src.rule(date(2019, 3, 7)) == datetime(2019, 3, 14, 12, tzinfo=UTC)   # Fri +3 +1
+    assert "late_bias:+3 HK weekdays" in src.rule_basis(date(2019, 3, 7))
+    assert "typhoon" in src.rule_basis(date(2019, 3, 7))
     for d in (date(2024, 3, 28), date(2025, 12, 24), date(2026, 9, 30)):
         assert src.rule(d).date() not in (A.hk_general_holidays(src.rule(d).year) or ()), d
         assert src.rule(d).weekday() < 5, d
@@ -184,7 +186,7 @@ def test_hkma_store_rows_record_their_rule_basis() -> None:
                                   A.Obs("hkma_cu_flow_mn", date(2019, 3, 7), 2.0)], NOW)
     assert store["hkma_cu_flow_mn|2026-04-02"]["published_time"].startswith("2026-04-08T12")
     assert store["hkma_cu_flow_mn|2026-04-02"]["rule_basis"].startswith("hk_business_day")
-    assert store["hkma_cu_flow_mn|2019-03-07"]["rule_basis"].startswith("late_bias")
+    assert "late_bias:+3" in store["hkma_cu_flow_mn|2019-03-07"]["rule_basis"]
 
 
 # ============================================================================ GAP1 USAJOBS
@@ -486,7 +488,10 @@ def test_ideas_only_row_still_mined_and_labelled_not_held(tmp_path: Path,
     rep = run(budget_s=30, fetch=lambda *a: (_ for _ in ()).throw(AssertionError("fetched")),
               store=Store(tmp_path), roster=roster, now=NOW, live=False)
     assert rep["per_source"]["telegram"]["status"] == tf.IDEAS_ONLY
-    assert not any(ln["source"] == "telegram" for ln in rep["missed_growth_lines"])
+    # the live-input refusal carries its missed-growth line (IDEAS_ONLY, not a terms hold)
+    (ln,) = [x for x in rep["missed_growth_lines"] if x["source"] == "telegram"]
+    assert ln["kind"] == "ideas_only_refusal" and ln["status"] == tf.IDEAS_ONLY
+    assert ln["delta_elogw"] == "UNMEASURED" and "ideas still mined" in ln["cause"]
     # the idea route: a deep-forest telegram ground fetches its public previews
     asked: list[str] = []
 
@@ -564,3 +569,116 @@ def test_tga_stamp_rolls_past_one_off_federal_closures() -> None:
     assert set(A.US_FEDERAL_CLOSURES) == closures
     assert A.rule_net_liquidity(date(2024, 12, 23)) == datetime(2024, 12, 26, 22, tzinfo=UTC)
     assert A.rule_net_liquidity(date(2025, 12, 23)) == datetime(2025, 12, 29, 22, tzinfo=UTC)
+
+
+# ============================================================================ audit 1da3e0a8a
+@pytest.mark.parametrize(("period", "true_next"), [
+    (date(2019, 2, 4), date(2019, 2, 8)),       # Lunar New Year 2019-02-05..07
+    (date(2023, 1, 20), date(2023, 1, 26)),     # Lunar New Year 2023-01-23..25
+    (date(2015, 4, 2), date(2015, 4, 8)),       # Good Friday, Easter Monday, Ching Ming 04-07
+    (date(2027, 2, 5), date(2027, 2, 10)),      # Lunar New Year 2027-02-08..09 (untabled year)
+])
+def test_hkma_stamp_is_never_early_in_an_untabled_year(period: date, true_next: date) -> None:
+    src = A.BY_ID["hk_hkma_liquidity"]
+    assert A.hk_general_holidays(period.year) is None
+    t = src.rule(period)
+    assert t >= datetime(true_next.year, true_next.month, true_next.day, 12, tzinfo=UTC), period
+    assert t.weekday() < 5
+    assert src.rule_basis is not None and "late_bias:+3" in src.rule_basis(period)
+
+
+def test_hkma_severe_weather_bias_before_2024_09_23() -> None:
+    src = A.BY_ID["hk_hkma_liquidity"]
+    assert src.rule_basis is not None
+    # tabled year, before the 2024-09-23 rule change: one more business day for typhoon closures
+    assert src.rule(date(2024, 9, 5)) == datetime(2024, 9, 9, 12, tzinfo=UTC)    # Thu -> Mon
+    assert "typhoon" in src.rule_basis(date(2024, 9, 5))
+    # after it: the plain next business day
+    assert src.rule(date(2024, 10, 3)) == datetime(2024, 10, 4, 12, tzinfo=UTC)
+    assert "late_bias" not in src.rule_basis(date(2024, 10, 3))
+
+
+def test_index_route_urls_never_reach_the_frontier(monkeypatch: pytest.MonkeyPatch) -> None:
+    """MF-B: the frontier is fetched by world_crawler.fetch (browser agent, no robots check), so a
+    page the index route read is never followed into it."""
+    from types import SimpleNamespace
+    url = "https://ex.example/forum/a.html"
+    monkeypatch.setattr(D.pf, "get", lambda *a, **k: SimpleNamespace(
+        ok=True, status=200, error=None,
+        text="<html><title>t</title><body>" + "rule. " * 600 + "</body></html>"))
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    monkeypatch.setattr(D, "site_index_urls", lambda site, **k: {
+        "route": "sitemap", "urls": [url], "listed": 1, "robots_disallowed": 0,
+        "robots_unread": 0, "errors": []})
+    r = D._Run(60.0, True, None, None)
+    out = r.ground_site_index({"name": "g", "site": "ex.example", "queries": ["rule"],
+                               "language": "en"})
+    assert out["fetched"] == 1
+    assert url not in [u for u, _, _ in r.frontier] and url in r.seen_urls
+    # and nothing of it is handed to the crawler's frontier store
+    added: list[str] = []
+    fake = SimpleNamespace(load=lambda: {}, save=lambda *a, **k: None,
+                           add=lambda src, u, **k: added.append(u) or True)
+    monkeypatch.setitem(sys.modules, "world_frontier", fake)
+    D._feed_frontier(list(r.frontier))
+    assert url not in added
+
+
+def test_robots_origin_includes_a_non_default_port() -> None:
+    assert D.robots_origin("https://ex.com/a") == "https://ex.com"
+    assert D.robots_origin("https://ex.com:443/a") == "https://ex.com"
+    assert D.robots_origin("https://ex.com:8443/a") == "https://ex.com:8443"
+    assert D.robots_origin("http://ex.com/a") == "http://ex.com"
+    sm = "<urlset><url><loc>https://ex.com:8443/ok/p</loc></url></urlset>"
+
+    def get(url: str) -> str:
+        return {"https://ex.com/robots.txt":
+                "User-agent: *\nAllow: /\nSitemap: https://ex.com/sitemap.xml\n",
+                "https://ex.com/sitemap.xml": sm}[url]     # port 8443's robots.txt: unreadable
+    out = D.site_index_urls("ex.com", get=get)
+    assert out["urls"] == [] and out["robots_unread"] == 1
+    reads: list[str] = []
+
+    def get2(url: str) -> str:
+        reads.append(url)
+        if url == "https://ex.com:8443/robots.txt":
+            return "User-agent: *\nAllow: /\n"
+        return get(url)
+    out = D.site_index_urls("ex.com", get=get2)
+    assert out["urls"] == ["https://ex.com:8443/ok/p"]
+    assert "https://ex.com:8443/robots.txt" in reads
+
+
+def test_a_cross_origin_redirect_needs_the_new_origins_robots() -> None:
+    import io
+    import urllib.error
+    import urllib.request
+
+    def handler(allow: bool) -> Any:
+        h = D.IndexRedirectHandler(lambda u: allow)
+        h.parent = urllib.request.build_opener()
+        return h
+    req = urllib.request.Request("https://ex.com/a", headers={"User-Agent": D.INDEX_UA})
+    # another origin, its robots.txt unread or disallowing: stopped at the 30x
+    with pytest.raises(urllib.error.HTTPError) as e:
+        handler(False).redirect_request(req, io.BytesIO(b""), 301, "Moved", {},
+                                        "https://other.example/b")
+    assert "cross-origin redirect stopped" in str(e.value.reason)
+    with pytest.raises(urllib.error.HTTPError):                 # another port is another origin
+        handler(False).redirect_request(req, io.BytesIO(b""), 302, "Found", {},
+                                        "https://ex.com:8443/b")
+    # allowed by the new origin's own robots.txt, or the same origin: followed
+    new = handler(True).redirect_request(req, io.BytesIO(b""), 301, "Moved", {},
+                                         "https://other.example/b")
+    assert new is not None and new.full_url == "https://other.example/b"
+    same = handler(False).redirect_request(req, io.BytesIO(b""), 301, "Moved", {},
+                                           "https://ex.com/c")
+    assert same is not None and same.full_url == "https://ex.com/c"
+    # robots_allows reads the target ORIGIN's own file, and an unread one is not a permission
+    asked: list[str] = []
+
+    def get(url: str) -> str:
+        asked.append(url)
+        raise OSError("HTTP 404")
+    assert D.robots_allows("https://other.example:8080/b", get=get) is False
+    assert asked == ["https://other.example:8080/robots.txt"]

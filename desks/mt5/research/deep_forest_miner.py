@@ -530,6 +530,78 @@ def rank_by_queries(urls: list[str], queries: list[str]) -> list[str]:
 
 #: Extra hosts (beyond the ground's own) whose robots.txt one pass may read for listed pages.
 INDEX_EXTRA_HOSTS = 4
+_DEFAULT_PORT = {"http": 80, "https": 443}
+
+
+def robots_origin(url: str) -> str:
+    """The origin whose robots.txt governs `url`: scheme://host[:port], the default port dropped
+    (RFC 9309: a robots.txt applies to its own scheme, host and port only). So a page on
+    ex.com:8443 is judged by https://ex.com:8443/robots.txt, never by the one on port 443."""
+    p = urlparse(url)
+    scheme = (p.scheme or "https").lower()
+    host = (p.hostname or "").lower()
+    try:
+        port = p.port
+    except ValueError:
+        port = None
+    if port is not None and port != _DEFAULT_PORT.get(scheme):
+        return f"{scheme}://{host}:{port}"
+    return f"{scheme}://{host}"
+
+
+def robots_allows(url: str, *, get: Any = None,
+                  cache: dict[str, Any] | None = None) -> bool:
+    """True only when the robots.txt of `url`'s OWN origin was read and allows "*". An unread
+    robots.txt is not a permission."""
+    get = get or _index_get
+    cache = cache if cache is not None else {}
+    origin = robots_origin(url)
+    if origin not in cache:
+        try:
+            txt = get(f"{origin}/robots.txt")
+            cache[origin] = robots_parser(txt) if txt else None
+        except Exception:
+            cache[origin] = None
+    rp = cache[origin]
+    return bool(rp is not None and rp.can_fetch("*", url))
+
+
+class IndexRedirectHandler(_tf.FencedRedirectHandler):
+    """The fence's redirect handler (held sources and login walls still refused), plus: a redirect
+    to ANOTHER robots origin is followed only when that origin's robots.txt was read and allows
+    the target; otherwise the fetch STOPS at the 30x (raised as that HTTPError, never followed)."""
+
+    def __init__(self, allows: Any) -> None:
+        super().__init__()
+        self.allows = allows
+
+    def redirect_request(self, req: urllib.request.Request, fp: Any, code: int, msg: str,
+                         headers: Any, newurl: str) -> urllib.request.Request | None:
+        newurl = urljoin(str(req.full_url), newurl)
+        if robots_origin(newurl) != robots_origin(str(req.full_url)) and not self.allows(newurl):
+            with contextlib.suppress(Exception):
+                fp.read()
+                fp.close()
+            raise urllib.error.HTTPError(newurl, int(code), f"cross-origin redirect stopped: "
+                                         f"robots.txt of {robots_origin(newurl)} unread or "
+                                         "disallowing", headers, None)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def index_opener(allows: Any) -> Any:
+    """A `polite_fetch.get` opener for the index route: THE ONE FETCH DOOR's checks (a held
+    source or login wall refused before any request), with IndexRedirectHandler for redirects."""
+    def open_(req: urllib.request.Request, timeout: float | None = None,
+              context: Any = None) -> Any:
+        _tf.check_request(req.full_url, dict(req.header_items()))
+        if _tf.login_wall(req.full_url):
+            raise _tf.TermsFenced("login_wall", req.full_url)
+        hs: list[Any] = [IndexRedirectHandler(allows), _tf.TermsGuardProcessor()]
+        if context is not None:
+            hs.append(urllib.request.HTTPSHandler(context=context))
+        op = urllib.request.build_opener(*hs)
+        return op.open(req) if timeout is None else op.open(req, timeout=timeout)
+    return open_
 
 
 def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
@@ -541,26 +613,28 @@ def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
     get = get or _index_get
     errors: list[str] = []
     robots_txt = ""
-    site_host = site.lower().split("/")[0].split(":")[0]
+    site_origin = robots_origin(f"https://{site.lower().split('/')[0]}/")
     try:
-        robots_txt = get(f"https://{site_host}/robots.txt")
+        robots_txt = get(f"{site_origin}/robots.txt")
     except Exception as exc:
         errors.append(f"robots: {str(exc)[:80]}")
     rp = robots_parser(robots_txt) if robots_txt else None
-    rps: dict[str, Any] = {site_host: rp}
+    rps: dict[str, Any] = {site_origin: rp}
 
-    def host_rp(host: str) -> Any:
-        if host not in rps:
+    def host_rp(origin: str) -> Any:
+        """By ORIGIN (scheme, host, port): a subdomain, a twin host or another port each needs its
+        own robots.txt read."""
+        if origin not in rps:
             if len(rps) > INDEX_EXTRA_HOSTS:
-                rps[host] = None                       # over the read budget: unread, unfetched
+                rps[origin] = None                     # over the read budget: unread, unfetched
             else:
                 try:
-                    txt = get(f"https://{host}/robots.txt")
-                    rps[host] = robots_parser(txt) if txt else None
+                    txt = get(f"{origin}/robots.txt")
+                    rps[origin] = robots_parser(txt) if txt else None
                 except Exception as exc:
-                    errors.append(f"robots {host}: {str(exc)[:60]}")
-                    rps[host] = None
-        return rps[host]
+                    errors.append(f"robots {origin}: {str(exc)[:60]}")
+                    rps[origin] = None
+        return rps[origin]
     urls: list[str] = []
     route = ""
     maps = [ln.split(":", 1)[1].strip() for ln in robots_txt.splitlines()
@@ -594,7 +668,7 @@ def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
     allowed: list[str] = []
     disallowed = unread = 0
     for u in keep:
-        hrp = host_rp(urlparse(u).netloc.lower().split(":")[0])
+        hrp = host_rp(robots_origin(u))
         if hrp is None:
             unread += 1
         elif hrp.can_fetch("*", u):
@@ -1071,8 +1145,11 @@ class _Run:
             return ""
         if not self._net_ok():
             return ""
+        # a redirect to another robots origin is followed only on that origin's own robots.txt
+        cache = self.__dict__.setdefault("_index_robots", {})
         r = pf.get(url, headers=dict(INDEX_HEADERS), timeout=20.0, retries=1, leg=LEG,
-                   max_bytes=2_000_000)
+                   max_bytes=2_000_000,
+                   opener=index_opener(lambda u: robots_allows(u, cache=cache)))
         if r.ok:
             self._note_net(True)
             self.counts["pages"] += 1
@@ -1302,7 +1379,11 @@ class _Run:
                 continue
             fetched += 1
             claims += self._read_page(g, body, url, _title(body), f"index:{idx['route']}:page")
-            self.follow(url, _title(body), via=f"{SOURCE}:{g.get('name')}")
+            # NOT `follow`: the frontier is fetched by world_crawler with a browser agent and no
+            # robots check, so an index-route URL never enters it (audit 2026-10-14 MF-B). It is
+            # only marked seen, so no later route re-reads it as new.
+            with self._lock:
+                self.seen_urls.add(url)
             time.sleep(1.0)
         return {"route": idx["route"], "listed": idx["listed"], "allowed": len(idx["urls"]),
                 "robots_disallowed": idx["robots_disallowed"],
