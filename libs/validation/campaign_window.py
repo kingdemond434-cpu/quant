@@ -218,7 +218,13 @@ def _power_grid(m: np.ndarray, t_obs: np.ndarray, true_ann_sharpe: float,
     ok = (m >= 2) & (t > 1)
     if not np.any(ok):
         return out
-    mm, tt = m[ok], t[ok]
+    # THE BAR'S N IS FIXED (principal 2026-10-13, owner's T8 ruling), exactly as in
+    # detection_power: the cohort size m still weights a stratum's expected discoveries in the
+    # planner, but it never raises the hurdle. The planner's cohorts are >= MIN_COHORT (12) > 5,
+    # so the pin only ever lowers a hurdle it touches.
+    from libs.research.trial_count_guard import BAR_N
+    tt = t[ok]
+    mm = np.full(tt.shape, float(BAR_N))
     a = norm.ppf(1.0 - 1.0 / mm)
     b = norm.ppf(1.0 - 1.0 / (mm * np.e))
     sr0 = np.sqrt(1.0 / tt) * ((1.0 - _EULER) * a + _EULER * b)

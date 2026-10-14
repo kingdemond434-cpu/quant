@@ -691,9 +691,13 @@ def q4_overnight_drift_census(syms: list[str], deadline: float) -> dict:
         return _unmeasured(f"no instrument carries {CENSUS_DAYS} days of session bars under "
                        f"{UNIVERSE}")
     cells = len(rows)
-    crit = NormalDist().inv_cdf(1.0 - 0.025 / cells)
+    # THE BAR'S N IS FIXED (principal 2026-10-13): the Bonferroni charge is the owner's bar N,
+    # never above the cells tested; `n` below still reports every cell.
+    from libs.research.trial_count_guard import bar_n
+    charged = min(cells, bar_n(cells))
+    crit = NormalDist().inv_cdf(1.0 - 0.025 / charged)
     for r in rows:
-        r["p_bonf"] = round(min(1.0, r["p_raw"] * cells), 6)
+        r["p_bonf"] = round(min(1.0, r["p_raw"] * charged), 6)
         r["p_raw"] = round(r["p_raw"], 6)
         r["survives_deflation"] = bool(abs(r["t"]) >= crit)
     rows.sort(key=lambda r: -abs(r["t"]))

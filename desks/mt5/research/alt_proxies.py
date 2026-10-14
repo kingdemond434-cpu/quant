@@ -3768,6 +3768,12 @@ def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str
                              if may_mint(sym))
     out: dict[str, dict[str, Any]] = {}
     closes: dict[str, Any] = {}
+    # THE BAR'S N IS FIXED (principal 2026-10-13, "make sure the bars never raise ... never
+    # inflation due to trials"): the Bonferroni charge is the owner's bar N, never the pass's cell
+    # count -- and never ABOVE that count either, so a pass with fewer cells than BAR_N is charged
+    # exactly what it was before. len(cells) stays reported as n_cells_tested.
+    from libs.research.trial_count_guard import bar_n
+    n_charged = min(len(cells), bar_n(len(cells)))
     for sid, series, sym in cells:
         if sym not in closes:
             closes[sym] = _bars_close(paths, sym)
@@ -3779,7 +3785,7 @@ def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str
         pts = points_by_source[sid][series]
         ev = [(p["available_time"], float(p["surprise_z"])) for p in pts
               if p.get("surprise_z") is not None]
-        res = release_gain(ev, close, horizon_bars=HORIZON_BARS, n_cells=len(cells)).as_dict()
+        res = release_gain(ev, close, horizon_bars=HORIZON_BARS, n_cells=n_charged).as_dict()
         res["backfill_share"] = (round(sum(1 for p in pts if p["pit_quality"] == "backfill")
                                        / len(pts), 3) if pts else None)
         out[key] = res
@@ -3971,7 +3977,10 @@ def _gate_children(paths: Paths,
         mask = _regime_mask(paths, src, series, op, idx)
         inputs.append((cand, "no conditioning series in the lake on this box" if mask is None
                        else (pos, ret, mask)))
-    n_trials = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
+    # Fixed bar N (principal 2026-10-13), never above the children actually tested this pass.
+    from libs.research.trial_count_guard import bar_n
+    n_tested = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
+    n_trials = min(n_tested, bar_n(n_tested))
     passed: list[dict[str, Any]] = []
     gates: list[dict[str, Any]] = []
     for cand, x in inputs:
@@ -4414,7 +4423,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                   "n_underpowered": sum(1 for g in gains.values()
                                         if g.get("verdict") == "UNDERPOWERED"),
                   "rule": ("each gain row carries min_detectable_ic (80% power at its n and "
-                           "Bonferroni charge); a miss above target_ic is UNDERPOWERED, not FAIL")},
+                           "Bonferroni charge at the fixed bar N, never above the cells "
+                           "tested); a miss above target_ic is UNDERPOWERED, not FAIL")},
         "equity_handoff": {"path": str(paths.equity_handoff), "n_rows": len(handoff["rows"]),
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
@@ -4435,7 +4445,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                                     "params.conditioner, applied by mt5desk.cell_modifiers; a "
                                     "child is donated only when its in-regime parent return "
                                     "beats circularly shifted regimes of the same duty cycle, "
-                                    "Bonferroni over every child tested")},
+                                    "Bonferroni at the fixed bar N (never above the children "
+                                    "tested)")},
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),

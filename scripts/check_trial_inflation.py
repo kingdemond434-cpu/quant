@@ -12,6 +12,12 @@ lawful source of a bar's N. This fence walks the tree and goes RED on:
    expected_max_sharpe, expected_max_z, deflation, trials_penalty) whose trial-count argument is
    not `bar_n(...)`, `BAR_N`, or a literal at or below BAR_N. A new file that brings its own
    trial count is caught here on its first commit.
+1b. LEN-SCALED MULTIPLICITY (principal 2026-10-14, "yes land my 5 trial bar"). A correction that
+   grows with the size of a collection, written as arithmetic rather than a bar call: Bonferroni
+   `alpha / len(x)` (and `p * len(x)`), Sidak `1 - (1 - a) ** (1 / len(x))` (and
+   `(1 - p) ** len(x)`), and Holm over a growing count `alpha / (len(x) - i)`. Pinned when the
+   count is `bar_n(...)`, `BAR_N`, or `min(count, bar_n(...))` (never above the fixed bar, never
+   above the count it replaced).
 2. LIFETIME UNION CHARGE in the sealed judge (`charged_lifetime_trials`). The sealed files cannot
    change without the laptop's re-sign, so a sealed site that the T8 patch owns is OWED: WARN
    until SEALED_DEADLINE, then FAIL. An owed sealed site with no named patch FAILs at once.
@@ -27,6 +33,7 @@ import argparse
 import ast
 import json
 import os
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -54,7 +61,35 @@ BAR_FUNCS: dict[str, tuple[int, tuple[str, ...]]] = {
     "deflated_t": (1, ("n_trials",)),
     "expected_max_t": (0, ("n_trials", "n")),
     "sr0": (0, ("n_trials",)),
+    # Bonferroni-charged release / regime gates (libs/research/release_gain): their count is a
+    # keyword-only `n_cells` / `n_trials`, so the positional index is out of reach on purpose.
+    "release_gain": (99, ("n_cells",)),
+    "min_detectable_ic": (1, ("n_cells",)),
+    "regime_placebo": (99, ("n_trials",)),
 }
+
+#: Names that read as a significance level (Bonferroni/Holm numerator) or a p-value
+#: (Bonferroni/Holm multiplier, Sidak base). Narrow on purpose: `x / len(x)` is a mean.
+_ALPHA_NAMES = {"alpha", "a", "q", "level", "sig", "fwer", "fdr"}
+#: Cheap lexical gate before a file is parsed for 1b: an alpha-like numerator over something,
+#: a Sidak power, or a min(1, ...) p-adjustment. The AST pass decides; this only skips files
+#: that cannot hold one (parsing every file made the fence ~12x slower).
+_MULT_HINTS: tuple[tuple[tuple[str, ...], re.Pattern[str]], ...] = (
+    (("alpha", "fwer", "fdr", "level", "sig"),
+     re.compile(r"(?:alpha|fwer|fdr|level|sig)\w*\s*/\s*\(?\s*[A-Za-z_]")),
+    (("q /", "q/"), re.compile(r"[ (,=]q\s*/\s*\(?\s*[A-Za-z_]")),
+    (("a /", "a/"), re.compile(r"[ (,=]a\s*/\s*\(?\s*(?:len|max|int)\(")),
+    ((".0",), re.compile(r"\.0\d+\s*/\s*\(?\s*[A-Za-z_]")),
+    (("**",), re.compile(r"\*\*\s*\(?\s*(?:1(?:\.0)?\s*/|len\()")),
+    (("min(",), re.compile(r"min\(\s*1(?:\.0)?\s*,[^)\n]*\*")),
+)
+
+
+def _mult_hint(text: str) -> bool:
+    return any(any(k in text for k in keys) and rx.search(text) for keys, rx in _MULT_HINTS)
+
+
+_P_NAMES = {"p", "pv", "pval", "pvalue", "p_value", "p_val", "p_raw", "praw", "p_t", "p_min"}
 
 #: Functions that compute a deflation ONLY TO REPORT IT beside the fixed bar, never to rule;
 #: each is reviewed and named here, so a new one cannot arrive unnoticed.
@@ -108,6 +143,9 @@ def _pinned(arg: ast.expr, scope: ast.AST | None = None, depth: int = 0) -> bool
         return bool(vals) and all(_pinned(v, scope, depth + 1) for v in vals)
     if isinstance(arg, ast.Call) and _callee(arg) == "bar_n":
         return True
+    if isinstance(arg, ast.Call) and _callee(arg) == "min" and arg.args:
+        # min(count, bar_n(...)) is never above the fixed bar
+        return any(_pinned(a, scope, depth) for a in arg.args)
     if isinstance(arg, ast.Name) and arg.id == "BAR_N":
         return True
     if isinstance(arg, ast.Attribute) and arg.attr == "BAR_N":
@@ -122,6 +160,7 @@ class _Scan(ast.NodeVisitor):
         self.stack: list[ast.FunctionDef | ast.AsyncFunctionDef] = []
         self.hits: list[tuple[int, str, str]] = []
         self.union = False
+        self.capped: set[int] = set()       # BinOps sitting directly inside min(1, ...)
 
     def _fn(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
         if node.name == "charged_lifetime_trials":
@@ -140,6 +179,9 @@ class _Scan(ast.NodeVisitor):
 
     def visit_Call(self, node: ast.Call) -> None:
         name = _callee(node)
+        if name == "min" and any(isinstance(a, ast.Constant) and a.value in (1, 1.0)
+                                 and not isinstance(a.value, bool) for a in node.args):
+            self.capped.update(id(a) for a in node.args if isinstance(a, ast.BinOp))
         if name in BAR_FUNCS:
             pos, kws = BAR_FUNCS[name]
             arg: ast.expr | None = node.args[pos] if len(node.args) > pos else None
@@ -152,6 +194,98 @@ class _Scan(ast.NodeVisitor):
                     and not reported:
                 self.hits.append((node.lineno, name, ast.unparse(arg)[:80]))
         self.generic_visit(node)
+
+    def visit_BinOp(self, node: ast.BinOp) -> None:
+        scope = self.stack[-1] if self.stack else None
+        found = _multiplicity(node, scope, id(node) in self.capped)
+        if found is not None and not (bool(self.stack) and (
+                self.stack[-1].name in BAR_FUNCS
+                or (self.rel, self.stack[-1].name) in REPORTED_ONLY)):
+            kind, count = found
+            if not _pinned(count, scope) and not _pinned_count(count, scope):
+                self.hits.append((node.lineno, kind, ast.unparse(node)[:80]))
+                return                         # one hit per expression, not per sub-node
+        self.generic_visit(node)
+
+
+def _pinned_count(e: ast.expr, scope: ast.AST | None) -> bool:
+    """The count inside a wrapper is pinned: max(1, bar_n(n)), int(BAR_N), bar_n(n) - i."""
+    if isinstance(e, ast.Call) and _callee(e) in {"max", "int", "float", "abs", "round"}:
+        return all(_pinned(a, scope) or _pinned_count(a, scope) or
+                   (isinstance(a, ast.Constant) and not _len_scaled(a, scope))
+                   for a in e.args) and any(_pinned(a, scope) or _pinned_count(a, scope)
+                                            for a in e.args)
+    if isinstance(e, ast.BinOp) and isinstance(e.op, (ast.Sub, ast.Add)):
+        return _pinned(e.left, scope) or _pinned_count(e.left, scope)
+    return False
+
+
+def _local_values(name: str, scope: ast.AST | None) -> list[ast.expr]:
+    if scope is None:
+        return []
+    vals = [n.value for n in ast.walk(scope) if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == name for t in n.targets)]
+    vals += [n.value for n in ast.walk(scope) if isinstance(n, ast.AnnAssign)
+             and isinstance(n.target, ast.Name) and n.target.id == name and n.value]
+    return vals
+
+
+def _len_scaled(e: ast.expr, scope: ast.AST | None = None, depth: int = 0) -> bool:
+    """A count that grows with a collection: len(x), or max/int/float/abs of one, or len(x) +- k,
+    or a local name assigned from one (any assignment -- one moving path is enough)."""
+    if isinstance(e, ast.Call):
+        name = _callee(e)
+        if name == "len":
+            return True
+        if name in {"max", "int", "float", "abs", "round"}:
+            return any(_len_scaled(a, scope, depth) for a in e.args)
+        return False
+    if isinstance(e, ast.BinOp) and isinstance(e.op, (ast.Sub, ast.Add)):
+        return _len_scaled(e.left, scope, depth)
+    if isinstance(e, ast.Name) and depth < 3:
+        return any(_len_scaled(v, scope, depth + 1) for v in _local_values(e.id, scope))
+    return False
+
+
+def _named(e: ast.expr, names: set[str]) -> bool:
+    if isinstance(e, ast.Name):
+        return e.id.lower() in names or e.id.lower().startswith(tuple(f"{n}_" for n in names))
+    if isinstance(e, ast.Attribute):
+        return _named(ast.Name(id=e.attr), names)
+    return False
+
+
+def _alpha_like(e: ast.expr) -> bool:
+    if isinstance(e, ast.Constant) and isinstance(e.value, float):
+        return 0.0 < e.value <= 0.2
+    if isinstance(e, ast.BinOp) and isinstance(e.op, ast.Sub) \
+            and isinstance(e.left, ast.Constant) and e.left.value == 1:
+        return _alpha_like(e.right) or _named(e.right, _P_NAMES)   # Sidak base (1 - a)
+    return _named(e, _ALPHA_NAMES)
+
+
+def _multiplicity(node: ast.BinOp, scope: ast.AST | None,
+                  capped: bool = False) -> tuple[str, ast.expr] | None:
+    """(kind, count expression) when `node` is a len-scaled multiplicity correction."""
+    op, left, right = node.op, node.left, node.right
+    holm = isinstance(right, ast.BinOp) and isinstance(right.op, ast.Sub)
+    if isinstance(op, ast.Div) and _alpha_like(left) and _len_scaled(right, scope):
+        return ("holm_len" if holm else "bonferroni_len"), right
+    if isinstance(op, ast.Mult) and capped:
+        # p * m only inside min(1, ...): the Bonferroni/Holm p-adjustment. A bare p * len(x) is
+        # a quantile index or an expected count far more often than a correction.
+        for p, m in ((left, right), (right, left)):
+            if _named(p, _P_NAMES) and _len_scaled(m, scope):
+                return ("holm_len" if isinstance(m, ast.BinOp) and isinstance(m.op, ast.Sub)
+                        else "bonferroni_len"), m
+    if isinstance(op, ast.Pow) and _alpha_like(left):
+        ex = right
+        if isinstance(ex, ast.BinOp) and isinstance(ex.op, ast.Div) \
+                and isinstance(ex.left, ast.Constant) and ex.left.value in (1, 1.0):
+            ex = ex.right                                 # (1 - a) ** (1 / m)
+        if _len_scaled(ex, scope):
+            return "sidak_len", ex
+    return None
 
 
 def _files(root: Path) -> list[Path]:
@@ -178,7 +312,8 @@ def scan(root: Path = ROOT) -> dict[str, Any]:
             text = p.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        if not any(f in text for f in (*BAR_FUNCS, "charged_lifetime_trials")):
+        if not (any(f in text for f in (*BAR_FUNCS, "charged_lifetime_trials"))
+                or ("len(" in text and _mult_hint(text))):
             continue                     # parse only files that can hold a bar call
         try:
             trees.append((rel, ast.parse(text)))

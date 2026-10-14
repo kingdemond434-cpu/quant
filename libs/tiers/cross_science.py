@@ -110,8 +110,10 @@ def spectral_lab(panel: Mapping[str, F], top: int = 10) -> list[dict[str, Any]]:
         red = x.var() * (1 - phi ** 2) / (1 + phi ** 2 - 2 * phi * np.cos(2 * np.pi * freqs))
         ratio = power / np.maximum(red, 1e-18)
         k = int(np.argmax(ratio))
-        # chi-square(2)/2: the 99.9% point, Bonferroni-ish over frequencies
-        crit = -math.log(0.001 / len(freqs))
+        # chi-square(2)/2: the 99.9% point, Bonferroni-ish over frequencies -- at the FIXED bar N
+        # (principal 2026-10-13), never above the frequencies scanned
+        from libs.research.trial_count_guard import bar_n
+        crit = -math.log(0.001 / min(len(freqs), bar_n(len(freqs))))
         if ratio[k] > crit:
             period = 1.0 / freqs[k]
             rows.append(_row("signal", [s], float(ratio[k]), f"red-noise AR(1) x{crit:.1f}",

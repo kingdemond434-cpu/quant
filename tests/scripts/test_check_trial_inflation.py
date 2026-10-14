@@ -112,3 +112,64 @@ def test_the_live_tree_passes_its_own_fence() -> None:
     doc = fence.judge(ROOT, now=NOW)
     assert _check(doc, "unpinned_bar_calls")["state"] == "OK", \
         _check(doc, "unpinned_bar_calls")["sites"][:5]
+
+
+# ---- 1b: len(...)-scaled multiplicity written as arithmetic (principal 2026-10-14) -----------
+
+def _one(tmp_path: Path, body: str) -> dict:
+    root = _tree(tmp_path, {"desks/mt5/research/screen.py": body})
+    return _check(fence.judge(root, now=NOW), "unpinned_bar_calls")
+
+
+def test_bonferroni_over_len_fails_unpinned(tmp_path: Path) -> None:
+    got = _one(tmp_path, "def f(cells, alpha=0.05):\n    return alpha / len(cells)\n")
+    assert got["state"] == "FAIL" and got["sites"][0]["call"] == "bonferroni_len"
+
+
+def test_bonferroni_through_a_local_count_and_a_p_adjustment_fail(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("def f(rows, p_raw):\n"
+                          "    cells = len(rows)\n"
+                          "    crit = 0.025 / cells\n"
+                          "    return crit, min(1.0, p_raw * cells)\n"))
+    assert got["state"] == "FAIL"
+    assert [s["call"] for s in got["sites"]] == ["bonferroni_len", "bonferroni_len"]
+
+
+def test_sidak_over_len_fails_unpinned(tmp_path: Path) -> None:
+    got = _one(tmp_path, "def f(xs, a):\n    return 1 - (1 - a) ** (1 / len(xs))\n")
+    assert got["state"] == "FAIL" and got["sites"][0]["call"] == "sidak_len"
+
+
+def test_holm_over_a_growing_count_fails_unpinned(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("def f(pvals, alpha):\n"
+                          "    m = len(pvals)\n"
+                          "    return [alpha / (m - i) for i in range(m)]\n"))
+    assert got["state"] == "FAIL" and got["sites"][0]["call"] == "holm_len"
+
+
+def test_a_release_gate_charged_over_its_cells_fails(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("def f(cells, ev, close):\n"
+                          "    return release_gain(ev, close, n_cells=len(cells))\n"))
+    assert got["state"] == "FAIL" and got["sites"][0]["call"] == "release_gain"
+
+
+def test_pinned_multiplicity_sites_pass(tmp_path: Path) -> None:
+    got = _one(tmp_path, (
+        "from libs.research.trial_count_guard import bar_n, BAR_N\n"
+        "def f(rows, p_raw, alpha, xs, a, ev, close):\n"
+        "    cells = len(rows)\n"
+        "    charged = min(cells, bar_n(cells))\n"
+        "    crit = 0.025 / charged\n"
+        "    adj = min(1.0, p_raw * charged)\n"
+        "    sid = 1 - (1 - a) ** (1 / bar_n(len(xs)))\n"
+        "    holm = [alpha / (BAR_N - i) for i in range(BAR_N)]\n"
+        "    g = release_gain(ev, close, n_cells=min(len(rows), bar_n(len(rows))))\n"
+        "    return crit, adj, sid, holm, g\n"))
+    assert got["state"] == "OK", got["sites"]
+
+
+def test_a_mean_or_a_quantile_is_not_a_correction(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("def f(v, p, total):\n"
+                          "    mean = total / len(v)\n"
+                          "    return mean, v[min(len(v) - 1, int(p * len(v)))]\n"))
+    assert got["state"] == "OK", got["sites"]

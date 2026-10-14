@@ -47,12 +47,18 @@ def test_the_planner_never_sees_a_return():
 
 def test_stratifying_beats_truncating_on_a_realistic_campaign():
     """The measurement the module exists for: min-length truncation spends the resource that buys
-    power (observations) to keep the one that does not (cohort size)."""
+    power (observations). Under the fixed bar (principal 2026-10-13) the cohort size no longer
+    costs power at all -- detection_power is IDENTICAL whatever the trial count, which is still
+    reported by the cohort -- so the window is the only lever and stratifying still wins on it."""
     lens = _realistic()
+    t_min = int(lens.min())
+    # the bar is the same whatever the count
+    assert detection_power(len(lens), t_min) == detection_power(MIN_COHORT, t_min)
+    assert detection_power(10_000, 1250) == detection_power(5, 1250)
     plan = plan_strata(lens)
-    truncated = len(lens) * detection_power(len(lens), int(lens.min()))
-    assert plan.expected_discoveries > 20 * max(truncated, 1e-9)
-    assert plan.retained_fraction > 0.75          # vs 18% under truncation
+    truncated = len(lens) * detection_power(len(lens), t_min)
+    assert plan.expected_discoveries > 3 * max(truncated, 1e-9)
+    assert plan.retained_fraction > 0.7           # vs 18% under truncation
     assert plan.n_tested > len(lens) // 2
 
 

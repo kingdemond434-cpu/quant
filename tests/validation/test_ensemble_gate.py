@@ -265,7 +265,9 @@ def test_reordering_the_same_legs_does_not_mint_a_fresh_declaration() -> None:
 
 
 def test_every_rule_tried_is_charged_as_a_trial() -> None:
-    """Searching over combination rules raises the ensemble's own bar. The search is not free."""
+    """Every rule tried is still CHARGED -- counted and reported as a trial -- but since 2026-10-13
+    (principal: "make sure the bars never raise never ever penalty never inflation due to trials")
+    the count never raises the ensemble's bar: its N is trial_count_guard.BAR_N."""
     book = weak_cohort(n=20, t=800, ann_sharpe=0.2, rho=0.0, seed=9)
     reg = PreRegistry(campaign="rule-search")
     decls = [reg.declare(EnsembleDeclaration(tuple(book), rule, _NOW, f"rule {rule}"))
@@ -279,8 +281,8 @@ def test_every_rule_tried_is_charged_as_a_trial() -> None:
 
     searched = score_ensemble(decls[0], book, registry=reg, pool_trials=20, n_boot=100)
     single = score_ensemble(solo, book, registry=one, pool_trials=20, n_boot=100)
-    assert searched.n_trials_charged > single.n_trials_charged
-    assert searched.dsr_threshold_sharpe > single.dsr_threshold_sharpe
+    assert searched.n_trials_charged > single.n_trials_charged      # the count is reported
+    assert searched.dsr_threshold_sharpe == single.dsr_threshold_sharpe  # the bar does not move
 
 
 def test_a_follow_on_campaign_cannot_buy_a_discount_by_opening_a_fresh_ledger() -> None:
@@ -288,9 +290,11 @@ def test_a_follow_on_campaign_cannot_buy_a_discount_by_opening_a_fresh_ledger() 
 
     A sealed registry refuses new declarations, so a desk that wants a fourth rule after seeing
     three results must open a NEW registry. If that registry started its count at one it would
-    charge FEWER trials than the campaign it descends from -- looking again would buy a DISCOUNT on
-    the bar, which is exactly backwards. `carried_trials` makes the follow-on strictly dearer, and
-    it lands in the verdict where an auditor can see whether it was paid.
+    charge FEWER trials than the campaign it descends from. `carried_trials` keeps the follow-on's
+    COUNT honest, and it lands in the verdict where an auditor can see whether it was paid.
+    TRANSFORMED 2026-10-13: under the fixed bar (principal: "make sure the bars never raise never
+    ever penalty never inflation due to trials") neither ledger moves the bar -- a fresh ledger
+    buys no discount because the carried one charges no premium. The counts are still reported.
     """
     book = weak_cohort(n=20, t=800, ann_sharpe=0.2, rho=0.0, seed=13)
     first = PreRegistry(campaign="round-1")
@@ -314,7 +318,7 @@ def test_a_follow_on_campaign_cannot_buy_a_discount_by_opening_a_fresh_ledger() 
     unpaid = score_ensemble(d3, book, registry=cheating, pool_trials=20, n_boot=100)
     assert paid.n_trials_charged == 24
     assert unpaid.n_trials_charged == 21
-    assert paid.dsr_threshold_sharpe > unpaid.dsr_threshold_sharpe
+    assert paid.dsr_threshold_sharpe == unpaid.dsr_threshold_sharpe
     assert paid.carried_trials == 3
     assert unpaid.carried_trials == 0     # visible in the artifact, which is the only defence
 

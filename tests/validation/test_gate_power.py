@@ -18,52 +18,56 @@ _N, _T = 420, 310
 
 
 def test_the_campaign_shape_cannot_resolve_a_world_class_edge():
-    """THE FINDING. A world-class systematic book runs a true annualised Sharpe of 2-3. At the
-    campaign's own shape the gate demands ~5 just to reach dsr>=0.95, so a genuine SR-2 strategy
-    clears it well under 1% of the time.
+    """THE FINDING, re-read under the fixed bar (principal 2026-10-13: "make sure the bars never
+    raise never ever penalty never inflation due to trials"). The hurdle at the campaign's shape
+    is the SAME whether the campaign tested 5, 421 or 10,000 candidates -- the bar's N is
+    trial_count_guard.BAR_N -- and the candidate count is still REPORTED beside it.
 
-    The consequence is the whole point: 0-of-420 is EXACTLY what an underpowered campaign returns
-    whether or not the 420 contained real edges, so the null result carries no information about
-    the price space and must not be read as 'crypto is picked clean'."""
+    What remains true is that the WINDOW decides: at T=310 a genuine SR-2 strategy clears the
+    fixed bar well under half the time, so a 0-of-N record on that window still says little
+    about the price space."""
+    from libs.research.trial_count_guard import BAR_N
     d = design_power(_N + 1, _T)
-    assert d["hurdle_annual_sharpe"] > 4.5
-    assert d["power_by_true_annual_sharpe"]["2"] < 0.05
-    assert d["power_by_true_annual_sharpe"]["3"] < 0.10
-    assert d["underpowered_below_annual_sharpe"] >= 4.0
+    assert d["n_trials"] == _N + 1                       # the count is reported...
+    assert d["bar_n"] == BAR_N                           # ...and the bar charges the fixed N
+    for n in (1, 5, 30, _N + 1, 10_000):
+        assert design_power(n, _T)["hurdle_annual_sharpe"] == d["hurdle_annual_sharpe"]
+    assert d["power_by_true_annual_sharpe"]["2"] < 0.5
+    assert d["underpowered_below_annual_sharpe"] >= 2.0
 
 
 def test_shape_moves_the_hurdle_and_nothing_is_relaxed_to_do_it():
-    """The only legitimate response to an unpassable gate. Fewer, mechanism-motivated candidates
-    over longer history buy resolution while every threshold stays where it is -- lowering the
-    0.95 tolerance instead would manufacture survivors."""
+    """The only legitimate response to an unpassable gate is a longer window; every threshold
+    stays where it is. Narrowing the campaign no longer moves the hurdle at all, because a wider
+    one never raised it (fixed bar N, principal 2026-10-13)."""
     wide_short = dsr_hurdle_annual(_N, _T)
     narrow_long = dsr_hurdle_annual(30, 1250)
     assert narrow_long < wide_short / 2.0
-    # both knobs pull independently, so neither alone is the answer
-    assert dsr_hurdle_annual(30, _T) < wide_short          # narrowing alone helps
+    assert dsr_hurdle_annual(30, _T) == wide_short         # the count buys and costs nothing
     assert dsr_hurdle_annual(_N, 1250) < wide_short        # lengthening alone helps
+    assert dsr_hurdle_annual(_N, 1250) == narrow_long
 
 
 def test_the_design_table_does_not_inherit_the_certifiers_trial_floor():
-    """REGRESSION PIN, on a defect this file's first draft shipped. The table applied
-    certify_gauntlet's own _FAMILY_TRIAL_BUDGET=120 to every cell, collapsing N=100/30/10/5 to a
-    single identical number -- which reads as 'narrowing a campaign below 120 buys nothing' and
-    would have argued the desk out of its only working lever. Production callers pass the real
-    candidate count with no floor (run_discovery n_trials=len(lib), run_crypto_portfolio
-    matrix.shape[1]), so the design question must use N directly."""
-    t = design_power(_N + 1, _T)["alternative_shapes"]["T=310"]
-    assert t["N=5"] < t["N=10"] < t["N=30"] < t["N=100"] < t["N=420"]
+    """REGRESSION PIN. The table passes each N directly (no _FAMILY_TRIAL_BUDGET floor) and,
+    under the fixed bar, every N in a row prices the IDENTICAL hurdle: a trial count neither
+    raises nor lowers the bar. A row that stops being flat means a count got back into the bar."""
+    table = design_power(_N + 1, _T)["alternative_shapes"]
+    for row in table.values():
+        vals = list(row.values())
+        assert len(vals) == 5 and all(v == vals[0] for v in vals), row
+    t310, t1250 = table["T=310"]["N=420"], table["T=1250"]["N=420"]
+    assert t1250 < t310                                   # the window still moves it
 
 
 def test_the_hurdle_tracks_the_gate_rather_than_restating_it():
-    """If the hurdle were a hardcoded 5.04 it would drift away from the gate the first time
-    anything upstream changed, and the table would confidently describe a gate that no longer
-    exists. It is derived from expected_max_sharpe and _DSR_THRESHOLD, so it moves with them."""
+    """If the hurdle were a hardcoded literal it would drift away from the gate the first time
+    anything upstream changed. It is derived from expected_max_sharpe at the fixed bar N and
+    _DSR_THRESHOLD, so it moves with T and with them -- and never with the trial count."""
     from libs.autodiscovery.validation import _DSR_THRESHOLD
     assert design_power(_N + 1, _T)["dsr_threshold"] == _DSR_THRESHOLD
-    # monotone in both arguments, which a constant could not be
     assert dsr_hurdle_annual(_N, _T) > dsr_hurdle_annual(_N, _T * 2)
-    assert dsr_hurdle_annual(_N, _T) > dsr_hurdle_annual(_N // 4, _T)
+    assert dsr_hurdle_annual(_N, _T) == dsr_hurdle_annual(_N // 4, _T)
 
 
 # ---- gap #71's premise, corrected ---------------------------------------------------------------

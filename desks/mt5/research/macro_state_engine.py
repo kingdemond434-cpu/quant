@@ -2210,7 +2210,10 @@ def regime_children(specs: list[LatentSpec], series_root: Path, state: dict[str,
             known = series.reindex(series.index.union(idx)).ffill().reindex(idx)
             mask = cm.ALT_OPS[op](known.astype(float), 0.0).to_numpy(dtype=bool)
             inputs.append((cand, (pos, ret, mask)))
-    n_trials = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
+    # Fixed bar N (principal 2026-10-13), never above the children actually tested this pass.
+    from libs.research.trial_count_guard import bar_n
+    n_tested = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
+    n_trials = min(n_tested, bar_n(n_tested))
     passed: list[dict[str, Any]] = []
     gates: list[dict[str, Any]] = []
     by_family: dict[str, int] = {}
