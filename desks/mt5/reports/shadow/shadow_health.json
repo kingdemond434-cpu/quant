@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-13T22:57:30+00:00",
+  "updated_at": "2026-10-14T00:55:16+00:00",
   "configured_sleeves": 698,
   "represented_sleeves": 698,
   "certified_sleeves_total": 974,
@@ -9,19 +9,19 @@
   "n_mechanisms": 11,
   "retired_shadow_sleeves": 148,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 625,
+  "sleeves_with_forward_trades": 626,
   "zero_trade_clocks": {
-    "count": 73,
+    "count": 72,
     "by_status": {
-      "ACTIVE": 62,
+      "ACTIVE": 61,
       "BLOCKED_NO_BARS": 1,
       "IDENTITY_BROKEN": 10
     },
-    "age_measured": 73,
-    "median_age_days": 6.448,
+    "age_measured": 72,
+    "median_age_days": 6.531,
     "mature_14d_without_trade": 18,
-    "fresh_attempts": 63,
-    "naturally_inactive": 62,
+    "fresh_attempts": 62,
+    "naturally_inactive": 61,
     "suppressed_or_unproven": 11,
     "suppressed_examples": [
       "UNKNOWN",
@@ -43,13 +43,15 @@
     "128 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 4009.805,
+  "seconds": 3789.003,
   "gateway_armed": true,
   "promoted_live_sleeves": [
-    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
   ],
   "promoted_live_certificate_rows": [
-    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
   ],
   "live_exposure_aliases": {},
   "status": "ENROLMENT_GAP"
