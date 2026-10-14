@@ -190,6 +190,21 @@
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
    }
+  },
+  "state_gate_proposer": {
+   "hypothesis": "Gating price-only base families by a market STATE read off prices (FX+gold panel phase synchronisation with the direction fixed by the base's mechanism, or the symbol's own low permutation entropy) finds entries that pay where the ungated base does not, at one charged trial per (wrapper, base, symbol) and no gate-parameter search.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "minted",
+    "better": "up",
+    "organ": "report:STATE_GATE_PROPOSER.json"
+   },
+   "falsifier": {
+    "metric": "grid_total",
+    "op": "==",
+    "threshold": 0,
+    "after": "24h window: the grid is empty, so no hypothesis-lane H1 instrument reached the wrappers and the leg tests nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

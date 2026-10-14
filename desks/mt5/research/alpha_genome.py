@@ -65,6 +65,33 @@ MECHANISM_CLASS: dict[str, str] = {
     "regime_transition": "regime", "drawdown_conditional": "regime", "ensemble": "ensemble",
     "discovered": "discovered", "generic": "generic", "fair_value_gap": "reversion",
     "dav_range_filter_adx": "breakout",
+    # THE 35 FAMILIES THE REGISTRY CARRIED UNCLASSIFIED (2026-10-13, principal: "all certs never
+    # unmeasured excuse"). Each read from its own family function, declared by its cause. A
+    # family that combines others (joint_genome) is an ensemble.
+    "adx_channel_hybrid": "breakout", "lvc_asia_london": "breakout",
+    "opening_range": "breakout", "volatility_squeeze": "breakout",
+    "htf_anchor_trend": "trend", "pullback_entry": "trend", "trend_ma_cross": "trend",
+    "session_handoff": "trend", "style_premia": "trend",
+    "engulfing_reversal": "reversion", "pin_bar_reversal": "reversion",
+    "mean_reversion_bollinger": "reversion", "mean_reversion_rsi": "reversion",
+    "range_reversion": "reversion", "retail_overlap_reversal": "reversion",
+    "liquidity_gamma_reversal": "reversion", "ict_fvg": "reversion",
+    "overnight_drift": "calendar", "jump": "volatility",
+    "cot_change_fade": "positioning", "cot_change_momentum": "positioning",
+    "cot_comm_follow": "positioning", "cot_net_fade": "positioning",
+    "comex_settlement": "plumbing", "fx_fixing_reversal": "plumbing",
+    "forced_flow": "plumbing", "hedging_demand_close": "plumbing",
+    "execution_state": "microstructure", "volume_spike": "microstructure",
+    "lead_lag": "residual", "triangle": "residual", "usd_session_shock": "event",
+    # exit_operated is an exit OPERATOR over a textbook wrappable base (htf_anchor_proposer
+    # wraps trend/breakout cells), so its cause is its base's: textbook, never an ensemble lift.
+    # formula is the published 101-alphas price-volume library (axis_registry: not a family):
+    # a residual-style factor, adjacent -- never "discovered" (audit of #387).
+    "exit_operated": "trend", "joint_genome": "ensemble", "formula": "residual",
+    # The state-gated wrappers (2026-10-14) condition a base on a market STATE: regime, like
+    # regime_transition. Their bases' classes are declared above (the 35-family block), and
+    # family_state_gates.sync_gated reads the gate DIRECTION off them.
+    "sync_gated": "regime", "entropy_gated": "regime",
 }
 
 DIRECTION_BIAS = {"trend": "with", "breakout": "with", "reversion": "against",
