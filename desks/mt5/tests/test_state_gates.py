@@ -100,20 +100,48 @@ def test_truncating_after_t_leaves_r_and_entropy_unchanged() -> None:
 
 
 # ---------------------------------------------------------------- (c) mechanism-fixed gate ----
-@pytest.mark.parametrize(("base", "panel", "kept"), [
-    ("trend_ma_cross", "locked", True), ("trend_ma_cross", "random", False),
-    ("session_range_breakout", "locked", True),
-    ("mean_reversion_rsi", "locked", False), ("mean_reversion_rsi", "random", True),
-])
-def test_gate_direction_is_fixed_by_the_bases_mechanism(monkeypatch, base, panel, kept) -> None:
+def _scripted(monkeypatch, base: str, rs: list[float], **kw):
+    """Run sync_gated with R at the k-th signal bar scripted to rs[k]."""
     idx = _stamps()
-    times = [idx[300], idx[400], idx[500]]
+    times = [idx[150 + 8 * k] for k in range(len(rs))]
+    by = {t.value: r for t, r in zip(times, rs, strict=True)}
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
-    monkeypatch.setattr(fsg, "load_panel", _locked if panel == "locked" else
-                        (lambda: _random(200, seed=5)))
-    out = fsg.family_sync_gated(_bars(np.linspace(1.0, 1.1, N_BARS)), base_family=base,
-                                window=128, r_threshold=0.5, min_symbols=12)
-    assert [s.time for s in out] == (times if kept else [])
+    monkeypatch.setattr(fsg, "load_panel", _locked)
+    monkeypatch.setattr(fsg, "kuramoto_r", lambda panel, t, **_k: by[pd.Timestamp(t).value])
+    out = fsg.family_sync_gated(_bars(np.linspace(1.0, 1.1, N_BARS)), base_family=base, **kw)
+    return times, [s.time for s in out]
+
+
+@pytest.mark.parametrize("base", ["trend_ma_cross", "session_range_breakout",
+                                  "mean_reversion_rsi"])
+def test_the_gate_is_a_tail_of_rs_own_earlier_history(monkeypatch, base) -> None:
+    rs = list(np.random.default_rng(7).uniform(0.2, 0.4, 45))
+    times, kept = _scripted(monkeypatch, base, rs, tail=1 / 3, min_history=30)
+    high = fsg.mechanism_class(base) in fsg.SYNC_HIGH
+    expect = []
+    for k in range(30, len(rs)):
+        below = sum(1 for h in rs[:k] if h < rs[k]) / k
+        if (below >= 2 / 3) if high else (below <= 1 / 3):
+            expect.append(times[k])
+    assert kept == expect and 0 < len(kept) < 15
+    # Nothing is kept before min_history earlier observations exist.
+    assert all(t >= times[30] for t in kept)
+
+
+def test_a_rising_sync_is_all_trend_and_no_reversion(monkeypatch) -> None:
+    rs = [0.2 + 0.005 * k for k in range(40)]
+    times, kept = _scripted(monkeypatch, "trend_ma_cross", rs, min_history=30)
+    assert kept == times[30:]
+    _, kept = _scripted(monkeypatch, "mean_reversion_rsi", rs, min_history=30)
+    assert kept == []
+
+
+def test_the_gate_reads_no_later_signal(monkeypatch) -> None:
+    """Dropping every signal after the k-th leaves the decisions up to k unchanged."""
+    rs = list(np.random.default_rng(3).uniform(0.2, 0.4, 50))
+    _, full = _scripted(monkeypatch, "trend_ma_cross", rs, min_history=30)
+    cut_t, cut = _scripted(monkeypatch, "trend_ma_cross", rs[:42], min_history=30)
+    assert [t for t in full if t <= cut_t[-1]] == cut
 
 
 def test_any_other_mechanism_class_returns_nothing(monkeypatch) -> None:
@@ -130,8 +158,9 @@ def test_any_other_mechanism_class_returns_nothing(monkeypatch) -> None:
 
 
 def test_mechanism_classes_are_declared_for_every_base_and_wrapper() -> None:
-    from research import alpha_genome as ag
     import state_gate_proposer as P
+
+    from research import alpha_genome as ag
     for b in P.BASES:
         assert ag.MECHANISM_CLASS[b] in {"trend", "breakout", "reversion"}
     assert ag.MECHANISM_CLASS["sync_gated"] == ag.MECHANISM_CLASS["entropy_gated"] == "regime"
@@ -188,14 +217,54 @@ def test_proposer_mints_one_cell_per_wrapper_base_symbol_and_charges_it(monkeypa
     monkeypatch.setattr(proposer_common, "donation_counts",
                         lambda: {"donated": seen.get("n", 0)})
     monkeypatch.setattr(P, "REPORT", tmp_path / "STATE_GATE_PROPOSER.json")
-    monkeypatch.setattr(P, "CURSOR", tmp_path / "cursor.json")
+    monkeypatch.setattr(P, "CHARGED", tmp_path / "charged.json")
     monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 7)
     assert P.main(["--once"]) == 0
     assert seen == {"source": "state_gate_proposer", "n": 7, "tests_run": 7}
     import json
     rep = json.loads((tmp_path / "STATE_GATE_PROPOSER.json").read_text("utf-8"))
     assert rep["trials_charged"] == 7 and rep["grid_total"] == expect
-    assert json.loads((tmp_path / "cursor.json").read_text("utf-8"))["at"] == 7
+    assert len(json.loads((tmp_path / "charged.json").read_text("utf-8"))["cells"]) == 7
+
+
+def test_each_cell_is_charged_exactly_once_across_passes(monkeypatch, tmp_path) -> None:
+    """Audit of #395: re-donating the grid every hour re-charged ~7,680 trials a day."""
+    import json
+
+    import proposer_common
+    import state_gate_proposer as P
+    monkeypatch.setattr(P, "store_symbols", lambda: ["EURUSD", "XAUUSD"])
+    monkeypatch.setattr(P, "allowed", lambda sym, fam: True)
+    monkeypatch.setattr(P, "sync_applies", lambda sym: True)
+    grid, _ = P.build_grid(P.store_symbols())
+    charged: list[int] = []
+    monkeypatch.setattr(proposer_common, "donate",
+                        lambda source, candidates, tests_run: (charged.append(tests_run)
+                                                               or tmp_path / "c.json"))
+    monkeypatch.setattr(proposer_common, "donation_counts", lambda: {})
+    monkeypatch.setattr(P, "REPORT", tmp_path / "r.json")
+    monkeypatch.setattr(P, "CHARGED", tmp_path / "charged.json")
+    monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 1500)
+    for _ in range(3):
+        assert P.main(["--once"]) == 0
+    assert charged == [len(grid)]                  # pass 1 charges the grid; 2 and 3 nothing
+    assert json.loads((tmp_path / "r.json").read_text("utf-8"))["status"] == "ALL_CHARGED"
+    monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 3)
+    (tmp_path / "charged.json").unlink()
+    charged.clear()
+    for _ in range(-(-len(grid) // 3) + 2):
+        P.main(["--once"])
+    assert sum(charged) == len(grid) and max(charged) == 3
+
+
+def test_sync_is_never_minted_on_a_weekend_trading_crypto_cfd(monkeypatch) -> None:
+    import state_gate_proposer as P
+    monkeypatch.setattr(P, "allowed", lambda sym, fam: True)
+    monkeypatch.setattr(P, "sync_applies", lambda sym: sym != "BTCUSD")
+    grid, refused = P.build_grid(["BTCUSD", "EURUSD"])
+    assert not [c for c in grid if c["family"] == "sync_gated" and c["symbol"] == "BTCUSD"]
+    assert [c for c in grid if c["family"] == "entropy_gated" and c["symbol"] == "BTCUSD"]
+    assert refused["sync_gated:off_panel_session"] == len(P.bases_for("sync_gated"))
 
 
 # ----------------------------------------------------------------- (f) too few panel members ----
@@ -210,12 +279,12 @@ def test_too_few_panel_symbols_drops_the_signal(monkeypatch) -> None:
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base([t]))
     monkeypatch.setattr(fsg, "load_panel", lambda: _locked(5))
     assert fsg.family_sync_gated(_bars(np.linspace(1.0, 1.1, N_BARS)),
-                                 base_family="trend_ma_cross") == []
+                                 base_family="trend_ma_cross", min_history=0) == []
 
 
 def test_families_are_registered_where_the_gauntlet_looks() -> None:
-    from mt5desk.family_alt_series import _UNWRAPPABLE
     from mt5desk.families_orthogonal import FAMILY_INPUTS, ORTHOGONAL_FAMILIES
+    from mt5desk.family_alt_series import _UNWRAPPABLE
     from research.axis_registry import FAMILY_TABLE
     from research.orthogonal_sweep import NOT_SOURCED_HERE
     for fam in ("sync_gated", "entropy_gated"):

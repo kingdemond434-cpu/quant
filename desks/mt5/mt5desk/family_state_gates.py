@@ -15,13 +15,20 @@ docket; each cell here asks one question: does the base's entry pay in this stat
 
       R near 1 is a panel moving in lock-step (one common driver); R near 1/sqrt(N) is a panel
       whose members cycle independently. The phase at the window's END is the causal choice and
-      carries the Hilbert transform's endpoint bias; that bias is the same for every member and
-      every t, so it shifts R's level, not its ordering through time.
+      carries the Hilbert transform's endpoint bias, which depends on each member's own spectrum,
+      so R's level is not comparable across panels or eras -- which is why the gate reads R's
+      RANK, never its level (below).
+
+      THE GATE IS A TAIL OF R's OWN HISTORY (audit of #395). With ~22 members R's median sits near
+      0.30, so a fixed 0.5 cut kept 88% of a reversion base's signals -- a near-copy of its
+      ungated control, not an independent bet. Each signal's R is ranked against the R read at
+      the base's EARLIER signals only (at least `min_history` of them; before that, no signal is
+      kept), and the signal is kept in the `tail` of that distribution.
 
       THE GATE DIRECTION IS FIXED BY THE BASE'S MECHANISM (research/alpha_genome.MECHANISM_CLASS),
       so no regime trial is spent choosing it: a trend or breakout base needs a common driver to
-      carry the move and is kept where R >= r_threshold; a reversion base needs idiosyncratic,
-      self-correcting noise and is kept where R < r_threshold; any other class returns [].
+      carry the move and is kept in the TOP tail of R; a reversion base needs idiosyncratic,
+      self-correcting noise and is kept in the BOTTOM tail; any other class returns [].
 
   entropy_gated   (row 88). Bandt-Pompe permutation entropy of the symbol's own closes: ordinal
       patterns of order m (delay 1), normalised by log m!, over a trailing `window` of patterns,
@@ -203,11 +210,13 @@ def family_sync_gated(
     base_family: str = "",
     base_params: dict[str, Any] | None = None,
     window: int = 128,
-    r_threshold: float = 0.5,
+    tail: float = 1.0 / 3.0,
+    min_history: int = 30,
     min_symbols: int = 12,
 ) -> list[Signal]:
-    """`base_family`'s signals kept where the panel's Kuramoto R at signal time sits on the side
-    its mechanism class needs: trend/breakout R >= r_threshold, reversion R < r_threshold."""
+    """`base_family`'s signals kept where the panel's Kuramoto R at signal time ranks in the tail
+    its mechanism class needs, against R at the base's earlier signals only: trend/breakout the
+    top `tail`, reversion the bottom `tail`."""
     mech = mechanism_class(base_family)
     if mech not in SYNC_HIGH and mech not in SYNC_LOW:
         return []
@@ -217,20 +226,30 @@ def family_sync_gated(
     panel = load_panel()
     if len(panel) < max(2, int(min_symbols)):
         return []
-    thr = float(r_threshold)
+    q = float(tail)
+    if not 0.0 < q < 1.0:
+        return []
+    need = max(1, int(min_history))
     keep: list[Signal] = []
     memo: dict[int, float | None] = {}
-    for s in sigs:
-        key = _ns(s.time)
-        if key is None:
-            continue
+    timed = sorted(((k, s) for s in sigs if (k := _ns(s.time)) is not None),
+                   key=lambda ks: ks[0])
+    history: list[float] = []          # R at every STRICTLY EARLIER signal bar, in time order
+    pending: tuple[int, float] | None = None
+    for key, s in timed:
+        if pending is not None and pending[0] != key:
+            history.append(pending[1])  # a bar's R joins the history once its bar has passed
+            pending = None
         if key not in memo:
             memo[key] = kuramoto_r(panel, s.time, window=window, min_symbols=min_symbols)
         r = memo[key]
         if r is None:
             continue
-        if (r >= thr) if mech in SYNC_HIGH else (r < thr):
-            keep.append(s)
+        pending = (key, r)
+        if len(history) >= need:
+            below = sum(1 for h in history if h < r) / len(history)
+            if (below >= 1.0 - q) if mech in SYNC_HIGH else (below <= q):
+                keep.append(s)
     return keep
 
 
