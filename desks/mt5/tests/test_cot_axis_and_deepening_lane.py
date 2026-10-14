@@ -201,8 +201,157 @@ def test_the_worker_purges_queued_share_cfd_tasks_at_start(
     assert {r["id"] for r in ledger} == {dw.task_id(t) for t in tasks[:2]}
     # ONE-SHOT: a second pass finds nothing and writes nothing.
     before = queue.read_bytes()
-    assert dw.purge_off_lane() == {"purged": 0, "struck": 0, "status": "CLEAN"}
+    assert dw.purge_off_lane() == {"purged": 0, "struck": 0, "waiting": 0, "status": "CLEAN"}
     assert queue.read_bytes() == before
+
+
+@pytest.fixture(autouse=True)
+def _private_job_locks(tmp_path, monkeypatch):
+    """The purge takes the compiler's job lock; keep it out of the real data/.job_locks."""
+    import job_lock
+    monkeypatch.setattr(job_lock, "LOCK_ROOT", tmp_path / "job_locks")
+
+
+def _queue(tmp_path, monkeypatch, tasks: list[dict]):
+    queue = tmp_path / "deepen.json"
+    worked = tmp_path / "worked.jsonl"
+    queue.write_text(json.dumps({"built_at": "x", "tasks": tasks}), "utf-8")
+    monkeypatch.setattr(dw, "DEEPEN", queue)
+    monkeypatch.setattr(dw, "WORKED", worked)
+    return queue, worked
+
+
+_MIXED = [
+    {"source": "seasonality", "title": "XAUUSD_H1 bullish in month 10", "url": "",
+     "symbols": ["XAUUSD"]},
+    {"source": "world", "title": "EURUSD drifts", "url": "", "symbols": ["EURUSD"]},
+    {"source": "seasonality", "title": "Airbnb_H1 bullish in month 10", "url": "",
+     "symbols": ["Airbnb"]},
+]
+
+
+@pytest.mark.parametrize("state", ["missing", "unreadable", "mid_write", "not_an_object"])
+def test_an_empty_registry_purges_nothing_and_writes_no_final_line(
+        tmp_path, monkeypatch, state) -> None:
+    """MF1 (audit COT_AXIS_DEEPENING_31eb89f3d): with no registry every symbol reads
+    UNCLASSIFIED, and gold/EURUSD were refused for good. Now it is UNMEASURED: nothing purged,
+    nothing written, the queue untouched."""
+    up = mcc._universe_policy()
+    reg = tmp_path / "universe.json"
+    if state == "unreadable":
+        reg.write_bytes(b"\xff\xfe not json")
+    elif state == "mid_write":
+        reg.write_text('{"XAUUSD": {"asset_class": "Comm', "utf-8")
+    elif state == "not_an_object":
+        reg.write_text("[]", "utf-8")
+    monkeypatch.setattr(up, "UNIVERSE", reg)
+    queue, worked = _queue(tmp_path, monkeypatch, _MIXED)
+    before = queue.read_bytes()
+    note = dw.purge_off_lane()
+    assert note["status"].startswith("UNMEASURED") and note["purged"] == 0
+    assert queue.read_bytes() == before
+    assert not worked.exists()
+    # And the worker's own in-memory filter refuses nothing either: the tasks WAIT this pass.
+    kept, refused, waiting = dw.split_off_lane(_MIXED)
+    assert refused == [] and len(waiting) == 3 and kept == []
+    assert dw.ledger_ids() == (set(), set())
+
+
+def test_an_unclassified_task_waits_and_is_retried_once_classified(
+        tmp_path, monkeypatch, registry) -> None:
+    """UNCLASSIFIED is retryable, like a seat outage: one non-terminal line with a remedy, the
+    task stays queued, and it is worked on the first pass the registry classifies it."""
+    up = mcc._universe_policy()
+    task = {"source": "world", "title": "NEWSYM rallies into the fix", "url": "",
+            "symbols": ["NEWSYM"]}
+    queue, worked = _queue(tmp_path, monkeypatch, [task])
+    note = dw.purge_off_lane()
+    assert note["purged"] == 0 and note["waiting"] == 1
+    assert [t["title"] for t in json.loads(queue.read_text("utf-8"))["tasks"]] == [task["title"]]
+    lines = [json.loads(x) for x in worked.read_text("utf-8").splitlines()]
+    assert len(lines) == 1 and dw.is_lane_wait(lines[0]["disposition"])
+    assert "remedy: none" not in lines[0]["disposition"]
+    assert "classifies" in lines[0]["retry_action"]
+    # NOT terminal for the worker, the deep-forest reader or the compiler's index.
+    terminal, outage = dw.ledger_ids()
+    assert dw.task_id(task) not in terminal | outage
+    assert dw.task_id(task) not in dw.worked_ids()
+    monkeypatch.setattr(mcc, "DEEPEN_WORKED", worked)
+    assert dw.task_id(task) not in mcc._deepening_state()[0]
+    # Written ONCE: a second pass adds no line.
+    dw.purge_off_lane()
+    assert len(worked.read_text("utf-8").splitlines()) == 1
+    # Classified as Forex -> worked; classified as a share CFD -> then refused finally.
+    reg = json.loads(up.UNIVERSE.read_text("utf-8"))
+    up.UNIVERSE.write_text(json.dumps({**reg, "NEWSYM": {"asset_class": "Forex"}}), "utf-8")
+    kept, refused, waiting = dw.split_off_lane([task])
+    assert [t["title"] for t in kept] == [task["title"]] and not refused and not waiting
+    up.UNIVERSE.write_text(json.dumps({**reg, "NEWSYM": {"asset_class": "Equities"}}), "utf-8")
+    assert dw.purge_off_lane()["purged"] == 1
+    assert json.loads(queue.read_text("utf-8"))["tasks"] == []
+
+
+def test_a_share_cfd_task_is_still_refused_finally(tmp_path, monkeypatch, registry) -> None:
+    queue, worked = _queue(tmp_path, monkeypatch, _MIXED)
+    note = dw.purge_off_lane()
+    assert note["purged"] == 1 and note["status"] == "PURGED"
+    lines = [json.loads(x) for x in worked.read_text("utf-8").splitlines()]
+    assert [r["disposition"].split(":")[0] for r in lines] == ["REFUSED_LANE"]
+    assert dw.task_id(_MIXED[2]) in dw.ledger_ids()[0]
+    assert [t["title"] for t in json.loads(queue.read_text("utf-8"))["tasks"]] == [
+        "XAUUSD_H1 bullish in month 10", "EURUSD drifts"]
+
+
+def test_the_purge_defers_while_the_compiler_holds_the_queue_writer_lock(
+        tmp_path, monkeypatch, registry) -> None:
+    import job_lock
+    queue, worked = _queue(tmp_path, monkeypatch, _MIXED)
+    before = queue.read_bytes()
+    with job_lock.exclusive_job("miner_candidate_compiler", account=False) as held:
+        assert held
+        note = dw.purge_off_lane()
+    assert note["status"].startswith("DEFERRED") and note["purged"] == 0
+    assert queue.read_bytes() == before and not worked.exists()
+    assert dw.purge_off_lane()["status"] == "PURGED"
+
+
+def test_the_purge_lock_never_writes_the_compilers_admission_ledger(
+        tmp_path, monkeypatch) -> None:
+    import job_lock
+    monkeypatch.setattr(job_lock, "_peaks_path", lambda name: tmp_path / f"{name}.peaks.json")
+    with job_lock.exclusive_job("miner_candidate_compiler", account=False) as held:
+        assert held
+    assert not (tmp_path / "miner_candidate_compiler.peaks.json").exists()
+
+
+def test_the_compiler_with_an_empty_registry_refuses_nothing(tmp_path, monkeypatch) -> None:
+    """SF: an empty registry at enqueue refused every task for that pass. Now nothing is
+    refused, `lane_check` says UNMEASURED, and a seasonality row is held, not minted."""
+    up = mcc._universe_policy()
+    monkeypatch.setattr(up, "UNIVERSE", tmp_path / "absent_universe.json")
+    assert mcc.lane_split(["XAUUSD", "Airbnb", "NOTREAL"]) == (["XAUUSD", "Airbnb", "NOTREAL"], [])
+    out, deepen = _run_compiler(tmp_path, monkeypatch, {"EURUSD", "XAUUSD", "Airbnb"}, {
+        "world": [{"title": "EURUSD drifts in a way nobody named", "symbols": ["EURUSD"],
+                   "url": "https://example.invalid/b"},
+                  {"title": "Airbnb drifts higher into summer bookings", "symbols": ["Airbnb"],
+                   "url": "https://example.invalid/a"}],
+        "seasonality": [_season("XAUUSD_H1", "bullish")]})
+    assert deepen["n_lane_refused"] == 0 and deepen["lane_refused"] == []
+    assert deepen["lane_check"].startswith("UNMEASURED")
+    titles = {t["title"] for t in deepen["tasks"]}
+    assert {"EURUSD drifts in a way nobody named",
+            "Airbnb drifts higher into summer bookings"} <= titles
+    assert out["hypotheses"] == []                         # no cell minted on an absence
+    assert "lane_refused" not in out["per_source"]["world"]
+
+
+def test_the_compiler_queues_an_unclassified_task_waiting_not_refused(
+        tmp_path, monkeypatch, registry) -> None:
+    _out, deepen = _run_compiler(tmp_path, monkeypatch, registry | {"NOTREAL"}, {"world": [
+        {"title": "NOTREAL rallies", "symbols": ["NOTREAL"], "url": "https://example.invalid/n"}]})
+    assert deepen["n_lane_refused"] == 0 and deepen["lane_check"] == "MEASURED"
+    [task] = deepen["tasks"]
+    assert task["lane_waiting"] == ["NOTREAL"] and task["symbols"] == ["NOTREAL"]
 
 
 def test_a_dry_run_purge_writes_nothing(tmp_path, monkeypatch, registry) -> None:

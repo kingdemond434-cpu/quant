@@ -46,6 +46,14 @@ WINDOW_DAYS = 7
 SEAT_SOURCES = frozenset({"deepseek", "kimi_k3_deep_forest"})
 
 
+#: Worked-ledger lines that record a WAIT, never a decision: the seat outage (retried once a seat
+#: exists) and the UNCLASSIFIED lane hold (retried once the broker registry classifies the
+#: symbol). One tuple, read by this compiler's terminal index and by `deepening_worker`, so the
+#: two can never disagree about which lines are final.
+NON_TERMINAL_DISPOSITIONS = ("BLOCKED_SEAT_UNAVAILABLE:", "REJECTED: seat error:",
+                             "WAITING_LANE_UNCLASSIFIED:")
+
+
 def _deepening_task_id(source: str, row: dict) -> str:
     """Use the deepening worker's durable row identity exactly."""
     title = str(row.get("title") or row.get("description") or "")[:300]
@@ -72,8 +80,7 @@ def _deepening_state() -> tuple[dict[str, str], dict[str, list[dict]]]:
                 disposition = str(item.get("disposition") or "")
                 if not tid or not disposition:
                     continue
-                if (disposition.startswith("BLOCKED_SEAT_UNAVAILABLE:")
-                        or disposition.startswith("REJECTED: seat error:")):
+                if disposition.startswith(NON_TERMINAL_DISPOSITIONS):
                     continue
                 terminal[tid] = disposition
     except OSError:
@@ -703,8 +710,17 @@ def lane_split(symbols: list[str], family: object = None) -> tuple[list[str], li
     families, and an UNCLASSIFIED symbol in none -- absence from the registry is not permission.
     `family=None` asks the statistical question, which is what a calendar cell or a deepening task
     is. Decided by `universe_policy.may_hypothesise`, never by a list kept here.
+
+    AN EMPTY REGISTRY REFUSES NOTHING (audit COT_AXIS_DEEPENING_31eb89f3d MF1/SF, L1.28a). When
+    universe.json is missing, unreadable or caught mid-write every symbol reads UNCLASSIFIED, and
+    a refusal written from that would be an absence recorded as a verdict. So the split is not
+    made: every symbol is returned as allowed and the caller records UNMEASURED
+    (`lane_measured()`). A caller that would MINT a cell from the answer (the seasonality branch)
+    checks `lane_measured()` itself and holds the row instead.
     """
     up = _universe_policy()
+    if not up.registry_measured():
+        return list(symbols), []
     allowed: list[str] = []
     held: list[dict] = []
     for sym in symbols:
@@ -719,6 +735,21 @@ def lane_split(symbols: list[str], family: object = None) -> tuple[list[str], li
                   else f"{sym} may not carry family {family!r} in lane {lane}")
         held.append({"symbol": sym, "lane": lane, "reason": reason})
     return allowed, held
+
+
+def lane_measured() -> bool:
+    """True when the broker registry exists and parses -- the precondition of any lane DECISION."""
+    return bool(_universe_policy().registry_measured())
+
+
+def is_final_lane_hold(hold: dict) -> bool:
+    """A held symbol whose refusal is a DECISION: a share CFD (the event lane), by the registry.
+
+    An UNCLASSIFIED symbol is NOT final: it is waiting for the registry to classify it, and the
+    task that names it is revisited on the first pass that does -- the same way a seat outage is
+    revisited once a seat exists.
+    """
+    return hold.get("lane") == _universe_policy().EVENT
 
 
 def _lead_lag_lag(row: dict) -> int | None:
@@ -1463,6 +1494,10 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     if source_l == "seasonality" and isinstance(month, int) and 1 <= month <= 12 \
             and direction in _SIDE_WORDS:
         season_symbols = resolve_symbols(_untimeframed(row), universe)
+        if season_symbols and not lane_measured():
+            # NO REGISTRY, NO LANE ANSWER: neither a cell (it might be a share CFD) nor a
+            # refusal (it might be gold). The row goes to the deepening queue and waits.
+            return [], "LANE_UNMEASURED"
         if season_symbols:
             allowed, _held = lane_split(season_symbols, "calendar_month")
             if not allowed:
@@ -1616,6 +1651,10 @@ def main() -> int:
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
     lane_refused: list[dict] = []
+    # MEASURED ONCE PER PASS: whether the lane order could be applied at all this pass.
+    lane_check = ("MEASURED" if lane_measured() else
+                  "UNMEASURED: broker registry missing, unreadable or mid-write -- no lane "
+                  "refusal was made this pass; the worker applies the order once it is back")
     per_source: dict[str, dict[str, object]] = {}
     source_candidates: dict[str, set[str]] = {}
     factory_receipts: list[dict[str, object]] = []
@@ -1761,9 +1800,16 @@ def main() -> int:
             # task; a task left with none is REFUSED BY NAME into `lane_refused`, never queued.
             allowed, held = lane_split(list(compact["symbols"]), row.get("family"))
             if held:
-                compact["symbols"] = allowed
+                # Only a share CFD is a FINAL hold. A task whose remaining symbols are
+                # UNCLASSIFIED is queued WAITING (named in `lane_waiting`) rather than refused:
+                # the worker holds it, non-terminally, until the registry classifies it.
+                waiting = [h for h in held if not is_final_lane_hold(h)]
+                compact["symbols"] = allowed or [h["symbol"] for h in waiting]
                 compact["lane_held"] = held
-                if not allowed:
+                if not allowed and waiting:
+                    compact["lane_waiting"] = [h["symbol"] for h in waiting]
+                    stats["lane_waiting"] = int(stats.get("lane_waiting") or 0) + 1
+                elif not allowed:
                     lane_refused.append({"source": source, "title": compact["title"][:200],
                                          "url": compact["url"], "disposition": disposition,
                                          "held": held})
@@ -2059,9 +2105,12 @@ def main() -> int:
         # EVERY TASK THE TWO-LANE ORDER KEPT OUT, with its reason (one entry per held symbol).
         "lane_refused": lane_refused,
         "n_lane_refused": len(lane_refused),
+        "lane_check": lane_check,
         "lane_rule": ("universe_policy.may_hypothesise(symbol, family) for a statistical family; "
-                      "share CFDs and UNCLASSIFIED symbols are struck, a task left with no "
-                      "symbol is refused here and never queued"),
+                      "share CFDs and UNCLASSIFIED symbols are struck; a task left with only "
+                      "share CFDs is refused here and never queued, a task left with "
+                      "UNCLASSIFIED symbols is queued WAITING (lane_waiting) for the registry; "
+                      "an empty registry refuses nothing (lane_check UNMEASURED)"),
         "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
     })
     # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
