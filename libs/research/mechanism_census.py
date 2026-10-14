@@ -1071,6 +1071,9 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "amihud_illiquidity": "liquidity_provision_immediacy",
     "cross_sectional_class_illiquidity": "liquidity_provision_immediacy",
     "crypto_options_state": "volatility_risk_premium",
+    # P8-M2 (2026-10-14): the concession a thin book prints while the spread is wide, faded once
+    # liquidity providers return -- the price of immediacy at a scheduled liquidity hole.
+    "spread_recovery_fade": "liquidity_provision_immediacy",
 }
 
 

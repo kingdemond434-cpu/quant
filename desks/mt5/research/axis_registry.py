@@ -207,7 +207,11 @@ _FAMILY_GROUPS: dict[str, str] = {
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
-    "inventory_shock microstructure market": "volume_spike",
+    # The spread-recovery fade (P8-M2, 2026-10-14, research/spread_recovery.py): the move a thin
+    # book prints while the spread is wide at a scheduled liquidity hole is a concession to the
+    # trader forced through the gap, unwound when the spread normalises -- inventory_shock's
+    # payer, read off the bars' own spread.
+    "inventory_shock microstructure market": "volume_spike spread_recovery_fade",
     # Broker state (2026-10-14, research/broker_state_cells.py). A dated margin hike/cut or a
     # CLOSEONLY flip forces holders to cut size (forced_liquidation's payer, the margin-called
     # trader); a swap change, sign flip or carry-tercile change reprices the financing leg

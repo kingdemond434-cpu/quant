@@ -183,6 +183,8 @@ FAMILY_CLUSTER: dict[str, str] = {
     "liquidity_regime": "session_liquidity",
     "orderflow_imbalance": "session_liquidity",
     "spread_state": "session_liquidity",
+    # Fades the move made while the spread was wide at a scheduled liquidity hole (2026-10-14).
+    "spread_recovery_fade": "session_liquidity",
     "clock_transition": "session_liquidity",
     # -- cross-asset lead / lag
     "cross_asset_lead_lag": "cross_asset_lead_lag",

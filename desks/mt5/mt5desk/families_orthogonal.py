@@ -2484,3 +2484,17 @@ FAMILY_TIMEFRAMES["amihud_illiquidity"] = (
     ("H1",),
     "normalised by hour of the week, which exists only on the hourly chart")
 del _bs_name
+
+# THE SPREAD-RECOVERY FADE (P8-M2, 2026-10-14). Reads the bars' own `spread` column: at the week
+# open, the Tokyo open (00:00 UTC via session_clock.utc_to_server) and broker rollover it fades
+# the move printed while the spread was wide, once the spread is back within k x its pre-shock
+# baseline. Seeded and charged by `research/spread_recovery.py`.
+from mt5desk.family_spread_recovery import family_spread_recovery_fade  # noqa: E402
+
+ORTHOGONAL_FAMILIES["spread_recovery_fade"] = family_spread_recovery_fade
+FAMILY_INPUTS["spread_recovery_fade"] = (
+    "the bar's own spread column (MT5 MqlRates.spread, points) against its trailing median",
+    None)
+FAMILY_TIMEFRAMES["spread_recovery_fade"] = (
+    ("H1",),
+    "its preregistered holds, recovery waits and spread baseline are counted in H1 bars")

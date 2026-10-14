@@ -1127,7 +1127,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
                      # broker margin/CLOSEONLY/swap events, Amihud impact, options state -> cells
-                     "broker_state_cells"),
+                     "broker_state_cells",
+                     # spread-recovery half-lives -> the fade family and the gap-fade entry gate
+                     "spread_recovery",
+                     # the learned GNN/attention miners, refit weekly with their contract
+                     "learned_miners_weekly"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1943,6 +1947,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "event_surprise": 400,
     # Stops itself at --budget-s 600 and resumes from its state file; the cap sits above it.
     "broker_state_cells": 720,
+    # Stops itself at --budget-s 480 (half measuring, half seeding) and resumes from its state
+    # file; the cap sits above it.
+    "spread_recovery": 600,
+    # Hourly read of two artifact ages; when either is 7 days old it refits inside --budget-s
+    # 900 (miner pass at half, contract in the rest, both deadline-bounded). Cap above it.
+    "learned_miners_weekly": 1_080,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
@@ -4026,6 +4036,18 @@ def main() -> None:
     # counts in reports/BROKER_STATE_CELLS.json.
     bsc = _costed("broker_state_cells", lambda: _producer(
         "broker_state_cells", "research/broker_state_cells.py", "--once", "--budget-s", "600"))
+    # SPREAD RECOVERY (P8-M2): the half-life of the spread after the week open, the Tokyo open
+    # and broker rollover per symbol, on ticks / M15 / H1, and the two cell uses it buys: the
+    # spread_recovery_fade family (24 preregistered points per symbol, each charged once) and
+    # the gap fade under the two-sided `spread_gate` entry modifier, whose every move is billed
+    # in the report's missed_growth lines. Writes reports/SPREAD_RECOVERY.json.
+    sprr = _costed("spread_recovery", lambda: _producer(
+        "spread_recovery", "research/spread_recovery.py", "--once", "--budget-s", "480"))
+    # THE LEARNED MINERS' WEEKLY REFIT: the daily door had not turned since 2026-09-30 (GNN net
+    # Sharpe -1.07, never refit). Hourly it costs two artifact reads; at 7 days it refits the
+    # miners and the OOS contract and charges one trial per model in the set.
+    lmw = _costed("learned_miners_weekly", lambda: _producer(
+        "learned_miners_weekly", "research/learned_miners.py", "--weekly", "--budget-s", "900"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5799,6 +5821,7 @@ def main() -> None:
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "event_surprise": esur, "alpha_capture": acap,
                     "broker_state_cells": bsc,
+                    "spread_recovery": sprr, "learned_miners_weekly": lmw,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,

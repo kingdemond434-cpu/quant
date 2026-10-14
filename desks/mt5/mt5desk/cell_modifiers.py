@@ -48,8 +48,18 @@ import pandas as pd
 MODIFIER_KEYS = frozenset({
     "regime", "side_mode", "entry_timing", "execution_style", "entry_style", "representation",
     "cost_aware", "residual", "residual_tag", "conditioner", "macro_axis", "macro_state",
-    "publication_lag_d", "transform", "selector",
+    "publication_lag_d", "transform", "selector", "spread_gate",
 })
+
+#: THE SPREAD-RECOVERY ENTRY GATE (P8-M2, 2026-10-14): `spread_gate = "k:<mult>"` enters at the
+#: first bar whose spread is back within <mult> x its pre-signal baseline; `"hl:<h>"` waits <h>
+#: half-lives estimated from earlier shocks only (`mt5desk.family_spread_recovery.gate_waits`).
+#: It REPLACES the fixed one-bar `entry_timing=delayed` wait, so it is two-sided: a spread already
+#: normal at the signal bar enters one bar EARLIER than the fixed wait, a wide one later. It never
+#: drops a signal (an unrecovered spread enters at the wait cap), so it is not a veto; what each
+#: move cost or earned is billed per gate value in reports/SPREAD_RECOVERY.json `missed_growth`,
+#: carried into MISSED_GROWTH.json by research/missed_growth.published_gate_lines.
+SPREAD_GATE_KEY = "spread_gate"
 
 #: Labels: they name the coordinate a cell occupies and change nothing about how it trades.
 #: `representation` is the information-type axis the child was filed under (the same value as
@@ -171,6 +181,12 @@ def refusal(mods: dict[str, Any]) -> str | None:
     side = _s(mods.get("side_mode"))
     if side not in SIDE_MODES:
         return f"side_mode={mods.get('side_mode')!r} has no declared meaning"
+    if SPREAD_GATE_KEY in mods:
+        from mt5desk.family_spread_recovery import parse_gate
+
+        if parse_gate(mods[SPREAD_GATE_KEY]) is None:
+            return (f"spread_gate={mods[SPREAD_GATE_KEY]!r}: declared forms are 'k:<mult>' "
+                    "(mult > 1) and 'hl:<half-lives>' (> 0)")
     timing = _s(mods.get("entry_timing"))
     if timing not in ENTRY_TIMINGS:
         return f"entry_timing={mods.get('entry_timing')!r} has no declared meaning"
@@ -235,6 +251,14 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
         out = [s for s in out if int(s.side) > 0]
     elif side == "short":
         out = [s for s in out if int(s.side) < 0]
+    if SPREAD_GATE_KEY in mods:
+        # The measured wait replaces the fixed one. Bars with no spread column cannot be gated
+        # honestly, so the cell builds nothing rather than an ungated copy under the gate's name.
+        if "spread" not in bars.columns:
+            return []
+        from mt5desk.family_spread_recovery import apply_gate
+
+        return apply_gate(out, bars, mods[SPREAD_GATE_KEY])
     if _s(mods.get("entry_timing")) == "delayed":
         # One bar later: the signal moves to the next bar, so the engine fills a bar after it
         # would have. A signal on the last bar has no next bar and is dropped, not kept early.
