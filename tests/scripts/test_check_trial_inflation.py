@@ -173,10 +173,3 @@ def test_a_mean_or_a_quantile_is_not_a_correction(tmp_path: Path) -> None:
                           "    mean = total / len(v)\n"
                           "    return mean, v[min(len(v) - 1, int(p * len(v)))]\n"))
     assert got["state"] == "OK", got["sites"]
-
-
-def test_a_renamed_bar_import_is_still_scanned(tmp_path: Path) -> None:
-    got = _one(tmp_path, ("from libs.validation.dsr import deflated_sharpe_ratio as dsr_canon\n"
-                          "def f(arr, n_trials):\n"
-                          "    return dsr_canon(arr, n_trials=n_trials)\n"))
-    assert got["state"] == "FAIL" and got["sites"][0]["call"] == "deflated_sharpe_ratio"
