@@ -77,3 +77,27 @@ def test_url_is_read_but_never_written(tmp_path: Path, monkeypatch: pytest.Monke
                                              "verdict": "OK"})
     assert calls == [("https://hc-ping.com/secret-uuid", False)]
     assert "secret-uuid" not in out.read_text()
+
+
+def test_the_heartbeat_report_is_published_off_the_box() -> None:
+    """2026-10-13: whether the box's outside alarm is ARMED could not be read off the box at all;
+    BOX_HEARTBEAT.json was written and never published. The URL never enters the report."""
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from mt5desk import release_identity
+
+    from libs.ops import release
+    assert hb.OUT.as_posix().endswith("desks/mt5/reports/BOX_HEARTBEAT.json")
+    ignore = (ROOT / ".gitignore").read_text("utf-8").splitlines()
+    sync = (ROOT / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8", errors="ignore")
+    block = sync.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
+    # the same hour's sweep (2026-10-13): reports a reader off the box was told to use and could
+    # not see -- the adoption gate's decision, judging burndown and the LLM lab's inputs
+    for rel in ("desks/mt5/reports/BOX_HEARTBEAT.json", "desks/mt5/reports/JUDGING_BURNDOWN.json",
+                "desks/mt5/reports/WORLD_LAB.json", "desks/mt5/reports/EXPRESSION_FACTORY.json",
+                "desks/mt5/reports/RELEASE_GATE.json",
+                "desks/mt5/reports/ADOPTION_HEARTBEAT.json",
+                "desks/mt5/reports/ADOPTION_STATE.json", "desks/mt5/data/stall_watch.json",
+                "desks/mt5/data/world_causal_graph.json"):
+        assert rel.startswith("desks/mt5/data/") or f"!{rel}" in ignore, rel
+        assert f'"{rel}"' in block, rel
+        assert rel in release.NON_CODE and rel in release_identity.NON_CODE, rel
