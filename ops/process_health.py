@@ -415,6 +415,18 @@ def _age_min(path: Path) -> float | None:
         return None
 
 
+def _artifact_age(artifact: str) -> float | None:
+    """A contract's age as organ_contract judges it -- the INTERNAL stamp for the artifacts it
+    names (a status rewritten every pass proves only that the process beats), mtime otherwise."""
+    try:
+        if str(ROOT / "ops") not in sys.path:
+            sys.path.insert(0, str(ROOT / "ops"))
+        from organ_contract import artifact_age_min  # type: ignore[import-not-found]
+    except Exception:
+        return _age_min(ROOT / artifact)
+    return artifact_age_min(artifact, root=ROOT)  # type: ignore[no-any-return]
+
+
 def _contracts() -> dict[str, tuple[str, int, str]]:
     """The curated organ -> (artifact, max_age_min, purpose) map, if it is importable."""
     try:
@@ -487,7 +499,7 @@ def build() -> dict[str, Any]:
         if code_unreadable:
             result_unmeasured = f"last result {str(t.get('Last Result') or 'absent')!r} not a code"
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
-        age = _age_min(ROOT / artifact) if artifact else None
+        age = _artifact_age(artifact) if artifact else None
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
@@ -552,7 +564,7 @@ def build() -> dict[str, Any]:
     for organ, (artifact, max_age, purpose) in contracts.items():
         if organ in seen:
             continue
-        age = _age_min(ROOT / artifact)
+        age = _artifact_age(artifact)
         inventory_ok = scheduler_status.startswith("OK ")
         # Parenthesised contracts describe an artifact of an existing scheduled task, not a
         # second Windows task. Treating the name as a task manufactured 31 NOT_SCHEDULED alarms

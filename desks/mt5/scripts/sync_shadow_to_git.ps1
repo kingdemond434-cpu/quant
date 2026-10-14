@@ -748,7 +748,11 @@ $relPaths = @(
     # before and after (leg lockbox_recert) and the re-mint's own status (leg attestation_remint,
     # PR #126; absent until it lands, and an absent path is simply not staged).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
-    "desks/mt5/reports/REMINT_STATUS.json"
+    "desks/mt5/reports/REMINT_STATUS.json",
+    # WHETHER THE TICK TAPE IS STILL MOVING (2026-10-14). MT5-TickRecorder sat dead for two days
+    # and origin's tape_state.json (never on this list) read 2026-09-04 whatever the box held.
+    # The hourly `tape_fresh` leg judges both tapes by their own newest tick; this carries it.
+    "desks/mt5/reports/TAPE_FRESHNESS.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:
@@ -763,6 +767,11 @@ $ReportCapBytes = 4MB
 $reportPaths = @(
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
+    # THE COST SURFACE ITSELF (2026-10-14): symbol x broker-hour spread from the bars AND from
+    # the tick tape (zeros included), plus ATR(20) on H1, per symbol. Nine Tier-S clocks waited on
+    # it as UNMEASURED_COST while origin's copy read 2026-09-23 and the H1 bars stay on the box.
+    # ~1-2 MB, under $ReportCapBytes; MT5-CostState rebuilds it.
+    "desks/mt5/data/cost_surface.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",
     "desks/mt5/data/research_budget.json",
     # how fresh the box's bars and ticks are (2026-10-21, research/bars_state.py, core leg

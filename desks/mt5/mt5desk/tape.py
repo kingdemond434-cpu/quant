@@ -681,6 +681,20 @@ def write_day(chunk: pd.DataFrame, out: Path) -> int:
     return len(merged)
 
 
+def _venue_lead_h(now: datetime) -> int:
+    """Hours the venue's tick clock runs ahead of UTC at `now` (3 in US summer, else 2), from
+    `libs.regime.session_clock`; 0 when that cannot be imported -- a late window, never a wrong
+    one."""
+    try:
+        root = str(Path(__file__).resolve().parents[3])
+        if root not in sys.path:
+            sys.path.append(root)
+        from libs.regime.session_clock import utc_offset_h
+        return int(utc_offset_h(now))
+    except Exception:
+        return 0
+
+
 def record_ticks(symbols: list[str]) -> dict:
     """Append every tick since the last recorded one, per symbol. Resumable and idempotent.
 
@@ -697,6 +711,11 @@ def record_ticks(symbols: list[str]) -> dict:
 
     state = _load(STATE, {})
     now = datetime.now(UTC)
+    # THE WINDOW ENDS AT THE VENUE'S NOW, NOT UTC'S (2026-10-14). `copy_ticks_range` compares its
+    # bounds with `time_msc` as plain numbers, and `time_msc` is the venue clock (New York + 7 h),
+    # so a window ending at UTC-now stopped two or three hours short: on 2026-09-06 a pass at
+    # 22:40:35 UTC ended every crypto CFD at broker 22:40:3x. `start` is already on that clock.
+    end = now + timedelta(hours=_venue_lead_h(now))
     summary: dict[str, dict] = {}
 
     for sym in symbols:
@@ -704,7 +723,7 @@ def record_ticks(symbols: list[str]) -> dict:
         start = (datetime.fromtimestamp(last / 1000.0, tz=UTC) + timedelta(milliseconds=1)
                  if last else now - timedelta(days=COLD_START_DAYS))
         try:
-            ticks = mt5.copy_ticks_range(sym, start, now, mt5.COPY_TICKS_ALL)
+            ticks = mt5.copy_ticks_range(sym, start, end, mt5.COPY_TICKS_ALL)
         except Exception as exc:
             summary[sym] = {"error": f"{type(exc).__name__}: {exc}"}
             continue
@@ -944,7 +963,6 @@ def main(argv: list[str] | None = None) -> int:
         return _dry_run(argv)
     import MetaTrader5 as mt5
     from mt5desk.config import terminal_path
-
     from research.mt5_session import attach_or_initialize
 
     if not attach_or_initialize(mt5, path=terminal_path(), timeout=5000):
@@ -992,10 +1010,6 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
-
-
 def _explain(err: object) -> str:
     """Route the raw MT5 error through the shared explanation -- see h1_source.
 
@@ -1010,3 +1024,10 @@ def _explain(err: object) -> str:
         except ImportError:
             return f"{err}"
     return explain_init_failure(err)
+
+
+# THE ENTRY POINT IS THE LAST STATEMENT (2026-10-14). It sat above `_explain`, so
+# `python -m mt5desk.tape` ran main() before `_explain` existed and the init-failure path --
+# the one that must explain itself -- died on NameError instead of printing the reason.
+if __name__ == "__main__":
+    raise SystemExit(main())

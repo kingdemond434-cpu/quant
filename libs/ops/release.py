@@ -156,6 +156,9 @@ NON_CODE: frozenset[str] = frozenset({
     # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
     "desks/mt5/reports/REMINT_STATUS.json",
+    # Whether the tick tape is still moving (2026-10-14): the hourly `tape_fresh` leg's verdict
+    # on each tape's own newest-tick stamp, published on the same wire. An output, never an input.
+    "desks/mt5/reports/TAPE_FRESHNESS.json",
     # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
     # by the same sync so a halt is readable off the box. An output, never an input.
     "desks/mt5/data/placement_interlock.json",
