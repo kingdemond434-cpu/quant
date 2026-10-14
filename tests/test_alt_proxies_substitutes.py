@@ -350,8 +350,11 @@ def test_reviewed_terms_carry_evidence() -> None:
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
         # 2026-09-30 is the review of the original rows; a row added later carries its own
-        # (later) review date, never an earlier one.
-        assert ev["robots"] and ev["checked_at"] >= "2026-09-30", sid
+        # (later) review date, never an earlier one -- and it must BE a date: a string compare
+        # would accept "later" or "9999" as a review.
+        assert ev["robots"], sid
+        checked = date.fromisoformat(str(ev["checked_at"]))
+        assert checked >= date(2026, 9, 30), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
     assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
@@ -575,8 +578,16 @@ BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva
 
 def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     blocked = {s.id for s in A.SOURCES if s.terms != "confirmed"}
-    # a mirror-only candidate fails closed; BAZG (2026-10-13) is HELD on its commercial-use clause
-    assert blocked == {*BLOCKED, "za_statssa_retail", "ch_bazg_gold_exports"}
+    # a mirror-only candidate fails closed; a source HELD on its own terms with no substitute
+    # carries its reason and its substitute in A.HELD_NO_SUBSTITUTE (BAZG, 2026-10-13)
+    assert blocked == {*BLOCKED, "za_statssa_retail", *A.HELD_NO_SUBSTITUTE}
+    assert set(A.HELD_NO_SUBSTITUTE) == {"ch_bazg_gold_exports"}
+    for sid, held in A.HELD_NO_SUBSTITUTE.items():
+        assert held["reason"].startswith("terms:") and held["substitute"], sid
+        assert sid not in A.SUBSTITUTED_BY and sid not in A.NO_SUBSTITUTE, sid
+    bazg = A.HELD_NO_SUBSTITUTE["ch_bazg_gold_exports"]
+    assert "commercial use requires permission" in bazg["reason"]
+    assert bazg["substitute"] == "none: UNMEASURED"
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
     for sid, subs in A.SUBSTITUTED_BY.items():

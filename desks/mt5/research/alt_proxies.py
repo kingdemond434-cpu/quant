@@ -3202,6 +3202,18 @@ NO_SUBSTITUTE: dict[str, str] = {
                 "requires written permission); COVERED only at corr >= 0.5 with n reported"),
 }
 
+#: Sources blocked on their OWN terms (not paid originals) that no substitute stands in for: the
+#: reason and the substitute are recorded, never left implicit (GD audit 2026-10-14). These are
+#: not part of SUBSTITUTED_BY / NO_SUBSTITUTE, which hold the paid originals under the #152 law.
+HELD_NO_SUBSTITUTE: dict[str, dict[str, str]] = {
+    "ch_bazg_gold_exports": {
+        "reason": ("terms: commercial use requires permission -- BAZG 'Kommerzielle Nutzung nur "
+                   "mit Bewilligung des Datenlieferanten zulässig'; a trading desk's use is "
+                   "commercial and no Bewilligung is on file"),
+        "substitute": "none: UNMEASURED",
+        "unblock": "a written Bewilligung from BAZG recorded in TERMS_EVIDENCE",
+    },
+}
 
 def substitute_check(blocked: str, sub: str,
                      measured: dict[str, dict[str, dict[str, Any]]] | None = None
