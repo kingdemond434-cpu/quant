@@ -643,6 +643,47 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: The polite fetchers' shared access state (`libs/data/polite_fetch.ACCESS_STATE`): robots.txt per
+#: origin and every site that refused the desk. Each hold row carries its own missed_growth line.
+ACCESS_STATE = BASE / "data" / "world_crawler_access.json"
+
+
+def access_hold_lines(path: Path | None = None, now: float | None = None) -> dict[str, Any]:
+    """The access holds' missed-growth lines, read from the polite fetchers' own state file.
+
+    A site held for 401/403/429 or a challenge is a source the desk is not reading; the gain
+    forgone is UNMEASURED (no conversion of its pages is on record) and says why. Counted here so
+    the holds sit beside the rails' bill instead of only in the access file. A lapsed 429/WAF hold
+    is not counted (it is no longer holding anything). A missing file is UNMEASURED, never zero."""
+    import time as _time
+    src = path or ACCESS_STATE
+    doc = _json(src)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [], "n_held": None,
+                "why": f"no {src.name} on this host: no polite fetcher has run here"}
+    t = _time.time() if now is None else now
+    lines: list[dict[str, Any]] = []
+    for site, row in sorted((doc.get("blocked") or {}).items()):
+        if not isinstance(row, dict):
+            continue
+        until = row.get("recheck_after_ts")
+        if until is not None and _num(until) is not None and t >= float(until):
+            continue
+        mg = row.get("missed_growth") if isinstance(row.get("missed_growth"), dict) else {}
+        lines.append({"source": str(mg.get("source") or site), "kind": "access_hold",
+                      "status": row.get("verdict") or mg.get("status") or "METHOD_BLOCKED",
+                      "http_status": row.get("status"), "since_utc": row.get("since_utc"),
+                      "waits_for": row.get("waits_for"),
+                      "delta_elogw": mg.get("delta_elogw") or UNMEASURED,
+                      "verdict": UNMEASURED,
+                      "cause": mg.get("cause") or (f"HTTP {row.get('status')} hold on {site}; "
+                                                   "the growth forgone is UNMEASURED")})
+    return {"verdict": UNMEASURED if lines else NOT_BINDING,
+            "source": f"data/{src.name}", "lines": lines, "n_held": len(lines),
+            "by_status": {v: sum(1 for x in lines if x["status"] == v)
+                          for v in sorted({x["status"] for x in lines})}}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +801,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "access_holds": access_hold_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

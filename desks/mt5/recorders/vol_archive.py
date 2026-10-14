@@ -98,6 +98,13 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
         sys.path.insert(0, _p)
 
 from recorders.tape_store import _append_line  # noqa: E402
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 SCHEMA = "vol-archive-1"
 ARCHIVE = _DESK / "data" / "vol_archive" / "observations.jsonl"
@@ -117,7 +124,7 @@ MIN_VINTAGES = 60
 RV_WINDOW_D = 21
 ANNUALISE = math.sqrt(252.0)
 
-UA = "Mozilla/5.0 (MT5 research desk; point-in-time vol collector)"
+UA = DESK_UA
 
 
 @dataclass(frozen=True)

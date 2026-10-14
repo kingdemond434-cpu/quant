@@ -1,10 +1,16 @@
 import json
 import urllib.request
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 req = urllib.request.Request(
     "https://publicreporting.cftc.gov/resource/72hh-3qpy.json?$limit=1",
-    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"})
+    headers={"User-Agent": DESK_UA})
 try:
     rows = json.load(urllib.request.urlopen(req, timeout=60))
     print("rows:", len(rows))

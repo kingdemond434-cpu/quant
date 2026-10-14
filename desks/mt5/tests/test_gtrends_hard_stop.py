@@ -17,6 +17,9 @@ import urllib.error
 from datetime import UTC, datetime, timedelta
 from email.message import Message
 from pathlib import Path
+from typing import ClassVar
+
+import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
@@ -116,3 +119,34 @@ def test_the_trailing_partial_point_is_never_counted_as_final(tmp_path: Path) ->
                          {}, NOW, block_state=tmp_path / "b.json", register=tmp_path / "r.json")
     assert partial_day not in {o["period_end"] for o in h.obs}
     assert partial_day not in {r["day"] for r in h.raw}
+
+
+def test_the_side_channel_miner_is_honest_and_stops_on_429(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """side_channels/google_trends_miner: the desk's UA, and a 429 ends the pass with the shared
+    marker written -- it is not swallowed while the loop carries on."""
+    side = str(_DESK / "side_channels")
+    if side not in sys.path:
+        sys.path.insert(0, side)
+    import google_trends_miner as gtm
+    assert gtm.HEADERS["User-Agent"] == pf.DESK_UA
+    calls: list[str] = []
+
+    class _R:
+        status_code = 429
+        headers: ClassVar[dict[str, str]] = {"Retry-After": "600"}
+        text = ""
+
+    def _get(url: str, headers: dict[str, str] | None = None, timeout: float = 0) -> _R:
+        calls.append(str((headers or {}).get("User-Agent")))
+        return _R()
+
+    monkeypatch.setattr(gtm.requests, "get", _get)
+    monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
+    monkeypatch.setattr(gtm, "BLOCKED_REGISTER", tmp_path / "reg.json")
+    assert gtm.mine_google_trends(now=NOW) == []
+    assert calls == [pf.DESK_UA]                          # one request, then the stop
+    assert gtm.LAST_PASS["status"] == "METHOD_BLOCKED"
+    assert json.loads((tmp_path / "block.json").read_text("utf-8"))["http_status"] == 429
+    assert gtm.mine_google_trends(now=NOW + timedelta(seconds=60)) == []
+    assert calls == [pf.DESK_UA]                          # the next pass sends nothing

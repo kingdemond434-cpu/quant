@@ -15,6 +15,13 @@ import requests
 from bs4 import BeautifulSoup
 
 from ...base import SideChannelAxis, SideChannelHypothesis, generate_id, save_hypothesis, DATA_DIR
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[5]))
+    from libs.data.polite_fetch import DESK_UA
 
 
 @dataclass
@@ -160,7 +167,7 @@ class MQL5ForumMiner:
         self.parser = MQL5ForumParser()
         self.session = requests.Session()
         self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (compatible; QuantResearchBot/1.0)"
+            "User-Agent": DESK_UA
         })
         self.data_dir = DATA_DIR / "mql5_forum"
         self.data_dir.mkdir(parents=True, exist_ok=True)

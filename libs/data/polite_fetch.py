@@ -23,14 +23,15 @@ MEASURED, NEVER ASSUMED. `STATS` counts fetches, successes, HTTP and transport f
 and seconds per `leg` label, so a miner can publish its own fetches/second.
 
 HONEST, AND ROBOTS DECIDES (auditor ruling 2026-10-14). Every request carries `DESK_UA`; a
-caller-supplied User-Agent that looks like a browser is REPLACED by it (`honest_headers`), so no
-caller can make this module impersonate one. Before every request -- the URL and each redirect
-hop -- `HostAccess.permits` reads the exact origin's robots.txt (24h cache) against the
-`DESK_UA_PRODUCT` token: unreadable robots (network error, 5xx) means no fetch, 404/410 means
-allow. 401 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED) are a HARD STOP for the whole site: no
-retry, no sibling host, no other route, recorded in the shared access state. There is no IP,
-egress or User-Agent rotation anywhere in this module. `HostAccess` is the ONE implementation:
-the world crawler subclasses it.
+caller-supplied User-Agent that looks like a browser or another company's crawler is REPLACED by
+it (`honest_headers`), so no caller can make this module impersonate one. Before every request --
+the URL and each redirect hop -- `HostAccess.permits` reads the exact origin's robots.txt (24h
+cache) against the `DESK_UA_PRODUCT` token: unreadable robots (network error, 5xx) means no
+fetch; a 4xx other than 401/403/429, or an HTML soft-404, means allow (RFC 9309). 401
+(NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), and a challenge recognised by markup, header or status
+(a Cloudflare 503 included), are a HARD STOP for the whole site: no retry, no sibling host, no
+other route, recorded in the shared access state. There is no IP, egress or User-Agent rotation
+anywhere in this module. `HostAccess` is the ONE implementation: the world crawler subclasses it.
 
 No secret is read or sent. Stdlib only (certifi is optional).
 """
@@ -72,20 +73,37 @@ DESK_HEADERS: dict[str, str] = {
                "*/*;q=0.8"),
     "Accept-Encoding": "gzip, deflate",
 }
-#: Tokens that only a browser (or something pretending to be one) puts in its User-Agent.
-BROWSER_UA_TOKENS: tuple[str, ...] = ("mozilla/", "chrome/", "safari/", "applewebkit",
-                                      "gecko/", "edg/")
+#: Tokens that only a browser -- or a NAMED CRAWLER (a search engine's, an ad network's) -- puts in
+#: its User-Agent. Sending either is impersonation: a desk fetcher is neither a person's browser
+#: nor another company's crawler, and a robots.txt rule written for that crawler is not addressed
+#: to it. This tuple is the ONE list; `tests/data/test_no_browser_ua.py` allow-lists exactly it.
+IMPERSONATION_UA_TOKENS: tuple[str, ...] = (
+    # browsers and engines
+    "mozilla/", "chrome/", "chromium/", "crios/", "safari/", "applewebkit", "gecko/", "edg/",
+    "edge/", "opr/", "opera/", "opera mini", "presto/", "msie ", "trident/", "firefox/",
+    # other companies' crawlers
+    "googlebot", "adsbot-google", "mediapartners-google", "google-inspectiontool", "bingbot",
+    "slurp", "baiduspider", "yandexbot", "duckduckbot", "applebot", "facebookexternalhit",
+    "twitterbot", "petalbot", "sogou web spider", "360spider", "bytespider", "yeti/",
+)
+#: Back-compatible name for importers that read the old browser-only list.
+BROWSER_UA_TOKENS: tuple[str, ...] = IMPERSONATION_UA_TOKENS
 
 
 def looks_like_browser(ua: str) -> bool:
+    """True when `ua` carries a browser OR a named-crawler token: either is impersonation."""
     low = str(ua or "").lower()
-    return any(t in low for t in BROWSER_UA_TOKENS)
+    return any(t in low for t in IMPERSONATION_UA_TOKENS)
+
+
+looks_impersonating = looks_like_browser
 
 
 def honest_headers(headers: Mapping[str, str] | None = None) -> dict[str, str]:
-    """DESK_HEADERS overlaid with the caller's, with exactly one User-Agent that never looks like a
-    browser. A caller's own honest UA (the SEC's declared-contact UA, say) is kept; a browser-
-    looking one is replaced by DESK_UA, whatever case its header name was spelled in."""
+    """DESK_HEADERS overlaid with the caller's, with exactly one User-Agent that impersonates
+    nobody. A caller's own honest UA (the SEC's declared-contact UA, say) is kept; a browser- or
+    named-crawler-looking one is replaced by DESK_UA, whatever case its header name was spelled
+    in."""
     out = dict(DESK_HEADERS)
     caller_ua = ""
     for k, v in (headers or {}).items():
@@ -296,24 +314,58 @@ def site_of(host: str) -> str:
     return ".".join(labels[-(suffix_len + 1):])
 
 
-#: Anti-bot interstitials, matched in a body's head. Specific to WAF products on purpose: a plain
-#: "captcha" or "access denied" also appears in ordinary pages (a comment form's reCAPTCHA), and a
-#: false match here holds a whole site -- a mining cut.
-CHALLENGE_MARKERS: tuple[str, ...] = (
-    "just a moment...", "checking your browser", "cf-browser-verification", "cf_chl_",
-    "cf-challenge", "challenge-platform", "attention required! | cloudflare", "ddos-guard",
-    "are you a robot", "px-captcha", "_incapsula_resource", "captcha-delivery.com",
-    "awswaf", "sucuri website firewall")
+#: Anti-bot interstitials, recognised by MARKUP, HEADER or STATUS -- never by prose. A forum post
+#: that says "Just a moment..." or "checking your browser" is content; holding a whole site on
+#: words a person can type is a mining cut (P6). What a challenge page carries and an ordinary
+#: page does not is the vendor's own machinery:
+#:   * strong markup (any status): Cloudflare's challenge bootstrap and form, Imperva/Incapsula's
+#:     resource path, DataDome's and PerimeterX's block-page hooks, AWS WAF's challenge loader.
+#:   * a header: `cf-mitigated: challenge` is Cloudflare saying so outright.
+#:   * weak markup ONLY WITH a refusal status (403/429/503): `challenge-platform` and `cf-chl-`
+#:     also appear on ORDINARY 200 pages (Cloudflare's passive bot-detection script, a Turnstile
+#:     widget on a comment form), so on a 200 they prove nothing.
+CHALLENGE_MARKUP: tuple[str, ...] = (
+    "_cf_chl_opt", "__cf_chl_", "challenge-platform/h/", "/chl_page", 'id="challenge-form"',
+    "id='challenge-form'", "cf-browser-verification", "_incapsula_resource",
+    "captcha-delivery.com", 'id="px-captcha"', "awswafcookiedomainlist")
+CHALLENGE_MARKUP_WITH_STATUS: tuple[str, ...] = ("challenge-platform", "cf-chl-", "cf_chl_")
+CHALLENGE_STATUS: frozenset[int] = frozenset({403, 429, 503})
+#: Back-compatible name: the markers `looks_challenged` matches on any status.
+CHALLENGE_MARKERS: tuple[str, ...] = CHALLENGE_MARKUP
 
 
-def looks_challenged(body: str | bytes) -> str:
-    """The challenge marker in this page's head, or ''. A challenge is a block, not content."""
+def _header(headers: Any, name: str) -> str:
+    if headers is None:
+        return ""
+    try:
+        v = headers.get(name)
+    except Exception:
+        return ""
+    if v is None and isinstance(headers, Mapping):
+        for k, vv in headers.items():
+            if str(k).lower() == name.lower():
+                v = vv
+                break
+    return str(v or "")
+
+
+def looks_challenged(body: str | bytes, headers: Any = None, status: int | None = None) -> str:
+    """What marks this response as an anti-bot challenge, or ''. A challenge is a block, not
+    content. Decided by markup, header or status -- never by body prose (see CHALLENGE_MARKUP)."""
+    if _header(headers, "cf-mitigated").strip().lower() == "challenge":
+        return "cf-mitigated: challenge"
     if isinstance(body, bytes):
-        body = body[:8000].decode("utf-8", errors="replace")
-    low = str(body or "")[:8000].lower()
-    for marker in CHALLENGE_MARKERS:
+        body = body[:16000].decode("utf-8", errors="replace")
+    low = str(body or "")[:16000].lower()
+    for marker in CHALLENGE_MARKUP:
         if marker in low:
             return marker
+    if status in CHALLENGE_STATUS:
+        for marker in CHALLENGE_MARKUP_WITH_STATUS:
+            if marker in low:
+                return f"{marker} with HTTP {status}"
+        if "ddos-guard" in _header(headers, "Server").lower():
+            return f"server: ddos-guard with HTTP {status}"
     return ""
 
 
@@ -516,23 +568,36 @@ class HostAccess:
             try:
                 with send(self.request(url, "text/plain,*/*;q=0.5"), self.robots_timeout()) as fh:
                     body = fh.read(MAX_ROBOTS_BYTES)
+                    rh = getattr(fh, "headers", None)
+                    rstatus = getattr(fh, "status", None)
                 text = body.decode("utf-8", errors="replace")
-                marker = looks_challenged(text)
-                if marker or looks_like_html(text):
-                    # A WAF challenge or an HTML page is not a robots file: never allow-all.
-                    why = (f"challenge page ({marker!r}) served as robots.txt" if marker
-                           else "an HTML page served as robots.txt")
+                marker = looks_challenged(text, rh, rstatus)
+                if marker:
+                    # A REAL challenge (markup, header or status) is a refusal: hold the site.
+                    why = f"challenge ({marker!r}) served as robots.txt"
                     self.block(url, "WAF", "METHOD_BLOCKED", why)
                     return {"state": "blocked", "why": why}
+                if looks_like_html(text):
+                    # RFC 9309 s2.2/2.3: unparseable lines are ignored, so a soft-404 HTML page
+                    # served as robots.txt carries no rules -- allow, exactly like a real 404.
+                    return {"state": "allow_all", "why": "HTML (soft-404) served as robots.txt"}
                 return {"state": "rules", "text": text}
             except urllib.error.HTTPError as exc:
                 code = int(exc.code)
                 loc = exc.headers.get("Location") if exc.headers else None
+                ebody = b""
+                with contextlib.suppress(Exception):
+                    ebody = exc.read(16000)
                 with contextlib.suppress(Exception):
                     exc.close()
                 if code in BLOCK_STATUS:
                     self.block(url, code)
                     return {"state": "blocked", "status": code}
+                marker = looks_challenged(ebody, exc.headers, code)
+                if marker:
+                    why = f"challenge ({marker!r}) on robots.txt, HTTP {code}"
+                    self.block(url, "WAF", "METHOD_BLOCKED", why)
+                    return {"state": "blocked", "status": code, "why": why}
                 if code in REDIRECT_STATUS:
                     if not loc:
                         return {"state": "unreadable", "why": f"robots HTTP {code} no Location"}
@@ -886,7 +951,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 cenc = str(h.get("Content-Encoding") or "") if h is not None else ""
                 status = int(getattr(fh, "status", None) or getattr(fh, "code", 200) or 200)
                 text = decode_body(raw, ctype, cenc)
-                marker = looks_challenged(text)
+                marker = looks_challenged(text, h, status)
                 if marker:
                     # A 200 challenge page is a block, not content: held, never ingested.
                     resp.status, resp.final_url = status, final
@@ -916,9 +981,13 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             code = int(exc.code)
             # HTTPError also owns the response stream. Release it on every path rather than
             # leaving the socket to garbage collection.
+            ebody = b""
             try:
                 wait = _retry_after(getattr(exc, "headers", None))
                 loc = exc.headers.get("Location") if exc.headers is not None else None
+                if code not in REDIRECT_STATUS and code not in BLOCK_STATUS:
+                    with contextlib.suppress(Exception):
+                        ebody = exc.read(16000)
             finally:
                 exc.close()
             if code in REDIRECT_STATUS:
@@ -941,6 +1010,15 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 resp.verdict = acc.block(cur, code)
                 resp.error = f"{resp.verdict}: HTTP {code}"
                 break                              # hard stop: no retry, no other route
+            marker = looks_challenged(ebody, getattr(exc, "headers", None), code)
+            if marker:
+                # A challenge on an error status (Cloudflare's 503 interstitial, say) is a
+                # refusal, not a "come back later": held like a 429, never retried (P4).
+                resp.verdict = acc.block(cur, "WAF", "METHOD_BLOCKED",
+                                         f"challenge ({marker!r}) on HTTP {code}")
+                resp.error = f"{resp.verdict}: challenge on HTTP {code} ({marker})"
+                _stat(leg, refused=1, error="WAF")
+                break
             resp.error = f"HTTP {code}"
             if code not in RETRY_STATUS:
                 break
@@ -969,6 +1047,85 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     resp.elapsed_s = time.monotonic() - t0
     _stat(leg, seconds=resp.elapsed_s)
     return resp
+
+
+class FetchRefused(RuntimeError):
+    """A polite fetch that did not return content: a hold, a robots refusal, an HTTP error or a
+    transport failure. `code` is the HTTP status when there was one (so a caller's own `code ==
+    429` check still reads it) and `verdict` is NEEDS_KEY / METHOD_BLOCKED / ROBOTS_* or ''."""
+
+    def __init__(self, url: str, status: int | None, verdict: str, error: str) -> None:
+        super().__init__(f"{verdict or 'FETCH_FAILED'}: {error or status} ({url[:160]})")
+        self.url = url
+        self.code = status
+        self.verdict = verdict
+        self.error = error
+
+
+def get_text(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 25.0,
+             retries: int = 1, leg: str = "default", access: HostAccess | None = None,
+             opener: Callable[..., Any] | None = None) -> str:
+    """`get()` for callers written against `urlopen(...).read().decode()`: the body text, or
+    `FetchRefused`. Same honest UA, robots check per hop and 401/403/429 site hold as `get()`."""
+    r = get(url, headers=headers, timeout=timeout, retries=retries, leg=leg, access=access,
+            opener=opener)
+    if r.verdict or not r.ok:
+        raise FetchRefused(url, r.status, r.verdict, r.error)
+    return r.text
+
+
+def post(url: str, data: bytes, *, headers: Mapping[str, str] | None = None,
+         timeout: float = 20.0, leg: str = "default", access: HostAccess | None = None,
+         opener: Callable[..., Any] | None = None) -> str:
+    """One POST (a GraphQL search, say), under the same rules as `get()`: honest UA, the site's
+    holds and the origin's robots.txt checked first, redirects not followed, and 401/403/429 or a
+    challenge record a hold and raise `FetchRefused`. Never retried: a POST is not idempotent."""
+    acc = access if access is not None else default_access()
+    open_ = opener or open_no_redirect
+
+    def _send(req: urllib.request.Request, t: float) -> Any:
+        return open_(req, timeout=t, context=ssl_context())
+
+    ok, why = acc.permits(url, send=_send)
+    if not ok:
+        raise FetchRefused(url, None, why.split(" ")[0].split(":")[0], why)
+    host = hostname_of(url)
+    if GATE is not None and host:
+        w = GATE.reserve(host, acc.crawl_delay(url, send=_send))
+        if w > 0:
+            time.sleep(w)
+    req = urllib.request.Request(ascii_url(url), data=data, headers=honest_headers(headers),
+                                 method="POST")
+    try:
+        with open_(req, timeout=timeout, context=ssl_context()) as fh:
+            raw = fh.read(MAX_BYTES)
+            h = getattr(fh, "headers", None)
+            status = int(getattr(fh, "status", None) or 200)
+    except urllib.error.HTTPError as exc:
+        code = int(exc.code)
+        ebody = b""
+        with contextlib.suppress(Exception):
+            ebody = exc.read(16000)
+        with contextlib.suppress(Exception):
+            exc.close()
+        _stat(leg, fetches=1, http_errors=1, error=f"HTTP {code}")
+        if code in BLOCK_STATUS:
+            v = acc.block(url, code)
+            raise FetchRefused(url, code, v, f"{v}: HTTP {code}") from None
+        marker = looks_challenged(ebody, exc.headers, code)
+        if marker:
+            v = acc.block(url, "WAF", "METHOD_BLOCKED", f"challenge ({marker!r}) on HTTP {code}")
+            raise FetchRefused(url, code, v, f"{v}: challenge on HTTP {code}") from None
+        raise FetchRefused(url, code, "", f"HTTP {code}") from None
+    ctype = str(h.get("Content-Type") or "") if h is not None else ""
+    text = decode_body(raw, ctype, str(h.get("Content-Encoding") or "") if h is not None else "")
+    marker = looks_challenged(text, h, status)
+    if marker:
+        v = acc.block(url, "WAF", "METHOD_BLOCKED", f"challenge ({marker!r}) served as content")
+        _stat(leg, fetches=1, refused=1, error="WAF")
+        raise FetchRefused(url, status, v, f"{v}: challenge page")
+    _stat(leg, fetches=1, ok=1, bytes=len(raw))
+    return text
 
 
 T = TypeVar("T")

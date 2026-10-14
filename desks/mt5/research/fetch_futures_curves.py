@@ -18,13 +18,20 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 if str(BASE.parent.parent) not in sys.path:      # the repo root, for libs.data.terms_fence
     sys.path.append(str(BASE.parent.parent))
 OUT = BASE / "data" / "futures_curves"
 REPORT = BASE / "reports" / "futures_curve_coverage.json"
-UA = "Mozilla/5.0 (compatible; quant-research/1.0)"
+UA = DESK_UA
 MONTH_CODE = dict(zip(range(1, 13), "FGHJKMNQUVXZ", strict=True))
 PRODUCTS = {
     "GC": {"suffix": "CMX", "months": (2, 4, 6, 8, 10, 12)},

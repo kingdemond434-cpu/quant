@@ -3077,7 +3077,7 @@ TERMS: dict[str, tuple[str, str]] = {
     "cn_baidu_migration": ("to_confirm", "Baidu terms (baidu.com/duty) blocked by robots.txt, so "
                            "unread; huiyan has no robots.txt"),
     "kr_busan_port": ("to_confirm", "BPA copyright policy / KOGL mark not found; robots.txt "
-                      "only names Yeti and Googlebot"),
+                      "only names Naver's and Google's crawlers"),
     "sg_port_throughput": ("confirmed", "SingStat Table Builder API, Singapore Open Data Licence"),
     "cn_mot_port_weekly": ("to_confirm", "MOT disclaimer bars commercial verbatim reprint but "
                            "grants no reuse licence; no robots.txt"),
@@ -3229,7 +3229,8 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "terms_url": "https://www.busanpa.com/index.bpa?menuCd=DOM_000000105005001003",
         "terms_quote": ("(not found: no 저작권정책 or 공공누리 mark in the served HTML of the "
                         "home page or of the current statistics page; old board URL 404)"),
-        "robots": "rules only for Yeti and Googlebot (Disallow /iam/, /cms/, /board/download.*); "
+        "robots": "rules only for Naver's and Google's crawlers (Disallow /iam/, /cms/, "
+                  "/board/download.*); "
                   "none for other agents",
         "checked_at": _CHK},
     "cn_mot_port_weekly": {

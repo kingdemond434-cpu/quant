@@ -51,8 +51,10 @@ class _Web:
     """URL -> (status, body, location). Unlisted URLs are a network error. Records every request
     with the User-Agent it actually carried."""
 
-    def __init__(self, routes: dict[str, tuple[int, bytes, str]]) -> None:
+    def __init__(self, routes: dict[str, tuple[int, bytes, str]],
+                 headers: dict[str, dict[str, str]] | None = None) -> None:
         self.routes = routes
+        self.headers = headers or {}
         self.sent: list[tuple[str, str]] = []
 
     def __call__(self, req: Any, timeout: float, context: Any = None) -> _Resp:
@@ -66,7 +68,9 @@ class _Web:
         hdrs = Message()
         if loc:
             hdrs["Location"] = loc
-        raise urllib.error.HTTPError(url, status, "fixture", hdrs, io.BytesIO(b""))
+        for k, v in self.headers.get(url, {}).items():
+            hdrs[k] = v
+        raise urllib.error.HTTPError(url, status, "fixture", hdrs, io.BytesIO(body))
 
     def urls(self) -> list[str]:
         return [u for u, _ in self.sent]
@@ -213,8 +217,12 @@ def test_regional_hunter_stops_a_source_on_a_refusal(monkeypatch: pytest.MonkeyP
 
 
 # ------------------------------------------- auditor follow-ups on 1e8cca2ac (2026-10-14)
+#: A real Cloudflare interstitial is recognised by its MARKUP (the challenge bootstrap), not by
+#: its title text: the words alone also appear in ordinary forum posts.
 _CHALLENGE = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
-              b"<div id='cf-challenge'>Checking your browser</div></body></html>")
+              b"<script>window._cf_chl_opt={cvId:'3'};</script>"
+              b"<script src='/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1'></script>"
+              b"</body></html>")
 
 
 def test_a_crawl_delay_larger_than_the_gap_is_obeyed() -> None:
@@ -241,11 +249,70 @@ def test_a_challenge_page_as_robots_is_a_hold_and_nothing_is_fetched() -> None:
     assert row["missed_growth"]["delta_elogw"] == "UNMEASURED" and row["missed_growth"]["cause"]
 
 
-def test_an_html_page_as_robots_never_reads_as_allow_all() -> None:
+def test_a_soft_404_html_robots_means_allow_per_rfc9309() -> None:
+    """P7: an HTML page served as robots.txt has no parseable rules, so it allows (RFC 9309), as a
+    real 404 does -- it never holds the site or re-holds it every 24h."""
     web = _Web({"https://a.test/robots.txt": (200, b"<html><body>Not found</body></html>", ""),
                 "https://a.test/p": (200, _HTML, "")})
-    r = _get(web, "https://a.test/p")
-    assert not r.ok and "https://a.test/p" not in web.urls()
+    acc = pf.HostAccess(path=None)
+    r = _get(web, "https://a.test/p", acc)
+    assert r.ok and "https://a.test/p" in web.urls() and not acc.blocked
+
+
+def test_unparseable_robots_lines_are_ignored_not_held() -> None:
+    web = _Web({"https://a.test/robots.txt": (200, b"\x00\xff garbage ;;\nnot a rule\n", ""),
+                "https://a.test/p": (200, _HTML, "")})
+    acc = pf.HostAccess(path=None)
+    assert _get(web, "https://a.test/p", acc).ok and not acc.blocked
+
+
+def test_a_cloudflare_503_challenge_is_held_and_never_retried() -> None:
+    """P4: a 503 carrying the challenge (markup or `cf-mitigated`) is a refusal, not a 'come back
+    later': one request, a WAF hold for the site, no retry."""
+    for body, hdr in ((_CHALLENGE, {}), (b"", {"cf-mitigated": "challenge"})):
+        web = _Web({"https://a.test/robots.txt": _ALLOW, "https://a.test/p": (503, body, "")},
+                   headers={"https://a.test/p": hdr})
+        acc = pf.HostAccess(path=None)
+        r = _get(web, "https://a.test/p", acc, retries=3)
+        assert r.verdict == "METHOD_BLOCKED" and r.text == ""
+        assert web.urls().count("https://a.test/p") == 1
+        assert acc.blocked["a.test"]["status"] == "WAF"
+
+
+def test_a_plain_503_is_still_retried() -> None:
+    web = _Web({"https://a.test/robots.txt": _ALLOW,
+                "https://a.test/p": (503, b"<html>maintenance</html>", "")})
+    acc = pf.HostAccess(path=None)
+    r = _get(web, "https://a.test/p", acc, retries=2)
+    assert not r.ok and not r.verdict and web.urls().count("https://a.test/p") == 3
+    assert not acc.blocked
+
+
+def test_forum_prose_about_a_challenge_is_content_not_a_hold() -> None:
+    """P6: words a person can type are not a challenge."""
+    post = (b"<html><head><title>Gold forum</title></head><body><p>Just a moment... checking "
+            b"your browser, access denied, are you a robot? XAUUSD fades London.</p></body></html>")
+    web = _Web({"https://a.test/robots.txt": _ALLOW, "https://a.test/t/1": (200, post, "")})
+    acc = pf.HostAccess(path=None)
+    r = _get(web, "https://a.test/t/1", acc)
+    assert r.ok and "XAUUSD" in r.text and not acc.blocked
+
+
+def test_cloudflares_passive_script_on_a_200_is_not_a_challenge() -> None:
+    page = (b"<html><body>EURUSD carry<script src='/cdn-cgi/challenge-platform/scripts/jsd/"
+            b"main.js'></script></body></html>")
+    assert pf.looks_challenged(page, {}, 200) == ""
+    assert pf.looks_challenged(page, {}, 503) != ""
+    assert pf.looks_challenged(b"", {"CF-Mitigated": "challenge"}, 403) != ""
+
+
+@pytest.mark.parametrize("ua", ["Googlebot/2.1 (+http://www.google.com/bot.html)",
+                                "Opera/9.80 (Windows NT 6.1) Presto/2.12.388 Version/12.16",
+                                "Mozilla/5.0 (compatible; bingbot/2.0)", "Baiduspider",
+                                "Mozilla/5.0 AppleWebKit/537.36 OPR/110.0"])
+def test_crawler_and_opera_impersonation_is_replaced(ua: str) -> None:
+    """P5: another company's crawler name is impersonation exactly as a browser string is."""
+    assert pf.honest_headers({"User-Agent": ua})["User-Agent"] == pf.DESK_UA
 
 
 def test_a_challenge_page_as_content_is_held_and_not_ingested() -> None:
@@ -279,3 +346,85 @@ def test_an_ip_is_held_by_its_full_host() -> None:
     _get(web, "http://10.1.2.3/p", acc)
     assert "10.1.2.3" in acc.blocked and pf.site_of("10.1.2.3") == "10.1.2.3"
     assert _get(web, "http://10.9.2.3/p", acc).ok
+
+
+# ------------------------------------------- auditor follow-ups on 0ca783b1f (2026-10-14)
+def test_regional_robots_disallow_on_one_path_does_not_stop_allowed_alternates(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    tried: list[str] = []
+    alt = rsh.ALTERNATES["hfm_pamm"][0]
+
+    def fake(url: str, timeout: float = 0, *, referer: str = "", accept_json: bool = False) -> str:
+        tried.append(url)
+        if url == alt:
+            return "<html><body>nothing listed</body></html>"
+        raise rsh.FetchError(url, None, "ROBOTS_DISALLOW", "ROBOTS_DISALLOW")
+
+    monkeypatch.setattr(rsh, "fetch", fake)
+    out = rsh.mine_source("hfm_pamm", rsh.SOURCES["hfm_pamm"], 1)
+    assert alt in tried and len(tried) > 1, tried
+    assert not str(out["state"]).startswith("refused")
+    assert "ROBOTS_DISALLOW" not in rsh.HARD_STOP and "ROBOTS_UNREADABLE" not in rsh.HARD_STOP
+    assert {"NEEDS_KEY", "METHOD_BLOCKED"} <= rsh.HARD_STOP
+
+
+def test_wayback_never_reads_a_held_sites_archive(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+    acc = pf.HostAccess(path=None)
+    acc.block("https://forum.held.test/x", 403)
+    monkeypatch.setattr(pf, "default_access", lambda: acc)
+    asked: list[str] = []
+    monkeypatch.setattr(dfm, "wayback_snapshot", lambda u, ts="": (asked.append(u) or ("", "x")))
+    stub = SimpleNamespace(status=[], _note_net=lambda ok: None)
+    out = dfm._Run.ground_wayback(stub, {"url": "https://www.held.test/forum", "name": "w"})
+    assert out["refused"] == "METHOD_BLOCKED" and out["fetched"] == 0 and asked == []
+
+
+def test_access_holds_are_counted_by_missed_growth(tmp_path: Path) -> None:
+    from research import missed_growth as mg
+    state = tmp_path / "access.json"
+    acc = pf.HostAccess.load(state)
+    acc.block("https://a.test/p", 403)
+    acc.block("https://b.test/p", 429)
+    out = mg.access_hold_lines(state)
+    assert out["n_held"] == 2 and out["verdict"] == mg.UNMEASURED
+    assert {x["source"] for x in out["lines"]} == {"a.test", "b.test"}
+    assert all(x["delta_elogw"] == "UNMEASURED" and x["cause"] for x in out["lines"])
+    lapsed = mg.access_hold_lines(state, now=acc.now() + pf.RECHECK_429_S + 1)
+    assert {x["source"] for x in lapsed["lines"]} == {"a.test"}
+    assert mg.access_hold_lines(tmp_path / "absent.json")["verdict"] == mg.UNMEASURED
+
+
+def test_zenn_403_holds_the_site_and_never_switches_ua(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The R0466 path: zenn.dev 403s the named agent. The answer is a hold, not a disguise."""
+    from libs.data import foreign_sources as fsrc
+    web = _Web({"https://zenn.dev/robots.txt": _ALLOW})
+    original = web.__call__
+
+    def opener(req: Any, timeout: float, context: Any = None) -> Any:
+        if "/api/articles" in req.full_url:
+            web.sent.append((req.full_url, str(req.get_header("User-agent"))))
+            raise urllib.error.HTTPError(req.full_url, 403, "x", Message(), io.BytesIO(b""))
+        return original(req, timeout, context)
+
+    acc = pf.HostAccess(path=None)
+    real_get = pf.get
+    monkeypatch.setattr(pf, "get", lambda url, **kw: real_get(
+        url, **{**kw, "opener": opener, "access": acc, "gate": None, "sleep": lambda s: None}))
+    monkeypatch.setattr(fsrc, "_pace", lambda s: None)
+    fsrc._BACKED_OFF.discard("zenn")
+    rows, err = fsrc.zenn("carry")
+    assert rows == [] and err and "METHOD_BLOCKED" in err
+    assert acc.hold("https://zenn.dev/anything") == "METHOD_BLOCKED"
+    assert all(ua == pf.DESK_UA for _, ua in web.sent)
+    assert "zenn" in fsrc._BACKED_OFF
+    fsrc._BACKED_OFF.discard("zenn")
+
+
+@pytest.mark.parametrize("mod", ["cn_sources", "papers", "bilibili", "foreign_sources"])
+def test_the_priority_libs_send_the_desk_ua_through_polite_fetch(mod: str) -> None:
+    import importlib
+    m = importlib.import_module(f"libs.data.{mod}")
+    assert m._UA["User-Agent"] == pf.DESK_UA
+    src = Path(m.__file__ or "").read_text("utf-8")
+    assert "urlopen(" not in src and "_pf.get_text(" in src

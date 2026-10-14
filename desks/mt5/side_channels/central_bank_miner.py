@@ -35,6 +35,13 @@ from pathlib import Path
 from typing import Any
 
 import requests
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "central_banks"
@@ -177,8 +184,7 @@ def mine_central_banks() -> list[dict[str, Any]]:
     seen = _seen_keys()
     for bank, info in FEEDS.items():
         try:
-            resp = requests.get(info["url"], headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}, timeout=20)
+            resp = requests.get(info["url"], headers={"User-Agent": DESK_UA}, timeout=20)
             resp.raise_for_status()
         except requests.RequestException as exc:
             # A dead feed is a REPORTED fact, never a silent empty result (the heartbeat lesson).

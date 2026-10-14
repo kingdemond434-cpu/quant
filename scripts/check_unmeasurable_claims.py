@@ -42,11 +42,19 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import DESK_UA
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 OUT = ROOT / "data" / "unmeasurable_claims.json"
 
-_UA = {"User-Agent": "Mozilla/5.0 (quant-desk availability probe)"}
+_UA = {"User-Agent": DESK_UA}
 
 #: Candidate free sources per blocked observable. This list is the SEARCH RECORD: an observable
 #: with no entry here has not been searched for, which is a different and worse state than

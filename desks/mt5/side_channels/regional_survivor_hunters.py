@@ -671,8 +671,11 @@ SOURCES = {
                            "https://www.ready-trade.com", 1),
 }
 
-#: ALTERNATES a source is resolved through when its primary listing 404s or fails TLS. Never after
-#: a refusal: a 401/403/429 or a robots.txt Disallow (`HARD_STOP`) ends the source's run.
+#: ALTERNATES a source is resolved through when its primary listing 404s, fails TLS or is
+#: disallowed for THAT PATH by robots.txt. Never after a refusal: a 401/403/429 or a challenge
+#: (`HARD_STOP`, a hold on the whole site) ends the source's run. A robots Disallow is a rule about
+#: one path, not a refusal of the site, so the source's ALLOWED paths are still read -- each of
+#: them passes its own robots check first, and an unreadable robots.txt refuses only its origin.
 #: Sibling hosts and moved paths of the SAME venue only -- never a new venue (new grounds are
 #: registered, not hard-coded here). Tried in order after the primary; the one that yields is
 #: remembered in the state file and tried FIRST next run. Unverified from the build sandbox
@@ -694,8 +697,10 @@ ALTERNATES: dict[str, tuple[str, ...]] = {
     "duplitrade": ("https://duplitrade.com/strategy-providers/",),
     "mylivefx_br": ("https://mylivefx.com/ranking/", "https://mylivefx.com/traders/"),
 }
-#: Verdicts that end a source's run: no alternate, no site-root walk, nothing else sent.
-HARD_STOP = frozenset({"NEEDS_KEY", "METHOD_BLOCKED", "ROBOTS_DISALLOW", "ROBOTS_UNREADABLE"})
+#: Verdicts that end a source's run: no alternate, no site-root walk, nothing else sent. Only a
+#: site hold (401 NEEDS_KEY; 403/429/challenge METHOD_BLOCKED). ROBOTS_DISALLOW and
+#: ROBOTS_UNREADABLE refuse one URL / one origin and are recorded in `tried`, never routed around.
+HARD_STOP = frozenset({"NEEDS_KEY", "METHOD_BLOCKED"})
 _LISTING_LINK = re.compile(
     r'href="([^"#]{2,200})"[^>]*>\s*([^<]{0,80}(?:rank|rating|leader|trader|strateg|master|'
     r'provider|pamm|copy|signal|systre|ランキング|ストラテジー|排行|榜|рейтинг|трейдер)[^<]{0,40})<',

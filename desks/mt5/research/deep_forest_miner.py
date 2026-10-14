@@ -271,6 +271,12 @@ def accept_language(lang: str) -> str:
 
 
 # ------------------------------------------------------------------------------- fetching
+def _answered(err: str) -> bool:
+    """True when an error string is the SITE's answer (an HTTP status, a hold, a robots rule)
+    rather than a transport failure -- only the latter counts against the network."""
+    return any(t in err for t in ("HTTP", "NEEDS_KEY", "METHOD_BLOCKED", "ROBOTS_"))
+
+
 class Refused(OSError):
     """A fetch the site or its robots.txt refused (NEEDS_KEY / METHOD_BLOCKED / ROBOTS_*). A
     recorded answer: the caller never renders, mirrors or otherwise routes around it."""
@@ -1784,7 +1790,7 @@ class _Run:
                 break
             self.counts["queries"] += 1
             arts, err = fn(str(q))
-            self._note_net(err is None or "HTTP" in str(err))
+            self._note_net(err is None or _answered(str(err)))
             if err:
                 errors.append(str(err)[:100])
             for a in arts:
@@ -1819,7 +1825,7 @@ class _Run:
                 break
             self.counts["queries"] += 1
             rows, err = call()
-            self._note_net(err is None or "HTTP" in str(err))
+            self._note_net(err is None or _answered(str(err)))
             if err:
                 errors.append(str(err)[:100])
             for p in rows:
@@ -1881,13 +1887,22 @@ class _Run:
         """A ground that no longer exists (the Quantopian forum) through the Wayback Machine:
         nearest capture of the seed, then the capture's own links on the same original host."""
         original = str(g.get("url") or "")
-        # The ORIGINAL site's hold is re-checked before every archive.org request -- the
-        # availability API, the capture and each deep link (audit PASS5_feb86fa30 SF): an
-        # archive of a site that refused this agent is a route-around.
+        # polite_fetch's HostAccess record first: a site that refused the desk (401/403/429,
+        # a challenge) is not read through its archive copy either -- an archive is not a route
+        # around a refusal. The hold lapses on its own clock (429/WAF) or a person's word.
+        held = pf.default_access().hold(original) if original else ""
+        if held:
+            self.status.append({"url": original, "refused": held, "route": "wayback"})
+            return {"fetched": 0, "claims": 0, "refused": held,
+                    "errors": [f"{held}: {urlparse(original).netloc} is held; its archive "
+                               "copy is not read while the hold stands"]}
+        # Then the run's SiteHolds: the ORIGINAL site's hold is re-checked before every
+        # archive.org request -- the availability API, the capture and each deep link (audit
+        # PASS5_feb86fa30 SF): an archive of a site that refused this agent is a route-around.
         if self._site_held(original):
             return {"fetched": 0, "claims": 0, "errors": [f"site held: {original}"]}
         snap, err = wayback_snapshot(original, str(g.get("timestamp") or ""))
-        self._note_net(err is None or "HTTP" in str(err))
+        self._note_net(err is None or _answered(str(err)))
         if err:
             return {"fetched": 0, "claims": 0, "errors": [err]}
         page = self.page(snap)

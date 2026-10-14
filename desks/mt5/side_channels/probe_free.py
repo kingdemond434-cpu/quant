@@ -1,8 +1,15 @@
 import json
 import urllib.parse
 import urllib.request
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
-UA = {"User-Agent": "Mozilla/5.0 (research; desk)"}
+UA = {"User-Agent": DESK_UA}
 
 
 def get(url, timeout=40):

@@ -26,8 +26,9 @@ from pathlib import Path
 from typing import Any
 
 from libs.core.coerce import integer
+from libs.data.polite_fetch import DESK_UA
 
-_UA = "Mozilla/5.0 (compatible; QuantResearchPublicSourceMonitor/1.0)"
+_UA = DESK_UA
 _CTX = ssl.create_default_context()
 _EXTREME = re.compile(
     r"(?:\b(?:100|200|300|500|1000)%|triple[- ]digit|world cup|champion|record return|10x|100x)",

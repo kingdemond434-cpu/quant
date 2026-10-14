@@ -65,6 +65,13 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -106,7 +113,7 @@ OUT_REL = "desks/mt5/reports/FUTURES_LEAD_LAG.json"
 CLOCK_REL = "desks/mt5/reports/BAR_CLOCK.json"
 
 _CHART = "https://query2.finance.yahoo.com/v8/finance/chart/{sym}?range={rng}&interval={iv}"
-_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+_UA = DESK_UA
 
 
 def _clean_returns(close: pd.Series) -> pd.Series:

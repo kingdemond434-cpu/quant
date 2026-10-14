@@ -24,13 +24,19 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
 OUT = INTEL / "mql5_survivors"
 SHORTLIST = INTEL / "survivor_shortlist.json"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                         "(KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+HEADERS = {"User-Agent": DESK_UA,
            "Accept-Language": "en-US,en;q=0.9"}
 
 LIST_PAGES = [("mt5", 1), ("mt5", 2), ("mt5", 3), ("mt4", 1)]

@@ -12,6 +12,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "reddit"
@@ -21,7 +28,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 SUBREDDITS = ["Forex", "algotrading", "wallstreetbets", "Gold",
               "silverbugs", "ForexTrading", "Daytrading"]
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
+HEADERS = {"User-Agent": DESK_UA}
 
 SYMBOLS = [
     "XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF",

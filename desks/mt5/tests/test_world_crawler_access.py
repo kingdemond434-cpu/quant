@@ -305,8 +305,9 @@ def test_the_crawl_never_asks_a_held_site_again(monkeypatch: pytest.MonkeyPatch,
 
 
 # ------------------------------------------- auditor follow-ups on 1e8cca2ac (2026-10-14)
+#: A challenge is recognised by its MARKUP (Cloudflare's bootstrap), never by its title text.
 _CHALLENGE = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
-              b"<div id='cf-challenge'>Checking your browser</div></body></html>")
+              b"<script>window._cf_chl_opt={cvId:'3'};</script></body></html>")
 
 
 def _crawl_fixture(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, urls: tuple[str, ...]) -> None:
