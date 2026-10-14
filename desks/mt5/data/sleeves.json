@@ -50349,8 +50349,8 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.0,
-      "status": "STANDBY",
+      "risk_frac": 0.1,
+      "status": "LIVE",
       "risk_frac_source": "principal_cert_book",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
@@ -50387,7 +50387,7 @@
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-13T23:56:31.247847+00:00",
-      "restored_at": "2026-09-16T20:48:19+00:00",
+      "restored_at": "2026-10-14T01:48:12+00:00",
       "restore_reason": "already funded by the allocator at 5.50% heat; the allocator's current solve gives this sleeve 5.50% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audchf|overnight_gap_decay|asia' (funded book))",
       "artifact": {
         "version_hash": "11e86dbf4cf04fb7",
@@ -50396,7 +50396,7 @@
       },
       "restored_from": "STANDBY",
       "restored_by": "heal_silent_demotions",
-      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
+      "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason, demote_reason; a demotion that records nothing is not a verdict",
       "status_before_gold_only": "STANDBY",
       "principal_override": true,
       "canonical_identity": "audchf|overnight_gap_decay|asia",
