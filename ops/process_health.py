@@ -485,11 +485,47 @@ def _reading(organ: str, artifact: str) -> dict[str, Any]:
 
 #: Verdicts that page through the alert channels and count against the headline. A DISABLED
 #: task joins them unless it is EXPECTED_DISABLED (v5b ruling): see `needs_attention`.
-ATTENTION = ("ALERTS_UNARMED", "NOT_SCHEDULED", "SCHEDULER_UNMEASURED", "FAILING",
+ATTENTION = ("ALERTS_UNARMED", "DISK_LOW", "NOT_SCHEDULED", "SCHEDULER_UNMEASURED", "FAILING",
              "NO_ARTIFACT", "STALE", "UNMEASURED")
-#: Rows read OFF the scheduler (the pager, ...): a definite fault whatever the scheduler read
+#: Free space on the desk's drive below this is a red row (coordinator, 2026-10-14). Generic: the
+#: floor is the same on any box; what the drive holds is read, never assumed.
+DISK_FLOOR_GB = 10.0
+#: Where reclaimable bulk tends to sit, listed (never deleted) when the floor is breached.
+RECLAIM_GLOBS = ("**/*.bak", "**/*backup*", "**/*.log.*", "**/logs/*.log", "**/*.zip",
+                 "**/*.7z", "**/*.tar*")
+
+
+def disk_state(root: Path | None = None, *, floor_gb: float = DISK_FLOOR_GB,
+               top: int = 10) -> dict[str, Any]:
+    """Free space on the drive holding `root`, and, under the floor, the largest reclaimable
+    files under it by size. Reads only; an unreadable drive is UNMEASURED, never fine."""
+    import shutil
+    base = Path(root or ROOT)
+    try:
+        du = shutil.disk_usage(base)
+    except OSError as exc:
+        return {"verdict": "UNMEASURED", "why": f"disk usage unreadable ({exc})"}
+    free_gb = du.free / 1024 ** 3
+    out: dict[str, Any] = {"free_gb": round(free_gb, 2), "total_gb": round(du.total / 1024 ** 3, 2),
+                           "floor_gb": floor_gb,
+                           "verdict": "DISK_LOW" if free_gb < floor_gb else "OK"}
+    if out["verdict"] == "DISK_LOW":
+        seen: dict[str, int] = {}
+        for g in RECLAIM_GLOBS:
+            for f in base.glob(g):
+                try:
+                    if f.is_file():
+                        seen[str(f.relative_to(base))] = f.stat().st_size
+                except OSError:
+                    continue
+        out["reclaimable"] = [{"path": k, "mb": round(v / 1024 ** 2, 1)} for k, v in
+                              sorted(seen.items(), key=lambda kv: -kv[1])[:top]]
+    return out
+
+
+#: Rows read OFF the scheduler (the pager, the disk): a definite fault whatever the scheduler read
 #: managed, so they headline ATTENTION even over a brief-only or unread scheduler.
-OFF_SCHEDULER_FAULTS = frozenset({"ALERTS_UNARMED"})
+OFF_SCHEDULER_FAULTS = frozenset({"ALERTS_UNARMED", "DISK_LOW"})
 
 
 def needs_attention(row: dict[str, Any]) -> bool:
@@ -651,7 +687,25 @@ def build() -> dict[str, Any]:
             "purpose": "the pager every other row depends on to be heard",
         })
 
-    order = {"ALERTS_UNARMED": 0, "NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
+    disk = disk_state()
+    if disk.get("verdict") == "DISK_LOW":
+        rows.append({
+            "name": "DISK FREE",
+            "verdict": "DISK_LOW",
+            "why": (f"{disk['free_gb']} GB free of {disk['total_gb']} GB, under the "
+                    f"{disk['floor_gb']:g} GB floor; largest reclaimable (review, never "
+                    f"auto-deleted): "
+                    + ", ".join(f"{x['path']} {x['mb']}MB"
+                                for x in disk.get("reclaimable", [])[:5])),
+            "state": "LOW", "last_run": "", "next_run": "", "last_result_code": None,
+            "last_result": "", "artifact": str(ROOT), "artifact_age_min": None,
+            "age_basis": None, "artifact_stamp": None, "artifact_mtime_age_min": None,
+            "contract_max_age_min": None,
+            "purpose": "room for every organ on this board to write its artifact",
+        })
+
+    order = {"ALERTS_UNARMED": 0, "DISK_LOW": 0, "NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0,
+             "FAILING": 1,
              "NO_ARTIFACT": 2, "STALE": 3, "UNMEASURED": 3,
              "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
@@ -683,6 +737,7 @@ def build() -> dict[str, Any]:
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
         "scheduler_status": scheduler_status,
+        "disk": disk,
         "n_processes": len(rows),
         "counts": counts,
         # Which clock each contracted row was judged by: "stamp" (inside the artifact), "mtime"

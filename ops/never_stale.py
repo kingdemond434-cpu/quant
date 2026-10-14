@@ -118,6 +118,10 @@ VERDICT_DIAGNOSIS = {
         "no alert channel is armed, so every red row on the board reaches no one. Arming needs a "
         "credential only the owner types on the box: create data/secrets/alert_channels.json "
         "(shapes in libs/ops/alert_channels.py). Nothing here can or should invent one."),
+    "DISK_LOW": (
+        "the drive the desk writes to is under process_health.DISK_FLOOR_GB free. A restart frees "
+        "nothing and deleting state is the owner's call: the row names the largest reclaimable "
+        "paths (backups, rotated logs) to review."),
 }
 
 #: ONE START PER ORGAN PER SHAPE PER WINDOW. A start that did not cure the verdict is evidence the

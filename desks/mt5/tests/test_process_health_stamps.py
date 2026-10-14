@@ -310,3 +310,23 @@ def test_unarmed_pager_is_a_red_row_with_the_owner_action(
     doc = ph.build()
     assert not any(r["name"] == "ALERT CHANNELS" for r in doc["processes"])
     assert doc["status"] == "OK"
+
+
+def test_disk_under_the_floor_is_a_red_row_that_lists_and_never_deletes(tmp_path, monkeypatch):
+    import shutil
+    from collections import namedtuple
+
+    (tmp_path / "logs").mkdir()
+    big = tmp_path / "logs" / "old.log"
+    big.write_bytes(b"x" * 2048)
+    du = namedtuple("du", "total used free")
+    monkeypatch.setattr(shutil, "disk_usage", lambda _p: du(100 * 1024 ** 3, 95 * 1024 ** 3,
+                                                           5 * 1024 ** 3))
+    d = ph.disk_state(tmp_path)
+    assert d["verdict"] == "DISK_LOW" and d["free_gb"] == 5.0
+    assert d["reclaimable"][0]["path"].endswith("old.log") and big.exists()
+    assert "DISK_LOW" in ph.ATTENTION
+    monkeypatch.setattr(shutil, "disk_usage", lambda _p: du(100 * 1024 ** 3, 50 * 1024 ** 3,
+                                                           50 * 1024 ** 3))
+    assert ph.disk_state(tmp_path)["verdict"] == "OK"
+    assert "DISK_LOW" in ns.VERDICT_DIAGNOSIS
