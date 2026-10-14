@@ -4903,7 +4903,9 @@ def chokepoints_asof(decision_at: datetime, store_path: Path | None = None,
     vintage read, never a later revision back-dated. An absent or empty store is UNMEASURED."""
     want = [PORTWATCH_PACK_SERIES.get(n, n) for n in names] if names is not None else None
     got = series_asof("imf_portwatch_chokepoints", decision_at, store_path, want)
-    p, best = Path(got["store"]), got["series"]
+    p = Path(got["store"])
+    best = {k: {f: v[f] for f in ("period", "value", "known_at")}
+            for k, v in got["series"].items()}           # the packs' row shape, unchanged
     if decision_at.tzinfo is None:
         decision_at = decision_at.replace(tzinfo=UTC)
     if not best:
