@@ -32,7 +32,10 @@ COT_MAP: dict[str, tuple[str, float]] = {
     "USDJPY": ("097741", -1.0),   # JAPANESE YEN (JPY/USD) -> invert for USDJPY
     "USDCHF": ("092741", -1.0),   # SWISS FRANC (CHF/USD) -> invert for USDCHF
     "USDCAD": ("090741", -1.0),   # CANADIAN DOLLAR (CAD/USD) -> invert for USDCAD
-    "XTIUSD": ("067411", +1.0),   # CRUDE OIL, LIGHT SWEET-WTI
+    # NYMEX 067651, the primary WTI venue (CFTC now names it "WTI-PHYSICAL"), as
+    # scripts/refresh_cot_zcache.py:CODES already uses. 067411 is the ICE Europe WTI
+    # look-alike: a different, thinner speculator book for the same MT5 instrument.
+    "XTIUSD": ("067651", +1.0),   # WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE
 }
 
 
