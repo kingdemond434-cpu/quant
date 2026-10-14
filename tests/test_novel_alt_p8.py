@@ -24,7 +24,9 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 from research import alt_proxies as A  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures" / "alt_proxies"
-EC = FIX / "energy_charts"
+DE_LU = FIX / "eu_power_dayahead.de_lu.json"
+FR = FIX / "eu_power_dayahead.fr.json"
+RESTRICTED = FIX / "energy_charts_restricted.json"
 NOW = datetime(2026, 10, 14, 12, tzinfo=UTC)
 POWER = A.BY_ID["eu_power_dayahead"]
 SKY = A.BY_ID["opensky_departures"]
@@ -69,19 +71,20 @@ def _caught_up_sst() -> dict[str, Any]:
 
 
 # ============================================================================ parse
-def test_power_fixture_parses_complete_delivery_days_only() -> None:
+def test_power_fixture_parses_complete_delivery_days_keyed_on_the_auction_day() -> None:
     obs = {(o.series, o.period): o.value for o in
-           A.parse_power_dayahead((EC / "price_de_lu.json").read_bytes(), A.Ctx(part="de_lu"))}
-    assert ("de_lu_dayahead_base", date(2026, 10, 12)) in obs
-    assert ("de_lu_dayahead_peak", date(2026, 10, 13)) in obs
-    assert ("de_lu_dayahead_base", date(2026, 10, 14)) not in obs       # partial day: never
-    # 12 peak hours at +30, one hour at -120 on the 12th: base = 80 + (360 - 120) / 24
-    assert obs[("de_lu_dayahead_base", date(2026, 10, 12))] == pytest.approx(90.0)
-    assert obs[("de_lu_dayahead_peak", date(2026, 10, 13))] == pytest.approx(115.0)
+           A.parse_power_dayahead(DE_LU.read_bytes(), A.Ctx(part="de_lu"))}
+    # delivery 12th and 13th complete -> auction days 11th and 12th; delivery 14th is partial
+    assert ("de_lu_dayahead_base", date(2026, 10, 11)) in obs
+    assert ("de_lu_dayahead_peak", date(2026, 10, 12)) in obs
+    assert ("de_lu_dayahead_base", date(2026, 10, 13)) not in obs       # partial day: never
+    # 12 peak hours at +30, one hour at -120 on delivery 12th: base = 80 + (360 - 120) / 24
+    assert obs[("de_lu_dayahead_base", date(2026, 10, 11))] == pytest.approx(90.0)
+    assert obs[("de_lu_dayahead_peak", date(2026, 10, 12))] == pytest.approx(115.0)
 
 
 def test_a_body_without_the_cc_by_licence_is_never_read() -> None:
-    body = (EC / "price_restricted.json").read_bytes()
+    body = RESTRICTED.read_bytes()
     assert A.power_licence_error(body).startswith("LICENCE_CHANGED")  # type: ignore[union-attr]
     assert A.parse_power_dayahead(body, A.Ctx(part="de_lu")) == []
     assert A.power_licence_error(b"<html>blocked</html>").startswith("NOT_JSON")  # type: ignore[union-attr]
@@ -97,7 +100,7 @@ def test_only_cc_by_zones_are_ever_requested() -> None:
 
 def test_opensky_fixture_parses_departures_per_country() -> None:
     obs = {(o.series, o.period): o.value for o in A.parse_opensky_departures(
-        (FIX / "opensky" / "departures.json").read_bytes(), A.Ctx())}
+        (FIX / "opensky_departures.json").read_bytes(), A.Ctx())}
     assert obs[("cn_departures", date(2026, 10, 12))] == 5
     assert obs[("tr_departures", date(2026, 10, 13))] == 1
     assert not any(s.startswith("gb") for s, _ in obs)                   # unmapped: discarded
@@ -106,18 +109,19 @@ def test_opensky_fixture_parses_departures_per_country() -> None:
 # ============================================================================ PIT
 def test_power_stamp_is_d_minus_1_1400_brussels_and_never_earlier_than_the_read() -> None:
     # summer (CEST, UTC+2) and winter (CET, UTC+1), both on the latest stated deadline
-    assert A.rule_power_dayahead(date(2026, 7, 2)) == datetime(2026, 7, 1, 12, tzinfo=UTC)
-    assert A.rule_power_dayahead(date(2026, 1, 15)) == datetime(2026, 1, 14, 13, tzinfo=UTC)
-    for d in (date(2026, 3, 29), date(2026, 3, 30), date(2026, 10, 25), date(2026, 10, 26)):
+    # period = auction day: 14:00 Brussels on it, summer (UTC+2) and winter (UTC+1)
+    assert A.rule_power_dayahead(date(2026, 7, 1)) == datetime(2026, 7, 1, 12, tzinfo=UTC)
+    assert A.rule_power_dayahead(date(2026, 1, 14)) == datetime(2026, 1, 14, 13, tzinfo=UTC)
+    for d in (date(2026, 3, 28), date(2026, 3, 29), date(2026, 10, 24), date(2026, 10, 25)):
         t = A.rule_power_dayahead(d)
-        # never before the 12:45 CET preliminary results of D-1, in either regime
-        assert t >= datetime(d.year, d.month, d.day, tzinfo=UTC) - timedelta(hours=12)
+        # never before the 12:45 CET preliminary results, in either regime or on a change day
+        assert t >= datetime(d.year, d.month, d.day, 11, 45, tzinfo=UTC)
     assert A.cet_day_hours(date(2026, 3, 29)) == 23 and A.cet_day_hours(date(2026, 10, 25)) == 25
     store: dict[str, Any] = {}
     early_read = datetime(2026, 10, 12, 11, 0, tzinfo=UTC)                 # before 14:00 CEST
-    A.merge_vintages(store, POWER, [A.Obs("fr_dayahead_base", date(2026, 10, 13), 61.0)],
+    A.merge_vintages(store, POWER, [A.Obs("fr_dayahead_base", date(2026, 10, 12), 61.0)],
                      early_read)
-    assert store["fr_dayahead_base|2026-10-13"]["published_time"] == "2026-10-12T12:00:00+00:00"
+    assert store["fr_dayahead_base|2026-10-12"]["published_time"] == "2026-10-12T12:00:00+00:00"
     A.merge_vintages(store, POWER, [A.Obs("fr_dayahead_base", date(2025, 1, 2), 90.0)], NOW)
     row = store["fr_dayahead_base|2025-01-02"]
     assert row["published_time"] == NOW.isoformat() and row["pit_quality"] == "backfill"
@@ -126,14 +130,14 @@ def test_power_stamp_is_d_minus_1_1400_brussels_and_never_earlier_than_the_read(
 
 
 def test_each_response_is_stamped_at_its_own_fetch_time(tmp_path: Path) -> None:
-    body_de, body_fr = (EC / "price_de_lu.json").read_bytes(), (EC / "price_fr.json").read_bytes()
+    body_de, body_fr = DE_LU.read_bytes(), FR.read_bytes()
     t1, t2 = NOW + timedelta(minutes=1), NOW + timedelta(minutes=2)
     ticks = iter([t1, t2])
     rec, store, _ = _run(Getter(_http(404), [body_de, body_fr]), tmp_path, _caught_up_sst(),
                          clock=lambda: next(ticks))
     assert rec["outcome"] == "OK"
-    assert store["de_lu_dayahead_base|2026-10-13"]["first_seen_at"] == t1.isoformat()
-    assert store["fr_dayahead_base|2026-10-13"]["first_seen_at"] == t2.isoformat()
+    assert store["de_lu_dayahead_base|2026-10-12"]["first_seen_at"] == t1.isoformat()
+    assert store["fr_dayahead_base|2026-10-12"]["first_seen_at"] == t2.isoformat()
 
 
 # ============================================================================ pass outcomes
@@ -145,7 +149,7 @@ def test_an_empty_power_pass_is_failed_never_zero(tmp_path: Path) -> None:
 
 
 def test_a_reread_with_nothing_new_is_unchanged(tmp_path: Path) -> None:
-    body_de, body_fr = (EC / "price_de_lu.json").read_bytes(), (EC / "price_fr.json").read_bytes()
+    body_de, body_fr = DE_LU.read_bytes(), FR.read_bytes()
     rec, store, sst = _run(Getter(_http(404), [body_de, body_fr]), tmp_path, _caught_up_sst())
     assert rec["outcome"] == "OK"
     rec2, _, _ = _run(Getter(_http(404), [body_de, body_fr]), tmp_path, sst, store)
@@ -153,7 +157,7 @@ def test_a_reread_with_nothing_new_is_unchanged(tmp_path: Path) -> None:
 
 
 def test_the_cursor_walks_windows_until_tomorrow_is_served(tmp_path: Path) -> None:
-    body = (EC / "price_de_lu.json").read_bytes()
+    body = DE_LU.read_bytes()
     since = (NOW - timedelta(days=A.POWER_CHUNK_D + 10)).date().isoformat()
     sst = {"power_from": dict.fromkeys(A.POWER_ZONES, since)}
     g = Getter(_http(404), [body] * 4)
@@ -165,7 +169,7 @@ def test_the_cursor_walks_windows_until_tomorrow_is_served(tmp_path: Path) -> No
 
 @pytest.mark.parametrize("code", [401, 403, 429])
 def test_a_403_hard_stops_and_waits_for_a_person(code: int, tmp_path: Path) -> None:
-    body = (EC / "price_de_lu.json").read_bytes()
+    body = DE_LU.read_bytes()
     g = Getter(_http(404), [_http(code), body])
     rec, _, sst = _run(g, tmp_path, _caught_up_sst())
     assert rec["status"] == "FAILED:HARD_STOP" and len(g.data_urls) == 1
@@ -179,13 +183,13 @@ def test_a_403_hard_stops_and_waits_for_a_person(code: int, tmp_path: Path) -> N
                            deadline=float("inf"), getter=g2, sleep=lambda _s: None)
     assert rec2["status"] == "HELD:HARD_STOP" and g2.urls == []
     sst["hard_stop"]["released_by"] = "a person"
-    rec3, _, _ = _run(Getter(_http(404), [body, (EC / "price_fr.json").read_bytes()]),
+    rec3, _, _ = _run(Getter(_http(404), [body, FR.read_bytes()]),
                       tmp_path, sst)
     assert rec3["outcome"] == "OK" and sst["hard_stop_released"]
 
 
 def test_a_licence_change_mid_pass_is_held_for_a_person(tmp_path: Path) -> None:
-    rec, store, sst = _run(Getter(_http(404), [(EC / "price_restricted.json").read_bytes()]),
+    rec, store, sst = _run(Getter(_http(404), [RESTRICTED.read_bytes()]),
                            tmp_path, _caught_up_sst())
     assert rec["status"] == "FAILED:LICENCE_CHANGED" and not store and sst["hard_stop"]
 
@@ -206,24 +210,25 @@ def test_robots_decides_every_power_pass(tmp_path: Path) -> None:
 def test_the_power_consumer_cannot_see_a_same_day_or_unpublished_value(tmp_path: Path) -> None:
     store: dict[str, Any] = {}
     seen = datetime(2026, 10, 12, 13, tzinfo=UTC)
-    A.merge_vintages(store, POWER, [A.Obs("de_lu_dayahead_base", date(2026, 10, 12), 70.0),
-                                    A.Obs("de_lu_dayahead_base", date(2026, 10, 13), 95.0)],
+    # auction days 11th (read late) and 12th (read at 13:00 UTC, after its 12:00 UTC rule)
+    A.merge_vintages(store, POWER, [A.Obs("de_lu_dayahead_base", date(2026, 10, 11), 70.0),
+                                    A.Obs("de_lu_dayahead_base", date(2026, 10, 12), 95.0)],
                      seen)
     p = tmp_path / "eu_power_dayahead.json"
     p.write_text(json.dumps(store), "utf-8")
-    # at 13:30 UTC on the 12th: the 13th was auctioned, but is a later period; the 12th is
-    # the decision's own day -- neither is visible
-    got = A.power_stress_asof(datetime(2026, 10, 12, 13, 30, tzinfo=UTC), p)
+    # at 12:30 UTC on the 12th nothing is known yet (both were first read at 13:00)
+    got = A.power_stress_asof(datetime(2026, 10, 12, 12, 30, tzinfo=UTC), p)
     assert got["status"] == "UNMEASURED" and got["instruments"] == {}
-    got = A.power_stress_asof(datetime(2026, 10, 13, 9, tzinfo=UTC), p)
-    assert got["series"]["de_lu_dayahead_base"]["period"] == "2026-10-12"
+    # at 13:30 UTC on the 12th: the 11th is visible; the 12th's auction is same-day -- hidden
+    got = A.power_stress_asof(datetime(2026, 10, 12, 13, 30, tzinfo=UTC), p)
+    assert got["series"]["de_lu_dayahead_base"]["period"] == "2026-10-11"
     legs = {r["series"]: r["prior_sign"] for r in got["instruments"]["GER40"]}
     assert legs == {"de_lu_dayahead_base": -1}
     assert set(got["instruments"]) == {"GER40", "EURUSD", "EURCHF", "XNGUSD"}
     assert got["style"]["style_tag"] == "novel" and got["style"]["verdict"] == "UNMEASURED"
     # a value read later than the decision is invisible even when its period is older
-    late = A.series_asof("eu_power_dayahead", datetime(2026, 10, 12, 12, tzinfo=UTC), p)
-    assert late["status"] == "UNMEASURED"
+    nxt = A.series_asof("eu_power_dayahead", datetime(2026, 10, 13, 0, 1, tzinfo=UTC), p)
+    assert nxt["series"]["de_lu_dayahead_base"]["period"] == "2026-10-12"
 
 
 def test_every_mapped_instrument_is_the_ones_named() -> None:

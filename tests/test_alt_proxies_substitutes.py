@@ -574,7 +574,8 @@ BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva
 
 def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     blocked = {s.id for s in A.SOURCES if s.terms != "confirmed"}
-    assert blocked == {*BLOCKED, "za_statssa_retail"}       # a mirror-only candidate fails closed
+    # a mirror-only candidate fails closed; OpenSky is IDEAS_ONLY on its own terms (pass 8)
+    assert blocked == {*BLOCKED, "za_statssa_retail", "opensky_departures"}
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
     for sid, subs in A.SUBSTITUTED_BY.items():

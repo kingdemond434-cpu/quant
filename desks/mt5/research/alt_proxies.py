@@ -596,7 +596,8 @@ def parse_portwatch_chokepoints(body: bytes, ctx: Ctx) -> list[Obs]:
 
 # ---------------------------------------------------------------------------- pass-8 novel styles
 #: P8-N1 EU DAY-AHEAD POWER (Energy-Charts / Fraunhofer ISE, `api.energy-charts.info/price`).
-#: The SDAC auction for delivery day D closes at 12:00 CET on D-1; NEMO Committee timings (in
+#: Series are keyed on the AUCTION day (delivery day - 1). The SDAC auction for delivery day D
+#: closes at 12:00 CET on D-1; NEMO Committee timings (in
 #: force from delivery 2021-06-18, Nord Pool exchange message 2021-05-26): preliminary results
 #: "12:45 CET", Full-Decoupling deadline "14:00 CET", shadow allocation results "no later than
 #: 14:00 CET". The rule takes the LATEST of these, 14:00 Brussels local time on D-1, so a
@@ -645,10 +646,11 @@ def cet_day_hours(d: date) -> int:
 
 
 def rule_power_dayahead(period: date) -> datetime:
-    """Delivery day `period` is known from 14:00 Brussels time on the day before (the SDAC
-    Full-Decoupling / shadow-results deadline, the latest stated publication), in UTC."""
-    d1 = period - timedelta(days=1)
-    guess = _utc(d1.year, d1.month, d1.day, POWER_PUBLISH_HOUR_LOCAL)
+    """`period` is the AUCTION day A (delivery day A+1): its prices are known from 14:00
+    Brussels time on A (the SDAC Full-Decoupling / shadow-results deadline, the latest stated
+    publication), in UTC. Keying the series on the auction day keeps every stamp after its
+    period, as the organ's release-rule law requires; the delivery day is period + 1."""
+    guess = _utc(period.year, period.month, period.day, POWER_PUBLISH_HOUR_LOCAL)
     return guess - timedelta(hours=cet_offset_h(guess - timedelta(hours=1)))
 
 
@@ -672,9 +674,10 @@ def parse_power_dayahead(body: bytes, ctx: Ctx) -> list[Obs]:
     """Energy-Charts /price: `unix_seconds` (slot start) and `price` (EUR/MWh), hourly or 15-min.
 
     Folded per Brussels DELIVERY day into `<zone>_dayahead_base` (mean of every slot) and
-    `<zone>_dayahead_peak` (08-20 local). A day is published only when every local hour of it
-    (23, 24 or 25) carries a price: a partial day is never averaged. `ctx.part` is the zone slug.
-    Nothing is read unless the licence check passes."""
+    `<zone>_dayahead_peak` (08-20 local), each keyed on its AUCTION day (delivery - 1, see
+    `rule_power_dayahead`). A day is published only when every local hour of it (23, 24 or 25)
+    carries a price: a partial day is never averaged. `ctx.part` is the zone slug. Nothing is
+    read unless the licence check passes."""
     if power_licence_error(body) is not None:
         return []
     doc = json.loads(body.decode("utf-8", errors="replace"))
@@ -699,9 +702,11 @@ def parse_power_dayahead(body: bytes, ctx: Ctx) -> list[Obs]:
     for d, vals in sorted(base.items()):
         if len(hours[d]) < cet_day_hours(d):
             continue
-        out.append(Obs(f"{slug}_dayahead_base", d, round(sum(vals) / len(vals), 4)))
+        auction = d - timedelta(days=1)
+        out.append(Obs(f"{slug}_dayahead_base", auction, round(sum(vals) / len(vals), 4)))
         if peak.get(d):
-            out.append(Obs(f"{slug}_dayahead_peak", d, round(sum(peak[d]) / len(peak[d]), 4)))
+            out.append(Obs(f"{slug}_dayahead_peak", auction,
+                           round(sum(peak[d]) / len(peak[d]), 4)))
     return out
 
 
@@ -4690,7 +4695,7 @@ def collect_power(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
 
     if fixtures is not None:
         for slug in POWER_ZONES.values():
-            fp = fixtures / "energy_charts" / f"price_{slug}.json"
+            fp = fixtures / f"eu_power_dayahead.{slug}.json"
             if not fp.exists():
                 continue
             body = fp.read_bytes()
