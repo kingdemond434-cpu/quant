@@ -1,11 +1,11 @@
 {
- "generated_utc": "2026-10-14T11:27:15+00:00",
+ "generated_utc": "2026-10-14T19:30:26+00:00",
  "status": "MEASURED",
  "budget_s": 600.0,
- "elapsed_s": 625.72,
- "draws_this_pass": 149,
- "run_this_pass": 101,
- "ledger_draws": 2792,
+ "elapsed_s": 591.32,
+ "draws_this_pass": 1,
+ "run_this_pass": 1,
+ "ledger_draws": 2793,
  "families_hunted": 100,
  "families_measured": 56,
  "unmeasured_families": [
@@ -3347,8 +3347,8 @@
    "fpr_charge": 1.0
   },
   "discovered": {
-   "draws": 29,
-   "run": 29,
+   "draws": 30,
+   "run": 30,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
@@ -3360,7 +3360,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 29,
+     "unmeasured_draws": 30,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -3388,7 +3388,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 29,
+     "unmeasured_draws": 30,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -3416,7 +3416,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 29,
+     "unmeasured_draws": 30,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
