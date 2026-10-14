@@ -1,21 +1,21 @@
 {
- "at": "2026-10-14T16:59:59+00:00",
+ "at": "2026-10-14T17:54:43+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 56465,
+  "free_phys_mb": 25323,
   "commit_limit_mb": 204793,
-  "commit_free_mb": 83879,
+  "commit_free_mb": 45220,
   "cpu_source": "psutil",
-  "busy_other_cores": 13.4,
-  "busy_judge_cores": 0.0,
+  "busy_other_cores": 15.52,
+  "busy_judge_cores": 0.38,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": true,
-  "n_python": 69,
+  "n_python": 67,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -38,7 +38,7 @@
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
   "source_at": "2026-10-03T12:38:16.788667+00:00",
-  "source_age_seconds": 966102.767431,
+  "source_age_seconds": 969384.044097,
   "why": "backpressure timestamp missing, invalid, future or stale; historical sweep is not current queue capacity"
  },
  "decision": {
@@ -52,7 +52,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "cores",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 36, commit 54 at 768MB a worker; the binding one is cores",
+  "why": "cores 15 (reserved 3), memory 16, commit 29 at 768MB a worker; the binding one is cores",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -96,7 +96,7 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "10/14/2026 7:01:00 PM",
+   "next_run_before": "10/14/2026 8:01:00 PM",
    "why": "TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 20.0 seconds"
   },
   "process_env": {
@@ -106,7 +106,7 @@
  "limiting_resource": "cores",
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-14T16:59:59+00:00",
+  "at": "2026-10-14T17:54:43+00:00",
   "verdicts": {
    "status": "MEASURED",
    "rows_total": 864239,
@@ -139,11 +139,11 @@
    "status": "MEASURED",
    "counts": {
     "24h": 14323,
-    "7d": 198112
+    "7d": 198000
    },
    "per_hour": {
     "24h": 596.792,
-    "7d": 1179.238
+    "7d": 1178.571
    }
   },
   "verdicts_per_hour": 26.0,
@@ -163,6 +163,6 @@
   "workers_last_sweep": "UNMEASURED",
   "cores_basis": "fixed_reservation"
  },
- "measure_seconds": 46.1,
- "seconds": 67.4
+ "measure_seconds": 260.3,
+ "seconds": 287.5
 }
