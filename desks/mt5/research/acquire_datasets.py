@@ -58,7 +58,7 @@ REPORT = DESK / "reports" / "dataset_acquisition.json"
 
 #: A real browser UA. Measured on this box: the default urllib agent draws 403s from several
 #: statistics sites, which read downstream as dead sources rather than as a rejected header.
-_UA = (DESK_UA)
+_UA = DESK_UA
 
 FETCH_TIMEOUT_S = 25
 MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of MB

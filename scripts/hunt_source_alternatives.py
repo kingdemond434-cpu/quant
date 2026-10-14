@@ -51,7 +51,7 @@ from libs.research import source_health as health
 _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "data" / "source_alternatives_report.json"
 
-_UA = {"User-Agent": (DESK_UA),
+_UA = {"User-Agent": DESK_UA,
        "Accept": "text/html,application/json,application/xhtml+xml,*/*;q=0.8",
        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"}
 

@@ -49,7 +49,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "reports" / "research_queue.json"
 _LEDGER = _ROOT / "data" / "research_queue_seen.json"
 
-_UA = {"User-Agent": (DESK_UA),
+_UA = {"User-Agent": DESK_UA,
        "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8"}
 
 #: Channels whose output has actually converted on this desk, plus near neighbours. Ordered by
