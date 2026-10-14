@@ -558,14 +558,24 @@ def terms_hold_lines(rows: list[dict[str, Any]], cursor: dict[str, Any],
     out: list[dict[str, Any]] = []
     for row in rows:
         sid = str(row["id"])
-        if not _tf.held_on_terms(sid):
+        held = _tf.held_on_terms(sid)
+        # an IDEAS_ONLY row refused as LIVE INPUT by run_source's check carries its line too
+        # (audit 2026-10-14 should-fix); a NEEDS_KEY refusal is a missing key, not a terms hold
+        ideas = None if held else _tf.input_source(str(row.get("kind") or ""), sid,
+                                                   str(row.get("url") or ""))
+        if not held and not (ideas and _tf.status(ideas) == _tf.IDEAS_ONLY):
             continue
         st = cursor.get(sid) or {}
-        past = {k: st[k] for k in ("attempts", "successes", "obs_total", "last_success")
-                if st.get(k)}
+        past = {k: st[k] for k in ("successes", "obs_total", "last_success") if st.get(k)}
+        if held and st.get("attempts"):
+            past["attempts"] = st["attempts"]
         if columns.get(sid):
             past["past_columns"] = len(columns[sid])
-        out.append(_tf.held_missed_growth(sid, past or None))
+        if held:
+            out.append(_tf.held_missed_growth(sid, past or None))
+        else:
+            out.append(_tf.held_missed_growth(str(ideas), past or None, source=sid,
+                                              live_input_refusal=True))
     return out
 
 
