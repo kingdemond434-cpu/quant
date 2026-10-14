@@ -303,6 +303,8 @@ def _clause_reading(clause: str) -> int | None:
         if mt is None:
             continue
         verb = next(mt.start(g) for g in range(1, 3) if mt.group(g)) if mt.lastindex else 0
+        if _HEDGE.search(clause[:verb]):
+            continue  # "continue to evaluate future increases": a hedge, not guidance
         # The guided phrase: from just before its guidance word up to the verb. A negation in
         # it holds sizes ("does not currently anticipate that it will need to increase", "will
         # not, given current projections, increase"); one earlier in the clause that this
