@@ -16,8 +16,13 @@ source stays HTTP-dead for live collection: an archive is history, not a feed. A
 `DEAD_AFTER_PASSES` consecutive failed repairs the source is marked `dead_since`, which is a
 verdict a reader can act on, never a row that quietly stopped appearing.
 
-WHAT IT NEVER DOES. It does not touch a source that answered 401/403 (that is access control,
-not a route), one blocked by robots.txt, or one declared `key`/`paid` without a key; it never
+WHAT IT NEVER DOES. A source that answered 401/403/429 or a WAF/challenge page -- to the
+collector or to any variant probe here -- is a HARD STOP: no further variant, no scheme or
+`www` swap, no Wayback lookup. That is the site saying no, and trying its other doors or an
+archive of it is a route-around. The stop is recorded as a PERSON-RELEASED hold in this organ's
+own state (`hold.released_by` null) with a missed_growth line; it never lapses on a timer and
+holds until a person writes their name into `released_by`. It does not touch one blocked by
+robots.txt, or one declared `key`/`paid` without a key; it never
 hammers a host (one variant per second, the collector's own politeness), and it never invents a
 URL that does not derive from the registered one.
 """
@@ -42,7 +47,16 @@ OUT = BASE / "reports" / "SOURCE_FIXER.json"
 STATE = BASE / "data" / "lake" / "source_fixer_state.json"
 
 FIX_STATUSES = frozenset({"HTTP_ERROR", "UNREACHABLE", "ROUTE_CHANGED"})
-SKIP_HTTP = frozenset({401, 403})
+# Access control and rate refusal: a hard stop on the source, held until a person releases it.
+HARD_STOP_HTTP = frozenset({401, 403, 429})
+SKIP_HTTP = HARD_STOP_HTTP
+# Bytes a WAF/bot-challenge interstitial carries in its first 4 KB (Cloudflare, Akamai,
+# Imperva, generic captcha walls). Matched lower-case.
+WAF_MARKERS: tuple[bytes, ...] = (
+    b"cf-chl", b"challenge-platform", b"just a moment...", b"attention required! | cloudflare",
+    b"cf-browser-verification", b"captcha", b"_incapsula_resource", b"akamai bot manager",
+    b"access denied</title>", b"request unsuccessful. incapsula",
+)
 DEAD_AFTER_PASSES = 3
 VARIANT_GAP_S = 1.0
 TIMEOUT_S = 15.0
@@ -96,16 +110,67 @@ def candidate_urls(url: str) -> list[str]:
     return out
 
 
+def looks_like_waf(head: bytes, headers: Any = None) -> bool:
+    """A bot-challenge / WAF interstitial rather than the publisher's content."""
+    try:
+        if headers is not None and str(headers.get("cf-mitigated") or "").lower() == "challenge":
+            return True
+    except AttributeError:
+        pass
+    low = head[:4096].lower()
+    return any(m in low for m in WAF_MARKERS)
+
+
+def _verdict_hard_stop(verdict: dict[str, Any]) -> str | None:
+    """Why the collector's own verdict is already a hard stop (None when it is not)."""
+    http = verdict.get("http")
+    if isinstance(http, int) and http in HARD_STOP_HTTP:
+        return f"HTTP {http}"
+    if verdict.get("waf") or "challenge" in str(verdict.get("why") or "").lower() \
+            or str(verdict.get("status") or "") == "WAF":
+        return "WAF/challenge page"
+    return None
+
+
+def _hold_row(sid: str, url: str, cause: str, now: str) -> dict[str, Any]:
+    """A person-released hold. No timestamp releases it; only a named person does."""
+    return {
+        "held_at": now, "url": url, "cause": cause, "released_by": None,
+        "release": ("a person writes their name into hold.released_by in "
+                    "data/lake/source_fixer_state.json; no timer releases this hold"),
+        "missed_growth": {"source": sid, "delta_elogw": "UNMEASURED",
+                          "cause": (f"{cause} from {url}: the source refused; no variant, "
+                                    f"scheme/www swap or archive lookup is tried while held")},
+    }
+
+
+def _held(entry: dict[str, Any]) -> bool:
+    hold = entry.get("hold")
+    return isinstance(hold, dict) and not hold.get("released_by")
+
+
 def _probe(url: str) -> tuple[int | None, str, bytes]:
-    """(status, content-type, first bytes) for a GET; status None when unreachable."""
+    """(status, content-type, first bytes) for a GET; status None when unreachable.
+
+    A WAF/challenge page is reported as status 403 so the caller treats it as a hard stop."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
-            return status, ctype, r.read(4096)
+            head = r.read(4096)
+            if looks_like_waf(head, r.headers):
+                return 403, ctype, b""
+            return status, ctype, head
     except urllib.error.HTTPError as e:
-        return int(getattr(e, "code", 0) or 0), "", b""
+        code = int(getattr(e, "code", 0) or 0)
+        if code not in HARD_STOP_HTTP:
+            try:
+                if looks_like_waf(e.read(4096), e.headers):
+                    return 403, "", b""
+            except (OSError, ValueError, AttributeError):
+                pass
+        return code, "", b""
     except (urllib.error.URLError, TimeoutError, OSError, ValueError):
         return None, "", b""
 
@@ -172,10 +237,18 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
             results.append({"id": sid, "outcome": "DEFERRED", "why": "fixer budget exhausted"})
             continue
         src = next(r for r in rows if str(r.get("id")) == sid)
-        http = verdict.get("http")
-        if isinstance(http, int) and http in SKIP_HTTP:
-            results.append({"id": sid, "outcome": "NOT_A_ROUTE_PROBLEM",
-                            "why": f"HTTP {http} is access control; no variant can fix it"})
+        entry = fstate.setdefault(sid, {"failed_passes": 0})
+        if _held(entry):
+            results.append({"id": sid, "outcome": "HELD", "hold": entry["hold"],
+                            "why": "person-released hold stands; no request is made"})
+            continue
+        stop = _verdict_hard_stop(verdict)
+        if stop:
+            now = datetime.now(UTC).isoformat(timespec="seconds")
+            entry["hold"] = _hold_row(sid, str(src.get("url_override") or src.get("url") or ""),
+                                      stop, now)
+            results.append({"id": sid, "outcome": "HELD", "hold": entry["hold"],
+                            "why": f"{stop} is a hard stop; no variant, no Wayback"})
             continue
         if str(src.get("access") or "public") in ("key", "paid"):
             results.append({"id": sid, "outcome": "NOT_A_ROUTE_PROBLEM",
@@ -185,15 +258,26 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
         expect = str(src.get("expect") or "any")
         tried: list[dict[str, Any]] = []
         fix: str | None = None
+        refused: str | None = None
         for cand in candidate_urls(base_url):
             status, ctype, head = _probe(cand)
+            if status in HARD_STOP_HTTP:
+                tried.append({"url": cand, "status": status, "ok": False})
+                refused = cand
+                entry["hold"] = _hold_row(sid, cand, f"HTTP {status} (WAF pages read as 403)",
+                                          datetime.now(UTC).isoformat(timespec="seconds"))
+                break
             ok, _shape = (_acceptable(expect, ctype, head) if status == 200 else (False, ""))
             tried.append({"url": cand, "status": status, "ok": ok})
             if ok:
                 fix = cand
                 break
             time.sleep(VARIANT_GAP_S)
-        entry = fstate.setdefault(sid, {"failed_passes": 0})
+        if refused:
+            results.append({"id": sid, "outcome": "HELD", "hold": entry["hold"],
+                            "tried": tried,
+                            "why": "a variant was refused; hard stop, no Wayback"})
+            continue
         if fix:
             entry.update({"failed_passes": 0, "fixed_at": datetime.now(UTC).isoformat(
                 timespec="seconds"), "fixed_from": base_url, "fixed_to": fix})
@@ -222,6 +306,10 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
         _write_atomic(REGISTRY, json.dumps(registry, indent=1, ensure_ascii=False))
     if not dry_run:
         _write_atomic(STATE, json.dumps(fstate, indent=1))
+    # Every standing hold, including one on a source the collector no longer lists as failed:
+    # a hold leaves this list only when a person releases it.
+    standing = [{"id": k, **v["hold"]} for k, v in sorted(fstate.items())
+                if isinstance(v, dict) and _held(v)]
     doc = {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "rule": ("every source the collector could not read gets the webmaster's variants tried "
@@ -229,6 +317,7 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
                  "becomes url_override in the registry; three failed passes mark dead_since"),
         "n_failed_sources": len(failed), "n_repaired": repaired,
         "n_dead": sum(1 for r in results if r.get("outcome") == "DEAD"),
+        "n_held": len(standing), "holds": standing,
         "dry_run": dry_run, "results": results,
     }
     _write_atomic(OUT, json.dumps(doc, indent=1, ensure_ascii=False))
