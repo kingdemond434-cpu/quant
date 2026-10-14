@@ -206,7 +206,10 @@ def test_held_routes_carry_a_quote_and_have_no_source_row(tmp_path: Path) -> Non
                                   "cnx_shfe", "cnx_ine", "cnx_dce", "cnx_czce", "cnx_gfex",
                                   "cnx_cffex"}
     for rid, h in A.HELD_ROUTES.items():
-        assert h["verdict"] == "HELD" and h["terms_url"].startswith("https://"), rid
+        # a quoted clause cites an https terms page; an UNREAD China-exchange row cites the http
+        # page that could not be read, verbatim from its 2026-10-06 evidence
+        scheme = ("https://", "http://") if rid.startswith("cnx_") else ("https://",)
+        assert h["verdict"] == "HELD" and h["terms_url"].startswith(scheme), rid
         assert h["terms_quote"] and h["reason"] and h["unblock"], rid
         assert rid not in A.BY_ID and rid not in A.TERMS, rid           # never fetched
     from libs.data import terms_fence as tf
