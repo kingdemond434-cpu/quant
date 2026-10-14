@@ -514,6 +514,14 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/pf_allocation.json"),
          writes=("desks/mt5/reports/alpha_evolution.json",
                  "desks/mt5/data/intelligence/alpha_evolution/")),
+    # THE STATE-GATED WRAPPERS' PROPOSER (2026-10-14): one sync_gated / entropy_gated cell per
+    # (wrapper, base, hypothesis-lane symbol), donated through the proposer contract into the
+    # intake the compiler merges; its report is the per-pass receipt a person reads. Its ring
+    # cursor is the organ's own position, read back only by itself, so it is not an edge here.
+    Node("state_gate_proposer", "desks/mt5/research/state_gate_proposer.py",
+         reads=("desks/mt5/data/universe/",),
+         writes=("desks/mt5/reports/STATE_GATE_PROPOSER.json",
+                 "desks/mt5/data/intelligence/state_gate_proposer/")),
     Node("style_premia_sweep", "desks/mt5/research/style_premia_sweep.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
@@ -964,6 +972,7 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/EXIT_ACCOUNTS.json", "desks/mt5/reports/ACTION_COUNTERFACTUALS.json",
     "desks/mt5/reports/RESEARCH_PNL.json", "desks/mt5/reports/MUTATION_YIELD.json",
     "desks/mt5/reports/RESEARCH_BANDIT.json",
+    "desks/mt5/reports/STATE_GATE_PROPOSER.json",
     # THE BREADTH LANE'S REPORTS. Each producer's DECISION path is the deepening queue it also
     # writes; these three files are the evidence a person reads beside it -- nominal against
     # effective breadth with every reading's status, the book's own drawdown windows and what

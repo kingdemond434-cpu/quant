@@ -1125,7 +1125,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
-                     "cross_sectional_breadth"),
+                     "cross_sectional_breadth",
+                     # the state-gated wrappers' cells: one per (wrapper, base, symbol)
+                     "state_gate_proposer"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -2077,6 +2079,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "free_stack_hunt": 720,
     # Its proposer mints a 1,500-row ring slice; the registry write is the long part.
     "free_stack_proposer": 900,
+    # The state-gate proposer mints a 1,500-row ring slice the same way; the registry write is
+    # the long part.
+    "state_gate_proposer": 900,
     # A reader of the factory's report and journal tail; seconds.
     "factory_throughput": 180,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
@@ -4610,6 +4615,13 @@ def main() -> None:
     # donated to the one gauntlet with every minted cell charged. Writes FREE_STACK_PROPOSER.json.
     fsp = _costed("free_stack_proposer", lambda: _producer(
         "free_stack_proposer", "research/free_stack_proposer.py", "--once"))
+    # THE STATE-GATED WRAPPERS (2026-10-14, GAP_MAP rows 87-88): every hypothesis-lane H1
+    # instrument x the price-only base families, minted as sync_gated (panel phase
+    # synchronisation, direction fixed by the base's mechanism) and entropy_gated (own
+    # permutation entropy, low) cells -- one per (wrapper, base, symbol), a ring slice per pass,
+    # every minted cell charged. Writes STATE_GATE_PROPOSER.json.
+    sgp = _costed("state_gate_proposer", lambda: _producer(
+        "state_gate_proposer", "research/state_gate_proposer.py", "--once"))
     # THE WORLD DATASET HUNTER: discovers, fetches, quality-checks, PIT-stamps and registers
     # thousands of public datasets (DBnomics backbone + BIS bulk, CFTC, Treasury, FRED, and the
     # registry's own DISCOVERED rows), then publishes the per-symbol exposure that
@@ -5828,6 +5840,7 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "free_stack_hunt": fsh,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
+                    "state_gate_proposer": sgp,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,

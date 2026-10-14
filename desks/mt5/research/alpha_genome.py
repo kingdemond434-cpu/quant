@@ -65,6 +65,12 @@ MECHANISM_CLASS: dict[str, str] = {
     "regime_transition": "regime", "drawdown_conditional": "regime", "ensemble": "ensemble",
     "discovered": "discovered", "generic": "generic", "fair_value_gap": "reversion",
     "dav_range_filter_adx": "breakout",
+    # The state-gated wrappers' base families (2026-10-14): `family_state_gates.sync_gated` reads
+    # the gate DIRECTION off this table, so each base it may wrap is declared here, not guessed.
+    "trend_ma_cross": "trend", "volatility_squeeze": "breakout",
+    "mean_reversion_rsi": "reversion", "range_reversion": "reversion",
+    # The wrappers themselves condition a base on a market STATE: regime, like regime_transition.
+    "sync_gated": "regime", "entropy_gated": "regime",
 }
 
 DIRECTION_BIAS = {"trend": "with", "breakout": "with", "reversion": "against",

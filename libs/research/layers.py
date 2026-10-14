@@ -609,6 +609,8 @@ LEG_LAYER: dict[str, str] = {
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
+    # the state-gated wrappers' cells are claims about where a base's entry pays: prediction
+    "state_gate_proposer": "prediction",
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     "world_macro_proposer": "prediction",
