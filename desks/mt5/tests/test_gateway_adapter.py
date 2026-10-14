@@ -1639,6 +1639,37 @@ def test_a_refused_sleeve_whose_close_did_not_land_keeps_its_deadline(tmp_path) 
     assert "open_ttl_until" not in st["generic"][_NAME]
 
 
+def test_an_unreadable_venue_book_never_drops_the_deadline(tmp_path) -> None:
+    """`positions_get()` returns None when the terminal cannot answer. Read as an empty book it
+    dropped the deadline with the position still open (audit, 2026-10-14): before the close
+    and after it, an unreadable book keeps the deadline for the next pass."""
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    book = [SimpleNamespace(ticket=909, type=0, volume=0.02, symbol="CHFNOK",
+                            comment=f"DW{_NAME}")]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    ns["mt5"].positions_get = lambda *a, **k: None
+    st = {"armed": True, "generic": {_NAME: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [])
+    assert sent == [] and st["generic"][_NAME]["open_ttl_until"]
+    assert any("unreadable; deadline kept" in x for x in logs)
+    # Readable for the close, unreadable when the result is checked: still kept.
+    reads = {"n": 0}
+
+    def _flaky(*a, **k):
+        if k.get("symbol"):
+            return [p for p in book if p.symbol == k["symbol"]]
+        reads["n"] += 1
+        return list(book) if reads["n"] == 1 else None
+
+    ns["mt5"].positions_get = _flaky
+    ns["mt5"].order_send = lambda req: (sent.append(req) or SimpleNamespace(retcode=10018))
+    ns["close_refused_sleeve_ttls"](st, [])
+    assert len(sent) == 1 and st["generic"][_NAME]["open_ttl_until"]
+    assert any("unreadable after the close" in x for x in logs)
+
+
 def test_a_refused_sleeve_before_its_deadline_or_unarmed_is_left_alone(tmp_path) -> None:
     sent: list[dict] = []
     logs: list[str] = []

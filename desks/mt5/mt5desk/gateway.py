@@ -3649,8 +3649,14 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
                     "sleeve; deadline kept")
                 srec["ttl_shared_tag_logged"] = True
             continue
-        held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+        # A FAILED READ IS NOT AN EMPTY BOOK (audit, 2026-10-14): `positions_get()` returns
+        # None when the terminal cannot answer, and reading that as "none of this tag" dropped
+        # the deadline with the position still open -- the orphan this loop exists to close.
+        book = mt5.positions_get()
+        if book is None:
+            log(f"[{name}] OFF-ROSTER TTL: venue positions unreadable; deadline kept")
+            continue
+        held = [p for p in book if str(getattr(p, "comment", "") or "") == tag]
         armed = bool(st.get("armed") and GENERIC_EXEC_ENABLED.exists())
         for symbol in sorted({str(p.symbol) for p in held}):
             _book_target(str(name), symbol, 0.0, "ttl")
@@ -3663,8 +3669,12 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
             # A CLOSE THAT DID NOT LAND KEEPS THE DEADLINE (audit, 2026-10-13): 10018 on a
             # weekend TTL, or no tick, left the position open with nothing left to close it.
             # The deadline goes only once the venue holds none of this tag.
-            left = [p for p in (mt5.positions_get() or [])
-                    if str(getattr(p, "comment", "") or "") == tag]
+            after = mt5.positions_get()
+            if after is None:
+                log(f"[{name}] OFF-ROSTER TTL: venue positions unreadable after the close; "
+                    "deadline kept for the next pass")
+                continue
+            left = [p for p in after if str(getattr(p, "comment", "") or "") == tag]
             if left:
                 log(f"[{name}] OFF-ROSTER TTL: {len(left)} position(s) still open after the "
                     "close; deadline kept for the next pass")
