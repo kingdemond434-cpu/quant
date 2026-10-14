@@ -240,3 +240,14 @@ def test_follow_ups_from_the_second_audit(text: str, lang: str, want: list[str])
     """Exclusions are per language, word-bounded and near the keyword; cues after the date are
     read; a list-table cell naming another event is refused."""
     assert [e["date"] for e in ec.extract(text, lang, today=date(2026, 10, 14))] == want
+
+
+def test_what_was_held_on_the_date_must_be_the_vote() -> None:
+    """Audit should-fix on #394: the "was held" cue named another event."""
+    assert ec.extract("The general election: on 30 May 2024 nominations were held.", "en",
+                      today=date(2026, 1, 1)) == []
+    assert ec.extract("Before the general election, on 3 March 2025 a by-election was held.",
+                      "en", today=date(2026, 1, 1)) == []
+    got = ec.extract("The general election on 29 May 2024 was held nationwide.", "en",
+                     today=date(2026, 1, 1))
+    assert [e["date"] for e in got] == ["2024-05-29"]

@@ -13,7 +13,7 @@ from __future__ import annotations
 import csv
 import json
 import sys
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -83,7 +83,8 @@ def test_a_guided_change_is_no_surprise_and_a_change_against_guidance_is() -> No
 def test_the_series_holds_each_surprise_from_its_release_stamp() -> None:
     scored = [{"date": "2026-10-01", "first_seen": "2026-12-01T00:00:00+00:00",
                "size_surprise": 0.05, "guidance_shift": None}]
-    rows = tr.series_rows(scored, today=date(2026, 10, 8))
+    rows = tr.series_rows(scored, today=date(2026, 10, 8),
+                          measured_until=datetime(2026, 12, 1, tzinfo=UTC))
     assert rows[0]["available_time"] == "2026-10-01T14:00:00+00:00"
     assert rows[0]["stamp_basis"] == "published_history" and rows[0]["vintage_id"] != "v1"
     assert [r["size_surprise"] for r in rows] == [0.05] * tr.POST_DAYS + [0.0] * 3
@@ -201,3 +202,102 @@ def test_an_unreadable_prior_guidance_leaves_the_size_surprise_unmeasured() -> N
     s = tr.surprises([{"date": "2024-01-31", "sizes": {"3": 52}, "guidance": None},
                       {"date": "2024-05-01", "sizes": {"3": 54}, "guidance": 0}])
     assert s[1]["size_surprise"] is None and s[1]["guidance_shift"] is None
+
+
+def test_a_day_nobody_looked_at_is_blank_never_zero() -> None:
+    """Audit must-fix on #394 v2: indexes unreachable since the May statement, today 09-01."""
+    scored = [{"date": "2024-05-01", "first_seen": "2024-05-01T15:00:00+00:00",
+               "size_surprise": 0.05, "guidance_shift": 0.0}]
+    rows = tr.series_rows(scored, today=date(2024, 9, 1),
+                          measured_until=datetime(2024, 6, 1, 9, tzinfo=UTC),
+                          now=datetime(2024, 9, 1, 10, tzinfo=UTC))
+    by_day = {r["published_time"][:10]: r for r in rows}
+    assert by_day["2024-05-20"]["size_surprise"] == 0.0, "read the index after it: none"
+    for day in ("2024-07-31", "2024-09-01"):
+        assert by_day[day]["size_surprise"] == "" and by_day[day]["guidance_shift"] == ""
+        assert by_day[day]["stamp_basis"] == tr.UNMEASURED
+    blind = tr.series_rows(scored, today=date(2024, 9, 1))
+    assert all(r["size_surprise"] == "" for r in blind[tr.POST_DAYS:]), "never read: blank"
+    today_row = tr.series_rows(scored, today=date(2024, 9, 1),
+                               measured_until=datetime(2024, 9, 1, 12, tzinfo=UTC),
+                               now=datetime(2024, 9, 1, 10, tzinfo=UTC))[-1]
+    assert today_row["size_surprise"] == "", "today's 14:00 row is not published at 10:00"
+
+
+def test_a_pass_with_unreachable_indexes_writes_no_zeros(tmp_path: Path,
+                                                         monkeypatch: pytest.MonkeyPatch
+                                                         ) -> None:
+    for name, sub in (("STATE_DIR", "state"), ("SERIES_DIR", "series"),
+                      ("DONATE_DIR", "donate")):
+        monkeypatch.setattr(tr, name, tmp_path / sub)
+    monkeypatch.setattr(tr, "STATEMENTS", tmp_path / "state" / "statements.json")
+    monkeypatch.setattr(tr, "FETCHED", tmp_path / "state" / "fetched.json")
+    monkeypatch.setattr(tr, "REPORT", tmp_path / "REPORT.json")
+    (tmp_path / "state").mkdir()
+    (tmp_path / "state" / "statements.json").write_text(json.dumps({"u": {
+        "date": "2024-05-01", "first_seen": "2024-05-01T15:00:00+00:00",
+        "sizes": {"3": 58}, "guidance": 0}}))
+    import collector_lab
+    monkeypatch.setattr(collector_lab, "fetch",
+                        lambda url, _s, **_k: (b"", "UNREACHABLE:DNS_TIMEOUT"))
+    doc = tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2024, 9, 1))
+    assert doc["measured_until"] is None and doc["rows_unmeasured"] == doc["rows"] - tr.POST_DAYS
+    with (tmp_path / "series" / "treasury_refunding.csv").open() as fh:
+        assert {r["size_surprise"] for r in csv.DictReader(fh)} == {""}
+
+
+def test_a_missing_first_read_fails_closed() -> None:
+    scored = [{"date": "2026-10-01", "size_surprise": 0.05, "guidance_shift": 1.0},
+              {"date": "2026-10-20", "first_seen": "garbage", "size_surprise": 0.02,
+               "guidance_shift": 0.0}]
+    rows = tr.series_rows(scored, today=date(2026, 10, 22),
+                          measured_until=datetime(2026, 11, 1, tzinfo=UTC))
+    held = [r for r in rows if r["stamp_basis"] == "unstamped"]
+    assert len(held) == tr.POST_DAYS + 3
+    assert all(r["size_surprise"] == "" and r["guidance_shift"] == "" for r in held)
+
+
+def test_each_row_is_vintaged_by_its_own_statement() -> None:
+    a = {"date": "2026-01-01", "first_seen": "2026-01-01T15:00:00+00:00",
+         "size_surprise": 0.05, "guidance_shift": 0.0}
+    b = {"date": "2026-04-01", "first_seen": "2026-04-01T15:00:00+00:00",
+         "size_surprise": 0.02, "guidance_shift": 1.0}
+    end = datetime(2026, 12, 1, tzinfo=UTC)
+    one = tr.series_rows([a], today=date(2026, 1, 3), measured_until=end)
+    two = tr.series_rows([a, b], today=date(2026, 4, 3), measured_until=end)
+    assert one[0]["vintage_id"] == two[0]["vintage_id"], "a new quarter never re-vintages"
+    assert two[-1]["vintage_id"] != two[0]["vintage_id"]
+
+
+def test_a_guided_increase_that_did_not_come_is_a_surprise() -> None:
+    s = tr.surprises([{"date": "2024-01-31", "sizes": {"3": 50}, "guidance": 0},
+                      {"date": "2024-05-01", "sizes": {"3": 55}, "guidance": 1},
+                      {"date": "2024-07-31", "sizes": {"3": 55}, "guidance": 0}])
+    assert s[1]["size_surprise"] == pytest.approx(0.1, abs=1e-6)
+    assert s[2]["size_surprise"] == pytest.approx(-0.1, abs=1e-6), "one typical step short"
+
+
+@pytest.mark.parametrize(("text", "want"), [
+    ("Treasury anticipates maintaining nominal coupon and FRN auction sizes and will increase "
+     "the 5-year TIPS auction sizes.", 0),
+    ("Treasury cannot foresee a need to increase nominal coupon auction sizes.", 0),
+    ("Treasury is unlikely to increase nominal coupon auction sizes.", 0),
+    ("Treasury never plans to cut nominal coupon auction sizes.", 0),
+    ("Treasury believes increases to nominal coupon auction sizes will not be needed.", 0),
+    ("Treasury will not only maintain but will increase nominal coupon auction sizes.", 1),
+])
+def test_guidance_follow_ups(text: str, want: int | None) -> None:
+    """Audit #394 v2: TIPS behind a bare "and", wider negation, "not only"."""
+    assert tr.guidance(text) == want
+
+
+def test_sizes_skip_reopenings_and_misattached_amounts() -> None:
+    same = ("The securities are a $58 billion 3-year note, a $42 billion 10-year note and a "
+            "$25 billion 30-year bond. The $39 billion 10-year note reopening settles later.")
+    assert tr.sizes(same) == {"3": 58.0, "10": 42.0, "30": 25.0}
+    before = ("Treasury will reopen the $39 billion 10-year note and the $22 billion 30-year "
+              "bond.\nThe refunding: a 3-year note in the amount of $58 billion, a 10-year note "
+              "in the amount of $42 billion, and a 30-year bond in the amount of $25 billion.")
+    assert tr.sizes(before) == {"3": 58.0, "10": 42.0, "30": 25.0}
+    assert tr.sizes("Treasury will sell a 3-year note, a 5-year note, and a $42 billion "
+                    "10-year note and a $25 billion 30-year bond.") == {"10": 42.0, "30": 25.0}

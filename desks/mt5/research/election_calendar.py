@@ -248,8 +248,14 @@ def _is_vote_date(seg: str, pos: int, lang: str, end: int) -> bool:
         return True
     if lang == "ja" and CUE_AFTER_JA.search(seg[end:end + 12]):
         return True
-    if lang != "ja" and CUE_AFTER.search(seg[end:end + CUE_SPAN]):
-        return True
+    after = CUE_AFTER.search(seg[end:end + CUE_SPAN]) if lang != "ja" else None
+    if after is not None:
+        # What "was held" on that date must be the vote itself: "nominations were held", "a
+        # by-election was held" name another event (audit should-fix on #394).
+        span = after.group(0)
+        other = [_EXCLUDE_RE[lg] for lg in langs if lg in _EXCLUDE_RE]
+        return not (any(NOT_THE_VOTE[lg].search(span) for lg in langs if lg in NOT_THE_VOTE)
+                    or any(rx.search(span) for rx in other))
     if " | " not in seg:
         return False
     # The date cell of a list-table row, and only when that cell names no other event (audit

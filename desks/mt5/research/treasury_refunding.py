@@ -21,14 +21,19 @@ TWO SIGNALS, BOTH SURPRISES RELATIVE TO WHAT TREASURY ITSELF HAD SAID.
     point that way. A change Treasury pre-announced is priced; a change against guidance is news.
   * `guidance_shift`: this statement's guidance (+1 increases ahead, 0 maintain, -1 reductions)
     minus the previous one's. A move to "increases ahead" is supply news before any auction.
-Each is non-zero on the release day and the POST_DAYS - 1 days after it, zero otherwise.
+Each is non-zero on the release day and the POST_DAYS - 1 days after it, and 0.0 on a day with
+no statement ONLY when the desk can show there was none: the day is published before the last
+successful read of the most-recent index, and no listed statement is still unread. Any other
+day (index unreachable since, a backlog still queued, a row not yet published) is blank,
+UNMEASURED, never a clean zero (audit must-fix on #394 v2).
 
 POINT IN TIME. The statement is released at 08:30 New York time on the announcement day; each
 held row is stamped at RELEASE_HOUR_UTC that day (after 08:30 ET in summer and winter). A
 statement the desk first read while its surprise was still held is stamped no earlier than that
 read (`stamp_basis = first_sight`); one read after its hold ended is history, stamped at its own
 publication and flagged `published_history`. The conditioner's own 24 h lag then acts. Rows
-exist only up to today; the vintage is a hash of the statements the series was built from.
+exist only up to today. Each row's vintage hashes the ONE statement it carries, so a new quarter
+never re-vintages history; a statement whose first read is unrecorded is blank (fail closed).
 
 WHAT IS NOT YET READ, said rather than hidden: the TBAC minutes and the primary-dealer
 expectations they summarise. They would sharpen the surprise (dealer consensus vs outcome) and
@@ -46,6 +51,7 @@ import time
 import urllib.parse
 from collections.abc import Callable, Sequence
 from datetime import UTC, date, datetime, timedelta
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -91,15 +97,27 @@ _DATE = re.compile(r"\b(" + "|".join(_MONTHS) + r")\s+(\d{1,2}),?\s+(\d{4})\b", 
 _SIZE = re.compile(r"\$\s?(\d+(?:\.\d+)?)\s+billion\s+(?:of\s+)?(?:(?:the|a|new)\s+)*"
                    r"(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b", re.I)
 #: The statement's own phrasing: "a 10-year note in the amount of $42 billion".
-_SIZE_AFTER = re.compile(r"\b(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b[^.$]{0,60}?"
+_SIZE_AFTER = re.compile(r"\b(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b"
+                         r"(?:(?!\d+[-\s]year)[^.$]){0,60}?"
                          r"\$\s?(\d+(?:\.\d+)?)\s+billion", re.I)
+#: A reopening sentence sizes one auction, never the refunding list (audit #394 v2).
+_REOPEN = re.compile(r"\breopen", re.I)
 #: A clause about NOMINAL coupon sizes: TIPS, FRN and bill sizes are other supply.
 _COUPON = re.compile(r"\bcoupon", re.I)
 _NOMINAL = re.compile(r"\bnominal coupon", re.I)
 _OTHER_SUPPLY = re.compile(r"\bTIPS\b|inflation[- ]protected|\bFRNs?\b|floating rate|\bbills?\b",
                            re.I)
-_NEGATED = re.compile(r"(?:\bnot\b|\bno longer\b|n't\b|\bwithout\b)[^.;]{0,40}?"
-                      r"\b(?:increase|reduce|reduction|decrease|cut)", re.I)
+_NEGATED = re.compile(
+    r"(?:\bnot\b(?!\s+only)|\bno longer\b|n't\b|\bwithout\b|\bcannot\b|\bnever\b|"
+    r"\bunlikely\b)[^.;]{0,40}?\b(?:increase|reduce|reduction|decrease|cut)"
+    r"|\b(?:increases?|reductions?|decreases?|cuts?)\b[^.;]{0,60}?"
+    r"\b(?:not|no longer|unlikely to)\b(?:\s+be)?\s+(?:needed|necessary|required|warranted)",
+    re.I)
+#: Clause boundaries: a separator, or a bare "and"/"while" that starts a new verb phrase, so
+#: "maintaining nominal coupon sizes and will increase TIPS" is two clauses (audit #394 v2).
+_CLAUSE = re.compile(r";|,\s*(?:while|but|and|whereas)\b|\bwhile\b|\bwhereas\b"
+                     r"|\s\band\s+(?=(?:will|plans?|anticipates?|expects?|intends?|is|are|"
+                     r"also)\b)", re.I)
 _LINK = re.compile(r"""<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a\s*>""", re.I | re.S)
 _ABOUT = re.compile(r"coupon|auction sizes?|issuance sizes?", re.I)
 _UP = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?\bincrease"
@@ -166,22 +184,28 @@ def release_date(text: str, *, today: date | None = None) -> date | None:
 
 def _sizes_in(seg: str) -> dict[str, float]:
     found: dict[str, float] = {}
+    used: list[tuple[int, int]] = []
     for mt in _SIZE.finditer(seg):
         found.setdefault(mt.group(2), float(mt.group(1)))
+        used.append(mt.span(1))
     for mt in _SIZE_AFTER.finditer(seg):
+        # a dollar amount already read as "$N billion <tenor>" belongs to that tenor
+        if any(a <= mt.start(2) < b for a, b in used):
+            continue
         found.setdefault(mt.group(1), float(mt.group(2)))
     return found
 
 
 def sizes(text: str) -> dict[str, float]:
     """Tenor -> $bn, read ONLY from the refunding list: the first block or sentence that
-    names a size for at least two of the 3/10/30-year tenors (audit must-fix 4 on #394: an
-    earlier "$39 billion 10-year note reopening" sentence set the 10-year by order). Empty when
+    sizes all three of the 3/10/30-year tenors, else the first that sizes two; a sentence about a
+    reopening is never read (audit must-fix 4 on #394 and its v2 follow-up). Empty when
     the statement has no such list -- UNMEASURED, never a size read elsewhere."""
-    for seg in [*text.split("\n"), *_sentences(text)]:
-        found = _sizes_in(seg)
-        if sum(t in found for t in TENORS) >= 2:
-            return {t: found[t] for t in TENORS if t in found}
+    segs = [(seg, _sizes_in(seg)) for seg in _sentences(text) if not _REOPEN.search(seg)]
+    for need in (len(TENORS), 2):        # the sentence that sizes all three wins, then two
+        for _seg, found in segs:
+            if sum(t in found for t in TENORS) >= need:
+                return {t: found[t] for t in TENORS if t in found}
     return {}
 
 
@@ -191,10 +215,13 @@ def _clause_reading(clause: str) -> int | None:
         return None
     if _NEGATED.search(clause):
         return 0            # "does not anticipate needing to increase": sizes held
-    if _UP.search(clause):
-        return 1
-    if _DOWN.search(clause):
-        return -1
+    up, down = _UP.search(clause), _DOWN.search(clause)
+    for mt, v in ((up, 1), (down, -1)):
+        # the object of the verb must be nominal coupons, not TIPS / FRN / bills
+        if mt is not None and not _OTHER_SUPPLY.search(clause[mt.start():mt.end() + 40]):
+            return v
+    if up or down:
+        return None
     if _FLAT.search(clause):
         return 0
     return None
@@ -209,7 +236,7 @@ def guidance(text: str) -> int | None:
     for sent in _sentences(text):
         if not _ABOUT.search(sent):
             continue
-        for clause in re.split(r";|,\s*(?:while|but|and|whereas)\b|\bwhile\b", sent):
+        for clause in _CLAUSE.split(sent):
             v = _clause_reading(clause)
             if v is not None:
                 seen.add(v)
@@ -224,26 +251,40 @@ def parse(text: str, url: str, seen: str, *, today: date | None = None) -> dict[
             "guidance": guidance(text)}
 
 
+def _change(prev: dict[str, Any], cur: dict[str, Any]) -> float | None:
+    """Fractional change in coupon sizes over the tenors both statements size, or None."""
+    common = [t for t in TENORS if t in (cur.get("sizes") or {})
+              and t in (prev.get("sizes") or {})]
+    before = sum(float(prev["sizes"][t]) for t in common)
+    if not common or before <= 0:
+        return None
+    return sum(float(cur["sizes"][t]) for t in common) / before - 1.0
+
+
 def surprises(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     """Each statement with its two surprises against the one before it (None = UNMEASURED)."""
     rows = sorted((s for s in statements if s.get("date")), key=lambda s: s["date"])
+    changes = [abs(c) for c in (_change(p, c) for p, c in pairwise(rows)) if c]
+    # The size of a missed step: the median measured move, derived from the record itself.
+    step = sorted(changes)[len(changes) // 2] if changes else None
     out: list[dict[str, Any]] = []
     for prev, cur in zip([None, *rows][:len(rows)], rows, strict=True):
         size_s: float | None = None
         shift: float | None = None
         if prev is not None:
-            common = [t for t in TENORS if t in (cur.get("sizes") or {})
-                      and t in (prev.get("sizes") or {})]
-            before = sum(float(prev["sizes"][t]) for t in common)
-            if common and before > 0:
-                change = sum(float(cur["sizes"][t]) for t in common) / before - 1.0
-                guided = prev.get("guidance")
+            change = _change(prev, cur)
+            guided = prev.get("guidance")
+            if change is not None and isinstance(guided, int):
                 sign = (change > 0) - (change < 0)
-                if sign == 0:
+                if sign == guided:
                     size_s = 0.0
-                elif isinstance(guided, int):
-                    size_s = 0.0 if guided == sign else round(change, 6)
-                # an unreadable prior guidance leaves the surprise UNMEASURED (must-fix 3)
+                elif sign != 0:
+                    size_s = round(change, 6)
+                elif step is not None:
+                    # guided increases (or cuts) that did not come: less (more) supply than
+                    # promised, by one typical step (audit should-fix on #394 v2)
+                    size_s = round(-guided * step, 6)
+            # an unreadable prior guidance leaves the surprise UNMEASURED (must-fix 3)
             g0, g1 = prev.get("guidance"), cur.get("guidance")
             if isinstance(g0, int) and isinstance(g1, int):
                 shift = float(g1 - g0)
@@ -274,25 +315,34 @@ def _stamp(d: date, ev: dict[str, Any] | None) -> tuple[datetime, str]:
     seen = _seen_at(ev)
     rel = date.fromisoformat(str(ev["date"]))
     hold_end = datetime(rel.year, rel.month, rel.day, tzinfo=UTC) + timedelta(days=POST_DAYS)
-    if seen is not None and seen < hold_end:
+    if seen is None:
+        return pub, "unstamped"          # fail closed: its values are written blank
+    if seen < hold_end:
         return max(pub, seen), "first_sight"
     return pub, "published_history"
 
 
-def series_rows(scored: Sequence[dict[str, Any]], *, today: date | None = None
+def _vintage(s: dict[str, Any] | None) -> str:
+    """One statement's content hash: a re-read (corrected size or guidance) is a visible
+    revision of THAT row, and a new quarter never re-vintages history (audit #394 v2)."""
+    body = (["none"] if s is None else
+            [s["date"], s.get("sizes"), s.get("guidance"), s.get("size_surprise"),
+             s.get("guidance_shift")])
+    return hashlib.sha256(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()[:12]
+
+
+def series_rows(scored: Sequence[dict[str, Any]], *, today: date | None = None,
+                measured_until: datetime | None = None, now: datetime | None = None
                 ) -> list[dict[str, Any]]:
     """One row a day from the first statement to today; each surprise is held POST_DAYS days.
-    An UNMEASURED surprise is written blank, never as zero."""
+    A day with no statement is 0.0 only when published at or before `measured_until` (the last
+    read that showed every listed statement) and not after `now`; otherwise it is blank, as is
+    any UNMEASURED surprise. Never a clean zero for a day nobody looked at."""
     if not scored:
         return []
     end = today or datetime.now(UTC).date()
+    clock = now or datetime.now(UTC)
     events = [(date.fromisoformat(s["date"]), s) for s in scored]
-    # The vintage is a hash of what the series was built from, so a re-read statement (a
-    # corrected size or guidance) is a visible revision, never a silent rewrite under "v1".
-    vintage = hashlib.sha256(json.dumps(
-        [[s["date"], s.get("sizes"), s.get("guidance"), s.get("size_surprise"),
-          s.get("guidance_shift")] for s in scored], sort_keys=True, default=str
-    ).encode()).hexdigest()[:12]
     d = events[0][0]
     rows: list[dict[str, Any]] = []
     while d <= end:
@@ -303,10 +353,15 @@ def series_rows(scored: Sequence[dict[str, Any]], *, today: date | None = None
                                                           RELEASE_HOUR_UTC,
                                                           tzinfo=UTC).isoformat(),
                                "retrieval_time": ev.get("first_seen", "") if ev else "",
-                               "source_id": SOURCE_ID, "vintage_id": vintage,
+                               "source_id": SOURCE_ID, "vintage_id": _vintage(ev),
                                "stamp_basis": basis}
+        known_none = (measured_until is not None and avail <= measured_until
+                      and avail <= clock)
+        if ev is None and not known_none:
+            row["stamp_basis"] = UNMEASURED
         for sig in SIGNALS:
-            v = ev.get(sig) if ev else 0.0
+            v = (ev.get(sig) if basis != "unstamped" else None) if ev else (
+                0.0 if known_none else None)
             row[sig] = "" if v is None else v
         rows.append(row)
         d += timedelta(days=1)
@@ -390,7 +445,10 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
             per.append({"url": url, "status": "NOT_REACHED"})
             continue
         body, why = collector_lab.fetch(url, url, get=get, resolve=resolve, budget_s=left())
-        fetched[url] = {"at_epoch": time.time(), "status": why or "OK"}
+        prior_ok = (fetched.get(url) or {}).get("ok_epoch")
+        fetched[url] = {"at_epoch": time.time(), "status": why or "OK",
+                        **({"ok_epoch": time.time()} if not why else
+                           {"ok_epoch": prior_ok} if prior_ok else {})}
         if why:
             per.append({"url": url, "status": why})
             continue
@@ -416,7 +474,12 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     _write_json(FETCHED, fetched)
     good = [s for s in store.values() if isinstance(s, dict) and s.get("date")]
     scored = surprises(good)
-    rows = series_rows(scored, today=today)
+    # What the desk can vouch for: no listed statement unread, and the most-recent index read
+    # successfully at ok_epoch. Past that, a day without a statement is UNMEASURED.
+    ok_epoch = (fetched.get(INDEXES[0]) or {}).get("ok_epoch")
+    measured_until = (datetime.fromtimestamp(float(ok_epoch), UTC)
+                      if ok_epoch and not queue else None)
+    rows = series_rows(scored, today=today, measured_until=measured_until)
     if rows:
         write_series(rows)
     if lane_ok is None:
@@ -453,7 +516,10 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     doc = {"generated_at": _now(), "state": state, **({"why": why} if why else {}),
            "indexes": per, "statements_read": read,
            "statements_on_record": len(good), "queued": len(queue),
-           "measured": measured, "rows": len(rows), "cells_total": len(donate),
+           "measured": measured, "rows": len(rows),
+           "measured_until": measured_until.isoformat() if measured_until else None,
+           "rows_unmeasured": sum(1 for r in rows if r["stamp_basis"] == UNMEASURED),
+           "cells_total": len(donate),
            "cells_donated": len(fresh), "seconds": round(time.time() - started, 1),
            "not_yet_read": "TBAC minutes / primary-dealer expectations (surprise is vs "
                            "Treasury's own prior guidance until they are)",
