@@ -15,10 +15,11 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from libs.regime import session_clock  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
 from mt5desk import scalp_exec as sx  # noqa: E402
 from mt5desk.broker_clock import broker_to_utc  # noqa: E402
+
+from libs.regime import session_clock  # noqa: E402
 
 STAMPS = ["2026-01-14 10:00", "2026-07-14 10:00",
           # US spring-forward (2026-03-08) and fall-back (2026-11-01), both sides
@@ -74,7 +75,7 @@ def test_the_autumn_repeat_hour_reads_as_the_earlier_instant_and_never_raises() 
 def test_epoch_seconds_and_the_tape_use_the_same_conversion() -> None:
     from mt5desk import tape
     from mt5desk.broker_clock import broker_epoch_to_utc
-    for stamp in STAMPS + ["2026-11-01 08:30"]:
+    for stamp in [*STAMPS, "2026-11-01 08:30"]:
         sec = int(pd.Timestamp(stamp, tz="UTC").timestamp())
         want = broker_to_utc(pd.Timestamp(stamp, tz="UTC"))
         assert broker_epoch_to_utc(sec) == want
@@ -86,5 +87,6 @@ def test_the_family_intent_declares_its_time_exit_clock() -> None:
     """A trade autopsy converts a broker-labelled `ttl_until` and must not convert a UTC one
     again; the intent says which (absent = a legacy broker-labelled row)."""
     src = (DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
-    seg = src[src.index('[{name}] FAMILY-EXEC ORDER') - 2500:src.index('[{name}] FAMILY-EXEC ORDER')]
+    end = src.index("[{name}] FAMILY-EXEC ORDER")
+    seg = src[end - 2500:end]
     assert 'ttl_clock="utc"' in seg

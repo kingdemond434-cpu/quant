@@ -25,11 +25,12 @@ from typing import Any
 
 import pandas as pd
 
-from libs.regime.session_clock import server_to_utc
-
 
 def broker_to_utc(stamp: Any) -> pd.Timestamp:
     """The true UTC instant of one broker-stamped time (naive, or labelled UTC)."""
+    # Imported here, as the other money-path modules import libs: the repo root is on the path
+    # wherever the gateway runs, and a module that merely imports this one pays nothing.
+    from libs.regime.session_clock import server_to_utc
     return pd.Timestamp(server_to_utc([pd.Timestamp(stamp)])[0])
 
 
