@@ -335,6 +335,8 @@ desks/mt5/data/parity_hunt_targets.json
 # is ever added to $relPaths without a line here.
 !desks/mt5/data/sleeves.json
 !desks/mt5/data/account_state.json
+# the LLM lab's Treasury refunding surprise pass (2026-10-14), published by the box sync
+!desks/mt5/reports/TREASURY_REFUNDING.json
 !desks/mt5/reports/shadow/scalp_shadow_state.json
 !desks/mt5/reports/shadow/qquant_shadow_state.json
 !desks/mt5/reports/shadow/external_shadow_state.json

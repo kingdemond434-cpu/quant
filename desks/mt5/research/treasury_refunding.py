@@ -1,0 +1,372 @@
+"""TREASURY REFUNDING: the Quarterly Refunding Announcement's size and guidance surprise, PIT.
+
+THE IDEA (coordinator's hourly pass 4, idea F5, 2026-10-14): once a quarter the US Treasury says
+how many coupons it will sell (the 3-, 10- and 30-year refunding auction sizes) and what it
+expects to do next ("at least the next several quarters" vs "anticipates increases"). More
+duration supply than the market was told to expect raises the term premium: Treasuries cheapen,
+the dollar firms against the yen, equities and gold lose a discount-rate tailwind. The desk had
+no record of these announcements. This organ reads them from home.treasury.gov, writes one lake
+series, and donates exactly pre-registered conditioner cells on UST10Y, USDJPY, US500 and XAUUSD.
+
+NO MODEL IS IN THE PATH, ON PURPOSE (the same rule as `election_calendar`, #388). The sizes and
+the guidance are read by FIXED CODE from the statement's own words: a dollar amount next to a
+tenor, and a guidance phrase inside a sentence about coupon auction sizes. A model scoring the
+"tone" could be scoring with hindsight of what yields did next, which is look-ahead no cutoff
+guard can trim when the model's training ends after the whole history; fixed code has no such
+channel. The cells' sides are fixed below from the stated mechanism, never from data or a model.
+
+TWO SIGNALS, BOTH SURPRISES RELATIVE TO WHAT TREASURY ITSELF HAD SAID.
+  * `size_surprise`: the fractional change in the refunding's coupon sizes (tenors common to this
+    and the previous statement), counted ONLY when the previous statement's guidance did not
+    point that way. A change Treasury pre-announced is priced; a change against guidance is news.
+  * `guidance_shift`: this statement's guidance (+1 increases ahead, 0 maintain, -1 reductions)
+    minus the previous one's. A move to "increases ahead" is supply news before any auction.
+Each is non-zero on the release day and the POST_DAYS - 1 days after it, zero otherwise.
+
+POINT IN TIME. The statement is released at 08:30 New York time on the announcement day; the
+row for the release day is stamped available at RELEASE_HOUR_UTC that day (after 08:30 ET in
+both summer and winter), and the conditioner's own 24 h lag then acts from the next day. Our
+own first sight is kept in `retrieval_time`. Rows exist only up to today.
+
+WHAT IS NOT YET READ, said rather than hidden: the TBAC minutes and the primary-dealer
+expectations they summarise. They would sharpen the surprise (dealer consensus vs outcome) and
+are the next step; until then the surprise is measured against Treasury's own prior guidance.
+"""
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import os
+import re
+import sys
+import time
+import urllib.parse
+from collections.abc import Callable, Sequence
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+BASE = Path(__file__).resolve().parent.parent
+ROOT = BASE.parent.parent
+for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+STATE_DIR = BASE / "data" / "treasury_refunding"
+STATEMENTS = STATE_DIR / "statements.json"
+FETCHED = STATE_DIR / "fetched.json"
+SERIES_DIR = BASE / "data" / "lake" / "series"
+DONATE_DIR = BASE / "data" / "intelligence" / "treasury_refunding"
+REPORT = BASE / "reports" / "TREASURY_REFUNDING.json"
+SOURCE_ID = "treasury_refunding"
+UNMEASURED = "UNMEASURED"
+
+POST_DAYS = 5
+RELEASE_HOUR_UTC = 14
+REFETCH_S = 20 * 3600.0
+#: Most statement pages fetched per pass; a statement never changes once read, so it is cached.
+MAX_NEW_PER_PASS = 8
+EARLIEST = date(1990, 1, 1)
+TENORS = ("3", "10", "30")
+
+INDEXES: tuple[str, ...] = (
+    "https://home.treasury.gov/policy-issues/financing-the-government/quarterly-refunding/"
+    "most-recent-quarterly-refunding-documents",
+    "https://home.treasury.gov/policy-issues/financing-the-government/quarterly-refunding/"
+    "quarterly-refunding-archives",
+)
+
+#: symbol -> side while a signal is POSITIVE (more supply than guided / guidance turned to
+#: increases). Treasuries cheapen (UST10Y is a price), USD firms vs JPY, equities and gold soften.
+MECHANISMS: dict[str, int] = {"UST10Y": -1, "USDJPY": 1, "US500": -1, "XAUUSD": -1}
+SIGNALS = ("size_surprise", "guidance_shift")
+
+_MONTHS = {m: i + 1 for i, m in enumerate(
+    ("january", "february", "march", "april", "may", "june", "july", "august", "september",
+     "october", "november", "december"))}
+_DATE = re.compile(r"\b(" + "|".join(_MONTHS) + r")\s+(\d{1,2}),?\s+(\d{4})\b", re.I)
+_SIZE = re.compile(r"\$\s?(\d+(?:\.\d+)?)\s+billion\s+(?:of\s+)?(?:(?:the|a|new)\s+)*"
+                   r"(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b", re.I)
+_LINK = re.compile(r"""<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a\s*>""", re.I | re.S)
+_ABOUT = re.compile(r"coupon|auction sizes?|issuance sizes?", re.I)
+_UP = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?\bincrease"
+                 r"|\bincreases? (?:to|in) (?:nominal )?coupon", re.I)
+_DOWN = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?"
+                   r"\b(?:reduce|reduction|decrease|cut)"
+                   r"|\b(?:reductions?|decreases?|cuts?) (?:to|in) (?:nominal )?coupon", re.I)
+_FLAT = re.compile(r"at least the next several quarters|\bmaintain|\bunchanged\b"
+                   r"|\bno changes?\b|\bkeep\b[^.]{0,60}\bsteady", re.I)
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+def _read_json(path: Path, default: Any) -> Any:
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+def _write_json(path: Path, doc: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    os.replace(tmp, path)
+
+
+def statement_links(body: bytes, base_url: str) -> list[str]:
+    """Every link on an index page whose text names a refunding statement, on a treasury.gov
+    host. A link elsewhere is never followed."""
+    import html
+    out: list[str] = []
+    for href, text in _LINK.findall(body.decode("utf-8", errors="replace")):
+        label = html.unescape(re.sub(r"(?s)<[^>]+>", " ", text)).lower()
+        if "refunding" not in label or "statement" not in label:
+            continue
+        url = urllib.parse.urljoin(base_url, html.unescape(href.strip()))
+        host = (urllib.parse.urlsplit(url).hostname or "").lower()
+        on_site = host == "treasury.gov" or host.endswith(".treasury.gov")
+        if urllib.parse.urlsplit(url).scheme == "https" and on_site and url not in out:
+            out.append(url)
+    return out
+
+
+def _sentences(text: str) -> list[str]:
+    return [s for s in re.split(r"\n|(?<=[.!?])\s+", text) if s.strip()]
+
+
+def release_date(text: str, *, today: date | None = None) -> date | None:
+    """The statement's own date: the first Month D, YYYY in its first 15 blocks."""
+    limit = today or datetime.now(UTC).date()
+    for line in text.split("\n")[:15]:
+        for mt in _DATE.finditer(line):
+            try:
+                d = date(int(mt.group(3)), _MONTHS[mt.group(1).lower()], int(mt.group(2)))
+            except ValueError:
+                continue
+            if EARLIEST <= d <= limit:
+                return d
+    return None
+
+
+def sizes(text: str) -> dict[str, float]:
+    """Tenor -> $bn for the FIRST size the statement names for each refunding tenor."""
+    out: dict[str, float] = {}
+    for mt in _SIZE.finditer(text):
+        out.setdefault(mt.group(2), float(mt.group(1)))
+    return {t: out[t] for t in TENORS if t in out}
+
+
+def guidance(text: str) -> int | None:
+    """+1 increases ahead, -1 reductions ahead, 0 sizes maintained, None if no sentence about
+    coupon auction sizes says any of the three."""
+    about = [s for s in _sentences(text) if _ABOUT.search(s)]
+    if any(_UP.search(s) for s in about):
+        return 1
+    if any(_DOWN.search(s) for s in about):
+        return -1
+    if any(_FLAT.search(s) for s in about):
+        return 0
+    return None
+
+
+def parse(text: str, url: str, seen: str, *, today: date | None = None) -> dict[str, Any] | None:
+    d = release_date(text, today=today)
+    if d is None:
+        return None
+    return {"date": d.isoformat(), "url": url, "first_seen": seen, "sizes": sizes(text),
+            "guidance": guidance(text)}
+
+
+def surprises(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Each statement with its two surprises against the one before it (None = UNMEASURED)."""
+    rows = sorted((s for s in statements if s.get("date")), key=lambda s: s["date"])
+    out: list[dict[str, Any]] = []
+    for prev, cur in zip([None, *rows[:-1]], rows, strict=True):
+        size_s: float | None = None
+        shift: float | None = None
+        if prev is not None:
+            common = [t for t in TENORS if t in (cur.get("sizes") or {})
+                      and t in (prev.get("sizes") or {})]
+            before = sum(float(prev["sizes"][t]) for t in common)
+            if common and before > 0:
+                change = sum(float(cur["sizes"][t]) for t in common) / before - 1.0
+                guided = prev.get("guidance")
+                sign = (change > 0) - (change < 0)
+                size_s = 0.0 if (sign == 0 or guided == sign) else round(change, 6)
+            g0, g1 = prev.get("guidance"), cur.get("guidance")
+            if isinstance(g0, int) and isinstance(g1, int):
+                shift = float(g1 - g0)
+        out.append({**cur, "size_surprise": size_s, "guidance_shift": shift})
+    return out
+
+
+SERIES_COLUMNS = ("available_time", "published_time", "retrieval_time", "source_id",
+                  "vintage_id", *SIGNALS)
+
+
+def series_rows(scored: Sequence[dict[str, Any]], *, today: date | None = None
+                ) -> list[dict[str, Any]]:
+    """One row a day from the first statement to today; each surprise is held POST_DAYS days.
+    An UNMEASURED surprise is written blank, never as zero."""
+    if not scored:
+        return []
+    end = today or datetime.now(UTC).date()
+    events = [(date.fromisoformat(s["date"]), s) for s in scored]
+    d = events[0][0]
+    rows: list[dict[str, Any]] = []
+    while d <= end:
+        ev = next((s for e, s in reversed(events) if 0 <= (d - e).days < POST_DAYS), None)
+        avail = datetime(d.year, d.month, d.day, RELEASE_HOUR_UTC, tzinfo=UTC)
+        row: dict[str, Any] = {"available_time": avail.isoformat(),
+                               "published_time": avail.isoformat(),
+                               "retrieval_time": ev.get("first_seen", "") if ev else "",
+                               "source_id": SOURCE_ID, "vintage_id": "v1"}
+        for sig in SIGNALS:
+            v = ev.get(sig) if ev else 0.0
+            row[sig] = "" if v is None else v
+        rows.append(row)
+        d += timedelta(days=1)
+    return rows
+
+
+def write_series(rows: Sequence[dict[str, Any]]) -> Path:
+    SERIES_DIR.mkdir(parents=True, exist_ok=True)
+    path = SERIES_DIR / f"{SOURCE_ID}.csv"
+    tmp = path.with_suffix(".csv.tmp")
+    with tmp.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(SERIES_COLUMNS))
+        w.writeheader()
+        w.writerows(rows)
+    os.replace(tmp, path)
+    return path
+
+
+def cells(scored: Sequence[dict[str, Any]], uni: dict[str, str] | None = None,
+          lane_ok: Callable[[str, str], bool] | None = None) -> list[dict[str, Any]]:
+    """The pre-registered cells, once at least two surprises of a signal are measured non-zero."""
+    out: list[dict[str, Any]] = []
+    for sig in SIGNALS:
+        n = sum(1 for s in scored if isinstance(s.get(sig), (int, float)) and s[sig] != 0)
+        if n < 2:
+            continue
+        for sym, side in MECHANISMS.items():
+            if uni is not None and sym not in uni:
+                continue
+            if lane_ok is not None and not lane_ok(sym, "exogenous_conditioner"):
+                continue
+            params = {"source": SOURCE_ID, "signal": sig, "transform": "level_z",
+                      "threshold": 1.0, "side_when_high": side}
+            ident = hashlib.sha256(json.dumps(
+                {"family": "exogenous_conditioner", "params": params, "symbol": sym},
+                sort_keys=True).encode()).hexdigest()[:16]
+            what = ("coupon sizes moved against Treasury's own prior guidance"
+                    if sig == "size_surprise" else "Treasury's size guidance shifted")
+            out.append({
+                "kind": "hypothesis", "family": "exogenous_conditioner", "params": params,
+                "symbols": [sym], "symbol": sym, "cell_id": f"refunding_{ident}",
+                "mechanism": (f"duration-supply surprise at the Quarterly Refunding: when {what}, "
+                              f"the term premium reprices; {sym} is taken "
+                              f"{'long' if side > 0 else 'short'} on more supply than guided "
+                              f"({n} measured surprises)"),
+                "falsifier": (f"{sym} returns in the {POST_DAYS} days after a refunding "
+                              f"{sig.replace('_', ' ')} are no different from unconditioned "
+                              f"returns, or carry the opposite sign"),
+                "title": f"treasury refunding: {sym} on the {sig.replace('_', ' ')}",
+                "mechanism_class": "event", "novelty_class": "GENUINELY_NOVEL",
+                "lineage": {"root": f"treasury_refunding:{sig}", "operator": "fixed_rule"},
+                "producer": "treasury_refunding", "url": f"lake://{SOURCE_ID}",
+                "copy_trade": False, "credibility_inherited": False,
+                "gauntlet_bypass": False})
+    return out
+
+
+def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
+        uni: dict[str, str] | None = None, lane_ok: Callable[[str, str], bool] | None = None,
+        today: date | None = None) -> dict[str, Any]:
+    """Refresh the index pages at most once per REFETCH_S, read up to MAX_NEW_PER_PASS new
+    statements, rebuild the series and donate new cells."""
+    import collector_lab
+    from election_calendar import page_text
+    started = time.time()
+    deadline = started + max(5.0, budget_s)
+    store: dict[str, Any] = _read_json(STATEMENTS, {}) or {}
+    fetched: dict[str, Any] = _read_json(FETCHED, {}) or {}
+    queue: list[str] = list(fetched.get("_queue") or [])
+    per: list[dict[str, Any]] = []
+
+    def left() -> float:
+        return min(float(collector_lab.FETCH_S), max(1.0, deadline - time.time()))
+
+    for url in INDEXES:
+        last = float((fetched.get(url) or {}).get("at_epoch") or 0)
+        if time.time() - last < REFETCH_S:
+            per.append({"url": url, "status": "FRESH"})
+            continue
+        if time.time() > deadline - 5:
+            per.append({"url": url, "status": "NOT_REACHED"})
+            continue
+        body, why = collector_lab.fetch(url, url, get=get, resolve=resolve, budget_s=left())
+        fetched[url] = {"at_epoch": time.time(), "status": why or "OK"}
+        if why:
+            per.append({"url": url, "status": why})
+            continue
+        links = statement_links(body, url)
+        queue.extend(u for u in links if u not in store and u not in queue)
+        per.append({"url": url, "status": "OK", "links": len(links)})
+    read = 0
+    for url in list(queue):
+        if read >= MAX_NEW_PER_PASS or time.time() > deadline - 5:
+            break
+        body, why = collector_lab.fetch(url, url, get=get, resolve=resolve, budget_s=left())
+        read += 1
+        if why:
+            fetched[url] = {"at_epoch": time.time(), "status": why}
+            if not why.startswith("UNREACHABLE"):
+                queue.remove(url)        # a refusal is permanent; an outage is retried
+            continue
+        queue.remove(url)
+        st = parse(page_text(body), url, _now(), today=today)
+        store[url] = st or {"url": url, "status": UNMEASURED, "why": "no statement date"}
+    fetched["_queue"] = queue
+    _write_json(STATEMENTS, store)
+    _write_json(FETCHED, fetched)
+    good = [s for s in store.values() if isinstance(s, dict) and s.get("date")]
+    scored = surprises(good)
+    rows = series_rows(scored, today=today)
+    if rows:
+        write_series(rows)
+    if lane_ok is None:
+        try:
+            import llm_lab
+            lane_ok = llm_lab._lane_ok
+        except Exception:
+            lane_ok = None
+    donate = cells(scored, uni, lane_ok)
+    known = set(_read_json(STATE_DIR / "donated.json", []) or [])
+    fresh = [r for r in donate if r["cell_id"] not in known]
+    if fresh:
+        DONATE_DIR.mkdir(parents=True, exist_ok=True)
+        stamp = _now().replace(":", "").replace("-", "")[:15]
+        _write_json(DONATE_DIR / f"discoveries_{stamp}.json",
+                    {"source": "treasury_refunding", "generated_at": _now(),
+                     "rule": "fixed-code extraction; pre-registered sides; the gauntlet judges",
+                     "discoveries": fresh})
+        _write_json(STATE_DIR / "donated.json", sorted(known | {r["cell_id"] for r in fresh}))
+    measured = {sig: sum(1 for s in scored if isinstance(s.get(sig), (int, float)))
+                for sig in SIGNALS}
+    ran = read > 0 or any(p["status"] == "OK" for p in per)
+    state = ("RAN" if ran else "FRESH" if all(p["status"] == "FRESH" for p in per) else "DARK")
+    doc = {"generated_at": _now(), "state": state, "indexes": per, "statements_read": read,
+           "statements_on_record": len(good), "queued": len(queue),
+           "measured": measured, "rows": len(rows), "cells_total": len(donate),
+           "cells_donated": len(fresh), "seconds": round(time.time() - started, 1),
+           "not_yet_read": "TBAC minutes / primary-dealer expectations (surprise is vs "
+                           "Treasury's own prior guidance until they are)",
+           "pit": f"release-day row stamped {RELEASE_HOUR_UTC}:00 UTC (after the 08:30 ET "
+                  f"release), held {POST_DAYS} days; first sight kept in retrieval_time"}
+    _write_json(REPORT, doc)
+    return doc
