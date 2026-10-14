@@ -2140,7 +2140,8 @@ def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
     notes += [f"PRINCIPAL STOP holds {r.get('name') or r.get('symbol')}: {why}"
               for r, why in stopped]
     if problem:
-        notes.append(f"PRINCIPAL STOPS UNMEASURED, holding the built-in stops this pass: {problem}")
+        notes.append(f"PRINCIPAL STOPS UNMEASURED, holding every readable stop plus the built-in "
+                     f"ones not validly resumed: {problem}")
     # FEED HEALTH IS AN INPUT, NEVER A FILTER (LAWS 5m observatory; GROWTH_GOVERNANCE Rule 1).
     # The observatory (research/feed_clock_lab.py) stamps data/feed_health.json beside this
     # file; the reading rides on the row for entry timing to read and drops nothing.

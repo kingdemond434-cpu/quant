@@ -13,8 +13,8 @@ re-applied the 0.10 risk from CERT_BOOK_LIVE.json. Nothing recorded that a human
 So a stop is now a RECORD, not a status. data/PRINCIPAL_STOPS.json lists each stopped identity
 with who stopped it and on whose word. While a stop is active:
   - the gateway's roster (`decision_core.load_sleeves_verbose`) drops every LIVE row it matches,
-    so no new risk is placed however the row became LIVE; with the file absent or unreadable it
-    holds the built-in stops (`BUILTIN`), never nothing;
+    so no new risk is placed however the row became LIVE; the built-in stops (`BUILTIN`) hold
+    unless the file validly resumes them, so a missing or damaged file never releases one;
   - `heal_silent_demotions` never lifts a matching row;
   - `scripts/check_principal_stops.py` goes RED for any matching LIVE row with risk above 0.
 Open positions are not touched here: the gateway manages them on the unfiltered roster.
@@ -83,33 +83,43 @@ BUILTIN: tuple[dict[str, Any], ...] = (
 def load(path: Path) -> tuple[list[dict[str, Any]], str | None]:
     """(active stop entries, problem).
 
-    An absent, unreadable or malformed file returns the built-in stops and its problem: the
-    gateway holds what the principal already ordered, the healer restores nothing, and the fence
-    reads UNMEASURED or RED. A single bad entry is skipped and named; the valid ones still hold.
-    Resumes in a file that cannot be read are not honoured, so the built-in stops hold there too.
+    THE BUILT-IN STOPS ONLY EVER ADD HOLDS. Every `BUILTIN` identity the file does not validly
+    resume is held, whatever else the file says: an emptied file, a typo in a stop's own entry or
+    a file that cannot be read never releases one. The only release is the documented record, a
+    well-formed entry for that identity with `resumed.by == "principal"` and a message.
+
+    An absent, unreadable or shapeless file returns its problem (the healer then restores
+    nothing and the fence reads UNMEASURED or RED). A bad entry is skipped and named; the valid
+    entries still hold.
     """
-    if not path.exists():
-        return list(BUILTIN), f"{path.name} absent"
-    try:
-        doc = json.loads(path.read_text(encoding="utf-8-sig"))
-    except (OSError, ValueError) as exc:
-        return list(BUILTIN), f"{path.name} unreadable ({type(exc).__name__}: {exc})"
-    stops = doc.get("stops") if isinstance(doc, dict) else None
-    if not isinstance(stops, list):
-        return list(BUILTIN), f"{path.name} has no `stops` list"
-    active: list[dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     bad: list[str] = []
-    for e in stops:
-        if not isinstance(e, dict) or not (e.get("identity") or e.get("name")):
-            bad.append(repr(e)[:80])
-        elif not resumed(e):
-            active.append(e)
-    return active, (
-        f"{path.name} skipped {len(bad)} entry(ies) with neither identity nor "
-        f"name: {'; '.join(bad)}"
-        if bad
-        else None
-    )
+    problem: str | None = None
+    if not path.exists():
+        problem = f"{path.name} absent"
+    else:
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError) as exc:
+            doc, problem = None, f"{path.name} unreadable ({type(exc).__name__}: {exc})"
+        stops = doc.get("stops") if isinstance(doc, dict) else None
+        if problem is None and not isinstance(stops, list):
+            problem = f"{path.name} has no `stops` list"
+        for e in stops if isinstance(stops, list) else ():
+            if not isinstance(e, dict) or not (e.get("identity") or e.get("name")):
+                bad.append(repr(e)[:80])
+            else:
+                entries.append(e)
+        if bad:
+            problem = (
+                f"{path.name} skipped {len(bad)} entry(ies) with neither identity nor "
+                f"name: {'; '.join(bad)}"
+            )
+    released = {str(e.get("identity") or "").strip().lower() for e in entries if resumed(e)}
+    active = [e for e in entries if not resumed(e)]
+    held = {str(e.get("identity") or "").strip().lower() for e in active}
+    active += [b for b in BUILTIN if b["identity"] not in released | held]
+    return active, problem
 
 
 def match(row: dict[str, Any], stops: list[dict[str, Any]]) -> dict[str, Any] | None:

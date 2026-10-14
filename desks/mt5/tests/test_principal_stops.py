@@ -96,7 +96,7 @@ def test_no_readable_stops_file_holds_the_built_in_stops_at_the_gateway(
             (tmp_path / "PRINCIPAL_STOPS.json").write_text(content, "utf-8")
         keep, notes = dc.load_sleeves_verbose(sl)
         assert [r["name"] for r in keep] == ["eurzar_carry_asia"], content
-        assert any("holding the built-in stops" in n for n in notes)
+        assert any("plus the built-in" in n for n in notes)
 
 
 def test_a_malformed_entry_is_skipped_and_the_valid_stops_still_hold(tmp_path, monkeypatch) -> None:
@@ -189,3 +189,22 @@ def test_an_absent_stops_file_lifts_nothing_and_the_fence_reads_unmeasured(
     assert json.loads(sl.read_text())["sleeves"][0]["status"] == "STANDBY"
     doc = fence.check(sl, tmp_path / "PRINCIPAL_STOPS.json")
     assert doc["status"] == "UNMEASURED" and doc["why"].endswith("absent")
+
+
+def test_an_emptied_file_or_a_typo_in_a_stop_never_releases_a_built_in_stop(
+    tmp_path, monkeypatch
+) -> None:
+    import mt5desk.live_policy as lp
+    from scripts import check_principal_stops as fence
+
+    monkeypatch.setattr(lp, "admit", lambda rows: (list(rows), []))
+    typo = {k: v for k, v in STOP.items() if k != "identity"} | {"identiy": STOP["identity"]}
+    for stops in ([], [typo]):
+        sl = _write(tmp_path, [AUD, CARRY], stops)
+        keep, _notes = dc.load_sleeves_verbose(sl)
+        assert [r["name"] for r in keep] == ["eurzar_carry_asia"], stops
+        doc = fence.check(sl, tmp_path / "PRINCIPAL_STOPS.json")
+        assert doc["status"] == "RED" and doc["breaches"], stops
+    resume = {**STOP, "resumed": {"by": "principal", "at": "x", "message": "cmsg_z resume"}}
+    sl = _write(tmp_path, [AUD, CARRY], [resume])
+    assert len(dc.load_sleeves_verbose(sl)[0]) == 2, "only the recorded resume releases it"
