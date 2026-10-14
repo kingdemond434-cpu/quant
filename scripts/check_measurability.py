@@ -71,7 +71,7 @@ LIVE_TRADABILITY = DESK / "reports" / "LIVE_TRADABILITY.json"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
 CLOCK_LAW = DESK / "reports" / "CERTIFICATE_CLOCK_LAW.json"
 CHAIN = DESK / "reports" / "attribution_chain.json"
-MARKOUT = DESK / "reports" / "markout.json"
+MARKOUT = DESK / "reports" / "markout.json"   # counts only: its slip_r is not read (units)
 REPORT = DESK / "reports" / "MEASURABILITY.json"
 STATE = DESK / "data" / "measurability_state.json"
 

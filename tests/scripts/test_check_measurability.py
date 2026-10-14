@@ -241,3 +241,13 @@ def test_the_owners_are_read_first_for_cost_and_tradability(desk: Path, monkeypa
     doc, _ = cm.judge(cm.measure(NOW), {}, NOW)
     fc = doc["subjects"][f"cert:{CID}"]["fields"]["fill_cost"]
     assert fc["status"] == "MEASURED" and fc["source"] == "fill_hour_reprice"
+
+
+def test_markout_slip_is_never_a_measurability_input(desk: Path) -> None:
+    """markout's slip_r mixes price and money units until Max-growth's fix lands, so no field
+    here may read it: only n_deals / n_unmatched_deals (counts) are taken from markout."""
+    base = cm.measure(NOW)["subjects"]
+    (desk / "markout.json").write_text(json.dumps({
+        "at": AT, "n_deals": 3, "n_unmatched_deals": 0, "mean_slip_r": 99.0,
+        "mean_slip_quote": -5.0, "edge_share": -1.27}), "utf-8")
+    assert cm.measure(NOW)["subjects"] == base
