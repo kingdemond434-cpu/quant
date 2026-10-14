@@ -158,12 +158,13 @@ def test_f1_is_preregistered_with_its_disclosure() -> None:
 
 
 def test_the_breadth_sweep_does_not_charge_f1_a_second_time() -> None:
-    """breadth_sweep.default_families excludes every NOT_SOURCED_HERE family (audit MF4)."""
-    import orthogonal_sweep as osw
-
+    """breadth_sweep.default_families excludes F1 by name (PREREGISTERED_ELSEWHERE) and keeps
+    mining every other family exactly as before (audit MF4, narrowed)."""
     from research import breadth_sweep as bs
 
     ok, blocked = bs.default_families()
+    assert set(bs.PREREGISTERED_ELSEWHERE) == {"idio_volume_reversal"}
     assert "idio_volume_reversal" not in ok
-    assert blocked["idio_volume_reversal"].startswith("not sourced here")
-    assert not set(ok) & set(osw.NOT_SOURCED_HERE)
+    assert blocked["idio_volume_reversal"].startswith("preregistered elsewhere")
+    for still_swept in ("lead_lag", "triangle", "exogenous_conditioner"):
+        assert still_swept in ok, still_swept
