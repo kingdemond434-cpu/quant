@@ -3,13 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-14T04:29:02.826903+00:00",
+   "finished_at": "2026-10-14T05:37:14.607672+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-14T04:31:51.231536+00:00",
+   "finished_at": "2026-10-14T05:38:43.712510+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -21,13 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-14T04:30:17.175376+00:00",
+   "finished_at": "2026-10-14T05:37:42.118175+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-14T04:31:29.158724+00:00",
+   "finished_at": "2026-10-14T05:38:30.320741+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -57,10 +57,15 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-14T04:33:19.223688+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-desk-pull.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-14T05:39:27.438144+00:00",
+   "status": "RUNNING"
   },
   "mechanism_independence": {
    "finished_at": "2026-10-14T04:44:08.674421+00:00",
@@ -81,5 +86,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-14T04:45:58.875167+00:00"
+ "updated_at": "2026-10-14T05:39:27.438144+00:00"
 }
