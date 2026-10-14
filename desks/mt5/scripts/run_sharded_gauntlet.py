@@ -13,10 +13,10 @@ import os
 import sys
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
-from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
 
@@ -375,6 +375,8 @@ def _sweep_phase() -> dict[str, Any] | None:
 
 def _write_state(doc: dict[str, Any]) -> None:
     doc = {**doc, "heartbeat_utc": datetime.now(UTC).isoformat(timespec="seconds")}
+    if _PRIORITY_DOC:
+        doc["priority"] = dict(_PRIORITY_DOC)
     if doc.get("status") == "SWEEPING":
         doc["sweep_phase"] = _sweep_phase()
     try:
@@ -494,15 +496,100 @@ def _kill_sweep_tree(pid: int, *, rounds: int = 20) -> int:
     return killed
 
 
+# ------------------------------------------------------------------- the judge's CPU standing
+#: THE JUDGE STANDS LEVEL WITH THE MINERS, NEVER BELOW AND NEVER ABOVE (principal 2026-10-14:
+#: judging "maximised using every way possible", with mining never cut or slowed). At 04:54Z the
+#: box measured 16.13 of 18 cores busy outside the judge and 0.76 inside it. A judge scheduled
+#: BELOW the processes it competes with loses every contended quantum to them; one scheduled
+#: LEVEL shares the cores by runnable threads, which costs a miner nothing it is owed.
+#:
+#: So the sweep child's priority class is no longer a literal. It is the MODAL class of the
+#: miner processes measured on this box right now (department residents, the hourly cycle and the
+#: swarms), raised to only if the judge sits below it, capped at NORMAL (the terminal's and
+#: gateway's class is never contested), and never lowered: a class read off the machine, not
+#: assumed. Every shard the sweep child spawns inherits it. Measured on the scheduler's defaults
+#: the answer is EQUAL already -- MT5-Gauntlet and every miner task run at Task Scheduler
+#: priority 7 (BELOW_NORMAL) and `department_resident` launches its passes BELOW_NORMAL -- so this
+#: changes nothing today and guards the parity the day either side moves. The reading is
+#: published on JUDGE_RESIDENT.json under `priority`.
+_PRIO_ORDER = ("IDLE", "BELOW_NORMAL", "NORMAL", "ABOVE_NORMAL", "HIGH", "REALTIME")
+_PRIO_VALUE = {"IDLE": 0x40, "BELOW_NORMAL": 0x4000, "NORMAL": 0x20, "ABOVE_NORMAL": 0x8000,
+               "HIGH": 0x80, "REALTIME": 0x100}
+_PRIO_NAME = {v: k for k, v in _PRIO_VALUE.items()}
+JUDGE_PRIORITY_CAP = "NORMAL"
+MINER_SCRIPTS = frozenset({"department_resident.py", "hourly_cycle.py", "moat_miner.py",
+                           "scout_swarm.py", "moat_swarms.py", "deep_forest_miner.py",
+                           "miner_candidate_compiler.py", "run_data_axis_miner.cmd"})
+
+
+def _runs_any(cmd: list[str], names: frozenset[str]) -> bool:
+    for arg in cmd[:cmd.index("-c") if "-c" in cmd else len(cmd)]:
+        if str(arg).strip('"').replace("\\", "/").rsplit("/", 1)[-1].lower() in names:
+            return True
+    return False
+
+
+def _miner_classes() -> list[str] | None:
+    """The priority class (name) of every miner process on this box; None when unmeasurable."""
+    if sys.platform != "win32":
+        return None                     # POSIX niceness cannot be raised without privilege
+    try:
+        import psutil
+    except ImportError:                                        # pragma: no cover - box has it
+        return None
+    out: list[str] = []
+    try:
+        for pr in psutil.process_iter(["cmdline"]):
+            try:
+                if _runs_any(list(pr.info.get("cmdline") or []), MINER_SCRIPTS):
+                    out.append(_PRIO_NAME.get(int(pr.nice()), "NORMAL"))
+            except (psutil.Error, TypeError, ValueError):
+                continue
+    except Exception:
+        return None
+    return out
+
+
+def priority_parity(judge: str, miners: list[str] | None) -> dict[str, Any]:
+    """The class the sweep child runs at: the miners' modal class if the judge is below it."""
+    doc: dict[str, Any] = {"judge_was": judge, "judge": judge, "cap": JUDGE_PRIORITY_CAP,
+                           "miners_seen": len(miners or [])}
+    if not miners:
+        doc.update(status="UNMEASURED", why="no miner process measured: the judge keeps its class")
+        return doc
+    counts: dict[str, int] = {}
+    for m in miners:
+        counts[m] = counts.get(m, 0) + 1
+    modal = max(counts, key=lambda k: (counts[k], -_PRIO_ORDER.index(k)))
+    doc["miners_by_class"] = dict(sorted(counts.items()))
+    doc["miner_modal"] = modal
+    rank = _PRIO_ORDER.index
+    target = modal if rank(modal) <= rank(JUDGE_PRIORITY_CAP) else JUDGE_PRIORITY_CAP
+    if rank(judge) < rank(target):
+        doc.update(judge=target, status="RAISED_TO_EQUAL",
+                   why=f"the judge ran {judge} below the miners' {modal}: raised to {target}")
+    else:
+        doc.update(status="EQUAL" if judge == modal else "UNCHANGED",
+                   why=(f"the judge runs {judge}, the miners' modal class is {modal}: "
+                        "never raised above them, never lowered"))
+    return doc
+
+
+#: The standing the scheduler gives MT5-Gauntlet (Task Scheduler priority 7 = BELOW_NORMAL).
+JUDGE_DEFAULT_CLASS = "BELOW_NORMAL"
+_PRIORITY_DOC: dict[str, Any] = {}
+
+
 def _one_sweep_child(hang_s: float | None = None) -> int:
-    """One sweep in a fresh process, at the priority the scheduler gives the judge today."""
+    """One sweep in a fresh process, level with the miners' measured priority class."""
     import subprocess
 
     flags = 0
     if sys.platform == "win32":
-        # BELOW_NORMAL is the Task Scheduler's default priority (7) for MT5-Gauntlet, so the
-        # child keeps exactly the standing the judge has now: miners are never displaced by it.
-        flags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
+        parity = priority_parity(JUDGE_DEFAULT_CLASS, _miner_classes())
+        _PRIORITY_DOC.clear()
+        _PRIORITY_DOC.update(parity)
+        flags = _PRIO_VALUE.get(str(parity["judge"]), _PRIO_VALUE[JUDGE_DEFAULT_CLASS])
     child = subprocess.Popen([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
                              cwd=DESK, env=_sweep_env(), creationflags=flags)
     try:
@@ -619,9 +706,15 @@ def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
                 state["last_hung_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
                 state["killed_in_phase"] = _sweep_phase()
             pause = RESIDENT_BACKOFF_S[min(failures, len(RESIDENT_BACKOFF_S)) - 1]
-        state.update(status="BACKOFF", backoff_s=pause)
+        # THE BACKOFF SPACES SWEEP STARTS; IT IS NOT AN IDLE GAP AFTER A LONG SWEEP (2026-10-14).
+        # It exists so an instantly-crashing sweep cannot spin; a sweep that already ran for
+        # longer than the pause has paid it, and queued work starts now. Only the remainder of
+        # the pause (if the sweep died faster than it) is slept.
+        wait = max(0.0, float(pause) - dt)
+        state.update(status="BACKOFF", backoff_s=round(wait, 1))
         _write_state(state)
-        sleep(pause)
+        if wait > 0:
+            sleep(wait)
     return last_rc
 
 

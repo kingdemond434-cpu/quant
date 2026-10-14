@@ -221,6 +221,68 @@ def _ts(raw: object) -> datetime | None:
         return None
 
 
+#: THE LEDGER IS READ ONCE, INCREMENTALLY (2026-10-14, `research/gate_ledger_index.py`). Six
+#: readers here each re-parsed the whole append-only gate ledger on every pass; they now answer
+#: from one index caught up from a persisted byte watermark, so a pass costs what the judge wrote
+#: since the last one. The desk's own ledger persists its index under reports/ (gitignored, a
+#: cache); any other path (a test's ledger) is indexed in-process only.
+LEDGER_INDEX_STATE = REPORTS / "judge_ledger_index.pkl"
+_DEFAULT_LEDGER = GATE_LEDGER
+_LEDGER_INDEXES: dict[str, Any] = {}
+#: The monotonic deadline the ledger catch-up honours while a budgeted `build` runs (`main`).
+_LEDGER_DEADLINE: list[float] = []
+
+
+def ledger_index(path: Path | None = None) -> Any:
+    """The gate ledger's index, caught up to EOF (or to the pass's ledger deadline)."""
+    desk = str(BASE)
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from research.gate_ledger_index import LedgerIndex
+
+    p = Path(path or GATE_LEDGER)
+    persist = p == _DEFAULT_LEDGER and GATE_LEDGER == _DEFAULT_LEDGER
+    key = str(p)
+    idx = _LEDGER_INDEXES.get(key)
+    if idx is None:
+        idx = LedgerIndex.load(p, LEDGER_INDEX_STATE if persist else None)
+        _LEDGER_INDEXES[key] = idx
+    done = idx.catch_up(deadline=_LEDGER_DEADLINE[0] if _LEDGER_DEADLINE else None)
+    if persist and (done.get("consumed_bytes") or done.get("rebuilt")):
+        idx.save(LEDGER_INDEX_STATE)
+    return idx
+
+
+def _tail_lines(path: Path, limit: int) -> list[str]:
+    """`open(path).readlines()[-limit:]`, read from the END of the file: O(limit), not O(file).
+
+    Same text semantics as the text-mode read it replaces (UTF-8, errors replaced, universal
+    newlines), so `learn_priors` sees exactly the rows it saw before.
+    """
+    if limit <= 0:
+        return []
+    with path.open("rb") as fh:
+        fh.seek(0, 2)
+        pos, data = fh.tell(), b""
+        # Enough bytes for `limit` complete lines plus the one cut at the front.
+        while pos > 0 and max(data.count(b"\n"), data.count(b"\r")) <= limit:
+            step = min(pos, 1 << 20)
+            pos -= step
+            fh.seek(pos)
+            data = fh.read(step) + data
+    if pos > 0:
+        cut = data.find(b"\n")
+        if cut < 0:
+            cut = data.find(b"\r")
+        data = data[cut + 1:] if cut >= 0 else b""
+    text = data.decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n")
+    lines = text.split("\n")
+    out = [ln + "\n" for ln in lines[:-1]]
+    if lines[-1]:
+        out.append(lines[-1])
+    return out[-limit:]
+
+
 def _cell_id(row: dict[str, Any]) -> str | None:
     """The gauntlet's OWN identity function, imported, never re-implemented.
 
@@ -284,42 +346,11 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
     `UNKNOWN` is the sealed evaluator's unmeasured path, even when it carries passed=False.
     Neither that path nor a `NOT_RUN_*` deferral clears the backlog or earns judge capacity.
     """
-    seen: set[str] = set()
-    total: dict[str, int] = {}
-    in_window: dict[str, int] = {}
+    # ONE INCREMENTAL INDEX, not a full parse per call (2026-10-14, `ledger_index`): the same
+    # rule, folded once per appended row. Returns copies, so a caller can never edit the index.
     cutoff = (now or datetime.now(tz=UTC)).timestamp() - window_h * 3600.0
-    # STREAMED, never `readlines()` (2026-10-07): the ledger holds every changed verdict the desk
-    # has written, and loading it whole on each hourly pass is how this report went 56 h stale.
-    try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
-                if not isinstance(row, dict):
-                    continue
-                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-                    continue
-                if row.get("passed") is not True and str(
-                        row.get("terminal_gate") or "") in ("", "UNKNOWN"):
-                    continue
-                fam = str(row.get("family") or "")
-                cell = str(row.get("cell") or "")
-                if cell:
-                    seen.add(cell)
-                if not fam:
-                    continue
-                total[fam] = total.get(fam, 0) + 1
-                at = _ts(row.get("at"))
-                if at is not None and at.timestamp() >= cutoff:
-                    in_window[fam] = in_window.get(fam, 0) + 1
-    except OSError:
-        pass
-    return seen, total, in_window
+    idx = ledger_index(path)
+    return set(idx.judged_cells), dict(idx.judged_total), idx.window_judged(cutoff)
 
 
 def not_testable_index(bank: dict[str, dict[str, Any]] | None = None
@@ -344,30 +375,7 @@ def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
     """
     best = 0
     cutoff = (now or datetime.now(tz=UTC)).timestamp() - CAPACITY_LOOKBACK_H * 3600.0
-    per_hour: dict[str, int] = {}
-    try:
-        with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
-                if not isinstance(row, dict):
-                    continue
-                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-                    continue
-                if row.get("passed") is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
-                    continue
-                at = _ts(row.get("at"))
-                if at is None or at.timestamp() < cutoff:
-                    continue
-                key = at.strftime("%Y-%m-%dT%H")
-                per_hour[key] = per_hour.get(key, 0) + 1
-    except OSError:
-        per_hour = {}
+    per_hour = ledger_index(ledger).judged_per_hour(cutoff)
     if per_hour:
         best = max(per_hour.values())
     return max(best, CAPACITY_FLOOR, sum(judged_total.values()) // 24)
@@ -393,31 +401,11 @@ def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -
     # ruling. That is what the 7-day "43%" was; it is published here so it is never again set
     # against a per-sweep figure computed over a different denominator (see `unknown_breakdown`).
     unknown = {"24h": 0, "7d": 0}
-    try:
-        with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
-                if not isinstance(row, dict):
-                    continue
-                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-                    continue
-                at = _ts(row.get("at"))
-                if at is None:
-                    continue
-                _unk = (row.get("passed") is not True
-                        and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"))
-                for w, cut in cuts.items():
-                    if at.timestamp() >= cut:
-                        counts[w] += 1
-                        unknown[w] += int(_unk)
-    except OSError:
+    if not Path(ledger or GATE_LEDGER).is_file():
         return {"status": "UNMEASURED", "why": "gate ledger unreadable"}
+    idx = ledger_index(ledger)
+    for w, cut in cuts.items():
+        counts[w], unknown[w], _ = idx.window_rows(cut)
     return {"status": "MEASURED", "counts": counts,
             "per_hour_24h": round(counts["24h"] / 24.0, 3),
             "per_hour_7d": round(counts["7d"] / 168.0, 3),
@@ -429,6 +417,63 @@ def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -
                                  if counts["7d"] else None),
             # The drain rate above counts an UNKNOWN as judged; this is the rate of RULINGS.
             "named_per_hour_24h": round((counts["24h"] - unknown["24h"]) / 24.0, 3)}
+
+
+#: THE JUDGING RATE THE DESK OWES (principal, 2026-10-14 06:21Z: "judging speed and quantity per
+#: day should be maximised using every way possible to maximum so it judges even 100-200k cells a
+#: day"). The floor is the middle of that range. `scripts/check_judge_coverage.py` fails the box
+#: below it; nothing here throttles a miner or moves a gate to reach it.
+JUDGING_RATE_TARGET_PER_DAY = 150_000
+
+
+def judging_rate(ledger: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
+    """VERDICTS PER DAY, from the judge's own verdict ledger: rolling 24 h and the hourly series.
+
+    A verdict is `judged_index`'s unit -- a ledger row with a named terminal gate or a pass. The
+    sealed writer appends one row per CHANGED verdict, so a re-judge that lands on the same gate
+    is not counted again: this is the rate of new rulings, which is the rate the backlog drains
+    at. UNKNOWN rows (the judge's unmeasured path) are counted beside it, never in it.
+    An absent ledger is UNMEASURED, never zero. An index the pass's deadline stopped short of
+    EOF is PARTIAL: its count is a lower bound, and the unread bytes are named.
+    """
+    t = now or datetime.now(tz=UTC)
+    p = Path(ledger or GATE_LEDGER)
+    out: dict[str, Any] = {"target_per_day": JUDGING_RATE_TARGET_PER_DAY,
+                           "basis": ("gate_verdict_ledger.jsonl rows with a named terminal gate "
+                                     "or a pass, stamped in the last 24 h (one row per changed "
+                                     "verdict; NOT_RUN and UNKNOWN excluded)")}
+    if not p.is_file():
+        out.update(status="UNMEASURED", why=f"{p.name} absent: verdicts/day is UNMEASURED")
+        return out
+    idx = ledger_index(ledger)
+    now_ts = t.timestamp()
+    rows, unknown, judged = idx.window_rows(now_ts - 86400.0, now_ts)
+    first = (now_ts // 3600.0) * 3600.0 - 23 * 3600.0
+    series = [{"hour": datetime.fromtimestamp(h, UTC).strftime("%Y-%m-%dT%H"),
+               "verdicts": j, "unknown": u, "rows": a}
+              for h, a, u, j in idx.hourly(first, 24)]
+    catch = idx.last_catch_up or {}
+    status = "MEASURED" if idx.complete else "PARTIAL"
+    out.update(
+        status=status,
+        verdicts_24h=judged, unknown_24h=unknown, rows_24h=rows,
+        verdicts_per_day=judged,
+        verdicts_per_hour_24h=round(judged / 24.0, 3),
+        needed_per_hour=round(JUDGING_RATE_TARGET_PER_DAY / 24.0, 1),
+        meets_target=judged >= JUDGING_RATE_TARGET_PER_DAY,
+        shortfall_per_day=max(0, JUDGING_RATE_TARGET_PER_DAY - judged),
+        share_of_target=round(judged / float(JUDGING_RATE_TARGET_PER_DAY), 6),
+        last_verdict_at=(datetime.fromtimestamp(idx.max_ts, UTC).isoformat(timespec="seconds")
+                         if idx.max_ts else None),
+        per_hour=series,
+        ledger_index={"complete": idx.complete, "behind_bytes": idx.behind_bytes,
+                      "offset": idx.offset, "rows_indexed": idx.rows_read,
+                      "consumed_bytes": catch.get("consumed_bytes"),
+                      "rebuilt": catch.get("rebuilt"), "seconds": catch.get("seconds")})
+    if status == "PARTIAL":
+        out["why"] = (f"the pass's deadline stopped the ledger index {idx.behind_bytes} bytes "
+                      "short of EOF: the count is a lower bound and the next pass resumes there")
+    return out
 
 
 def drain(backlog_now: int, per_hour: float | None, *, prior_backlog: int | None,
@@ -504,38 +549,13 @@ def realised_pass_rates(path: Path | None = None) -> dict[str, dict[str, float]]
     Beta(1,1): mean 0.5, upper bound 1.0, which is how an unjudged family stays EXPLORED rather
     than being ranked below a family measured to fail.
     """
-    judged: dict[str, int] = {}
-    passed: dict[str, int] = {}
-    try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()
-    except OSError:
+    if not Path(path or GATE_LEDGER).is_file():
         return {}
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(row, dict):
-            continue
-        if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-            continue
-        fam = str(row.get("family") or "")
-        if not fam:
-            continue
-        ok = row.get("passed")
-        gate = str(row.get("terminal_gate") or "")
-        # AN UNMEASURED CELL IS NOT A FAILURE. `UNKNOWN` is the sealed judge's unmeasured path, so
-        # it counts toward nothing here: charging it as a rejection would teach the aim that a
-        # family does not work when what happened is that nobody looked.
-        if ok is not True and gate in ("", "UNKNOWN"):
-            continue
-        judged[fam] = judged.get(fam, 0) + 1
-        if ok is True or str(ok).lower() == "true":
-            passed[fam] = passed.get(fam, 0) + 1
+    # The index folds this exact rule once per appended row (`gate_ledger_index`), instead of the
+    # whole-file `readlines()` this used to do on every pass.
+    idx = ledger_index(path)
+    judged: dict[str, int] = dict(idx.judged_total)
+    passed: dict[str, int] = dict(idx.passed_total)
     out: dict[str, dict[str, float]] = {}
     for fam, n in judged.items():
         k = passed.get(fam, 0)
@@ -621,8 +641,9 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
         return out
     try:
-        with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()[-limit:]
+        # The last `limit` lines, read from the END (`_tail_lines`): the same rows the old
+        # whole-file `readlines()[-limit:]` kept, without reading the other 800k first.
+        lines = _tail_lines(Path(ledger or GATE_LEDGER), limit)
     except OSError as exc:
         out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
         return out
@@ -993,8 +1014,16 @@ CPCV_MIN_DAYS = 60
 
 
 def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
-                bar_sizes: dict[tuple[str, str], int] | None = None) -> bool:
-    """True when a parked cell's history has grown enough, or it has waited long enough."""
+                bar_sizes: dict[tuple[str, str], int] | None = None,
+                memo: bool = False) -> bool:
+    """True when a parked cell's history has grown enough, or it has waited long enough.
+
+    `memo=True` (the bank update passes it when it can fingerprint the build code): a row
+    `memoised` under a code identity (`_memoised`) is NOT re-admitted by the blind
+    BUILD_FAILED_RETRY_DAYS timer -- a deterministic failure re-run on unchanged code and
+    unchanged bars fails again. Its code changing is handled by the canary in
+    `update_unrunnable_bank`; bar growth and READMIT_MAX_DAYS below still re-admit it.
+    """
     parked_bytes = int(row.get("bar_bytes") or 0)
     key = (str(row.get("sym") or ""), str(row.get("tf") or "H1"))
     # A pass measures each chart once. Never retain this snapshot across passes: new
@@ -1008,7 +1037,8 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
     if parked_bytes <= 0:
         return bars > 0
     if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
-                             "observations_under_60_days", "no_terminal_gate_recorded"):
+                             "observations_under_60_days", "no_terminal_gate_recorded") \
+            and not (memo and _memoised(row)):
         _at = _ts(row.get("parked_at"))
         _t = now or datetime.now(tz=UTC)
         if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
@@ -1025,6 +1055,224 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
             and (t.timestamp() - parked_at.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
 
 
+#: MEMOISED BUILD FAILURES (2026-10-14). A cell whose build failed DETERMINISTICALLY is re-run by
+#: the judge only when an input that could change the outcome changed: its bars (the growth rule
+#: above, and READMIT_MAX_DAYS) or the code that builds it. Before this, every `build_failed` /
+#: `no_series` / `series_exception` row came back after BUILD_FAILED_RETRY_DAYS whatever had
+#: changed -- the raw COT families alone parked ~26k cells on one TypeError and re-paid the build
+#: for all of them weekly, on code that had not moved (floor_starvation_2026-10-14.md).
+#:
+#: THE KEY IS (cell, input fingerprint). The data half is the bar file size already on the row;
+#: the code half is `build_code_identity()` -- the sealed judge's own replay identity (the code
+#: its series cache is keyed on) plus the other modules `build_cell` imports. A row parked under
+#: identity A is `_memoised`; when the identity moves to B, ONE CANARY per failure signature
+#: (family, symbol, chart, reason, the error text) is re-admitted, not the whole bank. If the
+#: canary fails the same way under B, its siblings are re-stamped B and stay parked; if it is
+#: judged, or fails differently, every sibling is re-admitted. A canary with no evidence after
+#: BUILD_FAILED_RETRY_DAYS releases its siblings -- never worse than the old timer.
+#:
+#: WHICH CODE A REPORT RAN IS NOT WRITTEN IN IT, so the memo only trusts what it can bound: an
+#: identity is CERTAIN once MEMO_CERTAIN_GENERATIONS distinct sealed reports have been seen
+#: under it and MEMO_CERTAIN_H hours have passed (a sweep that spanned the release cannot be the
+#: third report since). A row parked under an uncertain identity keeps the old weekly timer, and
+#: canary evidence is read only from a report generation that began after the canary was set.
+MEMO_REASONS = frozenset({"build_failed", "no_series", "series_exception"})
+MEMO_CERTAIN_GENERATIONS = 3
+MEMO_CERTAIN_H = 6.0
+CANARIES_PER_SIGNATURE = 1
+MEMO_STATE_NAME = "unrunnable_memo.json"
+#: Modules `external_gauntlet.build_cell` imports beyond the sealed replay identity's own list.
+BUILD_PATH_EXTRA = ("desks/mt5/mt5desk/family_inputs.py", "desks/mt5/mt5desk/family_call.py",
+                    "desks/mt5/mt5desk/universe_registry.py", "desks/mt5/research/edge_search.py",
+                    "desks/mt5/research/cost_surface.py", "desks/mt5/research/h1_source.py")
+
+
+def sealed_replay_identity(root: Path | None = None) -> str | None:
+    """`external_gauntlet._replay_code_identity()`, restated (a drift test pins the two equal).
+
+    The sealed judge imports pandas and sizes a worker pool at import; this organ must not, so the
+    file list and the digest are restated here verbatim. None when any file is unreadable.
+    """
+    import hashlib
+
+    base = root or BASE.parent.parent
+    desk = base / "desks" / "mt5"
+    paths = [desk / "scripts" / "external_gauntlet.py",
+             desk / "research" / "orthogonal_sweep.py"]
+    paths.extend(desk / "mt5desk" / name for name in
+                 ("engine.py", "cell_modifiers.py", "data.py", "legacy_family_inputs.py"))
+    paths.extend((desk / "mt5desk").glob("famil*.py"))
+    digest = hashlib.sha256()
+    try:
+        for path in sorted(set(paths)):
+            name = path.relative_to(base).as_posix()
+            digest.update(name.encode("utf-8") + b"\0"
+                          + path.read_bytes().replace(b"\r\n", b"\n") + b"\0")
+    except (OSError, ValueError):
+        return None
+    return digest.hexdigest()
+
+
+def build_code_identity(root: Path | None = None) -> str | None:
+    """The build path's code fingerprint: the sealed replay identity plus BUILD_PATH_EXTRA."""
+    import hashlib
+
+    base = root or BASE.parent.parent
+    sealed = sealed_replay_identity(base)
+    if sealed is None:
+        return None
+    digest = hashlib.sha256(sealed.encode("ascii"))
+    for rel in BUILD_PATH_EXTRA:
+        try:
+            body = (base / rel).read_bytes().replace(b"\r\n", b"\n")
+        except OSError:
+            body = b"\0ABSENT"
+        digest.update(rel.encode("utf-8") + b"\0" + body + b"\0")
+    return digest.hexdigest()[:24]
+
+
+def failure_signature(row: dict[str, Any]) -> str:
+    """Cells that share this failed the same way on the same instrument and chart.
+
+    Digits in the error text are folded (`#`) so a row count or a date in a message does not
+    split a signature; the symbol stays in the key, because data is per symbol."""
+    import re
+
+    sym = str(row.get("sym") or "")
+    why = str(row.get("why") or row.get("detail") or "")
+    if sym:
+        why = why.replace(sym, "<sym>")
+    why = re.sub(r"\d+", "#", why)[:160]
+    return "|".join((str(row.get("family") or ""), sym, str(row.get("tf") or ""),
+                     str(row.get("reason") or ""), why))
+
+
+def _memoised(row: dict[str, Any]) -> bool:
+    """A bank row parked under a CERTAIN code identity for a deterministic build failure."""
+    return bool(row.get("code_fp")) and row.get("reason") in MEMO_REASONS
+
+
+def _memo_state(target: Path) -> dict[str, Any]:
+    try:
+        doc = json.loads((target.parent / MEMO_STATE_NAME).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"code": {}, "canaries": {}}
+    if not isinstance(doc, dict):
+        return {"code": {}, "canaries": {}}
+    doc.setdefault("code", {})
+    doc.setdefault("canaries", {})
+    return doc
+
+
+def _report_mtime(path: Path | None = None) -> float | None:
+    try:
+        return (path or GATES_REPORT).stat().st_mtime
+    except OSError:
+        return None
+
+
+def _memo_pass(bank: dict[str, dict[str, Any]], named: dict[str, dict[str, Any]],
+               state: dict[str, Any], *, code_fp: str, at: str, now_ts: datetime | None,
+               report_mtime: float | None, judged: set[str] | None,
+               excluded: set[str]) -> dict[str, Any]:
+    """One pass of the memo: track the identity, resolve canaries, start new ones.
+
+    Mutates `bank` (siblings released, canaries popped, siblings re-stamped) and `state`.
+    Returns (stats, the cells re-admitted, the canary cells that must NOT be re-parked yet).
+    """
+    stats: dict[str, Any] = {"code_fp": code_fp, "certain": False, "canaries_started": 0,
+                             "canaries_confirmed": 0, "canaries_released": 0,
+                             "siblings_restamped": 0, "siblings_released": 0,
+                             "canaries_waiting": 0}
+    t = (now_ts or datetime.now(tz=UTC)).timestamp()
+    code_raw = state.get("code")
+    code: dict[str, Any] = code_raw if isinstance(code_raw, dict) else {}
+    if code.get("fp") != code_fp:
+        code = {"fp": code_fp, "since": at, "report_mtimes": []}
+    gens = [float(m) for m in (code.get("report_mtimes") or [])]
+    if report_mtime is not None and report_mtime not in gens:
+        gens = [*gens, report_mtime][-MEMO_CERTAIN_GENERATIONS:]
+    code["report_mtimes"] = gens
+    since = _ts(code.get("since"))
+    certain = (len(gens) >= MEMO_CERTAIN_GENERATIONS and since is not None
+               and (t - since.timestamp()) / 3600.0 >= MEMO_CERTAIN_H)
+    state["code"] = code
+    stats["certain"] = certain
+    readmit: set[str] = set()
+    hold_out: set[str] = set()
+    can_raw = state.get("canaries")
+    canaries: dict[str, Any] = can_raw if isinstance(can_raw, dict) else {}
+
+    def _siblings(sig: str) -> list[str]:
+        return [c for c, r in bank.items()
+                if _memoised(r) and r.get("signature") == sig and r.get("code_fp") != code_fp]
+
+    for sig in list(canaries):
+        rec = canaries[sig] if isinstance(canaries[sig], dict) else {}
+        if rec.get("code_fp") != code_fp:
+            del canaries[sig]                         # the code moved again: start over
+            continue
+        seen = [float(m) for m in (rec.get("report_mtimes") or [])]
+        if report_mtime is not None and report_mtime not in seen:
+            seen.append(report_mtime)
+        rec["report_mtimes"] = seen[-4:]
+        cells = [str(c) for c in (rec.get("cells") or [])]
+        # Judged at any time since it was set: it built, so the failure did not persist.
+        judged_now = bool(judged) and any(c in judged for c in cells)  # type: ignore[operator]
+        # Evidence from a report is admissible only from the SECOND generation after the canary
+        # was set: the first may come from a sweep that was already running when it was set.
+        admissible = len(seen) >= 3
+        named_sigs = {failure_signature(named[c]) for c in cells if c in named}
+        if judged_now or (admissible and named_sigs and named_sigs != {sig}):
+            for c in _siblings(sig):
+                bank.pop(c, None)
+                readmit.add(c)
+                stats["siblings_released"] += 1
+            del canaries[sig]
+            stats["canaries_released"] += 1
+            continue
+        if admissible and named_sigs == {sig}:
+            for c in _siblings(sig):
+                bank[c]["code_fp"] = code_fp
+                stats["siblings_restamped"] += 1
+            del canaries[sig]
+            stats["canaries_confirmed"] += 1
+            continue
+        set_at = _ts(rec.get("at"))
+        if set_at is not None and (t - set_at.timestamp()) / 86400.0 >= BUILD_FAILED_RETRY_DAYS:
+            for c in _siblings(sig):
+                bank.pop(c, None)
+                readmit.add(c)
+                stats["siblings_released"] += 1
+            del canaries[sig]
+            stats["canaries_released"] += 1
+            continue
+        hold_out.update(c for c in cells if c in named)  # too early to read: judge it again
+        stats["canaries_waiting"] += 1
+    if certain:
+        groups: dict[str, list[str]] = {}
+        for c, r in bank.items():
+            if c in excluded or not _memoised(r) or r.get("code_fp") == code_fp:
+                continue
+            groups.setdefault(str(r.get("signature") or failure_signature(r)), []).append(c)
+        for sig, cells in groups.items():
+            if sig in canaries:
+                continue
+            pick = sorted(cells, key=lambda c: (str(bank[c].get("parked_at") or ""), c))[
+                :CANARIES_PER_SIGNATURE]
+            for c in pick:
+                bank.pop(c, None)
+                readmit.add(c)
+            canaries[sig] = {"code_fp": code_fp, "cells": pick, "at": at,
+                             "report_mtimes": [report_mtime] if report_mtime is not None else []}
+            stats["canaries_started"] += 1
+    state["canaries"] = canaries
+    stats["signatures_in_flight"] = len(canaries)
+    stats["_readmit"] = readmit
+    stats["_hold_out"] = hold_out
+    return stats
+
+
 #: WHEN NOT-TESTABLE CELLS RETURN TO THE BACKLOG, one line per pass that re-admitted any: the
 #: burn-down's inflow reads it (`judging_burndown.inflow`), because a re-admitted cell is owed
 #: again exactly like a newly minted one and leaving it out overstates the drain.
@@ -1033,7 +1281,10 @@ READMISSION_LOG = HYP / "not_testable_readmissions.jsonl"
 
 def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                            path: Path | None = None,
-                           log: Path | None = None) -> dict[str, Any]:
+                           log: Path | None = None,
+                           code_fp: str | None = None,
+                           judged: set[str] | None = None,
+                           report_mtime: float | None = None) -> dict[str, Any]:
     """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown.
 
     A cell the latest report names AGAIN is updated in place and never re-admitted on the same
@@ -1041,14 +1292,26 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     rename never restarts the READMIT_MAX_DAYS clock. `not_testable_since` is stamped when a row
     ENTERS the not-testable class (new, or re-named out of a defect), which is the moment it
     leaves the backlog -- the coverage table books that as PARKING, never as drain.
+
+    `code_fp` (the build path's identity, `build_code_identity`) switches on the build-failure
+    memo (MEMO_REASONS above): deterministic failures are keyed on (cell, bars, code) and re-run
+    only when one of those moves. Without it the bank behaves exactly as before.
     """
     target = path or UNRUNNABLE_BANK
     bank = unrunnable_bank(target)
     now_ts = _ts(at)
     bar_sizes: dict[tuple[str, str], int] = {}
     parkable = {c for c, r in named.items() if r.get("reason") != "missing_bars"}
+    memo_on = bool(code_fp)
     readmitted = [cell for cell, row in bank.items()
-                  if cell not in parkable and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
+                  if cell not in parkable and readmit_due(row, now=now_ts, bar_sizes=bar_sizes,
+                                                          memo=memo_on)]
+    # What the memo saved this pass: memoised rows the blind weekly timer would have re-run.
+    _readmitted_set = set(readmitted)
+    memo_held = (sum(1 for cell, row in bank.items()
+                     if cell not in parkable and cell not in _readmitted_set and _memoised(row)
+                     and readmit_due(row, now=now_ts, bar_sizes=bar_sizes))
+                 if memo_on else 0)
     readmitted_nt: dict[str, int] = {}
     readmitted_nt_reason: dict[str, int] = {}
 
@@ -1062,10 +1325,25 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         old = bank.pop(cell, None)
         if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
             _count_readmit(old)
+    memo: dict[str, Any] = {"status": "OFF", "why": "no build-code identity this pass"}
+    hold_out: set[str] = set()
+    state: dict[str, Any] = {}
+    if memo_on:
+        state = _memo_state(target)
+        memo = _memo_pass(bank, named, state, code_fp=str(code_fp), at=at, now_ts=now_ts,
+                          report_mtime=report_mtime, judged=judged, excluded=parkable)
+        hold_out = memo.pop("_hold_out")
+        memo_readmit = memo.pop("_readmit")
+        memo["readmitted"] = len(memo_readmit)
+        memo["held_by_memo"] = memo_held
+        memo["status"] = "ON"
+    certain = bool(memo.get("certain"))
     added = 0
     for cell, row in named.items():
         if row.get("reason") == "missing_bars":
             continue                       # owned by the conversion organ, not filtered here
+        if cell in hold_out:
+            continue                       # a canary too early to read: judged once more
         prev = bank.get(cell)
         if prev is None:
             added += 1
@@ -1077,12 +1355,23 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             entry["not_testable_since"] = (prev.get("not_testable_since") or at) if was_nt else at
         elif was_nt:
             _count_readmit(prev)            # re-named OUT of the class: owed again
+        entry.pop("code_fp", None)
+        entry.pop("signature", None)
+        if memo_on and certain and row.get("reason") in MEMO_REASONS:
+            # MEMOISED: parked under a code identity this desk is sure the report ran.
+            entry["code_fp"] = code_fp
+            entry["signature"] = failure_signature(row)
         bank[cell] = entry
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
     except OSError:
         pass
+    if memo_on:
+        with contextlib.suppress(OSError):
+            (target.parent / MEMO_STATE_NAME).write_text(
+                json.dumps(state, indent=1, default=str), "utf-8")
+        memo["memoised_rows"] = sum(1 for r in bank.values() if _memoised(r))
     n_re = sum(readmitted_nt.values())
     # ONE LINE EVERY PASS, ZEROS INCLUDED (audit of PR #290, M1): the burn-down reads a missing
     # or stale log as UNMEASURED, so a quiet pass must still say "0" by writing it.
@@ -1097,6 +1386,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     except OSError:
         pass
     return {"parked_this_pass": added, "readmitted_on_bar_growth": len(readmitted),
+            "build_failure_memo": memo,
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,
             "readmitted_not_testable_by_reason": readmitted_nt_reason,
@@ -1948,29 +2238,64 @@ def never_judged_families(table: dict[str, dict[str, Any]],
     return out
 
 
+#: Stages `build` may DEFER when its deadline has passed (`main --budget-s`). Each is a reading or
+#: an ordering refinement whose input persists, so deferral is queueing, never loss: the priors'
+#: cursor stays where it was, the k_eff/occupancy terms rank every row exactly as an unstamped
+#: row does, and the never-judged census is re-derived next pass. The bank update, the backlog,
+#: the quotas and the judging rate are never deferred.
+DEFERRABLE_STAGES = ("learn_priors", "keff_stamp", "occupancy_stamp", "never_judged")
+#: The share of the budget the ledger catch-up may use before the rest of the pass runs.
+LEDGER_BUDGET_SHARE = 0.5
+
+
+class _Budget:
+    """A monotonic deadline checked between units of work; what is skipped is named."""
+
+    def __init__(self, deadline: float | None) -> None:
+        self.deadline = deadline
+        self.deferred: list[str] = []
+
+    def allow(self, stage: str) -> bool:
+        if self.deadline is not None and time.monotonic() >= self.deadline:
+            self.deferred.append(stage)
+            return False
+        return True
+
+
 def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
-          ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
-    """The per-family coverage table, the quotas, and the carried-cohort ratchet."""
+          ratchet: Path | None = None, now: datetime | None = None,
+          deadline: float | None = None, ledger_deadline: float | None = None) -> dict[str, Any]:
+    """The per-family coverage table, the quotas, and the carried-cohort ratchet.
+
+    `deadline` / `ledger_deadline` are `time.monotonic()` instants (`main --budget-s`): the
+    ledger catch-up stops at the second and leaves the rest of the file queued past its
+    watermark; DEFERRABLE_STAGES are skipped past the first and named in `budget`.
+    """
     global _GATES_MEMO
     outer = _GATES_MEMO is not None
     if not outer:
         _GATES_MEMO = {}
+    _LEDGER_DEADLINE[:] = [ledger_deadline] if ledger_deadline is not None else []
     try:
-        return _build(docket, ledger=ledger, ratchet=ratchet, now=now)
+        return _build(docket, ledger=ledger, ratchet=ratchet, now=now, budget=_Budget(deadline))
     finally:
+        _LEDGER_DEADLINE[:] = []
         if not outer:
             _GATES_MEMO = None
 
 
 def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
-           ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
+           ratchet: Path | None = None, now: datetime | None = None,
+           budget: _Budget | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
+    budget = budget or _Budget(None)
     rows = docket if docket is not None else (_read(DOCKET) or [])
     rows = [r for r in rows if isinstance(r, dict)]
     if not rows:
         return {"at": at.isoformat(timespec="seconds"), "verdict": "UNMEASURED",
                 "why": "the judging docket is absent or empty -- nothing mined to cover",
-                "families": {}, "totals": {}, "quota": {}}
+                "families": {}, "totals": {}, "quota": {},
+                "judging_rate": judging_rate(ledger, now=at)}
 
     prior = _read(ratchet or RATCHET) or {}
     judged_cells, judged_total, judged_window = judged_index(ledger, now=at)
@@ -2018,13 +2343,18 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     capacity = measured_capacity(judged_total, ledger, now=at)
     # TEACH THE PRIOR BEFORE SPENDING IT: every verdict since the last reading updates its
     # family's posterior, so the ranking below is spending a number this desk actually learned.
-    learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""))
+    _cursor = str((prior or {}).get("priors_cursor") or "")
+    learned = (learn_priors(ledger, since=_cursor) if budget.allow("learn_priors") else
+               {"status": "DEFERRED", "recorded": 0, "families": 0, "cursor": _cursor,
+                "why": "the pass's --budget-s deadline passed: every row past the cursor waits"})
     realised_seen = realised_pass_rates(ledger)
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
     not_run = name_not_run()
     unrunnable = update_unrunnable_bank({**named_unknowns, **not_run},
-                                        at=at.isoformat(timespec="seconds"))
+                                        at=at.isoformat(timespec="seconds"),
+                                        code_fp=build_code_identity(), judged=judged_cells,
+                                        report_mtime=_report_mtime())
     _bank_now = unrunnable_bank()
     failures = judging_failures(bank=_bank_now)
     failures["handed_to_converter"] = write_conversion_handoff(
@@ -2037,9 +2367,11 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
-    keff = keff_stamp(rows)
+    keff: dict[str, Any] = (keff_stamp(rows) if budget.allow("keff_stamp") else
+                            {"status": "DEFERRED", "why": "the pass's --budget-s deadline passed"})
     # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
-    occ = occupancy_stamp(rows)
+    occ: dict[str, Any] = (occupancy_stamp(rows) if budget.allow("occupancy_stamp") else
+                           {"status": "DEFERRED", "why": "the pass's --budget-s deadline passed"})
     # THE QUOTA IS SPENT ON WHAT SHIPS (2026-10-14). `order_docket` removes every cell the
     # unrunnable bank holds before the docket is written, so a quota computed over the whole
     # backlog promised hours to cells the sealed judge never receives: measured on the box
@@ -2196,6 +2528,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                          for f, n in backlog.items())
     total_backlog = sum(backlog.values())
     rate = sustained_rate(ledger, now=at)
+    rate_doc = judging_rate(ledger, now=at)
+    _ledger_catch = dict(rate_doc.get("ledger_index") or {})
     _prior_total = (sum(int(v.get("unjudged", 0)) for v in prior_fams.values()
                         if isinstance(v, dict)) if prior_at is not None else None)
     _parked_total = sum(parked_since.values()) if prior_at is not None else 0
@@ -2228,7 +2562,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
 
     # NEVER JUDGED, NAMED (2026-10-14): every family that has mined cells and not one real
     # verdict, with the oldest wait and every reason this desk can read for it.
-    never_judged = never_judged_families(table, parked_by_reason, parked_why)
+    never_judged = (never_judged_families(table, parked_by_reason, parked_why)
+                    if budget.allow("never_judged") else {})
     for fam, nj in never_judged.items():
         table[fam]["never_judged_reason"] = nj["reason"]
     # A family whose whole backlog is parked ships nothing and is given nothing: it is not
@@ -2313,9 +2648,17 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "judging_failures": failures,
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
+        # THE RATE THE PRINCIPAL SET (150k verdicts/day), from the judge's own ledger.
+        "verdicts_24h": rate_doc.get("verdicts_24h"),
+        "judging_rate_target_per_day": JUDGING_RATE_TARGET_PER_DAY,
+        "judging_rate_status": rate_doc.get("status"),
     }
     return {
         "at": at.isoformat(timespec="seconds"),
+        "judging_rate": rate_doc,
+        "budget": {"deadline_hit": bool(budget.deferred), "deferred_stages": budget.deferred,
+                   "deferrable": list(DEFERRABLE_STAGES),
+                   "ledger_index": _ledger_catch},
         "verdict": "COVERED" if not starved else "STARVED",
         "why": ("every family holding unjudged cells is in this hour's queue at its own quota"
                 if not starved else
@@ -2400,21 +2743,7 @@ SIBLING_NEVER_FIRES_MIN = 20
 
 def fired_pairs(path: Path | None = None) -> set[tuple[str, str]]:
     """(family, sym) pairs holding at least one verdict with a named gate -- they CAN fire."""
-    out: set[tuple[str, str]] = set()
-    try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                if '"UNKNOWN"' in line or not line.strip():
-                    continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
-                if isinstance(row, dict) and row.get("terminal_gate"):
-                    out.add((str(row.get("family") or ""), str(row.get("sym") or "")))
-    except OSError:
-        pass
-    return out
+    return set(ledger_index(path).fired)
 
 
 def never_fire_pairs(bank: dict[str, dict[str, Any]],
@@ -2568,7 +2897,12 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
 
 def render(doc: dict[str, Any]) -> list[str]:
     t = doc.get("totals") or {}
+    jr = doc.get("judging_rate") or {}
     lines = [f"judge coverage: {doc.get('verdict')} -- {doc.get('why')}",
+             f"  judging rate {jr.get('status')}: {jr.get('verdicts_24h')} verdicts in 24h vs "
+             f"target {jr.get('target_per_day', JUDGING_RATE_TARGET_PER_DAY)}/day"
+             + (f" (short {jr.get('shortfall_per_day')}/day)"
+                if jr.get("meets_target") is False else ""),
              f"  families mined {t.get('families_mined')} / with backlog "
              f"{t.get('families_with_backlog')} / queued this hour {t.get('families_queued')}; "
              f"unjudged {t.get('unjudged_total')} on capacity {t.get('capacity_measured')}"]
@@ -2604,9 +2938,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-write", action="store_true", help="measure without advancing the ratchet")
     args = ap.parse_args(argv)
     t0 = time.time()
-    doc = build()
+    # --budget-s IS ENFORCED (2026-10-14). It used to be stamped into the report and never read,
+    # while the hourly_cycle comment said the leg "stops itself" at it; the leg ran into its 300 s
+    # cap instead and the report, written only at the end, went stale for days. Now the ledger
+    # catch-up stops at LEDGER_BUDGET_SHARE of the budget (the unread tail stays queued past the
+    # watermark) and DEFERRABLE_STAGES are skipped past the budget, so the report is written.
+    m0 = time.monotonic()
+    budget_s = float(args.budget_s) if args.budget_s and args.budget_s > 0 else None
+    doc = build(deadline=(m0 + budget_s) if budget_s else None,
+                ledger_deadline=(m0 + budget_s * LEDGER_BUDGET_SHARE) if budget_s else None)
     doc["elapsed_s"] = round(time.time() - t0, 2)
     doc["budget_s"] = args.budget_s
+    doc["budget_enforced"] = budget_s is not None
     if not args.no_write:
         write(doc)
     if args.json:
