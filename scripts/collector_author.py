@@ -27,6 +27,7 @@ Stage-A only, zero promotion authority. Run from repo root.
 """
 from __future__ import annotations
 
+import ast
 import json
 import os
 import re
@@ -48,6 +49,7 @@ from libs.doctrine.constitution import (  # noqa: E402
     RESIDUAL_PROTOCOL,
 )
 from libs.llm.effort import reasoning_payload  # noqa: E402
+from libs.research import sandbox  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -134,10 +136,19 @@ def safety_scan(code: str) -> str | None:
     """Return a rejection reason, or None if the code passes. Fail CLOSED on anything unknown."""
     if BANNED.search(code):
         return f"banned construct: {BANNED.search(code).group(0)[:40]}"
-    for mod in re.findall(r"^\s*(?:import|from)\s+([a-zA-Z_][\w.]*)", code, re.M):
-        root = mod.split(".")[0]
-        if root not in {m.split(".")[0] for m in ALLOWED_IMPORTS}:
-            return f"non-whitelisted import: {mod}"
+    # EVERY imported name, read from the syntax tree: the line regex this replaced saw only the
+    # first of `import json, winreg` and let the registry module through (audit #402).
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as exc:
+        return f"does not parse: {exc.msg}"
+    allowed = {m.split(".")[0] for m in ALLOWED_IMPORTS}
+    for node in ast.walk(tree):
+        names = ([a.name for a in node.names] if isinstance(node, ast.Import)
+                 else [node.module or "."] if isinstance(node, ast.ImportFrom) else [])
+        for mod in names:
+            if mod.split(".")[0] not in allowed:
+                return f"non-whitelisted import: {mod}"
     if "def fetch" not in code:
         return "no fetch() defined"
     return None
@@ -158,8 +169,10 @@ def run_isolated(code: str, timeout: int = 70) -> tuple[dict | None, str]:
         fh.write(runner)
         path = fh.name
     try:
-        p = subprocess.run([sys.executable, path], capture_output=True, text=True,
-                           timeout=timeout, check=False)
+        # ISOLATED (-I) and with a SCRUBBED environment: model-written code never runs holding
+        # the parent's keys (audit #402; it ran with the full environment before).
+        p = subprocess.run([sys.executable, "-I", path], capture_output=True, text=True,
+                           timeout=timeout, check=False, env=sandbox.scrub_env())
         out = p.stdout or ""
         if "__SERIES__" in out:
             return json.loads(out.split("__SERIES__", 1)[1].splitlines()[0]), "ok"

@@ -38,6 +38,8 @@
 #
 # It never touches the gateway, the judge, a sleeve or a key. To undo:
 #   Unregister-ScheduledTask MT5-LocalLLM -Confirm:$false; winget uninstall Ollama.Ollama
+#   'QUANT_LOCAL_LLM_URLS','QUANT_LOCAL_LLM_MODEL','QUANT_LOCAL_LLM_THREADS' | ForEach-Object {
+#       [Environment]::SetEnvironmentVariable($_, $null, 'Machine') }
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_local_llm.ps1
 
@@ -205,7 +207,10 @@ r = free_chain.chat("Reply with the single word ok.", "ok?", max_tokens=5, tempe
                     skip=tuple(p.name for p in free_chain.providers() if p.tier != "local"))
 print("local rung answered:", r.provider, r.model, repr(r.text[:20]))
 from libs.ops import llm_seat
-print("llm_seat local seat:", llm_seat.local_dark() or "LIT")
+dark = llm_seat.local_dark()
+seat = next((s for s in llm_seat.seats() if llm_seat.is_local(s)), None)
+model, err = llm_seat.discover_model(seat) if seat else ("", dark)
+print("llm_seat local seat:", f"LIT on {model}" if model else f"DARK: {err}")
 '@
 $probe = $probe.Replace('REPO', $Repo)
 $tmp = Join-Path $env:TEMP 'local_llm_probe.py'

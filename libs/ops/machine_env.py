@@ -19,11 +19,12 @@ FOUR FENCES, because a helper that finds keys is a helper that can hand them out
     cannot be reached through it;
   * J-Quants is refused by name even if it is added to that list later, because its licence
     keeps its data away from every model;
-  * under pytest the registry is never read either, so a test that deletes a key on the box
-    sees no key rather than the box's real one;
-  * inside a sandbox (`QUANT_SANDBOX=1`, set by `libs.research.sandbox.scrub_env` for every
-    process that runs third-party or model-written code) the registry is never read, so a
-    scrubbed environment stays scrubbed.
+  * under pytest (collection included) the registry is never read either, so a test that
+    deletes a key on the box sees no key rather than the box's real one;
+  * when `QUANT_SANDBOX=1` the registry is never read. `libs.research.sandbox.scrub_env` sets
+    it, and so do the desk's two model-code runners (llm_lab_roles' code lab and
+    collector_author). This guards a sandboxed process that imports this module; it is not a
+    sandbox itself -- those runners also refuse `winreg` and run isolated (`python -I`).
 """
 
 from __future__ import annotations
@@ -77,6 +78,6 @@ def value(name: str) -> str:
         return ""
     if os.environ.get("QUANT_SANDBOX") == "1" or os.environ.get("QUANT_MACHINE_ENV") == "0":
         return ""
-    if "PYTEST_CURRENT_TEST" in os.environ:
+    if "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules:
         return ""  # a test that clears a key must not find the box's real one
     return _registry(name)

@@ -153,3 +153,85 @@ def test_the_registry_is_never_read_under_pytest(monkeypatch: pytest.MonkeyPatch
 def test_local_threads_cap() -> None:
     assert free_chain.local_threads(18) == 4
     assert free_chain.local_threads(4) == 2
+
+
+@pytest.mark.parametrize(
+    ("url", "ok"),
+    [
+        ("http://127.0.0.1:11434/v1", True),
+        ("http://localhost:8080/v1", True),
+        ("http://[::1]:11434/v1", True),
+        ("http://127.999.999.999:11434/v1", False),
+        ("http://127.0.0.1.evil.com/v1", False),
+        ("https://127.0.0.1/v1", False),
+        ("http://10.0.0.5/v1", False),
+    ],
+)
+def test_loopback_is_parsed_as_an_address(url: str, ok: bool) -> None:
+    from libs.ops import public_host
+
+    assert public_host.is_loopback_url(url) is ok
+
+
+def test_a_loopback_redirect_is_refused_not_followed() -> None:
+    import http.server
+    import threading
+
+    hits: list[str] = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            hits.append(self.path)
+            if self.path.startswith("/v1"):
+                self.send_response(302)
+                self.send_header("Location", f"http://127.0.0.1:{port}/elsewhere")
+                self.end_headers()
+            else:
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'{"data": []}')
+
+        do_POST = do_GET
+
+        def log_message(self, *a: Any) -> None:
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    port = srv.server_address[1]
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+    try:
+        body, err = llm_seat._get(f"http://127.0.0.1:{port}/v1/models", "sk-fake", timeout=5)
+        assert body == {} and err and err.startswith("HTTP 302")
+        assert hits == ["/v1/models"]  # the redirect target was never fetched
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_the_pin_matches_ollamas_latest_tag(monkeypatch: pytest.MonkeyPatch) -> None:
+    _local(monkeypatch)
+    monkeypatch.setenv(llm_seat.LOCAL_MODEL_ENV, "quant-lab")
+    monkeypatch.setattr(
+        llm_seat, "_get", lambda *a, **k: ({"data": [{"id": "quant-lab:latest"}]}, None)
+    )
+    assert llm_seat.discover_model(llm_seat.seats()[0]) == ("quant-lab:latest", None)
+
+
+def test_a_cloud_seat_named_local_still_spends_the_day(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    cloud = llm_seat.Seat(
+        name="local", base_url="https://openrouter.ai/api/v1", key="k", source="file:llm_panel.json"
+    )
+    llm_seat._record_spend(cloud, "x/y:free", {"usage": {"total_tokens": 1}})
+    assert llm_seat.calls_today() == 1
+
+
+def test_collector_author_refuses_every_name_in_an_import_list() -> None:
+    import importlib
+
+    ca = importlib.import_module("scripts.collector_author")
+    code = "import json, winreg\n\ndef fetch():\n    return {}\n"
+    assert "winreg" in (ca.safety_scan(code) or "")
+    assert ca.safety_scan("import json\n\ndef fetch():\n    return {}\n") is None

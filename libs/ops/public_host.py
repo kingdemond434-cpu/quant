@@ -11,6 +11,27 @@ import socket
 import urllib.parse
 from collections.abc import Callable
 
+
+def is_loopback_url(url: str) -> bool:
+    """An http URL whose host IS this machine: `localhost` or a loopback IP literal, parsed as an
+    address (so `127.999.999.999` or `127.0.0.1.evil.com`, which go to DNS, are not). The local
+    LLM seat and free_chain's local rungs accept only these (audit #402)."""
+    try:
+        parts = urllib.parse.urlsplit(url.strip())
+        host = parts.hostname or ""
+        _ = parts.port                                    # a malformed port raises here
+    except ValueError:
+        return False
+    if parts.scheme != "http" or not host:
+        return False
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 _NAT64 = ipaddress.ip_network("64:ff9b::/96")
 _NAT64_LOCAL = ipaddress.ip_network("64:ff9b:1::/48")
 

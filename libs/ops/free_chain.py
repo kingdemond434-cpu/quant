@@ -52,7 +52,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.ops import machine_env, openrouter_guard
+from libs.ops import machine_env, openrouter_guard, public_host
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "desks" / "mt5" / "data" / "llm_lab" / "providers.json"
@@ -181,9 +181,6 @@ LOCAL_RECOMMENDED: tuple[tuple[str, float], ...] = (
 )
 
 
-_LOOPBACK = re.compile(
-    r"^http://(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|\[::1\])(?::\d+)?(?:/|$)", re.I)
-
 #: Local servers tried when QUANT_LOCAL_LLM_URLS is unset: Ollama, then llama.cpp's server.
 LOCAL_DEFAULT_URLS = ("http://127.0.0.1:11434/v1", "http://127.0.0.1:8080/v1")
 
@@ -226,7 +223,7 @@ def _local_providers() -> list[Provider]:
     pin = os.environ.get("QUANT_LOCAL_LLM_MODEL", "").strip()
     return [Provider(f"local{i}", u, "", "local", models=(pin,) if pin else (),
                      terms_url="local server, no third party")
-            for i, u in enumerate(urls) if _LOOPBACK.match(u)]
+            for i, u in enumerate(urls) if public_host.is_loopback_url(u)]
 
 
 def providers() -> list[Provider]:

@@ -60,7 +60,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.ops import machine_env, openrouter_guard
+from libs.ops import machine_env, openrouter_guard, public_host
 
 _ROOT = Path(__file__).resolve().parents[2]
 SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
@@ -173,9 +173,6 @@ _USD_PER_1K_TOKENS = 0.02
 LOCAL_URLS_ENV = "QUANT_LOCAL_LLM_URLS"
 LOCAL_MODEL_ENV = "QUANT_LOCAL_LLM_MODEL"
 LOCAL_SOURCE = "local:" + LOCAL_URLS_ENV
-#: Loopback only. A "local" URL that points anywhere else is a keyless third party, refused.
-_LOOPBACK = re.compile(
-    r"^http://(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|\[::1\])(?::\d+)?(?:/|$)", re.I)
 #: THE FIRST LOCAL CELL WAITS FOR THE LOOK-AHEAD GUARD. A local open-weight model was trained on
 #: an unknown slice of market history, so a cell it proposes must have its backtest trimmed to
 #: days after its evidence start -- `evidence_trim` in the gauntlet (llm_lookahead_gauntlet v3,
@@ -189,7 +186,8 @@ def local_urls() -> list[str]:
     """The declared local servers that are loopback, in order. Undeclared is empty: a server
     that happens to listen on a default port is not a seat until the installer declares it."""
     raw = os.environ.get(LOCAL_URLS_ENV, "")
-    return [u.strip().rstrip("/") for u in raw.split(",") if _LOOPBACK.match(u.strip())]
+    # Loopback only: a "local" URL that points anywhere else is a keyless third party, refused.
+    return [u.strip().rstrip("/") for u in raw.split(",") if public_host.is_loopback_url(u)]
 
 
 def local_dark() -> str:
@@ -411,6 +409,10 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
 _LOCAL_SKIP = ("embed", "rerank", "guard", "whisper", "tts", "vision-only", "moderation")
 
 
+def _untagged(model_id: str) -> str:
+    return model_id[: -len(":latest")] if model_id.endswith(":latest") else model_id
+
+
 def _discover_local(seat: Seat, *, timeout: float) -> tuple[str, str | None]:
     """The local server's own catalogue, largest model first. The pin in QUANT_LOCAL_LLM_MODEL
     wins when the server lists it.
@@ -426,8 +428,10 @@ def _discover_local(seat: Seat, *, timeout: float) -> tuple[str, str | None]:
     ids = [str(m.get("id") or "") for m in (body.get("data") or []) if isinstance(m, dict)]
     ids = [i for i in ids if i and not any(t in i.lower() for t in _LOCAL_SKIP)]
     if seat.model:
-        if seat.model in ids:
-            return seat.model, None
+        # Ollama lists `quant-lab` as `quant-lab:latest`; the bare name is the same model.
+        hit = next((i for i in ids if _untagged(i) == _untagged(seat.model)), "")
+        if hit:
+            return hit, None
         return "", f"local server does not list the pinned {LOCAL_MODEL_ENV}={seat.model!r}"
     if not ids:
         return "", "local server lists no chat model"
@@ -709,7 +713,7 @@ def calls_today(now: datetime | None = None) -> int:
         except json.JSONDecodeError:
             continue
         # A local call draws on no provider's allowance, so it never spends the cloud's day.
-        if str(row.get("utc", "")).startswith(stamp) and row.get("seat") != "local":
+        if str(row.get("utc", "")).startswith(stamp) and not row.get("local"):
             n += 1
     return n
 
@@ -994,9 +998,19 @@ def _headers(key: str) -> dict[str, str]:
     return head
 
 
-#: A loopback request never goes through a proxy: the proxy is a third party, and the local seat's
-#: whole promise is that the prompt does not leave the machine.
-_DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A loopback server's redirect is refused, never followed (audit must-fix on #402): a
+    followed 3xx would carry the request -- and any Authorization header -- to another host,
+    around the proxy, and accept that host's reply as the local model's answer."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> None:
+        return None                     # urllib then raises HTTPError with the 3xx code
+
+
+#: A loopback request never goes through a proxy and never follows a redirect: either would send
+#: the prompt off the machine, which is the one thing the local seat promises not to do.
+_DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
 
 
 def _get(url: str, key: str, *, timeout: float) -> tuple[dict[str, Any], str | None]:
@@ -1057,7 +1071,7 @@ def _send(req: urllib.request.Request, timeout: float) -> tuple[dict[str, Any], 
     """HTTP errors carry their BODY into the message. A bare '400 Bad Request' from a model API
     is unactionable; the body says which parameter the provider rejected."""
     try:
-        if _LOOPBACK.match(req.full_url):
+        if public_host.is_loopback_url(req.full_url):
             fh_cm = _DIRECT.open(req, timeout=timeout)
         else:
             fh_cm = urllib.request.urlopen(req, timeout=timeout, context=_ctx())
@@ -1144,6 +1158,9 @@ def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
         # ZERO for a free model, and it is zero because it IS zero -- not a discount, not an
         # assumption. The estimate is kept for metered models only, where erring high is right.
         "usd": 0.0 if free else round(tok / 1000.0 * _USD_PER_1K_TOKENS, 5)}
+    if is_local(seat):
+        # Keyed on the seat's SOURCE, never its name: a panel seat called "local" is a cloud seat.
+        row["local"] = True
     for key in ("prompt_tokens", "completion_tokens"):
         raw = usage.get(key)
         if raw is not None:
