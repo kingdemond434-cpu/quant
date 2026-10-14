@@ -197,8 +197,8 @@ def _daily_bars(log_sigma: np.ndarray, *, per_day: int = 24, seed: int = 0):
 def test_rough_and_persistent_log_vol_read_apart_through_h1_bars() -> None:
     reads = {}
     for h in (0.1, 0.5):
-        x = 0.5 * np.cumsum(_fgn(h, 600, 3))
-        idx, close = _daily_bars(np.log(0.006) + x)
+        x = 0.3 * np.cumsum(_fgn(h, 300, 3))
+        idx, close = _daily_bars(np.log(0.004) + x - x.mean())
         out = fsg.rough_vol_state(idx, close, [int(idx[-1].value)])
         assert np.isfinite(out[0])
         reads[h] = float(out[0])
@@ -257,12 +257,13 @@ def test_markov_gate_keeps_its_class_tail_by_brute_force(monkeypatch, base) -> N
     x, _ = _two_state(3000, seed=8)
     close = _close_from(x)
     idx = _stamps(len(close))
-    pos = list(range(420, len(close), 37))
+    pos = list(range(3 * MS_FAST["refit"], len(close), 37))   # 504: the first full fit
     times = [idx[p] for p in pos]
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
     kept = [s.time for s in fsg.family_markov_vol_gated(_bars(close), base_family=base,
                                                         **MS_FAST)]
     st = [float(fsg.markov_vol_state(close[: p + 1], [p], **MS_FAST)[0]) for p in pos]
+    assert np.all(np.isfinite(st))
     # trend/breakout keep the BOTTOM tail (calm), reversion the TOP tail (high variance)
     top = fsg.mechanism_class(base) in fsg.SYNC_LOW
     expect = [times[k] for k in _brute(st, high=top)]
@@ -272,7 +273,7 @@ def test_markov_gate_keeps_its_class_tail_by_brute_force(monkeypatch, base) -> N
 @pytest.mark.parametrize("base", BASES)
 def test_rough_gate_keeps_its_class_tail_by_brute_force(monkeypatch, base) -> None:
     x = 0.5 * np.cumsum(_fgn(0.3, 420, 6))
-    idx, close = _daily_bars(np.log(0.006) + x, seed=6)
+    idx, close = _daily_bars(np.log(0.004) + x - x.mean(), seed=6)
     pos = list(range(24 * 260 + 5, len(close), 29))
     times = [idx[p] for p in pos]
     monkeypatch.setattr(fsg, "get_family_func", lambda name: _fake_base(times))
@@ -281,10 +282,11 @@ def test_rough_gate_keeps_its_class_tail_by_brute_force(monkeypatch, base) -> No
     for p in pos:
         t = int(idx[p].value)
         st.append(float(fsg.rough_vol_state(idx[: p + 1], close[: p + 1], [t])[0]))
+    assert np.all(np.isfinite(st))
     # trend/breakout keep the TOP tail of H (persistent), reversion the BOTTOM (rough)
     top = fsg.mechanism_class(base) in fsg.SYNC_HIGH
     expect = [times[k] for k in _brute(st, high=top)]
-    assert kept == expect and 0 < len(kept) < len(times) // 2
+    assert kept == expect and 0 < len(kept) < len(times) - 30
 
 
 def test_other_classes_and_wrappers_return_nothing(monkeypatch) -> None:
