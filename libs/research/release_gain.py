@@ -327,9 +327,11 @@ def _sim_regime(ic: float, n: int, rng: np.random.Generator, *, duty: float = 0.
 def power_table(ics: Sequence[float] = (0.0, 0.05, 0.10), ns: Sequence[int] = (250, 1000), *,
                 n_sims: int = 100, n_cells: int = 1, seed: int = 0,
                 gates: Sequence[str] = ("release_gain", "regime_placebo"),
-                regime_masks: int = 500) -> list[dict[str, Any]]:
+                regime_masks: int = REGIME_MASKS) -> list[dict[str, Any]]:
     """Detection rate (share of PASS) of each gate at each planted IC and n, over `n_sims`
-    synthetic draws. The ic=0 rows are the false-positive rate, which must stay <= alpha."""
+    synthetic draws. The ic=0 rows are the false-positive rate, which must stay <= alpha.
+    `regime_masks` defaults to the gate's own REGIME_MASKS: at 500 the smallest reachable p
+    (1/501) barely clears the fixed Tier S bar, so the simulation would understate power."""
     rows: list[dict[str, Any]] = []
     for gate in gates:
         for n in ns:
