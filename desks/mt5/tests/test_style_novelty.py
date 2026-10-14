@@ -197,3 +197,18 @@ def test_overlapping_signals_follow_the_engines_single_position_rule() -> None:
             _Sig(df.index[400 * 24 + 30], 1, ttl_bars=24)]
     y, _X = sn.style_matrix(df["close"].to_numpy(), df.index, sigs)
     assert len(y) == 2                    # the second opens inside the first's window
+
+
+def test_the_judge_labels_each_familys_novelty_source(monkeypatch) -> None:
+    """MEASURED from the report, GENEALOGY from the registry, UNMEASURED for a registry gap."""
+    from research import judge_coverage as jc
+    monkeypatch.setattr(sn, "family_values", lambda *a, **k: {"multi_speed_trend": 0.1})
+    monkeypatch.setattr(jc, "certified_family_shares", lambda: ({}, 0))
+    backlog = {"multi_speed_trend": 1, "carry": 1, "zz_unclassified_style": 1}
+    rows = {r["family"]: r for r in jc.rank_by_value(
+        backlog, [{"family": f, "params": {}} for f in backlog], 100)}
+    assert rows["multi_speed_trend"]["novelty_source"] == "MEASURED"
+    assert rows["multi_speed_trend"]["novelty_factor"] == 1.1
+    assert rows["carry"]["novelty_source"] == "GENEALOGY"
+    assert rows["zz_unclassified_style"]["novelty_source"] == "UNMEASURED"
+    assert rows["zz_unclassified_style"]["novelty_factor"] == 1.0
