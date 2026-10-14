@@ -134,10 +134,37 @@ def test_a_403_hard_stops_and_holds_the_source(code: int, tmp_path: Path) -> Non
     sst: dict[str, Any] = {}
     rec, _ = _run(g, tmp_path, sst)
     assert rec["status"] == "FAILED:HARD_STOP" and len(g.data_urls) == 1
-    assert sst["hard_stop_until"] > NOW.isoformat()
+    hold = sst["hard_stop"]
+    assert hold["released_by"] is None and "person" in hold["release"]
+    assert hold["missed_growth"]["delta_elogw"] == "UNMEASURED" and hold["missed_growth"]["cause"]
     g2 = Getter(_http(404), [page])
     rec2, _ = _run(g2, tmp_path, sst)
     assert rec2["status"] == "HELD:HARD_STOP" and g2.urls == []      # nothing asked while held
+
+
+@pytest.mark.parametrize("age", [timedelta(hours=25), timedelta(days=11), timedelta(days=400)])
+def test_a_refusal_hold_waits_for_a_person_whatever_its_age(age: timedelta,
+                                                             tmp_path: Path) -> None:
+    page = (PW / "chokepoints_page.json").read_bytes()
+    sst: dict[str, Any] = {"hard_stop": {
+        "since": (NOW - age).isoformat(timespec="seconds"), "cause": "HARD_STOP: HTTP 403",
+        "release": A.PORTWATCH_HOLD_RELEASE, "released_by": None,
+        "missed_growth": {"delta_elogw": "UNMEASURED", "cause": "held"}}}
+    g = Getter(_http(404), [page])
+    rec, store = _run(g, tmp_path, sst)
+    assert rec["status"] == "HELD:HARD_STOP" and g.urls == [] and not store   # no request at all
+    assert sst["hard_stop"]["missed_growth"]["delta_elogw"] == "UNMEASURED"   # the row stays
+    sst["hard_stop"]["released_by"] = "a person"                              # the only release
+    rec2, _ = _run(Getter(_http(404), [page]), tmp_path, sst)
+    assert rec2["outcome"] == "OK" and "hard_stop" not in sst and sst["hard_stop_released"]
+
+
+def test_the_ua_is_the_desks_honest_ua_with_no_browser_token() -> None:
+    assert A.UA == ("quant-mt5-research-desk/1.0 (+https://github.com/kingdemond434-cpu/quant/"
+                    "issues; internal research; honours robots.txt)")
+    low = A.UA.lower()
+    for tok in ("mozilla/", "chrome/", "safari/", "applewebkit", "gecko/", "edg/"):
+        assert tok not in low
 
 
 def test_robots_decides_disallow_and_a_403_on_robots_is_a_hard_stop(tmp_path: Path) -> None:

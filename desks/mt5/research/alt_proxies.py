@@ -95,10 +95,14 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
 UNMEASURED = "UNMEASURED"
-#: The honest identifying UA: names the organ and a contact (pass-7 N4, 2026-10-14; it named
-#: no contact before). Every alt-proxies fetch, robots.txt included, sends it.
-UA = "quant-desk-alt-proxies/1.0 (+https://github.com/kingdemond434-cpu/quant)"
-UA_AGENT_NAME = "quant-desk-alt-proxies"
+#: The desk's honest identifying UA (pass-7 N4, 2026-10-14): a contact, no browser token.
+#: Every alt-proxies fetch, robots.txt included, sends it.
+#: EXACTLY `libs/data/polite_fetch.DESK_UA` on claude/polite-fetch-honest (0ca783b1f): LIVE has
+#: no polite_fetch.DESK_UA yet. When that branch lands this becomes
+#: `from libs.data.polite_fetch import DESK_UA as UA, DESK_UA_PRODUCT as UA_AGENT_NAME`.
+UA_AGENT_NAME = "quant-mt5-research-desk"
+UA = (f"{UA_AGENT_NAME}/1.0 (+https://github.com/kingdemond434-cpu/quant/issues; "
+      "internal research; honours robots.txt)")
 TIMEOUT = 30.0
 MAX_BYTES = 16 * 1024 * 1024
 #: The prefix a conditioner spec carries; `mt5desk.cell_modifiers` applies only this form.
@@ -1831,7 +1835,12 @@ PORTWATCH_MAX_PAGES = 20
 PORTWATCH_DEPTH_D = 800                 # first pass reaches this far back
 PORTWATCH_RECENT_D = 35                 # every later pass re-reads this window for revisions
 PORTWATCH_HARD_STOP = (401, 403, 429)
-PORTWATCH_HOLD_H = 24
+#: A 401/403/429 (or WAF) hold WAITS FOR A PERSON (auditor's index-route ruling, 2026-10-14):
+#: it has no expiry and no retry clock. RELEASE: a person deletes the `hard_stop` row from
+#: `sources.<id>` in data/alt_proxies/state.json (or sets its `released_by` to their name)
+#: after reading why the host refused us. Nothing in code ever clears it.
+PORTWATCH_HOLD_RELEASE = ("a person deletes sources.<id>.hard_stop in "
+                          "desks/mt5/data/alt_proxies/state.json, or sets its released_by")
 
 
 def portwatch_request(src_id: str, url: str, since: date, offset: int,
@@ -4295,7 +4304,8 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
 
     `outcome` is OK, UNCHANGED (rows read, nothing new or revised) or FAILED:<cause>. A fetch pass
     that parsed nothing is FAILED with its cause, never a zero. 401/403/429 or a non-JSON body
-    (WAF) is a HARD STOP: nothing more is requested and the source is held for 24h. robots.txt
+    (WAF) is a HARD STOP: nothing more is requested and the source is held until a PERSON
+    releases it (no expiry, see PORTWATCH_HOLD_RELEASE). robots.txt
     of the data host decides every pass and its crawl-delay is honoured between pages."""
     out: dict[str, Any] = {"requests": 0, "fetched": 0, "parsed": 0, "errors": [],
                            "merge": {"added": 0, "revised": 0}}
@@ -4306,9 +4316,14 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
         out["outcome"] = out["status"]
         out["why"] = cause
         if hold:
-            sst["hard_stop_until"] = (now + timedelta(hours=PORTWATCH_HOLD_H)).isoformat(
-                timespec="seconds")
-            sst["hard_stop_cause"] = cause
+            sst["hard_stop"] = {
+                "since": now.isoformat(timespec="seconds"), "cause": cause,
+                "release": PORTWATCH_HOLD_RELEASE, "released_by": None,
+                "missed_growth": {"delta_elogw": UNMEASURED,
+                                  "cause": (f"{src.id} held after {cause}: its chokepoint "
+                                            "cells read no new rows until a person releases "
+                                            "the hold")}}
+            out["hard_stop"] = sst["hard_stop"]
         return out
 
     def take(body: bytes, ctx: Ctx) -> int:
@@ -4337,14 +4352,19 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
         out["why"] = "no fetch this pass (--no-fetch): UNMEASURED, not zero"
         out["outcome"] = "UNMEASURED"
         return out
-    held = sst.get("hard_stop_until")
-    if held and str(held) > now.isoformat(timespec="seconds"):
+    held = sst.get("hard_stop")
+    if isinstance(held, dict) and not held.get("released_by"):
+        # NO AGE TEST, ON PURPOSE: a refusal is answered by a person, never by a clock.
         out["status"] = "HELD:HARD_STOP"
         out["outcome"] = out["status"]
-        out["why"] = f"hard stop held until {held}: {sst.get('hard_stop_cause')}"
+        out["hard_stop"] = held
+        out["why"] = (f"hard stop since {held.get('since')}: {held.get('cause')}; "
+                      f"release: {held.get('release')}")
         return out
-    sst.pop("hard_stop_until", None)
-    sst.pop("hard_stop_cause", None)
+    if isinstance(held, dict):
+        sst["hard_stop_released"] = {**held, "released_seen_at": now.isoformat(
+            timespec="seconds")}
+        sst.pop("hard_stop", None)
     since = portwatch_since(now, sst)
     first = portwatch_request(src.id, src.url, since, 0, now)
     rb = robots_verdict(first.url, getter)
