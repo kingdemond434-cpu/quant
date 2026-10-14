@@ -27,11 +27,17 @@ import pandas as pd
 
 
 def broker_to_utc(stamp: Any) -> pd.Timestamp:
-    """The true UTC instant of one broker-stamped time (naive, or labelled UTC)."""
+    """The true UTC instant of one broker-stamped time (naive, or labelled UTC). A stamp that
+    carries a real non-zero offset is already an instant and is taken as written, as
+    `libs.ops.gateway_clock` does: shifting it again would move it seven hours."""
+    ts = pd.Timestamp(stamp)
+    off = ts.utcoffset()
+    if off is not None and off.total_seconds() != 0:
+        return ts.tz_convert("UTC")
     # Imported here, as the other money-path modules import libs: the repo root is on the path
     # wherever the gateway runs, and a module that merely imports this one pays nothing.
     from libs.regime.session_clock import server_to_utc
-    return pd.Timestamp(server_to_utc([pd.Timestamp(stamp)])[0])
+    return pd.Timestamp(server_to_utc([ts])[0])
 
 
 def broker_epoch_to_utc(sec: Any) -> pd.Timestamp | None:
