@@ -945,7 +945,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "clock_liveness", "certificate_clock_law",
+    "forward_reconcile", "clock_liveness", "certificate_clock_law", "measurability",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
@@ -1850,6 +1850,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
+    # Reads seven artifacts and one state file; no bars, no venue.
+    "measurability": 120,
     # THE JUDGE WAS BEING KILLED AT 27% OF ITS OWN BUDGET (measured 2026-09-23). The sealed
     # gauntlet builds cells under `FRESH_BUILD_BUDGET_SEC = 2700` and stops ITSELF at that mark
     # to write `universal_gates_external.json`. This leg had no entry here, so it fell through to
@@ -5055,6 +5057,13 @@ def main() -> None:
     # promotes, sizes and retires nothing.
     ccl = _costed("certificate_clock_law", lambda: _producer(
         "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
+    # NEVER UNMEASURED PAST ONE CYCLE (principal 2026-10-13: "all sleeves must be able to be
+    # measureed all certs never unmeasured excuse"). Right after the clock law it reads: every
+    # certificate and every LIVE sleeve, every field (class, novelty, fill cost, tradability,
+    # forward clock, live attribution), dated, RED past two hours, each with its converter named.
+    # Writes reports/MEASURABILITY.json; sizes, retires and enrols nothing.
+    msr = _costed("measurability", lambda: _producer(
+        "measurability", "scripts/check_measurability.py"))
     # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
     # falsifiers.py had zero callers; every certificate was minted and never attacked. The
     # producer budgets itself (600 s default) under this leg's timeout and writes
@@ -5946,7 +5955,7 @@ def main() -> None:
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
-                    "certificate_clock_law": ccl,
+                    "certificate_clock_law": ccl, "measurability": msr,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
                     "rejection_throughput": rjt,
