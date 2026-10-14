@@ -442,3 +442,35 @@ def test_two_pages_on_one_date_are_one_statement() -> None:
     assert len(tr.surprises([prev, a, same])) == 2
     got = tr.surprises([prev, a, other])
     assert len(got) == 2 and got[1]["size_surprise"] is None, "disagreeing pages: UNMEASURED"
+
+
+@pytest.mark.parametrize(("text", "want"), [
+    ("Treasury anticipates no increase in nominal coupon auction sizes.", 0),
+    ("Treasury anticipates no need to increase nominal coupon auction sizes.", 0),
+    ("Treasury anticipates that no increase in nominal coupon auction sizes will be needed.", 0),
+    ("There is no expectation that Treasury will need to increase nominal coupon auction "
+     "sizes.", None),
+    ("Treasury anticipates no changes to nominal coupon auction sizes.", 0),
+    ("Treasury does not anticipate any change to nominal coupon auction sizes.", 0),
+])
+def test_a_bare_no_is_a_negation(text: str, want: int | None) -> None:
+    """Audit must-fix on #394 v5: never +1 on "anticipates no increase"."""
+    assert tr.guidance(text) == want
+
+
+def test_an_out_of_order_listing_bounds_nothing() -> None:
+    store = {u: {"date": d} for u, d in (("a", "2023-01-04"), ("b", "2026-08-05"),
+                                         ("c", "2026-02-04"), ("d", "2025-11-05"))}
+    fetched = {tr.INDEXES[0]: {"links": ["a", "b", "U", "c", "d"]}}
+    assert tr.unread_windows(["U"], fetched, store) == [{"url": "U", "from": None, "to": None}]
+
+
+def test_a_pair_an_unread_statement_could_split_is_not_measured() -> None:
+    rows = [{"date": "2026-02-04", "sizes": {"3": 50}, "guidance": 0},
+            {"date": "2026-08-05", "sizes": {"3": 55}, "guidance": 1},
+            {"date": "2026-11-04", "sizes": {"3": 60}, "guidance": 1}]
+    gap = [(date(2026, 2, 4), date(2026, 8, 5))]
+    got = tr.surprises(rows, gaps=gap)
+    assert got[1]["size_surprise"] is None and got[1]["guidance_shift"] is None
+    assert got[2]["guidance_shift"] == 0.0, "the pair after the gap is a real pair"
+    assert tr.surprises(rows, gaps=[(None, None)])[2]["guidance_shift"] is None

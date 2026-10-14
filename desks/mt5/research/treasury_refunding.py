@@ -112,7 +112,7 @@ _OTHER_SUPPLY = re.compile(r"\bTIPS\b|inflation[- ]protected|\bFRNs?\b|floating 
 #: "... will not be needed" after it, never one in a reason clause ("because it can no longer
 #: rely on bills") -- audit should-fix on #394 v3.
 _NEG_BEFORE = re.compile(r"\bnot\b(?!\s+only)|\bno longer\b|n't\b|\bwithout\b|\bcannot\b"
-                         r"|\bnever\b|\bunlikely\b", re.I)
+                         r"|\bnever\b|\bunlikely\b|\bno\b(?!\s+(?:changes?|longer)\b)", re.I)
 _NEG_AFTER = re.compile(r"\b(?:not|no longer|unlikely to)\b(?:\s+be)?\s+"
                         r"(?:needed|necessary|required|warranted)", re.I)
 _VERB = re.compile(r"\b(?:increas|reduc|decreas|cut(?:s|ting)?\b)", re.I)
@@ -135,7 +135,8 @@ _DOWN = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?"
                    r"|\b(reduc|decreas|cut)(?:es?|tions?|ing|s)? (?:to|in) (?:nominal )?coupon",
                    re.I)
 _FLAT = re.compile(r"at least the next several quarters|\bmaintain|\bunchanged\b"
-                   r"|\bno changes?\b|\bkeep\b[^.]{0,60}\bsteady", re.I)
+                   r"|\bno changes?\b|\bkeep\b[^.]{0,60}\bsteady"
+                   r"|(?:\bnot\b|n't\b)[^.;]{0,40}\bany (?:changes?|adjustments?)\b", re.I)
 
 
 def _now() -> str:
@@ -326,14 +327,21 @@ def _one_per_date(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     return [by_day[d] for d in sorted(by_day)]
 
 
-def surprises(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Each statement with its two surprises against the one before it (None = UNMEASURED)."""
+def surprises(statements: Sequence[dict[str, Any]],
+              gaps: Sequence[tuple[date | None, date | None]] = ()) -> list[dict[str, Any]]:
+    """Each statement with its two surprises against the one before it (None = UNMEASURED).
+    A pair an unread statement could fall between (a `gaps` window that overlaps it) is not a
+    pair: its surprises are UNMEASURED, never a diff that skipped a quarter (audit #394 v5)."""
     rows = _one_per_date(statements)
     pair_changes = [(c["date"], _change(p, c)) for p, c in pairwise(rows)]
     out: list[dict[str, Any]] = []
     for prev, cur in zip([None, *rows][:len(rows)], rows, strict=True):
         size_s: float | None = None
         shift: float | None = None
+        if prev is not None:
+            p_day, c_day = date.fromisoformat(prev["date"]), date.fromisoformat(cur["date"])
+            if any((lo is None or lo < c_day) and (hi is None or hi > p_day) for lo, hi in gaps):
+                prev = None
         if prev is not None:
             change = _change(prev, cur)
             guided = prev.get("guidance")
@@ -457,14 +465,18 @@ def unread_windows(unread: Sequence[str], fetched: dict[str, Any], store: dict[s
             if u not in links:
                 continue
             dated = [(j, d) for j, x in enumerate(links) if (d := day(x)) is not None]
-            if len(dated) < 2 or dated[0][1] == dated[-1][1]:
+            days = [d for _j, d in dated]
+            ascending = all(x < y for x, y in pairwise(days))
+            # An out-of-order listing gives no order to bound by: unbounded (audit #394 v5).
+            if len(dated) < 2 or not (ascending or all(x > y for x, y in pairwise(days))):
                 continue
-            ascending = dated[-1][1] > dated[0][1]
             i = links.index(u)
             before = [d for j, d in dated if j < i]
             after = [d for j, d in dated if j > i]
             b, a = (before[-1] if before else None), (after[0] if after else None)
             lo, hi = ((b, a) if ascending else (a, b))
+            if lo is not None and hi is not None and lo > hi:
+                lo = hi = None
             break
         out.append({"url": u, "from": lo.isoformat() if lo else None,
                     "to": hi.isoformat() if hi else None})
@@ -589,7 +601,6 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     _write_json(STATEMENTS, store)
     _write_json(FETCHED, fetched)
     good = [s for s in store.values() if isinstance(s, dict) and s.get("date")]
-    scored = surprises(good)
     # What the desk can vouch for: no listed statement unread, and the most-recent index read
     # successfully at ok_epoch. Past that, a day without a statement is UNMEASURED.
     ok_epoch = (fetched.get(INDEXES[0]) or {}).get("ok_epoch")
@@ -599,6 +610,7 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     windows = unread_windows(unread, fetched, store)
     blocked = [(date.fromisoformat(w["from"]) if w["from"] else None,
                 date.fromisoformat(w["to"]) if w["to"] else None) for w in windows]
+    scored = surprises(good, gaps=blocked)
     rows = series_rows(scored, today=today, measured_until=measured_until, blocked=blocked)
     if rows:
         write_series(rows)
