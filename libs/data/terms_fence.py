@@ -269,6 +269,68 @@ SOURCE_POLICY.update({
         "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news", PUBLIC_PAGE,
         _UNREAD, "", "terms page not read: imo.org refused the fetch (robots.txt redirect loop)"),
 })
+#: THE YAHOO SUBSTITUTES (coordinator + auditor ruling 2026-10-14): Yahoo is IDEAS_ONLY, so every
+#: series a live organ read from it is either re-sourced from a row below -- whose OWN terms page
+#: was read and quoted -- or is UNMEASURED_NO_LICENSED_SOURCE. Neither row holds anything (a public
+#: page, fetched politely); the clauses are the evidence a live-input organ acts on, and the
+#: restricting clauses are quoted beside them so the principal can overrule.
+SOURCE_POLICY.update({
+    "fred_public_domain": {
+        "hosts": ("fred.stlouisfed.org", "alfred.stlouisfed.org"), "status": PUBLIC_PAGE,
+        "sources": ("fred_public_domain",),
+        "why": ("FRED series tagged 'Public Domain: Citation Requested' (H.15 rates, H.10 FX, "
+                "EIA spot prices) may be used for internal commercial use with attribution; a "
+                "series carrying a third-party copyright notice (VIXCLS, the ICE/LBMA series) is "
+                "NOT covered and FRED cannot grant it; access stays polite (prohibition (g) bars "
+                "excessive or disruptive automated access)"),
+        "terms": {"url": "https://fred.stlouisfed.org/legal/", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "public_domain": ("may be used without permission, provided you do not "
+                                        "engage in any prohibited use."),
+                      "IV": ("may be used for internal commercial uses and may be displayed in "
+                             "textbooks, newsletters, or reports to clients"),
+                      "g": ("Use scripts, spiders, scrapers, bots, or any manual or automatic "
+                            "technology, tool, software, process, or device [...] excessive, "
+                            "disruptive, or adversely impacts the stability, performance, or "
+                            "availability of the FRED® Services"),
+                      "copyrighted": ("Series with a copyright notice are owned by third parties "
+                                      "and have special restrictions."),
+                      "ml": ("in connection with the development or training of any software "
+                             "program or system or machine learning")},
+                  "series_labels": {
+                      "DGS10": "Public Domain: Citation Requested (Board of Governors, H.15)",
+                      "DTWEXBGS": "Public Domain: Citation Requested (Board of Governors, H.10)",
+                      "DEXUSEU": "Public Domain: Citation Requested (Board of Governors, H.10)",
+                      "DCOILWTICO": "Public Domain: Citation Requested (EIA, Spot Prices)",
+                      "VIXCLS": ("Copyright, 2016, Chicago Board Options Exchange, Inc. "
+                                 "Reprinted with permission. -- NOT a licensed substitute")}}},
+    "eia_open_data": {
+        "hosts": ("eia.gov",), "status": PUBLIC_PAGE, "sources": ("eia_open_data",),
+        "why": ("U.S. government publications are public domain; EIA grants use and "
+                "distribution of its data files with an acknowledgment; no automated-access "
+                "clause restricts a polite fetch"),
+        "terms": {"url": "https://www.eia.gov/about/copyrights_reuse.php",
+                  "checked_at": "2026-10-14",
+                  "clauses": {
+                      "public_domain": ("U.S. government publications are in the public domain "
+                                        "and are not subject to copyright protection."),
+                      "use": ("You may use and/or distribute any of our data, files, databases, "
+                              "reports, graphs, charts, and other information products"),
+                      "acknowledgment": ("However, if you use or reproduce any of our "
+                                         "information products, you should use an "
+                                         "acknowledgment,")}}},
+    "mt5_own_bars": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("mt5_own_bars",),
+        "why": ("the desk's own broker bars (Fusion MT5 terminal, data/universe parquets): the "
+                "venue the desk trades, received under its own account; no third-party host is "
+                "read"),
+        "terms": {"url": "desks/mt5/data/universe/universe.json", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "own_data": ("auditor ruling 2026-10-14: MT5/Fusion bars from the desk's "
+                                   "own bar lake are the preferred substitute for the vol "
+                                   "archive and index/commodity levels")}}},
+})
 #: JPX's site terms (Japanese and English pages), read 2026-10-14 for the pass-6 F4 holds. One
 #: reading shared by every JPX route held on it (a value, not a second register).
 _JPX_TERMS: dict[str, Any] = {

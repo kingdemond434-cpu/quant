@@ -47,6 +47,16 @@ carries `resolution: H1` so no reader can quote it as one.
 MANDATE: the futures side is REFERENCE DATA informing an MT5 instrument, never a hunted universe
 of its own.
 
+THE YAHOO CUT (coordinator + auditor ruling 2026-10-14). The reference bars came from Yahoo's
+chart API, an IDEAS_ONLY row of libs/data/terms_fence.SOURCE_POLICY (Terms 2.d.9): never live
+input. `fetch_bars` now asks THE ONE FETCH DOOR with live_input=True and is refused before any
+request, and the Yahoo-era cache under data/reference/futures is never read again. No licensed
+source of intraday COMEX/NYMEX bars exists in the key set (CME is a held route), so every pair is
+UNMEASURED_NO_LICENSED_SOURCE with a missed_growth line, and BAR_CLOCK.json is NOT overwritten by
+an unmeasured pass: the clock on disk stays what the last measuring pass wrote, and this report
+says it was not re-measured. A licensed re-measurement (the desk's own tick tape: receipt time
+against the broker's time_msc) is the named unblock.
+
     python desks/mt5/research/futures_lead_lag.py
     python desks/mt5/research/futures_lead_lag.py --no-fetch    # cached reference bars only
 """
@@ -279,21 +289,26 @@ class Reading:
         }
 
 
-def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
-               timeout: int = 60) -> pd.DataFrame | None:
-    """Hourly bars for one reference contract, or None with nothing written.
+UNMEASURED_NO_LICENSED_SOURCE = "UNMEASURED_NO_LICENSED_SOURCE"
+NO_LICENSED_REFERENCE = ("intraday COMEX/NYMEX bars: Yahoo (which served them) is IDEAS_ONLY and "
+                         "CME's own pages are a held route; no licensed intraday futures feed is "
+                         "in the key set")
 
-    A FAILED FETCH RETURNS None AND NEVER TOUCHES THE CACHE. A partial write would shorten the
-    sample on the next run without saying so, and a clock measured on a silently shorter window
-    is a different measurement wearing the same name.
-    """
-    url = _CHART.format(sym=symbol.replace("=", "%3D"), rng=rng, iv=interval)
-    req = urllib.request.Request(url, headers={"User-Agent": _UA})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            doc = json.loads(r.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
-        return None
+
+def missed_growth_line(future: str) -> dict[str, Any]:
+    """The cut Yahoo input's missed-growth line (terms_fence.held_missed_growth, kind
+    ideas_only_refusal): delta E[log W] UNMEASURED, never zero."""
+    from libs.data import terms_fence as _tf
+    line = _tf.held_missed_growth("yahoo", None, source=f"futures_lead_lag:{future}",
+                                  live_input_refusal=True)
+    line.update({"yahoo_symbol": future, "series_status": UNMEASURED_NO_LICENSED_SOURCE,
+                 "substitute": None, "why_unsubstituted": NO_LICENSED_REFERENCE,
+                 "unblock_named": "re-measure the bar clock from the desk's own tick tape"})
+    return line
+
+
+def parse_chart(doc: Any) -> pd.DataFrame | None:
+    """A chart document's hourly closes on an epoch-second (UTC) index, or None."""
     try:
         res = doc["chart"]["result"][0]
         stamps, close = res["timestamp"], res["indicators"]["quote"][0]["close"]
@@ -307,16 +322,30 @@ def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
     return pd.DataFrame({"close": close}, index=pd.DatetimeIndex(idx, name="time")).dropna()
 
 
-def cached(symbol: str) -> pd.DataFrame | None:
-    path = CACHE / f"{symbol.replace('=', '_')}_H1.parquet"
-    if not path.exists():
-        return None
+def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
+               timeout: int = 60) -> pd.DataFrame | None:
+    """REFUSED AS LIVE INPUT (2026-10-14). THE ONE FETCH DOOR is asked with live_input=True and
+    refuses Yahoo before any request is built, so this returns None and writes nothing.
+
+    A FAILED FETCH RETURNS None AND NEVER TOUCHES THE CACHE. A partial write would shorten the
+    sample on the next run without saying so, and a clock measured on a silently shorter window
+    is a different measurement wearing the same name.
+    """
+    url = _CHART.format(sym=symbol.replace("=", "%3D"), rng=rng, iv=interval)
+    req = urllib.request.Request(url, headers={"User-Agent": _UA})
     try:
-        frame = pd.read_parquet(path)
-    except (OSError, ValueError):
+        from libs.data import terms_fence as _tf
+        with _tf.guarded_urlopen(req, timeout=timeout, live_input=True) as r:
+            doc = json.loads(r.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
         return None
-    frame.index = pd.DatetimeIndex(frame.index).tz_convert(UTC)
-    return frame
+    return parse_chart(doc)
+
+
+def cached(symbol: str) -> pd.DataFrame | None:
+    """The licensed reference cache, or None. The Yahoo-era files under data/reference/futures are
+    NOT read (a cached Yahoo series is the same Yahoo series); no licensed store exists yet."""
+    return None
 
 
 def store(symbol: str, frame: pd.DataFrame) -> Path:
@@ -367,9 +396,10 @@ def read_pair(future: str, symbol: str, why: str, *, fetch: bool = True) -> Read
 
     empty: dict[int, float | None] = dict.fromkeys(LAGS)
     if fut is None:
-        return Reading(future, symbol, why, "UNMEASURED", None, None, 0, {}, {}, {}, empty,
-                       f"no bars for {future}: the fetch failed and nothing is cached. A feed "
-                       "gap, not a finding about the clock or the lead")
+        return Reading(future, symbol, why, UNMEASURED_NO_LICENSED_SOURCE, None, None, 0, {}, {},
+                       {}, empty,
+                       f"no licensed bars for {future}: {NO_LICENSED_REFERENCE}. Not a finding "
+                       "about the clock or the lead")
     if cfd is None:
         return Reading(future, symbol, why, "UNMEASURED", None, None, 0, {}, {}, {}, empty,
                        f"{symbol} has no H1 parquet in this tree")
@@ -476,6 +506,10 @@ def census(*, fetch: bool = True) -> dict[str, Any]:
         "n_measured": sum(1 for r in rows if r.status == "MEASURED"),
         "clock": clock_verdict(rows),
         "pairs": [r.to_dict() for r in rows],
+        "unmeasured_no_licensed_source": [r.future for r in rows
+                                          if r.status == UNMEASURED_NO_LICENSED_SOURCE],
+        "missed_growth": [missed_growth_line(r.future) for r in rows
+                          if r.status == UNMEASURED_NO_LICENSED_SOURCE],
         "cluster": "cross_asset_lead_lag",
         "rule": (
             "the clock is measured BEFORE any lead is reported, and no lead is reported at all "
@@ -523,12 +557,20 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     doc = census(fetch=not args.no_fetch)
-    for rel, payload in ((OUT_REL, doc), (CLOCK_REL, {"at": doc["at"], **doc["clock"]})):
+    # AN UNMEASURED PASS NEVER OVERWRITES A MEASURED CLOCK: BAR_CLOCK.json is written only when
+    # at least one pair resolved this pass, and the report says when it was not.
+    doc["bar_clock_written"] = bool(doc["n_measured"])
+    targets = [(OUT_REL, doc)]
+    if doc["bar_clock_written"]:
+        targets.append((CLOCK_REL, {"at": doc["at"], **doc["clock"]}))
+    for rel, payload in targets:
         out = ROOT / Path(*rel.split("/"))
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
     print(json.dumps(doc, indent=1, default=str) if args.json else render(doc))
-    print(f"written: {OUT_REL} and {CLOCK_REL}")
+    print("written: " + " and ".join(rel for rel, _ in targets)
+          + ("" if doc["bar_clock_written"] else
+             f" ({CLOCK_REL} NOT rewritten: no licensed reference measured the clock)"))
     return 0
 
 

@@ -6,7 +6,10 @@ Perpetual supervised desk. Every cycle:
      monthly backfill from 2018-01 (one vintage per cycle)
   3. state vector (z vs 5y + 1y momentum + differentials US/EU/JP)
   4. cross-asset anchor series for SALEH_017 (DXY/yields/gold/oil/VIX/SPX)
-     -> data/cross_asset_anchors.pkl (daily, aligned)
+     -> data/cross_asset_anchors.pkl (daily, aligned) + its provenance sidecar. The columns
+     Yahoo used to serve come from licensed substitutes only (free_data.licensed_daily: MT5
+     bars, FRED public-domain series); a column with none (VIX) is ABSENT and its sidecar row
+     says UNMEASURED_NO_LICENSED_SOURCE with a missed_growth line -- never filled.
   5. data/macro_state.json <- consumed by desks and the reaction atlas
 
 No marker: perpetual watcher (supervisor keeps alive like research_loop).
@@ -30,6 +33,15 @@ import free_data as fd
 BASE = Path(__file__).resolve().parent.parent
 STATE_F = BASE / "data" / "macro_state.json"
 ANCHORS_F = BASE / "data" / "cross_asset_anchors.pkl"
+#: Which licensed source each Yahoo-era column now comes from, its PIT lag, and the missed_growth
+#: line of every cut input. A prior pickle column that this sidecar does not mark SUBSTITUTED was
+#: Yahoo's, and is dropped rather than merged (a Yahoo history kept behind a substitute is still
+#: Yahoo live input).
+ANCHORS_PROV_F = BASE / "data" / "cross_asset_anchors.provenance.json"
+#: The anchor columns Yahoo served, keyed by the Yahoo symbol (free_data.YAHOO_SUBSTITUTES).
+YAHOO_ANCHORS: tuple[tuple[str, str], ...] = (("DX-Y.NYB", "DXY"), ("^VIX", "VIX"),
+                                              ("^TNX", "TNX"), ("GC=F", "GC"),
+                                              ("CL=F", "CL"), ("^GSPC", "SPX"))
 PIT_DIR = BASE / "data" / "macro_pointintime"
 LOG = BASE / "logs" / "macro_desk.log"
 
@@ -127,6 +139,66 @@ def pit_backfill() -> None:
     log("PIT lake current")
 
 
+def licensed_anchor_columns(cols: dict[str, pd.Series], **readers: object) -> dict[str, dict]:
+    """Fill `cols` with the licensed substitute of every anchor Yahoo used to serve; return the
+    per-column provenance (substitute, PIT lag, status, missed_growth line). A column with no
+    licensed source, or whose substitute this host cannot read, is NOT added: it stays absent
+    and its provenance says why (UNMEASURED_NO_LICENSED_SOURCE / UNMEASURED_*), never zero."""
+    prov: dict[str, dict] = {}
+    for ticker, name in YAHOO_ANCHORS:
+        d, p = fd.licensed_daily(ticker, "macro_desk.anchors", **readers)  # type: ignore[arg-type]
+        prov[name] = p
+        if d:
+            s = pd.Series(d).sort_index()
+            s.index = pd.to_datetime(s.index)
+            cols[name] = s
+    return prov
+
+
+def _prior_columns() -> dict[str, dict]:
+    """The sidecar's `prior_columns` as the LAST pass left them ({} when none)."""
+    try:
+        got = json.loads(ANCHORS_PROV_F.read_text("utf-8")).get("prior_columns") or {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
+def purge_yahoo_columns(prev: pd.DataFrame, prior: dict[str, dict]) -> pd.DataFrame:
+    """Drop every Yahoo-era column from a prior pickle unless a PRIOR pass's sidecar marked it as
+    written by a licensed substitute. Yahoo history must not survive behind a substitute's tail."""
+    drop = [name for _, name in YAHOO_ANCHORS if name in prev.columns
+            and (prior.get(name) or {}).get("status") != "SUBSTITUTED"]
+    if drop:
+        log(f"anchors: Yahoo-era columns dropped from the prior pickle: {', '.join(drop)}")
+    return prev.drop(columns=drop)
+
+
+def _write_provenance(prov: dict[str, dict], prior: dict[str, dict]) -> None:
+    """The anchors' provenance sidecar. `prior_columns` records which pickle columns a licensed
+    substitute has written (sticky: a pass whose substitute is unreachable keeps the record, so
+    the substitute's own history is merged, never Yahoo's)."""
+    sticky = {k: v for k, v in prior.items() if (v or {}).get("status") == "SUBSTITUTED"}
+    sticky.update({k: {"status": "SUBSTITUTED", "substitute": v.get("substitute")}
+                   for k, v in prov.items() if v.get("status") == "SUBSTITUTED"})
+    doc = {"updated": fd.now_iso(), "rule": ("Yahoo is IDEAS_ONLY: every column it served is a "
+                                             "licensed substitute or absent "
+                                             f"({fd.UNMEASURED_NO_LICENSED_SOURCE})"),
+           "pit": "cross_asset_anchors (data_os): 27h late-biased; H.10 FX weekly",
+           "columns": prov, "prior_columns": sticky,
+           "missed_growth": [v["missed_growth"] for v in prov.values()
+                             if isinstance(v.get("missed_growth"), dict)],
+           "unmeasured_no_licensed_source": sorted(
+               k for k, v in prov.items() if v.get("status") == fd.UNMEASURED_NO_LICENSED_SOURCE)}
+    try:
+        ANCHORS_PROV_F.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ANCHORS_PROV_F.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        os.replace(tmp, ANCHORS_PROV_F)
+    except OSError as e:
+        log(f"anchors: provenance sidecar NOT written ({e!r})")
+
+
 def anchors() -> None:
     """Daily cross-asset anchors for SALEH_017 (DXY/yields/gold/oil/VIX/SPX)."""
     cols: dict[str, pd.Series] = {}
@@ -142,28 +214,27 @@ def anchors() -> None:
         list(ex.map(fred_col, ["DTWEXBGS", "DGS10", "T10YIE",
                                "GOLDAMGBD228NLBM", "DCOILWTICO", "VIXCLS"]))
 
-    def yhoo(ticker: str, name: str) -> None:
-        d = fd.yahoo_daily(ticker)
-        if d:
-            s = pd.Series(d).sort_index()
-            s.index = pd.to_datetime(s.index)
-            cols[name] = s
+    prior = _prior_columns()                  # read BEFORE this pass rewrites the sidecar
+    prov = licensed_anchor_columns(cols)
+    _write_provenance(prov, prior)
 
-    with ThreadPoolExecutor(max_workers=6) as ex:
-        list(ex.map(lambda t: yhoo(t[0], t[1]),
-                    [("DX-Y.NYB", "DXY"), ("^VIX", "VIX"), ("^TNX", "TNX"),
-                     ("GC=F", "GC"), ("CL=F", "CL"), ("^GSPC", "SPX")]))
-
-    if not cols:
-        log("anchors: no series fetched (network issue)")
-        return
-    df = pd.DataFrame(cols).sort_index()
     prev = None
     if ANCHORS_F.exists():
         try:
             prev = pd.read_pickle(ANCHORS_F)
         except Exception as e:
             log(f"anchors: prior pickle unreadable, replacing ({e!r})")
+    purged = False
+    if isinstance(prev, pd.DataFrame) and not prev.empty:
+        kept = purge_yahoo_columns(prev, prior)
+        purged = kept.shape[1] != prev.shape[1]
+        prev = kept
+    if not cols:
+        log("anchors: no series fetched (network issue)")
+        if purged and isinstance(prev, pd.DataFrame):
+            prev.to_pickle(ANCHORS_F)         # the Yahoo-era columns leave even on a dark pass
+        return
+    df = pd.DataFrame(cols).sort_index()
     if isinstance(prev, pd.DataFrame) and not prev.empty:
         # MERGE PER CELL, NEVER PER ROW. This used to drop every prior ROW whose date the new
         # fetch also carried and then append the new rows -- so a pass on which one FRED series
@@ -272,7 +343,7 @@ def _code_fingerprint() -> tuple:
 
 
 def main() -> None:
-    log("macro desk started (FRED keyless + ALFRED vintages + Yahoo anchors)")
+    log("macro desk started (FRED keyless + ALFRED vintages + licensed anchors; Yahoo cut)")
     # A PERPETUAL WORKER NEVER SAW A RELEASE (2026-09-30). This loop is launched once by
     # research_supervisor and runs forever, so it executes the code that was on disk when it
     # STARTED. MT5-AdoptRelease lands new code in place and restarts only the gateway: the

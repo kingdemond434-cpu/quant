@@ -684,6 +684,38 @@ def access_hold_lines(path: Path | None = None, now: float | None = None) -> dic
                           for v in sorted({x["status"] for x in lines})}}
 
 
+#: THE YAHOO CUT (2026-10-14): each organ that read Yahoo as live input now publishes the
+#: missed-growth line of every cut input on its own artifact. Read here so the bill sits beside
+#: the rails' (never appended to the ledger).
+YAHOO_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
+    ("macro_desk.anchors", BASE / "data" / "cross_asset_anchors.provenance.json"),
+    ("vol_archive", BASE / "reports" / "VOL_ARCHIVE.json"),
+    ("fetch_futures_curves", BASE / "reports" / "futures_curve_coverage.json"),
+    ("futures_lead_lag", BASE / "reports" / "FUTURES_LEAD_LAG.json"),
+    ("alpha_capture", BASE / "reports" / "ANALYST_VIEWS.json"),
+)
+
+
+def yahoo_cut_lines(artifacts: tuple[tuple[str, Path], ...] | None = None) -> dict[str, Any]:
+    """The cut Yahoo inputs' missed-growth lines, read from each organ's own artifact. An organ
+    that has not written its artifact on this host is listed as UNMEASURED, never as zero."""
+    lines: list[dict[str, Any]] = []
+    unread: list[str] = []
+    for organ, path in (artifacts or YAHOO_CUT_ARTIFACTS):
+        doc = _json(path)
+        got = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)] if doc else []
+        if not got:
+            unread.append(organ)
+        lines.extend({**x, "organ": organ} for x in got)
+    return {"verdict": UNMEASURED, "lines": lines, "n_cut": len(lines),
+            "unmeasured_no_licensed_source": sorted(
+                str(x.get("source")) for x in lines
+                if x.get("series_status") == "UNMEASURED_NO_LICENSED_SOURCE"),
+            "organs_without_artifact": unread,
+            "why": ("Yahoo is IDEAS_ONLY (terms_fence.SOURCE_POLICY): every cut input's delta "
+                    "E[log W] is UNMEASURED until a licensed source or the unblock arrives")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -802,7 +834,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
-                                    "access_holds": access_hold_lines()},
+                                    "access_holds": access_hold_lines(),
+                                    "yahoo_live_input_cut": yahoo_cut_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
