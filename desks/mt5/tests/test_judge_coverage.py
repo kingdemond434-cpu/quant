@@ -621,3 +621,17 @@ def test_a_lookahead_held_cell_is_named_never_parked_as_never_fires(tmp_path: Pa
     assert jc.unknown_reason_class("lookahead_held") == jc.DEFECT
     assert jc.unknown_reason_class("lookahead_after_last_day") == jc.NOT_TESTABLE
     assert jc.FAILURE_ROUTES[jc.failure_class("lookahead_held") or ""]["owner"] == "judge"
+
+
+def test_guard_held_rows_retry_on_the_short_clock_and_old_never_fires_rows_leave() -> None:
+    """Auditor should-fixes on #392 b5b1dd315: a repaired map must not wait 90 days, and a row
+    parked as never_fires before the guard was named is re-judged."""
+    now = datetime(2026, 10, 14, tzinfo=UTC)
+    old = (now - timedelta(days=jc.BUILD_FAILED_RETRY_DAYS + 1)).isoformat()
+    base = {"sym": "NOSUCHSYM", "tf": "H1", "bar_bytes": 10**9, "days": 0, "parked_at": old}
+    assert jc.readmit_due({**base, "reason": "lookahead_held"}, now=now)
+    guarded = {**base, "reason": "never_fires", "parked_at": now.isoformat(),
+               "series_error": "look-ahead guard: trim failed (ValueError); held"}
+    assert jc.readmit_due(guarded, now=now)
+    plain = {**guarded, "series_error": ""}
+    assert not jc.readmit_due(plain, now=now)

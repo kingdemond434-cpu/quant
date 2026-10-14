@@ -907,8 +907,10 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
                     "history grows past its evidence start")
             else:
                 reason, route = "lookahead_held", (
-                    "LLM-born cell with no readable evidence start (stamp unparseable or the "
-                    "lab's evidence-start map unreadable): held until the start is readable")
+                    "LLM-born cell held by the look-ahead guard: its evidence start is "
+                    "unreadable (stamp unparseable, the lab's evidence-start map unreadable) or "
+                    "the trim to it failed; re-asked after "
+                    f"{BUILD_FAILED_RETRY_DAYS:.0f} days, judged once the start applies")
         elif declared == "series_exception":
             reason, route = "series_exception", (
                 "the backtest raised while building this cell's daily series: a code defect, "
@@ -954,7 +956,8 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
                                          "about the search, re-admitted when the history grows")
         out[cell] = {"reason": reason, "route": route, "sym": sym, "family": v.get("family"),
                      "tf": tf, "days": days, "bar_bytes": bars, "why": why[:200],
-                     **({"detail": declared} if declared else {})}
+                     **({"detail": declared} if declared else {}),
+                     **({"series_error": guard[:200]} if guard else {})}
     return out
 
 
@@ -1011,8 +1014,12 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
         bars = bar_sizes[key]
     if parked_bytes <= 0:
         return bars > 0
+    if (row.get("reason") == "never_fires"
+            and str(row.get("series_error") or "").startswith("look-ahead guard:")):
+        return True        # parked before the guard was named: re-judge it, and name it right
     if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
-                             "observations_under_60_days", "no_terminal_gate_recorded"):
+                             "observations_under_60_days", "no_terminal_gate_recorded",
+                             "lookahead_held"):
         _at = _ts(row.get("parked_at"))
         _t = now or datetime.now(tz=UTC)
         if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
