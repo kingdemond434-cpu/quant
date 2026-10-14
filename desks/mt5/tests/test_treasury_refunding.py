@@ -400,20 +400,20 @@ def test_an_unread_statement_blanks_only_the_dates_its_neighbours_allow(
     index = b"".join(f'<a href="{u}">Quarterly Refunding Statement</a>'.encode() for u in order)
     home = "https://home.treasury.gov"
     pages = {tr.INDEXES[0]: (index, ""), tr.INDEXES[1]: (b"", ""),
-             f"{home}/s1": (_statement("February 1, 2026", 58, 42, 25, HOLD), ""),
-             f"{home}/s2": (_statement("May 6, 2026", 58, 42, 25, HOLD), ""),
+             f"{home}/s1": (_statement("February 1, 2025", 58, 42, 25, HOLD), ""),
+             f"{home}/s2": (_statement("May 6, 2025", 58, 42, 25, HOLD), ""),
              f"{home}/s3": (b"", "HTTP_404"),
-             f"{home}/s4": (_statement("November 4, 2026", 58, 42, 25, HOLD), "")}
+             f"{home}/s4": (_statement("November 4, 2025", 58, 42, 25, HOLD), "")}
     import collector_lab
     monkeypatch.setattr(collector_lab, "fetch", lambda url, _s, **_k: pages[url])
-    doc = tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2026, 12, 1))
-    assert doc["blocking_zeros"] == [{"url": f"{home}/s3", "from": "2026-05-06",
-                                      "to": "2026-11-04"}]
+    doc = tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2025, 12, 1))
+    assert doc["blocking_zeros"] == [{"url": f"{home}/s3", "from": "2025-05-06",
+                                      "to": "2025-11-04"}]
     with (tmp_path / "series" / "treasury_refunding.csv").open() as fh:
         rows = {r["published_time"][:10]: r for r in csv.DictReader(fh)}
-    assert rows["2026-03-01"]["size_surprise"] == "0.0", "before the window: measured"
-    assert rows["2026-08-05"]["size_surprise"] == "", "inside it: UNMEASURED"
-    assert rows["2026-11-20"]["size_surprise"] == "0.0", "after it: measured"
+    assert rows["2025-03-01"]["size_surprise"] == "0.0", "before the window: measured"
+    assert rows["2025-08-05"]["size_surprise"] == "", "inside it: UNMEASURED"
+    assert rows["2025-11-20"]["size_surprise"] == "0.0", "after it: measured"
 
 
 @pytest.mark.parametrize(("text", "want"), [
