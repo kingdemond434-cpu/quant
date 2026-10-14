@@ -137,3 +137,20 @@ def test_a_pass_reads_caches_and_donates_once(tmp_path: Path,
     assert again["cells_donated"] == 0 and calls == [], \
         "statements are cached and each index is refreshed at most once per REFETCH_S"
     assert json.loads((tmp_path / "REPORT.json").read_text())["statements_read"] == 0
+
+
+def test_a_pass_that_measured_nothing_says_unmeasured(tmp_path: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    for name, sub in (("STATE_DIR", "state"), ("SERIES_DIR", "series"),
+                      ("DONATE_DIR", "donate")):
+        monkeypatch.setattr(tr, name, tmp_path / sub)
+    monkeypatch.setattr(tr, "STATEMENTS", tmp_path / "state" / "statements.json")
+    monkeypatch.setattr(tr, "FETCHED", tmp_path / "state" / "fetched.json")
+    monkeypatch.setattr(tr, "REPORT", tmp_path / "REPORT.json")
+    import collector_lab
+    monkeypatch.setattr(collector_lab, "fetch", lambda url, _s, **_k: (b"<p>none</p>", ""))
+    doc = tr.run(uni={}, lane_ok=lambda s, f: True)
+    assert doc["state"] == "UNMEASURED" and "no refunding statement" in doc["why"]
+    monkeypatch.setattr(collector_lab, "fetch", lambda url, _s, **_k: (b"", "REFUSED:x"))
+    monkeypatch.setattr(tr, "REFETCH_S", 0.0)
+    assert tr.run(uni={}, lane_ok=lambda s, f: True)["state"] == "DARK"

@@ -344,7 +344,8 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
             import llm_lab
             lane_ok = llm_lab._lane_ok
         except Exception:
-            lane_ok = None
+            def lane_ok(_s: str, _f: str) -> bool:    # no lane policy, no permission
+                return False
     donate = cells(scored, uni, lane_ok)
     known = set(_read_json(STATE_DIR / "donated.json", []) or [])
     fresh = [r for r in donate if r["cell_id"] not in known]
@@ -359,8 +360,18 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
     measured = {sig: sum(1 for s in scored if isinstance(s.get(sig), (int, float)))
                 for sig in SIGNALS}
     ran = read > 0 or any(p["status"] == "OK" for p in per)
-    state = ("RAN" if ran else "FRESH" if all(p["status"] == "FRESH" for p in per) else "DARK")
-    doc = {"generated_at": _now(), "state": state, "indexes": per, "statements_read": read,
+    fresh_all = all(p["status"] == "FRESH" for p in per)
+    # UNMEASURED IS A STATE (the #388 audit's rule, applied here too): no statement on record,
+    # or none whose surprise could be measured, is never "RAN" or "FRESH".
+    why = None
+    if not good:
+        why = "no refunding statement with a readable date is on record"
+    elif not any(measured.values()):
+        why = "no statement pair yields a measurable size or guidance surprise"
+    state = ("DARK" if not ran and not fresh_all else UNMEASURED if why
+             else "RAN" if ran else "FRESH")
+    doc = {"generated_at": _now(), "state": state, **({"why": why} if why else {}),
+           "indexes": per, "statements_read": read,
            "statements_on_record": len(good), "queued": len(queue),
            "measured": measured, "rows": len(rows), "cells_total": len(donate),
            "cells_donated": len(fresh), "seconds": round(time.time() - started, 1),
