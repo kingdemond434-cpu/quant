@@ -198,6 +198,66 @@ def never_judged(fams: Mapping[str, Mapping[str, Any]], doc: Mapping[str, Any],
             "undated": undated, "why": "; ".join(parts) + tail}
 
 
+#: Mirrors research/judge_coverage.TAPE_CERT_MIN_JUDGED (the test pins them equal): tape families
+#: judged past this many cells with the tape deep enough and 0 certificates fail. At a 1% per-cell
+#: pass rate P(0 of 500) = 0.66%.
+TAPE_CERT_MIN_JUDGED = 500
+
+
+def tape_produces(doc: Mapping[str, Any], *, armed: bool,
+                  require_state: bool) -> dict[str, Any]:
+    """THE TICK TAPE MUST PRODUCE CERTIFICATES (principal 2026-10-14 07:25Z). Once the tape holds
+    the need (60 development days + lockbox on at least one symbol), it FAILS armed / WARNs in a
+    source view when (a) a tape family has mined > 0 and NO named verdict in 24 h, or (b) tape
+    families together judged > TAPE_CERT_MIN_JUDGED cells and hold 0 certificates. Absent tape
+    state is UNMEASURED, never a zero; a report with no tape block at all fails --require-state
+    (the box owes it, L1.49)."""
+    tape = doc.get("tape")
+    if not isinstance(tape, Mapping):
+        return {"metric": "tape_produces", "state": "FAIL" if require_state else "UNMEASURED",
+                "why": "JUDGE_COVERAGE carries no tape block"
+                       + (" -- --require-state says this box owes it (L1.49)" if require_state
+                          else "")}
+    depth = tape.get("depth") if isinstance(tape.get("depth"), Mapping) else {}
+    fams = tape.get("families") if isinstance(tape.get("families"), Mapping) else {}
+    if tape.get("status") != "MEASURED" or depth.get("status") != "MEASURED":
+        return {"metric": "tape_produces", "state": "UNMEASURED",
+                "why": f"tape state UNMEASURED: {tape.get('why') or depth.get('why')}"}
+    need = depth.get("days_needed")
+    if not depth.get("meets_need", int(depth.get("symbols_at_need") or 0) > 0):
+        return {"metric": "tape_produces", "state": "OK",
+                "why": (f"the tape does not yet hold the need ({depth.get('max_days')} trading "
+                        f"days on the deepest symbol vs {need}; ETA "
+                        f"{depth.get('eta_days_to_judgeable')}d -- {depth.get('eta_rule')}): "
+                        "nothing judgeable is owed yet")}
+    silent = sorted(f for f, r in fams.items() if isinstance(r, Mapping)
+                    and int(r.get("mined") or 0) > 0
+                    and int(r.get("named_verdicts_24h") or 0) == 0)
+    judged = sum(int(r.get("judged_total") or 0) for r in fams.values()
+                 if isinstance(r, Mapping))
+    certs = tape.get("certificates_total")
+    barren = certs is not None and int(certs) == 0 and judged > TAPE_CERT_MIN_JUDGED
+    if not silent and not barren:
+        return {"metric": "tape_produces", "state": "OK",
+                "why": (f"tape at need ({depth.get('symbols_at_need')} symbol(s) >= {need} "
+                        f"trading days); every mined tape family has a named verdict in 24h; "
+                        f"certificates {certs} on {judged} judged")}
+    parts = []
+    if silent:
+        parts.append("tape family(ies) with mined cells and NO named verdict in 24h while the "
+                     "tape meets the need: " + ", ".join(
+                         f"{f} (mined {int(fams[f].get('mined') or 0)}, shippable "
+                         f"{int(fams[f].get('shippable') or 0)}, judged_total "
+                         f"{int(fams[f].get('judged_total') or 0)})" for f in silent))
+    if barren:
+        parts.append(f"tape families judged {judged} cells (> {TAPE_CERT_MIN_JUDGED}) with the "
+                     f"tape at need and hold 0 certificates")
+    return {"metric": "tape_produces", "state": "FAIL" if armed else "WARN",
+            "families": silent, "judged": judged, "certificates": certs,
+            "why": "; ".join(parts) + ("" if armed else
+                                       " -- published, not failed: source view / non-judge host")}
+
+
 def judge(report: Path | None = None, *, require_state: bool = False,
           now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
@@ -231,6 +291,11 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     out["checks"].append(nj)
     if nj["state"] == "FAIL":
         failures.extend(n["family"] for n in nj["families"][:10])
+    # 0b. THE TICK TAPE PRODUCES CERTIFICATES (principal 2026-10-14), see `tape_produces`.
+    tp = tape_produces(doc, armed=_armed(require_state), require_state=require_state)
+    out["checks"].append(tp)
+    if tp["state"] == "FAIL":
+        failures.extend([f"tape:{f}" for f in tp.get("families") or []] or ["tape_produces"])
 
     # 1. STARVATION: unjudged cells and no place in the queue.
     starved = sorted((f for f, r in fams.items()
@@ -547,7 +612,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 __all__ = ["NEVER_JUDGED_MAX_AGE_H", "RATCHET", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK",
-           "judge", "main", "never_judged", "render"]
+           "judge", "main", "never_judged", "render", "tape_produces"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

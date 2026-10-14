@@ -113,6 +113,10 @@ WINDOW_H = 1.0
 #: what makes a nine-cell family reachable at all; without it proportional allocation is a
 #: winner-take-all rule that rediscovers the exact starvation this organ was built to end.
 FLOOR_SHARE = 0.25
+#: The share of the measured hour handed to TAPE families (`tape_families`, derived from code)
+#: AFTER the breadth floor and BEFORE the value remainder. Bounded: the 25% floor is untouched (every family keeps its floor) and the
+#: value walk keeps at least 1 - FLOOR_SHARE - TAPE_PRIORITY_SHARE of the hour.
+TAPE_PRIORITY_SHARE = 0.20
 
 #: The judge's capacity is MEASURED from its own ledger (the busiest recent hour), never assumed
 #: off a machine size -- CLAUDE.md's 8 GB/96 GB note is the standing lesson about inventing one.
@@ -1372,7 +1376,10 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
 
 def allocate(backlog: dict[str, int], capacity: int,
              floor_share: float = FLOOR_SHARE,
-             ranking: list[dict[str, Any]] | None = None) -> dict[str, int]:
+             ranking: list[dict[str, Any]] | None = None, *,
+             priority: frozenset[str] | set[str] | None = None,
+             priority_share: float = TAPE_PRIORITY_SHARE,
+             tranche_out: dict[str, int] | None = None) -> dict[str, int]:
     """Quota per family: an equal FLOOR for every family holding backlog, then BY VALUE.
 
     THE FLOOR IS THE BREADTH MANDATE AND IT NEVER MOVES. Every family holding an unjudged cell
@@ -1400,6 +1407,36 @@ def allocate(backlog: dict[str, int], capacity: int,
     spare = capacity - sum(quota.values())
     if spare <= 0:
         return quota
+    # THE TAPE TRANCHE (principal 2026-10-14: the tick tape must produce certificates). After the
+    # floor -- which every family has already received, so nothing here can starve anyone -- the
+    # PRIORITY families (the derived tape families) share up to `priority_share` of the hour,
+    # split evenly and each capped at its own backlog; what they cannot use flows on to the value
+    # remainder below. Published per family as `tape_priority`, and kept OUT of `remainder`, so
+    # the fence's remainder-follows-ranking check reads the value walk alone.
+    pri = sorted(f for f in (priority or ()) if f in live)
+    if pri and priority_share > 0:
+        pool = min(spare, int(capacity * max(0.0, min(1.0, priority_share))))
+        left = list(pri)
+        while pool > 0 and left:
+            each = max(1, pool // len(left))
+            nxt = []
+            for f in left:
+                take = min(each, live[f] - quota[f], pool)
+                if take > 0:
+                    quota[f] += take
+                    pool -= take
+                    spare -= take
+                    if tranche_out is not None:
+                        tranche_out[f] = tranche_out.get(f, 0) + take
+                if live[f] - quota[f] > 0:
+                    nxt.append(f)
+                if pool <= 0:
+                    break
+            if nxt == left and each == 0:
+                break
+            left = nxt
+        if spare <= 0:
+            return quota
     if ranking:
         for row in ranking:
             fam = str(row.get("family") or "")
@@ -1782,11 +1819,135 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
 #: (`scripts/check_judge_coverage.py`) fails it on the box with the reasons published here.
 NEVER_JUDGED_MAX_AGE_H = 48.0
 
-#: Families whose builder conditions on the venue's own tick tape (`orthogonal_sweep._tape_series`
-#: via `external_gauntlet.build_cell`). Their judgeable history is the TAPE's depth, never the
-#: bars': a cell can produce no more development days than there are tape days.
-TAPE_FAMILIES = frozenset({"orderflow_imbalance", "liquidity_regime"})
 TAPE_DIR = BASE / "data" / "tape" / "ticks"
+#: THE TICK TAPE MUST PRODUCE CERTIFICATES, NOT CELLS (principal 2026-10-14 07:25Z: "Tick n moat
+#: recorder must be mined 24/7 n if must produce cells n certis always make sure it does ... always
+#: maximise it"). Which families are TAPE families is DERIVED FROM CODE, never listed: a family is
+#: one when the branch that builds it calls a reader of `data/tape/ticks` -- in the sealed judge's
+#: `build_cell` (`elif family ...:` whose body calls one of TAPE_READERS) or in the orthogonal
+#: sweep's `kwargs_by_family` (a family handed a value `_tape_series` returned). A new tape family
+#: is picked up the hour its builder lands; a family whose input is merely DERIVED from bars
+#: (execution_state's surface is the H1 parquets' spread/tick_volume columns,
+#: `microstructure_miner`) is not one, and the derivation says so by not finding a reader.
+TAPE_READERS = frozenset({"_tape_series", "_tape_minutes"})
+TAPE_SOURCES = (BASE / "scripts" / "external_gauntlet.py",
+                BASE / "research" / "orthogonal_sweep.py")
+#: A tape family's tape is stale (the recorder idle) when its newest day file is older than this.
+TAPE_STALE_DAYS = 3
+#: THE CERTIFICATE BAR FOR THE TAPE AS A WHOLE: tape families together judged past this many
+#: cells, with the tape deep enough, and not one certificate -> the fence fails. At a 1% per-cell
+#: pass rate (the low end of what producing families measure) P(0 of 500) = 0.99**500 = 0.66%, so
+#: zero certificates past 500 judged is a defect to name, not bad luck.
+TAPE_CERT_MIN_JUDGED = 500
+UNIVERSAL_SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
+
+
+def _family_test_names(test: Any) -> set[str]:
+    """Family names an `if family == "x"` / `if family in {...}` test selects, else empty."""
+    import ast
+    if not isinstance(test, ast.Compare) or len(test.ops) != 1:
+        return set()
+    if not (isinstance(test.left, ast.Name) and test.left.id == "family"):
+        return set()
+    comp = test.comparators[0]
+    if isinstance(test.ops[0], ast.Eq) and isinstance(comp, ast.Constant):
+        return {str(comp.value)} if isinstance(comp.value, str) else set()
+    if isinstance(test.ops[0], ast.In) and isinstance(comp, (ast.Set, ast.Tuple, ast.List)):
+        return {str(e.value) for e in comp.elts
+                if isinstance(e, ast.Constant) and isinstance(e.value, str)}
+    return set()
+
+
+def _calls_reader(nodes: list[Any]) -> bool:
+    import ast
+    for n in nodes:
+        for sub in ast.walk(n):
+            if isinstance(sub, ast.Call):
+                f = sub.func
+                name = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
+                if name in TAPE_READERS:
+                    return True
+    return False
+
+
+def derive_tape_families(sources: tuple[Path, ...] | None = None
+                         ) -> tuple[frozenset[str], dict[str, Any]]:
+    """(tape families, provenance) read from the builders' own source. See TAPE_READERS."""
+    import ast
+    fams: set[str] = set()
+    by_source: dict[str, list[str]] = {}
+    unreadable: list[str] = []
+    for src in sources if sources is not None else TAPE_SOURCES:
+        try:
+            tree = ast.parse(Path(src).read_text("utf-8"))
+        except (OSError, SyntaxError, ValueError):
+            unreadable.append(str(src))
+            continue
+        found: set[str] = set()
+        tape_vars: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.If) and _calls_reader(node.body):
+                found |= _family_test_names(node.test)
+            if isinstance(node, ast.Assign) and _calls_reader([node.value]):
+                for t in node.targets:
+                    for el in ast.walk(t):
+                        if isinstance(el, ast.Name):
+                            tape_vars.add(el.id)
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict)):
+                continue
+            if not any(isinstance(t, ast.Name) and t.id == "kwargs_by_family"
+                       for t in node.targets):
+                continue
+            for k, v in zip(node.value.keys, node.value.values, strict=False):
+                if not (isinstance(k, ast.Constant) and isinstance(k.value, str)):
+                    continue
+                names = {n.id for n in ast.walk(v) if isinstance(n, ast.Name)}
+                if names & tape_vars or _calls_reader([v]):
+                    found.add(k.value)
+        by_source[Path(src).name] = sorted(found)
+        fams |= found
+    return frozenset(fams), {"readers": sorted(TAPE_READERS), "by_source": by_source,
+                             "unreadable": unreadable,
+                             "status": "MEASURED" if by_source else "UNMEASURED"}
+
+
+_TAPE_FAMILY_CACHE: dict[str, Any] = {}
+
+
+def tape_families() -> frozenset[str]:
+    """The derived tape families, cached on the sources' mtimes (one parse per code change)."""
+    key = []
+    for src in TAPE_SOURCES:
+        try:
+            key.append(f"{src}:{src.stat().st_mtime_ns}")
+        except OSError:
+            key.append(f"{src}:absent")
+    k = "|".join(key)
+    if _TAPE_FAMILY_CACHE.get("key") != k:
+        fams, prov = derive_tape_families()
+        _TAPE_FAMILY_CACHE.update({"key": k, "fams": fams, "prov": prov})
+    return frozenset(_TAPE_FAMILY_CACHE["fams"])
+
+
+def tape_certificates(path: Path | None = None) -> tuple[dict[str, int] | None, str]:
+    """Certified sleeves per family from UNIVERSAL_SURVIVORS (None when unreadable)."""
+    p = path or UNIVERSAL_SURVIVORS
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None, f"{p.name} absent or unreadable"
+    surv = doc.get("survivors") if isinstance(doc, dict) else None
+    rows = surv.values() if isinstance(surv, dict) else (surv if isinstance(surv, list) else [])
+    out: dict[str, int] = {}
+    for c in rows:
+        if not isinstance(c, dict):
+            continue
+        spec = c.get("shadow_spec") if isinstance(c.get("shadow_spec"), dict) else {}
+        fam = (spec or {}).get("family") or c.get("family")
+        if isinstance(fam, str) and fam:
+            out[fam] = out.get(fam, 0) + 1
+    return out, p.name
 #: The held-out floor the sealed policy carves from every series (gate_policy.LOCKBOX_MIN_DAYS),
 #: read from the policy when importable and never re-declared as authority here.
 LOCKBOX_MIN_DAYS_FALLBACK = 40
@@ -1866,25 +2027,129 @@ def _lockbox_min_days() -> int:
         return LOCKBOX_MIN_DAYS_FALLBACK
 
 
-def tape_depth(root: Path | None = None) -> dict[str, Any]:
-    """How many days of tick tape the box holds per symbol -- the history a tape family can use.
+def _tape_day(stem: str) -> str | None:
+    """'2026-09-16' and '20260916' (the two tape writers) -> '2026-09-16'; else None."""
+    d = stem.replace("-", "")
+    if len(d) != 8 or not d.isdigit():
+        return None
+    return f"{d[:4]}-{d[4:6]}-{d[6:]}"
 
-    Counted from the day files themselves (`<SYM>/<DAY>.parquet`), cheap and never assumed."""
+
+def tape_depth(root: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
+    """How many TRADING days of tick tape the box holds per symbol -- the history a tape family
+    can use -- and, when short, how long until the deepest symbol is judgeable.
+
+    Counted from the day files themselves (`<SYM>/<DAY>.parquet`), cheap and never assumed. A day
+    is a distinct date with a file (the recorder writes no file on a day without ticks), so the
+    count IS trading days; the two writers' spellings of one date count once. The ETA assumes the
+    recorder keeps writing one trading day per weekday (5 per 7 calendar days) and is withheld
+    (None, with the reason) when the newest file is older than TAPE_STALE_DAYS -- an idle recorder
+    has no ETA."""
     base = root or TAPE_DIR
     need = CPCV_MIN_DAYS + _lockbox_min_days()
     if not base.is_dir():
         return {"status": "UNMEASURED", "why": f"no tape store at {base}", "days_needed": need}
     days: list[int] = []
+    last: str | None = None
+    first: str | None = None
     for d in base.iterdir():
-        if d.is_dir():
-            days.append(sum(1 for _f in d.glob("*.parquet")))
+        if not d.is_dir():
+            continue
+        dates = {x for x in (_tape_day(f.stem) for f in d.glob("*.parquet")) if x}
+        if not dates:
+            continue
+        days.append(len(dates))
+        last = max(last or "", max(dates))
+        first = min(first or "9999", min(dates))
     if not days:
         return {"status": "UNMEASURED", "why": "the tape store holds no symbol",
                 "days_needed": need}
     days.sort()
-    return {"status": "MEASURED", "symbols": len(days), "max_days": days[-1],
-            "median_days": days[len(days) // 2],
-            "symbols_at_need": sum(1 for n in days if n >= need), "days_needed": need}
+    at = now or datetime.now(tz=UTC)
+    out: dict[str, Any] = {
+        "status": "MEASURED", "symbols": len(days), "max_days": days[-1],
+        "median_days": days[len(days) // 2],
+        "symbols_at_need": sum(1 for n in days if n >= need), "days_needed": need,
+        "days_needed_rule": f"{CPCV_MIN_DAYS} development days + lockbox floor "
+                            f"{need - CPCV_MIN_DAYS} (gate_policy.LOCKBOX_MIN_DAYS)",
+        "first_day": first, "last_day": last}
+    out["meets_need"] = out["symbols_at_need"] > 0
+    try:
+        idle = (at.date() - datetime.fromisoformat(str(last)).date()).days
+    except ValueError:
+        idle = None
+    out["recorder_idle_days"] = idle
+    short = max(0, need - days[-1])
+    out["short_trading_days"] = short
+    if short == 0:
+        out["eta_days_to_judgeable"] = 0
+        out["eta_rule"] = "the deepest symbol already holds the need"
+    elif idle is None or idle > TAPE_STALE_DAYS:
+        out["eta_days_to_judgeable"] = None
+        out["eta_rule"] = (f"UNMEASURED: the newest tape day is {last} ({idle} days old, past "
+                           f"{TAPE_STALE_DAYS}) -- the recorder is idle, so no date can be given")
+    else:
+        out["eta_days_to_judgeable"] = math.ceil(short * 7 / 5)
+        out["eta_rule"] = (f"{short} trading days short on the deepest symbol, at 5 trading "
+                           f"days per 7 calendar days")
+    return out
+
+
+def tape_block(table: dict[str, dict[str, Any]], named_24h: dict[str, int],
+               *, depth: dict[str, Any] | None = None,
+               certs: tuple[dict[str, int] | None, str] | None = None) -> dict[str, Any]:
+    """THE TAPE BLOCK of JUDGE_COVERAGE.json: does the tick tape produce certificates?
+
+    Per derived tape family: mined, shippable, judged_total, named verdicts in the last 24 h,
+    certificates and oldest unjudged age; the tape's depth in trading days against the need, with
+    the ETA when short. UNMEASURED when the tape state (or the certificate canon) is absent --
+    never a zero standing in for "nobody looked"."""
+    fams = sorted(tape_families())
+    depth = tape_depth() if depth is None else depth
+    cert_counts, cert_src = tape_certificates() if certs is None else certs
+    rows: dict[str, dict[str, Any]] = {}
+    for f in fams:
+        r = table.get(f) or {}
+        rows[f] = {"mined": int(r.get("mined") or 0),
+                   "shippable": int(r.get("shippable") or 0),
+                   "quota": int(r.get("quota") or 0),
+                   "tape_priority": int(r.get("tape_priority") or 0),
+                   "judged_total": int(r.get("judged_total") or 0),
+                   "named_verdicts_24h": int(named_24h.get(f, 0)),
+                   "certificates": (int(cert_counts.get(f, 0)) if cert_counts is not None
+                                    else None),
+                   "oldest_unjudged_age_h": r.get("oldest_unjudged_age_h")}
+    status = "MEASURED"
+    why: list[str] = []
+    if depth.get("status") != "MEASURED":
+        status = "UNMEASURED"
+        why.append(f"tape depth UNMEASURED: {depth.get('why')}")
+    if cert_counts is None:
+        status = "UNMEASURED"
+        why.append(f"certificates UNMEASURED: {cert_src}")
+    if not fams:
+        status = "UNMEASURED"
+        why.append("no tape family derived from the builders' code "
+                   f"({(_TAPE_FAMILY_CACHE.get('prov') or {}).get('unreadable')})")
+    return {"status": status, "why": "; ".join(why) or "measured",
+            "families": rows,
+            "derived_from": _TAPE_FAMILY_CACHE.get("prov"),
+            "depth": depth,
+            "certificate_source": cert_src,
+            "certificates_total": (sum(int(v["certificates"] or 0) for v in rows.values())
+                                   if cert_counts is not None else None),
+            "judged_total": sum(v["judged_total"] for v in rows.values()),
+            "named_verdicts_24h": sum(v["named_verdicts_24h"] for v in rows.values()),
+            "priority_share": TAPE_PRIORITY_SHARE,
+            "cert_min_judged": TAPE_CERT_MIN_JUDGED,
+            "rule": ("tape families are DERIVED from the builders' source (a branch that calls "
+                     f"{sorted(TAPE_READERS)}); after the {FLOOR_SHARE:.0%} breadth floor they "
+                     "take "
+                     f"up to {TAPE_PRIORITY_SHARE:.0%} of the hour before the value remainder, "
+                     "which the sealed interleave reads as its WFQ weight (clamped there). "
+                     "scripts/check_judge_coverage.py fails, armed, a tape family with mined cells "
+                     "and no named verdict in 24 h once the tape meets the need, and tape families "
+                     f"with 0 certificates past {TAPE_CERT_MIN_JUDGED} judged")}
 
 
 def never_judged_families(table: dict[str, dict[str, Any]],
@@ -1900,7 +2165,8 @@ def never_judged_families(table: dict[str, dict[str, Any]],
     if not hits:
         return out
     census = sweep_census_by_family() if census is None else census
-    if tape is None and any(f in TAPE_FAMILIES for f in hits):
+    _tape_fams = tape_families()
+    if tape is None and any(f in _tape_fams for f in hits):
         tape = tape_depth()
     for fam in sorted(hits, key=lambda f: -float(table[f].get("oldest_unjudged_age_h") or 0.0)):
         row = table[fam]
@@ -1926,7 +2192,7 @@ def never_judged_families(table: dict[str, dict[str, Any]],
             parts.append("last sweep: the sealed judge's report is absent here (UNMEASURED)")
         else:
             parts.append("last sweep: no verdict row for this family at all")
-        if fam in TAPE_FAMILIES and isinstance(tape, dict):
+        if fam in _tape_fams and isinstance(tape, dict):
             if tape.get("status") == "MEASURED":
                 parts.append(
                     f"input: conditions on the tick tape; median {tape.get('median_days')} / max "
@@ -2052,7 +2318,10 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         rows, _bank_now, judged_cells, not_testable_ids, banned)
     shippable = {f: max(0, n - parked_unrunnable.get(f, 0)) for f, n in backlog.items()}
     ranking = rank_by_value(backlog, rows, capacity)
-    quota = allocate(shippable, capacity, ranking=ranking)
+    tape_fams = tape_families()
+    tape_tranche: dict[str, int] = {}
+    quota = allocate(shippable, capacity, ranking=ranking, priority=tape_fams,
+                     tranche_out=tape_tranche)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned
                  and str(r.get("_cell") or "") not in _bank_now]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
@@ -2213,7 +2482,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         row["shippable"] = shippable.get(fam, 0)
         row["floor"] = min(shippable.get(fam, 0), max(1, int(capacity * FLOOR_SHARE) // max(
             sum(1 for v in shippable.values() if v > 0), 1)))
-        row["remainder"] = max(0, row["quota"] - row["floor"])
+        row["tape_priority"] = tape_tranche.get(fam, 0)
+        row["remainder"] = max(0, row["quota"] - row["floor"] - row["tape_priority"])
         row["value_at_risk"] = row["ev_per_cell"] * row["unjudged"]
         row["value_deferred"] = row["ev_per_cell"] * max(0, row["unjudged"] - row["quota"])
     for fam, row in table.items():
@@ -2224,11 +2494,18 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                         "p_optimistic": rk["p_optimistic"], "prior_status": rk["prior_status"],
                         "value_at_risk": rk["value_at_risk"],
                         "value_deferred": rk["value_deferred"],
-                        "floor": rk["floor"], "remainder": rk["remainder"]})
+                        "floor": rk["floor"], "remainder": rk["remainder"],
+                        "tape_priority": rk["tape_priority"]})
 
     # NEVER JUDGED, NAMED (2026-10-14): every family that has mined cells and not one real
     # verdict, with the oldest wait and every reason this desk can read for it.
+    for fam, row in table.items():
+        row["tape_priority"] = tape_tranche.get(fam, 0)
     never_judged = never_judged_families(table, parked_by_reason, parked_why)
+    # THE TAPE BLOCK (2026-10-14): named verdicts per tape family in the last 24 h, read by the
+    # same judged rule as `judged_index` (a real terminal gate or a pass; UNKNOWN never counts).
+    _named_24h = judged_index(ledger, now=at, window_h=24.0)[2] if tape_fams else {}
+    tape = tape_block(table, _named_24h)
     for fam, nj in never_judged.items():
         table[fam]["never_judged_reason"] = nj["reason"]
     # A family whose whole backlog is parked ships nothing and is given nothing: it is not
@@ -2330,6 +2607,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "quota": quota,
         "starved": starved[:20],
         "never_judged": never_judged,
+        "tape": tape,
         "never_judged_rule": (
             "a family with mined cells and judged_total 0 (no real terminal gate or pass ever "
             "recorded), with its oldest unjudged age and every reason published: cells parked "
@@ -2593,7 +2871,24 @@ def render(doc: dict[str, Any]) -> list[str]:
     for row in (doc.get("worst_backlog") or [])[:5]:
         lines.append(f"  {row['family']}: mined {row['mined']} unjudged {row['unjudged']} "
                      f"queued {row['queued']} oldest {row['oldest_unjudged_age_h']}h")
+    lines.append(render_tape(doc.get("tape")))
     return lines
+
+
+def render_tape(tape: Any) -> str:
+    """The tape block's one line: depth vs need (ETA), judged, named 24 h, certificates."""
+    if not isinstance(tape, dict):
+        return "  tape: UNMEASURED -- this report carries no tape block"
+    d = tape.get("depth") or {}
+    depth = (f"depth {d.get('max_days')} max / {d.get('median_days')} median trading days vs "
+             f"{d.get('days_needed')} needed ({d.get('symbols_at_need')}/{d.get('symbols')} "
+             f"symbols at need; ETA {d.get('eta_days_to_judgeable')}d)"
+             if d.get("status") == "MEASURED" else f"depth UNMEASURED ({d.get('why')})")
+    fams = ", ".join(f"{f} judged {r.get('judged_total')} / 24h {r.get('named_verdicts_24h')} / "
+                     f"certs {r.get('certificates')}"
+                     for f, r in sorted((tape.get("families") or {}).items()))
+    return (f"  tape [{tape.get('status')}]: {depth}; certificates "
+            f"{tape.get('certificates_total')}; {fams or 'no tape family derived'}")
 
 
 def main(argv: list[str] | None = None) -> int:
