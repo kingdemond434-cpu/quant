@@ -42,7 +42,7 @@ def test_a_daily_trigger_against_an_hourly_manifest_is_caught(tmp_path: Path) ->
 def test_a_daily_trigger_with_an_hourly_repetition_reads_hourly(tmp_path: Path) -> None:
     ps = tmp_path / "desks" / "mt5" / "scripts" / "install_y.ps1"
     ps.parent.mkdir(parents=True)
-    ps.write_text("$trigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddMinutes(12))\n"
+    ps.write_text("$trigger = New-ScheduledTaskTrigger -Daily -At $x\n"
                   "$trigger.Repetition = (New-ScheduledTaskTrigger -Once -At $x `\n"
                   "    -RepetitionInterval (New-TimeSpan -Hours 1) `\n"
                   "    -RepetitionDuration (New-TimeSpan -Days 1)).Repetition\n"
