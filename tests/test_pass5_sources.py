@@ -835,9 +835,9 @@ def test_a_site_hold_is_persisted_in_the_frontier_and_reseeded(
     assert v.outcome == "BLOCKED" and v.blocker.startswith(D.ACCESS_REFUSED)
     held = D.persisted_site_holds([g], state)
     assert set(held) == {"ex.example"}
-    # past the hunt_frontier retry clock the hold lifts
+    # past the hunt_frontier retry clock the hold does NOT lift: it waits for a person
     later = datetime.now(tz=UTC).replace(year=datetime.now(tz=UTC).year + 1)
-    assert D.persisted_site_holds([g], state, now=later) == {}
+    assert set(D.persisted_site_holds([g], state, now=later)) == {"ex.example"}
     # a ground on a held site is skipped with a missed-growth line, and SITE_HELD never
     # refreshes the frontier stamp (it is not a frontier outcome)
     r = D._Run(60.0, True, None, None)
@@ -847,6 +847,79 @@ def test_a_site_hold_is_persisted_in_the_frontier_and_reseeded(
     assert row["status"] == "SITE_HELD"
     assert row["missed_growth"]["delta_elogw"] == "UNMEASURED"
     assert "SITE_HELD" not in D._FRONTIER_OUTCOME
+
+
+def test_a_refusal_older_than_the_retry_clock_still_blocks_every_request(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor ruling 2026-10-14: a 401/403/429 hold waits for a PERSON. A hold 30 days old
+    (three times hunt_frontier's 10-day BLOCKED retry) still blocks every request, the BLOCKED
+    row and its missed-growth line stay, and only a person deleting the row releases it."""
+    from datetime import timedelta
+    from types import SimpleNamespace
+
+    from libs.research import hunt_frontier as hf
+    path = tmp_path / "frontier.json"
+    monkeypatch.setattr(D, "_frontier_path", lambda: path)
+    g = {"name": "g", "site": "ex.example", "language": "en", "region": "x"}
+    bare = {"name": "bare", "route": "search", "queries": ["rule"], "language": "en"}
+    D._record_frontier([
+        {"ground": "g", "status": D.ACCESS_REFUSED, "language": "en",
+         "why": "HTTP 403 from ex.example: site held for the run"},
+        {"ground": "bare", "status": D.ACCESS_REFUSED, "language": "en",
+         "why": "HTTP 429 from other.example: site held for the run"}], [g, bare])
+    old = (datetime.now(tz=UTC) - timedelta(days=30)).isoformat()
+    raw = json.loads(path.read_text("utf-8"))
+    vecs = raw["vectors"]
+    for name in ("g", "bare"):
+        row = vecs[name] if isinstance(vecs, dict) else next(v for v in vecs if v["name"] == name)
+        row["last_attempt"] = old
+    path.write_text(json.dumps(raw), "utf-8")
+    state = hf.load(path)
+    assert hf.BLOCKED_RETRY_D < 30
+    for name in ("g", "bare"):
+        v = state.vectors[name]
+        assert v.person_held and not v.huntable(datetime.now(tz=UTC))[0]
+    # hunt_frontier's retry never re-requests it: not "blocked past retry", held for a person
+    fr = hf.frontier(state)
+    assert {v.name for v in fr["person_held"]} == {"g", "bare"} and not fr["blocked"]
+    assert hf.summarise(state)["person_held"] == 2
+    # the run seeded from that frontier sends NO request on any route
+    calls: list[str] = []
+
+    def no_net(url: str, **k: Any) -> Any:
+        calls.append(url)
+        return SimpleNamespace(ok=True, status=200, error=None, text="")
+    monkeypatch.setattr(D.pf, "get", no_net)
+    monkeypatch.setattr(D, "_http", lambda url, *a, **k: calls.append(url) or "")
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    r = D._Run(60.0, True, None, None)
+    D.seed_persisted_holds(r, [g, bare], state)
+    assert set(r.holds.sites) >= {"ex.example", "other.example"}
+    for gg in ({**g, "route": "http", "url": "https://www.ex.example/a"},
+               {**g, "route": "search"}, bare,
+               {"name": "sibling", "route": "http", "url": "https://other.example/p"}):
+        r.work(gg)
+    assert calls == []
+    assert r.page("https://sub.ex.example/x") == "" and calls == []
+    rows = {s["ground"]: s for s in r.status if "ground" in s}
+    assert {rows[n]["status"] for n in ("g", "bare", "sibling")} == {"SITE_HELD"}
+    assert all(rows[n]["missed_growth"]["delta_elogw"] == "UNMEASURED"
+               and "person" in rows[n]["missed_growth"]["unblock"].lower()
+               for n in ("g", "bare"))
+    # the BLOCKED row is untouched by the held pass (SITE_HELD is not a frontier outcome)
+    D._record_frontier(list(r.status), [g, bare])
+    after = hf.load(path)
+    assert after.vectors["g"].outcome == "BLOCKED" and after.vectors["g"].last_attempt == old
+    # THE RELEASE: a person deletes the row; the next run re-seeds it NAMED_ONLY, unheld
+    raw = json.loads(path.read_text("utf-8"))
+    if isinstance(raw["vectors"], dict):
+        raw["vectors"].pop("g")
+    else:
+        raw["vectors"] = [v for v in raw["vectors"] if v["name"] != "g"]
+    path.write_text(json.dumps(raw), "utf-8")
+    released = hf.load(path)
+    assert "ex.example" not in D.persisted_site_holds([g], released)
+    assert "g" not in D.person_held_grounds([g], released)
 
 
 def test_registrable_domain_groups_a_site() -> None:

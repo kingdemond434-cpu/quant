@@ -485,9 +485,10 @@ INDEX_HEADERS = {"User-Agent": INDEX_UA, "Accept": "*/*"}
 
 #: THE HARD STOP (audit 2026-10-14 MF-C): the first of these from a site holds that site --
 #: its registrable domain -- for the rest of the run, and the hold is persisted as the ground's
-#: frontier vector BLOCKED with an ACCESS_REFUSED blocker (hunt_frontier's retry clock, no second
-#: register). A held site gets no further request on any route, and never a Common Crawl CDX
-#: listing in its place: an index of the pages the site just refused is a route-around.
+#: frontier vector BLOCKED with an ACCESS_REFUSED blocker (no second register). That row is
+#: NOT on hunt_frontier's 10-day retry clock: it holds until a PERSON releases it (auditor ruling
+#: 2026-10-14; the release is named at `hunt_frontier.PERSON_HELD_PREFIX`). A held site gets
+#: no further request on any route, and never a Common Crawl CDX listing in its place: an index of the pages the site just refused is a route-around.
 ACCESS_STOP: frozenset[int] = frozenset({401, 403, 429})
 #: The frontier blocker prefix a persisted site hold carries (read back at the next run's start).
 ACCESS_REFUSED = "ACCESS_REFUSED"
@@ -748,8 +749,8 @@ def _held_listing(site_dom: str, holds: Any, errors: list[str]) -> dict[str, Any
 class SiteHolds:
     """The run's site holds (registrable domain -> {status, url, at, persisted}), shared by
     every fork of a run. Not a register: a hold lives for the run, and is persisted only as the
-    holding ground's frontier vector (BLOCKED, blocker ACCESS_REFUSED ...), from which the next
-    run re-seeds it until hunt_frontier's retry clock comes due."""
+    holding ground's frontier vector (BLOCKED, blocker ACCESS_REFUSED ...), from which every
+    later run re-seeds it until a person releases the row (never by the retry clock)."""
 
     def __init__(self) -> None:
         self.sites: dict[str, dict[str, Any]] = {}
@@ -776,11 +777,12 @@ def access_hold_missed_growth(site: str, hold: dict[str, Any]) -> dict[str, Any]
     never zero, with its cause)."""
     return {"source": site, "kind": "access_hold", "status": ACCESS_REFUSED,
             "http": hold.get("status"), "delta_elogw": "UNMEASURED",
-            "unblock": (f"hunt_frontier retry after {_BLOCKED_RETRY_D()}d; a 401/403 lifts only "
-                        "if the site stops refusing this agent"),
+            "unblock": (f"a PERSON releases it: delete the ground's vector from {FRONTIER_NAME} "
+                        "(or rewrite its blocker without the ACCESS_REFUSED prefix); never "
+                        f"lapsed by the {_BLOCKED_RETRY_D()}d hunt_frontier retry clock"),
             "cause": (f"HTTP {hold.get('status')} from {site}: the site refused this agent, so "
-                      "the ground is not read until the retry clock; what it would have yielded "
-                      "is UNMEASURED")}
+                      "the ground is not read until a person releases the hold; what it would "
+                      "have yielded is UNMEASURED")}
 
 
 def _BLOCKED_RETRY_D() -> int:
@@ -794,8 +796,12 @@ def _BLOCKED_RETRY_D() -> int:
 def persisted_site_holds(grounds: list[dict[str, Any]], frontier_state: Any,
                          now: datetime | None = None) -> dict[str, dict[str, Any]]:
     """The holds the frontier carries: a ground whose vector is BLOCKED with an ACCESS_REFUSED
-    blocker and whose retry is not yet due holds its site again this run."""
-    now = now or datetime.now(tz=UTC)
+    blocker holds its site again this run -- WHATEVER ITS AGE. A refusal waits for a person
+    (auditor ruling 2026-10-14): hunt_frontier's 10-day BLOCKED retry never lifts it. The person
+    releases it by deleting the ground's vector from the frontier file (or rewriting its blocker
+    without the ACCESS_REFUSED prefix); see `hunt_frontier.PERSON_HELD_PREFIX`. `now` is kept for
+    callers and deliberately unused: no clock decides this."""
+    del now
     vectors = getattr(frontier_state, "vectors", {}) or {}
     out: dict[str, dict[str, Any]] = {}
     for g in grounds:
@@ -803,16 +809,49 @@ def persisted_site_holds(grounds: list[dict[str, Any]], frontier_state: Any,
         if (v is None or str(getattr(v, "outcome", "")) != "BLOCKED"
                 or not str(getattr(v, "blocker", "")).startswith(ACCESS_REFUSED)):
             continue
-        try:
-            if v.huntable(now)[0]:
-                continue
-        except Exception:
-            continue
-        dom = registrable_domain(str(g.get("site") or g.get("url") or ""))
-        if dom:
-            out[dom] = {"ground": str(g.get("name")), "blocker": str(v.blocker)[:200],
-                        "last_attempt": str(v.last_attempt)}
+        row = {"ground": str(g.get("name")), "blocker": str(v.blocker)[:200],
+               "last_attempt": str(v.last_attempt)}
+        # The site the ground names, and the site the refusal came FROM (the blocker's
+        # "HTTP nnn from <site>"): both stay held, so a ground whose refusal came from a site
+        # other than its own still never re-asks it.
+        refused = re.search(r"\bfrom ([A-Za-z0-9.-]+\.[A-Za-z]{2,})", str(v.blocker))
+        for key in (str(g.get("site") or g.get("url") or ""),
+                    refused.group(1) if refused else ""):
+            dom = registrable_domain(key) if key else ""
+            if dom and dom not in out:
+                out[dom] = row
     return out
+
+
+def person_held_grounds(grounds: list[dict[str, Any]],
+                        frontier_state: Any) -> dict[str, dict[str, Any]]:
+    """Ground name -> hold, for every ground whose OWN frontier vector is a persisted
+    ACCESS_REFUSED refusal -- keyed by name, so a ground whose row names no site is held too.
+    Released only by a person (`hunt_frontier.PERSON_HELD_PREFIX`), never by age."""
+    vectors = getattr(frontier_state, "vectors", {}) or {}
+    out: dict[str, dict[str, Any]] = {}
+    for g in grounds:
+        name = str(g.get("name") or "")
+        v = vectors.get(name)
+        blocker = str(getattr(v, "blocker", "") or "")
+        if (v is None or str(getattr(v, "outcome", "")) != "BLOCKED"
+                or not blocker.startswith(ACCESS_REFUSED)):
+            continue
+        code = re.search(r"HTTP (\d{3})", blocker)
+        site = registrable_domain(str(g.get("site") or g.get("url") or ""))
+        out[name] = {"status": int(code.group(1)) if code else 0, "site": site,
+                     "blocker": blocker[:200]}
+    return out
+
+
+def seed_persisted_holds(run: Any, grounds: list[dict[str, Any]], frontier_state: Any) -> None:
+    """Seed a run's holds from the frontier: held until a PERSON releases the row, whatever its
+    age (auditor ruling 2026-10-14) -- every site a refusal names, and every refused ground."""
+    for dom, h in persisted_site_holds(grounds, frontier_state).items():
+        code = re.search(r"HTTP (\d{3})", h["blocker"])
+        run.holds.hold(f"https://{dom}/", int(code.group(1)) if code else 0, persisted=True,
+                       ground=h["ground"])
+    run.held_grounds.update(person_held_grounds(grounds, frontier_state))
 
 
 def bing_reroute_census(grounds: list[dict[str, Any]],
@@ -1185,6 +1224,10 @@ class _Run:
         self._shared: dict[str, Any] = {"network": None, "fails": 0}
         #: The run's site holds (MF-C), shared by every fork like the network verdict.
         self.holds = SiteHolds()
+        #: Grounds whose OWN frontier vector is a persisted ACCESS_REFUSED hold (ground name ->
+        #: hold). Such a ground is never requested, even when its row names no site to key the
+        #: hold on, until a person releases the row (`hunt_frontier.PERSON_HELD_PREFIX`).
+        self.held_grounds: dict[str, dict[str, Any]] = {}
         self._lock = threading.RLock()
         self.render_used = 0
         self.ground: dict[str, Any] = {}
@@ -1908,10 +1951,14 @@ class _Run:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
             return
         # A HELD SITE (MF-C): a 401/403/429 earlier this run, or a persisted ACCESS_REFUSED
-        # frontier vector whose retry is not due. Not fetched, and SITE_HELD is not a frontier
-        # outcome, so the hold's own stamp (and its retry clock) is left as it stands.
+        # frontier vector (held until a person releases it, whatever its age). Not fetched, and
+        # SITE_HELD is not a frontier outcome, so the BLOCKED row is left as it stands.
         site_key = str(g.get("site") or g.get("url") or "")
         held = self.holds.held(site_key) if site_key else None
+        if not held and name in self.held_grounds:
+            # the ground's OWN row is a persisted refusal: held whatever site it names
+            held = {**self.held_grounds[name], "persisted": True}
+            site_key = site_key or str(held.get("site") or name)
         if held:
             dom = registrable_domain(site_key)
             when = "persisted" if held.get("persisted") else "this run"
@@ -1972,8 +2019,8 @@ class _Run:
         status = "PRODUCTIVE" if n_claims else ("REACHED_NO_CLAIMS" if reached else "BLOCKED")
         if self.ground_holds:
             # THE HARD STOP, PERSISTED: the ground is BLOCKED in the frontier with an
-            # ACCESS_REFUSED blocker, and the next run re-seeds the hold from it until
-            # hunt_frontier's retry clock is due. Claims already read still count.
+            # ACCESS_REFUSED blocker, and every later run re-seeds the hold from it until a
+            # person releases the row (never the retry clock). Claims already read still count.
             dom = self.ground_holds[0]
             h = self.holds.held(dom) or {}
             status = ACCESS_REFUSED
@@ -2246,10 +2293,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
     except Exception:  # a damaged accounting file may never stop the miner
         frontier_state = None
     # THE PERSISTED HOLDS (MF-C): a site that refused this agent stays held across runs.
-    for _dom, _h in persisted_site_holds(grounds, frontier_state).items():
-        _code = re.search(r"HTTP (\d{3})", _h["blocker"])
-        r.holds.hold(f"https://{_dom}/", int(_code.group(1)) if _code else 0, persisted=True,
-                     ground=_h["ground"])
+    seed_persisted_holds(r, grounds, frontier_state)
     # LOW_EV_RETIRED is derived from the counters every pass (`research/forest_attempts.py`):
     # retired grounds are scheduled LAST, never dropped, and reopen on a named condition.
     try:
