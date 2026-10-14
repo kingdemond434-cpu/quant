@@ -62,5 +62,13 @@
 <preferredOriginID>o:mx</preferredOriginID><preferredMagnitudeID>m:mx:2</preferredMagnitudeID>
 <type>earthquake</type>
 </event>
+<!-- LATE FOREIGN PREFERRED: own M5.9 at +5m, JMA preferred M6.5 created at +2d -> margin, at +2d. -->
+<event catalog:eventsource="us" catalog:eventid="lf0001" publicID="quakeml:fixture/lf0001">
+<origin publicID="o:lf"><time><value>2024-08-08T07:42:00Z</value></time><longitude><value>131.7</value></longitude><latitude><value>31.7</value></latitude></origin>
+<magnitude publicID="m:lf:1"><mag><value>5.9</value></mag><type>mww</type><creationInfo><agencyID>us</agencyID><creationTime>2024-08-08T07:47:00Z</creationTime></creationInfo></magnitude>
+<magnitude publicID="m:lf:2"><mag><value>6.5</value></mag><type>mjma</type><creationInfo><agencyID>jma</agencyID><creationTime>2024-08-10T07:42:00Z</creationTime></creationInfo></magnitude>
+<preferredOriginID>o:lf</preferredOriginID><preferredMagnitudeID>m:lf:2</preferredMagnitudeID>
+<type>earthquake</type>
+</event>
 </eventParameters>
 </q:quakeml>

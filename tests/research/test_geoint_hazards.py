@@ -1,4 +1,5 @@
 """GEOINT hazards (N3 natural-hazard shocks, N4 chokepoint transit) and the leg join: fixtures."""
+
 from __future__ import annotations
 
 import json
@@ -25,35 +26,49 @@ NOW = datetime(2026, 10, 14, 1, 0, tzinfo=UTC)
 
 
 def _run(tmp: Path, **kw: object) -> dict:
-    return G.run(fixtures=FIX, now=NOW, report=tmp / "GEOINT_HAZARDS.json",
-                 state_path=tmp / "state.json", series_dir=tmp / "series",
-                 style_novelty_path=tmp / "absent.json", **kw)  # type: ignore[arg-type]
+    return G.run(
+        fixtures=FIX,
+        now=NOW,
+        report=tmp / "GEOINT_HAZARDS.json",
+        state_path=tmp / "state.json",
+        series_dir=tmp / "series",
+        style_novelty_path=tmp / "absent.json",
+        **kw,
+    )  # type: ignore[arg-type]
 
 
 def test_usgs_keeps_m6_quakes_inside_the_declared_boxes_only() -> None:
     rows = G.parse_usgs((FIX / "usgs_4.5_day.geojson").read_bytes(), NOW)
-    assert sorted((r["kind"], r["magnitude"]) for r in rows) == [("quake_cl", 7.1),
-                                                                  ("quake_jp", 6.4)]
+    assert sorted((r["kind"], r["magnitude"]) for r in rows) == [
+        ("quake_cl", 7.1),
+        ("quake_jp", 6.4),
+    ]
     jp = next(r for r in rows if r["kind"] == "quake_jp")
     origin = datetime.fromisoformat(jp["event_time"])
     assert datetime.fromisoformat(jp["available_time"]) == origin + G.PUBLICATION_SLACK
 
 
 def test_a_gulf_cone_is_an_event_at_its_advisory_issuance_and_an_open_ocean_cone_is_not() -> None:
-    storms = {s["id"]: s for s in G.parse_nhc_current(
-        (FIX / "nhc_current_storms.json").read_bytes())}
-    assert set(storms) == {"al052026", "al062026"}                 # the EP storm is not Atlantic
+    storms = {
+        s["id"]: s for s in G.parse_nhc_current((FIX / "nhc_current_storms.json").read_bytes())
+    }
+    assert set(storms) == {"al052026", "al062026"}  # the EP storm is not Atlantic
     gulf = G.storm_event(storms["al052026"], (FIX / "nhc_cone_al052026.kmz").read_bytes(), NOW)
     assert gulf is not None and gulf["kind"] == "storm_gulf"
     assert gulf["available_time"] == "2026-10-13T21:00:00+00:00"
-    assert G.storm_event(storms["al062026"], (FIX / "nhc_cone_al062026.kmz").read_bytes(),
-                         NOW) is None
+    assert (
+        G.storm_event(storms["al062026"], (FIX / "nhc_cone_al062026.kmz").read_bytes(), NOW) is None
+    )
 
 
 def test_the_leg_writes_the_lake_frame_terms_cells_and_novelty(tmp_path: Path) -> None:
     doc = _run(tmp_path, donate=False)
-    assert doc["N3"]["events_by_kind"] == {"quake_jp": 2, "quake_tw": 0, "quake_cl": 1,
-                                           "storm_gulf": 1}
+    assert doc["N3"]["events_by_kind"] == {
+        "quake_jp": 2,
+        "quake_tw": 0,
+        "quake_cl": 1,
+        "storm_gulf": 1,
+    }
     frame = pd.read_csv(tmp_path / "series" / G.SERIES_FILE)
     assert set(frame["kind"]) == {"quake_jp", "quake_cl", "storm_gulf"}
     assert {"available_time", "event_time", "first_seen_at"} <= set(frame.columns)
@@ -78,6 +93,7 @@ def test_a_second_pass_does_not_duplicate_events(tmp_path: Path) -> None:
 def test_a_held_or_failing_source_is_named_not_zeroed(tmp_path: Path) -> None:
     def boom(url: str) -> bytes:
         raise OSError("refused")
+
     store: dict = {}
     rec = G.collect(store, {}, NOW, fetch=True, fixtures=None, deadline=1e18, getter=boom)
     assert rec["requests"] >= 2 and rec["errors"] and store == {}
@@ -110,35 +126,39 @@ def test_an_upgraded_quake_is_not_in_the_set_before_its_upgrade() -> None:
 
 def test_a_downgraded_quake_keeps_its_first_sighting_membership() -> None:
     rows = _pit_rows()
-    dn = rows["usgs:usdn0001"]                       # reviewed 5.7 today: v1 dropped it entirely
+    dn = rows["usgs:usdn0001"]  # reviewed 5.7 today: v1 dropped it entirely
     assert dn["reviewed_magnitude"] == 5.7 and dn["magnitude"] == 6.1
     assert dn["pit_basis"] == "first_sighting_creation_time"
-    assert dn["available_time"] == "2024-01-01T08:10:00+00:00"   # 07:30 sighting, origin+slack
+    assert dn["available_time"] == "2024-01-01T08:10:00+00:00"  # 07:30 sighting, origin+slack
     assert "usgs:usdn0001" in G.members_as_of(rows, datetime(2024, 6, 1, tzinfo=UTC))
 
 
 def test_a_missing_creation_time_uses_the_magnitude_margin() -> None:
     rows = _pit_rows()
-    assert "usgs:usnt0001" not in rows                 # M6.1, no creationTime: inside the margin
-    nt = rows["usgs:usnt0002"]                         # M6.6 >= MARGIN_MAGNITUDE
+    assert "usgs:usnt0001" not in rows  # M6.1, no creationTime: inside the margin
+    nt = rows["usgs:usnt0002"]  # M6.6 >= MARGIN_MAGNITUDE
     assert nt["pit_basis"] == "margin" and G.MARGIN_MAGNITUDE == 6.3
-    assert (datetime.fromisoformat(nt["available_time"])
-            == datetime.fromisoformat(nt["event_time"]) + G.PUBLICATION_SLACK)
-    assert "usgs:usob0001" not in rows                 # outside every box
-    assert G.parse_quakeml(b"<not xml", NOW) is None   # unparsable is None, never "no quakes"
+    assert (
+        datetime.fromisoformat(nt["available_time"])
+        == datetime.fromisoformat(nt["event_time"]) + G.PUBLICATION_SLACK
+    )
+    assert "usgs:usob0001" not in rows  # outside every box
+    assert G.parse_quakeml(b"<not xml", NOW) is None  # unparsable is None, never "no quakes"
 
 
 def test_a_sighting_is_never_stamped_before_origin_plus_slack() -> None:
-    mb = _pit_rows()["usgs:usmb0001"]                  # own mb 6.0 created at origin + 12 min
+    mb = _pit_rows()["usgs:usmb0001"]  # own mb 6.0 created at origin + 12 min
     assert mb["pit_basis"] == "first_sighting_creation_time"
-    assert (datetime.fromisoformat(mb["available_time"])
-            == datetime.fromisoformat(mb["event_time"]) + G.PUBLICATION_SLACK)
+    assert (
+        datetime.fromisoformat(mb["available_time"])
+        == datetime.fromisoformat(mb["event_time"]) + G.PUBLICATION_SLACK
+    )
 
 
 def test_only_the_event_sources_own_magnitudes_time_an_entry() -> None:
     rows = _pit_rows()
-    assert "usgs:usfa0001" not in rows                 # JMA Ml 6.1 beside us Mww 5.8: never
-    mb = rows["usgs:usmb0001"]                         # own mb 6.0 later revised to Mww 5.8
+    assert "usgs:usfa0001" not in rows  # JMA Ml 6.1 beside us Mww 5.8: never
+    mb = rows["usgs:usmb0001"]  # own mb 6.0 later revised to Mww 5.8
     assert mb["magnitude_type"] == "mb" and mb["preferred_type"] == "Mww"
     assert mb["non_preferred_type"] is True
 
@@ -147,13 +167,33 @@ def test_a_sub_six_timed_sighting_with_an_untimed_margin_magnitude_takes_the_mar
     mx = _pit_rows()["usgs:usmx0001"]
     assert mx["pit_basis"] == "margin" and mx["magnitude"] == 6.5
 
+
+def test_a_late_foreign_preferred_magnitude_enters_by_margin_no_earlier_than_its_creation() -> None:
+    lf = _pit_rows()["usgs:uslf0001"]  # own 5.9 at +5m; JMA 6.5 created at +2d
+    assert lf["pit_basis"] == "margin" and lf["magnitude"] == 6.5
+    assert lf["available_time"] == "2024-08-10T07:42:00+00:00"
+
+
 def _live(mag: float, updated: datetime, eid: str = "us7000live") -> bytes:
     origin = datetime(2026, 10, 13, 22, 0, tzinfo=UTC)
-    return json.dumps({"type": "FeatureCollection", "features": [{
-        "type": "Feature", "id": eid,
-        "properties": {"mag": mag, "time": int(origin.timestamp() * 1000),
-                       "updated": int(updated.timestamp() * 1000), "type": "earthquake"},
-        "geometry": {"type": "Point", "coordinates": [142.3, 38.1, 10.0]}}]}).encode()
+    return json.dumps(
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "id": eid,
+                    "properties": {
+                        "mag": mag,
+                        "time": int(origin.timestamp() * 1000),
+                        "updated": int(updated.timestamp() * 1000),
+                        "type": "earthquake",
+                    },
+                    "geometry": {"type": "Point", "coordinates": [142.3, 38.1, 10.0]},
+                }
+            ],
+        }
+    ).encode()
 
 
 def test_live_feed_records_the_first_sighting_and_never_revises_membership() -> None:
@@ -162,26 +202,28 @@ def test_live_feed_records_the_first_sighting_and_never_revises_membership() -> 
     t1 = datetime(2026, 10, 13, 22, 20, tzinfo=UTC)
     G.merge(store, G.parse_usgs(_live(5.8, t1), t1 + timedelta(minutes=5), sightings))
     assert store == {} and sightings["usgs:us7000live"]["first_magnitude"] == 5.8
-    t2 = datetime(2026, 10, 14, 2, 0, tzinfo=UTC)                       # upgraded to 6.2 at t2
+    t2 = datetime(2026, 10, 14, 2, 0, tzinfo=UTC)  # upgraded to 6.2 at t2
     G.merge(store, G.parse_usgs(_live(6.2, t2), t2 + timedelta(minutes=30), sightings))
     row = store["usgs:us7000live"]
     assert row["available_time"] == t2.isoformat() and row["first_sighting_magnitude"] == 5.8
     assert "usgs:us7000live" not in G.members_as_of(store, t2 - timedelta(seconds=1))
-    assert sightings["usgs:us7000live"]["first_magnitude"] == 5.8      # never revised
+    assert sightings["usgs:us7000live"]["first_magnitude"] == 5.8  # never revised
 
     store2: dict = {}
     sightings2: dict = {}
     G.merge(store2, G.parse_usgs(_live(6.1, t1, "us7000dn"), t1, sightings2))
-    G.merge(store2, G.parse_usgs(_live(5.7, t2, "us7000dn"), t2, sightings2))   # downgraded
-    assert store2["usgs:us7000dn"]["magnitude"] == 6.1                   # membership kept
+    G.merge(store2, G.parse_usgs(_live(5.7, t2, "us7000dn"), t2, sightings2))  # downgraded
+    assert store2["usgs:us7000dn"]["magnitude"] == 6.1  # membership kept
 
 
 def test_v1_state_with_reviewed_magnitude_rows_is_migrated() -> None:
-    state = {"events": {"usgs:old": {"source_id": "usgs_earthquakes",
-                                     "pit_basis": "origin+publication_slack"},
-                        "nhc:al01": {"source_id": "nhc_current_storms",
-                                     "pit_basis": "advisory_issuance"}},
-             "backfilled": {"quake_jp": "2026-10-14"}}
+    state = {
+        "events": {
+            "usgs:old": {"source_id": "usgs_earthquakes", "pit_basis": "origin+publication_slack"},
+            "nhc:al01": {"source_id": "nhc_current_storms", "pit_basis": "advisory_issuance"},
+        },
+        "backfilled": {"quake_jp": "2026-10-14"},
+    }
     assert G.migrate(state) == 1
     assert set(state["events"]) == {"nhc:al01"} and "backfilled" not in state
     assert G.migrate(state) == 0
@@ -190,6 +232,7 @@ def test_v1_state_with_reviewed_magnitude_rows_is_migrated() -> None:
 # ------------------------------------------------------------------------------ donation, fixtures
 def test_cells_are_donated_once_per_identity_including_rolled_up_contracts(tmp_path: Path) -> None:
     import gzip
+
     cells = G.n3_cells({}, NOW)[:4]
     sent: list[list[dict]] = []
 
@@ -207,8 +250,7 @@ def test_cells_are_donated_once_per_identity_including_rolled_up_contracts(tmp_p
     assert again == {"donated": 0, "already_donated": 4} and len(sent) == 1
     # disk_guard rolls aged contracts into rollup_<day>.jsonl.gz: still donated.
     (tmp_path / G.SOURCE / "discoveries_1.json").unlink()
-    with gzip.open(tmp_path / G.SOURCE / "rollup_20261014.jsonl.gz", "wt",
-                   encoding="utf-8") as fh:
+    with gzip.open(tmp_path / G.SOURCE / "rollup_20261014.jsonl.gz", "wt", encoding="utf-8") as fh:
         fh.write(json.dumps({"discoveries": cells[:3]}) + "\n")
     third = G.donate_new(cells, intel=tmp_path, donate_fn=fake)
     assert third["donated"] == 1 and sent[-1] == [cells[3]]
@@ -232,9 +274,9 @@ def _bars(start: datetime, n: int, drift: float = 0.0) -> pd.DataFrame:
 def _frame(tmp: Path, at: datetime, kind: str = "quake_jp") -> Path:
     d = tmp / "series"
     d.mkdir(exist_ok=True)
-    pd.DataFrame([{"event_id": "e1", "kind": kind, "magnitude": 6.5,
-                   "available_time": at.isoformat()}]).to_csv(d / f"{H.SERIES_ID}.csv",
-                                                              index=False)
+    pd.DataFrame(
+        [{"event_id": "e1", "kind": kind, "magnitude": 6.5, "available_time": at.isoformat()}]
+    ).to_csv(d / f"{H.SERIES_ID}.csv", index=False)
     H._CACHE.clear()
     return d
 
@@ -243,25 +285,30 @@ def test_drift_enters_on_the_first_bar_opening_after_the_notice(tmp_path: Path) 
     start = datetime(2026, 3, 1, tzinfo=UTC)
     notice = start + timedelta(hours=40, minutes=20)
     root = _frame(tmp_path, notice)
-    sigs = H.family_hazard_shock(_bars(start, 120), symbol="USDJPY", kind="quake_jp",
-                                 prior_side=-1, series_root=root)
+    sigs = H.family_hazard_shock(
+        _bars(start, 120), symbol="USDJPY", kind="quake_jp", prior_side=-1, series_root=root
+    )
     assert len(sigs) == 1 and sigs[0].side == -1
-    assert sigs[0].time == pd.Timestamp(start + timedelta(hours=41))   # never the bar holding it
+    assert sigs[0].time == pd.Timestamp(start + timedelta(hours=41))  # never the bar holding it
 
 
 def test_fade_trades_against_the_move_since_the_notice(tmp_path: Path) -> None:
     start = datetime(2026, 3, 1, tzinfo=UTC)
     root = _frame(tmp_path, start + timedelta(hours=40))
-    sigs = H.family_hazard_shock(_bars(start, 120, drift=0.05), symbol="USDJPY", kind="quake_jp",
-                                 mode="fade", series_root=root)
-    assert len(sigs) == 1 and sigs[0].side == -1                      # price rose -> fade short
+    sigs = H.family_hazard_shock(
+        _bars(start, 120, drift=0.05),
+        symbol="USDJPY",
+        kind="quake_jp",
+        mode="fade",
+        series_root=root,
+    )
+    assert len(sigs) == 1 and sigs[0].side == -1  # price rose -> fade short
 
 
 def test_hazard_family_refuses_without_its_frame_or_its_kind(tmp_path: Path) -> None:
     bars = _bars(datetime(2026, 3, 1, tzinfo=UTC), 120)
     H._CACHE.clear()
-    assert H.family_hazard_shock(bars, symbol="USDJPY", kind="quake_jp",
-                                 series_root=tmp_path) == []
+    assert H.family_hazard_shock(bars, symbol="USDJPY", kind="quake_jp", series_root=tmp_path) == []
     root = _frame(tmp_path, datetime(2026, 3, 2, tzinfo=UTC))
     assert H.family_hazard_shock(bars, symbol="USDJPY", kind="quake_tw", series_root=root) == []
     assert H.family_hazard_shock(bars, symbol="USDJPY", kind="volcano", series_root=root) == []
@@ -270,6 +317,7 @@ def test_hazard_family_refuses_without_its_frame_or_its_kind(tmp_path: Path) -> 
 def test_hazard_family_is_registered() -> None:
     from mt5desk.families_orthogonal import ORTHOGONAL_FAMILIES
     from research.axis_registry import FAMILY_TABLE
+
     assert ORTHOGONAL_FAMILIES["hazard_shock"] is H.family_hazard_shock
     assert FAMILY_TABLE["hazard_shock"] == ("volatility_shock", "event", "market")
 
@@ -284,15 +332,18 @@ def test_chokepoint_transits_now_map_to_oil_gold_and_usdjpy() -> None:
 
 def test_alt_proxies_and_geoint_ride_a_department_that_reaches_the_tail() -> None:
     import hourly_cycle as hc
+
     assert hc.department_of("alt_proxies") == "intel"
     assert hc.department_of("geoint_hazards") == "intel"
     assert hc.LEG_BUDGET_SEC["geoint_hazards"] >= 120
     from libs.research.layers import LEG_LAYER
+
     assert LEG_LAYER["geoint_hazards"] == "information"
 
 
-@pytest.mark.parametrize("sid", ["cn_firms_industrial", "imf_portwatch_ports",
-                                 "imf_portwatch_chokepoints"])
+@pytest.mark.parametrize(
+    "sid", ["cn_firms_industrial", "imf_portwatch_ports", "imf_portwatch_chokepoints"]
+)
 def test_geoint_series_sources_are_confirmed_and_on_the_alt_proxies_clock(sid: str) -> None:
     src = A.BY_ID[sid]
     assert src.terms == "confirmed"

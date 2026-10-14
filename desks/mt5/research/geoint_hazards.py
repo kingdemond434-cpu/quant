@@ -350,7 +350,12 @@ def parse_quakeml(body: bytes, first_seen: datetime) -> list[dict[str, Any]] | N
         elif reviewed >= MARGIN_MAGNITUDE:
             # No own-network timed sighting reached M6 (none timed, or only sub-6 ones timed):
             # the first M6+ sighting is unknowable, so only the margin admits (should-fix :336).
-            out.append(_row(eid, kind, reviewed, lat, lon, origin, origin + PUBLICATION_SLACK,
+            # A preferred magnitude with a known creationTime (foreign or agency-less) was not
+            # what live showed before that instant (GEOINT_v3 MF): never earlier than it.
+            avail = origin + PUBLICATION_SLACK
+            if pref[0] is not None:
+                avail = max(avail, pref[0])
+            out.append(_row(eid, kind, reviewed, lat, lon, origin, avail,
                             "margin", first_seen, first_sighting_magnitude=None,
                             first_sighting_at=None, reviewed_magnitude=round(reviewed, 2),
                             magnitude_type=pref_type, preferred_type=pref_type,
