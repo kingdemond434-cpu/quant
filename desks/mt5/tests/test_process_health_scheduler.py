@@ -14,6 +14,16 @@ def _row(doc, name):
     return next(row for row in doc["processes"] if row["name"] == name)
 
 
+def _aged(fn):
+    """A `_reading` stub: artifact path -> stamp age in minutes (freshness is read from the
+    stamp inside the artifact since 2026-10-14, not from the file mtime)."""
+    def reading(organ, artifact):
+        age = fn(Path(artifact))
+        return {"exists": True, "age_min": age, "age_basis": "stamp:at", "stamp": None,
+                "mtime_age_min": age, "why": ""}
+    return reading
+
+
 def test_e8_live_clock_and_book_have_measured_freshness_contracts(monkeypatch):
     contracts = ph._contracts()
     assert contracts["E8-Executor"][1] == 15
@@ -22,8 +32,8 @@ def test_e8_live_clock_and_book_have_measured_freshness_contracts(monkeypatch):
         {"TaskName": r"\E8-Executor", "Scheduled Task State": "Ready", "Last Result": "0"},
         {"TaskName": r"\E8-Book", "Scheduled Task State": "Ready", "Last Result": "0"},
     ], "OK powershell"))
-    monkeypatch.setattr(ph, "_age_min", lambda path: 16.0 if path.name == "E8_EXEC.json"
-                        else 120.0)
+    monkeypatch.setattr(ph, "_reading", _aged(lambda path: 16.0 if path.name == "E8_EXEC.json"
+                                              else 120.0))
 
     doc = ph.build()
     assert _row(doc, "E8-Executor")["verdict"] == "STALE"
@@ -35,7 +45,7 @@ def test_unreadable_scheduler_is_not_empty_scheduler(monkeypatch):
     monkeypatch.setattr(ph, "_contracts", lambda: {
         "MT5-Gateway": ("gateway.json", 10, "broker check"),
     })
-    monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
+    monkeypatch.setattr(ph, "_reading", _aged(lambda path: 1.0))
 
     doc = ph.build()
 
@@ -54,11 +64,11 @@ def test_hourly_replication_staleness_is_detected_before_live_door_expiry(monkey
         "Last Result": "267009",
     }], "OK powershell"))
     monkeypatch.setattr(ph, "_contracts", lambda: {name: contracts[name]})
-    monkeypatch.setattr(ph, "_age_min", lambda path: 181.0)
+    monkeypatch.setattr(ph, "_reading", _aged(lambda path: 181.0))
     row = _row(ph.build(), name)
     assert row["verdict"] == "STALE"
     assert row["state"] == "COMPONENT"
-    monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
+    monkeypatch.setattr(ph, "_reading", _aged(lambda path: 1.0))
     assert _row(ph.build(), name)["verdict"] == "OK"
 
 
@@ -71,7 +81,7 @@ def test_running_gateway_with_overlap_result_and_fresh_artifact_is_healthy(monke
     monkeypatch.setattr(ph, "_contracts", lambda: {
         "MT5-Gateway": ("gateway.json", 10, "broker check"),
     })
-    monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
+    monkeypatch.setattr(ph, "_reading", _aged(lambda path: 1.0))
 
     assert _row(ph.build(), "MT5-Gateway")["verdict"] == "OK"
 
@@ -86,11 +96,12 @@ def test_parenthesised_component_uses_owner_and_its_own_artifact_clock(monkeypat
         "MT5-Gauntlet": ("survivors.json", 240, "certificates"),
         "MT5-Gauntlet (rotation)": ("cursor.json", 30, "docket rotation"),
     })
-    monkeypatch.setattr(ph, "_age_min", lambda path: 5.0)
+    monkeypatch.setattr(ph, "_reading", _aged(lambda path: 5.0))
 
     component = _row(ph.build(), "MT5-Gauntlet (rotation)")
     assert component["verdict"] == "OK"
     assert component["state"] == "COMPONENT"
 
-    monkeypatch.setattr(ph, "_age_min", lambda path: 45.0 if path.name == "cursor.json" else 5.0)
+    monkeypatch.setattr(ph, "_reading",
+                        _aged(lambda path: 45.0 if path.name == "cursor.json" else 5.0))
     assert _row(ph.build(), "MT5-Gauntlet (rotation)")["verdict"] == "STALE"

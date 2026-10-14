@@ -472,7 +472,7 @@ def _reading(organ: str, artifact: str) -> dict[str, Any]:
     mtime only proves something touched the file. `age_basis` says which number was read.
     """
     try:
-        sys.path.insert(0, str(ROOT / "ops"))
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
         from organ_contract import read_artifact_age  # type: ignore[import-not-found]
         r = dict(read_artifact_age(artifact, organ, root=ROOT))
     except Exception as exc:
