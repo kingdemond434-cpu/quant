@@ -312,6 +312,32 @@ def _missing(rows: list[dict[str, str]], fields: tuple[str, ...]) -> list[str]:
     return [f for f in fields if rows and f not in rows[0]]
 
 
+#: "AN INSTANCE WAS STILL RUNNING WHEN THE NEXT TRIGGER FIRED" (2026-10-14). On this box
+#: 0x800710E0 (2147946720, "the operator or administrator refused the request") is what an
+#: IgnoreNew task records when a trigger lands on a live instance, and 0x8004131F (2147750687) is
+#: the same refusal said directly. Neither is a failure of the work and neither is evidence the
+#: work is happening: only a FRESH STAMP inside the artifact is. So with a fresh stamp the row is
+#: OK and says why; without one it is OVERLAP, a distinct non-OK verdict -- it used to read OK
+#: (MT5-Gauntlet, while its registry said swept_at 2026-09-16) or FAILING, and was neither.
+OVERLAP_CODES = (2147946720, 2147750687)
+#: 0x41301: the task is running right now. A distinct verdict, never a restart target.
+RUNNING_CODE = 267009
+
+#: EXIT CODES THAT MEAN "RAN FINE AND REPORTED A FINDING", keyed (task, code) because a small exit
+#: code means something only to the organ that chose it. Read off each organ's own source:
+#: research/shadow_cycle.py run() returns {"OPERATING": 0, "EVIDENCE_BLOCKED": 2,
+#: "ENROLMENT_GAP": 3} and 1 only when something threw. A finding is not OK (the gap is a real
+#: deficiency) and not FAILING (the run is trustworthy); never_stale carries its remedy.
+FINDING_CODES: dict[tuple[str, int], str] = {
+    ("MT5-Shadow", 2): ("EVIDENCE_BLOCKED: the shadow cycle completed and reports sleeves whose "
+                        "forward evidence is blocked (suppressed or unproven) -- a census, not a "
+                        "crash; counts in reports/shadow/shadow_health.json"),
+    ("MT5-Shadow", 3): ("ENROLMENT_GAP: the shadow cycle completed and reports certificates that "
+                        "hold no forward clock (`missing_sleeves` in reports/shadow/"
+                        "shadow_health.json) -- a census, not a crash"),
+}
+
+
 def _tasks() -> tuple[list[dict[str, str]], str]:
     """Read the scheduler, distinguishing a failed inventory from an empty one.
 
@@ -485,8 +511,9 @@ def _reading(organ: str, artifact: str) -> dict[str, Any]:
 
 #: Verdicts that page through the alert channels and count against the headline. A DISABLED
 #: task joins them unless it is EXPECTED_DISABLED (v5b ruling): see `needs_attention`.
-ATTENTION = ("ALERTS_UNARMED", "DISK_LOW", "NOT_SCHEDULED", "SCHEDULER_UNMEASURED", "FAILING",
-             "NO_ARTIFACT", "STALE", "UNMEASURED")
+ATTENTION = ("DEADMAN_UNARMED", "ALERTS_UNARMED", "DISK_LOW", "NOT_SCHEDULED",
+             "SCHEDULER_UNMEASURED", "FAILING", "OVERLAP", "FINDING", "NO_ARTIFACT", "STALE",
+             "UNMEASURED")
 #: Free space on the desk's drive below this is a red row (coordinator, 2026-10-14). Generic: the
 #: floor is the same on any box; what the drive holds is read, never assumed.
 DISK_FLOOR_GB = 10.0
@@ -523,9 +550,99 @@ def disk_state(root: Path | None = None, *, floor_gb: float = DISK_FLOOR_GB,
     return out
 
 
-#: Rows read OFF the scheduler (the pager, the disk): a definite fault whatever the scheduler read
-#: managed, so they headline ATTENTION even over a brief-only or unread scheduler.
-OFF_SCHEDULER_FAULTS = frozenset({"ALERTS_UNARMED", "DISK_LOW"})
+#: THE FUSION DEADMAN INVARIANT (coordinator, 2026-10-14). Measured on the published state:
+#: desks/mt5/data/fusion_deadman_state.json read `checked_at: 2026-09-12T12:05:02+00:00` and
+#: `mode: DRY-RUN` while three sleeves in desks/mt5/data/sleeves.json were `status: LIVE` and the
+#: account was 38% under the stamp's own `peak_equity` -- and this board read MT5-FusionDeadman
+#: OK. Field names and values are the writer's, read off desks/mt5/proposals/fusion_deadman.py
+#: main(): `checked_at` (UTC ISO, every pass) and `mode`, which is "DRY-RUN" by default and
+#: "LIVE" only when the task runs it with `--live`. So while ANY sleeve is LIVE the rail must have
+#: checked inside DEADMAN_MAX_AGE_MIN by its own stamp AND be in mode "LIVE"; anything else --
+#: including a state file that cannot be read -- is the red row DEADMAN_UNARMED. This module
+#: only READS the rail's state; the rail itself is never touched from here.
+DEADMAN_STATE = ROOT / "desks" / "mt5" / "data" / "fusion_deadman_state.json"
+SLEEVES = ROOT / "desks" / "mt5" / "data" / "sleeves.json"
+DEADMAN_MAX_AGE_MIN = 15.0
+DEADMAN_ARMED_MODE = "LIVE"
+DEADMAN_ARM_STEP = (
+    "ARMING IS THE PRINCIPAL'S ACT (LAWS §4): on the trading box, re-register "
+    "MT5-FusionDeadmanDryRun's action with `--live` after proposals\\fusion_deadman.py (see "
+    "patches/process_health_stamps/README.md for the exact command); the next 5-minute pass "
+    "writes mode LIVE and this row clears.")
+
+
+def deadman_invariant(*, state_path: Path | None = None, sleeves_path: Path | None = None,
+                      now: datetime | None = None) -> dict[str, Any] | None:
+    """The deadman row: OK, DEADMAN_UNARMED, or UNMEASURED when LIVE risk cannot be read.
+
+    Never raises. Returns a row in this board's shape."""
+    now = now or datetime.now(tz=UTC)
+    sp = state_path or DEADMAN_STATE
+    lp = sleeves_path or SLEEVES
+    row: dict[str, Any] = {
+        "name": "FUSION DEADMAN ARMED", "state": "", "last_run": "", "next_run": "",
+        "last_result_code": None, "last_result": "",
+        "artifact": str(sp.relative_to(ROOT)) if sp.is_relative_to(ROOT) else str(sp),
+        "artifact_age_min": None, "age_basis": None, "artifact_stamp": None,
+        "artifact_mtime_age_min": None, "contract_max_age_min": DEADMAN_MAX_AGE_MIN,
+        "purpose": "the ruin rail must be armed and current whenever any sleeve is LIVE",
+    }
+    try:
+        doc = json.loads(lp.read_text(encoding="utf-8-sig"))
+        sl = doc if isinstance(doc, list) else (doc.get("sleeves") or [])
+        live = sorted(str(r.get("name") or "?") for r in sl
+                      if isinstance(r, dict) and str(r.get("status", "")).upper() == "LIVE")
+    except (OSError, ValueError, AttributeError) as exc:
+        row.update(verdict="UNMEASURED", state="UNMEASURED",
+                   why=(f"sleeves.json unreadable ({type(exc).__name__}): whether LIVE risk "
+                        f"exists is UNMEASURED, so the deadman invariant cannot be cleared"))
+        return row
+    row["live_sleeves"] = live
+    if not live:
+        row.update(verdict="OK", state="NO LIVE RISK",
+                   why="no sleeve is LIVE; the invariant binds only while one is")
+        return row
+    faults: list[str] = []
+    try:
+        st = json.loads(sp.read_text(encoding="utf-8-sig"))
+        if not isinstance(st, dict):
+            raise ValueError("not an object")
+    except (OSError, ValueError) as exc:
+        st = None
+        faults.append(f"state file unreadable ({type(exc).__name__}) -- no evidence the rail runs")
+    if st is not None:
+        mode = st.get("mode")
+        row["state"] = str(mode)
+        raw = st.get("checked_at")
+        try:
+            t = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=UTC)
+            age = max(0.0, (now - t).total_seconds() / 60.0)
+            row.update(artifact_age_min=round(age, 1), age_basis="stamp:checked_at",
+                       artifact_stamp=t.isoformat(timespec="seconds"))
+            if age > DEADMAN_MAX_AGE_MIN:
+                faults.append(f"checked_at {t.isoformat(timespec='seconds')} is {age:.0f} min "
+                              f"old against a {DEADMAN_MAX_AGE_MIN:g} min bar")
+        except ValueError:
+            faults.append(f"checked_at {raw!r} unparseable -- the rail's last pass is unknown")
+        if mode != DEADMAN_ARMED_MODE:
+            faults.append(f"mode {mode!r}, not {DEADMAN_ARMED_MODE!r}: the rail would only log "
+                          f"what it would do")
+        rd = st.get("readings") if isinstance(st.get("readings"), dict) else {}
+        row["readings"] = {"equity": rd.get("equity"), "peak_equity": rd.get("peak_equity")}
+    if not faults:
+        row.update(verdict="OK", why=(f"{len(live)} LIVE sleeve(s); rail {DEADMAN_ARMED_MODE}, "
+                                      f"checked {row['artifact_age_min']} min ago"))
+        return row
+    row.update(verdict="DEADMAN_UNARMED",
+               why=(f"{len(live)} LIVE sleeve(s) ({', '.join(live[:3])}"
+                    f"{'...' if len(live) > 3 else ''}) and the Fusion ruin rail is not "
+                    f"protecting them: " + "; ".join(faults) + ". " + DEADMAN_ARM_STEP))
+    return row
+#: Rows read OFF the scheduler (the pager, the disk, the deadman): a definite fault whatever the
+#: scheduler read managed, so they headline ATTENTION even over a brief-only or unread scheduler.
+OFF_SCHEDULER_FAULTS = frozenset({"DEADMAN_UNARMED", "ALERTS_UNARMED", "DISK_LOW"})
 
 
 def needs_attention(row: dict[str, Any]) -> bool:
@@ -587,7 +704,20 @@ def build() -> dict[str, Any]:
         elif code_unreadable:
             verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
                                                     "succeeded is UNMEASURED")
-        elif code is not None and code not in (0, 267009, 267011) and not _running:
+        elif code is not None and (name, code) in FINDING_CODES:
+            verdict, why = "FINDING", FINDING_CODES[(name, code)]
+        elif code in OVERLAP_CODES and artifact and age is not None:
+            # Not stale (checked above) and stamped: the refused trigger cost nothing.
+            verdict, why = "OK", (f"last trigger refused ({RESULT_MEANING.get(code)}) -- an "
+                                  f"instance was still running; artifact fresh by "
+                                  f"{rd.get('age_basis')} at {age:.0f} min, so an overlap, "
+                                  f"not a failure")
+        elif code in OVERLAP_CODES and not (artifact and age is None):
+            verdict, why = "OVERLAP", (f"last trigger refused ({RESULT_MEANING.get(code)}): an "
+                                       f"instance was still running when it fired, and no "
+                                       f"stamped artifact proves that instance is working")
+        elif (code is not None and code not in (0, RUNNING_CODE, 267011, *OVERLAP_CODES)
+              and not _running):
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
         elif artifact and age is None:
             # A stampless artifact is UNMEASURED, never OK: its mtime is the number that lied.
@@ -595,6 +725,9 @@ def build() -> dict[str, Any]:
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
                                             "nothing would notice")
+        elif code == RUNNING_CODE:
+            verdict, why = "RUNNING", (f"running now; artifact fresh by {rd.get('age_basis')} "
+                                       f"at {age:.0f} min")
         else:
             verdict, why = "OK", ("" if code is not None else
                                   "artifact fresh; last result not read this pass")
@@ -687,6 +820,10 @@ def build() -> dict[str, Any]:
             "purpose": "the pager every other row depends on to be heard",
         })
 
+    dm = deadman_invariant()
+    if dm is not None:
+        rows.append(dm)
+
     disk = disk_state(floor_gb=DISK_FLOOR_GB)
     if disk.get("verdict") == "DISK_LOW":
         rows.append({
@@ -704,10 +841,11 @@ def build() -> dict[str, Any]:
             "purpose": "room for every organ on this board to write its artifact",
         })
 
-    order = {"ALERTS_UNARMED": 0, "DISK_LOW": 0, "NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0,
-             "FAILING": 1,
+    order = {"DEADMAN_UNARMED": 0, "ALERTS_UNARMED": 0, "DISK_LOW": 0, "NOT_SCHEDULED": 0,
+             "SCHEDULER_UNMEASURED": 0,
+             "FAILING": 1, "OVERLAP": 1, "FINDING": 1,
              "NO_ARTIFACT": 2, "STALE": 3, "UNMEASURED": 3,
-             "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
+             "DISABLED": 4, "UNCONTRACTED": 5, "RUNNING": 6, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     basis: dict[str, int] = {}

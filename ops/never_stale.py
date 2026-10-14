@@ -22,6 +22,11 @@ adding it to a list:
                     path with no working directory                 -> report with the diagnosis
     FAILING (kill)  0x800710E0 / 0xC000013A on a LONG-RUNNING job  -> report as a daemon
                                                                       registered as periodic
+    RUNNING         0x41301, or STALE while the task is running    -> never started on itself
+    OVERLAP         0x800710E0 with no fresh stamp to vouch for it -> report, never start
+    FINDING         an organ's own "ran fine, found something" code -> its TASK_DIAGNOSIS
+    DEADMAN_UNARMED LIVE sleeves and the Fusion rail stale/dry-run -> report; arming is the
+                                                                      principal's act (LAWS §4)
 
 WHY IT ONLY EVER STARTS THINGS. A watchdog that edits task definitions, kills processes or
 rewrites config is a second actor on the money path with no review, and this desk has a law about
@@ -65,15 +70,24 @@ DIAGNOSIS = {
         "(L0294: MT5-IdentityHealer had never once run for this reason.)"),
     2147942401: ("the system cannot find the file specified -- same shape as code 2: check the "
                  "working directory before the script."),
-    2147946720: ("killed by the scheduler. If the job is a DAEMON this is a registration error, "
-                 "not a failure: give it an at-startup trigger and ExecutionTimeLimit zero. "
-                 "(L0295: MT5-NewsDesk and MT5-ResearchReports both reported this forever.)"),
+    2147946720: ("0x800710E0, the request was refused. On this box it is what an IgnoreNew task "
+                 "records when a trigger fires while an instance is STILL RUNNING (an overlap): "
+                 "process_health reads it OK-with-note when the artifact's stamp is fresh and "
+                 "OVERLAP when nothing stamped proves the running instance works. Never restart "
+                 "it -- a start lands on the same live instance. If the instance is a hung pass, "
+                 "read its log; if the job is a DAEMON on a periodic trigger, give it an "
+                 "at-startup trigger and ExecutionTimeLimit zero (L0295)."),
+    2147750687: ("0x8004131F, an instance is already running and the policy refused another: "
+                 "the same overlap as 0x800710E0 -- not a failure, never a restart."),
+    267009: ("0x41301, the task is RUNNING now. process_health reads it RUNNING; nothing to start "
+             "on top of a live instance."),
+    267014: ("0x41306, terminated by the scheduler: the pass outran its ExecutionTimeLimit (or "
+             "was Stopped). A restart reproduces the kill -- bound the work under the limit or "
+             "raise the limit to fit the work. (E8-Spreads: a 10-hour loop under a 50-minute "
+             "limit, fixed in prop/e8_spread_sampler.py 2026-10-14.)"),
     3221225786: ("terminated by console close -- the daemon shape again; see L0295."),
     2147943645: ("no logged-on interactive session. An Interactive task cannot run headless; "
                  "either a user must stay signed in or the task needs a service principal."),
-    3: ("ENROLMENT GAP, not a failure. The organ completed its work and is reporting a "
-        "deficiency it measured: certificates exist that hold no forward clock. Read the count "
-        "in the organ's own health artifact and enrol them -- this never means restart."),
 }
 
 #: REMEDIES THAT ONLY MAKE SENSE FOR ONE ORGAN, keyed (task, code).
@@ -101,6 +115,46 @@ TASK_DIAGNOSIS = {
         "the news desk exits non-zero when its schedule is empty, which is the LICENSED CALENDAR "
         "being absent rather than a fault -- its log says so in words. Nothing to restart: the "
         "RSS capture half works. Wiring a calendar source is principal-gated work."),
+    # EXIT 3 USED TO BE IN THE GENERIC TABLE, which claimed every organ's exit 3 was a shadow
+    # enrolment gap. Only research/shadow_cycle.py chose that code, so it lives here.
+    ("MT5-Shadow", 3): (
+        "ENROLMENT GAP, not a failure (shadow_cycle.run: ENROLMENT_GAP -> 3). The cycle "
+        "completed and measured certificates that hold no forward clock: read `missing_sleeves` "
+        "in desks/mt5/reports/shadow/shadow_health.json and enrol them -- never a restart."),
+    ("MT5-Shadow", 2): (
+        "EVIDENCE BLOCKED, not a failure (shadow_cycle.run: EVIDENCE_BLOCKED -> 2). The cycle "
+        "completed; `evidence_blocked_sleeves` and `zero_trade_clocks` in shadow_health.json "
+        "name the sleeves whose forward evidence is suppressed or unproven. Never a restart. "
+        "(The generic code-2 'file not found' remedy does NOT apply to this organ.)"),
+    ("MT5-DeepenUniverse", 1): (
+        "ORPHAN REGISTRATION. ops/run_deepen_universe.cmd was removed from the repository on "
+        "2026-09-30 (18093a390) and the deepener now runs inside MT5-Daily as "
+        "daily_cycle:deepen_bars (box_tasks.manifest says so). A box task still named "
+        "MT5-DeepenUniverse fires hourly at a wrapper that no longer exists. Confirm with "
+        "(Get-ScheduledTask MT5-DeepenUniverse).Actions, then the owner disables it: "
+        "Disable-ScheduledTask -TaskName MT5-DeepenUniverse. A restart reproduces it."),
+    ("MT5-ContractTerms", 1): (
+        "`python -m mt5desk.tape --terms-only` returns 1 on exactly one path: `mt5 init failed`, "
+        "i.e. research.mt5_session.attach_or_initialize refused -- which it does by design in "
+        "Windows session 0, and install_contract_terms_task.ps1 registers this task S4U (session "
+        "0). Any other cause is a traceback, also 1. Read the tail of "
+        "desks/mt5/logs/MT5-ContractTerms.log. The financing leg itself is NOT dark: "
+        "MT5-Hourly's tape.main writes reports/BROKER_SWAPS_FRESHNESS.json every hour. Cure is "
+        "the registration (Interactive principal, as E8-Spreads), never a restart."),
+    ("MT5-DashboardFence", 1): (
+        "NO RUNNER IN THE REPOSITORY: no script, manifest row or installer names this task "
+        "(git log -S finds it only in published process_health.json). Its action is UNMEASURED "
+        "from here: read (Get-ScheduledTask MT5-DashboardFence).Actions on the box, then either "
+        "declare it in desks/mt5/ops/box_tasks.manifest with a contract or disable it."),
+    ("MT5-PushBacklog", 1): (
+        "NO RUNNER IN THE REPOSITORY and no next run: a one-shot task (last run 2026-09-25) "
+        "that failed once and was never re-scheduled. Read (Get-ScheduledTask "
+        "MT5-PushBacklog).Actions; if the backlog it pushed has since reached origin, the owner "
+        "unregisters it. A restart re-runs an unknown one-shot -- never from here."),
+    ("E8-Spreads", 1): (
+        "prop/e8_spread_sampler.py has no handled failure path: a non-zero exit is a traceback, "
+        "most likely TradeLockerVenue().connect() (credentials or network). Read the task log; "
+        "the artifact desks/mt5/reports/E8_SPREADS.json keeps its last samples."),
     ("MT5-ResearchReports", 1): (
         "subprocess timeout, not a crash: a report script outran BUDGET_S. Same shape as the "
         "daily cycle's 3h limit (raised to 10h 2026-09-13). Raise the budget for the specific "
@@ -122,7 +176,19 @@ VERDICT_DIAGNOSIS = {
         "the drive the desk writes to is under process_health.DISK_FLOOR_GB free. A restart frees "
         "nothing and deleting state is the owner's call: the row names the largest reclaimable "
         "paths (backups, rotated logs) to review."),
+    "DEADMAN_UNARMED": (
+        "LIVE sleeves exist and the Fusion ruin rail (desks/mt5/proposals/fusion_deadman.py) is "
+        "not protecting them: its desks/mt5/data/fusion_deadman_state.json is unreadable, its "
+        "`checked_at` is over process_health.DEADMAN_MAX_AGE_MIN old, or its `mode` is not "
+        "\"LIVE\". NEVER RESTARTED FROM HERE: a start runs the rail in whatever mode its task "
+        "was registered with, and arming (`--live`) is the principal's act under LAWS §4. The "
+        "exact arm step is in the row's `why` and in patches/process_health_stamps/README.md."),
 }
+
+#: TASKS THIS WATCHDOG NEVER STARTS, whatever the verdict. MT5-FusionDeadman is declared in
+#: desks/mt5/ops/box_tasks.manifest as running scripts/run_deadman_switch.py, the Tier-3 rail
+#: (LAWS §4): an autonomous start of it is not this file's call, so it is escalated instead.
+NEVER_START = {"MT5-FusionDeadman"}
 
 #: ONE START PER ORGAN PER SHAPE PER WINDOW. A start that did not cure the verdict is evidence the
 #: cause is not "it stopped", and starting it again every pass is a loop, not a remedy. Inside the
@@ -343,6 +409,29 @@ def run(apply: bool) -> dict:
                               "runs; a start would run the same writer again. Read the organ's "
                               "log for why its work is skipped (a lock, an early return, an "
                               "input that never changes) -- never restarted from here."),
+                "needs_human": True})
+            continue
+
+        if verdict in RESTARTABLE and name in NEVER_START:
+            escalated.append({
+                "task": name, "verdict": verdict, "code": row.get("last_result_code"),
+                "why": row.get("why"),
+                "diagnosis": (f"{name} is a money-path rail this watchdog never starts "
+                              f"(NEVER_START; LAWS §4). Read its log and its state stamp."),
+                "needs_human": True})
+            continue
+
+        if verdict in RESTARTABLE and (str(row.get("state") or "").lower() == "running"
+                                       or row.get("last_result_code") == 267009):
+            # A START ON A RUNNING TASK IS REFUSED (IgnoreNew) OR STACKS A SECOND COPY. The
+            # instance is alive and its artifact is not advancing: that is a hung or slow pass,
+            # and only its log says which.
+            escalated.append({
+                "task": name, "verdict": verdict, "code": row.get("last_result_code"),
+                "why": row.get("why"),
+                "diagnosis": ("RUNNING BUT NOT ADVANCING: the task is running now and its "
+                              "artifact is stale. Never started on top of itself -- read the "
+                              "running pass's log for where it is stuck."),
                 "needs_human": True})
             continue
 
