@@ -61,6 +61,15 @@ docket; each cell here asks one question: does the base's entry pay in this stat
   30 of them, a bar's reading joining the history only once a later bar arrives), never against
   a fixed level, with the direction fixed by the base's MECHANISM_CLASS.
 
+LIVE PARITY (follows #399). Every rank history is BOUNDED IN MARKET TIME: a signal is ranked
+against the states at the base's earlier signals inside the trailing RANK_SPAN_DAYS only, so the
+rule a certificate was earned under depends on a finite span of bars and the gateway can read it
+(`live_h1_bars` says how many; the gateway reads that count for these families and refuses a
+short read by name). Each BASE's own read is measured on real bars (state_gate_base_parity) and
+a base without one is refused by name, never traded on a read its signals were not proven on.
+Live, a panel wrapper's bar store is checked against the terminal and a lagging store is
+refused by name; the replay is unchanged.
+
 R and the entropy are computed only where a base signal exists for sync (one panel read per
 signal time) and over the symbol's own closes for entropy. Every wrapper returns [] -- never an
 ungated fallback -- when the base is unwrappable, the panel is short or the state unmeasurable.
@@ -70,8 +79,10 @@ from __future__ import annotations
 import bisect
 import contextlib
 import hashlib
+import json
 import math
 import sys
+from collections import deque
 from collections.abc import Callable, Sequence
 from itertools import combinations
 from pathlib import Path
@@ -91,6 +102,22 @@ SYNC_EXTRA: tuple[str, ...] = ("XAUUSD",)
 #: A panel member whose last bar at or before t is older than this is absent from R at t, not
 #: stale inside it (covers a weekend plus a holiday on the H1 clock).
 MAX_STALE_HOURS = 96
+
+#: The trailing span of market time every rank history covers (audit of #399, SF-3): long
+#: enough for `min_history` readings from a base that fires weekly, finite so a live read can
+#: hold it. One constant for every wrapper, the backtest and the gateway.
+RANK_SPAN_DAYS = 365
+#: The floor of the base's read behind the earliest ranked signal: the read every H1 family has
+#: always had (gateway._FAMILY_H1_BARS). The base's own read is MEASURED on real bars by
+#: research/state_gate_base_parity.py and recorded in state_gate_base_reads.json; a base with no
+#: measured read is not live-reproducible (`live_refusal`).
+BASE_H1_BARS = 400
+#: The panel wrappers read their panel from the bar store. Live, a store that has not ingested
+#: the terminal's latest closed bars would hand the gate an older panel than the replay saw --
+#: the gateway checks the store against the terminal for these and refuses a lagging store by
+#: name (gateway._panel_store_lag). The replay is untouched: market closures keep the
+#: MAX_STALE_HOURS allowance on both sides (audit of #403, must-fix 2).
+PANEL_WRAPPERS: frozenset[str] = frozenset({"sync_gated", "absorption_gated"})
 
 #: Mechanism classes each gate admits; anything else is refused (returns []).
 SYNC_HIGH: frozenset[str] = frozenset({"trend", "breakout"})
@@ -154,8 +181,8 @@ def _ns(t: Any) -> int | None:
 
 
 def keep_in_tail(sigs: Sequence[Signal], state_at: Callable[[int, Signal], float | None], *,
-                 keep_top: bool, tail: float = 1.0 / 3.0, min_history: int = 30
-                 ) -> list[Signal]:
+                 keep_top: bool, tail: float = 1.0 / 3.0, min_history: int = 30,
+                 span_days: float = RANK_SPAN_DAYS) -> list[Signal]:
     """The base signals whose state ranks in the TOP (`keep_top`) or BOTTOM `tail` of the state
     read at the base's STRICTLY EARLIER signal bars -- the gate every wrapper here shares.
 
@@ -164,6 +191,9 @@ def keep_in_tail(sigs: Sequence[Signal], state_at: Callable[[int, Signal], float
     only once a LATER bar arrives, so two signals on one bar never rank against each other, and
     nothing is kept until `min_history` earlier readings exist. The rank is the share of the
     history strictly below the reading: kept when >= 1 - tail (top) or <= tail (bottom).
+
+    The history holds only readings at signal bars within the trailing `span_days` of market time
+    (key >= this bar - span): a reading older than that leaves before this bar is ranked.
     """
     q = float(tail)
     if not 0.0 < q < 1.0:
@@ -173,12 +203,18 @@ def keep_in_tail(sigs: Sequence[Signal], state_at: Callable[[int, Signal], float
     memo: dict[int, float | None] = {}
     timed = sorted(((k, s) for s in sigs if (k := _ns(s.time)) is not None),
                    key=lambda ks: ks[0])
-    history: list[float] = []          # sorted readings at every STRICTLY EARLIER signal bar
+    span = int(float(span_days) * 24 * HOUR_NS)
+    history: list[float] = []          # sorted readings at STRICTLY EARLIER signal bars in span
+    arrived: deque[tuple[int, float]] = deque()   # the same readings, oldest bar first
     pending: tuple[int, float] | None = None
     for key, s in timed:
         if pending is not None and pending[0] != key:
             bisect.insort(history, pending[1])  # a bar's state joins once its bar has passed
+            arrived.append(pending)
             pending = None
+        while arrived and arrived[0][0] < key - span:
+            _, old = arrived.popleft()
+            del history[bisect.bisect_left(history, old)]
         if key not in memo:
             memo[key] = state_at(key, s)
         v = memo[key]
@@ -1194,16 +1230,85 @@ def family_rough_vol_gated(
                         tail=tail, min_history=min_history)
 
 
-#: WHY NO STATE GATE IS LIVE-EXECUTABLE YET (audit of #399, SF-3). Every wrapper ranks its state
-#: against the state at ALL the base's earlier signals in the frame (`keep_in_tail`, at least
-#: `min_history` of them), and the slow states need long windows besides (Markov 2,000 H1 returns,
-#: rough-vol 250 complete days). The gateway's family read is 400 H1 bars, so a certificate
-#: traded today would rank against a different, shorter history than it was certified on -- or
-#: keep nothing -- with no refusal naming why. `executables.executor_gap` names this instead,
-#: until the history is bounded in market time and the gateway reads that much.
-LIVE_READ_GAP = ("state-gated wrapper: ranks against every earlier base signal in the frame "
-                 "and needs up to 250 days of H1 history; the gateway's family read is 400 H1 "
-                 "bars, so a live read would not reproduce the certified gate")
+#: Calendar days of H1 bars the rough-vol state needs behind a reading: `window` complete
+#: days at five trading days a week, a fortnight of holidays, the RV_COUNT_WINDOW the
+#: completeness median trails, and one day for the first bar's missing return.
+def _rough_days(window: int) -> int:
+    return -(-int(window) * 7 // 5) + 14 + RV_COUNT_WINDOW + 1
+
+
+def state_lookback_bars(wrapper: str, params: dict[str, Any] | None = None) -> int | None:
+    """H1 bars of the symbol's OWN frame one state reading needs behind it, an upper bound that
+    holds on any session (a day is at most 24 H1 bars); None for a name that is not a wrapper.
+    The panel wrappers read their panel from the bar store, so their frame needs none."""
+    p = dict(params or {})
+    if wrapper in ("sync_gated", "absorption_gated"):
+        return 0
+    if wrapper == "entropy_gated":
+        return int(p.get("window", 168)) + int(p.get("z_window", 24 * 60)) + int(p.get("order", 4))
+    if wrapper == "fisher_rao_gated":
+        return 2 * int(p.get("window", 120)) + 1
+    if wrapper == "markov_vol_gated":
+        return int(p.get("fit_window", MS_FIT_WINDOW)) + int(p.get("refit", MS_REFIT)) + 1
+    if wrapper == "rough_vol_gated":
+        return 24 * _rough_days(int(p.get("window", 250)))
+    return None
+
+
+_BASE_READS_PATH = Path(__file__).with_name("state_gate_base_reads.json")
+
+
+def base_reads() -> dict[str, Any]:
+    """The recorded measurement of each base's own read (see research/state_gate_base_parity)."""
+    try:
+        doc = json.loads(_BASE_READS_PATH.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def live_refusal(wrapper: str, params: dict[str, Any] | None = None) -> str | None:
+    """Why a certificate of `wrapper` at `params` cannot be traded on a live read, or None.
+
+    The base's signals inside the rank span must be the same on the live read as on the whole
+    history. That is MEASURED per base at the default params the proposer mints; any other base,
+    or base params, or a base the measurement could not match at any read, is refused by name."""
+    if wrapper not in STATE_GATE_FAMILIES:
+        return None
+    p = dict(params or {})
+    base = str(p.get("base_family") or "")
+    if p.get("base_params"):
+        return (f"state gate base {base!r} carries base_params {p.get('base_params')!r}; only the "
+                f"default parameterisation's live read is measured")
+    doc = base_reads()
+    if doc.get("status") != "MEASURED":
+        return "state gate base reads are UNMEASURED (run research/state_gate_base_parity.py)"
+    row = (doc.get("bases") or {}).get(base)
+    if not isinstance(row, dict):
+        return f"state gate base {base!r} has no measured live read"
+    if not isinstance(row.get("read"), int):
+        return (f"state gate base {base!r} is not live-reproducible: "
+                f"{row.get('first_mismatch') or 'no read matched'}")
+    if int(doc.get("rank_span_days") or 0) != int(RANK_SPAN_DAYS):
+        return "state gate base reads were measured at a different rank span"
+    return None
+
+
+def live_h1_bars(wrapper: str, params: dict[str, Any] | None = None) -> int | None:
+    """H1 bars a live read must hold for the gate at its last bar to equal the certified one:
+    the base's own MEASURED read behind the earliest ranked signal, every bar of the trailing
+    rank span (at most 24 a day), and the state's lookback behind that signal. None for a
+    non-wrapper, or for a certificate `live_refusal` refuses.
+
+    entropy_gated keeps on a fixed z threshold and has no rank history, so it needs no span."""
+    look = state_lookback_bars(wrapper, params)
+    if look is None or live_refusal(wrapper, params) is not None:
+        return None
+    base = str((params or {}).get("base_family") or "")
+    read = int(((base_reads().get("bases") or {}).get(base) or {}).get("read") or 0)
+    span = 0 if wrapper == "entropy_gated" else 24 * int(RANK_SPAN_DAYS)
+    return max(BASE_H1_BARS, read) + span + look
+
 
 STATE_GATE_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "sync_gated": family_sync_gated,

@@ -1,0 +1,50 @@
+{
+ "base_params": {},
+ "bases": {
+  "mean_reversion_rsi": {
+   "checks": 9,
+   "first_mismatch": null,
+   "read": 400
+  },
+  "range_reversion": {
+   "checks": 9,
+   "first_mismatch": null,
+   "read": 400
+  },
+  "session_range_breakout": {
+   "checks": 9,
+   "first_mismatch": null,
+   "read": 400
+  },
+  "trend_ma_cross": {
+   "checks": 9,
+   "first_mismatch": null,
+   "read": 400
+  },
+  "volatility_squeeze": {
+   "checks": 9,
+   "first_mismatch": null,
+   "read": 400
+  }
+ },
+ "end_offsets_days": [
+  0,
+  120,
+  240
+ ],
+ "ladder": [
+  400,
+  1000,
+  2000,
+  4000,
+  8000
+ ],
+ "measured_at": "2026-10-14T07:43:35+00:00",
+ "rank_span_days": 365,
+ "status": "MEASURED",
+ "symbols": [
+  "EURUSD",
+  "XAUUSD",
+  "BTCUSD"
+ ]
+}

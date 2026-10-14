@@ -152,6 +152,20 @@ def gateway_can_execute(fam: str, timeframe: str = "H1") -> bool:
     return executor_gap(fam, timeframe) is None
 
 
+def state_gate_gap(fam: str, params: dict[str, Any] | None) -> str | None:
+    """Why a STATE-GATED certificate at `params` cannot be traded live, or None (and None for
+    every other family). The gate ranks against the base's signals over the trailing rank span,
+    so it is live-executable only where that base's live read is measured
+    (`family_state_gates.live_refusal`). An unreadable registry refuses, never waves through."""
+    try:
+        from mt5desk.family_state_gates import STATE_GATE_FAMILIES, live_refusal
+    except Exception as exc:
+        return f"state gate registry unavailable ({type(exc).__name__}: {exc})"
+    if fam not in STATE_GATE_FAMILIES:
+        return None
+    return live_refusal(fam, params)
+
+
 def executor_gap(fam: str, timeframe: str = "H1") -> str | None:
     """Why `fam` on `timeframe` cannot be traded yet, or None when it can."""
     pop = population_of(fam)
@@ -160,12 +174,6 @@ def executor_gap(fam: str, timeframe: str = "H1") -> str | None:
     if pop not in GATEWAY_FAMILY_POPULATIONS:
         return (f"family {fam!r} lives in the {pop!r} population, which the gateway's family "
                 f"executor does not run yet (populations: {', '.join(GATEWAY_FAMILY_POPULATIONS)})")
-    try:
-        from mt5desk.family_state_gates import LIVE_READ_GAP, STATE_GATE_FAMILIES
-    except Exception:
-        LIVE_READ_GAP, STATE_GATE_FAMILIES = "", {}
-    if fam in STATE_GATE_FAMILIES:
-        return LIVE_READ_GAP
     tf = str(timeframe or "H1").upper()
     if tf not in GATEWAY_FAMILY_TIMEFRAMES:
         return (f"certificate is on the {tf} chart and the gateway's family executor runs "
