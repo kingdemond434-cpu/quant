@@ -47,14 +47,15 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
 import json
 import math
 import sys
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar, cast
 
 import numpy as np
 import pandas as pd
@@ -84,6 +85,27 @@ PANEL: tuple[str, ...] = (
     "AUDCAD", "AUDJPY", "AUDNZD", "AUDUSD", "BTCUSD", "CADJPY", "CHFJPY", "ETHUSD", "EURAUD",
     "EURCHF", "EURGBP", "EURJPY", "EURUSD", "GBPAUD", "GBPJPY", "GBPUSD", "NZDCAD", "NZDJPY",
     "NZDUSD", "USDCAD", "USDCHF", "USDJPY", "XAGUSD", "XAUUSD")
+
+#: THE RETAIL-HEAVY BEHAVIOURAL PANEL (2026-10-13, principal's yes to the Chinese-shop gap): the
+#: MT5 corners where the marginal trader is a retail crowd rather than a dealer -- every crypto
+#: CFD, the China H-share and Hang Seng index CFDs, offshore yuan, and gold (whose Asia session is
+#: retail- and physical-flow led). Deep models earn their keep on behavioural markets; on the
+#: institutional daily FX panel the learned families read IC ~0 (learned_miners_contract.json).
+#: Bars live in data/universe on the box; a panel with fewer than MIN_PANEL symbols is skipped and
+#: reported, never shrunk silently into a different hypothesis.
+RETAIL_PANEL: tuple[str, ...] = (
+    "ADAUSD", "AVAXUSD", "BCHUSD", "BNBUSD", "BTCUSD", "CHINAH", "DOGEUSD", "DOTUSD", "EOSUSD",
+    "ETHUSD", "HK50", "LNKUSD", "LTCUSD", "MATICUSD", "SOLUSD", "USDCNH", "XAUUSD", "XLMUSD")
+PANELS: dict[str, tuple[str, ...]] = {"core": PANEL, "retail_heavy": RETAIL_PANEL}
+#: THE ONLY MEMBERSHIP THAT EVER WROTE BARE TRIAL IDS, FROZEN (audit of #354 v4, M1'): the core
+#: panel as it stood on live when the ledger began. Compared against this literal, never against
+#: the editable PANEL, so adding a member to PANEL re-charges every re-tested cell instead of
+#: re-using the old bare ids. The retail panel never wrote a bare id and is always hashed.
+_BARE_ID_PANEL: frozenset[str] = frozenset((
+    "AUDCAD", "AUDJPY", "AUDNZD", "AUDUSD", "BTCUSD", "CADJPY", "CHFJPY", "ETHUSD", "EURAUD",
+    "EURCHF", "EURGBP", "EURJPY", "EURUSD", "GBPAUD", "GBPJPY", "GBPUSD", "NZDCAD", "NZDJPY",
+    "NZDUSD", "USDCAD", "USDCHF", "USDJPY", "XAGUSD", "XAUUSD"))
+MIN_PANEL = 6
 
 #: Entry thresholds on forecast strength (|pred| / trailing RMS). Each is a trial.
 ENTRY_Z: tuple[float, ...] = (1.0, 1.5)
@@ -126,15 +148,76 @@ MINERS: dict[str, dict[str, Any]] = {
                          "out of sample"),
         "crowding_prior": "medium",
     },
+    "rocket": {
+        "source": "learned_rocket", "family": "rocket_ts", "grid": LP.ROCKET_GRID,
+        "event": "inventory_shock",
+        "mechanism": ("non-linear path shapes on {sym}: {kernels} random dilated convolution "
+                      "kernels over the last {lookback} daily tokens (fixed seed, never fitted) "
+                      "feed a ridge readout pooled across the panel, so crowd patterns that no "
+                      "linear lag formula expresses can still be priced"),
+        "falsifier": ("the out-of-sample IC of the convolution forecast is no better than ridge "
+                      "on the instrument's own lags, or a time-shuffled panel shows the same edge"),
+        "constraint": ("retail and dealer inventory limits make the reaction to a given recent "
+                       "path shape repeat, because the same constrained participants respond"),
+        "failure_mode": ("the readout fits volatility-regime noise among thousands of random "
+                         "features and the sign flips out of sample"),
+        "crowding_prior": "low",
+    },
+    "signature": {
+        "source": "learned_signature", "family": "sig_path", "grid": LP.SIG_GRID,
+        "event": "inventory_shock",
+        "mechanism": ("order and area of {sym}'s recent path against the panel: the depth-{depth} "
+                      "rough-path signature of (own, market, time) over the last {lookback} days "
+                      "(a fixed transform, never fitted) feeds a ridge readout pooled across the "
+                      "panel, so who moved first and how far the instrument lagged the crowd "
+                      "can be priced"),
+        "falsifier": ("the out-of-sample IC of the signature forecast is no better than ridge "
+                      "on the instrument's own lags, or a time-shuffled panel shows the same edge"),
+        "constraint": ("constrained participants (retail stop-outs, dealer inventory, index "
+                       "rebalancers) react to the ORDER of moves, not only their sum, so the "
+                       "lead-lag area between an instrument and its crowd repeats"),
+        "failure_mode": ("the level-two area terms track the panel's volatility regime, which "
+                         "forecasts size but not sign"),
+        "crowding_prior": "low",
+    },
+    "autoencoder": {
+        "source": "learned_autoencoder", "family": "ae_latent", "grid": LP.AE_GRID,
+        "event": "cross_market_lead",
+        "mechanism": ("non-linear latent cross-asset state: a deep autoencoder compresses the "
+                      "whole panel's recent moves into {latent} latent factors ({hidden} hidden "
+                      "units, trained on the walk-forward window only), and {sym}'s next-day "
+                      "return is read off its own loadings on those factors"),
+        "falsifier": ("the out-of-sample IC is no better than ridge on the instrument's own "
+                      "lags, or a linear (PCA) code of the same size does as well"),
+        "constraint": ("shared funding, risk-appetite and retail-flow states move many markets "
+                       "together before each instrument has repriced"),
+        "failure_mode": ("the latent code tracks the panel's volatility level, which forecasts "
+                         "size but not sign"),
+        "crowding_prior": "low",
+    },
 }
+
+#: Which family function trades each model's forecast.
+FAMILY_FN: dict[str, Any] = {"gnn": FLP.family_gnn_propagation,
+                             "attention": FLP.family_attention_ts,
+                             "rocket": FLP.family_rocket_ts,
+                             "autoencoder": FLP.family_ae_latent,
+                             "signature": FLP.family_sig_path}
 
 #: The dominant participant structure of the instruments the cell trades (the desk's vocabulary:
 #: retail_heavy, institutional, tax_driven, policy_driven, physical_flow, broker_specific,
 #: settlement_constrained). Crypto CFDs are retail-heavy venues; pegged or managed crosses are
 #: policy-driven; the metals carry physical flow; every other liquid FX pair is institutional.
 _PARTICIPANTS: dict[str, str] = {"BTCUSD": "retail_heavy", "ETHUSD": "retail_heavy",
-                                 "EURCHF": "policy_driven", "XAUUSD": "physical_flow",
-                                 "XAGUSD": "physical_flow"}
+                                 "ADAUSD": "retail_heavy", "BNBUSD": "retail_heavy",
+                                 "DOGEUSD": "retail_heavy", "DOTUSD": "retail_heavy",
+                                 "LTCUSD": "retail_heavy", "SOLUSD": "retail_heavy",
+                                 "AVAXUSD": "retail_heavy", "BCHUSD": "retail_heavy",
+                                 "EOSUSD": "retail_heavy", "LNKUSD": "retail_heavy",
+                                 "MATICUSD": "retail_heavy", "XLMUSD": "retail_heavy",
+                                 "CHINAH": "retail_heavy", "HK50": "retail_heavy",
+                                 "USDCNH": "policy_driven", "EURCHF": "policy_driven",
+                                 "XAUUSD": "physical_flow", "XAGUSD": "physical_flow"}
 
 
 def participant_structure(symbol: str) -> str:
@@ -153,6 +236,28 @@ def _config_key(model: str, cfg: Mapping[str, Any]) -> str:
     return f"{model}:" + ",".join(f"{k}={cfg[k]}" for k in sorted(cfg))
 
 
+def _one_native_thread() -> Any:
+    """BLAS/OpenMP capped at one thread: the miner runs beside the gateway and the judge, and a
+    ridge or einsum that grabs every core starves them. A no-op where threadpoolctl is absent."""
+    try:
+        from threadpoolctl import threadpool_limits
+    except ImportError:
+        return contextlib.nullcontext()
+    return threadpool_limits(limits=1)
+
+
+_F = TypeVar("_F", bound=Callable[..., Any])
+
+
+def _single_threaded(fn: _F) -> _F:
+    """The daily cycle calls `run` directly (not `main`), so the cap sits on the function."""
+    @functools.wraps(fn)
+    def inner(*args: Any, **kwargs: Any) -> Any:
+        with _one_native_thread():
+            return fn(*args, **kwargs)
+    return cast(_F, inner)
+
+
 # =========================================================================== candidates
 def make_candidate(model: str, row: dict[str, Any], *, panel: Sequence[str],
                    tests_run: int, n_effective: float) -> dict[str, Any]:
@@ -169,7 +274,9 @@ def make_candidate(model: str, row: dict[str, Any], *, panel: Sequence[str],
     params = {"symbol": sym, "peer_symbols": list(panel), **cfg, "entry_z": row["entry_z"],
               **FIXED, "timeframe": "H1"}
     mech = spec["mechanism"].format(sym=sym, hops=cfg.get("layers"), adj=cfg.get("adjacency"),
-                                    lookback=cfg.get("lookback"), heads=cfg.get("heads"))
+                                    lookback=cfg.get("lookback"), heads=cfg.get("heads"),
+                                    kernels=cfg.get("kernels"), latent=cfg.get("latent"),
+                                    hidden=cfg.get("hidden"), depth=cfg.get("depth"))
     title = (f"{sym}.{spec['family']} {_config_key(model, cfg)} z>={row['entry_z']} "
              f"hold={FIXED['hold_bars']}")
     # The miner's own walk-forward IC stays in its REPORT and off the row: `libs.tiers.blinding`
@@ -219,12 +326,26 @@ def _redeflate(rows: list[dict[str, Any]], n_attempted: int) -> list[dict[str, A
 
 
 # ================================================================================ miner
+def _trial_id(panel_name: str, panel_syms: Sequence[str], sym: str, ck: str, z: float) -> str:
+    """One trial = (panel members, symbol, config, threshold). The forecast pools across the
+    peers, so a panel that gained or lost a symbol re-tests every cell as a NEW trial (audit
+    2026-10-13). Only the frozen membership that wrote the ledger already on the box keeps the
+    bare id; every other membership -- an edited PANEL, a box missing a member, any retail
+    panel -- carries a short hash of its peers."""
+    head = sym if panel_name == "core" else f"{panel_name}:{sym}"
+    if panel_name != "core" or frozenset(panel_syms) != _BARE_ID_PANEL:
+        import hashlib
+        tag = hashlib.sha1(",".join(sorted(panel_syms)).encode()).hexdigest()[:8]
+        head = f"{head}:p{tag}"
+    return f"{head}:{ck}:z{z}"
+
+
 def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], *,
          deadline: float, grid: Sequence[Mapping[str, Any]] | None = None,
-         entry_z: Sequence[float] = ENTRY_Z) -> dict[str, Any]:
+         entry_z: Sequence[float] = ENTRY_Z, panel_name: str = "core") -> dict[str, Any]:
     """Walk-forward every configuration, screen every (config, symbol, threshold), charge all."""
     spec = MINERS[model]
-    fam_fn = (FLP.family_gnn_propagation if model == "gnn" else FLP.family_attention_ts)
+    fam_fn = FAMILY_FN[model]
     panel_syms = sorted(bars)
     tick = {s: float((meta.get(s) or {}).get("tick_size") or 0.0) for s in panel_syms}
     eval_panel = LP.daily_panel(bars, tick)
@@ -236,28 +357,40 @@ def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], 
     attempted = 0
     unf = {s: pc.artifact_hours(bars[s]) for s in panel_syms}
     costs = {s: pc.cost_frac(s, dict(meta), bars[s]["close"]) for s in panel_syms}
+    last_fit = 0.0
     for cfg in (grid or spec["grid"]):
         ck = _config_key(model, cfg)
-        if time.monotonic() > deadline:
+        # A config that cannot finish inside the slice is not started: the previous fit on this
+        # panel is the estimate, so the slice is never overrun by one long fit.
+        if time.monotonic() + last_fit > deadline:
             configs[ck] = {"verdict": "UNMEASURED", "why": "budget exhausted before this config"}
             continue
         t0 = time.monotonic()
         got = FLP.panel_predictions(bars[panel_syms[0]], panel_syms[0], panel_syms, bars,
-                                    "gnn" if model == "gnn" else "attention", cfg)
+                                    model, cfg)
         if got is None:
             configs[ck] = {"verdict": "UNMEASURED", "why": "panel too short or a peer missing"}
             continue
         _panel, preds = got
-        configs[ck] = {"config": dict(cfg), "fit_seconds": round(time.monotonic() - t0, 2),
+        last_fit = time.monotonic() - t0
+        configs[ck] = {"config": dict(cfg), "fit_seconds": round(last_fit, 2),
                        **LP.evaluate(preds, eval_panel, des)}
         per_sym = LP.per_symbol_ic(preds, eval_panel)
-        for sym in panel_syms:
+        for si, sym in enumerate(panel_syms):
+            if time.monotonic() > deadline:
+                # Mid-config: the symbols not screened were never tried, so they are neither
+                # charged nor reported as tested.
+                configs[ck]["screen"] = (f"PARTIAL: budget ran out after {si} of "
+                                         f"{len(panel_syms)} symbols")
+                break
             for z in entry_z:
                 attempted += 1
                 trials.append(TL.Trial(
-                    trial_id=f"{sym}:{ck}:z{z}", family=f"{spec['source']}:{spec['family']}",
+                    trial_id=_trial_id(panel_name, panel_syms, sym, ck, z),
+                    family=f"{spec['source']}:{spec['family']}",
                     descriptors={"symbol": sym, "model_family": model, "horizon": "1d",
-                                 "mechanism": spec["event"], "representation": ck},
+                                 "mechanism": spec["event"], "representation": ck,
+                                 "panel": panel_name},
                     params={**{k: v for k, v in cfg.items() if not isinstance(v, str)},
                             "entry_z": z}))
                 if costs[sym] is None:
@@ -276,7 +409,8 @@ def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], 
     census = TL.census(trials)
     proposals = pc.best_per_cell(rows)
     return {"model": model, "source": spec["source"], "family": spec["family"],
-            "panel": panel_syms, "configs": configs, "tests_attempted": attempted,
+            "panel": panel_syms, "panel_name": panel_name, "configs": configs,
+            "tests_attempted": attempted,
             "tests_screened": len(rows), "effective_trials": round(census.n_effective, 3),
             "trial_census": census.to_dict(), "skipped": skipped, "rows": rows,
             "proposals": proposals, "_trials": trials}
@@ -291,7 +425,8 @@ KNOWABLE_HOUR = 3
 
 
 def forecast_axis(model: str, bars: Mapping[str, pd.DataFrame] | None = None,
-                  config: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                  config: Mapping[str, Any] | None = None,
+                  panel_name: str = "core") -> dict[str, Any]:
     """The PRIMARY configuration's walk-forward forecast as an `axis_ingest` document.
 
     Shape `rows` keyed by (symbol, knowable_at), the same shape as the COT axis, so
@@ -305,8 +440,7 @@ def forecast_axis(model: str, bars: Mapping[str, pd.DataFrame] | None = None,
     cfg = dict(config or spec["grid"][0])
     bars = dict(bars) if bars is not None else load_bars()
     syms = sorted(bars)
-    got = FLP.panel_predictions(bars[syms[0]], syms[0], syms, bars,
-                                "gnn" if model == "gnn" else "attention", cfg)
+    got = FLP.panel_predictions(bars[syms[0]], syms[0], syms, bars, model, cfg)
     rows: list[dict[str, Any]] = []
     if got is not None:
         panel, preds = got
@@ -330,7 +464,9 @@ def forecast_axis(model: str, bars: Mapping[str, pd.DataFrame] | None = None,
                                           else round(float(strength[t, j]), 4)),
                              "xs_rank": (None if not np.isfinite(ranks[j])
                                          else round(float(ranks[j]), 4))})
-    return {"axis": "learned_forecast", "id": f"{model}_forecast",
+    return {"axis": "learned_forecast",
+            "id": f"{model}_forecast" if panel_name == "core" else f"{model}_{panel_name}_forecast",
+            "panel_name": panel_name,
             "source": "desks/mt5/research/learned_miners.py",
             "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "family": spec["family"], "model": model, "config": cfg,
@@ -349,12 +485,21 @@ def forecast_axis(model: str, bars: Mapping[str, pd.DataFrame] | None = None,
 INTEL_REPORT = _DESK / "reports" / "GNN_ATTENTION_ALLOCATION_INTEL.json"
 
 
-def _contract_verdicts(path: Path = CONTRACT_REPORT) -> dict[str, str]:
+def _contract_verdicts(path: Path = CONTRACT_REPORT,
+                       now: float | None = None) -> dict[str, str]:
+    """The contract's verdict per model, or UNMEASURED once the report is older than its clock:
+    a GAIN measured more than CONTRACT_EVERY_S ago (a deferred or failed refresh) is no longer a
+    measurement and never makes a model allocation-eligible (audit of #354 v4, SF1)."""
     try:
         doc = json.loads(path.read_text("utf-8"))
-        return {m: str(b.get("verdict")) for m, b in (doc.get("miners") or {}).items()}
+        verdicts = {m: str(b.get("verdict")) for m, b in (doc.get("miners") or {}).items()}
     except (OSError, ValueError, AttributeError):
         return {}
+    age = _contract_age(path, now)
+    if age >= CONTRACT_EVERY_S:
+        stale = f"UNMEASURED: contract report {age / 3600.0:.0f}h old, past its weekly clock"
+        return dict.fromkeys(verdicts, stale)
+    return verdicts
 
 
 def allocation_intel(axis_docs: Mapping[str, Mapping[str, Any]],
@@ -391,11 +536,33 @@ def allocation_intel(axis_docs: Mapping[str, Mapping[str, Any]],
             "models": models, "instruments": dict(sorted(per.items()))}
 
 
+def _ledger_trial_ids(path: Path) -> set[str]:
+    """Every trial id already in the side ledger: those trials were charged on an earlier run."""
+    ids: set[str] = set()
+    try:
+        for ln in path.read_text("utf-8").splitlines():
+            if ln.strip():
+                with contextlib.suppress(ValueError):
+                    row = json.loads(ln)
+                    if isinstance(row, dict) and row.get("trial_id"):
+                        ids.add(str(row["trial_id"]))
+    except OSError:
+        pass
+    return ids
+
+
 def _append_trials(rows: list[dict[str, Any]], path: Path) -> str:
+    """Append only trial ids the ledger has never seen. The same grid is re-run every day; the
+    same (panel, symbol, config, threshold) is one trial, charged once, never once a day."""
+    seen = _ledger_trial_ids(path)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as fh:
             for r in rows:
+                tid = str(r.get("trial_id"))
+                if tid in seen:
+                    continue
+                seen.add(tid)
                 fh.write(json.dumps(r, default=str) + "\n")
         return ""
     except OSError as exc:
@@ -420,30 +587,68 @@ def load_bars(symbols: Sequence[str] = PANEL, base: Path | None = None
     return out
 
 
-def run(budget_s: float = BUDGET_S, models: Sequence[str] = ("gnn", "attention"),
+@_single_threaded
+def run(budget_s: float = BUDGET_S,
+        models: Sequence[str] = ("gnn", "attention", "rocket", "autoencoder", "signature"),
+        panels: Sequence[str] = tuple(PANELS),
         bars: Mapping[str, pd.DataFrame] | None = None, meta: Mapping[str, Any] | None = None,
         donate: bool = True, report: Path | None = None,
         trials_path: Path | None = None, publish_axes: bool = True,
-        axes_dir: Path | None = None, intel_path: Path | None = None) -> dict[str, Any]:
+        axes_dir: Path | None = None, intel_path: Path | None = None,
+        contract: bool | None = None) -> dict[str, Any]:
     deadline = time.monotonic() + float(budget_s)
-    bars = dict(bars) if bars is not None else load_bars()
+    injected = bars is not None
+    wanted = sorted({s for p in panels for s in PANELS.get(p, ())})
+    all_bars = dict(bars) if injected else load_bars(wanted)
     meta = dict(meta) if meta is not None else pc.universe_meta()
     out: dict[str, Any] = {"generated_at": datetime.now(tz=UTC).isoformat(),
-                           "panel": sorted(bars), "miners": {}}
+                           "panel": sorted(all_bars), "panels": {}, "miners": {}}
     total_proposed = 0
     axis_docs: dict[str, dict[str, Any]] = {}
     evidence: dict[str, dict[str, Any]] = {}
-    for model in models:
-        res = mine(model, bars, meta, deadline=deadline)
+    jobs: list[tuple[str, str, dict[str, pd.DataFrame]]] = []
+    for pname in panels:
+        # An injected frame set IS the core panel (tests, the contract); the box run reads each
+        # declared panel and refuses one that is short rather than mining a smaller hypothesis.
+        pbars = (dict(all_bars) if injected and pname == "core"
+                 else {s: all_bars[s] for s in PANELS.get(pname, ()) if s in all_bars})
+        missing = [s for s in PANELS.get(pname, ()) if s not in pbars]
+        out["panels"][pname] = {"symbols": sorted(pbars), "missing": missing}
+        if injected and pname != "core":
+            out["panels"][pname]["status"] = "SKIPPED: bars were injected for the core panel"
+            continue
+        if len(pbars) < MIN_PANEL:
+            out["panels"][pname]["status"] = (f"UNMEASURED: {len(pbars)} of "
+                                              f"{len(PANELS.get(pname, ()))} symbols have bars, "
+                                              f"below the {MIN_PANEL} floor")
+            continue
+        out["panels"][pname]["status"] = "MINED"
+        # Cheapest model first inside a panel, so a tight slice measures the most models.
+        jobs.extend((model, pname, pbars)
+                    for model in sorted(models, key=lambda m: MODEL_COST_RANK.get(m, 99)))
+    # EACH PANEL GETS ITS OWN SLICE of the budget, FIXED UP FRONT (audit 2026-10-13): queued
+    # behind the core panel's whole grid, the retail panel read UNMEASURED every day. Panel i
+    # ends at start + (i+1)/n of the mining budget, so time an earlier panel leaves unused rolls
+    # forward and no panel can take a later one's share. A due weekly contract is carved out of
+    # the SAME budget first, so the pass never runs past budget_s.
+    due = (contract if contract is not None else not injected) and _contract_due()
+    start = time.monotonic()
+    mine_end = deadline - (_contract_carve(budget_s) if due else 0.0)
+    order = list(dict.fromkeys(p for _m, p, _b in jobs))
+    pdeadline = {p: start + (mine_end - start) * (i + 1) / len(order)
+                 for i, p in enumerate(order)}
+    for model, pname, bars in jobs:
+        key = model if pname == "core" else f"{model}@{pname}"
+        res = mine(model, bars, meta, deadline=pdeadline[pname], panel_name=pname)
         # THE INDIRECT DOOR: the primary configuration's forecast (already computed above, so
         # this is a cache hit) becomes a dated conditioning axis every expression family can bind.
         prim = _config_key(model, MINERS[model]["grid"][0])
-        evidence[model] = {k: (res["configs"].get(prim) or {}).get(k)
+        evidence[key] = {k: (res["configs"].get(prim) or {}).get(k)
                            for k in ("ic_mean", "ic_t", "rank_ic_t", "hit_rate",
                                      "ls_sharpe_net", "oos_days")}
         if publish_axes and "config" in (res["configs"].get(prim) or {}):
-            doc = forecast_axis(model, bars)
-            axis_docs[model] = doc
+            doc = forecast_axis(model, bars, panel_name=pname)
+            axis_docs[key] = doc
             try:
                 import axis_ingest
                 res["axis_published"] = str(axis_ingest.publish(doc["id"], doc, axes_dir,
@@ -456,9 +661,16 @@ def run(budget_s: float = BUDGET_S, models: Sequence[str] = ("gnn", "attention")
                                 n_effective=res["effective_trials"])
                  for r in res["proposals"]]
         res["candidates"] = len(cands)
+        # The discovery file charges only trials no earlier run charged: today's re-run of
+        # yesterday's grid adds nothing to the desk's trial count.
+        seen = _ledger_trial_ids(trials_path or TRIALS)
+        res["tests_new"] = len({t.trial_id for t in trials} - seen)
         donated_file = False
         if donate and cands:
-            door = pc.donate(res["source"], cands, res["tests_attempted"])
+            # The full sweep count rides on the file (the lifetime ledger takes a max per seat, so
+            # this can never re-charge); the panel suffix keeps a core and a retail donation in
+            # the same minute from overwriting each other.
+            door = pc.donate(res["source"], cands, res["tests_attempted"], suffix=pname)
             res["donated"] = str(door)
             # The door can refuse every candidate (lane, blinding, pre-registration) and write no
             # discovery file; then nothing charged the trials there, so the side ledger must.
@@ -472,8 +684,15 @@ def run(budget_s: float = BUDGET_S, models: Sequence[str] = ("gnn", "attention")
                                "donated": donated_file} for t in trials],
                              trials_path or TRIALS)
         res["trial_ledger_error"] = led
-        out["miners"][model] = res
+        out["miners"][key] = res
     out["cells_proposed"] = total_proposed
+    # THE CONTRACT ON A CLOCK (audit 2026-10-13): weekly, from the daily pass, so every model's
+    # allocation-intel verdict is a measurement no older than CONTRACT_EVERY_S, never a verdict
+    # frozen at the day the model was added. An injected (test) run never triggers it.
+    if due:
+        left = deadline - time.monotonic()
+        out["contract"] = (_refresh_contract(budget_s=left) if left >= 0.5 * _contract_carve(
+            budget_s) else {"status": f"DEFERRED: {left:.0f}s left of budget_s, contract due"})
     if axis_docs:
         ip = intel_path or INTEL_REPORT
         ip.parent.mkdir(parents=True, exist_ok=True)
@@ -492,6 +711,53 @@ def run(budget_s: float = BUDGET_S, models: Sequence[str] = ("gnn", "attention")
 
 
 # ============================================================================ contract
+CONTRACT_EVERY_S = 7 * 86400.0
+#: The weekly contract's cell-screen budget ceiling, split evenly across the models; the
+#: walk-forward model scores themselves are cheap (seconds per config) and always run in full.
+CONTRACT_CELL_BUDGET_S = 1800.0
+#: Share of the daily pass's budget_s reserved for the contract on the day it is due.
+CONTRACT_SHARE = 1.0 / 3.0
+#: Measured primary-config fit seconds on an 18-symbol, 900-day panel (2026-10-13): signature
+#: 0.1, gnn 0.3, autoencoder 1.0, rocket 1.8, attention 2.5.
+MODEL_COST_RANK = {"signature": 0, "gnn": 1, "autoencoder": 2, "rocket": 3, "attention": 4}
+#: The floor of the contract's carve-out, so a small budget_s still pays for it on the day it is
+#: due instead of deferring forever (audit of #354 v4, SF2); never more than budget_s itself.
+CONTRACT_MIN_S = 120.0
+
+
+def _contract_carve(budget_s: float) -> float:
+    return min(float(budget_s), max(float(budget_s) * CONTRACT_SHARE, CONTRACT_MIN_S))
+
+
+def _contract_age(path: Path | None = None, now: float | None = None) -> float:
+    try:
+        return (time.time() if now is None else now) - (path or CONTRACT_REPORT).stat().st_mtime
+    except OSError:
+        return float("inf")
+
+
+def _contract_due(path: Path | None = None, now: float | None = None) -> bool:
+    return _contract_age(path, now) >= CONTRACT_EVERY_S
+
+
+def _refresh_contract(path: Path | None = None, now: float | None = None,
+                      budget_s: float = 2.0 * CONTRACT_CELL_BUDGET_S) -> dict[str, Any]:
+    """Half the budget goes to the cell screen, and the walk-forward scoring stops at the whole
+    budget's deadline, so a refresh never runs past what it was given."""
+    p = path or CONTRACT_REPORT
+    age = _contract_age(p, now)
+    if age < CONTRACT_EVERY_S:
+        return {"status": "FRESH", "age_h": round(age / 3600.0, 1)}
+    try:
+        doc = measure_contract(out_path=p,
+                               cell_budget_s=min(CONTRACT_CELL_BUDGET_S, 0.5 * float(budget_s)),
+                               deadline=time.monotonic() + float(budget_s))
+        return {"status": "MEASURED", "verdicts": {m: b.get("verdict")
+                                                    for m, b in doc["miners"].items()}}
+    except Exception as exc:
+        return {"status": f"UNMEASURED: contract failed: {type(exc).__name__}: {exc}"}
+
+
 def _git_meta() -> dict[str, Any]:
     meta: dict[str, Any] = {}
     for p in (_DESK / "data" / "universe" / "universe.json", GIT_BARS / "universe.json"):
@@ -514,7 +780,7 @@ def _shuffled(panel: LP.Panel, seed: int = 11) -> LP.Panel:
 
 
 def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
-                 deflate_t: Any) -> dict[str, Any]:
+                 deflate_t: Any, per_model_s: float = 3600.0) -> dict[str, Any]:
     """EVERY (config, symbol, threshold) test the miner charges, committed, not only the best.
 
     The claim "best of N, deflated to t" is only checkable if all N rows are in the artifact."""
@@ -522,11 +788,11 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
     keep = ("cell", "config", "symbol", "entry_z", "t_gross", "t_deflated_sweep",
             "t_deflated_lifetime", "n_independent", "net_per_trade", "clears_cost", "proposed")
     for model in MINERS:
-        res = mine(model, bars, meta, deadline=time.monotonic() + 3600.0)
+        res = mine(model, bars, meta, deadline=time.monotonic() + float(per_model_s))
         rows = [{k: r.get(k) for k in keep} for r in res["rows"]]
         tried: dict[str, int] = {}
         for t in res["_trials"]:
-            sym = str(t.trial_id).split(":", 1)[0]
+            sym = str(t.descriptors.get("symbol") or str(t.trial_id).split(":", 1)[0])
             tried[sym] = tried.get(sym, 0) + 1
         got: dict[str, int] = {}
         for r in rows:
@@ -560,8 +826,15 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
     return out
 
 
-def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dict[str, Any]:
-    """Walk-forward OOS metrics for both miners against their baselines on the bars in git."""
+@_single_threaded
+def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
+                     cell_budget_s: float | None = None,
+                     deadline: float | None = None) -> dict[str, Any]:
+    """Walk-forward OOS metrics for both miners against their baselines on the bars in git.
+
+    With a `deadline`, any model or control not yet scored when it passes is recorded as
+    UNMEASURED and a block whose primary or baseline is missing reads UNMEASURED, never NO_GAIN
+    (audit of #354 v4, SF3)."""
     from research.multiplicity import deflate_t
     meta = _git_meta()
     bars = load_bars(PANEL, base)
@@ -571,13 +844,22 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
     results: dict[str, Any] = {}
     timings: dict[str, float] = {}
 
+    def late() -> bool:
+        return deadline is not None and time.monotonic() >= deadline
+
     def score(name: str, model: str, cfg: Mapping[str, Any]) -> None:
+        if late():
+            results[name] = {"model": model, "config": dict(cfg),
+                             "status": "UNMEASURED: contract budget spent before this model"}
+            return
         t0 = time.monotonic()
         p = LP.predictions(des, model, cfg)
         timings[name] = round(time.monotonic() - t0, 2)
         results[name] = {"model": model, "config": dict(cfg), **LP.evaluate(p, panel, des)}
 
-    cell_screen = _cell_screen(bars, meta, deflate_t)
+    cell_screen = _cell_screen(bars, meta, deflate_t,
+                               per_model_s=(3600.0 if cell_budget_s is None
+                                            else float(cell_budget_s) / len(MINERS)))
     score("zero", "zero", {})
     score("naive_last", "naive_last", {})
     score("ridge_own_lags", "ridge", {})
@@ -587,9 +869,14 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
         score(_config_key("gnn", cfg), "gnn", cfg)
     for cfg in LP.ATTENTION_GRID:
         score(_config_key("attention", cfg), "attention", cfg)
+    for m in ("rocket", "autoencoder", "signature"):
+        for cfg in MINERS[m]["grid"]:
+            score(_config_key(m, cfg), m, cfg)
     shuf = _shuffled(panel)
     sdes = LP.design(shuf)
-    control = LP.evaluate(LP.predictions(sdes, "gnn", LP.GNN_GRID[0]), shuf, sdes)
+    _late_ctl = {"status": "UNMEASURED: contract budget spent before this control"}
+    control = (_late_ctl if late() else
+               LP.evaluate(LP.predictions(sdes, "gnn", LP.GNN_GRID[0]), shuf, sdes))
 
     def block(model: str, grid: Sequence[Mapping[str, Any]], baseline: str) -> dict[str, Any]:
         keys = [_config_key(model, c) for c in grid]
@@ -620,8 +907,15 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
     gnn_b = block("gnn", LP.GNN_GRID, "ridge_own_lags")
     att_b = block("attention", LP.ATTENTION_GRID,
                   f"ridge_lags_L{int(LP.ATTENTION_GRID[0]['lookback'])}")
+    # ROCKET, the autoencoder and the signature readouts all regress on the node's own features
+    # plus their transform, so their baseline is ridge on those own features alone.
+    extra_b = {m: block(m, MINERS[m]["grid"], "ridge_own_lags")
+               for m in ("rocket", "autoencoder", "signature")}
 
     def verdict(b: dict[str, Any]) -> str:
+        if any("status" in results.get(k, {}) for k in (b["primary_config (declared before "
+                                                          "any result)"], b["baseline"])):
+            return "UNMEASURED: contract budget spent before the primary or its baseline"
         p = b["primary"]
         gain = b["primary_minus_baseline"]
         ic_ok = (p.get("ic_t") or 0) >= 2.0 and (gain.get("ic_mean") or 0) > 0
@@ -638,6 +932,26 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
 
     gnn_b["verdict"] = verdict(gnn_b)
     att_b["verdict"] = verdict(att_b)
+    for b in extra_b.values():
+        b["verdict"] = verdict(b)
+    # THE DECLARED FALSIFIERS, COMPUTED (audit 2026-10-13). Each new model's mechanism names a
+    # time-shuffled panel; the autoencoder's also names a linear code of the same size. They are
+    # controls on the primary config, never trials, and they are reported beside the verdict.
+    for m, b in extra_b.items():
+        prim_cfg = MINERS[m]["grid"][0]
+        sc = _late_ctl if late() else LP.evaluate(LP.predictions(sdes, m, prim_cfg), shuf, sdes)
+        b["falsifier_time_shuffled"] = {k: sc.get(k) for k in ("ic_mean", "ic_t", "rank_ic_t",
+                                                               "ls_sharpe_net")}
+        if m == "autoencoder":
+            score(f"pca_latent{int(prim_cfg['latent'])}", "pca", {"latent": prim_cfg["latent"]})
+            lin = results[f"pca_latent{int(prim_cfg['latent'])}"]
+            b["falsifier_linear_code"] = {
+                "model": f"pca_latent{int(prim_cfg['latent'])}",
+                **{k: lin.get(k) for k in ("ic_mean", "ic_t", "ls_sharpe_net")},
+                "autoencoder_beats_it": (None if lin.get("ic_mean") is None
+                                         or b["primary"].get("ic_mean") is None
+                                         else float(b["primary"]["ic_mean"])
+                                         > float(lin["ic_mean"]))}
     doc = {
         "generated_at": datetime.now(tz=UTC).isoformat(),
         "data": {"bars": "desks/mt5/universe/*_H1.parquet (in git)", "resample": "broker-date "
@@ -656,9 +970,10 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
             "no_tuning": "every constant and both grids were fixed before the first run; every "
                          "configuration is reported and charged",
         },
-        "miners": {"gnn": gnn_b, "attention": att_b},
+        "miners": {"gnn": gnn_b, "attention": att_b, **extra_b},
         "falsification_control": {
             "what": "gnn primary on a panel with each instrument's returns permuted in time",
+            **({"status": control["status"]} if "status" in control else {}),
             **{k: control.get(k) for k in ("ic_mean", "ic_t", "rank_ic_t", "hit_rate",
                                            "ls_sharpe_net")}},
         "all_models": results,
@@ -666,8 +981,10 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
         "fit_seconds": timings,
         "trials_charged": {"gnn_configs": len(LP.GNN_GRID),
                            "attention_configs": len(LP.ATTENTION_GRID),
+                           **{f"{m}_configs": len(MINERS[m]["grid"])
+                              for m in ("rocket", "autoencoder", "signature")},
                            "baselines_not_charged": ["zero", "naive_last", "ridge_own_lags"] +
-                           [k for k in results if k.startswith("ridge_lags")],
+                           [k for k in results if k.startswith(("ridge_lags", "pca_latent"))],
                            "cell_level": ("the miner charges configs x symbols x "
                                           f"{len(ENTRY_Z)} entry thresholds per model = "
                                           f"{len(LP.GNN_GRID) * len(PANEL) * len(ENTRY_Z)} "
