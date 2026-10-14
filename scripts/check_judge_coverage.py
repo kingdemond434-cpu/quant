@@ -116,6 +116,9 @@ ETA_UNMEASURED_MAX_READINGS = 1
 #: A report older than this is stale: the organ runs at intake, hourly, so three hours of silence
 #: means the clock stopped. Generous because a box reboot or a long sweep is not a law breach.
 STALE_H = 6.0
+#: The judging rate is written hourly: older than this, its ETA describes no current reading.
+RATE_STALE_H = 3.0
+RATE_FUTURE_SKEW_H = 0.25
 
 #: How far past its OWN window a family's oldest unjudged cell may sit before this fails. The
 #: slack exists because a window is derived from a quota measured on the previous hour's capacity
@@ -312,7 +315,8 @@ def _legacy_missing(rate: Mapping[str, Any]) -> list[str]:
     return out or ["UNKNOWN"]
 
 
-def eta_check(rate_path: Path, *, require_state: bool = False) -> dict[str, Any]:
+def eta_check(rate_path: Path, *, require_state: bool = False,
+              now: datetime | None = None) -> dict[str, Any]:
     """8. THE DRAIN ETA IS MEASURED. An UNMEASURED `eta_to_drain` for more than one reading FAILS.
 
     Measured 2026-10-14: JUDGING_RATE read `eta_to_drain: UNMEASURED` hour after hour while the
@@ -328,6 +332,25 @@ def eta_check(rate_path: Path, *, require_state: bool = False) -> dict[str, Any]
                 "why": (f"{rate_path.name} absent or unreadable"
                         + (": --require-state says this box owes one (L1.49)" if require_state
                            else "; this tree holds no judging-rate state (L1.28a)"))}
+    # A STOPPED CLOCK IS NOT A MEASUREMENT (audit of 8613a43a2): a MEASURED reading whose producer
+    # then stopped would stay green for ever. Missing, unparseable, future or older than
+    # RATE_STALE_H, the reading is UNMEASURED -- FAIL where this box owes a fresh one.
+    at = now or datetime.now(tz=UTC)
+    try:
+        stamp = datetime.fromisoformat(str(rate.get("at") or "").replace("Z", "+00:00"))
+        stamp = stamp if stamp.tzinfo else None
+    except (ValueError, OverflowError):
+        stamp = None
+    age_h = (at - stamp).total_seconds() / 3600.0 if stamp is not None else None
+    if age_h is None or age_h > RATE_STALE_H or age_h < -RATE_FUTURE_SKEW_H:
+        how = ("missing or unparseable" if age_h is None else
+               f"{age_h:.1f}h old, past {RATE_STALE_H:g}h" if age_h > 0 else "in the future")
+        return {"metric": "eta_to_drain", "state": "FAIL" if require_state else "UNMEASURED",
+                "missing_inputs": [rate_path.name],
+                "why": (f"{rate_path.name} stale: its `at` is {how}, so the drain ETA describes "
+                        "no current reading"
+                        + (" and --require-state says this box owes one (L1.49)"
+                           if require_state else " (L1.28a)"))}
     eta = rate.get("eta_to_drain")
     eta = eta if isinstance(eta, dict) else {}
     status = eta.get("status")
@@ -401,7 +424,7 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
     # The rate sits beside the report it is read with; a fixture's report never reads the tree's.
     rate_path = rate or (path.parent / RATE.name if report is not None else RATE)
     out["rate"] = str(rate_path)
-    eta_row = eta_check(rate_path, require_state=require_state)
+    eta_row = eta_check(rate_path, require_state=require_state, now=at)
     doc = _read(path)
     if not isinstance(doc, dict) or not doc.get("families"):
         out["checks"].append(eta_row)

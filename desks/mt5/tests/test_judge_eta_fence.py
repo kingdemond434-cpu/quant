@@ -166,3 +166,23 @@ def test_the_eta_check_survives_an_absent_coverage_report(tmp_path: Path) -> Non
     doc = fence.judge(tmp_path / "JUDGE_COVERAGE.json", now=NOW)
     assert doc["verdict"] == "FAIL"
     assert "JUDGE_COVERAGE.json" in doc["why"]
+
+
+@pytest.mark.parametrize("stamp", ["2026-09-01T00:00:00+00:00", None, "bogus",
+                                   "2026-10-14T05:00:00+00:00", "2026-10-14T01:47:00"])
+def test_a_stale_or_unstamped_rate_is_never_a_green_eta(tmp_path: Path, stamp: object) -> None:
+    """Audit of 8613a43a2: a MEASURED rate whose producer stopped must not stay OK."""
+    (tmp_path / "JUDGING_RATE.json").write_text(json.dumps(
+        {"at": stamp, "eta_to_drain": {"status": "DRAINING", "hours": 40}}), "utf-8")
+    strict = fence.eta_check(tmp_path / "JUDGING_RATE.json", require_state=True, now=NOW)
+    assert strict["state"] == "FAIL" and "JUDGING_RATE.json stale" in strict["why"]
+    loose = fence.eta_check(tmp_path / "JUDGING_RATE.json", now=NOW)
+    assert loose["state"] == "UNMEASURED"
+
+
+def test_a_fresh_measured_rate_stays_ok(tmp_path: Path) -> None:
+    (tmp_path / "JUDGING_RATE.json").write_text(json.dumps(
+        {"at": (NOW - timedelta(hours=1)).isoformat(),
+         "eta_to_drain": {"status": "DRAINING", "hours": 40}}), "utf-8")
+    assert fence.eta_check(tmp_path / "JUDGING_RATE.json", require_state=True,
+                           now=NOW)["state"] == "OK"
