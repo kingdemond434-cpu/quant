@@ -71,7 +71,9 @@ def test_a_guided_change_is_no_surprise_and_a_change_against_guidance_is() -> No
             {"date": "2024-01-31", "sizes": {"3": 52, "10": 42, "30": 25}, "guidance": None}]
     s = tr.surprises(rows)
     assert s[0]["size_surprise"] is None and s[0]["guidance_shift"] is None
-    assert s[1]["size_surprise"] == pytest.approx(103 / 96 - 1, abs=1e-6) and s[1]["guidance_shift"] == 1
+    assert s[1]["size_surprise"] == pytest.approx(103 / 96 - 1, abs=1e-6)
+    assert s[1]["guidance_shift"] == 1
+    assert tr.surprises([]) == []
     assert s[2]["size_surprise"] == 0.0, "the August guidance said increases: priced"
     assert s[2]["guidance_shift"] == -1
     assert s[3]["size_surprise"] == pytest.approx(119 / 112 - 1, abs=1e-6), "guided 0, sizes rose"

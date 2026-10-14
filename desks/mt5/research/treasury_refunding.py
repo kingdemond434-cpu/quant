@@ -185,7 +185,7 @@ def surprises(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     """Each statement with its two surprises against the one before it (None = UNMEASURED)."""
     rows = sorted((s for s in statements if s.get("date")), key=lambda s: s["date"])
     out: list[dict[str, Any]] = []
-    for prev, cur in zip([None, *rows[:-1]], rows, strict=True):
+    for prev, cur in zip([None, *rows][:len(rows)], rows, strict=True):
         size_s: float | None = None
         shift: float | None = None
         if prev is not None:
