@@ -3,7 +3,7 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-14T11:38:50.044066+00:00",
+   "finished_at": "2026-10-14T17:40:29.786376+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -81,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-14T13:58:55.455923+00:00"
+ "updated_at": "2026-10-14T17:40:29.786376+00:00"
 }
