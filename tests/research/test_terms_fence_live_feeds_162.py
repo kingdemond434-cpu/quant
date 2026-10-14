@@ -56,7 +56,7 @@ def _roster_row(sid: str) -> dict[str, Any]:
     ("reddit_api", tf.NEEDS_KEY, "Reddit requires OAuth for authentication"),
     ("yahoo", tf.IDEAS_ONLY, "using any automated means"),
     ("mql5", tf.IDEAS_ONLY, "through any automated means, including use of scripts"),
-    ("telegram", tf.IDEAS_ONLY, "Telegram firmly prohibits the scraping"),
+    ("telegram", tf.SOURCE_POLICY["telegram"]["status"], "Telegram firmly prohibits the scraping"),
 ])
 def test_each_row_carries_its_own_terms_page_and_verbatim_clause(key: str, status: str,
                                                                  needle: str) -> None:
@@ -74,13 +74,19 @@ def test_a_row_without_a_terms_record_reads_unread_never_permitted() -> None:
     assert tf.input_source("stocktwits") == "stocktwits"
 
 
-def test_telegram_previews_are_ideas_only_never_live_input() -> None:
-    # Auditor ruling 2026-10-13: the content-licensing terms bar AI/ML use and aggregation.
-    assert tf.policy_of_url("https://t.me/s/markettwits")["status"] == tf.IDEAS_ONLY
-    assert tf.input_source("telegram", "https://t.me/s/") == "telegram"
+#: Read off the row (auditor ruling 2026-10-13: IDEAS_ONLY; the revert to PUBLIC_PAGE is the
+#: one line `terms_fence.SOURCE_POLICY["telegram"]["status"]`, and these tests follow it).
+TELEGRAM = tf.SOURCE_POLICY["telegram"]["status"]
+_NOT_LIVE = (tf.IDEAS_ONLY, *tf.HOLDING)
 
 
-def test_the_free_stack_telegram_feed_is_held_as_ideas_only(tmp_path: Path) -> None:
+def test_telegram_previews_follow_their_row_for_live_input() -> None:
+    assert tf.policy_of_url("https://t.me/s/markettwits")["status"] == TELEGRAM
+    want = "telegram" if TELEGRAM in _NOT_LIVE else None
+    assert tf.input_source("telegram", "https://t.me/s/") == want
+
+
+def test_the_free_stack_telegram_feed_follows_its_row(tmp_path: Path) -> None:
     from research import free_stack_hunter as H
     asked: list[str] = []
 
@@ -89,8 +95,11 @@ def test_the_free_stack_telegram_feed_is_held_as_ideas_only(tmp_path: Path) -> N
         return b""
 
     h, _ = H.run_source(_roster_row("telegram"), H.Store(tmp_path), fetch, {}, NOW)
-    assert h.status == tf.IDEAS_ONLY, h.detail
-    assert not asked, "an IDEAS_ONLY source is never fetched as live input"
+    if TELEGRAM in _NOT_LIVE:
+        assert h.status == TELEGRAM, h.detail
+        assert not asked, "an IDEAS_ONLY source is never fetched as live input"
+    else:
+        assert asked, "a PUBLIC_PAGE feed runs as live input"
 
 
 def test_reddit_live_input_is_the_data_api_route_only(monkeypatch: pytest.MonkeyPatch) -> None:
