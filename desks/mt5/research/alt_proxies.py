@@ -1790,6 +1790,176 @@ def parse_usajobs_count(body: bytes, ctx: Ctx) -> list[Obs]:
     return [Obs(f"usajobs_{ctx.part or 'open_total'}", at.date(), float(n), published_at=at)]
 
 
+# ============================================================================ US net liquidity
+#: NET LIQUIDITY = Fed total assets (H.4.1, Wednesday level) - Treasury General Account (Daily
+#: Treasury Statement closing balance) - overnight reverse repo take-up (NY Fed), all in USD bn,
+#: on the Wednesday the H.4.1 describes. Three official publishers, each read on its own terms
+#: (TERMS_EVIDENCE["us_net_liquidity"]); the combination is formed in `build_points` and is
+#: available only once ALL THREE components were (the latest of the three stamps).
+NET_LIQ_ID = "us_net_liquidity"
+H41_CURRENT_URL = "https://www.federalreserve.gov/releases/h41/current/"
+H41_DATED_URL = "https://www.federalreserve.gov/releases/h41/{yyyymmdd}/"
+DTS_TGA_URL = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/"
+               "dts/operating_cash_balance?filter=record_date:gte:{since}"
+               "&fields=record_date,account_type,close_today_bal,open_today_bal"
+               "&sort=record_date&page[size]=10000")
+NYFED_RRP_URL = ("https://markets.newyorkfed.org/api/rp/reverserepo/propositions/search.json"
+                 "?startDate={since}&endDate={until}")
+#: History requested on the first pass; later passes re-read the last NET_LIQ_RECENT_D days.
+NET_LIQ_DEPTH_D = 3 * 365
+NET_LIQ_RECENT_D = 45
+#: Dated H.4.1 release pages walked back per pass (a Thursday each). A page that does not
+#: exist (a holiday-shifted release) is a 404: recorded as not published, never an error.
+NET_LIQ_BACK_PER_PASS = 12
+#: The late-only publication stamps, UTC. H.4.1: Thursday 16:30 ET (21:30 UTC in winter, so
+#: 21:30 is never early); the DTS: next business day ~16:00 ET (stamped 22:00 UTC); the NY Fed
+#: RRP results: ~13:15 ET the same day (stamped 19:00 UTC).
+H41_PUB_HM = (21, 30)
+DTS_PUB_HM = (22, 0)
+RRP_PUB_HM = (19, 0)
+_H41_RELEASE = re.compile(r"Release Date:\s*([A-Z][a-z]+)\.?\s+(\d{1,2}),\s*(\d{4})")
+_H41_WED = re.compile(r"Wednesday\s+([A-Z][a-z]{2})[a-z]*\.?\s+(\d{1,2}),\s*(\d{4})")
+_H41_TOTAL = re.compile(r"Total assets\s*(?:\(\s*[\d,]+\s*\)\s*)?([\d,]{5,})")
+_MON3 = {m: i for i, m in enumerate(("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
+                                     "Sep", "Oct", "Nov", "Dec"), 1)}
+
+
+def _at(d: date, hm: tuple[int, int], *, next_weekday: bool = False) -> datetime:
+    t = _utc(d.year, d.month, d.day, *hm)
+    if next_weekday:
+        t = _roll_weekday(t + timedelta(days=1))
+    return t
+
+
+def parse_net_liquidity(body: bytes, ctx: Ctx) -> list[Obs]:
+    """One component per body, recognised by its own shape (never by the request label):
+    the NY Fed's `repo.operations` JSON -> `rrp_bn`; the Fiscal Data `data` rows -> `tga_bn`;
+    an H.4.1 release page -> `walcl_bn`. Anything else parses to nothing."""
+    with contextlib.suppress(ValueError, UnicodeDecodeError):
+        doc = json.loads(body.decode("utf-8"))
+        if isinstance(doc, dict) and isinstance(doc.get("repo"), dict):
+            per: dict[date, float] = {}
+            for op in doc["repo"].get("operations") or []:
+                if not isinstance(op, dict) or "reverse" not in str(
+                        op.get("operationType") or "").lower():
+                    continue
+                v = _num(str(op.get("totalAmtAccepted")))
+                try:
+                    d = date.fromisoformat(str(op.get("operationDate"))[:10])
+                except ValueError:
+                    continue
+                if v is not None:
+                    per[d] = per.get(d, 0.0) + v / 1e9
+            return [Obs("rrp_bn", d, round(v, 3), _at(d, RRP_PUB_HM))
+                    for d, v in sorted(per.items())]
+        if isinstance(doc, dict) and isinstance(doc.get("data"), list):
+            out: list[Obs] = []
+            for r in doc["data"]:
+                if not isinstance(r, dict):
+                    continue
+                kind = str(r.get("account_type") or "")
+                if not (("Closing Balance" in kind and ("TGA" in kind or "General Account"
+                                                        in kind))
+                        or kind == "Federal Reserve Account"):
+                    continue
+                v = _num(str(r.get("close_today_bal")))
+                if v is None:                    # since 2021-10 the closing row is in open_today
+                    v = _num(str(r.get("open_today_bal")))
+                try:
+                    d = date.fromisoformat(str(r.get("record_date"))[:10])
+                except ValueError:
+                    continue
+                if v is not None:
+                    out.append(Obs("tga_bn", d, round(v / 1e3, 3),
+                                   _at(d, DTS_PUB_HM, next_weekday=True)))
+            return out
+        return []
+    text = _text(body)
+    rel = _H41_RELEASE.search(text)
+    head = text.find("Consolidated Statement of Condition")
+    if not rel or head < 0:
+        return []
+    mon = _MON3.get(rel.group(1)[:3])
+    if mon is None:
+        return []
+    try:
+        released = date(int(rel.group(3)), mon, int(rel.group(2)))
+    except ValueError:
+        return []
+    wed = _H41_WED.search(text, head)
+    tot = _H41_TOTAL.search(text, head)
+    if not wed or not tot or wed.group(1) not in _MON3:
+        return []
+    asof = date(int(wed.group(3)), _MON3[wed.group(1)], int(wed.group(2)))
+    v = _num(tot.group(1))
+    if v is None or not 0 <= (released - asof).days <= 3:
+        return []
+    return [Obs("walcl_bn", asof, round(v / 1e3, 3), _at(released, H41_PUB_HM))]
+
+
+def rule_net_liquidity(period: date) -> datetime:
+    """The calendar fallback when a body carried no stamp: the next weekday, 22:00 UTC -- after
+    every one of the three releases it could describe, so it is late, never early."""
+    return _at(period, (22, 0), next_weekday=True)
+
+
+def _thursdays_back(start: date, n: int) -> list[date]:
+    d = start - timedelta(days=(start.weekday() - 3) % 7)
+    return [d - timedelta(days=7 * i) for i in range(n)]
+
+
+def _net_liquidity_requests(now: datetime, state: dict[str, Any]) -> list[Request]:
+    full = bool(state.get("full_done"))
+    since = (now - timedelta(days=NET_LIQ_RECENT_D if full else NET_LIQ_DEPTH_D)).date()
+    state["full_done_next"] = True
+    reqs = [Request(DTS_TGA_URL.replace("{since}", since.isoformat()),
+                    Ctx(part="tga", fetched_at=now)),
+            Request(NYFED_RRP_URL.replace("{since}", since.isoformat())
+                    .replace("{until}", now.date().isoformat()),
+                    Ctx(part="rrp", fetched_at=now)),
+            Request(H41_CURRENT_URL, Ctx(part="walcl:current", fetched_at=now))]
+    cur = state.get("backfill_to")
+    start = date.fromisoformat(cur) if cur else (now - timedelta(days=7)).date()
+    floor = (now - timedelta(days=NET_LIQ_DEPTH_D)).date()
+    days = [d for d in _thursdays_back(start, NET_LIQ_BACK_PER_PASS) if d > floor]
+    if days:
+        reqs += [Request(H41_DATED_URL.replace("{yyyymmdd}", d.strftime("%Y%m%d")),
+                         Ctx(part=f"walcl:back:{d.isoformat()}", start=d, end=d, fetched_at=now))
+                 for d in days]
+        state["backfill_to_next"] = (days[-1] - timedelta(days=7)).isoformat()
+    return reqs
+
+
+def _net_liquidity(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """The combined weekly series: on each H.4.1 Wednesday that has all three components, the
+    first-seen values combined, available at the LATEST of the three stamps (and first seen at
+    the latest first-seen), so no point is visible before every input was."""
+    comp: dict[str, dict[str, dict[str, Any]]] = {}
+    for row in store.values():
+        if isinstance(row, dict) and row.get("series") in ("walcl_bn", "tga_bn", "rrp_bn"):
+            comp.setdefault(str(row["series"]), {})[str(row["period"])] = row
+    sub: dict[str, Any] = {}
+    for d, w in comp.get("walcl_bn", {}).items():
+        t, r = comp.get("tga_bn", {}).get(d), comp.get("rrp_bn", {}).get(d)
+        if t is None or r is None:
+            continue
+        parts = (w, t, r)
+        v = float(w["value_first"]) - float(t["value_first"]) - float(r["value_first"])
+        sub[f"net_liquidity|{d}"] = {
+            "series": "net_liquidity", "period": d, "value_first": round(v, 3),
+            "value_last": round(v, 3),
+            "first_seen_at": max(str(p.get("first_seen_at") or "") for p in parts),
+            "published_time": max((str(p.get("published_time") or "") for p in parts),
+                                  key=lambda s: _t(s) or datetime.min.replace(tzinfo=UTC)),
+            "published_basis": ("page" if all(p.get("published_basis") == "page"
+                                               for p in parts) else "release_rule"),
+            "revision_time": None}
+    if not sub:
+        return {}
+    got = build_points(replace(src, id=src.id + "_combined"), sub)
+    return {"net_liquidity": got.get("net_liquidity", [])}
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -2048,6 +2218,35 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id=NET_LIQ_ID, name="US net liquidity: Fed total assets - TGA - ON RRP (weekly)",
+        url=H41_CURRENT_URL, region="US", language="en", cadence="weekly",
+        parse=parse_net_liquidity, rule=rule_net_liquidity, transform="diff_weekly",
+        instruments={"US500": 1, "NAS100": 1, "XAUUSD": 1, "EURUSD": 1, "GBPUSD": 1,
+                     "AUDUSD": 1, "USDJPY": -1, "USDCHF": -1, "USDCAD": -1},
+        signal_series=("net_liquidity",),
+        mechanism=("reserves the Fed supplies, net of the cash the Treasury parks at the Fed "
+                   "and money funds park in the reverse repo, is the dollar liquidity actually "
+                   "left in the banking system; its weekly change is a funding regime that "
+                   "risk assets and the dollar reprice to"),
+        payer=("holders who price on the policy rate alone and miss balance-sheet plumbing "
+               "(TGA rebuilds after debt-ceiling deals, RRP drains, QT run-off)"),
+        constraint=("the TGA moves on Treasury cash management and tax dates, the RRP on "
+                    "money-fund allocation; neither is a policy decision the rates market "
+                    "prices in advance"),
+        licence=("H.4.1: Board public domain; Daily Treasury Statement: Fiscal Data open data, "
+                 "commercial reuse; NY Fed Markets API: licence to access by automated "
+                 "process (all quoted in TERMS_EVIDENCE)"),
+        source_culture="US/en", participant_structure=("institutional", "policy_driven"),
+        failure_mode_hypothesis=("fails when the policy-rate path, not the balance sheet, "
+                                 "dominates (a surprise hike or cut week) and around quarter-"
+                                 "ends, when RRP swings are window dressing that reverses"),
+        crowding_prior="high",
+        note=("three publishers, one combined series: walcl_bn (H.4.1 Wednesday level), tga_bn "
+              "(DTS closing balance), rrp_bn (NY Fed ON RRP take-up); net_liquidity on each H.4.1 "
+              "Wednesday, available at the latest of the three stamps. pace = the weekly change "
+              "in USD bn (the regime sign the indirect cells condition on); surprise_z = that "
+              "change against its own run-rate")),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2762,6 +2961,9 @@ TERMS: dict[str, tuple[str, str]] = {
     "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
                             "commercial and non-commercial use, with attribution; data.gov.in "
                             "documented OGD API (free key)"),
+    NET_LIQ_ID: ("confirmed", "H.4.1 public domain (Board disclaimer); Fiscal Data open data "
+                 "for commercial and non-commercial use; NY Fed terms licence automated access "
+                 "(verbatim in TERMS_EVIDENCE, read 2026-10-14)"),
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),
@@ -3100,6 +3302,31 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                           "commercially or non-commercially."),
         "robots": "tablebuilder.singstat.gov.sg/api is the documented Table Builder API",
         "checked_at": _CHK},
+    NET_LIQ_ID: {
+        "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+        "terms_quote": ("Unless otherwise indicated, information on Board's website is in the "
+                        "public domain and may be copied and distributed without permission. "
+                        "Please cite to the Board as the source of the information."),
+        "tga_terms_url": "https://fiscaldata.treasury.gov/about-us/",
+        "tga_terms_quote": ("The data on this site is available to copy, adapt, redistribute, "
+                            "or otherwise use for non-commercial and commercial purposes."),
+        "rrp_terms_url": "https://www.newyorkfed.org/privacy/termsofuse",
+        "rrp_terms_quote": ("The New York Fed grants you a non-exclusive license, subject to the "
+                            "Terms, to use, copy, and distribute Content [...] Access the "
+                            "Content, manually or through an automated process or device, "
+                            "provided your access does not have the effect of disabling, "
+                            "damaging, or interfering with the function of the Website"),
+        "rrp_condition": ("When you copy or distribute any Content, you must include any "
+                          "copyright notice and other source identifiers"),
+        "judgement": ("all three permit automated reads for internal research; the Board asks "
+                      "for citation and the NY Fed for source identifiers, carried in `credit`"),
+        "robots": ("WebFetch (robots-respecting) read an H.4.1 dated release page, the Fiscal "
+                   "Data operating_cash_balance endpoint and the NY Fed reverserepo search.json "
+                   "on 2026-10-14"),
+        "credit": ("Sources: Board of Governors of the Federal Reserve System (H.4.1); U.S. "
+                   "Treasury, Bureau of the Fiscal Service (Daily Treasury Statement); Federal "
+                   "Reserve Bank of New York (reverse repo operations)."),
+        "checked_at": "2026-10-14"},
 }
 
 #: AXIS-ONLY TERMS. Sources this organ never fetches (no `Source` row, so never in BY_ID) whose
@@ -3339,6 +3566,31 @@ TERMS.update(PASS5_TERMS)
 TERMS_EVIDENCE.update(PASS5_TERMS_EVIDENCE)
 TERMS_EVIDENCE["wiki_asia_attention"] = {**TERMS_EVIDENCE["wiki_asia_attention"],
                                          **WIKI_POLICY_EVIDENCE}
+
+
+#: HELD ROUTES (2026-10-14, the GD queue rows) are rows of the ONE terms register,
+#: `libs/data/terms_fence.SOURCE_POLICY` (`held_route: True`): routes the queue asked for whose OWN
+#: terms were read and carry NO clause permitting automated access for internal research. None has
+#: a Source row here, so nothing is fetched (fail closed), and the run report lists each by name as
+#: HELD. This is a read-only VIEW of those rows; a route leaves it only when its fence row changes.
+from libs.data import terms_fence as _tf  # noqa: E402
+
+
+def _held_route_view(key: str) -> dict[str, str]:
+    row = _tf.SOURCE_POLICY[key]
+    terms = row.get("terms") or {}
+    quoted = " | ".join(str(v) for v in (terms.get("clauses") or {}).values())
+    unread = " | ".join(str(v) for v in (terms.get("unread") or {}).values())
+    return {"verdict": "HELD", "status": str(row["status"]), "wanted": str(row["wanted"]),
+            "terms_url": str(terms.get("url") or ""),
+            "terms_quote": quoted or f"(not readable: {unread})",
+            "reason": str(row["why"]), "robots": str(row.get("robots") or ""),
+            "unblock": str(row["unblock"]), "checked_at": str(terms.get("checked_at") or "")}
+
+
+HELD_ROUTES: dict[str, dict[str, str]] = {k: _held_route_view(k)
+                                          for k in sorted(_tf.HELD_ROUTE_KEYS)}
+
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PASS5_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
@@ -3634,6 +3886,8 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         return reqs
     if src.id == "gdelt_events_country":
         return _gdelt_requests(src, now, state)
+    if src.id == NET_LIQ_ID:
+        return _net_liquidity_requests(now, state)
     if src.id in DATED_SOURCES:
         recent, lag, back = DATED_SOURCES[src.id]
         return _dated_requests(src, key, now, state, recent=recent, lag=lag, back=back)
@@ -3849,6 +4103,11 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 base = vals[max(0, i - 6): i]
                 mb = _mean(base)
                 x = (v / mb - 1.0) * 100.0 if len(base) >= 3 and mb else None
+            elif src.transform == "diff_weekly":
+                # the change since the previous point, only when that point is exactly a week
+                # earlier: a missing week leaves a gap, never a two-week change called weekly
+                x = (v - vals[i - 1] if i >= 1 and (periods[i] - periods[i - 1]).days == 7
+                     else None)
             elif src.transform == "level_dev":
                 base = vals[max(0, i - 20): i]
                 mb = _mean(base)
@@ -3890,6 +4149,8 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
     # FIRMS: a total across the declared footprints, per day, from the per-cluster counts.
     if src.id == "cn_firms_industrial":
         out.update(_firms_total(src, out))
+    if src.id == NET_LIQ_ID:
+        out.update(_net_liquidity(src, store))
     return out
 
 
@@ -4448,6 +4709,12 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 read_parts.append(req.ctx.part)
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
+                if (isinstance(exc, urllib.error.HTTPError) and exc.code == 404
+                        and ":back:" in req.ctx.part):
+                    # a dated release page that does not exist (a holiday-shifted week): no
+                    # release that day, recorded by name, and the backfill cursor still moves
+                    rec.setdefault("not_published", []).append(req.ctx.part)
+                    continue
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
                 continue
         if body is None:
@@ -4784,6 +5051,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
         "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
+        "held_routes": {k: {"verdict": v["verdict"], "reason": v["reason"],
+                            "terms_url": v["terms_url"]} for k, v in sorted(HELD_ROUTES.items())},
         "blocked_substituted": {sid: list(v) for sid in sorted(SUBSTITUTED_BY)
                                 if (v := verified_substitutes(sid))},
         "blocked_unsubstituted": unsubstituted(),

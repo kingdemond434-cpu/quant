@@ -358,6 +358,102 @@ def _spec_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
             "why": text.strip(), "declared_mechanism": str(row.get("mechanism") or "")}
 
 
+def registry_parent(row: Mapping[str, Any],
+                    override: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """One registry discovery row -> the intake shape `_expand_one` reads. `override` (fields
+    the recording organ knows better now than when it recorded) wins over the payload."""
+    payload = row.get("payload_json")
+    spec = json.loads(payload) if isinstance(payload, str) and payload.startswith("{") else {}
+    merged: dict[str, Any] = {**row, **spec, **dict(override or {})}
+    if not merged.get("symbol") and not (override or {}).get("symbols") \
+            and isinstance(row.get("assets_json"), str):
+        # A discovery another organ recorded carries its instruments in `assets_json` and no
+        # `symbol`. Reading only `symbol` would make every foreign discovery instrument-less,
+        # and an instrument-less parent produces a closure of nothing -- a silent drop wearing
+        # a successful run.
+        with contextlib.suppress(ValueError, TypeError):
+            merged["symbols"] = [s for s in json.loads(row["assets_json"]) if s]
+    return {"discovery_id": str(row["discovery_id"]), "source_type": "registry",
+            "origin": row.get("origin"), **_spec_from_row(merged)}
+
+
+def expand_ids(overrides: Mapping[str, Mapping[str, Any]], *, conn: Any,
+               deadline: float | None = None, ctx: TM.Context | None = None,
+               dry_run: bool = False) -> dict[str, Any]:
+    """THE PRIORITY DRAIN: expand THESE UNPROCESSED discoveries now, through the same seven steps.
+
+    `run()` takes the OLDEST 200 UNPROCESSED discoveries per pass, so a discovery recorded behind
+    a backlog waits for the whole backlog to drain first. The ingestion ledger's stranded-unit
+    handoffs are exactly that case: a datum already past its 24-hour grace would wait again, in a
+    queue, for its first cell. This lets the recording organ hand its OWN discoveries straight to
+    `_expand_one` -- the same gates, the same registry door (`enqueue_candidate`, so every cell
+    is charged to the census), the same donation into `data/intelligence/discovery_compiler/`.
+    Nothing else in the queue moves; nothing is skipped. `overrides` maps discovery_id -> fields
+    the caller knows now (the routed mechanism, information and instruments). Never raises.
+    """
+    out: dict[str, Any] = {"requested": len(overrides), "expanded": 0, "compiled": 0,
+                           "blocked": 0, "not_unprocessed": 0, "budget_stopped": False,
+                           "by_mechanism": {}, "blocked_by_reason": {}, "donation_path": None,
+                           "donated": 0, "errors": []}
+    if not overrides:
+        return out
+    try:
+        ctx = ctx if ctx is not None else build_context()
+        coverage = dict(R.grid_coverage(conn=conn))
+        hashes = {str(r["content_hash"]) for r in R.candidates(limit=20000, conn=conn)
+                  if r.get("content_hash")}
+        redundant = _redundant_keys()
+    except Exception as exc:
+        out["errors"].append(f"context: {type(exc).__name__}: {exc}")
+        return out
+    donations: list[dict[str, Any]] = []
+    blocked: dict[str, int] = {}
+    by_miner: dict[str, dict[str, int]] = {}
+    possible = 0
+    ids = list(overrides)
+    for i in range(0, len(ids), 500):
+        chunk = ids[i:i + 500]
+        marks = ",".join("?" * len(chunk))
+        try:
+            rows = [dict(r) for r in conn.execute(
+                f"SELECT * FROM discoveries WHERE discovery_id IN ({marks})",  # noqa: S608
+                chunk)]
+        except Exception as exc:
+            out["errors"].append(f"read: {type(exc).__name__}: {exc}")
+            break
+        for row in rows:
+            if str(row.get("state") or "").upper() != "UNPROCESSED":
+                out["not_unprocessed"] += 1
+                continue
+            if deadline is not None and time.monotonic() > deadline:
+                out["budget_stopped"] = True
+                break
+            try:
+                got = _expand_one(registry_parent(row, overrides.get(str(row["discovery_id"]))),
+                                  ctx, coverage=coverage, hashes=hashes, redundant=redundant,
+                                  conn=conn, dry_run=dry_run, donations=donations,
+                                  blocked=blocked, by_miner=by_miner)
+            except Exception as exc:
+                out["errors"].append(f"{row.get('discovery_id')}: {type(exc).__name__}: {exc}")
+                continue
+            out["expanded"] += 1
+            out["compiled"] += got["compiled"]
+            out["blocked"] += int(got["compiled"] == 0)
+            possible += got["possible"]
+            slot = out["by_mechanism"].setdefault(got["mechanism_id"],
+                                                  {"discoveries": 0, "compiled": 0})
+            slot["discoveries"] += 1
+            slot["compiled"] += got["compiled"]
+        if out["budget_stopped"]:
+            break
+    out["blocked_by_reason"] = dict(sorted(blocked.items()))
+    if donations and not dry_run:
+        out["donation_path"] = donate(donations, possible)
+        out["donated"] = len(donations)
+    out["errors"] = out["errors"][:20]
+    return out
+
+
 def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVERIES,
            deadline: float | None = None, record: bool = True
            ) -> tuple[list[dict[str, Any]], dict[str, int], list[dict[str, str]]]:
@@ -400,18 +496,7 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
             by_source[source_type] = by_source.get(source_type, 0) + 1
 
     for row in R.discoveries(state="UNPROCESSED", limit=limit, conn=conn):
-        payload = row.get("payload_json")
-        spec = json.loads(payload) if isinstance(payload, str) and payload.startswith("{") else {}
-        merged: dict[str, Any] = {**row, **spec}
-        if not merged.get("symbol") and isinstance(row.get("assets_json"), str):
-            # A discovery another organ recorded carries its instruments in `assets_json` and no
-            # `symbol`. Reading only `symbol` would make every foreign discovery instrument-less,
-            # and an instrument-less parent produces a closure of nothing -- a silent drop wearing
-            # a successful run.
-            with contextlib.suppress(ValueError, TypeError):
-                merged["symbols"] = [s for s in json.loads(row["assets_json"]) if s]
-        got.append({"discovery_id": str(row["discovery_id"]), "source_type": "registry",
-                    "origin": row.get("origin"), **_spec_from_row(merged)})
+        got.append(registry_parent(row))
         by_source["registry_unprocessed"] = by_source.get("registry_unprocessed", 0) + 1
         if len(got) >= limit:
             return got, by_source, unmeasured
