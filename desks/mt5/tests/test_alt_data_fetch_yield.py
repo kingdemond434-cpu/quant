@@ -522,7 +522,8 @@ def test_a_403_ground_records_its_cause_on_the_frontier_and_the_stats(monkeypatc
 @pytest.mark.parametrize("url, status", [
     ("https://www.reddit.com/r/algotrading/.rss", "IDEAS_ONLY"),
     ("https://oauth.reddit.com/r/x/new", "NEEDS_KEY"),
-    ("https://t.me/s/markettwits", "IDEAS_ONLY"),         # auditor ruling 2026-10-13
+    # read off its row: the ruling and its revert are one line in terms_fence
+    ("https://t.me/s/markettwits", dfm.SOURCE_POLICY["telegram"]["status"]),
     ("https://x.com/someone/status/1", "IDEAS_ONLY"),
     ("https://api.x.com/2/tweets/search/recent", "NEEDS_KEY"),
     ("https://nitter.poast.org/search?q=x", "METHOD_BLOCKED"),
@@ -865,6 +866,30 @@ def test_pit_stamp_floors_available_time_at_the_fetch_per_row() -> None:
     plain, _ = pit_stamp.stamp_frame(df, lag_days=20, observed_at="2026-10-13T12:00:00+00:00")
     assert str(plain["available_time"].iloc[0])[:10] == "2019-02-20", "registered sources keep" \
         " their declared-lag stamp"
+
+
+@pytest.mark.parametrize("observed_at", ["not-a-timestamp", None, "2026-10-13T12:00:00+00:00"])
+def test_the_first_sight_floor_fails_closed(monkeypatch, observed_at) -> None:
+    """PR162_357 #357 MF1: if the floor cannot run (no fetch instant, an unparseable one, or any
+    exception inside it) the frame is UNSTAMPED -- never STAMPED on period + lag, which would put
+    a 2019 row at 2019-02-20."""
+    import pandas as pd
+
+    from libs.data import pit_stamp
+    df = pd.DataFrame({"period_end": ["2019-01-31", "2026-10-01"], "v": [1.0, 2.0]})
+    if observed_at is not None and observed_at.startswith("2026"):
+        real = pd.Series.where
+
+        def boom(self, *a, **k):                          # the floor itself raises
+            raise RuntimeError("forced")
+        monkeypatch.setattr(pd.Series, "where", boom)
+    out, meta = pit_stamp.stamp_frame(df, lag_days=20, observed_at=observed_at,
+                                      source_id="dfraw__x", not_before_observed=True)
+    if observed_at is not None and observed_at.startswith("2026"):
+        monkeypatch.setattr(pd.Series, "where", real)
+    assert meta["status"] == "UNSTAMPED", meta
+    assert "first-sight floor failed" in meta["why"]
+    assert "available_time" not in out.columns
 
 
 def test_a_dfraw_landing_parses_with_available_at_max_period_lag_or_fetch(monkeypatch,
