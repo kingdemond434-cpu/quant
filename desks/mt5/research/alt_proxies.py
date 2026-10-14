@@ -2011,8 +2011,8 @@ SOURCES: tuple[Source, ...] = (
             "strait_of_hormuz": {"XTIUSD": -1, "XBRUSD": -1, "XAUUSD": -1},
             "bab_el_mandeb_strait": {"XBRUSD": -1, "XTIUSD": -1},
             "suez_canal": {"XBRUSD": -1, "XTIUSD": -1},
-            **dict.fromkeys(("panama_canal", "cape_of_good_hope", "gibraltar_strait",
-                             "bosporus_strait", "malacca_strait"), {})},
+            **{k: {} for k in ("panama_canal", "cape_of_good_hope", "gibraltar_strait",
+                               "bosporus_strait", "malacca_strait")}},
         signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits",
                        "suez_canal_transits"),
         mechanism=("fewer transits through oil chokepoints is supply friction; the tanker count "
