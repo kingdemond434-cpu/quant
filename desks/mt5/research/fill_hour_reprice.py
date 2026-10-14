@@ -117,7 +117,7 @@ def ratio_of(surface: dict[str, Any] | None, meta: dict[str, Any], sym: str,
         return None, None, None
     pooled = None
     try:
-        from research.entry_hour_cost import hour_spread_pts
+        from research.entry_hour_cost import hour_spread_pts  # type: ignore[import-not-found, unused-ignore]
     except ImportError:
         from research.cost_surface import spread_pts
         fill = spread_pts(surface or {}, sym, hour) if surface else None
