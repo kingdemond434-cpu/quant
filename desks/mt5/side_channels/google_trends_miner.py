@@ -70,6 +70,19 @@ def trend_reading(timeline: list[dict]) -> float | None:
     return (recent - prev) / prev * 100
 
 
+def timeline_from(text: str) -> list[dict]:
+    """The embedded `timelineData` array, decoded whole. The old non-greedy bracket match stopped at
+    the first `]`, which is inside the first point's own `"value": [n]`, so it never decoded."""
+    m = re.search(r'"timelineData":\s*', text)
+    if not m:
+        return []
+    try:
+        val, _end = json.JSONDecoder().raw_decode(text, m.end())
+    except ValueError:
+        return []
+    return [t for t in val if isinstance(t, dict)] if isinstance(val, list) else []
+
+
 def mine_google_trends() -> list[dict]:
     """Fetch Google Trends data for trading terms."""
     discoveries = []
@@ -85,29 +98,27 @@ def mine_google_trends() -> list[dict]:
                     # Extract trend data from HTML
                     text = resp.text
                     # Look for JSON data embedded in page
-                    match = re.search(r'"timelineData":\s*(\[.*?\])', text)
-                    if match:
-                        timeline = json.loads(match.group(1))
-                        if timeline:
-                            # Get latest value
-                            latest = timeline[-1].get("value", [0])[0]
-                            # Calculate trend (last 4 weeks vs previous 4); unmeasurable
-                            # emits nothing rather than a zero
-                            trend_pct = trend_reading(timeline)
+                    timeline = timeline_from(text)
+                    if timeline:
+                        # Get latest value
+                        latest = timeline[-1].get("value", [0])[0]
+                        # Calculate trend (last 4 weeks vs previous 4); unmeasurable
+                        # emits nothing rather than a zero
+                        trend_pct = trend_reading(timeline)
 
-                            syms = TERM_TO_SYMBOLS.get(term, [])
-                            if syms and latest > 0 and trend_pct is not None:
-                                discoveries.append({
-                                    "source": "google_trends",
-                                    "type": "search_volume",
-                                    "term": term,
-                                    "category": category,
-                                    "current_value": latest,
-                                    "trend_pct": round(trend_pct, 1),
-                                    "symbols": syms,
-                                    "confidence": min(0.7, abs(trend_pct) / 50),
-                                    "description": f"'{term}' search volume {trend_pct:+.1f}% vs 4-week avg",
-                                })
+                        syms = TERM_TO_SYMBOLS.get(term, [])
+                        if syms and latest > 0 and trend_pct is not None:
+                            discoveries.append({
+                                "source": "google_trends",
+                                "type": "search_volume",
+                                "term": term,
+                                "category": category,
+                                "current_value": latest,
+                                "trend_pct": round(trend_pct, 1),
+                                "symbols": syms,
+                                "confidence": min(0.7, abs(trend_pct) / 50),
+                                "description": f"'{term}' search volume {trend_pct:+.1f}% vs 4-week avg",
+                            })
             except Exception:
                 pass
 

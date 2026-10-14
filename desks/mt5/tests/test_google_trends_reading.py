@@ -40,3 +40,9 @@ def test_the_miner_emits_nothing_for_an_unmeasurable_term(monkeypatch: pytest.Mo
     monkeypatch.setattr(gtm.requests, "get", lambda *a, **k: Long())
     rows = gtm.mine_google_trends()
     assert rows and all(r["trend_pct"] == 100.0 for r in rows)
+
+
+def test_the_embedded_timeline_decodes_whole() -> None:
+    page = 'x "timelineData": [{"value": [3]}, {"value": [4]}], "other": [1]'
+    assert gtm.timeline_from(page) == [{"value": [3]}, {"value": [4]}]
+    assert gtm.timeline_from("nothing here") == []
