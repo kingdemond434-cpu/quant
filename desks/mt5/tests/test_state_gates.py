@@ -415,3 +415,27 @@ def test_families_are_registered_where_the_gauntlet_looks() -> None:
     for fam in ("sync_gated", "entropy_gated"):
         assert fam in ORTHOGONAL_FAMILIES and fam in FAMILY_INPUTS and fam in FAMILY_TABLE
         assert fam in _UNWRAPPABLE and fam in NOT_SOURCED_HERE
+
+
+def test_donate_is_called_with_the_true_count_never_settled_after(monkeypatch, tmp_path) -> None:
+    """Audit of #395 v4: rows the door would refuse are dropped BEFORE donate, so the contract is
+    written once with tests_run equal to its rows -- no window where the ledger reads more."""
+    import json
+
+    import proposer_common
+    P, grid, charged = _two_symbol_proposer(monkeypatch, tmp_path)
+    monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 1500)
+    real = proposer_common._lane_filtered
+
+    def lane(cands):
+        ok, ref = real([c for c in cands if c.get("symbol") != "XAUUSD"])
+        return ok, ref + [c for c in cands if c.get("symbol") == "XAUUSD"]
+    monkeypatch.setattr(proposer_common, "_lane_filtered", lane)
+    assert P.main(["--once"]) == 0
+    n_eur = sum(1 for c in grid if c["symbol"] == "EURUSD")
+    assert charged == [n_eur]
+    rep = json.loads((tmp_path / "r.json").read_text("utf-8"))
+    assert rep["refused_before_donate"] == len(grid) - n_eur and rep["trials_charged"] == n_eur
+    (f,) = sorted((tmp_path / "intel").glob("discoveries_*.json"))
+    doc = json.loads(f.read_text("utf-8"))
+    assert doc["tests_run"] == len(doc["discoveries"]) == n_eur
