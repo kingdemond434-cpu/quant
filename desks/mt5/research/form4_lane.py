@@ -107,17 +107,19 @@ EVENT_HOLD_DAYS = 5
 #: only for Retry-After.
 Getter = Callable[[str, dict[str, str]], tuple[Any, ...]]
 
-#: THE HARD STOP (standing project rule). A 401, 403 or 429 ends the pass's SEC fetching on the
-#: spot: the lane backs off, marks itself with the reason and moves on to scoring what it already
-#: holds. It never retries around the block, rotates identity or takes another route to the same
-#: gated content. 401 asks for a key; 403/429 say this method is blocked for now.
-HARD_STOP: dict[int, str] = {401: "NEEDS_KEY", 403: "METHOD_BLOCKED", 429: "METHOD_BLOCKED"}
-#: Backoff when the response names no Retry-After: 1h, doubling per consecutive block, capped.
-BACKOFF_BASE_S = 3600.0
-BACKOFF_MAX_S = 7 * 86400.0
-#: The desk's one register of sources that stopped yielding (written by the regional survivor
-#: hunters too); the block is recorded there, never in a register of its own.
-BLOCKED_REGISTER = DESK / "data" / "intelligence" / "blocked_sources.json"
+#: THE HARD STOP (standing project rule; one implementation in `research/hard_stop.py`). A 401,
+#: 403 or 429 ends the pass's SEC fetching on the spot: the lane backs off, marks itself with the
+#: reason and moves on to scoring what it already holds. It never retries around the block,
+#: rotates identity or takes another route to the same gated content.
+try:
+    from research import hard_stop as _hs
+except ImportError:                                         # pragma: no cover - layout
+    import hard_stop as _hs  # type: ignore[no-redef,import-not-found]
+HARD_STOP = _hs.HARD_STOP
+BACKOFF_BASE_S = _hs.BACKOFF_BASE_S
+BACKOFF_MAX_S = _hs.BACKOFF_MAX_S
+BLOCKED_REGISTER = _hs.BLOCKED_REGISTER
+retry_after_s = _hs.retry_after_s
 REGISTER_KEY = "sec_edgar_form4"
 
 
@@ -204,57 +206,15 @@ def _call(get: Getter, url: str) -> tuple[int, bytes, dict[str, str]]:
     return status, body, {str(k).lower(): str(v) for k, v in headers.items()}
 
 
-def retry_after_s(value: str | None, now: datetime) -> float | None:
-    """Retry-After as seconds from `now`: delta-seconds or an HTTP-date; None when absent/bad."""
-    if not value:
-        return None
-    v = value.strip()
-    if v.isdigit():
-        return float(v)
-    try:
-        from email.utils import parsedate_to_datetime
-        at = parsedate_to_datetime(v)
-    except (TypeError, ValueError, IndexError):
-        return None
-    if at.tzinfo is None:
-        at = at.replace(tzinfo=UTC)
-    return max(0.0, (at - now).total_seconds())
-
-
 def block_marker(status: int, url_class: str, headers: dict[str, str], now: datetime,
                  prior: dict[str, Any] | None) -> dict[str, Any]:
-    """The persisted hard-stop marker: who refused, which URL class, when, and until when."""
-    consecutive = int((prior or {}).get("consecutive") or 0) + 1
-    ra = retry_after_s(headers.get("retry-after"), now)
-    wait = ra if ra is not None else min(BACKOFF_MAX_S,
-                                         BACKOFF_BASE_S * 2 ** (consecutive - 1))
-    return {"status": HARD_STOP[status], "http_status": status, "url_class": url_class,
-            "at": now.isoformat(timespec="seconds"),
-            "until": (now + timedelta(seconds=wait)).isoformat(timespec="seconds"),
-            "backoff_s": wait, "backoff_source": "retry_after" if ra is not None else
-            "exponential", "consecutive": consecutive}
+    """The persisted hard-stop marker (see `research/hard_stop.py`)."""
+    return _hs.block_marker(status, url_class, headers, now, prior)
 
 
 def record_block(marker: dict[str, Any], register: Path) -> None:
-    """Append the block to the desk's existing blocked-sources register (same schema as the
-    regional survivor hunters' entries)."""
-    reg = _read_json(register, None)
-    if not isinstance(reg, dict):
-        reg = {"note": "sources that returned no survivor records -- a WORK QUEUE, never a "
-                       "discovery.", "sources": {}}
-    e = reg.setdefault("sources", {}).setdefault(REGISTER_KEY, {"first_seen": marker["at"],
-                                                                 "region": "US"})
-    e.update({"last_seen": marker["at"], "url": f"sec.gov {marker['url_class']}",
-              "diagnosis": marker["status"],
-              "fix_hint": (f"HARD STOP: HTTP {marker['http_status']} -- backed off until "
-                           f"{marker['until']}; no retry around the block, no identity "
-                           "rotation, no other route to the same content"
-                           + ("; a key/credential is needed" if marker["status"] == "NEEDS_KEY"
-                              else "")),
-              "error": f"HTTP {marker['http_status']} on {marker['url_class']}",
-              "blocked_until": marker["until"],
-              "attempts": int(e.get("attempts", 0)) + 1})
-    _write_json(register, reg)
+    """Record the block in the desk's existing blocked-sources register."""
+    _hs.record_block(marker, register, key=REGISTER_KEY, host="sec.gov", region="US")
 
 
 # ------------------------------------------------------------------------------- instruments

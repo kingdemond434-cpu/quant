@@ -487,6 +487,7 @@ desks/mt5/data/hypotheses/conversion_handoff.json
 # reports/FORM4_LANE.json. And F1's donation ledger (market_ecology.donate_f1).
 desks/mt5/data/form4/
 desks/mt5/data/f1_idio_volume_state.json
+desks/mt5/data/google_trends_block.json
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.

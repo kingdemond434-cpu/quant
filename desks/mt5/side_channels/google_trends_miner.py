@@ -9,14 +9,31 @@ Uses Google Trends RSS/CSV (no API key needed).
 
 import json
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
 
 BASE = Path(__file__).resolve().parent.parent
+for _p in (str(BASE), str(BASE / "research")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+try:
+    from research import hard_stop
+except ImportError:                                         # pragma: no cover - layout
+    import hard_stop  # type: ignore[no-redef,import-not-found]
+
 OUT = BASE / "data" / "intelligence" / "google_trends"
 OUT.mkdir(parents=True, exist_ok=True)
+#: THE HARD STOP (standing project rule, `research/hard_stop.py`): the persisted backoff marker
+#: and the register the block is recorded in. A 401/403/429 ends the pass; later passes request
+#: nothing until the backoff expires; no retry around it, no UA rotation, no other host.
+BLOCK_STATE = BASE / "data" / "google_trends_block.json"
+BLOCKED_REGISTER = hard_stop.BLOCKED_REGISTER
+REGISTER_KEY = "google_trends"
+#: What the last pass did (status, requests, block), for the caller's one-line summary.
+LAST_PASS: dict = {}
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
 
@@ -83,18 +100,51 @@ def timeline_from(text: str) -> list[dict]:
     return [t for t in val if isinstance(t, dict)] if isinstance(val, list) else []
 
 
-def mine_google_trends() -> list[dict]:
-    """Fetch Google Trends data for trading terms."""
-    discoveries = []
+def _load_block() -> dict | None:
+    try:
+        doc = json.loads(BLOCK_STATE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
 
+
+def mine_google_trends(now: datetime | None = None) -> list[dict]:
+    """Fetch Google Trends data for trading terms, under the hard stop."""
+    now = now or datetime.now(timezone.utc)
+    discoveries: list[dict] = []
+    prior = _load_block()
+    LAST_PASS.clear()
+    LAST_PASS.update({"requests": 0, "ok_responses": 0, "block": None})
+    if hard_stop.active(prior, now):
+        assert prior is not None
+        LAST_PASS.update({"status": prior.get("status"), "skipped": True, "block": prior})
+        return discoveries
+
+    blocked = False
     for category, terms in SEARCH_TERMS.items():
+        if blocked:
+            break
         for term in terms:
             try:
                 # Use Google Trends explore page (HTML scraping)
                 url = f"https://trends.google.com/trends/explore?q={term.replace(' ', '+')}&date=today+12-m"
                 resp = requests.get(url, headers=HEADERS, timeout=15)
+                LAST_PASS["requests"] += 1
+                status = int(resp.status_code)
+                if status in hard_stop.HARD_STOP:
+                    marker = hard_stop.block_marker(status, "explore",
+                                                    dict(getattr(resp, "headers", None) or {}),
+                                                    now, prior)
+                    BLOCK_STATE.parent.mkdir(parents=True, exist_ok=True)
+                    BLOCK_STATE.write_text(json.dumps(marker, indent=1), encoding="utf-8")
+                    hard_stop.record_block(marker, BLOCKED_REGISTER, key=REGISTER_KEY,
+                                           host="trends.google.com")
+                    LAST_PASS.update({"status": marker["status"], "block": marker})
+                    blocked = True
+                    break                    # THE HARD STOP: no further request this pass
 
                 if resp.status_code == 200:
+                    LAST_PASS["ok_responses"] += 1
                     # Extract trend data from HTML
                     text = resp.text
                     # Look for JSON data embedded in page
@@ -122,6 +172,10 @@ def mine_google_trends() -> list[dict]:
             except Exception:
                 pass
 
+    if not blocked:
+        LAST_PASS["status"] = "FETCHED" if LAST_PASS["ok_responses"] else "FAILED"
+        if LAST_PASS["ok_responses"] and prior is not None:
+            BLOCK_STATE.unlink(missing_ok=True)   # an answered, unrefused pass ends the ladder
     return discoveries
 
 
@@ -133,7 +187,8 @@ def run_and_save() -> list[dict]:
     except ModuleNotFoundError:
         from discovery_io import write_discoveries
     discoveries = write_discoveries(out_file, discoveries)
-    print(f"google_trends: {len(discoveries)} discoveries saved")
+    print(f"google_trends: {len(discoveries)} discoveries saved "
+          f"(pass {LAST_PASS.get('status')}, {LAST_PASS.get('requests')} requests)")
     return discoveries
 
 
