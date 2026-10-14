@@ -293,6 +293,7 @@ def test_the_crawl_never_asks_a_held_site_again(monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr(wc, "ACCESS_STATE", tmp_path / "access.json")
     monkeypatch.setattr(wc, "REPORT", tmp_path / "world_crawl.json")
     monkeypatch.setattr(wc, "WORLD", tmp_path / "world")
+    monkeypatch.setattr(wc, "BASE", tmp_path)
     monkeypatch.setattr(wc, "VAULT", tmp_path / "world" / "vault")
     report = wc.crawl(budget=4, run_budget_s=60, seconds_per_host=0.0)
     assert "https://a.test/2" not in web.urls() and "https://a.test/3" not in web.urls()
