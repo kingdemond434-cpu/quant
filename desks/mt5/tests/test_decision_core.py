@@ -933,7 +933,7 @@ def test_scalp_basket_arithmetic_and_order_lines() -> None:
                    "opened_bar": "2026-09-04T10:00:00+00:00"}
     assert dc.scalp_order_desc(plan, 0.03, "XAUUSD", "bounded_structural") == (
         "SELL 0.03 XAUUSD @market sl=2015.00000 tp=2005.00000 mode=bounded_structural "
-        "ttl_until=2026-09-04T11:45:00")
+        "ttl_until(bar clock)=2026-09-04T11:45:00")
     assert dc.addon_desc(1, 0.03, "XAUUSD", 2000.0, 2010.5, 2) == (
         "ADD BUY 0.03 XAUUSD @market sl=2000.00000 tp->2010.50000 depth=2")
     assert dc.addon_desc(-1, 0.03, "XAUUSD", 2000.0, 2010.5, 3).startswith("ADD SELL")
