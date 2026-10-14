@@ -457,7 +457,7 @@ def _lane_ok(symbol: str, family: str) -> bool:
         import universe_policy as up
         return bool(up.may_hypothesise(symbol, family))
     except Exception:                                  # pragma: no cover
-        return True
+        return False      # a lane that cannot be read is no permission (audit minor on #388)
 
 
 # ============================================================================ banal filter
