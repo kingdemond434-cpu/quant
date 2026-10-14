@@ -1062,6 +1062,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
     # this bounded caller ran nothing: the holder is running the same steps (v1.2).
     "daily": (DAILY_CYCLE_STOOD_DOWN,),
+    # `fill_hour_reprice` exits 1 when a LIVE/STANDBY certificate is negative at its fill hour or
+    # was never charged a cost: that is the alarm it exists to raise, not a crash.
+    "fill_hour_reprice": (1,),
 }
 
 #: The other side of the same rule: exit codes a leg uses to NAME a failure. They stay failures

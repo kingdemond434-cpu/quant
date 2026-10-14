@@ -177,10 +177,14 @@ def test_a_certificate_whose_cost_stress_never_bit_is_flagged_and_alarms_when_li
         "external.USDZAR.overnight_gap_decay.p=x": {"gates": {
             "expected_value": {"ev": 0.3321}, "stress_costs": {"exp_x3": 0.2442}}},
         "external.X.f.p=z": {"gates": {"expected_value": {"ev": -0.1},
-                                       "stress_costs": {"exp_x3": -0.1}}}}}
+                                       "stress_costs": {"exp_x3": -0.1}}},
+        "external.Y.f.p=w": {"gates": {"expected_value": {"ev": 0.3}}}}}
     got = fh.cost_never_charged(surv)
-    assert set(got) == {"external.AUDCHF.overnight_gap_decay.p=x",
-                        "external.EURCHF.discovered.p=y"}
+    assert {k for k, v in got.items() if v["verdict"] == "COST_NEVER_CHARGED"} == {
+        "external.AUDCHF.overnight_gap_decay.p=x", "external.EURCHF.discovered.p=y"}
+    assert got["external.Y.f.p=w"]["verdict"].startswith("UNMEASURED"), \
+        "a certificate without its stress number is unmeasured, never clean"
+    assert "external.USDZAR.overnight_gap_decay.p=x" not in got
     assert fh.cost_never_charged(None) == {} and fh.cost_never_charged({"survivors": []}) == {}
 
 
@@ -195,6 +199,30 @@ def test_a_live_unbitten_certificate_raises_the_alarm(tmp_path, monkeypatch) -> 
     assert fh.run(force=True) == 1
     doc = json.loads(fh.OUT.read_text("utf-8"))
     assert doc["cost_never_charged"]["external.USDZAR.overnight_gap_decay.p=x"][
-        "live_sleeve"] == "usdzar_gap"
+        "sleeve"] == "usdzar_gap"
     assert doc["summary"]["cost_never_charged"] == 1
     assert any("cost never charged" in a.get("why", "") for a in doc["alarm"])
+
+
+def test_the_charge_check_runs_without_a_cost_surface_and_flags_standby(
+        tmp_path, monkeypatch) -> None:
+    _desk(tmp_path, monkeypatch, {})
+    fh.SURFACE.unlink()
+    fh.SLEEVES.write_text(json.dumps({"sleeves": [
+        {"name": "audchf_gap", "status": "STANDBY",
+         "certificate": {"cell": "external.AUDCHF.overnight_gap_decay.p=x"}}]}), "utf-8")
+    surv = tmp_path / "surv.json"
+    surv.write_text(json.dumps({"survivors": {"external.AUDCHF.overnight_gap_decay.p=x": {
+        "gates": {"expected_value": {"ev": 0.24}, "stress_costs": {"exp_x3": 0.24}}}}}), "utf-8")
+    monkeypatch.setattr(fh, "SURVIVOR_FILES", (surv,))
+    assert fh.run(force=True) == 1
+    doc = json.loads(fh.OUT.read_text("utf-8"))
+    assert doc["status"].startswith("UNMEASURED")
+    row = doc["cost_never_charged"]["external.AUDCHF.overnight_gap_decay.p=x"]
+    assert row["roster_status"] == "STANDBY" and row["sleeve"] == "audchf_gap"
+    assert doc["alarm"][0]["roster_status"] == "STANDBY"
+
+
+def test_the_alarm_exit_is_a_verdict_in_the_hourly_cycle() -> None:
+    from research import hourly_cycle as hc
+    assert 1 in hc.VERDICT_EXITS["fill_hour_reprice"]

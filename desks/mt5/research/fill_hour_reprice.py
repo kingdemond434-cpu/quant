@@ -140,7 +140,7 @@ def verdict_of(in_scope: bool, fill: dict[str, Any]) -> str:
     return "NEGATIVE_AT_FILL_HOUR" if float(fill["exp_r"]) <= 0 else "SURVIVES_FILL_HOUR"
 
 
-def cost_never_charged(survivors: Any) -> dict[str, dict[str, float]]:
+def cost_never_charged(survivors: Any) -> dict[str, dict[str, Any]]:
     """Certificates whose 3x cost stress did not lower their expectancy: no cost was ever
     charged, so their EV is a zero-spread number and reads UNMEASURED at real cost.
 
@@ -148,19 +148,69 @@ def cost_never_charged(survivors: Any) -> dict[str, dict[str, float]]:
     gap-decay cells have exp_x3 >= ev (the registry priced those pairs at 0-1 point against a
     12-46 point fill-hour book). The discovered family lost -0.14R/trade live against +0.28R
     certified; AUDCHF lost -0.68R over 10 forward trades.
+
+    A certificate missing either number cannot show its cost bit, so it is listed UNMEASURED,
+    never passed as clean.
     """
     rows = (survivors or {}).get("survivors") if isinstance(survivors, dict) else None
-    out: dict[str, dict[str, float]] = {}
+    out: dict[str, dict[str, Any]] = {}
     for key, row in (rows.items() if isinstance(rows, dict) else ()):
         gates = row.get("gates") if isinstance(row, dict) else None
         if not isinstance(gates, dict):
+            out[str(key)] = {"verdict": "UNMEASURED: no gates on the certificate"}
             continue
         ev = (gates.get("expected_value") or {}).get("ev")
         x3 = (gates.get("stress_costs") or {}).get("exp_x3")
-        if isinstance(ev, (int, float)) and isinstance(x3, (int, float)) and ev > 0 \
-                and x3 >= ev:
-            out[str(key)] = {"ev": float(ev), "exp_x3": float(x3)}
+        if not isinstance(ev, (int, float)) or not isinstance(x3, (int, float)):
+            out[str(key)] = {"ev": ev, "exp_x3": x3,
+                             "verdict": "UNMEASURED: ev or exp_x3 missing"}
+        elif ev > 0 and x3 >= ev:
+            out[str(key)] = {"ev": float(ev), "exp_x3": float(x3),
+                             "verdict": "COST_NEVER_CHARGED"}
     return out
+
+
+def roster_certificates() -> dict[str, dict[str, str]]:
+    """certificate cell -> {sleeve, status} for every LIVE or STANDBY roster row. A STANDBY row
+    is one promoter reading from LIVE, so a cost-never-charged certificate there is flagged too."""
+    doc = _read(SLEEVES) or {}
+    out: dict[str, dict[str, str]] = {}
+    for r in doc.get("sleeves") or []:
+        status = str(r.get("status") or "").upper() if isinstance(r, dict) else ""
+        if status in ("LIVE", "STANDBY"):
+            cert = r.get("certificate")
+            cell = str((cert or {}).get("cell") if isinstance(cert, dict) else cert or "")
+            if cell and out.get(cell, {}).get("status") != "LIVE":
+                out[cell] = {"sleeve": str(r.get("name") or ""), "status": status}
+    return out
+
+
+def charge_check(doc: dict[str, Any]) -> int:
+    """Write the cost-never-charged section into `doc`; return how many certificates it flags.
+
+    Runs before every early exit of `run`, so a host with no cost surface or no gauntlet import
+    still reports which certificates were never charged a cost."""
+    survivors = next((d for d in (_read(f) for f in SURVIVOR_FILES) if isinstance(d, dict)),
+                     None)
+    if survivors is None:
+        doc["cost_never_charged"] = "UNMEASURED: no survivors file on this host"
+        return 0
+    roster = roster_certificates()
+    rows = cost_never_charged(survivors)
+    doc["cost_never_charged"] = {
+        k: {**v, "sleeve": (roster.get(k) or {}).get("sleeve"),
+            "roster_status": (roster.get(k) or {}).get("status")}
+        for k, v in sorted(rows.items())}
+    flagged = 0
+    for key, row in doc["cost_never_charged"].items():
+        if row["verdict"] != "COST_NEVER_CHARGED":
+            continue
+        flagged += 1
+        if row["roster_status"]:
+            doc["alarm"].append({"certificate": key, "sleeve": row["sleeve"],
+                                 "roster_status": row["roster_status"],
+                                 "why": "3x cost stress did not lower EV: cost never charged"})
+    return flagged
 
 
 def live_certificates() -> dict[str, str]:
@@ -218,6 +268,7 @@ def run(force: bool = False) -> int:
     doc: dict[str, Any] = {"generated_at": _now().isoformat(), "reprice_ratio": REPRICE_RATIO,
                            "shift_hours": SHIFT_HOURS, "certificates": {}, "children": {},
                            "alarm": [], "donated": 0}
+    n_unbitten = charge_check(doc)
     meta = _read(UNIVERSE)
     surface = _read(SURFACE)
     if not isinstance(meta, dict) or not isinstance(surface, dict):
@@ -225,7 +276,7 @@ def run(force: bool = False) -> int:
                                            else "no cost surface") + " on this host")
         OUT.write_text(json.dumps(doc, indent=1), "utf-8")
         print(f"fill_hour_reprice: {doc['status']}")
-        return 0
+        return 1 if doc["alarm"] else 0
     try:
         import external_gauntlet as eg  # type: ignore[import-not-found]
 
@@ -234,19 +285,9 @@ def run(force: bool = False) -> int:
         doc["status"] = f"UNMEASURED: import failed ({type(exc).__name__}: {exc})"
         OUT.write_text(json.dumps(doc, indent=1), "utf-8")
         print(f"fill_hour_reprice: {doc['status']}")
-        return 0
+        return 1 if doc["alarm"] else 0
 
     live = live_certificates()
-    survivors = next((d for d in (_read(f) for f in SURVIVOR_FILES) if isinstance(d, dict)),
-                     None)
-    unbitten = cost_never_charged(survivors)
-    doc["cost_never_charged"] = (
-        {k: {**v, "live_sleeve": live.get(k)} for k, v in sorted(unbitten.items())}
-        if survivors is not None else "UNMEASURED: no survivors file on this host")
-    for key in sorted(unbitten):
-        if live.get(key):
-            doc["alarm"].append({"certificate": key, "sleeve": live[key],
-                                 "why": "3x cost stress did not lower EV: cost never charged"})
     donated = _read(DONATED) or {}
     candidates: list[dict[str, Any]] = []
     for sv in load_survivors():
@@ -295,8 +336,8 @@ def run(force: bool = False) -> int:
     doc["status"] = "ALARM" if doc["alarm"] else "OK"
     doc["summary"] = {"certificates": len(doc["certificates"]), "in_scope": n_scope,
                       "negative_at_fill_hour": n_neg, "children": len(doc["children"]),
-                      "live_negative": len(doc["alarm"]),
-                      "cost_never_charged": len(unbitten)}
+                      "live_negative": sum(1 for a in doc["alarm"] if "why" not in a),
+                      "cost_never_charged": n_unbitten}
     OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     print(f"fill_hour_reprice: {len(doc['certificates'])} certificates, {n_scope} in scope, "
           f"{n_neg} negative at their fill hour, {len(doc['alarm'])} of them LIVE; "
