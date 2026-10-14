@@ -8,6 +8,7 @@ import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -36,6 +37,7 @@ def _desk_state_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(jc, "CONVERSION_HANDOFF", tmp_path / "conversion_handoff.json")
     monkeypatch.setattr(jc, "GATES_REPORT", tmp_path / "universal_gates_external.json")
     monkeypatch.setattr(jc, "TAPE_DIR", tmp_path / "no_tape")
+    monkeypatch.setattr(jc, "UNIVERSAL_SURVIVORS", tmp_path / "no_survivors.json")
     monkeypatch.setattr(research_priors, "STATE_DIR", tmp_path / "research_priors")
     monkeypatch.delenv("QUANT_LAWGATE_SOURCE_VIEW", raising=False)
 
@@ -397,6 +399,167 @@ def test_warmer_restates_the_steered_judge_including_the_floor_interleave(
             return None
     assert O.allocate(Unsteered, specs)[:len(specs)] == [
         sp for fam in ("sat", "f1", "f0") for sp in specs if sp["family"] == fam]
+
+
+# ------------------------------------------------------------------ the tick tape must certify
+_GAUNTLET_LIKE = """
+def build_cell(sym, family, params, meta):
+    if family == "triangle":
+        x = inputs._bars(sym, "H1")
+    elif family in {"newtape_a", "newtape_b"}:
+        spread, flow = inputs._tape_series(sym, None, "H1")
+    elif family == "execution_state":
+        surface = inputs._surface_for(sym)
+"""
+_SWEEP_LIKE = """
+def sweep():
+    spread, flow = _tape_series(sym, df.index, tf)
+    macro = _macro_series(df.index)
+    kwargs_by_family = {
+        "carry": {"symbol": sym},
+        "minute_flow": {"flow": flow},
+        "macro_conditional": {"macro": macro},
+    }
+"""
+
+
+def test_tape_families_are_derived_from_the_builders_code(tmp_path: Path) -> None:
+    g, w = tmp_path / "g.py", tmp_path / "w.py"
+    g.write_text(_GAUNTLET_LIKE, "utf-8")
+    w.write_text(_SWEEP_LIKE, "utf-8")
+    fams, prov = jc.derive_tape_families((g, w))
+    assert fams == {"newtape_a", "newtape_b", "minute_flow"}
+    assert prov["status"] == "MEASURED" and prov["by_source"]["w.py"] == ["minute_flow"]
+    # On the real builders: the tape readers' families, and not a bar-derived surface.
+    real = jc.tape_families()
+    assert {"orderflow_imbalance", "liquidity_regime"} <= real
+    assert "execution_state" not in real and "triangle" not in real
+    none, prov = jc.derive_tape_families((tmp_path / "absent.py",))
+    assert none == frozenset() and prov["status"] == "UNMEASURED"
+
+
+def test_tape_families_get_a_bounded_tranche_and_nobody_loses_the_floor() -> None:
+    backlog = {"tape": 5000, "alpha": 5000, "beta": 5000, "gamma": 40}
+    ranking = [{"family": f} for f in ("alpha", "beta", "gamma", "tape")]
+    plain = jc.allocate(backlog, 1000, ranking=ranking)
+    tranche: dict[str, int] = {}
+    pri = jc.allocate(backlog, 1000, ranking=ranking, priority={"tape"}, tranche_out=tranche)
+    floor = int(1000 * jc.FLOOR_SHARE) // len(backlog)
+    assert all(pri[f] >= min(backlog[f], floor) for f in backlog), "every family keeps its floor"
+    assert tranche == {"tape": int(1000 * jc.TAPE_PRIORITY_SHARE)}
+    assert pri["tape"] == plain["tape"] + tranche["tape"] and pri["tape"] > plain["tape"]
+    assert sum(pri.values()) == sum(plain.values()) == 1000, "the hour is redistributed, not grown"
+    small: dict[str, int] = {}
+    capped = jc.allocate({"tape": 70, "alpha": 5000}, 1000, ranking=ranking, priority={"tape"},
+                         tranche_out=small)
+    assert capped["tape"] == 70, "a quota never exceeds the family's own backlog"
+
+
+def _tape_store(root: Path, sym: str, dates: list[str]) -> None:
+    (root / sym).mkdir(parents=True, exist_ok=True)
+    for d in dates:
+        (root / sym / f"{d}.parquet").write_bytes(b"")
+
+
+def test_tape_depth_counts_trading_days_once_and_gives_an_eta(tmp_path: Path) -> None:
+    days = pd.bdate_range(end="2026-10-13", periods=40)
+    # Two writers, one date: '2026-10-13' and '20261013' are one trading day.
+    _tape_store(tmp_path, "EURUSD", [d.strftime("%Y-%m-%d") for d in days]
+                + [days[-1].strftime("%Y%m%d")])
+    d = jc.tape_depth(tmp_path, now=NOW)
+    need = jc.CPCV_MIN_DAYS + jc._lockbox_min_days()
+    assert d["max_days"] == 40 and d["days_needed"] == need and not d["meets_need"]
+    assert d["short_trading_days"] == need - 40
+    assert d["eta_days_to_judgeable"] == -(-(need - 40) * 7 // 5)
+    stale = jc.tape_depth(tmp_path, now=NOW + timedelta(days=30))
+    assert stale["eta_days_to_judgeable"] is None and "idle" in stale["eta_rule"]
+    assert jc.tape_depth(tmp_path / "nope", now=NOW)["status"] == "UNMEASURED"
+
+
+def test_judge_coverage_publishes_a_tape_block(tmp_path: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = _rows({"alpha": 10, "orderflow_imbalance": 6, "liquidity_regime": 4})
+    doc = jc.build(rows, ledger=tmp_path / "no.jsonl", ratchet=tmp_path / "no.json", now=NOW)
+    tape = doc["tape"]
+    assert tape["status"] == "UNMEASURED", "absent tape state and canon are UNMEASURED"
+    assert tape["depth"]["status"] == "UNMEASURED" and tape["certificates_total"] is None
+    of = tape["families"]["orderflow_imbalance"]
+    assert of["mined"] == 6 and of["named_verdicts_24h"] == 0 and of["certificates"] is None
+    assert doc["families"]["orderflow_imbalance"]["tape_priority"] >= 0
+    assert "tape [UNMEASURED]" in "\n".join(jc.render(doc))
+    store = tmp_path / "tape"
+    _tape_store(store, "S0", [d.strftime("%Y-%m-%d") for d in
+                              pd.bdate_range(end="2026-10-13", periods=150)])
+    monkeypatch.setattr(jc, "TAPE_DIR", store)
+    jc.UNIVERSAL_SURVIVORS.write_text(json.dumps({"survivors": {
+        "c1": {"shadow_spec": {"family": "orderflow_imbalance"}},
+        "c2": {"family": "alpha"}}}), "utf-8")
+    led = tmp_path / "ledger.jsonl"
+    led.write_text(json.dumps({"cell": "z", "family": "liquidity_regime", "passed": False,
+                               "terminal_gate": "cpcv", "at": NOW.isoformat()}) + "\n", "utf-8")
+    doc = jc.build(rows, ledger=led, ratchet=tmp_path / "no.json", now=NOW)
+    tape = doc["tape"]
+    assert tape["status"] == "MEASURED" and tape["depth"]["meets_need"]
+    assert tape["families"]["orderflow_imbalance"]["certificates"] == 1
+    assert tape["families"]["liquidity_regime"]["named_verdicts_24h"] == 1
+    assert tape["certificates_total"] == 1
+
+
+def _tape_doc(**over: Any) -> dict:
+    depth = {"status": "MEASURED", "max_days": 150, "median_days": 150, "symbols": 1,
+             "symbols_at_need": 1, "days_needed": 100, "meets_need": True,
+             "eta_days_to_judgeable": 0, "eta_rule": "at need"}
+    fams = {"orderflow_imbalance": {"mined": 900, "shippable": 800, "judged_total": 0,
+                                    "named_verdicts_24h": 0, "certificates": 0}}
+    tape = {"status": "MEASURED", "depth": depth, "families": fams, "certificates_total": 0}
+    tape.update(over)
+    return {"at": NOW.isoformat(), "families": {"alpha": {"unjudged": 1, "queued": 1}},
+            "tape": tape, "totals": {}}
+
+
+def test_fence_fails_a_silent_tape_family_armed_and_warns_in_source_view() -> None:
+    nj = fence.tape_produces(_tape_doc(), armed=True, require_state=True)
+    assert nj["state"] == "FAIL" and nj["families"] == ["orderflow_imbalance"]
+    assert fence.tape_produces(_tape_doc(), armed=False, require_state=False)["state"] == "WARN"
+
+
+def test_fence_fails_a_barren_tape_and_passes_a_producing_one() -> None:
+    fams = {"orderflow_imbalance": {"mined": 900, "judged_total": 700, "named_verdicts_24h": 30}}
+    barren = fence.tape_produces(_tape_doc(families=fams, certificates_total=0), armed=True,
+                                 require_state=True)
+    assert barren["state"] == "FAIL" and "0 certificates" in barren["why"]
+    ok = fence.tape_produces(_tape_doc(families=fams, certificates_total=2), armed=True,
+                             require_state=True)
+    assert ok["state"] == "OK"
+    few = {"orderflow_imbalance": {"mined": 900, "judged_total": fence.TAPE_CERT_MIN_JUDGED,
+                                   "named_verdicts_24h": 3}}
+    assert fence.tape_produces(_tape_doc(families=few), armed=True,
+                               require_state=True)["state"] == "OK"
+
+
+def test_fence_owes_nothing_before_the_tape_is_deep_and_never_reads_absence_as_zero() -> None:
+    short = _tape_doc()
+    short["tape"]["depth"].update({"meets_need": False, "symbols_at_need": 0, "max_days": 30})
+    assert fence.tape_produces(short, armed=True, require_state=True)["state"] == "OK"
+    blind = _tape_doc(status="UNMEASURED", why="no tape store")
+    assert fence.tape_produces(blind, armed=True, require_state=True)["state"] == "UNMEASURED"
+    none = {"at": NOW.isoformat(), "families": {}}
+    assert fence.tape_produces(none, armed=True, require_state=True)["state"] == "FAIL"
+    assert fence.tape_produces(none, armed=False, require_state=False)["state"] == "UNMEASURED"
+    full = fence.judge(_write(_tape_doc()), require_state=True, now=NOW)
+    assert any(c["metric"] == "tape_produces" and c["state"] == "FAIL" for c in full["checks"])
+    assert full["verdict"] == "FAIL"
+
+
+def _write(doc: dict) -> Path:
+    import tempfile
+    p = Path(tempfile.mkdtemp()) / "JUDGE_COVERAGE.json"
+    p.write_text(json.dumps(doc), "utf-8")
+    return p
+
+
+def test_fence_and_organ_share_the_tape_certificate_bar() -> None:
+    assert fence.TAPE_CERT_MIN_JUDGED == jc.TAPE_CERT_MIN_JUDGED
 
 
 # ------------------------------------------------------------------ the sealed patch, once applied
