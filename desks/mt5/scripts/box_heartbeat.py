@@ -40,7 +40,9 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import shutil
+import stat
 import sys
 import time
 import urllib.request
@@ -172,9 +174,29 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
             doc["paged"] = {"status": "ERROR", "detail": type(exc).__name__}
     doc["since"] = (prev.get("since") if doc["verdict"] == prev.get("verdict") and prev.get("since")
                     else doc["at"])
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(doc, indent=1), "utf-8")
+    _write_atomic(out, json.dumps(doc, indent=1))
     return doc
+
+
+def _write_atomic(out: Path, text: str) -> None:
+    """Temp file, then `os.replace`: the publisher copies this report off the box every fifteen
+    minutes and a plain `write_text` it catches mid-write is torn JSON, which an off-box reader
+    can only call UNMEASURED. On Windows `os.replace` onto a READ-ONLY destination raises
+    PermissionError (WinError 5) where POSIX would succeed, so the read-only bit is cleared and
+    the replace tried once more; a second failure removes the temp file and raises."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_name(out.name + ".tmp")
+    tmp.write_text(text, "utf-8")
+    try:
+        os.replace(tmp, out)
+    except PermissionError:
+        try:
+            os.chmod(out, stat.S_IWRITE | stat.S_IREAD)
+            os.replace(tmp, out)
+        except OSError:
+            with contextlib.suppress(OSError):
+                tmp.unlink()
+            raise
 
 
 def main(argv: list[str] | None = None) -> int:
