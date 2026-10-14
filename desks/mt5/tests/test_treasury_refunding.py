@@ -834,6 +834,9 @@ def test_a_reviewed_anticipation_is_guidance() -> None:
         "maintains sizes but will consider increasing the 2-year next quarter.",
         "is reviewing a reduction in the 20-year bond.",
         "is studying whether to cut the 20-year bond.",
+        "will consider further increasing the 2-year.",
+        "will consider further reducing the 20-year bond.",
+        "will assess the need for further increasing the 2-year.",
     ],
 )
 def test_a_considered_move_leaves_a_held_statement_unmeasured(tail: str) -> None:

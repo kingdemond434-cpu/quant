@@ -303,7 +303,7 @@ def _clause_reading(clause: str) -> int | None:
         if mt is None:
             continue
         verb = next(mt.start(g) for g in range(1, 3) if mt.group(g)) if mt.lastindex else 0
-        if _HEDGE.search(clause[:verb]):
+        if _HEDGE.search(clause[:verb]) and not _GERUND.match(clause, verb):
             continue  # "continue to evaluate future increases": a hedge, not guidance
         # The guided phrase: from just before its guidance word up to the verb. A negation in
         # it holds sizes ("does not currently anticipate that it will need to increase", "will
@@ -383,6 +383,10 @@ _HEDGE = re.compile(
     re.I,
 )
 
+#: "consider further increasing the 2-year": the modifier binds a GERUND, which is the verb of
+#: a considered move, not the noun of a hedged one (audit must-fix on #394 v11).
+_GERUND = re.compile(r"\w*ing\b", re.I)
+
 
 def _only_other_supply(obj: str) -> bool:
     """The object names bills, TIPS or FRN and NO coupon security: "increasing bills and the
@@ -418,7 +422,9 @@ def _live_direction(clause: str, sentence: str | None = None, at: int | None = N
             rest = _REASON.split(sent[base + mt.end() :])[0]
             if (
                 not _negated(lead, v)
-                and not _HEDGE.search(clause[: mt.start()])
+                and not (
+                    _HEDGE.search(clause[: mt.start()]) and not _GERUND.match(clause, mt.start())
+                )
                 and not _NEG_AFTER.search(obj)
                 and not _only_other_supply(rest)
             ):
