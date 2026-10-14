@@ -481,10 +481,14 @@ def _bank_update(named: dict, at: datetime, code: str, mtime: float,
                                      report_mtime=mtime)
 
 
+_LAST: dict[str, Any] = {}
+
+
 def _certain(code: str, t0: datetime) -> datetime:
-    """Three report generations, six hours apart, under `code`: the identity is CERTAIN."""
+    """Three report generations, six hours apart, under `code`: the identity is CERTAIN on the
+    third, and any canary for it is set on that pass (its result is kept in `_LAST`)."""
     for k in range(3):
-        _bank_update({}, t0 + timedelta(hours=3 * k), code, 1000.0 + k)
+        _LAST["out"] = _bank_update({}, t0 + timedelta(hours=3 * k), code, 1000.0 + k)
     return t0 + timedelta(hours=6)
 
 
@@ -515,7 +519,7 @@ def test_a_code_change_sends_one_canary_and_a_repeat_failure_keeps_siblings_park
     t = _certain("A", NOW)
     _bank_update({f"c{i}": _named(f"c{i}") for i in range(6)}, t, "A", 2000.0)
     tb = _certain("B", t + timedelta(hours=1))
-    out = _bank_update({}, tb, "B", 3000.0)
+    out = _LAST["out"]
     memo = out["build_failure_memo"]
     assert memo["canaries_started"] == 1 and memo["readmitted"] == 1 and out["bank_size"] == 5
     state = json.loads((jc.UNRUNNABLE_BANK.parent / jc.MEMO_STATE_NAME).read_text())
@@ -536,7 +540,6 @@ def test_a_canary_that_is_judged_releases_every_sibling(monkeypatch) -> None:
     t = _certain("A", NOW)
     _bank_update({f"c{i}": _named(f"c{i}") for i in range(4)}, t, "A", 2000.0)
     tb = _certain("B", t + timedelta(hours=1))
-    _bank_update({}, tb, "B", 3000.0)
     state = json.loads((jc.UNRUNNABLE_BANK.parent / jc.MEMO_STATE_NAME).read_text())
     (canary,) = next(iter(state["canaries"].values()))["cells"]
     out = _bank_update({}, tb + timedelta(hours=1), "B", 3001.0, judged={canary})
@@ -550,8 +553,8 @@ def test_different_failures_are_different_canaries(monkeypatch) -> None:
              **{f"b{i}": _named(f"b{i}", sym="EURUSD") for i in range(3)},
              **{f"n{i}": _named(f"n{i}", reason="no_series", why="no series") for i in range(2)}}
     _bank_update(named, t, "A", 2000.0)
-    tb = _certain("B", t + timedelta(hours=1))
-    assert _bank_update({}, tb, "B", 3000.0)["build_failure_memo"]["canaries_started"] == 3
+    _certain("B", t + timedelta(hours=1))
+    assert _LAST["out"]["build_failure_memo"]["canaries_started"] == 3
 
 
 def test_without_a_code_identity_the_bank_is_unchanged(monkeypatch) -> None:
