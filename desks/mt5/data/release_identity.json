@@ -3,7 +3,7 @@
  "running_sha": "9766aa777d113b38d8db8450dfe881c3cf50a477",
  "release_sha": "ca669d8c27550fa94c9e7429780dc556b4db5093",
  "reason": "running 9766aa777d11 carries 115 path(s) the sealed release ca669d8c2755 never named: ['.gitignore', 'REPO_MAP.md', 'context/CERT_BOOK_PROMOTION_DESKTOP_SPEC.md', 'context/patches/pr162_usdjpy_rr25_live_policy_quarantine.patch', 'desks/mt5/docs/MT5_DESK.md', 'desks/mt5/docs/MT5_DESK_STATE.json']; money path drifted on disk: ['desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/engine.py', 'desks/mt5/research/pf_allocator.py', 'libs/portfolio/allocator_proof.py']; the signed judge manifest on disk is not the one the release sealed",
- "age_h": 21.723,
+ "age_h": 21.956,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -135,7 +135,7 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-10-14T18:35:04+00:00",
+ "at": "2026-10-14T18:49:04+00:00",
  "tested_sha": "9766aa777d113b38d8db8450dfe881c3cf50a477",
  "tested_gates": "fast",
  "allocator_certificate": "8de1dcef0b336b72@2026-10-14T18:15:50.334980+00:00 proof=PASSED book=dynamic",
