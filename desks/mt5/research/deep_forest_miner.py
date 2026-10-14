@@ -1099,6 +1099,8 @@ class _Run:
         #: rows only. The report's `fetch_notes` reads the first forty of these.
         self.fetch_errors: list[dict[str, Any]] = []
         self.frontier: list[tuple[str, str, str]] = []
+        #: Pages a landing cap deferred to the next pass (shared by forks; see `_defer_raw`).
+        self.raw_deferred: list[dict[str, str]] = []
         self.counts = {"queries": 0, "pages": 0, "transcripts": 0, "rendered": 0,
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
                        "claims_seen_before": 0, "net_failures": 0, "dataset_pages": 0,
@@ -1203,12 +1205,26 @@ class _Run:
                                       "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
             return ""
 
+    def _defer_raw(self, url: str, cap: str) -> None:
+        """A per-run landing cap DEFERS a page, never drops it: the URL is released from the
+        durable seen-set so the next pass fetches and lands it, and it is named in the report
+        (`raw_deferred`). Without the release a capped CSV/PDF was marked seen and never
+        fetched again -- mining reduced by a disk bound."""
+        with self._lock:
+            self.seen_urls.discard(url)
+            if len(self.raw_deferred) < 500:
+                self.raw_deferred.append({"url": url, "cap": cap})
+        key = f"landed_raw_deferred_{cap}"
+        self.counts[key] = self.counts.get(key, 0) + 1
+
     def _land(self, url: str, raw: bytes, ctype: str, reason: str) -> None:
         if self.counts.get("landed_raw", 0) >= RAW_MAX_PER_RUN:
+            self._defer_raw(url, "count_cap")
             return
         if self.counts.get("landed_raw_bytes", 0) + len(raw) > RAW_MAX_BYTES_PER_RUN:
             self.counts["landed_raw_skipped_bytes_cap"] = (
                 self.counts.get("landed_raw_skipped_bytes_cap", 0) + 1)
+            self._defer_raw(url, "bytes_cap")
             return
         got = land_raw(url, raw, ctype, ground=self.ground or {}, reason=reason)
         if got:
@@ -2397,6 +2413,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "proposer_seat": seat_hint,
            "source_expansion": expansion,
            "fetch_notes": r.fetch_errors[:40],
+           "raw_deferred": r.raw_deferred[:200],
            "top_claims": [{k: t.get(k) for k in ("title", "symbols", "channel", "mechanism_class",
                                                  "n_tellings", "evidence_grade",
                                                  "claimed_performance", "score", "url")}

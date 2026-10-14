@@ -940,6 +940,7 @@ def _bare_run() -> dfm._Run:
     r = object.__new__(dfm._Run)
     r.counts = {"landed_raw": 0, "landed_raw_new": 0}
     r.ground = {"name": "g", "region": "za", "language": "en"}
+    r.seen_urls, r.raw_deferred, r._lock = set(), [], threading.RLock()
     return r
 
 
@@ -974,3 +975,25 @@ def test_the_raw_landing_is_bounded_in_bytes_per_run(monkeypatch, tmp_path) -> N
     assert r.counts["landed_raw"] == 1 and r.counts["landed_raw_bytes"] == 60
     assert r.counts["landed_raw_skipped_bytes_cap"] == 1
     assert len(list((tmp_path / "vault").glob("*/*.gz"))) == 1
+
+
+def test_a_capped_page_is_deferred_to_the_next_pass_never_dropped(monkeypatch, tmp_path) -> None:
+    """Audit GD_DELTAS #357 MF: a page past either landing cap is released from the durable
+    seen-set (so the next pass fetches it) and named in the report, never silently lost."""
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
+    monkeypatch.setattr(dfm, "RAW_MAX_BYTES_PER_RUN", 100)
+    r = _bare_run()
+    for u in ("https://a.test/1.csv", "https://a.test/2.csv"):
+        r.seen_urls.add(u)
+    r._land("https://a.test/1.csv", b"a" * 60, "text/csv", "format:text/csv")
+    r._land("https://a.test/2.csv", b"b" * 60, "text/csv", "format:text/csv")
+    assert "https://a.test/2.csv" not in r.seen_urls
+    assert "https://a.test/1.csv" in r.seen_urls
+    assert r.raw_deferred == [{"url": "https://a.test/2.csv", "cap": "bytes_cap"}]
+    assert r.counts["landed_raw_deferred_bytes_cap"] == 1
+    monkeypatch.setattr(dfm, "RAW_MAX_PER_RUN", 1)
+    r.seen_urls.add("https://a.test/3.csv")
+    r._land("https://a.test/3.csv", b"c" * 10, "text/csv", "format:text/csv")
+    assert "https://a.test/3.csv" not in r.seen_urls
+    assert r.raw_deferred[-1] == {"url": "https://a.test/3.csv", "cap": "count_cap"}
+    assert r.counts["landed_raw_deferred_count_cap"] == 1
