@@ -48,7 +48,8 @@ class Getter:
     def __call__(self, url: str) -> tuple[bytes, str]:
         self.urls.append(url)
         item = (self.robots if url.endswith("/robots.txt") else
-                self.meta if "/query?" not in url else self.pages.pop(0))
+                self.meta if "/query?" not in url else
+                self.pages.pop(0) if self.pages else b'{"features": []}')  # then: the end
         if isinstance(item, BaseException):
             raise item
         return item, "application/json"
@@ -195,7 +196,8 @@ def test_pages_step_by_the_layer_limit_and_the_cursor_moves(tmp_path: Path) -> N
     rec, store = _run(g, tmp_path, sst)
     offs = [urllib.parse.parse_qs(urllib.parse.urlsplit(u).query)["resultOffset"][0]
             for u in g.data_urls]
-    assert offs == ["0", "1000"] and rec["outcome"] == "OK" and rec["complete"]
+    # a short page is never the end: one more, EMPTY, page proves it
+    assert offs == ["0", "1000", "1015"] and rec["outcome"] == "OK" and rec["complete"]
     assert sst["pw_from"] == (date(2026, 9, 30) - timedelta(days=A.PORTWATCH_RECENT_D)).isoformat()
     g2 = Getter(_http(404), [(PW / "chokepoints_page.json").read_bytes()])
     rec2, _ = _run(g2, tmp_path, sst, store)
@@ -334,3 +336,55 @@ def test_panama_and_the_other_controls_map_to_no_instrument() -> None:
         assert SRC.instruments_for(s) == {}, s
         assert s not in SRC.signal_series
     assert SRC.instruments_for("suez_canal_transits") == {"XBRUSD": -1, "XTIUSD": -1}
+
+
+# ============================================================================ audit 78e725a3b
+class SilentCapServer(CappedServer):
+    """States maxRecordCount 1000 in its metadata but serves 500 a page, flag never set."""
+
+    def __call__(self, url: str) -> tuple[bytes, str]:
+        if "/query?" not in url and not url.endswith("/robots.txt"):
+            return b'{"maxRecordCount": 1000}', "application/json"
+        return super().__call__(url)
+
+
+def test_a_server_silently_capping_below_its_stated_cap_still_stores_all(tmp_path: Path) -> None:
+    srv = SilentCapServer(2500, 500, flag=False)
+    rec, store = _run(srv, tmp_path)
+    assert rec["page_cap"] == 1000 and len(store) == 2500 and rec["outcome"] == "OK"
+
+
+def test_a_waf_page_on_the_metadata_read_holds_and_never_requests_page_0(tmp_path: Path) -> None:
+    g = Getter(_http(404), [(PW / "chokepoints_page.json").read_bytes()],
+               meta=b"<html><title>Attention Required</title></html>")
+    sst: dict[str, Any] = {}
+    rec, store = _run(g, tmp_path, sst)
+    assert rec["status"] == "FAILED:NOT_JSON" and g.data_urls == [] and not store
+    assert sst["hard_stop"]["released_by"] is None
+    assert sst["hard_stop"]["missed_growth"]["delta_elogw"] == "UNMEASURED"
+
+
+def test_a_server_ignoring_result_offset_fails_on_the_first_repeat(tmp_path: Path) -> None:
+    feats = [{"attributes": {"date": "2025-01-01", "portname": n, "n_total": 1}}
+             for n in A.CHOKEPOINTS]
+    same = json.dumps({"features": feats, "exceededTransferLimit": True}).encode()
+    g = Getter(_http(404), [same] * 20)
+    rec, _ = _run(g, tmp_path)
+    assert rec["status"] == "FAILED:OFFSET_IGNORED" and len(g.data_urls) == 2
+
+
+@pytest.mark.parametrize("n_cells", [7, 10, 11, 12, 30])
+def test_the_gain_bar_is_the_fixed_tier_s_bar_at_every_family_size(n_cells: int) -> None:
+    import inspect
+
+    from libs.research import release_gain as RG
+    assert RG.TIER_S_T_BAR == 2.84
+    assert "n_cells" not in inspect.signature(RG.release_gain).parameters   # no count enters
+    assert RG.min_detectable_ic(250) == RG.min_detectable_ic(250, t_bar=2.84)
+    assert RG.GainResult("FAIL", None, 0, None, None, None, None, None, 0, 1, "").t_bar == 2.84
+    src = inspect.getsource(RG.release_gain) + inspect.getsource(RG.min_detectable_ic)
+    assert "n_cells" not in src and "Bonferroni" not in src
+    # the caller records the family size and never charges it
+    gsrc = inspect.getsource(A.gain_tests)
+    assert "n_cells=" not in gsrc and "cells_in_family" in gsrc
+    assert n_cells > 0                                    # every size reads the same 2.84 bar
