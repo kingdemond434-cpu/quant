@@ -78,6 +78,11 @@ def value(name: str) -> str:
         return ""
     if os.environ.get("QUANT_SANDBOX") == "1" or os.environ.get("QUANT_MACHINE_ENV") == "0":
         return ""
-    if "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules:
+    if _under_test():
         return ""  # a test that clears a key must not find the box's real one
     return _registry(name)
+
+
+def _under_test() -> bool:
+    """Inside a pytest run, collection included (PYTEST_CURRENT_TEST is unset while collecting)."""
+    return "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules

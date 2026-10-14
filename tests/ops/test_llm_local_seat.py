@@ -136,6 +136,7 @@ def test_the_machine_scope_key_is_read_for_seat_keys_only(
     monkeypatch.delenv("QUANT_MACHINE_ENV", raising=False)
     monkeypatch.delenv("JQUANTS_API_KEY", raising=False)
     monkeypatch.setattr(machine_env, "_registry", lambda name: f"reg-{name}")
+    monkeypatch.setattr(machine_env, "_under_test", lambda: False)
     assert machine_env.value("OPENROUTER_API_KEY") == "reg-OPENROUTER_API_KEY"
     assert machine_env.value("JQUANTS_API_KEY") == ""
     assert machine_env.value("FRED_API_KEY") == ""
