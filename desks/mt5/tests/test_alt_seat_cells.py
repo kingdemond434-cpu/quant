@@ -267,13 +267,38 @@ def test_the_fence_judges_only_rows_inside_the_compilers_intake_window(
 
 def test_the_compiler_publishes_its_intake_cutoff(tmp_path: Path,
                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """The cutoff `recent_rows` itself uses: the saved cycle's, only while its resume file is
+    still there; else the plain window."""
     import miner_candidate_compiler as mcc
+    intel = tmp_path / "intel"
+    (intel / "seat").mkdir(parents=True)
+    resume = intel / "seat" / "discoveries_1.json"
+    resume.write_text("[]")
+    monkeypatch.setattr(mcc, "INTEL_ROOTS", (intel,))
     monkeypatch.setattr(mcc, "CURSOR", tmp_path / "absent.json")
     assert mcc.intake_cutoff(NOW) == NOW - timedelta(days=mcc.WINDOW_DAYS)
     saved = tmp_path / "cursor.json"
-    saved.write_text(json.dumps({"next_path": "x", "cycle_cutoff_utc": "2026-10-01T00:00:00"}))
+    saved.write_text(json.dumps({"next_path": str(resume), "row_offset": 0, "file_size": 0,
+                                 "cycle_cutoff_utc": "2026-10-01T00:00:00"}))
     monkeypatch.setattr(mcc, "CURSOR", saved)
     assert mcc.intake_cutoff(NOW) == datetime(2026, 10, 1, tzinfo=UTC)
+    resume.unlink()                                  # the resume file is gone: no stale window
+    assert mcc.intake_cutoff(NOW) == NOW - timedelta(days=mcc.WINDOW_DAYS)
+    import inspect
+    assert "intake_cutoff(now" in inspect.getsource(mcc.recent_rows)
+
+
+def test_a_duplicated_row_is_first_seen_in_its_earliest_file(tmp_path: Path) -> None:
+    seat = tmp_path / "fear_greed"
+    seat.mkdir()
+    row = {"source": "cnn_fear_greed", "type": "sentiment_reading", "score": 30.0,
+           "symbols": ["US500"]}
+    (seat / "a_discoveries_20261010_1200.json").write_text(json.dumps([row]))
+    (seat / "b_discoveries_20261001_0900.json").write_text(json.dumps([row]))
+    [(got, seen, paths)] = list(asc.seat_rows_at("fear_greed", tmp_path))
+    assert got == row and seen == datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
+    assert [p.name for p in paths] == ["b_discoveries_20261001_0900.json",
+                                       "a_discoveries_20261010_1200.json"]
 
 
 def test_the_lane_check_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:

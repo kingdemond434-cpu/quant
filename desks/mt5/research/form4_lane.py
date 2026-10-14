@@ -343,7 +343,7 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
     """New transactions this pass, and what the pass did. `state` is updated in place."""
     rep: dict[str, Any] = {"requests": 0, "errors": Counter(), "issuers_visited": 0,
                            "filings_read": 0, "transactions": 0, "block": None,
-                           "ok_responses": 0}
+                           "ok_responses": 0, "data_responses": 0}
 
     def stopped(status: int, url_class: str, headers: dict[str, str]) -> bool:
         if status not in HARD_STOP:
@@ -386,6 +386,7 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
         status, raw, hdr = _call(get, SUBMISSIONS_URL.format(cik=cik))
         rep["requests"] += 1
         rep["ok_responses"] += int(status == 200)
+        rep["data_responses"] += int(status == 200)
         if stopped(status, "submissions", hdr):
             visited -= 1                 # the refused issuer is first in line after the backoff
             break
@@ -405,6 +406,7 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             status, body, hdr = _call(get, url)
             rep["requests"] += 1
             rep["ok_responses"] += int(status == 200)
+            rep["data_responses"] += int(status == 200)
             if stopped(status, "archive_document", hdr):
                 done_all = False
                 break
@@ -533,14 +535,32 @@ def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]]
     return out
 
 
-def score(rows: list[dict[str, Any]], frozen: list[dict[str, Any]] | None = None
+def score(rows: list[dict[str, Any]], frozen: list[dict[str, Any]] | None = None,
+          backfilled: set[str] | None = None
           ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-    """(every cluster -- frozen then new --, the new ones, the census)."""
+    """(every frozen cluster -- prior then new --, the new ones, the census).
+
+    FROZEN ONLY ONCE THE ISSUER IS BACKFILLED (audit 2026-10-14, MF2). EDGAR is read newest
+    first, so before an issuer's backfill completes its older filings are missing: a cluster
+    frozen then could lack a buyer, and its baseline (the issuer's earlier buying) is short --
+    200 of 200 probe stores differed from a full replay. With `backfilled` given, only those
+    issuers' transactions are frozen; the rest are scored EPHEMERALLY (counted in the census as
+    `clusters_ephemeral`, never stored, never in the breadth series or the event store), and
+    freeze for the first time on the pass their backfill completes -- with every filing in hand,
+    so the store equals a full replay whatever the fetch order. `backfilled=None` freezes every
+    issuer (a store built from a complete history).
+    """
     from libs.research import form4
     prior = [c for c in (frozen or []) if c.get("rows")]
-    new = freeze_clusters(rows, prior)
+    ready = rows if backfilled is None else [r for r in rows
+                                             if str(r.get("symbol")) in backfilled]
+    new = freeze_clusters(ready, prior)
     allc = sorted(prior + new, key=lambda r: (r["knowable_at"], r["symbol"]))
-    return allc, new, form4.census(to_txns(rows))
+    census = form4.census(to_txns(rows))
+    if backfilled is not None:
+        rest = [r for r in rows if str(r.get("symbol")) not in backfilled]
+        census["clusters_ephemeral"] = len(freeze_clusters(rest, []))
+    return allc, new, census
 
 
 def breadth_points(clusters: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
@@ -712,7 +732,9 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
         # MEASURED ONLY ON AN ANSWER (audit MUST-FIX 2). A ticker-map 500, a dead network
         # (status 0) or 5xx on every request is a pass that learned nothing; it must not read
         # OK/MEASURED. At least one 200 is required.
-        fetch = {**rep, "status": ("FETCHED" if rep["ok_responses"] else
+        # ...and the 200 must be ISSUER DATA (a submissions index or a filing): a ticker-map 200
+        # with every submissions request failing is a pass that learned nothing.
+        fetch = {**rep, "status": ("FETCHED" if rep["data_responses"] else
                                    "FAILED" if rep["requests"] else "IDLE")}
         if rep["block"] is not None:
             state["block"] = rep["block"]
@@ -728,7 +750,8 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
     report["fetch"] = fetch
     rows = _jsonl(txn_path)
     stored = _jsonl(cl_path)
-    clusters, new_clusters, census = score(rows, stored)
+    clusters, new_clusters, census = score(rows, stored,
+                                           set(state.get("backfilled") or []))
     sd.mkdir(parents=True, exist_ok=True)
     if any(not c.get("rows") for c in stored):
         # A store written before freezing carried no row identities, so it cannot be honoured

@@ -155,3 +155,15 @@ def test_f1_is_preregistered_with_its_disclosure() -> None:
         assert needle in doc, needle
     assert all(c["preregistration"].endswith("F1_IDIO_VOLUME_PREREGISTRATION.md")
                for c in fiv.f1_cells())
+
+
+def test_the_breadth_sweep_does_not_charge_f1_a_second_time() -> None:
+    """breadth_sweep.default_families excludes every NOT_SOURCED_HERE family (audit MF4)."""
+    import orthogonal_sweep as osw
+
+    from research import breadth_sweep as bs
+
+    ok, blocked = bs.default_families()
+    assert "idio_volume_reversal" not in ok
+    assert blocked["idio_volume_reversal"].startswith("not sourced here")
+    assert not set(ok) & set(osw.NOT_SOURCED_HERE)

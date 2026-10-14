@@ -467,27 +467,35 @@ def _iter_file(path: Path) -> Iterator[dict[str, Any]]:
 def seat_rows(seat: str, intel: Path | None = None
               ) -> Iterator[tuple[dict[str, Any], datetime | None]]:
     """(row, first-seen instant) for every row on disk for one seat, exact duplicates once."""
-    for row, seen, _path in seat_rows_at(seat, intel):
+    for row, seen, _paths in seat_rows_at(seat, intel):
         yield row, seen
 
 
 def seat_rows_at(seat: str, intel: Path | None = None
-                 ) -> Iterator[tuple[dict[str, Any], datetime | None, Path]]:
-    """`seat_rows` with the file each row was first read from."""
+                 ) -> Iterator[tuple[dict[str, Any], datetime | None, tuple[Path, ...]]]:
+    """`seat_rows` with EVERY file holding each row, earliest capture first.
+
+    A row repeated across files is one row, first seen at the EARLIEST file stamp that holds it
+    -- never the alphabetically first file (audit 2026-10-14). All its files are returned, so the
+    intake-window test asks whether ANY copy is one the compiler still reads.
+    """
     base = (intel or INTEL) / seat
     if not base.is_dir():
         return
-    seen: set[str] = set()
-    paths = sorted(p for p in base.rglob("*") if p.is_file()
-                   and (p.suffix in {".json", ".jsonl"} or p.name.endswith(".jsonl.gz")))
-    for path in paths:
-        fallback = file_stamp(path)
+    far = datetime.max.replace(tzinfo=UTC)
+    stamped = sorted(((file_stamp(p), p) for p in base.rglob("*") if p.is_file()
+                      and (p.suffix in {".json", ".jsonl"} or p.name.endswith(".jsonl.gz"))),
+                     key=lambda sp: (sp[0] or far, str(sp[1])))
+    held: dict[str, tuple[dict[str, Any], datetime | None, list[Path]]] = {}
+    for stamp, path in stamped:
         for row in _iter_file(path):
             h = hashlib.sha256(json.dumps(row, sort_keys=True, default=str).encode()).hexdigest()
-            if h in seen:
+            if h in held:
+                held[h][2].append(path)
                 continue
-            seen.add(h)
-            yield row, first_seen(row, fallback), path
+            held[h] = (row, stamp, [path])
+    for row, stamp, paths in held.values():
+        yield row, first_seen(row, stamp), tuple(paths)
 
 
 def _compiler() -> Any:
@@ -707,7 +715,8 @@ def run(*, intel: Path | None = None, series_root: Path | None = None,
     for seat in SEATS:
         located = list(seat_rows_at(seat, intel))
         rows = [(r, t) for r, t, _p in located]
-        window = [(r, t) for r, t, p in located if in_intake_window(p, cutoff)]
+        window = [(r, t) for r, t, ps in located
+                  if any(in_intake_window(p, cutoff) for p in ps)]
         pts = build_series(seat, rows, universe, now)
         # A dry run writes series only under an explicit scratch root, never the live lake.
         written = (write_series(seat, pts, root)

@@ -102,3 +102,54 @@ def test_a_401_reads_needs_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(gtm.requests, "get", _refuse(calls, 401))
     gtm.mine_google_trends(now=NOW)
     assert len(calls) == 1 and gtm.LAST_PASS["status"] == "NEEDS_KEY"
+
+
+# ------------------------------------------------------------------------------- audit 2b4cd0942
+
+def test_a_point_without_a_value_is_unmeasured_never_zero() -> None:
+    tl = _tl([10, 10, 10, 10, 20, 20, 20, 20])
+    del tl[5]["value"]
+    assert gtm.point_value({"value": [7]}) == 7.0
+    assert gtm.point_value({}) is None and gtm.point_value({"value": []}) is None
+    assert gtm.trend_reading(tl) is None
+
+
+def test_the_trailing_partial_week_is_not_a_reading() -> None:
+    tl = [*_tl([10, 10, 10, 10, 20, 20, 20, 20]), {"value": [99], "isPartial": True}]
+    assert gtm.trend_reading(tl) == pytest.approx(100.0)
+
+
+def test_a_200_with_no_timeline_is_not_fetched_and_the_desk_ua_is_sent(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
+    seen_ua: list[str] = []
+
+    class Empty:
+        status_code = 200
+        text = "<html>consent wall</html>"
+
+    def get(url: str, headers: dict | None = None, **_k: object) -> object:
+        seen_ua.append((headers or {}).get("User-Agent", ""))
+        return Empty()
+    monkeypatch.setattr(gtm.requests, "get", get)
+    assert gtm.mine_google_trends(now=NOW) == []
+    assert gtm.LAST_PASS["status"] == "FAILED" and gtm.LAST_PASS["timelines_read"] == 0
+    assert seen_ua and set(seen_ua) == {gtm.DESK_UA} and "Mozilla" not in gtm.DESK_UA
+
+
+def test_a_refusal_whose_record_cannot_be_written_still_ends_the_pass(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """MF4a: persisting the marker raised inside the loop's broad except and the pass kept
+    fetching (20 requests after a 429). `blocked` is set and the loop broken first."""
+    monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
+    monkeypatch.setattr(gtm, "BLOCKED_REGISTER", tmp_path / "r.json")
+
+    def boom(*_a: object, **_k: object) -> None:
+        raise OSError("disk full")
+    monkeypatch.setattr(gtm.hard_stop, "record_block", boom)
+    calls: list[str] = []
+    monkeypatch.setattr(gtm.requests, "get", _refuse(calls, 429))
+    assert gtm.mine_google_trends(now=NOW) == []
+    assert len(calls) == 1
+    assert gtm.LAST_PASS["status"] == "METHOD_BLOCKED" and "disk full" in gtm.LAST_PASS[
+        "persist_error"]

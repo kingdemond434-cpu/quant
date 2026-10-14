@@ -35,7 +35,10 @@ REGISTER_KEY = "google_trends"
 #: What the last pass did (status, requests, block), for the caller's one-line summary.
 LAST_PASS: dict = {}
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
+#: The desk's own declared identity, never a browser impersonation (audit 2026-10-14). One fixed
+#: value: on a refusal it is never rotated.
+DESK_UA = "quant-desk-google-trends/1.0 (research; public trend queries only)"
+HEADERS = {"User-Agent": DESK_UA}
 
 # Search terms that move markets
 SEARCH_TERMS = {
@@ -67,21 +70,43 @@ TERM_TO_SYMBOLS = {
 MIN_TIMELINE = 8
 
 
-def trend_reading(timeline: list[dict]) -> float | None:
-    """Last 4 weeks vs the 4 before, in percent; None (UNMEASURED) when it cannot be computed.
-
-    NEVER A ZERO FOR "NO DATA". A short timeline or a zero base used to be written as
-    trend_pct=0, which the seat series (`alt_seat_cells`, seat_google_trends) cannot tell from a
-    genuinely flat month -- a silent zero entering a PIT series. No reading emits no row.
-    """
-    if len(timeline) < MIN_TIMELINE:
-        return None
+def point_value(point: dict) -> float | None:
+    """A timeline point's value, or None when it carries none. NEVER a 0 for a missing value
+    (`t.get("value", [0])` turned an absent point into a zero, which read as a -25% trend)."""
     try:
-        vals = [float(t.get("value", [0])[0]) for t in timeline[-MIN_TIMELINE:]]
+        raw = point.get("value")
+        v = raw[0] if isinstance(raw, list | tuple) else raw
+        return None if v is None or isinstance(v, bool) else float(v)
     except (TypeError, ValueError, IndexError, AttributeError):
         return None
-    recent = sum(vals[-4:]) / 4
-    prev = sum(vals[:4]) / 4
+
+
+def complete_points(timeline: list[dict]) -> list[dict]:
+    """The timeline without its trailing `isPartial` point(s): an unfinished week is not a
+    reading of that week."""
+    pts = list(timeline)
+    while pts and pts[-1].get("isPartial"):
+        pts.pop()
+    return pts
+
+
+def trend_reading(timeline: list[dict]) -> float | None:
+    """Last 4 complete weeks vs the 4 before, in percent; None (UNMEASURED) when it cannot be
+    computed.
+
+    NEVER A ZERO FOR "NO DATA". A short timeline, a zero base or a point without a value used to
+    be written as a number the seat series (`alt_seat_cells`, seat_google_trends) cannot tell from
+    a genuine reading -- a silent zero entering a PIT series. No reading emits no row.
+    """
+    pts = complete_points(timeline)
+    if len(pts) < MIN_TIMELINE:
+        return None
+    vals = [point_value(t) for t in pts[-MIN_TIMELINE:]]
+    if any(v is None for v in vals):
+        return None
+    nums = [float(v) for v in vals if v is not None]
+    recent = sum(nums[-4:]) / 4
+    prev = sum(nums[:4]) / 4
     if prev <= 0:
         return None
     return (recent - prev) / prev * 100
@@ -121,60 +146,70 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
         return discoveries
 
     blocked = False
+    LAST_PASS["timelines_read"] = 0
     for category, terms in SEARCH_TERMS.items():
-        if blocked:
-            break
         for term in terms:
+            # Use Google Trends explore page (HTML scraping)
+            url = f"https://trends.google.com/trends/explore?q={term.replace(' ', '+')}&date=today+12-m"
             try:
-                # Use Google Trends explore page (HTML scraping)
-                url = f"https://trends.google.com/trends/explore?q={term.replace(' ', '+')}&date=today+12-m"
                 resp = requests.get(url, headers=HEADERS, timeout=15)
-                LAST_PASS["requests"] += 1
-                status = int(resp.status_code)
-                if status in hard_stop.HARD_STOP:
-                    marker = hard_stop.block_marker(status, "explore",
-                                                    dict(getattr(resp, "headers", None) or {}),
-                                                    now, prior)
+            except Exception:
+                continue
+            LAST_PASS["requests"] += 1
+            status = int(getattr(resp, "status_code", 0) or 0)
+            if status in hard_stop.HARD_STOP:
+                # THE HARD STOP, DECIDED BEFORE ANYTHING CAN FAIL. `blocked` is set and the loop
+                # ends whatever happens while the marker is persisted: a write that raises can
+                # cost the record, never another request (audit 2026-10-14, MF4a).
+                blocked = True
+                LAST_PASS.update({"status": hard_stop.HARD_STOP[status],
+                                  "http_status": status})
+                try:
+                    marker = hard_stop.block_marker(
+                        status, "explore", dict(getattr(resp, "headers", None) or {}), now,
+                        prior)
+                    LAST_PASS["block"] = marker
                     BLOCK_STATE.parent.mkdir(parents=True, exist_ok=True)
                     BLOCK_STATE.write_text(json.dumps(marker, indent=1), encoding="utf-8")
                     hard_stop.record_block(marker, BLOCKED_REGISTER, key=REGISTER_KEY,
                                            host="trends.google.com")
-                    LAST_PASS.update({"status": marker["status"], "block": marker})
-                    blocked = True
-                    break                    # THE HARD STOP: no further request this pass
-
-                if resp.status_code == 200:
-                    LAST_PASS["ok_responses"] += 1
-                    # Extract trend data from HTML
-                    text = resp.text
-                    # Look for JSON data embedded in page
-                    timeline = timeline_from(text)
-                    if timeline:
-                        # Get latest value
-                        latest = timeline[-1].get("value", [0])[0]
-                        # Calculate trend (last 4 weeks vs previous 4); unmeasurable
-                        # emits nothing rather than a zero
-                        trend_pct = trend_reading(timeline)
-
-                        syms = TERM_TO_SYMBOLS.get(term, [])
-                        if syms and latest > 0 and trend_pct is not None:
-                            discoveries.append({
-                                "source": "google_trends",
-                                "type": "search_volume",
-                                "term": term,
-                                "category": category,
-                                "current_value": latest,
-                                "trend_pct": round(trend_pct, 1),
-                                "symbols": syms,
-                                "confidence": min(0.7, abs(trend_pct) / 50),
-                                "description": f"'{term}' search volume {trend_pct:+.1f}% vs 4-week avg",
-                            })
+                except Exception as exc:
+                    LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
+                break
+            if status != 200:
+                continue
+            LAST_PASS["ok_responses"] += 1
+            try:
+                timeline = timeline_from(resp.text)
             except Exception:
-                pass
+                timeline = []
+            if not timeline:
+                continue                     # a 200 with no decodable timeline read nothing
+            LAST_PASS["timelines_read"] += 1
+            pts = complete_points(timeline)
+            latest = point_value(pts[-1]) if pts else None
+            # last 4 complete weeks vs previous 4; unmeasurable emits nothing rather than a zero
+            trend_pct = trend_reading(timeline)
+            syms = TERM_TO_SYMBOLS.get(term, [])
+            if syms and latest is not None and latest > 0 and trend_pct is not None:
+                discoveries.append({
+                    "source": "google_trends",
+                    "type": "search_volume",
+                    "term": term,
+                    "category": category,
+                    "current_value": latest,
+                    "trend_pct": round(trend_pct, 1),
+                    "symbols": syms,
+                    "confidence": min(0.7, abs(trend_pct) / 50),
+                    "description": f"'{term}' search volume {trend_pct:+.1f}% vs 4-week avg",
+                })
+        if blocked:
+            break
 
     if not blocked:
-        LAST_PASS["status"] = "FETCHED" if LAST_PASS["ok_responses"] else "FAILED"
-        if LAST_PASS["ok_responses"] and prior is not None:
+        # FETCHED only when a timeline was actually read: a 200 that carried none is not data
+        LAST_PASS["status"] = "FETCHED" if LAST_PASS["timelines_read"] else "FAILED"
+        if LAST_PASS["timelines_read"] and prior is not None:
             BLOCK_STATE.unlink(missing_ok=True)   # an answered, unrefused pass ends the ladder
     return discoveries
 

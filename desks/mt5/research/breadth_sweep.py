@@ -237,6 +237,17 @@ def _banned(family: str) -> bool:
         return False
 
 
+def _not_sourced_here() -> dict[str, str]:
+    """`orthogonal_sweep.NOT_SOURCED_HERE`: families whose grid is named and CHARGED by their own
+    producer (F1's 21 preregistered cells, learned_miners, triangle_miner, ...). Sweeping them
+    here at defaults would charge the same hypothesis a second time (audit 2026-10-14, MF4)."""
+    try:
+        from research.orthogonal_sweep import NOT_SOURCED_HERE
+        return dict(NOT_SOURCED_HERE)
+    except Exception:
+        return {}
+
+
 def default_families() -> tuple[dict[str, str], dict[str, str]]:
     """(sweepable, blocked): EVERY registered family the desk can call on bars alone, with its
     default parameters, and the ones it cannot with the reason (principal 2026-09-16: "make them
@@ -262,8 +273,12 @@ def default_families() -> tuple[dict[str, str], dict[str, str]]:
         names.setdefault(str(name), fn)
     ok: dict[str, str] = {}
     blocked: dict[str, str] = {}
+    not_sourced = _not_sourced_here()
     for name, fn in sorted(names.items()):
         if name in READY:
+            continue
+        if name in not_sourced:  # charged by its own producer's grid: never a second charge here
+            blocked[name] = f"not sourced here (orthogonal_sweep): {not_sourced[name]}"
             continue
         if name in NOT_A_FAMILY:
             blocked[name] = "a constructor that builds families from a spec, not a family"

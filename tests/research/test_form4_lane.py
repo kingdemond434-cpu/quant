@@ -384,3 +384,73 @@ def test_a_user_agent_without_contact_is_unconfigured_and_never_echoed(
 def test_breadth_cells_carry_the_survivorship_caveat() -> None:
     cells, _ = fl.breadth_cells(fl.MIN_POINTS, True)
     assert all(any("SURVIVORSHIP" in c for c in cell["caveats"]) for cell in cells)
+
+
+# ------------------------------------------------------------------------------- audit 2b4cd0942
+
+ORDERED = [  # (accession, acceptance wall clock, owner, code, txn day) -- oldest first
+    ("0002-26-000001", "2026-05-02T17:00:00.000Z", "Ann A", "P", "2026-05-01"),
+    ("0002-26-000002", "2026-05-04T17:00:00.000Z", "Ben B", "P", "2026-05-03"),
+    ("0002-26-000003", "2026-05-21T17:00:00.000Z", "Cat C", "P", "2026-05-20"),
+    ("0002-26-000004", "2026-05-23T17:00:00.000Z", "Dan D", "P", "2026-05-22"),
+    ("0002-26-000005", "2026-06-11T17:00:00.000Z", "Eve E", "P", "2026-06-10"),
+    ("0002-26-000006", "2026-06-12T17:00:00.000Z", "Fay F", "P", "2026-06-11"),
+]
+
+
+def _edgar_listing(filings: list[tuple[str, str, str, str, str]], calls: list[str]):
+    sub = {"filings": {"recent": {
+        "form": ["4"] * len(filings),
+        "accessionNumber": [f[0] for f in filings],
+        "acceptanceDateTime": [f[1] for f in filings],
+        "primaryDocument": [f"xslF345X05/d{f[0][-1]}.xml" for f in filings]}}}
+    docs = {f"d{f[0][-1]}.xml": _xml(f[2], "Director", f[3], f[4]) for f in filings}
+
+    def get(url: str, headers: dict[str, str]):
+        calls.append(url)
+        if url == fl.TICKER_MAP_URL:
+            return 200, json.dumps({"0": {"cik_str": 320193, "ticker": "AAPL"}}).encode()
+        if "submissions/CIK0000320193" in url:
+            return 200, json.dumps(sub).encode()
+        for name, body in docs.items():
+            if url.endswith(name):
+                return 200, body
+        return 404, b""
+    return get
+
+
+@pytest.mark.parametrize("order", ["newest_first", "oldest_first"])
+def test_the_frozen_store_equals_a_full_replay_whatever_the_fetch_order(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, order: str) -> None:
+    """EDGAR is read newest first, a few filings a pass. Nothing is frozen until the issuer's
+    backfill completes, so the store is the full replay -- buyers and baselines both."""
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    monkeypatch.setattr(fl, "DOCS_PER_ISSUER", 2)
+    listing = list(reversed(ORDERED)) if order == "newest_first" else list(ORDERED)
+    sd = tmp_path / "f4"
+    now = datetime(2026, 7, 1, tzinfo=UTC)
+    stores = []
+    for k in range(6):
+        rep = fl.run(get=_edgar_listing(listing, []), now=now + timedelta(hours=k),
+                     state_dir=sd, series_root=tmp_path / "s", dry_run=True)
+        stores.append((rep["backfill"]["complete"],
+                       (sd / "clusters.jsonl").read_text("utf-8")
+                       if (sd / "clusters.jsonl").exists() else ""))
+        if rep["backfill"]["complete"]:
+            break
+    assert stores[-1][0] is True and len(stores) > 1
+    assert all(text == "" for done, text in stores if not done), "nothing frozen mid-backfill"
+    rows = fl._jsonl(sd / "transactions.jsonl")
+    assert len(rows) == len(ORDERED)
+    replay = fl.freeze_clusters(rows, [])
+    stored = fl._jsonl(sd / "clusters.jsonl")
+    assert stored == json.loads(json.dumps(replay)) and len(stored) == 3
+
+
+def test_a_first_pass_with_every_submissions_request_failing_is_failed(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    rep = fl.run(get=_refusing([], 503, "submissions"), now=NOW, state_dir=tmp_path / "f4",
+                 series_root=tmp_path / "s", dry_run=True)
+    assert rep["fetch"]["ok_responses"] == 1                  # the ticker map answered
+    assert rep["fetch"]["status"] == "FAILED" and rep["status"] == fl.UNMEASURED
