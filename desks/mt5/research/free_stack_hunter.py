@@ -564,6 +564,16 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         spent = time.monotonic() - t0
         if spent >= budget_s:
             break
+        # TERMS FAIL CLOSED (2026-10-14): a row that RECORDS its publisher's terms as refused or
+        # unconfirmed (`terms`, with the verbatim `terms_quote`) is HELD and never fetched. A
+        # row with no `terms` field is untouched: this reads the evidence a row carries, it does
+        # not invent a verdict for rows nobody has reviewed.
+        terms = str(row.get("terms") or "")
+        if terms in ("refused", "to_confirm"):
+            st.update({"last_status": "HELD_ON_TERMS", "last_attempt": _iso(now),
+                       "last_error": (f"terms {terms} ({row.get('terms_url', '')}): "
+                                      f"{str(row.get('terms_quote') or '')[:240]}")})
+            continue
         acc = access(row)
         st["access"] = acc
         if not acc["mined"]:

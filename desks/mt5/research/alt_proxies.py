@@ -8,6 +8,14 @@ migration) and satellite/AIS (Busan, SingStat, China MOT ports). Each row names 
 `substitutes_for`; `substitute_agreement` measures each against an overlapping free series on the
 same keys (the paid originals are not held). They ride this organ's hourly clock unchanged.
 
+PASS 5 (PASS5_SOURCES, 2026-10-14). HKMA interbank liquidity -- the Convertibility Undertaking
+flow (the Aggregate Balance change from market activities: negative = weak-side trigger), the
+closing Aggregate Balance and HIBOR -- for USDHKD, HK50, CHINAH, USDCNH; USAJOBS federal posting
+counts (first-seen PIT; key and e-mail in headers only) for the USD crosses and US500; and the
+Wikipedia attention row extended to ja/tr/es/pt/ko currency and crisis articles (USDJPY, USDTRY,
+USDMXN, USDBRL, USDKRW) under the Wikimedia User-Agent policy. FINRA Reg SHO short volume and
+Adzuna vacancy counts are HELD on their publishers' own terms (quoted in PASS5_TERMS_EVIDENCE).
+
 BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched. SUBSTITUTED_BY names the
 CANDIDATE lawful rows that may stand in for it (e-Stat immigration for JNTO, HK Immigration
 crossings for Baidu migration / Maoyan / the holiday tallies, TÜİK for BKM, BCB Open Data for
@@ -758,7 +766,27 @@ WIKI_ASIA_ARTICLES: tuple[tuple[str, str, str], ...] = (
     ("ja_boj", "ja.wikipedia", "日本銀行"), ("ja_nikkei", "ja.wikipedia", "日経平均株価"),
     ("zh_pboc", "zh.wikipedia", "中国人民银行"), ("zh_rmb", "zh.wikipedia", "人民币"),
     ("zh_hsi", "zh.wikipedia", "恒生指数"), ("ko_bok", "ko.wikipedia", "한국은행"),
-    ("ko_kospi", "ko.wikipedia", "코스피"))
+    ("ko_kospi", "ko.wikipedia", "코스피"),
+    # N6 (2026-10-14): local-language CURRENCY and CRISIS articles -- the attention shock of a
+    # domestic reader looking up their own currency (titles read off each wiki's own article,
+    # not translated: a redirect title would count only the redirect's views).
+    ("ja_yen", "ja.wikipedia", "円 (通貨)"), ("ja_yen_rate", "ja.wikipedia", "円相場"),
+    ("ja_fx_intervention", "ja.wikipedia", "外国為替平衡操作"),
+    ("tr_lira", "tr.wikipedia", "Türk lirası"),  # noqa: RUF001
+    ("tr_crisis", "tr.wikipedia", "Türkiye ekonomik krizi (2018-günümüz)"),
+    ("es_mxn", "es.wikipedia", "Peso mexicano"),
+    ("pt_brl", "pt.wikipedia", "Real (moeda brasileira)"),
+    ("ko_krw", "ko.wikipedia", "대한민국 원"), ("ko_jpy", "ko.wikipedia", "일본 엔"))
+#: The seven articles the first version read: a state that recorded `full_done` read their full
+#: history; every article added since gets its own full-history read once (`full_labels`).
+WIKI_LEGACY_LABELS: tuple[str, ...] = ("ja_boj", "ja_nikkei", "zh_pboc", "zh_rmb", "zh_hsi",
+                                       "ko_bok", "ko_kospi")
+#: The Wikimedia User-Agent policy and the Analytics API access policy require a descriptive
+#: User-Agent naming the client and a way to reach its operator ("<client>/<version> (<contact>)
+#: <library>/<version>"); a browser-looking or contact-less agent may be blocked without notice.
+#: The contact is the repository's public address unless the box overrides it.
+WIKI_CONTACT = os.environ.get("ALT_WIKI_CONTACT", "https://github.com/kingdemond434-cpu/quant")
+WIKI_UA = f"quant-desk-alt-proxies/1.1 ({WIKI_CONTACT}) python-urllib/3"
 WIKI_URL = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/"
             "all-access/user/{title}/daily/{start}/{end}")
 
@@ -1691,6 +1719,77 @@ def rule_kr_mof_port(period: date) -> datetime:
     return _roll_weekday(_utc(t.year, t.month, t.day))
 
 
+# ============================================================================ pass-5 parsers
+# HKMA interbank liquidity (Convertibility Undertaking flows, Aggregate Balance, HIBOR) and
+# USAJOBS posting counts. Each parser keeps only what the publisher printed; every derived number
+# is named for what it is.
+
+def _hk_num(v: Any) -> float | None:
+    """HKMA prints some amounts as strings ("-1,234", "0", "") -- a blank is UNMEASURED, never 0."""
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", "")
+    return None if s in ("", "-", "N/A", "null") else _num(s)
+
+
+def parse_hkma_liquidity(body: bytes, ctx: Ctx) -> list[Obs]:
+    """HKMA open API `daily-figures-interbank-liquidity` JSON (`result.records[]`, one row per
+    business day `end_of_date`).
+
+    `hkma_cu_flow_mn` = `market_activities` (HK$ mn): the change in the Aggregate Balance from
+    market activities, which under the Linked Exchange Rate System is the Convertibility
+    Undertaking at work -- NEGATIVE when the weak-side CU (7.85) triggered and the HKMA bought HKD
+    (banks' HKD liquidity drained), POSITIVE when the strong-side CU (7.75) triggered and it sold
+    HKD. `hkma_cu_trigger` is that flow's sign (-1 weak side, +1 strong side, 0 none) -- the CU
+    trigger as an event series. `hkma_ab_close_mn` is the closing Aggregate Balance, and
+    `hkma_hibor_on` / `hkma_hibor_1m` the overnight and 1-month HIBOR the drain pushes up. A blank
+    cell yields nothing for that series (UNMEASURED), never a zero."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    res = doc.get("result") if isinstance(doc, dict) else None
+    recs = res.get("records") if isinstance(res, dict) else None
+    if not isinstance(recs, list):
+        return []
+    out: list[Obs] = []
+    for r in recs:
+        if not isinstance(r, dict):
+            continue
+        try:
+            d = date.fromisoformat(str(r.get("end_of_date") or "")[:10])
+        except ValueError:
+            continue
+        flow = _hk_num(r.get("market_activities"))
+        if flow is not None:
+            out.append(Obs("hkma_cu_flow_mn", d, flow))
+            out.append(Obs("hkma_cu_trigger", d, float((flow > 0) - (flow < 0))))
+        for series, col in (("hkma_ab_close_mn", "closing_balance"),
+                            ("hkma_hibor_on", "hibor_overnight"),
+                            ("hkma_hibor_1m", "hibor_fixing_1m")):
+            x = _hk_num(r.get(col))
+            if x is not None:
+                out.append(Obs(series, d, x))
+    return out
+
+
+def parse_usajobs_count(body: bytes, ctx: Ctx) -> list[Obs]:
+    """USAJOBS Search API JSON: `SearchResult.SearchResultCountAll`, the number of announcements
+    matching the request's filters (`ctx.part` names the cut: open_total, new_1d, new_1d_<group>).
+    One observation per FETCH DAY, stamped published_at = the fetch instant: a posting count is
+    knowable only when it was read (first-seen PIT), so the first read of a day is its value."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    sr = doc.get("SearchResult") if isinstance(doc, dict) else None
+    n = sr.get("SearchResultCountAll") if isinstance(sr, dict) else None
+    if isinstance(n, bool) or not isinstance(n, int | float) or n < 0:
+        return []
+    at = ctx.fetched_at.astimezone(UTC)
+    return [Obs(f"usajobs_{ctx.part or 'open_total'}", at.date(), float(n), published_at=at)]
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -2005,30 +2104,47 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
               "per slot and published only for days whose 96 slots were all read (<= 8 gaps). "
               "GKG themes are not read (files are 10x larger); CAMEO roots stand in for themes")),
     Source(
-        id="wiki_asia_attention", name="Asian-language Wikipedia attention (ja/zh/ko pageviews)",
+        id="wiki_asia_attention",
+        name="Local-language Wikipedia attention (ja/zh/ko/tr/es/pt pageviews)",
         url=WIKI_URL, region="ASIA",
-        language="ja/zh/ko", cadence="daily", parse=parse_wikimedia,
+        language="ja/zh/ko/tr/es/pt", cadence="daily", parse=parse_wikimedia,
         rule=_lag_rule(1, 12), transform="anomaly_daily",
         instruments={"USDJPY": -1},
+        # Order matters: `instruments_for` takes the FIRST matching prefix, so the specific
+        # currency labels precede the bare language prefixes. The currency signs are the
+        # REVERSAL prior of an attention shock (a spike in the domestic reader's lookups of
+        # their own currency marks a capitulation the pair gives back); the gain test, not this
+        # sign, decides whether it holds.
         series_instruments={"ja_boj": {"USDJPY": -1, "EURJPY": -1},
                             "ja_nikkei": {"JPN225": -1},
+                            "ja_yen": {"USDJPY": -1}, "ja_fx_intervention": {"USDJPY": -1},
+                            "tr_": {"USDTRY": -1}, "es_mxn": {"USDMXN": -1},
+                            "pt_brl": {"USDBRL": -1}, "ko_jpy": {"USDJPY": -1},
                             "zh_": {"USDCNH": 1, "HK50": -1, "CHINAH": -1},
                             "ko_": {"USDKRW": 1}},
         signal_series=("ja_boj_views", "ja_nikkei_views", "zh_pboc_views", "zh_rmb_views",
-                       "zh_hsi_views", "ko_bok_views", "ko_kospi_views"),
-        mechanism=("a Japanese, Chinese or Korean reader looks up the central bank, the currency "
-                   "or the index in their own language before acting; an attention spike in the "
-                   "local language is local retail attention the English Wikipedia list misses"),
+                       "zh_hsi_views", "ko_bok_views", "ko_kospi_views", "ja_yen_views",
+                       "ja_yen_rate_views", "ja_fx_intervention_views", "tr_lira_views",
+                       "tr_crisis_views", "es_mxn_views", "pt_brl_views", "ko_krw_views",
+                       "ko_jpy_views"),
+        mechanism=("a Japanese, Chinese, Korean, Turkish, Mexican or Brazilian reader looks up "
+                   "the central bank, the currency or the index in their own language before "
+                   "acting; an attention spike in the local language is local retail attention "
+                   "the English Wikipedia list misses, and a spike in lookups of one's own "
+                   "currency is the domestic saver's crisis attention"),
         payer="local retail positioning that chases the move after the attention spike",
         constraint="retail acts on attention with a lag; institutions ignore pageviews",
         licence="Wikimedia pageviews API (CC0 data); no key",
-        source_culture="JP/ja,CN/zh,KR/ko", participant_structure=("retail_heavy",),
+        source_culture="JP/ja,CN/zh,KR/ko,TR/tr,MX/es,BR/pt",
+        participant_structure=("retail_heavy",),
         failure_mode_hypothesis=("fails when bots or a main-page feature inflate views, and "
                                  "zh.wikipedia is blocked in mainland China so its readers are "
                                  "TW/HK/diaspora, not the onshore retail base"),
         crowding_prior="low", substitutes_for=_NEWS,
-        note=("full history once, then the last 45 days each pass; the English macro list "
-              "stays in scripts/ingest_axes.py")),
+        note=("full history once per article, then the last 45 days each pass; the English "
+              "macro list stays in scripts/ingest_axes.py. Requests carry the policy User-Agent "
+              "(client, version, contact). es.wikipedia readers are not only Mexican and "
+              "pt.wikipedia not only Brazilian, so those two are diluted attention")),
     Source(
         id="us_oi_card_spend", name="Opportunity Insights / Affinity card spend (US, by sector)",
         url=("https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/"
@@ -3009,8 +3125,222 @@ AXIS_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": "2026-10-06"},
 }
 
+# ---------------------------------------------------------------------------- pass-5 sources
+#: PASS 5 (2026-10-14). HKMA interbank liquidity (F4: Convertibility Undertaking flows, the
+#: Aggregate Balance and HIBOR) and USAJOBS federal posting counts (GAP 1) ride this organ's
+#: hourly leg and its one exogenous_conditioner path unchanged. FINRA Reg SHO daily short volume
+#: (F2) and Adzuna job counts (GAP 1) are HELD on their publishers' own terms, quoted below.
+HKMA_LIQUIDITY_URL = ("https://api.hkma.gov.hk/public/market-data-and-statistics/"
+                      "daily-monetary-statistics/daily-figures-interbank-liquidity")
+USAJOBS_SEARCH_URL = "https://data.usajobs.gov/api/search"
+#: (part, query) per USAJOBS request: every open announcement, those posted in the last day, and
+#: the last day's postings in four occupational series as sector cuts (2210 IT management, 0610
+#: nurse, 1102 contracting, 0801 general engineering) -- seven small requests a pass.
+USAJOBS_CUTS: tuple[tuple[str, str], ...] = (
+    ("open_total", "WhoMayApply=All"), ("new_1d", "DatePosted=1"),
+    ("new_1d_it", "DatePosted=1&JobCategoryCode=2210"),
+    ("new_1d_nurse", "DatePosted=1&JobCategoryCode=0610"),
+    ("new_1d_contracting", "DatePosted=1&JobCategoryCode=1102"),
+    ("new_1d_engineering", "DatePosted=1&JobCategoryCode=0801"))
+#: The note prefix of a row held on its publisher's terms (the macro-flow rows use the same words).
+_HELD_P5 = "HELD, NEVER FETCHED: "
+_HKD_LIQ = {"USDHKD": -1, "HK50": 1, "CHINAH": 1, "USDCNH": -1}
+_HKD_RATE = {"USDHKD": -1, "HK50": -1, "CHINAH": -1}
+
+PASS5_SOURCES: tuple[Source, ...] = (
+    Source(
+        id="hk_hkma_liquidity",
+        name="HKMA interbank liquidity: Convertibility Undertaking flows, Aggregate Balance, "
+             "HIBOR (HKMA open API)",
+        url=os.environ.get("ALT_HKMA_LIQUIDITY_URL", HKMA_LIQUIDITY_URL),
+        region="HK", language="en", cadence="daily", parse=parse_hkma_liquidity,
+        rule=_lag_rule(1, 2, weekday=True), transform="given",
+        instruments=dict(_HKD_LIQ),
+        series_instruments={"hkma_cu_": dict(_HKD_LIQ), "hkma_ab_": dict(_HKD_LIQ),
+                            "hkma_hibor": dict(_HKD_RATE)},
+        signal_series=("hkma_cu_flow_mn", "hkma_ab_close_mn", "hkma_hibor_1m"),
+        mechanism=("under the Linked Exchange Rate System a weak-side Convertibility Undertaking "
+                   "trigger (USDHKD at 7.85) has the HKMA buy HKD, draining the Aggregate "
+                   "Balance one-for-one; a thinner balance lifts HIBOR, which tightens Hong Kong "
+                   "funding for the equity book (HK50, CHINAH) and narrows the USD-HKD carry; a "
+                   "strong-side trigger (7.75) does the reverse. The drain is printed daily, "
+                   "days before HIBOR has finished repricing"),
+        payer="HKD carry and Hong Kong equity positions funded at HIBOR",
+        constraint="the CU band is fixed; the HKMA must take every weak- or strong-side order",
+        licence=("HKMA Terms and Conditions of Use para 17: the APIs may be used to develop a "
+                 "system or service, for commercial or non-commercial purposes, that retrieves "
+                 "and analyses the information; attribution to the HKMA required"),
+        source_culture="HK/en", participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails when the drain is small against a large balance (the "
+                                 "2009-2021 regime, when HIBOR barely moved), and when EFBN "
+                                 "issuance, not the CU, moves the balance"),
+        crowding_prior="medium",
+        note=("PIT: the daily figures for end_of_date are published that Hong Kong evening; "
+              "availability is 02:00 UTC the next weekday (10:00 HKT), never earlier. "
+              "market_activities is the CU flow at settlement. USDCNH is mapped as the "
+              "offshore-RMB funding channel (HKD liquidity is CNH liquidity's neighbour), the "
+              "weakest of the four. Credit line when published: 'Source: Hong Kong Monetary "
+              "Authority'")),
+    Source(
+        id="us_usajobs_postings",
+        name="USAJOBS federal job announcements: open and new-per-day counts, by occupational "
+             "series (OPM Search API)",
+        url=os.environ.get("ALT_USAJOBS_SEARCH_URL", USAJOBS_SEARCH_URL),
+        region="US", language="en", cadence="daily", parse=parse_usajobs_count,
+        rule=_lag_rule(1, 0), transform="level_dev",
+        instruments={"USDX": 1, "US500": 1, "EURUSD": -1, "USDJPY": 1},
+        signal_series=("usajobs_new_1d", "usajobs_open_total"),
+        key_env="USAJOBS_API_KEY", config_env=("USAJOBS_USER_AGENT",),
+        mechanism=("federal hiring is the one labour-demand series printed daily for free: new "
+                   "announcements per day against their own trailing run are a nowcast of the "
+                   "public payroll impulse (and, in a freeze or a surge, of fiscal stance) weeks "
+                   "before the payroll report"),
+        payer="positions marked to the monthly payroll consensus between releases",
+        constraint="the payroll report is monthly and federal postings move with budget law",
+        licence=("USAJOBS API Terms of Service s.2: Public Data may be copied, stored, analysed "
+                 "and used for lawful commercial or noncommercial purposes; prior OPM approval "
+                 "not required"),
+        source_culture="US/en", participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails because federal postings are a small, policy-driven "
+                                 "slice of US labour demand (a hiring freeze reads as weakness "
+                                 "the private economy does not share), and around fiscal-year "
+                                 "turns and shutdowns"),
+        crowding_prior="low",
+        note=("PIT = FIRST-SEEN: a count is stamped at the instant this box read it "
+              "(published_at = fetch time), so a day's value is the first read of that day; no "
+              "history exists before the first fetch. Key (Authorization-Key) and the "
+              "registered e-mail (User-Agent) travel only in headers. A missing key reads "
+              "BLOCKED_ON_KEY:USAJOBS_API_KEY (NEEDS_KEY), a missing e-mail "
+              "UNCONFIGURED:USAJOBS_USER_AGENT -- never a zero. Region cuts are not read: the "
+              "federal series is national. Credit line when published: 'Source: USAJOBS "
+              "(OPM); not endorsed by OPM'")),
+    # ---- HELD on the publisher's own terms: no parser, never fetched, named every pass.
+    Source(
+        id="us_finra_regsho_short_volume",
+        name="FINRA Reg SHO daily short-sale volume (CNMS consolidated file)",
+        url="https://cdn.finra.org/equity/regsho/daily/CNMSshvol{yyyymmdd}.txt",
+        region="US", language="en", cadence="daily", parse=None,
+        rule=_lag_rule(1, 0), transform="given",
+        instruments={"US500": -1, "NAS100": -1, "US2000": -1},
+        signal_series=("short_volume_ratio_z",),
+        mechanism=("an extreme market-wide short-volume ratio is mostly market-maker hedging of "
+                   "retail buying; at extremes it mean-reverts over 1-5 days"),
+        payer="late shorts at a capitulation extreme",
+        constraint="short volume includes market-maker hedges, not only directional shorts",
+        licence="FINRA Terms of Use: non-commercial personal or professional use only; no "
+                "data-mining or robots; no database built from the site",
+        source_culture="US/en", participant_structure=("retail_heavy", "institutional"),
+        failure_mode_hypothesis="short volume is dominated by market-making, not conviction",
+        crowding_prior="high",
+        note=_HELD_P5 + "FINRA's Terms of Use govern finra.org content including FINRA Data: "
+             "'shall be used ONLY for your own non-commercial personal or professional use' "
+             "and users may not 'use any data mining, scraping or harvesting tools (including "
+             "robots)' or 'develop or create a database of data using the FINRA Website'; the "
+             "Reg SHO file page carries no separate licence"),
+    Source(
+        id="gb_adzuna_vacancies",
+        name="Adzuna job-advert counts (UK/EU/AU/CA) as labour-demand nowcast",
+        url="https://api.adzuna.com/v1/api/jobs/gb/search/1", region="GB", language="en",
+        cadence="daily", parse=None, rule=_lag_rule(1, 0), transform="level_dev",
+        instruments={"GBPUSD": 1, "EURUSD": 1, "AUDUSD": 1, "USDCAD": -1},
+        signal_series=("adzuna_ads_total",), key_env="ADZUNA_APP_KEY",
+        mechanism="advertised vacancies lead the official labour-market releases",
+        payer="positions marked to the monthly labour-market consensus",
+        constraint="official vacancy data is monthly or quarterly",
+        licence=("Adzuna API terms: commercial use only within a 14-day trial; vacancy counts "
+                 "may not be used in aggregation for ongoing research without written consent"),
+        source_culture="GB/en", participant_structure=("institutional",),
+        failure_mode_hypothesis="aggregator coverage changes move the count",
+        crowding_prior="medium",
+        note=_HELD_P5 + "the Adzuna API terms permit commercial use only for 'a 14 day trial "
+             "period' during which the data 'may not be used in its original format or in "
+             "aggregation (including but not limited to vacancy counts, average salaries etc) "
+             "to deliver any ongoing work or research ... without written consent'; the key on "
+             "the box does not change that. Written consent from Adzuna lifts the hold"),
+)
+
+PASS5_TERMS: dict[str, tuple[str, str]] = {
+    "hk_hkma_liquidity": ("confirmed", "HKMA Terms para 17: the APIs may be used for commercial "
+                          "or non-commercial systems that retrieve and analyse the data"),
+    "us_usajobs_postings": ("confirmed", "USAJOBS API ToS s.2: Public Data may be stored, "
+                            "analysed and used for lawful commercial purposes; no approval "
+                            "needed"),
+    "us_finra_regsho_short_volume": ("refused", "FINRA Terms of Use: non-commercial use only; "
+                                     "no data-mining tools or robots; no database"),
+    "gb_adzuna_vacancies": ("refused", "Adzuna API terms: 14-day commercial trial; no "
+                            "aggregated vacancy counts for ongoing research without consent"),
+}
+_P5_CHK = "2026-10-14"
+PASS5_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "hk_hkma_liquidity": {
+        "terms_url": "https://www.hkma.gov.hk/eng/other-information/terms-and-conditions.shtml",
+        "terms_quote": ("You may use the APIs to develop, whether for commercial or "
+                        "non-commercial purposes, a software, application [para 17; the "
+                        "sentence continues: website, system or service that searches, "
+                        "displays, analyses, retrieves or views the information, subject to "
+                        "para 12] / you shall give proper attribution to the HKMA and the "
+                        "Website by identifying clearly the source of the Information "
+                        "[para 12(iii)] / at the request of the HKMA, you shall forthwith stop "
+                        "any use of the APIs. [para 17(iii)]"),
+        "robots": ("api.hkma.gov.hk is the documented open-API host (apidocs.hkma.gov.hk); "
+                   "robots.txt not readable from the authoring container"),
+        "credit": "Source: Hong Kong Monetary Authority",
+        "checked_at": _P5_CHK},
+    "us_usajobs_postings": {
+        "terms_url": "https://developer.usajobs.gov/guides/terms-of-service",
+        "terms_quote": ("Public Data may be copied, stored, reformatted, adapted, analyzed, "
+                        "published, redistributed, and used for lawful commercial or "
+                        "noncommercial purposes. Prior OPM approval is not required. / "
+                        "[prohibited:] Circumvent authentication requirements, rate limits, or "
+                        "other technical safeguards"),
+        "robots": "data.usajobs.gov/api is the documented, key-authenticated Search API",
+        "credit": "Source: USAJOBS (OPM); not operated, sponsored or endorsed by OPM",
+        "checked_at": _P5_CHK},
+    "us_finra_regsho_short_volume": {
+        "terms_url": "https://www.finra.org/terms-of-use",
+        "terms_quote": ("shall be used ONLY for your own non-commercial personal or professional "
+                        "use. / use any data mining, scraping or harvesting tools (including "
+                        "robots) / develop or create a database of data using the FINRA "
+                        "Website"),
+        "robots": "not consulted: the source is held on terms and never fetched",
+        "judgement": ("REFUSED: non-commercial use only, robots and database-building "
+                      "prohibited; the daily-files page (finra.org/finra-data/browse-catalog/"
+                      "short-sale-volume-data/daily-short-sale-volume-files) adds no licence"),
+        "checked_at": _P5_CHK},
+    "gb_adzuna_vacancies": {
+        "terms_url": "https://developer.adzuna.com/docs/terms_of_service",
+        "terms_quote": ("Any other use of the Adzuna API by a commercial, government or academic "
+                        "organisation ... is permitted subject to a 14 day trial period. / It "
+                        "may not be used in its original format or in aggregation (including but "
+                        "not limited to vacancy counts, average salaries etc) to deliver any "
+                        "ongoing work or research, apart from the purpose stated prior, without "
+                        "written consent."),
+        "robots": "not consulted: the source is held on terms and never fetched",
+        "judgement": "REFUSED until Adzuna grants written consent for ongoing aggregate use",
+        "checked_at": _P5_CHK},
+}
+#: The Wikimedia pageviews row (N6) re-read on 2026-10-14 against the Analytics API's own access
+#: policy and the User-Agent policy it now complies with.
+WIKI_POLICY_EVIDENCE: dict[str, str] = {
+    "api_terms_url": ("https://doc.wikimedia.org/generated-data-platform/aqs/analytics-api/"
+                      "documentation/access-policy.html"),
+    "api_terms_quote": ("Data provided by the API is available under the CC0 1.0 license / The "
+                        "API requires an HTTP User-Agent header for all requests. / <client "
+                        "name>/<version> (<contact information>) <library/framework "
+                        "name>/<version> / wait for each request to finish before sending "
+                        "another request"),
+    "ua_policy_url": "https://meta.wikimedia.org/wiki/User-Agent_policy",
+    "ua_policy_quote": ("use an informative User-Agent string with contact information, or they "
+                        "may be IP-blocked without notice"),
+    "ua_sent": "WIKI_UA (client/version, repository contact, library); requests are sequential",
+    "policy_checked_at": _P5_CHK}
+
+TERMS.update(PASS5_TERMS)
+TERMS_EVIDENCE.update(PASS5_TERMS_EVIDENCE)
+TERMS_EVIDENCE["wiki_asia_attention"] = {**TERMS_EVIDENCE["wiki_asia_attention"],
+                                         **WIKI_POLICY_EVIDENCE}
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
-                for s in (*SOURCES, *SUBSTITUTE_SOURCES))
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PASS5_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
@@ -3233,8 +3563,9 @@ def _redact(url: str, src: Source) -> str:
     return url.replace(key, f"<{src.key_env}>") if key else url
 
 
-def http_get(url: str) -> tuple[bytes, str]:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+def http_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*",
+                                               **(headers or {})})
     with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
@@ -3259,6 +3590,9 @@ def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
 class Request:
     url: str
     ctx: Ctx
+    #: Extra request headers (a key carried as a header, a policy-required User-Agent). Never
+    #: vaulted and never logged.
+    headers: dict[str, str] = field(default_factory=dict)
 
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
@@ -3304,13 +3638,36 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         recent, lag, back = DATED_SOURCES[src.id]
         return _dated_requests(src, key, now, state, recent=recent, lag=lag, back=back)
     if src.id == "wiki_asia_attention":
-        wstart = ((now - timedelta(days=45)).strftime("%Y%m%d") if state.get("full_done")
-                  else "20150701")
+        done = set(state.get("full_labels") or
+                   (WIKI_LEGACY_LABELS if state.get("full_done") else ()))
+        window = (now - timedelta(days=45)).strftime("%Y%m%d")
         state["full_done_next"] = True
-        return [Request(WIKI_URL.format(project=proj, title=urllib.parse.quote(title, safe=""),
-                                        start=wstart, end=now.strftime("%Y%m%d")),
-                        Ctx(part=label, fetched_at=now))
+        # The REST path takes the title with spaces as underscores, percent-encoded.
+        return [Request(WIKI_URL.format(project=proj,
+                                        title=urllib.parse.quote(title.replace(" ", "_"),
+                                                                 safe=""),
+                                        start=window if label in done else "20150701",
+                                        end=now.strftime("%Y%m%d")),
+                        Ctx(part=label, fetched_at=now), {"User-Agent": WIKI_UA})
                 for label, proj, title in WIKI_ASIA_ARTICLES]
+    if src.id == "hk_hkma_liquidity":
+        # Full history once (1,000 business days a page, newest first, until a page is empty),
+        # then the latest 60 rows each pass; the vintage store dedupes.
+        pages = range(0, 12_000, 1_000) if not state.get("full_done") else range(0, 1)
+        size = 1_000 if not state.get("full_done") else 60
+        state["full_done_next"] = True
+        return [Request(f"{src.url}?pagesize={size}&offset={o}&sortby=end_of_date"
+                        f"&sortorder=desc", Ctx(part=f"page{o}", fetched_at=now))
+                for o in pages]
+    if src.id == "us_usajobs_postings":
+        # The key and the registered e-mail travel ONLY in headers, never in the URL, so the
+        # vaulted URL and every logged error are clean by construction.
+        ua = os.environ.get("USAJOBS_USER_AGENT", "").strip()
+        if not key or not ua:
+            return []                  # never a request built without the registration pair
+        hdr = {"Host": "data.usajobs.gov", "User-Agent": ua, "Authorization-Key": key}
+        return [Request(f"{src.url}?{q}&ResultsPerPage=1", Ctx(part=part, fetched_at=now), hdr)
+                for part, q in USAJOBS_CUTS]
     if src.id == "cn_baidu_migration":
         return [Request(src.url.replace("{city}", cid), Ctx(part=city, fetched_at=now))
                 for city, cid in BAIDU_CITIES.items()]
@@ -4035,7 +4392,7 @@ def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | 
 
 def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             fetch: bool, fixtures: Path | None, deadline: float,
-            getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
+            getter: Callable[..., tuple[bytes, str]] = http_get) -> dict[str, Any]:
     """Fetch (or read fixtures), parse, and merge into the source's vintage store."""
     rec: dict[str, Any] = {"id": src.id, "status": status_of(src)}
     store_p = paths.obs_dir / f"{src.id}.json"
@@ -4073,6 +4430,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     reqs = requests_for(src, now, sst)
     parsed = fetched = 0
     errors: list[str] = []
+    read_parts: list[str] = []
     for i, req in enumerate(reqs):
         if time.monotonic() > deadline:
             errors.append("budget reached: the remaining requests are owed to the next pass")
@@ -4084,8 +4442,10 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 continue
         elif fetch:
             try:
-                body, ctype = getter(req.url)
+                body, ctype = (getter(req.url, req.headers) if req.headers
+                               else getter(req.url))
                 fetched += 1
+                read_parts.append(req.ctx.part)
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
@@ -4098,10 +4458,15 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec.setdefault("merge", {"added": 0, "revised": 0})
         rec["merge"]["added"] += m["added"]
         rec["merge"]["revised"] += m["revised"]
-        if src.id.startswith("imf_portwatch") and not obs:
+        if src.id.startswith(("imf_portwatch", "hk_hkma")) and not obs:
             break                                              # paging exhausted
     if src.id == "cn_firms_industrial" and "firms_backfill_to_next" in sst and not errors:
         sst["firms_backfill_to"] = sst.pop("firms_backfill_to_next")
+    if src.id == "wiki_asia_attention" and fetch and fixtures is None and read_parts:
+        # an article's full history is read once it ANSWERED; a 404 title is retried in full
+        sst["full_labels"] = sorted(
+            set(sst.get("full_labels") or (WIKI_LEGACY_LABELS if sst.get("full_done") else ()))
+            | set(read_parts))
     for k in ("backfill_to_next", "full_done_next"):
         if k in sst:
             nxt = sst.pop(k)

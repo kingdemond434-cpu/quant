@@ -478,7 +478,7 @@
    "cadence": "daily",
    "auth": "none",
    "licence": "US public-record disclosures (STOCK Act); mirror data community-published",
-   "machine_use_allowed": true,
+   "machine_use_allowed": false,
    "cursor": "none: re-read yearly index; values keyed by disclosure date",
    "region": "us",
    "language": "en",
@@ -510,7 +510,12 @@
      "organ": "research/free_stack_hunter.py",
      "note": "congress_trades latest point-in-time z and regime per mapped instrument"
     }
-   }
+   },
+   "terms": "refused",
+   "terms_url": "https://efdsearch.senate.gov/search/home/",
+   "terms_quote": "It shall be unlawful for any person to obtain or use a report: ... for any commercial purpose, other than by news and communications media for dissemination to the general public; ... for determining or establishing the credit rating of any individual",
+   "terms_judgement": "REFUSED, FAIL CLOSED: the Ethics in Government Act restriction (now 5 U.S.C. 13107(c)) printed on the Senate eFD gate binds House and Senate reports alike, and using them to trade is a commercial purpose; the House Clerk page links a Terms of Service PDF that was not readable from the authoring container, and the S3 community mirror republishes the same reports with no licence of its own. HELD: never fetched until counsel or the principal clears the use. The trade parser (libs.data.free_stack.parse_ptr_trades) is built and fixture-tested so the lane is one terms decision from running",
+   "terms_checked_at": "2026-10-14"
   },
   {
    "id": "coinpaprika",

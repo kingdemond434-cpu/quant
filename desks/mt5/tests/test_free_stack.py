@@ -242,7 +242,9 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
         assert per[sid]["status"] == "REFUSED_HARD_BOUNDARY", sid
         assert per[sid]["attempts"] == 0 and per[sid]["last_error"], sid
     assert per["akshare"]["status"] == "OK"
-    assert per["congress_trades"]["status"] == "OK"
+    # the congress row records its publisher's terms as refused (the disclosure statute bars a
+    # commercial purpose): HELD, never fetched -- a terms verdict, not a transport failure
+    assert per["congress_trades"]["status"] == "HELD_ON_TERMS"
     assert per["coinpaprika"]["status"] == "OK"
     assert per["dataset_catalogues"]["status"] == "OK"
     # a live yield is never claimed from a fixture run

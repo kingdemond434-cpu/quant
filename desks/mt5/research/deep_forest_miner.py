@@ -433,6 +433,174 @@ def engine_search(query: str, site: str = "", lang: str = "zh", market: str = ""
     return [], "", errs
 
 
+# ------------------------------------------------------------------- non-Bing site-index route
+# GAP 3 (2026-10-14). Bing answers this miner with an anti-bot shell on most `search` grounds,
+# and the frontier records those vectors BLOCKED. The block is NOT routed around: no rotated
+# agent, no header games, no CAPTCHA work. A different METHOD is used instead, reading only what
+# the ground or a public index publishes for machines: the ground's own sitemap (named in its own
+# robots.txt) first, else the Common Crawl URL index (the CDX server, metadata only). Every page
+# then read from the site must be allowed by that site's robots.txt for every agent ("*"); a
+# disallowed page is counted, never fetched.
+#: Common Crawl's licence to the Service (index included): "CC grants you a limited,
+#: non-assignable, non-transferable, non-sublicensable, non-exclusive, limited license to access
+#: and use the Service subject to the terms and conditions of these ToU" (commoncrawl.org/
+#: terms-of-use, read 2026-10-14). The index answers URL lists only; no crawled page is copied.
+CC_TERMS = {"terms_url": "https://commoncrawl.org/terms-of-use",
+            "terms_quote": ("CC grants you a limited, non-assignable, non-transferable, "
+                            "non-sublicensable, non-exclusive, limited license to access and "
+                            "use the Service subject to the terms and conditions of these ToU"),
+            "restrictions_quote": ("interfering with or disrupting the Service and/or the "
+                                   "servers or networks connected to the Service"),
+            "verdict": "confirmed (URL index only; one request per ground per pass)",
+            "checked_at": "2026-10-14"}
+#: An honest agent for the index and robots reads (never a browser string).
+INDEX_UA = "quant-desk-deep-forest/1.0 (site-index route; sitemap + Common Crawl CDX)"
+INDEX_URLS_PER_GROUND = 80
+_STATIC_EXT = (".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".css", ".js", ".ico",
+               ".woff", ".woff2", ".ttf", ".mp4", ".mp3", ".zip", ".gz", ".xml", ".json")
+
+
+def _cc_index() -> str:
+    try:
+        from research.index_discovery import CC_INDEX
+        return str(CC_INDEX)
+    except Exception:
+        return "CC-MAIN-2026-30"
+
+
+def _index_get(url: str) -> str:
+    """One polite GET with the honest index agent. Raises OSError on any failure."""
+    r = pf.get(url, headers={"User-Agent": INDEX_UA, "Accept": "*/*"}, timeout=25.0,
+               retries=1, leg=LEG, max_bytes=4_000_000)
+    if r.ok:
+        return r.text
+    raise OSError(r.error or f"HTTP {r.status}")
+
+
+def robots_parser(robots_txt: str) -> Any:
+    import urllib.robotparser
+    rp = urllib.robotparser.RobotFileParser()
+    rp.parse(robots_txt.splitlines())
+    return rp
+
+
+def sitemap_locs(xml: str) -> tuple[list[str], list[str]]:
+    """(page urls, child sitemap urls) from a sitemap or a sitemap index."""
+    locs = [_html.unescape(m.strip()) for m in re.findall(r"<loc>\s*([^<]+?)\s*</loc>", xml)]
+    if "<sitemapindex" in xml:
+        return [], locs
+    return locs, []
+
+
+def article_like(url: str, site: str) -> bool:
+    p = urlparse(url)
+    host = p.netloc.lower().split(":")[0]
+    bare = site.lower().removeprefix("www.")
+    if not (host == bare or host.endswith("." + bare)):
+        return False
+    path = p.path or "/"
+    return path not in ("", "/") and not path.lower().endswith(_STATIC_EXT)
+
+
+def rank_by_queries(urls: list[str], queries: list[str]) -> list[str]:
+    """URLs whose path or query shares a token with the ground's queries first (Latin tokens of
+    three or more letters; a CJK query rarely appears in a URL, so order then stays as listed)."""
+    toks = {t for q in queries for t in re.findall(r"[a-z0-9]{3,}", q.lower())}
+
+    def score(u: str) -> int:
+        low = unquote(u).lower()
+        return -sum(1 for t in toks if t in low)
+    return sorted(dict.fromkeys(urls), key=score)
+
+
+def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
+    """The ground's own sitemap(s), else the Common Crawl CDX listing for `site/*`; each URL
+    filtered to article-like pages on that site and to what its robots.txt allows for "*".
+    Returns {"route", "urls", "robots_disallowed", "errors"}; never raises."""
+    get = get or _index_get
+    errors: list[str] = []
+    robots_txt = ""
+    try:
+        robots_txt = get(f"https://{site}/robots.txt")
+    except Exception as exc:
+        errors.append(f"robots: {str(exc)[:80]}")
+    rp = robots_parser(robots_txt) if robots_txt else None
+    urls: list[str] = []
+    route = ""
+    maps = [ln.split(":", 1)[1].strip() for ln in robots_txt.splitlines()
+            if ln.lower().startswith("sitemap:")][:2]
+    for sm in maps:
+        try:
+            pages, kids = sitemap_locs(get(sm))
+            for kid in kids[:2]:
+                pages += sitemap_locs(get(kid))[0]
+            urls += pages
+        except Exception as exc:
+            errors.append(f"sitemap: {str(exc)[:80]}")
+    if urls:
+        route = "sitemap"
+    else:
+        q = quote(f"{site}/*", safe="")
+        cdx = (f"https://index.commoncrawl.org/{_cc_index()}-index?url={q}&output=json"
+               f"&limit={INDEX_URLS_PER_GROUND * 2}&filter=status:200&fl=url")
+        try:
+            for ln in get(cdx).splitlines():
+                with contextlib.suppress(ValueError):
+                    u = str((json.loads(ln) or {}).get("url") or "")
+                    if u:
+                        urls.append(u)
+            route = "cdx" if urls else ""
+        except Exception as exc:
+            errors.append(f"cdx: {str(exc)[:80]}")
+    keep = [u for u in dict.fromkeys(urls) if article_like(u, site)]
+    # NO ROBOTS FILE READ: an unread robots.txt is not a permission, so nothing is fetched.
+    allowed = [u for u in keep if rp.can_fetch("*", u)] if rp is not None else []
+    if rp is None and keep:
+        errors.append("robots.txt unread: pages listed, none fetched")
+    return {"route": route or "none", "urls": allowed[:INDEX_URLS_PER_GROUND],
+            "listed": len(keep),
+            "robots_disallowed": len(keep) - len(allowed) if rp is not None else 0,
+            "errors": errors[:4]}
+
+
+def bing_reroute_census(grounds: list[dict[str, Any]],
+                        vectors: dict[str, Any] | None = None) -> dict[str, Any]:
+    """How many Bing-dependent grounds (route `search`, including legacy `unreachable` re-routed
+    to search) now have a non-Bing route, and which stay BLOCKED with cause. With the frontier's
+    vectors, the same count over the vectors recorded BLOCKED."""
+    dep = [g for g in grounds if str(g.get("route") or "http") in ("search", "youtube")
+           or (str(g.get("route")) == "unreachable" and g.get("site"))]
+    rerouted = sorted(str(g.get("name")) for g in dep
+                      if g.get("site") and str(g.get("route")) != "youtube")
+    no_site = sorted(str(g.get("name")) for g in dep
+                     if not g.get("site") and str(g.get("route")) != "youtube")
+    tube = sorted(str(g.get("name")) for g in dep if str(g.get("route")) == "youtube")
+    out: dict[str, Any] = {
+        "bing_dependent_grounds": len(dep), "rerouted": len(rerouted),
+        "route": "site sitemap (robots.txt Sitemap:) else Common Crawl CDX, robots-gated pages",
+        "still_blocked": {**dict.fromkeys(no_site,
+                                          "no site to index: a search engine was its only "
+                                          "address"),
+                          **dict.fromkeys(tube, "youtube.com is found through the engine; its "
+                                          "own index is the YouTube Data API, whose key is not "
+                                          "on the box, and its site is not crawled around "
+                                          "that")},
+        "terms": CC_TERMS,
+        "live_yield": "UNMEASURED until the box runs the deep_forest leg"}
+    if vectors is not None:
+        by_name = {str(g.get("name")): g for g in grounds}
+        blocked = [n for n, v in vectors.items()
+                   if isinstance(v, dict) and v.get("outcome") == "BLOCKED"]
+        bing = [n for n in blocked if by_name.get(n) in dep]
+        out["frontier_blocked_vectors"] = len(blocked)
+        out["frontier_blocked_bing_dependent"] = len(bing)
+        out["frontier_blocked_rerouted"] = sum(1 for n in bing if by_name[n].get("site"))
+        out["frontier_blocked_other_cause"] = {
+            n: "not a search ground: its own route failed (not Bing)"
+            for n in blocked if n not in bing}
+    return out
+
+
 # --------------------------------------------------------------------------- platform routes
 def gitee_search(query: str) -> tuple[list[dict[str, Any]], str | None]:
     url = (f"https://gitee.com/api/v5/search/repositories?q={quote(query)}"
@@ -1012,8 +1180,38 @@ class _Run:
                                                   f"search:{engine}:page")
                     time.sleep(1.0)
             time.sleep(1.5)
-        return {"queries": len(g.get("queries") or []), "engines": engines, "pages": pages,
-                "claims": claims, "errors": errors[:4]}
+        out: dict[str, Any] = {"queries": len(g.get("queries") or []), "engines": engines,
+                               "pages": pages, "claims": claims, "errors": errors[:4]}
+        # NO ENGINE ANSWERED (Bing's anti-bot shell, DuckDuckGo empty): the block is recorded,
+        # never routed around, and the ground is read by a different METHOD -- its own sitemap
+        # or the Common Crawl URL index -- with every page gated by the site's robots.txt.
+        if not engines and site and not self.over() and self._net_ok():
+            out["index_route"] = self.ground_site_index(g)
+            out["claims"] = claims + int(out["index_route"].get("claims") or 0)
+            out["pages"] = pages + int(out["index_route"].get("fetched") or 0)
+            if out["index_route"].get("fetched"):
+                out["fetched"] = out["index_route"]["fetched"]
+        return out
+
+    def ground_site_index(self, g: dict[str, Any]) -> dict[str, Any]:
+        site = str(g.get("site") or "")
+        idx = site_index_urls(site)
+        queries = [str(q) for q in g.get("queries") or []]
+        claims = fetched = 0
+        cap = PAGE_FETCH_PER_QUERY * max(1, len(queries))
+        for url in rank_by_queries(idx["urls"], queries)[: cap * 2]:
+            if fetched >= cap or self.over():
+                break
+            body = self.page(url)
+            if len(html_text(body)) < MIN_PAGE_TEXT:
+                continue
+            fetched += 1
+            claims += self._read_page(g, body, url, _title(body), f"index:{idx['route']}:page")
+            self.follow(url, _title(body), via=f"{SOURCE}:{g.get('name')}")
+            time.sleep(1.0)
+        return {"route": idx["route"], "listed": idx["listed"], "allowed": len(idx["urls"]),
+                "robots_disallowed": idx["robots_disallowed"], "fetched": fetched,
+                "claims": claims, "errors": idx["errors"]}
 
     def ground_cn_api(self, g: dict[str, Any]) -> dict[str, Any]:
         from libs.data import cn_sources
@@ -1405,6 +1603,19 @@ class _Run:
                             # ORTHOGONALITY: a ground that yields only momentum says so.
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
                             "datasets": sum(1 for d in self.datasets if d.get("ground") == name)})
+
+
+def _reroute_census(grounds: list[dict[str, Any]]) -> dict[str, Any]:
+    """`bing_reroute_census` over the frontier file as it stands; never raises."""
+    try:
+        doc = json.loads(_frontier_path().read_text(encoding="utf-8"))
+        vectors = doc.get("vectors") if isinstance(doc, dict) else None
+    except (OSError, ValueError):
+        vectors = None
+    try:
+        return bing_reroute_census(grounds, vectors if isinstance(vectors, dict) else None)
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
 
 
 def _feed_frontier(urls: list[tuple[str, str, str]]) -> int:
@@ -1808,6 +2019,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "by_region": by_region,
            "languages": sorted({str(g.get("language")) for g in grounds if g.get("language")}),
            "frontier": frontier,
+           "bing_reroute": _reroute_census(grounds),
            "scheduler": {"policy": ("NAMED_ONLY -> retry-due BLOCKED -> cooldown-due covered "
                                     "-> picked-over; inside each bucket least-recently-"
                                     "attempted first over a regional round-robin"),
