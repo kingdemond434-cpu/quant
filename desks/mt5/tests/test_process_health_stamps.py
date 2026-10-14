@@ -44,6 +44,9 @@ ns = _load("_ph_stamps_never_stale", "ops/never_stale.py")
 def _host_disk_is_not_the_subject(monkeypatch: pytest.MonkeyPatch) -> None:
     """The board's rows are the subject here, not this machine's free space."""
     monkeypatch.setattr(ph, "DISK_FLOOR_GB", 0.0)
+    # Nor is the repository's own sleeves.json: the deadman row has its own tests
+    # (test_process_health_deadman_codes.py) and would otherwise colour every headline here.
+    monkeypatch.setattr(ph, "deadman_invariant", lambda **_: None)
 dh = _load("_ph_stamps_desk_health", "desks/mt5/scripts/check_desk_health.py")
 
 NOW = datetime(2026, 10, 14, 6, 0, tzinfo=UTC)
