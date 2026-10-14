@@ -216,7 +216,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
     f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
                                        " alt_conditioned sync_gated entropy_gated"
-                                       " fisher_rao_gated absorption_gated",
+                                       " fisher_rao_gated absorption_gated"
+                                       " markov_vol_gated rough_vol_gated",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
     # base family's entries, so its mechanism and style are its base's and no single row names
     # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
@@ -229,6 +230,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     # gate (panel synchronisation, own permutation entropy): mechanism and style are the base's.
     # `fisher_rao_gated` / `absorption_gated` (rows 90-91) likewise, with the symbol's own
     # distribution velocity and the panel's absorption-ratio shift as the gate.
+    # `markov_vol_gated` / `rough_vol_gated` (row 92) likewise, with the symbol's own
+    # Markov-switching variance regime and the roughness H of its daily realised variance.
     # `world_macro_state` (2026-09-30) conditions on one hunted world series named on the recipe,
     # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
     f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum",

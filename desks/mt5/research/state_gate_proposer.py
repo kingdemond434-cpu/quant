@@ -1,6 +1,6 @@
 """THE STATE-GATE PROPOSER -- every hypothesis-lane H1 instrument, crossed with the price-only
-base families, minted as `sync_gated`, `entropy_gated`, `fisher_rao_gated` and `absorption_gated`
-cells and donated to the one gauntlet.
+base families, minted as `sync_gated`, `entropy_gated`, `fisher_rao_gated`, `absorption_gated`,
+`markov_vol_gated` and `rough_vol_gated` cells and donated to the one gauntlet.
 
 WHAT IT MINTS, per (wrapper, base, symbol) on H1 -- ONE cell each, at registered defaults:
 
@@ -11,8 +11,13 @@ WHAT IT MINTS, per (wrapper, base, symbol) on H1 -- ONE cell each, at registered
                     velocity its class fixes (trend/breakout slow, reversion fast).
     absorption_gated  the base kept in the tail of the hypothesis-lane panel's standardised
                     absorption-ratio shift its class fixes (trend/breakout high, reversion low).
+    markov_vol_gated  the base kept in the tail of the filtered high-variance regime probability
+                    of a 2-state Markov-switching model of the symbol's own H1 returns its class
+                    fixes (trend/breakout calm, reversion wild).
+    rough_vol_gated the base kept in the tail of the roughness H of the symbol's own daily
+                    realised variance its class fixes (trend/breakout persistent, reversion rough).
 
-A base whose class is none of trend, breakout or reversion is not minted for the three
+A base whose class is none of trend, breakout or reversion is not minted for the five
 class-directed wrappers (CLASS_DIRECTED): it would return [] on every bar.
 
 NO PARAMETER SWEEP, ON PURPOSE. The gate direction is fixed by the mechanism (sync) or by the
@@ -38,8 +43,8 @@ certifies.
 
 SYNC AND ABSORPTION ARE NOT MINTED ON CRYPTO CFDs (PANEL_WRAPPERS). They trade through the
 weekend, when the panel's FX, metals and index members are closed: the state would be read off
-bars up to MAX_STALE_HOURS old (audit of #395). fisher_rao_gated reads only the symbol's own
-bars, so it is minted on crypto like entropy_gated.
+bars up to MAX_STALE_HOURS old (audit of #395). fisher_rao_gated, markov_vol_gated and
+rough_vol_gated read only the symbol's own bars, so they are minted on crypto like entropy_gated.
 
 Share CFDs never appear: the symbol list is filtered by
 `research.universe_policy.may_hypothesise`, and `proposer_common.donate` refuses anything the
@@ -72,9 +77,10 @@ REPORT = DESK / "reports" / "STATE_GATE_PROPOSER.json"
 MINT_ROWS_PER_PASS = 1500
 CHARTS: tuple[str, ...] = ("H1",)
 WRAPPERS: tuple[str, ...] = ("sync_gated", "entropy_gated", "fisher_rao_gated",
-                             "absorption_gated")
+                             "absorption_gated", "markov_vol_gated", "rough_vol_gated")
 #: Wrappers whose gate direction is read off the base's mechanism class.
-CLASS_DIRECTED: frozenset[str] = frozenset({"sync_gated", "fisher_rao_gated", "absorption_gated"})
+CLASS_DIRECTED: frozenset[str] = frozenset({"sync_gated", "fisher_rao_gated", "absorption_gated",
+                                            "markov_vol_gated", "rough_vol_gated"})
 #: Wrappers whose state is a weekday-closed PANEL, so a weekend-trading class is not minted.
 PANEL_WRAPPERS: frozenset[str] = frozenset({"sync_gated", "absorption_gated"})
 #: Price-only base families each wrapper gates, at their registered defaults. The un-gated base
@@ -89,6 +95,9 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     "fisher_rao_gated": {"window": 120, "nu": 5.0, "tail": 1.0 / 3.0, "min_history": 30},
     "absorption_gated": {"window": 360, "short": 24, "step": 6, "k_divisor": 5,
                          "min_members": 20, "tail": 1.0 / 3.0, "min_history": 30},
+    "markov_vol_gated": {"fit_window": 2000, "refit": 168, "max_iter": 100, "tail": 1.0 / 3.0,
+                         "min_history": 30},
+    "rough_vol_gated": {"window": 250, "max_lag": 10, "tail": 1.0 / 3.0, "min_history": 30},
 }
 
 
@@ -266,6 +275,22 @@ def _row(wrapper: str, base: str, sym: str, chart: str) -> dict[str, Any]:
                   else "needs a decoupled market whose moves stay local and revert"))
         falsifier = (f"{base} on {sym} {chart} kept where the absorption shift is {side} earns "
                      "no more out of sample than the ungated base")
+    elif wrapper == "markov_vol_gated":
+        side = "calm" if mech in ("trend", "breakout") else "high-variance"
+        why = (f"{base} ({mech}) on {sym} pays only where a 2-state Markov-switching model of its "
+               f"own H1 returns filters the {side} regime: a {mech} entry "
+               + ("needs a quiet tape for its move to carry" if side == "calm"
+                  else "fades the overshoots of a wild regime"))
+        falsifier = (f"{base} on {sym} {chart} kept in the {side} variance regime earns no more "
+                     "out of sample than the ungated base")
+    elif wrapper == "rough_vol_gated":
+        side = "persistent" if mech in ("trend", "breakout") else "rough"
+        why = (f"{base} ({mech}) on {sym} pays only where the roughness H of its own daily "
+               f"realised variance says volatility is {side}: a {mech} entry "
+               + ("needs a volatility state that lasts" if side == "persistent"
+                  else "needs volatility that snaps back"))
+        falsifier = (f"{base} on {sym} {chart} kept where its volatility is {side} earns no more "
+                     "out of sample than the ungated base")
     else:
         why = (f"{base} ({mech}) on {sym} pays more inside low permutation-entropy windows, "
                "where the path's ordinal structure is predictable")
