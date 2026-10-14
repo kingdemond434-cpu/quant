@@ -379,14 +379,30 @@ def _row_check(gate: Any, why_gate: str, waived: dict[str, str] | set[str]
             return ""
         if gate is None:
             return f"REFUSED_UNREPLICATED: {why_gate}"
-        if (cert not in (getattr(gate, "verdicts", None) or {}) and cert not in waived
-                and not row.get("principal_certificate") and not row.get("canon_certificate")):
+        key = row.get("certificate")
+        if (not row.get("principal_certificate") and isinstance(key, str) and key.strip()
+                and key.strip() not in waived):
+            # A LANE KEY IS RE-RESOLVED EVERY PASS (audit of door v4, 2026-10-14). A stamp is a
+            # record, never an authority: when the enrolment knows this clock key, its
+            # certificate is the one asked, and a row stamped with any other is refused. Only a
+            # key the enrolment does not list this pass falls back to its stamp, and says so.
             if "clock" not in memo:
                 memo["clock"] = _clock_canon_map()
-            canon = memo["clock"].get(cert)
-            if canon:
-                row["canon_certificate"] = canon       # carried on the row from here on
-                cert = canon
+            mapped = memo["clock"].get(key.strip())
+            stamped = str(row.get("canon_certificate") or "")
+            if mapped:
+                if stamped and stamped != mapped:
+                    return (f"REFUSED_UNREPLICATED: row stamped canon_certificate {stamped} but "
+                            f"clock {key.strip()} is enrolled by {mapped}; a stamp never "
+                            f"outranks the enrolment")
+                row["canon_certificate"] = mapped
+                row["canon_certificate_source"] = "clock_enrolment"
+                cert = mapped
+            elif stamped:
+                row["canon_certificate_source"] = "stamp_unverified (clock not enrolled this pass)"
+                cert = stamped
+            else:
+                cert = key.strip()
         return str(gate.live_refusal(cert, waived=cert in waived) or "")
     return check
 

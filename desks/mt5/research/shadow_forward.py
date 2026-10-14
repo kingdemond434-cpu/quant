@@ -204,6 +204,7 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     HELD_AT_INTEGRITY.clear()
     REPLICATION_TAG.clear()
     CLOCK_CERTIFICATE.clear()
+    row_cert: dict[int, str] = {}
     # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
     # when the placebo audit shows the certifier caught every planted trap and an independent
     # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
@@ -232,11 +233,11 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                                               "key": key, "reason": reason})
                     slog(f"HELD {key}: {reason}")
                     continue
-                CLOCK_CERTIFICATE[key] = str(run.get("certificate") or "")
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
                              bool(run.get("promotion_authority", True))))
+                row_cert[id(rows[-1])] = str(run.get("certificate") or "")
                 continue
             # EVERY certified family owes a clock (one-pipeline law; the same-day fence carried
             # CERTIFIED-NOT-ENROLLED on two overnight_gap_decay certificates while this branch
@@ -268,15 +269,24 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                                           "reason": reason})
                 slog(f"HELD {key}: {reason}")
                 continue
-            CLOCK_CERTIFICATE[key] = str(run.get("certificate") or "")
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),
                          bool(run.get("promotion_authority", True))))
+            row_cert[id(rows[-1])] = str(run.get("certificate") or "")
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
-    return _one_clock_per_identity(rows, frozen_params=_frozen_clock_params())
+    kept = _one_clock_per_identity(rows, frozen_params=_frozen_clock_params())
+    # The map names the certificate of the row that SURVIVED the one-clock merge, never a
+    # dropped duplicate's (audit of door v4).
+    for t in kept:
+        r = [*list(t), "LONG"]
+        try:
+            CLOCK_CERTIFICATE[sleeve_key(r[0], r[1], r[2], r[3], r[4])] = row_cert.get(id(t), "")
+        except Exception:
+            continue
+    return kept
 
 
 def _frozen_clock_params() -> dict[str, dict]:

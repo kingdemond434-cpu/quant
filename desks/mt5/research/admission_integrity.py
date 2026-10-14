@@ -180,9 +180,10 @@ def scalp_lane_marker(row: Mapping[str, Any]) -> bool:
 
 
 def scalp_ban_stands(policy_file: Path | None = None) -> tuple[bool, str]:
-    """(True, why) while `live_policy` bans `scalp_market` from live capital; (False, why) when the
-    ban is lifted or the policy cannot be read -- then the replication door applies to scalp rows,
-    and with no SPEC_BOOK scalp rule they cannot replicate, so they stay STANDBY (fail closed)."""
+    """(True, why) while `live_policy`'s FILE bans `scalp_market` from live capital; (False, why)
+    when the ban is lifted or the policy file is absent or cannot be read -- then the replication
+    door applies to scalp rows, and with no SPEC_BOOK scalp rule they cannot replicate, so they
+    stay STANDBY (fail closed)."""
     try:
         import sys as _sys
         if str(BASE) not in _sys.path:
@@ -195,7 +196,11 @@ def scalp_ban_stands(policy_file: Path | None = None) -> tuple[bool, str]:
         pol = policy(p)
     except Exception as exc:
         return False, f"live policy unreadable ({type(exc).__name__}: {exc})"
-    if p.exists() and pol.source == "defaults":
+    if not p.exists():
+        # The gateway keeps its coded default ban; the DOOR reads an absent policy as unreadable
+        # (audit of door v4): no file, no written ban, so the exemption does not hold.
+        return False, f"{p.name} is absent"
+    if pol.source == "defaults":
         return False, f"{p.name} is present but unreadable"
     if SCALP_EXEC not in pol.banned_execs:
         return False, f"live policy no longer bans {SCALP_EXEC}"

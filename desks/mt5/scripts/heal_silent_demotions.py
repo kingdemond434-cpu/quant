@@ -109,6 +109,12 @@ def _replication_refusal(row: dict, gate: object | None, waived: set[str]) -> st
     import admission_integrity as ai
     if ai.scalp_lane_marker(row):
         return ai.scalp_refusal()
+    if (row.get("canon_certificate") and not row.get("principal_certificate")
+            and isinstance(row.get("certificate"), str)):
+        # A lane row's stamped canon certificate is verified against the enrolment only by the
+        # promoter (`_row_check`); this writer cannot, so it leaves the restore to the promoter.
+        return ("REFUSED_UNREPLICATED: lane row's canon_certificate is verified against the "
+                "clock enrolment by the promoter's restore, not here")
     cid = ai.canon_certificate(row)
     if not cid:
         return ""

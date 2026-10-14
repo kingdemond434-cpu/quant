@@ -197,7 +197,62 @@ def test_a_promoted_main_row_carrying_its_canon_certificate_needs_no_lookup(
         roster, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
     row = _lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON)
-    assert roster([], [row])[MAIN_KEY]["status"] == "LIVE"
+    got = roster([], [row])[MAIN_KEY]
+    assert got["status"] == "LIVE"
+    # the clock is not enrolled this pass: the stamp is used, and the fallback is NAMED
+    assert got["canon_certificate_source"].startswith("stamp_unverified")
+
+
+# --------------------------------------------- a stamp never outranks the enrolment (door v4)
+OTHER_CANON = "external.USDJPY@H1.session_range_breakout.p=fedcba9876543210"
+
+
+def test_a_stamp_that_disagrees_with_the_enrolment_is_refused(roster, tmp_path,
+                                                              monkeypatch) -> None:
+    CLOCKS[MAIN_KEY] = {"certificate": OTHER_CANON}
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
+    got = roster([], [_lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON)])[MAIN_KEY]
+    assert (got["status"], got["risk_frac"]) == ("STANDBY", 0.0)
+    assert "never outranks the enrolment" in got["demote_reason"]
+
+
+def test_a_replicated_stamp_carried_onto_another_clock_is_refused(roster, tmp_path,
+                                                                 monkeypatch) -> None:
+    other_key = "USDJPY.asia#rr=3.0"
+    CLOCKS[MAIN_KEY] = {"certificate": MAIN_CANON}
+    CLOCKS[other_key] = {"certificate": OTHER_CANON}
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
+    got = roster([], [_lane_row(other_key, other_key, canon_certificate=MAIN_CANON)])[other_key]
+    assert got["status"] == "STANDBY"
+
+
+def test_an_enrolled_clock_re_stamps_its_own_certificate(roster, tmp_path, monkeypatch) -> None:
+    CLOCKS[MAIN_KEY] = {"certificate": MAIN_CANON}
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
+    got = roster([], [_lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON)])[MAIN_KEY]
+    assert got["status"] == "LIVE" and got["canon_certificate_source"] == "clock_enrolment"
+
+
+def test_the_clock_map_names_the_survivor_of_the_one_clock_merge(monkeypatch) -> None:
+    import shadow_forward as sf
+    rows = [("USDJPY", "asia", {}, "session_range_breakout", "LONG"),
+            ("USDJPY", "asia", {"timeframe": "H1"}, "session_range_breakout", "LONG")]
+    kept = sf._one_clock_per_identity(list(rows))
+    assert len(kept) == 1 and kept[0] is rows[1]     # the more explicit spelling survives
+
+
+def test_the_side_channel_writes_through_the_promoters_door(roster, tmp_path,
+                                                           monkeypatch) -> None:
+    spec = importlib.util.spec_from_file_location(
+        "promoter_fixed_r", DESK / "side_channels" / "promoter_fixed.py")
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    key = "qquant.AUDSGD.macro_conditional.asia"
+    promoter.SLEEVES_FILE.write_text(json.dumps({"sleeves": []}), "utf-8")
+    mod.save_sleeves([_lane_row(key, key)])
+    got = json.loads(promoter.SLEEVES_FILE.read_text("utf-8"))["sleeves"][0]
+    assert got["status"] == "STANDBY"
 
 
 def test_a_generic_survivor_key_that_replicated_goes_live(roster, tmp_path, monkeypatch) -> None:
@@ -235,8 +290,8 @@ def test_the_scalp_lane_passes_only_while_its_live_ban_stands(roster, tmp_path,
     for cert in ("forward_clock", f"ten_gate:scalp.{name}"):
         _policy(tmp_path, monkeypatch, {"banned_execs": ["scalp_market"]})
         assert roster([], [_scalp(name, cert)])[name]["status"] == "LIVE"
-        _policy(tmp_path, monkeypatch, None)            # no file: the coded ban stands
-        assert roster([], [_scalp(name, cert)])[name]["status"] == "LIVE"
+        _policy(tmp_path, monkeypatch, None)            # no file: no written ban, door applies
+        assert roster([], [_scalp(name, cert)])[name]["status"] == "STANDBY"
         _policy(tmp_path, monkeypatch, {"banned_execs": []})      # ban lifted: door applies
         got = roster([], [_scalp(name, cert)])[name]
         assert got["status"] == "STANDBY" and "no longer bans" in got["demote_reason"]
@@ -339,7 +394,8 @@ def test_the_healer_refuses_a_string_certificate_and_does_not_make_it_sticky(hea
     row = {**_lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON), "status": "STANDBY",
            "risk_frac": 0.0}
     assert healer([dict(row)], {})[MAIN_KEY] == "STANDBY"
-    assert healer([dict(row)], {MAIN_CANON: dict(REP)})[MAIN_KEY] == "LIVE"
+    # a STAMPED lane row is verified against the enrolment only by the promoter (audit door v4)
+    assert healer([dict(row)], {MAIN_CANON: dict(REP)})[MAIN_KEY] == "STANDBY"
     # an unstamped clock key finds no verdict here and is left for the promoter's restore
     bare = {**_lane_row(MAIN_KEY, MAIN_KEY), "status": "STANDBY", "risk_frac": 0.0}
     assert healer([dict(bare)], {MAIN_CANON: dict(REP)})[MAIN_KEY] == "STANDBY"
