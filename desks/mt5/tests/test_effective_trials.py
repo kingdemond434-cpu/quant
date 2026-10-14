@@ -199,7 +199,11 @@ def test_a_small_move_does_not_rewrite_policy_every_hour(tmp_path: Path) -> None
 
 
 def test_lower_charge_lowers_the_hurdle_and_the_relief_is_published() -> None:
-    assert et.sr0(109, 0.014863) < et.sr0(597, 0.014863)
+    # TRANSFORMED 2026-10-14 (principal: "make sure the bars never raise ... never inflation due
+    # to trials"): above BAR_N the charge no longer moves the hurdle at all; below it the hurdle
+    # is the count's own, never above the fixed bar.
+    assert et.sr0(109, 0.014863) == et.sr0(597, 0.014863)
+    assert et.sr0(3, 0.014863) <= et.sr0(597, 0.014863)
 
 
 def test_build_publishes_nominal_effective_ratio_and_the_judge_proof(
