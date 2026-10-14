@@ -116,8 +116,16 @@ EXCLUDE: dict[str, tuple[str, ...]] = {
     "es": ("local", "municipal", "gubernatura", "estatal", "consulta", "revocación",
            "ayuntamiento"),
     "ja": ("知事", "市長", "区長", "町長", "村長", "統一地方", "補欠", "補選", "住民投票", "地方選",
-           "議会"),
+           "議会議員選挙"),
 }
+#: An exclusion word disqualifies a keyword only when it sits this close to it, so a sentence
+#: that names a national vote and, elsewhere, a mayor's resignation is still read (audit
+#: follow-up on #388). Latin-script words match on word boundaries ("mayor" is not "mayoría").
+EXCLUDE_SPAN = 40
+_EXCLUDE_RE: dict[str, re.Pattern[str]] = {
+    lg: re.compile("|".join((re.escape(w) if lg == "ja" else rf"\b{re.escape(w)}\b")
+                            for w in words), re.I)
+    for lg, words in EXCLUDE.items()}
 #: A date is the VOTE date only with a vote cue just before it (or 投票/執行 just after, or as
 #: the date cell of a list-table row), and never right after an event that is not the vote
 #: (audit must-fix 2: "first sat", "results declared", "registration closes" were taken).
@@ -129,7 +137,9 @@ CUE: dict[str, re.Pattern[str]] = {
                      r"\bdel\b", re.I),
     "ja": re.compile(r"投票日|投票|執行日|期日"),
 }
-CUE_AFTER_JA = re.compile("^\\s*(?:\\([^)]{0,3}\\)|\uff08[^\uff09]{0,3}\uff09)?\\s*(?:投票|執行)")
+CUE_AFTER = re.compile(r"^[^.]{0,40}?\b(?:was|were|is|will be)\s+held\b", re.I)
+CUE_AFTER_JA = re.compile("^\\s*(?:\\([^)]{0,3}\\)|\uff08[^\uff09]{0,3}\uff09)?"
+                          "\\s*(?:に)?\\s*(?:投票|執行)")
 NOT_THE_VOTE: dict[str, re.Pattern[str]] = {
     "en": re.compile(r"first sat|\bsat\b|declared|announced|registration|closes|close on|"
                      r"results|dissolved|proclaimed|sworn|took office|inaugurat|nomination|"
@@ -210,13 +220,19 @@ def _dates_spans(text: str) -> list[tuple[int, date, int]]:
 
 
 
-def _national(seg: str, lang: str) -> bool:
-    low = seg.lower().replace("national and provincial", "national")
-    langs = {lang, "en"}
-    if any(x in low for lg in langs for x in EXCLUDE.get(lg, ())):
-        return False
-    return not (lang == "ja" and any(k in seg for k in KEYWORDS["ja"])
-                and not any(h in seg for h in JA_HOUSES))
+def _national_hits(seg: str, lang: str, hits: Sequence[int]) -> list[int]:
+    """The keyword positions that name a NATIONAL vote: no exclusion word of the page's own
+    language within EXCLUDE_SPAN of it, and, in Japanese, a house named in the segment."""
+    if lang == "ja" and not any(h in seg for h in JA_HOUSES):
+        return []
+    # South Africa's own name for its national vote, blanked (same length) so the exclusion
+    # "provincial election" never reads inside it.
+    text = re.sub(r"national and provincial", lambda m: " " * len(m.group(0)), seg, flags=re.I)
+    rx = _EXCLUDE_RE.get(lang)
+    if rx is None:
+        return list(hits)
+    bad = [m.start() for m in rx.finditer(text)]
+    return [h for h in hits if not any(abs(h - b) <= EXCLUDE_SPAN for b in bad)]
 
 
 def _is_vote_date(seg: str, pos: int, lang: str, end: int) -> bool:
@@ -228,7 +244,14 @@ def _is_vote_date(seg: str, pos: int, lang: str, end: int) -> bool:
         return True
     if lang == "ja" and CUE_AFTER_JA.search(seg[end:end + 12]):
         return True
-    return " | " in seg            # the date cell of a list-table row
+    if lang != "ja" and CUE_AFTER.search(seg[end:end + CUE_SPAN]):
+        return True
+    if " | " not in seg:
+        return False
+    # The date cell of a list-table row, and only when that cell names no other event (audit
+    # follow-up on #388: a results-date cell was accepted).
+    cell = seg[seg.rfind("|", 0, pos) + 1:(seg.find("|", end) if "|" in seg[end:] else len(seg))]
+    return not any(NOT_THE_VOTE[lg].search(cell) for lg in langs if lg in NOT_THE_VOTE)
 
 
 def extract(text: str, lang: str, *, today: date | None = None) -> list[dict[str, str]]:
@@ -241,7 +264,8 @@ def extract(text: str, lang: str, *, today: date | None = None) -> list[dict[str
     for seg in re.split(r"\n|(?<=[.!?\u3002])\s+", text):
         low = seg.lower()
         hits = [m.start() for k in keys for m in re.finditer(re.escape(k.lower()), low)]
-        if not hits or not _national(seg, lang):
+        hits = _national_hits(seg, lang, hits)
+        if not hits:
             continue
         best: tuple[int, date] | None = None
         for pos, d, end in _dates_spans(seg):
@@ -256,11 +280,22 @@ def extract(text: str, lang: str, *, today: date | None = None) -> list[dict[str
     return sorted(out.values(), key=lambda e: e["date"])
 
 
+def page_key(url: str) -> str:
+    """A page's identity: host (lower-cased) and path, without query, fragment or a trailing
+    slash, so `?x=1` or `#top` on the same page is never a second source (audit follow-up)."""
+    import urllib.parse
+    u = urllib.parse.urlsplit(url)
+    return f"{(u.hostname or '').lower()}{u.path.rstrip('/') or '/'}"
+
+
 def merge_events(store: dict[str, Any], cc: str, found: Sequence[dict[str, str]], url: str,
-                 seen: str) -> int:
+                 seen: str, page_hash: str | None = None) -> int:
     """Record which page read which vote. A date within MERGE_DAYS of a known one is the same
     vote, read again: this page joins its `sources`, and the vote is CONFIRMED (stamped
-    `confirmed_at`) the first time a second distinct page reads it. Returns new votes added."""
+    `confirmed_at`) the first time a second DISTINCT page reads it -- distinct by `page_key`
+    and, when given, by the hash of its text, so a mirror of the same page never confirms.
+    Returns new votes added."""
+    url = page_key(url)
     rows = store.setdefault(cc, [])
     added = 0
     for e in found:
@@ -269,12 +304,16 @@ def merge_events(store: dict[str, Any], cc: str, found: Sequence[dict[str, str]]
                     if abs((d - date.fromisoformat(r["date"])).days) <= MERGE_DAYS), None)
         if row is None:
             rows.append({"date": e["date"], "first_seen": seen, "url": url, "quote": e["quote"],
-                         "sources": {url: seen}, "confirmed_at": None})
+                         "sources": {url: seen}, "confirmed_at": None,
+                         "page_hashes": [page_hash] if page_hash else []})
             added += 1
             continue
         srcs = row.setdefault("sources", {row.get("url", ""): row.get("first_seen", "")})
-        if url not in srcs:
+        hashes = row.setdefault("page_hashes", [])
+        if url not in srcs and not (page_hash and page_hash in hashes):
             srcs[url] = seen
+            if page_hash:
+                hashes.append(page_hash)
             if len(srcs) >= MIN_SOURCES and not row.get("confirmed_at"):
                 row["confirmed_at"] = seen
     rows.sort(key=lambda r: r["date"])
@@ -424,8 +463,10 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
             fetched[url] = {"at_epoch": time.time(), "status": why}
             per.append({"url": url, "status": why})
             continue
-        found = extract(page_text(body), lang, today=today)
-        added = merge_events(store, cc, found, url, _now())
+        text = page_text(body)
+        found = extract(text, lang, today=today)
+        added = merge_events(store, cc, found, url, _now(),
+                             hashlib.sha256(text.encode()).hexdigest()[:16])
         fetched[url] = {"at_epoch": time.time(), "status": "OK", "dates": len(found)}
         per.append({"url": url, "status": "OK", "dates": len(found), "new_events": added})
     _write_json(EVENTS, store)
