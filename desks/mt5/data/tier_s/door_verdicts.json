@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-14T10:44:26.454965+00:00",
+ "generated_utc": "2026-10-14T11:41:38.653433+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -501,10 +501,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.XAGEUR@M5.pca_residual.p=be3d516727ee10f4": {
@@ -512,10 +510,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.XAGEUR@M15.pca_residual.p=1d4eb3af830df777": {
@@ -523,10 +519,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.XAGEUR@M5.pca_residual.p=81e3b49046ec1b67": {
@@ -534,10 +528,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed": {
@@ -2305,10 +2297,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.CHFSGD@M5.pca_residual.p=e184347a0bbd1cc2": {
@@ -2316,10 +2306,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.USDTHB@M5.pca_residual.p=dbc509e25a3337d9": {
@@ -2327,10 +2315,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.XAGEUR@M5.pca_residual.p=dbc509e25a3337d9": {
@@ -2338,10 +2324,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.CHFSGD@M15.pca_residual.p=9f03548a72decb59": {
@@ -2349,10 +2333,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.NAS100@M15.pca_residual.p=9f03548a72decb59": {
@@ -2360,10 +2342,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.GBPDKK@M15.pca_residual.p=e79b566a9f4a58f5": {
@@ -2371,10 +2351,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.AUDSGD@M15.pca_residual.p=1d4eb3af830df777": {
@@ -2382,10 +2360,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.CHFSGD@M15.pca_residual.p=1d4eb3af830df777": {
@@ -2393,10 +2369,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.AUDCAD@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2404,10 +2378,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDJPY@M30.clock_transition.p=5f72ef0d4db22aa9": {
@@ -2415,10 +2389,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDJPY@M30.clock_transition.p=6c42be9bb86c315d": {
@@ -2426,10 +2400,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M30.clock_transition.p=5032f329d5bbc16e": {
@@ -2437,10 +2411,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M30.clock_transition.p=4f61cfa93eeb1316": {
@@ -2448,10 +2422,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M30.clock_transition.p=5f72ef0d4db22aa9": {
@@ -2459,10 +2433,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M30.clock_transition.p=6c42be9bb86c315d": {
@@ -2470,10 +2444,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2481,10 +2455,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.clock_transition.p=5f72ef0d4db22aa9": {
@@ -2492,10 +2466,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.clock_transition.p=6c42be9bb86c315d": {
@@ -2503,10 +2477,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.clock_transition.p=5032f329d5bbc16e": {
@@ -2514,10 +2488,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.clock_transition.p=4f61cfa93eeb1316": {
@@ -2525,10 +2499,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2536,10 +2510,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK@M30.clock_transition.p=5f72ef0d4db22aa9": {
@@ -2547,10 +2521,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK@M30.clock_transition.p=6c42be9bb86c315d": {
@@ -2558,10 +2532,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK@M30.clock_transition.p=5032f329d5bbc16e": {
@@ -2569,10 +2543,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK@M30.clock_transition.p=4f61cfa93eeb1316": {
@@ -2580,10 +2554,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFJPY@M30.clock_transition.p=5f72ef0d4db22aa9": {
@@ -2591,10 +2565,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFJPY@M30.clock_transition.p=6c42be9bb86c315d": {
@@ -2602,10 +2576,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFNOK@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2613,10 +2587,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPCHF@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2624,10 +2598,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2635,10 +2609,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2646,10 +2620,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSGD@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2657,10 +2631,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.NZDJPY@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2668,10 +2642,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2679,10 +2653,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD@M30.clock_transition.p=caebb3dcbda3756e": {
@@ -2690,10 +2664,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M30.cross_asset_residual.p=5a29a76a02065a5a": {
@@ -4237,7 +4211,7 @@
    }
   },
   "external.NZDCAD@M5.cross_asset_residual.p=aa8934bebbf9ed69": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4248,7 +4222,7 @@
    }
   },
   "external.NZDJPY@M5.cross_asset_residual.p=0052fbfc522a4c69": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4259,7 +4233,7 @@
    }
   },
   "external.NZDJPY@M5.cross_asset_residual.p=aa8934bebbf9ed69": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4270,7 +4244,7 @@
    }
   },
   "external.NZDSGD@M5.cross_asset_residual.p=0052fbfc522a4c69": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4281,7 +4255,7 @@
    }
   },
   "external.US30@M5.cross_asset_residual.p=0052fbfc522a4c69": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4292,7 +4266,7 @@
    }
   },
   "external.USDTHB@M5.cross_asset_residual.p=2479d0d883199a4b": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4303,7 +4277,7 @@
    }
   },
   "external.USDTHB@M5.cross_asset_residual.p=0052fbfc522a4c69": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4314,7 +4288,7 @@
    }
   },
   "external.XAGEUR@M5.cross_asset_residual.p=2c37ecd8fd162964": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4325,7 +4299,7 @@
    }
   },
   "external.XAGEUR@M5.cross_asset_residual.p=aa8934bebbf9ed69": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4336,7 +4310,7 @@
    }
   },
   "external.XAGUSD@M5.cross_asset_residual.p=2479d0d883199a4b": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4347,7 +4321,7 @@
    }
   },
   "external.XAUAUD@M5.cross_asset_residual.p=2479d0d883199a4b": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4358,7 +4332,7 @@
    }
   },
   "external.XAUAUD@M5.cross_asset_residual.p=0052fbfc522a4c69": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4369,7 +4343,7 @@
    }
   },
   "external.XAUAUD@M5.cross_asset_residual.p=cec9a82bd34685dc": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4380,7 +4354,7 @@
    }
   },
   "external.XAUEUR@M5.cross_asset_residual.p=2479d0d883199a4b": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4391,7 +4365,7 @@
    }
   },
   "external.XAUEUR@M5.cross_asset_residual.p=0052fbfc522a4c69": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -4402,7 +4376,7 @@
    }
   },
   "external.XAUEUR@M5.cross_asset_residual.p=cec9a82bd34685dc": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -5572,10 +5546,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.USDTHB@M15.pca_residual.p=1d4eb3af830df777": {
@@ -5583,10 +5555,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.USDZAR@M15.pca_residual.p=1d4eb3af830df777": {
@@ -5594,10 +5564,8 @@
    "review_failed": [],
    "family": "pca_residual",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.EURCHF.spread_state.p=b7fa9c13b16d8255": {
@@ -9059,10 +9027,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDCHF@M30.clock_transition.p=7481c8ca4ea1b04c": {
@@ -9070,10 +9038,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M5.macro_conditional.p=106eb588bc104673": {
@@ -9103,10 +9071,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.clock_transition.p=5bc67806736f96db": {
@@ -9114,10 +9082,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDSEK.overnight_gap_decay.p=44136fa355b3678a": {
@@ -9257,10 +9225,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=5bc67806736f96db": {
@@ -9268,10 +9236,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=b0778a084a2839bc": {
@@ -9279,10 +9247,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -9521,10 +9489,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.clock_transition.p=967450f96e345dfd": {
@@ -9532,10 +9500,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK@M30.clock_transition.p=967450f96e345dfd": {
@@ -9543,10 +9511,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN@M30.clock_transition.p=967450f96e345dfd": {
@@ -9554,10 +9522,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN@M30.clock_transition.p=f38fd212a82835a2": {
@@ -9565,10 +9533,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNZD@M30.clock_transition.p=6c42be9bb86c315d": {
@@ -9576,10 +9544,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSGD@M30.clock_transition.p=967450f96e345dfd": {
@@ -9587,10 +9555,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD@M30.clock_transition.p=967450f96e345dfd": {
@@ -9598,10 +9566,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD@M30.clock_transition.p=967450f96e345dfd": {
@@ -9609,10 +9577,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=44136fa355b3678a": {
@@ -9873,10 +9841,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK@M30.clock_transition.p=d416e1eebe081eac": {
@@ -9884,10 +9852,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN@M30.clock_transition.p=d416e1eebe081eac": {
@@ -9895,10 +9863,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSGD@M30.clock_transition.p=d416e1eebe081eac": {
@@ -9906,10 +9874,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD@M30.clock_transition.p=d416e1eebe081eac": {
@@ -9917,10 +9885,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN@M15.clock_transition.p=973b2d288686dc36": {
@@ -9928,10 +9896,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.clock_transition.p=c6e30bbd4abefa53": {
@@ -9939,10 +9907,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURCHF.clock_transition.p=f06d06fa49e353c7": {
@@ -9950,10 +9918,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURCHF.clock_transition.p=9ab0bb13bca2c21e": {
@@ -9961,10 +9929,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURCHF.clock_transition.p=db1311aecee19527": {
@@ -9972,10 +9940,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.clock_transition.p=c6e30bbd4abefa53": {
@@ -9983,10 +9951,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.clock_transition.p=625528b8bca83afd": {
@@ -9994,10 +9962,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=19b5c459353448df": {
@@ -10005,10 +9973,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=16568e51b50ea1e2": {
@@ -10016,10 +9984,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=9ab0bb13bca2c21e": {
@@ -10027,10 +9995,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=c6e30bbd4abefa53": {
@@ -10038,10 +10006,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.clock_transition.p=c6e30bbd4abefa53": {
@@ -10049,10 +10017,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.clock_transition.p=39ec47e132030e47": {
@@ -10060,10 +10028,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD.clock_transition.p=39ec47e132030e47": {
@@ -10071,10 +10039,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.clock_transition.p=39ec47e132030e47": {
@@ -10082,10 +10050,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFNOK.clock_transition.p=39ec47e132030e47": {
@@ -10093,10 +10061,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.clock_transition.p=39ec47e132030e47": {
@@ -10104,10 +10072,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURMXN.clock_transition.p=39ec47e132030e47": {
@@ -10115,10 +10083,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURNOK.clock_transition.p=39ec47e132030e47": {
@@ -10126,10 +10094,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURNZD.clock_transition.p=39ec47e132030e47": {
@@ -10137,10 +10105,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.clock_transition.p=39ec47e132030e47": {
@@ -10148,10 +10116,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.clock_transition.p=39ec47e132030e47": {
@@ -10159,10 +10127,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURZAR.clock_transition.p=39ec47e132030e47": {
@@ -10170,10 +10138,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.clock_transition.p=39ec47e132030e47": {
@@ -10181,10 +10149,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPJPY.clock_transition.p=39ec47e132030e47": {
@@ -10192,10 +10160,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=39ec47e132030e47": {
@@ -10203,10 +10171,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK.clock_transition.p=39ec47e132030e47": {
@@ -10214,10 +10182,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSGD.clock_transition.p=39ec47e132030e47": {
@@ -10225,10 +10193,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.clock_transition.p=39ec47e132030e47": {
@@ -10236,10 +10204,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.clock_transition.p=39ec47e132030e47": {
@@ -10247,10 +10215,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.clock_transition.p=39ec47e132030e47": {
@@ -10258,10 +10226,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.NZDJPY.clock_transition.p=39ec47e132030e47": {
@@ -10269,10 +10237,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD.clock_transition.p=39ec47e132030e47": {
@@ -10280,10 +10248,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.clock_transition.p=39ec47e132030e47": {
@@ -10291,10 +10259,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDCNH.clock_transition.p=39ec47e132030e47": {
@@ -10302,10 +10270,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.clock_transition.p=39ec47e132030e47": {
@@ -10313,10 +10281,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDNOK.clock_transition.p=39ec47e132030e47": {
@@ -10324,10 +10292,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDPLN.clock_transition.p=39ec47e132030e47": {
@@ -10335,10 +10303,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.clock_transition.p=39ec47e132030e47": {
@@ -10346,10 +10314,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.clock_transition.p=39ec47e132030e47": {
@@ -10357,10 +10325,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.clock_transition.p=99cdb0d39855b38f": {
@@ -10368,10 +10336,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.clock_transition.p=aaf7fdb4641151c9": {
@@ -10379,10 +10347,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDJPY.clock_transition.p=b95e974aac459e97": {
@@ -10390,10 +10358,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD.clock_transition.p=c6388886873e74ed": {
@@ -10401,10 +10369,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD.clock_transition.p=fdd66336df4507c7": {
@@ -10412,10 +10380,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD.clock_transition.p=b95e974aac459e97": {
@@ -10423,10 +10391,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.clock_transition.p=7f79288b204e4928": {
@@ -10434,10 +10402,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURCHF.clock_transition.p=ad7bb861939ff1dd": {
@@ -10445,10 +10413,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURCHF.clock_transition.p=2133289359eb72ef": {
@@ -10456,10 +10424,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURCHF.clock_transition.p=d2848be1d174af3c": {
@@ -10467,10 +10435,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.clock_transition.p=7f79288b204e4928": {
@@ -10478,10 +10446,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.clock_transition.p=33faf75946da2e88": {
@@ -10489,10 +10457,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=7f79288b204e4928": {
@@ -10500,10 +10468,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=e80a04d19803a4c6": {
@@ -10511,10 +10479,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=0ca25a2a97630244": {
@@ -10522,10 +10490,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=2133289359eb72ef": {
@@ -10533,10 +10501,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.clock_transition.p=9af535ec0bbe3451": {
@@ -10544,10 +10512,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.clock_transition.p=7f79288b204e4928": {
@@ -10555,10 +10523,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.clock_transition.p=777a92da6bf78078": {
@@ -10566,10 +10534,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.clock_transition.p=39249b788f391241": {
@@ -10577,10 +10545,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.clock_transition.p=7785fe2f84d075de": {
@@ -10588,10 +10556,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.clock_transition.p=f0f0f12b20b62f60": {
@@ -10599,10 +10567,10 @@
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
-    "n_oos": 9,
-    "confidence": 0.36,
-    "sd": 0.0941,
-    "status": "UNMEASURED"
+    "n_oos": 10,
+    "confidence": 0.3396,
+    "sd": 0.0903,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD@M15.formula.p=49bac000a84302db": {
