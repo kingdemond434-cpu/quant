@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-14T10:30:18.334017+00:00",
+  "swept_at": "2026-10-14T10:45:24.059504+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -184,8 +184,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 50,
-      "shadow_exp_r": -0.5146,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.3423,
       "woke_on_shadow": false
     },
     "AUDNZD|discovered_asia": {
@@ -2912,8 +2912,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.0856,
+      "shadow_n": 78,
+      "shadow_exp_r": -0.9037,
       "woke_on_shadow": false
     },
     "NZDCAD|cross_asset_residual_continuous": {
@@ -2957,7 +2957,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2548,
+      "shadow_exp_r": -0.2539,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3023,7 +3023,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5491,
+      "shadow_exp_r": -0.5509,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3100,7 +3100,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0341,
+      "shadow_exp_r": 0.043,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -4959,7 +4959,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 41,
-      "shadow_exp_r": 0.126,
+      "shadow_exp_r": 0.1301,
       "woke_on_shadow": false
     },
     "XAUUSD|cross_asset_residual_asia": {
