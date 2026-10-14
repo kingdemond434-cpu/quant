@@ -273,11 +273,13 @@ SOURCE_POLICY.update({
 #: the queue asked for whose OWN terms were read and carry no clause permitting automated access
 #: for internal research. Not URL-level (`hosts` is empty): the row governs the named ROUTE, so
 #: other pages on these domains keep whatever row or default they had. IDEAS_ONLY = never live
-#: input; `alt_proxies.HELD_ROUTES` is a read-only view that reports each by name as HELD.
+#: input; `alt_proxies.HELD_ROUTES` is a read-only view that reports each by name as HELD. Each
+#: row's `sources` is its own key, so `input_source("<route>")` resolves to the row.
 #: Missed growth: each route's delta E[log W] is UNMEASURED until its `unblock` arrives.
 _HELD_ROUTES: dict[str, dict[str, Any]] = {
     "cme_margin_changes": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("cme_margin_changes",),
         "wanted": ("CME Clearing performance-bond (margin) change advisories, PIT at notice "
                    "publication: a margin-hike regime for XAUUSD, XAGUSD, XTIUSD and indices"),
         "why": ("the licence (s.12) is personal and bars copying and derivative works, s.8(vi) "
@@ -297,6 +299,7 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                                 "artificial intelligence [...] is expressly prohibited.")}}},
     "cn_credit_contagion": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("cn_credit_contagion",),
         "wanted": ("GAP_MAP row 31: China credit/default-notice graph (CFETS ChinaMoney, "
                    "ChinaBond, PBoC) mapped to AUD, copper, HK50, CHINAH, USDCNH, gold"),
         "why": ("no official source's own terms could be read, so none has a permitting "
@@ -314,6 +317,7 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                                            "home page on 2026-10-14: UNREAD")}}},
     "cboe_delayed_index_values": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("cboe_delayed_index_values",),
         "wanted": ("Cboe delayed index values (VIX family) for #234's vol route (a note only; "
                    "#234 is not changed here)"),
         "why": ("s.2 grants one personal non-commercial copy and bars storing in a retrieval "
@@ -339,6 +343,7 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
     # are the ones pass 5 quoted, moved here verbatim. Nothing is fetched for any of them.
     "us_finra_regsho_short_volume": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("us_finra_regsho_short_volume",),
         "wanted": ("FINRA Reg SHO daily short-sale volume (CNMS consolidated file): an extreme "
                    "market-wide short-volume ratio as a 1-5 day mean-reversion state for US500, "
                    "NAS100, US2000"),
@@ -356,6 +361,7 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                       "database": "develop or create a database of data using the FINRA Website"}}},
     "gb_adzuna_vacancies": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("gb_adzuna_vacancies",),
         "wanted": ("Adzuna job-advert counts (UK/EU/AU/CA) as a labour-demand nowcast for "
                    "GBPUSD, EURUSD, AUDUSD, USDCAD"),
         "why": ("the Adzuna API terms permit commercial use only inside a 14-day trial and bar "
@@ -376,6 +382,7 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                                       "written consent.")}}},
     "congress_trades": {
         "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("congress_trades",),
         "wanted": ("US congressional periodic transaction reports (House Clerk index, Senate eFD) "
                    "and their community S3 mirror: filing-dated legislator net buying as informed-"
                    "flow evidence (free_stack_hunter row congress_trades)"),
@@ -1037,14 +1044,13 @@ HELD_ON_TERMS = "HELD_ON_TERMS"
 
 
 def held_on_terms(key: str) -> bool:
-    """True when `key` names a row of this register that forbids LIVE INPUT on its terms: a
-    held route, or a row whose live-input status is IDEAS_ONLY. A row that is only short of its
-    key (NEEDS_KEY) is not held on terms; an unlisted key is not held here (its organ's own
-    checks still apply)."""
+    """True only for a HELD ROUTE of this register (`held_route`): a route whose own terms carry
+    no permitting clause, so nothing is fetched for it at all. An IDEAS_ONLY source is NOT held
+    here (auditor ruling 2026-10-14): it keeps being read for ideas and is labelled IDEAS_ONLY;
+    the live-input check (`input_source`) alone keeps it out of live input data. A NEEDS_KEY row
+    and an unlisted key are not held on terms either."""
     row = SOURCE_POLICY.get(key)
-    if row is None:
-        return False
-    return bool(row.get("held_route")) or live_input_status(key) == IDEAS_ONLY
+    return bool(row and row.get("held_route"))
 
 
 def held_missed_growth(key: str, past: Mapping[str, Any] | None = None) -> dict[str, Any]:

@@ -592,8 +592,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         if spent >= budget_s:
             break
         # TERMS FAIL CLOSED, ONE REGISTER (2026-10-14): a source whose row in the terms register
-        # (libs/data/terms_fence.SOURCE_POLICY, keyed by this roster id) is a held route or
-        # IDEAS_ONLY for live input is HELD and never fetched; the clause quoted is the fence's.
+        # (libs/data/terms_fence.SOURCE_POLICY, keyed by this roster id) is a HELD ROUTE is held
+        # and never fetched; the clause quoted is the fence's. An IDEAS_ONLY row is not held here:
+        # it reaches `run_source`, whose live-input check labels it IDEAS_ONLY (auditor ruling).
         if _tf.held_on_terms(sid):
             pol = _tf.SOURCE_POLICY[sid]
             quote = " | ".join(str(v) for v in ((pol.get("terms") or {}).get("clauses")

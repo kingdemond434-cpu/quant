@@ -70,6 +70,9 @@ def test_each_hold_is_one_fence_row_with_a_quoted_clause_and_no_hosts() -> None:
         assert t["clauses"] and all(len(c) > 40 for c in t["clauses"].values()), sid
         assert tf.terms_state(sid) == "READ" and tf.held_on_terms(sid), sid
         assert sid in tf.HELD_ROUTE_KEYS and sid in A.HELD_ROUTES, sid
+    for sid in tf.HELD_ROUTE_KEYS:                 # the queue rows too: the name finds the row
+        assert tf.SOURCE_POLICY[sid]["sources"] == (sid,), sid
+        assert tf.input_source(sid) == sid and tf.source_key(sid) == sid, sid
     q = {sid: " ".join(tf.SOURCE_POLICY[sid]["terms"]["clauses"].values()) for sid in FENCE_HELD}
     assert "non-commercial personal or professional use" in q["us_finra_regsho_short_volume"]
     assert "14 day trial" in q["gb_adzuna_vacancies"]
@@ -145,11 +148,43 @@ def test_hkma_requests_page_history_once_then_the_latest_rows() -> None:
 
 def test_hkma_signs_map_a_weak_side_drain_to_hk_equity_pressure() -> None:
     src = A.BY_ID["hk_hkma_liquidity"]
-    assert src.instruments_for("hkma_cu_flow_mn") == {"USDHKD": -1, "HK50": 1, "CHINAH": 1,
+    # USDHKD follows the balance: a drain lifts HIBOR and pulls the pair off the weak side
+    assert src.instruments_for("hkma_cu_flow_mn") == {"USDHKD": 1, "HK50": 1, "CHINAH": 1,
                                                       "USDCNH": -1}
     assert src.instruments_for("hkma_hibor_1m")["HK50"] == -1
-    # PIT: never before the next weekday's HK morning
-    assert src.rule(date(2026, 10, 9)) == datetime(2026, 10, 12, 2, tzinfo=UTC)
+    # PIT: the next HK business day, 12:00 UTC (the HKMA states no release hour: late-biased)
+    assert src.rule(date(2026, 10, 9)) == datetime(2026, 10, 12, 12, tzinfo=UTC)
+    assert "UNMEASURED" in src.note and "that Hong Kong evening" not in src.note
+
+
+def test_hkma_stamp_rolls_past_hong_kong_holidays() -> None:
+    src = A.BY_ID["hk_hkma_liquidity"]
+    # Thu 2026-04-02 -> Good Friday 04-03, the weekend, Easter Monday 04-06 and Ching Ming
+    # observed 04-07 are all shut: the first HK business day is Wed 04-08
+    assert src.rule(date(2026, 4, 2)) == datetime(2026, 4, 8, 12, tzinfo=UTC)
+    # Thu 2026-12-24 -> Christmas Fri 12-25, Boxing Day falls on the Saturday: Mon 12-28
+    assert src.rule(date(2026, 12, 24)) == datetime(2026, 12, 28, 12, tzinfo=UTC)
+    # Lunar New Year 2026 (02-17..19): Mon 02-16 -> Fri 02-20
+    assert src.rule(date(2026, 2, 16)) == datetime(2026, 2, 20, 12, tzinfo=UTC)
+    assert src.rule_basis is not None
+    assert src.rule_basis(date(2026, 4, 2)).startswith("hk_business_day")
+    # a year the HK table does not cover: one EXTRA weekday, and the basis says so
+    assert A.hk_general_holidays(2019) is None
+    assert src.rule(date(2019, 3, 7)) == datetime(2019, 3, 11, 12, tzinfo=UTC)   # Thu -> Mon
+    assert src.rule_basis(date(2019, 3, 7)).startswith("late_bias")
+    for d in (date(2024, 3, 28), date(2025, 12, 24), date(2026, 9, 30)):
+        assert src.rule(d).date() not in (A.hk_general_holidays(src.rule(d).year) or ()), d
+        assert src.rule(d).weekday() < 5, d
+
+
+def test_hkma_store_rows_record_their_rule_basis() -> None:
+    src = A.BY_ID["hk_hkma_liquidity"]
+    store: dict[str, Any] = {}
+    A.merge_vintages(store, src, [A.Obs("hkma_cu_flow_mn", date(2026, 4, 2), -1.0),
+                                  A.Obs("hkma_cu_flow_mn", date(2019, 3, 7), 2.0)], NOW)
+    assert store["hkma_cu_flow_mn|2026-04-02"]["published_time"].startswith("2026-04-08T12")
+    assert store["hkma_cu_flow_mn|2026-04-02"]["rule_basis"].startswith("hk_business_day")
+    assert store["hkma_cu_flow_mn|2019-03-07"]["rule_basis"].startswith("late_bias")
 
 
 # ============================================================================ GAP1 USAJOBS
@@ -421,3 +456,96 @@ def test_bing_reroute_census_counts_rerouted_and_blocked_with_cause() -> None:
     real = json.loads((DESK / "data" / "deep_forest_sources.json").read_text("utf-8"))
     rc = D.bing_reroute_census(real["grounds"])
     assert rc["rerouted"] + len(rc["still_blocked"]) == rc["bing_dependent_grounds"]
+
+
+# ============================================================================ audit 2026-10-14
+def test_usajobs_host_header_follows_the_request_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    from dataclasses import replace
+    from urllib.parse import urlparse
+    monkeypatch.setenv("USAJOBS_API_KEY", "k3y-not-real-0002")
+    monkeypatch.setenv("USAJOBS_USER_AGENT", "desk@example.invalid")
+    src = replace(A.BY_ID["us_usajobs_postings"], url="https://mirror.example.invalid/api/search")
+    for r in A.requests_for(src, NOW, {}):
+        assert r.headers["Host"] == urlparse(r.url).netloc == "mirror.example.invalid"
+
+
+def test_ideas_only_row_still_mined_and_labelled_not_held(tmp_path: Path,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor ruling: IDEAS_ONLY still mines ideas. The free-stack telegram row is not held on
+    terms (it reaches run_source and is labelled IDEAS_ONLY, carrying no terms-hold line), and a
+    telegram idea ground in the deep forest is still fetched."""
+    from libs.data import terms_fence as tf
+    assert tf.SOURCE_POLICY["telegram"]["status"] == tf.IDEAS_ONLY
+    assert not tf.held_on_terms("telegram") and tf.fenced_ground(
+        {"route": "telegram", "channels": ["x"]}) is None
+    from free_stack_hunter import Store, run
+    doc = json.loads((DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
+    row = next(r for r in doc["sources"] if r["id"] == "telegram")
+    roster = tmp_path / "roster.json"
+    roster.write_text(json.dumps({"sources": [row]}), "utf-8")
+    rep = run(budget_s=30, fetch=lambda *a: (_ for _ in ()).throw(AssertionError("fetched")),
+              store=Store(tmp_path), roster=roster, now=NOW, live=False)
+    assert rep["per_source"]["telegram"]["status"] == tf.IDEAS_ONLY
+    assert not any(ln["source"] == "telegram" for ln in rep["missed_growth_lines"])
+    # the idea route: a deep-forest telegram ground fetches its public previews
+    asked: list[str] = []
+
+    def http(url: str, **k: Any) -> str:
+        asked.append(url)
+        return "<html><body>" + "gold breakout rule. " * 40 + "</body></html>"
+    monkeypatch.setattr(D, "_http", http)
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    r = D._Run(60.0, True, None, None)
+    r.ground_telegram({"name": "t", "route": "telegram", "channels": ["chan_a"],
+                       "language": "ru", "kind": "social"})
+    assert "https://t.me/s/chan_a" in asked
+
+
+def test_rerouted_pages_are_fetched_with_the_index_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+    sent: list[tuple[str, dict[str, str]]] = []
+
+    def get(url: str, headers: dict[str, str] | None = None, **k: Any) -> Any:
+        sent.append((url, dict(headers or {})))
+        return SimpleNamespace(ok=True, status=200, error=None,
+                               text="<html><title>t</title><body>" + "rule. " * 200
+                                    + "</body></html>")
+    monkeypatch.setattr(D.pf, "get", get)
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    monkeypatch.setattr(D, "site_index_urls", lambda site, **k: {
+        "route": "sitemap", "urls": ["https://ex.example/forum/a.html"], "listed": 1,
+        "robots_disallowed": 0, "robots_unread": 0, "errors": []})
+    r = D._Run(60.0, True, None, None)
+    out = r.ground_site_index({"name": "g", "site": "ex.example", "queries": ["rule"],
+                               "language": "en"})
+    pages = [(u, h) for u, h in sent if u == "https://ex.example/forum/a.html"]
+    assert out["fetched"] == 1 and pages
+    for _, h in pages:
+        assert h["User-Agent"] == D.INDEX_UA
+        assert h["User-Agent"] != D._UA["User-Agent"] and "Mozilla" not in h["User-Agent"]
+
+
+def test_a_subdomain_page_needs_its_own_hosts_robots() -> None:
+    sm = ("<urlset><url><loc>https://m.ex.com/ok/y</loc></url>"
+          "<url><loc>https://ex.com/ok/x</loc></url></urlset>")
+    parent = "User-agent: *\nAllow: /\nSitemap: https://ex.com/sitemap.xml\n"
+
+    def make(sub: str | None) -> Any:
+        def get(url: str) -> str:
+            if url == "https://ex.com/robots.txt":
+                return parent
+            if url == "https://ex.com/sitemap.xml":
+                return sm
+            if url == "https://m.ex.com/robots.txt" and sub is not None:
+                return sub
+            raise OSError("HTTP 404")
+        return get
+    # m.ex.com's own robots.txt unread: the parent's Allow is NOT a permission for it
+    out = D.site_index_urls("ex.com", get=make(None))
+    assert out["urls"] == ["https://ex.com/ok/x"] and out["robots_unread"] == 1
+    # read and allowing: fetched
+    out = D.site_index_urls("ex.com", get=make("User-agent: *\nAllow: /\n"))
+    assert "https://m.ex.com/ok/y" in out["urls"]
+    # read and disallowing, though the parent allows: never fetched
+    out = D.site_index_urls("ex.com", get=make("User-agent: *\nDisallow: /ok/\n"))
+    assert "https://m.ex.com/ok/y" not in out["urls"] and out["robots_disallowed"] == 1

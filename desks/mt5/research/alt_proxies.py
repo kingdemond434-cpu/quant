@@ -1791,6 +1791,60 @@ def parse_usajobs_count(body: bytes, ctx: Ctx) -> list[Obs]:
     return [Obs(f"usajobs_{ctx.part or 'open_total'}", at.date(), float(n), published_at=at)]
 
 
+# ---------------------------------------------------------------------------- HK business days
+#: The hour (UTC) the HKMA stamp is placed on the next Hong Kong business day. The HKMA's API
+#: documentation states no publication time (read 2026-10-14: the dataset page gives none), so
+#: the release hour is UNMEASURED and the stamp is LATE-BIASED: 12:00 UTC = 20:00 HKT, the end of
+#: the next HK business day, never a morning it may not have reached.
+HKMA_PUB_HOUR_UTC = 12
+
+
+def hk_general_holidays(year: int) -> frozenset[date] | None:
+    """Hong Kong general holidays for `year` from the desk's ONE HK calendar
+    (`countries.hk.pack.holidays`, the General Holidays Ordinance table), or None when that table
+    has no row for the year -- an absent year is never read as 'no holidays'."""
+    import importlib
+    try:
+        holidays = importlib.import_module("countries.hk.pack").holidays
+    except Exception:                                      # pragma: no cover - import guard
+        return None
+    got = holidays(year)
+    return frozenset(date.fromisoformat(d) for d in got) if got else None
+
+
+def _hk_roll(period: date) -> tuple[date, str]:
+    """The first Hong Kong business day after `period` and how it was reached. A day in a year
+    the holiday table does not cover is rolled one EXTRA weekday (late bias), and the basis says
+    so; a covered year rolls past weekends and the tabled general holidays only."""
+    d = period + timedelta(days=1)
+    uncovered: set[int] = set()
+    while True:
+        hol = hk_general_holidays(d.year)
+        if hol is None:
+            uncovered.add(d.year)
+        if d.weekday() < 5 and (hol is None or d not in hol):
+            break
+        d += timedelta(days=1)
+    if uncovered:
+        d += timedelta(days=1)
+        while d.weekday() >= 5:
+            d += timedelta(days=1)
+        return d, ("late_bias:+1 HK weekday (no HK holiday table for "
+                   + ",".join(str(y) for y in sorted(uncovered)) + ")")
+    return d, "hk_business_day:countries.hk.pack.holidays"
+
+
+def rule_hkma_liquidity(period: date) -> datetime:
+    """The next Hong Kong business day after `end_of_date` (weekends and HK general holidays
+    rolled), 12:00 UTC: late, never early."""
+    d, _ = _hk_roll(period)
+    return _utc(d.year, d.month, d.day, HKMA_PUB_HOUR_UTC)
+
+
+def basis_hkma_liquidity(period: date) -> str:
+    return _hk_roll(period)[1]
+
+
 # ============================================================================ US net liquidity
 #: NET LIQUIDITY = Fed total assets (H.4.1, Wednesday level) - Treasury General Account (Daily
 #: Treasury Statement closing balance) - overnight reverse repo take-up (NY Fed), all in USD bn,
@@ -2041,6 +2095,9 @@ class Source:
     #: first (history) fetch is that vintage, not what was known at the time. Published with the
     #: series (axis file, roster) so no reader mistakes a backfill for a first release.
     vintage: str = ""
+    #: How `rule` reached a period's stamp when that is not plain arithmetic (a holiday table, or
+    #: a late bias where the table has no year): recorded as `rule_basis` on each store row.
+    rule_basis: Callable[[date], str] | None = None
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -3412,7 +3469,9 @@ USAJOBS_CUTS: tuple[tuple[str, str], ...] = (
     ("new_1d_nurse", "DatePosted=1&JobCategoryCode=0610"),
     ("new_1d_contracting", "DatePosted=1&JobCategoryCode=1102"),
     ("new_1d_engineering", "DatePosted=1&JobCategoryCode=0801"))
-_HKD_LIQ = {"USDHKD": -1, "HK50": 1, "CHINAH": 1, "USDCNH": -1}
+#: USDHKD +1: a falling balance (a weak-side drain) lifts HIBOR and narrows the USD-HKD carry,
+#: which pulls USDHKD back off the 7.85 side -- the pair FOLLOWS the balance down.
+_HKD_LIQ = {"USDHKD": 1, "HK50": 1, "CHINAH": 1, "USDCNH": -1}
 _HKD_RATE = {"USDHKD": -1, "HK50": -1, "CHINAH": -1}
 
 PASS5_SOURCES: tuple[Source, ...] = (
@@ -3422,7 +3481,7 @@ PASS5_SOURCES: tuple[Source, ...] = (
              "HIBOR (HKMA open API)",
         url=os.environ.get("ALT_HKMA_LIQUIDITY_URL", HKMA_LIQUIDITY_URL),
         region="HK", language="en", cadence="daily", parse=parse_hkma_liquidity,
-        rule=_lag_rule(1, 2, weekday=True), transform="given",
+        rule=rule_hkma_liquidity, rule_basis=basis_hkma_liquidity, transform="given",
         instruments=dict(_HKD_LIQ),
         series_instruments={"hkma_cu_": dict(_HKD_LIQ), "hkma_ab_": dict(_HKD_LIQ),
                             "hkma_hibor": dict(_HKD_RATE)},
@@ -3443,9 +3502,12 @@ PASS5_SOURCES: tuple[Source, ...] = (
                                  "2009-2021 regime, when HIBOR barely moved), and when EFBN "
                                  "issuance, not the CU, moves the balance"),
         crowding_prior="medium",
-        note=("PIT: the daily figures for end_of_date are published that Hong Kong evening; "
-              "availability is 02:00 UTC the next weekday (10:00 HKT), never earlier. "
-              "market_activities is the CU flow at settlement. USDCNH is mapped as the "
+        note=("PIT: the HKMA states no publication time for these daily figures (UNMEASURED; "
+              "its API page gives none), so availability is LATE-BIASED to 12:00 UTC (20:00 HKT) "
+              "of the next Hong Kong business day after end_of_date -- weekends and HK general "
+              "holidays (countries.hk.pack) rolled; a year that table lacks rolls one extra "
+              "weekday and each row's rule_basis says so. market_activities is the CU flow at "
+              "settlement. USDCNH is mapped as the "
               "offshore-RMB funding channel (HKD liquidity is CNH liquidity's neighbour), the "
               "weakest of the four. Credit line when published: 'Source: Hong Kong Monetary "
               "Authority'")),
@@ -3903,7 +3965,9 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         ua = os.environ.get("USAJOBS_USER_AGENT", "").strip()
         if not key or not ua:
             return []                  # never a request built without the registration pair
-        hdr = {"Host": "data.usajobs.gov", "User-Agent": ua, "Authorization-Key": key}
+        # Host is the request URL's own host (an overridden ALT_USAJOBS_SEARCH_URL included).
+        hdr = {"Host": urllib.parse.urlparse(src.url).netloc, "User-Agent": ua,
+               "Authorization-Key": key}
         return [Request(f"{src.url}?{q}&ResultsPerPage=1", Ctx(part=part, fetched_at=now), hdr)
                 for part, q in USAJOBS_CUTS]
     if src.id == "cn_baidu_migration":
@@ -4006,6 +4070,8 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                         "published_time": (pub or rule_at).isoformat(timespec="seconds"),
                         "published_basis": "page" if pub else "release_rule",
                         "revision_time": None, "n_revisions": 0}
+            if src.rule_basis is not None:
+                store[k]["rule_basis"] = src.rule_basis(o.period)
             added += 1
             continue
         row["last_seen_at"] = stamp

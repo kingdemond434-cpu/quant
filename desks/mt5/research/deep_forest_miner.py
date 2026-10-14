@@ -477,10 +477,16 @@ def _cc_index() -> str:
         return "CC-MAIN-2026-30"
 
 
+#: The headers of EVERY request on the site-index route -- robots, sitemap, CDX and the pages it
+#: lists. A rerouted page is never fetched with the browser string (`_UA`): that would be the
+#: route-around the block's record forbids (audit 2026-10-14 MF1).
+INDEX_HEADERS = {"User-Agent": INDEX_UA, "Accept": "*/*"}
+
+
 def _index_get(url: str) -> str:
     """One polite GET with the honest index agent. Raises OSError on any failure."""
-    r = pf.get(url, headers={"User-Agent": INDEX_UA, "Accept": "*/*"}, timeout=25.0,
-               retries=1, leg=LEG, max_bytes=4_000_000)
+    r = pf.get(url, headers=dict(INDEX_HEADERS), timeout=25.0, retries=1, leg=LEG,
+               max_bytes=4_000_000)
     if r.ok:
         return r.text
     raise OSError(r.error or f"HTTP {r.status}")
@@ -522,18 +528,39 @@ def rank_by_queries(urls: list[str], queries: list[str]) -> list[str]:
     return sorted(dict.fromkeys(urls), key=score)
 
 
+#: Extra hosts (beyond the ground's own) whose robots.txt one pass may read for listed pages.
+INDEX_EXTRA_HOSTS = 4
+
+
 def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
     """The ground's own sitemap(s), else the Common Crawl CDX listing for `site/*`; each URL
-    filtered to article-like pages on that site and to what its robots.txt allows for "*".
-    Returns {"route", "urls", "robots_disallowed", "errors"}; never raises."""
+    filtered to article-like pages on that site and to what ITS OWN HOST's robots.txt allows for
+    "*". A page on another host (a subdomain, the bare or www. twin) is judged by that exact
+    host's robots.txt, read here; an unread one fetches nothing (audit 2026-10-14 MF2).
+    Returns {"route", "urls", "robots_disallowed", "robots_unread", "errors"}; never raises."""
     get = get or _index_get
     errors: list[str] = []
     robots_txt = ""
+    site_host = site.lower().split("/")[0].split(":")[0]
     try:
-        robots_txt = get(f"https://{site}/robots.txt")
+        robots_txt = get(f"https://{site_host}/robots.txt")
     except Exception as exc:
         errors.append(f"robots: {str(exc)[:80]}")
     rp = robots_parser(robots_txt) if robots_txt else None
+    rps: dict[str, Any] = {site_host: rp}
+
+    def host_rp(host: str) -> Any:
+        if host not in rps:
+            if len(rps) > INDEX_EXTRA_HOSTS:
+                rps[host] = None                       # over the read budget: unread, unfetched
+            else:
+                try:
+                    txt = get(f"https://{host}/robots.txt")
+                    rps[host] = robots_parser(txt) if txt else None
+                except Exception as exc:
+                    errors.append(f"robots {host}: {str(exc)[:60]}")
+                    rps[host] = None
+        return rps[host]
     urls: list[str] = []
     route = ""
     maps = [ln.split(":", 1)[1].strip() for ln in robots_txt.splitlines()
@@ -562,13 +589,22 @@ def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
         except Exception as exc:
             errors.append(f"cdx: {str(exc)[:80]}")
     keep = [u for u in dict.fromkeys(urls) if article_like(u, site)]
-    # NO ROBOTS FILE READ: an unread robots.txt is not a permission, so nothing is fetched.
-    allowed = [u for u in keep if rp.can_fetch("*", u)] if rp is not None else []
-    if rp is None and keep:
-        errors.append("robots.txt unread: pages listed, none fetched")
+    # EACH PAGE BY ITS OWN HOST'S robots.txt. An unread robots.txt is not a permission, so a
+    # page whose exact host's file was not read is never fetched (counted as robots_unread).
+    allowed: list[str] = []
+    disallowed = unread = 0
+    for u in keep:
+        hrp = host_rp(urlparse(u).netloc.lower().split(":")[0])
+        if hrp is None:
+            unread += 1
+        elif hrp.can_fetch("*", u):
+            allowed.append(u)
+        else:
+            disallowed += 1
+    if unread:
+        errors.append(f"robots.txt unread for {unread} listed page(s): none of them fetched")
     return {"route": route or "none", "urls": allowed[:INDEX_URLS_PER_GROUND],
-            "listed": len(keep),
-            "robots_disallowed": len(keep) - len(allowed) if rp is not None else 0,
+            "listed": len(keep), "robots_disallowed": disallowed, "robots_unread": unread,
             "errors": errors[:4]}
 
 
@@ -1026,6 +1062,29 @@ class _Run:
             self.status.append({"url": url, "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
             return ""
 
+    def index_page(self, url: str) -> str:
+        """A page the site-index route listed, fetched with INDEX_HEADERS (the honest agent):
+        the same fence, network and status bookkeeping as `page`, never the browser `_UA`."""
+        fenced = _tf.platform_of_url(url)
+        if fenced:
+            self.status.append({"url": url, **_tf.refusal(fenced)})
+            return ""
+        if not self._net_ok():
+            return ""
+        r = pf.get(url, headers=dict(INDEX_HEADERS), timeout=20.0, retries=1, leg=LEG,
+                   max_bytes=2_000_000)
+        if r.ok:
+            self._note_net(True)
+            self.counts["pages"] += 1
+            return str(r.text)
+        if r.status is not None and r.status >= 400:
+            self._note_net(True)
+            self.status.append({"url": url, "http": r.status})
+        else:
+            self._note_net(False)
+            self.status.append({"url": url, "error": str(r.error or "fetch failed")[:80]})
+        return ""
+
     def rendered(self, url: str) -> str:
         fenced = _tf.platform_of_url(url)
         if fenced:
@@ -1238,7 +1297,7 @@ class _Run:
         for url in rank_by_queries(idx["urls"], queries)[: cap * 2]:
             if fetched >= cap or self.over():
                 break
-            body = self.page(url)
+            body = self.index_page(url)          # the honest INDEX_UA, never the browser string
             if len(html_text(body)) < MIN_PAGE_TEXT:
                 continue
             fetched += 1
@@ -1246,7 +1305,8 @@ class _Run:
             self.follow(url, _title(body), via=f"{SOURCE}:{g.get('name')}")
             time.sleep(1.0)
         return {"route": idx["route"], "listed": idx["listed"], "allowed": len(idx["urls"]),
-                "robots_disallowed": idx["robots_disallowed"], "fetched": fetched,
+                "robots_disallowed": idx["robots_disallowed"],
+                "robots_unread": idx.get("robots_unread", 0), "fetched": fetched,
                 "claims": claims, "errors": idx["errors"]}
 
     def ground_cn_api(self, g: dict[str, Any]) -> dict[str, Any]:
