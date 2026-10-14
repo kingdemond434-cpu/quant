@@ -245,16 +245,23 @@ def test_a_403_holds_until_a_person_releases_it_and_the_release_keeps_history(
 
     fl._hs.release(reg, "site:www.sec.gov", "tester", now=NOW + timedelta(days=400, hours=1))
     calls.clear()
-    rep3 = fl.run(get=_refusing(calls, 403, "/Archives/"), now=NOW + timedelta(days=401),
+    rep3 = fl.run(get=_refusing(calls, 403, "submissions"), now=NOW + timedelta(days=401),
                   state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
                   register=reg)
-    assert calls and "/Archives/" in calls[-1]             # released: the next pass fetches
-    assert rep3["fetch"]["block"]["held_at"] == (NOW + timedelta(days=401)).timestamp()
+    assert calls and "submissions" in calls[-1]            # released: the next pass fetches
+    assert rep3["fetch"]["block"]["key"] == "site:data.sec.gov"
     doc = json.loads(reg.read_text())
-    assert doc["holds"]["site:www.sec.gov"]["released_by"] is None        # held again
-    hist = doc["hold_history"]
-    assert len(hist) == 1 and hist[0]["released_by"] == "tester"
-    assert hist[0]["held_at"] == NOW.timestamp()                          # history kept
+    kept = doc["holds"]["site:www.sec.gov"]                # the released hold keeps its record
+    assert kept["released_by"] == "tester" and kept["held_at"] == NOW.timestamp()
+    assert doc["holds"]["site:data.sec.gov"]["released_by"] is None
+    # the same host refusing again moves the released row into history
+    fl._hs.release(reg, "site:data.sec.gov", "tester", now=NOW + timedelta(days=402))
+    fl.run(get=_refusing([], 403, "submissions"), now=NOW + timedelta(days=403),
+           state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True, register=reg)
+    doc = json.loads(reg.read_text())
+    assert doc["holds"]["site:data.sec.gov"]["released_by"] is None
+    assert [(r["key"], r["released_by"]) for r in doc["hold_history"]] == [
+        ("site:data.sec.gov", "tester")]
 
 
 def test_a_429_records_retry_after_but_it_releases_nothing(
