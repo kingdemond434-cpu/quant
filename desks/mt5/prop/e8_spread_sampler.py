@@ -36,7 +36,13 @@ OUT = ROOT/"desks"/"mt5"/"reports"/"E8_SPREADS.json"
 SYMS = ["EURUSD","XAUUSD","USDCHF","USDCAD","EURGBP","GBPJPY","EURJPY","USDJPY","CADJPY",
         "AUDUSD","AUDNZD","AUDCAD","AUDCHF","CADCHF","EURAUD","EURCHF","GBPAUD","GBPCHF","NZDCAD"]
 INTERVAL_S = 300
-HOURS = 10
+#: ONE PASS FITS INSIDE THE TASK'S EXECUTION LIMIT (2026-10-14). This loop ran for HOURS = 10
+#: while install_e8_tasks.ps1 registers E8-Spreads with its default -LimitMinutes 50, so every
+#: pass was killed by the scheduler at 50 minutes (0x41306) and read FAILING; on the box's hourly
+#: :02 trigger the long pass also landed every later trigger on a live instance (an overlap).
+#: Samples persist across passes through `raw`, so a 45-minute pass loses nothing and exits 0
+#: before the limit and before the next hourly trigger.
+RUN_BUDGET_S = 45 * 60
 
 v = TradeLockerVenue().connect()
 samples: dict[str, list[tuple[int, float]]] = collections.defaultdict(list)
@@ -47,7 +53,7 @@ if OUT.exists():
     except Exception:
         pass
 
-deadline = time.time() + HOURS*3600
+deadline = time.time() + RUN_BUDGET_S
 while time.time() < deadline:
     hour = datetime.now(UTC).hour
     for s in SYMS:
@@ -101,5 +107,5 @@ while time.time() < deadline:
             "usable_as_cost": not _frozen,
         }
     OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
-    time.sleep(INTERVAL_S)
+    time.sleep(max(0.0, min(INTERVAL_S, deadline - time.time())))
 print("done", OUT)
