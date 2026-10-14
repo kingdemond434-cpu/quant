@@ -515,7 +515,8 @@ def _keyed_txns(rows: list[dict[str, Any]]) -> list[tuple[str, Any]]:
 
 
 def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]],
-                    held: Mapping[str, datetime] | None = None) -> list[dict[str, Any]]:
+                    unread_floor: Mapping[str, datetime] | None = None
+                    ) -> list[dict[str, Any]]:
     """The clusters NOT yet in `frozen`, each frozen at the first acceptance instant it qualified.
 
     APPEND-ONLY, AS OF EACH ACCEPTANCE (audit 2026-10-14, MUST-FIX 1). `form4.clusters` over the
@@ -528,9 +529,9 @@ def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]],
     frozen: its rows, buyers, score (baseline strictly before t) and `knowable_at = t` never
     change. A later filing can start a NEW cluster; it never rewrites one.
 
-    `held` maps an issuer to the acceptance time of its oldest filing still UNREAD: the replay
-    for that issuer stops there, because from that instant on the store would be missing a
-    filing that was public (audit 0b66b08de, MF4).
+    `unread_floor` maps an issuer to the acceptance time of its oldest filing still UNREAD: the
+    replay for that issuer stops there, because from that instant on the store would be missing
+    a filing that was public (audit 0b66b08de, MF4).
     """
     from libs.research import form4
     used = {k for c in frozen for k in (c.get("rows") or [])}
@@ -545,7 +546,7 @@ def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]],
     for issuer, items in by_issuer.items():
         public: list[tuple[str, Any]] = []
         i = 0
-        cut = (held or {}).get(issuer)
+        cut = (unread_floor or {}).get(issuer)
         while i < len(items):
             t_now = items[i][1].filed_at
             if cut is not None and t_now >= cut:
@@ -589,7 +590,8 @@ def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]],
 
 
 def score(rows: list[dict[str, Any]], frozen: list[dict[str, Any]] | None = None,
-          backfilled: set[str] | None = None, held: Mapping[str, datetime] | None = None
+          backfilled: set[str] | None = None,
+          unread_floor: Mapping[str, datetime] | None = None
           ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """(every frozen cluster -- prior then new --, the new ones, the census).
 
@@ -601,15 +603,15 @@ def score(rows: list[dict[str, Any]], frozen: list[dict[str, Any]] | None = None
     `clusters_ephemeral`, never stored, never in the breadth series or the event store), and
     freeze for the first time on the pass their backfill completes -- with every filing in hand,
     so the store equals a full replay whatever the fetch order. `backfilled=None` freezes every
-    issuer (a store built from a complete history). `held` (issuer -> acceptance time of its
-    oldest filing still unread) stops a backfilled issuer's freezing there: see
+    issuer (a store built from a complete history). `unread_floor` (issuer -> acceptance time
+    of its oldest filing still unread) stops a backfilled issuer's freezing there: see
     `freeze_clusters`.
     """
     from libs.research import form4
     prior = [c for c in (frozen or []) if c.get("rows")]
     ready = rows if backfilled is None else [r for r in rows
                                              if str(r.get("symbol")) in backfilled]
-    new = freeze_clusters(ready, prior, held)
+    new = freeze_clusters(ready, prior, unread_floor)
     allc = sorted(prior + new, key=lambda r: (r["knowable_at"], r["symbol"]))
     census = form4.census(to_txns(rows))
     if backfilled is not None:
@@ -805,11 +807,11 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
     report["fetch"] = fetch
     rows = _jsonl(txn_path)
     stored = _jsonl(cl_path)
-    held = {str(k): t for k, v in (state.get("unread_floor") or {}).items()
-            if (t := _parse_time(v)) is not None}
+    floors = {str(k): t for k, v in (state.get("unread_floor") or {}).items()
+              if (t := _parse_time(v)) is not None}
     clusters, new_clusters, census = score(rows, stored,
-                                           set(state.get("backfilled") or []), held)
-    census["issuers_held_unread"] = len(held)
+                                           set(state.get("backfilled") or []), floors)
+    census["issuers_held_unread"] = len(floors)
     sd.mkdir(parents=True, exist_ok=True)
     if any(not c.get("rows") for c in stored):
         # A store written before freezing carried no row identities, so it cannot be honoured
