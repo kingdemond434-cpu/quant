@@ -152,7 +152,7 @@ class Ground:
 
 GROUND: tuple[Ground, ...] = (
     Ground("^GVZ", ("XAUUSD", "GOLD", "XAUUSD.", "XAUUSDx"), "gold 30-day implied vol"),
-    Ground("^OVX", ("USOIL", "WTI", "UKOIL", "BRENT", "CRUDE", "OIL"),
+    Ground("^OVX", ("USOIL", "WTI", "UKOIL", "BRENT", "CRUDE", "OIL", "XTIUSD"),
            "crude oil 30-day implied vol"),
     Ground("^VIX", ("US500", "SPX500", "USA500", "SP500", "US500.cash"),
            "S&P 500 30-day implied vol",
