@@ -222,6 +222,31 @@ def _family_counts(rows: list[dict]) -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
+def novelty_family_values() -> tuple[dict[str, float], str]:
+    """Per-FAMILY novelty in [0, 1] from `research/style_novelty`, and the basis.
+
+    A family with measured certificates carries their mean novelty (the share of each one's P&L
+    no known style reproduces, scaled by its mechanism class); any other family carries its
+    declared genealogy (0 textbook, 0.5 adjacent, 1.0 discovered/generic/learned, and a neutral 0
+    for a family the registry does not classify). Every family therefore has a value with or without the report. A failure to import returns {}:
+    every family then reads 0.0 and the order is exactly the pre-novelty order."""
+    try:
+        from research import style_novelty as sn
+        measured = sn.family_values()
+        return measured, (
+            f"{len(measured)} measured families from {sn.REPORT.name}; genealogy for the rest")
+    except Exception as exc:
+        return {}, f"style_novelty unavailable: {type(exc).__name__}: {exc}"
+
+
+def _novelty_of(fam: str, measured: dict[str, float]) -> float:
+    try:
+        from research import style_novelty as sn
+        return sn.family_novelty(fam, measured)
+    except Exception:
+        return 0.0
+
+
 def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     """ORDER THE DOCKET SO UNTESTED FAMILIES REACH THE GATES.
 
@@ -240,8 +265,16 @@ def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
         fam = str(row.get("family") or "")
         docket[fam] = docket.get(fam, 0) + 1
 
+    # THE NOVELTY TILT (principal 2026-10-13: "hunt tons of unknown styles"). A family's spend
+    # is divided by (1 + its novelty), so a family whose certificates no known style explains --
+    # or, unmeasured, whose mechanism class is not textbook -- is judged as though less of its
+    # docket had been spent. It RE-ORDERS families only: no row leaves the docket, no bar moves,
+    # and every row that reaches the judge is charged and judged exactly as before.
+    nov_measured, _nov_why = novelty_family_values()
+    nov = {fam: _novelty_of(fam, nov_measured) for fam in docket}
+
     def spend(fam: str) -> float:
-        return judged.get(fam, 0) / max(docket.get(fam, 1), 1)
+        return judged.get(fam, 0) / max(docket.get(fam, 1), 1) / (1.0 + nov.get(fam, 0.0))
 
     # G4's CONSUMER. Breadth still decides the TIER -- an unjudged family outranks a re-judged
     # one, and that ratchet is untouched -- but families that have been spent on equally are no
