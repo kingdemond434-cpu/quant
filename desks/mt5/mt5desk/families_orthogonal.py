@@ -2446,3 +2446,20 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
+
+# FX OPTION-EXPIRY STRIKE PINNING INTO THE 10:00 NEW YORK CUT, THEN RELEASE (2026-10-13, the
+# novel-style lane N1). Loads its own point-in-time strike ladder (the lake frame
+# `fx_option_expiry_strikes`, written by research/novel_style_lanes.py) given only `symbol`, so the
+# gauntlet builds it through its ordinary `fn(h1, **params)` call. `symbol` is a REQUIRED keyword
+# argument, so the sweep names it unsuppliable instead of calling it blind. Its source is HELD on
+# terms today, so the frame is absent on every host and the family returns [] (UNMEASURED).
+from mt5desk.family_fx_expiry_pin import family_fx_expiry_pin  # noqa: E402
+
+ORTHOGONAL_FAMILIES["fx_expiry_pin"] = family_fx_expiry_pin
+FAMILY_INPUTS["fx_expiry_pin"] = (
+    "public FX option prints aggregated to a PIT strike ladder per pair and expiry, plus price",
+    "data/lake/series/fx_option_expiry_strikes.csv")
+FAMILY_TIMEFRAMES["fx_expiry_pin"] = (
+    ("H1",),
+    "the cut is one instant a day (10:00 New York) and the pin is read a few bars before it; "
+    "the lead and release windows are counted in H1 bars")

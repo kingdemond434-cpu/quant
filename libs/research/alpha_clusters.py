@@ -236,6 +236,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     # -- options-implied state
     "implied_vol": "options_implied",
     "gamma_exposure": "options_implied",
+    "fx_expiry_pin": "options_implied",
     # -- execution and entry alpha
     "entry_alpha": "execution_entry",
     "execution_alpha": "execution_entry",
