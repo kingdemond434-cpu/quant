@@ -67,7 +67,7 @@ MECHANISM_CLASS: dict[str, str] = {
     "dav_range_filter_adx": "breakout",
     # THE 35 FAMILIES THE REGISTRY CARRIED UNCLASSIFIED (2026-10-13, principal: "all certs never
     # unmeasured excuse"). Each read from its own family function, declared by its cause. A
-    # family built ON another (exit_operated, joint_genome) is an ensemble of its base.
+    # family that combines others (joint_genome) is an ensemble.
     "adx_channel_hybrid": "breakout", "lvc_asia_london": "breakout",
     "opening_range": "breakout", "volatility_squeeze": "breakout",
     "htf_anchor_trend": "trend", "pullback_entry": "trend", "trend_ma_cross": "trend",
@@ -83,7 +83,11 @@ MECHANISM_CLASS: dict[str, str] = {
     "forced_flow": "plumbing", "hedging_demand_close": "plumbing",
     "execution_state": "microstructure", "volume_spike": "microstructure",
     "lead_lag": "residual", "triangle": "residual", "usd_session_shock": "event",
-    "exit_operated": "ensemble", "joint_genome": "ensemble", "formula": "discovered",
+    # exit_operated is an exit OPERATOR over a textbook wrappable base (htf_anchor_proposer
+    # wraps trend/breakout cells), so its cause is its base's: textbook, never an ensemble lift.
+    # formula is the published 101-alphas price-volume library (axis_registry: not a family):
+    # a residual-style factor, adjacent -- never "discovered" (audit of #387).
+    "exit_operated": "trend", "joint_genome": "ensemble", "formula": "residual",
 }
 
 DIRECTION_BIAS = {"trend": "with", "breakout": "with", "reversion": "against",
