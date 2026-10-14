@@ -25749,6 +25749,31 @@
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
    "measured_at": "2026-10-13T17:28:30+00:00"
+  },
+  {
+   "organ": "leg:scalp_markout_rerank",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/scalp_markout_rerank.py"
+   ],
+   "clock": "hourly_cycle:scalp_markout_rerank",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/scalp_markout_rerank.json",
+   "artifact_declared": "desks/mt5/reports/scalp_markout_rerank.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "docs/research/experiment_contracts.json (experiment_contracts leg)"
   }
  ],
  "ratchet": {

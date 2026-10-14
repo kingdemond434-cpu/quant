@@ -1036,7 +1036,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
-    "decay_monitor", "fill_markout",
+    "decay_monitor", "fill_markout", "scalp_markout_rerank",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -5301,6 +5301,10 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # SCALP CERTS AT THE MEASURED MARKOUT (2026-10-13), reports only: each scalp certificate's
+    # expectancy net of its OWN measured slip, UNMEASURED where it has no matched fill.
+    smr = _costed("scalp_markout_rerank", lambda: _producer(
+        "scalp_markout_rerank", "research/scalp_markout_rerank.py"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -5925,6 +5929,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk,
+                    "scalp_markout_rerank": smr,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
