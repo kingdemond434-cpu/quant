@@ -50,6 +50,9 @@ def wired(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(ls, "_bars", lambda sym, d: pd.DataFrame({"close": 1.0}, index=idx))
     monkeypatch.setattr(ls, "_family", lambda name: (lambda df, **p: dict(p["reads"]))
                         if name == "exogenous_conditioner" else None)
+    monkeypatch.setattr(ls, "BARS_DIR", tmp_path / "bars")
+    monkeypatch.setattr(ls, "CALENDAR", tmp_path / "calendar.json")
+    monkeypatch.setattr(ls, "HELD", tmp_path / "held_default.json")
     return tmp_path
 
 
@@ -128,11 +131,11 @@ def test_the_hold_publishes_its_missed_growth_line(wired: Path) -> None:
     assert doc["verdict"] == "COSTS_GROWTH" and doc["keff_days_deferred"] == 3.5
 
 
-def test_the_screen_never_reads_the_lockbox() -> None:
+def test_the_screen_never_reads_the_lockbox(wired: Path) -> None:
     import pandas as pd
     idx = pd.date_range("2024-01-01", periods=24 * 400, freq="h", tz="UTC")
     df = pd.DataFrame({"close": 1.0}, index=idx)
-    cut = ls._before_lockbox(df)
+    cut = ls._before_lockbox(df, wired / "no_bars")
     from research.gate_policy import LOCKBOX_FRAC
     assert 0 < len(cut) < len(df) and cut.index[-1] < idx[int(len(idx) * (1 - LOCKBOX_FRAC))]
 
@@ -202,10 +205,137 @@ def test_a_held_then_certified_cell_is_charged_to_the_hold(
     ledger.write_text(json.dumps({"cell": "h1", "passed": True}) + "\n")
     monkeypatch.setattr(roles, "_keff", lambda cells: ({c["cid"]: 0.4 for c in cells}, "t"))
     doc = roles.verdict_loop(ledger, donate, [], tmp_path / "c.json")
-    assert doc["style_hold_cost"] == {"judged": 1, "certified": 1, "keff_days": 2.0}
+    assert doc["style_hold_cost"] == {"judged": 1, "certified": 1, "keff_days": 2.0,
+                                      "certified_days_unmeasured": 0}
 
 
 def test_the_inventors_are_told_which_styles_the_book_owns(tmp_path: Path) -> None:
     line = ls.prompt_line(_report(tmp_path / "s.json", COUNTS))
     assert "passive_window (20)" in line and "trend_20d" not in line
     assert "UNMEASURED" in ls.prompt_line(tmp_path / "absent.json")
+
+
+def _monkey_ls(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(ls, "HELD", tmp_path / "held_default.json")
+    monkeypatch.setattr(ls, "CALENDAR", tmp_path / "calendar.json")
+
+
+def test_a_late_chart_never_reads_past_the_campaign_cut(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Should-fix B on #385: the gauntlet cuts every cell at ONE campaign-wide date taken over
+    the union of every chart's days; a chart that starts late has its own tail cut LATER than
+    that, so a per-chart tail would read days the campaign lockbox judges."""
+    import pandas as pd
+    from research.gate_policy import lockbox_cut
+    _monkey_ls(monkeypatch, tmp_path)
+    bars = tmp_path / "bars"
+    bars.mkdir()
+    long_idx = pd.date_range("2018-01-01", "2025-12-31", freq="D", tz="UTC")
+    short_idx = pd.date_range("2024-01-01", "2025-12-31", freq="h", tz="UTC")
+    pd.DataFrame({"close": 1.0}, index=long_idx).to_parquet(bars / "OLD_H1.parquet")
+    pd.DataFrame({"close": 1.0}, index=short_idx).to_parquet(bars / "NEW_H1.parquet")
+    camp = lockbox_cut([pd.Series(0.0, index=long_idx.normalize())])
+    own = lockbox_cut([pd.Series(0.0, index=short_idx.normalize().unique())])
+    assert own > camp
+    dev = ls._before_lockbox(pd.DataFrame({"close": 1.0}, index=short_idx), bars)
+    assert len(dev) > 0 and dev.index[-1] < camp
+    # The calendar is cached for the day, so the next cell reads no parquet.
+    assert json.loads((tmp_path / "calendar.json").read_text())["charts"] == 2
+
+
+def test_a_future_or_unreadable_stamp_expires_and_never_writes_infinity(wired: Path) -> None:
+    """Should-fixes C and D on #385."""
+    from datetime import UTC, datetime, timedelta
+    rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
+    ls.screen([_row("future", 0.1, "passive_window"), _row("bad", 0.2, "passive_window")],
+              report=rep, held_path=held, sn=_fake_sn())
+    store = json.loads(held.read_text())
+    store["future"]["style_screen"]["held_at"] = (datetime.now(UTC)
+                                                  + timedelta(days=30)).isoformat()
+    store["bad"]["style_screen"]["held_at"] = "not a time"
+    store["bad"]["style_screen"]["at"] = "not a time"
+    held.write_text(json.dumps(store))
+    out = wired / "h.json"
+    doc = ls.publish_holds(held_path=held, out=out)
+    assert doc["unreadable_hold_stamps"] == 2 and doc["oldest_hold_days"] is None
+    freed, still = ls.release(report=rep, held_path=held)
+    assert still == 0 and set(freed) == {"future", "bad"}
+    for r in freed.values():
+        sc = r["style_screen"]
+        assert sc["release_reason"] == "HELD_EXPIRED" and sc["held_days"] is None
+        assert sc["held_days_status"] == "UNMEASURED"
+    json.loads(json.dumps(freed), parse_constant=lambda c: pytest.fail(f"wrote {c}"))
+    assert "Infinity" not in out.read_text()
+
+
+def test_re_screening_a_held_cell_keeps_one_key_and_its_clock(wired: Path) -> None:
+    """Should-fix E on #385: the stamp changes on every screen; the key and hold age do not."""
+    rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
+    ls.screen([_row("p", 0.1, "passive_window")], report=rep, held_path=held, sn=_fake_sn())
+    first = json.loads(held.read_text())["p"]["style_screen"]["held_at"]
+    store = json.loads(held.read_text())
+    store["p"]["style_screen"]["held_at"] = store["p"]["style_screen"]["at"] = \
+        "2026-01-01T00:00:00+00:00"
+    held.write_text(json.dumps(store))
+    ls.screen([_row("p", 0.1, "passive_window")], report=rep, held_path=held, sn=_fake_sn())
+    after = json.loads(held.read_text())
+    assert list(after) == ["p"] and first != after["p"]["style_screen"]["held_at"]
+    assert after["p"]["style_screen"]["held_at"] == "2026-01-01T00:00:00+00:00"
+    # A DIFFERENT row under the same id still gets a key of its own.
+    other = _row("p", 0.1, "passive_window")
+    other["params"]["extra"] = 1
+    ls.screen([other], report=rep, held_path=held, sn=_fake_sn())
+    assert len(json.loads(held.read_text())) == 2
+
+
+def test_held_rows_count_in_the_labs_novel_share(tmp_path: Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    """Should-fix F on #385: a lab with 1 NOVEL donated and 3 KNOWN held is 25% novel, not 100%."""
+    _monkey_ls(monkeypatch, tmp_path)
+    donate = tmp_path / "donate"
+    donate.mkdir()
+    rows = [{"cell_id": "n", "lab": "L", "style_screen": {"verdict": "NOVEL"}},
+            {"cell_id": "u", "lab": "L"}]
+    (donate / "discoveries_x.json").write_text(json.dumps({"discoveries": rows}))
+    (tmp_path / "held_default.json").write_text(json.dumps({
+        f"k{i}": {"cell_id": f"k{i}", "lab": "L", "style_screen": {"verdict": "KNOWN_STYLE"}}
+        for i in range(3)}))
+    owners = roles._donations(donate)
+    assert owners["u"]["novel_weight"] == pytest.approx(0.25)
+
+
+def test_a_certified_cell_with_an_unknown_wait_is_counted_never_priced(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _monkey_ls(monkeypatch, tmp_path)
+    donate = tmp_path / "donate"
+    donate.mkdir()
+    row = {"cell_id": "h1", "lab": "L", "model": "m", "symbol": "USDCNH",
+           "family": "exogenous_conditioner",
+           "style_screen": {"verdict": "KNOWN_STYLE", "held_days": None, "released": "x",
+                            "held_days_status": "UNMEASURED"}}
+    (donate / "discoveries_r.json").write_text(json.dumps({"discoveries": [row]}))
+    ledger = tmp_path / "v.jsonl"
+    ledger.write_text(json.dumps({"cell": "h1", "passed": True}) + "\n")
+    monkeypatch.setattr(roles, "_keff", lambda cells: ({c["cid"]: 0.4 for c in cells}, "t"))
+    doc = roles.verdict_loop(ledger, donate, [], tmp_path / "c.json")
+    assert doc["style_hold_cost"] == {"judged": 1, "certified": 1, "keff_days": 0.0,
+                                      "certified_days_unmeasured": 1}
+
+
+def test_the_hold_is_measured_on_the_missed_growth_ledger(tmp_path: Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    """Should-fix A on #385 (the measure half; the rail row goes through the sealed pass)."""
+    import missed_growth as mg
+    monkeypatch.setattr(mg, "BASE", tmp_path)
+    assert mg.measure_lab_style_hold(None, {}, {})["verdict"] == "UNMEASURED"
+    rep = tmp_path / "reports"
+    rep.mkdir()
+    (rep / "LAB_STYLE_HOLDS.json").write_text(json.dumps({"held": 0}))
+    quiet = mg.measure_lab_style_hold(None, {}, {})
+    assert quiet["verdict"] == "NOT_BINDING" and quiet["sample"] is True
+    (rep / "LAB_STYLE_HOLDS.json").write_text(json.dumps(
+        {"held": 3, "released_this_pass": 1, "held_then_judged": 2, "held_then_certified": 1,
+         "keff_days_deferred": 3.5, "oldest_hold_days": 4.0}))
+    busy = mg.measure_lab_style_hold(None, {}, {})
+    assert busy["verdict"] == "UNMEASURED" and busy["keff_days_deferred"] == 3.5
+    assert "sample" not in busy and "measure_lab_style_hold" in mg.MEASURES
