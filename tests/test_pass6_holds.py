@@ -376,3 +376,187 @@ def test_asia_collector_keeps_the_pre_hold_record_on_every_held_pass(
         st = json.loads(state.read_text("utf-8"))["comex_warehouse"]
         assert st["last_status"] == tf.IDEAS_ONLY
         assert st["last_status_before_hold"] == "COLLECTED"
+
+
+# ============================================================================ audit e5a1526f3
+#: MUST-FIX 1: the asia_collector registry rows that fetch the China exchanges' own data under
+#: their own ids (asia_sources.json indices 12-19 and 48-52) -> the exchange's held row.
+CN_ASIA_ROWS = {
+    "shfe_daily": "cnx_shfe", "shfe_warehouse": "cnx_shfe", "shfe_member_rank": "cnx_shfe",
+    "shfe_delivery": "cnx_shfe", "ine_crude": "cnx_ine",
+    "dce_daily": "cnx_dce", "dce_member_rank": "cnx_dce",
+    "czce_daily": "cnx_czce", "czce_member_rank": "cnx_czce", "gfex_daily": "cnx_gfex",
+    "cffex_daily": "cnx_cffex", "cffex_member_rank": "cnx_cffex",
+    "cffex_option_stats": "cnx_cffex",
+}
+
+
+def _asia_rows() -> dict[str, dict[str, Any]]:
+    doc = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
+    return {r["id"]: r for r in doc["sources"]}
+
+
+def test_the_thirteen_cn_exchange_asia_rows_are_the_audited_indices() -> None:
+    doc = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
+    ids = [doc["sources"][i]["id"] for i in (*range(12, 20), *range(48, 53))]
+    assert sorted(ids) == sorted(CN_ASIA_ROWS)
+
+
+@pytest.mark.parametrize("rid,row", sorted(CN_ASIA_ROWS.items()))
+def test_cn_exchange_asia_rows_resolve_to_the_held_row_and_make_no_request(
+        rid: str, row: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    import asia_collector as ac
+    monkeypatch.setattr(urllib.request, "urlopen", _no_network)
+    monkeypatch.setattr(ac, "fenced_urlopen", _no_network)
+    monkeypatch.setattr(ac, "_robots_allows", _no_network)
+    src = _asia_rows()[rid]
+    assert tf.input_source(ac._resolve_url(src), rid) == row
+    rec = ac.collect_one(src)
+    assert rec["fetched"] == 0 and rec["status"] == tf.IDEAS_ONLY and rec["source"] == row
+    assert tf.held_on_terms(row)
+    assert tf.platform_of_url(src["url"].replace("{", "").replace("}", "")) is None  # ideas
+
+
+def test_cnx_rows_hold_their_whole_exchange_host_each_on_its_own_row() -> None:
+    """SHFE's commercial bar covers any content of the website (site-wide, like LME 3.1.11);
+    INE is judged by its own row; the unread exchanges hold the host because UNREAD never
+    permits. Every row stays IDEAS_ONLY."""
+    assert "本网站的任何内容" in tf.SOURCE_POLICY["cnx_shfe"]["terms"]["clauses"]["commercial_bar"]
+    for url, row in (("https://www.shfe.com.cn/", "cnx_shfe"),
+                     ("https://shfe.com.cn/news/x.html", "cnx_shfe"),
+                     ("https://www.ine.cn/data/dailydata/kx/pm20261013.dat", "cnx_ine"),
+                     ("http://www.dce.com.cn/publicweb/quotesdata/x.html", "cnx_dce"),
+                     ("http://www.czce.com.cn/cn/x.htm", "cnx_czce"),
+                     ("http://www.gfex.com.cn/u/x", "cnx_gfex"),
+                     ("http://www.cffex.com.cn/sj/ccpm/202610/13/IF.xml", "cnx_cffex")):
+        assert tf.input_source(url) == row, url
+        assert tf.SOURCE_POLICY[row]["status"] == tf.IDEAS_ONLY
+        assert tf.platform_of_url(url) is None, url               # ideas still mined
+
+
+def test_cnx_host_holds_do_not_catch_other_hosts() -> None:
+    for url in ("https://www.sge.com.cn/sjzx/mrhq", "https://www.chinamoney.com.cn/r/x.json",
+                "https://mine.cn/", "https://www.notshfe.com.cn/", "https://shfe.com.cn.example/",
+                "https://www.example.org/www.shfe.com.cn/", "https://www.dce.com/",
+                "https://www.cffex.com.cn.example.org/"):
+        assert tf.input_source(url) is None, url
+
+
+# ---------------------------------------------------------------- MUST-FIX 2: redirect hops
+_HELD_TARGETS = {
+    "https://www.jpx.co.jp/markets/statistics-equities/short-selling/x.xls":
+        "jpx_short_selling_ratio",
+    "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls": "comex_warehouse_stocks",
+    "https://www.lme.com/en/market-data/reports-and-data/warehouse-and-stocks-reports":
+        "lme_warehouse_stocks",
+}
+_START = "https://data.example.org/moved"
+_UNHELD = "https://data.example.org/new-home.csv"
+
+
+class _FakeWeb(urllib.request.BaseHandler):
+    """Serves `_START` as a 302 to `self.target` and any other URL as a 200 body; no socket."""
+
+    handler_order = 100
+
+    def __init__(self, target: str) -> None:
+        self.target = target
+        self.served: list[str] = []
+
+    def https_open(self, req: urllib.request.Request) -> Any:
+        import email.message
+        import io
+        import urllib.response
+        self.served.append(req.full_url)
+        hdrs = email.message.Message()
+        if req.full_url == _START:
+            hdrs["Location"] = self.target
+            r = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, 302)
+            r.msg = "Found"
+            return r
+        hdrs["Content-Type"] = "text/csv"
+        r = urllib.response.addinfourl(io.BytesIO(b"a,b\n1,2\n"), hdrs, req.full_url, 200)
+        r.msg = "OK"
+        return r
+
+    http_open = https_open
+
+
+def _patch_web(monkeypatch: pytest.MonkeyPatch, target: str) -> _FakeWeb:
+    web = _FakeWeb(target)
+    real = tf.guarded_opener
+
+    def opener(context: Any = None, *handlers: Any) -> Any:
+        return real(context, web, *handlers)
+
+    monkeypatch.setattr(tf, "guarded_opener", opener)
+    return web
+
+
+@pytest.mark.parametrize("target,row", sorted(_HELD_TARGETS.items()))
+def test_a_302_into_a_held_route_is_refused_for_live_input(
+        target: str, row: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    web = _patch_web(monkeypatch, target)
+    with pytest.raises(tf.TermsFenced) as ei:
+        tf.guarded_urlopen(_START, live_input=True)
+    assert ei.value.platform == row and ei.value.status == tf.IDEAS_ONLY
+    assert web.served == [_START]                       # the held target was never requested
+
+
+@pytest.mark.parametrize("target,row", sorted(_HELD_TARGETS.items()))
+def test_asia_collector_and_free_stack_refuse_a_302_into_a_held_route(
+        target: str, row: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    import asia_collector as ac
+
+    from libs.data import free_stack as fs
+    web = _patch_web(monkeypatch, target)
+    monkeypatch.setattr(ac, "_robots_allows", lambda url, *a, **k: (True, "fixture"))
+    rec = ac.collect_one({"id": "moved_series", "url": _START, "expect": "any",
+                          "access": "public", "cadence": "daily"})
+    assert rec["status"] == tf.IDEAS_ONLY and rec["source"] == row and rec["redirected"]
+    assert rec["fetched"] == 0
+    with pytest.raises(fs.FetchError) as ei:
+        fs.http_fetch(_START)
+    assert row in ei.value.detail
+    assert target not in web.served
+
+
+def test_a_302_to_an_unheld_page_still_follows(monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.data import free_stack as fs
+    web = _patch_web(monkeypatch, _UNHELD)
+    with tf.guarded_urlopen(_START, live_input=True) as r:
+        assert r.read() == b"a,b\n1,2\n"
+        assert r.redirects == [(302, _START, _UNHELD)]
+    assert fs.http_fetch(_START) == b"a,b\n1,2\n"
+    assert web.served[-2:] == [_START, _UNHELD]
+
+
+def test_an_ideas_fetch_still_follows_a_302_into_an_ideas_only_route(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ideas mining is untouched: without `live_input` a 302 into an IDEAS_ONLY (not held)
+    route is followed, as before."""
+    target = "https://www.lme.com/en/news"
+    _patch_web(monkeypatch, target)
+    with tf.guarded_urlopen(_START) as r:
+        assert r.redirects == [(302, _START, target)]
+
+
+# ---------------------------------------------------------------- SHOULD-FIX: ;params
+@pytest.mark.parametrize("url,row", [
+    ("https://www.jpx.co.jp/markets;v=1/statistics-equities/short-selling/",
+     "jpx_short_selling_ratio"),
+    ("https://www.jpx.co.jp/markets/statistics-equities/short-selling;x=1/index.html",
+     "jpx_short_selling_ratio"),
+    ("https://www.jpx.co.jp/markets/statistics-equities;jsessionid=A1/margin/index.html",
+     "jpx_margin_balances"),
+    ("https://www.cmegroup.com/delivery_reports;v=2/Gold_Stocks.xls", "comex_warehouse_stocks"),
+])
+def test_a_segment_param_cannot_escape_a_route(url: str, row: str) -> None:
+    assert tf.input_source(url) == row
+
+
+def test_stripping_params_does_not_widen_a_route() -> None:
+    assert tf.input_source(
+        "https://www.jpx.co.jp/markets/statistics-equities/short-selling-x;v=1/") is None
+    assert tf.input_source("https://www.jpx.co.jp/markets/statistics-equities;x=/index.html") \
+        is None

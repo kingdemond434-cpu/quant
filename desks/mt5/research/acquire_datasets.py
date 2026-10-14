@@ -143,7 +143,7 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
         return None, f"terms_fenced:{platform}"
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
     try:
-        with _tf.guarded_urlopen(req, timeout=FETCH_TIMEOUT_S) as r:
+        with _tf.guarded_urlopen(req, timeout=FETCH_TIMEOUT_S, live_input=True) as r:
             ctype = str(r.headers.get("Content-Type") or "").lower()
             if "html" in ctype:
                 return None, "html"

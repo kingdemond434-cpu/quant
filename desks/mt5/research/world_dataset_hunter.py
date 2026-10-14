@@ -346,7 +346,7 @@ def urllib_fetch(url: str, timeout: float) -> bytes:
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "application/json, text/csv, */*"})
         try:
-            with _tf.guarded_urlopen(req, timeout=timeout) as resp:
+            with _tf.guarded_urlopen(req, timeout=timeout, live_input=True) as resp:
                 raw = resp.read(MAX_DIRECT_BYTES + 1)
             if len(raw) > MAX_DIRECT_BYTES:
                 raise FetchError("too_large", url)

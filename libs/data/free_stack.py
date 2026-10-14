@@ -109,7 +109,7 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
     from libs.data import terms_fence as _tf
     try:
         # THE REDIRECT GUARD: a 30x into a held source or a login wall raises, never followed.
-        with _tf.guarded_urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+        with _tf.guarded_urlopen(req, timeout=HTTP_TIMEOUT_S, live_input=True) as resp:
             raw: bytes = resp.read(MAX_BYTES + 1)
     except _tf.TermsFenced as exc:
         raise FetchError(str(exc.status), f"terms fence ({exc.platform}): {url}") from exc

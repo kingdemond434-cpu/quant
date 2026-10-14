@@ -206,9 +206,11 @@ def test_held_routes_carry_a_quote_and_have_no_source_row(tmp_path: Path) -> Non
                                   "cnx_shfe", "cnx_ine", "cnx_dce", "cnx_czce", "cnx_gfex",
                                   "cnx_cffex"}
     for rid, h in A.HELD_ROUTES.items():
-        # a quoted clause cites an https terms page; an UNREAD China-exchange row cites the http
-        # page that could not be read, verbatim from its 2026-10-06 evidence
-        scheme = ("https://", "http://") if rid.startswith("cnx_") else ("https://",)
+        # a quoted clause cites an https terms page; only the four UNREAD China-exchange rows
+        # (no clause at all) cite the http page that could not be read, verbatim from their
+        # 2026-10-06 evidence. cnx_shfe and cnx_ine quote clauses, so they cite https.
+        unread_cnx = ("cnx_dce", "cnx_czce", "cnx_gfex", "cnx_cffex")
+        scheme = ("https://", "http://") if rid in unread_cnx else ("https://",)
         assert h["verdict"] == "HELD" and h["terms_url"].startswith(scheme), rid
         assert h["terms_quote"] and h["reason"] and h["unblock"], rid
         assert rid not in A.BY_ID and rid not in A.TERMS, rid           # never fetched

@@ -188,11 +188,12 @@ MethodRefused = _tf.TermsFenced
 
 
 def fenced_urlopen(req: Any, timeout: float | None = None,
-                   context: ssl.SSLContext | None = None) -> Any:
+                   context: ssl.SSLContext | None = None, *, live_input: bool = False) -> Any:
     """THE ONE FETCH DOOR for the desk's urllib call sites: `terms_fence.guarded_urlopen`. A held
     source, a first URL that is a login wall, or a redirect into either raises `MethodRefused`;
-    the redirect chain is kept on the response as `.redirects` [(code, from, to)]."""
-    return _tf.guarded_urlopen(req, timeout=timeout, context=context)
+    the redirect chain is kept on the response as `.redirects` [(code, from, to)]. A live-input
+    organ passes `live_input=True`: an IDEAS_ONLY or held route is then refused on every hop."""
+    return _tf.guarded_urlopen(req, timeout=timeout, context=context, live_input=live_input)
 
 
 # --------------------------------------------------------------------------- decoding

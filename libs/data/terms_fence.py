@@ -287,11 +287,19 @@ _JPX_TERMS: dict[str, Any] = {
     "also_read": ("https://www.jpx.co.jp/english/term-of-use/index.html",
                   "https://www.jpx.co.jp/markets/statistics-equities/short-selling/index.html",
                   "https://www.jpx.co.jp/markets/statistics-equities/margin/index.html")}
-def _cnx_row(sid: str, exch: str, *, url: str, why: str = "", unblock: str = "",
+def _cnx_row(sid: str, exch: str, *, url: str, host: str, why: str = "", unblock: str = "",
              clauses: dict[str, str] | None = None,
              unread: dict[str, str] | None = None) -> dict[str, Any]:
     """One China-exchange held route (the free-stack `cn_exchange` roster rows). Evidence read
-    2026-10-06; a row with no clause is UNREAD (to_confirm), never permitted."""
+    2026-10-06; a row with no clause is UNREAD (to_confirm), never permitted.
+
+    `host` is the exchange's OWN domain, held WHOLE-HOST through `url_patterns` (pass-6 audit
+    e5a1526f3 MUST-FIX 1): the asia_collector registry fetches the same exchange's pages
+    (shfe_daily, cffex_member_rank, ...) under other ids, and the hold must bind the URL, not
+    only the roster id. Whole-host because the evidence is whole-host: SHFE's statement governs
+    "本网站的任何内容" (any content of this website), and an UNREAD exchange has no clause for
+    any of its pages. Still IDEAS_ONLY (never METHOD_BLOCKED), so pages stay readable for ideas
+    and only LIVE INPUT is refused (`input_source`)."""
     terms: dict[str, Any] = {"url": url, "checked_at": "2026-10-06"}
     if clauses:
         terms["clauses"] = dict(clauses)
@@ -299,6 +307,7 @@ def _cnx_row(sid: str, exch: str, *, url: str, why: str = "", unblock: str = "",
         terms["unread"] = dict(unread)
     return {"hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
             "sources": (sid,),
+            "url_patterns": (r"^(?:[^/]*\.)?" + re.escape(host) + "/",),
             "wanted": (f"{exch} daily member rankings, warehouse receipts and quotes (free-stack "
                        f"roster row {sid}): positioning, inventory and curve state for the "
                        "copper, gold, silver, oil, iron-ore and index complexes"),
@@ -627,8 +636,16 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
     # `terms_verdict` (refused: clauses read that do not grant the use; to_confirm: unread). THE
     # UNBLOCK FLIPS THIS ROW (held_route off, a permitting status and the quoted grant), never a
     # roster field. Missed growth: each exchange's delta E[log W] is UNMEASURED until it flips.
+    # WHOLE-HOST holds (pass-6 audit e5a1526f3 MUST-FIX 1), each on its OWN row: cnx_shfe holds
+    # shfe.com.cn SITE-WIDE because its commercial bar covers "本网站的任何内容" (any content of
+    # this website), as LME 3.1.11 does for lme.com; cnx_ine holds ine.cn on INE's own row (its
+    # only clause is the parent's grant, which grants no commercial use, and its own page is
+    # UNREAD); DCE, CZCE, GFEX and CFFEX hold their hosts because their terms are UNREAD, which
+    # never permits. So the asia_collector registry rows on these hosts (shfe_daily,
+    # shfe_member_rank, cffex_member_rank, ...) name these rows through `input_source(url)` and
+    # are never requested as live input; ideas mining of the pages is untouched (IDEAS_ONLY).
     "cnx_shfe": _cnx_row(
-        "cnx_shfe", "SHFE",
+        "cnx_shfe", "SHFE", host="shfe.com.cn",
         why=("the SHFE site statement grants NON-COMMERCIAL browse/download only (基于非商业目的"
              "浏览、下载) and bars use for profit without written permission; trading on the data "
              "is commercial use, which is not granted (fail closed; audit of PR #224)"),
@@ -642,7 +659,7 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                 "的任何内容，此种使用包括但不限于拷贝、下载、存贮、通过硬拷贝或电子抓取系统、发送、"  # noqa: RUF001 -- verbatim
                 "转换、出租、演示、转载、复制、修改、销售、传播、出版或任何其它形式的散发。")}),
     "cnx_ine": _cnx_row(
-        "cnx_ine", "INE",
+        "cnx_ine", "INE", host="ine.cn",
         why=("INE's own disclaimer could not be read (slider-captcha WAF); the parent exchange's "
              "statement (cnx_shfe) grants NON-COMMERCIAL use only and nothing read grants more "
              "(fail closed; audit of PR #224)"),
@@ -653,19 +670,19 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
         unread={"ine.cn": ("not readable from the build sandbox: the host serves a "
                            "slider-captcha WAF page to the sandbox")}),
     "cnx_dce": _cnx_row(
-        "cnx_dce", "DCE", url="http://www.dce.com.cn/",
+        "cnx_dce", "DCE", host="dce.com.cn", url="http://www.dce.com.cn/",
         unread={"dce.com.cn": ("not readable from the build sandbox: robots.txt fetch timed out "
                                "from the sandbox")}),
     "cnx_czce": _cnx_row(
-        "cnx_czce", "CZCE", url="http://www.czce.com.cn/",
+        "cnx_czce", "CZCE", host="czce.com.cn", url="http://www.czce.com.cn/",
         unread={"czce.com.cn": ("not readable from the build sandbox: the legal-statement link "
                                 "returned HTTP 412 to the sandbox")}),
     "cnx_gfex": _cnx_row(
-        "cnx_gfex", "GFEX", url="http://www.gfex.com.cn/",
+        "cnx_gfex", "GFEX", host="gfex.com.cn", url="http://www.gfex.com.cn/",
         unread={"gfex.com.cn": ("not readable from the build sandbox: TLS hostname mismatch on "
                                 "the sandbox's robots.txt fetch")}),
     "cnx_cffex": _cnx_row(
-        "cnx_cffex", "CFFEX", url="http://www.cffex.com.cn/",
+        "cnx_cffex", "CFFEX", host="cffex.com.cn", url="http://www.cffex.com.cn/",
         unread={"cffex.com.cn": ("not readable from the build sandbox: robots.txt could not be "
                                  "fetched or parsed from the sandbox")}),
 }
@@ -938,7 +955,9 @@ def _wrapped_url(url: str) -> str | None:
 def _route_path(path: str) -> str:
     """The path a route is matched on, as the server resolves it: percent-decoded (repeatedly,
     so a double-encoded `%255F` cannot hide `_`), NFKC-folded, every run of `/` collapsed, and the
-    `.` / `..` dot segments removed (RFC 3986 5.2.4). Always starts with `/`."""
+    `.` / `..` dot segments removed (RFC 3986 5.2.4), and every `;param` cut off its segment
+    (a servlet container serves `/markets;v=1/x` as `/markets/x`; pass-6 audit SHOULD-FIX).
+    Always starts with `/`."""
     p = str(path or "")
     for _ in range(3):
         q = unquote(p)
@@ -947,7 +966,8 @@ def _route_path(path: str) -> str:
         p = q
     p = unicodedata.normalize("NFKC", p).replace("\\", "/")
     out: list[str] = []
-    for seg in re.sub(r"/+", "/", p).split("/"):
+    for raw in re.sub(r"/+", "/", p).split("/"):
+        seg = raw.split(";", 1)[0]
         if seg == ".":
             continue
         if seg == "..":
@@ -955,7 +975,7 @@ def _route_path(path: str) -> str:
                 out.pop()
             continue
         out.append(seg)
-    trail = p.endswith(("/", "/.", "/.."))
+    trail = re.sub(r";[^/]*$", "", p).endswith(("/", "/.", "/.."))
     norm = "/" + "/".join(x for x in out if x)
     return norm + "/" if trail and norm != "/" else norm
 
@@ -1082,17 +1102,24 @@ def _req_headers(req: urllib.request.Request) -> dict[str, str]:
 class FencedRedirectHandler(urllib.request.HTTPRedirectHandler):
     """urllib's redirect handler, except a 30x pointing at a fenced platform raises `TermsFenced`
     instead of being followed. A fence that checks only the FIRST URL is a fence any shortener or
-    moved page walks straight through."""
+    moved page walks straight through.
 
-    def __init__(self) -> None:
+    `live_input=True` (a LIVE-INPUT organ's fetch: asia_collector, free_stack, the acquirers)
+    also re-runs THE LIVE-INPUT CHECK (`input_source`) on every hop, so a 30x into an IDEAS_ONLY
+    held route (JPX short-selling, CME delivery_reports, lme.com, an exchange host) is refused
+    exactly as the first URL would have been (pass-6 audit e5a1526f3 MUST-FIX 2). An ideas fetch
+    keeps the held-only rule: IDEAS_ONLY pages are still read for ideas."""
+
+    def __init__(self, live_input: bool = False) -> None:
         super().__init__()
         #: Every hop this opener was asked to follow, [(code, from, to)] -- redirects are VISIBLE.
         self.chain: list[tuple[int, str, str]] = []
+        self.live_input = bool(live_input)
 
     def redirect_request(self, req: urllib.request.Request, fp: Any, code: int, msg: str,
                          headers: Any, newurl: str) -> urllib.request.Request | None:
         self.chain.append((int(code), str(req.full_url), str(newurl)))
-        held = platform_of_url(newurl)
+        held = platform_of_url(newurl) or (input_source(newurl) if self.live_input else None)
         # METHOD: a redirect into a held source or a login / CAPTCHA wall is refused, never
         # followed; the 3xx response's socket is released before the refusal is raised.
         if held or login_wall(newurl):
@@ -1119,27 +1146,38 @@ class TermsGuardProcessor(urllib.request.BaseHandler):
     https_request = http_request
 
 
-def guarded_opener(context: Any = None, *handlers: Any) -> urllib.request.OpenerDirector:
+def guarded_opener(context: Any = None, *handlers: Any,
+                   live_input: bool = False) -> urllib.request.OpenerDirector:
     """An opener whose redirects and requests are terms-fenced. `context` is the SSL context the
-    caller would have passed to `urlopen`."""
-    hs: list[Any] = [FencedRedirectHandler(), TermsGuardProcessor()]
+    caller would have passed to `urlopen`; `live_input` re-checks `input_source` on every hop."""
+    hs: list[Any] = [FencedRedirectHandler(live_input=live_input), TermsGuardProcessor()]
     if context is not None:
         hs.append(urllib.request.HTTPSHandler(context=context))
     return urllib.request.build_opener(*hs, *handlers)
 
 
-def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = None) -> Any:
+def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = None,
+                    live_input: bool = False) -> Any:
     """THE ONE FETCH DOOR (`polite_fetch.fenced_urlopen` is this function): `urlopen` with the
     fence. The URL is checked BEFORE any request is built (a held source, or a first URL that is
     itself a login wall, raises `TermsFenced`); a redirect into a held source or a login wall
     raises instead of being followed; every hop followed is kept on the response as
-    `.redirects` [(code, from, to)]. `timeout=None` means the socket default."""
+    `.redirects` [(code, from, to)]. `timeout=None` means the socket default. `live_input=True`
+    (a live-input organ) refuses an IDEAS_ONLY or held first URL and every such redirect hop
+    (`input_source`), not only the held ones."""
     url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
     hdrs = _req_headers(req) if isinstance(req, urllib.request.Request) else None
     check_request(url, hdrs)
     if login_wall(url):
         raise TermsFenced("login_wall", url)
+    if live_input:
+        k = input_source(url)
+        if k:
+            raise TermsFenced(k, url)
     opener = guarded_opener(context)
+    for h in getattr(opener, "handlers", ()):
+        if isinstance(h, FencedRedirectHandler):
+            h.live_input = h.live_input or bool(live_input)   # every hop re-checked
     fh = opener.open(req) if timeout is None else opener.open(req, timeout=timeout)
     chain = next((h.chain for h in getattr(opener, "handlers", ())
                   if isinstance(h, FencedRedirectHandler)), [])

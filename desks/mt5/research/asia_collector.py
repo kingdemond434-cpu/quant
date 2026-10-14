@@ -417,7 +417,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     from libs.data import terms_fence as _tfg
     try:
         # THE ONE FETCH DOOR: a redirect into a login / CAPTCHA wall is refused, not followed.
-        with fenced_urlopen(req, timeout=timeout, context=_TLS) as r:
+        with fenced_urlopen(req, timeout=timeout, context=_TLS, live_input=True) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
