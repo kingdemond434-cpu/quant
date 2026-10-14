@@ -210,7 +210,7 @@ def local_dark() -> str:
 
 
 def is_local(seat: Seat) -> bool:
-    return seat.source == LOCAL_SOURCE
+    return getattr(seat, "source", "") == LOCAL_SOURCE
 
 
 def free_tier_only() -> bool:
@@ -794,16 +794,16 @@ def _local_busy() -> str:
 
 def _resolve(seat: Seat | None) -> tuple[Seat | None, str]:
     """The seat this call uses, or (None, why). A named seat is checked as named; with none
-    named, the first reachable seat in `seats()` order wins, so the local seat takes a call the
+    named, the primary seat is tried and then the local seat, so the local seat takes a call the
     cloud's spent day would have refused, and never one the cloud could have answered."""
     if seat is not None:
         why = _local_busy() if is_local(seat) else _cloud_refusal()
         return (None, f"local seat: {why}" if is_local(seat) else why) if why else (seat, "")
-    got = seats()
-    if not got:
+    primary = primary_seat()
+    if primary is None:
         return None, f"{_NO_SEAT}; local seat: {local_dark()}"
     first = ""
-    for s in got:
+    for s in [primary] + [x for x in seats() if is_local(x) and not is_local(primary)]:
         chosen, why = _resolve(s)
         if chosen is not None:
             return chosen, ""
