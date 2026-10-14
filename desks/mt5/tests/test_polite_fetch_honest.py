@@ -361,7 +361,7 @@ def test_regional_robots_disallow_on_one_path_does_not_stop_allowed_alternates(
         raise rsh.FetchError(url, None, "ROBOTS_DISALLOW", "ROBOTS_DISALLOW")
 
     monkeypatch.setattr(rsh, "fetch", fake)
-    out = rsh.mine_source("hfm_pamm", rsh.SOURCES["hfm_pamm"], 1, explore=False)
+    out = rsh.mine_source("hfm_pamm", rsh.SOURCES["hfm_pamm"], 1)
     assert alt in tried and len(tried) > 1, tried
     assert not str(out["state"]).startswith("refused")
     assert "ROBOTS_DISALLOW" not in rsh.HARD_STOP and "ROBOTS_UNREADABLE" not in rsh.HARD_STOP
