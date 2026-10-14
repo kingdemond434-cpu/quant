@@ -197,17 +197,16 @@ def seat_of(source: str, row: dict[str, Any] | None = None) -> str | None:
 
 
 def first_seen(row: dict[str, Any], fallback: datetime | None) -> datetime | None:
-    """When the desk could first have known this row: the door's stamp, never earlier.
+    """When the desk could first have known this row: the latest of its stamps, never earlier.
 
     `available_time` from `libs.data.pit.stamp` is the save instant unless the producer named a
-    publication time; `ingested_time` is the save instant. The LATER of the two is used, so a
-    producer-claimed publication stamp can never move a reading earlier than the desk held it.
+    publication time; `ingested_time` is the save instant; `fallback` is the file's own capture
+    stamp. The LATEST is used, so neither a producer-claimed publication stamp nor a row stamp
+    alone can move a reading earlier than the file that holds it was written.
     """
     stamps = [t for t in (_parse_time(row.get("available_time")),
-                          _parse_time(row.get("ingested_time"))) if t is not None]
-    if stamps:
-        return max(stamps)
-    return fallback
+                          _parse_time(row.get("ingested_time")), fallback) if t is not None]
+    return max(stamps) if stamps else None
 
 
 # ------------------------------------------------------------------------------- the universe
@@ -240,11 +239,11 @@ def _may_hypothesise(symbol: str) -> bool:
         try:
             from universe_policy import may_hypothesise  # type: ignore[no-redef,import-not-found]
         except ImportError:
-            return True
+            return False                 # FAIL CLOSED: no lane check, no hypothesis
     try:
         return bool(may_hypothesise(symbol, FAMILY))
     except Exception:
-        return True
+        return False
 
 
 def targets(row: dict[str, Any], universe: set[str]) -> tuple[list[str], str | None]:
@@ -468,6 +467,13 @@ def _iter_file(path: Path) -> Iterator[dict[str, Any]]:
 def seat_rows(seat: str, intel: Path | None = None
               ) -> Iterator[tuple[dict[str, Any], datetime | None]]:
     """(row, first-seen instant) for every row on disk for one seat, exact duplicates once."""
+    for row, seen, _path in seat_rows_at(seat, intel):
+        yield row, seen
+
+
+def seat_rows_at(seat: str, intel: Path | None = None
+                 ) -> Iterator[tuple[dict[str, Any], datetime | None, Path]]:
+    """`seat_rows` with the file each row was first read from."""
     base = (intel or INTEL) / seat
     if not base.is_dir():
         return
@@ -481,7 +487,26 @@ def seat_rows(seat: str, intel: Path | None = None
             if h in seen:
                 continue
             seen.add(h)
-            yield row, first_seen(row, fallback)
+            yield row, first_seen(row, fallback), path
+
+
+def _compiler() -> Any:
+    try:
+        from research import miner_candidate_compiler as mcc
+    except ImportError:                                     # pragma: no cover - layout
+        import miner_candidate_compiler as mcc  # type: ignore[no-redef,import-not-found]
+    return mcc
+
+
+def in_intake_window(path: Path, cutoff: datetime) -> bool:
+    """Would the compiler's intake read this file on the pass whose window opens at `cutoff`?
+    The same two tests the intake applies: its file kinds and its mtime window."""
+    if path.suffix.lower() not in _compiler().INTAKE_SUFFIXES:
+        return False
+    try:
+        return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC) >= cutoff
+    except OSError:
+        return False
 
 
 # ------------------------------------------------------------------------------- the series
@@ -652,8 +677,13 @@ def measure(seat: str, rows: list[tuple[dict[str, Any], datetime | None]], unive
 
 def run(*, intel: Path | None = None, series_root: Path | None = None,
         universe_dir: Path | None = None, compiled_path: Path | None = None,
-        now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
+        now: datetime | None = None, dry_run: bool = False,
+        intake_cutoff: datetime | None = None) -> dict[str, Any]:
+    """The series are built from EVERY row on disk (history is the input); conversion is judged
+    only on rows inside the compiler's intake window, since a row the compiler will never read
+    again cannot be converted by it and would hold the fence red forever."""
     now = now or _now()
+    cutoff = intake_cutoff or _compiler().intake_cutoff(now)
     universe = known_universe(universe_dir)
     report: dict[str, Any] = {
         "generated_utc": now.isoformat(timespec="seconds"),
@@ -661,7 +691,10 @@ def run(*, intel: Path | None = None, series_root: Path | None = None,
                 "row is a READING; its seat's series is the input, the cell is an "
                 "exogenous_conditioner state on the instrument it names, one trial per cell."),
         "cycle_h": CYCLE_H, "grace_h": GRACE_H, "family": FAMILY,
-        "universe_symbols": len(universe), "seats": {}}
+        "universe_symbols": len(universe), "seats": {},
+        "intake_window": {"cutoff_utc": cutoff.isoformat(timespec="seconds"),
+                          "window_days": _compiler().WINDOW_DAYS,
+                          "why": "conversion is judged on the rows the compiler reads"}}
     if not universe:
         report.update({"status": UNMEASURED,
                        "why": "no H1 parquet under data/universe: no instrument can be resolved"})
@@ -672,18 +705,21 @@ def run(*, intel: Path | None = None, series_root: Path | None = None,
                           {"available": False, "why": compiled_at})
     root = series_root or SERIES_DIR
     for seat in SEATS:
-        rows = list(seat_rows(seat, intel))
+        located = list(seat_rows_at(seat, intel))
+        rows = [(r, t) for r, t, _p in located]
+        window = [(r, t) for r, t, p in located if in_intake_window(p, cutoff)]
         pts = build_series(seat, rows, universe, now)
         # A dry run writes series only under an explicit scratch root, never the live lake.
         written = (write_series(seat, pts, root)
                    if (not dry_run or series_root is not None) else None)
-        entry = measure(seat, rows, universe, compiled, root)
+        entry = measure(seat, window, universe, compiled, root)
+        entry["rows_on_disk"] = len(rows)
         entry["series_points"] = len(pts)
         entry["series_written"] = str(written) if written else None
         report["seats"][seat] = entry
     totals = Counter[str]()
     for e in report["seats"].values():
-        for k in ("rows", "convertible", "series_accruing", "cells"):
+        for k in ("rows", "rows_on_disk", "convertible", "series_accruing", "cells"):
             totals[k] += int(e.get(k) or 0)
         totals["converted"] += int(e.get("converted") or 0)
         totals["unconverted"] += int(e.get("unconverted") or 0)

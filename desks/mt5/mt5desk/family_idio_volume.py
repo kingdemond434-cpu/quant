@@ -31,6 +31,13 @@ family reads the same per-symbol / per-hour surface (`data/cost_surface.json`, p
 hour) and refuses an entry whose fill-hour spread exceeds `max_spread_atr` of the bar's ATR: the
 rollover spike that could never pay is not taken, rather than taken and averaged away. A symbol or
 hour the surface does not measure refuses nothing (`symbol` unset reads no surface at all).
+
+WHICH SPREAD, AND WHEN (audit SHOULD-FIX, 2026-10-14). The point-in-time source is the fill bar's
+OWN recorded spread: MT5 bars carry a `spread` column (points) written when the bar closed, so a
+2019 fill is judged by a 2019 spread. It is used whenever it is recorded (> 0). The surface is
+TODAY's per-hour p50 and is used only where the bar recorded none (0 or absent) -- a fallback that
+applies today's costs to history, disclosed in the F1 preregistration. Caveat on the PIT source
+too: MT5's bar spread is commonly the bar's MINIMUM, so it can understate the fill's spread.
 """
 from __future__ import annotations
 
@@ -127,6 +134,24 @@ def fill_hour_spread(symbol: str, hour: int, surface: dict[str, Any] | None = No
     return float(cell["p50"]) * tick
 
 
+def _tick_size(symbol: str, surface: dict[str, Any] | None) -> float | None:
+    doc = surface if surface is not None else _surface_doc(str(COST_SURFACE))
+    tick = float((((doc or {}).get("symbols") or {}).get(symbol) or {}).get("tick_size") or 0.0)
+    return tick if tick > 0 else None
+
+
+def fill_spread(symbol: str, hour: int, bar_spread_pts: float | None,
+                surface: dict[str, Any] | None = None) -> tuple[float | None, str]:
+    """The fill's spread in price units and its source: the bar's own recorded spread (PIT)
+    when it is recorded, else today's surface p50 at that hour, else (None, 'unmeasured')."""
+    if bar_spread_pts is not None and np.isfinite(bar_spread_pts) and bar_spread_pts > 0:
+        tick = _tick_size(symbol, surface)
+        if tick is not None:
+            return float(bar_spread_pts) * tick, "bar_pit"
+    spr = fill_hour_spread(symbol, hour, surface)
+    return (spr, "surface_today") if spr is not None else (None, "unmeasured")
+
+
 def _peers_for(df: pd.DataFrame, names: list[str] | tuple[str, ...], symbol: str
                ) -> list[pd.DataFrame]:
     from mt5desk.family_inputs import bars_named
@@ -168,6 +193,8 @@ def family_idio_volume_reversal(
     o = d["open"].astype(float).to_numpy()
     c = d["close"].astype(float).to_numpy()
     zv = z.to_numpy()
+    bar_spread = (pd.to_numeric(d["spread"], errors="coerce").to_numpy(dtype=float)
+                  if "spread" in d.columns else None)
     idx = pd.DatetimeIndex(d.index)
     thr = float(z_threshold)
     out: list[Signal] = []
@@ -181,7 +208,9 @@ def family_idio_volume_reversal(
         if move == 0 or not np.isfinite(a) or a <= 0:
             continue
         if symbol and max_spread_atr > 0:
-            spr = fill_hour_spread(symbol, int(idx[i + 1].hour), surface)
+            spr, _src = fill_spread(symbol, int(idx[i + 1].hour),
+                                    None if bar_spread is None else float(bar_spread[i + 1]),
+                                    surface)
             if spr is not None and spr > float(max_spread_atr) * a:
                 continue                   # the fill hour's own spread eats the retrace
         side = -1 if move > 0 else 1
@@ -191,6 +220,17 @@ def family_idio_volume_reversal(
                           tag="idio_volume_reversal", trigger=None, wait_bars=1))
         last = i
     return out
+
+
+#: Carried on every F1 cell (see the preregistration).
+F1_CAVEATS = (
+    "COST: the spread cap reads the fill bar's own recorded MT5 spread (point-in-time) where "
+    "the bar recorded one; where it did not, it falls back to TODAY's per-hour p50 from "
+    "data/cost_surface.json, i.e. today's costs applied to history",
+    "DIRECTION: fade is fixed by the mechanism; a measurement on the same history (EURUSD, h=2, "
+    "p=0.0125) showed CONTINUATION before the preregistration was written; a continuation "
+    "variant is a new, separately charged trial and is not minted here",
+)
 
 
 def f1_cells() -> list[dict[str, Any]]:
@@ -210,5 +250,7 @@ def f1_cells() -> list[dict[str, Any]]:
                 "falsifier": (f"{sym} returns over the {hold} H1 bar(s) after a z>3 idiosyncratic "
                               "volume spike, signed against the spike bar, are no better than "
                               "zero net of the fill-hour spread"),
+                "preregistration": "docs/research/F1_IDIO_VOLUME_PREREGISTRATION.md",
+                "caveats": list(F1_CAVEATS),
                 "lane": "F1"})
     return cells

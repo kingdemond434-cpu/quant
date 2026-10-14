@@ -300,6 +300,25 @@ def _prefix_sha256(path: Path, size: int) -> str:
     return digest.hexdigest()
 
 
+def intake_cutoff(now: datetime) -> datetime:
+    """The oldest file mtime this compiler's intake reads on a pass at `now`: the cycle cutoff a
+    saved cursor carries (a pass resuming mid-cycle keeps its cycle's window), else
+    `now - WINDOW_DAYS`. Published so a fence measuring "rows the compiler should have turned
+    into cells" judges exactly the rows the compiler can see (`alt_seat_cells.measure`)."""
+    try:
+        saved = json.loads(CURSOR.read_text(encoding="utf-8"))
+        if saved.get("next_path") and saved.get("cycle_cutoff_utc"):
+            cut = datetime.fromisoformat(str(saved["cycle_cutoff_utc"]))
+            return cut.replace(tzinfo=UTC) if cut.tzinfo is None else cut.astimezone(UTC)
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return now - timedelta(days=WINDOW_DAYS)
+
+
+#: The file kinds the intake reads (`.jsonl.gz` archives are not among them).
+INTAKE_SUFFIXES = frozenset({".json", ".jsonl"})
+
+
 def _cursor_start(paths: list[Path]) -> tuple[int, int, datetime | None]:
     """Resume at a content-bound row inside the last partially consumed file."""
     try:
@@ -489,7 +508,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
         if not root.exists():
             continue
         all_paths.extend(sorted((p for p in root.rglob("*")
-                                 if p.is_file() and p.suffix.lower() in {".json", ".jsonl"}
+                                 if p.is_file() and p.suffix.lower() in INTAKE_SUFFIXES
                                  and not _is_operational_state(p.relative_to(root))),
                                 key=lambda p: p.stat().st_mtime, reverse=True))
     start, start_row, saved_cutoff = _cursor_start(all_paths)

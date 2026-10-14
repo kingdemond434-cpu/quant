@@ -216,3 +216,78 @@ def test_a_youtube_row_without_a_video_is_a_claim_not_a_sighting() -> None:
         {}, "UNRECOGNISED_SHAPE")
     assert asc.readings("youtube", {"url": "https://youtube.com/watch?v=a",
                                     "symbols": ["XAUUSD"]}) == ({}, None)
+
+
+# ------------------------------------------------------------------------------- audit 2026-10-14
+
+def test_the_fence_judges_only_rows_inside_the_compilers_intake_window(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """CNN F&G names XAUUSD only on its extreme-fear rows. Such a row written ten days ago lies
+    outside the compiler's window: the compiler will never read it again, so it cannot hold the
+    fence red. The same row inside the window is held, as it should be."""
+    import os
+
+    import miner_candidate_compiler as mcc
+    uni_dir = tmp_path / "universe"
+    uni_dir.mkdir()
+    for s in ("US500", "NAS100", "XAUUSD"):
+        (uni_dir / f"{s}_H1.parquet").write_bytes(b"")
+    root = _series_root(tmp_path, "fear_greed", "score", asc.MIN_POINTS + 5)
+    monkeypatch.setattr(asc, "SERIES_DIR", root)
+    seat = tmp_path / "intel" / "fear_greed"
+    seat.mkdir(parents=True)
+    old_at = NOW - timedelta(days=mcc.WINDOW_DAYS + 3)
+    fear = {**_fg(8.0, old_at), "type": "extreme_sentiment", "symbols": ["XAUUSD"]}
+    old = seat / "discoveries_old.json"
+    old.write_text(json.dumps([fear]), encoding="utf-8")
+    os.utime(old, (old_at.timestamp(), old_at.timestamp()))
+    recent_at = NOW - timedelta(hours=3)
+    new = seat / "discoveries_new.json"
+    new.write_text(json.dumps([_fg(40.0, recent_at)]), encoding="utf-8")
+    os.utime(new, (recent_at.timestamp(), recent_at.timestamp()))
+    made, _ = asc.row_cells("fear_greed", _fg(40.0, recent_at), {"US500", "NAS100"}, root)
+    compiled = tmp_path / "miner_candidates.json"
+    compiled.write_text(json.dumps({"compiled_at": NOW.isoformat(), "hypotheses": [
+        {"symbol": s, "family": asc.FAMILY, "params": p} for s, p, _m in made]}),
+        encoding="utf-8")
+    cut = NOW - timedelta(days=mcc.WINDOW_DAYS)
+    rep = asc.run(intel=tmp_path / "intel", universe_dir=uni_dir, compiled_path=compiled,
+                  now=NOW, dry_run=True, intake_cutoff=cut)
+    fg = rep["seats"]["fear_greed"]
+    assert fg["rows_on_disk"] == 2 and fg["rows"] == 1
+    assert fg["unconverted"] == 0 and asc.held_seats(rep) == []
+    assert rep["intake_window"]["window_days"] == mcc.WINDOW_DAYS
+    # the extreme-fear row INSIDE the window is judged, and held
+    os.utime(old, (recent_at.timestamp(), recent_at.timestamp()))
+    rep2 = asc.run(intel=tmp_path / "intel", universe_dir=uni_dir, compiled_path=compiled,
+                   now=NOW, dry_run=True, intake_cutoff=cut)
+    assert rep2["seats"]["fear_greed"]["unconverted"] == 1
+    assert [h["seat"] for h in asc.held_seats(rep2)] == ["fear_greed"]
+
+
+def test_the_compiler_publishes_its_intake_cutoff(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    import miner_candidate_compiler as mcc
+    monkeypatch.setattr(mcc, "CURSOR", tmp_path / "absent.json")
+    assert mcc.intake_cutoff(NOW) == NOW - timedelta(days=mcc.WINDOW_DAYS)
+    saved = tmp_path / "cursor.json"
+    saved.write_text(json.dumps({"next_path": "x", "cycle_cutoff_utc": "2026-10-01T00:00:00"}))
+    monkeypatch.setattr(mcc, "CURSOR", saved)
+    assert mcc.intake_cutoff(NOW) == datetime(2026, 10, 1, tzinfo=UTC)
+
+
+def test_the_lane_check_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    import research.universe_policy as up
+
+    def boom(*_a: object, **_k: object) -> bool:
+        raise RuntimeError("registry unreadable")
+    monkeypatch.setattr(up, "may_hypothesise", boom)
+    assert asc._may_hypothesise("XAUUSD") is False
+
+
+def test_first_seen_is_never_earlier_than_the_file_that_holds_the_row() -> None:
+    early = NOW - timedelta(days=3)
+    row = {"available_time": early.isoformat()}
+    assert asc.first_seen(row, NOW) == NOW
+    assert asc.first_seen({"available_time": NOW.isoformat()}, early) == NOW
+    assert asc.first_seen({}, early) == early and asc.first_seen({}, None) is None

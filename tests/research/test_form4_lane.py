@@ -288,3 +288,99 @@ def test_retry_after_reads_seconds_and_http_dates() -> None:
     assert fl.retry_after_s("30", NOW) == 30.0
     assert fl.retry_after_s("Wed, 14 Oct 2026 13:00:00 GMT", NOW) == 3600.0
     assert fl.retry_after_s("soon", NOW) is None and fl.retry_after_s(None, NOW) is None
+
+
+# ------------------------------------------------------------------------------- audit 2026-10-14
+
+def _row(insider: str, txn: str, filed: str, acc: str) -> dict:
+    return {"symbol": "Apple", "insider": insider, "title": "Director", "txn_date": txn,
+            "filed_at": filed, "code": "P", "shares": 1000.0, "price": 50.0,
+            "accession": acc, "shares_after": 5000.0}
+
+
+PROBE = [_row("A", "2026-05-01", "2026-05-05T22:00:00+00:00", "a1"),
+         _row("B", "2026-05-04", "2026-05-06T22:00:00+00:00", "b1"),
+         _row("C", "2026-05-02", "2026-05-20T22:00:00+00:00", "c1")]
+
+
+def test_a_later_filing_never_reshapes_a_frozen_cluster() -> None:
+    """The auditor's probe: A and B public on 05-06; C (transaction inside the window) filed on
+    05-20. The 05-06 cluster stays where it was, and the 05-06..05-09 breadth points built on
+    05-10 are exactly those built with C on file."""
+    asof = [r for r in PROBE if r["filed_at"] <= "2026-05-10"]
+    early, _new, _ = fl.score(asof)
+    assert [(c["knowable_at"], c["n_buyers"]) for c in early] == [
+        ("2026-05-06T22:00:00+00:00", 2)]
+    full, new, _ = fl.score(PROBE, early)                  # the next pass, frozen store in hand
+    assert new == [] and full == early
+    rebuilt, _n, _ = fl.score(PROBE)                        # and from scratch, the same
+    assert [(c["knowable_at"], c["buyers"]) for c in rebuilt] == [
+        ("2026-05-06T22:00:00+00:00", ["A", "B"])]
+    days = {f"2026-05-0{d}" for d in (6, 7, 8, 9)}
+    p_early = {p["event_time"]: p for p in fl.breadth_points(early, datetime(2026, 5, 10,
+                                                                             tzinfo=UTC))}
+    p_full = {p["event_time"]: p for p in fl.breadth_points(rebuilt, datetime(2026, 5, 25,
+                                                                              tzinfo=UTC))}
+    assert all(p_early[d] == p_full[d] for d in days)
+    assert all(p_full[d]["n_clusters_30d"] == 1 for d in days)
+
+
+def test_a_new_cluster_is_appended_and_old_lines_are_never_rewritten(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    sd = tmp_path / "f4"
+    sd.mkdir()
+    (sd / "transactions.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in PROBE[:2]), encoding="utf-8")
+    fl.run(get=_edgar([]), now=NOW, state_dir=sd, series_root=tmp_path / "s", dry_run=True)
+    first = (sd / "clusters.jsonl").read_text(encoding="utf-8")
+    more = [_row("D", "2026-07-01", "2026-07-02T22:00:00+00:00", "d1"),
+            _row("E", "2026-07-02", "2026-07-03T22:00:00+00:00", "e1"), PROBE[2]]
+    with (sd / "transactions.jsonl").open("a", encoding="utf-8") as fh:
+        fh.writelines(json.dumps(r) + "\n" for r in more)
+    rep = fl.run(get=_edgar([]), now=NOW, state_dir=sd, series_root=tmp_path / "s",
+                 dry_run=True)
+    after = (sd / "clusters.jsonl").read_text(encoding="utf-8")
+    assert after.startswith(first) and rep["clusters_new"] >= 1
+
+
+@pytest.mark.parametrize("status", [500, 0, 503])
+def test_a_pass_with_no_200_is_unmeasured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                          status: int) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    calls: list[str] = []
+    rep = fl.run(get=_refusing(calls, status, "sec.gov"), now=NOW, state_dir=tmp_path / "f4",
+                 series_root=tmp_path / "s", dry_run=True, register=tmp_path / "r.json")
+    assert rep["fetch"]["status"] == "FAILED"
+    assert rep["status"] == fl.UNMEASURED and rep["new_data"] == fl.UNMEASURED
+    assert not (tmp_path / "r.json").exists()          # a failure is not a block
+
+
+def test_every_submissions_request_5xx_is_unmeasured(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL", "Zeta": "AAPL"})
+    sd = tmp_path / "f4"
+    sd.mkdir()
+    (sd / "state.json").write_text(json.dumps({"ciks": {"AAPL": 320193}}))
+    rep = fl.run(get=_refusing([], 502, "submissions"), now=NOW, state_dir=sd,
+                 series_root=tmp_path / "s", dry_run=True)
+    assert rep["fetch"]["requests"] == 2 and rep["fetch"]["ok_responses"] == 0
+    assert rep["status"] == fl.UNMEASURED and rep["new_data"] == fl.UNMEASURED
+
+
+def test_a_user_agent_without_contact_is_unconfigured_and_never_echoed(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        ) -> None:
+    bare = "DeskResearchBot-without-contact"
+    monkeypatch.setenv(fl.UA_ENV, bare)
+    rep = fl.run(now=NOW, state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True)
+    assert rep["fetch"]["status"] == "UNCONFIGURED" and rep["status"] == fl.UNMEASURED
+    assert bare not in json.dumps(rep, default=str) and bare not in capsys.readouterr().out
+    assert fl.ua_has_contact("Desk Research ops@example.org")
+    assert fl.ua_has_contact("Desk Research (+https://example.org/contact)")
+    assert not fl.ua_has_contact("Desk Research")
+
+
+def test_breadth_cells_carry_the_survivorship_caveat() -> None:
+    cells, _ = fl.breadth_cells(fl.MIN_POINTS, True)
+    assert all(any("SURVIVORSHIP" in c for c in cell["caveats"]) for cell in cells)

@@ -109,3 +109,49 @@ def test_f1_cells_are_registered_distinct_and_classified() -> None:
     from research.axis_registry import classify_family
     assert classify_family("idio_volume_reversal") == ("inventory_shock", "microstructure",
                                                        "market")
+
+
+def test_f1_is_charged_once_by_its_own_grid_not_by_the_sweep() -> None:
+    """The 21 donated cells are the whole F1 charge; the orthogonal sweep declines the family
+    (NOT_SOURCED_HERE, with its reason) and is never handed a kwarg that would run it."""
+    import ast
+
+    import orthogonal_sweep as osw
+
+    assert "idio_volume_reversal" in osw.NOT_SOURCED_HERE
+    tree = ast.parse((DESK / "research" / "orthogonal_sweep.py").read_text("utf-8"))
+    keys = {k.value for node in ast.walk(tree)
+            if isinstance(node, ast.Assign) and node.targets
+            and getattr(node.targets[0], "id", "") == "kwargs_by_family"
+            and isinstance(node.value, ast.Dict)
+            for k in node.value.keys if isinstance(k, ast.Constant)}
+    assert keys and "idio_volume_reversal" not in keys
+
+
+def test_the_fill_bars_own_recorded_spread_is_preferred_to_todays_surface() -> None:
+    """Point-in-time cost: a fill bar that recorded a ruinous spread refuses even when today's
+    surface says the hour is cheap; a bar that recorded none falls back to the surface."""
+    target, peers = _panel(spike_at=2500, common_at=2600)
+    fill_hour = int(IDX[2501].hour)
+    cheap = {"symbols": {"USDZAR": {"tick_size": 1.0, "hours": {
+        str(fill_hour): {"status": "MEASURED", "p50": 1e-9}}}}}
+    recorded = target.assign(spread=0.0)
+    recorded.iloc[2501, recorded.columns.get_loc("spread")] = 1e6
+    refused = fiv.family_idio_volume_reversal(recorded, peers=peers, symbol="USDZAR",
+                                              surface=cheap)
+    assert not any(s.time == IDX[2500] for s in refused)
+    blank = target.assign(spread=0.0)
+    taken = fiv.family_idio_volume_reversal(blank, peers=peers, symbol="USDZAR", surface=cheap)
+    assert any(s.time == IDX[2500] for s in taken)
+    assert fiv.fill_spread("USDZAR", fill_hour, 5.0, cheap) == (5.0, "bar_pit")
+    assert fiv.fill_spread("USDZAR", fill_hour, 0.0, cheap) == (1e-9, "surface_today")
+    assert fiv.fill_spread("XAUUSD", 3, None, cheap) == (None, "unmeasured")
+
+
+def test_f1_is_preregistered_with_its_disclosure() -> None:
+    doc = (ROOT / "docs" / "research" / "F1_IDIO_VOLUME_PREREGISTRATION.md").read_text("utf-8")
+    for needle in ("z > 3.0", "1, 2 and 4", "0.25 \u00d7 ATR", "21 cells", "p = 0.0125",
+                   "CONTINUATION", "separately charged trial"):
+        assert needle in doc, needle
+    assert all(c["preregistration"].endswith("F1_IDIO_VOLUME_PREREGISTRATION.md")
+               for c in fiv.f1_cells())

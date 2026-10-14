@@ -189,6 +189,14 @@ def urllib_getter(ua: str) -> Getter:
     return get
 
 
+_CONTACT_RE = re.compile(r"[^\s@<>]+@[^\s@<>]+\.[A-Za-z]{2,}|https?://\S+\.\S+")
+
+
+def ua_has_contact(ua: str) -> bool:
+    """Does the declared User-Agent carry contact details (an email or a URL)? Never prints it."""
+    return bool(_CONTACT_RE.search(ua or ""))
+
+
 def _call(get: Getter, url: str) -> tuple[int, bytes, dict[str, str]]:
     out = get(url, {})
     status, body = int(out[0]), out[1]
@@ -374,7 +382,8 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
                issuers: dict[str, str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """New transactions this pass, and what the pass did. `state` is updated in place."""
     rep: dict[str, Any] = {"requests": 0, "errors": Counter(), "issuers_visited": 0,
-                           "filings_read": 0, "transactions": 0, "block": None}
+                           "filings_read": 0, "transactions": 0, "block": None,
+                           "ok_responses": 0}
 
     def stopped(status: int, url_class: str, headers: dict[str, str]) -> bool:
         if status not in HARD_STOP:
@@ -386,6 +395,7 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
     if not ciks:
         status, raw, hdr = _call(get, TICKER_MAP_URL)
         rep["requests"] += 1
+        rep["ok_responses"] += int(status == 200)
         if stopped(status, "ticker_map", hdr):
             rep["errors"] = dict(rep["errors"])
             return [], rep
@@ -415,6 +425,7 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             continue
         status, raw, hdr = _call(get, SUBMISSIONS_URL.format(cik=cik))
         rep["requests"] += 1
+        rep["ok_responses"] += int(status == 200)
         if stopped(status, "submissions", hdr):
             visited -= 1                 # the refused issuer is first in line after the backoff
             break
@@ -433,6 +444,7 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             url = ARCHIVE_URL.format(cik=cik, acc=acc.replace("-", ""), doc=f["document"])
             status, body, hdr = _call(get, url)
             rep["requests"] += 1
+            rep["ok_responses"] += int(status == 200)
             if stopped(status, "archive_document", hdr):
                 done_all = False
                 break
@@ -464,9 +476,19 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
 
 # ------------------------------------------------------------------------------- scoring
 
+def txn_key(r: dict[str, Any]) -> str:
+    """One transaction's identity in the append-only store (a filing may hold several)."""
+    return "|".join(str(r.get(k) or "") for k in ("accession", "insider", "txn_date", "code",
+                                                    "shares", "price"))
+
+
 def to_txns(rows: list[dict[str, Any]]) -> list[Any]:
+    return [t for _k, t in _keyed_txns(rows)]
+
+
+def _keyed_txns(rows: list[dict[str, Any]]) -> list[tuple[str, Any]]:
     from libs.research.form4 import Form4Txn
-    out = []
+    out: list[tuple[str, Any]] = []
     for r in rows:
         filed = _parse_time(r.get("filed_at"))
         try:
@@ -475,23 +497,90 @@ def to_txns(rows: list[dict[str, Any]]) -> list[Any]:
             continue
         if filed is None:
             continue
-        out.append(Form4Txn(issuer=str(r.get("symbol")), insider=str(r.get("insider") or ""),
-                            title=str(r.get("title") or ""), txn_date=txn_date,
-                            filed_at=filed, code=str(r.get("code") or ""),
-                            shares=float(r.get("shares") or 0.0),
-                            price=float(r.get("price") or 0.0),
-                            shares_after=float(r.get("shares_after") or 0.0)))
+        out.append((txn_key(r), Form4Txn(
+            issuer=str(r.get("symbol")), insider=str(r.get("insider") or ""),
+            title=str(r.get("title") or ""), txn_date=txn_date, filed_at=filed,
+            code=str(r.get("code") or ""), shares=float(r.get("shares") or 0.0),
+            price=float(r.get("price") or 0.0),
+            shares_after=float(r.get("shares_after") or 0.0))))
     return out
 
 
-def score(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Every cluster, as rows for the event store, plus the census."""
+def freeze_clusters(rows: list[dict[str, Any]], frozen: list[dict[str, Any]]
+                    ) -> list[dict[str, Any]]:
+    """The clusters NOT yet in `frozen`, each frozen at the first acceptance instant it qualified.
+
+    APPEND-ONLY, AS OF EACH ACCEPTANCE (audit 2026-10-14, MUST-FIX 1). `form4.clusters` over the
+    full history lets a filing accepted LATER join an earlier window and move the cluster's
+    `knowable_at` to its own acceptance -- buyers A and B public on 05-06, C filed on 05-20 with a
+    transaction date inside the window, and the 05-06 cluster vanished from the 05-06..05-09
+    breadth points. Here the transactions are replayed in acceptance order; at each instant t
+    only filings accepted by t exist, and a window becomes a cluster the moment it first holds
+    `MIN_BUYERS` distinct buyers among transactions no frozen cluster already holds. It is then
+    frozen: its rows, buyers, score (baseline strictly before t) and `knowable_at = t` never
+    change. A later filing can start a NEW cluster; it never rewrites one.
+    """
     from libs.research import form4
-    txns = to_txns(rows)
-    cs = form4.clusters(txns)
-    out = [{"symbol": c.issuer, **c.to_dict()} for c in cs]
+    used = {k for c in frozen for k in (c.get("rows") or [])}
+    held = {(str(c.get("symbol")), str(c.get("knowable_at"))) for c in frozen}
+    keyed = [(k, t) for k, t in _keyed_txns(rows) if t.is_open_market_buy]
+    all_buys = [t for _k, t in keyed]
+    by_issuer: dict[str, list[tuple[str, Any]]] = {}
+    for k, t in sorted(keyed, key=lambda kt: (kt[1].filed_at, kt[0])):
+        by_issuer.setdefault(t.issuer, []).append((k, t))
+    wd = form4.WINDOW_DAYS
+    out: list[dict[str, Any]] = []
+    for issuer, items in by_issuer.items():
+        public: list[tuple[str, Any]] = []
+        i = 0
+        while i < len(items):
+            t_now = items[i][1].filed_at
+            batch = []
+            while i < len(items) and items[i][1].filed_at == t_now:
+                batch.append(items[i])
+                i += 1
+            public.extend(batch)
+            for bk, b in batch:
+                if bk in used:
+                    continue
+                pool = [(k, x) for k, x in public if k not in used]
+                anchors = sorted(((k, x) for k, x in pool
+                                  if 0 <= (b.txn_date - x.txn_date).days <= wd),
+                                 key=lambda kx: (kx[1].txn_date, kx[1].filed_at, kx[0]))
+                for _ak, a in anchors:
+                    win = [(k, x) for k, x in pool if 0 <= (x.txn_date - a.txn_date).days <= wd]
+                    people = {x.insider for _k, x in win}
+                    if len(people) < form4.MIN_BUYERS:
+                        continue
+                    rows_in = [x for _k, x in win]
+                    med, rate = form4._issuer_baseline(all_buys, issuer, t_now,
+                                                       frozenset(rows_in))
+                    value = sum(x.value for x in rows_in)
+                    comp = form4._score_components(rows_in, people, value, med, rate, wd)
+                    c = form4.Cluster(
+                        issuer=issuer, knowable_at=t_now,
+                        first_txn_date=min(x.txn_date for x in rows_in),
+                        buyers=tuple(sorted(people)), value=value,
+                        score=round(sum(comp.values()), 4), components=comp,
+                        why=(f"{len(people)} insiders bought ${value:,.0f} of {issuer} within "
+                             f"{wd}d; public at {t_now.isoformat()} (frozen)"))
+                    used |= {k for k, _x in win}
+                    rec = {"symbol": issuer, **c.to_dict(), "rows": sorted(k for k, _ in win)}
+                    if (issuer, rec["knowable_at"]) not in held:
+                        out.append(rec)
+                    break
     out.sort(key=lambda r: (r["knowable_at"], r["symbol"]))
-    return out, form4.census(txns)
+    return out
+
+
+def score(rows: list[dict[str, Any]], frozen: list[dict[str, Any]] | None = None
+          ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """(every cluster -- frozen then new --, the new ones, the census)."""
+    from libs.research import form4
+    prior = [c for c in (frozen or []) if c.get("rows")]
+    new = freeze_clusters(rows, prior)
+    allc = sorted(prior + new, key=lambda r: (r["knowable_at"], r["symbol"]))
+    return allc, new, form4.census(to_txns(rows))
 
 
 def breadth_points(clusters: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
@@ -539,6 +628,18 @@ def write_breadth(points: list[dict[str, Any]], root: Path | None = None) -> Pat
 
 # ------------------------------------------------------------------------------- cells
 
+#: THE ISSUER SET IS TODAY'S, NOT A POINT-IN-TIME ONE (audit SHOULD-FIX). The breadth score sums
+#: clusters over the share CFDs Fusion lists NOW (`alpha_capture.TICKERS`); the desk holds no
+#: point-in-time membership list, so names delisted or dropped before today are absent from the
+#: past and names listed later are present in it. Carried on every breadth cell and the report.
+BREADTH_CAVEATS = (
+    "SURVIVORSHIP: the issuer set is today's Fusion share-CFD list (alpha_capture.TICKERS), not "
+    "a point-in-time membership list -- none exists on this desk; issuers that delisted or left "
+    "the list before today are missing from the history, so the past breadth level is built "
+    "from survivors",
+)
+
+
 def breadth_cells(points: int, backfill_complete: bool) -> tuple[list[dict[str, Any]], str]:
     if not backfill_complete:
         return [], "BREADTH_BACKFILLING: not every issuer has been read back to the lookback"
@@ -555,6 +656,7 @@ def breadth_cells(points: int, backfill_complete: bool) -> tuple[list[dict[str, 
              "falsifier": (f"{s} H1 returns while the 30-day insider cluster score sits above "
                            "+1 sd of its own history are no better than unconditional, net of "
                            "the fill-hour spread"),
+             "caveats": list(BREADTH_CAVEATS),
              "lane": "breadth"} for s in BREADTH_TARGETS], "OK"
 
 
@@ -637,18 +739,27 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
                  "why": f"no {UA_ENV}: the SEC's fair-access policy requires a declared "
                         "User-Agent, so nothing was fetched (a configuration gap, not a "
                         "closed source)"}
+    elif get is None and not ua_has_contact(ua):
+        # The value is never echoed: only that it lacks a contact.
+        fetch = {"status": "UNCONFIGURED",
+                 "why": f"{UA_ENV} is set but names no contact (an email address or a URL); "
+                        "the SEC's fair-access policy asks for one, so nothing was fetched"}
     else:
         report["user_agent_configured"] = bool(ua) or get is not None
         getter = get or urllib_getter(ua)
         fresh, rep = fetch_pass(getter, state, time.monotonic() + budget_s * 0.8, now=now,
                                 issuers=issuers)
-        fetch = {"status": "FETCHED" if rep["requests"] else "IDLE", **rep}
+        # MEASURED ONLY ON AN ANSWER (audit MUST-FIX 2). A ticker-map 500, a dead network
+        # (status 0) or 5xx on every request is a pass that learned nothing; it must not read
+        # OK/MEASURED. At least one 200 is required.
+        fetch = {**rep, "status": ("FETCHED" if rep["ok_responses"] else
+                                   "FAILED" if rep["requests"] else "IDLE")}
         if rep["block"] is not None:
             state["block"] = rep["block"]
             fetch["status"] = rep["block"]["status"]
             record_block(rep["block"], register or BLOCKED_REGISTER)
-        elif rep["requests"]:
-            state.pop("block", None)     # an unrefused pass ends the backoff ladder
+        elif rep["ok_responses"]:
+            state.pop("block", None)     # an answered, unrefused pass ends the backoff ladder
         if fresh:
             sd.mkdir(parents=True, exist_ok=True)
             with txn_path.open("a", encoding="utf-8") as fh:
@@ -656,12 +767,20 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
                     fh.write(json.dumps(r, sort_keys=True) + "\n")
     report["fetch"] = fetch
     rows = _jsonl(txn_path)
-    clusters, census = score(rows)
+    stored = _jsonl(cl_path)
+    clusters, new_clusters, census = score(rows, stored)
     sd.mkdir(parents=True, exist_ok=True)
-    tmp = cl_path.with_name(f"{cl_path.name}.tmp{os.getpid()}")
-    tmp.write_text("".join(json.dumps(c, sort_keys=True) + "\n" for c in clusters),
-                   encoding="utf-8")
-    os.replace(tmp, cl_path)
+    if any(not c.get("rows") for c in stored):
+        # A store written before freezing carried no row identities, so it cannot be honoured
+        # as frozen; it is rebuilt once, as of each acceptance, and appended from then on.
+        tmp = cl_path.with_name(f"{cl_path.name}.tmp{os.getpid()}")
+        tmp.write_text("".join(json.dumps(c, sort_keys=True) + "\n" for c in clusters),
+                       encoding="utf-8")
+        os.replace(tmp, cl_path)
+    elif new_clusters:
+        with cl_path.open("a", encoding="utf-8") as fh:      # APPEND-ONLY
+            for c in new_clusters:
+                fh.write(json.dumps(c, sort_keys=True) + "\n")
     pts = breadth_points(clusters, now)
     written = write_breadth(pts, series_root)
     backfilled = set(state.get("backfilled") or [])
@@ -672,18 +791,19 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
     _write_json(state_path, state)
     report.update({
         "transactions": len(rows), "census": census, "clusters": len(clusters),
+        "clusters_new": len(new_clusters),
         "clusters_by_symbol": dict(Counter(c["symbol"] for c in clusters).most_common()),
         "backfill": {"issuers_backfilled": len(backfilled & set(issuers)),
                      "of": len(issuers), "complete": complete},
         "breadth": {"series": BREADTH_SERIES, "points": len(pts),
                     "written": str(written) if written else None, "state": b_state,
-                    "cells": len(b_cells), "targets": list(BREADTH_TARGETS)},
+                    "cells": len(b_cells), "targets": list(BREADTH_TARGETS),
+                    "caveats": list(BREADTH_CAVEATS)},
         "event": {"family": EVENT_FAMILY, "cells": len(e_cells), "min_events": MIN_EVENTS,
                   "accruing": accruing},
         "donated": donated,
-        "new_data": (UNMEASURED if fetch.get("status") in set(HARD_STOP.values())
-                     | {"UNCONFIGURED"} else "MEASURED"),
-        "status": ("OK" if fetch.get("status") in {"FETCHED", "IDLE"} else UNMEASURED)})
+        "new_data": "MEASURED" if fetch.get("status") == "FETCHED" else UNMEASURED,
+        "status": "OK" if fetch.get("status") == "FETCHED" else UNMEASURED})
     return report
 
 

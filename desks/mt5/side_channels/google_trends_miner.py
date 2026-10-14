@@ -46,6 +46,30 @@ TERM_TO_SYMBOLS = {
 }
 
 
+#: Weeks the trend reading needs: four recent against the four before them.
+MIN_TIMELINE = 8
+
+
+def trend_reading(timeline: list[dict]) -> float | None:
+    """Last 4 weeks vs the 4 before, in percent; None (UNMEASURED) when it cannot be computed.
+
+    NEVER A ZERO FOR "NO DATA". A short timeline or a zero base used to be written as
+    trend_pct=0, which the seat series (`alt_seat_cells`, seat_google_trends) cannot tell from a
+    genuinely flat month -- a silent zero entering a PIT series. No reading emits no row.
+    """
+    if len(timeline) < MIN_TIMELINE:
+        return None
+    try:
+        vals = [float(t.get("value", [0])[0]) for t in timeline[-MIN_TIMELINE:]]
+    except (TypeError, ValueError, IndexError, AttributeError):
+        return None
+    recent = sum(vals[-4:]) / 4
+    prev = sum(vals[:4]) / 4
+    if prev <= 0:
+        return None
+    return (recent - prev) / prev * 100
+
+
 def mine_google_trends() -> list[dict]:
     """Fetch Google Trends data for trading terms."""
     discoveries = []
@@ -67,16 +91,12 @@ def mine_google_trends() -> list[dict]:
                         if timeline:
                             # Get latest value
                             latest = timeline[-1].get("value", [0])[0]
-                            # Calculate trend (last 4 weeks vs previous 4)
-                            if len(timeline) >= 8:
-                                recent = sum(t.get("value", [0])[0] for t in timeline[-4:]) / 4
-                                prev = sum(t.get("value", [0])[0] for t in timeline[-8:-4]) / 4
-                                trend_pct = ((recent - prev) / prev * 100) if prev > 0 else 0
-                            else:
-                                trend_pct = 0
+                            # Calculate trend (last 4 weeks vs previous 4); unmeasurable
+                            # emits nothing rather than a zero
+                            trend_pct = trend_reading(timeline)
 
                             syms = TERM_TO_SYMBOLS.get(term, [])
-                            if syms and latest > 0:
+                            if syms and latest > 0 and trend_pct is not None:
                                 discoveries.append({
                                     "source": "google_trends",
                                     "type": "search_volume",
