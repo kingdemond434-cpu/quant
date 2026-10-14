@@ -23,6 +23,7 @@ import research.novel_style_lanes as N  # noqa: E402
 from mt5desk import family_fx_expiry_pin as F  # noqa: E402
 
 FIX = ROOT / "tests" / "fixtures" / "novel_styles"
+ALT_FIX = ROOT / "tests" / "fixtures" / "alt_proxies"
 SEEN = datetime(2026, 7, 20, tzinfo=UTC)
 
 
@@ -165,7 +166,7 @@ def _bazg_series(body: bytes) -> dict[tuple[str, date], float]:
 
 
 def test_bazg_parser_builds_destination_tonnes_and_asia_share() -> None:
-    got = _bazg_series((FIX / "ch_bazg_gold_exports.csv").read_bytes())
+    got = _bazg_series((ALT_FIX / "ch_bazg_gold_exports.csv").read_bytes())
     jun, may = date(2026, 6, 30), date(2026, 5, 31)
     assert got[("gold_exp_total_t", jun)] == 110.0
     assert got[("gold_exp_cn_t", jun)] == 30.0 and got[("gold_exp_uk_t", jun)] == 50.0
@@ -178,9 +179,9 @@ def test_bazg_parser_builds_destination_tonnes_and_asia_share() -> None:
 def test_bazg_parser_reads_the_zipped_bulk_file() -> None:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as z:
-        z.writestr("OGD_EXP_TN_M.csv", (FIX / "ch_bazg_gold_exports.csv").read_bytes())
+        z.writestr("OGD_EXP_TN_M.csv", (ALT_FIX / "ch_bazg_gold_exports.csv").read_bytes())
     assert _bazg_series(buf.getvalue()) == _bazg_series(
-        (FIX / "ch_bazg_gold_exports.csv").read_bytes())
+        (ALT_FIX / "ch_bazg_gold_exports.csv").read_bytes())
 
 
 def test_bazg_row_is_held_on_terms_and_never_fetched(tmp_path: Path) -> None:
@@ -202,7 +203,7 @@ def test_bazg_series_reach_the_lake_in_the_conditioner_envelope(tmp_path: Path) 
     src = replace(A.BY_ID["ch_bazg_gold_exports"], terms="confirmed")
     store: dict = {}
     A.merge_vintages(store, src, A.parse_bazg_exports(
-        (FIX / "ch_bazg_gold_exports.csv").read_bytes(), A.Ctx()), SEEN)
+        (ALT_FIX / "ch_bazg_gold_exports.csv").read_bytes(), A.Ctx()), SEEN)
     pts = A.build_points(src, store)
     row = pts["gold_exp_asia_share"][-1]
     assert row["available_time"] >= "2026-07-25"                 # release rule, never early

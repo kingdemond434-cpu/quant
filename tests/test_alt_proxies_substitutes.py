@@ -349,7 +349,9 @@ def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
-        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+        # 2026-09-30 is the review of the original rows; a row added later carries its own
+        # (later) review date, never an earlier one.
+        assert ev["robots"] and ev["checked_at"] >= "2026-09-30", sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
     assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
@@ -573,7 +575,8 @@ BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva
 
 def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     blocked = {s.id for s in A.SOURCES if s.terms != "confirmed"}
-    assert blocked == {*BLOCKED, "za_statssa_retail"}       # a mirror-only candidate fails closed
+    # a mirror-only candidate fails closed; BAZG (2026-10-13) is HELD on its commercial-use clause
+    assert blocked == {*BLOCKED, "za_statssa_retail", "ch_bazg_gold_exports"}
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
     for sid, subs in A.SUBSTITUTED_BY.items():
@@ -586,6 +589,7 @@ def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     for sid, why in A.NO_SUBSTITUTE.items():
         assert "UNVERIFIED" in why and "0.5" in why, sid
     assert A.status_of(A.BY_ID["za_statssa_retail"]) == "BLOCKED_ON_TERMS:to_confirm"
+    assert A.status_of(A.BY_ID["ch_bazg_gold_exports"]) == "BLOCKED_ON_TERMS:to_confirm"
 
 
 # ---- the #152 law: a substitute is COVERED only on a measured corr >= 0.5 with n
@@ -800,6 +804,7 @@ def test_configured_substitutes_never_request_on_a_placeholder(
         assert A.requests_for(src, NOW, {}) == [], sid
     monkeypatch.setenv("ALT_STATSSA_RETAIL_URL", "https://example.invalid/p6242")
     assert A.status_of(A.BY_ID["za_statssa_retail"]) == "BLOCKED_ON_TERMS:to_confirm"
+    assert A.status_of(A.BY_ID["ch_bazg_gold_exports"]) == "BLOCKED_ON_TERMS:to_confirm"
 
 
 def test_nbs_terms_were_rejudged_against_the_listed_exclusions() -> None:
