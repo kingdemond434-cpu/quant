@@ -3920,12 +3920,11 @@ def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str
         pts = points_by_source[sid][series]
         ev = [(p["available_time"], float(p["surprise_z"])) for p in pts
               if p.get("surprise_z") is not None]
-        # TODO(tier-s-bar, audit PORTWATCH_LIVE_84602112c): the auditor rules these cells
-        # (PortWatch's 7 among them) be judged by the FIXED Tier S bar (N=5, 1/(T-1),
-        # t~2.84), not a Bonferroni charge over n_cells. LIVE carries no shared fixed-bar helper
-        # (searched gate_policy / tier_s / trial-bar pins, 2026-10-14), and a second bar is never
-        # forked here: route `n_cells` through that helper the day it lands.
-        res = release_gain(ev, close, horizon_bars=HORIZON_BARS, n_cells=len(cells)).as_dict()
+        # THE FIXED TIER S BAR (|t| >= release_gain.TIER_S_T_BAR = 2.84) judges every cell,
+        # whatever the family size: no charge over the count of cells. Replaced by
+        # libs.research.trial_count_guard's T8 bar when claude/trial-count-guard lands.
+        res = release_gain(ev, close, horizon_bars=HORIZON_BARS).as_dict()
+        res["cells_in_family"] = len(cells)                       # recorded, never charged
         res["backfill_share"] = (round(sum(1 for p in pts if p["pit_quality"] == "backfill")
                                        / len(pts), 3) if pts else None)
         out[key] = res
@@ -4045,8 +4044,8 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
 
     THE PLACEBO-CONDITIONED GATE. A child is donated only when the parent's signals inside its
     regime beat the same signals inside random regimes of the same duty cycle
-    (`release_gain.regime_placebo`, circular shifts of the regime mask), Bonferroni-charged over
-    every child tested this pass. A child whose parent cannot be replayed here, or whose regime
+    (`release_gain.regime_placebo`, circular shifts of the regime mask), judged against the fixed
+    Tier S bar whatever the number of children tested this pass (that count is recorded). A child whose parent cannot be replayed here, or whose regime
     holds too few signals, is UNMEASURED and not donated.
 
     Returns (passing candidates, pairs owed to later passes, one gate row per minted child)."""
@@ -4131,7 +4130,7 @@ def _gate_children(paths: Paths,
         if res.get("verdict") == "PASS":
             cand["evidence"] = {k: res.get(k) for k in (
                 "n_in", "n_signals", "duty_cycle", "mean_in", "placebo_mean", "placebo_p95",
-                "p_placebo", "p_charged", "n_trials", "n_masks", "why")}
+                "p_placebo", "p_bar", "n_trials", "n_masks", "why")}
             passed.append(cand)
     return passed, gates
 
@@ -4401,21 +4400,28 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
             sleep(delay)
         return time.monotonic() <= deadline
 
-    # THE SERVER'S PAGE CAP, READ FROM THE LAYER (FeatureServer/0?f=json). Unknown is allowed,
-    # but then completion is proved only by an EMPTY page -- never by a short one.
+    # THE SERVER'S PAGE CAP, READ FROM THE LAYER (FeatureServer/0?f=json). It sizes the pages
+    # only: completion is proved by an EMPTY page whatever the cap says, because a server can
+    # cap below its stated maxRecordCount without setting exceededTransferLimit.
     cap: int | None = None
     meta_url = src.url.rsplit("/query", 1)[0] + "?f=json"
     try:
         mbody, _ct = getter(meta_url)
         n_req += 1
-        mdoc = _arcgis_doc(mbody) or {}
-        mrc = mdoc.get("maxRecordCount")
-        cap = int(mrc) if isinstance(mrc, int) and mrc > 0 else None
     except Exception as exc:
         n_req += 1
         code = _http_code(exc)
         if code in PORTWATCH_HARD_STOP:
             return fail(f"HARD_STOP: HTTP {code} on the layer metadata", hold=True)
+    else:
+        mdoc = _arcgis_doc(mbody)
+        if mdoc is None:
+            # A WAF / HTML / non-JSON answer is a refusal in disguise: fail closed and hold for
+            # a person, and never go on to page 0.
+            return fail("NOT_JSON: the layer metadata answered with a non-JSON body (WAF, "
+                        "maintenance or HTML page)", hold=True)
+        mrc = mdoc.get("maxRecordCount")
+        cap = int(mrc) if isinstance(mrc, int) and mrc > 0 else None
     out["page_cap"] = cap if cap is not None else UNMEASURED
     page_size = min(PORTWATCH_PAGE, cap) if cap else PORTWATCH_PAGE
     complete = False
@@ -4423,6 +4429,7 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
     last_full: date | None = None
     offset = 0
     flagged = False                           # the previous page said exceededTransferLimit
+    prev_sig = ""                             # the previous page's row identities, hashed
     for page in range(PORTWATCH_MAX_PAGES):
         if not polite():
             partial_why = "BUDGET: the remaining pages are owed to the next pass (cursor kept)"
@@ -4446,6 +4453,13 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
         n_rows = take(body, Ctx(part=req.ctx.part, start=since, fetched_at=seen_at), seen_at)
         doc = _arcgis_doc(body) or {}
         exceeded = bool(doc.get("exceededTransferLimit"))
+        sig = hashlib.sha256(json.dumps(
+            [[a.get("date"), a.get("portid"), a.get("portname")] for a in _arcgis_rows(body)],
+            sort_keys=True, default=str).encode()).hexdigest() if n_rows else ""
+        if sig and sig == prev_sig:
+            return fail(f"OFFSET_IGNORED: page {page} repeats the previous page's rows -- the "
+                        "server ignores resultOffset, so paging cannot advance")
+        prev_sig = sig
         dates = [d for a in _arcgis_rows(body) if (d := _arcgis_date(a.get("date")))]
         if dates:
             # The last date on a page may continue on the next one: only the day before it is
@@ -4459,12 +4473,8 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
             break
         offset += n_rows
         flagged = exceeded
-        more = exceeded or n_rows >= page_size or (cap is not None and n_rows >= cap)
-        if not more and cap is not None:
-            complete = True                   # a short page under a KNOWN cap, no flag
-            break
-        # cap unknown: a short unflagged page may still be a silent server cap, so read on
-        # until an empty page proves the end.
+        # A short unflagged page may still be a silent server cap (below the stated
+        # maxRecordCount, or with the cap unknown): read on until an EMPTY page proves the end.
     else:
         partial_why = (f"MAX_PAGES: {PORTWATCH_MAX_PAGES} pages read and more remain "
                        "(cursor kept)")
@@ -4847,7 +4857,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                   "n_underpowered": sum(1 for g in gains.values()
                                         if g.get("verdict") == "UNDERPOWERED"),
                   "rule": ("each gain row carries min_detectable_ic (80% power at its n and "
-                           "Bonferroni charge); a miss above target_ic is UNDERPOWERED, not FAIL")},
+                           "fixed Tier S bar |t| >= 2.84); a miss above target_ic is UNDERPOWERED, not FAIL")},
         "equity_handoff": {"path": str(paths.equity_handoff), "n_rows": len(handoff["rows"]),
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
@@ -4868,7 +4878,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                                     "params.conditioner, applied by mt5desk.cell_modifiers; a "
                                     "child is donated only when its in-regime parent return "
                                     "beats circularly shifted regimes of the same duty cycle, "
-                                    "Bonferroni over every child tested")},
+                                    "fixed Tier S bar over every child tested")},
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
