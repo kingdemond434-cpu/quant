@@ -132,6 +132,13 @@ def extract_code(txt: str) -> str:
     return (m.group(1) if m else txt).strip()
 
 
+#: The only dunders model code may spell: the module guard the runner appends checks __name__.
+_DUNDER_OK = frozenset({"__name__", "__main__", "__init__"})
+#: Builtins that reach an object by a name computed at run time, past any static scan.
+_REFLECTION = frozenset({"getattr", "setattr", "delattr", "globals", "locals", "vars",
+                         "breakpoint", "input", "help", "memoryview", "type"})
+
+
 def safety_scan(code: str) -> str | None:
     """Return a rejection reason, or None if the code passes. Fail CLOSED on anything unknown."""
     if BANNED.search(code):
@@ -144,6 +151,16 @@ def safety_scan(code: str) -> str | None:
         return f"does not parse: {exc.msg}"
     allowed = {m.split(".")[0] for m in ALLOWED_IMPORTS}
     for node in ast.walk(tree):
+        # NO DYNAMIC REACH, read from the tree (audit #402): any dunder name or attribute
+        # (`__builtins__`, `__import__`, `__class__`, `__subclasses__` ...) and the builtins
+        # that fetch an object by a computed name. `getattr(__builtins__, '__imp'+'ort__')`
+        # passed the regex this sits behind and imported `os`.
+        ident = (node.id if isinstance(node, ast.Name)
+                 else node.attr if isinstance(node, ast.Attribute) else "")
+        if ident.startswith("__") and ident.endswith("__") and ident not in _DUNDER_OK:
+            return f"dunder access: {ident}"
+        if ident in _REFLECTION:
+            return f"reflection builtin: {ident}"
         names = ([a.name for a in node.names] if isinstance(node, ast.Import)
                  else [node.module or "."] if isinstance(node, ast.ImportFrom) else [])
         for mod in names:

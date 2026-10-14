@@ -998,19 +998,9 @@ def _headers(key: str) -> dict[str, str]:
     return head
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """A loopback server's redirect is refused, never followed (audit must-fix on #402): a
-    followed 3xx would carry the request -- and any Authorization header -- to another host,
-    around the proxy, and accept that host's reply as the local model's answer."""
-
-    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
-                         newurl: str) -> None:
-        return None                     # urllib then raises HTTPError with the 3xx code
-
-
 #: A loopback request never goes through a proxy and never follows a redirect: either would send
 #: the prompt off the machine, which is the one thing the local seat promises not to do.
-_DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+_DIRECT = public_host.LOOPBACK_OPENER
 
 
 def _get(url: str, key: str, *, timeout: float) -> tuple[dict[str, Any], str | None]:

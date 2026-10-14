@@ -166,6 +166,8 @@ def test_local_threads_cap() -> None:
         ("http://127.0.0.1.evil.com/v1", False),
         ("https://127.0.0.1/v1", False),
         ("http://10.0.0.5/v1", False),
+        ("http://user@evil.com@127.0.0.1:11434/v1", False),
+        ("http://u:p@127.0.0.1:11434/v1", False),
     ],
 )
 def test_loopback_is_parsed_as_an_address(url: str, ok: bool) -> None:
@@ -205,6 +207,11 @@ def test_a_loopback_redirect_is_refused_not_followed() -> None:
         body, err = llm_seat._get(f"http://127.0.0.1:{port}/v1/models", "sk-fake", timeout=5)
         assert body == {} and err and err.startswith("HTTP 302")
         assert hits == ["/v1/models"]  # the redirect target was never fetched
+        # free_chain's local rungs go through the same opener, GET and POST alike
+        for payload in (None, {"model": "m", "messages": []}):
+            body, err = free_chain._request(f"http://127.0.0.1:{port}/v1/x", "", payload, 5)
+            assert body == {} and err == "HTTP 302"
+        assert hits == ["/v1/models", "/v1/x", "/v1/x"]
     finally:
         srv.shutdown()
         srv.server_close()
@@ -235,4 +242,9 @@ def test_collector_author_refuses_every_name_in_an_import_list() -> None:
     ca = importlib.import_module("scripts.collector_author")
     code = "import json, winreg\n\ndef fetch():\n    return {}\n"
     assert "winreg" in (ca.safety_scan(code) or "")
+    dyn = (
+        "def fetch():\n    m = getattr(__builtins__, '__imp' + 'ort__')('o' + 's')\n    return {}\n"
+    )
+    assert ca.safety_scan(dyn) is not None
+    assert ca.safety_scan("def fetch():\n    return ().__class__.__mro__\n") is not None
     assert ca.safety_scan("import json\n\ndef fetch():\n    return {}\n") is None

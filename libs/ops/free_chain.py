@@ -358,8 +358,13 @@ def _request(url: str, key: str, payload: dict[str, Any] | None, timeout: float
     req = urllib.request.Request(url, data=data, headers=headers,
                                  method="POST" if data is not None else "GET")
     try:
-        ctx = _ctx() if url.startswith("https") else None
-        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+        if public_host.is_loopback_url(url):
+            # The local rungs: no proxy, no redirect off the machine (audit must-fix on #402).
+            resp = public_host.LOOPBACK_OPENER.open(req, timeout=timeout)
+        else:
+            ctx = _ctx() if url.startswith("https") else None
+            resp = urllib.request.urlopen(req, timeout=timeout, context=ctx)
+        with resp as r:
             return json.loads(r.read() or b"{}"), None
     except urllib.error.HTTPError as exc:
         return {}, f"HTTP {exc.code}"
