@@ -973,6 +973,11 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # resolves its inputs from this hour's data and never from the last one's.
     _INPUT_CACHE.clear()
     _LAST_INPUT_REFUSAL.clear()
+    # NEVER AGAINST THE FUSION BOOK (E8 rule, 2026-10-13): this lane holds no terminal, so it
+    # reads the publisher's file; a stale or missing file refuses every entry (fail closed).
+    from prop import cross_account
+    fusion, fusion_src = cross_account.fusion_book(None)
+    doc["fusion_book"] = fusion_src
     for s in book.get("sleeves", []):
         sym, fam = s["symbol"], s["family"]
         tag = f"{TAG}{fam[:6]}{sym}"[:31]
@@ -1151,6 +1156,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             continue
         g = fresh[-1]
         side = "buy" if int(g.side) > 0 else "sell"
+        cross = cross_account.refusal(sym, side, fusion, fusion_src)
+        if cross is not None:
+            row.update({"side": side, "status": "CROSS_ACCOUNT_BLOCKED", "why": cross})
+            doc["sleeves"].append(row)
+            _record(row, now, armed)
+            continue
         try:
             bid, ask = venue.quote(sym)
         except Exception as exc:
