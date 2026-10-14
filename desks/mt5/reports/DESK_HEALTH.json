@@ -1,11 +1,11 @@
 {
   "schema": "desk_health/1",
-  "checked_at": "2026-10-13T22:11:25+00:00",
+  "checked_at": "2026-10-14T23:17:47+00:00",
   "desk_root": "C:\\opt\\quant\\desks\\mt5",
   "verdict": "PROBLEM",
   "counts": {
-    "OK": 8,
-    "PROBLEM": 10,
+    "OK": 7,
+    "PROBLEM": 11,
     "UNKNOWN": 0
   },
   "findings": [
@@ -31,8 +31,8 @@
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
-      "level": "PROBLEM",
-      "message": "MT5-Gauntlet is NOT INSTALLED on this machine -- judges the docket and mints certificates. Nothing runs it, so nothing it produces will ever appear."
+      "level": "OK",
+      "message": "MT5-Gauntlet: Running, last run 10/15/2026 1:16:01 AM, result -2147020576 -- judges the docket and mints certificates"
     },
     {
       "section": "RUNNING NOW",
@@ -57,32 +57,32 @@
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/hypotheses/edge_search_results.json is 56.5h old (expected under 3h) -- the SEARCH leg has stopped producing"
+      "message": "data/hypotheses/edge_search_results.json is 81.6h old (expected under 3h) -- the SEARCH leg has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/hypotheses/orthogonal_candidates.json is 8.2h old (expected under 3h) -- the SWEEP leg has stopped producing"
+      "message": "data/hypotheses/orthogonal_candidates.json is 33.3h old (expected under 3h) -- the SWEEP leg has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "OK",
-      "message": "reports/UNIVERSAL_SURVIVORS.json is 1.1h old -- the gauntlet's canon"
+      "message": "reports/UNIVERSAL_SURVIVORS.json is 5.2h old -- the gauntlet's canon"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "reports/pf_allocation.json is 0.6h old (expected under 0h) -- the allocator has stopped producing"
+      "message": "reports/pf_allocation.json is 0.7h old (expected under 0h) -- the allocator has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
-      "level": "OK",
-      "message": "reports/BOX_STATE_FLOW.json is 0.9h old -- publish_state's delivery meter"
+      "level": "PROBLEM",
+      "message": "reports/BOX_STATE_FLOW.json is 3.4h old (expected under 2h) -- publish_state's delivery meter has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
-      "level": "OK",
-      "message": "reports/GATE_VERDICT_DIGEST.json is 0.9h old -- publish_state's gate verdict digest"
+      "level": "PROBLEM",
+      "message": "reports/GATE_VERDICT_DIGEST.json is 3.5h old (expected under 2h) -- publish_state's gate verdict digest has stopped producing"
     },
     {
       "section": "IS THE BOX'S STATE REACHING ORIGIN",
@@ -97,7 +97,7 @@
     {
       "section": "DOES A STALL PAGE ANYONE  (stall_watch.json, every ten minutes)",
       "level": "PROBLEM",
-      "message": "ALERTS NOT ARMED: STALLED pages reach no one (stall_watch 2026-10-13T21:51:29.3436879Z, watcher verdict FLOWING)"
+      "message": "ALERTS NOT ARMED: STALLED pages reach no one (stall_watch 2026-10-14T22:51:24.2541843Z, watcher verdict METER_SILENT)"
     }
   ]
 }
