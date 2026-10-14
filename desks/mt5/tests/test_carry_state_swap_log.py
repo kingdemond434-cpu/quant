@@ -88,3 +88,16 @@ def test_main_logs_swaps_before_the_carry_state(tmp_path: Path) -> None:
             "--universe", str(tmp_path / "nouni"), "--lake-dir", str(tmp_path / "lake"),
             "--out", str(out)])
     assert list((tmp_path / "lake").glob("swap_*.csv"))           # logged even with no terms
+
+
+def test_an_unreadable_log_is_skipped_and_never_overwritten(tmp_path: Path) -> None:
+    """GD queue-rows audit MF2: a corrupt log plus a pruned panel must never lose logged days."""
+    panel, lake = _panel(tmp_path), tmp_path / "lake"
+    lake.mkdir()
+    bad = lake / "swap_EURUSD.csv"
+    bad.write_bytes(b"\x00\xff not,a\ncsv")
+    before = bad.read_bytes()
+    rep = C.log_daily_swaps(panel, lake, NOW)
+    assert bad.read_bytes() == before                              # untouched
+    assert [u["symbol"] for u in rep["unreadable_logs"]] == ["EURUSD"]
+    assert (lake / "swap_USD_JPY.csv").exists()                    # other symbols still logged

@@ -66,6 +66,22 @@ def test_a_friday_tga_record_is_stamped_on_monday() -> None:
     assert o.published_at == datetime(2024, 10, 7, 22, tzinfo=UTC)
 
 
+
+def test_a_tga_record_before_a_federal_holiday_rolls_past_it() -> None:
+    """GD queue-rows audit MF1: the DTS for Wednesday 2024-11-27 was published Friday 11-29, not
+    on Thanksgiving; the component series must never reach the lake a day early."""
+    body = json.dumps({"data": [{"record_date": "2024-11-27", "account_type":
+                                 "Treasury General Account (TGA) Closing Balance",
+                                 "close_today_bal": "null", "open_today_bal": "800000"}]})
+    (o,) = A.parse_net_liquidity(body.encode(), A.Ctx())
+    assert o.published_at == datetime(2024, 11, 29, 22, tzinfo=UTC)
+    assert A.rule_net_liquidity(date(2024, 11, 27)) == datetime(2024, 11, 29, 22, tzinfo=UTC)
+    hol = A.us_federal_holidays(2024)
+    assert {date(2024, 11, 28), date(2024, 7, 4), date(2024, 6, 19), date(2024, 10, 14),
+            date(2024, 11, 11), date(2024, 12, 25), date(2024, 1, 15)} <= hol
+    assert date(2026, 7, 3) in A.us_federal_holidays(2026)          # July 4 on a Saturday
+    assert date(2021, 12, 31) in A.us_federal_holidays(2021)        # 2022-01-01 is a Saturday
+
 def test_garbage_and_foreign_shapes_parse_to_nothing() -> None:
     for body in (b"<html>maintenance</html>", b"{}", b'{"data": "x"}', b"[1,2]",
                  b"Release Date: October 03, 2024 but no table"):

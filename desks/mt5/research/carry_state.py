@@ -329,6 +329,7 @@ def log_daily_swaps(panel_dir: Path | None = None, out_dir: Path | None = None,
     now = now or datetime.now(UTC)
     days = daily_swap_rows(panel_dir, now)
     added = total = 0
+    unreadable: list[dict[str, str]] = []
     for sym, rows in sorted(days.items()):
         target = out_dir / f"{swap_series_name(sym)}.csv"
         have: dict[str, dict[str, Any]] = {}
@@ -336,8 +337,12 @@ def log_daily_swaps(panel_dir: Path | None = None, out_dir: Path | None = None,
             try:
                 old = pd.read_csv(target, dtype={"event_time": str})
                 have = {str(r["event_time"]): r for r in old.to_dict("records")}
-            except (OSError, ValueError):
-                have = {}
+            except (OSError, ValueError, KeyError) as exc:
+                # An unreadable log is NEVER replaced (GD queue-rows audit MF2): rewriting it from
+                # the panel would delete every logged day the panel has since pruned.
+                unreadable.append({"symbol": sym, "path": str(target),
+                                   "error": f"{type(exc).__name__}: {exc}"[:200]})
+                continue
         new = {d: r for d, r in rows.items() if d not in have}
         total += len(have) + len(new)
         if not new:
@@ -351,6 +356,7 @@ def log_daily_swaps(panel_dir: Path | None = None, out_dir: Path | None = None,
     all_days = sorted(d for rows in days.values() for d in rows)
     return {"out_dir": str(out_dir), "panel": str(panel_dir),
             "n_symbols": len(days), "n_rows_added": added, "n_rows_total": total,
+            "unreadable_logs": unreadable,
             "first_day": all_days[0] if all_days else None,
             "last_day": all_days[-1] if all_days else None,
             "status": ("LOGGED" if days else

@@ -1725,10 +1725,49 @@ _MON3 = {m: i for i, m in enumerate(("Jan", "Feb", "Mar", "Apr", "May", "Jun", "
                                      "Sep", "Oct", "Nov", "Dec"), 1)}
 
 
+def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    """The n-th `weekday` (Mon=0) of the month; n=-1 is the last."""
+    if n > 0:
+        first = date(year, month, 1)
+        return first + timedelta(days=(weekday - first.weekday()) % 7 + 7 * (n - 1))
+    last = (date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1))
+    return last - timedelta(days=(last.weekday() - weekday) % 7)
+
+
+def _observed(d: date) -> date:
+    return d - timedelta(days=1) if d.weekday() == 5 else (
+        d + timedelta(days=1) if d.weekday() == 6 else d)
+
+
+def us_federal_holidays(year: int) -> frozenset[date]:
+    """5 U.S.C. 6103 holidays as observed: the days the Treasury publishes no DTS and the Board no
+    release (GD queue-rows audit MF1). An ad-hoc closure (a day of mourning) is not knowable in
+    advance and is not here; it can only make a real stamp LATER than this rule's, never earlier
+    than the record itself."""
+    days = {_observed(date(year, 1, 1)), _nth_weekday(year, 1, 0, 3), _nth_weekday(year, 2, 0, 3),
+            _nth_weekday(year, 5, 0, -1), _observed(date(year, 7, 4)), _nth_weekday(year, 9, 0, 1),
+            _nth_weekday(year, 10, 0, 2), _observed(date(year, 11, 11)),
+            _nth_weekday(year, 11, 3, 4), _observed(date(year, 12, 25))}
+    if year >= 2021:
+        days.add(_observed(date(year, 6, 19)))
+    if date(year + 1, 1, 1).weekday() == 5:              # next New Year observed on 12-31
+        days.add(date(year, 12, 31))
+    return frozenset(days)
+
+
+def _roll_business_day(t: datetime) -> datetime:
+    while t.weekday() >= 5 or t.date() in us_federal_holidays(t.year):
+        t += timedelta(days=1)
+    return t
+
+
 def _at(d: date, hm: tuple[int, int], *, next_weekday: bool = False) -> datetime:
+    """`next_weekday` rolls to the next U.S. federal BUSINESS day (weekends and observed federal
+    holidays skipped): the DTS for Wednesday 2024-11-27 was published Friday 11-29, not on
+    Thanksgiving."""
     t = _utc(d.year, d.month, d.day, *hm)
     if next_weekday:
-        t = _roll_weekday(t + timedelta(days=1))
+        t = _roll_business_day(t + timedelta(days=1))
     return t
 
 
@@ -1799,7 +1838,8 @@ def parse_net_liquidity(body: bytes, ctx: Ctx) -> list[Obs]:
 
 
 def rule_net_liquidity(period: date) -> datetime:
-    """The calendar fallback when a body carried no stamp: the next weekday, 22:00 UTC -- after
+    """The calendar fallback when a body carried no stamp: the next federal business day, 22:00 UTC
+    -- after
     every one of the three releases it could describe, so it is late, never early."""
     return _at(period, (22, 0), next_weekday=True)
 
