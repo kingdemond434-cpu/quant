@@ -367,7 +367,9 @@ _COUPON_OBJECT = re.compile(r"\d+[-\s]year|\bnotes?\b|\bbonds?\b|\bcoupon", re.I
 def _only_other_supply(obj: str) -> bool:
     """The object names bills, TIPS or FRN and NO coupon security: "increasing bills and the
     7-year note" still moves coupons (audit #394 v8)."""
-    return bool(_OTHER_SUPPLY.search(obj)) and not _COUPON_OBJECT.search(obj)
+    # "the 5-year TIPS" names a TIPS tenor, not a nominal coupon, so the tenor is read away first
+    nominal = re.sub(r"\d+[-\s]year\s+(?:TIPS|FRNs?|inflation)", " ", obj, flags=re.I)
+    return bool(_OTHER_SUPPLY.search(obj)) and not _COUPON_OBJECT.search(nominal)
 
 
 def _live_direction(clause: str) -> bool:

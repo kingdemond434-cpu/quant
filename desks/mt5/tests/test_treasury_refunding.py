@@ -759,3 +759,8 @@ def test_a_held_zero_is_judged_on_the_whole_statement(text: str, want: int | Non
     """Audit must-fix on #394 v8: any un-negated move in any sentence, unless its object is
     solely bills / TIPS / FRN, leaves the held 0 UNMEASURED."""
     assert tr.guidance(text) == want
+
+
+def test_a_tips_tenor_is_not_a_coupon_object() -> None:
+    assert tr._only_other_supply(" the 5-year TIPS auction sizes.")
+    assert not tr._only_other_supply(" bills and the 7-year note is likely")
