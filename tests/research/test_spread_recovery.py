@@ -178,14 +178,15 @@ def test_the_organ_charges_every_grid_point_once(universe: Path, tmp_path: Path,
         return tmp_path / "d.json"
     monkeypatch.setattr(pc, "donate", door)
     monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": 1})
-    kw = dict(universe=universe, git_bars=tmp_path / "none", ticks=tmp_path / "none",
-              state_path=tmp_path / "state.json", out=tmp_path / "SPREAD_RECOVERY.json")
+    kw: dict[str, Any] = {"universe": universe, "git_bars": tmp_path / "none",
+                          "ticks": tmp_path / "none", "state_path": tmp_path / "state.json",
+                          "out": tmp_path / "SPREAD_RECOVERY.json"}
     rep = sr.run(budget_s=600, **kw)
     grid = len(sr.plan(["EURUSD"]))
     assert rep["cells"]["cells_planned"] == grid == 24 + len(sr.GATE_VALUES)
     assert donated and donated[0][1] == grid, "every point charged, fired or not"
     assert rep["cells"]["trials_pending_charge"] == 0
-    roll = [h for h in rep["half_lives"] if h["event"] == "rollover"][0]
+    roll = next(h for h in rep["half_lives"] if h["event"] == "rollover")
     assert roll["state"] in ("FITTED", "TWO_POINT") and roll["n"] > 100
     lines = rep["missed_growth"]
     assert {ln["gate"] for ln in lines} == {f"spread_gate={g}" for g in sr.GATE_VALUES}
@@ -220,7 +221,8 @@ def test_the_family_is_registered_through_every_door() -> None:
     from libs.research import layers
     from libs.research.alpha_clusters import FAMILY_CLUSTER
     from libs.research.mechanism_census import CONSTRUCTION_CLASS
-    from research import alpha_genome, axis_registry, hourly_cycle as hc, orthogonal_sweep
+    from research import alpha_genome, axis_registry, orthogonal_sweep
+    from research import hourly_cycle as hc
     fam = "spread_recovery_fade"
     assert fam in ORTHOGONAL_FAMILIES and fam in FAMILY_INPUTS and fam in FAMILY_TIMEFRAMES
     assert fam in axis_registry.FAMILY_TABLE and fam in FAMILY_CLUSTER
@@ -308,8 +310,8 @@ def test_the_weekly_leg_refits_only_when_due_and_charges_the_set(tmp_path: Path)
     now = datetime(2026, 10, 14, tzinfo=UTC)
     rep, con, out = tmp_path / "r.json", tmp_path / "c.json", tmp_path / "w.json"
     calls: list[float] = []
-    kw = dict(now=now, out_path=out, report=rep, contract=con,
-              refit=lambda b: calls.append(b) or {"ok": True})
+    kw: dict[str, Any] = {"now": now, "out_path": out, "report": rep, "contract": con,
+                          "refit": lambda b: calls.append(b) or {"ok": True}}
     assert lm.weekly(100.0, **kw)["state"] == "REFIT" and calls == [100.0]
     for p, age in ((rep, 1), (con, 2)):
         p.write_text(json.dumps({"generated_at": (now - timedelta(days=age)).isoformat()}))
