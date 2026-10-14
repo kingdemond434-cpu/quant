@@ -2665,9 +2665,31 @@ def _family_chart(s: dict) -> tuple[str, object, int]:
     attr = _FAMILY_TF_ATTR.get(tf)
     if attr is None or not hasattr(mt5, attr):
         return tf, None, 0                       # caller refuses the row by name; never guesses
+    need = _state_gate_bars(s)
+    if need is not None and tf == "H1":
+        return tf, getattr(mt5, attr), need
     minutes = _FAMILY_H1_BARS * 60                    # the market time an H1 read has always seen
     bars = int(min(_FAMILY_MAX_BARS, round(minutes / _BAR_MINUTES.get(tf, 60))))
     return tf, getattr(mt5, attr), max(bars, 60)
+
+
+def _state_gate_bars(s: dict) -> int | None:
+    """The H1 read a STATE-GATED family's certificate needs, or None for any other family.
+
+    A state gate ranks its state against the states at the base's earlier signals over the
+    trailing `family_state_gates.RANK_SPAN_DAYS`, and each of those states needs its own
+    lookback. 400 bars holds neither, so the gate computed here would not be the gate that was
+    certified. `live_h1_bars` derives the read from the certificate's own params; the caller
+    refuses by name when the terminal returns fewer bars than that.
+    """
+    try:
+        from mt5desk.family_state_gates import STATE_GATE_FAMILIES, live_h1_bars
+    except Exception:
+        return None
+    fam = str(s.get("family") or "")
+    if fam not in STATE_GATE_FAMILIES:
+        return None
+    return live_h1_bars(fam, (s.get("params") or {}))
 
 
 def _family_constructor(family: str) -> tuple[object | None, str | None]:
@@ -3064,6 +3086,13 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     h1 = mt5.copy_rates_from_pos(s["symbol"], tf_const, 0, n_bars)
     if h1 is None or len(h1) < 60:
         return {"ok": False, "stage": "no_bars", "why": f"{tf} bars unavailable; skipped"}
+    gate_need = _state_gate_bars(s)
+    if gate_need is not None and len(h1) < gate_need:
+        # REFUSED BY NAME, never computed on a shorter history: the gate ranks against the
+        # trailing rank span, and fewer bars rank against a different history than certified.
+        return {"ok": False, "stage": "short_history",
+                "sep": " ", "why": f"refused: state gate needs {gate_need} {tf} bars, the "
+                                   f"terminal returned {len(h1)} (raise Max bars in chart)"}
     # `frame` KEEPS THE FORMING BAR; `closed` drops it. Both are needed and they are not
     # interchangeable: every decision below is made on CLOSED data only, but the family's own
     # loop bound is `len(d) - 1`, so it can only emit on `last_bar` if one more bar exists after

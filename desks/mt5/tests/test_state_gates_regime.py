@@ -429,21 +429,3 @@ def test_the_h1_only_wrappers_refuse_another_chart(monkeypatch) -> None:
     assert not fsg.is_h1(m15) and fsg.is_h1(_stamps(50))
     for fn in (fsg.family_markov_vol_gated, fsg.family_rough_vol_gated):
         assert fn(bars, base_family="trend_ma_cross") == []
-
-
-def test_no_state_gate_is_live_executable_until_its_history_is() -> None:
-    """SF-3: the gateway reads 400 H1 bars; every wrapper ranks against the whole frame's earlier
-    signals. A certificate would trade a gate it was not certified on, so the promoter's own
-    boundary names why instead of writing a LIVE row the gateway cannot reproduce."""
-    ex = pytest.importorskip("mt5desk.executables")
-    for fam in fsg.STATE_GATE_FAMILIES:
-        assert ex.population_of(fam) == "orthogonal"
-        gap = ex.executor_gap(fam)
-        assert gap == fsg.LIVE_READ_GAP and "400 H1" in gap
-        assert not ex.gateway_can_execute(fam)
-    # The reason quotes the gateway's own read: if that literal moves, this refusal is re-judged.
-    import ast
-    tree = ast.parse((_DESK / "mt5desk" / "gateway.py").read_text("utf-8"))
-    bars = [ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign)
-            and any(getattr(t, "id", "") == "_FAMILY_H1_BARS" for t in n.targets)]
-    assert bars == [400]
