@@ -339,3 +339,54 @@ def test_the_hold_is_measured_on_the_missed_growth_ledger(tmp_path: Path,
     busy = mg.measure_lab_style_hold(None, {}, {})
     assert busy["verdict"] == "UNMEASURED" and busy["keff_days_deferred"] == 3.5
     assert "sample" not in busy and "measure_lab_style_hold" in mg.MEASURES
+
+
+def test_the_hold_key_ignores_the_moving_reading(wired: Path) -> None:
+    """Audit must-fix 2 on #392: n and novelty_return move with every bar; the key and the hold
+    clock must not."""
+    rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
+    a = _row("p", 0.1, "passive_window")
+    ls.screen([a], report=rep, held_path=held, sn=_fake_sn())
+    store = json.loads(held.read_text())
+    store["p"]["style_screen"]["held_at"] = "2026-01-01T00:00:00+00:00"
+    held.write_text(json.dumps(store))
+    b = _row("p", 0.1, "passive_window")
+    b["style_screen"] = {"n": 1001, "novelty_return": 0.11}
+    assert ls._content(a) == ls._content(b)
+    ls.screen([b], report=rep, held_path=held, sn=_fake_sn())
+    after = json.loads(held.read_text())
+    assert list(after) == ["p"]
+    assert after["p"]["style_screen"]["held_at"] == "2026-01-01T00:00:00+00:00"
+
+
+def test_the_screen_stamps_the_last_day_it_read_and_the_compiler_carries_it(
+        wired: Path) -> None:
+    """Audit must-fix 1 on #392: the gauntlet knows the real cut, so the row says how far the
+    screen read and the candidate carries it (the gauntlet's refusal is a sealed-pass patch)."""
+    import pandas as pd
+    df = pd.DataFrame({"close": 1.0}, index=pd.date_range("2024-01-01", periods=24 * 400,
+                                                          freq="h", tz="UTC"))
+    rd = ls._last_day(ls._before_lockbox(df, wired / "no_bars"))
+    assert rd is not None and rd < "2025-02-03"
+    rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
+    out, _ = ls.screen([_row("novel", 0.8, "trend_20d")], report=rep, held_path=held,
+                       sn=_fake_sn())
+    assert out[0]["style_screen"]["read_until"] == rd
+    import miner_candidate_compiler as mcc
+    cand = mcc._candidate("USDCNH", "exogenous_conditioner", {}, "llm_lab", out[0], "m")
+    assert cand["screen_read_until"] == rd
+    assert "screen_read_until" not in mcc._candidate("USDCNH", "exogenous_conditioner", {},
+                                                     "llm_lab", {"cell_id": "x"}, "m")
+
+
+def test_the_screen_reads_the_constitutions_held_out_share(monkeypatch: pytest.MonkeyPatch
+                                                           ) -> None:
+    from research.gate_policy import LOCKBOX_FRAC
+
+    import libs.tiers.truth_kernel as tk
+    monkeypatch.setattr(tk, "gauntlet_thresholds",
+                        lambda *_a, **_k: {"lockbox_min_fraction": LOCKBOX_FRAC + 0.1})
+    assert ls._lockbox_frac() == pytest.approx(LOCKBOX_FRAC + 0.1)
+    monkeypatch.setattr(tk, "gauntlet_thresholds",
+                        lambda *_a, **_k: {"lockbox_min_fraction": LOCKBOX_FRAC - 0.1})
+    assert ls._lockbox_frac() == pytest.approx(LOCKBOX_FRAC), "never looser than the policy"

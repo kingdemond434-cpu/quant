@@ -155,19 +155,48 @@ def _union_days(bars_dir: Path) -> list[Any]:
     return out
 
 
+def _last_day(df: Any) -> str | None:
+    """The last calendar day of bars the screen read (ISO date), or None when it read none."""
+    try:
+        import pandas as pd
+        return str(pd.DatetimeIndex(df.index).max().date()) if len(df) else None
+    except Exception:
+        return None
+
+
+def _lockbox_frac() -> float:
+    """The held-out share of the constitution IN FORCE, read where the gauntlet reads it
+    (`truth_kernel.gauntlet_thresholds`), never only the policy default (audit should-fix on
+    #392). An unreadable constitution leaves the policy's own fraction, as in the gauntlet."""
+    from research.gate_policy import LOCKBOX_FRAC
+    try:
+        from libs.tiers.truth_kernel import gauntlet_thresholds
+        law = gauntlet_thresholds(BASE, dsr_threshold=0.0, gates_required=0.0,
+                                  lockbox_min_fraction=float(LOCKBOX_FRAC))
+        return max(float(LOCKBOX_FRAC), float(law.get("lockbox_min_fraction") or LOCKBOX_FRAC))
+    except Exception:
+        return float(LOCKBOX_FRAC)
+
+
 def _dev_end(df: Any, bars_dir: Path | None = None) -> Any:
-    """Where this cell's development window ends: the EARLIER of the gauntlet's campaign-wide cut
-    (`gate_policy.lockbox_cut` over the union of every chart's days) and the chart's own tail cut
-    (`lockbox_cut` over its own days, which is what `cell_dev_cut` falls back to for a chart that
-    starts late). The gauntlet uses one of the two for every cell, so reading only before the
-    earlier never reads a day any lockbox will judge (audit should-fix B on #385). None when no
-    cut can be located: the screen then reads nothing."""
+    """Where the screen stops reading: the EARLIER of a cut over the union of every chart's bar
+    days and the chart's own tail cut, both at the constitution's held-out share.
+
+    THIS IS A BEST EFFORT, NOT A PROOF (audit must-fix 1 on #392). The gauntlet cuts over the
+    campaign cells' TRADE days, which this screen cannot know before the campaign exists: a cell
+    whose trades are front-loaded is cut earlier than any bar-day calendar says. So the screen
+    stamps `read_until` (the last bar day it read) on the row, the compiler carries it onto the
+    candidate as `screen_read_until`, and the gauntlet must fail closed on any cell whose cut is
+    not after it (sealed-pass patch `reports/sealed_pass/gauntlet_screen_read_until.patch`).
+    None when no cut can be located: the screen then reads nothing."""
     import pandas as pd
+
     from research.gate_policy import lockbox_cut
     own_days = pd.DatetimeIndex(df.index).normalize().unique()
-    own = lockbox_cut([pd.Series(0.0, index=own_days)])
+    frac = _lockbox_frac()
+    own = lockbox_cut([pd.Series(0.0, index=own_days)], frac=frac)
     union = _union_days(bars_dir or BARS_DIR)
-    camp = (lockbox_cut([pd.Series(0.0, index=pd.DatetimeIndex(union))])
+    camp = (lockbox_cut([pd.Series(0.0, index=pd.DatetimeIndex(union))], frac=frac)
             if union else None)
     cuts = [c for c in (own, camp) if c is not None]
     if own is None:
@@ -221,7 +250,8 @@ def measure(row: Mapping[str, Any], *, bars_dir: Path | None = None,
     return {"status": "MEASURED", "n": proj.get("n"),
             "novelty_return": proj.get("novelty_return"),
             "dominant_style": proj.get("dominant_style"),
-            "residual_t": proj.get("residual_t")}
+            "residual_t": proj.get("residual_t"),
+            "read_until": _last_day(df)}
 
 
 def verdict(reading: Mapping[str, Any], sat: Mapping[str, Any]) -> str:
@@ -287,9 +317,11 @@ SKEW_DAYS = 1.0 / 24.0
 
 
 def _content(r: Mapping[str, Any]) -> str:
-    """The row as the compiler sees it, minus the screen's own clock stamps."""
-    sc = {k: v for k, v in dict(r.get("style_screen") or {}).items() if k not in _VOLATILE}
-    return json.dumps({**r, "style_screen": sc}, sort_keys=True, default=str)
+    """The row as its PROPOSER wrote it: the whole `style_screen` is left out, because the
+    reading moves with every new bar (n, novelty_return), and a key that moved with it gave one
+    cell a new hold and a new clock almost daily (audit must-fix 2 on #392)."""
+    return json.dumps({k: v for k, v in r.items() if k != "style_screen"}, sort_keys=True,
+                      default=str)
 
 
 def _hold_key(r: Mapping[str, Any], store: Mapping[str, Any]) -> str:
