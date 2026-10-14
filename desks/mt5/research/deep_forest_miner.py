@@ -279,15 +279,38 @@ def fenced_ground(g: dict[str, Any]) -> str | None:
     return _tf.fenced_ground(g)
 
 
-def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
+class RedirectStopped(OSError):
+    """A redirect hop `fetch_hops` refused to request (a held site, the fence, a login wall, or
+    an unread / disallowing robots.txt at another origin). Not a transport failure."""
+
+    def __init__(self, url: str, at: str, why: str) -> None:
+        super().__init__(why)
+        self.url, self.at, self.why = url, at, why
+
+
+def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "",
+          held: Any = None, allows: Any = None) -> str:
     """One polite GET (honest agent, per-host spacing, certifi-backed TLS, charset-aware
     decoding). retries=0: a 429 is a hard stop that holds the site, never a retry (audit
     PASS5_feb86fa30 SF). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError` on a
-    transport one, exactly the two shapes `_Run.page` and the route helpers expect."""
+    transport one, exactly the two shapes `_Run.page` and the route helpers expect.
+
+    With `held` (a run's hold lookup) the redirects are followed BY HAND (`fetch_hops`): each
+    hop is checked against `held`, the fence and -- cross-origin -- `allows` before it is
+    requested; a cut hop raises `RedirectStopped`, and an HTTPError names the URL that ANSWERED
+    (its `filename`), so the caller holds the site that refused (pass-6 lanes audit MF1)."""
     hdr = {**_UA, "Accept-Language": accept_language(lang)}
     if referer:
         hdr["Referer"] = referer
-    r = pf.get(url, headers=hdr, timeout=timeout, retries=0, leg=LEG, max_bytes=2_000_000)
+    if held is not None:
+        r, at, stop = fetch_hops(url, headers=hdr, held=held,
+                                 allows=allows or (lambda u: robots_allows(u)),
+                                 timeout=timeout, max_bytes=2_000_000)
+        if stop:
+            raise RedirectStopped(url, at, stop)
+        url = at
+    else:
+        r = pf.get(url, headers=hdr, timeout=timeout, retries=0, leg=LEG, max_bytes=2_000_000)
     if r.ok:
         return r.text
     if r.status is not None and r.status >= 400:
@@ -802,8 +825,9 @@ def fetch_hops(url: str, *, headers: dict[str, str], held: Any, allows: Any,
             hops.append((int(sink["code"]), cur, loc))
             prev, cur = cur, loc
             continue
-        r.redirects = hops
-        r.final_url = r.final_url or cur
+        with contextlib.suppress(AttributeError):
+            r.redirects = hops
+            r.final_url = getattr(r, "final_url", "") or cur
         return r, cur, ""
     r = pf.Response(url=str(url), status=int(hops[-1][0]) if hops else None,
                     error=f"more than {MAX_HOPS} redirects")
@@ -1564,14 +1588,34 @@ class _Run:
             return ""
         if not self._net_ok():
             return ""
-        hdr = {**_UA, "Accept-Language": accept_language(self.lang)}
-        if referer:
-            hdr["Referer"] = referer
         # NO AUTO-REDIRECT (pass-6 lanes audit a7698187e MUST-FIX 1): each hop is checked
         # against the holds, the fence and robots.txt BEFORE it is requested, and a refusal
-        # holds the site that refused -- exactly as `index_page` does.
-        return self._fetched(url, *fetch_hops(url, headers=hdr, held=self.held_url,
-                                              allows=self._robots_allows))
+        # holds the site that refused (the HTTPError's own URL) -- exactly as `index_page` does.
+        try:
+            body = _http(url, referer=referer, lang=self.lang, held=self.held_url,
+                         allows=self._robots_allows)
+            self._note_net(True)
+            self.counts["pages"] += 1
+            return body
+        except RedirectStopped as exc:
+            self._note_net(True)
+            self.status.append({"url": url, "redirect_stopped": exc.at[:200],
+                                "why": exc.why[:160]})
+            return ""
+        except urllib.error.HTTPError as exc:
+            self._note_net(True)
+            at = str(getattr(exc, "filename", "") or url)
+            row: dict[str, Any] = {"url": url, "http": exc.code}
+            if at != url:
+                row["at"] = at[:200]
+            self.status.append(row)
+            if exc.code in ACCESS_STOP:
+                self._hold_site(at, exc.code)
+            return ""
+        except Exception as exc:
+            self._note_net(False)
+            self.status.append({"url": url, "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
+            return ""
 
     def _robots_allows(self, u: str) -> bool:
         """A redirect hop to another robots origin: never into a held site (whose robots.txt

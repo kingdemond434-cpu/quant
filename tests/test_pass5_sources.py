@@ -500,11 +500,6 @@ def test_ideas_only_row_still_mined_and_labelled_not_held(tmp_path: Path,
         asked.append(url)
         return "<html><body>" + "gold breakout rule. " * 40 + "</body></html>"
     monkeypatch.setattr(D, "_http", http)
-
-    def get(url: str, **k: Any) -> Any:   # page() fetches hop by hop through polite_fetch.get
-        from types import SimpleNamespace
-        return SimpleNamespace(ok=True, status=200, error=None, text=http(url), final_url=url)
-    monkeypatch.setattr(D.pf, "get", get)
     monkeypatch.setattr(D.time, "sleep", lambda *_: None)
     r = D._Run(60.0, True, None, None)
     r.ground_telegram({"name": "t", "route": "telegram", "channels": ["chan_a"],
