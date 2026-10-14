@@ -94,3 +94,56 @@ def test_parenthesised_component_uses_owner_and_its_own_artifact_clock(monkeypat
 
     monkeypatch.setattr(ph, "_age_min", lambda path: 45.0 if path.name == "cursor.json" else 5.0)
     assert _row(ph.build(), "MT5-Gauntlet (rotation)")["verdict"] == "STALE"
+
+
+def test_a_blind_scheduler_still_reports_stale_and_missing_artifacts(monkeypatch):
+    """2026-10-14 00:45Z: both inventory queries timed out and all 73 rows read
+    SCHEDULER_UNMEASURED, hiding a 43h-stale gauntlet. Artifact age is measured regardless."""
+    monkeypatch.setattr(ph, "_tasks", lambda: ([], "UNMEASURED: scheduler timed out"))
+    monkeypatch.setattr(ph, "_contracts", lambda: {
+        "MT5-Gauntlet": ("cursor.json", 240, "judge"),
+        "MT5-Hourly": ("hourly.json", 90, "research"),
+        "MT5-Gateway": ("gateway.json", 10, "broker check"),
+    })
+    ages = {"cursor.json": 2580.0, "hourly.json": None, "gateway.json": 1.0}
+    monkeypatch.setattr(ph, "_age_min", lambda path: ages[path.name])
+
+    doc = ph.build()
+
+    assert _row(doc, "MT5-Gauntlet")["verdict"] == "STALE"
+    assert _row(doc, "MT5-Hourly")["verdict"] == "NO_ARTIFACT"
+    assert _row(doc, "MT5-Gateway")["verdict"] == "SCHEDULER_UNMEASURED"
+    assert doc["counts"].get("NOT_SCHEDULED", 0) == 0
+
+
+def test_per_task_fallback_measures_contracted_tasks_without_claiming_absence(monkeypatch):
+    calls: list[list[str]] = []
+
+    class _Proc:
+        def __init__(self, rc, out):
+            self.returncode, self.stdout, self.stderr = rc, out, ""
+
+    def _run(cmd, **kw):
+        calls.append(cmd)
+        if "/tn" not in cmd:
+            raise ph.subprocess.TimeoutExpired(cmd, kw.get("timeout"))
+        name = cmd[cmd.index("/tn") + 1]
+        if name == "MT5-Gateway":
+            return _Proc(0, '"TaskName","Status","Last Result"\n"\\MT5-Gateway","Running","0"\n')
+        return _Proc(1, "")
+
+    monkeypatch.setattr(ph.sys, "platform", "linux")
+    monkeypatch.setattr(ph.subprocess, "run", _run)
+    monkeypatch.setattr(ph, "_contracts", lambda: {
+        "MT5-Gateway": ("gateway.json", 10, "broker check"),
+        "MT5-Shadow": ("shadow.json", 30, "clocks"),
+    })
+    monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
+
+    rows, status = ph._tasks()
+    assert status.startswith("OK schtasks per task") and len(rows) == 1
+    doc = ph.build()
+    assert _row(doc, "MT5-Gateway")["verdict"] == "OK"
+    # Not answered by a partial inventory: unmeasured, never "not scheduled".
+    assert _row(doc, "MT5-Shadow")["verdict"] == "SCHEDULER_UNMEASURED"
+    assert any("/tn" in c for c in calls)
