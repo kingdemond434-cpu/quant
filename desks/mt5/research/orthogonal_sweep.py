@@ -341,6 +341,45 @@ def _macro_series_name() -> str | None:
 COT_RELEASE_LAG_DAYS = 3
 
 
+def _cot_zcache() -> Path:
+    """The COT z cache (scripts/refresh_cot_zcache.py), read by `_cot_frame`."""
+    return BASE.parent.parent / "data" / "cot_zcache.parquet"
+
+
+def _zcache_version_of(cache: Path) -> int | None:
+    try:
+        from libs.data.cot_source import zcache_version
+    except ImportError:                                    # pragma: no cover - path dependent
+        return None
+    return zcache_version(cache)
+
+
+def cot_input_refusal(symbol: str | None) -> str | None:
+    """Why `_cot_frame(symbol)` refuses the zcache, by name -- or None when it may read it.
+
+    Refuses only a symbol the zcache CARRIES, when the cache's stamped definition is not
+    `cot_source.COT_ZCACHE_VERSION`: the cell's input exists, but not as the series the family's
+    code identity now names. UNMEASURED until `scripts/refresh_cot_zcache.py` rebuilds it.
+    """
+    cache = _cot_zcache()
+    if not symbol or not cache.exists():
+        return None
+    try:
+        import pyarrow.parquet as pq
+
+        from libs.data.cot_source import COT_ZCACHE_VERSION
+        if symbol not in pq.read_schema(str(cache)).names:
+            return None
+    except Exception:
+        return None
+    have = _zcache_version_of(cache)
+    if have == COT_ZCACHE_VERSION:
+        return None
+    return (f"COT zcache is definition {have if have is not None else '1 (unstamped)'}, not "
+            f"v{COT_ZCACHE_VERSION}: UNMEASURED until scripts/refresh_cot_zcache.py rebuilds it "
+            f"(the old series is never read or substituted)")
+
+
 @lru_cache(maxsize=32)
 def _cot_frame(symbol: str | None = None):
     import pandas as pd
@@ -359,14 +398,23 @@ def _cot_frame(symbol: str | None = None):
     # entering roughly twenty hours before the data existed, and about a day once the broker
     # clock is counted. A weekly series read a day early is a look-ahead on every observation it
     # has, which is the whole 26 years.
-    cache = BASE.parent.parent / "data" / "cot_zcache.parquet"
+    cache = _cot_zcache()
     if symbol and cache.exists():
+        # A CACHE OF ANOTHER DEFINITION IS REFUSED, NOT READ AND NOT SUBSTITUTED (audit
+        # COT_AXIS_DEEPENING MF2). The z history was redefined (raw-net z, definition v2); an
+        # unstamped or differently stamped cache is the old series, and reading it would let a
+        # cell be judged -- or a clock run -- over a series nobody now defines. Falling through
+        # to the JSON sources would be worse: a different series under the same name.
+        if cot_input_refusal(symbol) is not None:
+            return None
         try:
             frame = pd.read_parquet(cache, columns=[symbol])
             series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
             series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
             if len(series) >= 52:
-                return series.rename("net").to_frame()
+                out = series.rename("net").to_frame()
+                out.attrs["cot_zcache_version"] = _zcache_version_of(cache)
+                return out
         except Exception:
             pass
     for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):

@@ -73,7 +73,10 @@ def test_the_series_is_shifted_past_its_own_report_date(tmp_path, monkeypatch):
     frame = pd.DataFrame({"AUDUSD": range(len(idx))}, index=idx)
     cache = tmp_path / "data" / "cot_zcache.parquet"
     cache.parent.mkdir(parents=True, exist_ok=True)
-    frame.to_parquet(cache)
+    # A CURRENT-DEFINITION cache: an unstamped one is the redefined (v1) series and is refused
+    # (audit COT_AXIS_DEEPENING MF2; tests/research/test_cot_zcache_refresh.py).
+    from libs.data.cot_source import write_zcache
+    write_zcache(frame, cache)
 
     monkeypatch.setattr(osw, "BASE", tmp_path / "desks" / "mt5")
     osw._cot_frame.cache_clear()

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import urllib.request
 from io import StringIO
+from pathlib import Path
 
 import pandas as pd
 
@@ -37,6 +38,73 @@ COT_MAP: dict[str, tuple[str, float]] = {
     # look-alike: a different, thinner speculator book for the same MT5 instrument.
     "XTIUSD": ("067651", +1.0),   # WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE
 }
+
+
+#: THE DEFINITION OF `data/cot_zcache.parquet`, versioned (audit COT_AXIS_DEEPENING MF2,
+#: 2026-10-14). Version 1 was the banked z history extended by a rolling z over a MIXTURE of
+#: banked z-scores and raw contract counts on a daily forward-filled index; version 2 is the
+#: 52-REPORT rolling z of RAW nets only (`scripts/refresh_cot_zcache.py:zscores_from_raw`),
+#: rebuilt from source. The refresh stamps it into the parquet's own schema metadata, so the stamp
+#: travels with the file wherever it is copied. The reader (`orthogonal_sweep._cot_frame`) refuses
+#: a cache whose stamp differs, and `families_orthogonal.family_cot_positioning` carries the same
+#: number as a LITERAL in its body -- so the family's code identity (`sleeve_registry.code_hash`,
+#: `behaviour_hash`) changes with the definition, and every forward clock on the family is
+#: restarted by the existing organs (shadow_forward verify -> IDENTITY_BROKEN ->
+#: heal_identity_broken_clocks -> sleeve_registry.rebase_code, window RESET) instead of carrying
+#: on over a redefined series. Bump this, the family's literal and the refresh together; the
+#: suite fails if they disagree (tests/research/test_cot_zcache_refresh.py).
+COT_ZCACHE_VERSION = 2
+ZCACHE_VERSION_KEY = b"cot_zcache_version"
+#: Where the refresh writes it and every reader looks (repository root `data/`).
+ZCACHE = Path(__file__).resolve().parents[2] / "data" / "cot_zcache.parquet"
+
+
+def write_zcache(frame: pd.DataFrame, path: object) -> None:
+    """Write a z cache WITH its definition stamp in the parquet schema metadata (not atomic: the
+    refresh writes a temporary file through this and renames it)."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    table = pa.Table.from_pandas(frame)
+    meta = dict(table.schema.metadata or {})
+    meta[ZCACHE_VERSION_KEY] = str(COT_ZCACHE_VERSION).encode("ascii")
+    pq.write_table(table.replace_schema_metadata(meta), str(path))  # type: ignore[no-untyped-call]
+
+
+def zcache_definition_refusal(path: object = None) -> str | None:
+    """Why a cot_positioning cell may not be BUILT on this machine right now, or None.
+
+    Until the zcache here carries the current definition stamp, neither the judge nor a forward
+    clock may build the family: over the old file it would judge a series nobody now defines, and
+    with no COT it would judge an absence (zero signals) as a verdict. A failed build BY NAME is
+    the honest answer -- UNMEASURED until `scripts/refresh_cot_zcache.py` rebuilds it. No zcache
+    at all refuses nothing: the family then reads its other sources, as before.
+    """
+    cache = Path(str(path)) if path is not None else ZCACHE
+    if not cache.exists():
+        return None
+    have = zcache_version(cache)
+    if have == COT_ZCACHE_VERSION:
+        return None
+    label = have if have is not None else "1 (unstamped)"
+    return (f"BLOCKED_DATA: COT zcache is definition {label}, not v{COT_ZCACHE_VERSION}; "
+            f"UNMEASURED until scripts/refresh_cot_zcache.py rebuilds it")
+
+
+def zcache_version(path: object) -> int | None:
+    """The definition version stamped in a zcache parquet's schema metadata.
+
+    None when the file is absent, unreadable or carries no stamp -- an unstamped cache is the
+    version-1 history (it predates the stamp), and a reader treats None as NOT the current
+    version, never as a pass (L1.28a).
+    """
+    try:
+        import pyarrow.parquet as pq
+        meta = pq.read_schema(str(path)).metadata or {}  # type: ignore[no-untyped-call]
+        raw = meta.get(ZCACHE_VERSION_KEY)
+        return int(raw.decode("ascii")) if raw is not None else None
+    except Exception:
+        return None
 
 
 def _get(url: str) -> list[dict[str, str]]:
