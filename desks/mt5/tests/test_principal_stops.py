@@ -195,6 +195,7 @@ def test_an_emptied_file_or_a_typo_in_a_stop_never_releases_a_built_in_stop(
     tmp_path, monkeypatch
 ) -> None:
     import mt5desk.live_policy as lp
+
     from scripts import check_principal_stops as fence
 
     monkeypatch.setattr(lp, "admit", lambda rows: (list(rows), []))
