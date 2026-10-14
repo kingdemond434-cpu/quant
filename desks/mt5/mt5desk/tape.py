@@ -163,17 +163,11 @@ def contract_terms_row(symbol: str, info: object, at: datetime) -> dict:
 
 def broker_epoch_to_utc(stamp: object) -> str | None:
     """`symbol_info().time` is epoch seconds on the BROKER's clock (New York wall time + 7h,
-    `libs.regime.session_clock`); the true UTC instant, or None when the terminal gave none."""
-    from zoneinfo import ZoneInfo
-    try:
-        sec = int(stamp)  # type: ignore[call-overload]
-    except (TypeError, ValueError):
-        return None
-    if sec <= 0:
-        return None
-    wall = datetime.fromtimestamp(sec, UTC).replace(tzinfo=None) - timedelta(hours=7)
-    return wall.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(UTC).isoformat(
-        timespec="seconds")
+    `libs.regime.session_clock`); the true UTC instant, or None when the terminal gave none.
+    One conversion for the desk: `mt5desk.broker_clock`."""
+    from mt5desk.broker_clock import broker_epoch_to_utc as _to_utc
+    ts = _to_utc(stamp)
+    return None if ts is None else ts.isoformat(timespec="seconds")
 
 
 def record_contract_terms(symbols: list[str]) -> dict:

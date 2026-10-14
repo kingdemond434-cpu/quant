@@ -3519,6 +3519,10 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
                        fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
                        deal_ticket=(getattr(res, "deal", None) if res else None),
+                       # The clock of this send's time exit (`ttl_until`, recorded beside it by
+                       # the trade autopsy's lane): TRUE UTC since 2026-10-14. A reader converts
+                       # only rows WITHOUT this field, which are broker-labelled.
+                       ttl_clock="utc",
                        **_sleeve_identity(s))
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "

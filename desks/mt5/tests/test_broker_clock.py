@@ -59,3 +59,32 @@ def test_a_scalp_deadline_converts_the_forming_bar_then_adds() -> None:
     assert got == broker_to_utc(ft) + pd.Timedelta(minutes=15 * 7)
     # 01:45 New York wall time is still EST (UTC-5): the clocks jump at 02:00.
     assert got == pd.Timestamp("2026-03-08 06:45", tz="UTC") + pd.Timedelta(minutes=105)
+
+
+def test_the_autumn_repeat_hour_reads_as_the_earlier_instant_and_never_raises() -> None:
+    """2026-11-01 01:30 New York happened twice (EDT then EST), so the broker stamp 08:30 names
+    two instants. It is read as the first: a time exit built on it can only fire early."""
+    stamp = pd.Timestamp("2026-11-01 08:30", tz="UTC")
+    got = broker_to_utc(stamp)
+    assert got == pd.Timestamp("2026-11-01 05:30", tz="UTC")          # 01:30 EDT
+    assert got < pd.Timestamp("2026-11-01 06:30", tz="UTC")           # never the later 01:30 EST
+    assert got == session_clock.server_to_utc([stamp])[0]
+
+
+def test_epoch_seconds_and_the_tape_use_the_same_conversion() -> None:
+    from mt5desk import tape
+    from mt5desk.broker_clock import broker_epoch_to_utc
+    for stamp in STAMPS + ["2026-11-01 08:30"]:
+        sec = int(pd.Timestamp(stamp, tz="UTC").timestamp())
+        want = broker_to_utc(pd.Timestamp(stamp, tz="UTC"))
+        assert broker_epoch_to_utc(sec) == want
+        assert tape.broker_epoch_to_utc(sec) == want.isoformat(timespec="seconds")
+    assert broker_epoch_to_utc(0) is None and broker_epoch_to_utc("x") is None
+
+
+def test_the_family_intent_declares_its_time_exit_clock() -> None:
+    """A trade autopsy converts a broker-labelled `ttl_until` and must not convert a UTC one
+    again; the intent says which (absent = a legacy broker-labelled row)."""
+    src = (DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    seg = src[src.index('[{name}] FAMILY-EXEC ORDER') - 2500:src.index('[{name}] FAMILY-EXEC ORDER')]
+    assert 'ttl_clock="utc"' in seg
