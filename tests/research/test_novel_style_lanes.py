@@ -38,9 +38,33 @@ def test_ppd_parser_keeps_new_fx_option_prints_on_the_four_pairs_only() -> None:
     assert eur["notional_usd"] == pytest.approx(1.0851e9)
     assert by[("USDJPY", 157.5)]["notional_usd"] == 5e8
     assert by[("AUDUSD", 0.66)]["notional_usd"] == 3.3e8
-    executed = datetime.fromisoformat(eur["event_time"])
-    assert datetime.fromisoformat(eur["available_time"]) == executed + N.DISSEMINATION_SLACK
+    assert eur["available_time"] == "2026-07-13T09:01:00+00:00"       # its dissemination stamp
+    assert eur["pit_basis"] == "dissemination_timestamp"
     assert eur["retrieval_time"] == SEEN.isoformat(timespec="seconds")
+
+
+def test_a_block_delayed_print_is_public_at_its_dissemination_not_execution_plus_slack() -> None:
+    rows = N.parse_ppd_csv((FIX / "dtcc_ppd_fx_options.csv").read_bytes(), SEEN)
+    late = next(r for r in rows if r["strike_raw"] == 1.0849)
+    executed = datetime.fromisoformat(late["event_time"])
+    assert datetime.fromisoformat(late["available_time"]) - executed > timedelta(hours=4)
+    assert late["available_time"] == "2026-07-13T14:30:00+00:00"
+
+
+def test_a_print_without_a_dissemination_timestamp_is_dropped_and_counted() -> None:
+    dropped: dict[str, int] = {}
+    rows = N.parse_ppd_csv((FIX / "dtcc_ppd_fx_options.csv").read_bytes(), SEEN, dropped)
+    assert 1.0875 not in {r["strike_raw"] for r in rows} and dropped == {
+        "no_dissemination_time": 1}
+    # A file without the column at all: every print is dropped, none execution-stamped.
+    text = (FIX / "dtcc_ppd_fx_options.csv").read_text("utf-8").splitlines()
+    head = text[0].split(",")
+    i = head.index("Dissemination Timestamp")
+    stripped = "\n".join(",".join(c for j, c in enumerate(line.split(",")) if j != i)
+                         for line in text[:2])
+    none: dict[str, int] = {}
+    assert N.parse_ppd_csv(stripped.encode(), SEEN, none) == [] and none[
+        "no_dissemination_time"] == 1
 
 
 def test_cut_is_ten_new_york_through_daylight_saving() -> None:
@@ -132,6 +156,8 @@ def test_leg_publishes_held_terms_ideas_only_cells_and_unmeasured_novelty(tmp_pa
     assert on_disk["terms"]["dtcc_ppd_fx_options"]["verdict"] == "HELD"
     assert "unauthorized use" in on_disk["terms"]["dtcc_ppd_fx_options"]["terms_quote"]
     assert on_disk["N1"]["prints_parsed"] == 4 and on_disk["N1"]["n_cells"] == 32
+    assert on_disk["N1"]["prints_dropped_no_dissemination_time"] == 1
+    assert on_disk["N2"]["held_substitute"]["substitute"] == "none: UNMEASURED"
     assert all(c["status"] == "IDEAS_ONLY" and not c["donated"] for c in on_disk["N1"]["cells"])
     assert on_disk["N1"]["trials_charged"] == 0 and on_disk["N2"]["trials_charged"] == 0
     assert on_disk["N2"]["terms"] == "to_confirm"
@@ -151,6 +177,15 @@ def test_novelty_reads_the_book_when_the_artifact_exists(tmp_path: Path) -> None
     assert nov["lanes"]["N1"]["verdict"] == "DECLARED_OUTSIDE_DOMINANT"
     assert nov["lanes"]["N1"]["return_novelty"] == "UNMEASURED"
     assert nov["lanes"]["N1"]["dominant_overlap"] == {"momentum_6bar": 5}
+
+
+def test_fixtures_never_write_into_the_production_strike_frame(tmp_path: Path) -> None:
+    with pytest.raises(N.FixturesIntoProduction):
+        N.run(fixtures=FIX, style_novelty_path=tmp_path / "x.json", now=SEEN)
+    assert N.main(["--once", "--fixtures", str(FIX)]) == 2
+    assert N.main(["--once", "--fixtures", str(FIX), "--out", str(tmp_path)]) == 0
+    assert (tmp_path / "series" / "fx_option_expiry_strikes.csv").exists()
+    assert (tmp_path / N.REPORT.name).exists()
 
 
 def test_dry_run_writes_nothing(tmp_path: Path) -> None:

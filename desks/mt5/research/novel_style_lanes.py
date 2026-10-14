@@ -14,11 +14,13 @@ for both lanes.
 N1  FX OPTION-EXPIRY STRIKE PINNING into the 10:00 New York cut, then release, on EURUSD,
     USDJPY, AUDUSD and GBPUSD. Data: public FX-option prints (DTCC's public price dissemination
     of swap data, CFTC Part 43). From each print: pair, expiry date, strike and USD notional,
-    stamped `available_time = execution + DISSEMINATION_SLACK` (the public tape is real time with
-    regulatory delays; the slack can only make a print late), `first_seen_at` = when this box read
-    it. Aggregated into a per-(pair, expiry, strike) open-interest PROXY by the family itself at
-    each decision instant, so the ladder is exactly what was known then. Executed by the minimal
-    family `mt5desk.family_fx_expiry_pin` (modes `pin` and `release`).
+    stamped `available_time` = the print's own DISSEMINATION TIMESTAMP (GD audit 2026-10-14:
+    Part 43 block and large-notional delays can run past any fixed slack after execution, so an
+    execution-based stamp can be early). A print without a readable dissemination timestamp is
+    DROPPED and counted (fail closed), never stamped from its execution time. `first_seen_at` =
+    when this box read it. Aggregated into a per-(pair, expiry, strike) open-interest PROXY by
+    the family itself at each decision instant, so the ladder is exactly what was known then.
+    Executed by the minimal family `mt5desk.family_fx_expiry_pin` (modes `pin` and `release`).
 N2  SWISS GOLD/SILVER EXPORTS BY DESTINATION (BAZG monthly customs, tariff 7108 / 7106) as a
     regime state for XAUUSD / XAGUSD: `alt_proxies.ch_bazg_gold_exports`. Its cells are the
     exogenous_conditioner direct cells and the conditioned-parent indirect cells that organ
@@ -42,7 +44,8 @@ absent -> UNMEASURED, never "novel". Present -> the declared closest known style
 the book's dominant styles, and the return-novelty reading stays UNMEASURED until a certificate's
 own signals exist (style_novelty measures certificates, and neither lane holds one).
 
-    python desks/mt5/research/novel_style_lanes.py --once [--dry-run] [--fixtures DIR]
+    python desks/mt5/research/novel_style_lanes.py --once [--dry-run]
+        [--fixtures DIR (only with --dry-run or --out DIR)]
 """
 from __future__ import annotations
 
@@ -56,7 +59,7 @@ import os
 import re
 import sys
 from collections.abc import Iterable
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -72,9 +75,9 @@ SERIES_DIR = DESK / "data" / "lake" / "series"
 UNMEASURED = "UNMEASURED"
 SOURCE_ID = "dtcc_ppd_fx_options"
 N2_SOURCE = "ch_bazg_gold_exports"
-#: A print is public no earlier than its execution plus this. CFTC Part 43 disseminates "as soon
-#: as technologically practicable" with block/large-notional delays; two hours can only be late.
-DISSEMINATION_SLACK = timedelta(hours=2)
+#: (DISSEMINATION_SLACK = execution + 2h was the PIT stamp until the GD audit of 2026-10-14: Part
+#: 43 block/large-notional dissemination delays can exceed any fixed slack. The print's own
+#: dissemination timestamp is the stamp now, used at max(dissemination, execution).)
 #: Strike buckets: the grid expiry headlines quote ("EUR 1.2bn at 1.0850"), per quote currency.
 STRIKE_STEP = {"EURUSD": 0.0025, "GBPUSD": 0.0025, "AUDUSD": 0.0025, "USDJPY": 0.25}
 PAIRS = ("EURUSD", "USDJPY", "AUDUSD", "GBPUSD")
@@ -120,6 +123,8 @@ TERMS_RECORD: dict[str, dict[str, Any]] = {
 _COLS: dict[str, tuple[str, ...]] = {
     "action": ("action type", "action"),
     "executed": ("execution timestamp", "execution_timestamp"),
+    "disseminated": ("dissemination timestamp", "dissemination_timestamp",
+                     "dissemination time", "disseminated timestamp"),
     "expiry": ("expiration date", "expiration_date", "end date"),
     "strike": ("strike price", "option strike price", "strike"),
     "pair": ("strike price currency/currency pair", "underlier id-leg 1", "underlying asset 1",
@@ -195,12 +200,17 @@ def bucket(pair: str, strike: float) -> float:
     return round(round(strike / step) * step, 6)
 
 
-def parse_ppd_csv(body: bytes, first_seen: datetime) -> list[dict[str, Any]]:
+def parse_ppd_csv(body: bytes, first_seen: datetime,
+                  dropped: dict[str, int] | None = None) -> list[dict[str, Any]]:
     """One row per new FX VANILLA option print on the four pairs; everything else is dropped.
 
     Cancels and errors are skipped, not netted: a strike never LOSES notional here, which only
     overstates a pin the gauntlet must then find (it cannot leak a future cancellation backward).
+    A print is public at its own dissemination timestamp; a print without one is dropped and
+    counted in `dropped["no_dissemination_time"]` (a file without the column drops every print).
     """
+    drops = dropped if dropped is not None else {}
+    drops.setdefault("no_dissemination_time", 0)
     text = body.decode("utf-8-sig", errors="replace")
     rows = list(csv.reader(io.StringIO(text)))
     if len(rows) < 2:
@@ -238,7 +248,11 @@ def parse_ppd_csv(body: bytes, first_seen: datetime) -> list[dict[str, Any]]:
                                    (n2, g(r, "c2").upper().strip())])
         if usd is None:
             continue
-        avail = executed + DISSEMINATION_SLACK
+        disseminated = _ts(g(r, "disseminated"))
+        if disseminated is None:
+            drops["no_dissemination_time"] += 1          # FAIL CLOSED: never execution-stamped
+            continue
+        avail = max(disseminated, executed)
         vid = hashlib.sha1(f"{g(r, 'id')}|{executed.isoformat()}|{pair}|{strike}|{usd}"
                            .encode()).hexdigest()[:16]
         out.append({"pair": pair, "expiry_date": expiry.isoformat(),
@@ -247,6 +261,7 @@ def parse_ppd_csv(body: bytes, first_seen: datetime) -> list[dict[str, Any]]:
                     "event_time": executed.isoformat(timespec="seconds"),
                     "available_time": avail.isoformat(timespec="seconds"),
                     "published_time": avail.isoformat(timespec="seconds"),
+                    "pit_basis": "dissemination_timestamp",
                     "retrieval_time": first_seen.isoformat(timespec="seconds"),
                     "revision_time": None, "source_id": SOURCE_ID, "vintage_id": vid})
     return out
@@ -418,23 +433,35 @@ def _n2_status() -> dict[str, Any]:
     if src is None:
         return {"status": f"{UNMEASURED}: {N2_SOURCE} not registered"}
     return {"status": ap.status_of(src), "terms": src.terms,
+            "held_substitute": dict(getattr(ap, "HELD_NO_SUBSTITUTE", {}).get(N2_SOURCE)
+                                    or {"substitute": UNMEASURED}),
             "signal_series": list(src.signal_series), "instruments": src.instruments,
             "organ": "desks/mt5/research/alt_proxies.py (hourly leg alt_proxies)"}
+
+
+class FixturesIntoProduction(ValueError):
+    """A fixtures run aimed at the production report or strike frame."""
 
 
 def run(*, dry_run: bool = False, fixtures: Path | None = None, now: datetime | None = None,
         report: Path = REPORT, series_dir: Path = SERIES_DIR,
         style_novelty_path: Path = STYLE_NOVELTY) -> dict[str, Any]:
+    if fixtures is not None and not dry_run and (
+            Path(report) == REPORT or Path(series_dir) == SERIES_DIR):
+        raise FixturesIntoProduction(
+            "--fixtures writes fixture prints only with --dry-run or with --out redirecting the "
+            "report and the strike frame; refused rather than written into production")
     now = now or datetime.now(UTC)
     n1_terms = TERMS_RECORD[SOURCE_ID]
     rows: list[dict[str, Any]] = []
     fixture_files: list[str] = []
+    dropped: dict[str, int] = {}
     if fixtures is not None:
         # FIXTURES ONLY: a HELD source is never fetched. A fixture pass proves the parser, the
         # PIT stamp and the lake frame; it is not a yield.
         for p in sorted(fixtures.glob("dtcc_ppd*.csv")):
             fixture_files.append(p.name)
-            rows.extend(parse_ppd_csv(p.read_bytes(), now))
+            rows.extend(parse_ppd_csv(p.read_bytes(), now, dropped))
     written = write_strike_series(rows, series_dir) if rows and not dry_run else None
     held = n1_terms["verdict"] != "CONFIRMED"
     doc: dict[str, Any] = {
@@ -445,12 +472,15 @@ def run(*, dry_run: bool = False, fixtures: Path | None = None, now: datetime | 
                "pairs": list(PAIRS), "family": "fx_expiry_pin",
                "family_module": "desks/mt5/mt5desk/family_fx_expiry_pin.py",
                "data_route": ("DTCC public price dissemination (CFTC Part 43) FX option prints "
-                              "-> pair/expiry/strike/USD notional, available_time = execution + "
-                              f"{int(DISSEMINATION_SLACK.total_seconds() // 60)} min, "
+                              "-> pair/expiry/strike/USD notional, available_time = the print's "
+                              "dissemination timestamp (absent -> dropped and counted), "
                               "lake frame data/lake/series/fx_option_expiry_strikes.csv"),
                "status": "IDEAS_ONLY" if held else "LIVE",
                "fetched": False, "fixture_files": fixture_files,
                "prints_parsed": len(rows) if fixtures is not None else UNMEASURED,
+               "prints_dropped_no_dissemination_time": (
+                   dropped.get("no_dissemination_time", 0) if fixtures is not None
+                   else UNMEASURED),
                "lake_written": written, "ladder_top": ladder_summary(rows) if rows else {},
                "cells": n1_cells("IDEAS_ONLY" if held else "PROPOSED"),
                "trials_charged": 0},
@@ -478,12 +508,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--fixtures", type=Path, default=None)
+    ap.add_argument("--out", type=Path, default=None,
+                    help="write the report and strike frame under this directory instead")
     a = ap.parse_args(argv)
-    doc = run(dry_run=a.dry_run, fixtures=a.fixtures)
+    paths: dict[str, Any] = {}
+    if a.out is not None:
+        paths = {"report": a.out / REPORT.name, "series_dir": a.out / "series"}
+    try:
+        doc = run(dry_run=a.dry_run, fixtures=a.fixtures, **paths)
+    except FixturesIntoProduction as exc:
+        print(json.dumps({"refused": str(exc)}))
+        return 2
     print(json.dumps({"N1": {k: doc["N1"][k] for k in ("status", "prints_parsed", "n_cells")},
                       "N2": {k: doc["N2"].get(k) for k in ("status", "n_cells")},
                       "novelty": {k: v.get("verdict") for k, v in doc["novelty"]["lanes"].items()},
-                      "report": str(REPORT) if not a.dry_run else None}))
+                      "report": (str(paths.get("report", REPORT)) if not a.dry_run
+                                 else None)}))
     return 0
 
 
