@@ -29,13 +29,18 @@ LOG_REL = "logs/MT5-CostState.log"
 
 #: (artifact, stamp key, producer, max age in hours). One cycle plus the slack its clock needs:
 #: MT5-CostState fires daily at 04:20, so 26 h; the triangle runs inside the hourly
-#: `record_tape` leg, so 3 h. Breadth's hourly carry rebuild only ever makes carry fresher.
+#: `record_tape` leg, so 2 h -- red after ONE missed cycle, not two. Breadth's hourly carry rebuild only ever makes carry fresher.
 ARTIFACTS: tuple[tuple[str, str, str, float], ...] = (
     ("data/cost_surface.json", "built_at", "MT5-CostState: research/cost_surface.py", 26.0),
     ("data/carry_state.json", "generated_at", "MT5-CostState: research/carry_state.py", 26.0),
     ("data/tape/triangle_executable.json", "at",
-     "hourly_cycle record_tape: mt5desk/triangle_tape.py", 3.0),
+     "hourly_cycle record_tape: mt5desk/triangle_tape.py", 2.0),
 )
+
+
+#: A stamp further in the future than this is no reading of age at all (a wrong clock or a wrong
+#: field), so it is UNMEASURED, never FRESH. Five minutes absorbs two hosts' ordinary skew.
+FUTURE_SKEW_H = 5 / 60
 
 
 def _stamp(raw: object) -> datetime | None:
@@ -57,6 +62,9 @@ def judge(path: Path, key: str, max_h: float, now: datetime) -> dict[str, Any]:
     if at is None:
         return {"status": "UNMEASURED", "why": f"no `{key}` stamp"}
     age = round((now - at).total_seconds() / 3600, 2)
+    if age < -FUTURE_SKEW_H:
+        return {"status": "UNMEASURED", "stamp": at.isoformat(), "age_h": age,
+                "why": f"`{key}` is {-age:g} h in the FUTURE; a future stamp measures nothing"}
     return {"status": "FRESH" if age <= max_h else "STALE", "stamp": at.isoformat(),
             "age_h": age, "why": "" if age <= max_h else f"{age:g} h old against a {max_h:g} h cycle"}
 

@@ -53,6 +53,27 @@ def test_an_absent_carry_state_is_unmeasured_and_red(tmp_path: Path) -> None:
     assert rep["n_unmeasured"] == 1
 
 
+def test_a_future_stamp_is_unmeasured_not_fresh(tmp_path: Path) -> None:
+    rep = fence.build(_desk(tmp_path, -24 * 30, 1, 1), NOW)
+    assert rep["artifacts"][0]["status"] == "UNMEASURED" and rep["status"] == "RED"
+    assert fence.build(_desk(tmp_path, -0.02, 1, 1), NOW)["status"] == "GREEN"   # clock skew
+
+
+def test_the_triangle_is_red_after_one_missed_hourly_cycle(tmp_path: Path) -> None:
+    assert fence.build(_desk(tmp_path, 1, 1, 1.9), NOW)["status"] == "GREEN"
+    assert fence.build(_desk(tmp_path, 1, 1, 2.5), NOW)["status"] == "RED"
+
+
+def test_the_watchdog_escalating_is_not_the_watchdog_crashing() -> None:
+    spec = importlib.util.spec_from_file_location("never_stale_x", ROOT / "ops" / "never_stale.py")
+    assert spec is not None and spec.loader is not None
+    ns = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ns)
+    assert ns.ESCALATED not in (0, 1)
+    assert ("MT5-NeverStale", ns.ESCALATED) in ns.TASK_DIAGNOSIS
+    assert ("MT5-NeverStale", 1) in ns.TASK_DIAGNOSIS
+
+
 def test_an_unstamped_artifact_is_never_fresh(tmp_path: Path) -> None:
     desk = _desk(tmp_path, None, 1, 1)
     (desk / "data" / "cost_surface.json").write_text(json.dumps({"symbols": {}}), "utf-8")
@@ -94,19 +115,71 @@ def test_the_leg_is_wired_contracted_and_published() -> None:
     assert '"desks/mt5/reports/COST_STATE_FRESHNESS.json"' in sync
 
 
+_RUN = r"python|%PY%|\bscp\b|powershell|\bcall\s+\S+\.(cmd|bat)\b|\.exe\b"
+_SUCCESS = (r"^exit(\s*/b)?\s+0\s*$", r"^cmd\s*/c\s*exit\s*(/b\s*)?0\s*$",
+            r"^\(call\s*\)\s*$")
+_CHECKED = r"errorlevel|\|\||&&"
+
+
+def masked_steps(text: str) -> list[str]:
+    """The steps a batch runner can lose: when its LAST executable line is a literal success
+    (`exit /b 0`, `exit 0`, `cmd /c exit 0`, `(call )`), every step that runs something must be
+    followed by an errorlevel check or capture (or chained with `||` / `&&`) before the next step.
+    A guard `exit /b 2` earlier does not save an unchecked step later. Returns the unchecked steps
+    ([] = honest). A runner whose last line is not a literal success returns its real code."""
+    import re
+    code = [ln.strip() for ln in text.splitlines()
+            if ln.strip() and not re.match(r"^(rem\b|::|@echo\b|echo\b)", ln.strip(), re.I)]
+    if not code or not any(re.search(p, code[-1], re.I) for p in _SUCCESS):
+        return []
+    bad: list[str] = []
+    for i, ln in enumerate(code[:-1]):
+        if (not re.search(_RUN, ln, re.I) or re.search(_CHECKED, ln, re.I)
+                or re.match(r'^(set\b|if\b.*\bset\s+")', ln, re.I)):
+            continue
+        nxt = code[i + 1:-1]
+        upto = next((k for k, x in enumerate(nxt) if re.search(_RUN, x, re.I)
+                     and not re.match(r'^(set\b|if\b.*\bset\s+")', x, re.I)), len(nxt))
+        if not any(re.search(_CHECKED, x, re.I) for x in nxt[:upto]):
+            bad.append(ln)
+    return bad
+
+
+def test_the_masked_step_reader_catches_the_audited_shapes() -> None:
+    assert masked_steps('"%PY%" a.py\nexit /b 0') == ['"%PY%" a.py']
+    assert masked_steps('"%PY%" a.py\nif errorlevel 1 exit /b 2\n"%PY%" b.py\nexit /b 0') \
+        == ['"%PY%" b.py']
+    for tail in ("exit 0", "cmd /c exit 0", "(call )", "EXIT /B 0"):
+        assert masked_steps(f'"%PY%" a.py\n{tail}'), tail
+    assert masked_steps("call other.cmd\nexit /b 0") == ["call other.cmd"]
+    assert masked_steps('"%PY%" a.py\nexit /b %ERRORLEVEL%') == []
+    assert masked_steps('"%PY%" a.py\nset "RC=%ERRORLEVEL%"\nexit /b 0') == []
+    assert masked_steps('"%PY%" a.py || exit /b 1\nexit /b 0') == []
+    assert masked_steps('set "PY=C:\\python.exe"\nexit /b 0') == []
+
+
 def test_no_scheduled_runner_hard_codes_success() -> None:
-    """A runner whose every exit is `exit /b 0` reports success whatever it ran (2026-10-14:
-    twelve did, MT5-CostState among them). One with no `exit` at all returns its last command's
-    code, which is honest; one with only literal-zero exits is not."""
+    """A runner that ends in a literal success while a step's failure goes unchecked reports
+    success whatever it ran (2026-10-14: twelve did, MT5-CostState among them). Batch files (.cmd
+    and .bat) are read step by step; a PowerShell runner may not END in a bare `exit 0` without
+    ever reading `$LASTEXITCODE`."""
     import re
     roots = ("ops", "desks/mt5/ops", "desks/mt5/scripts")
-    masked = []
+    masked: dict[str, list[str]] = {}
     for root in roots:
-        for p in sorted((ROOT / root).glob("*.cmd")):
-            code = [ln.strip() for ln in p.read_text("utf-8", errors="replace").splitlines()
-                    if ln.strip() and not ln.strip().lower().startswith("rem")]
-            exits = [ln for ln in code if re.search(r"exit\s*/b", ln, re.I)]
-            runs = any(re.search(r"python|%PY%|scp|powershell", ln, re.I) for ln in code)
-            if runs and exits and all(re.search(r"exit\s*/b\s+0\b", e, re.I) for e in exits):
-                masked.append(str(p.relative_to(ROOT)))
-    assert masked == [], f"runners that can only ever report success: {masked}"
+        for p in sorted((ROOT / root).iterdir()):
+            text = p.read_text("utf-8", errors="replace") if p.is_file() else ""
+            if p.suffix.lower() in (".cmd", ".bat"):
+                bad = masked_steps(text)
+            elif p.suffix.lower() == ".ps1":
+                code = [ln.strip() for ln in text.splitlines()
+                        if ln.strip() and not ln.strip().startswith("#")]
+                bad = (["exit 0 without $LASTEXITCODE"]
+                       if code and re.fullmatch(r"exit\s+0", code[-1], re.I)
+                       and re.search(_RUN, text, re.I)
+                       and not re.search(r"\$LASTEXITCODE|\$\?", text) else [])
+            else:
+                continue
+            if bad:
+                masked[str(p.relative_to(ROOT))] = bad
+    assert masked == {}, f"runners that can report success over a failed step: {masked}"

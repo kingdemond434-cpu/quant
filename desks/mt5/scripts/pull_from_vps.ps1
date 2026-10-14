@@ -8,24 +8,31 @@ $base = "C:\Users\dell\mt5-research"
 $vps = "quant@95.216.191.70"
 $vpsBase = "/home/quant/quant-platform/desks/mt5"
 $winBase = "C:\opt\quant\desks\mt5"
+# THE EXIT IS THE PULLS', NOT A CONSTANT (2026-10-14): this ended `exit 0` whatever scp returned.
+$bad = 0
 
 # Pull UNIVERSAL_SURVIVORS.json (authority file)
 $dest = "$winBase\reports"
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 & scp -o ConnectTimeout=15 ${vps}:${vpsBase}/reports/UNIVERSAL_SURVIVORS.json "$dest/" 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) { $bad++ }
 
 # Pull canon
 $destData = "$winBase\data"
 New-Item -ItemType Directory -Force -Path $destData | Out-Null
 & scp -o ConnectTimeout=15 ${vps}:${vpsBase}/data/UNIVERSAL_SURVIVORS.canon.json "$destData/" 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) { $bad++ }
 
 # Pull all universal_gates_*.json
 & ssh -o ConnectTimeout=15 $vps "ls ${vpsBase}/reports/universal_gates_*.json 2>/dev/null" | ForEach-Object {
     $fname = [System.IO.Path]::GetFileName($_.Trim())
     & scp -o ConnectTimeout=15 ${vps}:${vpsBase}/reports/$fname "$dest/" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { $bad++ }
 }
 
 # Pull external gauntlet
 & scp -o ConnectTimeout=15 ${vps}:${vpsBase}/reports/universal_gates_external.json "$dest/" 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) { $bad++ }
 
+if ($bad -gt 0) { exit 1 }
 exit 0
