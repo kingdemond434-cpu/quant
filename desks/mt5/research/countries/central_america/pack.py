@@ -4730,6 +4730,11 @@ def canal_auction_prints(pack: Any = None, ctx: Any = None) -> dict[str, Any]:
                            "observations and is declared as such (L1.28a)"]}
 
 
+#: The attribution the IMF terms require on every payload that carries PortWatch counts
+#: (`alt_proxies._IMF_EV["credit"]` is the source; this is the fallback when it cannot load).
+PORTWATCH_CREDIT = "Source: International Monetary Fund (IMF PortWatch)."
+
+
 def _portwatch_known(names: Iterable[str], store: Any = None,
                      asof: datetime | None = None) -> dict[str, Any]:
     """The IMF PortWatch chokepoint counts KNOWN at `asof` (default now), read through the one
@@ -4744,7 +4749,7 @@ def _portwatch_known(names: Iterable[str], store: Any = None,
             import alt_proxies as _ap  # type: ignore[import-not-found,no-redef]
         return dict(_ap.chokepoints_asof(at, store, names))
     except Exception as exc:
-        return {"status": "UNMEASURED", "series": {},
+        return {"status": "UNMEASURED", "series": {}, "credit": PORTWATCH_CREDIT,
                 "why": f"PortWatch reader unavailable ({type(exc).__name__})"}
 
 
@@ -4769,7 +4774,8 @@ def chokepoint_substitution(pack: Any = None, ctx: Any = None, *, store: Any = N
         n += _emit(ctx, "substitution",
                    payload={"domain": "CA-D", "control": row["name"],
                             "observable": row["observable"], "status": row["status"],
-                            "measured": got.get(pw) if pw else None})
+                            "measured": got.get(pw) if pw else None,
+                            "credit": known.get("credit") or PORTWATCH_CREDIT})
     panama = got.get("panama_transits")
     controls_in = all(s in got for s in ("suez_transits", "bab_el_mandeb_transits"))
     unmeasured: list[str] = []
@@ -4781,7 +4787,8 @@ def chokepoint_substitution(pack: Any = None, ctx: Any = None, *, store: Any = N
                           "to claim otherwise")
     return {"miner": "chokepoint_substitution", "domain": "CA-D",
             "controls": len(CHOKEPOINT_CONTROLS), "emitted": n,
-            "portwatch": known, "unmeasured": unmeasured}
+            "portwatch": known, "credit": known.get("credit") or PORTWATCH_CREDIT,
+            "unmeasured": unmeasured}
 
 
 def coffee_export_calendar(pack: Any = None, ctx: Any = None) -> dict[str, Any]:

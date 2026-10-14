@@ -1844,14 +1844,14 @@ PORTWATCH_HOLD_RELEASE = ("a person deletes sources.<id>.hard_stop in "
 
 
 def portwatch_request(src_id: str, url: str, since: date, offset: int,
-                      fetched_at: datetime) -> Request:
+                      fetched_at: datetime, page_size: int = PORTWATCH_PAGE) -> Request:
     names = PORTS if src_id == "imf_portwatch_ports" else CHOKEPOINTS
     quoted = ",".join("'" + n.replace("'", "''") + "'" for n in names)
     q = urllib.parse.urlencode({
         "where": f"portname IN ({quoted}) AND date >= DATE '{since.isoformat()}'",
         "outFields": PORTWATCH_FIELDS[src_id], "orderByFields": "date,portid",
         "returnGeometry": "false", "resultOffset": offset,
-        "resultRecordCount": PORTWATCH_PAGE, "f": "json"})
+        "resultRecordCount": page_size, "f": "json"})
     return Request(f"{url}?{q}", Ctx(part=f"page{offset}", start=since, fetched_at=fetched_at))
 
 
@@ -2004,12 +2004,15 @@ SOURCES: tuple[Source, ...] = (
         instruments={"XTIUSD": -1, "XBRUSD": -1},
         # Declared priors, untested: the gain test decides and charges every cell. Oil
         # chokepoints bear on crude; Hormuz also on gold (a transit collapse there is the
-        # war-risk state). Panama, the Cape, Gibraltar and the Bosporus are STORED as the
-        # controls the red_sea and central_america packs name, and mint no cell here.
+        # war-risk state). Panama, the Cape, Gibraltar, the Bosporus and Malacca are
+        # UNMAPPED CONTROLS: stored for the red_sea and central_america packs, mapped to NO
+        # instrument (an empty map, so `instruments_for` cannot fall back to oil).
         series_instruments={
             "strait_of_hormuz": {"XTIUSD": -1, "XBRUSD": -1, "XAUUSD": -1},
             "bab_el_mandeb_strait": {"XBRUSD": -1, "XTIUSD": -1},
-            "suez_canal": {"XBRUSD": -1, "XTIUSD": -1}},
+            "suez_canal": {"XBRUSD": -1, "XTIUSD": -1},
+            **dict.fromkeys(("panama_canal", "cape_of_good_hope", "gibraltar_strait",
+                             "bosporus_strait", "malacca_strait"), {})},
         signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits",
                        "suez_canal_transits"),
         mechanism=("fewer transits through oil chokepoints is supply friction; the tanker count "
@@ -2814,8 +2817,9 @@ _IMF_EV: dict[str, str] = {
                   "commercial purposes (internal research is inside that); PortWatch publishes "
                   "the ArcGIS 'Access API' itself. The automation clause targets bulk downloading "
                   "of publication files, not Data, and this organ is bounded (<=20 pages of 1000 "
-                  "rows a pass, robots.txt and its crawl-delay obeyed, 401/403/429 a 24h hard "
-                  "stop). Attribution required; a material transformation must say so"),
+                  "rows a pass, robots.txt and its crawl-delay obeyed; a 401/403/429 or WAF "
+                  "answer is a hard stop whose hold WAITS FOR A PERSON, with no timer). "
+                  "Attribution required; a material transformation must say so"),
     "robots": ("portwatch.imf.org/robots.txt: Crawl-delay 60, disallows /sites/ /admin/ "
                "/sessions/ /groups/ /people/ /workspace/ only; services9.arcgis.com/robots.txt "
                "unread from the authoring container -- read on the box every pass, fail closed"),
@@ -3647,7 +3651,10 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 prior_x.append(x)
             first_seen = _t(r.get("first_seen_at"))
             published = _t(r.get("published_time"))
+            # A row stamped AT its first read because that read came after its release rule
+            # (`first_read`) is a backfill: it was not seen when it was released.
             quality = ("live" if first_seen and published
+                       and r.get("published_basis") != "first_read"
                        and first_seen <= published + timedelta(days=2) else "backfill")
             pts.append({
                 "d": str(r["period"]), "event_time": str(r["period"]),
@@ -3913,6 +3920,11 @@ def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str
         pts = points_by_source[sid][series]
         ev = [(p["available_time"], float(p["surprise_z"])) for p in pts
               if p.get("surprise_z") is not None]
+        # TODO(tier-s-bar, audit PORTWATCH_LIVE_84602112c): the auditor rules these cells
+        # (PortWatch's 7 among them) be judged by the FIXED Tier S bar (N=5, 1/(T-1),
+        # t~2.84), not a Bonferroni charge over n_cells. LIVE carries no shared fixed-bar helper
+        # (searched gate_policy / tier_s / trial-bar pins, 2026-10-14), and a second bar is never
+        # forked here: route `n_cells` through that helper the day it lands.
         res = release_gain(ev, close, horizon_bars=HORIZON_BARS, n_cells=len(cells)).as_dict()
         res["backfill_share"] = (round(sum(1 for p in pts if p["pit_quality"] == "backfill")
                                        / len(pts), 3) if pts else None)
@@ -4200,7 +4212,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
     if src.id in PORTWATCH_FIELDS:
         rec.update(collect_portwatch(paths, src, sst, store, now, fetch=fetch,
-                                     fixtures=fixtures, deadline=deadline))
+                                     fixtures=fixtures, deadline=deadline, getter=getter))
         _atomic(store_p, store)
         rec["store_rows"] = len(store)
         return rec
@@ -4299,7 +4311,9 @@ def robots_verdict(url: str, getter: Callable[[str], tuple[bytes, str]] = http_g
 def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
                       now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
                       getter: Callable[[str], tuple[bytes, str]] = http_get,
-                      sleep: Callable[[float], None] = time.sleep) -> dict[str, Any]:
+                      sleep: Callable[[float], None] = time.sleep,
+                      clock: Callable[[], datetime] = lambda: datetime.now(UTC)
+                      ) -> dict[str, Any]:
     """IMF PortWatch chokepoint transits / port calls into the PIT vintage store.
 
     `outcome` is OK, UNCHANGED (rows read, nothing new or revised) or FAILED:<cause>. A fetch pass
@@ -4326,11 +4340,14 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
             out["hard_stop"] = sst["hard_stop"]
         return out
 
-    def take(body: bytes, ctx: Ctx) -> int:
+    def take(body: bytes, ctx: Ctx, seen_at: datetime) -> int:
+        # `seen_at` is THIS page's fetch instant, taken after its response arrived: a pass with
+        # a crawl-delay can run for many minutes, and the pass-start instant would date a row
+        # published mid-pass before it existed.
         assert src.parse is not None
         obs = src.parse(body, ctx)
         out["parsed"] += len(obs)
-        m = merge_vintages(store, src, obs, now)
+        m = merge_vintages(store, src, obs, seen_at)
         out["merge"]["added"] += m["added"]
         out["merge"]["revised"] += m["revised"]
         return len(_arcgis_rows(body))
@@ -4343,7 +4360,7 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
         err = arcgis_error(body)
         if err:
             return fail(err)
-        take(body, Ctx(part="fixture", fetched_at=now))
+        take(body, Ctx(part="fixture", fetched_at=now), now)
         if not out["parsed"]:
             return fail("EMPTY: the fixture parsed to no rows")
         out["outcome"] = "OK"
@@ -4374,20 +4391,45 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
     if rb["verdict"] != "allow":
         return fail(f"ROBOTS_{rb['verdict'].upper()}: {rb['note']}")
     delay = float(rb.get("crawl_delay") or 0.0)
-    complete = False
-    last_full: date | None = None
-    for page in range(PORTWATCH_MAX_PAGES):
-        if page and delay:
+    n_req = 0
+
+    def polite() -> bool:
+        """Crawl-delay before every request after the first; False when the budget is out."""
+        if n_req and delay:
             if time.monotonic() + delay > deadline:
-                out["errors"].append("budget reached: the remaining pages are owed to the next "
-                                     "pass (cursor kept)")
-                break
+                return False
             sleep(delay)
-        if time.monotonic() > deadline:
-            out["errors"].append("budget reached: the remaining pages are owed to the next pass")
+        return time.monotonic() <= deadline
+
+    # THE SERVER'S PAGE CAP, READ FROM THE LAYER (FeatureServer/0?f=json). Unknown is allowed,
+    # but then completion is proved only by an EMPTY page -- never by a short one.
+    cap: int | None = None
+    meta_url = src.url.rsplit("/query", 1)[0] + "?f=json"
+    try:
+        mbody, _ct = getter(meta_url)
+        n_req += 1
+        mdoc = _arcgis_doc(mbody) or {}
+        mrc = mdoc.get("maxRecordCount")
+        cap = int(mrc) if isinstance(mrc, int) and mrc > 0 else None
+    except Exception as exc:
+        n_req += 1
+        code = _http_code(exc)
+        if code in PORTWATCH_HARD_STOP:
+            return fail(f"HARD_STOP: HTTP {code} on the layer metadata", hold=True)
+    out["page_cap"] = cap if cap is not None else UNMEASURED
+    page_size = min(PORTWATCH_PAGE, cap) if cap else PORTWATCH_PAGE
+    complete = False
+    partial_why = ""
+    last_full: date | None = None
+    offset = 0
+    flagged = False                           # the previous page said exceededTransferLimit
+    for page in range(PORTWATCH_MAX_PAGES):
+        if not polite():
+            partial_why = "BUDGET: the remaining pages are owed to the next pass (cursor kept)"
             break
-        req = portwatch_request(src.id, src.url, since, page * PORTWATCH_PAGE, now)
+        req = portwatch_request(src.id, src.url, since, offset, now, page_size)
         out["requests"] += 1
+        n_req += 1
         try:
             body, ctype = getter(req.url)
         except Exception as exc:
@@ -4395,20 +4437,37 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
             if code in PORTWATCH_HARD_STOP:
                 return fail(f"HARD_STOP: HTTP {code} on page {page}", hold=True)
             return fail(f"HTTP_ERROR: {type(exc).__name__}: {str(exc)[:120]}")
+        seen_at = clock()
         out["fetched"] += 1
         err = arcgis_error(body)
         if err:
             return fail(err, hold=err.startswith("NOT_JSON"))
-        vault(paths, src, body, req.url, ctype, now)
-        n_rows = take(body, req.ctx)
+        vault(paths, src, body, req.url, ctype, seen_at)
+        n_rows = take(body, Ctx(part=req.ctx.part, start=since, fetched_at=seen_at), seen_at)
+        doc = _arcgis_doc(body) or {}
+        exceeded = bool(doc.get("exceededTransferLimit"))
         dates = [d for a in _arcgis_rows(body) if (d := _arcgis_date(a.get("date")))]
         if dates:
             # The last date on a page may continue on the next one: only the day before it is
             # known complete, which is where a cut-short pass resumes.
             last_full = max(dates) - timedelta(days=1)
-        if n_rows < PORTWATCH_PAGE:
+        if n_rows == 0:
+            if flagged:
+                return fail("TRUNCATED: the server said exceededTransferLimit and the next "
+                            "page was empty -- rows were withheld, the read is not complete")
             complete = True
             break
+        offset += n_rows
+        flagged = exceeded
+        more = exceeded or n_rows >= page_size or (cap is not None and n_rows >= cap)
+        if not more and cap is not None:
+            complete = True                   # a short page under a KNOWN cap, no flag
+            break
+        # cap unknown: a short unflagged page may still be a silent server cap, so read on
+        # until an empty page proves the end.
+    else:
+        partial_why = (f"MAX_PAGES: {PORTWATCH_MAX_PAGES} pages read and more remain "
+                       "(cursor kept)")
     if complete:
         newest = max((date.fromisoformat(str(r["period"])) for r in store.values()
                       if isinstance(r, dict) and r.get("period")), default=None)
@@ -4418,10 +4477,17 @@ def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dic
         sst["pw_from"] = last_full.isoformat()
     if not out["parsed"]:
         return fail("EMPTY: the query answered with no rows" if complete else
-                    "BUDGET: no page completed inside the budget")
-    out["outcome"] = ("UNCHANGED" if not (out["merge"]["added"] or out["merge"]["revised"])
-                   else "OK")
+                    partial_why or "EMPTY: no page completed")
     out["complete"] = complete
+    if not complete:
+        # NEVER OK ON A PARTIAL READ: the rows read are kept (each stamped at its own page's
+        # fetch), the cursor resumes, and the pass says so.
+        out["errors"].append(partial_why)
+        out["outcome"] = f"PARTIAL:{partial_why.split(':', 1)[0]}"
+        out["why"] = partial_why
+        return out
+    out["outcome"] = ("UNCHANGED" if not (out["merge"]["added"] or out["merge"]["revised"])
+                      else "OK")
     return out
 
 
@@ -4470,14 +4536,16 @@ def chokepoints_asof(decision_at: datetime, store_path: Path | None = None,
         if cur is None or period.isoformat() > cur["period"]:
             best[name] = {"period": period.isoformat(), "value": float(row["value_first"]),
                           "known_at": known.isoformat(timespec="seconds")}
+    credit = _IMF_EV["credit"]                 # the attribution the IMF terms require
     if not best:
-        return {"status": "UNMEASURED", "series": {}, "store": str(p),
+        return {"status": "UNMEASURED", "series": {}, "store": str(p), "credit": credit,
                 "why": ("no IMF PortWatch chokepoint row known at "
                         f"{decision_at.isoformat(timespec='seconds')} in {p.name}")}
     inv = {v: k for k, v in PORTWATCH_PACK_SERIES.items()}
     return {"status": "MEASURED", "series": dict(sorted(best.items())),
             "by_pack_name": {inv[k]: v for k, v in sorted(best.items()) if k in inv},
-            "store": str(p), "decision_at": decision_at.isoformat(timespec="seconds")}
+            "store": str(p), "decision_at": decision_at.isoformat(timespec="seconds"),
+            "credit": credit}
 
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],

@@ -35,32 +35,38 @@ def _http(code: int) -> urllib.error.HTTPError:
     return urllib.error.HTTPError("https://x/", code, "no", {}, io.BytesIO(b""))  # type: ignore[arg-type]
 
 
-class Getter:
-    """Scripted responses: robots first, then data pages. Records every URL asked."""
+META_1000 = b'{"name": "Daily_Chokepoints_Data", "maxRecordCount": 1000}'
 
-    def __init__(self, robots: Any, pages: list[Any]) -> None:
-        self.robots, self.pages = robots, list(pages)
+
+class Getter:
+    """Scripted responses: robots, the layer metadata, then data pages. Records every URL."""
+
+    def __init__(self, robots: Any, pages: list[Any], meta: Any = META_1000) -> None:
+        self.robots, self.pages, self.meta = robots, list(pages), meta
         self.urls: list[str] = []
 
     def __call__(self, url: str) -> tuple[bytes, str]:
         self.urls.append(url)
-        item = self.robots if url.endswith("/robots.txt") else self.pages.pop(0)
+        item = (self.robots if url.endswith("/robots.txt") else
+                self.meta if "/query?" not in url else self.pages.pop(0))
         if isinstance(item, BaseException):
             raise item
         return item, "application/json"
 
     @property
     def data_urls(self) -> list[str]:
-        return [u for u in self.urls if not u.endswith("/robots.txt")]
+        return [u for u in self.urls if "/query?" in u]
 
 
-def _run(getter: Getter, tmp: Path, sst: dict[str, Any] | None = None,
-         store: dict[str, Any] | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+def _run(getter: Any, tmp: Path, sst: dict[str, Any] | None = None,
+         store: dict[str, Any] | None = None,
+         clock: Any = None) -> tuple[dict[str, Any], dict[str, Any]]:
     sst = {} if sst is None else sst
     paths = A.Paths(tmp / "desk")
     store = {} if store is None else store
     rec = A.collect_portwatch(paths, SRC, sst, store, NOW, fetch=True, fixtures=None,
-                              deadline=float("inf"), getter=getter, sleep=lambda _s: None)
+                              deadline=float("inf"), getter=getter, sleep=lambda _s: None,
+                              clock=clock or (lambda: NOW))
     return rec, store
 
 
@@ -243,3 +249,88 @@ def test_the_fixture_pass_writes_the_pit_store_and_axis(tmp_path: Path) -> None:
     assert rec["outcome"] == "OK" and rec["parsed"] > 0
     store = json.loads((paths.obs_dir / "imf_portwatch_chokepoints.json").read_text("utf-8"))
     assert all(r["published_time"] >= NOW.isoformat() for r in store.values())
+
+
+# ============================================================================ audit 84602112c
+class CappedServer:
+    """An ArcGIS layer holding `n` rows that serves at most `cap` per page, flags
+    exceededTransferLimit while rows remain (when `flag`), and publishes or hides its cap."""
+
+    def __init__(self, n: int, cap: int, *, meta: bool = True, flag: bool = True) -> None:
+        names = A.CHOKEPOINTS[:5]
+        self.rows = [{"date": (date(2024, 1, 1) + timedelta(days=i // 5)).isoformat(),
+                      "portname": names[i % 5], "n_total": i} for i in range(n)]
+        self.cap, self.meta, self.flag, self.data_calls = cap, meta, flag, 0
+
+    def __call__(self, url: str) -> tuple[bytes, str]:
+        if url.endswith("/robots.txt"):
+            raise _http(404)
+        if "/query?" not in url:
+            if not self.meta:
+                raise _http(500)
+            return json.dumps({"maxRecordCount": self.cap}).encode(), "application/json"
+        self.data_calls += 1
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+        off, want = int(q["resultOffset"][0]), int(q["resultRecordCount"][0])
+        take = self.rows[off: off + min(want, self.cap)]
+        doc: dict[str, Any] = {"features": [{"attributes": a} for a in take]}
+        if self.flag and off + len(take) < len(self.rows):
+            doc["exceededTransferLimit"] = True
+        return json.dumps(doc).encode(), "application/json"
+
+
+def test_a_server_capped_at_500_with_2500_rows_stores_all_2500(tmp_path: Path) -> None:
+    srv = CappedServer(2500, 500)
+    rec, store = _run(srv, tmp_path)
+    assert len(store) == 2500 and rec["outcome"] == "OK" and rec["page_cap"] == 500
+    srv2 = CappedServer(2500, 500, meta=False, flag=False)       # cap unknown, no flag at all
+    rec2, store2 = _run(srv2, tmp_path / "b")
+    assert len(store2) == 2500 and rec2["outcome"] == "OK" and rec2["page_cap"] == "UNMEASURED"
+
+
+def test_unknown_cap_flagged_truncation_with_no_further_page_is_failed(tmp_path: Path) -> None:
+    rows = [{"attributes": {"date": "2025-01-01", "portname": "Suez Canal", "n_total": 1}}]
+    first = json.dumps({"features": rows, "exceededTransferLimit": True}).encode()
+    g = Getter(_http(404), [first, b'{"features": []}'], meta=_http(500))
+    rec, _ = _run(g, tmp_path)
+    assert rec["status"] == "FAILED:TRUNCATED" and rec["outcome"] != "OK"
+
+
+def test_each_page_is_stamped_at_its_own_fetch_not_the_pass_start(tmp_path: Path) -> None:
+    ticks = iter([NOW + timedelta(minutes=1), NOW + timedelta(minutes=2),
+                  NOW + timedelta(minutes=3)])
+    srv = CappedServer(10, 5)
+    _rec, store = _run(srv, tmp_path, clock=lambda: next(ticks))
+    seen = sorted({r["first_seen_at"] for r in store.values()})
+    assert seen == [(NOW + timedelta(minutes=m)).isoformat() for m in (1, 2)]
+    for r in store.values():                    # backfill rows: stamp == their page's read
+        assert r["published_time"] == r["first_seen_at"] > NOW.isoformat()
+
+
+def test_floor_stamped_backfill_is_labelled_backfill() -> None:
+    store: dict[str, Any] = {}
+    A.merge_vintages(store, SRC, [A.Obs("suez_canal_transits", date(2024, 1, 2), 12.0)], NOW)
+    pts = A.build_points(SRC, store)["suez_canal_transits"]
+    assert pts[0]["pit_quality"] == "backfill"
+
+
+def test_imf_credit_rides_on_every_portwatch_payload(tmp_path: Path) -> None:
+    fp = _store_file(tmp_path, [(s, "2026-10-04", 20.0, "2026-10-06T14:00:00+00:00") for s in (
+        "suez_canal_transits", "bab_el_mandeb_strait_transits", "panama_canal_transits",
+        "cape_of_good_hope_transits")])
+    at = datetime(2026, 10, 7, tzinfo=UTC)
+    credit = A.TERMS_EVIDENCE["imf_portwatch_chokepoints"]["credit"]
+    assert "International Monetary Fund" in credit
+    assert A.chokepoints_asof(at, fp)["credit"] == credit
+    assert A.chokepoints_asof(at, tmp_path / "absent.json")["credit"] == credit
+    rs = RS.mine_chokepoint_phases(None, None, store=fp, asof=at)
+    assert next(r for r in rs["rows"] if r["domain"] == "RS-B")["credit"] == credit
+    assert CA.chokepoint_substitution(None, None, store=fp, asof=at)["credit"] == credit
+
+
+def test_panama_and_the_other_controls_map_to_no_instrument() -> None:
+    for s in ("panama_canal_transits", "cape_of_good_hope_transits", "bosporus_strait_transits",
+              "gibraltar_strait_transits", "malacca_strait_transits"):
+        assert SRC.instruments_for(s) == {}, s
+        assert s not in SRC.signal_series
+    assert SRC.instruments_for("suez_canal_transits") == {"XBRUSD": -1, "XTIUSD": -1}

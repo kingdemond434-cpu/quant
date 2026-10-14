@@ -4893,6 +4893,11 @@ def _emit(ctx: Any, rows: list[dict[str, Any]]) -> int:
     return taken
 
 
+#: The attribution the IMF terms require on every payload that carries PortWatch counts
+#: (`alt_proxies._IMF_EV["credit"]` is the source; this is the fallback when it cannot load).
+PORTWATCH_CREDIT = "Source: International Monetary Fund (IMF PortWatch)."
+
+
 def _portwatch_known(names: Iterable[str], store: Any = None,
                      asof: datetime | None = None) -> dict[str, Any]:
     """The IMF PortWatch chokepoint counts KNOWN at `asof` (default now), read through the one
@@ -4907,7 +4912,7 @@ def _portwatch_known(names: Iterable[str], store: Any = None,
             import alt_proxies as _ap  # type: ignore[import-not-found,no-redef]
         return dict(_ap.chokepoints_asof(at, store, names))
     except Exception as exc:
-        return {"status": "UNMEASURED", "series": {},
+        return {"status": "UNMEASURED", "series": {}, "credit": PORTWATCH_CREDIT,
                 "why": f"PortWatch reader unavailable ({type(exc).__name__})"}
 
 
@@ -4954,6 +4959,7 @@ def mine_chokepoint_phases(pack: Any = None, ctx: Any = None, *, store: Any = No
     for r in rows:
         if r["domain"] == "RS-B":
             r["portwatch"] = known
+            r["credit"] = known.get("credit") or PORTWATCH_CREDIT
     unmeasured = ["the PortWatch series is REVISED as AIS gaps are backfilled, so a "
                   "cell compiled on today's vintage for a 2024 decision is using "
                   "information the decision did not have"]
