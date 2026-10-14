@@ -483,15 +483,12 @@ def _public(cond: dict[str, Any]) -> dict[str, Any]:
 def bh_threshold(pvals: np.ndarray, m: int, q: float) -> float:
     """Benjamini-Hochberg over m hypotheses of which only `pvals` (the ones <= q) are listed;
     every unlisted p exceeds q, so it can never be rejected and never moves the cut. Returns the
-    p-value cut (0.0 when nothing is rejected). Same arithmetic as libs.validation.fdr._control,
-    including its FIXED BAR N (principal 2026-10-13): the family size is min(m, BAR_N)."""
-    from libs.research.trial_count_guard import bar_n
+    p-value cut (0.0 when nothing is rejected). Same arithmetic as libs.validation.fdr._control."""
     p = np.sort(np.asarray(pvals, dtype="float64"))
     if p.size == 0 or m <= 0:
         return 0.0
-    m_bar = min(int(m), bar_n(m))
-    ranks = np.minimum(np.arange(1, p.size + 1), m_bar)
-    below = p <= ranks / float(m_bar) * q
+    ranks = np.arange(1, p.size + 1)
+    below = p <= ranks / float(m) * q
     if not below.any():
         return 0.0
     return float(p[int(np.max(np.flatnonzero(below)))])
