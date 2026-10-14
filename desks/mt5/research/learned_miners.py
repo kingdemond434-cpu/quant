@@ -42,6 +42,19 @@ and the zero forecast, plus a time-shuffled falsification control, and writes
 SCHEDULING: this organ runs DAILY as a `daily_cycle` proposer (`daily_cycle._proposers`, which
 calls `run(budget_s=...)`), on its own budget. It is deliberately not on the hourly roster, so it
 takes no share of any hourly miner's time. `--once` runs one pass by hand.
+
+THE WEEKLY REFIT (2026-10-14). The daily door did not turn: the contract was last written
+2026-09-30 and the GNN primary's long-short net Sharpe has stood at -1.07 with no refit since.
+`--weekly` is the hourly leg `learned_miners_weekly`: every hour it reads the age of the miner
+report and the contract, and when either is older than MAX_AGE_DAYS (or absent) it refits --
+one miner pass, then the contract -- inside its own budget. Otherwise it writes
+`reports/learned_miners_weekly.json` saying both are fresh and when the next refit falls due, so
+the leg always leaves an artifact. `mission_control` holds the contract to the same 7-day age.
+
+SET-WIDE TRIAL CHARGING. Choosing which model of the set to believe is itself a selection, and
+the per-configuration rows above never charge it. Every refit therefore appends ONE row per model
+in the set (`family = learned_miners:model_set`, `kind = set_selection`, `donated = false`) to the
+trial ledger, so `experiment_ledger` counts it exactly once into the lifetime total.
 """
 from __future__ import annotations
 
@@ -76,6 +89,12 @@ CONTRACT_REPORT = _DESK / "reports" / "learned_miners_contract.json"
 TRIALS = _DESK / "data" / "learned_miners_trials.jsonl"
 GIT_BARS = _DESK / "universe"
 BUDGET_S = 900.0
+
+#: The refit cadence the weekly leg enforces and producer health holds the contract to.
+MAX_AGE_DAYS = 7.0
+WEEKLY_REPORT = _DESK / "reports" / "learned_miners_weekly.json"
+#: The family every set-wide selection charge is booked under in the trial ledger.
+SET_FAMILY = "learned_miners:model_set"
 
 #: The declared panel: every FX / metals / crypto-CFD instrument whose H1 history is held in git.
 #: The panel IS the hypothesis for both families (the graph is measured over it, the attention
@@ -402,6 +421,83 @@ def _append_trials(rows: list[dict[str, Any]], path: Path) -> str:
         return f"trial ledger not written: {type(exc).__name__}: {exc}"
 
 
+def set_charge_rows(models: Sequence[str], generated_utc: str) -> list[dict[str, Any]]:
+    """ONE trial per model in the set for this refit: the selection across the set, charged.
+
+    `donated` is False on purpose: `experiment_ledger` counts non-donated rows of this ledger, and
+    no discovery file's `tests_run` includes the choice between models, so this is the only place
+    the charge is ever counted -- exactly once."""
+    return [{"generated_utc": generated_utc, "source": "learned_miners",
+             "trial_id": f"set:{generated_utc}:{m}", "family": SET_FAMILY,
+             "kind": "set_selection",
+             "descriptors": {"model_family": m, "set": ",".join(sorted(models))},
+             "donated": False} for m in models]
+
+
+def _age_days(path: Path, now: datetime) -> float | None:
+    """Age of an artifact by its own stamp (`generated_at`), falling back to the file's mtime."""
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+        stamp = doc.get("generated_at") if isinstance(doc, dict) else None
+        ts = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=UTC)
+        return max(0.0, (now - ts).total_seconds() / 86400.0)
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    try:
+        return max(0.0, (now.timestamp() - path.stat().st_mtime) / 86400.0)
+    except OSError:
+        return None
+
+
+def weekly_due(now: datetime | None = None, report: Path | None = None,
+               contract: Path | None = None) -> tuple[bool, dict[str, Any]]:
+    """Whether the refit is due: either artifact absent, unreadable or >= MAX_AGE_DAYS old."""
+    now = now or datetime.now(tz=UTC)
+    ages = {"report": _age_days(report or REPORT, now),
+            "contract": _age_days(contract or CONTRACT_REPORT, now)}
+    due = any(a is None or a >= MAX_AGE_DAYS for a in ages.values())
+    return due, {k: (None if v is None else round(v, 3)) for k, v in ages.items()}
+
+
+def weekly(budget_s: float = BUDGET_S, *, now: datetime | None = None,
+           out_path: Path | None = None, report: Path | None = None,
+           contract: Path | None = None, refit: Any = None) -> dict[str, Any]:
+    """The hourly leg: refit when due, otherwise say both artifacts are fresh. Always writes."""
+    now = now or datetime.now(tz=UTC)
+    due, ages = weekly_due(now, report, contract)
+    doc: dict[str, Any] = {"generated_at": now.isoformat(timespec="seconds"),
+                           "max_age_days": MAX_AGE_DAYS, "ages_days": ages, "due": due}
+    if not due:
+        oldest = max(v for v in ages.values() if v is not None)
+        doc.update({"state": "FRESH", "next_due_in_days": round(MAX_AGE_DAYS - oldest, 3)})
+    else:
+        t0 = time.monotonic()
+        try:
+            if refit is not None:
+                doc["refit"] = refit(budget_s)
+            else:
+                res = run(budget_s=budget_s * 0.5)
+                left = max(60.0, budget_s - (time.monotonic() - t0))
+                con = measure_contract(deadline=time.monotonic() + left)
+                doc["refit"] = {
+                    "cells_proposed": res.get("cells_proposed"),
+                    "set_charge": res.get("set_charge"),
+                    "contract_verdicts": {m: b.get("verdict")
+                                          for m, b in (con.get("miners") or {}).items()},
+                    "ls_sharpe_net": {m: (b.get("primary") or {}).get("ls_sharpe_net")
+                                      for m, b in (con.get("miners") or {}).items()}}
+            doc["state"] = "REFIT"
+        except Exception as exc:
+            doc.update({"state": "FAILED", "why": f"{type(exc).__name__}: {str(exc)[:300]}"})
+        doc["seconds"] = round(time.monotonic() - t0, 1)
+    path = out_path or WEEKLY_REPORT
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    return doc
+
+
 def load_bars(symbols: Sequence[str] = PANEL, base: Path | None = None
               ) -> dict[str, pd.DataFrame]:
     out: dict[str, pd.DataFrame] = {}
@@ -474,6 +570,10 @@ def run(budget_s: float = BUDGET_S, models: Sequence[str] = ("gnn", "attention")
         res["trial_ledger_error"] = led
         out["miners"][model] = res
     out["cells_proposed"] = total_proposed
+    # SET-WIDE CHARGE: one trial per model in the set, per refit, whatever each model yielded.
+    set_rows = set_charge_rows(models, out["generated_at"])
+    out["set_charge"] = {"family": SET_FAMILY, "models": list(models), "charged": len(set_rows),
+                         "ledger_error": _append_trials(set_rows, trials_path or TRIALS)}
     if axis_docs:
         ip = intel_path or INTEL_REPORT
         ip.parent.mkdir(parents=True, exist_ok=True)
@@ -514,7 +614,7 @@ def _shuffled(panel: LP.Panel, seed: int = 11) -> LP.Panel:
 
 
 def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
-                 deflate_t: Any) -> dict[str, Any]:
+                 deflate_t: Any, deadline: float | None = None) -> dict[str, Any]:
     """EVERY (config, symbol, threshold) test the miner charges, committed, not only the best.
 
     The claim "best of N, deflated to t" is only checkable if all N rows are in the artifact."""
@@ -522,7 +622,8 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
     keep = ("cell", "config", "symbol", "entry_z", "t_gross", "t_deflated_sweep",
             "t_deflated_lifetime", "n_independent", "net_per_trade", "clears_cost", "proposed")
     for model in MINERS:
-        res = mine(model, bars, meta, deadline=time.monotonic() + 3600.0)
+        res = mine(model, bars, meta,
+                   deadline=deadline if deadline is not None else time.monotonic() + 3600.0)
         rows = [{k: r.get(k) for k in keep} for r in res["rows"]]
         tried: dict[str, int] = {}
         for t in res["_trials"]:
@@ -560,7 +661,8 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
     return out
 
 
-def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dict[str, Any]:
+def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
+                     deadline: float | None = None) -> dict[str, Any]:
     """Walk-forward OOS metrics for both miners against their baselines on the bars in git."""
     from research.multiplicity import deflate_t
     meta = _git_meta()
@@ -577,7 +679,7 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
         timings[name] = round(time.monotonic() - t0, 2)
         results[name] = {"model": model, "config": dict(cfg), **LP.evaluate(p, panel, des)}
 
-    cell_screen = _cell_screen(bars, meta, deflate_t)
+    cell_screen = _cell_screen(bars, meta, deflate_t, deadline)
     score("zero", "zero", {})
     score("naive_last", "naive_last", {})
     score("ridge_own_lags", "ridge", {})
@@ -688,12 +790,21 @@ def main() -> int:
     ap.add_argument("--once", action="store_true", help="one pass and exit")
     ap.add_argument("--contract", action="store_true",
                     help="measure the OOS contract on the bars in git and exit")
+    ap.add_argument("--weekly", action="store_true",
+                    help="the hourly leg: refit (miners + contract) when either is >= "
+                         f"{MAX_AGE_DAYS:g} days old, else record that both are fresh")
     ap.add_argument("--budget-s", type=float, default=BUDGET_S)
     ap.add_argument("--model", action="append", choices=list(MINERS), default=None)
     ap.add_argument("--no-donate", action="store_true")
     ap.add_argument("--no-axes", action="store_true",
                     help="do not publish the forecast axes or the allocation-intel artifact")
     a = ap.parse_args()
+    if a.weekly:
+        wk = weekly(budget_s=a.budget_s)
+        print(f"LEARNED MINERS WEEKLY  {wk['state']}  ages {wk['ages_days']}"
+              + (f"  {wk.get('why')}" if wk.get("why") else ""))
+        print(f"written: {WEEKLY_REPORT}")
+        return 0 if wk["state"] != "FAILED" else 1
     if a.contract:
         doc = measure_contract()
         print(f"LEARNED MINERS CONTRACT  {doc['data']['n_symbols']} symbols, "
