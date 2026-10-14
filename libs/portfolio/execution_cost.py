@@ -269,10 +269,14 @@ _GAUNTLET_MARKER = "from research.entry_hour_cost import gauntlet_costs"
 
 def gauntlet_charges_entry_hour(path: Path | None = None) -> bool:
     """True only when the (sealed, read-only here) gauntlet prices cells via `entry_hour_cost`."""
+    import ast
     try:
-        return _GAUNTLET_MARKER in Path(path or _GAUNTLET).read_text("utf-8", errors="replace")
-    except OSError:
+        tree = ast.parse(Path(path or _GAUNTLET).read_text("utf-8", errors="replace"))
+    except (OSError, SyntaxError, ValueError):
         return False
+    # An actual import, never a substring: a comment quoting the line must not flip the bias.
+    return any(isinstance(n, ast.ImportFrom) and n.module == "research.entry_hour_cost"
+               and any(a.name == "gauntlet_costs" for a in n.names) for n in ast.walk(tree))
 
 
 def costs_for(sleeves: Sequence[Mapping[str, Any]],

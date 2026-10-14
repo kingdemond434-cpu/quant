@@ -324,6 +324,10 @@ def test_the_seal_is_read_from_the_gauntlets_own_source(tmp_path):
     g = tmp_path / "external_gauntlet.py"
     g.write_text("costs = costs_for(sym, meta)\n", "utf-8")
     assert gauntlet_charges_entry_hour(g) is False
-    g.write_text("    from research.entry_hour_cost import gauntlet_costs\n", "utf-8")
+    # a comment quoting the line is not the import (audit of fe09eb913)
+    g.write_text("# from research.entry_hour_cost import gauntlet_costs\n", "utf-8")
+    assert gauntlet_charges_entry_hour(g) is False
+    g.write_text("def build():\n    from research.entry_hour_cost import gauntlet_costs\n",
+                 "utf-8")
     assert gauntlet_charges_entry_hour(g) is True
     assert gauntlet_charges_entry_hour(tmp_path / "absent.py") is False

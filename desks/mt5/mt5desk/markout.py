@@ -101,7 +101,8 @@ class Markout:
     mean_slip_quote: float
     median_slip_quote: float
     worst_slip_quote: float
-    mean_slip_r: float
+    #: None when no matched row carries a stop or every one is quarantined (L1.28a): never 0.0.
+    mean_slip_r: float | None
     edge_share: float | None
     rows: list[dict[str, Any]]
     why: str = ""
@@ -555,7 +556,7 @@ def compute(intents: list[dict], deals: list[dict],
 
     sq = sorted(r["slip_quote"] for r in rows)
     srs = [r["slip_r"] for r in rows if r["slip_r"] is not None and not r.get("quarantine")]
-    mean_r = (sum(srs) / len(srs)) if srs else 0.0
+    mean_r = (sum(srs) / len(srs)) if srs else None
     return Markout(
         n_deals=len(deals), n_matched=len(rows), n_unfilled_intents=unfilled,
         n_unmatched_deals=unmatched,
@@ -563,7 +564,7 @@ def compute(intents: list[dict], deals: list[dict],
         median_slip_quote=sq[len(sq) // 2],
         worst_slip_quote=sq[-1],
         mean_slip_r=mean_r,
-        edge_share=(mean_r / book_edge_r) if book_edge_r else None,
+        edge_share=(mean_r / book_edge_r) if book_edge_r and mean_r is not None else None,
         rows=rows,
         why=("matched on the position id (entry order == intent ticket), and legacy key-less "
              "deals on the exact stop/target echo; slip against the ENTRY fill, signed by the "
@@ -592,14 +593,16 @@ def render(m: Markout) -> str:
           f"  unmatched deals      {m.n_unmatched_deals}   "
           f"{'<- RECONCILE: orders this desk cannot account for' if m.n_unmatched_deals else ''}",
           "",
-          f"  mean slip            {m.mean_slip_quote:+.5f} quote  ({m.mean_slip_r:+.4f} R)",
+          f"  mean slip            {m.mean_slip_quote:+.5f} quote  "
+          + (f"({m.mean_slip_r:+.4f} R)" if m.mean_slip_r is not None
+             else "(R UNMEASURED: no clean row with a stop)"),
           f"  median slip          {m.median_slip_quote:+.5f} quote",
           f"  worst slip           {m.worst_slip_quote:+.5f} quote"]
     pooled = (m.slip or {}).get("pooled") or {}
     clean_pts = ((pooled.get("clean") or {}).get("pts") or {}).get("mean")
     if pooled:
         L += [f"  quarantined rows     {pooled.get('n_quarantined', 0)}   (implausible; listed, "
-              "kept in the mean above)",
+              "kept in the quote mean, excluded from R)",
               (f"  clean mean slip      {clean_pts:+.2f} points" if clean_pts is not None
                else "  clean mean slip      UNMEASURED"),
               "  sign: positive = cost, negative = price improvement"]

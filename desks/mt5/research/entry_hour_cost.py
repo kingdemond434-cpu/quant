@@ -46,8 +46,8 @@ THE FALLBACK LADDER, and it never goes down to zero or to a cheaper number:
   5. symbol absent from the surface                         -- the registry's pooled spread when
      it is positive AND fresh, labelled REGISTRY_FALLBACK; otherwise UNMEASURED.
 
-UNMEASURED is a verdict, never a price: `costs_at_entry_hour` still returns a cost model (the
-replay needs one) but its basis string starts with "UNMEASURED", and `field_status` names every
+UNMEASURED is a verdict, never a price: `costs_at_entry_hour` returns no cost model (None) with a
+basis string that starts with "UNMEASURED", and `field_status` names every
 zero, missing or stale spread/swap/commission field so a certificate or clock priced on one is
 queued for repricing instead of being treated as free.
 

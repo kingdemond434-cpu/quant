@@ -225,7 +225,8 @@ def test_the_44R_row_is_quarantined_on_its_stop_fraction():
     assert row["slip_r_money"] == pytest.approx(-44.297, abs=0.01)
     assert row["slip_r"] == pytest.approx(row["slip_stop_frac"])
     assert row["quarantine"] and "stop distance" in row["quarantine"][0]
-    assert m.mean_slip_r == 0.0                # the only row is quarantined: no clean mean
+    assert m.mean_slip_r is None               # the only row is quarantined: no clean mean
+    assert m.edge_share is None and "R UNMEASURED" in render(m)
     assert m.slip["pooled"]["n_quarantined"] == 1
     assert m.slip["quarantined"][0]["order"] == 222937609
 

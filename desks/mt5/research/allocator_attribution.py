@@ -360,6 +360,10 @@ def _execution_term(basis: str) -> dict[str, Any]:
     if not m.n_matched:
         return {"value": UNMEASURED, "why": m.why, "n_unfilled_intents": m.n_unfilled_intents,
                 "n_unmatched_deals": m.n_unmatched_deals}
+    if m.mean_slip_r is None:
+        return {"value": UNMEASURED, "why": ("no clean matched fill carries a stop, so slip in R "
+                                             "is unmeasured (never 0.0)"),
+                "n_matched_fills": int(m.n_matched)}
     return {
         "value": round(-float(m.mean_slip_r), 8),
         "mean_slip_r": round(float(m.mean_slip_r), 8),
