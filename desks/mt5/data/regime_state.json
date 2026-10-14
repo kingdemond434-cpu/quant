@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-14T00:30:22.552089+00:00",
+  "swept_at": "2026-10-14T00:45:20.940258+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -3639,7 +3639,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5528,
+      "shadow_exp_r": -0.575,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -4068,7 +4068,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3245,
+      "shadow_exp_r": -0.349,
       "woke_on_shadow": false
     },
     "USDTHB|overnight_gap_decay_continuous": {
@@ -4299,7 +4299,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1022,
+      "shadow_exp_r": -0.138,
       "woke_on_shadow": false
     },
     "XAGEUR|range_reversion_continuous": {
@@ -4827,7 +4827,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1339,
+      "shadow_exp_r": -0.1268,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
