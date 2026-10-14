@@ -3236,64 +3236,28 @@ AXIS_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": "2026-10-06"},
 }
 
-#: HELD ROUTES (2026-10-14, the GD queue rows). Routes the queue asked for whose OWN terms were
-#: read and carry NO clause permitting automated access for internal research: nothing here has
-#: a Source row, so nothing here is fetched (fail closed), and the run report lists each one by
-#: name as HELD. A route leaves this table only for a Source row whose terms quote permits it.
-HELD_ROUTES: dict[str, dict[str, str]] = {
-    "cme_margin_changes": {
-        "verdict": "HELD",
-        "wanted": ("CME Clearing performance-bond (margin) change advisories, PIT at notice "
-                   "publication: a margin-hike regime for XAUUSD, XAGUSD, XTIUSD and indices"),
-        "terms_url": "https://www.cmegroup.com/files/terms-of-use.pdf",
-        "terms_quote": ("Except as expressly authorized by CME, you agree not to sell, copy, "
-                        "distribute, or create derivative works based on the Website, in whole "
-                        "or in part. [...] Your use of any data, databases, directories content, "
-                        "information or materials (including associated metadata) on the "
-                        "Website, in any manner for any machine learning and/or artificial "
-                        "intelligence [...] is expressly prohibited."),
-        "reason": ("the licence (s.12) is personal and bars copying and derivative works, s.8(vi) "
-                   "bars data use for machine learning, and no clause permits automated access"),
-        "robots": ("cmegroup.com/robots.txt disallows Python-urllib/1.17 entirely and many "
-                   "/clearing/ sub-paths for every agent"),
-        "unblock": "a written CME authorisation, or a public-domain mirror of the advisories",
-        "checked_at": "2026-10-14"},
-    "cn_credit_contagion": {
-        "verdict": "HELD",
-        "wanted": ("GAP_MAP row 31: China credit/default-notice graph (CFETS ChinaMoney, "
-                   "ChinaBond, PBoC) mapped to AUD, copper, HK50, CHINAH, USDCNH, gold"),
-        "terms_url": "https://www.chinamoney.com.cn/chinese/flsm/",
-        "terms_quote": ("(not readable: the CFETS legal-statement page returned a fetch error; "
-                        "the ChinaBond home page shows no legal or copyright page; pbc.gov.cn is "
-                        "robots.txt-disallowed to the reader)"),
-        "reason": ("no official source's own terms could be read, so none has a permitting "
-                   "clause: UNREAD terms never permit automated input"),
-        "robots": "pbc.gov.cn: ROBOTS_DISALLOWED to the reader on 2026-10-14",
-        "unblock": ("a CFETS, ChinaBond or PBoC terms page read on the publisher's own domain "
-                    "with a reuse clause"),
-        "checked_at": "2026-10-14"},
-    "cboe_delayed_index_values": {
-        "verdict": "HELD",
-        "wanted": ("Cboe delayed index values (VIX family) for #234's vol route (a note only; "
-                   "#234 is not changed here)"),
-        "terms_url": "https://www.cboe.com/terms",
-        "terms_quote": ("You may view, print and download one copy of the Materials for your "
-                        "personal non-commercial use in connection with products and services "
-                        "offered by Cboe, provided that you maintain all copyright, trademark "
-                        "and other notices contained on the Materials. You may not otherwise "
-                        "copy, reproduce, alter, store either in hard copy or in an electronic "
-                        "retrieval system, create a derivative work (for example, a financial "
-                        "product, service or index) from, use to verify or correct other data "
-                        "or information, publish, rent, sublicense, distribute, or otherwise use "
-                        "in whole or in part in any other manner the Materials without Cboe's "
-                        "prior written consent"),
-        "reason": ("s.2 grants one personal non-commercial copy and bars storing in a retrieval "
-                   "system or deriving from the Materials; no clause names delayed data or "
-                   "automated access: no permitting clause, so #234's vol route stays unadmitted"),
-        "robots": "not consulted: the terms already decide",
-        "unblock": "a Cboe 'Request to Use Cboe Content' consent, or a licensed data feed",
-        "checked_at": "2026-10-14"},
-}
+#: HELD ROUTES (2026-10-14, the GD queue rows) are rows of the ONE terms register,
+#: `libs/data/terms_fence.SOURCE_POLICY` (`held_route: True`): routes the queue asked for whose OWN
+#: terms were read and carry NO clause permitting automated access for internal research. None has
+#: a Source row here, so nothing is fetched (fail closed), and the run report lists each by name as
+#: HELD. This is a read-only VIEW of those rows; a route leaves it only when its fence row changes.
+from libs.data import terms_fence as _tf  # noqa: E402
+
+
+def _held_route_view(key: str) -> dict[str, str]:
+    row = _tf.SOURCE_POLICY[key]
+    terms = row.get("terms") or {}
+    quoted = " | ".join(str(v) for v in (terms.get("clauses") or {}).values())
+    unread = " | ".join(str(v) for v in (terms.get("unread") or {}).values())
+    return {"verdict": "HELD", "status": str(row["status"]), "wanted": str(row["wanted"]),
+            "terms_url": str(terms.get("url") or ""),
+            "terms_quote": quoted or f"(not readable: {unread})",
+            "reason": str(row["why"]), "robots": str(row.get("robots") or ""),
+            "unblock": str(row["unblock"]), "checked_at": str(terms.get("checked_at") or "")}
+
+
+HELD_ROUTES: dict[str, dict[str, str]] = {k: _held_route_view(k)
+                                          for k in sorted(_tf.HELD_ROUTE_KEYS)}
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
                 for s in (*SOURCES, *SUBSTITUTE_SOURCES))

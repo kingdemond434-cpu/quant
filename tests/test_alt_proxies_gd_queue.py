@@ -185,6 +185,12 @@ def test_held_routes_carry_a_quote_and_have_no_source_row(tmp_path: Path) -> Non
         assert h["verdict"] == "HELD" and h["terms_url"].startswith("https://"), rid
         assert h["terms_quote"] and h["reason"] and h["unblock"], rid
         assert rid not in A.BY_ID and rid not in A.TERMS, rid           # never fetched
+    from libs.data import terms_fence as tf
+    for rid in A.HELD_ROUTES:                               # ONE register: each is a fence row
+        row = tf.SOURCE_POLICY[rid]
+        assert row["held_route"] and row["status"] == tf.IDEAS_ONLY and not row["hosts"], rid
+        assert A.HELD_ROUTES[rid]["reason"] == row["why"], rid
+    assert set(A.HELD_ROUTES) == tf.HELD_ROUTE_KEYS
     assert "derivative works" in A.HELD_ROUTES["cme_margin_changes"]["terms_quote"]
     assert "prior written consent" in A.HELD_ROUTES["cboe_delayed_index_values"]["terms_quote"]
     rep = A.run(A.Paths(tmp_path / "desk"), fixtures=FIX, donate=False, dry_run=True,

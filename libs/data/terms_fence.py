@@ -269,6 +269,76 @@ SOURCE_POLICY.update({
         "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news", PUBLIC_PAGE,
         _UNREAD, "", "terms page not read: imo.org refused the fetch (robots.txt redirect loop)"),
 })
+#: HELD ROUTES (2026-10-14, the GD queue rows; auditor: one register, so they live HERE). Routes
+#: the queue asked for whose OWN terms were read and carry no clause permitting automated access
+#: for internal research. Not URL-level (`hosts` is empty): the row governs the named ROUTE, so
+#: other pages on these domains keep whatever row or default they had. IDEAS_ONLY = never live
+#: input; `alt_proxies.HELD_ROUTES` is a read-only view that reports each by name as HELD.
+#: Missed growth: each route's delta E[log W] is UNMEASURED until its `unblock` arrives.
+_HELD_ROUTES: dict[str, dict[str, Any]] = {
+    "cme_margin_changes": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "wanted": ("CME Clearing performance-bond (margin) change advisories, PIT at notice "
+                   "publication: a margin-hike regime for XAUUSD, XAGUSD, XTIUSD and indices"),
+        "why": ("the licence (s.12) is personal and bars copying and derivative works, s.8(vi) "
+                "bars data use for machine learning, and no clause permits automated access"),
+        "robots": ("cmegroup.com/robots.txt disallows Python-urllib/1.17 entirely and many "
+                   "/clearing/ sub-paths for every agent"),
+        "unblock": "a written CME authorisation, or a public-domain mirror of the advisories",
+        "terms": {"url": "https://www.cmegroup.com/files/terms-of-use.pdf",
+                  "checked_at": "2026-10-14",
+                  "clauses": {
+                      "12": ("Except as expressly authorized by CME, you agree not to sell, "
+                             "copy, distribute, or create derivative works based on the "
+                             "Website, in whole or in part."),
+                      "8(vi)": ("Your use of any data, databases, directories content, "
+                                "information or materials (including associated metadata) on "
+                                "the Website, in any manner for any machine learning and/or "
+                                "artificial intelligence [...] is expressly prohibited.")}}},
+    "cn_credit_contagion": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "wanted": ("GAP_MAP row 31: China credit/default-notice graph (CFETS ChinaMoney, "
+                   "ChinaBond, PBoC) mapped to AUD, copper, HK50, CHINAH, USDCNH, gold"),
+        "why": ("no official source's own terms could be read, so none has a permitting "
+                "clause: UNREAD terms never permit automated input"),
+        "robots": "pbc.gov.cn: ROBOTS_DISALLOWED to the reader on 2026-10-14",
+        "unblock": ("a CFETS, ChinaBond or PBoC terms page read on the publisher's own domain "
+                    "with a reuse clause"),
+        "terms": {"url": "https://www.chinamoney.com.cn/chinese/flsm/",
+                  "checked_at": "2026-10-14",
+                  "unread": {
+                      "pbc.gov.cn": "ROBOTS_DISALLOWED to the reader on 2026-10-14: UNREAD",
+                      "chinamoney.com.cn": ("SITE_BLOCKED: the CFETS legal-statement page "
+                                            "returned a fetch error on 2026-10-14: UNREAD"),
+                      "chinabond.com.cn": ("no legal or copyright page found on the ChinaBond "
+                                           "home page on 2026-10-14: UNREAD")}}},
+    "cboe_delayed_index_values": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "wanted": ("Cboe delayed index values (VIX family) for #234's vol route (a note only; "
+                   "#234 is not changed here)"),
+        "why": ("s.2 grants one personal non-commercial copy and bars storing in a retrieval "
+                "system or deriving from the Materials; no clause names delayed data or "
+                "automated access: no permitting clause, so #234's vol route stays unadmitted"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": "a Cboe 'Request to Use Cboe Content' consent, or a licensed data feed",
+        "terms": {"url": "https://www.cboe.com/terms", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "2": ("You may view, print and download one copy of the Materials for "
+                            "your personal non-commercial use in connection with products and "
+                            "services offered by Cboe, provided that you maintain all "
+                            "copyright, trademark and other notices contained on the "
+                            "Materials. You may not otherwise copy, reproduce, alter, store "
+                            "either in hard copy or in an electronic retrieval system, create a "
+                            "derivative work (for example, a financial product, service or "
+                            "index) from, use to verify or correct other data or information, "
+                            "publish, rent, sublicense, distribute, or otherwise use in whole "
+                            "or in part in any other manner the Materials without Cboe's prior "
+                            "written consent")}}},
+}
+SOURCE_POLICY.update(_HELD_ROUTES)
+#: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
+HELD_ROUTE_KEYS: frozenset[str] = frozenset(
+    k for k, r in SOURCE_POLICY.items() if r.get("held_route"))
 #: A redirect INTO one of these paths is a login / CAPTCHA wall; it is refused, never followed.
 LOGIN_WALL = re.compile(r"(?i)/(?:i/flow/)?(?:log[-_]?in|sign[-_]?in|signin|accounts?/login|"
                         r"session/new|oauth2?/authorize|authorize|sso|captcha|"
