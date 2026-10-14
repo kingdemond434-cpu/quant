@@ -2907,7 +2907,7 @@ def alpha_rl() -> dict:
     return _producer("alpha_rl", "research/alpha_rl_run.py")
 
 
-def compile_candidates() -> dict:
+def compile_candidates(*, lock_held: bool = False) -> dict:
     """`miner_candidate_compiler`: every crawler row becomes a candidate or a deepening task.
 
     NOTHING SCHEDULED IT. Measured 2026-09-05 by cross-referencing the capability graph against
@@ -2929,7 +2929,31 @@ def compile_candidates() -> dict:
     did -- works this hour's worker against last hour's queue, so a row fetched at 10:05 could not
     reach the gauntlet until 11:xx at the earliest and only if somebody had run the compiler by
     hand in between.
+
+    THE WRITER'S LOCK IS TAKEN HERE (audit COT_AXIS_DEEPENING_31eb89f3d, should-fix). The
+    compiler rewrites `miner_deepening_queue.json`; `deepening_worker.purge_off_lane` and
+    `catch_up_intake` both exclude it with `job_lock.exclusive_job("miner_candidate_compiler")`,
+    and this leg was the one writer that did not, so a purge could replace the queue between the
+    compiler's read and its write. The leg now takes the SAME lock (without admission accounting,
+    as the purge does: this parent is not the compiler and its footprint is not the compiler's).
+    A held lock returns DEFERRED, loud, at once -- it never waits on the owner and never reads as
+    a pass. `lock_held=True` is for a caller that already holds it (`catch_up_intake`).
     """
+    if lock_held:
+        return _compile_producer()
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("miner_candidate_compiler", account=False) as acquired:
+        if not acquired:
+            why = ("miner_candidate_compiler writer lock is held (the lane purge or the intake "
+                   "catch-up owns the queue); this pass's compile is deferred to the next trigger")
+            print(f"compile_candidates: DEFERRED -- {why}")
+            return {"status": "DEFERRED", "exit_code": None, "why": why,
+                    "at": datetime.now(UTC).isoformat(timespec="seconds")}
+        return _compile_producer()
+
+
+def _compile_producer() -> dict:
     return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py",
                      "--budget-s", "600")
 
@@ -2947,7 +2971,7 @@ def catch_up_intake() -> dict:
     with exclusive_job("miner_candidate_compiler", need_mb=14000) as acquired:
         if not acquired:
             return {"status": "SKIPPED", "why": "canonical compiler lane already owned"}
-        compiled = compile_candidates()
+        compiled = compile_candidates(lock_held=True)
     if compiled.get("exit_code") != 0:
         return {"status": "FAILED", "compile": compiled,
                 "why": "fresh compilation failed; catch-up merge withheld"}

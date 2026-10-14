@@ -643,6 +643,20 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+def cot_zcache_wait_line() -> dict[str, Any]:
+    """The COT v2-definition wait, billed (audit COT_AXIS_DEEPENING_31eb89f3d should-fix): the
+    hold and its adoption commands come from `libs.data.cot_source.zcache_wait_line`, the module
+    that owns the refusal. Published beside the gate lines, never appended to the ledger (it
+    registers no rail; libs/portfolio/rails.py is sealed). An unimportable owner is UNMEASURED."""
+    try:
+        from libs.data.cot_source import zcache_wait_line
+    except Exception as exc:                            # pragma: no cover - host dependent
+        return {"rail": "cot_zcache_definition_wait", "verdict": UNMEASURED, "value": None,
+                "delta_elogw": UNMEASURED,
+                "cause": f"libs.data.cot_source not importable: {type(exc).__name__}"}
+    return zcache_wait_line()
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +774,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "cot_zcache_definition_wait": cot_zcache_wait_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

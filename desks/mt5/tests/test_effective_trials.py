@@ -282,3 +282,27 @@ def test_charge_carries_each_family_s_selection_trials(monkeypatch: pytest.Monke
                "by_family": [{"family": "f", "n_nominal": 10, "n_effective": 4.0,
                               "selection_trials": 200}]})
     assert seen["census"].families["f"].selection_trials == 200
+
+
+# --------------------------------------- duplicates never lower the bar (audit 2026-10-14)
+def test_duplicated_docket_rows_leave_the_charge_unchanged() -> None:
+    """Audit COT_AXIS_DEEPENING_31eb89f3d: duplicating docket rows dropped the charge 597->313
+    because nominal counted rows. The census is over distinct judge cells now."""
+    rows = ([_row("carry", "AUDJPY", "H1", fast=f) for f in range(8)]
+            + [_row("seasonality", sym, "H4", month=m)
+               for sym in ("EURUSD", "XAUUSD") for m in range(1, 4)]
+            + [_row("cot_positioning", "EURUSD", "D1", lookback=lb) for lb in (13, 26, 52)])
+    base = et.measure(rows)
+    charged, _ = et.charge(base)
+    doubled = et.measure(rows + [dict(r) for r in rows] + [dict(r) for r in rows[:5]])
+    assert doubled["duplicate_rows_collapsed"] == len(rows) + 5
+    assert doubled["n_nominal"] == base["n_nominal"] == len(rows)
+    assert et.charge(doubled) == (charged, et.charge(base)[1])
+    assert base["duplicate_rows_collapsed"] == 0
+
+
+def test_dedupe_never_adds_or_merges_distinct_cells() -> None:
+    rows = [_row("carry", "AUDJPY", "H1", fast=1), _row("carry", "AUDJPY", "M15", fast=1),
+            _row("carry", "AUDJPY", "H1", fast=2), {"not": "a cell"}]
+    kept, dropped = et.distinct_cells(rows)
+    assert dropped == 0 and kept == rows

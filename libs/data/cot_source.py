@@ -91,6 +91,45 @@ def zcache_definition_refusal(path: object = None) -> str | None:
             f"UNMEASURED until scripts/refresh_cot_zcache.py rebuilds it")
 
 
+#: THE BOX COMMANDS THAT CLEAR THE WAIT, in order (run from the repository root on the trading
+#: box): rebuild the z history as definition v2 from source, then refetch the TFF parquets.
+ZCACHE_ADOPTION = ("python scripts/refresh_cot_zcache.py",
+                   "cd desks/mt5 && python -m mt5desk.fetch_tff")
+
+
+def zcache_wait_line(path: object = None, *, at: str | None = None) -> dict[str, object]:
+    """The GROWTH-GOVERNANCE line for the v2-definition wait (audit COT_AXIS_DEEPENING should-fix).
+
+    While `zcache_definition_refusal` refuses, the whole `cot_positioning` family is BLOCKED_DATA
+    on this machine: no judge build, no forward clock. That is a hold, and every hold is billed:
+    its cost in forward E[log W] is UNMEASURED (no cell of the family can be judged while it
+    lasts, so nothing prices what it withholds) -- never a zero -- and it names the box commands
+    that clear it (`adoption`). A current-definition cache, or none at all, holds nothing and
+    reads NOT_BINDING with a measured zero.
+    """
+    from datetime import UTC, datetime
+    stamp = at or datetime.now(tz=UTC).isoformat(timespec="seconds")
+    cache = Path(str(path)) if path is not None else ZCACHE
+    why = zcache_definition_refusal(cache)
+    line: dict[str, object] = {
+        "day": stamp[:10], "at": stamp, "rail": "cot_zcache_definition_wait",
+        "kind": "data_hold", "family": "cot_positioning", "zcache": str(cache),
+        "units": "E[log W] per day",
+        "adoption": " ; then ".join(ZCACHE_ADOPTION), "adoption_steps": list(ZCACHE_ADOPTION)}
+    if why is None:
+        line.update(value=0.0, delta_elogw=0.0, verdict="NOT_BINDING", held=False,
+                    cause=(f"zcache is definition v{COT_ZCACHE_VERSION}"
+                           if cache.exists() else "no zcache here: the family reads its other "
+                           "sources and nothing is held"))
+        return line
+    line.update(value=None, delta_elogw="UNMEASURED", verdict="UNMEASURED", held=True,
+                cause=why,
+                why=(f"cot_positioning is BLOCKED_DATA until the zcache carries the "
+                     f"v{COT_ZCACHE_VERSION} stamp; its forgone growth cannot be priced while "
+                     f"no cell of the family can be judged"))
+    return line
+
+
 def zcache_version(path: object) -> int | None:
     """The definition version stamped in a zcache parquet's schema metadata.
 
