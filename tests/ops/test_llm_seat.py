@@ -19,6 +19,7 @@ def _isolate(tmp_path, monkeypatch):
     for var, _, _ in llm_seat.KEY_ENV_VARS:
         monkeypatch.delenv(var, raising=False)
     monkeypatch.delenv("LLM_MONTHLY_CAP_USD", raising=False)
+    monkeypatch.delenv(llm_seat.LOCAL_URLS_ENV, raising=False)
     monkeypatch.setattr(llm_seat, "SECRETS", tmp_path / "llm_panel.json")
     monkeypatch.setattr(llm_seat, "SPEND_LEDGER", tmp_path / "spend.jsonl")
 

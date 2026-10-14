@@ -37,6 +37,7 @@ while and the chain moves on; the cooldown expires on its own.
 """
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import json
 import os
@@ -51,7 +52,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.ops import openrouter_guard
+from libs.ops import machine_env, openrouter_guard
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "desks" / "mt5" / "data" / "llm_lab" / "providers.json"
@@ -95,7 +96,8 @@ class Provider:
     free_only_account: bool = False
 
     def key(self) -> str:
-        return os.environ.get(self.key_env, "").strip() if self.key_env else ""
+        # machine_env: a key set at machine scope after this process started still counts.
+        return machine_env.value(self.key_env) if self.key_env else ""
 
     def url(self) -> str:
         """The base URL with its `{ENV}` placeholders filled, or "" when one is unset."""
@@ -179,6 +181,9 @@ LOCAL_RECOMMENDED: tuple[tuple[str, float], ...] = (
 )
 
 
+_LOOPBACK = re.compile(
+    r"^http://(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|\[::1\])(?::\d+)?(?:/|$)", re.I)
+
 #: Local servers tried when QUANT_LOCAL_LLM_URLS is unset: Ollama, then llama.cpp's server.
 LOCAL_DEFAULT_URLS = ("http://127.0.0.1:11434/v1", "http://127.0.0.1:8080/v1")
 
@@ -215,8 +220,13 @@ def _write_json(path: Path, doc: Any) -> None:
 def _local_providers() -> list[Provider]:
     raw = os.environ.get("QUANT_LOCAL_LLM_URLS")
     urls = [u.strip().rstrip("/") for u in raw.split(",")] if raw else list(LOCAL_DEFAULT_URLS)
-    return [Provider(f"local{i}", u, "", "local", terms_url="local server, no third party")
-            for i, u in enumerate(urls) if u]
+    # LOOPBACK ONLY: a "local" rung that points at another host is a keyless third party.
+    # The installer's capped model (QUANT_LOCAL_LLM_MODEL) is pinned, so the chain never loads
+    # the uncapped base model beside it.
+    pin = os.environ.get("QUANT_LOCAL_LLM_MODEL", "").strip()
+    return [Provider(f"local{i}", u, "", "local", models=(pin,) if pin else (),
+                     terms_url="local server, no third party")
+            for i, u in enumerate(urls) if _LOOPBACK.match(u)]
 
 
 def providers() -> list[Provider]:
@@ -574,6 +584,17 @@ def _psutil() -> Any:
     return psutil
 
 
+def local_threads(cores: int) -> int:
+    """How many cores the local server may use: QUANT_LOCAL_LLM_THREADS, else a quarter of the
+    machine's logical cores, never fewer than 2 and never more than the machine has."""
+    try:
+        n = int(os.environ.get("QUANT_LOCAL_LLM_THREADS", "") or 0)
+    except ValueError:
+        n = 0
+    n = n or cores // 4
+    return max(1, min(cores, max(2, n))) if cores else max(2, n)
+
+
 def demote_local_servers() -> list[int]:
     """Drop every local inference server to the OS's idle priority. Best effort, once per pid.
 
@@ -591,6 +612,13 @@ def demote_local_servers() -> list[int]:
                 continue
             idle = getattr(ps, "IDLE_PRIORITY_CLASS", None)
             proc.nice(idle if idle is not None else 19)
+            # ...and onto the LAST cores only, so the terminal and the gateway keep the rest even
+            # if the idle class were ever ignored. The installer's thread cap sets how many.
+            with contextlib.suppress(Exception):
+                cores = int(ps.cpu_count(logical=True) or 0)
+                n = local_threads(cores)
+                if cores and n < cores:
+                    proc.cpu_affinity(list(range(cores - n, cores)))
             _DEMOTED.add(proc.pid)
             out.append(proc.pid)
         except Exception:
