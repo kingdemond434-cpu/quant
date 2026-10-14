@@ -586,8 +586,12 @@ def load_absorption_panel() -> dict[str, tuple[np.ndarray, np.ndarray]]:
 
 
 def _panel_signature(panel: dict[str, tuple[np.ndarray, np.ndarray]]) -> tuple[Any, ...]:
-    return tuple(sorted((sym, len(st), int(st[-1]) if len(st) else 0)
-                        for sym, (st, _) in panel.items()))
+    """What the AR memo is keyed on: each member's span AND a checksum of its closes, so a
+    revised bar (same length, same last stamp) is never served a stale read."""
+    return tuple(sorted(
+        (sym, len(st), int(st[0]) if len(st) else 0, int(st[-1]) if len(st) else 0,
+         float(np.asarray(cl, dtype="float64").sum()))
+        for sym, (st, cl) in panel.items()))
 
 
 def _candidates(panel: dict[str, tuple[np.ndarray, np.ndarray]], at: int, n_bars: int

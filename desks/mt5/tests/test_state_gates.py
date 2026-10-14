@@ -242,7 +242,9 @@ def _contracting(intel: Path, refuse: frozenset[str] = frozenset()):
             return None
         intel.mkdir(parents=True, exist_ok=True)
         n[0] += 1
-        path = intel / f"discoveries_2026101{n[0]:02d}.json"
+        # One past day for every contract, so a rollup packs them all whatever the grid's size
+        # (a day holding a single file is never rolled), and no name meets the SAME_MINUTE guard.
+        path = intel / f"discoveries_20200101_{n[0]:04d}.json"
         path.write_text(json.dumps({"source": source, "tests_run": tests_run,
                                     "discoveries": rows}, default=str), "utf-8")
         return path
