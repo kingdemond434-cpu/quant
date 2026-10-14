@@ -19,8 +19,8 @@ overlapping windows are one observation counted several times.
 
 UNMEASURED is a verdict (L1.28a): fewer than `min_events` independent windows is not a zero.
 UNDERPOWERED is a verdict too, distinct from FAIL: a cell that did not pass AND whose minimum
-detectable IC (80% power at its own n against the fixed Tier S bar) is above `TARGET_IC` could not have
-detected a realistic edge, so its miss says nothing about the edge. `power_table` measures the
+detectable IC (80% power at its own n against the fixed Tier S bar) is above `TARGET_IC` could
+not have detected a realistic edge, so its miss says nothing about the edge. `power_table` measures the
 detection rate by simulation with a planted IC; the null row is the false-positive rate.
 Pure numpy/pandas; no desk paths, so it is testable on synthetic data with a planted effect.
 """
@@ -273,8 +273,8 @@ def regime_placebo(sig_pos: Sequence[int] | np.ndarray, sig_ret: Sequence[float]
     p = float((1 + int((null >= real).sum())) / (1 + null.size))
     passed = real > 0 and p <= TIER_S_P_ONE_SIDED
     # Power, as the point-biserial IC between "inside the regime" and the signal's return: the
-    # smallest one detected with 80% power at this many signals against the fixed bar (a lower bound:
-    # a slow regime has fewer independent blocks than signals).
+    # smallest one detected with 80% power at this many signals against the fixed bar (a lower
+    # bound: a slow regime has fewer independent blocks than signals).
     mde = min_detectable_ic(int(pos.size))
     under = not passed and mde is not None and mde > TARGET_IC
     verdict = "PASS" if passed else ("UNDERPOWERED" if under else "FAIL")
