@@ -78,8 +78,9 @@ def test_collector_refusal_makes_zero_requests_and_holds_for_a_person(env, code)
     assert env["calls"] == []  # no variant, no www/bare, no http/https, no Wayback
     (row,) = doc["results"]
     assert row["outcome"] == "HELD"
-    hold = _state(env)["s1"]["hold"]
-    assert hold["released_by"] is None
+    hold = _state(env)["_holds"]["site:data.example.org"]
+    assert hold["released_by"] is None and hold["released_at"] is None
+    assert hold["status"] == code and hold["host"] == "data.example.org"
     assert hold["missed_growth"]["delta_elogw"] == "UNMEASURED"
     assert "recheck_after_ts" not in hold and doc["n_held"] == 1
 
@@ -99,7 +100,8 @@ def test_variant_refusal_stops_every_further_request_including_wayback(env, code
     assert env["calls"] == [first]
     assert not any(c.startswith(source_fixer.WAYBACK) for c in env["calls"])
     assert doc["results"][0]["outcome"] == "HELD"
-    assert _state(env)["s1"]["hold"]["released_by"] is None
+    host = source_fixer._host(first)
+    assert _state(env)["_holds"][f"site:{host}"]["released_by"] is None
 
 
 def test_waf_body_on_a_variant_is_a_hard_stop(env) -> None:
@@ -113,15 +115,20 @@ def test_waf_body_on_a_variant_is_a_hard_stop(env) -> None:
 def test_hold_never_lapses_and_only_a_person_releases_it(env, monkeypatch) -> None:
     env["verdict"](status="HTTP_ERROR", http=429)
     source_fixer.run()
+    # 400 days on, whatever any clock says, the hold stands.
+    real = source_fixer.time.time
+    monkeypatch.setattr(source_fixer.time, "time", lambda: real() + 400 * 86400)
     # A later pass -- whatever the clock says -- with a now-harmless verdict makes no request.
     env["verdict"](status="ROUTE_CHANGED", http=200)
     for _ in range(3):
         doc = source_fixer.run()
         assert doc["results"][0]["outcome"] == "HELD"
     assert env["calls"] == []
-    st = _state(env)
-    st["s1"]["hold"]["released_by"] = "principal"
-    (env["tmp"] / "sfs.json").write_text(json.dumps(st))
+    with pytest.raises(ValueError):
+        source_fixer.release("site:data.example.org", " ")
+    assert source_fixer.main(["--release", "site:data.example.org", "--by", "principal"]) == 0
+    row = _state(env)["_holds"]["site:data.example.org"]
+    assert row["released_by"] == "principal" and row["released_at"]
     source_fixer.run()
     assert env["calls"]  # released by a person: the repair resumes
 
@@ -144,3 +151,19 @@ def test_404_everywhere_still_reaches_wayback(env) -> None:
     doc = source_fixer.run()
     assert env["calls"][-1].startswith(source_fixer.WAYBACK)
     assert doc["results"][0]["outcome"] == "STILL_DEAD"
+
+
+def test_legacy_row_with_recheck_after_ts_is_still_active(env) -> None:
+    (env["tmp"] / "sfs.json").write_text(json.dumps({"_holds": {"site:data.example.org": {
+        "key": "site:data.example.org", "released_by": None, "recheck_after_ts": 1.0}}}))
+    env["verdict"](status="ROUTE_CHANGED", http=200)
+    doc = source_fixer.run()
+    assert env["calls"] == [] and doc["results"][0]["outcome"] == "HELD"
+
+
+def test_a_held_twin_host_blocks_the_www_variant(env) -> None:
+    (env["tmp"] / "sfs.json").write_text(json.dumps({"_holds": {
+        "site:www.data.example.org": {"key": "site:www.data.example.org", "released_by": None}}}))
+    env["verdict"](status="ROUTE_CHANGED", http=200)
+    doc = source_fixer.run()
+    assert env["calls"] == [] and doc["results"][0]["outcome"] == "HELD"

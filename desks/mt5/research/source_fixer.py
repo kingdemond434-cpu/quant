@@ -20,9 +20,10 @@ WHAT IT NEVER DOES. A source that answered 401/403/429 or a WAF/challenge page -
 collector or to any variant probe here -- is a HARD STOP: no further variant, no scheme or
 `www` swap, no Wayback lookup. That is the site saying no, and trying its other doors or an
 archive of it is a route-around. The stop is recorded as a PERSON-RELEASED hold in this organ's
-own state (`hold.released_by` null) with a missed_growth line; it never lapses on a timer and
-holds until a person writes their name into `released_by`. It does not touch one blocked by
-robots.txt, or one declared `key`/`paid` without a key; it never
+own state (`_holds["site:<host>"]`, the record shape hard_stop and polite_fetch share, with
+`released_by` null and a missed_growth line). It never lapses on a timer; it stands until a
+person runs `source_fixer.py --release site:<host> --by <name>`. It does not touch a source
+blocked by robots.txt, or one declared `key`/`paid` without a key; it never
 hammers a host (one variant per second, the collector's own politeness), and it never invents a
 URL that does not derive from the registered one.
 """
@@ -132,21 +133,62 @@ def _verdict_hard_stop(verdict: dict[str, Any]) -> str | None:
     return None
 
 
-def _hold_row(sid: str, url: str, cause: str, now: str) -> dict[str, Any]:
-    """A person-released hold. No timestamp releases it; only a named person does."""
-    return {
-        "held_at": now, "url": url, "cause": cause, "released_by": None,
-        "release": ("a person writes their name into hold.released_by in "
-                    "data/lake/source_fixer_state.json; no timer releases this hold"),
-        "missed_growth": {"source": sid, "delta_elogw": "UNMEASURED",
-                          "cause": (f"{cause} from {url}: the source refused; no variant, "
-                                    f"scheme/www swap or archive lookup is tried while held")},
-    }
+HOLDS_KEY = "_holds"
 
 
-def _held(entry: dict[str, Any]) -> bool:
-    hold = entry.get("hold")
-    return isinstance(hold, dict) and not hold.get("released_by")
+def _host(url: str) -> str:
+    try:
+        return (urllib.parse.urlsplit(url).hostname or "").lower()
+    except ValueError:
+        return ""
+
+
+def _site_keys(host: str) -> tuple[str, ...]:
+    """The hold keys that cover `host`: itself and its www/bare twin (one site, two doors)."""
+    if not host:
+        return ()
+    twin = host[4:] if host.startswith("www.") else "www." + host
+    return (f"site:{host}", f"site:{twin}")
+
+
+def hold_row(url: str, verdict: str, status: int | None) -> dict[str, Any]:
+    """The shared person-held record (same shape as hard_stop / polite_fetch).
+
+    Active while released_by is null. There is no recheck_after_ts: no timer releases it."""
+    host = _host(url)
+    return {"key": f"site:{host}", "verdict": verdict, "status": status, "host": host,
+            "url": url[:300], "held_at": time.time(), "released_by": None,
+            "released_at": None,
+            "missed_growth": {"delta_elogw": "UNMEASURED",
+                              "cause": (f"{verdict} from {host}: the site refused; no variant, "
+                                        f"scheme/www swap or archive lookup is tried until a "
+                                        f"person releases {f'site:{host}'}")}}
+
+
+def _active(row: Any) -> bool:
+    # A row carrying a legacy recheck_after_ts is still active: time never releases a hold.
+    return isinstance(row, dict) and not row.get("released_by")
+
+
+def held_by(holds: dict[str, Any], url: str) -> dict[str, Any] | None:
+    for k in _site_keys(_host(url)):
+        if _active(holds.get(k)):
+            return dict(holds[k])
+    return None
+
+
+def release(key: str, by: str) -> dict[str, Any]:
+    """A person releases one hold. The only path that ever clears it."""
+    if not by.strip():
+        raise ValueError("a release names the person releasing it")
+    fstate = _read(STATE, {})
+    holds = fstate.get(HOLDS_KEY) if isinstance(fstate, dict) else None
+    if not isinstance(holds, dict) or key not in holds:
+        raise KeyError(key)
+    holds[key]["released_by"] = by.strip()
+    holds[key]["released_at"] = time.time()
+    _write_atomic(STATE, json.dumps(fstate, indent=1))
+    return dict(holds[key])
 
 
 def _probe(url: str) -> tuple[int | None, str, bytes]:
@@ -229,25 +271,31 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
     fstate = _read(STATE, {})
     if not isinstance(fstate, dict):
         fstate = {}
+    holds = fstate.setdefault(HOLDS_KEY, {})
+    if not isinstance(holds, dict):
+        holds = fstate[HOLDS_KEY] = {}
     started = time.monotonic()
     results: list[dict[str, Any]] = []
     repaired = 0
     for sid, verdict in sorted(failed.items()):
+        if sid == HOLDS_KEY:
+            continue
         if time.monotonic() - started > budget_s:
             results.append({"id": sid, "outcome": "DEFERRED", "why": "fixer budget exhausted"})
             continue
         src = next(r for r in rows if str(r.get("id")) == sid)
-        entry = fstate.setdefault(sid, {"failed_passes": 0})
-        if _held(entry):
-            results.append({"id": sid, "outcome": "HELD", "hold": entry["hold"],
+        src_url = str(src.get("url_override") or src.get("url") or "")
+        standing = held_by(holds, src_url)
+        if standing:
+            results.append({"id": sid, "outcome": "HELD", "hold": standing,
                             "why": "person-released hold stands; no request is made"})
             continue
         stop = _verdict_hard_stop(verdict)
         if stop:
-            now = datetime.now(UTC).isoformat(timespec="seconds")
-            entry["hold"] = _hold_row(sid, str(src.get("url_override") or src.get("url") or ""),
-                                      stop, now)
-            results.append({"id": sid, "outcome": "HELD", "hold": entry["hold"],
+            row = hold_row(src_url, stop, verdict.get("http") if isinstance(
+                verdict.get("http"), int) else None)
+            holds[row["key"]] = row
+            results.append({"id": sid, "outcome": "HELD", "hold": row,
                             "why": f"{stop} is a hard stop; no variant, no Wayback"})
             continue
         if str(src.get("access") or "public") in ("key", "paid"):
@@ -258,14 +306,17 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
         expect = str(src.get("expect") or "any")
         tried: list[dict[str, Any]] = []
         fix: str | None = None
-        refused: str | None = None
+        refused: dict[str, Any] | None = None
         for cand in candidate_urls(base_url):
+            refused = held_by(holds, cand)
+            if refused:  # another source's refusal already holds this door
+                break
             status, ctype, head = _probe(cand)
             if status in HARD_STOP_HTTP:
                 tried.append({"url": cand, "status": status, "ok": False})
-                refused = cand
-                entry["hold"] = _hold_row(sid, cand, f"HTTP {status} (WAF pages read as 403)",
-                                          datetime.now(UTC).isoformat(timespec="seconds"))
+                refused = hold_row(cand, f"HTTP {status} (a WAF/challenge page reads as 403)",
+                                   status)
+                holds[refused["key"]] = refused
                 break
             ok, _shape = (_acceptable(expect, ctype, head) if status == 200 else (False, ""))
             tried.append({"url": cand, "status": status, "ok": ok})
@@ -274,10 +325,11 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
                 break
             time.sleep(VARIANT_GAP_S)
         if refused:
-            results.append({"id": sid, "outcome": "HELD", "hold": entry["hold"],
+            results.append({"id": sid, "outcome": "HELD", "hold": refused,
                             "tried": tried,
                             "why": "a variant was refused; hard stop, no Wayback"})
             continue
+        entry = fstate.setdefault(sid, {"failed_passes": 0})
         if fix:
             entry.update({"failed_passes": 0, "fixed_at": datetime.now(UTC).isoformat(
                 timespec="seconds"), "fixed_from": base_url, "fixed_to": fix})
@@ -308,8 +360,7 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
         _write_atomic(STATE, json.dumps(fstate, indent=1))
     # Every standing hold, including one on a source the collector no longer lists as failed:
     # a hold leaves this list only when a person releases it.
-    standing = [{"id": k, **v["hold"]} for k, v in sorted(fstate.items())
-                if isinstance(v, dict) and _held(v)]
+    standing_holds = [dict(v) for _k, v in sorted(holds.items()) if _active(v)]
     doc = {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "rule": ("every source the collector could not read gets the webmaster's variants tried "
@@ -317,7 +368,7 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
                  "becomes url_override in the registry; three failed passes mark dead_since"),
         "n_failed_sources": len(failed), "n_repaired": repaired,
         "n_dead": sum(1 for r in results if r.get("outcome") == "DEAD"),
-        "n_held": len(standing), "holds": standing,
+        "n_held": len(standing_holds), "holds": standing_holds,
         "dry_run": dry_run, "results": results,
     }
     _write_atomic(OUT, json.dumps(doc, indent=1, ensure_ascii=False))
@@ -328,7 +379,15 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--budget", type=float, default=240.0)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--release", metavar="KEY", help="release one person-held hold (site:<host>)")
+    ap.add_argument("--by", metavar="NAME", help="the person releasing it")
     args = ap.parse_args(argv)
+    if args.release:
+        if not args.by:
+            ap.error("--release needs --by <name>")
+        row = release(args.release, args.by)
+        print(f"released {row['key']} by {row['released_by']}")
+        return 0
     doc = run(budget_s=args.budget, dry_run=args.dry_run)
     print(f"source fixer: {doc['n_failed_sources']} failed source(s), {doc['n_repaired']} "
           f"repaired, {doc['n_dead']} dead -> {OUT}")
