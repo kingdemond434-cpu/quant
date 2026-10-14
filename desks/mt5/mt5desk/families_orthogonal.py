@@ -1691,12 +1691,27 @@ FAMILY_INPUTS["style_premia"] = ("swap_diff (broker_swaps) for carry; risk-drive
 # rebuilds peers only for the families it names) and refuses the cell if any peer is missing.
 # research/learned_miners.py is the only proposer and charges every configuration it tried.
 from mt5desk.family_learned_propagation import (  # noqa: E402
+    family_ae_latent,
     family_attention_ts,
     family_gnn_propagation,
+    family_rocket_ts,
+    family_sig_path,
 )
 
 ORTHOGONAL_FAMILIES["gnn_propagation"] = family_gnn_propagation
 ORTHOGONAL_FAMILIES["attention_ts"] = family_attention_ts
+ORTHOGONAL_FAMILIES["rocket_ts"] = family_rocket_ts
+ORTHOGONAL_FAMILIES["ae_latent"] = family_ae_latent
+ORTHOGONAL_FAMILIES["sig_path"] = family_sig_path
+FAMILY_INPUTS["sig_path"] = ("the peer panel's bars (peer_symbols on the recipe; the readout is "
+                             "pooled across it and the path includes the panel mean), resolved "
+                             "by the family itself", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["rocket_ts"] = ("the peer panel's bars (peer_symbols on the recipe; the readout is "
+                              "pooled across it), resolved by the family itself",
+                              "data/universe/*_H1.parquet")
+FAMILY_INPUTS["ae_latent"] = ("the peer panel's bars (peer_symbols on the recipe; the "
+                              "autoencoder compresses the whole panel), resolved by the family "
+                              "itself", "data/universe/*_H1.parquet")
 FAMILY_INPUTS["gnn_propagation"] = ("the peer panel's bars (peer_symbols on the recipe), "
                                     "resolved by the family itself",
                                     "data/universe/*_H1.parquet")
@@ -2027,6 +2042,18 @@ FAMILY_TIMEFRAMES["attention_ts"] = (
     ("H1", "H4", "D1"),
     "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
     "daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["rocket_ts"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
+    "daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["sig_path"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
+    "daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["ae_latent"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from the daily cross-asset panel, acted on once a day; a finer chart "
+    "re-emits the same daily signal and only multiplies the trial count")
 
 #: Parameters whose bar count expresses a WALL-CLOCK duration the mechanism's cause is dated by.
 #: Everything not listed is bar-relative and is left exactly as written. See the essay above.

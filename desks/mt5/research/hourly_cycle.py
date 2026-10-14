@@ -1128,7 +1128,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cross_sectional_breadth"),
                     "discovery"),
     # validate: the adversarial evidence lab
-    **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
+    **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
+                     "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
                      "adversary_evolution", "frontier_map", "market_ecology",
                      "research_diversity_archive", "execution_science",
@@ -1832,6 +1833,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The six committees stop themselves at --budget-s 300 (traps and writes included).
     "committee_ensembles": 420,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
+    # THE KIMI HUNT is three waves, each one ask of up to 240 s that may walk the free chain; on
+    # the default 720 s a slow Wave 3 was cut and (before it donated per wave) lost every finding.
+    # PRODUCER_YIELD read the seat DEAD for 3 days on 2026-10-13. Three full waves fit here.
+    "kimi_hunt": 1_020,
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
@@ -5059,6 +5064,12 @@ def main() -> None:
     # producer budgets itself (600 s default) under this leg's timeout and writes
     # reports/FALSIFIER_VERDICTS.json; a kill there is evidence for the promoter, never a gate here.
     fz = _costed("falsifier_run", lambda: _producer("falsifier_run", "research/falsifier_run.py"))
+    # STYLE NOVELTY (principal 2026-10-13: "hunt tons of unknown styles"). Each certificate's
+    # signals projected onto the known-style library; writes reports/STYLE_NOVELTY.json (and
+    # NOVELTY_WEEKLY.json once a week), which judge_coverage's ranking reads as a one-sided
+    # novelty factor. Self-throttled to one re-measure per 20h, so most hours it stands down.
+    snv = _costed("style_novelty", lambda: _producer(
+        "style_novelty", "research/style_novelty.py", "--once", "--budget-s", "300"))
     # THE CANON SEAL, hourly rather than daily. A certificate the gauntlet minted at 02:00 sat
     # unsealed until the next midnight run, so `shadow_admission._canon` -- which enrolment,
     # promotion and the dashboard all read -- was up to 24 hours behind the gates.
@@ -5953,7 +5964,7 @@ def main() -> None:
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
                     "rejection_throughput": rjt,
-                    "falsifier_run": fz, "merge_docket": mh,
+                    "falsifier_run": fz, "style_novelty": snv, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
                     "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,

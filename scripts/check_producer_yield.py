@@ -142,6 +142,21 @@ REPLACEMENTS: dict[str, str] = {
     "mql5_reputation": "mql5_survivors -- reputation is one of its phenotypes",
     "plumbing": "plumbing_miner (the proposer), which is the organ this seat fed",
     "scheduled_chatgpt": "deepseek_cycle -- the seat that is actually donating today",
+    # THE SIX MEASURED DEAD WITH NO NAMED ALTERNATIVE on 2026-10-13 (PRODUCER_YIELD of 10-12).
+    # Each names a live organ on the same ground; the LLM-born ones also name the research-lab
+    # role (#332, desks/mt5/research/llm_lab.py) that takes the ground once it lands.
+    "expression_factory": "alpha_recombination -- the same expression search over measured "
+                          "parents; llm_lab lab H (program_synthesis) once #332 lands",
+    "kimi": "deepseek_cycle -- the same deep-forest seat shape on the free chain; kimi itself "
+            "now donates per wave on a 1,020 s leg cap",
+    "lab_probability": "mathlab -- the stochastic_processes and extreme_value traditions; "
+                       "llm_lab lab C (mathematical) once #332 lands",
+    "lab_timeseries": "lab_crossasset -- the sibling lab of the same box writer; llm_lab lab G "
+                      "(representation) and role R (code_lab) once #332 lands",
+    "world_lab": "dislocation_lab -- the macro department's cross-asset shock ground; world_lab "
+                 "reads a causal graph frozen since 2026-09-08 (causal_graph leg)",
+    "literature": "academic -- academic_miner and seed_miners arxiv_qfin, the same "
+                  "papers-with-a-mechanism ground; literature was a one-off 2026-09-16 hand seed",
 }
 
 

@@ -204,3 +204,24 @@ def test_the_contest_carries_the_previous_verdict_into_its_hysteresis(book, monk
     ap.certify(res, root=tmp_path, book={"a": 0.05, "b": 0.03, "c": 0.02})
     res2 = ap.contest(book, {"a": 0.05, "b": 0.03, "c": 0.02}, root=tmp_path)
     assert res2["hysteresis"]["holding_global"] == bool(res["passed"])
+
+
+# ------------------------------------------------- a re-solve of the dynamic book is not a rival
+
+def test_a_copy_of_the_dynamic_book_within_solver_noise_is_one_book() -> None:
+    """2026-10-13 on the box: "dynamic 0.018999 vs best baseline posterior 0.019000 (needs >
+    0.019380)". The posterior re-solve differed from the dynamic book by solver noise, entered as
+    a rival at 1e-6, and the dynamic book could never beat its own copy by the margin."""
+    dyn = {"a": 0.04, "b": 0.02, "c": 0.01}
+    noisy = {"a": 0.04002, "b": 0.01999, "c": 0.00999}
+    assert ap._same_book(dyn, noisy, 0.07)
+    assert not ap._same_book(dyn, {"a": 0.03, "b": 0.03, "c": 0.01}, 0.07)
+
+
+def test_a_near_identical_incumbent_is_not_entered_as_a_rival(book) -> None:
+    dyn = {"a": 0.04, "b": 0.02, "c": 0.01}
+    res = ap.contest(book, dyn, {"a": 0.04001, "b": 0.02, "c": 0.01},
+                     cfg=WorldConfig(seed=7, n_worlds=64, n_rows=128))
+    assert "static_incumbent" not in res["scores"]
+    res = ap.contest(book, dyn, {"a": 0.05}, cfg=WorldConfig(seed=7, n_worlds=64, n_rows=128))
+    assert "static_incumbent" in res["scores"]                # a distinct book still contests
