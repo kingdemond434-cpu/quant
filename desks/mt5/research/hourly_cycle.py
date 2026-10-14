@@ -2081,8 +2081,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "free_stack_hunt": 720,
     # Its proposer mints a 1,500-row ring slice; the registry write is the long part.
     "free_stack_proposer": 900,
-    # The state-gate proposer mints a 1,500-row ring slice the same way; the registry write is
-    # the long part.
+    # The state-gate proposer mints at most 1,500 never-charged cells a pass; the registry write
+    # is the long part.
     "state_gate_proposer": 900,
     # A reader of the factory's report and journal tail; seconds.
     "factory_throughput": 180,
@@ -4620,8 +4620,9 @@ def main() -> None:
     # THE STATE-GATED WRAPPERS (2026-10-14, GAP_MAP rows 87-88): every hypothesis-lane H1
     # instrument x the price-only base families, minted as sync_gated (panel phase
     # synchronisation, direction fixed by the base's mechanism) and entropy_gated (own
-    # permutation entropy, low) cells -- one per (wrapper, base, symbol), a ring slice per pass,
-    # every minted cell charged. Writes STATE_GATE_PROPOSER.json.
+    # permutation entropy, low) cells -- one per (wrapper, base, symbol), each donated and
+    # charged exactly once (the charged set is read from its own contracts). Writes
+    # STATE_GATE_PROPOSER.json.
     sgp = _costed("state_gate_proposer", lambda: _producer(
         "state_gate_proposer", "research/state_gate_proposer.py", "--once"))
     # THE WORLD DATASET HUNTER: discovers, fetches, quality-checks, PIT-stamps and registers

@@ -208,53 +208,131 @@ def test_proposer_mints_one_cell_per_wrapper_base_symbol_and_charges_it(monkeypa
         assert c["falsifier"]
 
     seen: dict = {}
+    intel = tmp_path / "intel"
+    donate = _contracting(intel)
 
     def fake_donate(source, candidates, tests_run):
         seen.update(source=source, n=len(candidates), tests_run=tests_run)
-        return tmp_path / "contract.json"
+        return donate(source, candidates, tests_run)
 
     monkeypatch.setattr(proposer_common, "donate", fake_donate)
     monkeypatch.setattr(proposer_common, "donation_counts",
                         lambda: {"donated": seen.get("n", 0)})
     monkeypatch.setattr(P, "REPORT", tmp_path / "STATE_GATE_PROPOSER.json")
-    monkeypatch.setattr(P, "CHARGED", tmp_path / "charged.json")
+    monkeypatch.setattr(P, "INTEL", intel)
     monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 7)
     assert P.main(["--once"]) == 0
     assert seen == {"source": "state_gate_proposer", "n": 7, "tests_run": 7}
     import json
     rep = json.loads((tmp_path / "STATE_GATE_PROPOSER.json").read_text("utf-8"))
     assert rep["trials_charged"] == 7 and rep["grid_total"] == expect
-    assert len(json.loads((tmp_path / "charged.json").read_text("utf-8"))["cells"]) == 7
+    charged, bad = P.charged_cells(intel)
+    assert charged is not None and len(charged) == 7 and not bad
 
 
-def test_each_cell_is_charged_exactly_once_across_passes(monkeypatch, tmp_path) -> None:
-    """Audit of #395: re-donating the grid every hour re-charged ~7,680 trials a day."""
+def _contracting(intel: Path, refuse: frozenset[str] = frozenset()):
+    """A donate that writes the seat's contract the way proposer_common.donate does, refusing
+    rows on the symbols in `refuse` (they never reach the file)."""
     import json
+    n = [0]
 
+    def donate(source, candidates, tests_run):
+        rows = [c for c in candidates if c.get("symbol") not in refuse]
+        if not rows:
+            return None
+        intel.mkdir(parents=True, exist_ok=True)
+        n[0] += 1
+        path = intel / f"discoveries_2026101{n[0]:02d}.json"
+        path.write_text(json.dumps({"source": source, "tests_run": tests_run,
+                                    "discoveries": rows}, default=str), "utf-8")
+        return path
+    return donate
+
+
+def _two_symbol_proposer(monkeypatch, tmp_path, refuse=frozenset()):
     import proposer_common
     import state_gate_proposer as P
     monkeypatch.setattr(P, "store_symbols", lambda: ["EURUSD", "XAUUSD"])
     monkeypatch.setattr(P, "allowed", lambda sym, fam: True)
     monkeypatch.setattr(P, "sync_applies", lambda sym: True)
-    grid, _ = P.build_grid(P.store_symbols())
     charged: list[int] = []
+    donate = _contracting(tmp_path / "intel", refuse)
     monkeypatch.setattr(proposer_common, "donate",
-                        lambda source, candidates, tests_run: (charged.append(tests_run)
-                                                               or tmp_path / "c.json"))
+                        lambda source, candidates, tests_run: (charged.append(tests_run),
+                                                               donate(source, candidates,
+                                                                      tests_run))[1])
     monkeypatch.setattr(proposer_common, "donation_counts", lambda: {})
     monkeypatch.setattr(P, "REPORT", tmp_path / "r.json")
-    monkeypatch.setattr(P, "CHARGED", tmp_path / "charged.json")
+    monkeypatch.setattr(P, "INTEL", tmp_path / "intel")
+    return P, P.build_grid(P.store_symbols())[0], charged
+
+
+def test_each_cell_is_charged_exactly_once_across_passes(monkeypatch, tmp_path) -> None:
+    """Audit of #395: re-donating the grid every hour re-charged ~7,680 trials a day."""
+    import json
+    P, grid, charged = _two_symbol_proposer(monkeypatch, tmp_path)
     monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 1500)
     for _ in range(3):
         assert P.main(["--once"]) == 0
     assert charged == [len(grid)]                  # pass 1 charges the grid; 2 and 3 nothing
     assert json.loads((tmp_path / "r.json").read_text("utf-8"))["status"] == "ALL_CHARGED"
+
+
+def test_chunked_passes_charge_the_grid_exactly_once(monkeypatch, tmp_path) -> None:
+    P, grid, charged = _two_symbol_proposer(monkeypatch, tmp_path)
     monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 3)
-    (tmp_path / "charged.json").unlink()
-    charged.clear()
     for _ in range(-(-len(grid) // 3) + 2):
         P.main(["--once"])
     assert sum(charged) == len(grid) and max(charged) == 3
+
+
+def test_a_refused_cell_is_retried_never_marked_charged(monkeypatch, tmp_path) -> None:
+    """Audit of #395 v2: a cell donate turned away is in no contract, so it stays uncharged."""
+    P, grid, charged = _two_symbol_proposer(monkeypatch, tmp_path, frozenset({"XAUUSD"}))
+    monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 1500)
+    P.main(["--once"])
+    P.main(["--once"])
+    keys, _ = P.charged_cells(tmp_path / "intel")
+    assert keys is not None
+    assert not [c for c in grid if c["symbol"] == "XAUUSD" and P.cell_key(c) in keys]
+    assert len(charged) == 2 and charged[1] == sum(1 for c in grid if c["symbol"] == "XAUUSD")
+
+
+def test_an_unreadable_contract_stops_the_pass_never_recharges(monkeypatch, tmp_path) -> None:
+    import json
+    P, _, charged = _two_symbol_proposer(monkeypatch, tmp_path)
+    (tmp_path / "intel").mkdir()
+    (tmp_path / "intel" / "discoveries_corrupt.json").write_text("{not json", "utf-8")
+    assert P.main(["--once"]) == 0
+    rep = json.loads((tmp_path / "r.json").read_text("utf-8"))
+    assert rep["status"] == "UNREADABLE" and rep["unreadable_contracts"] and charged == []
+
+
+def test_the_charged_set_is_read_off_real_donate_contracts(monkeypatch, tmp_path) -> None:
+    """End to end through proposer_common.donate's own file, registry write stubbed."""
+    import proposer_common
+    import state_gate_proposer as P
+    monkeypatch.setattr(P, "store_symbols", lambda: ["EURUSD"])
+    monkeypatch.setattr(P, "allowed", lambda sym, fam: True)
+    monkeypatch.setattr(P, "sync_applies", lambda sym: True)
+    monkeypatch.setattr(proposer_common, "INTEL", tmp_path / "intelligence")
+    monkeypatch.setattr(proposer_common, "_record_in_registry", lambda source, cands: None)
+    monkeypatch.setattr(proposer_common, "_preregister",
+                        lambda source, cands: {"preregistered": 0, "failed": 0})
+    monkeypatch.setattr(P, "INTEL", tmp_path / "intelligence" / P.SEAT)
+    monkeypatch.setattr(P, "REPORT", tmp_path / "r.json")
+    grid, _ = P.build_grid(["EURUSD"])
+    P.main(["--once"])
+    keys, bad = P.charged_cells()
+    assert not bad and keys == {P.cell_key(c) for c in grid}
+
+
+def test_an_unreadable_asset_class_is_unmeasured_not_off_session(monkeypatch) -> None:
+    import state_gate_proposer as P
+    monkeypatch.setattr(P, "allowed", lambda sym, fam: True)
+    monkeypatch.setattr(P, "sync_applies", lambda sym: None)
+    _, refused = P.build_grid(["EURUSD"])
+    assert refused == {"sync_gated:class_UNMEASURED": len(P.bases_for("sync_gated"))}
 
 
 def test_sync_is_never_minted_on_a_weekend_trading_crypto_cfd(monkeypatch) -> None:

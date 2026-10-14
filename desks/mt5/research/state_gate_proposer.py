@@ -17,9 +17,13 @@ search over gate settings. `tests_run` on every donation is the number of cells 
 EACH CELL IS CHARGED EXACTLY ONCE (audit of #395). `libs.research.experiment_ledger` sums
 `tests_run` across donations with no dedupe, so re-donating the same 320 cells every hour would
 have charged ~7,680 phantom trials a day to the lifetime DSR and the per-family shrinkage. The
-proposer keeps `data/state_gate/charged.json` -- the identity of every cell it ever donated --
-and each pass donates only cells never donated before; `tests_run` is that count. A pass with
-nothing new donates nothing and charges nothing.
+charged set is DERIVED from the proposer's own contracts -- every row in
+`data/intelligence/state_gate_proposer/discoveries_*.json`, the very files the ledger counts -- so
+a side ledger cannot drift from the charge, a crash after donate cannot lose it, and a box
+migration carries it with the intake. Each pass donates only cells in no contract yet;
+`tests_run` is that count. A cell `donate` refused is in no contract, so it is retried, never
+silently dropped (refusals are counted by reason). A contract that cannot be read makes the pass
+UNREADABLE and donate nothing: an unknown charged set is never read as empty.
 
 NOT A SCREEN AND NOT A SECOND JUDGE. The whole grid is minted, at most MINT_ROWS_PER_PASS new
 cells per pass, so every cell reaches the gauntlet and the ten gates remain the only thing that
@@ -51,7 +55,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 
 SEAT = "state_gate_proposer"
 UNIVERSE = DESK / "data" / "universe"
-CHARGED = DESK / "data" / "state_gate" / "charged.json"
+INTEL = DESK / "data" / "intelligence" / SEAT
 REPORT = DESK / "reports" / "STATE_GATE_PROPOSER.json"
 #: New rows donated per pass. NOT A BRAKE ON BREADTH: every never-donated cell is minted within
 #: `passes_to_cover_grid` hours; the bound keeps the registry write inside the hour (see
@@ -69,13 +73,6 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     "sync_gated": {"window": 128, "tail": 1.0 / 3.0, "min_history": 30, "min_symbols": 12},
     "entropy_gated": {"order": 4, "window": 168, "z_window": 24 * 60, "threshold": 1.0},
 }
-
-
-def _read(p: Path, default: Any) -> Any:
-    try:
-        return json.loads(p.read_text("utf-8"))
-    except (OSError, ValueError):
-        return default
 
 
 def store_symbols() -> list[str]:
@@ -101,12 +98,35 @@ def allowed(symbol: str, family: str) -> bool:
 SYNC_EXCLUDED_CLASSES: frozenset[str] = frozenset({"crypto"})
 
 
-def sync_applies(symbol: str) -> bool:
+def sync_applies(symbol: str) -> bool | None:
+    """True/False from the symbol's asset class, None when the class cannot be read here."""
     try:
         from research.universe_policy import asset_class_of
-        return str(asset_class_of(symbol)).lower() not in SYNC_EXCLUDED_CLASSES
+        klass = str(asset_class_of(symbol)).lower()
     except Exception:
-        return False
+        return None
+    if not klass:
+        return None
+    return klass not in SYNC_EXCLUDED_CLASSES
+
+
+def charged_cells(root: Path | None = None) -> tuple[set[str] | None, list[str]]:
+    """(the cell keys of every row in this seat's contracts, unreadable contract paths). The set
+    is None when any contract cannot be read: the charge is then unknown, not empty."""
+    d = INTEL if root is None else root
+    keys: set[str] = set()
+    bad: list[str] = []
+    for f in sorted(d.glob("discoveries_*.json")) if d.is_dir() else []:
+        try:
+            rows = json.loads(f.read_text("utf-8")).get("discoveries")
+        except (OSError, ValueError, AttributeError):
+            bad.append(str(f))
+            continue
+        if not isinstance(rows, list):
+            bad.append(str(f))
+            continue
+        keys.update(cell_key(r) for r in rows if isinstance(r, dict))
+    return (None if bad else keys), bad
 
 
 def cell_key(c: dict[str, Any]) -> str:
@@ -164,10 +184,13 @@ def build_grid(symbols: list[str]) -> tuple[list[dict[str, Any]], dict[str, int]
                 if not allowed(sym, wrapper):
                     refused[wrapper] = refused.get(wrapper, 0) + 1
                     continue
-                if wrapper == "sync_gated" and not sync_applies(sym):
-                    refused["sync_gated:off_panel_session"] = (
-                        refused.get("sync_gated:off_panel_session", 0) + 1)
-                    continue
+                if wrapper == "sync_gated":
+                    ok = sync_applies(sym)
+                    if not ok:
+                        why = ("sync_gated:off_panel_session" if ok is False
+                               else "sync_gated:class_UNMEASURED")
+                        refused[why] = refused.get(why, 0) + 1
+                        continue
                 for chart in CHARTS:
                     out.append(_row(wrapper, base, sym, chart))
     return out, refused
@@ -194,7 +217,17 @@ def main(argv: list[str] | None = None) -> int:
         REPORT.write_text(json.dumps(doc, indent=1), "utf-8")
         print(f"state_gate_proposer: {doc['status']} -- nothing to mint")
         return 0
-    charged = set((_read(CHARGED, {}) or {}).get("cells") or [])
+    charged, unreadable = charged_cells()
+    if charged is None:
+        doc.update({"built": 0, "minted": 0, "trials_charged": 0, "status": "UNREADABLE",
+                    "unreadable_contracts": unreadable,
+                    "why": ("a contract of this seat cannot be read, so which cells were already "
+                            "charged is unknown; nothing is donated until it is repaired, because "
+                            "an unknown charge read as empty would re-charge the grid")})
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        REPORT.write_text(json.dumps(doc, indent=1), "utf-8")
+        print(f"state_gate_proposer: UNREADABLE -- {len(unreadable)} contract(s)")
+        return 0
     fresh = [c for c in grid if cell_key(c) not in charged]
     cands = fresh[:MINT_ROWS_PER_PASS]
     arms: dict[str, int] = {}
@@ -206,12 +239,6 @@ def main(argv: list[str] | None = None) -> int:
         from proposer_common import donate, donation_counts
         path = donate(source=SEAT, candidates=cands, tests_run=len(cands))
         counts = donation_counts()
-        if path:
-            charged.update(cell_key(c) for c in cands)
-            CHARGED.parent.mkdir(parents=True, exist_ok=True)
-            tmp = CHARGED.with_name(CHARGED.name + ".tmp")
-            tmp.write_text(json.dumps({"cells": sorted(charged)}), "utf-8")
-            tmp.replace(CHARGED)
     doc.update({"status": "DRY_RUN" if a.dry_run else ("RAN" if cands else "ALL_CHARGED"),
                 "already_charged": len(grid) - len(fresh), "uncharged": len(fresh),
                 "passes_to_cover_grid": -(-len(fresh) // MINT_ROWS_PER_PASS),
@@ -219,11 +246,15 @@ def main(argv: list[str] | None = None) -> int:
                 "minted": counts.get("donated", 0),
                 "refused_wrong_lane": counts.get("refused_wrong_lane", 0),
                 "refused_unstamped": counts.get("refused_unstamped", 0),
+                "refused_by_reason": {r: n for r, n in (
+                    ("wrong_lane", counts.get("refused_wrong_lane", 0)),
+                    ("unstamped", counts.get("refused_unstamped", 0))) if n},
                 "trials_charged": len(cands) if path else 0,
                 "contract": str(path) if path else None,
                 "seconds": round(time.monotonic() - t0, 1),
                 "rule": ("one cell per (wrapper, base, symbol) at registered defaults; each is "
-                         "donated and charged exactly once (data/state_gate/charged.json)")})
+                         "donated and charged exactly once; the charged set is read from this "
+                         "seat's own contracts, and a refused cell is retried")})
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     print(f"state_gate_proposer: grid {len(grid)}, built {len(cands)}, minted "
