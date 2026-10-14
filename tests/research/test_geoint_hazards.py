@@ -113,7 +113,7 @@ def test_a_downgraded_quake_keeps_its_first_sighting_membership() -> None:
     dn = rows["usgs:usdn0001"]                       # reviewed 5.7 today: v1 dropped it entirely
     assert dn["reviewed_magnitude"] == 5.7 and dn["magnitude"] == 6.1
     assert dn["pit_basis"] == "first_sighting_creation_time"
-    assert dn["available_time"] == "2024-01-01T07:30:00+00:00"
+    assert dn["available_time"] == "2024-01-01T08:10:00+00:00"   # 07:30 sighting, origin+slack
     assert "usgs:usdn0001" in G.members_as_of(rows, datetime(2024, 6, 1, tzinfo=UTC))
 
 
@@ -127,6 +127,25 @@ def test_a_missing_creation_time_uses_the_magnitude_margin() -> None:
     assert "usgs:usob0001" not in rows                 # outside every box
     assert G.parse_quakeml(b"<not xml", NOW) is None   # unparsable is None, never "no quakes"
 
+
+def test_a_sighting_is_never_stamped_before_origin_plus_slack() -> None:
+    mb = _pit_rows()["usgs:usmb0001"]                  # own mb 6.0 created at origin + 12 min
+    assert mb["pit_basis"] == "first_sighting_creation_time"
+    assert (datetime.fromisoformat(mb["available_time"])
+            == datetime.fromisoformat(mb["event_time"]) + G.PUBLICATION_SLACK)
+
+
+def test_only_the_event_sources_own_magnitudes_time_an_entry() -> None:
+    rows = _pit_rows()
+    assert "usgs:usfa0001" not in rows                 # JMA Ml 6.1 beside us Mww 5.8: never
+    mb = rows["usgs:usmb0001"]                         # own mb 6.0 later revised to Mww 5.8
+    assert mb["magnitude_type"] == "mb" and mb["preferred_type"] == "Mww"
+    assert mb["non_preferred_type"] is True
+
+
+def test_a_sub_six_timed_sighting_with_an_untimed_margin_magnitude_takes_the_margin() -> None:
+    mx = _pit_rows()["usgs:usmx0001"]
+    assert mx["pit_basis"] == "margin" and mx["magnitude"] == 6.5
 
 def _live(mag: float, updated: datetime, eid: str = "us7000live") -> bytes:
     origin = datetime(2026, 10, 13, 22, 0, tzinfo=UTC)

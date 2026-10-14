@@ -306,7 +306,14 @@ def parse_quakeml(body: bytes, first_seen: datetime) -> list[dict[str, Any]] | N
         kind = next((k for k, box in QUAKE_BOXES.items() if _in(box, lat, lon)), None)
         if kind is None:
             continue
-        mags: list[tuple[datetime | None, float, str]] = []
+        # ONLY THE EVENT'S OWN NETWORK'S MAGNITUDES TIME AN ENTRY (GEOINT_v2 MF2). Live sees one
+        # preferred magnitude from the authoritative network; an mb 6.0 later revised to Mww 5.8,
+        # or another agency's Ml 6.1 beside a preferred Mww 5.8, is a number live never showed.
+        # A magnitude whose creationInfo/agencyID is absent or names another agency never times
+        # an entry; the type it entered on is recorded and non-preferred types are counted.
+        src = (next((v for k, v in ev.attrib.items() if _local(k) == "eventsource"), "")
+               or "").strip().lower()
+        mags: list[tuple[datetime | None, float, str, str, bool]] = []
         for m in ev:
             if _local(m.tag) != "magnitude":
                 continue
@@ -315,28 +322,39 @@ def parse_quakeml(body: bytes, first_seen: datetime) -> list[dict[str, Any]] | N
             except ValueError:
                 continue
             if v == v:
+                agency = (_val(m, "creationInfo", "agencyID") or "").strip().lower()
                 mags.append((_when(_val(m, "creationInfo", "creationTime")), v,
-                             str(m.attrib.get("publicID") or "")))
+                             str(m.attrib.get("publicID") or ""), _val(m, "type") or "",
+                             bool(src) and agency == src))
         if not mags:
             continue
         pref_m = _val(ev, "preferredMagnitudeID")
-        reviewed = next((v for _, v, pid in mags if pid == pref_m), mags[0][1])
-        timed = sorted((ct, v) for ct, v, _ in mags if ct is not None)
+        pref = next((x for x in mags if x[2] == pref_m), mags[0])
+        reviewed, pref_type = pref[1], pref[3]
+        timed = sorted(((ct, v, typ) for ct, v, _, typ, own in mags if ct is not None and own),
+                       key=lambda x: x[0])
         eid = _event_id(ev)
-        if timed:
-            hit = next(((ct, v) for ct, v in timed if v >= MIN_MAGNITUDE), None)
-            if hit is None:
-                continue
+        hit = next(((ct, v, typ) for ct, v, typ in timed if v >= MIN_MAGNITUDE), None)
+        if hit is not None:
             basis = ("first_sighting_creation_time" if hit == timed[0]
                      else "upgrade_creation_time")
-            out.append(_row(eid, kind, hit[1], lat, lon, origin, max(hit[0], origin), basis,
+            # Never before origin + slack: live never stamps earlier (GEOINT_v2 MF1).
+            out.append(_row(eid, kind, hit[1], lat, lon, origin,
+                            max(hit[0], origin + PUBLICATION_SLACK), basis,
                             first_seen, first_sighting_magnitude=round(timed[0][1], 2),
                             first_sighting_at=timed[0][0].isoformat(timespec="seconds"),
-                            reviewed_magnitude=round(reviewed, 2)))
+                            reviewed_magnitude=round(reviewed, 2), magnitude_type=hit[2],
+                            preferred_type=pref_type,
+                            non_preferred_type=bool(hit[2] and pref_type
+                                                    and hit[2].lower() != pref_type.lower())))
         elif reviewed >= MARGIN_MAGNITUDE:
+            # No own-network timed sighting reached M6 (none timed, or only sub-6 ones timed):
+            # the first M6+ sighting is unknowable, so only the margin admits (should-fix :336).
             out.append(_row(eid, kind, reviewed, lat, lon, origin, origin + PUBLICATION_SLACK,
                             "margin", first_seen, first_sighting_magnitude=None,
-                            first_sighting_at=None, reviewed_magnitude=round(reviewed, 2)))
+                            first_sighting_at=None, reviewed_magnitude=round(reviewed, 2),
+                            magnitude_type=pref_type, preferred_type=pref_type,
+                            non_preferred_type=False))
     return out
 
 
@@ -701,7 +719,13 @@ def run(*, budget_s: float = 120.0, fetch: bool = True, fixtures: Path | None = 
                "cells_preview": cells[:8], "trials_charged_here": 0,
                "pit_rule": ("M6+ membership is the first sighting at M6+ (FDSN creationTime, or "
                             "the live feed's updated stamp), never today's reviewed magnitude; "
-                            f"no creationTime -> reviewed >= {MARGIN_MAGNITUDE} at origin+slack"),
+                            f"no own-network timed M6+ -> reviewed >= {MARGIN_MAGNITUDE} at "
+                            "origin+slack; only magnitudes whose agencyID is the event source "
+                            "time an entry, never before origin+slack. KNOWN MISS: an event "
+                            f"first shown at M6+ and since cut below {BACKFILL_QUERY_MIN} is "
+                            "outside the backfill query floor and never enters"),
+               "entered_on_non_preferred_type": sum(1 for r in store.values()
+                                                    if r.get("non_preferred_type")),
                "pit_basis_counts": {b: sum(1 for r in store.values() if r.get("pit_basis") == b)
                                     for b in sorted({str(r.get("pit_basis")) for r in
                                                      store.values()})},
