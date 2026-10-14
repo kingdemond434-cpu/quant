@@ -126,11 +126,12 @@ def test_a_reconcile_restore_is_refused_when_unreplicated(roster, monkeypatch) -
         "status": "LIVE", "risk_frac": 0.03, "streak": 2, "why": "funded"})
     monkeypatch.setattr(promoter, "note_door", lambda *a, **k: None)
     row = {**_principal_row("STANDBY"), "demote_reason": "the optimiser gives it 0% heat"}
+    on_disk = dict(row)
     rows = [row]
     promoter.reconcile_capital(rows, {"fresh": True, "at": "2026-10-14T00:00:00+00:00",
                                       "admission_at": "2026-10-14T01:00:00+00:00"})
     assert rows[0]["status"] == "LIVE"                       # the restore happened in memory
-    got = roster([{**row}], rows)["eurzar_carry_asia_p_8339edce23032d21"]
+    got = roster([on_disk], rows)["eurzar_carry_asia_p_8339edce23032d21"]
     assert got["status"] == "STANDBY"                          # and never reached the file
     assert got["demote_reason"].startswith(ai.REFUSED_UNREPLICATED)
 
