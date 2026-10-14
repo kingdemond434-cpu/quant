@@ -302,3 +302,85 @@ def test_the_crawl_never_asks_a_held_site_again(monkeypatch: pytest.MonkeyPatch,
     assert report["failures"].get("HELD METHOD_BLOCKED") == 2
     saved = json.loads((tmp_path / "access.json").read_text("utf-8"))
     assert saved["blocked"]["a.test"]["status"] == 403
+
+
+# ------------------------------------------- auditor follow-ups on 1e8cca2ac (2026-10-14)
+_CHALLENGE = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
+              b"<div id='cf-challenge'>Checking your browser</div></body></html>")
+
+
+def _crawl_fixture(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, urls: tuple[str, ...]) -> None:
+    import world_frontier as wf
+    sources = {u: wf.Source(url=u, host=u.split("/")[2]) for u in urls}
+    monkeypatch.setattr(wf, "load", lambda *a, **k: sources)
+    monkeypatch.setattr(wf, "save", lambda *a, **k: None)
+    monkeypatch.setattr(wf, "due", lambda s, b: list(s.values()))
+    monkeypatch.setattr(wc, "seed", lambda s: 0)
+    monkeypatch.setitem(sys.modules, "libs.research.proposer_seat", None)
+    monkeypatch.setitem(sys.modules, "research.source_shares", None)
+    monkeypatch.setattr(wc, "ACCESS_STATE", tmp_path / "access.json")
+    monkeypatch.setattr(wc, "REPORT", tmp_path / "world_crawl.json")
+    monkeypatch.setattr(wc, "WORLD", tmp_path / "world")
+    monkeypatch.setattr(wc, "BASE", tmp_path)
+    monkeypatch.setattr(wc, "VAULT", tmp_path / "world" / "vault")
+
+
+def test_the_crawl_obeys_a_crawl_delay_larger_than_its_gap(monkeypatch: pytest.MonkeyPatch,
+                                                           tmp_path: Path) -> None:
+    _install(monkeypatch, {"https://a.test/robots.txt": (200, b"User-agent: *\nCrawl-delay: 9\n",
+                                                         ""),
+                           "https://a.test/1": (200, _HTML, ""),
+                           "https://a.test/2": (200, _HTML + b"2", "")})
+    _crawl_fixture(monkeypatch, tmp_path, ("https://a.test/1", "https://a.test/2"))
+    slept: list[float] = []
+    monkeypatch.setattr(wc.time, "sleep", slept.append)
+    wc.crawl(budget=2, run_budget_s=60, seconds_per_host=wc.HOST_GAP_S)
+    assert slept and max(slept) > 8.0, f"the 9s Crawl-delay was not obeyed: {slept}"
+
+
+def test_a_challenge_robots_is_a_hold_and_no_fetch(monkeypatch: pytest.MonkeyPatch) -> None:
+    web = _install(monkeypatch, {"https://a.test/robots.txt": (200, _CHALLENGE, ""),
+                                 "https://a.test/page": (200, _HTML, "")})
+    acc = _access()
+    raw, why = wc.fetch("https://a.test/page", acc)
+    assert raw is None and why == "METHOD_BLOCKED"
+    assert "https://a.test/page" not in web.urls()
+    assert acc.blocked["a.test"]["missed_growth"]["delta_elogw"] == "UNMEASURED"
+
+
+def test_a_challenge_page_is_not_ingested_and_is_held(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install(monkeypatch, {"https://a.test/robots.txt": _ALLOW,
+                           "https://a.test/page": (200, _CHALLENGE, "")})
+    acc = _access()
+    raw, why = wc.fetch("https://a.test/page", acc)
+    assert raw is None and why.startswith("METHOD_BLOCKED")
+    assert acc.hold("https://a.test/other") == "METHOD_BLOCKED"
+
+
+def test_a_github_io_refusal_holds_only_that_tenant(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install(monkeypatch, {"https://a.github.io/robots.txt": _ALLOW,
+                           "https://a.github.io/p": (403, b"", ""),
+                           "https://b.github.io/robots.txt": _ALLOW,
+                           "https://b.github.io/p": (200, _HTML, "")})
+    acc = _access()
+    wc.fetch("https://a.github.io/p", acc)
+    assert wc.fetch("https://b.github.io/p", acc) == (_HTML, "")
+    assert wc.site_of("10.1.2.3") == "10.1.2.3"
+
+
+def test_a_hold_survives_a_run_that_raises_mid_loop(monkeypatch: pytest.MonkeyPatch,
+                                                    tmp_path: Path) -> None:
+    _install(monkeypatch, {"https://a.test/robots.txt": _ALLOW,
+                           "https://a.test/1": (403, b"", ""),
+                           "https://b.test/robots.txt": _ALLOW,
+                           "https://b.test/1": (200, _HTML, "")})
+    _crawl_fixture(monkeypatch, tmp_path, ("https://a.test/1", "https://b.test/1"))
+
+    def killed(url: str, raw: bytes) -> str:
+        raise RuntimeError("killed mid-loop")
+    monkeypatch.setattr(wc, "vault", killed)
+    with pytest.raises(RuntimeError):
+        wc.crawl(budget=2, run_budget_s=60, seconds_per_host=0.0)
+    saved = json.loads((tmp_path / "access.json").read_text("utf-8"))
+    assert saved["blocked"]["a.test"]["status"] == 403
+    assert wc.HostAccess.load(tmp_path / "access.json").hold("https://a.test/9") == "METHOD_BLOCKED"

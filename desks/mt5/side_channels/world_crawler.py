@@ -86,6 +86,9 @@ DEFAULT_FETCHES = 150
 MAX_BYTES = 1_500_000
 #: Politeness gap between two requests to the same host, seconds.
 HOST_GAP_S = 2.0
+#: A robots Crawl-delay is obeyed in full; a wait longer than this defers the source to a later
+#: hour (counted CRAWL_DELAY_DEFERRED) rather than spending the run asleep on one host.
+MAX_CRAWL_DELAY_WAIT_S = 120.0
 #: The frontier may not grow without bound on a box with no swap. New links past this are
 #: DROPPED AND COUNTED, never silently discarded.
 MAX_FRONTIER = 40_000
@@ -265,7 +268,14 @@ def fetch(url: str, access: HostAccess | None = None) -> tuple[bytes | None, str
                     ctype = str(resp.headers.get("Content-Type", ""))
                     if "html" not in ctype and "text" not in ctype and "json" not in ctype:
                         return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
-                    return resp.read(MAX_BYTES), ""
+                    body = resp.read(MAX_BYTES)
+                marker = _pf.looks_challenged(body)
+                if marker:
+                    # A 200 challenge page is a block, not content: held, never ingested.
+                    verdict = access.block(url, "WAF", "METHOD_BLOCKED",
+                                           f"challenge page ({marker!r}) served as content")
+                    return None, f"{verdict}: challenge page"
+                return body, ""
             except urllib.error.HTTPError as exc:
                 code = int(exc.code)
                 if code in BLOCK_STATUS:
@@ -1075,9 +1085,16 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
             failures[f"HELD {held}"] += 1
             continue
 
-        gap = seconds_per_host - (time.time() - last_host_hit.get(src.host, 0.0))
+        # PACE: max(the crawler's own gap, the origin's robots Crawl-delay for our token). A
+        # Crawl-delay is obeyed, never shortened; one longer than MAX_CRAWL_DELAY_WAIT_S defers
+        # the source to a later hour instead of stalling the whole run on one host.
+        pace = max(seconds_per_host, access.crawl_delay(src.url))
+        gap = pace - (time.time() - last_host_hit.get(src.host, 0.0))
+        if gap > MAX_CRAWL_DELAY_WAIT_S:
+            failures["CRAWL_DELAY_DEFERRED"] += 1
+            continue
         if gap > 0:
-            time.sleep(min(gap, seconds_per_host))
+            time.sleep(gap)
         last_host_hit[src.host] = time.time()
 
         raw, why = fetch(src.url, access)

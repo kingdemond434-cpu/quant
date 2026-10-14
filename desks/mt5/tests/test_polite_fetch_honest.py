@@ -210,3 +210,72 @@ def test_regional_hunter_stops_a_source_on_a_refusal(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(rsh, "fetch", fake)
     out = rsh.mine_source("hfm_pamm", rsh.SOURCES["hfm_pamm"], 1)
     assert out["state"] == "refused:METHOD_BLOCKED" and len(tried) == 1, tried
+
+
+# ------------------------------------------- auditor follow-ups on 1e8cca2ac (2026-10-14)
+_CHALLENGE = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
+              b"<div id='cf-challenge'>Checking your browser</div></body></html>")
+
+
+def test_a_crawl_delay_larger_than_the_gap_is_obeyed() -> None:
+    web = _Web({"https://a.test/robots.txt": (200, b"User-agent: *\nCrawl-delay: 7\n", ""),
+                "https://a.test/p": (200, _HTML, ""), "https://a.test/q": (200, _HTML, "")})
+    gate = pf.HostGate(default_s=0.1)
+    slept: list[float] = []
+    acc = pf.HostAccess(path=None)
+    for u in ("https://a.test/p", "https://a.test/q"):
+        r = pf.get(u, opener=web, gate=gate, sleep=slept.append, access=acc)
+        assert r.ok
+    assert slept and max(slept) > 6.5, slept
+
+
+def test_a_challenge_page_as_robots_is_a_hold_and_nothing_is_fetched() -> None:
+    web = _Web({"https://a.test/robots.txt": (200, _CHALLENGE, ""),
+                "https://a.test/p": (200, _HTML, "")})
+    acc = pf.HostAccess(path=None)
+    r = _get(web, "https://a.test/p", acc)
+    assert not r.ok and r.verdict == "METHOD_BLOCKED"
+    assert "https://a.test/p" not in web.urls()
+    row = acc.blocked["a.test"]
+    assert row["verdict"] == "METHOD_BLOCKED" and row["status"] == "WAF"
+    assert row["missed_growth"]["delta_elogw"] == "UNMEASURED" and row["missed_growth"]["cause"]
+
+
+def test_an_html_page_as_robots_never_reads_as_allow_all() -> None:
+    web = _Web({"https://a.test/robots.txt": (200, b"<html><body>Not found</body></html>", ""),
+                "https://a.test/p": (200, _HTML, "")})
+    r = _get(web, "https://a.test/p")
+    assert not r.ok and "https://a.test/p" not in web.urls()
+
+
+def test_a_challenge_page_as_content_is_held_and_not_ingested() -> None:
+    web = _Web({"https://a.test/robots.txt": _ALLOW, "https://a.test/p": (200, _CHALLENGE, ""),
+                "https://a.test/q": (200, _HTML, "")})
+    acc = pf.HostAccess(path=None)
+    r = _get(web, "https://a.test/p", acc)
+    assert not r.ok and r.text == "" and r.verdict == "METHOD_BLOCKED"
+    assert acc.hold("https://a.test/q") == "METHOD_BLOCKED"
+    n = len(web.sent)
+    assert not _get(web, "https://a.test/q", acc).ok and len(web.sent) == n
+
+
+def test_a_github_io_tenants_refusal_does_not_hold_its_neighbour() -> None:
+    web = _Web({"https://a.github.io/robots.txt": _ALLOW,
+                "https://a.github.io/p": (403, b"", ""),
+                "https://b.github.io/robots.txt": _ALLOW,
+                "https://b.github.io/p": (200, _HTML, "")})
+    acc = pf.HostAccess(path=None)
+    assert _get(web, "https://a.github.io/p", acc).verdict == "METHOD_BLOCKED"
+    assert _get(web, "https://b.github.io/p", acc).ok
+    assert pf.site_of("x.blogspot.com") != pf.site_of("y.blogspot.com")
+    assert pf.site_of("a.lausd.k12.ca.us") != pf.site_of("b.sfusd.k12.ca.us")
+    assert pf.site_of("www.example.co.uk") == pf.site_of("old.example.co.uk") == "example.co.uk"
+
+
+def test_an_ip_is_held_by_its_full_host() -> None:
+    web = _Web({"http://10.1.2.3/robots.txt": _ALLOW, "http://10.1.2.3/p": (403, b"", ""),
+                "http://10.9.2.3/robots.txt": _ALLOW, "http://10.9.2.3/p": (200, _HTML, "")})
+    acc = pf.HostAccess(path=None)
+    _get(web, "http://10.1.2.3/p", acc)
+    assert "10.1.2.3" in acc.blocked and pf.site_of("10.1.2.3") == "10.1.2.3"
+    assert _get(web, "http://10.9.2.3/p", acc).ok

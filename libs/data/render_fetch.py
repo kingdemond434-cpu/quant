@@ -234,7 +234,7 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
 
     marker = looks_challenged(html)
     if marker:
-        access.block(url, 403, "METHOD_BLOCKED")
+        access.block(url, "WAF", "METHOD_BLOCKED", f"challenge page ({marker!r}) on a render")
         return html, (f"RENDER-CHALLENGED: the page returned an anti-bot interstitial "
                       f"({marker!r}). A challenge is NOT a markup change and NOT an empty forest "
                       "-- it is a live block on a rendered session, which is the strongest signal "

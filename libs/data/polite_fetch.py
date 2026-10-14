@@ -151,12 +151,13 @@ class HostGate:
     def interval(self, host: str) -> float:
         return float(self.per_host.get(host, self.default_s))
 
-    def reserve(self, host: str) -> float:
-        """Book the next slot for `host`; returns how long the caller must wait for it."""
+    def reserve(self, host: str, at_least: float = 0.0) -> float:
+        """Book the next slot for `host`; returns how long the caller must wait for it. The
+        spacing after this slot is max(the host's interval, `at_least`) -- robots Crawl-delay."""
         now = time.monotonic()
         with self._lock:
             slot = max(now, self._next.get(host, 0.0))
-            self._next[host] = slot + self.interval(host)
+            self._next[host] = slot + max(self.interval(host), float(at_least or 0.0))
         return max(0.0, slot - now)
 
     def penalise(self, host: str, seconds: float) -> None:
@@ -165,8 +166,9 @@ class HostGate:
         with self._lock:
             self._next[host] = max(self._next.get(host, 0.0), time.monotonic() + seconds)
 
-    def wait(self, host: str, sleep: Callable[[float], None] = time.sleep) -> None:
-        w = self.reserve(host)
+    def wait(self, host: str, sleep: Callable[[float], None] = time.sleep,
+             at_least: float = 0.0) -> None:
+        w = self.reserve(host, at_least)
         if w > 0:
             sleep(w)
 
@@ -194,9 +196,57 @@ REDIRECT_STATUS: frozenset[int] = frozenset({301, 302, 303, 307, 308})
 #: The verdict each refusal status is recorded as. A hard stop: never retried, never routed around.
 BLOCK_STATUS: dict[int, str] = {401: "NEEDS_KEY", 403: "METHOD_BLOCKED", 429: "METHOD_BLOCKED"}
 
-#: Second-level labels under which a registrable domain takes three labels (co.uk, com.cn, ...).
-#: Approximate on purpose: it errs towards a WIDER hold, which is the safe direction.
-_SLD = frozenset({"co", "com", "net", "org", "gov", "ac", "edu", "or", "ne", "go"})
+#: The Public Suffix List, VENDORED (snapshot 2025-12-28, MPL-2.0, from publicsuffix.org): no
+#: network at runtime and no new dependency. ICANN and PRIVATE sections both apply, so github.io,
+#: blogspot.com and k12.ca.us tenants are separate sites. Refresh by replacing the file.
+PSL_PATH = Path(__file__).with_name("public_suffix_list.dat")
+_PSL: tuple[frozenset[str], frozenset[str], frozenset[str]] | None = None
+_PSL_LOCK = threading.Lock()
+
+
+def _idna(label: str) -> str:
+    try:
+        return label.encode("idna").decode("ascii")
+    except UnicodeError:
+        return label
+
+
+def _psl() -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
+    """(plain rules, wildcard parents, exception rules), each in both Unicode and IDNA form."""
+    global _PSL
+    with _PSL_LOCK:
+        if _PSL is None:
+            plain: set[str] = set()
+            wild: set[str] = set()
+            exc: set[str] = set()
+            try:
+                lines = PSL_PATH.read_text("utf-8").splitlines()
+            except OSError:
+                lines = []
+            for ln in lines:
+                rule = ln.strip().split(" ")[0].lower()
+                if not rule or rule.startswith("//"):
+                    continue
+                forms = {rule, ".".join(_idna(x) if x not in ("*", "!") else x
+                                        for x in rule.lstrip("!").split("."))}
+                for r in forms:
+                    if rule.startswith("!"):
+                        exc.add(r.lstrip("!"))
+                    elif r.startswith("*."):
+                        wild.add(r[2:])
+                    else:
+                        plain.add(r)
+            _PSL = (frozenset(plain), frozenset(wild), frozenset(exc))
+        return _PSL
+
+
+def _is_ip(host: str) -> bool:
+    import ipaddress
+    try:
+        ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        return False
+    return True
 
 
 def ascii_url(url: str) -> str:
@@ -224,12 +274,65 @@ def hostname_of(url: str) -> str:
 
 
 def site_of(host: str) -> str:
-    """The registrable site a host belongs to. A refusal holds the whole site, so a 403 on
-    www.example.org is never answered by asking old.example.org or example.org instead."""
-    labels = [x for x in host.lower().strip(".").split(".") if x]
-    if len(labels) >= 3 and len(labels[-1]) == 2 and labels[-2] in _SLD:
-        return ".".join(labels[-3:])
-    return ".".join(labels[-2:])
+    """The registrable site a host belongs to, by the Public Suffix List. A refusal holds the whole
+    site, so a 403 on www.example.org is never answered by asking old.example.org or example.org
+    instead -- and a.github.io's refusal never holds b.github.io. A bare IP is its own site."""
+    host = host.lower().strip(".")
+    if not host or _is_ip(host):
+        return host
+    labels = [x for x in host.split(".") if x]
+    plain, wild, exc = _psl()
+    suffix_len = 1                                   # the default rule "*"
+    for i in range(len(labels)):
+        cand = ".".join(labels[i:])
+        if cand in exc:                              # an exception rule: its parent is the suffix
+            suffix_len = len(labels) - i - 1
+            break
+        if cand in plain:
+            suffix_len = max(suffix_len, len(labels) - i)
+        if i >= 1 and cand in wild:
+            suffix_len = max(suffix_len, len(labels) - i + 1)
+    if suffix_len >= len(labels):
+        return host                                  # the host IS a public suffix
+    return ".".join(labels[-(suffix_len + 1):])
+
+
+#: Anti-bot interstitials, matched in a body's head. Specific to WAF products on purpose: a plain
+#: "captcha" or "access denied" also appears in ordinary pages (a comment form's reCAPTCHA), and a
+#: false match here holds a whole site -- a mining cut.
+CHALLENGE_MARKERS: tuple[str, ...] = (
+    "just a moment...", "checking your browser", "cf-browser-verification", "cf_chl_",
+    "cf-challenge", "challenge-platform", "attention required! | cloudflare", "ddos-guard",
+    "are you a robot", "px-captcha", "_incapsula_resource", "captcha-delivery.com",
+    "awswaf", "sucuri website firewall")
+
+
+def looks_challenged(body: str | bytes) -> str:
+    """The challenge marker in this page's head, or ''. A challenge is a block, not content."""
+    if isinstance(body, bytes):
+        body = body[:8000].decode("utf-8", errors="replace")
+    low = str(body or "")[:8000].lower()
+    for marker in CHALLENGE_MARKERS:
+        if marker in low:
+            return marker
+    return ""
+
+
+def looks_like_html(body: str | bytes) -> bool:
+    if isinstance(body, bytes):
+        body = body[:2000].decode("utf-8", errors="replace")
+    head = str(body or "")[:2000].lstrip().lower()
+    return head.startswith(("<!doctype", "<html", "<head", "<body", "<?xml")) or "<html" in head
+
+
+#: The missed-growth line every hold carries (GROWTH GOVERNANCE): the gain forgone by not reading
+#: the site is UNMEASURED, never zero, and the line says why.
+def hold_missed_growth(site: str, verdict: str, status: int | str, cause: str) -> dict[str, Any]:
+    return {"source": site, "kind": "access_hold", "status": verdict, "http_status": status,
+            "delta_elogw": "UNMEASURED",
+            "cause": (f"{cause}; nothing from {site} is read while the hold stands, and no "
+                      "conversion of its pages is on record here, so the growth forgone is "
+                      "UNMEASURED, never zero")}
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -370,16 +473,24 @@ class HostAccess:
                 return ""
             return str(row.get("verdict") or "METHOD_BLOCKED")
 
-    def block(self, url: str, status: int, verdict: str = "") -> str:
-        verdict = verdict or BLOCK_STATUS.get(status, "METHOD_BLOCKED")
+    def block(self, url: str, status: int | str, verdict: str = "", cause: str = "") -> str:
+        """Record a hold for the URL's site and SAVE IT AT ONCE, so a run killed mid-loop keeps
+        it. `status` is the HTTP code, or "WAF" for a challenge page (rechecked after 24h like a
+        429: it is a throttle, not an explicit refusal)."""
+        verdict = verdict or (BLOCK_STATUS.get(status, "METHOD_BLOCKED")
+                              if isinstance(status, int) else "METHOD_BLOCKED")
         host = hostname_of(url)
+        site = site_of(host)
+        clock = status in (429, "WAF")
         with self._lock:
-            self.blocked[site_of(host)] = {
+            self.blocked[site] = {
                 "verdict": verdict, "status": status, "host": host, "url": url[:300],
                 "since_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                 "since_ts": self.now(),
-                "recheck_after_ts": self.now() + RECHECK_429_S if status == 429 else None,
-                "waits_for": "clock (24h)" if status == 429 else "a person",
+                "recheck_after_ts": self.now() + RECHECK_429_S if clock else None,
+                "waits_for": "clock (24h)" if clock else "a person",
+                "missed_growth": hold_missed_growth(
+                    site, verdict, status, cause or f"HTTP {status} from {host}"),
             }
         self.save()
         return verdict
@@ -397,7 +508,15 @@ class HostAccess:
             try:
                 with send(self.request(url, "text/plain,*/*;q=0.5"), self.robots_timeout()) as fh:
                     body = fh.read(MAX_ROBOTS_BYTES)
-                return {"state": "rules", "text": body.decode("utf-8", errors="replace")}
+                text = body.decode("utf-8", errors="replace")
+                marker = looks_challenged(text)
+                if marker or looks_like_html(text):
+                    # A WAF challenge or an HTML page is not a robots file: never allow-all.
+                    why = (f"challenge page ({marker!r}) served as robots.txt" if marker
+                           else "an HTML page served as robots.txt")
+                    self.block(url, "WAF", "METHOD_BLOCKED", why)
+                    return {"state": "blocked", "why": why}
+                return {"state": "rules", "text": text}
             except urllib.error.HTTPError as exc:
                 code = int(exc.code)
                 loc = exc.headers.get("Location") if exc.headers else None
@@ -471,6 +590,21 @@ class HostAccess:
                 self.disallowed += 1
             return False, "ROBOTS_DISALLOW"
         return True, ""
+
+    def crawl_delay(self, url: str, send: Send | None = None) -> float:
+        """The origin's robots.txt Crawl-delay for the desk's token, in seconds (0 when none or
+        when robots is unreadable -- an unreadable origin is not fetched at all)."""
+        parser = self._parser(origin_of(url), send or self.send)
+        if parser is None:
+            return 0.0
+        try:
+            d = parser.crawl_delay(self.product)
+        except Exception:
+            return 0.0
+        try:
+            return max(0.0, float(d)) if d is not None else 0.0
+        except (TypeError, ValueError):
+            return 0.0
 
     def summary(self) -> dict[str, Any]:
         with self._lock:
@@ -647,7 +781,14 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             break
         host = hostname_of(cur)
         if gate is not None and host:
-            gate.wait(host, sleep)
+            # Robots Crawl-delay widens the host's spacing, never narrows it.
+            delay = acc.crawl_delay(cur, send=_send)
+            w = gate.reserve(host, delay)
+            if deadline is not None and time.monotonic() + w >= deadline:
+                resp.error = f"deadline (crawl-delay {delay:g}s for {host})"
+                break
+            if w > 0:
+                sleep(w)
         per_try = timeout
         if deadline is not None:
             per_try = max(1.0, min(timeout, deadline - time.monotonic()))
@@ -671,10 +812,21 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 h = getattr(fh, "headers", None)
                 ctype = str(h.get("Content-Type") or "") if h is not None else ""
                 cenc = str(h.get("Content-Encoding") or "") if h is not None else ""
-                resp.status = int(getattr(fh, "status", None) or getattr(fh, "code", 200) or 200)
+                status = int(getattr(fh, "status", None) or getattr(fh, "code", 200) or 200)
+                text = decode_body(raw, ctype, cenc)
+                marker = looks_challenged(text)
+                if marker:
+                    # A 200 challenge page is a block, not content: held, never ingested.
+                    resp.status, resp.final_url = status, final
+                    resp.verdict = acc.block(final, "WAF", "METHOD_BLOCKED",
+                                             f"challenge page ({marker!r}) served as content")
+                    resp.error = f"{resp.verdict}: challenge page ({marker})"
+                    _stat(leg, refused=1, error="WAF")
+                    break
+                resp.status = status
                 resp.final_url = final
                 resp.content_type = ctype
-                resp.text = decode_body(raw, ctype, cenc)
+                resp.text = text
                 resp.error = ""
                 _stat(leg, ok=1, bytes=len(raw))
                 break
