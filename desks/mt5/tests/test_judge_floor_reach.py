@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -264,9 +265,146 @@ def test_no_tape_is_still_none() -> None:
     assert osw._tape_series("NO_SUCH_SYMBOL_ANYWHERE", pd.DatetimeIndex([]), "H1") == (None, None)
 
 
+# ------------------------------------------------------------------ the bounded tape cache
+def test_tape_cache_holds_several_symbols_and_reads_each_tape_once(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Alternating symbols used to re-read each WHOLE tape on every switch (one symbol resident)."""
+    from research import orthogonal_sweep as osw
+    _write_tape(tmp_path, "EURUSD", 3)
+    (tmp_path / "GBPUSD").mkdir()
+    for f in (tmp_path / "EURUSD").glob("*.parquet"):
+        (tmp_path / "GBPUSD" / f.name).write_bytes(f.read_bytes())
+    monkeypatch.setattr(osw, "TAPE", tmp_path)
+    reads: list[str] = []
+    real = pd.read_parquet
+    monkeypatch.setattr(pd, "read_parquet", lambda f, *a, **k: (reads.append(str(f)),
+                                                                 real(f, *a, **k))[1])
+    osw._tape_minutes.cache_clear()
+    try:
+        for _ in range(3):
+            for sym in ("EURUSD", "GBPUSD"):
+                assert osw._tape_minutes(sym) is not None
+        assert len(reads) == 6, "each symbol's three day files read exactly once"
+        info = osw._tape_minutes.cache_info()
+        assert info["currsize"] == 2 and info["bytes"] > 0
+        assert info["max_bytes"] == osw.TAPE_CACHE_MAX_BYTES
+    finally:
+        osw._tape_minutes.cache_clear()
+
+
+def test_tape_cache_is_bounded_by_count_and_bytes() -> None:
+    from research import orthogonal_sweep as osw
+    calls: list[str] = []
+
+    def frame(sym: str) -> pd.DataFrame:
+        calls.append(sym)
+        return pd.DataFrame({"x": np.zeros(1000)})          # ~8 KB + index
+
+    lru = osw._SymbolLRU(frame, max_items=3, max_bytes=10**9)
+    for sym in "ABCD":
+        lru(sym)
+    assert lru.cache_info()["currsize"] == 3 and calls == list("ABCD")
+    lru("A")                                                 # A was evicted (least recent)
+    assert calls[-1] == "A"
+    tight = osw._SymbolLRU(frame, max_items=99, max_bytes=1)
+    tight("A")
+    tight("B")
+    assert tight.cache_info()["currsize"] == 1, "a byte bound below one entry keeps only the last"
+    tight("B")
+    assert tight.hits == 1
+
+
+# ------------------------------------------------------------------ fence: an undated wait
+def test_fence_names_an_undated_never_judged_family_unmeasured_and_fails_it_armed(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """judge_coverage writes oldest_unjudged_age_h None when rows lack first_seen; that used to
+    read OK -- 'every family holds a real verdict' -- for mined > 0 and judged_total == 0."""
+    p = _report(tmp_path, oldest_unjudged_age_h=None)
+    monkeypatch.setattr(fence, "_armed", lambda require_state: bool(require_state))
+    loose = fence.judge(p, now=NOW)
+    nj = next(c for c in loose["checks"] if c["metric"] == "never_judged")
+    assert nj["state"] == "UNMEASURED" and nj["undated"] == ["orderflow_imbalance"]
+    assert "UNMEASURED" in nj["why"] and "every family" not in nj["why"]
+    assert nj["families"][0]["age"] == "UNMEASURED"
+    armed = fence.judge(p, require_state=True, now=NOW)
+    nj = next(c for c in armed["checks"] if c["metric"] == "never_judged")
+    assert nj["state"] == "FAIL" and armed["verdict"] == "FAIL"
+
+
+def test_fence_does_not_call_nothing_waiting_an_undated_wait(tmp_path: Path) -> None:
+    p = _report(tmp_path, oldest_unjudged_age_h=None, unjudged=0, shippable=0, queued=0)
+    doc = fence.judge(p, require_state=True, now=NOW)
+    nj = next(c for c in doc["checks"] if c["metric"] == "never_judged")
+    assert nj["state"] == "OK"
+
+
+# ------------------------------------------------------------------ the warmer under a steer
+def test_warmer_restates_the_steered_judge_including_the_floor_interleave(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """With a breadth steer the sealed judge keeps head (re-dealt by _floor_interleave_steered)
+    + explored + orthogonal + the rest of the tail; the warmer must build in that same order."""
+    import types
+
+    from research import judge_docket_order as O
+    calls: dict[str, object] = {}
+
+    def steered_yield_order(specs, wants, steer):
+        calls["wants"] = dict(wants)
+        return list(reversed(specs)), 4, {"built_in_budget": {}}
+
+    fake = types.ModuleType("research.breadth_enforcer")
+    fake.SATURATED = "SATURATED"  # type: ignore[attr-defined]
+    fake.class_of = lambda f, st: "SATURATED" if f == "sat" else "UNKNOWN"  # type: ignore[attr-defined]
+    fake.steered_yield_order = steered_yield_order  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "research.breadth_enforcer", fake)
+    specs = [{"sym": f"S{i}", "family": "sat" if i % 3 == 0 else f"f{i % 2}"} for i in range(9)]
+
+    class G:
+        YIELD_ALLOCATION_STRENGTH, YIELD_MAX_SHARE, YIELD_MIN_SHARE = 0.5, 1.0, 1.0
+
+        @staticmethod
+        def _family_yield() -> dict:
+            return {}
+
+        @staticmethod
+        def _breadth_steer() -> dict:
+            return {"status": "MEASURED"}
+
+        @staticmethod
+        def _floor_interleave_steered(head, steer):
+            return list(reversed(head))
+
+        @staticmethod
+        def _explore_unmeasured_axes(specs, keep):
+            return [specs[0]], {}
+
+        @staticmethod
+        def _orthogonality_floor(specs, keep, saturated=frozenset()):
+            calls["saturated"] = set(saturated)
+            return [specs[1]], {}
+
+    keep = O.allocate(G, specs)
+    order_ = list(reversed(specs))
+    head = list(reversed(order_[:4]))
+    added = {id(s) for s in [*head, specs[0], specs[1]]}
+    assert keep == head + [specs[0], specs[1]] + [s for s in order_[4:] if id(s) not in added]
+    assert calls["saturated"] == {"sat"}
+    assert sum(calls["wants"].values()) == len(specs)        # MIN_SHARE 1.0: every row a take
+
+    class Unsteered(G):
+        @staticmethod
+        def _breadth_steer() -> None:
+            return None
+    assert O.allocate(Unsteered, specs)[:len(specs)] == [
+        sp for fam in ("sat", "f1", "f0") for sp in specs if sp["family"] == fam]
+
+
 # ------------------------------------------------------------------ the sealed patch, once applied
+#: An applier can point this at a patched copy inside a full tree before re-sealing:
+#: JUDGE_FLOOR_REACH_GAUNTLET=/path/to/tree/desks/mt5/scripts/external_gauntlet.py
 _spec = importlib.util.spec_from_file_location(
-    "_gaunt_floor", ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py")
+    "_gaunt_floor", os.environ.get("JUDGE_FLOOR_REACH_GAUNTLET")
+    or ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py")
 
 
 def _gauntlet():
@@ -277,7 +415,7 @@ def _gauntlet():
 
 
 def test_floor_interleave_once_the_sealed_patch_lands(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Skipped until `judging/floor_reach_sealed.patch` is applied by a principal-gated hand."""
+    """Skipped until `judging/floor_reach_sealed_v2.patch` is applied by a principal-gated hand."""
     g = _gauntlet()
     if not hasattr(g, "_floor_interleave"):
         pytest.skip("sealed floor-reach patch not applied")
@@ -290,3 +428,84 @@ def test_floor_interleave_once_the_sealed_patch_lands(monkeypatch: pytest.Monkey
     assert {sp["family"] for sp in out[:100]} == {"big", "of", "liq"}, "every prefix reaches all"
     for fam, rows in takes.items():
         assert [sp for sp in out if sp["family"] == fam] == rows, "each family keeps its order"
+
+
+def _patched():
+    g = _gauntlet()
+    if not hasattr(g, "_floor_interleave_steered"):
+        pytest.skip("sealed floor-reach v2 patch not applied")
+    return g
+
+
+def test_floor_interleave_orders_by_start_time_in_capped_units(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The audit's probe: finish-time order let one long light run wait behind a heavy family.
+    Start-time order puts every family's first unit inside the first one-unit-each prefix, and no
+    unit is longer than FLOOR_INTERLEAVE_MAX_RUN."""
+    g = _patched()
+    monkeypatch.setattr(g, "_coverage_quota", lambda: {"big": 5000, "light": 10})
+    takes = {"big": [{"sym": "A", "family": "big", "i": i} for i in range(400)],
+             "light": [{"sym": "L", "family": "light", "i": i} for i in range(100)]}
+    out = g._floor_interleave(takes)
+    assert sorted(id(s) for s in out) == sorted(id(s) for rows in takes.values() for s in rows)
+    cap = g.FLOOR_INTERLEAVE_MAX_RUN
+    assert {s["family"] for s in out[:2 * cap]} == {"big", "light"}
+    for fam, rows in takes.items():
+        assert [s for s in out if s["family"] == fam] == rows, "each family keeps its order"
+    # Two equal families, each ONE long same-symbol run: the run is cut at the cap, so neither
+    # holds the head for its whole take.
+    monkeypatch.setattr(g, "_coverage_quota", lambda: {"x": 100, "y": 100})
+    eq = g._floor_interleave({"x": [{"sym": "A", "family": "x"} for _ in range(200)],
+                              "y": [{"sym": "B", "family": "y"} for _ in range(200)]})
+    longest, run, prev = 0, 0, None
+    for s in eq:
+        run = run + 1 if s["family"] == prev else 1
+        prev = s["family"]
+        longest = max(longest, run)
+    assert longest == cap
+
+
+def test_floor_weights_are_clamped_and_logged(monkeypatch: pytest.MonkeyPatch,
+                                              capsys: pytest.CaptureFixture[str]) -> None:
+    g = _patched()
+    monkeypatch.setattr(g, "_coverage_quota", lambda: {"a": 100, "b": 100, "c": 100,
+                                                       "huge": 10**9})
+    w = g._floor_weights({f: [{"sym": "X", "family": f}] for f in ("a", "b", "c", "huge", "zero")})
+    lo, hi = g.FLOOR_WEIGHT_CLAMP
+    med = 100.0
+    assert w["huge"] == hi * med and w["zero"] == max(1.0, lo * med)
+    assert "huge" in g._FLOOR_INTERLEAVE_NOTE["clamped"]
+    assert "clamped" in capsys.readouterr().out
+
+
+def test_coverage_quota_skips_a_bad_entry_not_the_file(tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    g = _patched()
+    monkeypatch.setattr(g, "REPORTS", tmp_path)
+    (tmp_path / "JUDGE_COVERAGE.json").write_text(json.dumps(
+        {"quota": {"a": 10, "b": "x", "c": None, "d": -3, "e": 7.0}}), "utf-8")
+    assert g._coverage_quota() == {"a": 10, "e": 7}
+
+
+def test_steered_interleave_keeps_tiers_and_saturated_slots(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import types
+    g = _patched()
+    fake = types.ModuleType("research.breadth_enforcer")
+    fake.SATURATED = "SATURATED"  # type: ignore[attr-defined]
+    tiers = {"u1": "UNKNOWN", "u2": "UNKNOWN", "e1": "EXPLORED", "e2": "EXPLORED",
+             "s": "SATURATED"}
+    fake.class_of = lambda f, st: tiers[f]  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "research.breadth_enforcer", fake)
+    monkeypatch.setattr(g, "_coverage_quota", lambda: {})
+    head = ([{"sym": f"U{i}", "family": "u1"} for i in range(40)]
+            + [{"sym": "V", "family": "u2"} for _ in range(5)]
+            + [{"sym": "S", "family": "s"}]
+            + [{"sym": "E", "family": "e1"} for _ in range(10)]
+            + [{"sym": "F", "family": "e2"} for _ in range(10)])
+    out = g._floor_interleave_steered(head, {"status": "MEASURED"})
+    assert [tiers[s["family"]] for s in out] == [tiers[s["family"]] for s in head]
+    assert out[45] is head[45], "a saturated slot is untouched"
+    assert "u2" in {s["family"] for s in out[:10]}, "the light UNKNOWN family is no longer last"
+    for fam in tiers:
+        assert [s for s in out if s["family"] == fam] == [s for s in head if s["family"] == fam]

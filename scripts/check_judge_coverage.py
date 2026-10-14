@@ -134,20 +134,35 @@ def _armed(require_state: bool) -> bool:
 
 def never_judged(fams: Mapping[str, Mapping[str, Any]], doc: Mapping[str, Any],
                  *, armed: bool) -> dict[str, Any]:
-    """The never-judged check: mined > 0, judged_total == 0, oldest unjudged past 48 h."""
+    """The never-judged check: mined > 0, judged_total == 0, oldest unjudged past 48 h.
+
+    AN UNKNOWN AGE IS NOT A YOUNG ONE (L1.28a, audit of 4f28cd04). `judge_coverage` publishes
+    `oldest_unjudged_age_h: None` when a family's backlog rows carry no `first_seen`; this check
+    used to SKIP such a family, so mined > 0 with judged_total == 0 read OK -- "every family holds
+    a real verdict" -- on exactly the rows the desk could not date. Such a family is now
+    UNMEASURED and named; armed (the box's --require-state run, or the trading host) it FAILS with
+    the aged ones, because a family that has never been judged and cannot even say for how long is
+    not a family the fence may call fine."""
     published = doc.get("never_judged") if isinstance(doc.get("never_judged"), Mapping) else {}
     hits: list[tuple[str, float]] = []
+    undated: list[str] = []
     for f, r in fams.items():
         if str(r.get("judging_status") or "") == "STUDY_ONLY":
             continue
         if int(r.get("mined") or 0) <= 0 or int(r.get("judged_total") or 0) != 0:
             continue
         age = r.get("oldest_unjudged_age_h")
-        if age is None or float(age) <= NEVER_JUDGED_MAX_AGE_H:
+        if age is None:
+            # Nothing waiting (every cell parked or set aside) is not an undated wait.
+            if int(r.get("unjudged", 1) or 0) > 0:
+                undated.append(f)
+            continue
+        if float(age) <= NEVER_JUDGED_MAX_AGE_H:
             continue
         hits.append((f, float(age)))
     hits.sort(key=lambda fa: -fa[1])
-    if not hits:
+    undated.sort(key=lambda f: -int(fams[f].get("mined") or 0))
+    if not hits and not undated:
         return {"metric": "never_judged", "state": "OK", "families": [],
                 "why": (f"every family with mined cells holds a real verdict, or its oldest cell "
                         f"is under {NEVER_JUDGED_MAX_AGE_H:.0f}h")}
@@ -159,15 +174,28 @@ def never_judged(fams: Mapping[str, Mapping[str, Any]], doc: Mapping[str, Any],
 
     named = [{"family": f, "mined": int(fams[f].get("mined") or 0),
               "oldest_unjudged_age_h": a, "reason": _reason(f)} for f, a in hits]
-    head = "; ".join(f"{n['family']} (mined {n['mined']}, oldest {n['oldest_unjudged_age_h']:.0f}h:"
-                     f" {n['reason'][:160]})" for n in named[:4])
-    return {"metric": "never_judged", "state": "FAIL" if armed else "WARN",
-            "families": named,
-            "why": (f"{len(hits)} family(ies) have mined cells and NEVER a real verdict, oldest "
-                    f"past {NEVER_JUDGED_MAX_AGE_H:.0f}h: {head}"
-                    + ("" if armed else
-                       " -- published, not failed: this is a source view or a host that does "
-                       "not run the judge; the box's --require-state run fails it"))}
+    named += [{"family": f, "mined": int(fams[f].get("mined") or 0),
+               "oldest_unjudged_age_h": None, "age": "UNMEASURED", "reason": _reason(f)}
+              for f in undated]
+    tail = ("" if armed else
+            " -- published, not failed: this is a source view or a host that does not run the "
+            "judge; the box's --require-state run fails it")
+    parts: list[str] = []
+    if hits:
+        head = "; ".join(f"{n['family']} (mined {n['mined']}, oldest "
+                         f"{n['oldest_unjudged_age_h']:.0f}h: {n['reason'][:160]})"
+                         for n in named[:4] if n["oldest_unjudged_age_h"] is not None)
+        parts.append(f"{len(hits)} family(ies) have mined cells and NEVER a real verdict, oldest "
+                     f"past {NEVER_JUDGED_MAX_AGE_H:.0f}h: {head}")
+    if undated:
+        parts.append(f"{len(undated)} family(ies) have mined cells, NEVER a real verdict and NO "
+                     f"datable backlog row (oldest_unjudged_age_h is None: rows lack first_seen), "
+                     f"so their wait is UNMEASURED, not short: "
+                     + ", ".join(f"{f} (mined {int(fams[f].get('mined') or 0)})"
+                                 for f in undated[:6]))
+    state = "FAIL" if armed else ("WARN" if hits else "UNMEASURED")
+    return {"metric": "never_judged", "state": state, "families": named,
+            "undated": undated, "why": "; ".join(parts) + tail}
 
 
 def judge(report: Path | None = None, *, require_state: bool = False,
