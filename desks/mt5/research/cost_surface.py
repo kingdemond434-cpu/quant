@@ -77,6 +77,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -941,7 +942,12 @@ def main(argv: list[str] | None = None) -> int:
               f"(looked in {args.universe or _UNIVERSE}). Unmeasured is not OK (L1.28a).")
         return 2
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
+    # ATOMIC: every forward clock and the gauntlet read this file; a reader catching it half
+    # written would parse nothing and price the whole pass UNMEASURED (or worse, a truncated
+    # symbol set). Write beside it, then replace in one step.
+    tmp = args.out.with_name(args.out.name + ".tmp")
+    tmp.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
+    os.replace(tmp, args.out)
 
     syms = rep["symbols"]
     admin = sum(1 for v in syms.values() if v.get("administered"))

@@ -77,6 +77,7 @@ from __future__ import annotations
 import math
 import re
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 __all__ = [
@@ -240,17 +241,38 @@ def cost_ratio(surface: Mapping[str, Any] | None, symbol: str,
                f"against the {pooled:.0f} pts the replay charged ({r:.2f}x)"), detail
 
 
-#: THE REPLAY NOW CHARGES THE HOUR AT SOURCE (2026-10-13). Every forward clock prices its trades
-#: through `research/entry_hour_cost.py` (shadow_forward.per_symbol_costs, qquant_shadow): the
-#: cost model carries the surface's per-(weekday, hour) spread table and the engine charges each
-#: trade the slot where it crosses the ask. The evidence the allocator reads is therefore ALREADY
-#: net of the fill-hour spread, and adding `base_cost_r * (ratio - 1)` on top would charge the
-#: same spread twice -- the double charge this module's own rule forbids ("correcting it belongs
-#: in the replay, at source"). The ratio is still measured and published per sleeve; its bias is
-#: zero, sourced CHARGED_AT_SOURCE. A caller replaying FLAT evidence passes
-#: `charged_at_source=False` to get the old correction back.
+#: THE BIAS IS ZEROED PER SLEEVE, ONLY WHERE THE EVIDENCE IS PROVABLY PRICED AT ITS FILL HOUR
+#: (audit 2026-10-13; this replaced a GLOBAL zero). When a sleeve's series was replayed on the
+#: surface's per-(weekday, hour) table, adding `base_cost_r * (ratio - 1)` would charge the same
+#: spread twice, so its bias is 0 with source CHARGED_AT_SOURCE. But most evidence the allocator
+#: reads is STILL FLAT: hunt12 `sym_win_state` sleeves (`portfolio_projection` builds them with
+#: `Costs.from_symbol(mult=2.0)` and no table), certified cells (modal-hour pricing until the
+#: sealed gauntlet patch lands), and forward clocks on `frozen_costs`, REGISTRY_FALLBACK or an
+#: UNMEASURED spread. Zeroing all of them dropped up to 0.20 R/trade of correction on 288 of 763
+#: measurable symbol x session pairs -- overstated edge, oversized fractions. So the default is
+#: the measured correction, and a sleeve loses it only when BOTH hold:
+#:   1. its entry carries `spread_basis == "fill_hour_surface_table"` (stamped by the clock that
+#:      replayed it: shadow_forward / qquant_shadow), and
+#:   2. the sealed gauntlet ALREADY prices at the entry hour (`gauntlet_charges_entry_hour`,
+#:      read from the gauntlet's own source -- never assumed), so certified and forward evidence
+#:      agree on the cost they were charged.
 CHARGED_AT_SOURCE = "CHARGED_AT_SOURCE"
-REPLAY_CHARGES_ENTRY_HOUR = True
+FILL_HOUR_TABLE = "fill_hour_surface_table"
+#: The default: never zero a bias globally. `costs_for(charged_at_source=True)` remains for a
+#: caller that has proved its whole evidence set is table-priced.
+REPLAY_CHARGES_ENTRY_HOUR = False
+_GAUNTLET = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "scripts" / \
+    "external_gauntlet.py"
+#: The sealed patch's one call. Its presence in the gauntlet's source is the flag that patch sets.
+_GAUNTLET_MARKER = "from research.entry_hour_cost import gauntlet_costs"
+
+
+def gauntlet_charges_entry_hour(path: Path | None = None) -> bool:
+    """True only when the (sealed, read-only here) gauntlet prices cells via `entry_hour_cost`."""
+    try:
+        return _GAUNTLET_MARKER in Path(path or _GAUNTLET).read_text("utf-8", errors="replace")
+    except OSError:
+        return False
 
 
 def costs_for(sleeves: Sequence[Mapping[str, Any]],
@@ -258,7 +280,8 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
               registry: Mapping[str, Any] | None = None,
               base_cost_r: float = BASE_COST_R,
               max_ratio: float = MAX_RATIO,
-              charged_at_source: bool = REPLAY_CHARGES_ENTRY_HOUR) -> dict[str, Any]:
+              charged_at_source: bool | None = None,
+              gauntlet_live: bool | None = None) -> dict[str, Any]:
     """Per-sleeve execution cost bias, in R per trade, with every refusal named.
 
     Each entry of `sleeves` needs `name`, `symbol`, and either `selector` or a name that carries
@@ -267,6 +290,9 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
     whether this instrument is working: a run that prices three of sixty has not measured
     execution, it has measured three sleeves.
     """
+    if charged_at_source is None and REPLAY_CHARGES_ENTRY_HOUR:
+        charged_at_source = True
+    sealed = gauntlet_charges_entry_hour() if gauntlet_live is None else bool(gauntlet_live)
     out: dict[str, Any] = {}
     n_measured = n_under = n_over = n_clipped = n_registry_defect = n_no_provenance = 0
     defect_symbols: set[str] = set()
@@ -297,7 +323,9 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
         # and is reported -- but applying it would raise the sleeve's mean on the strength of a
         # cost model, and sizing up on a model is the one direction this desk does not take from
         # an instrument that has never been validated against a real fill.
-        bias = 0.0 if charged_at_source else float(base_cost_r) * max(0.0, applied - 1.0)
+        at_source = (bool(charged_at_source) if charged_at_source is not None else
+                     (sealed and str(s.get("spread_basis") or "") == FILL_HOUR_TABLE))
+        bias = 0.0 if at_source else float(base_cost_r) * max(0.0, applied - 1.0)
         if ratio > 1.0:
             n_under += 1
             if worst is None or ratio > worst[0]:
@@ -311,7 +339,8 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
             "cost_r": round(float(base_cost_r) * applied, 6),
             "ratio": round(applied, 4), "ratio_raw": round(float(ratio), 4),
             "clipped": bool(applied < ratio),
-            "source": CHARGED_AT_SOURCE if charged_at_source else MEASURED, "why": why,
+            "source": CHARGED_AT_SOURCE if at_source else MEASURED, "why": why,
+            "spread_basis": s.get("spread_basis"),
             **detail,
         }
     n = len(out)

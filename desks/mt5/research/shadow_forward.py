@@ -579,6 +579,22 @@ def per_symbol_costs(meta: dict, sym: str):
     return costs
 
 
+def _surface_postdates(stamp: dict, entry_time) -> bool | None:
+    """True when the cost surface a row was priced on was built after the trade's entry (entry
+    is a broker-clock bar stamp, so the comparison is good to the 2-3 h server offset). None when
+    the row was not priced on the surface."""
+    built = stamp.get("cost_surface_built_at")
+    if not built:
+        return None
+    try:
+        b, e = pd.Timestamp(built), pd.Timestamp(entry_time)
+        b = b if b.tzinfo else b.tz_localize("UTC")
+        e = e if e.tzinfo else e.tz_localize("UTC")
+        return bool(b > e)
+    except (TypeError, ValueError):
+        return None
+
+
 #: symbol -> the spread basis its clock was priced on this pass ("fill_hour_surface_table",
 #: "REGISTRY_FALLBACK:...", or "UNMEASURED..."). Published beside each clock so an UNMEASURED
 #: price is queued for repricing rather than read as a clean number.
@@ -1203,6 +1219,16 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             st["spread_basis"] = (COST_BASIS.get(sym) or "frozen_basis") if \
                 getattr(costs, "spread_per_lot_by_hour", None) or sym in COST_BASIS \
                 else "frozen_basis"
+            # POINT-IN-TIME DISCLOSURE (audit 2026-10-13). The replay re-prices EVERY trade in the
+            # window on this pass's surface, including trades entered before that surface was
+            # built -- a cost measured after the fact. It is not hidden: the surface's sha and
+            # built_at and the spread basis go on the clock and on every ledger row, and each
+            # row says whether the surface post-dates its entry.
+            from research.entry_hour_cost import surface_stamp as _surface_stamp
+            _cost_stamp = ({"spread_basis": st["spread_basis"], **_surface_stamp()}
+                           if getattr(costs, "spread_per_lot_by_hour", None)
+                           else {"spread_basis": st["spread_basis"]})
+            st["cost_surface"] = _cost_stamp
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
             # Trades before that boundary were available while the cell was being SELECTED,
@@ -1243,7 +1269,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                   "r_multiple": t.r_multiple, "reason": t.reason,
                   "phase": ("forward" if (_boundary is not None and t.entry_time >= _boundary)
                             else "historical"),
-                  **_stamp}
+                  **_stamp, **_cost_stamp,
+                  "surface_postdates_entry": _surface_postdates(_cost_stamp, t.entry_time)}
                  for t in all_trades],
                 indent=2), encoding="utf-8")
             try:

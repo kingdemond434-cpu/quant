@@ -279,10 +279,51 @@ def test_a_cost_bias_lowers_the_posterior_mean_and_can_unfund_a_sleeve() -> None
     assert w_dear.r[:, :, 1].mean() == pytest.approx(w_cheap.r[:, :, 1].mean(), abs=1e-6)
 
 
-def test_default_charges_nothing_twice():
-    """The replay charges the entry hour at source, so the default bias is zero and named."""
-    row = _costs_for(_sleeve(), GOOD_SURFACE, registry=GOOD_REGISTRY)["sleeves"][
-        "EURZAR_overnight_gap_decay_asia"]
-    assert row["source"] == CHARGED_AT_SOURCE
-    assert row["cost_bias_r"] == 0.0
-    assert row["ratio_raw"] > 1.0, "the ratio is still measured and published"
+def test_default_applies_the_measured_correction_never_a_global_zero():
+    """Audit 2026-10-13: most evidence the allocator reads is still priced FLAT, so the default
+    must keep the correction; a global zero overstated edge on 288 of 763 pairs."""
+    row = _costs_for(_sleeve(), GOOD_SURFACE, registry=GOOD_REGISTRY, gauntlet_live=True)[
+        "sleeves"]["EURZAR_overnight_gap_decay_asia"]
+    assert row["source"] == MEASURED
+    assert row["cost_bias_r"] > 0.0
+
+
+def _stamped(basis: str):
+    return [{**_sleeve()[0], "spread_basis": basis}]
+
+
+def test_bias_is_zero_only_for_a_table_priced_series_once_the_gauntlet_charges_the_hour():
+    sl = "EURZAR_overnight_gap_decay_asia"
+    both = _costs_for(_stamped("fill_hour_surface_table"), GOOD_SURFACE,
+                      registry=GOOD_REGISTRY, gauntlet_live=True)["sleeves"][sl]
+    assert both["source"] == CHARGED_AT_SOURCE and both["cost_bias_r"] == 0.0
+    assert both["ratio_raw"] > 1.0, "the ratio is still measured and published"
+    no_seal = _costs_for(_stamped("fill_hour_surface_table"), GOOD_SURFACE,
+                         registry=GOOD_REGISTRY, gauntlet_live=False)["sleeves"][sl]
+    assert no_seal["source"] == MEASURED and no_seal["cost_bias_r"] > 0.0
+    for basis in ("REGISTRY_FALLBACK:pooled_median_spread", "frozen_basis",
+                  "UNMEASURED(spread=ZERO):x"):
+        flat = _costs_for(_stamped(basis), GOOD_SURFACE, registry=GOOD_REGISTRY,
+                          gauntlet_live=True)["sleeves"][sl]
+        assert flat["cost_bias_r"] > 0.0, basis
+
+
+def test_explicit_override_still_forces_either_way():
+    sl = "EURZAR_overnight_gap_decay_asia"
+    on = _costs_for(_sleeve(), GOOD_SURFACE, registry=GOOD_REGISTRY, charged_at_source=True,
+                    gauntlet_live=False)["sleeves"][sl]
+    assert on["cost_bias_r"] == 0.0
+    off = _costs_for(_stamped("fill_hour_surface_table"), GOOD_SURFACE, registry=GOOD_REGISTRY,
+                     charged_at_source=False, gauntlet_live=True)["sleeves"][sl]
+    assert off["cost_bias_r"] > 0.0
+
+
+def test_the_seal_is_read_from_the_gauntlets_own_source(tmp_path):
+    from libs.portfolio.execution_cost import gauntlet_charges_entry_hour
+
+    g = tmp_path / "external_gauntlet.py"
+    g.write_text("costs = costs_for(sym, meta)\n", "utf-8")
+    assert gauntlet_charges_entry_hour(g) is False
+    g.write_text("    from research.entry_hour_cost import gauntlet_costs\n", "utf-8")
+    assert gauntlet_charges_entry_hour(g) is True
+    assert gauntlet_charges_entry_hour(tmp_path / "absent.py") is False

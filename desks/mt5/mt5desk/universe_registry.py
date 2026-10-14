@@ -362,6 +362,11 @@ MEDIAN_SPREAD_PRODUCERS: tuple[str, ...] = (
 #:                         rather than kept. Ranks above the H1 median it corrects.
 
 
+#: Age past which a `cost_surface_symbol_p50` stamp yields to any ranked writer (the surface's
+#: own freshness bar, `entry_hour_cost.SURFACE_MAX_AGE_H`).
+SURFACE_P50_MAX_AGE_H = 72.0
+
+
 def may_write_median_spread(prev: dict[str, Any], writer: str) -> tuple[bool, str]:
     """May `writer` overwrite this row's `median_spread_pts`? (yes/no, and why).
 
@@ -375,6 +380,20 @@ def may_write_median_spread(prev: dict[str, Any], writer: str) -> tuple[bool, st
     held = ((prev.get("_provenance") or {}).get("median_spread_pts") or {}).get("source")
     if held not in MEDIAN_SPREAD_PRODUCERS:
         return True, f"the held value is stamped {held!r}, which no ranking recognises"
+    # A DERIVED SURFACE VALUE EXPIRES WITH ITS SURFACE (audit 2026-10-13). The surface is held to
+    # 72 h; a `cost_surface_symbol_p50` stamp older than that ranks above the hourly H1 median
+    # forever if nothing rebuilds the surface, so the stale number could never be refreshed.
+    if held == "cost_surface_symbol_p50" and writer != held:
+        at = ((prev.get("_provenance") or {}).get("median_spread_pts") or {}).get("at")
+        try:
+            t = datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+            t = t if t.tzinfo else t.replace(tzinfo=UTC)
+            age_h = (datetime.now(UTC) - t).total_seconds() / 3600.0
+        except (TypeError, ValueError):
+            age_h = float("inf")
+        if age_h > SURFACE_P50_MAX_AGE_H:
+            return True, (f"the held {held!r} is {age_h:.0f} h old (> "
+                          f"{SURFACE_P50_MAX_AGE_H:g} h); its surface has expired")
     rank = MEDIAN_SPREAD_PRODUCERS.index
     mine = rank(writer) if writer in MEDIAN_SPREAD_PRODUCERS else len(MEDIAN_SPREAD_PRODUCERS)
     if mine <= rank(held):

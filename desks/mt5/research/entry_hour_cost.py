@@ -94,6 +94,16 @@ SWAP_STALE_DAYS = 30.0
 
 COST_FIELDS = ("spread", "swap", "commission")
 
+#: THE SURFACE ITSELF MUST BE CURRENT AND OF THE REVISION THIS READER WAS WRITTEN FOR (audit
+#: 2026-10-13). The committed surface was a revision-1 build of 2026-09-23 (MT5-CostState not
+#: running): no recent-regime, weekday or session parents, the pre-2021 fixed-spread placeholders
+#: still in (AUDCHF 160 pts). Priced through this ladder it reads as a measurement it is not. A
+#: surface with `schema_revision` below MIN_SCHEMA_REVISION, no parseable `built_at`, or one older
+#: than SURFACE_MAX_AGE_H (the 72 h bar `run_desk_integrity` already holds it to) prices NOTHING
+#: here: every hour is UNMEASURED and the consumer falls to its own named fallback.
+MIN_SCHEMA_REVISION = 2
+SURFACE_MAX_AGE_H = 72.0
+
 _SURFACE_CACHE: dict[str, Any] = {}
 
 
@@ -108,6 +118,48 @@ def load_surface(path: Path | None = None) -> dict[str, Any] | None:
         except (OSError, ValueError):
             _SURFACE_CACHE[key] = None
     return _SURFACE_CACHE[key]
+
+
+def surface_usable(surface: dict[str, Any] | None,
+                   now: datetime | None = None) -> tuple[bool, str]:
+    """(usable, why) for a cost-surface document: revision >= 2, stamped, at most 72 h old."""
+    if not isinstance(surface, dict):
+        return False, "no cost surface"
+    try:
+        rev = int(surface.get("schema_revision") or 1)
+    except (TypeError, ValueError):
+        rev = 1
+    if rev < MIN_SCHEMA_REVISION:
+        return False, (f"cost surface is schema revision {rev} (< {MIN_SCHEMA_REVISION}); "
+                       "rebuild with `python -m research.cost_surface` on the trading box")
+    age = _age_days(surface.get("built_at"), now or datetime.now(UTC))
+    if age is None:
+        return False, "cost surface carries no parseable built_at"
+    if age * 24.0 > SURFACE_MAX_AGE_H:
+        return False, (f"cost surface is {age * 24.0:.0f} h old (> {SURFACE_MAX_AGE_H:g} h, "
+                       f"built {surface.get('built_at')})")
+    return True, "fresh"
+
+
+def surface_stamp(path: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
+    """What a ledger row priced on the surface must carry: built_at, sha256, revision, usable.
+
+    The sha is of the file's bytes with line endings normalised (a Windows checkout and a Linux
+    one hold the same surface)."""
+    import hashlib
+
+    p = Path(path or SURFACE_PATH)
+    try:
+        raw = p.read_bytes()
+    except OSError:
+        return {"cost_surface_sha": None, "cost_surface_built_at": None,
+                "cost_surface_usable": False, "cost_surface_why": "no cost surface file"}
+    doc = load_surface(p)
+    ok, why = surface_usable(doc, now)
+    return {"cost_surface_sha": hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()[:16],
+            "cost_surface_built_at": (doc or {}).get("built_at"),
+            "cost_surface_revision": (doc or {}).get("schema_revision", 1),
+            "cost_surface_usable": ok, "cost_surface_why": why}
 
 
 def _num(v: Any) -> float | None:
@@ -153,8 +205,14 @@ def hour_spread_pts(surface: dict[str, Any] | None, symbol: str, hour: int,
     no row and no parent at all -- the caller must then read UNMEASURED, never zero.
     """
     h = int(hour) % 24
+    if surface is not None:
+        ok, why = surface_usable(surface)
+        if not ok:
+            return None, {"basis": f"UNMEASURED: {why}"}
     tick = load_surface(TICK_SURFACE_PATH) if surface is None or surface is load_surface() \
         else None
+    if tick is not None and not surface_usable(tick)[0]:
+        tick = None
     tcell = ((((tick or {}).get("symbols") or {}).get(symbol) or {}).get("hours") or {}
              ).get(str(h)) or {}
     if tcell.get("status") == "MEASURED" and (_num(tcell.get(q)) or 0) > 0:
@@ -172,7 +230,9 @@ def hour_spread_pts(surface: dict[str, Any] | None, symbol: str, hour: int,
     rv = _num(cell.get(f"r365_{q}"))
     if rn >= MIN_RECENT_OBS and rv is not None and rv > 0:
         return rv, {"basis": "hour_recent365", "n": rn, "n_eff": rn}
-    if cell.get("status") == "MEASURED" and _num(cell.get(q)) is not None:
+    # A MEASURED cell whose quantile is 0 is not a price (it would charge the 0.05 floor): it
+    # falls through to the thin/parent ladder like any unpriced hour.
+    if cell.get("status") == "MEASURED" and (_num(cell.get(q)) or 0) > 0:
         return float(cell[q]), {"basis": "hour", "n": n, "n_eff": n}
     parent, plabel, upper = _parent(row, h, q)
     thin = _num(cell.get(f"thin_{q}"))
@@ -383,6 +443,12 @@ def attach_table(symbol: str, meta_row: dict[str, Any], base: Any, mult: float =
 
     For call sites that must keep calling the sanctioned constructor themselves (the forward
     clock's test pins it). `mult` must be the spread multiple `base` was built with.
+
+    UNLIKE `costs_at_entry_hour`, an UNMEASURED spread here returns `base` unchanged -- the flat
+    registry model the forward clock priced on before this module existed -- with the basis
+    saying UNMEASURED. Withholding the price would stop ~430 running clocks whose registry
+    spread is STALE or ZERO (measured 2026-10-14); the label, stamped on every ledger row, is
+    what queues them for repricing. This is a disclosed flat price, not a new one.
     """
     row = meta_row if isinstance(meta_row, dict) else {}
     surf = surface if surface is not None else load_surface()
@@ -402,13 +468,15 @@ def attach_table(symbol: str, meta_row: dict[str, Any], base: Any, mult: float =
 def costs_at_entry_hour(symbol: str, meta_row: dict[str, Any], mult: float = 1.0, *,
                         commission: float | None = None, q: str = "p50",
                         surface: dict[str, Any] | None = None,
-                        now: datetime | None = None) -> tuple[Any, str]:
-    """(Costs, basis). The cost model with its per-(dow, hour) spread table attached.
+                        now: datetime | None = None) -> tuple[Any | None, str]:
+    """(Costs or None, basis). The cost model with its per-(dow, hour) spread table attached.
 
     `mult` scales the spread table exactly as it scales the flat spread in `from_symbol`.
     When the surface cannot price the symbol, the flat registry spread is used ONLY when it is
-    positive and fresh (basis REGISTRY_FALLBACK); otherwise the returned basis starts with
-    "UNMEASURED" and the caller must publish that, never a clean number.
+    positive and fresh (basis REGISTRY_FALLBACK). Otherwise the costs are None and the basis
+    starts with "UNMEASURED": NO PRICE IS RETURNED (audit 2026-10-13). A zero registry spread
+    used to price at the engine's 0.05 floor and a NaN one at NaN R -- both are fake prices; the
+    caller must publish the UNMEASURED basis and not replay on it.
     """
     from mt5desk.engine import Costs
 
@@ -433,7 +501,7 @@ def costs_at_entry_hour(symbol: str, meta_row: dict[str, Any], mult: float = 1.0
     if st["spread"] == "MEASURED":
         return base, "REGISTRY_FALLBACK:pooled_median_spread"
     flags.insert(0, f"spread={st['spread']}")
-    return base, f"UNMEASURED({', '.join(flags)}):{info.get('basis')}"
+    return None, f"UNMEASURED({', '.join(flags)}):{info.get('basis')}"
 
 
 def stress_costs(base: Any, symbol: str, meta_row: dict[str, Any], mult: float,
@@ -465,7 +533,15 @@ def gauntlet_costs(symbol: str, meta: dict[str, Any], sigs: Any = None,
         hour = _eg._modal_fill_hour(sigs, timeframe)
     except Exception:
         hour = None
-    costs, basis = costs_at_entry_hour(symbol, (meta or {}).get(symbol) or {})
+    row = (meta or {}).get(symbol) or {}
+    costs, basis = costs_at_entry_hour(symbol, row)
+    if costs is None:
+        # THE SEALED CALLER NEEDS A COST MODEL, and the gauntlet's pre-patch pricing for this
+        # symbol was exactly this flat registry model -- so the cell is built as it is today and
+        # its `cost_basis` says UNMEASURED, which the certificate carries. No cheaper number than
+        # today's is introduced; a gauntlet that refuses UNMEASURED cells is the patch's call.
+        from mt5desk.engine import Costs
+        costs = Costs.from_symbol(row)
     return costs, basis, hour
 
 

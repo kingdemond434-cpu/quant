@@ -1,7 +1,8 @@
 """ENTRY-HOUR COST: the gauntlet and every forward clock charge the spread of the hour they trade.
 
 Pins the four promises of `desks/mt5/research/entry_hour_cost.py` and the engine path it feeds:
-the flat path is byte-identical, a trade pays half its entry slot plus half its exit slot, the
+the flat path is byte-identical, a long pays its ENTRY slot's full spread and a short its EXIT
+slot's (bid bars: the ask is crossed there -- not half-and-half, which is the mid-bar rule), the
 fallback ladder never reaches zero or a cheaper number, and a zero/missing/stale cost field is
 named UNMEASURED rather than priced as free.
 """
@@ -31,7 +32,8 @@ META = {"contract_size": 100000.0, "tick_size": 0.00001, "tick_value": 1.0,
 
 def _surface(hours: dict[str, dict], **extra) -> dict:
     row = {"hours": hours, **extra}
-    return {"schema": "cost-surface-2", "symbols": {"X": row}}
+    return {"schema": "cost-surface-2", "schema_revision": 2,
+            "built_at": datetime.now(UTC).isoformat(), "symbols": {"X": row}}
 
 
 def _bars(n: int = 200, start: str = "2024-01-02 00:00") -> pd.DataFrame:
@@ -122,8 +124,9 @@ def test_costs_at_entry_hour_attaches_the_table_and_never_prices_zero():
     assert basis == "fill_hour_surface_table"
     assert c.spread_per_lot_by_hour[0] == pytest.approx(400.0 * 1e-5 * 1e5)
     assert c.spread_per_lot_by_hour[1] == pytest.approx(20.0 * 1e-5 * 1e5)
-    _, basis2 = ehc.costs_at_entry_hour("ABSENT", zero_meta, surface=surf)
+    c2, basis2 = ehc.costs_at_entry_hour("ABSENT", zero_meta, surface=surf)
     assert basis2.startswith("UNMEASURED"), "a zero registry spread and no surface row is not free"
+    assert c2 is None, "UNMEASURED returns no price -- never the 0.05 floor"
     _, basis3 = ehc.costs_at_entry_hour("ABSENT", META, surface=surf)
     assert basis3.startswith("REGISTRY_FALLBACK")
 
@@ -277,10 +280,141 @@ def test_hour_slip_unmeasured_is_zero_and_says_so():
 
 
 def test_hour_cost_is_spread_plus_slip_and_none_without_a_spread():
-    surface = {"symbols": {"XAUUSD": {"hours": {"7": {"status": "MEASURED", "p50": 15.0,
+    surface = {"schema_revision": 2, "built_at": datetime.now(UTC).isoformat(),
+               "symbols": {"XAUUSD": {"hours": {"7": {"status": "MEASURED", "p50": 15.0,
                                                        "n_nonzero": 500}}}}}
     v, info = ehc.hour_cost_pts(surface, _mk(10.0, 50, {}), "XAUUSD", 7)
     assert v == pytest.approx(25.0)
     assert info["slip"]["basis"] == "symbol_pooled"
     v2, info2 = ehc.hour_cost_pts(surface, None, "EURUSD", 7)
     assert v2 is None and info2["slip"]["status"] == "UNMEASURED"
+
+
+# --- audit 2026-10-13 must-fixes -------------------------------------------------------------
+
+
+def _full(**top):
+    doc = _surface({str(h): {"status": "MEASURED", "p50": 20.0, "p90": 40.0, "n_nonzero": 999}
+                    for h in range(24)})
+    doc.update(top)
+    return doc
+
+
+def test_an_old_revision_or_stale_surface_prices_nothing():
+    assert ehc.hour_spread_pts(_full(), "X", 3)[0] == 20.0
+    for bad, why in ((_full(schema_revision=1), "revision 1"),
+                     (_full(schema_revision=None), "revision 1"),
+                     (_full(built_at=(datetime.now(UTC) - timedelta(hours=73)).isoformat()),
+                      "h old"),
+                     (_full(built_at=None), "built_at")):
+        v, info = ehc.hour_spread_pts(bad, "X", 3)
+        assert v is None and info["basis"].startswith("UNMEASURED") and why in info["basis"]
+        c, basis = ehc.costs_at_entry_hour("X", {**META, "median_spread_pts": 0.0}, surface=bad)
+        assert c is None and basis.startswith("UNMEASURED")
+    ok, why = ehc.surface_usable(_full(), now=datetime.now(UTC) + timedelta(hours=71))
+    assert ok, why
+    assert ehc.surface_usable(None) == (False, "no cost surface")
+
+
+def test_a_measured_hour_with_a_zero_median_is_not_a_price():
+    surf = _surface({"5": {"status": "MEASURED", "p50": 0.0, "n_nonzero": 900}},
+                    symbol_level={"status": "MEASURED", "p50": 50.0, "p75": 60.0, "p90": 90.0})
+    v, info = ehc.hour_spread_pts(surf, "X", 5)
+    assert v == 60.0 and info["basis"] == "symbol_upper_quantile"
+
+
+def test_a_nan_registry_spread_is_unmeasured_not_nan_r():
+    c, basis = ehc.costs_at_entry_hour("ABSENT", {**META, "median_spread_pts": float("nan")},
+                                       surface=_full())
+    assert c is None and "spread=MISSING" in basis
+
+
+def test_the_gauntlet_keeps_its_pre_patch_flat_model_but_records_unmeasured(monkeypatch):
+    monkeypatch.setattr(ehc, "load_surface", lambda path=None: None)
+    costs, basis, _ = ehc.gauntlet_costs("ABSENT", {"ABSENT": {**META, "median_spread_pts": 0}})
+    assert basis.startswith("UNMEASURED")
+    assert costs is not None and costs.spread_per_lot_by_hour is None
+    assert costs == Costs.from_symbol({**META, "median_spread_pts": 0})
+
+
+def test_attach_table_discloses_a_flat_price_as_unmeasured():
+    base = Costs.from_symbol({**META, "median_spread_pts": 0.0})
+    c, basis = ehc.attach_table("X", {**META, "median_spread_pts": 0.0}, base,
+                                surface=_full(schema_revision=1))
+    assert c is base and basis.startswith("UNMEASURED(spread=ZERO)")
+    c2, basis2 = ehc.attach_table("X", META, base, surface=_full())
+    assert basis2 == "fill_hour_surface_table" and c2.spread_per_lot_by_hour
+
+
+def test_surface_stamp_carries_sha_built_at_and_usability(tmp_path):
+    p = tmp_path / "cs.json"
+    import json as _json
+    p.write_text(_json.dumps(_full()), "utf-8")
+    ehc._SURFACE_CACHE.pop(str(p), None)
+    st = ehc.surface_stamp(p)
+    assert st["cost_surface_usable"] is True and len(st["cost_surface_sha"]) == 16
+    assert st["cost_surface_built_at"]
+    p2 = tmp_path / "crlf.json"
+    p2.write_bytes(p.read_bytes().replace(b"\n", b"\r\n"))
+    assert ehc.surface_stamp(p2)["cost_surface_sha"] == st["cost_surface_sha"]
+    gone = ehc.surface_stamp(tmp_path / "absent.json")
+    assert gone["cost_surface_usable"] is False and gone["cost_surface_sha"] is None
+
+
+def test_cost_hash_includes_the_hour_table_and_flat_is_unchanged():
+    import importlib
+    from dataclasses import replace
+    reg = importlib.import_module("sleeve_registry")
+    flat = Costs.from_symbol(META)
+    t1 = replace(flat, spread_per_lot_by_hour=tuple([1.0] * 168))
+    t2 = replace(flat, spread_per_lot_by_hour=tuple([1.0] * 167 + [2.0]))
+    assert reg.cost_hash(t1) != reg.cost_hash(flat)
+    assert reg.cost_hash(t1) != reg.cost_hash(t2)
+    import hashlib
+    import json as _json
+    legacy = {k: round(float(v), 6) for k, v in vars(flat).items()
+              if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    assert reg.cost_hash(flat) == hashlib.sha256(
+        _json.dumps(legacy, sort_keys=True).encode()).hexdigest()[:16], "flat hash moved"
+
+
+def test_a_stale_surface_p50_stamp_yields_to_the_hourly_median():
+    from mt5desk.universe_registry import may_write_median_spread
+    fresh = datetime.now(UTC).isoformat()
+    old = (datetime.now(UTC) - timedelta(hours=80)).isoformat()
+
+    def row(at):
+        return {"median_spread_pts": 13.0, "_provenance": {"median_spread_pts": {
+            "source": "cost_surface_symbol_p50", "at": at}}}
+    assert may_write_median_spread(row(fresh), "h1_spread_median")[0] is False
+    ok, why = may_write_median_spread(row(old), "h1_spread_median")
+    assert ok and "expired" in why
+    assert may_write_median_spread(row("garbage"), "h1_spread_median")[0] is True
+    assert may_write_median_spread(row(old), "cost_surface_symbol_p50")[0] is True
+
+
+def test_expand_universe_refuses_a_stale_surface(tmp_path, monkeypatch):
+    import json as _json
+
+    from research import expand_universe as ex
+    (tmp_path / "data").mkdir()
+    doc = _full()
+    doc["symbols"]["X"]["symbol_level"] = {"status": "MEASURED", "p50": 12.0}
+    (tmp_path / "data" / "cost_surface.json").write_text(_json.dumps(doc), "utf-8")
+    monkeypatch.setattr(ex, "BASE", tmp_path)
+    assert ex._surface_symbol_p50("X") == (12.0, "cost_surface_symbol_p50")
+    doc["schema_revision"] = 1
+    (tmp_path / "data" / "cost_surface.json").write_text(_json.dumps(doc), "utf-8")
+    v, why = ex._surface_symbol_p50("X")
+    assert v is None and "revision 1" in why
+
+
+def test_ledger_rows_say_when_the_surface_postdates_the_entry():
+    from research import qquant_shadow as qq
+    from research import shadow_forward as sf
+    st = {"cost_surface_built_at": "2026-10-10T00:00:00+00:00"}
+    for fn in (sf._surface_postdates, qq._postdates):
+        assert fn(st, "2026-10-01 05:00:00+00:00") is True
+        assert fn(st, pd.Timestamp("2026-10-11 05:00")) is False
+    assert sf._surface_postdates({"spread_basis": "frozen_basis"}, "2026-10-01") is None
+    assert qq._postdates({"cost_surface_built_at": "nonsense"}, "2026-10-01") is None

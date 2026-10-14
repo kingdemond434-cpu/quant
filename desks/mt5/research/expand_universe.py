@@ -264,6 +264,15 @@ def _surface_symbol_p50(sym: str) -> tuple[float | None, str]:
         doc = json.loads((BASE / "data" / "cost_surface.json").read_text("utf-8"))
     except (OSError, ValueError):
         return None, "no cost surface"
+    # Only a current revision-2 surface may write: a stale one would stamp an expired number
+    # with a producer that outranks the hourly median (audit 2026-10-13).
+    try:
+        from research.entry_hour_cost import surface_usable
+    except ImportError:  # pragma: no cover - run from another root
+        from entry_hour_cost import surface_usable  # type: ignore[import-not-found,no-redef]
+    ok, why = surface_usable(doc if isinstance(doc, dict) else None)
+    if not ok:
+        return None, why
     row = ((doc.get("symbols") or {}).get(sym) or {}) if isinstance(doc, dict) else {}
     lvl = row.get("symbol_level") or {}
     v = lvl.get("p50") if lvl.get("status") == "MEASURED" else None
