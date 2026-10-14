@@ -146,6 +146,10 @@ HELD_AT_INTEGRITY: list[dict] = []
 #: (a family the replication lane has no written rule for). Stamped on the clock row as
 #: `replication`, so every reader -- and the promoter's LIVE door -- can see it was not rebuilt.
 REPLICATION_TAG: dict[str, str] = {}
+#: Clock key -> the canon certificate that enrolled it on the LAST `certified_sleeves()` pass. The
+#: replication lane keys verdicts by canon id, the clock by `sleeve_key`; the promoter's LIVE door
+#: reads this to find a clock's verdict (and writes it on the row as `canon_certificate`).
+CLOCK_CERTIFICATE: dict[str, str] = {}
 
 
 def _integrity_door() -> tuple[object | None, set[str], str]:
@@ -199,6 +203,7 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     rows: list[tuple[str, str, dict, str]] = []
     HELD_AT_INTEGRITY.clear()
     REPLICATION_TAG.clear()
+    CLOCK_CERTIFICATE.clear()
     # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
     # when the placebo audit shows the certifier caught every planted trap and an independent
     # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
@@ -227,6 +232,7 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                                               "key": key, "reason": reason})
                     slog(f"HELD {key}: {reason}")
                     continue
+                CLOCK_CERTIFICATE[key] = str(run.get("certificate") or "")
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
@@ -262,6 +268,7 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                                           "reason": reason})
                 slog(f"HELD {key}: {reason}")
                 continue
+            CLOCK_CERTIFICATE[key] = str(run.get("certificate") or "")
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),

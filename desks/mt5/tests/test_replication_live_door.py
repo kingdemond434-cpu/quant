@@ -28,6 +28,10 @@ from research import canon_publication as cp  # noqa: E402
 
 CERT = "external.EURZAR.carry.p=8339edce23032d21"
 SPEC_BOOK = ["overnight_gap_decay", "session_range_breakout"]
+#: The main lane's enrolment, as `promoter.clock_identities` returns it (set per test).
+CLOCKS: dict[str, dict] = {}
+MAIN_KEY = "USDJPY.asia#rr=2.5"
+MAIN_CANON = "external.USDJPY@H1.session_range_breakout.p=0123456789abcdef"
 REP = {"verdict": "REPLICATED", "sharpe_metric_version": rc.SHARPE_METRIC_VERSION}
 
 
@@ -104,6 +108,9 @@ def roster(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(promoter, "_apply_live_policy", lambda rows: 0)
     monkeypatch.setattr(promoter, "plog", lambda *a, **k: None)
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {}))
+    # The main lane's clock key -> canon map is the enrolment's; tests that need one set it.
+    monkeypatch.setattr(promoter, "clock_identities", lambda: dict(CLOCKS))
+    CLOCKS.clear()
     EVENTS.clear()
     monkeypatch.setattr(promoter, "note_door", lambda name, **k: EVENTS.append((name, k)))
 
@@ -157,55 +164,112 @@ def test_a_reconcile_restore_of_a_replicated_certificate_is_written(roster, tmp_
     assert [e[1]["door"] for e in EVENTS] == ["RESTORED"]
 
 
-# The main shadow lane and the generic lane write `certificate` as the clock-key STRING
-# (promoter.promote_main / promote_generic); the scalp lane writes the literal "forward_clock".
-def _lane_row(cert: object, name: str = "EURZAR.carry.asia@M15") -> dict:
+# The main shadow lane writes `certificate` as its CLOCK KEY and the generic (qquant) lane as its
+# survivor key; the replication lane keys verdicts by canon id, so the main lane's clock key is
+# resolved through the enrolment (audit of door v3, probe P7). The scalp lane writes its markers.
+def _lane_row(cert: object, name: str = "EURZAR.carry.asia@M15", **extra: object) -> dict:
     return {"name": name, "symbol": "EURZAR", "family": "carry", "status": "LIVE",
-            "risk_frac": 0.03, "certificate": cert, "sleeve_id": "sid"}
+            "risk_frac": 0.03, "certificate": cert, "sleeve_id": "sid", **extra}
 
 
 @pytest.mark.parametrize("lane", ["main", "generic"])
 def test_a_string_certificate_lane_is_refused_when_unreplicated(roster, lane) -> None:
-    key = "EURZAR.carry.asia@M15" if lane == "main" else "AUDSGD.macro_conditional.asia@M5"
+    key = MAIN_KEY if lane == "main" else "qquant.AUDSGD.macro_conditional.asia"
+    if lane == "main":
+        CLOCKS[MAIN_KEY] = {"certificate": MAIN_CANON}
     got = roster([], [_lane_row(key, key)])[key]
     assert (got["status"], got["risk_frac"]) == ("STANDBY", 0.0)
     assert got["demote_reason"].startswith(ai.REFUSED_UNREPLICATED)
     assert [e[1]["door"] for e in EVENTS] == ["REPLICATION_REFUSED"]   # the ledger is corrected
 
 
-def test_a_string_certificate_that_replicated_goes_live(roster, tmp_path, monkeypatch) -> None:
-    key = "EURZAR.carry.asia@M15"
-    monkeypatch.setattr(ai, "REPLICATION_VERDICTS",
-                        _book(tmp_path, {key: dict(REP)}))
+def test_a_main_lane_clock_whose_canon_certificate_replicated_goes_live(
+        roster, tmp_path, monkeypatch) -> None:
+    """The book is keyed by CANON id, as replication_civilization writes it -- never by the clock
+    key -- and the clock's own enrolling certificate is what the door looks up."""
+    CLOCKS[MAIN_KEY] = {"certificate": MAIN_CANON}
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
+    got = roster([], [_lane_row(MAIN_KEY, MAIN_KEY)])[MAIN_KEY]
+    assert got["status"] == "LIVE" and got["canon_certificate"] == MAIN_CANON
+
+
+def test_a_promoted_main_row_carrying_its_canon_certificate_needs_no_lookup(
+        roster, tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
+    row = _lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON)
+    assert roster([], [row])[MAIN_KEY]["status"] == "LIVE"
+
+
+def test_a_generic_survivor_key_that_replicated_goes_live(roster, tmp_path, monkeypatch) -> None:
+    key = "qquant.AUDSGD.macro_conditional.asia"
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {key: dict(REP)}))
     assert roster([], [_lane_row(key, key)])[key]["status"] == "LIVE"
 
 
 def test_a_matured_no_spec_paper_clock_cannot_go_live(roster, tmp_path, monkeypatch) -> None:
     key = "CHFNOK.carry.asia#input_symbol=CHFNOK"
-    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {key: {
+    canon = "external.CHFNOK@H1.carry.p=fedcba9876543210"
+    CLOCKS[key] = {"certificate": canon}
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {canon: {
         "verdict": "UNMEASURED", "why": [f"{ai.NO_SPEC_MARK} for family 'carry'"]}}))
     assert roster([], [_lane_row(key, key)])[key]["status"] == "STANDBY"
 
 
-def test_the_scalp_lane_marker_is_not_a_certificate(roster) -> None:
-    got = roster([], [_lane_row("forward_clock", "xau_m5_anti_breakout_overlap")])
-    assert got["xau_m5_anti_breakout_overlap"]["status"] == "LIVE"
-    assert promoter.live_certificate({"certificate": "forward_clock"}) == ""
+def _scalp(name: str = "xau_m5_anti_breakout_overlap", cert: str = "forward_clock") -> dict:
+    return _lane_row(cert, name, exec="scalp_market", symbol="XAUUSD")
 
 
-def test_the_healer_and_the_promoter_read_the_certificate_the_same_way(tmp_path) -> None:
+def _policy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, doc: object) -> None:
+    from mt5desk import live_policy
+    p = tmp_path / "live_sleeve_policy.json"
+    if doc is None:
+        p.unlink(missing_ok=True)
+    else:
+        p.write_text(doc if isinstance(doc, str) else json.dumps(doc), "utf-8")
+    monkeypatch.setattr(live_policy, "POLICY_FILE", p)
+
+
+def test_the_scalp_lane_passes_only_while_its_live_ban_stands(roster, tmp_path,
+                                                              monkeypatch) -> None:
+    name = "xau_m5_anti_breakout_overlap"
+    for cert in ("forward_clock", f"ten_gate:scalp.{name}"):
+        _policy(tmp_path, monkeypatch, {"banned_execs": ["scalp_market"]})
+        assert roster([], [_scalp(name, cert)])[name]["status"] == "LIVE"
+        _policy(tmp_path, monkeypatch, None)            # no file: the coded ban stands
+        assert roster([], [_scalp(name, cert)])[name]["status"] == "LIVE"
+        _policy(tmp_path, monkeypatch, {"banned_execs": []})      # ban lifted: door applies
+        got = roster([], [_scalp(name, cert)])[name]
+        assert got["status"] == "STANDBY" and "no longer bans" in got["demote_reason"]
+        _policy(tmp_path, monkeypatch, "{not json")     # unreadable: door applies
+        assert roster([], [_scalp(name, cert)])[name]["status"] == "STANDBY"
+
+
+def test_the_scalp_exemption_is_scoped_to_the_lanes_exact_form(roster, tmp_path,
+                                                              monkeypatch) -> None:
+    _policy(tmp_path, monkeypatch, {"banned_execs": ["scalp_market"]})
+    # another lane's row cannot borrow a scalp marker ...
+    for row in (_lane_row("forward_clock", "x"), _lane_row("ten_gate:scalp.x", "x")):
+        assert roster([], [row])["x"]["status"] == "STANDBY"
+    # ... nor a scalp row another sleeve's ten-gate name, nor a prefix lookalike
+    for cert in ("ten_gate:scalp.other", "ten_gate:scalp.xau_m5_anti_breakout_overlap_v2"):
+        got = roster([], [_scalp("xau_m5_anti_breakout_overlap", cert)])
+        assert got["xau_m5_anti_breakout_overlap"]["status"] == "STANDBY"
+
+
+def test_the_healer_and_the_promoter_read_the_certificate_the_same_way(tmp_path, monkeypatch
+                                                                       ) -> None:
     spec = importlib.util.spec_from_file_location(
         "heal_silent_demotions_p", DESK / "scripts" / "heal_silent_demotions.py")
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    assert mod.NON_CANON_CERTIFICATES == promoter.NON_CANON_CERTIFICATES
-    assert mod.NON_CANON_PREFIXES == promoter.NON_CANON_PREFIXES
+    _policy(tmp_path, monkeypatch, {"banned_execs": ["scalp_market"]})
     gate = _gate(tmp_path, {})
-    for row in (_principal_row(), _lane_row("EURZAR.carry.asia@M15"), _lane_row("forward_clock"),
-                _lane_row({"cell": CERT}), {"name": "gold_asia_v4"}):
+    for row in (_principal_row(), _lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON),
+                _lane_row("forward_clock"), _scalp(), _lane_row({"cell": CERT}),
+                {"name": "gold_asia_v4"}):
         assert bool(mod._replication_refusal(row, gate, set())) == bool(
-            promoter.live_certificate(row)), row
+            promoter._row_check(gate, "", set())(dict(row))), row
 
 
 def test_a_replicated_certificate_goes_live(roster, tmp_path, monkeypatch) -> None:
@@ -272,10 +336,13 @@ def test_the_healer_never_restores_an_unreplicated_certificate(healer) -> None:
 
 
 def test_the_healer_refuses_a_string_certificate_and_does_not_make_it_sticky(healer) -> None:
-    key = "EURZAR.carry.asia@M15"
-    row = {**_lane_row(key, key), "status": "STANDBY", "risk_frac": 0.0}
-    assert healer([dict(row)], {})[key] == "STANDBY"
-    assert healer([dict(row)], {key: dict(REP)})[key] == "LIVE"
+    row = {**_lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON), "status": "STANDBY",
+           "risk_frac": 0.0}
+    assert healer([dict(row)], {})[MAIN_KEY] == "STANDBY"
+    assert healer([dict(row)], {MAIN_CANON: dict(REP)})[MAIN_KEY] == "LIVE"
+    # an unstamped clock key finds no verdict here and is left for the promoter's restore
+    bare = {**_lane_row(MAIN_KEY, MAIN_KEY), "status": "STANDBY", "risk_frac": 0.0}
+    assert healer([dict(bare)], {MAIN_CANON: dict(REP)})[MAIN_KEY] == "STANDBY"
 
 
 def test_the_healer_still_restores_a_replicated_silent_demotion(healer) -> None:
@@ -330,13 +397,6 @@ def test_the_healer_honours_the_waiver_and_its_mismatch_void(healer, tmp_path) -
         "eurzar_carry_asia_p_8339edce23032d21"] == "STANDBY"
 
 
-def test_the_scalp_lanes_named_ten_gate_certificate_is_a_lane_marker_too() -> None:
-    """The scalp lane names `ten_gate:scalp.<name>` when scalp_gauntlet minted one; the clock
-    promotes either way, so it must not be held where the bare "forward_clock" row is not."""
-    assert promoter.live_certificate({"certificate": "ten_gate:scalp.xau_m5_x"}) == ""
-    assert promoter.live_certificate({"certificate": "EURZAR.carry.asia@M15"}) != ""
-
-
 def test_a_waiver_survives_a_size_only_mismatch_and_falls_to_a_sign_one(tmp_path: Path) -> None:
     size = ["forward fills off by more than half: 4 vs 10"]
     gate = _gate(tmp_path, {CERT: {"verdict": "MISMATCH", "why": size}})
@@ -357,3 +417,9 @@ def test_a_replicated_verdict_under_an_old_metric_or_another_spec_is_refused(
     gate = _gate(tmp_path, {CERT: {**REP, "fp": "a"}})
     assert gate.live_refusal(CERT, fingerprint="a") is None
     assert ai.STALE_SPEC in str(gate.live_refusal(CERT, fingerprint="b"))
+
+
+def test_an_unimportable_metric_version_refuses_replicated(tmp_path, monkeypatch) -> None:
+    ai._current_metric_version.cache_clear()
+    monkeypatch.setattr(ai, "_current_metric_version", lambda: "")
+    assert "UNMEASURED" in str(_gate(tmp_path, {CERT: dict(REP)}).live_refusal(CERT))

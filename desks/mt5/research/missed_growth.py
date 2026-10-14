@@ -590,9 +590,10 @@ def measure_ordered_standby_hold(_r: Any, alloc: dict[str, Any],
 
 def measure_replication_live_door(_r: Any, alloc: dict[str, Any],
                                   _fv: dict[str, Any]) -> dict[str, Any]:
-    """What the replication LIVE door withheld: rows whose `replication_refusal` (or a legacy
-    `demote_reason`) starts REFUSED_UNREPLICATED, priced by their forward R."""
-    held = [x for x in _sleeve_rows() if str(x.get("status") or "").upper() != "LIVE"
+    """What the replication LIVE door withholds NOW: STANDBY rows whose `replication_refusal` (or
+    `demote_reason`) starts REFUSED_UNREPLICATED, priced by their forward R. A RETIRED row is out
+    for its own reason and is not the door's cost."""
+    held = [x for x in _sleeve_rows() if str(x.get("status") or "").upper() == "STANDBY"
             and any(str(x.get(f) or "").startswith("REFUSED_UNREPLICATED")
                     for f in ("replication_refusal", "demote_reason"))]
     return _price_held(held, alloc, "replication LIVE door")

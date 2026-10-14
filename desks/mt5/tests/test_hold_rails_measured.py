@@ -56,3 +56,13 @@ def test_losing_held_rows_earn_their_place(tmp_path, monkeypatch):
              "shadow_exp": -0.1} for i in range(10)]
     _book(tmp_path, monkeypatch, rows)
     assert mg.measure_ordered_standby_hold(None, ALLOC, {})["verdict"] == mg.EARNS
+
+
+def test_a_retired_row_with_an_old_refusal_is_not_the_doors_cost(tmp_path, monkeypatch):
+    rows = [{"name": f"r{i}", "status": "STANDBY", "shadow_exp": 0.2,
+             "replication_refusal": "REFUSED_UNREPLICATED: x"} for i in range(10)]
+    rows.append({"name": "dead", "status": "RETIRED", "shadow_exp": -9.0,
+                 "demote_reason": "REFUSED_UNREPLICATED: old"})
+    _book(tmp_path, monkeypatch, rows)
+    out = mg.measure_replication_live_door(None, ALLOC, {})
+    assert out["verdict"] == mg.COSTS and out["n"] == 10 and "dead" not in out["names"]

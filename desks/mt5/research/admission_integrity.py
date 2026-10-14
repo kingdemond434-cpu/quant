@@ -160,6 +160,69 @@ def placebo_alarm(path: Path | None = None, now: datetime | None = None) -> dict
                     "not a reason to distrust an admission")}
 
 
+#: THE SCALP LANE'S OWN MARKERS (coordinator ruling, 2026-10-14). A `scalp_market` row names its
+#: lane, not a canon certificate: the literal "forward_clock", or `ten_gate:scalp.<its own name>`
+#: when scalp_gauntlet minted one. Matched on the row's exec AND the exact form, so no other lane's
+#: row can reach the exemption. The exemption itself holds only while live_policy bans the lane.
+SCALP_EXEC = "scalp_market"
+SCALP_CLOCK_MARKER = "forward_clock"
+SCALP_CERT_PREFIX = "ten_gate:scalp."
+
+
+def scalp_lane_marker(row: Mapping[str, Any]) -> bool:
+    if str(row.get("exec") or "") != SCALP_EXEC:
+        return False
+    cert = row.get("certificate")
+    if not isinstance(cert, str):
+        return False
+    name = str(row.get("name") or "")
+    return cert == SCALP_CLOCK_MARKER or (bool(name) and cert == f"{SCALP_CERT_PREFIX}{name}")
+
+
+def scalp_ban_stands(policy_file: Path | None = None) -> tuple[bool, str]:
+    """(True, why) while `live_policy` bans `scalp_market` from live capital; (False, why) when the
+    ban is lifted or the policy cannot be read -- then the replication door applies to scalp rows,
+    and with no SPEC_BOOK scalp rule they cannot replicate, so they stay STANDBY (fail closed)."""
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from mt5desk.live_policy import POLICY_FILE, policy
+    except Exception as exc:
+        return False, f"live policy unreadable ({type(exc).__name__}: {exc})"
+    p = Path(policy_file or POLICY_FILE)
+    try:
+        pol = policy(p)
+    except Exception as exc:
+        return False, f"live policy unreadable ({type(exc).__name__}: {exc})"
+    if p.exists() and pol.source == "defaults":
+        return False, f"{p.name} is present but unreadable"
+    if SCALP_EXEC not in pol.banned_execs:
+        return False, f"live policy no longer bans {SCALP_EXEC}"
+    return True, f"{SCALP_EXEC} banned from live capital ({pol.source})"
+
+
+def scalp_refusal(policy_file: Path | None = None) -> str:
+    """"" while the scalp exemption holds; otherwise the refusal a scalp row gets at the door."""
+    ok, why = scalp_ban_stands(policy_file)
+    return "" if ok else (f"{REFUSED_UNREPLICATED}: scalp lane row -- {why}; no SPEC_BOOK scalp "
+                          f"replication rule exists, so the LIVE door applies and cannot pass it")
+
+
+def canon_certificate(row: Mapping[str, Any]) -> str:
+    """The canon certificate a sleeve row trades on, as the replication lane keys its verdicts, or
+    "" for a scalp lane marker / a row with none. Order: `principal_certificate`,
+    `canon_certificate` (the clock's enrolling certificate, written by the promoter), a
+    `{"cell": ...}` certificate, then the `certificate` string (the generic lane's key IS its
+    survivor key; a main-lane clock key is resolved by the caller)."""
+    if scalp_lane_marker(row):
+        return ""
+    cert = row.get("certificate")
+    cell = (str(cert.get("cell") or "") if isinstance(cert, Mapping)
+            else cert.strip() if isinstance(cert, str) else "")
+    return str(row.get("principal_certificate") or row.get("canon_certificate") or cell or "")
+
+
 #: MISMATCH reasons that disagree on DIRECTION, as replication_civilization writes them: the
 #: Sharpe or summed P&L of the other sign, or a rebuild with no fill at all.
 _SIGN_MARKS: tuple[str, ...] = ("SIGN", "NO fill")
@@ -172,7 +235,8 @@ def _voids_waiver(reason: str) -> bool:
 @lru_cache(maxsize=1)
 def _current_metric_version() -> str:
     """The replication lane's Sharpe metric version, read from the lane itself (never copied);
-    "" when the lane cannot be imported, and then no verdict is refused on its metric."""
+    "" when the lane cannot be imported, and then every REPLICATED verdict is refused (fail
+    closed: a version that cannot be read cannot be shown current)."""
     try:
         from replication_civilization import SHARPE_METRIC_VERSION
     except Exception:
@@ -248,7 +312,11 @@ class IntegrityGate:
         if verdict == REPLICATED:
             metric = str(row.get("sharpe_metric_version") or "")
             current = _current_metric_version()
-            if current and metric != current:
+            if not current:
+                return (f"{REFUSED_UNREPLICATED}: {certificate} REPLICATED, but the lane's "
+                        f"current Sharpe metric version is UNMEASURED (replication_civilization "
+                        f"not importable), so the verdict cannot be shown current")
+            if metric != current:
                 return (f"{REFUSED_UNREPLICATED}: {certificate} was REPLICATED under Sharpe "
                         f"metric {metric or 'unstamped'}, not {current}; the lane re-judges "
                         f"stale-metric verdicts first")

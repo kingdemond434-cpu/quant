@@ -93,34 +93,25 @@ def _reason(row: dict) -> str:
     return _admission_reason(row)
 
 
-NON_CANON_CERTIFICATES = frozenset({"forward_clock"})
-#: The scalp lane NAMES its scalp_gauntlet ten-gate certificate (`ten_gate:scalp.<name>`) when one
-#: exists; the clock promotes either way and no canon spec stands behind it, so it is a lane marker
-#: too -- refusing it while passing "forward_clock" would hold the better-evidenced row.
-NON_CANON_PREFIXES: tuple[str, ...] = ("ten_gate:scalp.",)
-
-
 def _replication_refusal(row: dict, gate: object | None, waived: set[str]) -> str:
     """THE LIVE DOOR, AT THIS WRITER TOO (coordinator ruling C, 2026-10-14). This script writes
     sleeves.json itself, outside the promoter's `save_sleeves`, so restoring a canon certificate
     to LIVE here needs the same REPLICATED verdict (or the principal's named waiver). Fails closed
-    when the verdict book cannot be read. "" means the row may be restored."""
-    cert = row.get("certificate")
-    # The same three shapes as `promoter.live_certificate` (a test pins the two together): a
-    # principal certificate, a `{"cell": ...}` certificate, or the lanes' clock-key string; the
-    # scalp lane's literal "forward_clock" names a lane, not a certificate.
-    if isinstance(cert, dict):
-        cell = str(cert.get("cell") or "")
-    elif isinstance(cert, str) and cert.strip() not in NON_CANON_CERTIFICATES \
-            and not cert.strip().startswith(NON_CANON_PREFIXES):
-        cell = cert.strip()
-    else:
-        cell = ""
-    cid = str(row.get("principal_certificate") or cell or "")
+    when the verdict book cannot be read. "" means the row may be restored.
+
+    The certificate is read by `admission_integrity.canon_certificate`, the function the promoter
+    reads it by, and a scalp lane row passes only while `scalp_refusal` says the lane's ban stands.
+    A main-lane row the promoter has not yet stamped with `canon_certificate` is looked up by its
+    clock key, finds no verdict and is left for the promoter's own restore (fail closed)."""
+    if gate is None:
+        return ("REFUSED_UNREPLICATED: replication verdicts unreadable"
+                if (row.get("certificate") or row.get("principal_certificate")) else "")
+    import admission_integrity as ai
+    if ai.scalp_lane_marker(row):
+        return ai.scalp_refusal()
+    cid = ai.canon_certificate(row)
     if not cid:
         return ""
-    if gate is None:
-        return "REFUSED_UNREPLICATED: replication verdicts unreadable"
     return gate.live_refusal(cid, waived=cid in waived) or ""  # type: ignore[attr-defined]
 
 

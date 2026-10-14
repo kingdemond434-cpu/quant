@@ -339,39 +339,62 @@ def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, 
 REPLICATION_WAIVER = BASE / "data" / "REPLICATION_WAIVER.json"
 
 
-#: `certificate` values that name a LANE, not a canon certificate. The scalp lane writes the
-#: literal "forward_clock" (its sleeves trade on their own clock and carry no canon spec the
-#: replication lane could re-run); a gold window carries no `certificate` at all.
-NON_CANON_CERTIFICATES: frozenset[str] = frozenset({"forward_clock"})
-#: The scalp lane NAMES its scalp_gauntlet ten-gate certificate (`ten_gate:scalp.<name>`) when one
-#: exists; the clock promotes either way and no canon spec stands behind it, so it is a lane marker
-#: too -- refusing it while passing "forward_clock" would hold the better-evidenced row.
-NON_CANON_PREFIXES: tuple[str, ...] = ("ten_gate:scalp.",)
-
-
 def live_certificate(row: dict) -> str:
     """The canon certificate a sleeve row trades on, or "" for a row that carries none.
 
-    THREE SHAPES, ONE ANSWER (audit of ruling C, 2026-10-14). The principal book writes
-    `principal_certificate`; certified rows carry `certificate: {"cell": ...}`; the main shadow and
-    generic lanes write `certificate` as the clock key STRING, which is the certificate id on this
-    desk (see `promote_generic`/`promote_main`). Reading only the first two let every automatic
-    promotion -- and every no-spec paper clock that matures -- past the door unexamined."""
-    cert = row.get("certificate")
-    if isinstance(cert, dict):
-        cell = str(cert.get("cell") or "")
-    elif isinstance(cert, str) and cert.strip() not in NON_CANON_CERTIFICATES \
-            and not cert.strip().startswith(NON_CANON_PREFIXES):
-        cell = cert.strip()
-    else:
-        cell = ""
-    return str(row.get("principal_certificate") or cell or "")
+    EVERY SHAPE, ONE ANSWER (audit of ruling C, 2026-10-14), read by
+    `admission_integrity.canon_certificate` so the healer asks the identical question:
+    `principal_certificate`, `canon_certificate` (the clock's enrolling certificate), a
+    `{"cell": ...}` certificate, or the `certificate` string. The scalp lane's own markers are
+    not certificates; whether that lane passes is `admission_integrity.scalp_refusal`."""
+    from admission_integrity import canon_certificate
+    return canon_certificate(row)
+
+
+def _clock_canon_map() -> dict[str, str]:
+    """Main-lane clock key -> the canon certificate that enrolled it. The replication lane keys
+    its verdicts by canon id; a main-lane row names its clock key (`USDJPY.asia#rr=2.5`), so the
+    door looks the clock's own certificate up rather than refusing a REPLICATED cert unread."""
+    return {k: str(v.get("certificate")) for k, v in clock_identities().items()
+            if v.get("certificate")}
+
+
+def _row_check(gate: Any, why_gate: str, waived: dict[str, str] | set[str]
+               ) -> Callable[[dict], str]:
+    try:
+        import admission_integrity as ai
+    except Exception as exc:                           # fail closed on every row with a claim
+        why = f"REFUSED_UNREPLICATED: admission_integrity unreadable ({type(exc).__name__})"
+        return lambda row: why if (row.get("certificate") or row.get("principal_certificate")
+                                   or row.get("canon_certificate")) else ""
+    memo: dict[str, Any] = {}
+
+    def check(row: dict) -> str:
+        if ai.scalp_lane_marker(row):
+            if "scalp" not in memo:
+                memo["scalp"] = ai.scalp_refusal()
+            return str(memo["scalp"])
+        cert = live_certificate(row)
+        if not cert:
+            return ""
+        if gate is None:
+            return f"REFUSED_UNREPLICATED: {why_gate}"
+        if (cert not in (getattr(gate, "verdicts", None) or {}) and cert not in waived
+                and not row.get("principal_certificate") and not row.get("canon_certificate")):
+            if "clock" not in memo:
+                memo["clock"] = _clock_canon_map()
+            canon = memo["clock"].get(cert)
+            if canon:
+                row["canon_certificate"] = canon       # carried on the row from here on
+                cert = canon
+        return str(gate.live_refusal(cert, waived=cert in waived) or "")
+    return check
 
 
 def replication_check() -> Callable[[dict], str]:
     """One loaded verdict book and waiver list, asked per row: the refusal text, or "" when the
-    row may go LIVE (no canon certificate, REPLICATED, or waived and not MISMATCH). Fails closed:
-    an unreadable book refuses every certificate-backed row. `replication_door` and
+    row may go LIVE (no canon certificate, REPLICATED, or waived and not a SIGN MISMATCH). Fails
+    closed: an unreadable book refuses every certificate-backed row. `replication_door` and
     `reconcile_capital` ask the same question through this, so a restore the door would undo is
     never written (and never logged as RESTORED) in the first place."""
     why_gate = ""
@@ -381,16 +404,7 @@ def replication_check() -> Callable[[dict], str]:
         gate = IntegrityGate.load()
     except Exception as exc:
         why_gate = f"replication verdicts unreadable ({type(exc).__name__}: {exc})"
-    waived = _replication_waivers()
-
-    def check(row: dict) -> str:
-        cert = live_certificate(row)
-        if not cert:
-            return ""
-        if gate is None:
-            return f"REFUSED_UNREPLICATED: {why_gate}"
-        return str(gate.live_refusal(cert, waived=cert in waived) or "")
-    return check
+    return _row_check(gate, why_gate, _replication_waivers())
 
 
 def _replication_waivers() -> dict[str, str]:
@@ -418,16 +432,8 @@ def replication_door(rows: list[dict], prior_live: set[str], *, gate: object | N
     reported by the caller, never reversed silently. An unreadable verdict book refuses every new
     certificate-backed LIVE row -- the door fails closed. Returns the names it refused.
     """
-    if gate is None:
-        check = replication_check()
-    else:
-        waived = _replication_waivers()
-
-        def check(row: dict) -> str:
-            cert = live_certificate(row)
-            if not cert:
-                return ""
-            return str(gate.live_refusal(cert, waived=cert in waived) or "")  # type: ignore[attr-defined]
+    check = (replication_check() if gate is None
+             else _row_check(gate, "", _replication_waivers()))
     refused: list[str] = []
     for row in rows:
         name = str(row.get("name") or "")
@@ -1833,7 +1839,8 @@ def clock_identities() -> dict[str, dict]:
             sym, win, params, fam, side = r[0], r[1], r[2], r[3], r[4]
             key = sf.sleeve_key(sym, win, params, fam, side)
             out[key] = {"symbol": str(sym), "selector": str(win), "family": str(fam),
-                        "params": dict(params or {}), "side": str(side).upper()}
+                        "params": dict(params or {}), "side": str(side).upper(),
+                        "certificate": str(getattr(sf, "CLOCK_CERTIFICATE", {}).get(key) or "")}
         return out
     except Exception as exc:
         plog(f"clock identities unavailable ({type(exc).__name__}: {exc}); keys parsed by shape")
@@ -2475,6 +2482,10 @@ def main() -> None:
                # convention) AND THE REGISTRY IDENTITY, so the hop from a funded sleeve to the
                # certificate that justified it is a field, not a name-shaped inference (E9/E1).
                "certificate": key, "sleeve_id": registry_sleeve_id(key)}
+        # THE CANON ID THE REPLICATION LANE JUDGES (audit of door v3, 2026-10-14): `key` is the
+        # clock key; the certificate that enrolled the clock is what has a verdict.
+        if ident and ident.get("certificate"):
+            row["canon_certificate"] = str(ident["certificate"])
         if family == "session_range_breakout":
             if win not in GOLD_WINDOWS:
                 st["executor_gap"] = f"bracket window {win!r} is not one the gateway runs"
