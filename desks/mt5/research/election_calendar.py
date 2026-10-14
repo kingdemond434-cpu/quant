@@ -225,14 +225,18 @@ def _national_hits(seg: str, lang: str, hits: Sequence[int]) -> list[int]:
     language within EXCLUDE_SPAN of it, and, in Japanese, a house named in the segment."""
     if lang == "ja" and not any(h in seg for h in JA_HOUSES):
         return []
-    # South Africa's own name for its national vote, blanked (same length) so the exclusion
-    # "provincial election" never reads inside it.
-    text = re.sub(r"national and provincial", lambda m: " " * len(m.group(0)), seg, flags=re.I)
+    bad = _excluded_at(seg, lang)
+    return [h for h in hits if not any(abs(h - b) <= EXCLUDE_SPAN for b in bad)]
+
+
+def _excluded_at(seg: str, lang: str) -> list[int]:
+    """Where a non-national vote word sits in the segment (South Africa's "national and
+    provincial" blanked first, same length, so "provincial election" never reads inside it)."""
     rx = _EXCLUDE_RE.get(lang)
     if rx is None:
-        return list(hits)
-    bad = [m.start() for m in rx.finditer(text)]
-    return [h for h in hits if not any(abs(h - b) <= EXCLUDE_SPAN for b in bad)]
+        return []
+    text = re.sub(r"national and provincial", lambda m: " " * len(m.group(0)), seg, flags=re.I)
+    return [m.start() for m in rx.finditer(text)]
 
 
 def _is_vote_date(seg: str, pos: int, lang: str, end: int) -> bool:
@@ -268,8 +272,16 @@ def extract(text: str, lang: str, *, today: date | None = None) -> list[dict[str
         if not hits:
             continue
         best: tuple[int, date] | None = None
+        bad = _excluded_at(seg, lang)
         for pos, d, end in _dates_spans(seg):
             gap = min(abs(pos - h) for h in hits)
+            near = min(hits, key=lambda h: abs(pos - h))
+            # A date just after a non-national vote word, or with one between it and the keyword,
+            # belongs to that other vote ("the by-election was held on X alongside the general
+            # election"); a word after the date ("...; the mayor resigned") does not.
+            lo, hi = sorted((near, pos))
+            if any(pos - EXCLUDE_SPAN <= b <= pos or lo < b < hi for b in bad):
+                continue
             if (EARLIEST <= d <= limit and gap <= KEYWORD_SPAN
                     and _is_vote_date(seg, pos, lang, end)
                     and (best is None or gap < best[0])):
