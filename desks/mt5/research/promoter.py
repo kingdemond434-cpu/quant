@@ -1937,6 +1937,13 @@ def _after(a: str, b: str) -> bool:
         return False
 
 
+#: The row fields that carry a hold ORDERED from outside the promoter. reconcile_capital records an
+#: admitting reading on such a row and never lifts it; the promoter's own `demote_reason` is not
+#: here, because the promoter must still reverse its own demotions on evidence. The healer asks a
+#: different question ("was any reason recorded") and reads every `*_reason` field.
+ORDERED_HOLD_FIELDS: tuple[str, ...] = ("standby_reason",)
+
+
 def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None = None,
                       only: set[str] | None = None) -> bool:
     """Move every standing row toward what the CURRENT solve says, in both directions.
@@ -2024,6 +2031,20 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
             # risk on that is removing it on a compute limit, which is an outage wearing a risk
             # decision; adding it would be adding on nothing at all. The row stands, and the
             # reason stands on it so the gap is visible rather than silent.
+            changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+            continue
+        hold = next((str(s.get(f)).strip() for f in ORDERED_HOLD_FIELDS
+                     if str(s.get(f) or "").strip()), "")
+        if cap["status"] == "LIVE" and status == "STANDBY" and hold:
+            # A STANDBY SOMEONE ORDERED IS NOT THE PROMOTER'S TO LIFT (2026-10-14). The promoter
+            # writes its own demotions as `demote_reason` and may reverse them on evidence;
+            # `standby_reason` is a hold written by an order from outside it (the 2026-10-13
+            # stop-the-bleed on the AUDCHF/ZAR gap-decay principals), and an allocator reading
+            # does not answer the reason it was written for. The reading is still recorded on
+            # the row; the hold ends when whoever wrote it deletes the field
+            # (ORDERED_HOLD_FIELDS).
+            plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- standby_reason: "
+                 f"{hold[:120]}")
             changed = changed or json.dumps(s, sort_keys=True, default=str) != before
             continue
         if cap["status"] == "LIVE" and status == "STANDBY":

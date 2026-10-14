@@ -22,6 +22,8 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+import promoter  # noqa: E402
+
 _HOLD = "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only"
 
 
@@ -54,3 +56,28 @@ def test_any_reason_field_counts_and_a_restore_stamp_does_not(healer) -> None:
     got = healer([{"name": "a", "status": "STANDBY", "hold_reason": "principal order"},
                   {"name": "b", "status": "STANDBY", "restore_reason": "funded at 5.5% heat"}])
     assert got == {"a": "STANDBY", "b": "LIVE"}
+
+
+def _reconcile(monkeypatch, row: dict) -> dict:
+    monkeypatch.setattr(promoter, "capital_verdict", lambda *a, **k: {
+        "status": "LIVE", "risk_frac": 0.03, "streak": 2,
+        "why": "already funded by the allocator at 5.50% heat"})
+    monkeypatch.setattr(promoter, "note_door", lambda *a, **k: None)
+    monkeypatch.setattr(promoter, "plog", lambda *a, **k: None)
+    sleeves = [row]
+    promoter.reconcile_capital(sleeves, {"fresh": True, "at": "2026-10-14T00:00:00+00:00",
+                                         "admission_at": "2026-10-14T01:00:00+00:00"})
+    return sleeves[0]
+
+
+def test_the_promoter_records_the_reading_but_keeps_an_ordered_standby(monkeypatch) -> None:
+    row = _reconcile(monkeypatch, {"name": "audchf_gap", "status": "STANDBY", "risk_frac": 0.0,
+                                   "standby_reason": _HOLD})
+    assert (row["status"], row["risk_frac"]) == ("STANDBY", 0.0)
+    assert row["admission"]["status"] == "LIVE" and row["admit_streak"] == 2
+
+
+def test_the_promoters_own_standby_is_still_restored_on_evidence(monkeypatch) -> None:
+    row = _reconcile(monkeypatch, {"name": "x", "status": "STANDBY", "risk_frac": 0.0,
+                                   "demote_reason": "the optimiser gives it 0.0000% heat"})
+    assert (row["status"], row["risk_frac"]) == ("LIVE", 0.03)
