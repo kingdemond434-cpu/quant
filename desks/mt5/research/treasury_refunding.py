@@ -114,6 +114,7 @@ _NEG_BEFORE = re.compile(r"\bnot\b(?!\s+only)|\bno longer\b|n't\b|\bwithout\b|\b
                          r"|\bnever\b|\bunlikely\b", re.I)
 _NEG_AFTER = re.compile(r"\b(?:not|no longer|unlikely to)\b(?:\s+be)?\s+"
                         r"(?:needed|necessary|required|warranted)", re.I)
+_VERB = re.compile(r"\b(?:increas|reduc|decreas|cut)", re.I)
 _REASON = re.compile(r"\b(?:because|since|as|given|due to)\b", re.I)
 #: Clause boundaries: a separator, or a bare "and"/"while" that starts a new verb phrase, so
 #: "maintaining nominal coupon sizes and will increase TIPS" is two clauses (audit #394 v2).
@@ -238,6 +239,10 @@ def _clause_reading(clause: str) -> int | None:
             return v
     if up or down:
         return None
+    bare = _VERB.search(clause)
+    lead = clause[max(0, bare.start() - 40):bare.start()] if bare else ""
+    if bare and _NEG_BEFORE.search(_REASON.split(lead)[-1]):
+        return 0            # "cannot foresee a need to increase", with no guidance verb
     if _FLAT.search(clause):
         return 0
     return None
@@ -476,6 +481,7 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
             continue
         links = statement_links(body, url)
         queue.extend(u for u in links if u not in store and u not in queue)
+        per.append({"url": url, "status": "OK", "links": len(links)})
     # A listed statement the desk holds no DATED reading of (refused, gated, 404, undated) is
     # retried once per REFETCH_S and, until it reads, blocks every 0.0 (audit must-fix #394 v3).
     undated = sorted(u for u, st in store.items() if not (isinstance(st, dict) and st.get("date")))
@@ -483,7 +489,6 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
         if (u not in queue and time.time() - float((fetched.get(u) or {}).get("at_epoch") or 0)
                 >= REFETCH_S):
             queue.append(u)
-        per.append({"url": url, "status": "OK", "links": len(links)})
     read = 0
     for url in list(queue):
         if read >= MAX_NEW_PER_PASS or time.time() > deadline - 5:
