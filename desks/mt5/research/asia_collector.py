@@ -527,6 +527,32 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def held_missed_growth_lines(rows: list[dict[str, Any]],
+                             prior: dict[str, Any]) -> list[dict[str, Any]]:
+    """GROWTH GOVERNANCE: one missed-growth line per registry row this pass held on terms (a
+    `held_route` row of libs/data/terms_fence.SOURCE_POLICY; nothing was requested for it). Its
+    past conversion is this organ's own record from before the hold: the status of the last pass
+    that reached the source (`prior`, collector_state read before this pass). delta E[log W] is
+    UNMEASURED, never zero (terms_fence.held_missed_growth)."""
+    from libs.data import terms_fence as _tf
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for r in rows:
+        key = str(r.get("source") or "")
+        if not key or key in seen or not _tf.held_on_terms(key):
+            continue
+        seen.add(key)
+        prev = prior.get(str(r.get("id"))) if isinstance(prior, dict) else None
+        past: dict[str, Any] = {}
+        if isinstance(prev, dict) and prev.get("last_status") not in (None, "", r.get("status")):
+            past = {"registry_id": str(r.get("id")),
+                    "last_status_before_hold": str(prev.get("last_status"))}
+        line = _tf.held_missed_growth(key, past or None)
+        line["registry_id"] = str(r.get("id"))
+        out.append(line)
+    return out
+
+
 def due(src: dict[str, Any], state: dict[str, Any], now: float) -> bool:
     last = (state.get(str(src.get("id"))) or {}).get("last_attempt_epoch")
     if not isinstance(last, (int, float)):
@@ -556,6 +582,7 @@ def main(argv: list[str] | None = None) -> int:
         want = set(args.id)
         sources = [s for s in sources if str(s.get("id")) in want]
     state = _read(STATE, {})
+    prior = {k: dict(v) for k, v in state.items() if isinstance(v, dict)}
     now = time.time()
     # A TRANSPORT CARRIES OTHER SOURCES AND HAS NO ENDPOINT OF ITS OWN TO COLLECT.
     todo = [s for s in sources
@@ -645,6 +672,7 @@ def main(argv: list[str] | None = None) -> int:
         "series_written": [r["parse"]["path"] for r in rows
                            if isinstance(r.get("parse"), dict) and r["parse"].get("path")],
         "rows": rows,
+        "missed_growth_lines": held_missed_growth_lines(rows, prior),
     }
     _write_atomic(OUT, json.dumps(doc, indent=1))
 

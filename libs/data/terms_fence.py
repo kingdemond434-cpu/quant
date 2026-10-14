@@ -269,6 +269,24 @@ SOURCE_POLICY.update({
         "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news", PUBLIC_PAGE,
         _UNREAD, "", "terms page not read: imo.org refused the fetch (robots.txt redirect loop)"),
 })
+#: JPX's site terms (Japanese and English pages), read 2026-10-14 for the pass-6 F4 holds. One
+#: reading shared by every JPX route held on it (a value, not a second register).
+_JPX_TERMS: dict[str, Any] = {
+    "url": "https://www.jpx.co.jp/term-of-use/index.html", "checked_at": "2026-10-14",
+    "clauses": {
+        "secondary_use": ("当サイトに掲載されている情報について、有料・無料を問わずJPXからの許諾を"
+                          "得ている場合を除き、商用目的によるデータ収集のほか如何なる用途に関わらず"
+                          "二次利用及び再配信はできません。"),
+        "automated": ("当サイトへの高頻度・高負荷に繋がる可能性のある自動取得等はご遠慮いただいて"
+                      "おります。"),
+        "en:collection": ("The collection of data or secondary use of information from this "
+                          "website for commercial purposes is strictly prohibited [...] unless "
+                          "JPX has granted prior permission or authorized such use under a paid "
+                          "contract"),
+        "en:automated": "Please refrain from automatic information retrieval and other operations"},
+    "also_read": ("https://www.jpx.co.jp/english/term-of-use/index.html",
+                  "https://www.jpx.co.jp/markets/statistics-equities/short-selling/index.html",
+                  "https://www.jpx.co.jp/markets/statistics-equities/margin/index.html")}
 #: HELD ROUTES (2026-10-14, the GD queue rows; auditor: one register, so they live HERE). Routes
 #: the queue asked for whose OWN terms were read and carry no clause permitting automated access
 #: for internal research. Not URL-level (`hosts` is empty): the row governs the named ROUTE, so
@@ -405,6 +423,145 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                       "disclosures-clerk.house.gov": (
                           "the House Clerk page links a Terms of Service PDF that was not "
                           "readable from the authoring container on 2026-10-14: UNREAD")}}},
+    # ---- PASS 6 holds (2026-10-14; one register). F2 (COMEX registered/eligible stocks, the
+    # LME cancelled-warrant share) and F4 (JPX short-selling ratio, JPX margin balances): each
+    # publisher's OWN terms were read and none carries a clause permitting automated access for
+    # internal research, so all four are HELD and nothing is fetched. `url_patterns` make the
+    # row URL-level for exactly its route (host + path), so `input_source(<url>)` answers for the
+    # route even where a caller names no source; other pages on the host keep their own row or
+    # default. The asia_collector registry rows that pointed at these routes (comex_warehouse,
+    # lme_warehouse; jp_tocom_settlements has its own row) are held through the URL: the
+    # collector's live-input check reads `input_source(url, id)`, and the URL names the row.
+    # The FINRA margin-statistics route (an auditor should-fix) is held on FINRA's site-wide ToU.
+    "comex_warehouse_stocks": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("comex_warehouse_stocks",),
+        "url_patterns": (r"^(?:[^/]*\.)?cmegroup\.com/delivery_reports/",),
+        "wanted": ("COMEX registered vs eligible warehouse stocks (Gold_Stocks.xls, "
+                   "Silver_stocks.xls, Copper_Stocks.xls): the registered share as the "
+                   "deliverable float for XAUUSD, XAGUSD, XCUUSD"),
+        "why": ("the delivery-report page carries no licence of its own, so CME's Terms of Use "
+                "govern: s.12 bars copying and derivative works, s.8(vi) bars data use for "
+                "machine learning, and the Data Terms of Use allow personal non-commercial "
+                "access only and bar scripts and systematic retrieval without written permission"),
+        "robots": ("cmegroup.com/robots.txt disallows Python-urllib/1.17 entirely; "
+                   "/delivery_reports/ is not disallowed for other agents (the terms decide)"),
+        "unblock": ("a written CME authorisation (Data Terms of Use: 'Unless CME Group gives "
+                    "you prior written permission'), or a licensed vendor feed"),
+        "terms": {"url": "https://www.cmegroup.com/files/terms-of-use.pdf",
+                  "checked_at": "2026-10-14",
+                  "clauses": {
+                      "12": ("Except as expressly authorized by CME, you agree not to sell, "
+                             "copy, distribute, or create derivative works based on the "
+                             "Website, in whole or in part."),
+                      "8(vi)": ("Your use of any data, databases, directories content, "
+                                "information or materials (including associated metadata) on "
+                                "the Website, in any manner for any machine learning and/or "
+                                "artificial intelligence [...] is expressly prohibited."),
+                      "data_tou:personal": ("You may access content only for your personal use "
+                                            "for non-commercial purposes."),
+                      "data_tou:automated": (
+                          "use of any Web browsers (other than generally available third-party "
+                          "browsers), engines, scripts, [...] to navigate, access, copy in bulk, "
+                          "retrieve, harvest, index, search or analyze any portion of the "
+                          "Website [...] Unless CME Group gives you prior written permission")},
+                  "also_read": ("https://www.cmegroup.com/trading/"
+                                "market-data-explanation-disclaimer.html",
+                                "https://www.cmegroup.com/clearing/operations-and-deliveries/"
+                                "nymex-delivery-notices.html")}},
+    "lme_warehouse_stocks": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("lme_warehouse_stocks",),
+        "url_patterns": (r"^(?:[^/]*\.)?lme\.com/",),
+        "wanted": ("LME warehouse stocks and the cancelled-warrant share of live tonnage: the "
+                   "deliverable float for copper and the base complex (XCUUSD, XAGUSD)"),
+        "why": ("the LME website terms grant a personal licence and bar copying, archiving, "
+                "creating Derived Information and any API or automated mechanism to scrape or "
+                "download Information from any LME website; the stocks page adds no licence and "
+                "routes detailed stocks through licensed data vendors"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": "an LME market-data licence (LME 'Market data licensing'), or LME's written "
+                   "agreement under clause 3.1",
+        "terms": {"url": "https://www.lme.com/en/legal/website-terms-and-conditions",
+                  "checked_at": "2026-10-14",
+                  "clauses": {
+                      "2.1": ("grants to the Customer a limited, non-exclusive, revocable, "
+                              "personal, and non-transferable licence"),
+                      "3.1": "Unless specifically agreed with the LME in writing, the Customer "
+                             "shall not",
+                      "3.1.2": ("archive the Information, manipulate the information in any way "
+                                "or create Derived Information from the Information;"),
+                      "3.1.11": ("use an API (or equivalent automated mechanism) to scrape or "
+                                 "otherwise download Information from any LME website."),
+                      "stocks_page": ("Daily, one-day delayed detailed stock reports are "
+                                      "available from our licensed data vendors.")},
+                  "also_read": ("https://www.lme.com/en/market-data/reports-and-data/"
+                                "warehouse-and-stocks-reports",)}},
+    "jpx_short_selling_ratio": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("jpx_short_selling_ratio",),
+        "url_patterns": (r"^(?:[^/]*\.)?jpx\.co\.jp/(?:english/)?markets/statistics-equities/"
+                         r"short-selling/",),
+        "wanted": ("JPX daily short-selling ratio (空売り比率), published after the close: an "
+                   "extreme-shorting state for JPN225, USDJPY, EURJPY"),
+        "why": ("JPX's site terms bar secondary use and redistribution of the site's information "
+                "for any purpose, commercial data collection included, without JPX's permission, "
+                "and ask users to refrain from automated retrieval; the statistics page carries "
+                "no licence of its own"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": "JPX's permission (許諾), free or paid, e.g. a JPX Market Information data "
+                   "licence covering the short-selling statistics",
+        "terms": _JPX_TERMS},
+    "jpx_margin_balances": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("jpx_margin_balances",),
+        "url_patterns": (r"^(?:[^/]*\.)?jpx\.co\.jp/(?:english/)?markets/statistics-equities/"
+                         r"margin/",),
+        "wanted": ("JPX weekly margin trading balances (信用取引残高 / 信用残): retail leverage "
+                   "build and unwind for JPN225, USDJPY, EURJPY"),
+        "why": ("JPX's site terms bar secondary use and redistribution of the site's information "
+                "for any purpose without JPX's permission and ask users to refrain from automated "
+                "retrieval; the margin page carries no licence of its own (it states only the "
+                "schedule: 毎日の信用取引残高をその翌営業日に公表しています。)"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": "JPX's permission (許諾), free or paid, covering the margin statistics",
+        "terms": _JPX_TERMS},
+    "jp_tocom_settlements": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("jp_tocom_settlements",),
+        "url_patterns": (r"^(?:[^/]*\.)?jpx\.co\.jp/(?:english/)?markets/derivatives/",),
+        "wanted": ("OSE (ex-TOCOM) commodity settlements and open interest: the yen gold basis "
+                   "for XAUUSD, XAGUSD (asia_collector registry row jp_tocom_settlements)"),
+        "why": ("the same JPX site terms (read for F4) bar secondary use of any information on "
+                "the site without JPX's permission; found live in asia_sources.json in pass 6"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": "JPX's permission (許諾), free or paid, covering derivatives settlement data",
+        "terms": _JPX_TERMS},
+    "us_finra_margin_statistics": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY, "held_route": True,
+        "sources": ("us_finra_margin_statistics",),
+        "url_patterns": (
+            r"^(?:[^/]*\.)?finra\.org/investors/learn-to-invest/advanced-investing/"
+            r"margin-statistics",
+            r"^(?:[^/]*\.)?finra\.org/.*margin-statistics[^/]*\.xlsx$"),
+        "wanted": ("FINRA margin debt and free credit balances (US pack POSITIONING_SOURCES): "
+                   "the leverage stock US-F conditions on"),
+        "why": ("the margin-statistics page carries no licence of its own (it says only that "
+                "FINRA does not provide the data outside of the page and data feeds are not "
+                "available), so FINRA's site-wide Terms of Use govern: non-commercial use only, "
+                "no robots, no database built from the site. IDEAS_ONLY: the pack may surface "
+                "it as an idea, never live input"),
+        "robots": "not consulted: the terms already decide",
+        "unblock": "a FINRA data licence or written permission for internal commercial research",
+        "terms": {"url": "https://www.finra.org/terms-of-use", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "use": ("shall be used ONLY for your own non-commercial personal or "
+                              "professional use."),
+                      "robots": ("use any data mining, scraping or harvesting tools (including "
+                                 "robots)"),
+                      "database": "develop or create a database of data using the FINRA Website",
+                      "page": ("FINRA does not provide the data outside of this webpage and "
+                               "data feeds are not available.")}}},
 }
 SOURCE_POLICY.update(_HELD_ROUTES)
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
@@ -672,6 +829,22 @@ def _wrapped_url(url: str) -> str | None:
 
 
 
+def _pattern_source(url: str) -> str | None:
+    """The ROUTE row whose `url_patterns` match this URL's normalized `host + path`, else None.
+    A route row (e.g. a held route) governs exactly that route; the rest of its host keeps
+    whatever row or default it had."""
+    parts = _parse(url)
+    h = _host(url)
+    if parts is None or not h:
+        return None
+    target = h + (parts.path or "/")
+    for name, p in SOURCE_POLICY.items():
+        for pat in p.get("url_patterns") or ():
+            if re.search(pat, target, re.I):
+                return name
+    return None
+
+
 def source_of_url(url: str, _depth: int = 0) -> str | None:
     """The policy row a URL belongs to, or None (unlisted: PUBLIC_PAGE). A wrapper (archive,
     cache, reader, translate proxy) resolves to what it wraps when that is held."""
@@ -681,6 +854,11 @@ def source_of_url(url: str, _depth: int = 0) -> str | None:
     k = _host_source(h)
     if k and status(k) in HOLDING:
         return k
+    kp = _pattern_source(url)
+    if kp:
+        # a route row (`url_patterns`: host + path) names this exact route; a HOLDING host row
+        # above still wins, being the stricter answer
+        return kp
     inner = _wrapped_url(url) if _depth < 4 else None
     if inner and _on(h, _ARCHIVE_TODAY) and _on(_host(inner), PAYWALLED_HOSTS):
         # archive.today is the common route around a paywall: an archive.today copy of a
@@ -1058,17 +1236,29 @@ def held_missed_growth(key: str, past: Mapping[str, Any] | None = None) -> dict[
     it names what that fetch converted before (`past`, the organ's own record) or says that no
     conversion is on record; delta E[log W] is UNMEASURED either way, never zero."""
     row = SOURCE_POLICY[key]
-    line: dict[str, Any] = {"source": key, "kind": "terms_hold", "status": HELD_ON_TERMS,
-                            "policy_status": str(row["status"]), "delta_elogw": "UNMEASURED",
-                            "terms_url": str((row.get("terms") or {}).get("url") or ""),
-                            "unblock": str(row.get("unblock") or "")}
+    return terms_hold_missed_growth(
+        key, policy_status=str(row["status"]), why=str(row["why"]),
+        terms_url=str((row.get("terms") or {}).get("url") or ""),
+        unblock=str(row.get("unblock") or ""), past=past)
+
+
+def terms_hold_missed_growth(source: str, *, policy_status: str, why: str, terms_url: str,
+                             unblock: str, past: Mapping[str, Any] | None = None
+                             ) -> dict[str, Any]:
+    """The one shape of a terms hold's missed-growth line. `held_missed_growth` builds it from a
+    held-route row of this register; an organ that holds a source on terms evidence it carries
+    itself (the free-stack exchange roster's `terms` / `terms_evidence`, pass 6 should-fix)
+    builds it here from that evidence, so every hold's line reads the same."""
+    line: dict[str, Any] = {"source": source, "kind": "terms_hold", "status": HELD_ON_TERMS,
+                            "policy_status": policy_status, "delta_elogw": "UNMEASURED",
+                            "terms_url": terms_url, "unblock": unblock}
     if past:
         line["past_conversion"] = dict(past)
-        line["cause"] = (f"held on terms ({row['why']}); the conversion recorded before the hold "
+        line["cause"] = (f"held on terms ({why}); the conversion recorded before the hold "
                          "is in past_conversion; the growth forgone is UNMEASURED until the "
                          "unblock arrives and the cells are judged")
     else:
-        line["cause"] = (f"held on terms ({row['why']}); no measured conversion on record (no "
+        line["cause"] = (f"held on terms ({why}); no measured conversion on record (no "
                          "observation, cell or gain test of this source exists in the organ's "
                          "record), so the growth forgone is UNMEASURED, never zero")
     return line

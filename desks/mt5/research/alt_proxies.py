@@ -3610,6 +3610,10 @@ TERMS_EVIDENCE["wiki_asia_attention"] = {**TERMS_EVIDENCE["wiki_asia_attention"]
                                          **WIKI_POLICY_EVIDENCE}
 
 
+#: PASS 6 (2026-10-14): F2 (COMEX registered/eligible stocks, the LME cancelled-warrant share)
+#: and F4 (JPX short-selling ratio, JPX margin balances) were terms-gated first and all four are
+#: HELD on their publishers' own clauses, so none has a Source here; they join this view through
+#: their fence rows, with the OSE settlements route and the FINRA margin-statistics route.
 #: HELD ROUTES (2026-10-14, the GD queue rows) are rows of the ONE terms register,
 #: `libs/data/terms_fence.SOURCE_POLICY` (`held_route: True`): routes the queue asked for whose OWN
 #: terms were read and carry NO clause permitting automated access for internal research. None has

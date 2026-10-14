@@ -524,9 +524,15 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "root": "https://www.finra.org/investors/learn-to-invest/advanced-investing/margin-statistics",
      "fields": ("debit_balances", "free_credit_cash", "free_credit_margin"),
      "frequency": "monthly", "snapshot": "month end", "publish_utc": "22:00", "lag_days": 20,
-     "licence": "free, public", "available": True,
+     # HELD ON TERMS (pass 6, 2026-10-14): the page has no licence of its own and FINRA's ToU
+     # allow non-commercial use only and bar robots and databases built from the site. The one
+     # register (libs/data/terms_fence.py `us_finra_margin_statistics`) makes the route IDEAS_ONLY:
+     # surfaced as an idea, never live input; `input_source(root)` names the row.
+     "licence": ("FINRA Terms of Use: non-commercial use only, no robots, no database built from "
+                 "the site (terms_fence us_finra_margin_statistics: HELD, IDEAS_ONLY)"),
+     "available": False, "live_input": False, "terms_fence": "us_finra_margin_statistics",
      "why": "the retail and hedge-fund leverage stock; a peak-and-fall in margin debt is the "
-            "deleveraging state US-F conditions on",
+            "deleveraging state US-F conditions on (an IDEA here: held on FINRA's terms)",
      "pit_warning": "three weeks stale; never a same-month conditioner"},
     {"name": "Cboe equity and index put/call ratios and the daily market statistics",
      "root": "https://www.cboe.com/us/options/market_statistics/daily/",
@@ -869,8 +875,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("margin debt", "free credit balances", "retail option volume", "single-stock "
                  "option volume", "equity put call"),
         languages=("en",), access_label="PUBLIC", credibility="AUTHORITATIVE",
-        predictive_state="UNTESTED", licence="public",
-        notes="the measurable half of the retail layer; the forums are its narrative half"),
+        predictive_state="UNTESTED",
+        licence=("FINRA margin statistics: FINRA Terms of Use, non-commercial only (terms_fence "
+                 "us_finra_margin_statistics: HELD, IDEAS_ONLY); Cboe daily statistics: "
+                 "Cboe's terms"),
+        notes="the measurable half of the retail layer; the forums are its narrative half. The "
+              "FINRA root is an IDEA ground only: held on FINRA's terms as live input"),
     source_class(
         "us_apps_apis", "The trading and data app ecosystem: TradingView scripts, thinkscript, "
                         "QuantConnect, Alpaca, IBKR, polygon.io, the FRED API",

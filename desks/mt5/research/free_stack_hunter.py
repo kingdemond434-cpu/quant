@@ -558,14 +558,30 @@ def terms_hold_lines(rows: list[dict[str, Any]], cursor: dict[str, Any],
     out: list[dict[str, Any]] = []
     for row in rows:
         sid = str(row["id"])
-        if not _tf.held_on_terms(sid):
+        roster_terms = str(row.get("terms") or "")
+        if not _tf.held_on_terms(sid) and roster_terms not in ("refused", "to_confirm"):
             continue
         st = cursor.get(sid) or {}
         past = {k: st[k] for k in ("attempts", "successes", "obs_total", "last_success")
                 if st.get(k)}
         if columns.get(sid):
             past["past_columns"] = len(columns[sid])
-        out.append(_tf.held_missed_growth(sid, past or None))
+        if _tf.held_on_terms(sid):
+            out.append(_tf.held_missed_growth(sid, past or None))
+            continue
+        # A roster row held on its OWN reviewed terms (the cn_exchange rows: `terms` refused or
+        # to_confirm, the clause in `terms_evidence`) carries the same line, built from that
+        # evidence (pass 6 should-fix: these holds had none).
+        ev = row.get("terms_evidence") or {}
+        reading = str(ev.get("reading") or ev.get("terms_quote") or "")
+        out.append(_tf.terms_hold_missed_growth(
+            sid, policy_status=f"roster_terms:{roster_terms}",
+            why=f"roster terms {roster_terms}: {reading}"[:400],
+            terms_url=str(ev.get("terms_url") or row.get("terms_url") or ""),
+            unblock=("the exchange's written permission recorded in terms_evidence and a "
+                     "`terms` flip to confirmed" if roster_terms == "refused" else
+                     "the exchange's own terms read into terms_evidence and `terms` flipped"),
+            past=past or None))
     return out
 
 
