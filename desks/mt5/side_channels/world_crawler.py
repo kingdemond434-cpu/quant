@@ -58,11 +58,15 @@ WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
 REPORT = BASE / "reports" / "world_crawl.json"
 
-#: Browser UA, because a bot string is refused or served a stub by a large share of the ground
-#: this desk needs -- the gotcha recorded in the free-data-plane findings, where a healthy source
-#: reads as dead purely from its User-Agent.
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+from libs.data import polite_fetch as _pf  # noqa: E402
+
+#: THE HONEST USER-AGENT (auditor ruling 2026-10-14). This crawler used to send a desktop Chrome
+#: string so that ground which refuses bots would serve it anyway. That is browser impersonation
+#: and it is forbidden: a site that refuses this desk's own name has answered, and the answer is
+#: recorded (`HostAccess`), never routed around. One shared definition in `libs.data.polite_fetch`.
+UA = _pf.DESK_UA
+#: The product token robots.txt groups are matched against.
+UA_TOKEN = _pf.DESK_UA_PRODUCT
 
 #: Per-request and whole-run budgets. The run budget is what makes this safe to put on an hourly
 #: timer beside everything else on a 3.8 GB box: it stops on the clock, not when it runs out of
@@ -194,23 +198,278 @@ def _ascii_url(url: str) -> str:
     return url
 
 
-def fetch(url: str) -> tuple[bytes | None, str]:
-    """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
+# ------------------------------------------------------------------- polite access, per host
+
+#: Where the crawler keeps its per-host access record: robots.txt it has read and the hosts that
+#: refused it. Box-written state beside the frontier's directory, NOT under `intelligence/`
+#: (the compiler reads every JSON there as a donation).
+ACCESS_STATE = BASE / "data" / "world_crawler_access.json"
+#: robots.txt is re-read at most this often per scheme://host[:port].
+ROBOTS_TTL_S = 24 * 3600
+#: A 429 is a request to come back later: the host is rechecked after this. 401 and 403 wait for
+#: a person (a row in ACCESS_STATE that someone deletes), never for a clock.
+RECHECK_429_S = 24 * 3600
+#: Redirect hops followed per fetch; every hop passes the hold and robots checks again.
+MAX_REDIRECTS = 5
+MAX_ROBOTS_BYTES = 512_000
+#: The verdict each refusal status is recorded as.
+BLOCK_STATUS = {401: "NEEDS_KEY", 403: "METHOD_BLOCKED", 429: "METHOD_BLOCKED"}
+
+#: Second-level labels under which a registrable domain takes three labels (co.uk, com.cn, ...).
+#: Approximate on purpose: it errs towards a WIDER hold, which is the safe direction.
+_SLD = frozenset({"co", "com", "net", "org", "gov", "ac", "edu", "or", "ne", "go"})
+
+
+def _origin(url: str) -> str:
+    """scheme://host[:port], lower-cased. robots.txt belongs to exactly this, never to a parent."""
+    parts = urlsplit(url)
+    return f"{parts.scheme.lower()}://{parts.netloc.lower()}"
+
+
+def _hostname(url: str) -> str:
+    return (urlsplit(url).hostname or "").lower()
+
+
+def site_of(host: str) -> str:
+    """The registrable site a host belongs to. A refusal holds the whole site for the run, so a
+    403 on www.example.org is never answered by asking old.example.org or example.org instead."""
+    labels = [x for x in host.lower().strip(".").split(".") if x]
+    if len(labels) >= 3 and len(labels[-1]) == 2 and labels[-2] in _SLD:
+        return ".".join(labels[-3:])
+    return ".".join(labels[-2:])
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirects are surfaced as HTTPError so `fetch` can check the target before following."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        return None
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
+def _open(req: urllib.request.Request, timeout: float) -> Any:
+    """THE ONE NETWORK CALL. Every byte the crawler reads -- pages and robots.txt -- goes through
+    here, with redirects NOT followed (tests replace this function; nothing else opens a socket)."""
+    return _OPENER.open(req, timeout=timeout)
+
+
+def _request(url: str, accept: str) -> urllib.request.Request:
+    return urllib.request.Request(_ascii_url(url), headers={
+        "User-Agent": UA,
+        "Accept": accept,
+        # No language preference: asking for English is how a crawler that is supposed to
+        # cover the world quietly stops covering most of it.
+        "Accept-Language": "*",
+    })
+
+
+class HostAccess:
+    """robots.txt per scheme://host[:port] and the refusals each site has given, for one run.
+
+    THE RULES (auditor ruling 2026-10-14, superseding the 2026-09-23 "robots is a label" reading
+    for this crawler's FETCHES; the routing label on rows is unchanged):
+      * robots.txt decides every fetch, read for the exact origin -- a subdomain has its own file.
+      * robots.txt unreadable (network error, 5xx) means NO fetch to that origin this run;
+        a 404/410 on robots.txt means allow all, per the standard.
+      * 401 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), on a page or on robots.txt, are a hard stop
+        for the whole site: nothing else is sent to it this run, by any route. A 429 is rechecked
+        after RECHECK_429_S; a 401/403 waits for a person to delete its row.
+    """
+
+    def __init__(self, path: Path | None = None, now: float | None = None) -> None:
+        self.path = path
+        self._now = now
+        self.robots: dict[str, dict[str, Any]] = {}
+        self.blocked: dict[str, dict[str, Any]] = {}
+        self._parsers: dict[str, Any] = {}
+        self._unreadable: dict[str, str] = {}
+        self.robots_fetches = 0
+        self.disallowed = 0
+
+    def now(self) -> float:
+        return self._now if self._now is not None else time.time()
+
+    @classmethod
+    def load(cls, path: Path | None = None) -> HostAccess:
+        acc = cls(path or ACCESS_STATE)
+        try:
+            data = json.loads(acc.path.read_text("utf-8"))  # type: ignore[union-attr]
+        except (OSError, ValueError):
+            return acc
+        if isinstance(data, dict):
+            acc.robots = {str(k): v for k, v in (data.get("robots") or {}).items()
+                          if isinstance(v, dict)}
+            acc.blocked = {str(k): v for k, v in (data.get("blocked") or {}).items()
+                           if isinstance(v, dict)}
+        return acc
+
+    def save(self) -> None:
+        if self.path is None:
+            return
+        now = self.now()
+        robots = {k: v for k, v in self.robots.items()
+                  if now - float(v.get("fetched_ts") or 0) < ROBOTS_TTL_S}
+        payload = {
+            "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "user_agent": UA,
+            "note": ("per-host robots.txt cache (24h) and refusal holds. A METHOD_BLOCKED row "
+                     "from 429 lapses at recheck_after_ts; 401/403 rows are cleared by a person "
+                     "deleting them."),
+            "blocked": self.blocked,
+            "robots": robots,
+        }
+        with contextlib.suppress(OSError):
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(payload, indent=1, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(self.path)
+
+    # ---- holds
+    def hold(self, url: str) -> str:
+        """The verdict holding this URL's site, or ''. A lapsed 429 hold is released here."""
+        site = site_of(_hostname(url))
+        row = self.blocked.get(site)
+        if not row:
+            return ""
+        until = row.get("recheck_after_ts")
+        if until is not None and self.now() >= float(until):
+            self.blocked.pop(site, None)
+            return ""
+        return str(row.get("verdict") or "METHOD_BLOCKED")
+
+    def block(self, url: str, status: int) -> str:
+        verdict = BLOCK_STATUS[status]
+        host = _hostname(url)
+        self.blocked[site_of(host)] = {
+            "verdict": verdict, "status": status, "host": host, "url": url[:300],
+            "since_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "since_ts": self.now(),
+            "recheck_after_ts": self.now() + RECHECK_429_S if status == 429 else None,
+            "waits_for": "clock (24h)" if status == 429 else "a person",
+        }
+        return verdict
+
+    # ---- robots
+    def _read_robots(self, origin: str) -> dict[str, Any]:
+        """Fetch origin/robots.txt. Returns a cache row: state allow_all | rules | unreadable |
+        blocked. Redirects are followed (robots.txt itself is always readable) up to the cap."""
+        url = origin + "/robots.txt"
+        for _ in range(MAX_REDIRECTS + 1):
+            if self.hold(url):
+                return {"state": "blocked"}
+            self.robots_fetches += 1
+            try:
+                with _open(_request(url, "text/plain,*/*;q=0.5"), FETCH_TIMEOUT_S) as resp:
+                    body = resp.read(MAX_ROBOTS_BYTES)
+                return {"state": "rules", "text": body.decode("utf-8", errors="replace")}
+            except urllib.error.HTTPError as exc:
+                code = int(exc.code)
+                if code in BLOCK_STATUS:
+                    self.block(url, code)
+                    return {"state": "blocked", "status": code}
+                if code in (301, 302, 303, 307, 308):
+                    loc = exc.headers.get("Location") if exc.headers else None
+                    if not loc:
+                        return {"state": "unreadable", "why": f"robots HTTP {code} no Location"}
+                    url = urljoin(url, str(loc))
+                    continue
+                if 400 <= code < 500:
+                    return {"state": "allow_all", "status": code}
+                return {"state": "unreadable", "why": f"robots HTTP {code}"}
+            except Exception as exc:
+                return {"state": "unreadable", "why": f"robots {type(exc).__name__}"}
+        return {"state": "unreadable", "why": "robots redirect loop"}
+
+    def _parser(self, origin: str) -> Any:
+        import urllib.robotparser as _rp
+        if origin in self._parsers:
+            return self._parsers[origin]
+        row = self.robots.get(origin)
+        fresh = row is not None and self.now() - float(row.get("fetched_ts") or 0) < ROBOTS_TTL_S
+        if not fresh:
+            if origin in self._unreadable:
+                return None
+            got = self._read_robots(origin)
+            if got["state"] in ("unreadable", "blocked"):
+                # Not cached across runs: unreadable this run is retried next run.
+                self._unreadable[origin] = str(got.get("why") or got["state"])
+                return None
+            row = {"fetched_ts": self.now(), "state": got["state"],
+                   "text": got.get("text", "")[:MAX_ROBOTS_BYTES]}
+            self.robots[origin] = row
+        assert row is not None
+        parser = _rp.RobotFileParser()
+        # allow_all (a 4xx robots.txt) parses as an empty file, which permits everything.
+        text = "" if row.get("state") == "allow_all" else str(row.get("text") or "")
+        parser.parse(text.splitlines())
+        parser.modified()
+        self._parsers[origin] = parser
+        return parser
+
+    def permits(self, url: str) -> tuple[bool, str]:
+        """(may fetch, reason if not). Holds first, then the origin's own robots.txt."""
+        held = self.hold(url)
+        if held:
+            return False, held
+        origin = _origin(url)
+        parser = self._parser(origin)
+        if parser is None:
+            held = self.hold(url)
+            return False, held or f"ROBOTS_UNREADABLE {self._unreadable.get(origin, '')}".strip()
+        if not parser.can_fetch(UA_TOKEN, _ascii_url(url)):
+            self.disallowed += 1
+            return False, "ROBOTS_DISALLOW"
+        return True, ""
+
+    def summary(self) -> dict[str, Any]:
+        return {"user_agent": UA, "robots_fetches": self.robots_fetches,
+                "robots_disallowed": self.disallowed,
+                "robots_unreadable": dict(self._unreadable),
+                "holds": {k: {kk: v.get(kk) for kk in ("verdict", "status", "host", "waits_for")}
+                          for k, v in self.blocked.items()}}
+
+
+_DEFAULT_ACCESS: HostAccess | None = None
+
+
+def fetch(url: str, access: HostAccess | None = None) -> tuple[bytes | None, str]:
+    """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour.
+
+    Every hop -- the URL and each redirect target -- passes `access.permits` (site holds, then the
+    target origin's own robots.txt) BEFORE a request is sent. 401/403/429 record a hold for the
+    site and stop; nothing is retried, and no other host, UA or mirror is tried in its place.
+    """
+    global _DEFAULT_ACCESS
+    if access is None:
+        if _DEFAULT_ACCESS is None:
+            _DEFAULT_ACCESS = HostAccess.load()
+        access = _DEFAULT_ACCESS
     try:
-        req = urllib.request.Request(_ascii_url(url), headers={
-            "User-Agent": UA,
-            "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
-            # No language preference: asking for English is how a crawler that is supposed to
-            # cover the world quietly stops covering most of it.
-            "Accept-Language": "*",
-        })
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
-            ctype = str(resp.headers.get("Content-Type", ""))
-            if "html" not in ctype and "text" not in ctype and "json" not in ctype:
-                return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
-            return resp.read(MAX_BYTES), ""
-    except urllib.error.HTTPError as exc:
-        return None, f"HTTP {exc.code}"
+        for _ in range(MAX_REDIRECTS + 1):
+            ok, why = access.permits(url)
+            if not ok:
+                return None, why
+            try:
+                with _open(_request(url, "text/html,application/xhtml+xml,*/*;q=0.8"),
+                           FETCH_TIMEOUT_S) as resp:
+                    ctype = str(resp.headers.get("Content-Type", ""))
+                    if "html" not in ctype and "text" not in ctype and "json" not in ctype:
+                        return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
+                    return resp.read(MAX_BYTES), ""
+            except urllib.error.HTTPError as exc:
+                code = int(exc.code)
+                if code in BLOCK_STATUS:
+                    return None, f"{access.block(url, code)}: HTTP {code}"
+                if code in (301, 302, 303, 307, 308):
+                    loc = exc.headers.get("Location") if exc.headers else None
+                    if not loc:
+                        return None, f"HTTP {code} without Location"
+                    url = urljoin(url, str(loc))
+                    continue
+                return None, f"HTTP {code}"
+        return None, "too many redirects"
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return None, f"{type(exc).__name__}: {str(exc)[:60]}"
     except Exception as exc:
@@ -629,9 +888,10 @@ def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = 
                                           "instruments", "claimed_performance", "claim_hash")}
                    for c in claims[:8]],
         "n_claims": len(claims),
-        # THE ROUTING LABEL, NOT A BRAKE (LAWS 5e, 2026-09-23). A robots Disallow, a terms note
-        # or a registry `machine_use_allowed=false` lands HERE, on the crawled row, and the page
-        # is crawled exactly as any other. What the label withholds is REDISTRIBUTION; it has
+        # THE ROUTING LABEL, NOT A BRAKE (LAWS 5e, 2026-09-23). A terms note or a registry
+        # `machine_use_allowed=false` lands HERE, on the crawled row, and the page is crawled
+        # exactly as any other (a live robots.txt Disallow is different: `fetch` never sends that
+        # request, auditor ruling 2026-10-14). What the label withholds is REDISTRIBUTION; it has
         # never had anything to say about whether the desk may read and test the page.
         "terms_note": str(terms_note or ""),
     }
@@ -946,6 +1206,8 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
     # TERMS, ROBOTS OR `machine_use_allowed` ANY MORE (LAWS 5e, 2026-09-23): a source carrying
     # any of those notes is CRAWLED, with the note recorded as `terms_note` on every row it
     # produces. The only removal left is one of the five refused acts of the hard boundary.
+    # ROBOTS.TXT IS NOT A REGISTRY NOTE ANY MORE (auditor ruling 2026-10-14): it is read live,
+    # per origin, by `fetch` before every request, and a Disallow there means no request.
     share_meta: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
     share_state: dict[str, Any] | None = None
     terms_labels: dict[str, str] = {}
@@ -988,6 +1250,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
     failures: Counter[str] = Counter()
     langs: Counter[str] = Counter()
     last_host_hit: dict[str, float] = {}
+    access = HostAccess.load()
 
     for src in picked:
         if time.time() - started > run_budget_s:
@@ -995,12 +1258,21 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
                 f"The frontier resumes next hour rather than restarting.")
             break
 
+        # A HELD SITE IS NOT ASKED AGAIN THIS RUN (401/403/429 hard stop). Charged to the source
+        # as a refusal so the scheduler stops spending slots on it; no request, no sleep.
+        held = access.hold(src.url)
+        if held:
+            src.failures += 1
+            src.consecutive_failures += 1
+            failures[f"HELD {held}"] += 1
+            continue
+
         gap = seconds_per_host - (time.time() - last_host_hit.get(src.host, 0.0))
         if gap > 0:
             time.sleep(min(gap, seconds_per_host))
         last_host_hit[src.host] = time.time()
 
-        raw, why = fetch(src.url)
+        raw, why = fetch(src.url, access)
         src.fetches += 1
         src.last_fetched = datetime.now(tz=UTC).isoformat(timespec="seconds")
         if raw is None:
@@ -1045,6 +1317,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
                 discovered += 1
 
     wf.save(sources, note=f"crawl {datetime.now(tz=UTC):%Y-%m-%dT%H:%MZ}")
+    access.save()
 
     expansion: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
     try:
@@ -1068,6 +1341,10 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         "dropped_at_frontier_cap": dropped,
         "languages": dict(langs.most_common()),
         "failures": dict(failures.most_common()),
+        # POLITE ACCESS, MEASURED: the honest UA sent, robots.txt reads, disallowed and
+        # unreadable origins, and every site holding a 401 (NEEDS_KEY) or 403/429
+        # (METHOD_BLOCKED) refusal. A held site is a recorded answer, never routed around.
+        "access": access.summary(),
         # WHOSE BUDGET THIS WAS. `source_shares` says whether the registry's published shares
         # ranked this pass or whether the old order stood, and why -- an absence is a verdict,
         # never a silent fallback (L1.28a).

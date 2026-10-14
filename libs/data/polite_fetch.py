@@ -43,6 +43,14 @@ from email.message import Message
 from typing import Any, TypeVar
 from urllib.parse import urlparse
 
+#: THE DESK'S HONEST USER-AGENT (auditor ruling 2026-10-14: browser impersonation is forbidden).
+#: The project's name plus a contact path a site operator can reach, and no "Mozilla", engine or
+#: browser token. A fetcher that reads the open web on its own initiative (a crawler, a frontier,
+#: a ground it found itself) identifies itself with THIS, and robots.txt is matched against its
+#: product token `DESK_UA_PRODUCT`. One definition: import it, never copy it.
+DESK_UA_PRODUCT = "quant-mt5-research-desk"
+DESK_UA = (f"{DESK_UA_PRODUCT}/1.0 (+https://github.com/kingdemond434-cpu/quant/issues; "
+           "internal research; honours robots.txt)")
 BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 BROWSER_HEADERS: dict[str, str] = {
