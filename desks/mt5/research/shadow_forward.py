@@ -142,6 +142,10 @@ SLEEVES: list[tuple[str, str]] = []
 #: its named reason (`research/admission_integrity.py`). Reset every pass, so it always describes
 #: the run that just happened. Only certificates WITHOUT a clock are ever here.
 HELD_AT_INTEGRITY: list[dict] = []
+#: Clock key -> replication tag, for clocks the integrity door released WITHOUT a replication
+#: (a family the replication lane has no written rule for). Stamped on the clock row as
+#: `replication`, so every reader -- and the promoter's LIVE door -- can see it was not rebuilt.
+REPLICATION_TAG: dict[str, str] = {}
 
 
 def _integrity_door() -> tuple[object | None, set[str], str]:
@@ -167,6 +171,9 @@ def _integrity_door() -> tuple[object | None, set[str], str]:
 
 def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str) -> str | None:
     """The integrity door, asked only for a certificate whose clock does not exist yet."""
+    if gate is not None and gate.no_spec(str(run.get("certificate") or ""),  # type: ignore[attr-defined]
+                                         run.get("family")):
+        REPLICATION_TAG[key] = "UNMEASURED_NO_SPEC"
     if key in clocked:
         return None
     if gate is None:
@@ -191,6 +198,7 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     """
     rows: list[tuple[str, str, dict, str]] = []
     HELD_AT_INTEGRITY.clear()
+    REPLICATION_TAG.clear()
     # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
     # when the placebo audit shows the certifier caught every planted trap and an independent
     # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
@@ -905,6 +913,10 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         # a re-stamp on every pass would report every clock as freshly enrolled forever.
         st.setdefault("enrolled_at",
                       datetime.now(UTC).isoformat(timespec="seconds"))
+        if key in REPLICATION_TAG:
+            st["replication"] = REPLICATION_TAG[key]
+        elif st.get("replication") == "UNMEASURED_NO_SPEC":
+            st.pop("replication")           # the family has a written rule now
         if key in breached and not st.get("quarantine_reason"):
             st["quarantine_reason"] = breached[key]
 

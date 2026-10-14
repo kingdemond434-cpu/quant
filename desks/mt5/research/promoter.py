@@ -331,9 +331,87 @@ def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, 
     return None, f"{sym or 'row'} has no clock identity and no registry cost fields"
 
 
+#: Certificates the principal accepts LIVE without an independent replication, each with the
+#: order it rests on: {"certificates": {"<cell>": "<principal order, dated>"}}. Absent or empty is
+#: the default and waives nothing; an entry without its order text waives nothing either.
+REPLICATION_WAIVER = BASE / "data" / "REPLICATION_WAIVER.json"
+
+
+def live_certificate(row: dict) -> str:
+    """The canon certificate a sleeve row trades on, or "" for a row that carries none (a gold
+    window, a scalp lane's own clock): the replication door asks only about canon certificates."""
+    cert = row.get("certificate")
+    cell = cert.get("cell") if isinstance(cert, dict) else ""
+    return str(row.get("principal_certificate") or cell or "")
+
+
+def _replication_waivers() -> dict[str, str]:
+    try:
+        doc = json.loads(REPLICATION_WAIVER.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("certificates") if isinstance(doc, dict) else None
+    return {str(k): str(v) for k, v in (rows or {}).items()
+            if isinstance(v, str) and v.strip()}
+
+
+def replication_door(rows: list[dict], prior_live: set[str], *, gate: object | None = None,
+                     stamp: str = "") -> list[str]:
+    """THE LIVE DOOR NEEDS AN INDEPENDENT REPLICATION (coordinator ruling C, 2026-10-14).
+
+    Every row this pass would write LIVE that was not LIVE on disk, and that trades on a canon
+    certificate, goes back to STANDBY unless the replication lane's latest verdict for that
+    certificate is REPLICATED (`admission_integrity.IntegrityGate.live_refusal`) or the principal
+    waived it by name (REPLICATION_WAIVER). It runs inside `save_sleeves`, the only writer of
+    sleeves.json, so no path reaches the file around it: the principal-book promotion, every
+    `promote_*` lane and the STANDBY restore in `reconcile_capital` all write through here.
+
+    A row ALREADY LIVE on disk is not demoted by this door: what it did before the door existed is
+    reported by the caller, never reversed silently. An unreadable verdict book refuses every new
+    certificate-backed LIVE row -- the door fails closed. Returns the names it refused.
+    """
+    why_gate = ""
+    if gate is None:
+        try:
+            from admission_integrity import IntegrityGate
+            gate = IntegrityGate.load()
+        except Exception as exc:
+            gate = None
+            why_gate = f"replication verdicts unreadable ({type(exc).__name__}: {exc})"
+    waived = _replication_waivers()
+    refused: list[str] = []
+    for row in rows:
+        name = str(row.get("name") or "")
+        if str(row.get("status") or "").upper() != "LIVE" or name in prior_live:
+            continue
+        cert = live_certificate(row)
+        if not cert or cert in waived:
+            continue
+        why = (gate.live_refusal(cert) if gate is not None  # type: ignore[attr-defined]
+               else f"REFUSED_UNREPLICATED: {why_gate}")
+        if not why:
+            continue
+        row.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                    "demoted_at": stamp or datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                    "demote_reason": why})
+        plog(f"{name}: LIVE refused at the replication door -- {why}")
+        refused.append(name)
+    return refused
+
+
+def _live_on_disk() -> set[str]:
+    try:
+        doc = json.loads(SLEEVES_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {str(r.get("name")) for r in (doc.get("sleeves") or [])
+            if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE"}
+
+
 def save_sleeves(sleeves: list[dict]) -> None:
     SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
     _apply_live_policy(sleeves)
+    replication_door(sleeves, _live_on_disk())
     kept: list[dict] = []
     _universe: dict | None = None
     try:

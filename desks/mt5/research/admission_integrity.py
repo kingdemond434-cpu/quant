@@ -74,6 +74,21 @@ HELD_PLACEBO = "HELD_PLACEBO_ALARM"
 HELD_UNREPLICATED = "HELD_UNREPLICATED"
 HELD_MISMATCH = "HELD_REPLICATION_MISMATCH"
 
+#: THE CLOCK DOOR AND THE CAPITAL DOOR, SPLIT (coordinator ruling C, 2026-10-14). Measured that
+#: day: 127 certificates held clockless, 102 of them in families the replication lane has NO
+#: written rule for (clock_transition 76, cross_asset_residual 16, formula 10) -- UNMEASURED by
+#: construction, so held forever, so never gathering the forward evidence that could ever judge
+#: them. A forward clock deploys no capital, so a certificate whose family has no written rule
+#: now STARTS its clock, tagged `replication: UNMEASURED_NO_SPEC`; the requirement that matters
+#: for money moves to the promoter's LIVE door (`live_refusal`), where nothing unreplicated
+#: passes. MISMATCH and the placebo alarm still hold a clock, and a family WITH a written rule
+#: still waits for its REPLICATED verdict: a rule that can be checked is checked first.
+NO_SPEC = "UNMEASURED_NO_SPEC"
+#: The replication lane's own wording for "no written rule for this family"
+#: (replication_civilization.rule_for); read off a verdict when the lane did not publish its book.
+NO_SPEC_MARK = "no written specification in the spec book"
+REFUSED_UNREPLICATED = "REFUSED_UNREPLICATED"
+
 
 def _read(path: Path) -> Any:
     try:
@@ -151,6 +166,9 @@ class IntegrityGate:
     alarm: dict[str, Any] = field(default_factory=dict)
     verdicts: dict[str, dict[str, Any]] = field(default_factory=dict)
     replication_source: str = ""
+    #: The families the replication lane holds a written rule for, as it published them with its
+    #: verdict book; None when it published none (then only a recorded no-spec verdict counts).
+    spec_book: frozenset[str] | None = None
 
     @classmethod
     def load(cls, *, placebo: Path | None = None, verdicts: Path | None = None,
@@ -158,10 +176,40 @@ class IntegrityGate:
         vp = Path(verdicts or REPLICATION_VERDICTS)
         doc = _read(vp)
         rows = (doc.get("certificates") if isinstance(doc, dict) else None) or {}
+        book = doc.get("spec_book") if isinstance(doc, dict) else None
         return cls(alarm=placebo_alarm(placebo, now),
                    verdicts={str(k): v for k, v in rows.items() if isinstance(v, dict)},
                    replication_source=(vp.name if isinstance(doc, dict)
-                                       else f"{vp.name} absent"))
+                                       else f"{vp.name} absent"),
+                   spec_book=(frozenset(str(f) for f in book)
+                              if isinstance(book, list) and book else None))
+
+    def no_spec(self, certificate: str, family: Any) -> bool:
+        """True when the replication lane has NO written rule for this family: from its
+        published spec book, or from a recorded verdict that says so. Never from an absence."""
+        fam = str(family or "session_range_breakout")
+        if self.spec_book is not None:
+            return fam not in self.spec_book
+        row = self.verdicts.get(str(certificate)) or {}
+        return (str(row.get("verdict") or "") == UNMEASURED
+                and any(NO_SPEC_MARK in str(w) for w in (row.get("why") or [])))
+
+    def live_refusal(self, certificate: str) -> str | None:
+        """The capital door: None only when the certificate's latest verdict is REPLICATED.
+
+        FAILS CLOSED on everything else -- MISMATCH, UNMEASURED (no-spec families included),
+        never reached, an unreadable book -- because LIVE is where money moves and an absent
+        replication is not a clean one (L1.28a)."""
+        row = self.verdicts.get(str(certificate))
+        if row is None:
+            return (f"{REFUSED_UNREPLICATED}: {certificate} has no replication verdict "
+                    f"({self.replication_source or 'no verdict book'}); LIVE needs REPLICATED")
+        verdict = str(row.get("verdict") or UNMEASURED)
+        if verdict == REPLICATED:
+            return None
+        why = "; ".join(str(w) for w in (row.get("why") or []))[:200]
+        return (f"{REFUSED_UNREPLICATED}: {certificate} replication verdict {verdict}"
+                f"{f' ({why})' if why else ''}; LIVE needs REPLICATED")
 
     def replication(self, certificate: str, fingerprint: str) -> tuple[str, str]:
         row = self.verdicts.get(str(certificate))
@@ -186,6 +234,8 @@ class IntegrityGate:
         verdict, why = self.replication(certificate, fp)
         if verdict == REPLICATED:
             return None
+        if verdict != MISMATCH and self.no_spec(certificate, family):
+            return None             # paper clock starts; the LIVE door still refuses it
         if verdict == MISMATCH:
             return (f"{HELD_MISMATCH}: an independent rebuild from the written spec disagrees "
                     f"with the desk's implementation ({why})")

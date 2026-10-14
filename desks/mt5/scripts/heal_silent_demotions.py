@@ -34,12 +34,14 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import sys
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SLEEVES = ROOT / "desks" / "mt5" / "data" / "sleeves.json"
+REPLICATION_WAIVER = ROOT / "desks" / "mt5" / "data" / "REPLICATION_WAIVER.json"
 
 #: Fields any organ demoting for cause is expected to leave behind. If none carries text, the
 #: demotion recorded nothing and this fixer treats it as an accident rather than a decision.
@@ -91,6 +93,37 @@ def _reason(row: dict) -> str:
     return _admission_reason(row)
 
 
+def _replication_refusal(row: dict, gate: object | None, waived: set[str]) -> str:
+    """THE LIVE DOOR, AT THIS WRITER TOO (coordinator ruling C, 2026-10-14). This script writes
+    sleeves.json itself, outside the promoter's `save_sleeves`, so restoring a canon certificate
+    to LIVE here needs the same REPLICATED verdict (or the principal's named waiver). Fails closed
+    when the verdict book cannot be read. "" means the row may be restored."""
+    cert = row.get("certificate")
+    cid = str(row.get("principal_certificate")
+              or (cert.get("cell") if isinstance(cert, dict) else "") or "")
+    if not cid or cid in waived:
+        return ""
+    if gate is None:
+        return "REFUSED_UNREPLICATED: replication verdicts unreadable"
+    return gate.live_refusal(cid) or ""  # type: ignore[attr-defined]
+
+
+def _door() -> tuple[object | None, set[str]]:
+    try:
+        sys.path.insert(0, str(ROOT / "desks" / "mt5" / "research"))
+        from admission_integrity import IntegrityGate
+        gate: object | None = IntegrityGate.load()
+    except Exception:
+        gate = None
+    try:
+        doc = json.loads(REPLICATION_WAIVER.read_text(encoding="utf-8"))
+        waived = {str(k) for k, v in ((doc or {}).get("certificates") or {}).items()
+                  if isinstance(v, str) and v.strip()}
+    except (OSError, ValueError, AttributeError):
+        waived = set()
+    return gate, waived
+
+
 def heal(apply: bool) -> int:
     doc = json.loads(SLEEVES.read_text(encoding="utf-8"))
     rows = doc["sleeves"]
@@ -98,9 +131,14 @@ def heal(apply: bool) -> int:
     print(f"roster: {len(rows)} rows   {dict(by_status)}")
 
     silent, reasoned = [], []
+    gate, waived = _door()
     for r in rows:
         if str(r.get("status") or "").upper() not in LIFTABLE:
             continue
+        if not _reason(r):
+            refusal = _replication_refusal(r, gate, waived)
+            if refusal:
+                r["demote_reason"] = refusal       # recorded, so it is a verdict from now on
         (reasoned if _reason(r) else silent).append(r)
 
     print(f"\nSTANDBY with a recorded reason : {len(reasoned)}  (left alone -- a real verdict)")
