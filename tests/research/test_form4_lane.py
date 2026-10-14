@@ -210,10 +210,10 @@ def test_a_403_ends_the_pass_backs_off_an_hour_and_the_next_pass_requests_nothin
     reg = tmp_path / "blocked_sources.json"
     _seed_register(reg)
     calls: list[str] = []
-    rep = fl.run(get=_refusing(calls, 403, "doc0.xml"), now=NOW, state_dir=tmp_path / "f4",
+    rep = fl.run(get=_refusing(calls, 403, "/Archives/"), now=NOW, state_dir=tmp_path / "f4",
                  series_root=tmp_path / "s", dry_run=True, register=reg)
     # ticker map, submissions, then the refused document -- and nothing after it
-    assert calls[-1].endswith("doc0.xml") and len(calls) == 3
+    assert "/Archives/" in calls[-1] and len(calls) == 3
     assert rep["fetch"]["status"] == "METHOD_BLOCKED" and rep["status"] == fl.UNMEASURED
     assert rep["new_data"] == fl.UNMEASURED
     blk = rep["fetch"]["block"]
@@ -226,7 +226,7 @@ def test_a_403_ends_the_pass_backs_off_an_hour_and_the_next_pass_requests_nothin
     assert entry["diagnosis"] == "METHOD_BLOCKED" and "HTTP 403" in entry["error"]
 
     calls.clear()
-    rep2 = fl.run(get=_refusing(calls, 403, "doc0.xml"), now=NOW + timedelta(minutes=59),
+    rep2 = fl.run(get=_refusing(calls, 403, "/Archives/"), now=NOW + timedelta(minutes=59),
                   state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
                   register=reg)
     assert calls == [] and rep2["fetch"]["skipped"] is True
@@ -234,10 +234,10 @@ def test_a_403_ends_the_pass_backs_off_an_hour_and_the_next_pass_requests_nothin
 
     # expired: one more refusal doubles the wait
     calls.clear()
-    rep3 = fl.run(get=_refusing(calls, 403, "doc0.xml"), now=NOW + timedelta(hours=2),
+    rep3 = fl.run(get=_refusing(calls, 403, "/Archives/"), now=NOW + timedelta(hours=2),
                   state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
                   register=reg)
-    assert len(calls) == 2 and calls[-1].endswith("doc0.xml")   # ciks cached: no ticker map
+    assert len(calls) == 2 and "/Archives/" in calls[-1]   # ciks cached: no ticker map
     assert rep3["fetch"]["block"]["backoff_s"] == 7200.0
     assert json.loads(reg.read_text())["sources"][fl.REGISTER_KEY]["attempts"] == 2
 
