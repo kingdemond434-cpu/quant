@@ -48,6 +48,7 @@ other route to the same content.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -109,17 +110,19 @@ EVENT_HOLD_DAYS = 5
 Getter = Callable[[str, dict[str, str]], tuple[Any, ...]]
 
 #: THE HARD STOP (standing project rule; one implementation in `research/hard_stop.py`). A 401,
-#: 403 or 429 ends the pass's SEC fetching on the spot: the lane backs off, marks itself with the
-#: reason and moves on to scoring what it already holds. It never retries around the block,
-#: rotates identity or takes another route to the same gated content.
+#: 403, 429 or WAF challenge ends the pass's SEC fetching on the spot and places a hold on the
+#: refusing host that only a PERSON releases (`python -m desks.mt5.research.hard_stop --release
+#: site:<host> --by <name>`); until then no SEC host is sent a request, whatever time has passed.
+#: The lane still scores what it already holds. It never retries around the hold, rotates identity
+#: or takes another route to the same gated content.
 try:
     from research import hard_stop as _hs
 except ImportError:                                         # pragma: no cover - layout
     import hard_stop as _hs  # type: ignore[no-redef,import-not-found]
 HARD_STOP = _hs.HARD_STOP
-BACKOFF_BASE_S = _hs.BACKOFF_BASE_S
-BACKOFF_MAX_S = _hs.BACKOFF_MAX_S
 BLOCKED_REGISTER = _hs.BLOCKED_REGISTER
+#: Every SEC host the lane requests; a hold on any one stops the lane's fetching.
+SEC_HOSTS = ("www.sec.gov", "data.sec.gov")
 retry_after_s = _hs.retry_after_s
 REGISTER_KEY = "sec_edgar_form4"
 
@@ -207,15 +210,9 @@ def _call(get: Getter, url: str) -> tuple[int, bytes, dict[str, str]]:
     return status, body, {str(k).lower(): str(v) for k, v in headers.items()}
 
 
-def block_marker(status: int, url_class: str, headers: dict[str, str], now: datetime,
-                 prior: dict[str, Any] | None) -> dict[str, Any]:
-    """The persisted hard-stop marker (see `research/hard_stop.py`)."""
-    return _hs.block_marker(status, url_class, headers, now, prior)
-
-
-def record_block(marker: dict[str, Any], register: Path) -> None:
-    """Record the block in the desk's existing blocked-sources register."""
-    _hs.record_block(marker, register, key=REGISTER_KEY, host="sec.gov", region="US")
+def record_block(record: dict[str, Any], register: Path) -> None:
+    """Place the person-released hold in the desk's existing blocked-sources register."""
+    _hs.place_hold(record, register, source_key=REGISTER_KEY, region="US")
 
 
 # ------------------------------------------------------------------------------- instruments
@@ -346,46 +343,64 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
 
     ROBOTS (audit 0b66b08de MF5; principal's scope rule 2026-10-13). Before the first request to
     a host (www.sec.gov, data.sec.gov) its robots.txt is read through the same getter, so under
-    the same declared User-Agent, and every URL is judged by its exact path. A path robots does
-    not allow -- or a robots.txt that is unavailable -- is not fetched: the pass is held exactly
-    as a 401/403/429 holds it (`rep["block"]`, status ROBOTS_HOLD, the verdict attached). The
-    UA is used only for its product token and never recorded."""
+    the same declared User-Agent, at most once a day (`state["robots"]`), and every URL is judged
+    by its exact path against the group naming the desk's product AND the group naming the token
+    of the UA actually sent; either disallowing it means it is not fetched (`skip`). An
+    unavailable robots.txt means no fetch from the lane this pass (`stop`, re-read next pass); a
+    401/403/429 or challenge on robots.txt itself is a person-held hold. The UA is used only for
+    its product token and never recorded."""
     rep: dict[str, Any] = {"requests": 0, "errors": Counter(), "issuers_visited": 0,
                            "filings_read": 0, "transactions": 0, "block": None,
-                           "ok_responses": 0, "data_responses": 0, "robots": {}}
-    robots: dict[str, tuple[int, bytes]] = {}
+                           "ok_responses": 0, "data_responses": 0, "robots": {},
+                           "robots_disallowed": 0, "robots_unavailable": False}
+    cache: dict[str, Any] = state.setdefault("robots", {})
+    sent_token = re.split(r"[/\s]", (ua or "").strip(), maxsplit=1)[0].lower()
 
-    def stopped(status: int, url_class: str, headers: dict[str, str]) -> bool:
-        if status not in HARD_STOP:
+    def stopped(status: int, url: str, headers: dict[str, str], body: bytes = b"") -> bool:
+        verdict = _hs.refusal(status, headers, body)
+        if verdict is None:
             return False
-        rep["block"] = block_marker(status, url_class, headers, now, state.get("block"))
+        if (ra := retry_after_s(headers.get("retry-after"), now)) is not None:
+            rep["retry_after_s"] = ra                       # recorded; it releases nothing
+        if url.endswith("/robots.txt") and verdict == _hs.VERDICT_HARD_STOP:
+            verdict = _hs.VERDICT_ROBOTS_HOLD
+        rep["block"] = _hs.hold_record(verdict, status, url, now)
         return True
 
-    def held(url: str, url_class: str) -> bool:
-        """True when robots does not allow `url`: the hold is set and nothing is fetched."""
-        ru = _hs.robots_url(url)
-        if ru not in robots:
+    def robots_gate(url: str) -> str:
+        """"ok", "skip" (robots disallows this URL) or "stop" (hold placed, or robots.txt
+        unavailable: nothing more from the lane this pass)."""
+        hit = _hs.robots_cached(cache, url, now)
+        if hit is None:
+            ru = _hs.robots_url(url)
             status, raw, hdr = _call(get, ru)
             rep["requests"] += 1
-            robots[ru] = (status, raw)
-            if stopped(status, "robots.txt", hdr):
-                return True
-        verdict = _hs.robots_verdict(url, ua, *robots[ru])
-        rep["robots"][urllib.parse.urlsplit(url).netloc] = verdict["state"]
-        if verdict["allowed"]:
-            return False
-        rep["block"] = _hs.robots_marker(verdict, url_class, now, state.get("block"))
-        return True
+            if stopped(status, ru, hdr, raw):
+                return "stop"
+            _hs.robots_remember(cache, url, status, raw, now)
+            hit = (status, raw.decode("utf-8", "replace") if isinstance(raw, bytes) else str(raw))
+        verdicts = [_hs.robots_verdict(url, hit[0], hit[1])]
+        if sent_token and sent_token != _hs.DESK_UA_PRODUCT:
+            verdicts.append(_hs.robots_verdict(url, hit[0], hit[1], product=sent_token))
+        worst = next((v for v in verdicts if not v["allowed"]), verdicts[0])
+        rep["robots"][urllib.parse.urlsplit(url).netloc] = worst["state"]
+        if worst["state"] == "UNAVAILABLE":
+            rep["robots_unavailable"] = True
+            return "stop"
+        if not worst["allowed"]:
+            rep["robots_disallowed"] += 1
+            return "skip"
+        return "ok"
 
     ciks: dict[str, int] = {k: int(v) for k, v in (state.get("ciks") or {}).items()}
     if not ciks:
-        if held(TICKER_MAP_URL, "ticker_map"):
+        if robots_gate(TICKER_MAP_URL) != "ok":
             rep["errors"] = dict(rep["errors"])
             return [], rep
         status, raw, hdr = _call(get, TICKER_MAP_URL)
         rep["requests"] += 1
         rep["ok_responses"] += int(status == 200)
-        if stopped(status, "ticker_map", hdr):
+        if stopped(status, TICKER_MAP_URL, hdr, raw):
             rep["errors"] = dict(rep["errors"])
             return [], rep
         if status != 200:
@@ -412,14 +427,17 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             no_cik.append(sym)
             backfilled.add(sym)          # nothing to backfill: the SEC lists no such filer
             continue
-        if held(SUBMISSIONS_URL.format(cik=cik), "submissions"):
+        gate = robots_gate(SUBMISSIONS_URL.format(cik=cik))
+        if gate == "stop":
             visited -= 1                 # the held issuer is first in line after the hold
             break
+        if gate == "skip":
+            continue                     # robots disallows this issuer's index: not fetched
         status, raw, hdr = _call(get, SUBMISSIONS_URL.format(cik=cik))
         rep["requests"] += 1
         rep["ok_responses"] += int(status == 200)
         rep["data_responses"] += int(status == 200)
-        if stopped(status, "submissions", hdr):
+        if stopped(status, SUBMISSIONS_URL.format(cik=cik), hdr, raw):
             visited -= 1                 # the refused issuer is first in line after the backoff
             break
         if status != 200:
@@ -435,14 +453,17 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
                 break
             acc = f["accession"]
             url = ARCHIVE_URL.format(cik=cik, acc=acc.replace("-", ""), doc=f["document"])
-            if held(url, "archive_document"):
-                done_all = False
-                break
+            gate = robots_gate(url)
+            if gate != "ok":
+                done_all = False         # unread: it stays owed, never frozen around
+                if gate == "stop":
+                    break
+                continue
             status, body, hdr = _call(get, url)
             rep["requests"] += 1
             rep["ok_responses"] += int(status == 200)
             rep["data_responses"] += int(status == 200)
-            if stopped(status, "archive_document", hdr):
+            if stopped(status, url, hdr, body):
                 done_all = False
                 break
             if status != 200:
@@ -467,7 +488,7 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             floors[sym] = min(unread).isoformat(timespec="seconds")
         else:
             floors.pop(sym, None)
-        if rep["block"] is not None:
+        if rep["block"] is not None or rep["robots_unavailable"]:
             visited -= 1                 # the hard stop: no further SEC request this pass
             break
         if done_all and len(index) <= DOCS_PER_ISSUER:
@@ -763,14 +784,17 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
     ua = os.environ.get(UA_ENV, "").strip()
     fetch: dict[str, Any]
     prior = state.get("block") if isinstance(state.get("block"), dict) else None
-    until = _parse_time((prior or {}).get("until"))
-    if prior and until is not None and now < until:
-        # BACKING OFF: a refusal is honoured until it expires. Nothing is requested, and the
-        # data already held is still scored below.
-        fetch = {"status": prior.get("status"), "requests": 0, "skipped": True,
-                 "why": (f"backing off after HTTP {prior.get('http_status')} on "
-                         f"{prior.get('url_class')} at {prior.get('at')} until {prior['until']}"),
-                 "block": prior}
+    reg_path = register or BLOCKED_REGISTER
+    held = _hs.active_hold(reg_path, [_hs.host_key(h) for h in SEC_HOSTS], prior)
+    if prior is not None and held is None:
+        state.pop("block", None)         # a person released it: this copy is spent
+    if held is not None:
+        # HELD FOR A PERSON. Nothing is requested, however long ago the refusal was; the data
+        # already held is still scored below.
+        fetch = {"status": _hs.pass_status(held), "requests": 0, "skipped": True,
+                 "why": (f"{held.get('verdict')} HTTP {held.get('status')} from "
+                         f"{held.get('host')}: held until a person releases {held.get('key')}"),
+                 "block": held}
     elif get is None and not ua:
         fetch = {"status": "UNCONFIGURED",
                  "why": f"no {UA_ENV}: the SEC's fair-access policy requires a declared "
@@ -795,10 +819,18 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
                                    "FAILED" if rep["requests"] else "IDLE")}
         if rep["block"] is not None:
             state["block"] = rep["block"]
-            fetch["status"] = rep["block"]["status"]
-            record_block(rep["block"], register or BLOCKED_REGISTER)
-        elif rep["ok_responses"]:
-            state.pop("block", None)     # an answered, unrefused pass ends the backoff ladder
+            fetch["status"] = _hs.pass_status(rep["block"])
+            try:                         # the lane's own copy above holds even if this fails
+                record_block(rep["block"], reg_path)
+            except OSError as exc:
+                fetch["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
+        elif rep["robots_unavailable"] and not rep["data_responses"]:
+            fetch["status"] = "ROBOTS_UNAVAILABLE"
+        elif rep["robots_disallowed"] and not rep["data_responses"]:
+            fetch["status"] = "ROBOTS_DISALLOWED"     # not a hold: robots is re-read daily
+            with contextlib.suppress(OSError):
+                _hs.note_robots({"robots_url": "sec.gov robots.txt", "states": rep["robots"]},
+                                reg_path, source_key=REGISTER_KEY, region="US")
         if fresh:
             sd.mkdir(parents=True, exist_ok=True)
             with txn_path.open("a", encoding="utf-8") as fh:

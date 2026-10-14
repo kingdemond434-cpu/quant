@@ -1,56 +1,81 @@
-"""THE HARD STOP: one implementation of the standing rule for a 401, 403 or 429.
+"""THE HARD STOP: one implementation of the standing rule for a 401, 403, 429 or WAF challenge.
 
-A producer that receives one stops the pass on the spot, marks itself METHOD_BLOCKED (403/429) or
-NEEDS_KEY (401) with the reason, persists a backoff (the response's Retry-After when it names one,
-else 1h doubling per consecutive block, capped at 7 days) that makes its later passes request
-nothing until it expires, and records the block in the desk's one register of sources that stopped
-yielding, `data/intelligence/blocked_sources.json`. It never retries around the block, rotates
-identity or User-Agent, or takes another host or route to the same gated content.
+A producer that receives one stops the pass on the spot and places a HOLD on the refusing host.
+A hold is RELEASED BY A PERSON AND BY NOTHING ELSE: there is no expiry, no backoff that lapses, no
+timer of any kind (principal's scope rule 2026-10-13, "401/403/429 = HARD STOP, honest UA,
+robots"; audit 0b66b08de). While it stands, every producer that uses that host sends ZERO requests
+to it. A Retry-After is never read as permission. The producer never retries around the hold,
+rotates identity or User-Agent, or takes another host or route to the same content.
 
-ROBOTS (audit 0b66b08de MF5; principal's scope rule 2026-10-13: "401/403/429 = HARD STOP, honest
-UA, robots"). `robots_verdict` reads the host's robots.txt under RFC 9309: the group naming the
-desk's OWN product token (stacked User-agent lines are one group; '*' only when no group names us),
-longest-match path rules with `*` and `$`, Allow winning a tie, matched against the exact path and
-query about to be requested. A 2xx is parsed; a 404/410 (or another 4xx) is ABSENT and allows; a 5xx
-or an unreachable host is UNAVAILABLE and disallows; a 401/403/429 on robots.txt itself is a hold
-(the caller's hard stop). A disallowed path is NOT fetched: `robots_marker` records it as a hold
-exactly as a 401/403/429 is recorded (persisted backoff, the blocked-sources register), carrying the
-verdict, and robots.txt is re-read when the backoff expires.
+THE HOLD RECORD (one row per refusing host, kept in the desk's one register of sources that
+stopped yielding, `data/intelligence/blocked_sources.json`, under "holds"):
+
+    {"key": "site:<refusing host>", "verdict": "HARD_STOP" | "ROBOTS_HOLD" | "WAF_CHALLENGE",
+     "status": <http status or null>, "host": "<host>", "url": "<first 300 chars>",
+     "held_at": <unix ts>, "released_by": null, "released_at": null}
+
+Active while `released_by` is null. Released only by a person:
+
+    python -m desks.mt5.research.hard_stop --release site:trends.google.com --by <name>
+
+which writes `released_by` and `released_at`. A released record is kept: when the host refuses
+again, the released row moves to "hold_history" and a new row is placed. Each producer also keeps a
+copy of its hold in its own state (so a register write that fails still holds the next pass); that
+copy is released by the register's release record for the same key, never by time.
+
+ROBOTS (RFC 9309). `robots_verdict` reads robots.txt at the exact host, under the group naming
+DESK_UA_PRODUCT (stacked User-agent lines are one group; '*' only when no group names us),
+longest-match path rules with `*` and `$`, Allow winning a tie, matched against the exact path
+and query about to be requested. A Disallow means THAT URL is not fetched; it is not a person
+hold, because robots.txt is re-read at most once per 24h per host (`ROBOTS_TTL_S`), which is how a
+site's change of mind is picked up. A 404/410 (or another 4xx) is ABSENT and allows. A 5xx or an
+unreachable robots.txt means no fetch from that host this pass, and it is re-read next pass. A
+401/403/429 or a challenge on robots.txt itself is a person-held ROBOTS_HOLD.
 
 Used by `research/form4_lane.py`, `side_channels/google_trends_miner.py` and the gtrends path of
 `libs/data/free_stack.py`.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
+import sys
 import urllib.parse
-from datetime import UTC, datetime, timedelta
+from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 
+#: THE DESK'S DECLARED IDENTITY, with a contact path. These two strings mirror
+#: `libs/data/polite_fetch.py` on the Global data branch byte for byte; change both or neither.
+#: robots.txt groups are matched on the product token. One fixed value: never rotated.
+DESK_UA_PRODUCT = "quant-mt5-research-desk"
+DESK_UA = ("quant-mt5-research-desk/1.0 (+https://github.com/kingdemond434-cpu/quant/issues; "
+           "internal research; honours robots.txt)")
+
+#: Statuses that place a hold. The value is the producer's pass status.
 HARD_STOP: dict[int, str] = {401: "NEEDS_KEY", 403: "METHOD_BLOCKED", 429: "METHOD_BLOCKED"}
-#: The status a robots hold carries (a Disallow for our agent, or robots.txt unavailable).
-ROBOTS_HOLD = "ROBOTS_HOLD"
-#: Backoff when the response names no Retry-After: 1h, doubling per consecutive block, capped.
-BACKOFF_BASE_S = 3600.0
-BACKOFF_MAX_S = 7 * 86400.0
+VERDICT_HARD_STOP = "HARD_STOP"
+VERDICT_ROBOTS_HOLD = "ROBOTS_HOLD"
+VERDICT_WAF = "WAF_CHALLENGE"
+#: The pass status of a challenge page (a 200 or a 503 that is a WAF, not the content).
+CHALLENGED = "CHALLENGED"
 #: The desk's one register of sources that stopped yielding (written by the regional survivor
-#: hunters too); a block is recorded there, never in a register of its own.
+#: hunters too); holds live there, never in a register of their own.
 BLOCKED_REGISTER = DESK / "data" / "intelligence" / "blocked_sources.json"
+#: robots.txt is re-read at most once per this many seconds per host.
+ROBOTS_TTL_S = 86400.0
+ROBOTS_MAX_CHARS = 200_000
 
-
-def _parse_time(v: Any) -> datetime | None:
-    if not v:
-        return None
-    try:
-        t = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
-        return None
-    return t if t.tzinfo is not None else t.replace(tzinfo=UTC)
+#: Fingerprints of a WAF / bot challenge served in place of the content.
+_CHALLENGE_MARKERS = ("/cdn-cgi/challenge-platform", "cf-chl-", "attention required! | cloudflare",
+                      "g-recaptcha", "h-captcha", "hcaptcha.com", "_incapsula_resource",
+                      "request unsuccessful. incapsula", "www.google.com/sorry/",
+                      "our systems have detected unusual traffic", "px-captcha")
 
 
 def _read_json(path: Path, default: Any) -> Any:
@@ -67,8 +92,21 @@ def _write_json(path: Path, doc: Any) -> None:
     os.replace(tmp, path)
 
 
+def _ts(now: datetime) -> float:
+    return round(now.timestamp(), 3)
+
+
+def host_of(url: str) -> str:
+    return urllib.parse.urlsplit(str(url or "")).netloc.lower()
+
+
+def host_key(host: str) -> str:
+    return f"site:{str(host).lower()}"
+
+
 def retry_after_s(value: str | None, now: datetime) -> float | None:
-    """Retry-After as seconds from `now`: delta-seconds or an HTTP-date; None when absent/bad."""
+    """Retry-After as seconds from `now`: delta-seconds or an HTTP-date; None when absent/bad.
+    RECORDED ONLY: it never releases a hold."""
     if not value:
         return None
     v = str(value).strip()
@@ -84,61 +122,154 @@ def retry_after_s(value: str | None, now: datetime) -> float | None:
     return max(0.0, (at - now).total_seconds())
 
 
-def block_marker(status: int, url_class: str, headers: dict[str, str], now: datetime,
-                 prior: dict[str, Any] | None) -> dict[str, Any]:
-    """The persisted marker: who refused, which URL class, when, and until when."""
-    hdr = {str(k).lower(): str(v) for k, v in (headers or {}).items()}
-    consecutive = int((prior or {}).get("consecutive") or 0) + 1
-    ra = retry_after_s(hdr.get("retry-after"), now)
-    wait = ra if ra is not None else min(BACKOFF_MAX_S,
-                                         BACKOFF_BASE_S * 2 ** (consecutive - 1))
-    return {"status": HARD_STOP[status], "http_status": status, "url_class": url_class,
-            "at": now.isoformat(timespec="seconds"),
-            "until": (now + timedelta(seconds=wait)).isoformat(timespec="seconds"),
-            "backoff_s": wait, "backoff_source": "retry_after" if ra is not None else
-            "exponential", "consecutive": consecutive}
+def is_challenge(status: int, headers: Mapping[str, Any] | None, body: bytes | str | None
+                 ) -> bool:
+    """Is this response a WAF / bot challenge rather than the content?"""
+    hdr = {str(k).lower(): str(v).lower() for k, v in (headers or {}).items()}
+    if hdr.get("cf-mitigated") == "challenge":
+        return True
+    text = body.decode("utf-8", "replace") if isinstance(body, bytes) else str(body or "")
+    low = text[:20000].lower()
+    return any(m in low for m in _CHALLENGE_MARKERS)
 
 
-def active(marker: Any, now: datetime) -> bool:
-    """Is this persisted marker still in force at `now`?"""
-    if not isinstance(marker, dict):
-        return False
-    until = _parse_time(marker.get("until"))
-    return until is not None and now < until
+def refusal(status: int, headers: Mapping[str, Any] | None = None,
+            body: bytes | str | None = None) -> str | None:
+    """The hold verdict a response earns (HARD_STOP / WAF_CHALLENGE), or None."""
+    if status in HARD_STOP:
+        return VERDICT_HARD_STOP
+    if is_challenge(status, headers, body):
+        return VERDICT_WAF
+    return None
 
 
-def record_block(marker: dict[str, Any], register: Path, *, key: str, host: str,
-                 region: str = "global") -> None:
-    """Add or update `key` in the existing blocked-sources register (same schema as the regional
-    survivor hunters' entries); every other entry is kept."""
+def pass_status(record: Mapping[str, Any]) -> str:
+    """The producer's pass status for a hold record."""
+    st = record.get("status")
+    if record.get("verdict") == VERDICT_WAF:
+        return CHALLENGED
+    if isinstance(st, int) and st in HARD_STOP:
+        return HARD_STOP[st]
+    return str(record.get("verdict") or "HELD")
+
+
+def hold_record(verdict: str, status: int | None, url: str, now: datetime,
+                key: str | None = None) -> dict[str, Any]:
+    """The hold row, exactly the shape the module docstring names."""
+    host = host_of(url)
+    return {"key": key or host_key(host), "verdict": verdict,
+            "status": int(status) if status is not None else None, "host": host,
+            "url": str(url)[:300], "held_at": _ts(now), "released_by": None,
+            "released_at": None}
+
+
+def _register(register: Path) -> dict[str, Any]:
     reg = _read_json(register, None)
     if not isinstance(reg, dict):
         reg = {"note": "sources that returned no survivor records -- a WORK QUEUE, never a "
                        "discovery.", "sources": {}}
-    e = reg.setdefault("sources", {}).setdefault(key, {"first_seen": marker["at"],
-                                                       "region": region})
-    robots = marker.get("robots") if isinstance(marker.get("robots"), dict) else None
-    if robots is not None:
-        e.update({"last_seen": marker["at"], "url": f"{host} {marker['url_class']}",
-                  "diagnosis": marker["status"],
-                  "fix_hint": (f"ROBOTS HOLD: {robots.get('state')} ({robots.get('detail')}) -- "
-                               f"not fetched; robots.txt re-read after {marker['until']}"),
-                  "error": f"robots {robots.get('state')} on {marker['url_class']}",
-                  "blocked_until": marker["until"],
+    return reg
+
+
+def place_hold(record: dict[str, Any], register: Path, *, source_key: str | None = None,
+               region: str = "global") -> None:
+    """Write `record` as the register's hold for its key. A released row already there moves to
+    "hold_history"; an unreleased one is kept (the first refusal stands). With `source_key`, the
+    work-queue entry under "sources" is updated too, every other entry kept."""
+    reg = _register(register)
+    holds = reg.setdefault("holds", {})
+    cur = holds.get(record["key"])
+    if isinstance(cur, dict) and cur.get("released_by") is None:
+        pass                                   # already held: the standing record is kept
+    else:
+        if isinstance(cur, dict):
+            reg.setdefault("hold_history", []).append(cur)
+        holds[record["key"]] = record
+    if source_key:
+        at = datetime.fromtimestamp(float(record["held_at"]), tz=UTC).isoformat(
+            timespec="seconds")
+        e = reg.setdefault("sources", {}).setdefault(source_key, {"first_seen": at,
+                                                                  "region": region})
+        e.update({"last_seen": at, "url": record["url"], "diagnosis": record["verdict"],
+                  "hold_key": record["key"],
+                  "fix_hint": (f"{record['verdict']}: HTTP {record['status']} from "
+                               f"{record['host']}. HELD UNTIL A PERSON RELEASES IT "
+                               f"(python -m desks.mt5.research.hard_stop --release "
+                               f"{record['key']} --by <name>); no retry, no identity or "
+                               "User-Agent rotation, no other host or route"),
+                  "error": f"{record['verdict']} HTTP {record['status']}",
                   "attempts": int(e.get("attempts", 0)) + 1})
-        _write_json(register, reg)
-        return
-    e.update({"last_seen": marker["at"], "url": f"{host} {marker['url_class']}",
-              "diagnosis": marker["status"],
-              "fix_hint": (f"HARD STOP: HTTP {marker['http_status']} -- backed off until "
-                           f"{marker['until']}; no retry around the block, no identity or "
-                           "User-Agent rotation, no other host or route to the same content"
-                           + ("; a key/credential is needed" if marker["status"] == "NEEDS_KEY"
-                              else "")),
-              "error": f"HTTP {marker['http_status']} on {marker['url_class']}",
-              "blocked_until": marker["until"],
-              "attempts": int(e.get("attempts", 0)) + 1})
+        e.pop("blocked_until", None)
     _write_json(register, reg)
+
+
+def note_robots(verdict: Mapping[str, Any], register: Path, *, source_key: str,
+                region: str = "global") -> None:
+    """Record a robots Disallow on the work-queue entry. NOT a hold: robots is re-read daily."""
+    reg = _register(register)
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    e = reg.setdefault("sources", {}).setdefault(source_key, {"first_seen": now,
+                                                              "region": region})
+    e.update({"last_seen": now, "url": str(verdict.get("robots_url")),
+              "diagnosis": "ROBOTS_DISALLOW", "robots": dict(verdict),
+              "fix_hint": "robots.txt disallows this path for our agent: not fetched; "
+                          "robots.txt is re-read at most once a day"})
+    _write_json(register, reg)
+
+
+def _released(reg: Mapping[str, Any], key: str, held_at: Any) -> bool:
+    """Has a person released `key` at or after `held_at`?"""
+    rows = [(reg.get("holds") or {}).get(key), *(reg.get("hold_history") or [])]
+    try:
+        at = float(held_at)
+    except (TypeError, ValueError):
+        at = float("-inf")
+    for r in rows:
+        if isinstance(r, dict) and r.get("key") == key and r.get("released_by"):
+            try:
+                if float(r.get("released_at") or 0) >= at:
+                    return True
+            except (TypeError, ValueError):
+                continue
+    return False
+
+
+def active_hold(register: Path, keys: Iterable[str],
+                mirror: Mapping[str, Any] | None = None) -> dict[str, Any] | None:
+    """The hold in force on any of `keys`, or None. The register's row is in force while
+    `released_by` is null; the producer's own copy (`mirror`) while the register holds no release
+    for its key made at or after it was placed. No time field is read as a release."""
+    reg = _register(register)
+    holds = reg.get("holds") or {}
+    for k in keys:
+        row = holds.get(k)
+        if isinstance(row, dict) and row.get("released_by") is None:
+            return dict(row)
+    if isinstance(mirror, dict) and mirror.get("key") and mirror.get("released_by") is None \
+            and not _released(reg, str(mirror["key"]), mirror.get("held_at")):
+        return dict(mirror)
+    return None
+
+
+def release(register: Path, key: str, by: str, now: datetime | None = None
+            ) -> dict[str, Any]:
+    """A person releases `key`: `released_by` and `released_at` are written on its row (a key
+    with no row gets a release row, so a producer's own copy is released too)."""
+    if not str(by or "").strip():
+        raise ValueError("a release names the person who made it (--by)")
+    now = now or datetime.now(tz=UTC)
+    reg = _register(register)
+    holds = reg.setdefault("holds", {})
+    row = holds.get(key)
+    if not isinstance(row, dict):
+        row = {"key": key, "verdict": None, "status": None,
+               "host": key.split(":", 1)[1] if key.startswith("site:") else "", "url": "",
+               "held_at": None, "released_by": None, "released_at": None}
+        holds[key] = row
+    row["released_by"] = str(by).strip()
+    row["released_at"] = _ts(now)
+    _write_json(register, reg)
+    return dict(row)
 
 
 # ------------------------------------------------------------------------------------ robots
@@ -149,9 +280,31 @@ def robots_url(url: str) -> str:
     return f"{parts.scheme}://{parts.netloc}/robots.txt"
 
 
-def product_token(user_agent: str) -> str:
-    """The product token a robots group is matched on: the UA up to its first '/' or space."""
-    return re.split(r"[/\s]", str(user_agent or "").strip(), maxsplit=1)[0].lower()
+def robots_cached(cache: Mapping[str, Any], url: str, now: datetime
+                  ) -> tuple[int, str] | None:
+    """A robots.txt reading for `url`'s host taken within ROBOTS_TTL_S, or None (read it)."""
+    row = (cache or {}).get(robots_url(url))
+    if not isinstance(row, dict):
+        return None
+    try:
+        age = _ts(now) - float(row["read_at"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not 0 <= age < ROBOTS_TTL_S:
+        return None
+    return int(row.get("status") or 0), str(row.get("body") or "")
+
+
+def robots_remember(cache: dict[str, Any], url: str, status: int, body: bytes | str | None,
+                    now: datetime) -> None:
+    """Keep a DEFINITIVE reading (a 2xx, or a 4xx that is no refusal) for a day. A 5xx or an
+    unreachable host is not kept, so the next pass reads again."""
+    if not (200 <= status < 300 or (400 <= status < 500 and status not in HARD_STOP)):
+        cache.pop(robots_url(url), None)
+        return
+    text = body.decode("utf-8", "replace") if isinstance(body, bytes) else str(body or "")
+    cache[robots_url(url)] = {"status": int(status), "body": text[:ROBOTS_MAX_CHARS],
+                              "read_at": _ts(now)}
 
 
 def _groups(body: str) -> list[tuple[set[str], list[tuple[bool, str]]]]:
@@ -185,35 +338,32 @@ def _pattern_matches(pattern: str, path: str) -> bool:
     return re.match(rx + ("$" if anchored else ""), path) is not None
 
 
-def robots_verdict(url: str, user_agent: str, status: int, body: bytes | str | None
-                   ) -> dict[str, object]:
-    """RFC 9309 verdict for fetching `url` as `user_agent`, from the robots.txt response
-    (`status`, `body`) read at `robots_url(url)` under that same UA. Never names the UA itself.
-
-    `allowed` is True only on a positive reading: a served file that does not disallow the path,
-    or an ABSENT one (4xx other than 401/403/429). 5xx and status 0 (unreachable) are UNAVAILABLE
-    and disallow; 401/403/429 is REFUSED and the caller applies its hard stop."""
+def robots_verdict(url: str, status: int, body: bytes | str | None,
+                   product: str = DESK_UA_PRODUCT) -> dict[str, Any]:
+    """RFC 9309 verdict for fetching `url` as `product`, from the robots.txt response
+    (`status`, `body`) read at `robots_url(url)`. States: ALLOWED, DISALLOWED, ABSENT (4xx, allows),
+    UNAVAILABLE (5xx / unreachable: no fetch this pass), REFUSED (401/403/429: the caller holds)."""
     parts = urllib.parse.urlsplit(url)
     path = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
-    out: dict[str, object] = {"robots_url": robots_url(url), "http_status": int(status),
-                              "path": path}
+    out: dict[str, Any] = {"robots_url": robots_url(url), "http_status": int(status),
+                           "path": path[:300]}
     if status in HARD_STOP:
         return {**out, "state": "REFUSED", "allowed": False,
-                "detail": f"robots.txt answered HTTP {status}: a route refusal, held"}
+                "detail": f"robots.txt answered HTTP {status}: a refusal, held for a person"}
     if status == 0 or status >= 500:
         return {**out, "state": "UNAVAILABLE", "allowed": False,
                 "detail": f"robots.txt {'unreachable' if status == 0 else f'HTTP {status}'}: "
-                          "RFC 9309 reads an unavailable robots.txt as a full disallow"}
+                          "RFC 9309 reads it as a full disallow; no fetch this pass, re-read next"}
     if 400 <= status < 500:
         return {**out, "state": "ABSENT", "allowed": True,
                 "detail": f"robots.txt HTTP {status}: no robots file, unrestricted (RFC 9309)"}
     if not 200 <= status < 300:
         return {**out, "state": "UNAVAILABLE", "allowed": False,
-                "detail": f"robots.txt HTTP {status}: not a readable answer, held"}
+                "detail": f"robots.txt HTTP {status}: not a readable answer, no fetch"}
     if path == "/robots.txt":
         return {**out, "state": "ALLOWED", "allowed": True, "detail": "robots.txt itself"}
     text = body.decode("utf-8", "replace") if isinstance(body, bytes) else str(body or "")
-    token = product_token(user_agent)
+    token = str(product or "").lower()
     groups = _groups(text)
     mine = [r for a, r in groups if token and token in a]
     scope = "own agent"
@@ -234,14 +384,31 @@ def robots_verdict(url: str, user_agent: str, status: int, body: bytes | str | N
                        f"{scope} group")}
 
 
-def robots_marker(verdict: dict[str, object], url_class: str, now: datetime,
-                  prior: dict[str, Any] | None) -> dict[str, Any]:
-    """The persisted hold for a robots verdict that does not allow the fetch: the same marker,
-    backoff and register as a 401/403/429, with status ROBOTS_HOLD and the verdict attached."""
-    consecutive = int((prior or {}).get("consecutive") or 0) + 1
-    wait = min(BACKOFF_MAX_S, BACKOFF_BASE_S * 2 ** (consecutive - 1))
-    return {"status": ROBOTS_HOLD, "http_status": verdict.get("http_status"),
-            "url_class": url_class, "at": now.isoformat(timespec="seconds"),
-            "until": (now + timedelta(seconds=wait)).isoformat(timespec="seconds"),
-            "backoff_s": wait, "backoff_source": "exponential", "consecutive": consecutive,
-            "robots": dict(verdict)}
+# ------------------------------------------------------------------------------------ the CLI
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="List or release hard-stop holds (a person's act).")
+    ap.add_argument("--register", type=Path, default=BLOCKED_REGISTER)
+    ap.add_argument("--release", metavar="KEY", help="e.g. site:trends.google.com")
+    ap.add_argument("--by", metavar="NAME", help="who releases it (required with --release)")
+    ap.add_argument("--list", action="store_true", help="print every hold and its state")
+    a = ap.parse_args(argv)
+    if a.release:
+        if not a.by:
+            print("hard_stop: --release needs --by <name>", file=sys.stderr)
+            return 2
+        row = release(a.register, a.release, a.by)
+        print(f"hard_stop: released {row['key']} by {row['released_by']} at "
+              f"{row['released_at']}")
+        return 0
+    reg = _register(a.register)
+    for k, row in sorted((reg.get("holds") or {}).items()):
+        state = "RELEASED" if row.get("released_by") else "HELD"
+        print(f"{state:8} {k}  {row.get('verdict')} HTTP {row.get('status')} at "
+              f"{row.get('held_at')}" + (f" released by {row['released_by']}"
+                                         if row.get("released_by") else ""))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

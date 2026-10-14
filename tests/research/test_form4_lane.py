@@ -208,8 +208,11 @@ def _seed_register(path: Path) -> None:
                     encoding="utf-8")
 
 
-def test_a_403_ends_the_pass_backs_off_an_hour_and_the_next_pass_requests_nothing(
+def test_a_403_holds_until_a_person_releases_it_and_the_release_keeps_history(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 403 places a hold that NO TIMER releases: passes at +25h, +11d and +400d each send 0
+    requests. A person's release lets the next pass fetch; a second refusal places a new hold
+    and the released one is kept in the register's history."""
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL", "Zeta": "AAPL"})
     reg = tmp_path / "blocked_sources.json"
     _seed_register(reg)
@@ -221,32 +224,40 @@ def test_a_403_ends_the_pass_backs_off_an_hour_and_the_next_pass_requests_nothin
     assert rep["fetch"]["status"] == "METHOD_BLOCKED" and rep["status"] == fl.UNMEASURED
     assert rep["new_data"] == fl.UNMEASURED
     blk = rep["fetch"]["block"]
-    assert (blk["http_status"], blk["url_class"], blk["at"]) == (
-        403, "archive_document", NOW.isoformat(timespec="seconds"))
-    assert blk["backoff_source"] == "exponential" and blk["backoff_s"] == 3600.0
+    assert set(blk) == {"key", "verdict", "status", "host", "url", "held_at", "released_by",
+                        "released_at"}
+    assert (blk["key"], blk["verdict"], blk["status"], blk["host"]) == (
+        "site:www.sec.gov", "HARD_STOP", 403, "www.sec.gov")
+    assert blk["held_at"] == NOW.timestamp() and blk["released_by"] is None
     doc = json.loads(reg.read_text(encoding="utf-8"))
     assert "other" in doc["sources"]                         # appended, never replaced
+    assert doc["holds"]["site:www.sec.gov"]["released_by"] is None
     entry = doc["sources"][fl.REGISTER_KEY]
-    assert entry["diagnosis"] == "METHOD_BLOCKED" and "HTTP 403" in entry["error"]
+    assert entry["diagnosis"] == "HARD_STOP" and "HTTP 403" in entry["error"]
+    assert "blocked_until" not in entry
 
+    for later in (timedelta(hours=25), timedelta(days=11), timedelta(days=400)):
+        calls.clear()
+        rep2 = fl.run(get=_edgar(calls), now=NOW + later, state_dir=tmp_path / "f4",
+                      series_root=tmp_path / "s", dry_run=True, register=reg)
+        assert calls == [] and rep2["fetch"]["skipped"] is True, later
+        assert rep2["fetch"]["status"] == "METHOD_BLOCKED" and rep2["status"] == fl.UNMEASURED
+
+    fl._hs.release(reg, "site:www.sec.gov", "tester", now=NOW + timedelta(days=400, hours=1))
     calls.clear()
-    rep2 = fl.run(get=_refusing(calls, 403, "/Archives/"), now=NOW + timedelta(minutes=59),
+    rep3 = fl.run(get=_refusing(calls, 403, "/Archives/"), now=NOW + timedelta(days=401),
                   state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
                   register=reg)
-    assert calls == [] and rep2["fetch"]["skipped"] is True
-    assert rep2["fetch"]["status"] == "METHOD_BLOCKED" and rep2["status"] == fl.UNMEASURED
-
-    # expired: one more refusal doubles the wait
-    calls.clear()
-    rep3 = fl.run(get=_refusing(calls, 403, "/Archives/"), now=NOW + timedelta(hours=2),
-                  state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
-                  register=reg)
-    assert len(calls) == 2 and "/Archives/" in calls[-1]   # ciks cached: no ticker map
-    assert rep3["fetch"]["block"]["backoff_s"] == 7200.0
-    assert json.loads(reg.read_text())["sources"][fl.REGISTER_KEY]["attempts"] == 2
+    assert calls and "/Archives/" in calls[-1]             # released: the next pass fetches
+    assert rep3["fetch"]["block"]["held_at"] == (NOW + timedelta(days=401)).timestamp()
+    doc = json.loads(reg.read_text())
+    assert doc["holds"]["site:www.sec.gov"]["released_by"] is None        # held again
+    hist = doc["hold_history"]
+    assert len(hist) == 1 and hist[0]["released_by"] == "tester"
+    assert hist[0]["held_at"] == NOW.timestamp()                          # history kept
 
 
-def test_a_429_honours_retry_after_and_scoring_of_held_data_still_runs(
+def test_a_429_records_retry_after_but_it_releases_nothing(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
     reg = tmp_path / "blocked_sources.json"
@@ -262,17 +273,17 @@ def test_a_429_honours_retry_after_and_scoring_of_held_data_still_runs(
                  now=NOW, state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
     assert len(calls) == 1 and "submissions" in calls[0]
     blk = rep["fetch"]["block"]
-    assert blk["status"] == "METHOD_BLOCKED" and blk["http_status"] == 429
-    assert blk["backoff_source"] == "retry_after" and blk["backoff_s"] == 120.0
+    assert (blk["verdict"], blk["status"], blk["key"]) == ("HARD_STOP", 429, "site:data.sec.gov")
+    assert rep["fetch"]["retry_after_s"] == 120.0            # recorded ...
     assert rep["transactions"] == 3 and rep["clusters"] == 1   # held data still scored
     calls.clear()
-    rep2 = fl.run(get=_refusing(calls, 429, "submissions"), now=NOW + timedelta(seconds=119),
+    rep2 = fl.run(get=_edgar(calls), now=NOW + timedelta(seconds=121),
                   state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
-    assert calls == [] and rep2["clusters"] == 1
+    assert calls == [] and rep2["clusters"] == 1             # ... and it released nothing
     assert rep2["new_data"] == fl.UNMEASURED
 
 
-def test_a_401_reads_needs_key_and_a_clean_pass_clears_the_ladder(
+def test_a_401_reads_needs_key_and_only_a_release_lets_a_pass_fetch(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
     reg = tmp_path / "blocked_sources.json"
@@ -281,11 +292,41 @@ def test_a_401_reads_needs_key_and_a_clean_pass_clears_the_ladder(
                  state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
                  register=reg)
     assert len(calls) == 1 and rep["fetch"]["status"] == "NEEDS_KEY"
-    assert json.loads(reg.read_text())["sources"][fl.REGISTER_KEY]["diagnosis"] == "NEEDS_KEY"
-    rep2 = fl.run(get=_edgar([]), now=NOW + timedelta(hours=2), state_dir=tmp_path / "f4",
+    assert json.loads(reg.read_text())["sources"][fl.REGISTER_KEY]["diagnosis"] == "HARD_STOP"
+    held = fl.run(get=_edgar(calls), now=NOW + timedelta(hours=2), state_dir=tmp_path / "f4",
+                  series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert held["fetch"]["skipped"] is True and len(calls) == 1
+    fl._hs.release(reg, "site:www.sec.gov", "tester", now=NOW + timedelta(hours=3))
+    rep2 = fl.run(get=_edgar([]), now=NOW + timedelta(hours=4), state_dir=tmp_path / "f4",
                   series_root=tmp_path / "s", dry_run=True, register=reg)
     assert rep2["fetch"]["status"] == "FETCHED" and rep2["status"] == "OK"
     assert "block" not in json.loads((tmp_path / "f4" / "state.json").read_text())
+
+
+def test_a_hold_whose_register_write_failed_still_holds_until_released(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The lane's own copy of its hold holds the next pass even when the register write failed;
+    a person's release of the same key (made after it) releases that copy too."""
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    reg = tmp_path / "blocked_sources.json"
+    sd = tmp_path / "f4"
+    real = fl._hs.place_hold
+
+    def boom(*_a: object, **_k: object) -> None:
+        raise OSError("disk full")
+    monkeypatch.setattr(fl._hs, "place_hold", boom)
+    rep = fl.run(get=_refusing([], 429, "company_tickers"), now=NOW, state_dir=sd,
+                 series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert "disk full" in rep["fetch"]["persist_error"] and not reg.exists()
+    monkeypatch.setattr(fl._hs, "place_hold", real)
+    calls: list[str] = []
+    fl.run(get=_edgar(calls), now=NOW + timedelta(days=30), state_dir=sd,
+           series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert calls == []
+    fl._hs.release(reg, "site:www.sec.gov", "tester", now=NOW + timedelta(days=31))
+    fl.run(get=_edgar(calls), now=NOW + timedelta(days=32), state_dir=sd,
+           series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert calls
 
 
 def test_retry_after_reads_seconds_and_http_dates() -> None:
@@ -546,54 +587,106 @@ def test_robots_is_read_per_host_before_the_first_request_to_it(
     assert rep["fetch"]["robots"] == {"www.sec.gov": "ABSENT", "data.sec.gov": "ABSENT"}
 
 
-def test_a_robots_disallow_for_our_agent_is_not_fetched_and_is_held(
+def test_a_robots_disallow_for_our_agent_is_not_fetched_and_robots_is_reread_daily(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """ROBOTS (principal's scope rule 2026-10-13): our agent's own group bars the submissions
-    path -- the '*' group allows it -- so it is never requested; the pass holds exactly as a
-    401/403/429 holds it, the next pass requests nothing, and the UA is never written."""
+    """ROBOTS (principal's scope rule 2026-10-13): the group naming the desk's product bars the
+    submissions path -- the '*' group allows it -- so it is never requested. A Disallow is not a
+    person hold: robots.txt is kept a day (no re-read inside 24h) and re-read after, which is how
+    a change of mind is picked up. The SEC UA is never written."""
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
     monkeypatch.setenv(fl.UA_ENV, "TestDesk research test@example.org")
     reg = tmp_path / "blocked.json"
     _seed_register(reg)
-    robots = {"data.sec.gov": (200, b"User-agent: *\nAllow: /\n\n"
-                                    b"User-agent: testdesk\nDisallow: /submissions/\n")}
+    robots = {"data.sec.gov": (200, f"User-agent: *\nAllow: /\n\nUser-agent: "
+                                    f"{fl._hs.DESK_UA_PRODUCT}\nDisallow: /submissions/\n"
+                               .encode())}
     calls: list[str] = []
     sd = tmp_path / "f4"
     rep = fl.run(get=_edgar_with_robots(calls, robots), now=NOW, state_dir=sd,
                  series_root=tmp_path / "s", dry_run=True, register=reg)
     assert not any("submissions/CIK" in u for u in calls)
-    assert rep["fetch"]["status"] == "ROBOTS_HOLD"
-    assert rep["fetch"]["block"]["robots"]["state"] == "DISALLOWED"
-    assert json.loads(reg.read_text())["sources"][fl.REGISTER_KEY]["diagnosis"] == "ROBOTS_HOLD"
+    assert rep["fetch"]["status"] == "ROBOTS_DISALLOWED"
+    assert rep["fetch"]["robots"]["data.sec.gov"] == "DISALLOWED"
+    doc = json.loads(reg.read_text())
+    assert doc["sources"][fl.REGISTER_KEY]["diagnosis"] == "ROBOTS_DISALLOW"
+    assert not doc.get("holds")                                  # not a person hold
     state_text = (sd / "state.json").read_text("utf-8")
     assert "test@example.org" not in json.dumps(rep, default=str) + state_text
     calls.clear()
-    rep2 = fl.run(get=_edgar_with_robots(calls, robots), now=NOW + timedelta(minutes=5),
-                  state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
-    assert calls == [] and rep2["fetch"]["skipped"] is True
+    fl.run(get=_edgar_with_robots(calls, robots), now=NOW + timedelta(hours=23),
+           state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert calls == []                                           # robots kept a day
+    robots["data.sec.gov"] = (200, b"User-agent: *\nAllow: /\n")   # the site changes its mind
+    fl.run(get=_edgar_with_robots(calls, robots), now=NOW + timedelta(hours=25),
+           state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert calls[0] == "https://data.sec.gov/robots.txt"
+    assert any("submissions/CIK" in u for u in calls)
+
+
+def test_the_sent_uas_own_group_is_honoured_too(tmp_path: Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    monkeypatch.setenv(fl.UA_ENV, "TestDesk research test@example.org")
+    robots = {"data.sec.gov": (200, b"User-agent: testdesk\nDisallow: /submissions/\n")}
+    calls: list[str] = []
+    fl.run(get=_edgar_with_robots(calls, robots), now=NOW, state_dir=tmp_path / "f4",
+           series_root=tmp_path / "s", dry_run=True, register=tmp_path / "r.json")
+    assert not any("submissions/CIK" in u for u in calls)
 
 
 @pytest.mark.parametrize(("status", "state", "fetched"), [
     (503, "UNAVAILABLE", False), (404, "ABSENT", True)])
-def test_a_5xx_robots_holds_and_a_404_robots_allows(
+def test_a_5xx_robots_stops_the_pass_and_a_404_robots_allows(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: int, state: str,
         fetched: bool) -> None:
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
     calls: list[str] = []
+    sd = tmp_path / "f4"
     rep = fl.run(get=_edgar_with_robots(calls, {"www.sec.gov": (status, b"")}), now=NOW,
-                 state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
+                 state_dir=sd, series_root=tmp_path / "s", dry_run=True,
                  register=tmp_path / "r.json")
     assert (fl.TICKER_MAP_URL in calls) is fetched
     assert rep["fetch"]["robots"]["www.sec.gov"] == state
+    if not fetched:
+        assert rep["fetch"]["status"] == "ROBOTS_UNAVAILABLE"
+        assert not (tmp_path / "r.json").exists()                # no hold for a 5xx
+        calls.clear()
+        fl.run(get=_edgar_with_robots(calls, {}), now=NOW + timedelta(minutes=5),
+               state_dir=sd, series_root=tmp_path / "s", dry_run=True,
+               register=tmp_path / "r.json")
+        assert calls[0] == "https://www.sec.gov/robots.txt"      # re-read on the next pass
+        assert fl.TICKER_MAP_URL in calls
 
 
-def test_a_403_on_robots_itself_is_a_hold(tmp_path: Path,
-                                          monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_403_on_robots_itself_is_a_person_hold(tmp_path: Path,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
     calls: list[str] = []
+    reg = tmp_path / "r.json"
     rep = fl.run(get=_edgar_with_robots(calls, {"www.sec.gov": (403, b"")}), now=NOW,
                  state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True,
-                 register=tmp_path / "r.json")
+                 register=reg)
     assert calls == ["https://www.sec.gov/robots.txt"]
     assert rep["fetch"]["status"] == "METHOD_BLOCKED"
-    assert rep["fetch"]["block"]["url_class"] == "robots.txt"
+    blk = rep["fetch"]["block"]
+    assert (blk["verdict"], blk["key"], blk["url"]) == (
+        "ROBOTS_HOLD", "site:www.sec.gov", "https://www.sec.gov/robots.txt")
+    calls.clear()
+    fl.run(get=_edgar_with_robots(calls, {}), now=NOW + timedelta(days=11),
+           state_dir=tmp_path / "f4", series_root=tmp_path / "s", dry_run=True, register=reg)
+    assert calls == []
+
+
+def test_a_waf_challenge_page_is_a_hold(tmp_path: Path,
+                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
+    inner = _edgar([])
+
+    def get(url: str, headers: dict[str, str]):
+        if "submissions" in url:
+            return 200, b"<html><script src='/cdn-cgi/challenge-platform/x.js'></script></html>"
+        return inner(url, headers)
+    rep = fl.run(get=get, now=NOW, state_dir=tmp_path / "f4", series_root=tmp_path / "s",
+                 dry_run=True, register=tmp_path / "r.json")
+    assert rep["fetch"]["block"]["verdict"] == "WAF_CHALLENGE"
+    assert rep["fetch"]["status"] == "CHALLENGED"

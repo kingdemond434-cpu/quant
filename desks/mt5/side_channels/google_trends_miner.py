@@ -27,18 +27,22 @@ except ImportError:                                         # pragma: no cover -
 
 OUT = BASE / "data" / "intelligence" / "google_trends"
 OUT.mkdir(parents=True, exist_ok=True)
-#: THE HARD STOP (standing project rule, `research/hard_stop.py`): the persisted backoff marker
-#: and the register the block is recorded in. A 401/403/429 ends the pass; later passes request
-#: nothing until the backoff expires; no retry around it, no UA rotation, no other host.
+#: THE HARD STOP (standing project rule, `research/hard_stop.py`). A 401/403/429 or a WAF
+#: challenge ends the pass and places a hold on trends.google.com that a PERSON releases
+#: (`python -m desks.mt5.research.hard_stop --release site:trends.google.com --by <name>`); until
+#: then every pass sends zero requests. No timer releases it, no retry, no UA rotation, no other
+#: host. BLOCK_STATE is this miner's own copy of its hold; ROBOTS_STATE keeps robots.txt a day.
 BLOCK_STATE = BASE / "data" / "google_trends_block.json"
+ROBOTS_STATE = BASE / "data" / "google_trends_robots.json"
 BLOCKED_REGISTER = hard_stop.BLOCKED_REGISTER
 REGISTER_KEY = "google_trends"
+HOST = "trends.google.com"
 #: What the last pass did (status, requests, block), for the caller's one-line summary.
 LAST_PASS: dict = {}
 
-#: The desk's own declared identity, never a browser impersonation (audit 2026-10-14). One fixed
-#: value: on a refusal it is never rotated.
-DESK_UA = "quant-desk-google-trends/1.0 (research; public trend queries only)"
+#: The desk's one declared identity, with a contact path (`hard_stop.DESK_UA`): never a browser,
+#: never rotated on a refusal.
+DESK_UA = hard_stop.DESK_UA
 HEADERS = {"User-Agent": DESK_UA}
 
 # Search terms that move markets
@@ -129,49 +133,72 @@ def timeline_from(text: str) -> list[dict]:
     return [t for t in val if isinstance(t, dict)] if isinstance(val, list) else []
 
 
-def _load_block() -> dict | None:
+def _load_json(path: Path) -> dict | None:
     try:
-        doc = json.loads(BLOCK_STATE.read_text(encoding="utf-8"))
+        doc = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     return doc if isinstance(doc, dict) else None
 
 
-def _persist_hold(marker: dict) -> None:
-    """Persist a hold (hard stop or robots) and record it in the register. A write that raises
-    costs the record, never another request: the caller has already decided to stop."""
-    LAST_PASS["block"] = marker
+def _load_block() -> dict | None:
+    return _load_json(BLOCK_STATE)
+
+
+def _hold(verdict: str, status: int | None, url: str, now: datetime) -> None:
+    """Place the person-released hold: this miner's copy first, then the register. A write that
+    raises costs the record, never another request: the caller has already stopped."""
+    LAST_PASS.update({"status": hard_stop.pass_status({"verdict": verdict, "status": status}),
+                      "http_status": status})
     try:
+        record = hard_stop.hold_record(verdict, status, url, now)
+        LAST_PASS["block"] = record
         BLOCK_STATE.parent.mkdir(parents=True, exist_ok=True)
-        BLOCK_STATE.write_text(json.dumps(marker, indent=1), encoding="utf-8")
-        hard_stop.record_block(marker, BLOCKED_REGISTER, key=REGISTER_KEY,
-                               host="trends.google.com")
+        BLOCK_STATE.write_text(json.dumps(record, indent=1), encoding="utf-8")
+        hard_stop.place_hold(record, BLOCKED_REGISTER, source_key=REGISTER_KEY)
     except Exception as exc:
         LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
 
 
-def _read_robots(url: str) -> tuple[int, str, dict]:
-    """robots.txt at `url`'s own host, under the SAME User-Agent the pass sends (L0221):
-    (status, body, response headers -- read only for Retry-After)."""
+def _robots(url: str, now: datetime) -> tuple[int, str, dict] | None:
+    """robots.txt for `url`'s host: the day-old reading when there is one (None = not read now),
+    else read under the SAME User-Agent the pass sends (L0221) and kept when definitive."""
+    cache = _load_json(ROBOTS_STATE) or {}
+    hit = hard_stop.robots_cached(cache, url, now)
+    if hit is not None:
+        return hit[0], hit[1], {}
     try:
         resp = requests.get(hard_stop.robots_url(url), headers=HEADERS, timeout=15)
+        got = (int(getattr(resp, "status_code", 0) or 0), str(getattr(resp, "text", "") or ""),
+               dict(getattr(resp, "headers", None) or {}))
     except Exception:
-        return 0, "", {}
-    return (int(getattr(resp, "status_code", 0) or 0), str(getattr(resp, "text", "") or ""),
-            dict(getattr(resp, "headers", None) or {}))
+        got = (0, "", {})
+    LAST_PASS["requests"] += 1
+    LAST_PASS["robots_read"] = True
+    if not hard_stop.refusal(got[0], got[2], got[1]):
+        hard_stop.robots_remember(cache, url, got[0], got[1], now)
+        try:
+            ROBOTS_STATE.parent.mkdir(parents=True, exist_ok=True)
+            ROBOTS_STATE.write_text(json.dumps(cache, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+    return got
 
 
 def mine_google_trends(now: datetime | None = None) -> list[dict]:
-    """Fetch Google Trends data for trading terms, under the hard stop."""
+    """Fetch Google Trends data for trading terms, under the hard stop and robots."""
     now = now or datetime.now(timezone.utc)
     discoveries: list[dict] = []
     prior = _load_block()
     LAST_PASS.clear()
-    LAST_PASS.update({"requests": 0, "ok_responses": 0, "block": None})
-    if hard_stop.active(prior, now):
-        assert prior is not None
-        LAST_PASS.update({"status": prior.get("status"), "skipped": True, "block": prior})
+    LAST_PASS.update({"requests": 0, "ok_responses": 0, "block": None, "robots_disallowed": 0})
+    held = hard_stop.active_hold(BLOCKED_REGISTER, [hard_stop.host_key(HOST)], prior)
+    if held is not None:
+        LAST_PASS.update({"status": hard_stop.pass_status(held), "skipped": True,
+                          "block": held})
         return discoveries
+    if prior is not None:
+        BLOCK_STATE.unlink(missing_ok=True)   # a person released it: this copy is spent
 
     blocked = False
     LAST_PASS["timelines_read"] = 0
@@ -179,65 +206,50 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
     for category, terms in SEARCH_TERMS.items():
         for term in terms:
             # Use Google Trends explore page (HTML scraping)
-            url = f"https://trends.google.com/trends/explore?q={term.replace(' ', '+')}&date=today+12-m"
-            # ROBOTS (audit 0b66b08de MF5; principal's scope rule 2026-10-13). Read once a pass at
-            # the host, judged per exact path; a path it does not allow is not fetched and the
-            # pass is held exactly as a 401/403/429 holds it.
+            url = ("https://trends.google.com/trends/explore?q="
+                   f"{term.replace(' ', '+')}&date=today+12-m")
+            # ROBOTS (audit 0b66b08de MF5; principal's scope rule 2026-10-13): read at the host
+            # at most once a day, judged per exact path. A refusal on robots.txt itself is a
+            # person-held hold; an unavailable one stops this pass; a Disallow skips the URL.
             if robots is None:
-                robots = _read_robots(url)
-                LAST_PASS["requests"] += 1
-                if robots[0] in hard_stop.HARD_STOP:
+                robots = _robots(url, now)
+                if (verdict0 := hard_stop.refusal(robots[0], robots[2], robots[1])):
                     blocked = True
-                    LAST_PASS.update({"status": hard_stop.HARD_STOP[robots[0]],
-                                      "http_status": robots[0]})
-                    try:
-                        marker = hard_stop.block_marker(robots[0], "robots.txt", robots[2],
-                                                        now, prior)
-                    except Exception as exc:
-                        LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
-                    else:
-                        _persist_hold(marker)
+                    _hold(hard_stop.VERDICT_ROBOTS_HOLD if verdict0 == hard_stop.VERDICT_HARD_STOP
+                          else verdict0, robots[0], hard_stop.robots_url(url), now)
                     break
-            verdict = hard_stop.robots_verdict(url, DESK_UA, robots[0], robots[1])
+            verdict = hard_stop.robots_verdict(url, robots[0], robots[1])
             LAST_PASS["robots"] = verdict
-            if not verdict["allowed"]:
+            if verdict["state"] == "UNAVAILABLE":
                 blocked = True
-                LAST_PASS.update({"status": hard_stop.ROBOTS_HOLD,
+                LAST_PASS.update({"status": "ROBOTS_UNAVAILABLE",
                                   "http_status": verdict.get("http_status")})
-                try:
-                    marker = hard_stop.robots_marker(verdict, "explore", now, prior)
-                except Exception as exc:
-                    LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
-                else:
-                    _persist_hold(marker)
                 break
+            if not verdict["allowed"]:
+                LAST_PASS["robots_disallowed"] += 1
+                continue
             try:
                 resp = requests.get(url, headers=HEADERS, timeout=15)
             except Exception:
                 continue
             LAST_PASS["requests"] += 1
             status = int(getattr(resp, "status_code", 0) or 0)
-            if status in hard_stop.HARD_STOP:
+            body = str(getattr(resp, "text", "") or "")
+            hdrs = dict(getattr(resp, "headers", None) or {})
+            if (why := hard_stop.refusal(status, hdrs, body)):
                 # THE HARD STOP, DECIDED BEFORE ANYTHING CAN FAIL. `blocked` is set and the loop
-                # ends whatever happens while the marker is persisted: a write that raises can
+                # ends whatever happens while the hold is persisted: a write that raises can
                 # cost the record, never another request (audit 2026-10-14, MF4a).
                 blocked = True
-                LAST_PASS.update({"status": hard_stop.HARD_STOP[status],
-                                  "http_status": status})
-                try:
-                    marker = hard_stop.block_marker(
-                        status, "explore", dict(getattr(resp, "headers", None) or {}), now,
-                        prior)
-                except Exception as exc:
-                    LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
-                else:
-                    _persist_hold(marker)
+                if (ra := hard_stop.retry_after_s(hdrs.get("Retry-After"), now)) is not None:
+                    LAST_PASS["retry_after_s"] = ra          # recorded; it releases nothing
+                _hold(why, status, url, now)
                 break
             if status != 200:
                 continue
             LAST_PASS["ok_responses"] += 1
             try:
-                timeline = timeline_from(resp.text)
+                timeline = timeline_from(body)
             except Exception:
                 timeline = []
             if not timeline:
@@ -265,9 +277,16 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
 
     if not blocked:
         # FETCHED only when a timeline was actually read: a 200 that carried none is not data
-        LAST_PASS["status"] = "FETCHED" if LAST_PASS["timelines_read"] else "FAILED"
-        if LAST_PASS["timelines_read"] and prior is not None:
-            BLOCK_STATE.unlink(missing_ok=True)   # an answered, unrefused pass ends the ladder
+        n_terms = sum(len(t) for t in SEARCH_TERMS.values())
+        if LAST_PASS["robots_disallowed"] == n_terms:
+            LAST_PASS["status"] = "ROBOTS_DISALLOWED"
+            try:
+                hard_stop.note_robots(LAST_PASS.get("robots") or {}, BLOCKED_REGISTER,
+                                      source_key=REGISTER_KEY)
+            except Exception as exc:
+                LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
+        else:
+            LAST_PASS["status"] = "FETCHED" if LAST_PASS["timelines_read"] else "FAILED"
     return discoveries
 
 
