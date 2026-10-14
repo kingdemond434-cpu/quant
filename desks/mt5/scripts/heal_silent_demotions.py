@@ -101,11 +101,11 @@ def _replication_refusal(row: dict, gate: object | None, waived: set[str]) -> st
     cert = row.get("certificate")
     cid = str(row.get("principal_certificate")
               or (cert.get("cell") if isinstance(cert, dict) else "") or "")
-    if not cid or cid in waived:
+    if not cid:
         return ""
     if gate is None:
         return "REFUSED_UNREPLICATED: replication verdicts unreadable"
-    return gate.live_refusal(cid) or ""  # type: ignore[attr-defined]
+    return gate.live_refusal(cid, waived=cid in waived) or ""  # type: ignore[attr-defined]
 
 
 def _door() -> tuple[object | None, set[str]]:

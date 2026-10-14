@@ -1,0 +1,8 @@
+{
+ "rule": "Certificates the principal accepts LIVE without an independent replication (coordinator ruling C, 2026-10-14). Exactly these three; tests/test_replication_live_door.py pins the set and refuses any other entry. The AUDCHF/EURZAR/USDZAR gap_decay principals are deliberately absent: they stay stopped under zuck's stop.",
+ "certificates": {
+  "external.USDNOK@M5.carry.p=ff35bb7c8427d66f": "principal's final Fusion book, 2026-10-13 22:21-22:25Z (cmsg_012XFUfE12Rvggnu86fDb8prHz6dDBptWXNU76e4gkCAJY): 4 sleeves at 0.01 lot under waiver, accepted by zuck; sleeve usdnok_carry_asia_p_ff35bb7c8427d66f. Expires by itself: a REPLICATED verdict no longer needs it, a MISMATCH voids it (admission_integrity.live_refusal)",
+  "external.EURILS.formula.p=673857a649d3c271": "principal's final Fusion book, 2026-10-13 22:21-22:25Z (cmsg_012XFUfE12Rvggnu86fDb8prHz6dDBptWXNU76e4gkCAJY): 4 sleeves at 0.01 lot under waiver, accepted by zuck; sleeve eurils_formula_asia_p_673857a649d3c271. Expires by itself: a REPLICATED verdict no longer needs it, a MISMATCH voids it (admission_integrity.live_refusal)",
+  "external.EURZAR@M15.carry.p=8339edce23032d21": "principal's final Fusion book, 2026-10-13 22:21-22:25Z (cmsg_012XFUfE12Rvggnu86fDb8prHz6dDBptWXNU76e4gkCAJY): 4 sleeves at 0.01 lot under waiver, accepted by zuck; sleeve eurzar_carry_asia_p_8339edce23032d21. Expires by itself: a REPLICATED verdict no longer needs it, a MISMATCH voids it (admission_integrity.live_refusal)"
+ }
+}

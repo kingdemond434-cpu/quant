@@ -332,8 +332,8 @@ def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, 
 
 
 #: Certificates the principal accepts LIVE without an independent replication, each with the
-#: order it rests on: {"certificates": {"<cell>": "<principal order, dated>"}}. Absent or empty is
-#: the default and waives nothing; an entry without its order text waives nothing either.
+#: order it rests on: {"certificates": {"<cell>": "<principal order, dated>"}}. An entry without
+#: its order text waives nothing, and a MISMATCH verdict voids an entry (`live_refusal`).
 REPLICATION_WAIVER = BASE / "data" / "REPLICATION_WAIVER.json"
 
 
@@ -385,10 +385,10 @@ def replication_door(rows: list[dict], prior_live: set[str], *, gate: object | N
         if str(row.get("status") or "").upper() != "LIVE" or name in prior_live:
             continue
         cert = live_certificate(row)
-        if not cert or cert in waived:
+        if not cert:
             continue
-        why = (gate.live_refusal(cert) if gate is not None  # type: ignore[attr-defined]
-               else f"REFUSED_UNREPLICATED: {why_gate}")
+        why = (gate.live_refusal(cert, waived=cert in waived)  # type: ignore[attr-defined]
+               if gate is not None else f"REFUSED_UNREPLICATED: {why_gate}")
         if not why:
             continue
         row.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",

@@ -219,3 +219,32 @@ def test_aliases_in_the_seal_collapse_even_when_the_judge_did_not_republish(
     assert set(doc["survivors"]) == {"external.A"}
     assert doc["certificate_aliases"]["external.B"]["canonical_certificate"] == "external.A"
     assert doc["swept_at"] == "2026-10-12T00:00:00+00:00"      # no evidence was gathered
+
+
+# ------------------------------------------------------------------ the committed waiver
+def test_the_committed_waiver_holds_exactly_the_principals_three_book_sleeves() -> None:
+    doc = json.loads((DESK / "data" / "REPLICATION_WAIVER.json").read_text("utf-8"))
+    certs = doc["certificates"]
+    assert set(certs) == {"external.USDNOK@M5.carry.p=ff35bb7c8427d66f",
+                          "external.EURILS.formula.p=673857a649d3c271",
+                          "external.EURZAR@M15.carry.p=8339edce23032d21"}
+    assert all("cmsg_012XFUfE12Rvggnu86fDb8prHz6dDBptWXNU76e4gkCAJY" in v for v in certs.values())
+    assert not any("gap_decay" in k for k in certs)       # zuck's stop is not waived
+
+
+def test_a_mismatch_voids_the_waiver(roster, tmp_path, monkeypatch) -> None:
+    (tmp_path / "waiver.json").write_text(
+        json.dumps({"certificates": {CERT: "zuck 2026-10-13 22:21Z book"}}), "utf-8")
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS",
+                        _book(tmp_path, {CERT: {"verdict": "MISMATCH", "why": ["fills"]}}))
+    got = roster([], [_principal_row()])["eurzar_carry_asia_p_8339edce23032d21"]
+    assert got["status"] == "STANDBY" and "voids any waiver" in got["demote_reason"]
+
+
+def test_the_healer_honours_the_waiver_and_its_mismatch_void(healer, tmp_path) -> None:
+    (tmp_path / "waiver.json").write_text(
+        json.dumps({"certificates": {CERT: "zuck 2026-10-13 22:21Z book"}}), "utf-8")
+    row = {**_principal_row("STANDBY"), "risk_frac": 0.0}
+    assert healer([dict(row)], {})["eurzar_carry_asia_p_8339edce23032d21"] == "LIVE"
+    assert healer([dict(row)], {CERT: {"verdict": "MISMATCH"}})[
+        "eurzar_carry_asia_p_8339edce23032d21"] == "STANDBY"

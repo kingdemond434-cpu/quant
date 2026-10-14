@@ -194,13 +194,21 @@ class IntegrityGate:
         return (str(row.get("verdict") or "") == UNMEASURED
                 and any(NO_SPEC_MARK in str(w) for w in (row.get("why") or [])))
 
-    def live_refusal(self, certificate: str) -> str | None:
-        """The capital door: None only when the certificate's latest verdict is REPLICATED.
+    def live_refusal(self, certificate: str, *, waived: bool = False) -> str | None:
+        """The capital door: None only when the certificate's latest verdict is REPLICATED, or
+        the principal waived it by name and the lane has not since found a MISMATCH.
 
         FAILS CLOSED on everything else -- MISMATCH, UNMEASURED (no-spec families included),
         never reached, an unreadable book -- because LIVE is where money moves and an absent
-        replication is not a clean one (L1.28a)."""
+        replication is not a clean one (L1.28a). A waiver EXPIRES by itself: a REPLICATED
+        verdict no longer needs it, and a MISMATCH voids it."""
         row = self.verdicts.get(str(certificate))
+        if row is not None and str(row.get("verdict") or "") == MISMATCH:
+            why = "; ".join(str(w) for w in (row.get("why") or []))[:200]
+            return (f"{REFUSED_UNREPLICATED}: {certificate} replication verdict MISMATCH"
+                    f"{f' ({why})' if why else ''}; a MISMATCH voids any waiver")
+        if waived:
+            return None
         if row is None:
             return (f"{REFUSED_UNREPLICATED}: {certificate} has no replication verdict "
                     f"({self.replication_source or 'no verdict book'}); LIVE needs REPLICATED")
