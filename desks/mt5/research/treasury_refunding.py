@@ -327,10 +327,8 @@ def _clause_reading(clause: str) -> int | None:
         return 0 if held else None
     bare = _VERB.search(clause)
     lead = clause[max(0, bare.start() - 40) : bare.start()] if bare else ""
-    if (
-        (bare
-        and _NEG_BEFORE.search(_REASON.split(lead)[-1] + bare.group(0)))
-        or (bare and any(_NO[v].search(_REASON.split(lead)[-1] + bare.group(0)) for v in _STEM))
+    if (bare and _NEG_BEFORE.search(_REASON.split(lead)[-1] + bare.group(0))) or (
+        bare and any(_NO[v].search(_REASON.split(lead)[-1] + bare.group(0)) for v in _STEM)
     ):
         return 0  # "cannot foresee a need to increase", with no guidance verb
     if _FLAT.search(clause):
@@ -368,11 +366,11 @@ def _live_direction(clause: str) -> bool:
     for v, rx in _DIRECTION.items():
         for mt in rx.finditer(clause):
             lead = _REASON.split(clause[: mt.end()])[-1]
-            obj = _REASON.split(clause[mt.end() : mt.end() + 40])[0]
+            obj = _REASON.split(clause[mt.end() : mt.end() + 60])[0]
             if (
                 not _negated(lead, v)
                 and not _NEG_AFTER.search(obj)
-                and not (_OTHER_SUPPLY.search(obj))
+                and not _OTHER_SUPPLY.search(obj[:40])
             ):
                 return True
     return False
