@@ -36,6 +36,12 @@ it runs somewhere with ordinary egress -- the VPS. That is a real limitation and
 rather than discovered later: the five forests it targets stay BLOCKED on this box, and the
 artifact says so instead of implying a capability the desk does not have here.
 
+HONEST AND ROBOTS-BOUND (auditor ruling 2026-10-14). The browser context sends the desk's own
+`polite_fetch.DESK_UA`, never a browser string. The page and EVERY sub-request it makes pass
+`polite_fetch.HostAccess.permits` (site holds, then that origin's robots.txt) or are aborted, and
+a challenge interstitial records a METHOD_BLOCKED hold for the site: a WAF is a hard stop, never
+something this path "clears".
+
 NOTHING HERE LOGS IN, solves a CAPTCHA, or presents credentials. It renders public pages the same
 way a person opening the URL would, and a page that requires an account stays blocked and says so
 -- a membership is a person, not a credential.
@@ -170,12 +176,16 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
                     "this run. Not a source failure -- raise RENDER_BUDGET_PER_RUN if the spend "
                     "is worth it, but a sweep that renders everything gets killed for being slow "
                     "and the lane then looks worthless rather than expensive.")
+    from libs.data import polite_fetch as _pf
+    access = _pf.default_access()
+    allowed, why = access.permits(url)
+    if not allowed:
+        return "", f"RENDER-REFUSED: {why} -- a refusal is recorded, never rendered around"
     from playwright.sync_api import sync_playwright  # type: ignore[import-not-found]
 
     _used += 1
     ctx_kw: dict[str, Any] = {
-        "user_agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                       "Chrome/124.0.0.0 Safari/537.36"),
+        "user_agent": _pf.DESK_UA,
         "viewport": {"width": 1366, "height": 900},
     }
     if lang:
@@ -198,6 +208,14 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
             browser = pw.chromium.launch(**launch_kw)
             try:
                 page = browser.new_context(**ctx_kw).new_page()
+
+                def _gate(route: Any) -> None:
+                    ok, _why = access.permits(str(route.request.url))
+                    if ok:
+                        route.continue_()
+                    else:
+                        route.abort()
+                page.route("**/*", _gate)
                 page.set_default_timeout(timeout_s * 1000)
                 page.goto(url, wait_until="domcontentloaded", timeout=timeout_s * 1000)
                 if wait_selector:
@@ -216,6 +234,7 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
 
     marker = looks_challenged(html)
     if marker:
+        access.block(url, 403, "METHOD_BLOCKED")
         return html, (f"RENDER-CHALLENGED: the page returned an anti-bot interstitial "
                       f"({marker!r}). A challenge is NOT a markup change and NOT an empty forest "
                       "-- it is a live block on a rendered session, which is the strongest signal "

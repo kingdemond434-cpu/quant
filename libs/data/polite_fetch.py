@@ -8,9 +8,8 @@ transient failure was booked as a verdict about the source:
   Windows Python build, not a closed source. `ssl_context()` loads certifi's bundle ON TOP of the
   system store, so a chain either knows is accepted.
 * `share4you`, `hfm_pamm`, `followme_cn`, `minfx_jp` were booked `HTTPError` on the first answer.
-  A 429 or a 5xx is a request to come back later; `get()` does, with exponential backoff and the
-  server's own `Retry-After` (capped), inside a hard deadline. A 403/404 is deterministic and is
-  NOT retried here -- the caller resolves it with another URL, never by hammering.
+  A 5xx is a request to come back later; `get()` does, with exponential backoff and the server's
+  own `Retry-After` (capped), inside a hard deadline. A 404 is deterministic and is NOT retried.
 * Chinese and Japanese grounds serve GBK / Shift_JIS. Decoding every body as UTF-8 with
   `errors="replace"` turned their text into U+FFFD soup that no claim extractor can read.
   `decode_body()` honours the header charset, then the page's own `<meta charset>`.
@@ -23,11 +22,23 @@ concurrency buys coverage per second without buying a ban.
 MEASURED, NEVER ASSUMED. `STATS` counts fetches, successes, HTTP and transport failures, bytes
 and seconds per `leg` label, so a miner can publish its own fetches/second.
 
+HONEST, AND ROBOTS DECIDES (auditor ruling 2026-10-14). Every request carries `DESK_UA`; a
+caller-supplied User-Agent that looks like a browser is REPLACED by it (`honest_headers`), so no
+caller can make this module impersonate one. Before every request -- the URL and each redirect
+hop -- `HostAccess.permits` reads the exact origin's robots.txt (24h cache) against the
+`DESK_UA_PRODUCT` token: unreadable robots (network error, 5xx) means no fetch, 404/410 means
+allow. 401 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED) are a HARD STOP for the whole site: no
+retry, no sibling host, no other route, recorded in the shared access state. There is no IP,
+egress or User-Agent rotation anywhere in this module. `HostAccess` is the ONE implementation:
+the world crawler subclasses it.
+
 No secret is read or sent. Stdlib only (certifi is optional).
 """
 from __future__ import annotations
 
+import contextlib
 import gzip
+import json
 import random
 import re
 import ssl
@@ -39,9 +50,11 @@ import zlib
 from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from email.message import Message
+from pathlib import Path
 from typing import Any, TypeVar
-from urllib.parse import urlparse
+from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
 #: THE DESK'S HONEST USER-AGENT (auditor ruling 2026-10-14: browser impersonation is forbidden).
 #: The project's name plus a contact path a site operator can reach, and no "Mozilla", engine or
@@ -51,18 +64,44 @@ from urllib.parse import urlparse
 DESK_UA_PRODUCT = "quant-mt5-research-desk"
 DESK_UA = (f"{DESK_UA_PRODUCT}/1.0 (+https://github.com/kingdemond434-cpu/quant/issues; "
            "internal research; honours robots.txt)")
-BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-              "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
-BROWSER_HEADERS: dict[str, str] = {
-    "User-Agent": BROWSER_UA,
+#: The default request headers. There is no browser variant: `BROWSER_UA` / `BROWSER_HEADERS`
+#: were deleted with the ruling, and `honest_headers` replaces any browser-looking UA a caller
+#: passes.
+DESK_HEADERS: dict[str, str] = {
+    "User-Agent": DESK_UA,
     "Accept": ("text/html,application/xhtml+xml,application/json,application/xml;q=0.9,"
                "*/*;q=0.8"),
-    "Accept-Language": "en-US,en;q=0.8",
     "Accept-Encoding": "gzip, deflate",
-    "Upgrade-Insecure-Requests": "1",
 }
-#: Statuses that mean "come back later", and the only ones retried.
-RETRY_STATUS: frozenset[int] = frozenset({408, 425, 429, 500, 502, 503, 504, 520, 521, 522,
+#: Tokens that only a browser (or something pretending to be one) puts in its User-Agent.
+BROWSER_UA_TOKENS: tuple[str, ...] = ("mozilla/", "chrome/", "safari/", "applewebkit",
+                                      "gecko/", "edg/")
+
+
+def looks_like_browser(ua: str) -> bool:
+    low = str(ua or "").lower()
+    return any(t in low for t in BROWSER_UA_TOKENS)
+
+
+def honest_headers(headers: Mapping[str, str] | None = None) -> dict[str, str]:
+    """DESK_HEADERS overlaid with the caller's, with exactly one User-Agent that never looks like a
+    browser. A caller's own honest UA (the SEC's declared-contact UA, say) is kept; a browser-
+    looking one is replaced by DESK_UA, whatever case its header name was spelled in."""
+    out = dict(DESK_HEADERS)
+    caller_ua = ""
+    for k, v in (headers or {}).items():
+        if k.lower() == "user-agent":
+            caller_ua = str(v)
+            continue
+        out[k] = str(v)
+    if caller_ua.strip() and not looks_like_browser(caller_ua):
+        out["User-Agent"] = caller_ua.strip()
+    return out
+
+
+#: Statuses that mean "come back later", and the only ones retried. 429 is NOT here: it is a
+#: refusal (`BLOCK_STATUS`), a hard stop recorded for the site.
+RETRY_STATUS: frozenset[int] = frozenset({408, 425, 500, 502, 503, 504, 520, 521, 522,
                                           523, 524})
 #: Default spacing between two requests to ONE host, process-wide.
 DEFAULT_HOST_INTERVAL_S = 1.1
@@ -135,6 +174,327 @@ class HostGate:
 GATE = HostGate(per_host=HOST_INTERVAL_S)
 
 
+# --------------------------------------------------------------------------- robots + refusals
+#: The per-host access record every polite fetcher shares: robots.txt read per origin and the sites
+#: that refused. Box-written state, NOT under `intelligence/` (the compiler reads every JSON there
+#: as a donation). The world crawler wrote it first and keeps the same file, so a site that
+#: refused the crawler is held for every miner too.
+ACCESS_STATE = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data"
+                / "world_crawler_access.json")
+#: robots.txt is re-read at most this often per scheme://host[:port].
+ROBOTS_TTL_S = 24 * 3600
+#: A 429 is a request to come back later: the site is rechecked after this. 401 and 403 wait for
+#: a person (a row in the access state that someone deletes), never for a clock.
+RECHECK_429_S = 24 * 3600
+#: Redirect hops followed per fetch; every hop passes the hold and robots checks again.
+MAX_REDIRECTS = 5
+MAX_ROBOTS_BYTES = 512_000
+ROBOTS_TIMEOUT_S = 12.0
+REDIRECT_STATUS: frozenset[int] = frozenset({301, 302, 303, 307, 308})
+#: The verdict each refusal status is recorded as. A hard stop: never retried, never routed around.
+BLOCK_STATUS: dict[int, str] = {401: "NEEDS_KEY", 403: "METHOD_BLOCKED", 429: "METHOD_BLOCKED"}
+
+#: Second-level labels under which a registrable domain takes three labels (co.uk, com.cn, ...).
+#: Approximate on purpose: it errs towards a WIDER hold, which is the safe direction.
+_SLD = frozenset({"co", "com", "net", "org", "gov", "ac", "edu", "or", "ne", "go"})
+
+
+def ascii_url(url: str) -> str:
+    """Percent-encode a URL's non-ASCII parts (IDNA for the host); urllib raises without this."""
+    try:
+        url.encode("ascii")
+    except UnicodeEncodeError:
+        parts = urlsplit(url)
+        netloc = parts.netloc
+        with contextlib.suppress(UnicodeError):
+            netloc = parts.netloc.encode("idna").decode("ascii")
+        return urlunsplit((parts.scheme, netloc, quote(parts.path, safe="/%"),
+                           quote(parts.query, safe="=&%?"), quote(parts.fragment, safe="%")))
+    return url
+
+
+def origin_of(url: str) -> str:
+    """scheme://host[:port], lower-cased. robots.txt belongs to exactly this, never to a parent."""
+    parts = urlsplit(url)
+    return f"{parts.scheme.lower()}://{parts.netloc.lower()}"
+
+
+def hostname_of(url: str) -> str:
+    return (urlsplit(url).hostname or "").lower()
+
+
+def site_of(host: str) -> str:
+    """The registrable site a host belongs to. A refusal holds the whole site, so a 403 on
+    www.example.org is never answered by asking old.example.org or example.org instead."""
+    labels = [x for x in host.lower().strip(".").split(".") if x]
+    if len(labels) >= 3 and len(labels[-1]) == 2 and labels[-2] in _SLD:
+        return ".".join(labels[-3:])
+    return ".".join(labels[-2:])
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirects surface as HTTPError, so the fetcher checks each target BEFORE following it."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        return None
+
+
+_NR_OPENER: Any = None
+
+
+def open_no_redirect(req: urllib.request.Request, timeout: float,
+                     context: ssl.SSLContext | None = None) -> Any:
+    """The module's own network call: certifi-backed TLS, redirects NOT followed."""
+    global _NR_OPENER
+    if _NR_OPENER is None:
+        _NR_OPENER = urllib.request.build_opener(
+            NoRedirect, urllib.request.HTTPSHandler(context=ssl_context()))
+    return _NR_OPENER.open(req, timeout=timeout)
+
+
+Send = Callable[[urllib.request.Request, float], Any]
+
+
+class HostAccess:
+    """robots.txt per scheme://host[:port] and the refusals each site has given.
+
+    THE RULES (auditor ruling 2026-10-14):
+      * robots.txt decides every fetch, read for the exact origin -- a subdomain or a port has
+        its own file -- and matched against `DESK_UA_PRODUCT`. Cached `ROBOTS_TTL_S`.
+      * robots.txt unreadable (network error, 5xx) means NO fetch to that origin this run;
+        a 404/410 (any other 4xx) on robots.txt means allow all, per the standard.
+      * 401 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), on a page or on robots.txt, are a hard stop
+        for the whole site: nothing else is sent to it, by any route. A 429 is rechecked after
+        RECHECK_429_S; a 401/403 waits for a person to delete its row.
+    Thread-safe: miners call `permits` from a pool.
+    """
+
+    user_agent = DESK_UA
+    product = DESK_UA_PRODUCT
+
+    def __init__(self, path: Path | None = None, now: float | None = None) -> None:
+        self.path = path
+        self._now = now
+        self.robots: dict[str, dict[str, Any]] = {}
+        self.blocked: dict[str, dict[str, Any]] = {}
+        self._parsers: dict[str, Any] = {}
+        self._unreadable: dict[str, str] = {}
+        self.robots_fetches = 0
+        self.disallowed = 0
+        self._lock = threading.RLock()
+        self._origin_locks: dict[str, threading.Lock] = {}
+
+    def now(self) -> float:
+        return self._now if self._now is not None else time.time()
+
+    @classmethod
+    def load(cls, path: Path | None = None) -> HostAccess:
+        acc = cls(path or ACCESS_STATE)
+        acc._merge(acc._read_disk())
+        return acc
+
+    def _read_disk(self) -> dict[str, Any]:
+        if self.path is None:
+            return {}
+        try:
+            data = json.loads(self.path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def _merge(self, data: dict[str, Any]) -> None:
+        """Union another writer's rows into this one: holds this process lacks are adopted, and
+        a robots row is kept if it is newer. Another process's holds are never dropped."""
+        now = self.now()
+        for k, v in (data.get("blocked") or {}).items():
+            if not isinstance(v, dict):
+                continue
+            until = v.get("recheck_after_ts")
+            if until is not None and now >= float(until):
+                continue                                  # a lapsed 429 hold is not revived
+            self.blocked.setdefault(str(k), v)
+        for k, v in (data.get("robots") or {}).items():
+            if not isinstance(v, dict):
+                continue
+            mine = self.robots.get(str(k))
+            if mine is None or float(v.get("fetched_ts") or 0) > float(mine.get("fetched_ts") or 0):
+                self.robots[str(k)] = v
+                self._parsers.pop(str(k), None)
+
+    def save(self) -> None:
+        if self.path is None:
+            return
+        with self._lock:
+            self._merge(self._read_disk())
+            now = self.now()
+            robots = {k: v for k, v in self.robots.items()
+                      if now - float(v.get("fetched_ts") or 0) < ROBOTS_TTL_S}
+            payload = {
+                "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                "user_agent": self.user_agent,
+                "note": ("per-host robots.txt cache (24h) and refusal holds, shared by every "
+                         "polite fetcher. A METHOD_BLOCKED row from 429 lapses at "
+                         "recheck_after_ts; 401/403 rows are cleared by a person deleting them."),
+                "blocked": dict(self.blocked),
+                "robots": robots,
+            }
+        with contextlib.suppress(OSError):
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.path.with_name(f"{self.path.name}.{threading.get_ident()}.tmp")
+            tmp.write_text(json.dumps(payload, indent=1, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(self.path)
+
+    # ---- the network seam
+    def send(self, req: urllib.request.Request, timeout: float) -> Any:
+        """Open one request, redirects NOT followed. Subclasses (the crawler) override this."""
+        return open_no_redirect(req, timeout)
+
+    def request(self, url: str, accept: str) -> urllib.request.Request:
+        return urllib.request.Request(ascii_url(url), headers={
+            "User-Agent": self.user_agent, "Accept": accept, "Accept-Language": "*"})
+
+    def robots_timeout(self) -> float:
+        return ROBOTS_TIMEOUT_S
+
+    # ---- holds
+    def hold(self, url: str) -> str:
+        """The verdict holding this URL's site, or ''. A lapsed 429 hold is released here."""
+        site = site_of(hostname_of(url))
+        with self._lock:
+            row = self.blocked.get(site)
+            if not row:
+                return ""
+            until = row.get("recheck_after_ts")
+            if until is not None and self.now() >= float(until):
+                self.blocked.pop(site, None)
+                return ""
+            return str(row.get("verdict") or "METHOD_BLOCKED")
+
+    def block(self, url: str, status: int, verdict: str = "") -> str:
+        verdict = verdict or BLOCK_STATUS.get(status, "METHOD_BLOCKED")
+        host = hostname_of(url)
+        with self._lock:
+            self.blocked[site_of(host)] = {
+                "verdict": verdict, "status": status, "host": host, "url": url[:300],
+                "since_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                "since_ts": self.now(),
+                "recheck_after_ts": self.now() + RECHECK_429_S if status == 429 else None,
+                "waits_for": "clock (24h)" if status == 429 else "a person",
+            }
+        self.save()
+        return verdict
+
+    # ---- robots
+    def _read_robots(self, origin: str, send: Send) -> dict[str, Any]:
+        """Fetch origin/robots.txt. Returns a row: state allow_all | rules | unreadable | blocked.
+        Its redirects are followed (each hop held-checked) up to the cap."""
+        url = origin + "/robots.txt"
+        for _ in range(MAX_REDIRECTS + 1):
+            if self.hold(url):
+                return {"state": "blocked"}
+            with self._lock:
+                self.robots_fetches += 1
+            try:
+                with send(self.request(url, "text/plain,*/*;q=0.5"), self.robots_timeout()) as fh:
+                    body = fh.read(MAX_ROBOTS_BYTES)
+                return {"state": "rules", "text": body.decode("utf-8", errors="replace")}
+            except urllib.error.HTTPError as exc:
+                code = int(exc.code)
+                loc = exc.headers.get("Location") if exc.headers else None
+                with contextlib.suppress(Exception):
+                    exc.close()
+                if code in BLOCK_STATUS:
+                    self.block(url, code)
+                    return {"state": "blocked", "status": code}
+                if code in REDIRECT_STATUS:
+                    if not loc:
+                        return {"state": "unreadable", "why": f"robots HTTP {code} no Location"}
+                    url = urljoin(url, str(loc))
+                    continue
+                if 400 <= code < 500:
+                    return {"state": "allow_all", "status": code}
+                return {"state": "unreadable", "why": f"robots HTTP {code}"}
+            except Exception as exc:
+                return {"state": "unreadable", "why": f"robots {type(exc).__name__}"}
+        return {"state": "unreadable", "why": "robots redirect loop"}
+
+    def _parser(self, origin: str, send: Send) -> Any:
+        import urllib.robotparser as _rp
+        with self._lock:
+            olock = self._origin_locks.setdefault(origin, threading.Lock())
+        with olock:                       # one robots read per origin, however many threads ask
+            with self._lock:
+                if origin in self._parsers:
+                    return self._parsers[origin]
+                if origin in self._unreadable:
+                    return None
+                row = self.robots.get(origin)
+            fresh = (row is not None
+                     and self.now() - float(row.get("fetched_ts") or 0) < ROBOTS_TTL_S)
+            if not fresh:
+                got = self._read_robots(origin, send)
+                if got["state"] in ("unreadable", "blocked"):
+                    # Not cached across runs: unreadable this run is retried next run.
+                    with self._lock:
+                        self._unreadable[origin] = str(got.get("why") or got["state"])
+                    return None
+                row = {"fetched_ts": self.now(), "state": got["state"],
+                       "text": got.get("text", "")[:MAX_ROBOTS_BYTES]}
+                with self._lock:
+                    self.robots[origin] = row
+                self.save()
+            assert row is not None
+            parser = _rp.RobotFileParser()
+            # allow_all (a 4xx robots.txt) parses as an empty file, which permits everything.
+            text = "" if row.get("state") == "allow_all" else str(row.get("text") or "")
+            parser.parse(text.splitlines())
+            parser.modified()
+            with self._lock:
+                self._parsers[origin] = parser
+            return parser
+
+    def permits(self, url: str, send: Send | None = None) -> tuple[bool, str]:
+        """(may fetch, reason if not). Holds first, then the origin's own robots.txt. `send` is
+        the opener robots.txt is read through (default: this object's own seam)."""
+        held = self.hold(url)
+        if held:
+            return False, held
+        if urlsplit(url).scheme.lower() not in ("http", "https"):
+            return False, "SCHEME_REFUSED"
+        origin = origin_of(url)
+        parser = self._parser(origin, send or self.send)
+        if parser is None:
+            held = self.hold(url)
+            return False, held or f"ROBOTS_UNREADABLE {self._unreadable.get(origin, '')}".strip()
+        if not parser.can_fetch(self.product, ascii_url(url)):
+            with self._lock:
+                self.disallowed += 1
+            return False, "ROBOTS_DISALLOW"
+        return True, ""
+
+    def summary(self) -> dict[str, Any]:
+        with self._lock:
+            return {"user_agent": self.user_agent, "robots_fetches": self.robots_fetches,
+                    "robots_disallowed": self.disallowed,
+                    "robots_unreadable": dict(self._unreadable),
+                    "holds": {k: {kk: v.get(kk) for kk in ("verdict", "status", "host",
+                                                            "waits_for")}
+                              for k, v in self.blocked.items()}}
+
+
+_ACCESS: HostAccess | None = None
+_ACCESS_LOCK = threading.Lock()
+
+
+def default_access() -> HostAccess:
+    """The process-wide access record, loaded once from ACCESS_STATE."""
+    global _ACCESS
+    with _ACCESS_LOCK:
+        if _ACCESS is None:
+            _ACCESS = HostAccess.load(ACCESS_STATE)
+        return _ACCESS
+
+
 # --------------------------------------------------------------------------- stats
 @dataclass
 class LegStats:
@@ -143,6 +503,7 @@ class LegStats:
     http_errors: int = 0
     transport_errors: int = 0
     retries: int = 0
+    refused: int = 0
     bytes: int = 0
     seconds: float = 0.0
     by_error: dict[str, int] = field(default_factory=dict)
@@ -150,6 +511,7 @@ class LegStats:
     def as_row(self) -> dict[str, Any]:
         return {"fetches": self.fetches, "ok": self.ok, "http_errors": self.http_errors,
                 "transport_errors": self.transport_errors, "retries": self.retries,
+                "refused": self.refused,
                 "bytes": self.bytes, "fetch_seconds": round(self.seconds, 2),
                 "by_error": dict(sorted(self.by_error.items(), key=lambda kv: -kv[1])[:12])}
 
@@ -228,6 +590,9 @@ class Response:
     error: str = ""
     elapsed_s: float = 0.0
     attempts: int = 0
+    #: NEEDS_KEY / METHOD_BLOCKED / ROBOTS_DISALLOW / ROBOTS_UNREADABLE when the fetch was
+    #: refused or held; '' otherwise. A refusal is a recorded answer, never routed around.
+    verdict: str = ""
 
     @property
     def ok(self) -> bool:
@@ -245,23 +610,42 @@ def _retry_after(headers: Any) -> float | None:
 def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 20.0,
         retries: int = 2, backoff_s: float = 1.5, deadline: float | None = None,
         max_bytes: int = MAX_BYTES, leg: str = "default", gate: HostGate | None = GATE,
-        opener: Callable[..., Any] | None = None,
+        opener: Callable[..., Any] | None = None, access: HostAccess | None = None,
         sleep: Callable[[float], None] = time.sleep) -> Response:
     """GET `url` once, politely, with bounded retries. NEVER RAISES: the Response carries the
     status or the error, so a caller can record what happened rather than a stack trace.
 
+    Before every request -- `url` and each redirect hop -- `access.permits` checks the site's
+    holds and the hop's own origin robots.txt (read through the same `opener`). A refusal
+    returns with `verdict` set and nothing sent. 401/403/429 record a site hold and stop: no
+    retry, no other route. The User-Agent sent is always honest (`honest_headers`).
+
     `timeout` is per attempt; `deadline` (a `time.monotonic()` value) caps the whole call,
     retries and backoff included, so no fetch can outlive the budget of the leg that made it.
     """
-    hdr = {**BROWSER_HEADERS, **(headers or {})}
-    host = urlparse(url).netloc.lower()
-    open_ = opener or urllib.request.urlopen
+    hdr = honest_headers(headers)
+    acc = access if access is not None else default_access()
+    open_ = opener or open_no_redirect
+
+    def _send(req: urllib.request.Request, t: float) -> Any:
+        return open_(req, timeout=t, context=ssl_context())
+
     resp = Response(url=url)
     t0 = time.monotonic()
-    for attempt in range(max(0, retries) + 1):
+    cur = url
+    hops = 0
+    attempt = 0
+    while True:
         if deadline is not None and time.monotonic() >= deadline:
             resp.error = resp.error or "deadline"
             break
+        allowed, why = acc.permits(cur, send=_send)
+        if not allowed:
+            resp.status, resp.error = None, why
+            resp.verdict = why.split(" ")[0].split(":")[0]
+            _stat(leg, refused=1, error=resp.verdict)
+            break
+        host = hostname_of(cur)
         if gate is not None and host:
             gate.wait(host, sleep)
         per_try = timeout
@@ -271,30 +655,58 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         _stat(leg, fetches=1, retries=1 if attempt else 0)
         wait: float | None = None
         try:
-            req = urllib.request.Request(url, headers=hdr)
+            req = urllib.request.Request(ascii_url(cur), headers=hdr)
             with open_(req, timeout=per_try, context=ssl_context()) as fh:
+                final = str(getattr(fh, "url", "") or cur)
+                if final != cur and final != ascii_url(cur):
+                    # An opener that followed a redirect itself: the target was not checked
+                    # before it was read, so check it now and discard the body if refused.
+                    ok2, why2 = acc.permits(final, send=_send)
+                    if not ok2:
+                        resp.status, resp.error = None, why2
+                        resp.verdict = why2.split(" ")[0].split(":")[0]
+                        _stat(leg, refused=1, error=resp.verdict)
+                        break
                 raw = fh.read(max_bytes)
                 h = getattr(fh, "headers", None)
                 ctype = str(h.get("Content-Type") or "") if h is not None else ""
                 cenc = str(h.get("Content-Encoding") or "") if h is not None else ""
                 resp.status = int(getattr(fh, "status", None) or getattr(fh, "code", 200) or 200)
-                resp.final_url = str(getattr(fh, "url", "") or url)
+                resp.final_url = final
                 resp.content_type = ctype
                 resp.text = decode_body(raw, ctype, cenc)
                 resp.error = ""
                 _stat(leg, ok=1, bytes=len(raw))
                 break
         except urllib.error.HTTPError as exc:
-            resp.status = int(exc.code)
-            resp.error = f"HTTP {exc.code}"
-            _stat(leg, http_errors=1, error=f"HTTP {exc.code}")
-            # HTTPError also owns the response stream. Release it on both a terminal
-            # rejection and a retry, rather than leaving the socket to garbage collection.
+            code = int(exc.code)
+            # HTTPError also owns the response stream. Release it on every path rather than
+            # leaving the socket to garbage collection.
             try:
                 wait = _retry_after(getattr(exc, "headers", None))
+                loc = exc.headers.get("Location") if exc.headers is not None else None
             finally:
                 exc.close()
-            if exc.code not in RETRY_STATUS:
+            if code in REDIRECT_STATUS:
+                hops += 1
+                if not loc:
+                    resp.status, resp.error = code, f"HTTP {code} without Location"
+                    _stat(leg, http_errors=1, error=f"HTTP {code}")
+                    break
+                if hops > MAX_REDIRECTS:
+                    resp.status, resp.error = code, "too many redirects"
+                    _stat(leg, http_errors=1, error="too many redirects")
+                    break
+                cur = urljoin(cur, str(loc))       # the next pass checks THIS hop's robots
+                continue
+            resp.status = code
+            _stat(leg, http_errors=1, error=f"HTTP {code}")
+            if code in BLOCK_STATUS:
+                resp.verdict = acc.block(cur, code)
+                resp.error = f"{resp.verdict}: HTTP {code}"
+                break                              # hard stop: no retry, no other route
+            resp.error = f"HTTP {code}"
+            if code not in RETRY_STATUS:
                 break
             if gate is not None and host:
                 gate.penalise(host, wait or backoff_s * (2 ** attempt))
@@ -317,6 +729,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             pause = min(pause, max(0.0, deadline - time.monotonic()))
         if pause > 0:
             sleep(pause)
+        attempt += 1
     resp.elapsed_s = time.monotonic() - t0
     _stat(leg, seconds=resp.elapsed_s)
     return resp

@@ -29,8 +29,11 @@ the RESOLUTION CHAIN `mine_source` walks before it gives up on a page:
 * `error:HTTPError` 404 (share4you, minfx_jp): the listing MOVED. `resolve_listing` walks the
   source's alternates and the site root's own links for a rating/leader/strategy page and
   REMEMBERS the one that yielded, so the next run starts there.
-* `error:HTTPError` 403 (hfm_pamm, followme_cn): alternates on sibling hosts, a Referer from the
-  site root and a JSON Accept for API routes; a 429/5xx is retried with backoff.
+* `error:HTTPError` 403 (hfm_pamm, followme_cn): a REFUSAL, not a moved page. 401/403/429 are a
+  hard stop for the whole site (auditor ruling 2026-10-14): no sibling host, no alternate, no
+  site-root walk -- the verdict (NEEDS_KEY / METHOD_BLOCKED) is recorded and the source rests
+  until a person clears it. robots.txt decides every fetch (`polite_fetch.HostAccess`). A 5xx
+  is retried with backoff.
 * `error:SSLError` (readitrades_africa): certifi-backed trust (`polite_fetch.ssl_context`), then
   the bare-host variant. Verification is never turned off.
 
@@ -69,7 +72,7 @@ COVERAGE = INTEL / "coverage_registry.json"
 RUNS = BASE / "data" / "alt_fetch_runs.jsonl"
 YIELD_OUT = BASE / "reports" / "ALT_DATA_YIELD.json"
 LEG = "regional_survivor_hunters"
-HEADERS = {"User-Agent": pf.BROWSER_UA,
+HEADERS = {"User-Agent": pf.DESK_UA,
            "Accept-Language": "en-US,en;q=0.8,ru;q=0.6,zh;q=0.5,ja;q=0.5,ar;q=0.4,es;q=0.4"}
 NUM = r"[-+]?\d[\d\s,]*\.?\d*"
 #: Sources worked at once. Politeness is per HOST (`polite_fetch.GATE`), so this buys coverage
@@ -98,9 +101,9 @@ class FetchError(Exception):
     """A fetch that returned no page. `status` is the HTTP code when there was one;
     `response.status_code` mirrors it for the `diagnose_page` call sites."""
 
-    def __init__(self, url: str, status: int | None, error: str) -> None:
+    def __init__(self, url: str, status: int | None, error: str, verdict: str = "") -> None:
         super().__init__(f"{error} for url: {url}")
-        self.url, self.status, self.error = url, status, error
+        self.url, self.status, self.error, self.verdict = url, status, error, verdict
         self.response = type("R", (), {"status_code": status})()
 
 
@@ -109,8 +112,9 @@ _DEADLINE: dict[str, float | None] = {"at": None}
 
 def fetch(url: str, timeout: float = REQUEST_TIMEOUT_S, *, referer: str = "",
           accept_json: bool = False) -> str:
-    """One polite GET: per-host spacing, bounded retries on 429/5xx/transport, certifi-backed
-    TLS, charset-aware decoding. Raises FetchError on failure."""
+    """One polite GET: the desk's honest UA, robots.txt per origin, per-host spacing, bounded
+    retries on 5xx/transport, certifi-backed TLS, charset-aware decoding. Raises FetchError on
+    failure; a refusal (401/403/429, robots) carries its `verdict`."""
     hdr = dict(HEADERS)
     if referer:
         hdr["Referer"] = referer
@@ -119,7 +123,7 @@ def fetch(url: str, timeout: float = REQUEST_TIMEOUT_S, *, referer: str = "",
         hdr["X-Requested-With"] = "XMLHttpRequest"
     r = pf.get(url, headers=hdr, timeout=timeout, retries=2, leg=LEG, deadline=_DEADLINE["at"])
     if not r.ok:
-        raise FetchError(url, r.status, r.error or f"HTTP {r.status}")
+        raise FetchError(url, r.status, r.error or f"HTTP {r.status}", r.verdict)
     return r.text
 
 
@@ -667,7 +671,8 @@ SOURCES = {
                            "https://www.ready-trade.com", 1),
 }
 
-#: ALTERNATES a source is resolved through when its primary listing 404s, 403s or fails TLS.
+#: ALTERNATES a source is resolved through when its primary listing 404s or fails TLS. Never after
+#: a refusal: a 401/403/429 or a robots.txt Disallow (`HARD_STOP`) ends the source's run.
 #: Sibling hosts and moved paths of the SAME venue only -- never a new venue (new grounds are
 #: registered, not hard-coded here). Tried in order after the primary; the one that yields is
 #: remembered in the state file and tried FIRST next run. Unverified from the build sandbox
@@ -689,6 +694,8 @@ ALTERNATES: dict[str, tuple[str, ...]] = {
     "duplitrade": ("https://duplitrade.com/strategy-providers/",),
     "mylivefx_br": ("https://mylivefx.com/ranking/", "https://mylivefx.com/traders/"),
 }
+#: Verdicts that end a source's run: no alternate, no site-root walk, nothing else sent.
+HARD_STOP = frozenset({"NEEDS_KEY", "METHOD_BLOCKED", "ROBOTS_DISALLOW", "ROBOTS_UNREADABLE"})
 _LISTING_LINK = re.compile(
     r'href="([^"#]{2,200})"[^>]*>\s*([^<]{0,80}(?:rank|rating|leader|trader|strateg|master|'
     r'provider|pamm|copy|signal|systre|ランキング|ストラテジー|排行|榜|рейтинг|трейдер)[^<]{0,40})<',
@@ -748,6 +755,12 @@ def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
         except FetchError as exc:
             tried.append({"url": u, "status": exc.status, "error": exc.error[:120]})
             last_status, last_err = exc.status, exc.error
+            if exc.verdict in HARD_STOP:
+                return {"rows": [], "url": u, "via": "", "tried": tried,
+                        "state": f"refused:{exc.verdict}", "error": exc.error,
+                        "diagnosis": exc.verdict,
+                        "fix_hint": ("a refusal is a recorded answer, never routed around: no "
+                                     "alternate host or path was tried")}
             continue
         rows_, how = extract_rows(name, html, u, region, lang, grade, link_pat, base_url)
         tried.append({"url": u, "status": 200, "rows": len(rows_), "via": how})
@@ -769,6 +782,8 @@ def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
                 html = fetch(u, referer=root)
             except FetchError as exc:
                 tried.append({"url": u, "status": exc.status, "error": exc.error[:120]})
+                if exc.verdict in HARD_STOP:
+                    break
                 continue
             rows_, how = extract_rows(name, html, u, region, lang, grade, link_pat, base_url)
             tried.append({"url": u, "status": 200, "rows": len(rows_), "via": how,

@@ -134,8 +134,8 @@ LEG = "deep_forest_miner"
 LOCKS = _DESK / "data" / ".job_locks"
 #: Per-vector attempts / successes / rows / last error, beside the frontier file.
 VECTOR_STATS_NAME = "deep_forest_vector_stats.json"
-_UA = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
+#: The desk's honest UA (auditor ruling 2026-10-14: no browser impersonation).
+_UA = {"User-Agent": pf.DESK_UA,
        "Accept": ("text/html,application/xhtml+xml,application/json,application/xml;q=0.9,"
                   "*/*;q=0.8")}
 GRADE = {"competition": "COMPETITION_RECORD", "interview": "INTERVIEW",
@@ -266,16 +266,28 @@ def accept_language(lang: str) -> str:
 
 
 # ------------------------------------------------------------------------------- fetching
+class Refused(OSError):
+    """A fetch the site or its robots.txt refused (NEEDS_KEY / METHOD_BLOCKED / ROBOTS_*). A
+    recorded answer: the caller never renders, mirrors or otherwise routes around it."""
+
+    def __init__(self, url: str, verdict: str, error: str = "") -> None:
+        super().__init__(f"{verdict}: {error or verdict} for url: {url}")
+        self.url, self.verdict = url, verdict
+
+
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
-    """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
-    charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
-    on a transport one, exactly the two shapes `_Run.page` and the route helpers expect."""
+    """One polite GET (honest UA, robots.txt per origin, per-host spacing, bounded retry on
+    5xx/transport, certifi-backed TLS, charset-aware decoding). Raises `Refused` on a refusal
+    (401/403/429, robots), `urllib.error.HTTPError` on another HTTP failure and `OSError` on a
+    transport one -- the shapes `_Run.page` and the route helpers expect."""
     hdr = {**_UA, "Accept-Language": accept_language(lang)}
     if referer:
         hdr["Referer"] = referer
     r = pf.get(url, headers=hdr, timeout=timeout, retries=1, leg=LEG, max_bytes=2_000_000)
     if r.ok:
         return r.text
+    if r.verdict:
+        raise Refused(url, r.verdict, r.error)
     if r.status is not None and r.status >= 400:
         raise urllib.error.HTTPError(url, r.status, r.error or f"HTTP {r.status}",
                                      None, None)  # type: ignore[arg-type]
@@ -743,6 +755,8 @@ class _Run:
         self.new: list[dict[str, Any]] = []
         self.datasets: list[dict[str, Any]] = []
         self.status: list[dict[str, Any]] = []
+        #: URLs a site or its robots.txt refused this run: never rendered or mirrored around.
+        self.refused: set[str] = set()
         self.frontier: list[tuple[str, str, str]] = []
         self.counts = {"queries": 0, "pages": 0, "transcripts": 0, "rendered": 0,
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
@@ -820,6 +834,11 @@ class _Run:
             self._note_net(True)
             self.counts["pages"] += 1
             return body
+        except Refused as exc:
+            self._note_net(True)
+            self.refused.add(url)
+            self.status.append({"url": url, "refused": exc.verdict})
+            return ""
         except urllib.error.HTTPError as exc:
             self._note_net(True)
             self.status.append({"url": url, "http": exc.code})
@@ -950,6 +969,8 @@ class _Run:
                 break
             page = self.page(u)
             text = html_text(page)
+            if u in self.refused:
+                continue                 # a refusal is never rendered around
             if (len(text) < MIN_PAGE_TEXT or render_first) and self._net_ok():
                 rp = self.rendered(u)
                 if rp:
@@ -1167,7 +1188,11 @@ class _Run:
             self.counts["queries"] += 1
             rows: list[dict[str, str]] = []
             for m in ([live] if live else []) + [x for x in mirrors if x != live]:
-                page = self.page(f"https://{m}/search?f=tweets&q={quote(str(q))}")
+                murl = f"https://{m}/search?f=tweets&q={quote(str(q))}"
+                page = self.page(murl)
+                if murl in self.refused:
+                    errors.append(f"{m}: refused -- recorded, no other mirror tried")
+                    break
                 rows = parse_nitter(page)
                 if rows:
                     live = m

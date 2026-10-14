@@ -45,7 +45,7 @@ from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote, urljoin, urlparse, urlsplit, urlunsplit
+from urllib.parse import urljoin, urlparse
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE.parent.parent))
@@ -178,24 +178,9 @@ class _Extract(HTMLParser):
             self.links.append((self._href, chunk[:120]))
 
 
-def _ascii_url(url: str) -> str:
-    """Percent-encode a URL's non-ASCII parts. urllib raises UnicodeEncodeError without this.
-
-    MEASURED on the first live crawl: `note.com/hashtag/システムトレード` -- a Japanese hub, exactly
-    the ground this crawler exists to reach -- died with UnicodeEncodeError and was charged to
-    that source as a failure. A crawler that cannot fetch a non-ASCII URL is not multilingual,
-    and the failure is indistinguishable from a dead host.
-    """
-    try:
-        url.encode("ascii")
-    except UnicodeEncodeError:
-        parts = urlsplit(url)
-        netloc = parts.netloc
-        with contextlib.suppress(UnicodeError):
-            netloc = parts.netloc.encode("idna").decode("ascii")
-        return urlunsplit((parts.scheme, netloc, quote(parts.path, safe="/%"),
-                           quote(parts.query, safe="=&%?"), quote(parts.fragment, safe="%")))
-    return url
+#: Percent-encode a URL's non-ASCII parts. MEASURED on the first live crawl: `note.com/hashtag/
+#: システムトレード` died with UnicodeEncodeError. One implementation, in `libs.data.polite_fetch`.
+_ascii_url = _pf.ascii_url
 
 
 # ------------------------------------------------------------------- polite access, per host
@@ -204,48 +189,17 @@ def _ascii_url(url: str) -> str:
 #: refused it. Box-written state beside the frontier's directory, NOT under `intelligence/`
 #: (the compiler reads every JSON there as a donation).
 ACCESS_STATE = BASE / "data" / "world_crawler_access.json"
-#: robots.txt is re-read at most this often per scheme://host[:port].
-ROBOTS_TTL_S = 24 * 3600
-#: A 429 is a request to come back later: the host is rechecked after this. 401 and 403 wait for
-#: a person (a row in ACCESS_STATE that someone deletes), never for a clock.
-RECHECK_429_S = 24 * 3600
-#: Redirect hops followed per fetch; every hop passes the hold and robots checks again.
-MAX_REDIRECTS = 5
-MAX_ROBOTS_BYTES = 512_000
-#: The verdict each refusal status is recorded as.
-BLOCK_STATUS = {401: "NEEDS_KEY", 403: "METHOD_BLOCKED", 429: "METHOD_BLOCKED"}
-
-#: Second-level labels under which a registrable domain takes three labels (co.uk, com.cn, ...).
-#: Approximate on purpose: it errs towards a WIDER hold, which is the safe direction.
-_SLD = frozenset({"co", "com", "net", "org", "gov", "ac", "edu", "or", "ne", "go"})
-
-
-def _origin(url: str) -> str:
-    """scheme://host[:port], lower-cased. robots.txt belongs to exactly this, never to a parent."""
-    parts = urlsplit(url)
-    return f"{parts.scheme.lower()}://{parts.netloc.lower()}"
-
-
-def _hostname(url: str) -> str:
-    return (urlsplit(url).hostname or "").lower()
-
-
-def site_of(host: str) -> str:
-    """The registrable site a host belongs to. A refusal holds the whole site for the run, so a
-    403 on www.example.org is never answered by asking old.example.org or example.org instead."""
-    labels = [x for x in host.lower().strip(".").split(".") if x]
-    if len(labels) >= 3 and len(labels[-1]) == 2 and labels[-2] in _SLD:
-        return ".".join(labels[-3:])
-    return ".".join(labels[-2:])
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Redirects are surfaced as HTTPError so `fetch` can check the target before following."""
-
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
-        return None
-
-
+#: The robots/refusal rules and their constants live in ONE place, `libs.data.polite_fetch`
+#: (`HostAccess`); every polite fetcher shares them and the crawler only names its own seam.
+ROBOTS_TTL_S = _pf.ROBOTS_TTL_S
+RECHECK_429_S = _pf.RECHECK_429_S
+MAX_REDIRECTS = _pf.MAX_REDIRECTS
+MAX_ROBOTS_BYTES = _pf.MAX_ROBOTS_BYTES
+BLOCK_STATUS = _pf.BLOCK_STATUS
+_origin = _pf.origin_of
+_hostname = _pf.hostname_of
+site_of = _pf.site_of
+_NoRedirect = _pf.NoRedirect
 _OPENER = urllib.request.build_opener(_NoRedirect)
 
 
@@ -265,170 +219,24 @@ def _request(url: str, accept: str) -> urllib.request.Request:
     })
 
 
-class HostAccess:
-    """robots.txt per scheme://host[:port] and the refusals each site has given, for one run.
-
-    THE RULES (auditor ruling 2026-10-14, superseding the 2026-09-23 "robots is a label" reading
-    for this crawler's FETCHES; the routing label on rows is unchanged):
-      * robots.txt decides every fetch, read for the exact origin -- a subdomain has its own file.
-      * robots.txt unreadable (network error, 5xx) means NO fetch to that origin this run;
-        a 404/410 on robots.txt means allow all, per the standard.
-      * 401 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), on a page or on robots.txt, are a hard stop
-        for the whole site: nothing else is sent to it this run, by any route. A 429 is rechecked
-        after RECHECK_429_S; a 401/403 waits for a person to delete its row.
-    """
-
-    def __init__(self, path: Path | None = None, now: float | None = None) -> None:
-        self.path = path
-        self._now = now
-        self.robots: dict[str, dict[str, Any]] = {}
-        self.blocked: dict[str, dict[str, Any]] = {}
-        self._parsers: dict[str, Any] = {}
-        self._unreadable: dict[str, str] = {}
-        self.robots_fetches = 0
-        self.disallowed = 0
-
-    def now(self) -> float:
-        return self._now if self._now is not None else time.time()
+class HostAccess(_pf.HostAccess):
+    """The shared `polite_fetch.HostAccess` (robots.txt per origin, 401/403/429 site holds),
+    reading through the crawler's own seam `_open` and keeping its state at ACCESS_STATE."""
 
     @classmethod
     def load(cls, path: Path | None = None) -> HostAccess:
-        acc = cls(path or ACCESS_STATE)
-        try:
-            data = json.loads(acc.path.read_text("utf-8"))  # type: ignore[union-attr]
-        except (OSError, ValueError):
-            return acc
-        if isinstance(data, dict):
-            acc.robots = {str(k): v for k, v in (data.get("robots") or {}).items()
-                          if isinstance(v, dict)}
-            acc.blocked = {str(k): v for k, v in (data.get("blocked") or {}).items()
-                           if isinstance(v, dict)}
+        acc = super().load(path or ACCESS_STATE)
+        assert isinstance(acc, HostAccess)
         return acc
 
-    def save(self) -> None:
-        if self.path is None:
-            return
-        now = self.now()
-        robots = {k: v for k, v in self.robots.items()
-                  if now - float(v.get("fetched_ts") or 0) < ROBOTS_TTL_S}
-        payload = {
-            "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-            "user_agent": UA,
-            "note": ("per-host robots.txt cache (24h) and refusal holds. A METHOD_BLOCKED row "
-                     "from 429 lapses at recheck_after_ts; 401/403 rows are cleared by a person "
-                     "deleting them."),
-            "blocked": self.blocked,
-            "robots": robots,
-        }
-        with contextlib.suppress(OSError):
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = self.path.with_suffix(".tmp")
-            tmp.write_text(json.dumps(payload, indent=1, ensure_ascii=False), encoding="utf-8")
-            tmp.replace(self.path)
+    def send(self, req: urllib.request.Request, timeout: float) -> Any:
+        return _open(req, timeout)
 
-    # ---- holds
-    def hold(self, url: str) -> str:
-        """The verdict holding this URL's site, or ''. A lapsed 429 hold is released here."""
-        site = site_of(_hostname(url))
-        row = self.blocked.get(site)
-        if not row:
-            return ""
-        until = row.get("recheck_after_ts")
-        if until is not None and self.now() >= float(until):
-            self.blocked.pop(site, None)
-            return ""
-        return str(row.get("verdict") or "METHOD_BLOCKED")
+    def request(self, url: str, accept: str) -> urllib.request.Request:
+        return _request(url, accept)
 
-    def block(self, url: str, status: int) -> str:
-        verdict = BLOCK_STATUS[status]
-        host = _hostname(url)
-        self.blocked[site_of(host)] = {
-            "verdict": verdict, "status": status, "host": host, "url": url[:300],
-            "since_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-            "since_ts": self.now(),
-            "recheck_after_ts": self.now() + RECHECK_429_S if status == 429 else None,
-            "waits_for": "clock (24h)" if status == 429 else "a person",
-        }
-        return verdict
-
-    # ---- robots
-    def _read_robots(self, origin: str) -> dict[str, Any]:
-        """Fetch origin/robots.txt. Returns a cache row: state allow_all | rules | unreadable |
-        blocked. Redirects are followed (robots.txt itself is always readable) up to the cap."""
-        url = origin + "/robots.txt"
-        for _ in range(MAX_REDIRECTS + 1):
-            if self.hold(url):
-                return {"state": "blocked"}
-            self.robots_fetches += 1
-            try:
-                with _open(_request(url, "text/plain,*/*;q=0.5"), FETCH_TIMEOUT_S) as resp:
-                    body = resp.read(MAX_ROBOTS_BYTES)
-                return {"state": "rules", "text": body.decode("utf-8", errors="replace")}
-            except urllib.error.HTTPError as exc:
-                code = int(exc.code)
-                if code in BLOCK_STATUS:
-                    self.block(url, code)
-                    return {"state": "blocked", "status": code}
-                if code in (301, 302, 303, 307, 308):
-                    loc = exc.headers.get("Location") if exc.headers else None
-                    if not loc:
-                        return {"state": "unreadable", "why": f"robots HTTP {code} no Location"}
-                    url = urljoin(url, str(loc))
-                    continue
-                if 400 <= code < 500:
-                    return {"state": "allow_all", "status": code}
-                return {"state": "unreadable", "why": f"robots HTTP {code}"}
-            except Exception as exc:
-                return {"state": "unreadable", "why": f"robots {type(exc).__name__}"}
-        return {"state": "unreadable", "why": "robots redirect loop"}
-
-    def _parser(self, origin: str) -> Any:
-        import urllib.robotparser as _rp
-        if origin in self._parsers:
-            return self._parsers[origin]
-        row = self.robots.get(origin)
-        fresh = row is not None and self.now() - float(row.get("fetched_ts") or 0) < ROBOTS_TTL_S
-        if not fresh:
-            if origin in self._unreadable:
-                return None
-            got = self._read_robots(origin)
-            if got["state"] in ("unreadable", "blocked"):
-                # Not cached across runs: unreadable this run is retried next run.
-                self._unreadable[origin] = str(got.get("why") or got["state"])
-                return None
-            row = {"fetched_ts": self.now(), "state": got["state"],
-                   "text": got.get("text", "")[:MAX_ROBOTS_BYTES]}
-            self.robots[origin] = row
-        assert row is not None
-        parser = _rp.RobotFileParser()
-        # allow_all (a 4xx robots.txt) parses as an empty file, which permits everything.
-        text = "" if row.get("state") == "allow_all" else str(row.get("text") or "")
-        parser.parse(text.splitlines())
-        parser.modified()
-        self._parsers[origin] = parser
-        return parser
-
-    def permits(self, url: str) -> tuple[bool, str]:
-        """(may fetch, reason if not). Holds first, then the origin's own robots.txt."""
-        held = self.hold(url)
-        if held:
-            return False, held
-        origin = _origin(url)
-        parser = self._parser(origin)
-        if parser is None:
-            held = self.hold(url)
-            return False, held or f"ROBOTS_UNREADABLE {self._unreadable.get(origin, '')}".strip()
-        if not parser.can_fetch(UA_TOKEN, _ascii_url(url)):
-            self.disallowed += 1
-            return False, "ROBOTS_DISALLOW"
-        return True, ""
-
-    def summary(self) -> dict[str, Any]:
-        return {"user_agent": UA, "robots_fetches": self.robots_fetches,
-                "robots_disallowed": self.disallowed,
-                "robots_unreadable": dict(self._unreadable),
-                "holds": {k: {kk: v.get(kk) for kk in ("verdict", "status", "host", "waits_for")}
-                          for k, v in self.blocked.items()}}
+    def robots_timeout(self) -> float:
+        return float(FETCH_TIMEOUT_S)
 
 
 _DEFAULT_ACCESS: HostAccess | None = None

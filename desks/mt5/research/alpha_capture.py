@@ -568,7 +568,9 @@ def _cookie_opener() -> Callable[..., Any]:
     from http.cookiejar import CookieJar
 
     from libs.data import polite_fetch
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(CookieJar()),
+    # NoRedirect: polite_fetch follows each hop itself, after checking that hop's robots.txt.
+    opener = urllib.request.build_opener(polite_fetch.NoRedirect,
+                                         urllib.request.HTTPCookieProcessor(CookieJar()),
                                          urllib.request.HTTPSHandler(
                                              context=polite_fetch.ssl_context()))
 
