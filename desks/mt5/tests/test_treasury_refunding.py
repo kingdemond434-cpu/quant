@@ -728,3 +728,34 @@ def test_a_voided_pair_is_no_step_either() -> None:
 def test_a_held_zero_needs_nothing_else_moving(text: str, want: int | None) -> None:
     """Audit must-fix on #394 v7: a false 0 against a true +1 is never written."""
     assert tr.guidance(text) == want
+
+
+@pytest.mark.parametrize(
+    ("text", "want"),
+    [
+        (
+            "Treasury anticipates maintaining nominal coupon auction sizes this quarter. "
+            "Treasury anticipates that increases will likely be needed next quarter.",
+            None,
+        ),
+        (
+            "Treasury anticipates maintaining nominal coupon auction sizes; increasing bills "
+            "and the 7-year note is likely.",
+            None,
+        ),
+        (
+            "Treasury anticipates maintaining nominal coupon auction sizes. Treasury expects "
+            "to increase bill issuance.",
+            0,
+        ),
+        (
+            "Treasury anticipates maintaining nominal coupon and FRN auction sizes for at least "
+            "the next several quarters. Treasury does not anticipate needing to increase them.",
+            0,
+        ),
+    ],
+)
+def test_a_held_zero_is_judged_on_the_whole_statement(text: str, want: int | None) -> None:
+    """Audit must-fix on #394 v8: any un-negated move in any sentence, unless its object is
+    solely bills / TIPS / FRN, leaves the held 0 UNMEASURED."""
+    assert tr.guidance(text) == want

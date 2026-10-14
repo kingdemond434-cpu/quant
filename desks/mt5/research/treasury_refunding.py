@@ -342,7 +342,6 @@ def guidance(text: str) -> int | None:
     increase reads as held (audit must-fixes 1 and 2 on #394). Clauses that disagree, or none
     that say anything, are None: UNMEASURED, never a guess."""
     seen = set()
-    live = False
     for sent in _sentences(text):
         if not _ABOUT.search(sent):
             continue
@@ -350,13 +349,25 @@ def guidance(text: str) -> int | None:
             v = _clause_reading(clause)
             if v is not None:
                 seen.add(v)
-            live = live or _live_direction(clause)
     if len(seen) != 1:
         return None
     got = seen.pop()
+    # Statement-level and fail-closed (audit #394 v8): every sentence is scanned, not only the
+    # ones about coupon sizes, because the next quarter's "increases will likely be needed"
+    # often sits in a sentence of its own.
+    live = any(_live_direction(c) for sent in _sentences(text) for c in _CLAUSE.split(sent))
     # A HELD 0 IS ONLY TRUE WHEN NOTHING IN THE STATEMENT MOVES (audit must-fix on #394 v7):
     # "...; increases likely in the 2-year", "..., and will increase them" leave it UNMEASURED.
     return None if got == 0 and live else got
+
+
+_COUPON_OBJECT = re.compile(r"\d+[-\s]year|\bnotes?\b|\bbonds?\b|\bcoupon", re.I)
+
+
+def _only_other_supply(obj: str) -> bool:
+    """The object names bills, TIPS or FRN and NO coupon security: "increasing bills and the
+    7-year note" still moves coupons (audit #394 v8)."""
+    return bool(_OTHER_SUPPLY.search(obj)) and not _COUPON_OBJECT.search(obj)
 
 
 def _live_direction(clause: str) -> bool:
@@ -370,7 +381,7 @@ def _live_direction(clause: str) -> bool:
             if (
                 not _negated(lead, v)
                 and not _NEG_AFTER.search(obj)
-                and not _OTHER_SUPPLY.search(obj[:40])
+                and not _only_other_supply(obj[:40])
             ):
                 return True
     return False
