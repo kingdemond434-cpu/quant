@@ -53,6 +53,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -159,6 +160,26 @@ def placebo_alarm(path: Path | None = None, now: datetime | None = None) -> dict
                     "not a reason to distrust an admission")}
 
 
+#: MISMATCH reasons that disagree on DIRECTION, as replication_civilization writes them: the
+#: Sharpe or summed P&L of the other sign, or a rebuild with no fill at all.
+_SIGN_MARKS: tuple[str, ...] = ("SIGN", "NO fill")
+
+
+def _voids_waiver(reason: str) -> bool:
+    return any(m in reason for m in _SIGN_MARKS)
+
+
+@lru_cache(maxsize=1)
+def _current_metric_version() -> str:
+    """The replication lane's Sharpe metric version, read from the lane itself (never copied);
+    "" when the lane cannot be imported, and then no verdict is refused on its metric."""
+    try:
+        from replication_civilization import SHARPE_METRIC_VERSION
+    except Exception:
+        return ""
+    return str(SHARPE_METRIC_VERSION)
+
+
 @dataclass
 class IntegrityGate:
     """Both facts, read once per pass, applied to every certificate that has no clock yet."""
@@ -194,19 +215,30 @@ class IntegrityGate:
         return (str(row.get("verdict") or "") == UNMEASURED
                 and any(NO_SPEC_MARK in str(w) for w in (row.get("why") or [])))
 
-    def live_refusal(self, certificate: str, *, waived: bool = False) -> str | None:
-        """The capital door: None only when the certificate's latest verdict is REPLICATED, or
-        the principal waived it by name and the lane has not since found a MISMATCH.
+    def live_refusal(self, certificate: str, *, waived: bool = False,
+                     fingerprint: str | None = None) -> str | None:
+        """The capital door: None only when the certificate's latest verdict is REPLICATED for the
+        spec and metric in force, or the principal waived it by name and the lane has not since
+        found a SIGN disagreement.
 
         FAILS CLOSED on everything else -- MISMATCH, UNMEASURED (no-spec families included),
-        never reached, an unreadable book -- because LIVE is where money moves and an absent
-        replication is not a clean one (L1.28a). A waiver EXPIRES by itself: a REPLICATED
-        verdict no longer needs it, and a MISMATCH voids it."""
+        never reached, an unreadable book, a REPLICATED verdict recorded under an older Sharpe
+        metric or (when the caller knows it) a different spec fingerprint -- because LIVE is where
+        money moves and an absent replication is not a clean one (L1.28a).
+
+        A waiver EXPIRES by itself: a REPLICATED verdict no longer needs it, and a MISMATCH whose
+        reasons say the rebuild disagrees in SIGN (or produced no fill, or gives no reason) voids
+        it. A size-only MISMATCH (Sharpe outside half-to-double, fills off by half) does not: the
+        principal waived the rebuild's precision, not the edge's direction (audit 2026-10-14)."""
         row = self.verdicts.get(str(certificate))
         if row is not None and str(row.get("verdict") or "") == MISMATCH:
-            why = "; ".join(str(w) for w in (row.get("why") or []))[:200]
-            return (f"{REFUSED_UNREPLICATED}: {certificate} replication verdict MISMATCH"
-                    f"{f' ({why})' if why else ''}; a MISMATCH voids any waiver")
+            reasons = [str(w) for w in (row.get("why") or [])]
+            why = "; ".join(reasons)[:200]
+            if not (waived and reasons and not any(_voids_waiver(w) for w in reasons)):
+                return (f"{REFUSED_UNREPLICATED}: {certificate} replication verdict MISMATCH"
+                        f"{f' ({why})' if why else ''}"
+                        f"{'; a SIGN mismatch voids the waiver' if waived else ''}")
+            return None
         if waived:
             return None
         if row is None:
@@ -214,6 +246,15 @@ class IntegrityGate:
                     f"({self.replication_source or 'no verdict book'}); LIVE needs REPLICATED")
         verdict = str(row.get("verdict") or UNMEASURED)
         if verdict == REPLICATED:
+            metric = str(row.get("sharpe_metric_version") or "")
+            current = _current_metric_version()
+            if current and metric != current:
+                return (f"{REFUSED_UNREPLICATED}: {certificate} was REPLICATED under Sharpe "
+                        f"metric {metric or 'unstamped'}, not {current}; the lane re-judges "
+                        f"stale-metric verdicts first")
+            if fingerprint is not None and str(row.get("fp") or "") != fingerprint:
+                return (f"{REFUSED_UNREPLICATED}: {certificate} was REPLICATED for a different "
+                        f"spec fingerprint ({STALE_SPEC}); LIVE needs a verdict on this spec")
             return None
         why = "; ".join(str(w) for w in (row.get("why") or []))[:200]
         return (f"{REFUSED_UNREPLICATED}: {certificate} replication verdict {verdict}"

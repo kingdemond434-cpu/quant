@@ -21,12 +21,14 @@ for _p in (str(DESK.parents[1]), str(DESK), str(DESK / "research")):
 
 import admission_integrity as ai  # noqa: E402
 import promoter  # noqa: E402
+import replication_civilization as rc  # noqa: E402
 import shadow_forward as sf  # noqa: E402
 
 from research import canon_publication as cp  # noqa: E402
 
 CERT = "external.EURZAR.carry.p=8339edce23032d21"
 SPEC_BOOK = ["overnight_gap_decay", "session_range_breakout"]
+REP = {"verdict": "REPLICATED", "sharpe_metric_version": rc.SHARPE_METRIC_VERSION}
 
 
 def _book(tmp: Path, rows: dict[str, dict], spec_book: list[str] | None = SPEC_BOOK) -> Path:
@@ -81,7 +83,7 @@ def test_the_released_clock_is_tagged_unmeasured_no_spec(tmp_path: Path) -> None
 
 # ------------------------------------------------------------------ the capital door
 def test_live_needs_replicated_and_fails_closed_otherwise(tmp_path: Path) -> None:
-    gate = _gate(tmp_path, {CERT: {"verdict": "REPLICATED"},
+    gate = _gate(tmp_path, {CERT: dict(REP),
                             "external.U": {"verdict": "UNMEASURED", "why": ["no bars"]},
                             "external.M": {"verdict": "MISMATCH"}})
     assert gate.live_refusal(CERT) is None
@@ -148,7 +150,7 @@ def test_a_reconcile_restore_is_refused_when_unreplicated(roster, monkeypatch) -
 def test_a_reconcile_restore_of_a_replicated_certificate_is_written(roster, tmp_path,
                                                                    monkeypatch) -> None:
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS",
-                        _book(tmp_path, {CERT: {"verdict": "REPLICATED"}}))
+                        _book(tmp_path, {CERT: dict(REP)}))
     rows = [{**_principal_row("STANDBY"), "replication_refusal": "old"}]
     _reconcile(monkeypatch, rows)
     assert rows[0]["status"] == "LIVE" and "replication_refusal" not in rows[0]
@@ -174,7 +176,7 @@ def test_a_string_certificate_lane_is_refused_when_unreplicated(roster, lane) ->
 def test_a_string_certificate_that_replicated_goes_live(roster, tmp_path, monkeypatch) -> None:
     key = "EURZAR.carry.asia@M15"
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS",
-                        _book(tmp_path, {key: {"verdict": "REPLICATED"}}))
+                        _book(tmp_path, {key: dict(REP)}))
     assert roster([], [_lane_row(key, key)])[key]["status"] == "LIVE"
 
 
@@ -208,7 +210,7 @@ def test_the_healer_and_the_promoter_read_the_certificate_the_same_way(tmp_path)
 
 def test_a_replicated_certificate_goes_live(roster, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS",
-                        _book(tmp_path, {CERT: {"verdict": "REPLICATED"}}))
+                        _book(tmp_path, {CERT: dict(REP)}))
     assert roster([], [_principal_row()])["eurzar_carry_asia_p_8339edce23032d21"][
         "status"] == "LIVE"
 
@@ -273,12 +275,12 @@ def test_the_healer_refuses_a_string_certificate_and_does_not_make_it_sticky(hea
     key = "EURZAR.carry.asia@M15"
     row = {**_lane_row(key, key), "status": "STANDBY", "risk_frac": 0.0}
     assert healer([dict(row)], {})[key] == "STANDBY"
-    assert healer([dict(row)], {key: {"verdict": "REPLICATED"}})[key] == "LIVE"
+    assert healer([dict(row)], {key: dict(REP)})[key] == "LIVE"
 
 
 def test_the_healer_still_restores_a_replicated_silent_demotion(healer) -> None:
     got = healer([{**_principal_row("STANDBY"), "risk_frac": 0.0}],
-                 {CERT: {"verdict": "REPLICATED"}})
+                 {CERT: dict(REP)})
     assert got["eurzar_carry_asia_p_8339edce23032d21"] == "LIVE"
 
 
@@ -313,9 +315,10 @@ def test_a_mismatch_voids_the_waiver(roster, tmp_path, monkeypatch) -> None:
     (tmp_path / "waiver.json").write_text(
         json.dumps({"certificates": {CERT: "zuck 2026-10-13 22:21Z book"}}), "utf-8")
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS",
-                        _book(tmp_path, {CERT: {"verdict": "MISMATCH", "why": ["fills"]}}))
+                        _book(tmp_path, {CERT: {"verdict": "MISMATCH",
+                                                "why": ["summed P&L disagrees in SIGN"]}}))
     got = roster([], [_principal_row()])["eurzar_carry_asia_p_8339edce23032d21"]
-    assert got["status"] == "STANDBY" and "voids any waiver" in got["demote_reason"]
+    assert got["status"] == "STANDBY" and "voids the waiver" in got["demote_reason"]
 
 
 def test_the_healer_honours_the_waiver_and_its_mismatch_void(healer, tmp_path) -> None:
@@ -332,3 +335,25 @@ def test_the_scalp_lanes_named_ten_gate_certificate_is_a_lane_marker_too() -> No
     promotes either way, so it must not be held where the bare "forward_clock" row is not."""
     assert promoter.live_certificate({"certificate": "ten_gate:scalp.xau_m5_x"}) == ""
     assert promoter.live_certificate({"certificate": "EURZAR.carry.asia@M15"}) != ""
+
+
+def test_a_waiver_survives_a_size_only_mismatch_and_falls_to_a_sign_one(tmp_path: Path) -> None:
+    size = ["forward fills off by more than half: 4 vs 10"]
+    gate = _gate(tmp_path, {CERT: {"verdict": "MISMATCH", "why": size}})
+    assert gate.live_refusal(CERT, waived=True) is None
+    assert gate.live_refusal(CERT) is not None
+    for why in (["Sharpe SIGN disagrees: recorded +1.2, rebuilt -0.3"],
+                ["the rebuild produced NO fill against 12 ledger trades"], []):
+        assert "SIGN mismatch voids" in str(
+            _gate(tmp_path, {CERT: {"verdict": "MISMATCH", "why": why}}).live_refusal(
+                CERT, waived=True))
+
+
+def test_a_replicated_verdict_under_an_old_metric_or_another_spec_is_refused(
+        tmp_path: Path) -> None:
+    old = _gate(tmp_path, {CERT: {"verdict": "REPLICATED", "sharpe_metric_version": "v1"}})
+    assert "Sharpe metric v1" in str(old.live_refusal(CERT))
+    assert "unstamped" in str(_gate(tmp_path, {CERT: {"verdict": "REPLICATED"}}).live_refusal(CERT))
+    gate = _gate(tmp_path, {CERT: {**REP, "fp": "a"}})
+    assert gate.live_refusal(CERT, fingerprint="a") is None
+    assert ai.STALE_SPEC in str(gate.live_refusal(CERT, fingerprint="b"))
