@@ -344,6 +344,7 @@ def step_gauntlet(survivors):
     from libs.validation.pbo import probability_backtest_overfitting as pbo_canon
     from libs.validation.reality_check import hansen_spa as spa_canon
     from libs.validation.dsr import deflated_sharpe_ratio as dsr_canon, sharpe_ratio as sr_canon
+    from libs.research.trial_count_guard import bar_n
     from libs.validation.cpcv import CPCV
     from libs.validation.walk_forward import walk_forward_splits
 
@@ -456,11 +457,20 @@ def step_gauntlet(survivors):
             "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
         }
 
-        # Canonical DSR with estimation-noise variance floor (1/n)
-        var_noise = 1.0 / max(n_days, 2)
-        dsr = dsr_canon(arr, n_trials=n_trials, variance_of_sharpes=var_noise, threshold=DSR_THR)
+        # Canonical DSR with estimation-noise variance floor (1/n), at the TIER S BAR's N
+        # (trial_count_guard.BAR_N = 5, principal 2026-10-13: "make sure the bars never raise
+        # never ever penalty never inflation due to trials"). `n_trials` -- the charged count,
+        # >= 7 x effective cells -- is REPORTED beside the verdict and never raises the bar; it
+        # is always >= 7 > 5, so the pin only ever lowers the bar this pen used to mint at.
+        # Null variance 1/(T-1), the Tier S bar's (audit 2026-10-14: was 1/T, which put this pen's
+        # sr0 a hair BELOW the main writer's for the same T). The min form never charges above
+        # the count this pen charged before the pin.
+        var_noise = 1.0 / max(n_days - 1, 1)
+        n_bar = min(n_trials, bar_n(n_trials))
+        dsr = dsr_canon(arr, n_trials=n_bar, variance_of_sharpes=var_noise, threshold=DSR_THR)
         stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-                                     "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
+                                     "sr0": round(float(dsr.sr0_threshold), 4),
+                                     "n_trials": n_trials, "bar_n": n_bar}
 
         stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}
         stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4)}
@@ -542,20 +552,54 @@ def step_gauntlet(survivors):
 
 
 # ── STEP 5: CERTIFY + ADMISSION ───────────────────────────────────
+#: THE SAME LANE AS THE MAIN WRITER. `scripts/external_gauntlet.py` writes UNIVERSAL_SURVIVORS
+#: only while holding `exclusive_job("certification_lane")`; a second pen that does not take it
+#: can read the file mid-sweep and write back a stale copy over fresh certificates.
+CERT_LANE = "certification_lane"
+
+
+class SurvivorsUnreadable(RuntimeError):
+    """The authority file exists but cannot be read as a survivors map: never write over it."""
+
+
+def _read_survivors(surv_path):
+    """(survivors, gate_policy) from the authority file. ABSENT is an empty authority; PRESENT
+    BUT UNREADABLE raises -- the old `except: {}` turned one bad read into a write of `{}` plus
+    this pass's rows, which wiped every certificate the main writer held."""
+    if not surv_path.exists():
+        return {}, {}
+    try:
+        old = json.loads(surv_path.read_text("utf-8"))
+    except Exception as exc:
+        raise SurvivorsUnreadable(f"{surv_path}: {type(exc).__name__}: {exc}") from exc
+    if not isinstance(old, dict) or not isinstance(old.get("survivors", {}), dict):
+        raise SurvivorsUnreadable(f"{surv_path}: not a survivors map")
+    gp = old.get("gate_policy", {})
+    return dict(old.get("survivors", {})), (gp if isinstance(gp, dict) else {})
+
+
 def step_certify(gauntlet_result):
     print("\n" + "=" * 60)
     print("STEP 5: CERTIFY + SHADOW ADMISSION")
     print("=" * 60)
+    from research.job_lock import exclusive_job
+    with exclusive_job(CERT_LANE, need_mb=0) as lane:
+        if not lane:
+            print("  DEFERRED -- another certifier owns the certification lane; nothing written",
+                  file=sys.stderr)
+            return None
+        return _certify_locked(gauntlet_result)
+
+
+def _certify_locked(gauntlet_result):
     surv_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
-    survivors = {}
-    gate_policy = {}
-    if surv_path.exists():
-        try:
-            old = json.loads(surv_path.read_text("utf-8"))
-            survivors = old.get("survivors", {})
-            gate_policy = old.get("gate_policy", {})
-        except Exception:
-            gate_policy = {}
+    try:
+        survivors, gate_policy = _read_survivors(surv_path)
+    except SurvivorsUnreadable as exc:
+        # FAIL CLOSED: an authority we cannot read is never overwritten.
+        print(f"  REFUSED-WRITE: authority unreadable, nothing written ({exc})", file=sys.stderr)
+        return None
+    n_before = len(survivors)
 
     new_certs = 0
     for v in gauntlet_result.get("verdicts", []):
@@ -593,7 +637,11 @@ def step_certify(gauntlet_result):
         new_certs += 1
         print(f"  CERTIFIED: {v['cell']}")
 
-    surv_path.write_text(json.dumps({
+    if len(survivors) < n_before:                       # never-shrink, belt and braces
+        print("  REFUSED-WRITE: the authority would shrink", file=sys.stderr)
+        return None
+    tmp = surv_path.with_name(f"{surv_path.name}.full_pipeline.tmp")
+    tmp.write_text(json.dumps({
         "n": len(survivors), "survivors": survivors,
         "gate_policy": gate_policy or {
             "policy": "mt5-original-universal-10-v2-calibrated-inputs",
@@ -603,6 +651,8 @@ def step_certify(gauntlet_result):
         "note": "UNIVERSAL 10-GATE PASS ONLY.",
         "swept_at": datetime.now(UTC).isoformat(),
     }, indent=2, default=str), encoding="utf-8")
+    from libs.ops.win_write import replace_resilient
+    replace_resilient(tmp, surv_path)       # Windows sharing/read-only refusals retried
 
     print(f"  {new_certs} new certificates, {len(survivors)} total in authority")
     return survivors

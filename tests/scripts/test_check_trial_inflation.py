@@ -329,3 +329,10 @@ def test_the_helper_is_the_one_home_and_the_live_tree_is_clean(tmp_path: Path) -
     got = _lit(tmp_path, {"libs/research/tier_s_threshold.py": "X_T_BAR = 2.84\n"})
     assert got["state"] == "OK"
     assert fence.tier_s_literals(ROOT) == []
+
+
+def test_a_renamed_bar_import_is_still_scanned(tmp_path: Path) -> None:
+    got = _one(tmp_path, ("from libs.validation.dsr import deflated_sharpe_ratio as dsr_canon\n"
+                          "def f(arr, n_trials):\n"
+                          "    return dsr_canon(arr, n_trials=n_trials)\n"))
+    assert got["state"] == "FAIL" and got["sites"][0]["call"] == "deflated_sharpe_ratio"

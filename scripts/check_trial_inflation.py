@@ -180,8 +180,11 @@ def _pinned(arg: ast.expr, scope: ast.AST | None = None, depth: int = 0) -> bool
 
 
 class _Scan(ast.NodeVisitor):
-    def __init__(self, rel: str = "") -> None:
+    def __init__(self, rel: str = "", aliases: dict[str, str] | None = None) -> None:
         self.rel = rel
+        #: `from libs.validation.dsr import deflated_sharpe_ratio as dsr_canon` -- a renamed
+        #: import is still the bar function (side_channels/full_pipeline hid its charge this way).
+        self.aliases = aliases or {}
         self.stack: list[ast.FunctionDef | ast.AsyncFunctionDef] = []
         self.hits: list[tuple[int, str, str]] = []
         self.union = False
@@ -208,6 +211,7 @@ class _Scan(ast.NodeVisitor):
 
     def visit_Call(self, node: ast.Call) -> None:
         name = _callee(node)
+        name = self.aliases.get(name, name)
         if name == "multipletests" and not self._exempt():
             # statsmodels' corrections divide by len(pvals) internally: never at a fixed N
             self.hits.append((node.lineno, "multipletests", ast.unparse(node)[:80]))
@@ -414,7 +418,9 @@ def scan(root: Path = ROOT) -> dict[str, Any]:
                 defs.setdefault(n.name, []).append(_pins_inside(n))
     safe = {k for k, v in defs.items() if v and all(v)}
     for rel, tree in trees:
-        s = _Scan(rel)
+        aliases = {a.asname: a.name for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)
+                   for a in n.names if a.asname and a.name in BAR_FUNCS}
+        s = _Scan(rel, aliases)
         s.visit(tree)
         if s.union:
             union.append(rel)
