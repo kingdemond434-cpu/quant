@@ -171,6 +171,25 @@ def charged_cells(root: Path | None = None) -> tuple[set[str] | None, list[str]]
     return (None if bad else keys), bad
 
 
+def through_the_door(cands: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The candidates `proposer_common.donate` will WRITE, decided before it is called.
+
+    donate records `tests_run` in the contract it writes, before its door refuses rows, so the
+    count the ledger reads is the count passed in. Running the same two refusing checks here --
+    the two-lane filter and the point-in-time stamp -- and donating only what passes means the
+    contract is written ONCE with the true count (audit of #395 v4: a post-write rewrite left a
+    window where the ledger read an inflated count, permanently if the leg died inside it). The
+    blinding pass that also runs in donate strips fields and never refuses, so it is not needed
+    here. The originals are returned, unstamped: donate stamps them itself."""
+    from proposer_common import _lane_filtered, _stamped
+    lane_ok, _ = _lane_filtered(list(cands))
+    ok_ids = {id(c) for c in lane_ok}
+    passing = [c for c in cands if id(c) in ok_ids]
+    stamped, _ = _stamped(SEAT, [dict(c) for c in passing])
+    keep = {cell_key(r) for r in stamped}
+    return [c for c in passing if cell_key(c) in keep]
+
+
 def _settle_charge(path: Path | None) -> int:
     """Rewrite the contract's tests_run to the rows it actually holds, and return that count.
 
@@ -187,10 +206,16 @@ def _settle_charge(path: Path | None) -> int:
     rows = _contract_rows(doc)
     n = len(rows or [])
     if isinstance(doc, dict) and doc.get("tests_run") != n:
+        # Only reached if donate's door refused a row through_the_door passed (a race on the
+        # policy or the stamper). Correct it, but never crash the leg after a donation: a
+        # Windows replace onto an open file raises, and the donation has already happened.
         doc["tests_run"] = n
         tmp = path.with_name(path.name + ".tmp")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-        tmp.replace(path)
+        try:
+            tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+            tmp.replace(path)
+        except OSError:
+            return n
     return n
 
 
@@ -326,7 +351,9 @@ def main(argv: list[str] | None = None) -> int:
         cands = []
     if cands and not a.dry_run:
         from proposer_common import donate, donation_counts
-        path = donate(source=SEAT, candidates=cands, tests_run=len(cands))
+        door = through_the_door(cands)
+        doc["refused_before_donate"] = len(cands) - len(door)
+        path = donate(source=SEAT, candidates=door, tests_run=len(door)) if door else None
         counts = donation_counts()
         charged_now = _settle_charge(path)
     doc.update({"status": "DRY_RUN" if a.dry_run else ("RAN" if cands else (
