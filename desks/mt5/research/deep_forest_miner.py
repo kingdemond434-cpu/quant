@@ -483,12 +483,47 @@ def _cc_index() -> str:
 INDEX_HEADERS = {"User-Agent": INDEX_UA, "Accept": "*/*"}
 
 
+#: THE HARD STOP (audit 2026-10-14 MF-C): the first of these from a site holds that site --
+#: its registrable domain -- for the rest of the run, and the hold is persisted as the ground's
+#: frontier vector BLOCKED with an ACCESS_REFUSED blocker (hunt_frontier's retry clock, no second
+#: register). A held site gets no further request on any route, and never a Common Crawl CDX
+#: listing in its place: an index of the pages the site just refused is a route-around.
+ACCESS_STOP: frozenset[int] = frozenset({401, 403, 429})
+#: The frontier blocker prefix a persisted site hold carries (read back at the next run's start).
+ACCESS_REFUSED = "ACCESS_REFUSED"
+_SLD = frozenset({"co", "com", "net", "org", "gov", "ac", "edu", "or", "ne", "go", "gob",
+                  "gouv", "nic", "mil", "ltd", "plc"})
+
+
+def registrable_domain(url_or_host: str) -> str:
+    """The site a hold covers: the last two labels, or three under a two-letter country code
+    with a generic second level (co.uk, com.cn, co.jp, com.hk ...). Every subdomain and the www.
+    twin of a refusing site therefore share its hold."""
+    s = str(url_or_host or "").strip().lower()
+    host = (urlparse(s).hostname or "") if "//" in s else s.split("/")[0].split(":")[0]
+    labels = [x for x in host.strip(".").split(".") if x]
+    if len(labels) >= 3 and len(labels[-1]) == 2 and labels[-2] in _SLD:
+        return ".".join(labels[-3:])
+    return ".".join(labels[-2:])
+
+
+class SiteRefused(OSError):
+    """A 401/403/429 on the index route: the caller holds the site and stops."""
+
+    def __init__(self, url: str, status: int) -> None:
+        super().__init__(f"HTTP {status} (site held: {registrable_domain(url)})")
+        self.url, self.status = url, int(status)
+
+
 def _index_get(url: str) -> str:
-    """One polite GET with the honest index agent. Raises OSError on any failure."""
-    r = pf.get(url, headers=dict(INDEX_HEADERS), timeout=25.0, retries=1, leg=LEG,
+    """One polite GET with the honest index agent. Raises SiteRefused on a 401/403/429 and
+    OSError on any other failure. retries=0: a 429 is a stop, never a retry (MF-C)."""
+    r = pf.get(url, headers=dict(INDEX_HEADERS), timeout=25.0, retries=0, leg=LEG,
                max_bytes=4_000_000)
     if r.ok:
         return r.text
+    if r.status in ACCESS_STOP:
+        raise SiteRefused(url, int(r.status or 0))
     raise OSError(r.error or f"HTTP {r.status}")
 
 
@@ -604,20 +639,37 @@ def index_opener(allows: Any) -> Any:
     return open_
 
 
-def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
+def site_index_urls(site: str, *, get: Any = None, holds: Any = None) -> dict[str, Any]:
     """The ground's own sitemap(s), else the Common Crawl CDX listing for `site/*`; each URL
     filtered to article-like pages on that site and to what ITS OWN HOST's robots.txt allows for
     "*". A page on another host (a subdomain, the bare or www. twin) is judged by that exact
     host's robots.txt, read here; an unread one fetches nothing (audit 2026-10-14 MF2).
-    Returns {"route", "urls", "robots_disallowed", "robots_unread", "errors"}; never raises."""
-    get = get or _index_get
+    Returns {"route", "urls", "robots_disallowed", "robots_unread", "errors"}; never raises.
+
+    `holds` (a `SiteHolds`, the run's) is the hard stop: a held site is never requested, the
+    first 401/403/429 from any site holds it, and once the ground's own site is held the listing
+    STOPS -- route "held", no sitemap child, no CDX fallback, no page (audit 2026-10-14 MF-C)."""
+    raw_get = get or _index_get
+    holds = holds if holds is not None else SiteHolds()
+    site_dom = registrable_domain(site)
+
+    def fetch(u: str) -> str:
+        if holds.held(u):
+            raise SiteRefused(u, int(holds.held(u).get("status") or 0))
+        try:
+            return str(raw_get(u))
+        except SiteRefused as exc:
+            holds.hold(u, exc.status)
+            raise
     errors: list[str] = []
     robots_txt = ""
     site_origin = robots_origin(f"https://{site.lower().split('/')[0]}/")
     try:
-        robots_txt = get(f"{site_origin}/robots.txt")
+        robots_txt = fetch(f"{site_origin}/robots.txt")
     except Exception as exc:
         errors.append(f"robots: {str(exc)[:80]}")
+    if holds.held(site_dom):
+        return _held_listing(site_dom, holds, errors)
     rp = robots_parser(robots_txt) if robots_txt else None
     rps: dict[str, Any] = {site_origin: rp}
 
@@ -629,7 +681,7 @@ def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
                 rps[origin] = None                     # over the read budget: unread, unfetched
             else:
                 try:
-                    txt = get(f"{origin}/robots.txt")
+                    txt = fetch(f"{origin}/robots.txt")
                     rps[origin] = robots_parser(txt) if txt else None
                 except Exception as exc:
                     errors.append(f"robots {origin}: {str(exc)[:60]}")
@@ -641,12 +693,15 @@ def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
             if ln.lower().startswith("sitemap:")][:2]
     for sm in maps:
         try:
-            pages, kids = sitemap_locs(get(sm))
+            pages, kids = sitemap_locs(fetch(sm))
             for kid in kids[:2]:
-                pages += sitemap_locs(get(kid))[0]
+                pages += sitemap_locs(fetch(kid))[0]
             urls += pages
         except Exception as exc:
             errors.append(f"sitemap: {str(exc)[:80]}")
+        if holds.held(site_dom):
+            # A REFUSED SITEMAP IS A STOP, NOT A CUE FOR THE CDX: no fallback, no page.
+            return _held_listing(site_dom, holds, errors)
     if urls:
         route = "sitemap"
     else:
@@ -654,7 +709,7 @@ def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
         cdx = (f"https://index.commoncrawl.org/{_cc_index()}-index?url={q}&output=json"
                f"&limit={INDEX_URLS_PER_GROUND * 2}&filter=status:200&fl=url")
         try:
-            for ln in get(cdx).splitlines():
+            for ln in fetch(cdx).splitlines():
                 with contextlib.suppress(ValueError):
                     u = str((json.loads(ln) or {}).get("url") or "")
                     if u:
@@ -680,6 +735,84 @@ def site_index_urls(site: str, *, get: Any = None) -> dict[str, Any]:
     return {"route": route or "none", "urls": allowed[:INDEX_URLS_PER_GROUND],
             "listed": len(keep), "robots_disallowed": disallowed, "robots_unread": unread,
             "errors": errors[:4]}
+
+
+def _held_listing(site_dom: str, holds: Any, errors: list[str]) -> dict[str, Any]:
+    h = holds.held(site_dom) or {}
+    errors.append(f"site held: HTTP {h.get('status')} from {site_dom}; no further request, "
+                  "no CDX fallback")
+    return {"route": "held", "urls": [], "listed": 0, "robots_disallowed": 0,
+            "robots_unread": 0, "errors": errors[:4], "held": {site_dom: h}}
+
+
+class SiteHolds:
+    """The run's site holds (registrable domain -> {status, url, at, persisted}), shared by
+    every fork of a run. Not a register: a hold lives for the run, and is persisted only as the
+    holding ground's frontier vector (BLOCKED, blocker ACCESS_REFUSED ...), from which the next
+    run re-seeds it until hunt_frontier's retry clock comes due."""
+
+    def __init__(self) -> None:
+        self.sites: dict[str, dict[str, Any]] = {}
+        self._lock = threading.RLock()
+
+    def held(self, url_or_host: str) -> dict[str, Any] | None:
+        dom = registrable_domain(url_or_host)
+        with self._lock:
+            return self.sites.get(dom) if dom else None
+
+    def hold(self, url: str, status: int, *, persisted: bool = False,
+             ground: str = "") -> dict[str, Any]:
+        dom = registrable_domain(url)
+        with self._lock:
+            if dom not in self.sites:
+                self.sites[dom] = {"status": int(status), "url": url[:200], "ground": ground,
+                                   "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                                   "persisted": persisted}
+            return self.sites[dom]
+
+
+def access_hold_missed_growth(site: str, hold: dict[str, Any]) -> dict[str, Any]:
+    """GROWTH GOVERNANCE: the missed-growth line a site hold carries (delta E[log W] UNMEASURED,
+    never zero, with its cause)."""
+    return {"source": site, "kind": "access_hold", "status": ACCESS_REFUSED,
+            "http": hold.get("status"), "delta_elogw": "UNMEASURED",
+            "unblock": (f"hunt_frontier retry after {_BLOCKED_RETRY_D()}d; a 401/403 lifts only "
+                        "if the site stops refusing this agent"),
+            "cause": (f"HTTP {hold.get('status')} from {site}: the site refused this agent, so "
+                      "the ground is not read until the retry clock; what it would have yielded "
+                      "is UNMEASURED")}
+
+
+def _BLOCKED_RETRY_D() -> int:
+    try:
+        from libs.research.hunt_frontier import BLOCKED_RETRY_D
+        return int(BLOCKED_RETRY_D)
+    except Exception:
+        return 10
+
+
+def persisted_site_holds(grounds: list[dict[str, Any]], frontier_state: Any,
+                         now: datetime | None = None) -> dict[str, dict[str, Any]]:
+    """The holds the frontier carries: a ground whose vector is BLOCKED with an ACCESS_REFUSED
+    blocker and whose retry is not yet due holds its site again this run."""
+    now = now or datetime.now(tz=UTC)
+    vectors = getattr(frontier_state, "vectors", {}) or {}
+    out: dict[str, dict[str, Any]] = {}
+    for g in grounds:
+        v = vectors.get(str(g.get("name") or ""))
+        if (v is None or str(getattr(v, "outcome", "")) != "BLOCKED"
+                or not str(getattr(v, "blocker", "")).startswith(ACCESS_REFUSED)):
+            continue
+        try:
+            if v.huntable(now)[0]:
+                continue
+        except Exception:
+            continue
+        dom = registrable_domain(str(g.get("site") or g.get("url") or ""))
+        if dom:
+            out[dom] = {"ground": str(g.get("name")), "blocker": str(v.blocker)[:200],
+                        "last_attempt": str(v.last_attempt)}
+    return out
 
 
 def bing_reroute_census(grounds: list[dict[str, Any]],
@@ -1050,11 +1183,15 @@ class _Run:
                        "dataset_endpoints": 0, "feeds": 0, "urls_new": 0}
         #: Shared by every fork of this run: the network verdict and its failure streak.
         self._shared: dict[str, Any] = {"network": None, "fails": 0}
+        #: The run's site holds (MF-C), shared by every fork like the network verdict.
+        self.holds = SiteHolds()
         self._lock = threading.RLock()
         self.render_used = 0
         self.ground: dict[str, Any] = {}
         self.ground_claims: list[dict[str, Any]] = []
         self.mech_keys: set[str] = set()
+        #: The site holds THIS ground raised (domain names), for its status and frontier row.
+        self.ground_holds: list[str] = []
 
     @property
     def network(self) -> bool | None:
@@ -1074,6 +1211,7 @@ class _Run:
         f.counts = dict.fromkeys(self.counts, 0)
         f.ground, f.ground_claims = {}, []
         f.render_used = 0
+        f.ground_holds = []
         return f
 
     def merge(self, f: _Run) -> None:
@@ -1120,6 +1258,8 @@ class _Run:
         if fenced:
             self.status.append({"url": url, **_tf.refusal(fenced)})
             return ""
+        if self._site_held(url):
+            return ""
         if not self._net_ok():
             return ""
         try:
@@ -1130,6 +1270,8 @@ class _Run:
         except urllib.error.HTTPError as exc:
             self._note_net(True)
             self.status.append({"url": url, "http": exc.code})
+            if exc.code in ACCESS_STOP:
+                self._hold_site(url, exc.code)
             return ""
         except Exception as exc:
             self._note_net(False)
@@ -1143,13 +1285,19 @@ class _Run:
         if fenced:
             self.status.append({"url": url, **_tf.refusal(fenced)})
             return ""
+        if self._site_held(url):
+            return ""
         if not self._net_ok():
             return ""
-        # a redirect to another robots origin is followed only on that origin's own robots.txt
+        # a redirect to another robots origin is followed only on that origin's own robots.txt,
+        # and never into a held site (whose robots.txt is not requested either)
         cache = self.__dict__.setdefault("_index_robots", {})
-        r = pf.get(url, headers=dict(INDEX_HEADERS), timeout=20.0, retries=1, leg=LEG,
-                   max_bytes=2_000_000,
-                   opener=index_opener(lambda u: robots_allows(u, cache=cache)))
+
+        def allows(u: str) -> bool:
+            return not self.holds.held(u) and robots_allows(u, cache=cache, get=self._index_get)
+        # retries=0: a 429 is a hard stop, never retried (audit 2026-10-14 MF-C)
+        r = pf.get(url, headers=dict(INDEX_HEADERS), timeout=20.0, retries=0, leg=LEG,
+                   max_bytes=2_000_000, opener=index_opener(allows))
         if r.ok:
             self._note_net(True)
             self.counts["pages"] += 1
@@ -1157,15 +1305,43 @@ class _Run:
         if r.status is not None and r.status >= 400:
             self._note_net(True)
             self.status.append({"url": url, "http": r.status})
+            if r.status in ACCESS_STOP:
+                self._hold_site(url, int(r.status))
         else:
             self._note_net(False)
             self.status.append({"url": url, "error": str(r.error or "fetch failed")[:80]})
         return ""
 
+    def _site_held(self, url: str) -> bool:
+        """True (and recorded) when `url` is on a site this run holds: no request is made."""
+        h = self.holds.held(url)
+        if h:
+            self.status.append({"url": url, "site_held": registrable_domain(url),
+                                "http": h.get("status")})
+        return bool(h)
+
+    def _hold_site(self, url: str, status: int) -> None:
+        self.holds.hold(url, status, ground=str(self.ground.get("name") or ""))
+        dom = registrable_domain(url)
+        if dom not in self.ground_holds:
+            self.ground_holds.append(dom)
+
+    def _index_get(self, url: str) -> str:
+        """`_index_get` behind the run's holds: a held site is not requested; a refusal holds."""
+        if self.holds.held(url):
+            raise SiteRefused(url, int((self.holds.held(url) or {}).get("status") or 0))
+        try:
+            return _index_get(url)
+        except SiteRefused as exc:
+            self._hold_site(url, exc.status)
+            raise
+
     def rendered(self, url: str) -> str:
         fenced = _tf.platform_of_url(url)
         if fenced:
             self.status.append({"url": url, **_tf.refusal(fenced)})
+            return ""
+        if self._site_held(url):
             return ""
         try:
             from libs.data.render_fetch import render
@@ -1238,10 +1414,17 @@ class _Run:
         except Exception:
             pass
 
-    def dataset(self, page: str, *, ground: dict[str, Any], url: str, title: str) -> int:
+    def dataset(self, page: str, *, ground: dict[str, Any], url: str, title: str,
+                route: str = "") -> int:
         """A page that hands over DATA: its endpoints become a discovery row in the crawler's
         own shape (kind "dataset"), so `acquire_datasets` registers them, and a row in the
-        datasets ledger, so the report can count what each region's forest yields."""
+        datasets ledger, so the report can count what each region's forest yields.
+
+        ON THE INDEX ROUTE (`route` "index:..."), the page is NEVER followed into the frontier
+        (world_crawler fetches that with a browser agent) and the row is tagged `route: "index"`
+        with `fetch_policy` naming INDEX_UA plus robots.txt, so no downstream fetcher may take
+        its endpoints with a browser string or without the robots check (audit 2026-10-14
+        MF-B, second path)."""
         eps = data_endpoints(page, url)
         if ground.get("kind") != "dataset" and not eps:
             return 0
@@ -1257,10 +1440,16 @@ class _Run:
                "cluster": cluster_of(ground), "dataset_class": ground.get("dataset_class"),
                "available_time": now, "ingested_time": now, "source_hash": digest,
                "claims": [], "n_claims": 0}
+        index_route = route.startswith("index")
+        if index_route:
+            row["route"] = "index"
+            row["fetch_policy"] = {"user_agent": INDEX_UA, "robots_txt": "required",
+                                   "on_401_403_429": "stop"}
         self.datasets.append(row)
         self.counts["dataset_pages"] += 1
         self.counts["dataset_endpoints"] += len(eps)
-        self.follow(url, title, via=f"{SOURCE}:{ground.get('name')}:dataset")
+        if not index_route:
+            self.follow(url, title, via=f"{SOURCE}:{ground.get('name')}:dataset")
         return len(eps)
 
     def follow(self, url: str, anchor: str, via: str) -> None:
@@ -1278,7 +1467,7 @@ class _Run:
     # ---------------------------------------------------------------- routes per ground
     def _read_page(self, g: dict[str, Any], page: str, url: str, title: str, route: str) -> int:
         n = self.take(html_text(page), ground=g, url=url, title=title, route=route, page=page)
-        self.dataset(page, ground=g, url=url, title=title)
+        self.dataset(page, ground=g, url=url, title=title, route=route)
         return n
 
     def ground_http(self, g: dict[str, Any], *, render_first: bool = False,
@@ -1367,23 +1556,32 @@ class _Run:
 
     def ground_site_index(self, g: dict[str, Any]) -> dict[str, Any]:
         site = str(g.get("site") or "")
-        idx = site_index_urls(site)
+        if self.holds.held(site):
+            h = self.holds.held(site) or {}
+            return {"route": "held", "listed": 0, "allowed": 0, "robots_disallowed": 0,
+                    "robots_unread": 0, "fetched": 0, "claims": 0,
+                    "errors": [f"site held: HTTP {h.get('status')}; not listed, not fetched"]}
+        idx = site_index_urls(site, get=self._index_get, holds=self.holds)
         queries = [str(q) for q in g.get("queries") or []]
         claims = fetched = 0
         cap = PAGE_FETCH_PER_QUERY * max(1, len(queries))
         for url in rank_by_queries(idx["urls"], queries)[: cap * 2]:
             if fetched >= cap or self.over():
                 break
+            if self.holds.held(url):
+                # THE HARD STOP: the first 401/403/429 ends every request to that site
+                break
+            # NOT `follow`: the frontier is fetched by world_crawler with a browser agent and no
+            # robots check, so an index-route URL never enters it (audit 2026-10-14 MF-B). It is
+            # marked seen BEFORE it is read, so nothing the read reaches (`dataset`, a deep link)
+            # can put it in the frontier as new.
+            with self._lock:
+                self.seen_urls.add(url)
             body = self.index_page(url)          # the honest INDEX_UA, never the browser string
             if len(html_text(body)) < MIN_PAGE_TEXT:
                 continue
             fetched += 1
             claims += self._read_page(g, body, url, _title(body), f"index:{idx['route']}:page")
-            # NOT `follow`: the frontier is fetched by world_crawler with a browser agent and no
-            # robots check, so an index-route URL never enters it (audit 2026-10-14 MF-B). It is
-            # only marked seen, so no later route re-reads it as new.
-            with self._lock:
-                self.seen_urls.add(url)
             time.sleep(1.0)
         return {"route": idx["route"], "listed": idx["listed"], "allowed": len(idx["urls"]),
                 "robots_disallowed": idx["robots_disallowed"],
@@ -1709,11 +1907,24 @@ class _Run:
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
             return
+        # A HELD SITE (MF-C): a 401/403/429 earlier this run, or a persisted ACCESS_REFUSED
+        # frontier vector whose retry is not due. Not fetched, and SITE_HELD is not a frontier
+        # outcome, so the hold's own stamp (and its retry clock) is left as it stands.
+        site_key = str(g.get("site") or g.get("url") or "")
+        held = self.holds.held(site_key) if site_key else None
+        if held:
+            dom = registrable_domain(site_key)
+            when = "persisted" if held.get("persisted") else "this run"
+            self.status.append({**row, "status": "SITE_HELD", "claims": 0,
+                                "why": f"site {dom} held: HTTP {held.get('status')} ({when})",
+                                "missed_growth": access_hold_missed_growth(dom, held)})
+            return
         if not self._net_ok():
             self.status.append({**row, "status": "NO_NETWORK",
                                 "why": "three straight transport failures on this box"})
             return
         self.ground, self.ground_claims = g, []
+        self.ground_holds = []
         seen_before = self.counts["claims_seen_before"]
         urls_before = self.counts.get("urls_new", 0)
         t0 = time.monotonic()
@@ -1759,6 +1970,17 @@ class _Run:
                                             "items", "tweets", "channels", "feeds", "articles")
                       ) or self.counts["claims_seen_before"] > seen_before
         status = "PRODUCTIVE" if n_claims else ("REACHED_NO_CLAIMS" if reached else "BLOCKED")
+        if self.ground_holds:
+            # THE HARD STOP, PERSISTED: the ground is BLOCKED in the frontier with an
+            # ACCESS_REFUSED blocker, and the next run re-seeds the hold from it until
+            # hunt_frontier's retry clock is due. Claims already read still count.
+            dom = self.ground_holds[0]
+            h = self.holds.held(dom) or {}
+            status = ACCESS_REFUSED
+            out = {**out, "why": (f"HTTP {h.get('status')} from {dom}: site held for the run, "
+                                  "no further request, no CDX fallback"),
+                   "held_sites": list(self.ground_holds),
+                   "missed_growth": access_hold_missed_growth(dom, h)}
         classes: dict[str, int] = {}
         for c in self.ground_claims:
             k = str(c.get("mechanism_class"))
@@ -1833,6 +2055,10 @@ _FRONTIER_OUTCOME: dict[str, str] = {
     # exists) is BLOCKED in the frontier's vocabulary, with the policy row as the blocker. The
     # two older spellings stay mapped so a pre-ruling status row still reads.
     "METHOD_BLOCKED": "BLOCKED", "NEEDS_KEY": "BLOCKED",
+    # A 401/403/429 hard stop (MF-C): BLOCKED with blocker "ACCESS_REFUSED: ...", which is how
+    # the next run re-seeds the site hold. SITE_HELD (skipped under a hold) is deliberately
+    # absent, so a skip never refreshes the hold's stamp.
+    ACCESS_REFUSED: "BLOCKED",
     "BLOCKED_WITH_SUBSTITUTE": "BLOCKED", "BLOCKED_TERMS": "BLOCKED",
 }
 
@@ -2019,6 +2245,11 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         frontier_state = _hf.load(_frontier_path())
     except Exception:  # a damaged accounting file may never stop the miner
         frontier_state = None
+    # THE PERSISTED HOLDS (MF-C): a site that refused this agent stays held across runs.
+    for _dom, _h in persisted_site_holds(grounds, frontier_state).items():
+        _code = re.search(r"HTTP (\d{3})", _h["blocker"])
+        r.holds.hold(f"https://{_dom}/", int(_code.group(1)) if _code else 0, persisted=True,
+                     ground=_h["ground"])
     # LOW_EV_RETIRED is derived from the counters every pass (`research/forest_attempts.py`):
     # retired grounds are scheduled LAST, never dropped, and reopen on a named condition.
     try:

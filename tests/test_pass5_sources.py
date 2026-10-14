@@ -682,3 +682,210 @@ def test_a_cross_origin_redirect_needs_the_new_origins_robots() -> None:
         raise OSError("HTTP 404")
     assert D.robots_allows("https://other.example:8080/b", get=get) is False
     assert asked == ["https://other.example:8080/robots.txt"]
+
+
+# ============================================================================ audit c237d8848
+# MF-B (second path): a page the index route read, its dataset() row and the endpoints on it never
+# reach the world_crawler frontier; the discovery row is tagged for INDEX_UA + robots.txt.
+# MF-C: the first 401/403/429 holds the site for the run (persisted as the ground's frontier
+# vector), no CDX fallback for a held site, and a 429 is never retried.
+def _index_run(monkeypatch: pytest.MonkeyPatch, body: str, kind: str = "forum",
+               get: Any = None) -> tuple[str, Any, dict[str, Any]]:
+    from types import SimpleNamespace
+    url = "https://ex.example/data/page.html"
+    monkeypatch.setattr(D.pf, "get", get or (lambda *a, **k: SimpleNamespace(
+        ok=True, status=200, error=None, text=body)))
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    monkeypatch.setattr(D, "site_index_urls", lambda site, **k: {
+        "route": "sitemap", "urls": [url], "listed": 1, "robots_disallowed": 0,
+        "robots_unread": 0, "errors": []})
+    r = D._Run(60.0, True, None, None)
+    out = r.ground_site_index({"name": "g", "site": "ex.example", "queries": ["rule"],
+                               "language": "en", "kind": kind})
+    return url, r, out
+
+
+def test_an_index_page_with_a_csv_link_leaves_nothing_in_the_frontier(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    body = ("<html><title>t</title><body>" + "rule. " * 600 +
+            '<a href="/files/prices.csv">csv</a>'
+            '<a href="https://ex.example/api/v1/series?x=1">api</a></body></html>')
+    url, r, out = _index_run(monkeypatch, body)
+    assert out["fetched"] == 1 and r.frontier == []
+    assert url in r.seen_urls
+    (row,) = r.datasets
+    assert row["n_endpoints"] >= 1 and row["route"] == "index"
+    assert row["fetch_policy"]["user_agent"] == D.INDEX_UA
+    assert row["fetch_policy"]["robots_txt"] == "required"
+
+
+def test_a_dataset_kind_ground_on_the_index_route_leaves_nothing_in_the_frontier(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    body = "<html><title>t</title><body>" + "rule. " * 600 + "</body></html>"
+    _url, r, out = _index_run(monkeypatch, body, kind="dataset")
+    assert out["fetched"] == 1 and r.frontier == []
+    (row,) = r.datasets
+    assert row["route"] == "index"
+
+
+def test_a_non_index_dataset_page_is_still_followed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fix is scoped to the index route: the http route's dataset page keeps its follow."""
+    r = D._Run(60.0, True, None, None)
+    page = '<a href="/files/prices.csv">csv</a>'
+    r.dataset(page, ground={"name": "g", "kind": "dataset"},
+              url="https://ex.example/d.html", title="t", route="http")
+    assert [u for u, _, _ in r.frontier] == ["https://ex.example/d.html"]
+    assert "route" not in r.datasets[0]
+
+
+def test_the_acquirer_never_selects_an_index_route_endpoint(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import acquire_datasets as acq
+    world = tmp_path / "world"
+    world.mkdir()
+    (world / "discoveries_deepforest_20261014_0000.json").write_text(json.dumps([
+        {"kind": "dataset", "route": "index", "host": "ex.example",
+         "endpoints": ["https://ex.example/files/index-only.csv"]},
+        {"kind": "dataset", "host": "ok.example",
+         "endpoints": ["https://ok.example/files/plain.csv"]}]), "utf-8")
+    monkeypatch.setattr(acq, "WORLD", world)
+    monkeypatch.setattr(acq, "REGISTRY", tmp_path / "missing.json")
+    picked = [u for u, _ in acq._endpoints(10 ** 6, now=NOW)]
+    assert "https://ex.example/files/index-only.csv" not in picked
+    assert "https://ok.example/files/plain.csv" in picked
+    assert acq._ENDPOINT_FENCED.get(acq.INDEX_ROUTE_SKIP) == 1
+
+
+@pytest.mark.parametrize("code", [401, 403, 429])
+def test_one_refusal_stops_every_request_to_that_host(monkeypatch: pytest.MonkeyPatch,
+                                                      code: int) -> None:
+    from types import SimpleNamespace
+    calls: list[tuple[str, int]] = []
+
+    def get(url: str, **k: Any) -> Any:
+        calls.append((url, int(k.get("retries", -1))))
+        return SimpleNamespace(ok=False, status=code, error=f"HTTP {code}", text="")
+    monkeypatch.setattr(D.pf, "get", get)
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    urls = [f"https://ex.example/rule/p{i}.html" for i in range(6)]
+    monkeypatch.setattr(D, "site_index_urls", lambda site, **k: {
+        "route": "sitemap", "urls": urls, "listed": 6, "robots_disallowed": 0,
+        "robots_unread": 0, "errors": []})
+    r = D._Run(60.0, True, None, None)
+    g = {"name": "g", "site": "ex.example", "queries": ["rule"], "language": "en"}
+    r.ground_site_index(g)
+    assert len(calls) == 1 and calls[0][1] == 0                   # one request, no retry
+    assert (r.holds.held("www.ex.example") or {}).get("status") == code   # the whole site
+    # every other route of the run is held too: no request, recorded as held
+    assert r.page("https://sub.ex.example/x") == "" and len(calls) == 1
+    assert r.ground_site_index(g)["route"] == "held" and len(calls) == 1
+
+
+def test_a_sitemap_429_means_no_cdx_and_no_page(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+    calls: list[str] = []
+
+    def get(url: str, **k: Any) -> Any:
+        calls.append(url)
+        assert k.get("retries") == 0                              # a 429 is never retried
+        if url.endswith("robots.txt"):
+            return SimpleNamespace(ok=True, status=200, error=None,
+                                   text="User-agent: *\nAllow: /\n"
+                                        "Sitemap: https://ex.example/sitemap.xml\n")
+        if url.endswith("sitemap.xml"):
+            return SimpleNamespace(ok=False, status=429, error="HTTP 429", text="")
+        raise AssertionError(f"requested after the 429: {url}")
+    monkeypatch.setattr(D.pf, "get", get)
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    r = D._Run(60.0, True, None, None)
+    out = r.ground_site_index({"name": "g", "site": "ex.example", "queries": ["rule"],
+                               "language": "en"})
+    assert out["route"] == "held" and out["fetched"] == 0
+    assert calls == ["https://ex.example/robots.txt", "https://ex.example/sitemap.xml"]
+    assert not any("commoncrawl" in c for c in calls)
+    # the module function alone, with a plain getter: the same stop
+    seen: list[str] = []
+
+    def raw(url: str) -> str:
+        seen.append(url)
+        if url.endswith("robots.txt"):
+            return "User-agent: *\nSitemap: https://ex.example/sitemap.xml\n"
+        raise D.SiteRefused(url, 403)
+    got = D.site_index_urls("ex.example", get=raw)
+    assert got["route"] == "held" and got["urls"] == []
+    assert not any("commoncrawl" in u for u in seen)
+
+
+def test_the_index_route_never_asks_polite_fetch_to_retry() -> None:
+    src = Path(D.__file__).read_text("utf-8")
+    for fn in ("def _index_get", "def index_page"):
+        seg = src[src.index(fn):src.index(fn) + 1500]
+        assert "retries=0" in seg and "retries=1" not in seg, fn
+
+
+def test_a_site_hold_is_persisted_in_the_frontier_and_reseeded(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.research import hunt_frontier as hf
+    monkeypatch.setattr(D, "_frontier_path", lambda: tmp_path / "frontier.json")
+    g = {"name": "g", "site": "ex.example", "language": "en", "region": "x"}
+    D._record_frontier([{"ground": "g", "status": D.ACCESS_REFUSED, "language": "en",
+                         "why": "HTTP 403 from ex.example: site held for the run"}], [g])
+    state = hf.load(tmp_path / "frontier.json")
+    v = state.vectors["g"]
+    assert v.outcome == "BLOCKED" and v.blocker.startswith(D.ACCESS_REFUSED)
+    held = D.persisted_site_holds([g], state)
+    assert set(held) == {"ex.example"}
+    # past the hunt_frontier retry clock the hold lifts
+    later = datetime.now(tz=UTC).replace(year=datetime.now(tz=UTC).year + 1)
+    assert D.persisted_site_holds([g], state, now=later) == {}
+    # a ground on a held site is skipped with a missed-growth line, and SITE_HELD never
+    # refreshes the frontier stamp (it is not a frontier outcome)
+    r = D._Run(60.0, True, None, None)
+    r.holds.hold("https://ex.example/", 403, persisted=True)
+    r.work({**g, "route": "http", "url": "https://www.ex.example/a"})
+    (row,) = [s for s in r.status if s.get("ground") == "g"]
+    assert row["status"] == "SITE_HELD"
+    assert row["missed_growth"]["delta_elogw"] == "UNMEASURED"
+    assert "SITE_HELD" not in D._FRONTIER_OUTCOME
+
+
+def test_registrable_domain_groups_a_site() -> None:
+    assert D.registrable_domain("https://www.ex.example/a") == "ex.example"
+    assert D.registrable_domain("sub.ex.example") == "ex.example"
+    assert D.registrable_domain("https://news.bbc.co.uk/x") == "bbc.co.uk"
+    assert D.registrable_domain("https://a.b.example.com.hk:8443/x") == "example.com.hk"
+
+
+# HKMA: a multi-day weather closure before 2024 is covered by the untabled-year slack (+3) plus
+# the weather day (+1); since 2024-09-23 HK no longer closes for weather, and the HKMA is assumed
+# to publish on a typhoon day, so the stamp is the plain next business day -- never early.
+@pytest.mark.parametrize(("period", "closed", "true_next"), [
+    # Mangkhut-style closure stretched to two days, Mon-Tue
+    (date(2018, 9, 14), (date(2018, 9, 17), date(2018, 9, 18)), date(2018, 9, 19)),
+    # two-day closure right after the National Day / Mid-Autumn pair (Thu-Fri holidays)
+    (date(2020, 9, 30), (date(2020, 10, 5), date(2020, 10, 6)), date(2020, 10, 7)),
+    # a three-day closure in a week with no holiday
+    (date(2017, 8, 21), (date(2017, 8, 22), date(2017, 8, 23), date(2017, 8, 24)),
+     date(2017, 8, 25)),
+])
+def test_hkma_multi_day_weather_closure_before_2024_is_never_early(
+        period: date, closed: tuple[date, ...], true_next: date) -> None:
+    src = A.BY_ID["hk_hkma_liquidity"]
+    t = src.rule(period)
+    assert t >= datetime(true_next.year, true_next.month, true_next.day, 12, tzinfo=UTC)
+    assert all(t.date() > d for d in closed)
+    assert src.rule_basis is not None and "typhoon" in src.rule_basis(period)
+
+
+@pytest.mark.parametrize(("period", "typhoon_day"), [
+    (date(2025, 9, 23), date(2025, 9, 24)),        # signal 10 (Ragasa): market open since rule
+    (date(2024, 11, 13), date(2024, 11, 14)),      # signal 8 (Toraji)
+])
+def test_hkma_publishes_on_typhoon_days_after_the_2024_rule(period: date,
+                                                            typhoon_day: date) -> None:
+    src = A.BY_ID["hk_hkma_liquidity"]
+    t = src.rule(period)
+    # the typhoon day is a business day now; the stamp is its END (20:00 HKT), never before it
+    assert t == datetime(typhoon_day.year, typhoon_day.month, typhoon_day.day, 12, tzinfo=UTC)
+    assert t > datetime(period.year, period.month, period.day, 23, 59, tzinfo=UTC)
+    assert src.rule_basis is not None and "late_bias" not in src.rule_basis(period)

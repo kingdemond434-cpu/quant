@@ -275,6 +275,9 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
 #: Endpoints the last `_endpoints` pass left unselected because they sit on an IDEAS_ONLY or held
 #: source (never live input), by source. Such a URL never takes an hourly seat; the count says so.
 _ENDPOINT_FENCED: dict[str, int] = {}
+#: The `_ENDPOINT_FENCED` key for endpoints skipped because their discovery came from the
+#: deep-forest index route (INDEX_UA + robots.txt only; this acquirer sends neither).
+INDEX_ROUTE_SKIP = "index_route_needs_index_ua_and_robots"
 
 
 def _fenced_pick(url: str) -> bool:
@@ -407,6 +410,18 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         except (OSError, ValueError):
             continue
         for r in rows:
+            # AN INDEX-ROUTE DISCOVERY (deep_forest_miner, `route: "index"`) is never fetched
+            # here: this acquirer sends a browser string and reads no robots.txt, and those
+            # endpoints may be requested only with INDEX_UA behind robots.txt (audit 2026-10-14
+            # MF-B). Skipped and counted, never selected.
+            # TODO(world-crawler-honest-ua): the acquirer's own honest UA + robots fix lands on
+            # that branch; once it does, these rows may be fetched under their fetch_policy.
+            if isinstance(r, dict) and str(r.get("route") or "").startswith("index"):
+                n = len(r.get("endpoints") or [])
+                if n:
+                    _ENDPOINT_FENCED[INDEX_ROUTE_SKIP] = (
+                        _ENDPOINT_FENCED.get(INDEX_ROUTE_SKIP, 0) + n)
+                continue
             for u in (r.get("endpoints") or []):
                 if u in seen or u in fresh or _KEYED.search(u):
                     continue
