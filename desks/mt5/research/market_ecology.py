@@ -51,6 +51,7 @@ import json
 import math
 import sys
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -100,7 +101,10 @@ def _live_symbols(limit: int = MAX_SYMBOLS) -> list[str]:
     return out[:limit]
 
 
+@lru_cache(maxsize=64)
 def _frame(symbol: str) -> Any:
+    """The symbol's last BARS H1 bars, read once per pass: the F1 footprint reads the same
+    thirteen peer frames for each of its seven targets."""
     try:
         import pandas as pd
     except ImportError:
@@ -367,6 +371,105 @@ def _market_maker(df: Any) -> dict[str, Any]:
                       "where spreads blow out by an order of magnitude.")}
 
 
+# ---------------------------------------------------------------------------- flow pressure
+
+#: F1's donation ledger: the cells already donated, so the hourly --apply donates each once.
+F1_STATE = DESK / "data" / "f1_idio_volume_state.json"
+F1_SOURCE = "f1_idio_volume"
+
+
+def _flow_pressure(symbol: str, holds: tuple[int, ...] = (1, 2, 4),
+                   z_threshold: float = 3.0) -> dict[str, Any]:
+    """GAP_MAP row 42 / F1: does a tick-volume burst peculiar to this instrument retrace?
+
+    The footprint of an inventory-laden dealer: after the cross-sectional activity factor and
+    the hour-of-week rhythm are removed (`family_idio_volume.idio_volume_z`), a spike bar's move
+    should be partly given back over the next hours. The statistic is the mean forward return
+    from the next bar's open, signed AGAINST the spike bar's move; the null block-permutes the
+    same signed-return series, so a spike landing on a random stretch of the same tape -- with
+    its own volatility clustering -- is what the observed effect has to beat.
+    """
+    import numpy as np
+    from mt5desk.family_idio_volume import DEFAULT_PEERS, idio_volume_z
+
+    df = _frame(symbol)
+    if df is None:
+        return {"status": "UNMEASURED", "why": f"no usable H1 history for {symbol}"}
+    peers = [f for f in (_frame(p) for p in DEFAULT_PEERS if p != symbol) if f is not None]
+    z = idio_volume_z(df, peers)
+    if z is None:
+        return {"status": "UNMEASURED",
+                "why": f"{len(peers)} peer(s) with H1 tick volume -- the factor needs at least 4"}
+    o = df["open"].astype(float).to_numpy()
+    c = df["close"].astype(float).to_numpy()
+    zv = z.to_numpy()
+    sign = -np.sign(c - o)
+    out: dict[str, Any] = {"participant": "inventory-laden dealer absorbing idiosyncratic flow",
+                           "footprint": ("log tick volume regressed on the peer factor, "
+                                         "residual z-scored within hour of week; spike z > "
+                                         f"{z_threshold:g}, faded from the next bar's open"),
+                           "n_spikes": int(np.sum(np.nan_to_num(zv) > z_threshold)),
+                           "holds": {}}
+    for h in holds:
+        fwd = np.full(len(c), np.nan)
+        if len(c) > h + 1:
+            fwd[:-h - 1] = (c[h:-1] - o[1:-h]) / o[1:-h] if h > 0 else np.nan
+        signed = sign * fwd
+        spike = np.nan_to_num(zv) > z_threshold
+        ok = np.isfinite(signed)
+        if int((spike & ok).sum()) < 20:
+            out["holds"][str(h)] = {"status": "UNMEASURED",
+                                    "why": f"{int((spike & ok).sum())} spike(s) with a "
+                                           f"{h}-bar forward return; 20 needed"}
+            continue
+        observed = float(np.mean(signed[spike & ok]))
+        mask = spike[ok]
+        pool = signed[ok]
+
+        def stat(x: Any, _m: Any = mask) -> float:
+            return float(np.mean(x[_m[:len(x)]])) if _m[:len(x)].any() else float("nan")
+
+        out["holds"][str(h)] = {"effect": round(observed, 8),
+                                "n": int((spike & ok).sum()),
+                                "null": _null_p(observed, pool, stat)}
+    head = out["holds"].get("2") or {}
+    out["effect"] = head.get("effect")
+    out["null"] = head.get("null")
+    return out
+
+
+def donate_f1(apply: bool) -> dict[str, Any]:
+    """Donate every F1 cell not donated before: one trial each, charged at the docket."""
+    from mt5desk.family_idio_volume import f1_cells
+    cells = f1_cells()
+    try:
+        state = json.loads(F1_STATE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        state = {}
+    done = set(state.get("donated") or [])
+
+    def ident(c: dict[str, Any]) -> str:
+        return json.dumps({"symbol": c["symbol"], "family": c["family"],
+                           "params": c["params"]}, sort_keys=True)
+
+    new = [c for c in cells if ident(c) not in done]
+    out: dict[str, Any] = {"cells": len(cells), "new": len(new),
+                           "already": len(cells) - len(new)}
+    if not apply or not new:
+        return out
+    import proposer_common as pc  # type: ignore[import-not-found]
+    path = pc.donate(F1_SOURCE, new, tests_run=len(new))
+    out["path"] = str(path) if path else None
+    out["donation"] = {k: pc.LAST_DONATION.get(k)
+                       for k in ("donated", "refused_unstamped", "refused_wrong_lane")}
+    if path:
+        state["donated"] = sorted(done | {ident(c) for c in new})
+        state["updated_utc"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        F1_STATE.parent.mkdir(parents=True, exist_ok=True)
+        F1_STATE.write_text(json.dumps(state, indent=1, sort_keys=True), encoding="utf-8")
+    return out
+
+
 # ---------------------------------------------------------------------------- edge decay
 
 def _edge_decay() -> dict[str, Any]:
@@ -441,9 +544,15 @@ def build() -> dict[str, Any]:
             "round_number_magnet": _round_magnet(df),
             "market_maker": _market_maker(df),
         }
-    if not per_symbol:
+    # F1 FLOW PRESSURE (GAP_MAP row 42) on its own target set, whatever is live: the footprint
+    # is measured where the F1 cells trade, not only where the book already is.
+    from mt5desk.family_idio_volume import F1_SYMBOLS
+    flow = {sym: _flow_pressure(sym) for sym in F1_SYMBOLS}
+    if not per_symbol and not any(v.get("holds") for v in flow.values()):
         return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
                 "why": "no live symbol has usable H1 history on this box"}
+    for sym, v in flow.items():
+        per_symbol.setdefault(sym, {})["flow_pressure"] = v
 
     # WHAT SURVIVED ITS OWN NULL. A footprint that does not is a shape in the noise, and the
     # count of those is the honest headline rather than the list of everything measured.
@@ -540,6 +649,10 @@ def main(argv: list[str] | None = None) -> int:
     if not a.apply:
         print("  --apply not given; nothing written")
         return 0
+    # THE F1 CELLS GO TO THE GAUNTLET WHATEVER THE FOOTPRINT SAYS: the footprint is evidence that
+    # the participant is present, never a filter on which hypotheses are judged (L1.60).
+    doc["f1_donation"] = donate_f1(apply=True)
+    print(f"  F1 idio-volume cells: {doc['f1_donation']}")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(f"-> {OUT}")
