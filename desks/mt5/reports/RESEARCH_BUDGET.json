@@ -1,5 +1,5 @@
 {
- "at": "2026-10-14T12:55:39+00:00",
+ "at": "2026-10-14T13:47:26+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,20 +9,20 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-14T12:55:09+00:00",
+   "at": "2026-10-14T13:46:41+00:00",
    "bandit_at": "2026-10-14T00:56:34.241147+00:00",
-   "hour": "2026-10-14T12",
+   "hour": "2026-10-14T13",
    "arm": "control",
    "wanted_s": 480,
    "floor_s": 240,
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 0,
-   "surplus_s": 1487.0,
-   "surplus_why": "department 'discovery' measured spare 1487s/hour",
+   "surplus_s": 1558.8,
+   "surplus_why": "department 'discovery' measured spare 1559s/hour",
    "contract": {
     "n_treated": 24,
-    "n_control": 0,
+    "n_control": 1,
     "verdict": "UNMEASURED",
     "why": "fewer than 3 units in an arm",
     "window_d": 14.0
@@ -121,7 +121,7 @@
   "legs": {
    "alpha_evolution": {
     "n_treated": 24,
-    "n_control": 0,
+    "n_control": 1,
     "verdict": "UNMEASURED",
     "why": "fewer than 3 units in an arm",
     "window_d": 14.0
