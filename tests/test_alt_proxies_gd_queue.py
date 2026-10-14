@@ -201,7 +201,10 @@ def test_held_routes_carry_a_quote_and_have_no_source_row(tmp_path: Path) -> Non
                                   # pass 6 (F2, F4 and the FINRA margin route), all HELD
                                   "comex_warehouse_stocks", "lme_warehouse_stocks",
                                   "jpx_short_selling_ratio", "jpx_margin_balances",
-                                  "jp_tocom_settlements", "us_finra_margin_statistics"}
+                                  "jp_tocom_settlements", "us_finra_margin_statistics",
+                                  # the China exchange holds, fence rows since the pass-6 delta
+                                  "cnx_shfe", "cnx_ine", "cnx_dce", "cnx_czce", "cnx_gfex",
+                                  "cnx_cffex"}
     for rid, h in A.HELD_ROUTES.items():
         assert h["verdict"] == "HELD" and h["terms_url"].startswith("https://"), rid
         assert h["terms_quote"] and h["reason"] and h["unblock"], rid
