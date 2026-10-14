@@ -28,14 +28,14 @@ trigger are the same event and must not cancel each other in a mean. Reported in
 account currency, since R is the unit every gate and sizing decision on this desk is written in:
 a 0.10R average slip is not a rounding error, it is 63% of the gold book's +0.159R edge.
 
-THE R COLUMN IS NOT YET COHERENT AND THIS MODULE SAYS SO (2026-10-14). `slip_r` is
-`slip_quote / risk_quote`, and the live ledger's `risk_quote` is ACCOUNT MONEY at the traded lot
-(4.00 EUR on a 0.01-lot gold short, 10.81 on a 0.03-lot one), not a price distance: FX rows read
-~1e-5 R whatever they slipped, and one gold short whose stop sat 0.10 from its fill (ticket
-222937609, risk_quote 0.087 EUR) read -44.3R and alone moved the book mean to -0.20R. The
-denominator fix is owned elsewhere (the Max-growth lane), so `slip_r` and every pooled field are
-left exactly as they were; `slip_breakdown` reports slip in PRICE and POINTS only and marks its R
-columns UNMEASURED until that fix lands.
+THE R DENOMINATOR IS THE INTENT'S STOP DISTANCE IN PRICE (2026-10-14, agreed with the
+Max-growth lane, whose #391 rebases on this). `slip_r` was `slip_quote / risk_quote`, and the live
+ledger's `risk_quote` is ACCOUNT MONEY at the traded lot (4.00 EUR on a 0.01-lot gold short, 10.81
+on a 0.03-lot one), not a price distance: FX rows read ~1e-5 R whatever they slipped, and one gold
+short whose stop sat 0.10 from its fill (ticket 222937609, risk_quote 0.087 EUR) read -44.3R and
+alone moved the book mean to -0.20R. `slip_r` is now price over price (`slip_stop_frac`); the old
+quotient is kept as `slip_r_money` for audit only, and the pooled `mean_slip_r` averages the
+CLEAN (non-quarantined) rows. Slip is reported here and charged nowhere.
 
 THE SIGN IS UNCHANGED AND IT IS NOT INVERTED: positive is a COST (filled worse than asked),
 negative is price IMPROVEMENT. A negative `edge_share` therefore says execution GAVE edge, not
@@ -376,10 +376,8 @@ def _stats(vals: list[float | None]) -> dict[str, Any]:
             "status": "MEASURED"}
 
 
-#: The breakdown's R column until the denominator is fixed (see the module docstring).
-R_UNMEASURED = {"n": 0, "mean": None, "median": None, "p75": None,
-                "status": "UNMEASURED: markout slip_r divides price slip by risk_quote (account "
-                          "money); units incoherent pending the denominator fix"}
+#: What the breakdown's R column is.
+R_UNITS = "slip_quote / |intended - intent stop| (price over price; slip_stop_frac)"
 
 
 def _block(rows: list[dict]) -> dict[str, Any]:
@@ -388,14 +386,15 @@ def _block(rows: list[dict]) -> dict[str, Any]:
                            "n_clean": len(clean), "n_small": len(clean) < SLIP_N_SMALL}
     for tag, rs in (("all", rows), ("clean", clean)):
         blk = {u: _stats([r.get(f"slip_{u}") for r in rs]) for u in ("quote", "pts")}
-        blk["r"] = dict(R_UNMEASURED)
+        blk["r"] = _stats([r.get("slip_stop_frac") for r in rs])
         out[tag] = blk
     return out
 
 
 def slip_breakdown(rows: list[dict]) -> dict[str, Any]:
     """Per sleeve, per symbol and per (symbol, broker hour-of-day): n, mean, median and p75 slip in
-    quote (price) and in points (R is UNMEASURED, see `R_UNMEASURED`), over ALL rows and over the CLEAN (non-quarantined) rows, with every
+    quote (price), in points and in R (of the intent's stop), over ALL rows and over the CLEAN
+    (non-quarantined) rows, with every
     quarantined row listed and its reason. Cells are keyed on the broker hour so they line up with
     the cost surface's `hours` cells."""
     def group(key: Any) -> dict[str, list[dict]]:
@@ -416,7 +415,7 @@ def slip_breakdown(rows: list[dict]) -> dict[str, Any]:
     return {
         "sign": SLIP_SIGN,
         "units": {"quote": "price units", "pts": "slip_quote / the intent's point",
-                  "r": R_UNMEASURED["status"]},
+                  "r": R_UNITS},
         "hour_clock": "broker (New York + 7 h), the cost surface's clock; from the entry time "
                       "when the ledger has it, else the intent's send time",
         "rule": {"n_small_below": SLIP_N_SMALL,
@@ -529,8 +528,9 @@ def compute(intents: list[dict], deals: list[dict],
             "symbol": symbol, "pending": pending,
             "intended": float(want), "fill": float(got),
             "slip_quote": slip_quote,
-            # UNCHANGED: price over risk_quote (account money). See the module docstring.
-            "slip_r": (slip_quote / risk) if risk > 0 else None,
+            # Price over price: slip in units of the intent's own stop. See the docstring.
+            "slip_r": (slip_quote / stop) if stop else None,
+            "slip_r_money": (slip_quote / risk) if risk > 0 else None,
             "stop_distance": stop, "stop_basis": stop_basis,
             "slip_stop_frac": (slip_quote / stop) if stop else None,
             "slip_pts": (slip_quote / point) if point and point > 0 else None,
@@ -554,7 +554,7 @@ def compute(intents: list[dict], deals: list[dict],
                        account_kind=kind, attributed_deals=len(chain), chain=chain)
 
     sq = sorted(r["slip_quote"] for r in rows)
-    srs = [r["slip_r"] for r in rows if r["slip_r"] is not None]
+    srs = [r["slip_r"] for r in rows if r["slip_r"] is not None and not r.get("quarantine")]
     mean_r = (sum(srs) / len(srs)) if srs else 0.0
     return Markout(
         n_deals=len(deals), n_matched=len(rows), n_unfilled_intents=unfilled,

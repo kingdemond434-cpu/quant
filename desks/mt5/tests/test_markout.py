@@ -199,16 +199,17 @@ def test_the_gateway_writes_the_key_chain_and_filters_magic_in_python():
 # --- 2026-10-14: the R denominator, the breakdown and the quarantine -------------------------
 
 
-def test_slip_r_math_is_unchanged_and_the_breakdown_marks_R_unmeasured():
-    """slip_r is still price / risk_quote (its denominator fix is owned by another lane); the
-    breakdown refuses to aggregate an incoherent unit and says why."""
+def test_slip_r_is_price_over_the_intents_stop_never_account_money():
+    """slip_r is the slip in units of the intent's own stop (price over price); the old
+    price/risk_quote quotient survives only as slip_r_money, for audit."""
     m = compute([_intent(1, 2000.0, "sell", stop=4.0)], [_deal(1, 2001.0, SELL, risk=0.087)],
                 points={})
-    assert m.rows[0]["slip_r"] == pytest.approx(-1.0 / 0.087)
+    assert m.rows[0]["slip_r"] == pytest.approx(-0.25)
     assert m.rows[0]["slip_stop_frac"] == pytest.approx(-0.25)
+    assert m.rows[0]["slip_r_money"] == pytest.approx(-1.0 / 0.087)
     assert m.rows[0]["stop_basis"] == "intent_stop"
     r = m.slip["pooled"]["all"]["r"]
-    assert r["mean"] is None and r["status"].startswith("UNMEASURED")
+    assert r["mean"] == pytest.approx(-0.25) and r["status"] == "MEASURED"
 
 
 def test_the_44R_row_is_quarantined_on_its_stop_fraction():
@@ -221,8 +222,10 @@ def test_the_44R_row_is_quarantined_on_its_stop_fraction():
          "sleeve": "xau_m5_anti_breakout_overla"}
     m = compute([it], [d], points={"XAUUSD": 0.01})
     row = m.rows[0]
-    assert row["slip_r"] == pytest.approx(-44.297, abs=0.01)
+    assert row["slip_r_money"] == pytest.approx(-44.297, abs=0.01)
+    assert row["slip_r"] == pytest.approx(row["slip_stop_frac"])
     assert row["quarantine"] and "stop distance" in row["quarantine"][0]
+    assert m.mean_slip_r == 0.0                # the only row is quarantined: no clean mean
     assert m.slip["pooled"]["n_quarantined"] == 1
     assert m.slip["quarantined"][0]["order"] == 222937609
 
