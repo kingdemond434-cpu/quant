@@ -225,7 +225,11 @@ def _markout() -> None:
         "attributed_share": m.attributed_share,
         "mean_slip_quote": m.mean_slip_quote, "mean_slip_r": m.mean_slip_r,
         "edge_share": m.edge_share, "why": m.why,
-    }, indent=2), encoding="utf-8")
+        # Per sleeve / per (symbol, broker hour) slip with the implausible-row quarantine
+        # (2026-10-14). The pooled fields above are kept for their readers; this block states
+        # its own sign (positive = cost) and its own R denominator.
+        "slip_breakdown": m.slip,
+    }, indent=2, default=str), encoding="utf-8")
     # THE CHAIN, MATERIALISED (2026-09-08). One row per deal the desk can walk back to its
     # intent -- release id, state vector, entry order, entry deal, close deal, realised R -- and
     # the share of all deals that have one. The programme's "no semantic breaks" property is

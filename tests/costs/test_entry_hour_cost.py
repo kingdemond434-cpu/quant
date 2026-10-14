@@ -241,3 +241,46 @@ def test_charged_vs_hour_names_the_rollover_undercharge():
     assert out["undercharged_at_rollover"] == ["X"]
     assert out["by_symbol"]["X"]["registry"]["0"]["x"] == 2.8
     assert out["pooled_vs_hourly"][0]["stored_pooled_pts"] == 147.0
+
+
+# --- measured entry slip: read-only helper (2026-10-14) -------------------------------------
+
+
+def _mk(sym_mean, sym_n, cells):
+    return {"slip_breakdown": {
+        "by_symbol": {"XAUUSD": {"clean": {"pts": {"mean": sym_mean, "n": sym_n}}}},
+        "by_symbol_hour": {"XAUUSD": {h: {"clean": {"pts": {"mean": m, "n": n}}}
+                                      for h, (m, n) in cells.items()}}}}
+
+
+def test_hour_slip_shrinks_a_thin_cell_toward_the_symbol_pool():
+    doc = _mk(10.0, 50, {"7": (40.0, 2), "13": (20.0, 90)})
+    v, info = ehc.hour_slip_pts(doc, "XAUUSD", 7)
+    w = 2 / (2 + ehc.SLIP_K)
+    assert v == pytest.approx(w * 40.0 + (1 - w) * 10.0)
+    assert info["basis"] == "hour_shrunk_to_symbol" and info["n"] == 2
+    v13, _ = ehc.hour_slip_pts(doc, "XAUUSD", 13)
+    assert v13 == pytest.approx(0.9 * 20.0 + 0.1 * 10.0)
+
+
+def test_hour_slip_empty_cell_is_the_symbol_pool():
+    v, info = ehc.hour_slip_pts(_mk(-3.0, 12, {}), "XAUUSD", 5)
+    assert v == pytest.approx(-3.0)          # measured improvement stays negative
+    assert info["basis"] == "symbol_pooled"
+
+
+def test_hour_slip_unmeasured_is_zero_and_says_so():
+    for doc in (None, {}, _mk(None, 0, {})):
+        v, info = ehc.hour_slip_pts(doc, "XAUUSD", 7)
+        assert v == 0.0
+        assert info["status"] == "UNMEASURED"
+
+
+def test_hour_cost_is_spread_plus_slip_and_none_without_a_spread():
+    surface = {"symbols": {"XAUUSD": {"hours": {"7": {"status": "MEASURED", "p50": 15.0,
+                                                       "n_nonzero": 500}}}}}
+    v, info = ehc.hour_cost_pts(surface, _mk(10.0, 50, {}), "XAUUSD", 7)
+    assert v == pytest.approx(25.0)
+    assert info["slip"]["basis"] == "symbol_pooled"
+    v2, info2 = ehc.hour_cost_pts(surface, None, "EURUSD", 7)
+    assert v2 is None and info2["slip"]["status"] == "UNMEASURED"

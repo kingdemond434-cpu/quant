@@ -481,3 +481,50 @@ def charged_spread_pts(costs: Any, meta_row: dict[str, Any], entry_ts: Any,
 
     per_lot = spread_at(costs, entry_ts if side > 0 else exit_ts)
     return per_lot / (ts * cs)
+
+
+#: Shrinkage constant for measured entry slip: an hour cell with n clean fills keeps weight
+#: n / (n + SLIP_K) and the rest goes to the symbol's pooled clean slip. With SLIP_K = 10 a cell
+#: needs 10 fills to carry half its own weight (the same count markout flags `n_small` below).
+SLIP_K = 10.0
+
+
+def hour_slip_pts(markout: dict[str, Any] | None, symbol: str, hour: int,
+                  k: float = SLIP_K) -> tuple[float, dict[str, Any]]:
+    """Measured entry slip in POINTS at broker `hour` for `symbol`, from markout.json's
+    `slip_breakdown` (clean rows only; positive = cost). READ-ONLY: no charge reads this yet.
+
+    Rule: v = w * cell_mean + (1 - w) * symbol_mean, w = n / (n + k), n = the cell's clean fills.
+    An empty cell is the symbol's pooled mean. A symbol with no clean measured fill returns 0.0
+    with status UNMEASURED -- 0 because no slip was measured, never because none exists; a reader
+    that charges it must carry the status. Negative only where fills measured price improvement.
+    """
+    sb = (markout or {}).get("slip_breakdown") or {}
+    sym = ((sb.get("by_symbol") or {}).get(symbol) or {}).get("clean") or {}
+    s_pts = sym.get("pts") or {}
+    s_mean, s_n = _num(s_pts.get("mean")), int(s_pts.get("n") or 0)
+    if s_mean is None or s_n <= 0:
+        return 0.0, {"status": "UNMEASURED", "basis": "UNMEASURED: no clean markout fill for "
+                     f"{symbol}; 0 charged by default, not measured", "n": 0}
+    cell = ((((sb.get("by_symbol_hour") or {}).get(symbol) or {}).get(str(int(hour) % 24))
+             or {}).get("clean") or {}).get("pts") or {}
+    c_mean, n = _num(cell.get("mean")), int(cell.get("n") or 0)
+    if c_mean is None or n <= 0:
+        return s_mean, {"status": "MEASURED", "basis": "symbol_pooled", "n": 0, "n_symbol": s_n,
+                        "weight_hour": 0.0}
+    w = n / (n + float(k))
+    return w * c_mean + (1.0 - w) * s_mean, {
+        "status": "MEASURED", "basis": "hour_shrunk_to_symbol", "n": n, "n_symbol": s_n,
+        "weight_hour": w, "k": float(k)}
+
+
+def hour_cost_pts(surface: dict[str, Any] | None, markout: dict[str, Any] | None, symbol: str,
+                  hour: int, q: str = "p50") -> tuple[float | None, dict[str, Any]]:
+    """Spread + measured slip in points at broker `hour`. READ-ONLY helper: not wired into any
+    charge (the slip measurement is under audit, 2026-10-14). None when the spread is UNMEASURED."""
+    spread, s_info = hour_spread_pts(surface, symbol, hour, q)
+    slip, p_info = hour_slip_pts(markout, symbol, hour)
+    if spread is None:
+        return None, {"spread": s_info, "slip": p_info}
+    return spread + slip, {"spread": s_info, "slip": p_info, "spread_pts": spread,
+                           "slip_pts": slip}

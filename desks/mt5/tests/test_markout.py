@@ -16,17 +16,28 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
-from mt5desk.markout import Markout, _direction, compute, load_jsonl, render  # noqa: E402
+from mt5desk.markout import (  # noqa: E402
+    IMPLAUSIBLE_R,
+    Markout,
+    _direction,
+    broker_hour,
+    compute,
+    load_jsonl,
+    render,
+    slip_breakdown,
+    surface_points,
+)
 
 BUY, SELL = 0, 1
 
 
-def _intent(ticket, intended, side="buy_stop"):
+def _intent(ticket, intended, side="buy_stop", stop=19.1):
+    sl = intended - stop if "buy" in side else intended + stop
     return {"ticket": ticket, "intended": intended, "side": side, "sleeve": "gold_asia",
-            "symbol": "XAUUSD"}
+            "symbol": "XAUUSD", "sl": sl}
 
 
-def _deal(ticket, fill, side=BUY, risk=19.1):
+def _deal(ticket, fill, side=BUY, risk=4.0):
     return {"order": ticket, "fill_price": fill, "side": side, "risk_quote": risk,
             "sleeve": "gold_asia", "symbol": "XAUUSD", "deal": ticket * 10}
 
@@ -57,7 +68,7 @@ def test_a_favourable_fill_is_negative_slip():
 
 def test_slippage_is_reported_in_R_because_that_is_the_unit_of_every_gate():
     """0.5 quote on a 19.1 stop distance is 0.0262R -- against a +0.159R edge, 16% of it."""
-    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.5, BUY, risk=19.1)])
+    m = compute([_intent(1, 2000.0, stop=19.1)], [_deal(1, 2000.5, BUY)])
     assert m.mean_slip_r == pytest.approx(0.5 / 19.1, rel=1e-6)
     assert m.edge_share == pytest.approx((0.5 / 19.1) / 0.159, rel=1e-6)
 
@@ -91,7 +102,7 @@ def test_no_fills_yet_is_not_a_clean_bill_of_health():
 
 def test_the_report_escalates_when_slippage_eats_the_edge():
     """0.10R average against a 0.159R edge is 63% of everything the book earns."""
-    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.0 + 1.91, BUY, risk=19.1)])
+    m = compute([_intent(1, 2000.0, stop=19.1)], [_deal(1, 2000.0 + 1.91, BUY)])
     assert m.mean_slip_r == pytest.approx(0.10, abs=0.001)
     out = render(m)
     assert "eating the edge" in out
@@ -183,3 +194,94 @@ def test_the_gateway_writes_the_key_chain_and_filters_magic_in_python():
         "history_deals_get takes no magic keyword; a refused keyword lands in the except and "
         "the ledger is silently never written")
     assert 'getattr(d, "magic", 0)' in src
+
+
+# --- 2026-10-14: the R denominator, the breakdown and the quarantine -------------------------
+
+
+def test_R_is_the_intents_stop_distance_never_the_ledgers_account_money_risk():
+    """THE -44R ROW. The live ledger's risk_quote is account money at the traded lot (0.087 EUR on
+    a gold short whose stop sat 0.10 from its fill). Dividing price slip by it read -44.3R and
+    moved the whole book from about 0 to -0.20R."""
+    m = compute([_intent(1, 2000.0, "sell", stop=4.0)], [_deal(1, 2001.0, SELL, risk=0.087)],
+                points={})
+    assert m.rows[0]["slip_r"] == pytest.approx(-0.25)
+    assert m.rows[0]["r_basis"] == "intent_stop"
+
+
+def test_the_position_stop_is_the_fallback_and_no_stop_is_unmeasured_not_risk_quote():
+    it = {"ticket": 1, "intended": 2000.0, "side": "buy", "symbol": "XAUUSD"}
+    m = compute([it], [{**_deal(1, 2000.5, BUY, risk=1.0), "sl": 1990.5}], points={})
+    assert m.rows[0]["slip_r"] == pytest.approx(0.05)
+    assert m.rows[0]["r_basis"] == "position_stop"
+    m2 = compute([dict(it)], [_deal(1, 2000.5, BUY, risk=1.0)], points={})
+    assert m2.rows[0]["slip_r"] is None
+    assert m2.rows[0]["r_basis"].startswith("UNMEASURED")
+
+
+def test_the_sign_is_stated_in_the_payload_positive_is_a_cost():
+    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.5, BUY)], points={})
+    assert "positive = cost" in m.slip["sign"]
+    assert m.slip["pooled"]["all"]["quote"]["mean"] == pytest.approx(0.5)
+    assert "positive = cost" in render(m)
+
+
+def _row(sleeve, sym, slip, r=None, pts=None, hour=10, spread=None, pending=False):
+    row = {"sleeve": sleeve, "symbol": sym, "slip_quote": slip, "slip_r": r, "slip_pts": pts,
+           "broker_hour": hour, "spread_pts_at_decision": spread, "pending": pending}
+    from mt5desk.markout import _quarantine
+    row["quarantine"] = _quarantine(row)
+    return row
+
+
+def test_breakdown_reports_n_mean_median_p75_per_sleeve_and_symbol_hour():
+    rows = [_row("a", "XAUUSD", q, q / 4, q * 100, hour=h)
+            for q, h in ((0.1, 10), (0.2, 10), (0.3, 11), (0.4, 11))]
+    b = slip_breakdown(rows)
+    s = b["by_sleeve"]["a"]["clean"]["pts"]
+    assert s["n"] == 4
+    assert s["mean"] == pytest.approx(25.0)
+    assert s["median"] == pytest.approx(25.0)
+    assert s["p75"] == pytest.approx(32.5)
+    assert b["by_sleeve"]["a"]["n_small"] is True
+    cell = b["by_symbol_hour"]["XAUUSD"]["10"]["clean"]["r"]
+    assert cell["n"] == 2 and cell["mean"] == pytest.approx(0.0375)
+
+
+def test_an_implausible_row_is_quarantined_by_name_kept_in_all_excluded_from_clean():
+    rows = [_row("a", "XAUUSD", 0.1, 0.02), _row("a", "XAUUSD", -3.84, -0.974)]
+    b = slip_breakdown(rows)
+    assert b["by_sleeve"]["a"]["n_quarantined"] == 1
+    assert b["by_sleeve"]["a"]["all"]["r"]["n"] == 2
+    assert b["by_sleeve"]["a"]["clean"]["r"]["mean"] == pytest.approx(0.02)
+    assert len(b["quarantined"]) == 1 and str(IMPLAUSIBLE_R) in b["quarantined"][0]["quarantine"][0]
+
+
+def test_the_spread_rule_quarantines_a_market_order_but_not_a_pending_stop():
+    assert _row("a", "XAUUSD", 3.25, 0.34, 325.0, spread=7.0)["quarantine"]
+    assert not _row("a", "XAUUSD", 2.02, 0.05, 202.0, spread=6.0, pending=True)["quarantine"]
+
+
+def test_an_empty_unit_is_unmeasured_not_zero():
+    b = slip_breakdown([_row("a", "EURUSD", 0.0001, None, None)])
+    assert b["pooled"]["all"]["r"]["status"] == "UNMEASURED"
+    assert b["pooled"]["all"]["r"]["mean"] is None
+
+
+def test_points_come_from_the_intent_then_the_surface(tmp_path):
+    p = tmp_path / "cs.json"
+    p.write_text('{"symbols": {"XAUUSD": {"tick_size": 0.01}, "BAD": {"tick_size": 0}}}')
+    assert surface_points(p) == {"XAUUSD": 0.01}
+    assert surface_points(tmp_path / "missing.json") == {}
+    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.5, BUY)], points=surface_points(p))
+    assert m.rows[0]["slip_pts"] == pytest.approx(50.0)
+    it = {**_intent(1, 2000.0), "point": 0.1}
+    assert compute([it], [_deal(1, 2000.5, BUY)], points={}).rows[0]["slip_pts"] == \
+        pytest.approx(5.0)
+
+
+def test_broker_hour_is_new_york_plus_seven():
+    assert broker_hour("2026-07-01T10:00:00+00:00") == 13      # EDT: UTC+3
+    assert broker_hour("2026-01-15T10:00:00Z") == 12           # EST: UTC+2
+    assert broker_hour("2026-01-15T10:00:00") == 12            # naive read as UTC
+    assert broker_hour("not a time") is None
