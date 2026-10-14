@@ -174,13 +174,14 @@ RAILS: tuple[Rail, ...] = (
     # writer deletes the field.
     Rail("ordered_standby_hold", "veto",
          "promoter.reconcile_capital standby_reason / heal_silent_demotions._reason",
-         "measure_veto"),
+         "measure_ordered_standby_hold"),
     # THE REPLICATION LIVE DOOR (coordinator ruling C, 2026-10-14). A row newly written LIVE on
     # a canon certificate needs a REPLICATED independent rebuild, or the principal's named waiver
     # (MISMATCH voids it). Rows already LIVE are not demoted. Billed from the forward clocks of
     # the rows it withheld, which keep running as paper.
     Rail("replication_live_door", "gate",
-         "promoter.replication_door <- admission_integrity.live_refusal", "measure_veto"),
+         "promoter.replication_door <- admission_integrity.live_refusal",
+         "measure_replication_live_door"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}
