@@ -12,12 +12,14 @@
  "consecutive_hangs": 0,
  "sweep_started_utc": "2026-10-14T18:11:13+00:00",
  "hang_limit_s": 17280.0,
- "heartbeat_utc": "2026-10-14T20:49:54+00:00",
+ "heartbeat_utc": "2026-10-14T21:04:58+00:00",
  "sweep_phase": {
   "pid": 15980,
   "sweep_started_utc": "2026-10-14T18:11:14+00:00",
-  "phases": {},
-  "phase": "plan",
-  "phase_started_utc": "2026-10-14T18:11:14+00:00"
+  "phases": {
+   "plan": 9974.6
+  },
+  "phase": "build_shards",
+  "phase_started_utc": "2026-10-14T20:57:29+00:00"
  }
 }

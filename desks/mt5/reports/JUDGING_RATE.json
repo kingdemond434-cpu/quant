@@ -1,51 +1,51 @@
 {
- "at": "2026-10-14T17:54:43+00:00",
+ "at": "2026-10-14T20:59:24+00:00",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 864239,
+  "rows_total": 864242,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-10-14T05:40:58+00:00",
+  "last_verdict_at": "2026-10-14T17:59:16+00:00",
   "counts": {
    "1h": 0,
-   "24h": 624,
-   "7d": 108746
+   "24h": 627,
+   "7d": 108749
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
-   "24h": 433,
-   "7d": 43035
+   "24h": 435,
+   "7d": 43037
   },
-  "first_terminal_cells": 292852,
+  "first_terminal_cells": 292854,
   "first_terminal_per_hour": {
    "1h": 0.0,
-   "24h": 18.042,
-   "7d": 256.161
+   "24h": 18.125,
+   "7d": 256.173
   },
   "per_hour": {
    "1h": 0.0,
-   "24h": 26.0,
-   "7d": 647.298
+   "24h": 26.125,
+   "7d": 647.315
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 14323,
-   "7d": 198000
+   "24h": 14322,
+   "7d": 194133
   },
   "per_hour": {
-   "24h": 596.792,
-   "7d": 1178.571
+   "24h": 596.75,
+   "7d": 1155.554
   }
  },
- "verdicts_per_hour": 26.0,
- "verdicts_per_day": 624.0,
+ "verdicts_per_hour": 26.125,
+ "verdicts_per_day": 627.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 433.0,
+ "first_judged_per_day": 435.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 14323.0,
+ "created_per_day": 14322.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
