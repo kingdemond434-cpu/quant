@@ -95,6 +95,9 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
     # No early return when there is no intelligence dir: the side ledgers below still count.
+    # The learned miners re-run the SAME grid x symbols x thresholds every day, so their daily
+    # discovery files repeat one charge; they are reconciled below against the trial ledger.
+    learned_files: dict[str, tuple[int, set[str]]] = {}
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
@@ -103,9 +106,14 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
         if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
             continue
         n = int(doc["tests_run"])
-        total += n
         fams = {str(r.get("family")) for r in (doc.get("discoveries") or [])
                 if isinstance(r, dict) and r.get("family")}
+        seat = Path(f).parent.name
+        if seat.startswith("learned_"):
+            prev_n, prev_f = learned_files.get(seat, (0, set()))
+            learned_files[seat] = (max(prev_n, n), prev_f | fams)
+            continue
+        total += n
         for fam in fams or {"?"}:
             by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
     # FACTOR x MODEL PAIRINGS ARE TRIALS TOO. Co-evolution writes no discovery file (a pairing is
@@ -138,22 +146,38 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
                 by_fam[str(fam)] = by_fam.get(str(fam), 0) + int(k or 0)
     except (OSError, ValueError, TypeError):
         pass
-    # A MINER RUN THAT PROPOSES NOTHING STILL RAN ITS TESTS. `learned_miners` writes one row per
-    # (config, symbol, threshold) it tried; a run that donated is already counted through its
-    # discovery file's tests_run, so only the runs that donated nothing are charged here -- the
-    # null runs that would otherwise leave no trace in the lifetime count.
+    # THE LEARNED MINERS: ONE CHARGE PER DISTINCT TRIAL, EVER (audit 2026-10-13). The miner
+    # writes one ledger row per (panel, symbol, config, threshold) it tried, donated or not, and
+    # re-runs the same grid daily; a raw row count (or a sum of its daily files' tests_run)
+    # charged the same trial once a day and inflated the judge's N. Per seat the charge is the
+    # number of DISTINCT trial ids in the ledger, or that seat's largest single discovery file if
+    # it is larger (a ledger that began after the seat's first file never undercounts). A max,
+    # never a sum, so nothing is counted twice.
+    ledger_ids: dict[str, dict[str, str]] = {}
     try:
         for ln in (DESK / "data" / "learned_miners_trials.jsonl").read_text("utf-8").splitlines():
             if not ln.strip():
                 continue
             row = json.loads(ln)
-            if not isinstance(row, dict) or row.get("donated"):
+            if not isinstance(row, dict):
                 continue
-            fam = str(row.get("family") or "?").rsplit(":", 1)[-1]
-            total += 1
-            by_fam[fam] = by_fam.get(fam, 0) + 1
+            fam_full = str(row.get("family") or "?")
+            seat = fam_full.split(":", 1)[0] if ":" in fam_full else str(row.get("source") or "?")
+            tid = str(row.get("trial_id") or json.dumps(row, sort_keys=True))
+            ledger_ids.setdefault(seat, {}).setdefault(tid, fam_full.rsplit(":", 1)[-1])
     except (OSError, ValueError, TypeError):
         pass
+    for seat in sorted(set(ledger_ids) | set(learned_files)):
+        ids = ledger_ids.get(seat, {})
+        file_n, file_fams = learned_files.get(seat, (0, set()))
+        if len(ids) >= file_n:
+            total += len(ids)
+            for fam in ids.values():
+                by_fam[fam] = by_fam.get(fam, 0) + 1
+        else:
+            total += file_n
+            for fam in file_fams or {"?"}:
+                by_fam[fam] = by_fam.get(fam, 0) + file_n // max(1, len(file_fams))
     return total, by_fam
 
 
