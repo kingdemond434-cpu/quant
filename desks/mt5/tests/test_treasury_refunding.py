@@ -81,10 +81,11 @@ def test_a_guided_change_is_no_surprise_and_a_change_against_guidance_is() -> No
 
 
 def test_the_series_holds_each_surprise_from_its_release_stamp() -> None:
-    scored = [{"date": "2026-10-01", "first_seen": "f", "size_surprise": 0.05,
-               "guidance_shift": None}]
+    scored = [{"date": "2026-10-01", "first_seen": "2026-12-01T00:00:00+00:00",
+               "size_surprise": 0.05, "guidance_shift": None}]
     rows = tr.series_rows(scored, today=date(2026, 10, 8))
     assert rows[0]["available_time"] == "2026-10-01T14:00:00+00:00"
+    assert rows[0]["stamp_basis"] == "published_history" and rows[0]["vintage_id"] != "v1"
     assert [r["size_surprise"] for r in rows] == [0.05] * tr.POST_DAYS + [0.0] * 3
     assert rows[0]["guidance_shift"] == "" and rows[-1]["guidance_shift"] == 0.0
     assert rows[-1]["available_time"].startswith("2026-10-08")
@@ -156,3 +157,47 @@ def test_a_pass_that_measured_nothing_says_unmeasured(tmp_path: Path,
     monkeypatch.setattr(collector_lab, "fetch", lambda url, _s, **_k: (b"", "REFUSED:x"))
     monkeypatch.setattr(tr, "REFETCH_S", 0.0)
     assert tr.run(uni={}, lane_ok=lambda s, f: True)["state"] == "DARK"
+
+
+def test_a_statement_read_late_is_stamped_from_its_first_sight() -> None:
+    """Audit must-fix 5 on #394: first read 3 days after the release, inside its hold."""
+    scored = [{"date": "2026-10-01", "first_seen": "2026-10-04T09:00:00+00:00",
+               "size_surprise": 0.05, "guidance_shift": 1.0}]
+    rows = tr.series_rows(scored, today=date(2026, 10, 8))
+    held = [r for r in rows if r["size_surprise"] == 0.05]
+    assert len(held) == tr.POST_DAYS
+    assert all(r["available_time"] >= "2026-10-04T09:00:00+00:00" for r in held)
+    assert {r["stamp_basis"] for r in held} == {"first_sight"}
+    again = tr.series_rows([{**scored[0], "size_surprise": 0.06}], today=date(2026, 10, 8))
+    assert again[0]["vintage_id"] != rows[0]["vintage_id"], "a re-read is a revision"
+
+
+@pytest.mark.parametrize(("text", "want"), [
+    ("Treasury does not anticipate needing to increase nominal coupon or FRN auction sizes "
+     "for at least the next several quarters.", 0),
+    ("Treasury anticipates maintaining nominal coupon and FRN auction sizes for at least the "
+     "next several quarters. Treasury will increase the 5-year TIPS auction sizes.", 0),
+    ("Treasury will increase TIPS auction sizes.", None),
+    ("Treasury anticipates that it will need to increase nominal coupon auction sizes.", 1),
+    ("Treasury anticipates maintaining nominal coupon auction sizes; Treasury plans to "
+     "increase nominal coupon auction sizes.", None),
+])
+def test_guidance_reads_nominal_coupons_and_negation(text: str, want: int | None) -> None:
+    """Audit must-fixes 1 and 2 on #394."""
+    assert tr.guidance(text) == want
+
+
+def test_sizes_come_from_the_refunding_list_only() -> None:
+    """Audit must-fix 4 on #394: an earlier reopening sentence never sets a tenor."""
+    text = ("Treasury will auction a $39 billion 10-year note reopening next week.\n"
+            "The securities are: a 3-year note in the amount of $58 billion, a 10-year note in "
+            "the amount of $42 billion, and a 30-year bond in the amount of $25 billion.")
+    assert tr.sizes(text) == {"3": 58.0, "10": 42.0, "30": 25.0}
+    assert tr.sizes("Treasury will auction a $39 billion 10-year note reopening.") == {}
+
+
+def test_an_unreadable_prior_guidance_leaves_the_size_surprise_unmeasured() -> None:
+    """Audit must-fix 3 on #394."""
+    s = tr.surprises([{"date": "2024-01-31", "sizes": {"3": 52}, "guidance": None},
+                      {"date": "2024-05-01", "sizes": {"3": 54}, "guidance": 0}])
+    assert s[1]["size_surprise"] is None and s[1]["guidance_shift"] is None

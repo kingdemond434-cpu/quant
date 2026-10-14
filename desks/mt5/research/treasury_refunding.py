@@ -23,10 +23,12 @@ TWO SIGNALS, BOTH SURPRISES RELATIVE TO WHAT TREASURY ITSELF HAD SAID.
     minus the previous one's. A move to "increases ahead" is supply news before any auction.
 Each is non-zero on the release day and the POST_DAYS - 1 days after it, zero otherwise.
 
-POINT IN TIME. The statement is released at 08:30 New York time on the announcement day; the
-row for the release day is stamped available at RELEASE_HOUR_UTC that day (after 08:30 ET in
-both summer and winter), and the conditioner's own 24 h lag then acts from the next day. Our
-own first sight is kept in `retrieval_time`. Rows exist only up to today.
+POINT IN TIME. The statement is released at 08:30 New York time on the announcement day; each
+held row is stamped at RELEASE_HOUR_UTC that day (after 08:30 ET in summer and winter). A
+statement the desk first read while its surprise was still held is stamped no earlier than that
+read (`stamp_basis = first_sight`); one read after its hold ended is history, stamped at its own
+publication and flagged `published_history`. The conditioner's own 24 h lag then acts. Rows
+exist only up to today; the vintage is a hash of the statements the series was built from.
 
 WHAT IS NOT YET READ, said rather than hidden: the TBAC minutes and the primary-dealer
 expectations they summarise. They would sharpen the surprise (dealer consensus vs outcome) and
@@ -88,6 +90,16 @@ _MONTHS = {m: i + 1 for i, m in enumerate(
 _DATE = re.compile(r"\b(" + "|".join(_MONTHS) + r")\s+(\d{1,2}),?\s+(\d{4})\b", re.I)
 _SIZE = re.compile(r"\$\s?(\d+(?:\.\d+)?)\s+billion\s+(?:of\s+)?(?:(?:the|a|new)\s+)*"
                    r"(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b", re.I)
+#: The statement's own phrasing: "a 10-year note in the amount of $42 billion".
+_SIZE_AFTER = re.compile(r"\b(3|10|30)[-\s]year\s+(?:notes?|bonds?)\b[^.$]{0,60}?"
+                         r"\$\s?(\d+(?:\.\d+)?)\s+billion", re.I)
+#: A clause about NOMINAL coupon sizes: TIPS, FRN and bill sizes are other supply.
+_COUPON = re.compile(r"\bcoupon", re.I)
+_NOMINAL = re.compile(r"\bnominal coupon", re.I)
+_OTHER_SUPPLY = re.compile(r"\bTIPS\b|inflation[- ]protected|\bFRNs?\b|floating rate|\bbills?\b",
+                           re.I)
+_NEGATED = re.compile(r"(?:\bnot\b|\bno longer\b|n't\b|\bwithout\b)[^.;]{0,40}?"
+                      r"\b(?:increase|reduce|reduction|decrease|cut)", re.I)
 _LINK = re.compile(r"""<a\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a\s*>""", re.I | re.S)
 _ABOUT = re.compile(r"coupon|auction sizes?|issuance sizes?", re.I)
 _UP = re.compile(r"\b(?:anticipates?|expects?|plans?|will)\b[^.]{0,100}?\bincrease"
@@ -152,25 +164,56 @@ def release_date(text: str, *, today: date | None = None) -> date | None:
     return None
 
 
+def _sizes_in(seg: str) -> dict[str, float]:
+    found: dict[str, float] = {}
+    for mt in _SIZE.finditer(seg):
+        found.setdefault(mt.group(2), float(mt.group(1)))
+    for mt in _SIZE_AFTER.finditer(seg):
+        found.setdefault(mt.group(1), float(mt.group(2)))
+    return found
+
+
 def sizes(text: str) -> dict[str, float]:
-    """Tenor -> $bn for the FIRST size the statement names for each refunding tenor."""
-    out: dict[str, float] = {}
-    for mt in _SIZE.finditer(text):
-        out.setdefault(mt.group(2), float(mt.group(1)))
-    return {t: out[t] for t in TENORS if t in out}
+    """Tenor -> $bn, read ONLY from the refunding list: the first block or sentence that
+    names a size for at least two of the 3/10/30-year tenors (audit must-fix 4 on #394: an
+    earlier "$39 billion 10-year note reopening" sentence set the 10-year by order). Empty when
+    the statement has no such list -- UNMEASURED, never a size read elsewhere."""
+    for seg in [*text.split("\n"), *_sentences(text)]:
+        found = _sizes_in(seg)
+        if sum(t in found for t in TENORS) >= 2:
+            return {t: found[t] for t in TENORS if t in found}
+    return {}
+
+
+def _clause_reading(clause: str) -> int | None:
+    nominal = bool(_NOMINAL.search(clause))
+    if not nominal and (not _COUPON.search(clause) or _OTHER_SUPPLY.search(clause)):
+        return None
+    if _NEGATED.search(clause):
+        return 0            # "does not anticipate needing to increase": sizes held
+    if _UP.search(clause):
+        return 1
+    if _DOWN.search(clause):
+        return -1
+    if _FLAT.search(clause):
+        return 0
+    return None
 
 
 def guidance(text: str) -> int | None:
-    """+1 increases ahead, -1 reductions ahead, 0 sizes maintained, None if no sentence about
-    coupon auction sizes says any of the three."""
-    about = [s for s in _sentences(text) if _ABOUT.search(s)]
-    if any(_UP.search(s) for s in about):
-        return 1
-    if any(_DOWN.search(s) for s in about):
-        return -1
-    if any(_FLAT.search(s) for s in about):
-        return 0
-    return None
+    """Treasury's guidance on NOMINAL coupon auction sizes: +1 increases ahead, -1 reductions
+    ahead, 0 held. Read per clause, so a TIPS, FRN or bill clause never counts, and a negated
+    increase reads as held (audit must-fixes 1 and 2 on #394). Clauses that disagree, or none
+    that say anything, are None: UNMEASURED, never a guess."""
+    seen = set()
+    for sent in _sentences(text):
+        if not _ABOUT.search(sent):
+            continue
+        for clause in re.split(r";|,\s*(?:while|but|and|whereas)\b|\bwhile\b", sent):
+            v = _clause_reading(clause)
+            if v is not None:
+                seen.add(v)
+    return seen.pop() if len(seen) == 1 else None
 
 
 def parse(text: str, url: str, seen: str, *, today: date | None = None) -> dict[str, Any] | None:
@@ -196,7 +239,11 @@ def surprises(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                 change = sum(float(cur["sizes"][t]) for t in common) / before - 1.0
                 guided = prev.get("guidance")
                 sign = (change > 0) - (change < 0)
-                size_s = 0.0 if (sign == 0 or guided == sign) else round(change, 6)
+                if sign == 0:
+                    size_s = 0.0
+                elif isinstance(guided, int):
+                    size_s = 0.0 if guided == sign else round(change, 6)
+                # an unreadable prior guidance leaves the surprise UNMEASURED (must-fix 3)
             g0, g1 = prev.get("guidance"), cur.get("guidance")
             if isinstance(g0, int) and isinstance(g1, int):
                 shift = float(g1 - g0)
@@ -205,7 +252,31 @@ def surprises(statements: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 SERIES_COLUMNS = ("available_time", "published_time", "retrieval_time", "source_id",
-                  "vintage_id", *SIGNALS)
+                  "vintage_id", "stamp_basis", *SIGNALS)
+
+
+def _seen_at(ev: dict[str, Any]) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(ev.get("first_seen")))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def _stamp(d: date, ev: dict[str, Any] | None) -> tuple[datetime, str]:
+    """When day D's row became knowable (audit must-fix 5 on #394, #388's rule). A statement
+    the desk first read while its surprise was still being held is stamped no earlier than that
+    read (`first_sight`). One first read after its hold had ended is history: stamped at its own
+    08:30 ET publication (RELEASE_HOUR_UTC), the document's public time, and flagged."""
+    pub = datetime(d.year, d.month, d.day, RELEASE_HOUR_UTC, tzinfo=UTC)
+    if ev is None:
+        return pub, "calendar"
+    seen = _seen_at(ev)
+    rel = date.fromisoformat(str(ev["date"]))
+    hold_end = datetime(rel.year, rel.month, rel.day, tzinfo=UTC) + timedelta(days=POST_DAYS)
+    if seen is not None and seen < hold_end:
+        return max(pub, seen), "first_sight"
+    return pub, "published_history"
 
 
 def series_rows(scored: Sequence[dict[str, Any]], *, today: date | None = None
@@ -216,15 +287,24 @@ def series_rows(scored: Sequence[dict[str, Any]], *, today: date | None = None
         return []
     end = today or datetime.now(UTC).date()
     events = [(date.fromisoformat(s["date"]), s) for s in scored]
+    # The vintage is a hash of what the series was built from, so a re-read statement (a
+    # corrected size or guidance) is a visible revision, never a silent rewrite under "v1".
+    vintage = hashlib.sha256(json.dumps(
+        [[s["date"], s.get("sizes"), s.get("guidance"), s.get("size_surprise"),
+          s.get("guidance_shift")] for s in scored], sort_keys=True, default=str
+    ).encode()).hexdigest()[:12]
     d = events[0][0]
     rows: list[dict[str, Any]] = []
     while d <= end:
         ev = next((s for e, s in reversed(events) if 0 <= (d - e).days < POST_DAYS), None)
-        avail = datetime(d.year, d.month, d.day, RELEASE_HOUR_UTC, tzinfo=UTC)
+        avail, basis = _stamp(d, ev)
         row: dict[str, Any] = {"available_time": avail.isoformat(),
-                               "published_time": avail.isoformat(),
+                               "published_time": datetime(d.year, d.month, d.day,
+                                                          RELEASE_HOUR_UTC,
+                                                          tzinfo=UTC).isoformat(),
                                "retrieval_time": ev.get("first_seen", "") if ev else "",
-                               "source_id": SOURCE_ID, "vintage_id": "v1"}
+                               "source_id": SOURCE_ID, "vintage_id": vintage,
+                               "stamp_basis": basis}
         for sig in SIGNALS:
             v = ev.get(sig) if ev else 0.0
             row[sig] = "" if v is None else v
