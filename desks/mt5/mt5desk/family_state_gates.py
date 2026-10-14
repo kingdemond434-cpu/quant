@@ -116,7 +116,7 @@ def _ns(t: Any) -> int | None:
     if pd.isna(ts):
         return None
     ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
-    return int(ts.value)
+    return int(ts.as_unit("ns").value)
 
 
 # ------------------------------------------------------------------------- synchronisation ---
@@ -304,9 +304,11 @@ def _value_at(series: pd.Series, t: Any) -> float | None:
     at = _ns(t)
     if at is None or series.empty:
         return None
-    stamps = series.index.asi8 if isinstance(series.index, pd.DatetimeIndex) else None
-    if stamps is None:
+    if not isinstance(series.index, pd.DatetimeIndex):
         return None
+    ix = series.index
+    ix = ix.tz_localize("UTC") if ix.tz is None else ix.tz_convert("UTC")
+    stamps = ix.as_unit("ns").asi8      # pandas 3 defaults to microseconds; _ns() is nanoseconds
     j = int(np.searchsorted(stamps, at, side="right")) - 1
     if j < 0:
         return None

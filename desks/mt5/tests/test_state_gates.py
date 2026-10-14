@@ -28,7 +28,7 @@ PERIOD = 32.0
 
 
 def _stamps(n: int = N_BARS) -> pd.DatetimeIndex:
-    return pd.date_range(T0, periods=n, freq="h")
+    return pd.date_range(T0, periods=n, freq="h").as_unit("ns")
 
 
 def _panel(thetas: np.ndarray, n: int = N_BARS) -> dict[str, tuple[np.ndarray, np.ndarray]]:
@@ -37,7 +37,7 @@ def _panel(thetas: np.ndarray, n: int = N_BARS) -> dict[str, tuple[np.ndarray, n
     out = {}
     for j, th in enumerate(thetas):
         closes = np.exp(0.02 * np.sin(2 * np.pi * k / PERIOD + th) + 0.0001 * k)
-        out[f"S{j:03d}"] = (idx.asi8.astype("int64"), closes.astype("float32"))
+        out[f"S{j:03d}"] = (idx.as_unit("ns").asi8.astype("int64"), closes.astype("float32"))
     return out
 
 
