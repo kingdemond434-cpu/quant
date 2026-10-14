@@ -952,13 +952,16 @@ def _wrapped_url(url: str) -> str | None:
 
 
 
-def _route_path(path: str) -> str:
+def _route_path(path: str, *, params: str = "decoded") -> str:
     """The path a route is matched on, as the server resolves it: percent-decoded (repeatedly,
     so a double-encoded `%255F` cannot hide `_`), NFKC-folded, every run of `/` collapsed, and the
-    `.` / `..` dot segments removed (RFC 3986 5.2.4), and every `;param` cut off its segment
-    (a servlet container serves `/markets;v=1/x` as `/markets/x`; pass-6 audit SHOULD-FIX).
-    Always starts with `/`."""
+    `.` / `..` dot segments removed (RFC 3986 5.2.4). `params` says where a `;param` is cut:
+    "decoded" cuts it after decoding (a servlet container serves `/markets;v=1/x` as
+    `/markets/x`; pass-6 audit SHOULD-FIX), "raw" cuts only a RAW `;` BEFORE decoding (so an
+    encoded `%3B` stays part of its segment), "none" cuts nothing. Always starts with `/`."""
     p = str(path or "")
+    if params == "raw":
+        p = "/".join(seg.split(";", 1)[0] for seg in p.split("/"))
     for _ in range(3):
         q = unquote(p)
         if q == p:
@@ -967,7 +970,7 @@ def _route_path(path: str) -> str:
     p = unicodedata.normalize("NFKC", p).replace("\\", "/")
     out: list[str] = []
     for raw in re.sub(r"/+", "/", p).split("/"):
-        seg = raw.split(";", 1)[0]
+        seg = raw.split(";", 1)[0] if params == "decoded" else raw
         if seg == ".":
             continue
         if seg == "..":
@@ -975,9 +978,18 @@ def _route_path(path: str) -> str:
                 out.pop()
             continue
         out.append(seg)
-    trail = re.sub(r";[^/]*$", "", p).endswith(("/", "/.", "/.."))
+    tail = re.sub(r";[^/]*$", "", p) if params == "decoded" else p
+    trail = tail.endswith(("/", "/.", "/.."))
     norm = "/" + "/".join(x for x in out if x)
     return norm + "/" if trail and norm != "/" else norm
+
+
+def _route_paths(path: str) -> tuple[str, ...]:
+    """Every reading of `path` a route is matched on -- FAIL CLOSED (pass-6 audit cf305e3d2
+    SHOULD-FIX 2): the path with nothing cut, with only RAW `;params` cut before decoding, and
+    with `;params` cut after decoding. A route held under ANY reading is held, so neither
+    `..;x` nor `..%3Bx` can pop a segment out of a held folder."""
+    return tuple(dict.fromkeys(_route_path(path, params=m) for m in ("none", "raw", "decoded")))
 
 
 def _pattern_source(url: str) -> str | None:
@@ -990,8 +1002,8 @@ def _pattern_source(url: str) -> str | None:
     h = _host(url)
     if parts is None or not h:
         return None
-    path = _route_path(parts.path or "/")
-    targets = (h + path, h + path.rstrip("/") + "/")
+    targets = tuple(t for path in _route_paths(parts.path or "/")
+                    for t in (h + path, h + path.rstrip("/") + "/"))
     for name, p in SOURCE_POLICY.items():
         for pat in p.get("url_patterns") or ():
             if any(re.search(pat, t, re.I) for t in targets):
@@ -1157,14 +1169,17 @@ def guarded_opener(context: Any = None, *handlers: Any,
 
 
 def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = None,
-                    live_input: bool = False) -> Any:
+                    live_input: bool = False, live_hops: bool = False) -> Any:
     """THE ONE FETCH DOOR (`polite_fetch.fenced_urlopen` is this function): `urlopen` with the
     fence. The URL is checked BEFORE any request is built (a held source, or a first URL that is
     itself a login wall, raises `TermsFenced`); a redirect into a held source or a login wall
     raises instead of being followed; every hop followed is kept on the response as
     `.redirects` [(code, from, to)]. `timeout=None` means the socket default. `live_input=True`
     (a live-input organ) refuses an IDEAS_ONLY or held first URL and every such redirect hop
-    (`input_source`), not only the held ones."""
+    (`input_source`), not only the held ones. `live_hops=True` re-checks every redirect HOP that
+    way but leaves the first URL to the held-only rule: a live fetcher whose first URL is itself
+    an IDEAS_ONLY row it already reads (Yahoo) can never be redirected into another held route
+    (pass-6 audit cf305e3d2 SHOULD-FIX 1), while what it reads first is unchanged."""
     url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
     hdrs = _req_headers(req) if isinstance(req, urllib.request.Request) else None
     check_request(url, hdrs)
@@ -1177,7 +1192,7 @@ def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = No
     opener = guarded_opener(context)
     for h in getattr(opener, "handlers", ()):
         if isinstance(h, FencedRedirectHandler):
-            h.live_input = h.live_input or bool(live_input)   # every hop re-checked
+            h.live_input = h.live_input or bool(live_input) or bool(live_hops)  # every hop
     fh = opener.open(req) if timeout is None else opener.open(req, timeout=timeout)
     chain = next((h.chain for h in getattr(opener, "handlers", ())
                   if isinstance(h, FencedRedirectHandler)), [])

@@ -42,14 +42,20 @@ def _terms_fence():
     return terms_fence
 
 
-def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
+def _get(url: str, timeout: int = 25, headers: dict | None = None, *,
+         live_input: bool = True) -> bytes:
     # THE METHOD FENCE (libs/data/terms_fence.py): raises TermsFenced for a HELD source
     # (METHOD_BLOCKED, or NEEDS_KEY until its key exists) before any request is built.
     tf = _terms_fence()
     tf.check_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
     # A 30x into a held source or a login wall raises TermsFenced instead of being followed.
-    with tf.guarded_urlopen(req, timeout=timeout) as r:
+    # LIVE INPUT (macro_desk, news_desk): every redirect hop is re-checked against the live-input
+    # rule too (`input_source`), so a 30x into an IDEAS_ONLY or held route is refused (pass-6
+    # audit cf305e3d2 SHOULD-FIX 1). A caller whose FIRST URL is an IDEAS_ONLY row passes
+    # live_input=False: its hops are still re-checked (`live_hops`), its first URL is unchanged.
+    with tf.guarded_urlopen(req, timeout=timeout, live_input=live_input,
+                            live_hops=True) as r:
         return r.read()
 
 
@@ -173,7 +179,8 @@ def yahoo_daily(ticker: str) -> dict[str, float] | None:
         url = ("https://query1.finance.yahoo.com/v8/finance/chart/" +
                urllib.parse.quote(ticker) +
                "?range=10y&interval=1d&events=div%2Csplit")
-        data = json.loads(_get(url, timeout=20))
+        # Yahoo is IDEAS_ONLY: its first URL keeps the ideas rule, its hops the live one
+        data = json.loads(_get(url, timeout=20, live_input=False))
         res = data.get("chart", {}).get("result")
         if not res:
             return None
@@ -254,7 +261,8 @@ def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
     cycle, never a cell's live input data. [] on any failure."""
     url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
     try:
-        data = json.loads(_get(url, headers={"User-Agent": "research-crowding/1.0"}))
+        data = json.loads(_get(url, headers={"User-Agent": "research-crowding/1.0"},
+                               live_input=False))     # IDEAS_ONLY (see above): hops re-checked
         posts = []
         for c in data.get("data", {}).get("children", []):
             p = c.get("data", {})

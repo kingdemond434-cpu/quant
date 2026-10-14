@@ -560,3 +560,82 @@ def test_stripping_params_does_not_widen_a_route() -> None:
         "https://www.jpx.co.jp/markets/statistics-equities/short-selling-x;v=1/") is None
     assert tf.input_source("https://www.jpx.co.jp/markets/statistics-equities;x=/index.html") \
         is None
+
+
+# ------------------------------------- audit cf305e3d2 SHOULD-FIX 1: the other live fetchers
+class _RedirectEverything(urllib.request.BaseHandler):
+    """Every URL but `target` is a 302 to `target`; `target` would be a 200. No socket."""
+
+    handler_order = 100
+
+    def __init__(self, target: str) -> None:
+        self.target = target
+        self.served: list[str] = []
+
+    def https_open(self, req: urllib.request.Request) -> Any:
+        import email.message
+        import io
+        import urllib.response
+        self.served.append(req.full_url)
+        hdrs = email.message.Message()
+        if req.full_url != self.target:
+            hdrs["Location"] = self.target
+            r = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, 302)
+            r.msg = "Found"
+            return r
+        r = urllib.response.addinfourl(io.BytesIO(b"[]"), hdrs, req.full_url, 200)
+        r.msg = "OK"
+        return r
+
+    http_open = https_open
+
+
+def _live_fetchers() -> list[tuple[str, Any]]:
+    import axis_ingest
+    import fetch_futures_curves
+    import free_data
+
+    from libs.data import cot_source
+    return [
+        ("free_data._get", lambda: free_data._get(_START)),
+        ("free_data._get ideas-first (Yahoo)", lambda: free_data._get(_START, live_input=False)),
+        ("alt_proxies.http_get", lambda: A.http_get(_START)),
+        ("cot_source._get", lambda: cot_source._get(_START)),
+        ("axis_ingest._fetch", lambda: axis_ingest._fetch(_START)),
+        ("fetch_futures_curves.fetch_contract",
+         lambda: fetch_futures_curves.fetch_contract("GCZ26.CMX")),
+    ]
+
+
+@pytest.mark.parametrize("which", range(6))
+@pytest.mark.parametrize("target,row", sorted(_HELD_TARGETS.items()))
+def test_every_live_fetcher_refuses_a_302_into_a_held_route(
+        which: int, target: str, row: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """free_data (macro_desk / news_desk), alt_proxies.http_get (vintage store), cot_source,
+    axis_ingest and fetch_futures_curves: a 302 into a held IDEAS_ONLY route is refused and the
+    held target is never requested."""
+    web = _RedirectEverything(target)
+    real = tf.guarded_opener
+
+    def opener(context: Any = None, *handlers: Any, **kw: Any) -> Any:
+        return real(context, web, *handlers, **kw)
+
+    monkeypatch.setattr(tf, "guarded_opener", opener)
+    name, call = _live_fetchers()[which]
+    with pytest.raises(tf.TermsFenced) as ei:
+        call()
+    assert ei.value.platform == row, name
+    assert target not in web.served, name
+    assert len(web.served) == 1, name
+
+
+# ------------------------------------- audit cf305e3d2 SHOULD-FIX 2: `;` after decoding
+@pytest.mark.parametrize("url", [
+    "https://www.jpx.co.jp/markets/statistics-equities/short-selling/..;x/x.xls",
+    "https://www.jpx.co.jp/markets/statistics-equities/short-selling/..%3Bx/x.xls",
+    "https://www.jpx.co.jp/markets/statistics-equities/short-selling/..%253Bx/x.xls",
+    "https://www.jpx.co.jp/markets/statistics-equities/short-selling/.%3Bx/x.xls",
+])
+def test_an_encoded_or_raw_param_on_a_dot_segment_cannot_pop_out_of_a_held_folder(
+        url: str) -> None:
+    assert tf.input_source(url) == "jpx_short_selling_ratio"

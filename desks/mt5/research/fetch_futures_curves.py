@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -19,6 +20,8 @@ from pathlib import Path
 import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent
+if str(BASE.parent.parent) not in sys.path:      # the repo root, for libs.data.terms_fence
+    sys.path.append(str(BASE.parent.parent))
 OUT = BASE / "data" / "futures_curves"
 REPORT = BASE / "reports" / "futures_curve_coverage.json"
 UA = "Mozilla/5.0 (compatible; quant-research/1.0)"
@@ -54,7 +57,11 @@ def fetch_contract(symbol: str) -> tuple[pd.DataFrame, dict]:
            "?period1=0&period2=4102444800&interval=1d&events=history")
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=45) as response:
+        # THE ONE FETCH DOOR: Yahoo is an IDEAS_ONLY row, so its first URL keeps the ideas
+        # rule, and every redirect HOP is re-checked as live input (`live_hops`) -- a 30x
+        # into a held or IDEAS_ONLY route is refused (pass-6 audit cf305e3d2 SHOULD-FIX 1).
+        from libs.data import terms_fence as _tf
+        with _tf.guarded_urlopen(req, timeout=45, live_hops=True) as response:
             payload = json.load(response)
     except urllib.error.HTTPError as exc:
         if exc.code in (400, 404):

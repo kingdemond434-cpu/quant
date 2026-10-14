@@ -3902,7 +3902,11 @@ def _redact(url: str, src: Source) -> str:
 def http_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*",
                                                **(headers or {})})
-    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+    # THE ONE FETCH DOOR, LIVE INPUT (it feeds the vintage store): the first URL and every
+    # redirect hop must be a live-input route -- a 30x into a held or IDEAS_ONLY route raises
+    # TermsFenced (pass-6 audit cf305e3d2 SHOULD-FIX 1).
+    from libs.data import terms_fence as _tf_live
+    with _tf_live.guarded_urlopen(req, timeout=TIMEOUT, context=_tls(), live_input=True) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 
