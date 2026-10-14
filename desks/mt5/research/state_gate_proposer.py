@@ -110,23 +110,71 @@ def sync_applies(symbol: str) -> bool | None:
     return klass not in SYNC_EXCLUDED_CLASSES
 
 
+def _contract_rows(doc: Any) -> list[dict[str, Any]] | None:
+    rows = doc.get("discoveries") if isinstance(doc, dict) else None
+    return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else None
+
+
 def charged_cells(root: Path | None = None) -> tuple[set[str] | None, list[str]]:
     """(the cell keys of every row in this seat's contracts, unreadable contract paths). The set
-    is None when any contract cannot be read: the charge is then unknown, not empty."""
+    is None when any contract cannot be read: the charge is then unknown, not empty.
+
+    BOTH FORMS OF A CONTRACT ARE READ (audit of #395 v3). `scripts/disk_guard.py` packs
+    discoveries_*.json older than three days into rollup_YYYYMMDD.jsonl.gz -- one contract
+    document per line -- and deletes the originals, so a reader of the .json files alone forgets
+    every cell charged more than three days ago and re-charges it."""
+    import gzip
     d = INTEL if root is None else root
     keys: set[str] = set()
     bad: list[str] = []
-    for f in sorted(d.glob("discoveries_*.json")) if d.is_dir() else []:
+    if not d.is_dir():
+        return keys, bad
+    for f in sorted(d.glob("discoveries_*.json")):
         try:
-            rows = json.loads(f.read_text("utf-8")).get("discoveries")
-        except (OSError, ValueError, AttributeError):
+            rows = _contract_rows(json.loads(f.read_text("utf-8")))
+        except (OSError, ValueError):
+            rows = None
+        if rows is None:
             bad.append(str(f))
             continue
-        if not isinstance(rows, list):
+        keys.update(cell_key(r) for r in rows)
+    for f in sorted(d.glob("rollup_*.jsonl.gz")):
+        try:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                docs = [json.loads(line) for line in fh if line.strip()]
+        except (OSError, ValueError, EOFError):
             bad.append(str(f))
             continue
-        keys.update(cell_key(r) for r in rows if isinstance(r, dict))
+        for doc in docs:
+            rows = _contract_rows(doc)
+            if rows is None:
+                bad.append(f"{f} (a line that is not a contract)")
+                break
+            keys.update(cell_key(r) for r in rows)
     return (None if bad else keys), bad
+
+
+def _settle_charge(path: Path | None) -> int:
+    """Rewrite the contract's tests_run to the rows it actually holds, and return that count.
+
+    `donate` takes tests_run BEFORE its door refuses rows, and a refused row is retried on the
+    next pass -- so charging the pre-door count would charge every refused cell again each hour
+    (audit of #395 v3). The contract is this seat's own file, written a moment ago; the rewrite
+    is atomic, and the ledger then charges exactly the rows donated."""
+    if path is None:
+        return 0
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return 0
+    rows = _contract_rows(doc)
+    n = len(rows or [])
+    if isinstance(doc, dict) and doc.get("tests_run") != n:
+        doc["tests_run"] = n
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        tmp.replace(path)
+    return n
 
 
 def cell_key(c: dict[str, Any]) -> str:
@@ -227,7 +275,7 @@ def main(argv: list[str] | None = None) -> int:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
         REPORT.write_text(json.dumps(doc, indent=1), "utf-8")
         print(f"state_gate_proposer: UNREADABLE -- {len(unreadable)} contract(s)")
-        return 0
+        return 2                       # the leg goes RED: a silent stand-down is not a pass
     fresh = [c for c in grid if cell_key(c) not in charged]
     cands = fresh[:MINT_ROWS_PER_PASS]
     arms: dict[str, int] = {}
@@ -235,11 +283,20 @@ def main(argv: list[str] | None = None) -> int:
         arms[str(c["family"])] = arms.get(str(c["family"]), 0) + 1
     path = None
     counts: dict[str, Any] = {}
+    charged_now = 0
+    # donate names its contract to the minute, so a second pass in the same minute would
+    # overwrite the first contract and lose its charged cells: that pass stands down.
+    clash = INTEL / f"discoveries_{time.strftime('%Y%m%d_%H%M', time.gmtime())}.json"
+    if cands and not a.dry_run and clash.exists():
+        doc["same_minute"] = str(clash)
+        cands = []
     if cands and not a.dry_run:
         from proposer_common import donate, donation_counts
         path = donate(source=SEAT, candidates=cands, tests_run=len(cands))
         counts = donation_counts()
-    doc.update({"status": "DRY_RUN" if a.dry_run else ("RAN" if cands else "ALL_CHARGED"),
+        charged_now = _settle_charge(path)
+    doc.update({"status": "DRY_RUN" if a.dry_run else ("RAN" if cands else (
+                    "SAME_MINUTE" if doc.get("same_minute") else "ALL_CHARGED")),
                 "already_charged": len(grid) - len(fresh), "uncharged": len(fresh),
                 "passes_to_cover_grid": -(-len(fresh) // MINT_ROWS_PER_PASS),
                 "built": len(cands), "by_family": arms,
@@ -249,7 +306,7 @@ def main(argv: list[str] | None = None) -> int:
                 "refused_by_reason": {r: n for r, n in (
                     ("wrong_lane", counts.get("refused_wrong_lane", 0)),
                     ("unstamped", counts.get("refused_unstamped", 0))) if n},
-                "trials_charged": len(cands) if path else 0,
+                "trials_charged": charged_now,
                 "contract": str(path) if path else None,
                 "seconds": round(time.monotonic() - t0, 1),
                 "rule": ("one cell per (wrapper, base, symbol) at registered defaults; each is "

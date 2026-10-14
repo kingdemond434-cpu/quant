@@ -296,6 +296,11 @@ def test_a_refused_cell_is_retried_never_marked_charged(monkeypatch, tmp_path) -
     assert keys is not None
     assert not [c for c in grid if c["symbol"] == "XAUUSD" and P.cell_key(c) in keys]
     assert len(charged) == 2 and charged[1] == sum(1 for c in grid if c["symbol"] == "XAUUSD")
+    # The ledger charges what the contracts say: only the rows actually donated, once.
+    import json
+    tests_run = [json.loads(f.read_text("utf-8"))["tests_run"]
+                 for f in sorted((tmp_path / "intel").glob("discoveries_*.json"))]
+    assert tests_run == [sum(1 for c in grid if c["symbol"] == "EURUSD")]
 
 
 def test_an_unreadable_contract_stops_the_pass_never_recharges(monkeypatch, tmp_path) -> None:
@@ -303,9 +308,51 @@ def test_an_unreadable_contract_stops_the_pass_never_recharges(monkeypatch, tmp_
     P, _, charged = _two_symbol_proposer(monkeypatch, tmp_path)
     (tmp_path / "intel").mkdir()
     (tmp_path / "intel" / "discoveries_corrupt.json").write_text("{not json", "utf-8")
-    assert P.main(["--once"]) == 0
+    assert P.main(["--once"]) == 2                  # the leg goes RED, never a silent pass
     rep = json.loads((tmp_path / "r.json").read_text("utf-8"))
     assert rep["status"] == "UNREADABLE" and rep["unreadable_contracts"] and charged == []
+
+
+def test_rolled_up_contracts_still_count_as_charged(monkeypatch, tmp_path) -> None:
+    """Audit of #395 v3: disk_guard packs aged contracts into rollup_*.jsonl.gz and deletes them;
+    the charged set must survive that, or the grid is re-charged every three days."""
+    import gzip
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "disk_guard", _ROOT / "scripts" / "disk_guard.py")
+    assert spec is not None and spec.loader is not None
+    dg = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(dg)
+    P, grid, charged = _two_symbol_proposer(monkeypatch, tmp_path)
+    monkeypatch.setattr(P, "MINT_ROWS_PER_PASS", 4)
+    for _ in range(-(-len(grid) // 4)):
+        P.main(["--once"])
+    intel = tmp_path / "intel"
+    assert sum(charged) == len(grid)
+    actions: list[str] = []
+    dg.rollup(intel, "29991231", actions)
+    assert not list(intel.glob("discoveries_*.json")) and list(intel.glob("rollup_*.jsonl.gz"))
+    keys, bad = P.charged_cells(intel)
+    assert not bad and keys == {P.cell_key(c) for c in grid}
+    P.main(["--once"])
+    assert sum(charged) == len(grid)               # nothing re-charged after the rollup
+    roll = next(intel.glob("rollup_*.jsonl.gz"))
+    roll.write_bytes(gzip.compress(b"not json\n"))
+    keys, bad = P.charged_cells(intel)
+    assert keys is None and bad
+
+
+def test_a_second_pass_in_the_same_minute_stands_down(monkeypatch, tmp_path) -> None:
+    import json
+    import time as _time
+    P, _, charged = _two_symbol_proposer(monkeypatch, tmp_path)
+    intel = tmp_path / "intel"
+    intel.mkdir()
+    (intel / f"discoveries_{_time.strftime('%Y%m%d_%H%M', _time.gmtime())}.json").write_text(
+        json.dumps({"discoveries": []}), "utf-8")
+    assert P.main(["--once"]) == 0
+    assert charged == []
+    assert json.loads((tmp_path / "r.json").read_text("utf-8"))["status"] == "SAME_MINUTE"
 
 
 def test_the_charged_set_is_read_off_real_donate_contracts(monkeypatch, tmp_path) -> None:
