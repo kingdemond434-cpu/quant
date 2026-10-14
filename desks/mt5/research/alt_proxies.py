@@ -4383,8 +4383,9 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
     THE PLACEBO-CONDITIONED GATE. A child is donated only when the parent's signals inside its
     regime beat the same signals inside random regimes of the same duty cycle
     (`release_gain.regime_placebo`, circular shifts of the regime mask), judged against the fixed
-    Tier S bar whatever the number of children tested this pass (that count is recorded). A child whose parent cannot be replayed here, or whose regime
-    holds too few signals, is UNMEASURED and not donated.
+    Tier S bar whatever the number of children tested this pass (that count is recorded). A
+    child whose parent cannot be replayed here, or whose regime holds too few signals,
+    is UNMEASURED and not donated.
 
     Returns (passing candidates, pairs owed to later passes, one gate row per minted child)."""
     parents = _parents(paths)
@@ -5403,7 +5404,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                   "n_underpowered": sum(1 for g in gains.values()
                                         if g.get("verdict") == "UNDERPOWERED"),
                   "rule": ("each gain row carries min_detectable_ic (80% power at its n and "
-                           "fixed Tier S bar |t| >= 2.84); a miss above target_ic is UNDERPOWERED, not FAIL")},
+                           "fixed Tier S bar |t| >= 2.84); a miss above target_ic is "
+                           "UNDERPOWERED, not FAIL")},
         "equity_handoff": {"path": str(paths.equity_handoff), "n_rows": len(handoff["rows"]),
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),

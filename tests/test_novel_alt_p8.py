@@ -323,7 +323,7 @@ def test_one_pit_predicate_labels_live_and_backfill_alike_everywhere(tmp_path: P
                      pub + timedelta(hours=2))
     q = {p["d"]: p["pit_quality"] for p in A.build_points(pw, pws)["suez_canal_transits"]}
     assert q == {"2026-10-04": "live", "2024-01-02": "backfill"}
-    assert A.PIT_LIVE_READ_LAG == timedelta(hours=24)
+    assert timedelta(hours=24) == A.PIT_LIVE_READ_LAG
 
 
 def test_a_budget_cut_pass_is_partial_never_ok(tmp_path: Path) -> None:
