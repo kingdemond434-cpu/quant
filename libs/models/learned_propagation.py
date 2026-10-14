@@ -80,6 +80,41 @@ ATTENTION_GRID: tuple[dict[str, Any], ...] = (
     {"heads": 2, "lookback": 10},
 )
 ADJACENCIES = ("lead_lag", "corr")
+#: Random dilated convolution features (ROCKET, Dempster et al. 2020) over each node's recent
+#: tokens: the kernels are drawn ONCE from a fixed seed and never fitted, so the features carry no
+#: information from any return; only the ridge readout is fitted, walk-forward.
+ROCKET_GRID: tuple[dict[str, Any], ...] = (
+    {"kernels": 64, "lookback": 32},
+    {"kernels": 128, "lookback": 32},
+    {"kernels": 64, "lookback": 16},
+    {"kernels": 128, "lookback": 16},
+)
+ROCKET_KLEN = 9
+ROCKET_SEED = 13
+#: Rough-path signatures (Lyons; Chevyrev-Kormilitzin 2016) of each node's recent path in
+#: (own cumulative z, panel-mean cumulative z, time): the iterated integrals are a fixed,
+#: data-free transform that encodes order and area (who moved first, by how much); only the
+#: ridge readout is fitted, walk-forward.
+SIG_GRID: tuple[dict[str, Any], ...] = (
+    {"depth": 2, "lookback": 10},
+    {"depth": 3, "lookback": 10},
+    {"depth": 2, "lookback": 20},
+    {"depth": 3, "lookback": 20},
+)
+#: Deep autoencoder over the whole panel's own features on a date: tanh encoder -> linear latent
+#: code -> linear decoder, trained on the walk-forward training window only.
+AE_GRID: tuple[dict[str, Any], ...] = (
+    {"latent": 3, "hidden": 16},
+    {"latent": 6, "hidden": 16},
+    {"latent": 3, "hidden": 32},
+    {"latent": 6, "hidden": 32},
+)
+AE_LR = 0.005
+AE_EPOCHS_FIRST = 60
+AE_EPOCHS_WARM = 15
+AE_BATCH = 128
+AE_L2 = 1e-4
+AE_SEED = 17
 
 #: Attention training (declared). Head dimension, Adam step, epochs on the first fit and on each
 #: warm-started refit, minibatch, L2 on the projections.
@@ -498,6 +533,237 @@ def attention_predictions(d: Design, *, heads: int = 1, lookback: int = 20,
     return walk_forward(t_n, n, fit, predict, **wf)
 
 
+# ================================================================ random convolution model
+def rocket_kernels(lookback: int, kernels: int, n_channels: int,
+                   seed: int = ROCKET_SEED) -> list[tuple[np.ndarray, float, int, int]]:
+    """(weights, bias, dilation, channel) per kernel; data-free, so the same seed is the same
+    model on any panel. Dilations are powers of two whose span fits inside `lookback`."""
+    rng = np.random.default_rng(seed)
+    max_exp = max(0, math.floor(math.log2(max(1, (lookback - 1) / (ROCKET_KLEN - 1)))))
+    out = []
+    for _ in range(int(kernels)):
+        w = rng.normal(0, 1, ROCKET_KLEN)
+        w -= w.mean()
+        out.append((w, float(rng.uniform(-1, 1)), int(2 ** rng.integers(0, max_exp + 1)),
+                    int(rng.integers(0, n_channels))))
+    return out
+
+
+def rocket_features(d: Design, *, kernels: int = 64, lookback: int = 32,
+                    seed: int = ROCKET_SEED) -> np.ndarray:
+    """(T, N, 2*kernels): per kernel, the share of positive outputs (PPV) and the maximum, over
+    the convolution of the node's last `lookback` tokens. Causal: row t sees tokens <= t."""
+    seq = _sequences(tokens(d), int(lookback))          # (T, N, L, F), position 0 = today
+    t_n, n, lk, _f = seq.shape
+    feats = np.zeros((t_n, n, 2 * int(kernels)))
+    for j, (w, b, dil, ch) in enumerate(rocket_kernels(lk, kernels, seq.shape[-1], seed)):
+        span = (ROCKET_KLEN - 1) * dil
+        npos = lk - span
+        if npos <= 0:
+            continue
+        x = seq[..., ch]
+        conv = np.full((t_n, n, npos), b)
+        for k in range(ROCKET_KLEN):
+            conv += w[k] * x[..., k * dil:k * dil + npos]
+        feats[..., 2 * j] = (conv > 0).mean(axis=-1)
+        feats[..., 2 * j + 1] = conv.max(axis=-1)
+    return feats
+
+
+def rocket_predictions(d: Design, *, kernels: int = 64, lookback: int = 32,
+                       **wf: int) -> np.ndarray:
+    feats = rocket_features(d, kernels=int(kernels), lookback=int(lookback))
+    return ridge_predictions(d, np.concatenate([feats, d.x], axis=-1), **wf)
+
+
+# ===================================================================== path signature model
+def signature_features(d: Design, *, depth: int = 2, lookback: int = 20) -> np.ndarray:
+    """(T, N, 3 + 9 [+ 27]): the depth-2 or depth-3 signature of the piecewise-linear path whose
+    increments are (z_s, market_s, 1) / sqrt(lookback) for the last `lookback` days s <= t,
+    oldest first. Chen's identity appends one linear segment at a time, so row t sees days <= t
+    only and the transform has no parameter to fit."""
+    if int(depth) not in (2, 3):
+        raise ValueError(f"signature depth must be 2 or 3, got {depth!r}")
+    tok = tokens(d)
+    seq = _sequences(np.stack([tok[..., 0], tok[..., 2], np.ones_like(tok[..., 0])], axis=-1),
+                     int(lookback))                        # (T, N, L, 3), position 0 = today
+    t_n, n, lk, c = seq.shape
+    scale = 1.0 / math.sqrt(float(lk))
+    s1 = np.zeros((t_n, n, c))
+    s2 = np.zeros((t_n, n, c, c))
+    s3 = np.zeros((t_n, n, c, c, c)) if int(depth) == 3 else None
+    for pos in range(lk - 1, -1, -1):                      # oldest segment first
+        dx = seq[:, :, pos, :] * scale
+        dxx = np.einsum("tni,tnj->tnij", dx, dx)
+        if s3 is not None:
+            s3 = (s3 + np.einsum("tnij,tnk->tnijk", s2, dx)
+                  + np.einsum("tni,tnjk->tnijk", s1, dxx) / 2.0
+                  + np.einsum("tnij,tnk->tnijk", dxx, dx) / 6.0)
+        s2 = s2 + np.einsum("tni,tnj->tnij", s1, dx) + dxx / 2.0
+        s1 = s1 + dx
+    parts = [s1, s2.reshape(t_n, n, c * c)]
+    if s3 is not None:
+        parts.append(s3.reshape(t_n, n, c ** 3))
+    return np.concatenate(parts, axis=-1)
+
+
+def signature_predictions(d: Design, *, depth: int = 2, lookback: int = 20,
+                          **wf: int) -> np.ndarray:
+    feats = signature_features(d, depth=int(depth), lookback=int(lookback))
+    return ridge_predictions(d, np.concatenate([feats, d.x], axis=-1), **wf)
+
+
+# ======================================================================= autoencoder model
+@dataclass
+class AutoEncoder:
+    mu: np.ndarray
+    sd: np.ndarray
+    w1: np.ndarray   # (H, D)
+    b1: np.ndarray   # (H,)
+    w2: np.ndarray   # (K, H)
+    b2: np.ndarray   # (K,)
+    w3: np.ndarray   # (D, K)
+    b3: np.ndarray   # (D,)
+    ridge: Ridge | None = None
+
+    def encode(self, v: np.ndarray) -> np.ndarray:
+        h = np.tanh(((v - self.mu) / self.sd) @ self.w1.T + self.b1)
+        out: np.ndarray = h @ self.w2.T + self.b2
+        return out
+
+
+def ae_loss_grads(m: AutoEncoder, vs: np.ndarray) -> tuple[float, dict[str, np.ndarray]]:
+    """Mean squared reconstruction loss (halved) on standardised rows, and its gradients."""
+    bsz = vs.shape[0]
+    h = np.tanh(vs @ m.w1.T + m.b1)
+    c = h @ m.w2.T + m.b2
+    out = c @ m.w3.T + m.b3
+    err = out - vs
+    loss = 0.5 * float((err * err).sum()) / bsz
+    g_out = err / bsz
+    g_c = g_out @ m.w3
+    g_h = g_c @ m.w2
+    g_a = g_h * (1.0 - h * h)
+    return loss, {"w3": g_out.T @ c + AE_L2 * m.w3, "b3": g_out.sum(axis=0),
+                  "w2": g_c.T @ h + AE_L2 * m.w2, "b2": g_c.sum(axis=0),
+                  "w1": g_a.T @ vs + AE_L2 * m.w1, "b1": g_a.sum(axis=0)}
+
+
+def train_autoencoder(v: np.ndarray, *, latent: int, hidden: int, epochs: int,
+                      init: AutoEncoder | None = None, seed: int = AE_SEED) -> AutoEncoder:
+    """Minibatch Adam on the reconstruction loss. Standardisation is fitted on `v` (the training
+    window) only; a warm start keeps the weights and re-fits the scaling."""
+    rng = np.random.default_rng(seed)
+    dim = v.shape[1]
+    mu = v.mean(axis=0)
+    sd = v.std(axis=0)
+    sd = np.where(sd > 1e-12, sd, 1.0)
+    if (init is not None and init.w1.shape == (hidden, dim) and init.w2.shape[0] == latent):
+        m = AutoEncoder(mu, sd, init.w1.copy(), init.b1.copy(), init.w2.copy(), init.b2.copy(),
+                        init.w3.copy(), init.b3.copy())
+    else:
+        m = AutoEncoder(mu, sd, rng.normal(0, 1 / math.sqrt(dim), (hidden, dim)),
+                        np.zeros(hidden), rng.normal(0, 1 / math.sqrt(hidden), (latent, hidden)),
+                        np.zeros(latent), rng.normal(0, 1 / math.sqrt(latent), (dim, latent)),
+                        np.zeros(dim))
+    vs = (v - mu) / sd
+    st: dict[str, Any] = {}
+    step = 0
+    for _ in range(int(epochs)):
+        order = rng.permutation(vs.shape[0])
+        for a0 in range(0, vs.shape[0], AE_BATCH):
+            _loss, g = ae_loss_grads(m, vs[order[a0:a0 + AE_BATCH]])
+            step += 1
+            for key, grad in g.items():
+                _adam_step(getattr(m, key), grad, st, key, step, lr=AE_LR)
+    return m
+
+
+def _ae_readout_features(codes: np.ndarray, x: np.ndarray) -> np.ndarray:
+    """(B, N, N*K + F): each node sees the date's latent code in ITS OWN block, so one pooled
+    ridge learns a separate loading of every node on every latent factor, plus its own lags."""
+    b, n, _f = x.shape
+    k = codes.shape[1]
+    blocks = np.zeros((b, n, n * k))
+    for i in range(n):
+        blocks[:, i, i * k:(i + 1) * k] = codes
+    return np.concatenate([blocks, x], axis=-1)
+
+
+def autoencoder_predictions(d: Design, *, latent: int = 3, hidden: int = 16,
+                            **wf: int) -> np.ndarray:
+    """Latent cross-asset factors from a deep autoencoder over the date's whole panel, read out
+    per node by a pooled ridge. The encoder is refitted inside every walk-forward fold on that
+    fold's training rows only, so no code is computed with a scaling or weight from the future."""
+    t_n, n = d.y.shape
+    v = d.x.reshape(t_n, -1)
+
+    def fit(lo: int, k: int, prev: AutoEncoder | None) -> AutoEncoder | None:
+        if k - lo < 200:
+            return prev
+        m = train_autoencoder(v[lo:k], latent=int(latent), hidden=int(hidden),
+                              epochs=AE_EPOCHS_WARM if prev is not None else AE_EPOCHS_FIRST,
+                              init=prev, seed=AE_SEED + k)
+        feats = _ae_readout_features(m.encode(v[lo:k]), d.x[lo:k])
+        flat = feats.reshape(-1, feats.shape[-1])
+        yy = d.y[lo:k].reshape(-1)
+        ok = np.isfinite(yy)
+        if ok.sum() <= flat.shape[1] * 5:
+            return prev
+        m.ridge = fit_ridge(flat[ok], yy[ok])
+        return m
+
+    def predict(m: AutoEncoder, a: int, b: int) -> np.ndarray:
+        assert m.ridge is not None
+        feats = _ae_readout_features(m.encode(v[a:b]), d.x[a:b])
+        return m.ridge.predict(feats.reshape(-1, feats.shape[-1])).reshape(b - a, n)
+
+    return walk_forward(t_n, n, fit, predict, **wf)
+
+
+def pca_predictions(d: Design, *, latent: int = 3, **wf: int) -> np.ndarray:
+    """The autoencoder's declared falsifier: a LINEAR code of the same size (PCA of the date's
+    standardised panel features, fitted on the fold's training rows only) with the identical
+    per-node readout. If this does as well, the non-linearity bought nothing. Never a trial."""
+    t_n, n = d.y.shape
+    v = d.x.reshape(t_n, -1)
+
+    @dataclass
+    class _Pca:
+        mu: np.ndarray
+        sd: np.ndarray
+        comp: np.ndarray
+        ridge: Ridge | None = None
+
+        def encode(self, a: np.ndarray) -> np.ndarray:
+            return cast(np.ndarray, ((a - self.mu) / self.sd) @ self.comp.T)
+
+    def fit(lo: int, k: int, prev: _Pca | None) -> _Pca | None:
+        if k - lo < 200:
+            return prev
+        tr = v[lo:k]
+        mu = tr.mean(axis=0)
+        sd = tr.std(axis=0)
+        sd[sd < 1e-12] = 1.0
+        _u, _s, vt = np.linalg.svd((tr - mu) / sd, full_matrices=False)
+        m = _Pca(mu, sd, vt[:int(latent)])
+        feats = _ae_readout_features(m.encode(tr), d.x[lo:k])
+        flat = feats.reshape(-1, feats.shape[-1])
+        yy = d.y[lo:k].reshape(-1)
+        ok = np.isfinite(yy)
+        if ok.sum() <= flat.shape[1] * 5:
+            return prev
+        m.ridge = fit_ridge(flat[ok], yy[ok])
+        return m
+
+    def predict(m: _Pca, a: int, b: int) -> np.ndarray:
+        assert m.ridge is not None
+        feats = _ae_readout_features(m.encode(v[a:b]), d.x[a:b])
+        return m.ridge.predict(feats.reshape(-1, feats.shape[-1])).reshape(b - a, n)
+
+    return walk_forward(t_n, n, fit, predict, **wf)
+
+
 # ========================================================================== dispatcher
 def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: int) -> np.ndarray:
     """One walk-forward prediction panel for (model, config). Every call is one trial."""
@@ -507,6 +773,17 @@ def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: int) -> 
     if model == "attention":
         return attention_predictions(d, heads=int(config.get("heads", 1)),
                                      lookback=int(config.get("lookback", 20)), **wf)
+    if model == "rocket":
+        return rocket_predictions(d, kernels=int(config.get("kernels", 64)),
+                                  lookback=int(config.get("lookback", 32)), **wf)
+    if model == "signature":
+        return signature_predictions(d, depth=int(config.get("depth", 2)),
+                                     lookback=int(config.get("lookback", 20)), **wf)
+    if model == "autoencoder":
+        return autoencoder_predictions(d, latent=int(config.get("latent", 3)),
+                                       hidden=int(config.get("hidden", 16)), **wf)
+    if model == "pca":
+        return pca_predictions(d, latent=int(config.get("latent", 3)), **wf)
     if model == "ridge":
         return ridge_predictions(d, None, **wf)
     if model == "ridge_lags":
