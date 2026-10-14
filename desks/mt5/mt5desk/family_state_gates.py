@@ -275,14 +275,14 @@ def permutation_entropy(close: Sequence[float] | np.ndarray, *, order: int = 4,
     s = 0.0
     off = m - 1
     for i, k in enumerate(idx):
-        ck = counts[k]
-        s += xlogx[ck + 1] - xlogx[ck]
-        counts[k] = ck + 1
-        if i >= w:
+        if i >= w:                      # the pattern leaving first, so no count exceeds w
             o = idx[i - w]
             co = counts[o]
             s += xlogx[co - 1] - xlogx[co]
             counts[o] = co - 1
+        ck = counts[k]
+        s += xlogx[ck + 1] - xlogx[ck]
+        counts[k] = ck + 1
         if i >= w - 1:
             out[i + off] = max(0.0, (logw - s / w) / norm)
     return out
