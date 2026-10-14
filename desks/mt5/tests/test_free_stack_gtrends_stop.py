@@ -140,3 +140,16 @@ def test_a_403_on_robots_itself_is_a_person_hold() -> None:
     calls2: list[tuple[str, str]] = []
     fs.fetch_gtrends(_fake(calls2), ROW, _merge({}, h), NOW + timedelta(days=11))
     assert calls2 == []
+
+
+def test_the_release_cli_names_the_person_and_keeps_the_record(tmp_path: Path) -> None:
+    reg = tmp_path / "reg.json"
+    rec = _hs.hold_record("HARD_STOP", 429, "https://trends.google.com/trends/api/x", NOW)
+    _hs.place_hold(rec, reg, source_key="free_stack_gtrends")
+    assert _hs.main(["--register", str(reg), "--release", rec["key"]]) == 2   # no --by: refused
+    assert _hs.active_hold(reg, [rec["key"]]) is not None
+    assert _hs.main(["--register", str(reg), "--release", rec["key"], "--by", "desk-operator"]) == 0
+    row = json.loads(reg.read_text("utf-8"))["holds"][rec["key"]]
+    assert row["released_by"] == "desk-operator" and row["released_at"] is not None
+    assert row["held_at"] == rec["held_at"] and row["status"] == 429      # the record is kept
+    assert _hs.active_hold(reg, [rec["key"]]) is None
