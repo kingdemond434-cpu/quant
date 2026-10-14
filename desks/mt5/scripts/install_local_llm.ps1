@@ -1,4 +1,5 @@
-# INSTALL THE LAB'S LOCAL MODEL: Ollama, one quantized 7-8B model, at idle priority (2026-10-13).
+# INSTALL THE LAB'S LOCAL MODEL: Ollama, one quantized ~14B model on capped cores, at idle priority
+# (2026-10-13; the 14B model, the thread cap and the core pinning 2026-10-14).
 #
 # WHY. The free cloud rungs run out every day; the local rung never does. `libs/ops/free_chain.py`
 # already calls any OpenAI-compatible server named in QUANT_LOCAL_LLM_URLS, and only while the
@@ -7,9 +8,9 @@
 #
 # WHAT IT DOES, in order, printing each result:
 #   1. Measures this machine with psutil (never CIM: it has hung on the trading box). Picks the
-#      model from MEASURED free RAM: qwen2.5:7b-instruct-q4_K_M (~4.7 GB) at >= 12 GB free, and
-#      llama3.1:8b-instruct-q4_K_M as a second, independent model at >= 24 GB free; below
-#      12 GB, qwen2.5:3b-instruct. 70B is not offered: on CPU it is too slow to be worth a call.
+#      model from MEASURED free RAM: qwen2.5:14b-instruct-q4_K_M (~9 GB) at >= 24 GB free,
+#      qwen2.5:7b-instruct-q4_K_M (~4.7 GB) at >= 12 GB, qwen2.5:3b-instruct at >= 6 GB. 70B is
+#      not offered: on CPU it is too slow to be worth a call.
 #   2. Installs Ollama (winget, else the official installer) unless `ollama` is already on PATH,
 #      and stops the tray app so exactly one server runs -- ours.
 #   3. Sets MACHINE environment (the desk's tasks run as SYSTEM): OLLAMA_HOST=127.0.0.1:11434
@@ -18,7 +19,9 @@
 #      QUANT_LOCAL_LLM_URLS=http://127.0.0.1:11434/v1.
 #   4. Registers MT5-LocalLLM: `ollama serve` at startup as LOCAL SERVICE, task priority 10 (the lowest
 #      the scheduler has), restarted on failure, then starts it.
-#   5. Pulls the chosen model(s) and runs one tiny completion through free_chain.status().
+#   5. Pulls the chosen model, creates `quant-lab` from it with num_thread = cores/4 (min 2), pins
+#      the server to the last cores at Idle, sets QUANT_LOCAL_LLM_MODEL=quant-lab (machine), and
+#      runs one tiny completion through free_chain and reads llm_seat's local seat.
 #
 # INTEGRITY (audit must-fix 9, 2026-10-13):
 #   * Ollama is installed at a PINNED version. The first run pins winget's current version in
@@ -35,6 +38,8 @@
 #
 # It never touches the gateway, the judge, a sleeve or a key. To undo:
 #   Unregister-ScheduledTask MT5-LocalLLM -Confirm:$false; winget uninstall Ollama.Ollama
+#   'QUANT_LOCAL_LLM_URLS','QUANT_LOCAL_LLM_MODEL','QUANT_LOCAL_LLM_THREADS' | ForEach-Object {
+#       [Environment]::SetEnvironmentVariable($_, $null, 'Machine') }
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_local_llm.ps1
 
@@ -71,8 +76,9 @@ if (-not $py) { throw "python not on PATH: cannot measure memory with psutil" }
 $freeGb = [double](& $py -c "import psutil; print(round(psutil.virtual_memory().available / 1024**3, 1))")
 $cores  = [int](& $py -c "import psutil; print(psutil.cpu_count(logical=True))")
 Say "measured: $freeGb GB free RAM, $cores logical cores"
+# A ~14B model at 4-bit is ~9 GB resident; 24 GB free leaves the terminal and the gateway 15.
 if ($freeGb -ge 24) {
-    $pull = @('qwen2.5:7b-instruct-q4_K_M', 'llama3.1:8b-instruct-q4_K_M')
+    $pull = @('qwen2.5:14b-instruct-q4_K_M')
 } elseif ($freeGb -ge 12) {
     $pull = @('qwen2.5:7b-instruct-q4_K_M')
 } elseif ($freeGb -ge 6) {
@@ -152,7 +158,12 @@ Get-Process -Name 'ollama' -ErrorAction SilentlyContinue | ForEach-Object {
     $_.PriorityClass = 'Idle'; Say ("server pid {0} set to Idle priority" -f $_.Id)
 }
 
-# 5. Pull and prove one completion.
+# 5. Pull, then serve it as a CAPPED model: `quant-lab` is the pulled weights with num_thread
+#    fixed at a quarter of the logical cores (at least 2), so a long generation can never take
+#    the cores the terminal, the gateway and the gauntlet need. The server process is also pinned
+#    to the LAST $threads cores (its runner children inherit the mask) at Idle priority.
+$threads = [Math]::Max(2, [int][Math]::Floor($cores / 4))
+$Capped  = 'quant-lab'
 foreach ($m in $pull) {
     Say "pulling $m (several GB; this is the slow step)"
     & $ollama pull $m | Out-Host
@@ -167,6 +178,24 @@ foreach ($m in $pull) {
     $lockDoc.models[$m] = $digest; Save-Lock
     Say "$m digest $digest (pinned)"
 }
+$modelfile = Join-Path $Root 'quant-lab.Modelfile'
+Set-Content -Path $modelfile -Encoding ASCII -Value @("FROM $($pull[0])", "PARAMETER num_thread $threads")
+& $ollama create $Capped -f $modelfile | Out-Host
+if (-not (& $ollama list | Select-String -SimpleMatch $Capped)) { throw "ollama create $Capped failed" }
+Say "$Capped = $($pull[0]) capped at $threads of $cores threads"
+$mask = [long]0
+for ($i = $cores - $threads; $i -lt $cores; $i++) { $mask = $mask -bor ([long]1 -shl $i) }
+Get-Process -Name 'ollama' -ErrorAction SilentlyContinue | ForEach-Object {
+    $_.ProcessorAffinity = [IntPtr]$mask; $_.PriorityClass = 'Idle'
+    Say ("server pid {0} pinned to the last {1} cores, Idle" -f $_.Id, $threads)
+}
+[Environment]::SetEnvironmentVariable('QUANT_LOCAL_LLM_MODEL', $Capped, 'Machine')
+$env:QUANT_LOCAL_LLM_MODEL = $Capped
+# free_chain re-applies the same pinning to the server before every local call, so it survives a
+# reboot (a scheduled task cannot carry an affinity mask itself).
+[Environment]::SetEnvironmentVariable('QUANT_LOCAL_LLM_THREADS', [string]$threads, 'Machine')
+$env:QUANT_LOCAL_LLM_THREADS = [string]$threads
+Say "set QUANT_LOCAL_LLM_MODEL=$Capped (machine): llm_seat and free_chain call only the capped model"
 $probe = @'
 import json, os, sys
 sys.path[:0] = [r"REPO", r"REPO\desks\mt5"]
@@ -177,6 +206,11 @@ print(json.dumps({k: st.get(k) for k in ("verdict", "local_models_that_fit")}, d
 r = free_chain.chat("Reply with the single word ok.", "ok?", max_tokens=5, temperature=0,
                     skip=tuple(p.name for p in free_chain.providers() if p.tier != "local"))
 print("local rung answered:", r.provider, r.model, repr(r.text[:20]))
+from libs.ops import llm_seat
+dark = llm_seat.local_dark()
+seat = next((s for s in llm_seat.seats() if llm_seat.is_local(s)), None)
+model, err = llm_seat.discover_model(seat) if seat else ("", dark)
+print("llm_seat local seat:", f"LIT on {model}" if model else f"DARK: {err}")
 '@
 $probe = $probe.Replace('REPO', $Repo)
 $tmp = Join-Path $env:TEMP 'local_llm_probe.py'

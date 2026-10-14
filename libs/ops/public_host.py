@@ -9,7 +9,45 @@ from __future__ import annotations
 import ipaddress
 import socket
 import urllib.parse
+import urllib.request
 from collections.abc import Callable
+from typing import Any
+
+
+def is_loopback_url(url: str) -> bool:
+    """An http URL whose host IS this machine: `localhost` or a loopback IP literal, parsed as an
+    address (so `127.999.999.999` or `127.0.0.1.evil.com`, which go to DNS, are not). The local
+    LLM seat and free_chain's local rungs accept only these (audit #402)."""
+    try:
+        parts = urllib.parse.urlsplit(url.strip())
+        host = parts.hostname or ""
+        _ = parts.port                                    # a malformed port raises here
+    except ValueError:
+        return False
+    if parts.scheme != "http" or not host or "@" in parts.netloc:
+        return False                                      # userinfo is never a local server
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A loopback server's redirect is refused, never followed (audit must-fixes on #402): a
+    followed 3xx carries the request -- and any Authorization header -- to another host, around
+    the proxy, and its reply would be accepted as the local model's answer."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> None:
+        return None                     # urllib then raises HTTPError with the 3xx code
+
+
+#: The ONE opener for every loopback request, in llm_seat and free_chain alike: no proxy (a third
+#: party) and no redirects (another host). Either would send the prompt off the machine.
+LOOPBACK_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+
 
 _NAT64 = ipaddress.ip_network("64:ff9b::/96")
 _NAT64_LOCAL = ipaddress.ip_network("64:ff9b:1::/48")

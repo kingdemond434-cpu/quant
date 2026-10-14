@@ -544,6 +544,7 @@ def sandbox(code: str, mode: str = "test", bars: Path | None = None, out: Path |
         if mode == "series":
             args += [str(bars), str(out)]
         env = {k: os.environ[k] for k in ("SYSTEMROOT", "PATH", "TEMP", "TMP") if k in os.environ}
+        env["QUANT_SANDBOX"] = "1"      # machine_env reads no registry key inside this process
         try:
             p = subprocess.run(args, capture_output=True, text=True, timeout=timeout, cwd=tmp,
                                env=env, check=False)

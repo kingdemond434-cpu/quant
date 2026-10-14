@@ -221,8 +221,11 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
     # donates into `data/intelligence/asia/`, so without this it would be reported as producing
     # nothing on the same night it produced 513 cells -- the exact false negative this gate
     # exists to avoid making about anything else.
+    # `deepseek_cycle` (scripts/run_deepseek_cycle.py) donates into `data/intelligence/deepseek/`,
+    # and two REPLACEMENTS name it as the inheritor: without the alias the inheritor itself read
+    # UNMEASURED while its seat was PRODUCING thousands of rows.
     for producer, seat in (("asia_plane", "asia"), ("asia_transmission", "asia_transmission"),
-                           ("deep_forest_miner", "deep_forest")):
+                           ("deep_forest_miner", "deep_forest"), ("deepseek_cycle", "deepseek")):
         if producer not in seats and seat in seats:
             seats[producer] = seats[seat]
 
