@@ -787,3 +787,63 @@ def test_the_object_of_a_move_is_read_to_the_end_of_its_sentence(
 ) -> None:
     """Audit must-fix on #394 v9, and its coverage notes: hedges and buybacks are no move."""
     assert tr.guidance(_HELD + tail) == want
+
+
+@pytest.mark.parametrize(
+    ("tail", "want"),
+    [
+        ("will continue to evaluate future increases to nominal coupon auction sizes.", 0),
+        ("will assess the need for any further reductions in coupon sizes.", 0),
+        ("will monitor potential future increases to the 10-year note.", 0),
+    ],
+)
+def test_a_governed_hedge_holds(tail: str, want: int | None) -> None:
+    """Audit must-fix on #394 v10: the evaluation verb hedges only through a speculative
+    modifier that binds it to the move."""
+    assert tr.guidance(_HELD + tail) == want
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Having assessed needs, it plans to increase the 2-year note auction sizes.",
+        "Treasury will monitor demand and increase bills and the 5-year note.",
+        "In its review, Treasury will increase the 2-year note auction size.",
+        "Following its review, Treasury will increase the 2-year note auction size.",
+        "Following a review of needs, Treasury will increase the 2-year note.",
+        "Upon consideration, Treasury will increase the 2-year note auction size.",
+        "Treasury, having studied demand, will increase the 2-year note auction size.",
+        "After review, Treasury will cut the 20-year bond auction size.",
+    ],
+)
+def test_an_evaluation_word_near_a_move_is_no_hedge(text: str) -> None:
+    """Audit must-fix on #394 v10: each of these is a move, so the held 0 before it is
+    UNMEASURED, never 0."""
+    assert tr.guidance(_HELD.removesuffix("Treasury ") + text) is None
+
+
+def test_a_reviewed_anticipation_is_guidance() -> None:
+    text = "After review, Treasury anticipates increasing nominal coupon auction sizes."
+    assert tr.guidance(text) == 1
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [
+        "will consider increasing coupon sizes.",
+        "maintains sizes but will consider increasing the 2-year next quarter.",
+        "is reviewing a reduction in the 20-year bond.",
+        "is studying whether to cut the 20-year bond.",
+    ],
+)
+def test_a_considered_move_leaves_a_held_statement_unmeasured(tail: str) -> None:
+    """A direction under consideration is not a held size: UNMEASURED, never 0."""
+    assert tr.guidance(_HELD + tail) is None
+
+
+def test_a_repeated_clause_is_read_from_its_own_place() -> None:
+    """Audit should-fix on #394 v10: offsets come from each clause's own position."""
+    sent = "Treasury will review sizes, and will review sizes; will increase bills"
+    got = tr._clauses_at(sent)
+    assert [sent[a : a + len(c)] for c, a in got] == [c for c, _ in got]
+    assert got[0][1] < got[1][1]

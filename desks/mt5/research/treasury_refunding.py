@@ -357,7 +357,9 @@ def guidance(text: str) -> int | None:
     # Statement-level and fail-closed (audit #394 v8): every sentence is scanned, not only the
     # ones about coupon sizes, because the next quarter's "increases will likely be needed"
     # often sits in a sentence of its own.
-    live = any(_live_direction(c, sent) for sent in _sentences(text) for c in _CLAUSE.split(sent))
+    live = any(
+        _live_direction(c, sent, at) for sent in _sentences(text) for c, at in _clauses_at(sent)
+    )
     # A HELD 0 IS ONLY TRUE WHEN NOTHING IN THE STATEMENT MOVES (audit must-fix on #394 v7):
     # "...; increases likely in the 2-year", "..., and will increase them" leave it UNMEASURED.
     return None if got == 0 and live else got
@@ -368,9 +370,18 @@ _COUPON_OBJECT = re.compile(
 )
 #: Supply a move may name without moving nominal coupon AUCTIONS: bills, TIPS, FRN, buybacks.
 _NON_AUCTION = re.compile(_OTHER_SUPPLY.pattern + r"|\bbuybacks?\b", re.I)
-#: A stem under an evaluation verb is a hedge, not guidance: "continue to evaluate future
-#: increases" is what a held statement says (audit coverage note on #394 v9).
-_HEDGE = re.compile(r"\b(?:evaluat|assess|monitor|consider|stud|review)\w*\b[^.;]{0,25}$", re.I)
+#: A stem GOVERNED by an evaluation verb through a speculative modifier is a hedge, not
+#: guidance: "continue to evaluate future increases", "assess the need for any further
+#: reductions". Only the modifier binds the two (audit must-fix on #394 v10): "having assessed
+#: needs, it plans to increase", "after review, Treasury will cut" and "will consider
+#: increasing" are moves, and an evaluation word merely nearby is no hedge.
+_HEDGE = re.compile(
+    r"\b(?:evaluat|assess|monitor|consider|stud|review)\w*\s+(?:\w+ly\s+)?"
+    r"(?:(?:the\s+)?(?:need|case|possibility|scope)\s+(?:for|of|to)\s+(?:any\s+)?"
+    r"(?:further\s+|future\s+)?|(?:any\s+)?(?:potential|possible)\s+(?:future\s+|further\s+)?"
+    r"|(?:any\s+)?(?:future|further)\s+)$",
+    re.I,
+)
 
 
 def _only_other_supply(obj: str) -> bool:
@@ -381,14 +392,25 @@ def _only_other_supply(obj: str) -> bool:
     return bool(_NON_AUCTION.search(obj)) and not _COUPON_OBJECT.search(nominal)
 
 
-def _live_direction(clause: str, sentence: str | None = None) -> bool:
+def _clauses_at(sent: str) -> list[tuple[str, int]]:
+    """Each clause with its own offset in the sentence, so a clause repeated within one
+    sentence is read from where it stands, not from its first copy (audit #394 v10)."""
+    out, at = [], 0
+    for clause in _CLAUSE.split(sent):
+        at = max(at, sent.find(clause, at))
+        out.append((clause, at))
+        at += len(clause)
+    return out
+
+
+def _live_direction(clause: str, sentence: str | None = None, at: int | None = None) -> bool:
     """The clause names an increase or a reduction that nothing before it in the clause
     negates, that no evaluation verb hedges, and whose object -- the REST OF ITS SENTENCE, so a
     tenor after ", and" or past 40 characters still counts (audit #394 v9) -- is not solely
     other supply (bills, TIPS, FRN, buybacks). Read with or without a guidance verb and
     whether or not the clause names coupons."""
     sent = sentence if sentence is not None else clause
-    base = max(0, sent.find(clause))
+    base = at if at is not None else max(0, sent.find(clause))
     for v, rx in _DIRECTION.items():
         for mt in rx.finditer(clause):
             lead = _REASON.split(clause[: mt.end()])[-1]
