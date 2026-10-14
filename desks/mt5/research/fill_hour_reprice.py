@@ -140,7 +140,7 @@ def verdict_of(in_scope: bool, fill: dict[str, Any]) -> str:
     return "NEGATIVE_AT_FILL_HOUR" if float(fill["exp_r"]) <= 0 else "SURVIVES_FILL_HOUR"
 
 
-def cost_never_charged(survivors: Any) -> dict[str, dict[str, Any]]:
+def cost_never_charged(survivors: Any) -> dict[str, dict[str, Any]] | None:
     """Certificates whose 3x cost stress did not lower their expectancy: no cost was ever
     charged, so their EV is a zero-spread number and reads UNMEASURED at real cost.
 
@@ -150,11 +150,14 @@ def cost_never_charged(survivors: Any) -> dict[str, dict[str, Any]]:
     certified; AUDCHF lost -0.68R over 10 forward trades.
 
     A certificate missing either number cannot show its cost bit, so it is listed UNMEASURED,
-    never passed as clean.
+    never passed as clean; a non-positive EV is listed as its own verdict, never dropped. A file
+    with no `survivors` map returns None: the caller reads that as UNMEASURED.
     """
-    rows = (survivors or {}).get("survivors") if isinstance(survivors, dict) else None
+    rows = survivors.get("survivors") if isinstance(survivors, dict) else None
+    if not isinstance(rows, dict):
+        return None
     out: dict[str, dict[str, Any]] = {}
-    for key, row in (rows.items() if isinstance(rows, dict) else ()):
+    for key, row in rows.items():
         gates = row.get("gates") if isinstance(row, dict) else None
         if not isinstance(gates, dict):
             out[str(key)] = {"verdict": "UNMEASURED: no gates on the certificate"}
@@ -164,7 +167,10 @@ def cost_never_charged(survivors: Any) -> dict[str, dict[str, Any]]:
         if not isinstance(ev, (int, float)) or not isinstance(x3, (int, float)):
             out[str(key)] = {"ev": ev, "exp_x3": x3,
                              "verdict": "UNMEASURED: ev or exp_x3 missing"}
-        elif ev > 0 and x3 >= ev:
+        elif ev <= 0:
+            out[str(key)] = {"ev": float(ev), "exp_x3": float(x3),
+                             "verdict": "NON_POSITIVE_EV"}
+        elif x3 >= ev:
             out[str(key)] = {"ev": float(ev), "exp_x3": float(x3),
                              "verdict": "COST_NEVER_CHARGED"}
     return out
@@ -190,13 +196,12 @@ def charge_check(doc: dict[str, Any]) -> int:
 
     Runs before every early exit of `run`, so a host with no cost surface or no gauntlet import
     still reports which certificates were never charged a cost."""
-    survivors = next((d for d in (_read(f) for f in SURVIVOR_FILES) if isinstance(d, dict)),
-                     None)
-    if survivors is None:
-        doc["cost_never_charged"] = "UNMEASURED: no survivors file on this host"
+    rows = next((r for r in (cost_never_charged(_read(f)) for f in SURVIVOR_FILES)
+                 if r is not None), None)
+    if rows is None:
+        doc["cost_never_charged"] = "UNMEASURED: no survivors map on this host"
         return 0
     roster = roster_certificates()
-    rows = cost_never_charged(survivors)
     doc["cost_never_charged"] = {
         k: {**v, "sleeve": (roster.get(k) or {}).get("sleeve"),
             "roster_status": (roster.get(k) or {}).get("status")}

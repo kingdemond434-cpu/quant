@@ -185,7 +185,10 @@ def test_a_certificate_whose_cost_stress_never_bit_is_flagged_and_alarms_when_li
     assert got["external.Y.f.p=w"]["verdict"].startswith("UNMEASURED"), \
         "a certificate without its stress number is unmeasured, never clean"
     assert "external.USDZAR.overnight_gap_decay.p=x" not in got
-    assert fh.cost_never_charged(None) == {} and fh.cost_never_charged({"survivors": []}) == {}
+    assert got["external.X.f.p=z"]["verdict"] == "NON_POSITIVE_EV", "never silently dropped"
+    for shapeless in (None, {"other": 1}, {"survivors": []}):
+        assert fh.cost_never_charged(shapeless) is None
+    assert fh.cost_never_charged({"survivors": {}}) == {}
 
 
 def test_a_live_unbitten_certificate_raises_the_alarm(tmp_path, monkeypatch) -> None:
@@ -226,3 +229,13 @@ def test_the_charge_check_runs_without_a_cost_surface_and_flags_standby(
 def test_the_alarm_exit_is_a_verdict_in_the_hourly_cycle() -> None:
     from research import hourly_cycle as hc
     assert 1 in hc.VERDICT_EXITS["fill_hour_reprice"]
+
+
+def test_a_survivors_file_without_a_survivors_map_reads_unmeasured(tmp_path, monkeypatch) -> None:
+    _desk(tmp_path, monkeypatch, {})
+    bad = tmp_path / "bad.json"
+    bad.write_text(json.dumps({"other": 1}), "utf-8")
+    monkeypatch.setattr(fh, "SURVIVOR_FILES", (bad,))
+    fh.SURFACE.unlink()
+    fh.run(force=True)
+    assert json.loads(fh.OUT.read_text("utf-8"))["cost_never_charged"].startswith("UNMEASURED")
