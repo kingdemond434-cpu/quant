@@ -96,15 +96,21 @@ def test_swap_nights_match_the_engine() -> None:
 
 
 def test_bh_matches_the_repo_procedure_with_the_untestable_padded() -> None:
-    from libs.validation.fdr import benjamini_hochberg
+    # TRIAL-COUNT GUARD (2026-10-14): libs.validation.fdr now charges m at min(m, BAR_N). The
+    # mass screen is HELD on the counted m (pinning it forwards pure noise -- see
+    # test_pure_noise_forwards_nothing) pending a principal call, so the reference here is the
+    # step-up over the COUNTED, padded family, written out rather than borrowed from fdr.
     rng = np.random.default_rng(3)
     p = np.r_[rng.uniform(0, 1e-4, 30), rng.uniform(0, 1, 5000)]
     m = 20_000
     listed = p[p <= 0.05]
     cut = MS.bh_threshold(listed, m, 0.05)
-    ref = benjamini_hochberg(np.r_[p, np.ones(m - p.size)], alpha=0.05)
-    assert cut == pytest.approx(ref.threshold)
-    assert int((listed <= cut).sum()) == ref.n_rejected
+    full = np.sort(np.r_[p, np.ones(m - p.size)])
+    below = full <= np.arange(1, m + 1) / m * 0.05
+    k = int(np.max(np.flatnonzero(below))) + 1 if below.any() else 0
+    ref_threshold = float(full[k - 1]) if k else 0.0
+    assert cut == pytest.approx(ref_threshold)
+    assert int((listed <= cut).sum()) == k
 
 
 def test_training_window_never_reaches_the_walk_forward_or_lockbox_region() -> None:
