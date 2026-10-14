@@ -38,6 +38,10 @@ WHAT THIS FENCE NEVER DOES. It removes no cell, caps no book, shrinks no budget 
 miner (GROWTH_GOVERNANCE Rule 1). Its only remedy is ORDER -- and order costs nothing, because
 the same rows reach the same judge under the same budget either way.
 
+  * THE DRAIN ETA IS MEASURED.  `JUDGING_RATE.json` -> `eta_to_drain` UNMEASURED for more than
+    one consecutive reading FAILS and names the missing input (added 2026-10-14, after it read
+    UNMEASURED for days while the judge was stalled and nothing went red).
+
 UNMEASURED IS A VERDICT (L1.28a). On a clean checkout there is no report and no ratchet; this
 says UNMEASURED and exits 0, because "this machine has no desk state" is not "a law was broken".
 On the box `--require-state` promotes an absent report to a FAILURE -- an organ that was
@@ -103,6 +107,11 @@ STOP_FAIL_H = 24.0
 #: Mirrors `run_sharded_gauntlet.HEARTBEAT_STALE_S`: a RUNNING heartbeat older than this means
 #: the sweep's watchdog itself is wedged (it beats at least once a minute).
 HEARTBEAT_STALE_S = 600.0
+#: `research/judging_throughput.py` publishes verdicts/hour against the backlog here, with
+#: `eta_to_drain` and, while that is UNMEASURED, how many consecutive readings it has been.
+RATE = DESK / "reports" / "JUDGING_RATE.json"
+#: One UNMEASURED reading is a pass that came up short; this many in a row is a stopped clock.
+ETA_UNMEASURED_MAX_READINGS = 1
 
 #: A report older than this is stale: the organ runs at intake, hourly, so three hours of silence
 #: means the clock stopped. Generous because a box reboot or a long sweep is not a law breach.
@@ -286,9 +295,68 @@ def liveness_fence(*, require_state: bool = False, now: datetime | None = None,
             "why": row["why"], "checks": rows}
 
 
+def _legacy_missing(rate: Mapping[str, Any]) -> list[str]:
+    """Name the missing input from a JUDGING_RATE written before it named its own."""
+    out: list[str] = []
+    if rate.get("backlog") in (None, "UNMEASURED"):
+        if not rate.get("coverage_backlog_fresh"):
+            out.append("JUDGE_COVERAGE.json")
+        src = str(rate.get("backlog_source") or "")
+        name = src.replace("\\", "/").rsplit("/", 1)[-1].split(" ", 1)[0]
+        if name and name != "UNMEASURED" and name not in out:
+            out.append(name)
+    if (rate.get("verdicts") or {}).get("status") != "MEASURED":
+        out.append("gate_verdict_ledger.jsonl")
+    if (rate.get("created") or {}).get("status") != "MEASURED":
+        out.append("alpha_registry.sqlite")
+    return out or ["UNKNOWN"]
+
+
+def eta_check(rate_path: Path, *, require_state: bool = False) -> dict[str, Any]:
+    """8. THE DRAIN ETA IS MEASURED. An UNMEASURED `eta_to_drain` for more than one reading FAILS.
+
+    Measured 2026-10-14: JUDGING_RATE read `eta_to_drain: UNMEASURED` hour after hour while the
+    judge returned no verdict for two days, and no fence said a word -- the one number that says
+    whether the backlog will ever drain went dark exactly when it mattered. Absence never resolves
+    to a clean verdict (L1.28a), so a second consecutive UNMEASURED reading is a FAILURE naming
+    the input that is missing. The remedy is to restore that input's organ, never to drop the
+    check. A single UNMEASURED reading WARNs: one short pass is not a stopped clock.
+    """
+    rate = _read(rate_path)
+    if not isinstance(rate, dict) or not rate:
+        return {"metric": "eta_to_drain", "state": "FAIL" if require_state else "UNMEASURED",
+                "why": (f"{rate_path.name} absent or unreadable"
+                        + (": --require-state says this box owes one (L1.49)" if require_state
+                           else "; this tree holds no judging-rate state (L1.28a)"))}
+    eta = rate.get("eta_to_drain")
+    eta = eta if isinstance(eta, dict) else {}
+    status = eta.get("status")
+    if status not in (None, "UNMEASURED"):
+        return {"metric": "eta_to_drain", "state": "OK",
+                "why": f"eta_to_drain {status} at {rate.get('at')}"}
+    missing = eta.get("missing_inputs")
+    if not isinstance(missing, list) or not missing:
+        missing = _legacy_missing(rate)
+    readings = eta.get("unmeasured_readings")
+    since = eta.get("unmeasured_since") or rate.get("at")
+    reason = str(eta.get("why") or "no reason published")
+    if isinstance(readings, int) and readings <= ETA_UNMEASURED_MAX_READINGS:
+        return {"metric": "eta_to_drain", "state": "WARN", "missing_inputs": missing,
+                "why": (f"eta_to_drain UNMEASURED for {readings} reading (missing: "
+                        f"{', '.join(map(str, missing))}; {reason})")}
+    count = (f"{readings} consecutive readings since {since}" if isinstance(readings, int)
+             else "a reading whose producer publishes no history, so it cannot show this is "
+                  "the first")
+    return {"metric": "eta_to_drain", "state": "FAIL", "missing_inputs": missing,
+            "why": (f"eta_to_drain UNMEASURED for {count}; missing input(s): "
+                    f"{', '.join(map(str, missing))} ({reason}). Restore that input's organ "
+                    "-- an unmeasured drain is never a clean one (L1.28a)")}
+
+
 def judge(report: Path | None = None, *, require_state: bool = False,
           now: datetime | None = None, liveness: bool | None = None,
-          heartbeat: Path | None = None, stall: Path | None = None) -> dict[str, Any]:
+          heartbeat: Path | None = None, stall: Path | None = None,
+          rate: Path | None = None) -> dict[str, Any]:
     """The coverage verdict, with the judge's own liveness folded in.
 
     `liveness` None reads it only for the desk's REAL report (`report` None), so a test that
@@ -296,7 +364,7 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     the box (`--require-state`) a dead or stalled judge FAILS; anywhere else it is a WARN, the
     same split the freshness rule makes, because a commit cannot be blamed for a box incident.
     """
-    out = _coverage(report, require_state=require_state, now=now)
+    out = _coverage(report, require_state=require_state, now=now, rate=rate)
     if liveness is None:
         # The source view (pre-push, CI) reads no box-published state, and GAUNTLET_HEARTBEAT /
         # GAUNTLET_STALL are published to origin by sync_shadow_to_git.ps1 exactly as
@@ -319,7 +387,7 @@ def judge(report: Path | None = None, *, require_state: bool = False,
 
 
 def _coverage(report: Path | None = None, *, require_state: bool = False,
-              now: datetime | None = None) -> dict[str, Any]:
+              now: datetime | None = None, rate: Path | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     path = report or REPORT
     out: dict[str, Any] = {"at": at.isoformat(timespec="seconds"), "rule": RULE,
@@ -330,12 +398,19 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
         out["checks"].append({"metric": "box_state", "state": "UNMEASURED",
                               "why": f"{SOURCE_VIEW_ENV}=1: {path.name} not read"})
         return out
+    # The rate sits beside the report it is read with; a fixture's report never reads the tree's.
+    rate_path = rate or (path.parent / RATE.name if report is not None else RATE)
+    out["rate"] = str(rate_path)
+    eta_row = eta_check(rate_path, require_state=require_state)
     doc = _read(path)
     if not isinstance(doc, dict) or not doc.get("families"):
-        out["verdict"] = "FAIL" if require_state else "UNMEASURED"
+        out["checks"].append(eta_row)
+        out["verdict"] = ("FAIL" if require_state or eta_row["state"] == "FAIL"
+                          else "UNMEASURED")
         out["why"] = (f"{path.name} is absent or carries no family table"
                       + (" and --require-state says this box owes one (L1.49)" if require_state
-                         else "; this tree holds no judge-coverage state (L1.28a)"))
+                         else "; this tree holds no judge-coverage state (L1.28a)")
+                      + (f"; {eta_row['why']}" if eta_row["state"] == "FAIL" else ""))
         return out
 
     # A STALE OR UNDATED REPORT FAILS THE BOX (2026-10-21, audit of the coverage pager). Until
@@ -639,6 +714,9 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
         else:
             out["checks"].append({"metric": "build_input_release_file", "state": "OK",
                                   "why": f"release file {rstate or 'ABSENT'}"})
+    out["checks"].append(eta_row)
+    if eta_row["state"] == "FAIL":
+        failures.append("eta_to_drain")
 
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (
@@ -913,10 +991,11 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["BOX_STATE_ELSEWHERE", "FUTURE_SKEW_S", "GAUNTLET_HEARTBEAT", "GAUNTLET_STALL",
-           "INCIDENTS", "PAGE_STATE_REL", "RATCHET", "REPAGE_H", "REPORT", "RULE",
-           "SOURCE_VIEW_ENV", "STALE_H", "WINDOW_SLACK", "incidents", "judge", "judge_liveness",
-           "liveness_fence", "main", "page_coverage", "render"]
+__all__ = ["BOX_STATE_ELSEWHERE", "ETA_UNMEASURED_MAX_READINGS", "FUTURE_SKEW_S",
+           "GAUNTLET_HEARTBEAT", "GAUNTLET_STALL", "INCIDENTS", "PAGE_STATE_REL", "RATCHET",
+           "RATE", "REPAGE_H", "REPORT", "RULE", "SOURCE_VIEW_ENV", "STALE_H", "WINDOW_SLACK",
+           "eta_check", "incidents", "judge", "judge_liveness", "liveness_fence", "main",
+           "page_coverage", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

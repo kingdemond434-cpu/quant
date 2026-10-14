@@ -483,6 +483,48 @@ def measure_queue(now: datetime | None = None) -> dict[str, Any]:
 #: `research/judge_coverage.py`. Read here, never written here: that organ owns the number and
 #: this one owns the response to it.
 JUDGE_COVERAGE = BASE / "reports" / "JUDGE_COVERAGE.json"
+#: JUDGE_COVERAGE is hourly; two hours of silence means its leg did not complete, and a backlog
+#: read off it then would be a number from a clock that stopped.
+COVERAGE_MAX_AGE_S = 7200
+
+
+def _eta_missing_inputs(backlog: Any, cov: Any, unjudged: Any, cov_age_s: float | None,
+                        queue: dict[str, Any], ver: dict[str, Any], cre: dict[str, Any],
+                        ledger: Path | None, registry: Path | None) -> list[dict[str, str]]:
+    """NAME THE INPUT THAT IS MISSING, never a guess at it.
+
+    Until 2026-10-14 every unmeasured backlog was reported as "GAUNTLET_BACKPRESSURE.json
+    absent". It was not absent (its last write was 2026-10-03) and it was never the input that
+    mattered: a backpressure reading is one sweep's remainder, which this function refuses as
+    the backlog on purpose. The backlog comes from JUDGE_COVERAGE.json, and it was THAT file
+    which had gone stale -- so the published reason pointed the next session at the wrong organ.
+    """
+    out: list[dict[str, str]] = []
+    if not isinstance(backlog, int):
+        if not isinstance(cov, dict) or not cov:
+            cw = "absent or unreadable"
+        elif not isinstance(unjudged, int):
+            cw = "carries no totals.unjudged_total"
+        elif cov_age_s is None:
+            cw = "has no timezone-aware 'at'"
+        elif cov_age_s < 0:
+            cw = "is stamped in the future"
+        else:
+            cw = (f"stale: {cov_age_s / 3600.0:.1f}h old, past the "
+                  f"{COVERAGE_MAX_AGE_S / 3600.0:.0f}h lease (leg judge_coverage did not complete)")
+        out.append({"input": JUDGE_COVERAGE.name, "why": cw})
+        if queue.get("depth_scope") == "sweep":
+            bw = "one sweep's remainder, never the full backlog (refused as a fallback)"
+        else:
+            bw = str(queue.get("why") or "no queue depth")
+        out.append({"input": BACKPRESSURE.name, "why": bw})
+    if ver.get("status") != "MEASURED":
+        out.append({"input": (ledger.name if ledger else "gate_verdict_ledger.jsonl"),
+                    "why": str(ver.get("why") or "verdict rate UNMEASURED")})
+    if cre.get("status") != "MEASURED":
+        out.append({"input": (registry.name if registry else REGISTRY.name),
+                    "why": str(cre.get("why") or "creation rate UNMEASURED")})
+    return out or [{"input": "UNKNOWN", "why": "an input was unmeasured and none was named"}]
 
 
 def _value_at_risk() -> dict[str, Any]:
@@ -1386,7 +1428,8 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         _parse_utc(_resident.get("last_sweep_ended_utc") if isinstance(_resident, dict) else None))
     _cuts = regime_cuts(_step_state)
     try:
-        rate = measure_rate(queue, decision, now, deadline_s=_budget, extra_cuts=_cuts)
+        rate = measure_rate(queue, decision, now, deadline_s=_budget, extra_cuts=_cuts,
+                            previous=_read_json(RATE_OUT, {}) or {})
     except Exception as exc:     # a broken rate read must never cost the sizing decision
         rate = {"at": _now(now).isoformat(timespec="seconds"), "status": UNMEASURED,
                 "why": f"{type(exc).__name__}: {exc}"}
@@ -1726,7 +1769,8 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
                  now: datetime | None = None, *, ledger: Path | None = None,
                  registry: Path | None = None,
                  deadline_s: float | None = None,
-                 extra_cuts: dict[str, str] | None = None) -> dict[str, Any]:
+                 extra_cuts: dict[str, str] | None = None,
+                 previous: dict[str, Any] | None = None) -> dict[str, Any]:
     """VERDICTS/HOUR AGAINST THE BACKLOG, and how long the backlog takes to drain.
 
     ETA = backlog / (verdicts/hour - created/hour), both over the same 24 h window. A judge that
@@ -1749,9 +1793,12 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     _unj = ((_cov.get("totals") or {}).get("unjudged_total")
             if isinstance(_cov, dict) else None)
     # Require a timezone-aware content timestamp; touching the file is not freshness.
+    cov_age_s: float | None = None
     try:
         cov_at = datetime.fromisoformat(str(_cov.get("at") or "").replace("Z", "+00:00"))
-        coverage_fresh = cov_at.tzinfo is not None and 0 <= (t - cov_at).total_seconds() <= 7200
+        if cov_at.tzinfo is not None:
+            cov_age_s = (t - cov_at).total_seconds()
+        coverage_fresh = cov_age_s is not None and 0 <= cov_age_s <= COVERAGE_MAX_AGE_S
     except (ValueError, TypeError, AttributeError):
         coverage_fresh = False
     if isinstance(_unj, int) and coverage_fresh:
@@ -1772,10 +1819,27 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
             eta = {"status": "GROWING", "hours": None, "net_per_day": round(net * 24.0, 1),
                    "why": ("the judge returns fewer verdicts an hour than the desk creates cells; "
                            "the backlog cannot drain at this rate")}
-    elif not isinstance(backlog, int):
-        eta["why"] = "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
     else:
-        eta["why"] = "verdict or creation rate UNMEASURED"
+        missing = _eta_missing_inputs(backlog, _cov, _unj, cov_age_s, queue, ver, cre,
+                                      ledger, registry)
+        eta["why"] = "; ".join(f"{m['input']}: {m['why']}" for m in missing)
+        eta["missing_inputs"] = [m["input"] for m in missing]
+    if eta["status"] == UNMEASURED:
+        # HOW LONG HAS IT BEEN UNMEASURED. One UNMEASURED reading is a pass that came up short;
+        # two in a row is a clock that stopped, and `scripts/check_judge_coverage.py` fails on it
+        # (L1.28a). The count rides on this artifact so the fence needs no state of its own. A
+        # previous reading from before the counter existed was still a reading: it counts as one.
+        prev_eta = ((previous or {}).get("eta_to_drain") if isinstance(previous, dict)
+                    else None) or {}
+        if isinstance(prev_eta, dict) and prev_eta.get("status") == UNMEASURED:
+            n_prev = prev_eta.get("unmeasured_readings")
+            n_prev = n_prev if isinstance(n_prev, int) and n_prev > 0 else 1
+            since = prev_eta.get("unmeasured_since") or (previous or {}).get("at")
+            eta["unmeasured_readings"] = n_prev + 1
+            eta["unmeasured_since"] = since or t.isoformat(timespec="seconds")
+        else:
+            eta["unmeasured_readings"] = 1
+            eta["unmeasured_since"] = t.isoformat(timespec="seconds")
     return {
         "at": t.isoformat(timespec="seconds"),
         # The verdict count is this artifact's measurement: when it is UNMEASURED (absent ledger,
