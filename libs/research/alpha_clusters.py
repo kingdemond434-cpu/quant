@@ -257,6 +257,17 @@ FAMILY_CLUSTER: dict[str, str] = {
     "lead_lag_class_catchup": "cross_asset_lead_lag",
     # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
     "crisis_only_class_defensive": "crisis_drawdown",
+    # Amihud impact ranked within the class (2026-10-14): a characteristic rank book.
+    "cross_sectional_class_illiquidity": "cross_sectional_fx",
+    # -- broker state, Amihud and options state (2026-10-14, research/broker_state_cells.py)
+    # A dated margin hike or CLOSEONLY flip is forced deleveraging by the venue's own hand.
+    "broker_margin_event": "crisis_drawdown",
+    # A swap change is the financing leg repricing: macro/rates, like `carry` itself.
+    "carry_swap_drift": "macro_rates",
+    # Thin-book concession and the liquidity premium: liquidity provision.
+    "amihud_illiquidity": "mean_reversion",
+    # The BTC/ETH option surface conditioning the Fusion crypto CFD.
+    "crypto_options_state": "options_implied",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",

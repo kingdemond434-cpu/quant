@@ -47,6 +47,11 @@ THE FAMILIES AND THEIR ECONOMIC PRIORS (written down before any data was looked 
       return yesterday, because its participants watch a different screen. The causal lagged
       beta on the class ex-self predicts which members have not yet caught up; long the members
       predicted to rise most, short those predicted to fall most. Payer: the slow updater.
+  cross_sectional_class_illiquidity  Amihud impact per tick (|return| / tick_volume, normalised
+      by hour of the week, trailing), ranked within the class (2026-10-14). `premium`: the least
+      liquid members relative to their own hours earn a premium (Amihud 2002). `shock_reversal`:
+      the member that moved furthest on the thinnest book is faded. The share-CFD route to both
+      Amihud claims (`mt5desk.family_amihud` is the time-series form for the hypothesis lane).
 
 NO LOOKAHEAD, BY CONSTRUCTION. The decision bar for a day is the symbol's own last bar at or
 before `decision_hour` (broker stamp hour). Every peer is read AS OF THAT BAR'S STAMP -- a peer bar
@@ -101,6 +106,8 @@ PARAM_GRID: dict[str, dict[str, list]] = {
                                       "hold_d": [5, 20]},
     "crisis_only_class_defensive": {"stress_q": [0.67, 0.8], "hold_d": [3, 5]},
     "lead_lag_class_catchup": {"window_d": [120, 250], "hold_d": [1, 2]},
+    "cross_sectional_class_illiquidity": {"mode": ["premium", "shock_reversal"],
+                                          "window_d": [20, 60], "hold_d": [1, 5]},
 }
 
 _SERIES_CACHE: OrderedDict[str, tuple[int, np.ndarray, np.ndarray]] = OrderedDict()
@@ -546,6 +553,107 @@ def family_lead_lag_class_catchup(
                     tag=f"lead_lag_catchup:{panel['klass']}:{window_d}")
 
 
+#: Per-file hourly normalised Amihud impact, cached on mtime: (mtime, stamps ns, values).
+_IMPACT_CACHE: OrderedDict[str, tuple[int, np.ndarray, np.ndarray]] = OrderedDict()
+
+
+def _impact_from_frame(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray] | None:
+    """(stamps ns, hourly normalised impact) from a bar frame, or None without tick_volume."""
+    from mt5desk.family_amihud import normalised_impact
+    if frame is None or len(frame) == 0:
+        return None
+    f = _h1(frame)
+    imp = normalised_impact(f)
+    if imp is None:
+        return None
+    return pd.DatetimeIndex(f.index).as_unit("ns").asi8.astype("int64"), imp.to_numpy("float64")
+
+
+def _load_impact(symbol: str) -> tuple[np.ndarray, np.ndarray] | None:
+    path = UNIVERSE_DIR / f"{symbol}_H1.parquet"
+    try:
+        mtime = path.stat().st_mtime_ns
+    except OSError:
+        return None
+    key = str(path)                       # the FILE, so a moved store never reads a stale entry
+    hit = _IMPACT_CACHE.get(key)
+    if hit is not None and hit[0] == mtime:
+        _IMPACT_CACHE.move_to_end(key)
+        return hit[1], hit[2]
+    try:
+        frame = pd.read_parquet(path, columns=["close", "tick_volume"])
+    except Exception:
+        return None
+    out = _impact_from_frame(frame)
+    if out is None:
+        return None
+    _IMPACT_CACHE[key] = (mtime, out[0], out[1])
+    while len(_IMPACT_CACHE) > SERIES_CACHE_MAX:
+        _IMPACT_CACHE.popitem(last=False)
+    return out
+
+
+def _asof_rolling(t: np.ndarray, v: np.ndarray, stamps: np.ndarray, bars: int,
+                  max_stale_h: float) -> np.ndarray:
+    """The trailing `bars`-bar mean of `v`, read AS OF each stamp (a later bar is invisible, a
+    stale one is absent)."""
+    roll = pd.Series(v).rolling(int(bars), min_periods=max(2, int(bars) // 2)).mean().to_numpy()
+    j = np.searchsorted(t, stamps, side="right") - 1
+    out = np.full(stamps.size, np.nan, dtype="float64")
+    has = j >= 0
+    jj = np.where(has, j, 0)
+    fresh = has & ((stamps - t[jj]) <= float(max_stale_h) * 3_600_000_000_000)
+    out[fresh] = roll[jj[fresh]]
+    return out
+
+
+def family_cross_sectional_class_illiquidity(
+    df: pd.DataFrame, *, symbol: str = "", mode: str = "premium", window_d: int = 20,
+    hold_d: int = 5, quantile: float = 1 / 3, decision_hour: int = 22,
+    max_stale_h: float = 12.0, stop_sd: float = 3.0, rr: float = 2.0,
+) -> list[Signal]:
+    """AMIHUD IMPACT PER TICK, RANKED WITHIN THE CLASS (`mt5desk.family_amihud` for the measure).
+
+    `premium`: long while `symbol`'s trailing `window_d`-day mean normalised impact ranks in the
+    TOP `quantile` of its class (the least liquid relative to their own hours earn the premium),
+    short in the bottom. `shock_reversal`: score = -(1-day return) x the positive part of the
+    last day's impact above its own `window_d`-day mean -- members that moved furthest on the
+    thinnest book rank at the extremes and are faded. This is how a share CFD reaches the two
+    Amihud claims: against the `equity` peer class on the same date, never alone."""
+    if (not _valid_common(quantile, hold_d, stop_sd, rr)
+            or mode not in ("premium", "shock_reversal") or int(window_d) < 2):
+        return []
+    got = _prepare(df, symbol, decision_hour, max_stale_h)
+    if got is None:
+        return []
+    d, panel = got
+    own = _impact_from_frame(df)
+    if own is None:
+        return []
+    stamps = pd.DatetimeIndex(d.index).as_unit("ns").asi8[panel["pos"]]
+    per_day = bars_per_day(d)
+    cols_long: list[np.ndarray] = []
+    cols_day: list[np.ndarray] = []
+    for k, name in enumerate(panel["members"]):
+        series = own if k == panel["own"] else _load_impact(name)
+        if series is None:
+            cols_long.append(np.full(stamps.size, np.nan))
+            cols_day.append(np.full(stamps.size, np.nan))
+            continue
+        t, v = series
+        cols_long.append(_asof_rolling(t, v, stamps, int(window_d) * per_day, max_stale_h))
+        cols_day.append(_asof_rolling(t, v, stamps, per_day, max_stale_h))
+    level = np.column_stack(cols_long)
+    if mode == "premium":
+        score = level
+    else:
+        shock = np.clip(np.column_stack(cols_day) - _shift(level, 1), 0.0, None)
+        score = -_returns(panel["logv"]) * shock
+    side = _rank_sides(score, panel["own"], quantile)
+    return _signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,
+                    tag=f"xs_illiquidity:{mode}:{panel['klass']}:{window_d}")
+
+
 CROSS_SECTIONAL_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "cross_sectional_class_momentum": family_cross_sectional_class_momentum,
     "cross_sectional_class_reversal": family_cross_sectional_class_reversal,
@@ -553,6 +661,7 @@ CROSS_SECTIONAL_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "cross_sectional_class_low_vol": family_cross_sectional_class_low_vol,
     "crisis_only_class_defensive": family_crisis_only_class_defensive,
     "lead_lag_class_catchup": family_lead_lag_class_catchup,
+    "cross_sectional_class_illiquidity": family_cross_sectional_class_illiquidity,
 }
 
 #: The alpha cluster (libs/research/alpha_clusters) each family is BUILT to occupy, with the
@@ -581,4 +690,8 @@ TARGETS: dict[str, dict[str, str]] = {
         "cluster": "cross_asset_lead_lag",
         "prior": "slow updaters: members price the class's move with a lag (Lo & MacKinlay "
                  "1990 lead-lag; Hou 2007)"},
+    "cross_sectional_class_illiquidity": {
+        "cluster": "cross_sectional_fx",
+        "prior": "Amihud impact per tick, hour-of-week normalised: the illiquid earn a premium "
+                 "(Amihud 2002) and a thin-book shock is a concession that reverts"},
 }

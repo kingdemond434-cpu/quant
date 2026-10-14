@@ -2446,3 +2446,41 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
+
+# BROKER STATE, AMIHUD IMPACT AND THE OPTIONS-STATE CONDITIONER (2026-10-14). Four families that
+# load their own point-in-time evidence: the venue's margin / trade_mode / swap changes from the
+# contract-terms tape (`research/broker_state_cells.py` writes the store), the bars' own
+# tick_volume, and the recovered BTC/ETH options vintages. The event families take `symbol` and
+# `event` (the options one `symbol` and `field`) as REQUIRED keyword arguments, so the sweep names
+# them unsuppliable instead of calling them blind; `amihud_illiquidity` needs only the bars.
+from mt5desk.family_amihud import family_amihud_illiquidity  # noqa: E402
+from mt5desk.family_broker_state import (  # noqa: E402
+    family_broker_margin_event,
+    family_carry_swap_drift,
+)
+from mt5desk.family_options_state import family_crypto_options_state  # noqa: E402
+
+ORTHOGONAL_FAMILIES["broker_margin_event"] = family_broker_margin_event
+ORTHOGONAL_FAMILIES["carry_swap_drift"] = family_carry_swap_drift
+ORTHOGONAL_FAMILIES["amihud_illiquidity"] = family_amihud_illiquidity
+ORTHOGONAL_FAMILIES["crypto_options_state"] = family_crypto_options_state
+FAMILY_INPUTS["broker_margin_event"] = (
+    "the venue's margin / trade_mode changes, placed at the first hourly record showing them "
+    "(research/broker_state_cells.py)", "desks/mt5/data/broker_state/events.jsonl")
+FAMILY_INPUTS["carry_swap_drift"] = (
+    "the venue's swap changes, sign flips and carry-tercile changes, placed at the first record "
+    "showing them (research/broker_state_cells.py)", "desks/mt5/data/broker_state/events.jsonl")
+FAMILY_INPUTS["amihud_illiquidity"] = (
+    "the bar's own tick_volume (Amihud impact per tick, hour-of-week normalised)", None)
+FAMILY_INPUTS["crypto_options_state"] = (
+    "BTC/ETH option-surface vintages, read-only, as a PIT conditioner on the Fusion CFD",
+    "desks/mt5/data/options_state/vintages.jsonl")
+for _bs_name in ("broker_margin_event", "carry_swap_drift", "crypto_options_state"):
+    FAMILY_TIMEFRAMES[_bs_name] = (
+        ("H1",),
+        "an hourly-recorded venue state change: the event is placed on the first H1 bar opening "
+        "after the hourly record that showed it, and its hold is counted in H1 bars")
+FAMILY_TIMEFRAMES["amihud_illiquidity"] = (
+    ("H1",),
+    "normalised by hour of the week, which exists only on the hourly chart")
+del _bs_name

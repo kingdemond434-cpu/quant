@@ -58,6 +58,22 @@ def server_to_utc(index: Any) -> pd.DatetimeIndex:
     return local.tz_convert("UTC")
 
 
+def utc_to_server(at: Any) -> pd.Timestamp | None:
+    """The broker STAMP (UTC-labelled, as the bars carry it) of a true UTC instant: New York wall
+    time + 7 h. The exact inverse of `server_to_utc`, DST included, with no shoulder-month gap --
+    an event knowable at `at` is placed on the bar clock by this and nothing else. None for an
+    unparseable or missing instant (the caller drops the event, never uses it raw)."""
+    try:
+        ts = pd.Timestamp(at)
+    except (TypeError, ValueError):
+        return None
+    if ts is pd.NaT or pd.isna(ts):
+        return None
+    ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+    wall = ts.tz_convert(SERVER_TZ).tz_localize(None) + pd.Timedelta(hours=SERVER_SHIFT_H)
+    return wall.tz_localize("UTC")
+
+
 def utc_offset_h(at: Any = None) -> int:
     """The venue stamp's offset from UTC, in hours, at the UTC instant `at` (default now): 3 while
     New York is on daylight time, 2 otherwise. A constant is right for half the year only."""

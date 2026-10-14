@@ -1125,7 +1125,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
-                     "cross_sectional_breadth"),
+                     "cross_sectional_breadth",
+                     # broker margin/CLOSEONLY/swap events, Amihud impact, options state -> cells
+                     "broker_state_cells"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1939,6 +1941,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
     "event_surprise": 400,
+    # Stops itself at --budget-s 600 and resumes from its state file; the cap sits above it.
+    "broker_state_cells": 720,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
@@ -4012,6 +4016,16 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # BROKER STATE INTO CELLS (2026-10-14). The contract-terms tape records margin_initial,
+    # margin_maintenance, trade_mode and the swaps every hour and nothing read them: this rebuilds
+    # the PIT event store (margin hikes/cuts, CLOSEONLY on/off, swap changes, sign flips, carry-
+    # tercile changes), rebuilds data/carry_state.json HOURLY (its daily runner swallows its exit
+    # code and the box has never published one), refreshes the options-state store, and seeds the
+    # broker_margin_event / carry_swap_drift / amihud_illiquidity / crypto_options_state cells
+    # whose firing clears the gauntlet floor; the rest read SERIES_ACCRUING with their event
+    # counts in reports/BROKER_STATE_CELLS.json.
+    bsc = _costed("broker_state_cells", lambda: _producer(
+        "broker_state_cells", "research/broker_state_cells.py", "--once", "--budget-s", "600"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5784,6 +5798,7 @@ def main() -> None:
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "event_surprise": esur, "alpha_capture": acap,
+                    "broker_state_cells": bsc,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,

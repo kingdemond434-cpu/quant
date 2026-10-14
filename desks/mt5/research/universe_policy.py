@@ -204,6 +204,9 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
     "cross_sectional_class_momentum", "cross_sectional_class_reversal",
     "cross_sectional_class_value", "cross_sectional_class_low_vol",
     "crisis_only_class_defensive", "lead_lag_class_catchup",
+    # Amihud impact per tick ranked within the class (2026-10-14): the only door a share CFD has
+    # to the illiquidity-premium and thin-book shock-reversal claims.
+    "cross_sectional_class_illiquidity",
 })
 
 
