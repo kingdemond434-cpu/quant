@@ -122,10 +122,10 @@ def test_memo_hands_out_fresh_equal_values(eg) -> None:
 def test_program_reads_take_a_shards_reads_only_when_they_match(eg) -> None:
     arr = np.random.default_rng(4).normal(0.05, 1.0, 400)
     held = pd.Series(np.random.default_rng(5).normal(0.0, 1.0, 100))
-    dsr, lock = eg._program_reads(arr, held, 0.95, None)
+    dsr, lock = eg._program_reads(arr, held, None, threshold=0.95)
     sentinel = {"dsr_bar": 0.95, "n": len(arr), "n_held": len(held),
                 "dsr": (True, 9.0, 0.0), "lockbox": {"passed": True, "marker": 1}}
-    assert eg._program_reads(arr, held, 0.95, sentinel)[1]["marker"] == 1
+    assert eg._program_reads(arr, held, sentinel, threshold=0.95)[1]["marker"] == 1
     for bad in ({**sentinel, "dsr_bar": 0.96}, {**sentinel, "n": 399},
                 {**sentinel, "n_held": 99}, {**sentinel, "dsr": [True, 9.0, 0.0]}):
-        assert eg._program_reads(arr, held, 0.95, bad) == (dsr, lock)
+        assert eg._program_reads(arr, held, bad, threshold=0.95) == (dsr, lock)
