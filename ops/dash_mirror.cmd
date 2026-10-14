@@ -65,6 +65,9 @@ rem The box's own finished board, for any consumer that reads it verbatim rather
 call :grab "%Q%/web/desk_state.json"                                "C:\opt\quant\web\desk_state.json"
 
 echo %DATE% %TIME% mirrored ok=%OK% failed=%BAD%>>"%LOG%"
+rem A pass with any file stale after copy is a FAILED pass (2026-10-14): this returned 0 whatever
+rem BAD counted, so a mirror serving day-old files read as a healthy task.
+if %BAD% GTR 0 exit /b 1
 exit /b 0
 
 :grab

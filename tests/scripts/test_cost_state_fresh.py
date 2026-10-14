@@ -73,7 +73,7 @@ def test_the_runner_returns_its_worst_step_not_a_constant() -> None:
     cmd = (ROOT / "ops" / "run_cost_state.cmd").read_text("utf-8")
     code = [ln.strip() for ln in cmd.splitlines()
             if ln.strip() and not ln.lstrip().startswith("rem")]
-    assert "exit /b 0" not in code and code[-1] == "exit /b %WORST%"
+    assert "exit /b 0" not in code and "exit /b %WORST%" in code
     assert "MT5-CostState step=" in cmd
     for step in ("cost_surface", "carry_state", "cost_honesty"):
         assert step in cmd
@@ -92,3 +92,21 @@ def test_the_leg_is_wired_contracted_and_published() -> None:
     assert "cost_state_fresh" in contracts["legs"]
     sync = (ROOT / "desks" / "mt5" / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
     assert '"desks/mt5/reports/COST_STATE_FRESHNESS.json"' in sync
+
+
+def test_no_scheduled_runner_hard_codes_success() -> None:
+    """A runner whose every exit is `exit /b 0` reports success whatever it ran (2026-10-14:
+    twelve did, MT5-CostState among them). One with no `exit` at all returns its last command's
+    code, which is honest; one with only literal-zero exits is not."""
+    import re
+    roots = ("ops", "desks/mt5/ops", "desks/mt5/scripts")
+    masked = []
+    for root in roots:
+        for p in sorted((ROOT / root).glob("*.cmd")):
+            code = [ln.strip() for ln in p.read_text("utf-8", errors="replace").splitlines()
+                    if ln.strip() and not ln.strip().lower().startswith("rem")]
+            exits = [ln for ln in code if re.search(r"exit\s*/b", ln, re.I)]
+            runs = any(re.search(r"python|%PY%|scp|powershell", ln, re.I) for ln in code)
+            if runs and exits and all(re.search(r"exit\s*/b\s+0\b", e, re.I) for e in exits):
+                masked.append(str(p.relative_to(ROOT)))
+    assert masked == [], f"runners that can only ever report success: {masked}"
