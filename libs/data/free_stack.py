@@ -110,9 +110,13 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
     hdr.update(dict(headers or {}))
     req = urllib.request.Request(url, headers=hdr, data=body,
                                  method="POST" if body is not None else "GET")
+    from libs.data import terms_fence as _tf
     try:
-        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+        # THE REDIRECT GUARD: a 30x into a held source or a login wall raises, never followed.
+        with _tf.guarded_urlopen(req, timeout=HTTP_TIMEOUT_S, live_input=True) as resp:
             raw: bytes = resp.read(MAX_BYTES + 1)
+    except _tf.TermsFenced as exc:
+        raise FetchError(str(exc.status), f"terms fence ({exc.platform}): {url}") from exc
     except urllib.error.HTTPError as exc:
         raise FetchError(f"http_{exc.code}", url) from exc
     except Exception as exc:
@@ -145,6 +149,14 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
+    # THE METHOD FENCE, BEFORE ANY REQUEST (libs/data/terms_fence.py; no source is banned): a
+    # HELD URL (METHOD_BLOCKED, or NEEDS_KEY until its key exists) is refused and counted.
+    from libs.data import terms_fence as _tf
+    platform = _tf.platform_of_url(url)
+    if platform:
+        h.failures[_tf.PLATFORMS[platform]["status"]] += 1
+        h.notes.append(f"terms fence ({platform}): {url[:120]}")
+        return None
     h.requests += 1
     try:
         return fetch(url, headers, body)
@@ -1240,6 +1252,80 @@ def parse_stockwatcher(raw: bytes | None) -> list[dict[str, Any]]:
     return out
 
 
+_BAND = re.compile(r"\$?\s*([\d,]+)\s*(?:-|to|\u2013)\s*\$?\s*([\d,]+)")
+_BAND_OVER = re.compile(r"over\s*\$?\s*([\d,]+)", re.I)
+
+
+def amount_band(s: str) -> tuple[float, float | None] | None:
+    """A disclosure's printed amount band ("$1,001 - $15,000", "Over $50,000,000") as (low,
+    high); an open top band has high None. Anything else is unreadable (None), never a zero."""
+    m = _BAND.search(s or "")
+    if m:
+        lo, hi = float(m.group(1).replace(",", "")), float(m.group(2).replace(",", ""))
+        return (lo, hi) if hi >= lo else None
+    m = _BAND_OVER.search(s or "")
+    return (float(m.group(1).replace(",", "")), None) if m else None
+
+
+def band_mid(band: tuple[float, float | None]) -> float:
+    """The band's midpoint; an open top band counts at its floor (the only printed number)."""
+    lo, hi = band
+    return lo if hi is None else (lo + hi) / 2.0
+
+
+def parse_ptr_trades(raw: bytes | None) -> list[dict[str, Any]]:
+    """Periodic-transaction-report TRADES, one row per disclosed transaction: ticker, side
+    (+1 purchase, -1 sale_full / sale_partial; exchanges and unknown types dropped), the amount
+    band (band_lo, band_hi), the transaction date and the FILING (disclosure) date, plus the
+    filing lag in days. The filer's name, owner and district are NOT kept: only the trade.
+    A row without a ticker, a readable band or both dates is dropped and counted by the caller
+    as unparsed, never zero-filled."""
+    doc = _json(raw)
+    out: list[dict[str, Any]] = []
+    for r in doc if isinstance(doc, list) else []:
+        if not isinstance(r, dict):
+            continue
+        typ = str(r.get("type") or "").lower()
+        side = 1 if "purchase" in typ else -1 if "sale" in typ else 0
+        filed = _us_date(str(r.get("disclosure_date") or ""))
+        traded = _us_date(str(r.get("transaction_date") or ""))
+        ticker = str(r.get("ticker") or "").upper().strip()
+        band = amount_band(str(r.get("amount") or ""))
+        if not side or not filed or not traded or band is None or not ticker or ticker == "--":
+            continue
+        out.append({"ticker": ticker, "side": side, "band_lo": band[0], "band_hi": band[1],
+                    "transaction_date": traded, "filing_date": filed,
+                    "filing_lag_d": (date.fromisoformat(filed)
+                                     - date.fromisoformat(traded)).days})
+    return out
+
+
+def ptr_trade_obs(trades: Sequence[Mapping[str, Any]]) -> tuple[list[dict[str, Any]],
+                                                                 dict[str, dict[str, Any]]]:
+    """Per FILING date: `ptr_net_usd_mid` = sum(side x band midpoint) over every disclosed trade,
+    `ptr_trades` the count and, per mapped share CFD, `ptrusd_<TICKER>` -- an EVENT-lane column
+    only (universe_policy: a single name is never a statistical hypothesis)."""
+    agg: dict[tuple[str, str], float] = defaultdict(float)
+    cols: dict[str, dict[str, Any]] = {}
+    for t in trades:
+        mid = band_mid((float(t["band_lo"]), t["band_hi"]))
+        agg[("ptr_net_usd_mid", t["filing_date"])] += t["side"] * mid
+        agg[("ptr_trades", t["filing_date"])] += 1
+        cfd = TICKER_CFD.get(str(t["ticker"]))
+        if cfd:
+            k = f"ptrusd_{t['ticker']}"
+            agg[(k, t["filing_date"])] += t["side"] * mid
+            cols.setdefault(k, {"hypothesis": [], "event": [cfd],
+                                "why": f"disclosed congressional net $ (band midpoints), "
+                                       f"{t['ticker']}, dated by filing"})
+    if trades:
+        cols["ptr_net_usd_mid"] = {"hypothesis": ["US500", "NAS100", "US30"], "event": [],
+                                   "why": "disclosed congressional net $ (band midpoints), all "
+                                          "tickers, dated by filing"}
+    return ([{"key": k, "period_end": d, "value": v} for (k, d), v in sorted(agg.items())],
+            cols)
+
+
 def fetch_congress(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     """Disclosure-dated, never trade-dated: a congressional trade becomes public on its
@@ -1257,7 +1343,13 @@ def fetch_congress(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, An
     per_day = Counter(r["day"] for r in h.raw if r.get("kind") == "ptr")
     h.obs += [{"key": "ptr_filings", "period_end": d, "value": n}
               for d, n in sorted(per_day.items())]
-    tx = parse_stockwatcher(_get(fetch, h, str(row.get("mirror_url") or STOCKWATCHER)))
+    mirror = _get(fetch, h, str(row.get("mirror_url") or STOCKWATCHER))
+    tx = parse_stockwatcher(mirror)
+    trades = parse_ptr_trades(mirror)
+    h.raw += [{"kind": "ptr_trade", **t} for t in trades]
+    t_obs, t_cols = ptr_trade_obs(trades)
+    h.obs += t_obs
+    h.columns.update(t_cols)
     net: dict[tuple[str, str], int] = defaultdict(int)
     for t in tx:
         net[("net_all", t["disclosed"])] += t["side"]
@@ -1409,13 +1501,48 @@ def _social(h: Harvest, posts: list[dict[str, Any]], now: datetime, sid: str) ->
                           "score": round(float(tone), 4), "method": method})
 
 
+#: Reddit's Data API (libs/data/terms_fence.py `reddit_api`): "Reddit requires OAuth for
+#: authentication" and "Traffic not using OAuth or login credentials will be blocked" (Data API
+#: wiki, read 2026-10-13), so LIVE INPUT from Reddit is the application-only OAuth route, within
+#: its 100 queries per minute per client id. The public .json pages are IDEAS_ONLY.
+REDDIT_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"  # noqa: S105 (a URL)
+REDDIT_API = "https://oauth.reddit.com"
+REDDIT_UA = "python:quant-research-desk.free-stack:v1 (internal research; aggregates only)"
+
+
+def reddit_token(fetch: Fetch, h: Harvest) -> str | None:
+    """An application-only OAuth bearer token, or None (NEEDS_KEY when the keys are absent). The
+    keys are read from the environment and sent only to Reddit's token endpoint; never logged."""
+    import base64
+    cid = os.environ.get("REDDIT_CLIENT_ID") or ""
+    secret = os.environ.get("REDDIT_CLIENT_SECRET") or ""
+    if not (cid and secret):
+        h.failures["NEEDS_KEY"] += 1
+        h.notes.append("reddit_api: REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET absent (NEEDS_KEY)")
+        return None
+    basic = base64.b64encode(f"{cid}:{secret}".encode()).decode("ascii")
+    raw = _get(fetch, h, REDDIT_TOKEN_URL,
+               headers={"Authorization": f"Basic {basic}", "User-Agent": REDDIT_UA,
+                        "Content-Type": "application/x-www-form-urlencoded"},
+               body=b"grant_type=client_credentials")
+    doc = _json(raw)
+    tok = doc.get("access_token") if isinstance(doc, dict) else None
+    if not tok:
+        h.failures["reddit_token"] += 1
+        return None
+    return str(tok)
+
+
 def fetch_reddit(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                  now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
     seen = set(cursor.get("seen_ids") or [])
     posts: list[dict[str, Any]] = []
-    for sub in row.get("subreddits") or ():
-        raw = _get(fetch, h, f"https://www.reddit.com/r/{sub}/new.json?limit=100&raw_json=1")
+    subs = list(row.get("subreddits") or ())
+    token = reddit_token(fetch, h) if subs else None
+    for sub in subs if token else ():
+        raw = _get(fetch, h, f"{REDDIT_API}/r/{sub}/new?limit=100&raw_json=1",
+                   headers={"Authorization": f"bearer {token}", "User-Agent": REDDIT_UA})
         for p in parse_reddit(raw):
             if p["id"] not in seen:
                 seen.add(p["id"])

@@ -38,6 +38,7 @@ import sys
 import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -110,9 +111,17 @@ C_NC_LONG, C_NC_SHORT, C_NC_SPREAD = 8, 9, 10
 C_COMM_LONG, C_COMM_SHORT = 11, 12
 
 
+def _live_urlopen(req: urllib.request.Request, timeout: float) -> Any:
+    """THE ONE FETCH DOOR, LIVE INPUT (`terms_fence.guarded_urlopen(live_input=True)`): the
+    first URL and every redirect hop must be a live-input route; a 30x into a held or
+    IDEAS_ONLY route raises TermsFenced (pass-6 audit cf305e3d2 SHOULD-FIX 1)."""
+    from libs.data import terms_fence as _tf
+    return _tf.guarded_urlopen(req, timeout=timeout, live_input=True)
+
+
 def _fetch(url: str) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+    with _live_urlopen(req, timeout=TIMEOUT) as r:
         return r.read().decode("utf-8", "replace")
 
 
@@ -138,7 +147,7 @@ def _cot_history_text(years: int) -> list[tuple[int, str]]:
         try:
             req = urllib.request.Request(COT_HISTORY_URL.format(year=y),
                                          headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            with _live_urlopen(req, timeout=TIMEOUT) as r:
                 blob = r.read()
             z = zipfile.ZipFile(io.BytesIO(blob))
             out.append((y, z.read(z.namelist()[0]).decode("utf-8", "replace")))
@@ -278,7 +287,7 @@ def ingest_bis():
     """Policy rates -> a dated carry differential for every MT5 pair we can form both legs of."""
     import zipfile
     req = urllib.request.Request(BIS_URL, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=TIMEOUT * 2) as r:
+    with _live_urlopen(req, timeout=TIMEOUT * 2) as r:
         blob = r.read()
     z = zipfile.ZipFile(io.BytesIO(blob))
     text = z.read(z.namelist()[0]).decode("utf-8", "replace")
@@ -348,7 +357,7 @@ def ingest_fred():
     for sid, what in FRED_SERIES.items():
         try:
             req = urllib.request.Request(FRED_URL.format(sid=sid), headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            with _live_urlopen(req, timeout=TIMEOUT) as r:
                 text = r.read().decode("utf-8", "replace")
             hdr = text.splitlines()[0].split(",")
             pts = _csv_series(text, hdr[0], hdr[1] if len(hdr) > 1 else sid)
@@ -374,7 +383,7 @@ def ingest_ecb():
         try:
             url = ECB_URL.format(flow=flow, key=key, n=4000)
             req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            with _live_urlopen(req, timeout=TIMEOUT) as r:
                 text = r.read().decode("utf-8", "replace")
             pts = _csv_series(text, "TIME_PERIOD", "OBS_VALUE")
             if pts:

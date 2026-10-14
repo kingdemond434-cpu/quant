@@ -37,7 +37,6 @@ No secret is read or sent. Stdlib only (certifi is optional).
 from __future__ import annotations
 
 import contextlib
-import gzip
 import json
 import random
 import re
@@ -336,23 +335,32 @@ def hold_missed_growth(site: str, verdict: str, status: int | str, cause: str) -
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Redirects surface as HTTPError, so the fetcher checks each target BEFORE following it."""
+    """Redirects surface as HTTPError, so the fetcher checks each target BEFORE following it.
+
+    It runs AHEAD of the fence's own redirect handler (`handler_order = 400` < 500) and RAISES
+    rather than returning None: a None would hand the 30x to `terms_fence.FencedRedirectHandler`,
+    which follows it, and the hop would skip this module's robots and hold checks."""
+
+    handler_order = 400
+
+    def _raise(self, req, fp, code, msg, headers):  # type: ignore[no-untyped-def]
+        raise urllib.error.HTTPError(req.full_url, code, msg, headers, fp)
+
+    http_error_301 = http_error_302 = http_error_303 = http_error_307 = _raise
+    http_error_308 = _raise
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
         return None
 
 
-_NR_OPENER: Any = None
-
-
 def open_no_redirect(req: urllib.request.Request, timeout: float,
                      context: ssl.SSLContext | None = None) -> Any:
-    """The module's own network call: certifi-backed TLS, redirects NOT followed."""
-    global _NR_OPENER
-    if _NR_OPENER is None:
-        _NR_OPENER = urllib.request.build_opener(
-            NoRedirect, urllib.request.HTTPSHandler(context=ssl_context()))
-    return _NR_OPENER.open(req, timeout=timeout)
+    """The module's own network call: certifi-backed TLS, redirects NOT followed, and every
+    request terms-fenced -- the opener is THE ONE FETCH DOOR's (`terms_fence.guarded_opener`,
+    the door `fenced_urlopen` opens) with `NoRedirect` ahead of its redirect handler."""
+    # Built per call, like the crawler's `_open`: the fence's opener is resolved at call time,
+    # so the door in force is always the current one (never a stale cached opener).
+    return _tf.guarded_opener(ssl_context(), NoRedirect()).open(req, timeout=timeout)
 
 
 Send = Callable[[urllib.request.Request, float], Any]
@@ -677,24 +685,60 @@ def reset_stats(leg: str | None = None) -> None:
             _STATS.pop(leg, None)
 
 
+# --------------------------------------------------------------------------- the method fence
+# ONE FETCH DOOR, ONE TABLE (composition of #162 and #262). The per-source policy and the method
+# rules live in `libs.data.terms_fence` and nowhere else; this module re-exports the door under the
+# names its callers already use, so there is no second redirect handler and no second login-wall
+# pattern to drift. What stays off is the METHOD (principal ruling 2026-10-13: no source is
+# banned): a HELD source, or a redirect into a login / sign-in / CAPTCHA wall, is refused and named
+# -- never followed, never retried with other headers -- and every followed hop stays visible.
+from libs.data import terms_fence as _tf  # noqa: E402
+
+LOGIN_WALL = _tf.LOGIN_WALL
+login_wall = _tf.login_wall
+#: The refusal THE ONE FETCH DOOR raises: a `URLError`, deterministic, never retried.
+MethodRefused = _tf.TermsFenced
+
+
+def fenced_urlopen(req: Any, timeout: float | None = None,
+                   context: ssl.SSLContext | None = None, *, live_input: bool = False) -> Any:
+    """THE ONE FETCH DOOR for the desk's urllib call sites: `terms_fence.guarded_urlopen`. A held
+    source, a first URL that is a login wall, or a redirect into either raises `MethodRefused`;
+    the redirect chain is kept on the response as `.redirects` [(code, from, to)]. A live-input
+    organ passes `live_input=True`: an IDEAS_ONLY or held route is then refused on every hop."""
+    return _tf.guarded_urlopen(req, timeout=timeout, context=context, live_input=live_input)
+
+
 # --------------------------------------------------------------------------- decoding
 _META_CHARSET = re.compile(rb"""<meta[^>]+charset\s*=\s*["']?\s*([A-Za-z0-9_\-]+)""", re.I)
 
 
-def decode_body(raw: bytes, content_type: str = "", content_encoding: str = "") -> str:
-    """Bytes -> text: undo gzip/deflate, then the header charset, then `<meta charset>`, then
-    UTF-8. Never raises."""
+#: THE INFLATE CAP: a gzip/deflate body is never inflated past this many bytes, so a small
+#: compressed answer (a decompression bomb, or just a huge dump) cannot exhaust the box's memory.
+MAX_INFLATED = 20_000_000
+
+
+def inflate(raw: bytes, content_encoding: str = "", cap: int = MAX_INFLATED) -> bytes:
+    """Undo gzip/deflate, bounded to `cap` output bytes. Returns `raw` unchanged when it is not
+    compressed or cannot be inflated. Never raises."""
     enc = (content_encoding or "").lower()
     try:
         if "gzip" in enc or raw[:2] == b"\x1f\x8b":
-            raw = gzip.decompress(raw)
-        elif "deflate" in enc:
+            return zlib.decompressobj(16 + zlib.MAX_WBITS).decompress(raw, cap)
+        if "deflate" in enc:
             try:
-                raw = zlib.decompress(raw)
+                return zlib.decompressobj().decompress(raw, cap)
             except zlib.error:
-                raw = zlib.decompress(raw, -zlib.MAX_WBITS)
+                return zlib.decompressobj(-zlib.MAX_WBITS).decompress(raw, cap)
     except Exception:
         pass
+    return raw
+
+
+def decode_body(raw: bytes, content_type: str = "", content_encoding: str = "") -> str:
+    """Bytes -> text: undo gzip/deflate (bounded, `inflate`), then the header charset, then
+    `<meta charset>`, then UTF-8. Never raises."""
+    raw = inflate(raw, content_encoding)
     charset = ""
     if content_type:
         msg = Message()
@@ -727,6 +771,10 @@ class Response:
     #: NEEDS_KEY / METHOD_BLOCKED / ROBOTS_DISALLOW / ROBOTS_UNREADABLE when the fetch was
     #: refused or held; '' otherwise. A refusal is a recorded answer, never routed around.
     verdict: str = ""
+    #: The body as bytes (content-encoding undone, bounded): what a raw landing stores.
+    body: bytes = b""
+    #: Every redirect hop the fetch followed, [(code, from, to)] -- redirects are VISIBLE.
+    redirects: list[tuple[int, str, str]] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -757,14 +805,26 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     `timeout` is per attempt; `deadline` (a `time.monotonic()` value) caps the whole call,
     retries and backoff included, so no fetch can outlive the budget of the leg that made it.
     """
+    resp = Response(url=url)
+    # THE METHOD FENCE (libs/data/terms_fence.py; ruling of 2026-10-13, no source is banned): a
+    # URL on a HELD source (METHOD_BLOCKED, or NEEDS_KEY until its key exists) is never requested.
+    # The Response carries the named refusal, so the caller records it instead of a silent miss.
+    _why = _tf.platform_of_url(url)
+    if _why:
+        resp.error = f"{_tf.PLATFORMS[_why]['status']}:{_why}: {_tf.PLATFORMS[_why]['reason']}"
+        _stat(leg, error=f"terms_fenced:{_why}")
+        return resp
     hdr = honest_headers(headers)
     acc = access if access is not None else default_access()
+    # THE REDIRECT GUARD: the default opener is the module's no-redirect door, itself built on
+    # THE ONE FETCH DOOR's opener (`terms_fence.guarded_opener`): every request it sends is
+    # terms-fenced, and each 30x surfaces as HTTPError so the loop below checks the hop's fence,
+    # holds and robots BEFORE following it. A caller-supplied opener is the caller's own test.
     open_ = opener or open_no_redirect
 
     def _send(req: urllib.request.Request, t: float) -> Any:
         return open_(req, timeout=t, context=ssl_context())
 
-    resp = Response(url=url)
     t0 = time.monotonic()
     cur = url
     hops = 0
@@ -772,6 +832,15 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     while True:
         if deadline is not None and time.monotonic() >= deadline:
             resp.error = resp.error or "deadline"
+            break
+        # THE METHOD FENCE ON EVERY HOP, before robots and holds: a held source (or a discord
+        # user-token request) or a login / CAPTCHA wall is refused and named, never requested.
+        fenced = _tf.fenced_request(cur, hdr) or ("login_wall" if _tf.login_wall(cur) else None)
+        if fenced:
+            refusal = _tf.TermsFenced(fenced, cur)
+            resp.status, resp.error = None, str(refusal.reason)[:240]
+            _stat(leg, error=(refusal.status if fenced == "login_wall"
+                              else f"terms_fenced:{fenced}"))
             break
         allowed, why = acc.permits(cur, send=_send)
         if not allowed:
@@ -826,10 +895,20 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 resp.status = status
                 resp.final_url = final
                 resp.content_type = ctype
+                resp.body = inflate(raw, cenc)
                 resp.text = text
+                # hops a caller-supplied opener followed itself, after the ones this loop took
+                resp.redirects.extend(getattr(fh, "redirects", None) or [])
                 resp.error = ""
                 _stat(leg, ok=1, bytes=len(raw))
                 break
+        except MethodRefused as exc:
+            # A held source or a 30x into one or into a login wall: refused, never followed,
+            # and never retried -- the next attempt would be redirected to the same place.
+            resp.error = str(exc.reason)[:240]
+            _stat(leg, error=(exc.status if exc.platform == "login_wall"
+                              else f"terms_fenced:{exc.platform}"))
+            break
         except urllib.error.HTTPError as exc:
             code = int(exc.code)
             # HTTPError also owns the response stream. Release it on every path rather than
@@ -849,7 +928,9 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                     resp.status, resp.error = code, "too many redirects"
                     _stat(leg, http_errors=1, error="too many redirects")
                     break
-                cur = urljoin(cur, str(loc))       # the next pass checks THIS hop's robots
+                nxt = urljoin(cur, str(loc))
+                resp.redirects.append((code, cur, nxt))    # redirects are VISIBLE
+                cur = nxt                          # the next pass checks THIS hop's fence + robots
                 continue
             resp.status = code
             _stat(leg, http_errors=1, error=f"HTTP {code}")

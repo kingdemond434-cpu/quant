@@ -62,6 +62,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+
 REGISTRY = BASE / "data" / "asia_sources.json"
 SEEDS = BASE / "data" / "deep_forest_sources.json"
 OUT = BASE / "reports" / "INDEX_DISCOVERY.json"
@@ -86,11 +88,47 @@ def _ctx():
         return None
 
 
+from libs.data import terms_fence as _tf  # noqa: E402
+
+#: What the per-source policy (libs/data/terms_fence.py) HELD out of this pass, by source:
+#: addresses never handed to the frontier and fetches never sent; FENCED_HOSTS names each registry
+#: host never queried (host -> source). Only METHOD_BLOCKED / NEEDS_KEY sources are held; no
+#: source is banned (ruling of 2026-10-13). Reset by `main`; published in the report.
+TERMS_FENCED: dict[str, dict[str, int]] = {"addresses": {}, "fetches": {}}
+FENCED_HOSTS: dict[str, str] = {}
+
+
+def _count_fenced(kind: str, platform: str) -> None:
+    TERMS_FENCED[kind][platform] = TERMS_FENCED[kind].get(platform, 0) + 1
+
+
+def _clean(addresses: list[str]) -> list[str]:
+    """Drop every address on a HELD source (counted): the frontier never sees it."""
+    out: list[str] = []
+    for u in addresses:
+        p = _tf.platform_of_url(u)
+        if p:
+            _count_fenced("addresses", p)
+            continue
+        out.append(u)
+    return out
+
+
 def _get(url: str, timeout: float = 25.0, cap: int = 2_000_000) -> tuple[bytes | None, str]:
+    # THE METHOD FENCE (libs/data/terms_fence.py): never request a HELD source, never follow a
+    # redirect into one or into a login wall. Both come back as a named refusal, not a transport
+    # error.
+    p = _tf.platform_of_url(url)
+    if p:
+        _count_fenced("fetches", p)
+        return None, f"{_tf.PLATFORMS[p]['status']}:{p}"
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        with fenced_urlopen(req, timeout=timeout, context=_TLS) as r:   # the one fetch door
             return r.read(cap), f"HTTP {getattr(r, 'status', 0)}"
+    except _tf.TermsFenced as exc:
+        _count_fenced("fetches", exc.platform)
+        return None, f"{exc.status}:{exc.platform}"
     except urllib.error.HTTPError as e:
         return None, f"HTTP {getattr(e, 'code', 0)}"
     except Exception as e:
@@ -110,7 +148,14 @@ def _hosts_from_registry(limit: int = 12) -> list[str]:
     for s in reg.get("sources") or []:
         if not isinstance(s, dict):
             continue
-        host = urllib.parse.urlsplit(str(s.get("url") or "")).netloc
+        url = str(s.get("url") or "")
+        host = urllib.parse.urlsplit(url).netloc
+        # A HELD HOST IS NEVER QUERIED (METHOD_BLOCKED, or a keyed API whose key is absent).
+        p = _tf.platform_of_url(url) or _tf.fenced_source(str(s.get("id") or ""))
+        if p:
+            if host:
+                FENCED_HOSTS[host] = p
+            continue
         if host and host not in out:
             out.append(host)
     return out[:limit]
@@ -340,6 +385,9 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     want = args.route or sorted(ROUTES)
+    for v in TERMS_FENCED.values():
+        v.clear()
+    FENCED_HOSTS.clear()
     results = []
     for name in want:
         try:
@@ -347,6 +395,8 @@ def main(argv: list[str] | None = None) -> int:
         except Exception as exc:
             results.append({"route": name, "addresses": [],
                             "errors": {"route": f"{type(exc).__name__}: {exc}"}})
+    for r in results:
+        r["addresses"] = _clean(list(r.get("addresses") or []))
 
     total = sum(len(r.get("addresses") or []) for r in results)
     # ADDRESSES AND FETCHES ARE TWO NUMBERS. They have been one number, and that was the ceiling.
@@ -363,6 +413,11 @@ def main(argv: list[str] | None = None) -> int:
         "routes": {r["route"]: len(r.get("addresses") or []) for r in results},
         "errors": {r["route"]: r.get("errors") or {} for r in results},
         "refused_routes": REFUSED,
+        # HELD SOURCES (libs/data/terms_fence.py), counted: hosts never queried, addresses
+        # never handed to the frontier, fetches never sent.
+        "terms_fenced": {"hosts_not_queried": dict(FENCED_HOSTS),
+                         "addresses_dropped": dict(TERMS_FENCED["addresses"]),
+                         "fetches_refused": dict(TERMS_FENCED["fetches"])},
         "detail": results,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

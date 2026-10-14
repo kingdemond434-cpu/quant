@@ -51,8 +51,12 @@ BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE.parent.parent))
 sys.path.insert(0, str(BASE / "side_channels"))
 sys.path.insert(0, str(BASE))
+if str(BASE.parent.parent) not in sys.path:      # the repo root, for libs.data.terms_fence
+    sys.path.append(str(BASE.parent.parent))
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
+
+from libs.data import terms_fence as _tf  # noqa: E402
 
 WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
@@ -202,14 +206,20 @@ BLOCK_STATUS = _pf.BLOCK_STATUS
 _origin = _pf.origin_of
 _hostname = _pf.hostname_of
 site_of = _pf.site_of
+#: Redirects surface as HTTPError (handler_order 400, ahead of the fence's own redirect handler,
+#: and RAISING -- never returning None, which would let that handler follow the hop).
 _NoRedirect = _pf.NoRedirect
-_OPENER = urllib.request.build_opener(_NoRedirect)
 
 
 def _open(req: urllib.request.Request, timeout: float) -> Any:
     """THE ONE NETWORK CALL. Every byte the crawler reads -- pages and robots.txt -- goes through
-    here, with redirects NOT followed (tests replace this function; nothing else opens a socket)."""
-    return _OPENER.open(req, timeout=timeout)
+    here, with redirects NOT followed (tests replace this function; nothing else opens a socket).
+
+    It opens through THE ONE FETCH DOOR's opener (`terms_fence.guarded_opener`, the door
+    `polite_fetch.fenced_urlopen` opens), so robots.txt requests are terms-fenced as well as
+    pages: a held source or a discord user-token request raises `TermsFenced` before a
+    connection is made."""
+    return _tf.guarded_opener(None, _NoRedirect()).open(req, timeout=timeout)
 
 
 def _request(url: str, accept: str) -> urllib.request.Request:
@@ -259,6 +269,13 @@ def fetch(url: str, access: HostAccess | None = None) -> tuple[bytes | None, str
         access = _DEFAULT_ACCESS
     try:
         for _ in range(MAX_REDIRECTS + 1):
+            # THE METHOD FENCE (libs/data/terms_fence.py) on the URL and on every redirect hop,
+            # before holds and robots: a HELD source (METHOD_BLOCKED, or NEEDS_KEY until its key
+            # exists) or a login / CAPTCHA wall is refused and named, never requested. No source
+            # is banned; the frontier records the named blocker, not a transport error.
+            _tf.check_request(url)
+            if _tf.login_wall(url):
+                raise _tf.TermsFenced("login_wall", url)
             ok, why = access.permits(url)
             if not ok:
                 return None, why
@@ -288,6 +305,8 @@ def fetch(url: str, access: HostAccess | None = None) -> tuple[bytes | None, str
                     continue
                 return None, f"HTTP {code}"
         return None, "too many redirects"
+    except _tf.TermsFenced as exc:
+        return None, f"{exc.status}:{exc.platform}"
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return None, f"{type(exc).__name__}: {str(exc)[:60]}"
     except Exception as exc:
@@ -726,7 +745,7 @@ SEEDS = (
     "https://www.mql5.com/zh/code",
     "https://www.mql5.com/ja/code",
     "https://www.forexfactory.com/forums",
-    "https://www.reddit.com/r/algotrading/top/?t=week",
+    "https://www.reddit.com/r/algotrading/top/?t=week",   # IDEAS_ONLY (libs/data/terms_fence.py)
     "https://quantocracy.com/",
     "https://www.quantstart.com/articles/",
     "https://xueqiu.com/",

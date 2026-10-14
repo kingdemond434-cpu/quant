@@ -55,6 +55,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.data import free_stack as fs  # noqa: E402
+from libs.data import terms_fence as _tf  # noqa: E402
 
 ROSTER = DESK / "data" / "free_stack_sources.json"
 #: The leg's own artifact (the runtime attestation reads this binding).
@@ -482,6 +483,12 @@ def run_source(row: dict[str, Any], store: Store, fetch: fs.Fetch, cstate: dict[
                now: datetime) -> tuple[fs.Harvest, dict[str, Any]]:
     kind = str(row["kind"])
     fn = fs.FETCHERS.get(kind)
+    platform = _tf.input_source(kind, str(row["id"]), str(row.get("url") or ""))
+    if platform:
+        # LIVE INPUT from an IDEAS_ONLY or held source (libs/data/terms_fence.py): this organ
+        # builds live input series, so no request, no raw, no series, nothing to mint.
+        ref = _tf.refusal(platform)
+        return fs.Harvest(str(row["id"]), status=str(ref["status"]), detail=ref["why"]), {}
     if fn is None:
         h = fs.Harvest(str(row["id"]), status="NO_ROUTE", detail=f"no fetcher for kind {kind}")
         return h, {}
@@ -547,6 +554,36 @@ def derive_exchange(store: Store, row: dict[str, Any], h: fs.Harvest, now: datet
     return {"rows": len(rows), **counts, "signal_columns": len(h.columns)}
 
 
+def terms_hold_lines(rows: list[dict[str, Any]], cursor: dict[str, Any],
+                     columns: dict[str, Any]) -> list[dict[str, Any]]:
+    """GROWTH GOVERNANCE: every roster row held on terms carries a missed-growth line. Its past
+    conversion is this organ's own record from before the hold (attempts, successes,
+    observations, published columns); with none on record the line says so. delta E[log W] is
+    UNMEASURED, never zero."""
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        sid = str(row["id"])
+        held = _tf.held_on_terms(sid)
+        # an IDEAS_ONLY row refused as LIVE INPUT by run_source's check carries its line too
+        # (audit 2026-10-14 should-fix); a NEEDS_KEY refusal is a missing key, not a terms hold
+        ideas = None if held else _tf.input_source(str(row.get("kind") or ""), sid,
+                                                   str(row.get("url") or ""))
+        if not held and not (ideas and _tf.status(ideas) == _tf.IDEAS_ONLY):
+            continue
+        st = cursor.get(sid) or {}
+        past = {k: st[k] for k in ("successes", "obs_total", "last_success") if st.get(k)}
+        if held and st.get("attempts"):
+            past["attempts"] = st["attempts"]
+        if columns.get(sid):
+            past["past_columns"] = len(columns[sid])
+        if held:
+            out.append(_tf.held_missed_growth(sid, past or None))
+        else:
+            out.append(_tf.held_missed_growth(str(ideas), past or None, source=sid,
+                                              live_input_refusal=True))
+    return out
+
+
 def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         store: Store | None = None, roster: Path = ROSTER, now: datetime | None = None,
         only: list[str] | None = None, live: bool = True) -> dict[str, Any]:
@@ -569,6 +606,20 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         spent = time.monotonic() - t0
         if spent >= budget_s:
             break
+        # TERMS FAIL CLOSED, ONE REGISTER (2026-10-14): a source whose row in the terms register
+        # (libs/data/terms_fence.SOURCE_POLICY, keyed by this roster id) is a HELD ROUTE is held
+        # and never fetched; the clause quoted is the fence's. An IDEAS_ONLY row is not held here:
+        # it reaches `run_source`, whose live-input check labels it IDEAS_ONLY (auditor ruling).
+        if _tf.held_on_terms(sid):
+            pol = _tf.SOURCE_POLICY[sid]
+            quote = " | ".join(str(v) for v in ((pol.get("terms") or {}).get("clauses")
+                                                or {}).values())
+            st.update({"last_status": _tf.HELD_ON_TERMS, "last_attempt": _iso(now),
+                       "last_error": (f"terms_fence {sid} ({pol['status']}): {pol['why']}"
+                                      + (f" -- quoted: {quote[:240]}" if quote else ""))})
+            continue
+        # The China exchange rows used to be held here on the roster's own `terms` field (a
+        # second register); since the pass-6 delta they are fence rows and held above.
         acc = access(row)
         st["access"] = acc
         if not acc["mined"]:
@@ -623,6 +674,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     alloc = build_alt_state(store, columns, now)
     report = build_report(rows, complaints, cursor, columns, ran, store, now,
                           seconds=time.monotonic() - t0, alloc=alloc, live=live)
+    report["missed_growth_lines"] = terms_hold_lines(rows, cursor, columns)
     write_json(store.report, report)
     return report
 

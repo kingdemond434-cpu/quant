@@ -50,6 +50,7 @@ from typing import Any
 __all__ = [
     "BLOCKED_RETRY_D",
     "OUTCOMES",
+    "PERSON_HELD_PREFIX",
     "Vector",
     "VectorState",
     "frontier",
@@ -73,6 +74,15 @@ OUTCOMES: tuple[str, ...] = (
 #: A blocker is a fact about a moment, not about a territory. Paywalls lapse, transcripts appear,
 #: rate limits reset. Long enough not to thrash, short enough that a lifted blocker is noticed.
 BLOCKED_RETRY_D: int = 10
+
+#: A BLOCKED vector whose blocker starts with this is a SITE THAT REFUSED THE AGENT (HTTP
+#: 401/403/429; deep_forest_miner's hard stop). It is NOT on the retry clock above: a refusal is
+#: the site's answer, and re-asking after ten days is the route-around the hard stop forbids
+#: (auditor ruling 2026-10-14). The row stays BLOCKED -- and is reported, with its missed-growth
+#: line -- until a PERSON releases it. THE RELEASE: delete the ground's vector from the frontier
+#: file (deep_forest_miner: desks/mt5/data/deep_forest_frontier.json), or rewrite its blocker so
+#: it no longer starts with this prefix. The next run then re-seeds it NAMED_ONLY and tries once.
+PERSON_HELD_PREFIX = "ACCESS_REFUSED"
 
 #: Default cooldown for genuinely covered ground. Callers pass their own; kimi_hunter uses 45.
 COVERED_COOLDOWN_D: int = 45
@@ -102,6 +112,12 @@ class Vector:
         """Only a completed hunt covers ground. Naming it does not; failing to reach it does not."""
         return self.outcome in ("YIELDED", "EMPTY")
 
+    @property
+    def person_held(self) -> bool:
+        """BLOCKED by a site's refusal (401/403/429): held until a person releases it, never
+        lapsed by the retry clock (`PERSON_HELD_PREFIX`)."""
+        return self.outcome == "BLOCKED" and self.blocker.startswith(PERSON_HELD_PREFIX)
+
     def _age_days(self, stamp: str, now: datetime) -> float | None:
         if not stamp:
             return None
@@ -119,6 +135,10 @@ class Vector:
         """
         if self.outcome == "NAMED_ONLY":
             return True, f"{self.name}: NAMED but never hunted -- this is frontier, not coverage"
+        if self.person_held:
+            return False, (f"{self.name}: BLOCKED ({self.blocker[:120]}) -- the site refused "
+                           "this agent; held until a person releases it, never retried by the "
+                           "clock")
         if self.outcome == "BLOCKED":
             age = self._age_days(self.last_attempt, now)
             if age is None or age >= BLOCKED_RETRY_D:
@@ -237,10 +257,12 @@ def frontier(state: VectorState, *, now: datetime | None = None,
              cooldown_d: int = COVERED_COOLDOWN_D) -> dict[str, list[Vector]]:
     """Split the world into what is worth hunting and what is not."""
     n = now or datetime.now(tz=UTC)
-    unhunted, blocked, ready, picked = [], [], [], []
+    unhunted, blocked, ready, picked, held = [], [], [], [], []
     for v in state.vectors.values():
         ok, _ = v.huntable(n, cooldown_d=cooldown_d)
-        if not ok:
+        if v.person_held:
+            held.append(v)          # neither frontier nor picked over: waiting on a person
+        elif not ok:
             picked.append(v)
         elif v.outcome == "NAMED_ONLY":
             unhunted.append(v)
@@ -248,7 +270,8 @@ def frontier(state: VectorState, *, now: datetime | None = None,
             blocked.append(v)
         else:
             ready.append(v)
-    return {"unhunted": unhunted, "blocked": blocked, "ready": ready, "picked_over": picked}
+    return {"unhunted": unhunted, "blocked": blocked, "ready": ready, "picked_over": picked,
+            "person_held": held}
 
 
 def should_hunt(state: VectorState, *, now: datetime | None = None,
@@ -340,6 +363,8 @@ def summarise(state: VectorState, *, cooldown_d: int = COVERED_COOLDOWN_D) -> di
         "vectors": len(state.vectors),
         "unhunted": len(f["unhunted"]), "blocked": len(f["blocked"]),
         "off_cooldown": len(f["ready"]), "picked_over": len(f["picked_over"]),
+        # Refused by the site (401/403/429): held until a person releases the row.
+        "person_held": len(f["person_held"]),
         "total_findings": sum(v.findings for v in state.vectors.values()),
         "yield_rate": (round(len(yielded) / len(state.vectors), 3) if state.vectors else None),
         # Per-language and per-region outcome counts, or None with the reason: the state

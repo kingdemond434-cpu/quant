@@ -21,6 +21,11 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
     UNCONFIGURED    the source declares `access: key` or `paid` and no key is present. NOT a
                     failure and NOT a silent skip: a named state, so a missing subscription can
                     never be mistaken for a dead endpoint.
+    IDEAS_ONLY / METHOD_BLOCKED / NEEDS_KEY  the per-source policy (libs/data/terms_fence.py,
+                    ruling of 2026-10-13: no source is banned). This collector builds LIVE INPUT
+                    series, so a source that is IDEAS_ONLY (StockTwits' pages, whose Terms s.5
+                    bar automated extraction -- `stocktwits_macro`) or held is not requested; the
+                    row carries the status, the why and the permitted route.
     (BLOCKED_BY_ROBOTS is RETIRED, 2026-09-23.) A robots.txt Disallow was a refusal here and is
                     now a LABEL: the reading is recorded on the row as `robots_disallows` and
                     `terms_note`, it routes what the desk may REDISTRIBUTE, and the page is
@@ -66,6 +71,8 @@ ROOT = BASE.parent.parent
 for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
 
 REGISTRY = BASE / "data" / "asia_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
@@ -171,7 +178,7 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
         rp = RobotFileParser()
         robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
         req = urllib.request.Request(robots, headers={"User-Agent": agent})
-        with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
+        with fenced_urlopen(req, timeout=12, context=_TLS) as r:   # the one fetch door
             rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
         return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
     except Exception as exc:
@@ -365,6 +372,19 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
+    # THE LIVE-INPUT CHECK (libs/data/terms_fence.py) -- NOT a robots or licence label (those
+    # stay labels, LAWS 5e). A collected series is live input, so a source that is IDEAS_ONLY or
+    # held is never requested, not even for robots.txt. The row names the policy row.
+    try:
+        from libs.data import terms_fence as _tf
+        fenced = _tf.input_source(url, sid)   # live input: IDEAS_ONLY or held
+    except Exception as exc:                 # fail CLOSED: a fence that cannot load fetches nothing
+        rec.update({"status": "BLOCKED_TERMS", "why": f"terms fence unavailable: {exc!r}"})
+        return rec
+    if fenced:
+        rec.update({**_tf.refusal(fenced)})
+        return rec
+
     # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading
     # rides on the row as provenance -- it routes what the desk may REDISTRIBUTE -- and the fetch
     # proceeds either way. The `BLOCKED_BY_ROBOTS` status it used to set is deleted.
@@ -394,13 +414,18 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
     req = urllib.request.Request(url, data=body_out, headers=headers)
+    from libs.data import terms_fence as _tfg
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        # THE ONE FETCH DOOR: a redirect into a login / CAPTCHA wall is refused, not followed.
+        with fenced_urlopen(req, timeout=timeout, context=_TLS, live_input=True) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
             last_mod = r.headers.get("Last-Modified")
             body = r.read(MAX_BYTES)
+    except _tfg.TermsFenced as e:
+        rec.update(_tfg.refusal(e.platform, redirected=True))
+        return rec
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
         if code == 304:
@@ -502,6 +527,45 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def last_status_before_hold(prev: Any, rec: dict[str, Any]) -> str:
+    """The status of the last pass that REACHED a source now held on terms, kept across passes:
+    the persisted `last_status_before_hold` when collector_state carries one, else the previous
+    pass's status when that pass was not itself the hold (pass-6 audit SHOULD-FIX: the record
+    used to vanish after the first held pass). Empty when the source was never reached."""
+    if not isinstance(prev, dict):
+        return ""
+    kept = str(prev.get("last_status_before_hold") or "")
+    if kept:
+        return kept
+    last = str(prev.get("last_status") or "")
+    return last if last and last != str(rec.get("status") or "") else ""
+
+
+def held_missed_growth_lines(rows: list[dict[str, Any]],
+                             prior: dict[str, Any]) -> list[dict[str, Any]]:
+    """GROWTH GOVERNANCE: one missed-growth line per registry row this pass held on terms (a
+    `held_route` row of libs/data/terms_fence.SOURCE_POLICY; nothing was requested for it). Its
+    past conversion is this organ's own record from before the hold: the status of the last pass
+    that reached the source (`prior`, collector_state read before this pass). delta E[log W] is
+    UNMEASURED, never zero (terms_fence.held_missed_growth)."""
+    from libs.data import terms_fence as _tf
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for r in rows:
+        key = str(r.get("source") or "")
+        if not key or key in seen or not _tf.held_on_terms(key):
+            continue
+        seen.add(key)
+        prev = prior.get(str(r.get("id"))) if isinstance(prior, dict) else None
+        before = last_status_before_hold(prev, r)
+        past: dict[str, Any] = ({"registry_id": str(r.get("id")),
+                                 "last_status_before_hold": before} if before else {})
+        line = _tf.held_missed_growth(key, past or None)
+        line["registry_id"] = str(r.get("id"))
+        out.append(line)
+    return out
+
+
 def due(src: dict[str, Any], state: dict[str, Any], now: float) -> bool:
     last = (state.get(str(src.get("id"))) or {}).get("last_attempt_epoch")
     if not isinstance(last, (int, float)):
@@ -531,6 +595,7 @@ def main(argv: list[str] | None = None) -> int:
         want = set(args.id)
         sources = [s for s in sources if str(s.get("id")) in want]
     state = _read(STATE, {})
+    prior = {k: dict(v) for k, v in state.items() if isinstance(v, dict)}
     now = time.time()
     # A TRANSPORT CARRIES OTHER SOURCES AND HAS NO ENDPOINT OF ITS OWN TO COLLECT.
     todo = [s for s in sources
@@ -597,6 +662,16 @@ def main(argv: list[str] | None = None) -> int:
                               validators=prev.get("validators") if isinstance(prev, dict) else None)
         rows[i] = rec
         keep = {"last_attempt_epoch": time.time(), "last_status": rec.get("status")}
+        try:
+            from libs.data import terms_fence as _tfh
+            held = _tfh.held_on_terms(str(rec.get("source") or ""))
+        except Exception:                      # the fence is read again by the report below
+            held = False
+        if held:
+            # persist the pre-hold record so every held pass's missed-growth line carries it
+            before = last_status_before_hold(prev, rec)
+            if before:
+                keep["last_status_before_hold"] = before
         # A 304 keeps the OLD validators: they are what proved the page unchanged, and replacing
         # them with nothing would make the next pass unconditional for no reason.
         keep["validators"] = (rec.get("validators")
@@ -620,12 +695,13 @@ def main(argv: list[str] | None = None) -> int:
         "series_written": [r["parse"]["path"] for r in rows
                            if isinstance(r.get("parse"), dict) and r["parse"].get("path")],
         "rows": rows,
+        "missed_growth_lines": held_missed_growth_lines(rows, prior),
     }
     _write_atomic(OUT, json.dumps(doc, indent=1))
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_WITH_SUBSTITUTE", "BLOCKED_TERMS", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue

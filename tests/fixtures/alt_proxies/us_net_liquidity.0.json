@@ -1,0 +1,104 @@
+{
+ "data": [
+  {
+   "record_date": "2024-09-04",
+   "account_type": "Treasury General Account (TGA) Opening Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "804576"
+  },
+  {
+   "record_date": "2024-09-04",
+   "account_type": "Total TGA Deposits (Table II)",
+   "close_today_bal": "null",
+   "open_today_bal": "21944"
+  },
+  {
+   "record_date": "2024-09-04",
+   "account_type": "Treasury General Account (TGA) Closing Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "813994"
+  },
+  {
+   "record_date": "2024-09-11",
+   "account_type": "Treasury General Account (TGA) Opening Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "807576"
+  },
+  {
+   "record_date": "2024-09-11",
+   "account_type": "Total TGA Deposits (Table II)",
+   "close_today_bal": "null",
+   "open_today_bal": "21944"
+  },
+  {
+   "record_date": "2024-09-11",
+   "account_type": "Treasury General Account (TGA) Closing Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "816994"
+  },
+  {
+   "record_date": "2024-09-18",
+   "account_type": "Treasury General Account (TGA) Opening Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "810576"
+  },
+  {
+   "record_date": "2024-09-18",
+   "account_type": "Total TGA Deposits (Table II)",
+   "close_today_bal": "null",
+   "open_today_bal": "21944"
+  },
+  {
+   "record_date": "2024-09-18",
+   "account_type": "Treasury General Account (TGA) Closing Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "819994"
+  },
+  {
+   "record_date": "2024-09-25",
+   "account_type": "Treasury General Account (TGA) Opening Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "813576"
+  },
+  {
+   "record_date": "2024-09-25",
+   "account_type": "Total TGA Deposits (Table II)",
+   "close_today_bal": "null",
+   "open_today_bal": "21944"
+  },
+  {
+   "record_date": "2024-09-25",
+   "account_type": "Treasury General Account (TGA) Closing Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "822994"
+  },
+  {
+   "record_date": "2024-10-02",
+   "account_type": "Treasury General Account (TGA) Opening Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "813994"
+  },
+  {
+   "record_date": "2024-10-02",
+   "account_type": "Total TGA Deposits (Table II)",
+   "close_today_bal": "null",
+   "open_today_bal": "21944"
+  },
+  {
+   "record_date": "2024-10-02",
+   "account_type": "Treasury General Account (TGA) Closing Balance",
+   "close_today_bal": "null",
+   "open_today_bal": "823412"
+  },
+  {
+   "record_date": "2021-09-29",
+   "account_type": "Federal Reserve Account",
+   "close_today_bal": "173451",
+   "open_today_bal": "203133"
+  }
+ ],
+ "meta": {
+  "count": 16
+ },
+ "links": {}
+}

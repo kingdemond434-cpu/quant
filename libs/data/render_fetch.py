@@ -168,6 +168,14 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
     stops matching.
     """
     global _used
+    # THE METHOD FENCE (libs/data/terms_fence.py). A headless browser is a fetch like any other:
+    # a HELD URL (METHOD_BLOCKED / NEEDS_KEY) is refused before Chromium is launched, and every
+    # request the page then makes -- each redirect hop and subresource included -- is checked
+    # by the route handler below and aborted when it is held. No source is banned.
+    from libs.data import terms_fence as _tf
+    fenced = _tf.platform_of_url(url)
+    if fenced:
+        return "", f"TERMS-FENCED: {_tf.PLATFORMS[fenced]['status']}:{fenced}"
     ok, why = render_available()
     if not ok:
         return "", f"RENDER-UNAVAILABLE: {why}"
@@ -210,6 +218,11 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
                 page = browser.new_context(**ctx_kw).new_page()
 
                 def _gate(route: Any) -> None:
+                    # the terms fence first (a held source is aborted as blocked-by-client),
+                    # then the site's holds and robots for every request the page makes
+                    if _tf.platform_of_url(str(route.request.url)):
+                        route.abort("blockedbyclient")
+                        return
                     ok, _why = access.permits(str(route.request.url))
                     if ok:
                         route.continue_()
