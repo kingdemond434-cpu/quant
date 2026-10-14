@@ -207,30 +207,55 @@ def _resample_rule(timeframe: str) -> str:
 
 
 @lru_cache(maxsize=1)
-def _ticks(symbol: str):
-    """This symbol's recent tick tape as one indexed frame, or None. ONE symbol resident.
+def _tape_minutes(symbol: str):
+    """This symbol's WHOLE tick tape as exact one-minute aggregates, or None. ONE symbol resident.
 
-    Read once per SYMBOL rather than once per (symbol, chart). The concat of thirty tick vintages
-    is the expensive half of `_tape_series` and it is chart-independent -- only the resample rule
-    differs -- so a sweep that now visits a symbol on up to seven charts would otherwise re-read
-    and re-parse the same thirty files seven times. `maxsize=1` because the sweep finishes a
-    symbol's charts before moving on and a tick frame is far larger than a bar frame.
+    THE TAPE FAMILIES COULD NEVER BE JUDGED, AND THIS WAS THE CEILING (2026-10-14). The reader kept
+    the last THIRTY day files (`sorted(...)[-30:]`) because it concatenated raw ticks and a month of
+    them was the memory it could afford. Thirty calendar days is at most ~22 trading days, and the
+    sealed judge needs 60 development days plus the lockbox floor, so every `orderflow_imbalance`
+    and `liquidity_regime` cell built with a conditioning series that existed on at most 30 days of
+    a multi-year bar history and came back UNKNOWN -- for ever, however much tape the box had
+    recorded. Measured on the box 2026-10-13: 49,108 and 39,319 cells mined, judged_total 0, the
+    gate ledger holding 17,300 and 27,585 UNKNOWN rows for them and not one named gate.
+
+    THE FIX IS EXACT, NOT A WIDER GUESS. Every day file is read alone and reduced onto a one-minute
+    grid of ADDITIVE sums -- spread sum, tick count, net mid-step sum -- so any chart on the ladder
+    (all whole minutes) is recovered exactly by summing minutes: spread mean = sum / count, flow =
+    step sum. Peak memory is ONE day of ticks plus ~1,440 small rows per day held, lower than the
+    thirty-day concatenation it replaces, and the whole tape is now usable. The mid step across a
+    day boundary is taken against the previous file's last mid, as the concatenated series did.
     """
+    import numpy as np
     import pandas as pd
     d = TAPE / symbol
     if not d.exists():
         return None
-    frames = []
-    for f in sorted(d.glob("*.parquet"))[-30:]:
+    parts = []
+    last_mid: float | None = None
+    for f in sorted(d.glob("*.parquet")):
         try:
-            frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
+            t = pd.read_parquet(f, columns=["ts", "bid", "ask"])
         except Exception:
             continue
-    if not frames:
+        t["ts"] = pd.to_datetime(t["ts"], utc=True)
+        t = t.dropna(subset=["bid", "ask"]).sort_values("ts", kind="mergesort").set_index("ts")
+        if t.empty:
+            continue
+        mid = (t["ask"] + t["bid"]) / 2.0
+        diff = mid.diff()
+        if last_mid is not None:
+            diff.iloc[0] = float(mid.iloc[0]) - last_mid
+        # Flow proxy: net sign of mid changes. Not true aggressor data -- the tape has no trade
+        # side -- so it is labelled a proxy rather than passed off as order flow.
+        step = pd.Series(np.sign(diff.to_numpy(dtype=float)), index=t.index).fillna(0.0)
+        g = pd.DataFrame({"spread_sum": (t["ask"] - t["bid"]).astype(float),
+                          "spread_n": 1.0, "step_sum": step}).resample("1min").sum()
+        parts.append(g[g["spread_n"] > 0])
+        last_mid = float(mid.iloc[-1])
+    if not parts:
         return None
-    t = pd.concat(frames, ignore_index=True)
-    t["ts"] = pd.to_datetime(t["ts"], utc=True)
-    return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
+    return pd.concat(parts).groupby(level=0).sum().sort_index()
 
 
 def _tape_series(symbol: str, index, timeframe: str = "H1"):
@@ -243,16 +268,16 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
     `liquidity_regime` and `orderflow_imbalance` is that the book moves faster than price does,
     which is exactly the claim a fine chart exists to test.
     """
-    t = _ticks(symbol)
-    if t is None:
+    m = _tape_minutes(symbol)
+    if m is None:
         return None, None
     rule = _resample_rule(timeframe)
-    spread = (t["ask"] - t["bid"]).resample(rule).mean()
-    mid = ((t["ask"] + t["bid"]) / 2.0)
-    # Flow proxy: net sign of mid changes within the bar. Not true aggressor data -- the tape has
-    # no trade side -- so it is labelled a proxy rather than passed off as order flow.
-    step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
-    flow = step.resample(rule).sum()
+    agg = m.resample(rule).sum()
+    n = agg["spread_n"]
+    # A bar with no tick has no spread (NaN, as a mean of nothing) and zero net flow (a sum of
+    # nothing), exactly what resampling the raw ticks returned.
+    spread = agg["spread_sum"] / n.where(n > 0)
+    flow = agg["step_sum"]
     return spread.reindex(index).ffill(), flow.reindex(index).ffill()
 
 

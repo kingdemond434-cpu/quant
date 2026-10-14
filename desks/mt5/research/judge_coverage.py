@@ -182,11 +182,33 @@ NOT_TESTABLE_REASONS: frozenset[str] = frozenset(
 BACKLOG_BASIS = "unjudged_excl_not_testable"
 
 
+#: ONE READ OF THE SEALED JUDGE'S REPORT PER PASS (2026-10-14). `universal_gates_external.json`
+#: is ~625 MB on the box and six readers inside one `build` each parsed it afresh. While `build`
+#: runs this memo holds that ONE file, keyed on its size and mtime, and is dropped when the pass
+#: ends -- so nothing stays resident between passes and no other file (the bank is rewritten
+#: mid-pass) is ever served from it.
+_GATES_MEMO: dict[tuple[str, int, int], Any] | None = None
+
+
 def _read(path: Path) -> Any:
+    memo = _GATES_MEMO
+    key: tuple[str, int, int] | None = None
+    if memo is not None and path.name == GATES_REPORT.name:
+        try:
+            st = path.stat()
+            key = (str(path), st.st_mtime_ns, st.st_size)
+        except OSError:
+            key = None
+        if key is not None and key in memo:
+            return memo[key]
     try:
-        return json.loads(path.read_text("utf-8"))
+        doc = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
-        return None
+        doc = None
+    if memo is not None and key is not None:
+        memo.clear()
+        memo[key] = doc
+    return doc
 
 
 def _ts(raw: object) -> datetime | None:
@@ -1752,9 +1774,196 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
     return len(rows)
 
 
+#: A FAMILY THAT HAS NEVER BEEN JUDGED MAY NOT WAIT LONGER THAN THIS (2026-10-14). Measured on
+#: the box 2026-10-13: `orderflow_imbalance` (49,108 mined, oldest 782 h) and `liquidity_regime`
+#: (39,319) had judged_total 0 while each carried a 244-cell floor quota every hour, and the four
+#: raw COT families (~30k mined) the same. Two days is generous against an hourly judge: a family
+#: that cannot get ONE real verdict in 48 h is not queued, it is unreachable, and the fence
+#: (`scripts/check_judge_coverage.py`) fails it on the box with the reasons published here.
+NEVER_JUDGED_MAX_AGE_H = 48.0
+
+#: Families whose builder conditions on the venue's own tick tape (`orthogonal_sweep._tape_series`
+#: via `external_gauntlet.build_cell`). Their judgeable history is the TAPE's depth, never the
+#: bars': a cell can produce no more development days than there are tape days.
+TAPE_FAMILIES = frozenset({"orderflow_imbalance", "liquidity_regime"})
+TAPE_DIR = BASE / "data" / "tape" / "ticks"
+#: The held-out floor the sealed policy carves from every series (gate_policy.LOCKBOX_MIN_DAYS),
+#: read from the policy when importable and never re-declared as authority here.
+LOCKBOX_MIN_DAYS_FALLBACK = 40
+
+
+def parked_in_bank(rows: list[dict[str, Any]], bank: dict[str, dict[str, Any]],
+                   judged_cells: set[str], not_testable_ids: dict[str, str] | set[str],
+                   banned: frozenset[str] | set[str]
+                   ) -> tuple[dict[str, int], dict[str, dict[str, int]], dict[str, str]]:
+    """Unjudged backlog rows the bank holds OUT of the shipped docket, per family and reason.
+
+    These are exactly the rows `order_docket` removes before the gauntlet reads the file, so they
+    can be given no share of the hour. Not-testable rows are already outside the backlog and are
+    not counted twice. Returns (count per family, count per family per reason, one sample `why`
+    per family)."""
+    count: dict[str, int] = {}
+    by_reason: dict[str, dict[str, int]] = {}
+    why: dict[str, str] = {}
+    if not bank:
+        return count, by_reason, why
+    for row in rows:
+        cid = str(row.get("_cell") or "")
+        if not cid or cid in judged_cells or cid in not_testable_ids:
+            continue
+        fam = str(row.get("family") or "")
+        if fam in banned:
+            continue
+        b = bank.get(cid)
+        if not isinstance(b, dict):
+            continue
+        reason = str(b.get("reason") or "unnamed")
+        count[fam] = count.get(fam, 0) + 1
+        slot = by_reason.setdefault(fam, {})
+        slot[reason] = slot.get(reason, 0) + 1
+        if fam not in why and b.get("why"):
+            why[fam] = str(b.get("why"))[:200]
+    return count, by_reason, why
+
+
+def sweep_census_by_family(path: Path | None = None) -> dict[str, dict[str, dict[str, int]]]:
+    """The last sweep's fate per family: downstream status and UNKNOWN reason counts.
+
+    Read from the sealed judge's own report (memoised for the pass). An absent report is an empty
+    census -- the caller says so -- never zero failures."""
+    doc = _read(path or GATES_REPORT)
+    verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
+    out: dict[str, dict[str, dict[str, int]]] = {}
+    if not isinstance(verdicts, list):
+        return out
+    for v in verdicts:
+        if not isinstance(v, dict):
+            continue
+        fam = str(v.get("family") or "")
+        if not fam:
+            continue
+        slot = out.setdefault(fam, {"status": {}, "unknown_reason": {}, "terminal_gate": {}})
+        st = str(v.get("downstream_status") or "")
+        if st:
+            slot["status"][st] = slot["status"].get(st, 0) + 1
+        gate = str(v.get("terminal_gate") or ("PASSED" if v.get("passed") else "UNKNOWN"))
+        slot["terminal_gate"][gate] = slot["terminal_gate"].get(gate, 0) + 1
+        if v.get("unmeasured") or gate == "UNKNOWN":
+            r = str(v.get("unknown_reason") or "")
+            if r:
+                slot["unknown_reason"][r] = slot["unknown_reason"].get(r, 0) + 1
+    return out
+
+
+def _lockbox_min_days() -> int:
+    try:
+        desk = str(BASE)
+        if desk not in sys.path:
+            sys.path.insert(0, desk)
+        from research.gate_policy import LOCKBOX_MIN_DAYS
+        return int(LOCKBOX_MIN_DAYS)
+    except Exception:
+        return LOCKBOX_MIN_DAYS_FALLBACK
+
+
+def tape_depth(root: Path | None = None) -> dict[str, Any]:
+    """How many days of tick tape the box holds per symbol -- the history a tape family can use.
+
+    Counted from the day files themselves (`<SYM>/<DAY>.parquet`), cheap and never assumed."""
+    base = root or TAPE_DIR
+    need = CPCV_MIN_DAYS + _lockbox_min_days()
+    if not base.is_dir():
+        return {"status": "UNMEASURED", "why": f"no tape store at {base}", "days_needed": need}
+    days: list[int] = []
+    for d in base.iterdir():
+        if d.is_dir():
+            days.append(sum(1 for _f in d.glob("*.parquet")))
+    if not days:
+        return {"status": "UNMEASURED", "why": "the tape store holds no symbol",
+                "days_needed": need}
+    days.sort()
+    return {"status": "MEASURED", "symbols": len(days), "max_days": days[-1],
+            "median_days": days[len(days) // 2],
+            "symbols_at_need": sum(1 for n in days if n >= need), "days_needed": need}
+
+
+def never_judged_families(table: dict[str, dict[str, Any]],
+                          parked_by_reason: dict[str, dict[str, int]] | None = None,
+                          parked_why: dict[str, str] | None = None,
+                          census: dict[str, dict[str, dict[str, int]]] | None = None,
+                          tape: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    """Every family with mined cells and judged_total 0, with its oldest wait and named reasons."""
+    out: dict[str, dict[str, Any]] = {}
+    hits = [f for f, r in table.items()
+            if int(r.get("mined") or 0) > 0 and int(r.get("judged_total") or 0) == 0
+            and r.get("judging_status") != "STUDY_ONLY"]
+    if not hits:
+        return out
+    census = sweep_census_by_family() if census is None else census
+    if tape is None and any(f in TAPE_FAMILIES for f in hits):
+        tape = tape_depth()
+    for fam in sorted(hits, key=lambda f: -float(table[f].get("oldest_unjudged_age_h") or 0.0)):
+        row = table[fam]
+        parts: list[str] = []
+        pk = (parked_by_reason or {}).get(fam) or {}
+        if pk:
+            parts.append("parked in the unrunnable bank (filtered from the docket): " + ", ".join(
+                f"{k}={v}" for k, v in sorted(pk.items(), key=lambda kv: -kv[1])[:4])
+                + (f" -- e.g. {(parked_why or {}).get(fam)}" if (parked_why or {}).get(fam)
+                   else ""))
+        cs = census.get(fam) or {}
+        if cs:
+            st = cs.get("status") or {}
+            gates = cs.get("terminal_gate") or {}
+            ur = cs.get("unknown_reason") or {}
+            parts.append("last sweep: " + ", ".join(
+                f"{k}={v}" for k, v in sorted({**gates, **st}.items(),
+                                              key=lambda kv: -kv[1])[:5])
+                + ((" ; UNKNOWN reasons " + ", ".join(
+                    f"{k}={v}" for k, v in sorted(ur.items(), key=lambda kv: -kv[1])[:4]))
+                   if ur else ""))
+        elif census == {}:
+            parts.append("last sweep: the sealed judge's report is absent here (UNMEASURED)")
+        else:
+            parts.append("last sweep: no verdict row for this family at all")
+        if fam in TAPE_FAMILIES and isinstance(tape, dict):
+            if tape.get("status") == "MEASURED":
+                parts.append(
+                    f"input: conditions on the tick tape; median {tape.get('median_days')} / max "
+                    f"{tape.get('max_days')} tape days per symbol against {tape.get('days_needed')}"
+                    f" needed (60 development + lockbox floor); {tape.get('symbols_at_need')} of "
+                    f"{tape.get('symbols')} symbols reach it")
+            else:
+                parts.append(f"input: conditions on the tick tape, {tape.get('why')}")
+        if int(row.get("shippable") or 0) > 0 and int(row.get("quota") or 0) > 0:
+            parts.append(f"{row.get('shippable')} cell(s) ship with quota {row.get('quota')}, so "
+                         "the sealed judge receives them; its own build order decides reach")
+        out[fam] = {"mined": int(row.get("mined") or 0),
+                    "unjudged": int(row.get("unjudged") or 0),
+                    "shippable": int(row.get("shippable") or 0),
+                    "parked_unrunnable": int(row.get("parked_unrunnable") or 0),
+                    "quota": int(row.get("quota") or 0),
+                    "oldest_unjudged_age_h": row.get("oldest_unjudged_age_h"),
+                    "reason": "; ".join(parts) if parts else "no published reason"}
+    return out
+
+
 def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
           ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     """The per-family coverage table, the quotas, and the carried-cohort ratchet."""
+    global _GATES_MEMO
+    outer = _GATES_MEMO is not None
+    if not outer:
+        _GATES_MEMO = {}
+    try:
+        return _build(docket, ledger=ledger, ratchet=ratchet, now=now)
+    finally:
+        if not outer:
+            _GATES_MEMO = None
+
+
+def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
+           ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     rows = docket if docket is not None else (_read(DOCKET) or [])
     rows = [r for r in rows if isinstance(r, dict)]
@@ -1831,9 +2040,21 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     keff = keff_stamp(rows)
     # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
     occ = occupancy_stamp(rows)
+    # THE QUOTA IS SPENT ON WHAT SHIPS (2026-10-14). `order_docket` removes every cell the
+    # unrunnable bank holds before the docket is written, so a quota computed over the whole
+    # backlog promised hours to cells the sealed judge never receives: measured on the box
+    # 2026-10-13, 230,180 rows filtered from the docket while `queued` still claimed them, and the
+    # raw COT families -- ranked first on an unlearned prior, each given its WHOLE backlog -- held
+    # 0 judged. The backlog, the cohort and the drain are unchanged (a parked defect is still owed,
+    # audit of PR #290); only the allocation and the shipped head now describe the docket the
+    # judge reads, and every parked cell is published per family with its named reason.
+    parked_unrunnable, parked_by_reason, parked_why = parked_in_bank(
+        rows, _bank_now, judged_cells, not_testable_ids, banned)
+    shippable = {f: max(0, n - parked_unrunnable.get(f, 0)) for f, n in backlog.items()}
     ranking = rank_by_value(backlog, rows, capacity)
-    quota = allocate(backlog, capacity, ranking=ranking)
-    judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
+    quota = allocate(shippable, capacity, ranking=ranking)
+    judgeable = [r for r in rows if str(r.get("family") or "") not in banned
+                 and str(r.get("_cell") or "") not in _bank_now]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
     # Mark the variants BEFORE the order is taken, so the head this table reports is the head
     # that actually ships (`order_docket` re-derives the same marks and measures what they freed).
@@ -1907,6 +2128,11 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         table[fam] = {
             "mined": mined.get(fam, 0),
             "queued": queued.get(fam, 0),
+            # What the docket actually carries for this family, and what the bank holds back
+            # from it by named reason (`parked_in_bank`). unjudged = shippable + parked_unrunnable.
+            "shippable": shippable.get(fam, 0),
+            "parked_unrunnable": parked_unrunnable.get(fam, 0),
+            "parked_by_reason": dict(sorted((parked_by_reason.get(fam) or {}).items())),
             "judged_window": judged_window.get(fam, 0),
             "judged_total": judged_total.get(fam, 0),
             "unjudged": back,
@@ -1984,8 +2210,9 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     for row in ranking:
         fam = str(row["family"])
         row["quota"] = quota.get(fam, 0)
-        row["floor"] = min(backlog.get(fam, 0), max(1, int(capacity * FLOOR_SHARE) // max(
-            sum(1 for v in backlog.values() if v > 0), 1)))
+        row["shippable"] = shippable.get(fam, 0)
+        row["floor"] = min(shippable.get(fam, 0), max(1, int(capacity * FLOOR_SHARE) // max(
+            sum(1 for v in shippable.values() if v > 0), 1)))
         row["remainder"] = max(0, row["quota"] - row["floor"])
         row["value_at_risk"] = row["ev_per_cell"] * row["unjudged"]
         row["value_deferred"] = row["ev_per_cell"] * max(0, row["unjudged"] - row["quota"])
@@ -1999,8 +2226,16 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                         "value_deferred": rk["value_deferred"],
                         "floor": rk["floor"], "remainder": rk["remainder"]})
 
-    covered = sum(1 for f, r in table.items() if r["unjudged"] > 0 and r["queued"] > 0)
-    starved = sorted((f for f, r in table.items() if r["unjudged"] > 0 and r["queued"] == 0),
+    # NEVER JUDGED, NAMED (2026-10-14): every family that has mined cells and not one real
+    # verdict, with the oldest wait and every reason this desk can read for it.
+    never_judged = never_judged_families(table, parked_by_reason, parked_why)
+    for fam, nj in never_judged.items():
+        table[fam]["never_judged_reason"] = nj["reason"]
+    # A family whose whole backlog is parked ships nothing and is given nothing: it is not
+    # starved by the order, it is held by the bank with a named reason (and, if it has never
+    # been judged at all, by the never-judged class above). Starvation is about SHIPPED cells.
+    covered = sum(1 for f, r in table.items() if r["shippable"] > 0 and r["queued"] > 0)
+    starved = sorted((f for f, r in table.items() if r["shippable"] > 0 and r["queued"] == 0),
                      key=lambda f: -table[f]["unjudged"])
     totals = {
         "docket_rows": len(rows),
@@ -2070,6 +2305,9 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "not_testable_total": sum(not_testable.values()),
         "not_testable_by_reason": not_testable_by_reason,
         "unrunnable_bank": unrunnable.get("bank_size"),
+        "shippable_total": sum(shippable.values()),
+        "parked_unrunnable_total": sum(parked_unrunnable.values()),
+        "families_never_judged": len(never_judged),
         # EVERY WAY THE JUDGE FAILED TO RULE, per class, each with its route out (no terminal
         # class exists): what the hourly pass reads to hunt judging's own unoptimalities.
         "judging_failures": failures,
@@ -2091,6 +2329,14 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "totals": totals,
         "quota": quota,
         "starved": starved[:20],
+        "never_judged": never_judged,
+        "never_judged_rule": (
+            "a family with mined cells and judged_total 0 (no real terminal gate or pass ever "
+            "recorded), with its oldest unjudged age and every reason published: cells parked "
+            "in the unrunnable bank by reason, the last sweep's NOT_RUN / UNKNOWN status for the "
+            "family, and any structural input the family's builder lacks. "
+            "scripts/check_judge_coverage.py fails one older than "
+            f"{NEVER_JUDGED_MAX_AGE_H:.0f}h on the box"),
         "unmined_live_families": unmined[:40],
         # THE RANKING IS PUBLISHED SO THE CHOICE IS INSPECTABLE -- and so the fence can check that
         # the remainder actually followed it, which is what stops a future session quietly

@@ -248,13 +248,20 @@ def allocate(G: Any, specs: list[dict]) -> list[dict]:
     raw = {f: max(yields.get(f, prior), 1e-9) for f in by_fam}
     tot = sum(raw.values()) or 1.0
     n_fam = len(by_fam)
-    keep: list[dict] = []
+    takes: dict[str, list[dict]] = {}
     for fam, rows in by_fam.items():
         share = (G.YIELD_ALLOCATION_STRENGTH * (raw[fam] / tot)
                  + (1.0 - G.YIELD_ALLOCATION_STRENGTH) / n_fam)
         share = min(share, G.YIELD_MAX_SHARE)
         want = max(round(share * len(specs)), int(G.YIELD_MIN_SHARE * len(rows)), 1)
-        keep.extend(rows[:want])
+        takes[fam] = rows[:want]
+    # THE SEALED JUDGE'S OWN EMISSION ORDER, whichever it is (2026-10-14). The takes were
+    # concatenated family by family; the floor-reach patch (judging/floor_reach_sealed.patch)
+    # interleaves them through `external_gauntlet._floor_interleave`. Calling the judge's helper
+    # when it exists keeps this restatement identical to the sealed trim before AND after it lands.
+    inter = getattr(G, "_floor_interleave", None)
+    keep: list[dict] = (list(inter(takes)) if callable(inter)
+                        else [sp for rows in takes.values() for sp in rows])
     explored, _axes = G._explore_unmeasured_axes(specs, keep)
     keep.extend(explored)
     orthogonal, _rec = G._orthogonality_floor(specs, keep)

@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
@@ -74,7 +75,13 @@ STALE_H = 6.0
 #: "this hour ran a little short".
 WINDOW_SLACK = 2.0
 
-RULE = ("no family holding unjudged cells is absent from the hour's queue; each family's carried "
+#: A family with mined cells, not ONE real verdict ever (judged_total 0), and an oldest unjudged
+#: cell older than this FAILS on the box (2026-10-14). Mirrors
+#: `research/judge_coverage.NEVER_JUDGED_MAX_AGE_H`; a test pins the two together.
+NEVER_JUDGED_MAX_AGE_H = 48.0
+
+RULE = ("no family with mined cells goes unjudged past 48h; "
+        "no family holding unjudged cells is absent from the hour's queue; each family's carried "
         "backlog falls; no family's oldest unjudged cell sits past twice its own drain window "
         "without moving; and the remainder after every floor follows the published "
         "expected-value-per-judge-second ranking")
@@ -103,6 +110,66 @@ def _age_h(stamp: object, now: datetime) -> float | None:
     return max(0.0, (now.timestamp() - at.timestamp()) / 3600.0)
 
 
+def _armed(require_state: bool) -> bool:
+    """Whether a state-derived verdict may FAIL here, by the law gate's host semantics.
+
+    `--require-state` (the box's state battery) always arms it. Otherwise it is armed only on the
+    trading host and never in a source view (`QUANT_LAWGATE_SOURCE_VIEW=1`, every laws-only run):
+    the box publishes JUDGE_COVERAGE.json to origin every 15 minutes, so a clean CI or cloud
+    checkout holds a COPY, and judging a copy as local runtime is the confusion 778815d6c removed
+    from check_self_repair and check_birth_obligations. There the finding is published as WARN."""
+    if require_state:
+        return True
+    if os.environ.get("QUANT_LAWGATE_SOURCE_VIEW") == "1":
+        return False
+    try:
+        root = str(ROOT)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.ops import host_identity
+        return bool(host_identity.identify().may_be_trading)
+    except Exception:
+        return False
+
+
+def never_judged(fams: Mapping[str, Mapping[str, Any]], doc: Mapping[str, Any],
+                 *, armed: bool) -> dict[str, Any]:
+    """The never-judged check: mined > 0, judged_total == 0, oldest unjudged past 48 h."""
+    published = doc.get("never_judged") if isinstance(doc.get("never_judged"), Mapping) else {}
+    hits: list[tuple[str, float]] = []
+    for f, r in fams.items():
+        if str(r.get("judging_status") or "") == "STUDY_ONLY":
+            continue
+        if int(r.get("mined") or 0) <= 0 or int(r.get("judged_total") or 0) != 0:
+            continue
+        age = r.get("oldest_unjudged_age_h")
+        if age is None or float(age) <= NEVER_JUDGED_MAX_AGE_H:
+            continue
+        hits.append((f, float(age)))
+    hits.sort(key=lambda fa: -fa[1])
+    if not hits:
+        return {"metric": "never_judged", "state": "OK", "families": [],
+                "why": (f"every family with mined cells holds a real verdict, or its oldest cell "
+                        f"is under {NEVER_JUDGED_MAX_AGE_H:.0f}h")}
+
+    def _reason(f: str) -> str:
+        row = published.get(f) if isinstance(published.get(f), Mapping) else None
+        txt = (row or {}).get("reason") or fams[f].get("never_judged_reason")
+        return str(txt) if txt else "no reason published"
+
+    named = [{"family": f, "mined": int(fams[f].get("mined") or 0),
+              "oldest_unjudged_age_h": a, "reason": _reason(f)} for f, a in hits]
+    head = "; ".join(f"{n['family']} (mined {n['mined']}, oldest {n['oldest_unjudged_age_h']:.0f}h:"
+                     f" {n['reason'][:160]})" for n in named[:4])
+    return {"metric": "never_judged", "state": "FAIL" if armed else "WARN",
+            "families": named,
+            "why": (f"{len(hits)} family(ies) have mined cells and NEVER a real verdict, oldest "
+                    f"past {NEVER_JUDGED_MAX_AGE_H:.0f}h: {head}"
+                    + ("" if armed else
+                       " -- published, not failed: this is a source view or a host that does "
+                       "not run the judge; the box's --require-state run fails it"))}
+
+
 def judge(report: Path | None = None, *, require_state: bool = False,
           now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
@@ -127,9 +194,19 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     judged_any = sum(int(r.get("judged_window") or 0) for r in fams.values())
     failures: list[str] = []
 
+    # 0. NEVER JUDGED (2026-10-14). A floor quota on a family the judge never rules on is a quota
+    #    nobody consumed: orderflow_imbalance and liquidity_regime sat at judged_total 0 for 782h
+    #    and 499h while every check below read OK. Age alone is the trigger here, deliberately --
+    #    a family with NO verdict has no movement to ratchet, and two days without one is not a
+    #    short hour. Armed by the same host semantics as the law gate's other state checks.
+    nj = never_judged(fams, doc, armed=_armed(require_state))
+    out["checks"].append(nj)
+    if nj["state"] == "FAIL":
+        failures.extend(n["family"] for n in nj["families"][:10])
+
     # 1. STARVATION: unjudged cells and no place in the queue.
     starved = sorted((f for f, r in fams.items()
-                      if int(r.get("unjudged") or 0) > 0
+                      if int(r.get("shippable", r.get("unjudged")) or 0) > 0
                       and int(r.get("queued") or 0) == 0
                       and str(r.get("judging_status") or "") != "STUDY_ONLY"),
                      key=lambda f: -int(fams[f].get("unjudged") or 0))
@@ -243,7 +320,9 @@ def judge(report: Path | None = None, *, require_state: bool = False,
             if int(row.get("remainder") or 0) <= 0:
                 continue
             for higher in ranking[:i]:
-                room = int(higher.get("unjudged") or 0) - int(higher.get("quota") or 0)
+                # Room on what SHIPS: cells the bank holds out of the docket take no remainder.
+                room = (int(higher.get("shippable", higher.get("unjudged")) or 0)
+                        - int(higher.get("quota") or 0))
                 if int(higher.get("remainder") or 0) == 0 and room > 0:
                     starved_higher.append(f"{row.get('family')} over {higher.get('family')}")
                     break
@@ -364,7 +443,8 @@ def judge(report: Path | None = None, *, require_state: bool = False,
         "hours_to_drain", "capacity_short", "unknown_total", "unknown_share",
         "unknown_unnamed", "never_fires_cells", "unrunnable_parked", "unrunnable_bank",
         "drain_status", "backlog_growth_per_hour", "capacity_sustained_per_hour",
-        "prewarm_fail_share", "not_run_named")}
+        "prewarm_fail_share", "not_run_named", "shippable_total", "parked_unrunnable_total",
+        "families_never_judged")}
     out["unknown_reasons"] = (doc.get("unknown_reasons") or {}).get("by_reason") or {}
     out["top_value"] = [{k: r.get(k) for k in ("rank", "family", "ev_per_judge_second",
                                                "p_optimistic", "prior_status", "quota",
@@ -438,7 +518,8 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["RATCHET", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
+__all__ = ["NEVER_JUDGED_MAX_AGE_H", "RATCHET", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK",
+           "judge", "main", "never_judged", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
