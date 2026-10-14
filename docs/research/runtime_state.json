@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 778,
-  "UNMEASURED": 37
+  "UNMEASURED": 39
  },
  "scope": {
-  "attested": 996,
+  "attested": 998,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -346,7 +346,18 @@
     ]
    },
    {
-    "at": "2026-10-14T02:20:54+00:00",
+    "at": "2026-10-14T01:31:43+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:measurability",
+     "fence:check_measurability"
+    ]
+   },
+   {
+    "at": "2026-10-14T02:45:43+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -25761,6 +25772,66 @@
    "measured_at": "2026-10-13T17:28:30+00:00"
   },
   {
+   "organ": "leg:measurability",
+   "kind": "leg",
+   "code": [
+    "scripts/check_measurability.py"
+   ],
+   "clock": "hourly_cycle:measurability",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/MEASURABILITY.json",
+   "artifact_declared": "desks/mt5/reports/MEASURABILITY.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 329,
+   "artifact_bytes": 67317,
+   "artifact_sha256": "1595bf85127ad2d0aa09dd162efd64a29c27774f37cb52747995f9954e4a2699",
+   "summary": {
+    "verdict": "UNMEASURED"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-14T01:31:43+00:00"
+  },
+  {
+   "organ": "fence:check_measurability",
+   "kind": "task",
+   "code": [
+    "scripts/check_measurability.py"
+   ],
+   "clock": "run_law_gate.py",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read STALE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 11171,
+   "artifact_bytes": 9137,
+   "artifact_sha256": "fba47dbee3fe6f3eff1c4c3cf1a15c61b1d72986c890e6717b9c7deaadd458d9",
+   "summary": {
+    "ok": false
+   },
+   "progress_metric": "gate_runs",
+   "consumer": "desks/mt5/research/plumbing_watchdog.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-14T01:31:43+00:00"
+  },
+  {
    "organ": "leg:state_gate_proposer",
    "kind": "leg",
    "code": [
@@ -25786,7 +25857,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-14T02:20:54+00:00"
+   "measured_at": "2026-10-14T02:45:43+00:00"
   }
  ],
  "ratchet": {
