@@ -88,16 +88,21 @@ def test_fdr_buys_no_power_for_the_best_candidate():
     So switching the screen to FDR would not have lowered the detection floor -- which is why the
     real constraint is the campaign's shape, measured above, and not the multiplicity method."""
     m, q = 420, 0.05
-    hm = float(sum(1.0 / i for i in range(1, m + 1)))
-    # a lone candidate just inside the Bonferroni boundary, the rest pure noise
-    p = np.concatenate([[q / m * 0.99], np.linspace(0.2, 1.0, m - 1)])
+    # TRIAL-COUNT GUARD (2026-10-14): BH/BY charge m at min(m, BAR_N), so the rank-1 boundary is
+    # q/min(m, 5) -- still Bonferroni EXACTLY, at the pinned N. The point of this test stands: at
+    # rank 1 FDR is no looser than the FWER bar; the count (420) no longer sets either.
+    from libs.research.trial_count_guard import BAR_N
+    m_bar = min(m, BAR_N)
+    hm = float(sum(1.0 / i for i in range(1, m_bar + 1)))
+    # a lone candidate just inside the pinned Bonferroni boundary, the rest pure noise
+    p = np.concatenate([[q / m_bar * 0.99], np.linspace(0.2, 1.0, m - 1)])
     assert benjamini_hochberg(p, alpha=q).rejected[0] is True
     # ...and just outside it, BH rejects nothing -- identical to Bonferroni, not looser
-    p_out = np.concatenate([[q / m * 1.01], np.linspace(0.2, 1.0, m - 1)])
+    p_out = np.concatenate([[q / m_bar * 1.01], np.linspace(0.2, 1.0, m - 1)])
     assert benjamini_hochberg(p_out, alpha=q).n_rejected == 0
     # BY, which is what screen_select is actually wired with (method="by"), is STRICTER
     assert benjamini_yekutieli(p, alpha=q).n_rejected == 0
-    assert q / (m * hm) < q / m
+    assert q / (m_bar * hm) < q / m_bar
 
 
 def test_the_screen_selection_is_computed_but_does_not_gate():

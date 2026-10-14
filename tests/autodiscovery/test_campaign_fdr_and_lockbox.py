@@ -43,8 +43,11 @@ class TestCampaignFdr:
         now costs you the good candidates too. Nothing is lost outright -- the orchestrator demotes
         to PAPER rather than rejecting -- but it will not reach the registry that cycle.
         """
+        # TRANSFORMED 2026-10-14 (principal: "make sure the bars never raise ... never inflation
+        # due to trials"): BH's family size is min(m, BAR_N), so seventeen nulls no longer DILUTE
+        # the three genuine candidates -- padding a campaign costs the good ones nothing now.
         mask, _ = campaign_fdr([0.96] * 3 + [0.50] * 17)
-        assert sum(mask) == 0
+        assert sum(mask) == 3 and not any(mask[3:])
 
     def test_a_standout_survives_a_noisy_campaign(self) -> None:
         mask, _ = campaign_fdr([0.999] + [0.50] * 19)

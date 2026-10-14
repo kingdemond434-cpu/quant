@@ -157,7 +157,11 @@ def bh_alpha(m: int, rank: int, *, alpha: float = 0.05) -> float:
     that are certainly real. That is a stated risk preference and it belongs beside the number,
     which is why both bars are reported and neither silently replaces the other.
     """
+    # FIXED BAR N (principal 2026-10-13): the family size is min(m, BAR_N); rank r's level is
+    # alpha * min(r, m_bar) / m_bar, never below alpha * r / m.
+    from libs.research.trial_count_guard import bar_n
     m = max(1, int(m))
+    m = min(m, bar_n(m))
     r = min(max(1, int(rank)), m)
     return alpha * r / m
 

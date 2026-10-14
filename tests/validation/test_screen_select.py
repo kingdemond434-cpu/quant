@@ -105,19 +105,22 @@ class TestReachability:
         """A coarse bootstrap does NOT make selection impossible (p=0 is attainable) -- it costs
         DISCRIMINATION among candidates tied at the floor. The report must say which."""
         m = _campaign_fixed_winner(200, 5.0, 500, winner_seed=17, null_seed=18)
-        sd = romano_wolf_stepdown(m, alpha=0.05, n_boot=200, seed=17)
+        # TRIAL-COUNT GUARD (2026-10-14): the rank-1 level is q/min(m, BAR_N) = 0.01, which 200
+        # draws now resolve; 50 draws (atoms of 0.02) is the coarse case at the pinned N.
+        sd = romano_wolf_stepdown(m, alpha=0.05, n_boot=50, seed=17)
         sel = screen_select(sd, q=0.05, method="bh")
         assert sel.resolvable is False
         assert "COARSE BOOTSTRAP" in sel.error_statement
         assert "measurement limit, NOT evidence" in sel.error_statement
         assert sel.ties_at_floor >= 1
-        assert sel.required_n_boot >= 4000        # 0.05/201 -> boundary needs ~4020 draws
+        assert sel.required_n_boot == 100         # 0.05/min(201, 5) -> boundary needs 100 draws
 
     def test_required_n_boot_is_arithmetically_right(self) -> None:
         m = _campaign(n_null=99, goods=[2.0], n_obs=400, seed=19)
         sd = romano_wolf_stepdown(m, alpha=0.05, n_boot=500, seed=19)
         sel = screen_select(sd, q=0.05, method="bh")
-        assert sel.required_n_boot == 2000       # ceil(1 / (0.05/100))
+        # TRIAL-COUNT GUARD: m=100 is charged at min(100, BAR_N) = 5
+        assert sel.required_n_boot == 100        # ceil(1 / (0.05/5))
 
 
 class TestContract:

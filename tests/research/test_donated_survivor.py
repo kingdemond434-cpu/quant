@@ -31,7 +31,9 @@ def test_THE_BAR_IS_BUILT_ON_THE_UNION_NOT_THE_LOCAL_COHORT() -> None:
     v = admit(_row(trials_screened=40), local_m=12)
     assert v.union_m == 52
     assert v.bar == pytest.approx(holm_bar(52, rank=1))
-    assert v.bar > holm_bar(12, rank=1), "the union bar must be STRICTER than the local one"
+    # TRIAL-COUNT GUARD (2026-10-14): the Holm bar is pinned at the fixed N, so the union is
+    # still COUNTED and reported (union_m above) but the bar no longer rises with it.
+    assert v.bar == pytest.approx(holm_bar(12, rank=1)), "the bar does not move with the count"
 
 
 def test_A_DONATION_WITHOUT_A_TRIAL_COUNT_IS_REFUSED() -> None:
@@ -51,10 +53,12 @@ def test_A_HARDER_HUNTING_DONOR_FACES_A_HIGHER_BAR() -> None:
     adversarial donor: a factory cannot buy admission by generating more."""
     lo = admit(_row(trials_screened=10, t_stat=3.2), local_m=12)
     hi = admit(_row(trials_screened=500, t_stat=3.2), local_m=12)
-    assert lo.bar is not None and hi.bar is not None and hi.bar > lo.bar
-    assert lo.admit and hi.refused, (
-        "the same t-stat admitted from a small search and refused from a huge one -- which is the "
-        "arithmetic working, not an inconsistency")
+    assert lo.bar is not None and hi.bar is not None
+    # TRIAL-COUNT GUARD: both searches exceed the fixed N, so both face the SAME bar; generating
+    # more still cannot buy admission (the bar never falls with the count), it just no longer rises.
+    assert hi.bar == pytest.approx(lo.bar)
+    assert lo.union_m < hi.union_m
+    assert lo.admit and hi.admit, "the same t-stat against the same bar gets the same verdict"
 
 
 def test_DONOR_CLOCKS_ADD_TO_DONOR_SCREENS_RATHER_THAN_REPLACING_THEM() -> None:
@@ -135,7 +139,9 @@ def test_MORE_FACTORIES_MEANS_A_HIGHER_BAR_NOT_A_LOWER_ONE() -> None:
     bar_one = one["admitted"][0]["bar"] if one["n_admitted"] else one["refused"][0]["bar"]
     bar_three = next(r["bar"] for r in (three["admitted"] + three["refused"])
                      if r["name"] == "a")
-    assert bar_three > bar_one
+    # TRIAL-COUNT GUARD: the batch union is still counted, but the bar is fixed at N=5.
+    assert bar_three == pytest.approx(bar_one)
+    assert three["batch_union_m"] > one["batch_union_m"]
 
 
 def test_A_DONOR_CANNOT_DILUTE_ITS_OWN_TRIALS_BY_SENDING_MORE_ROWS() -> None:
@@ -148,7 +154,9 @@ def test_A_DONOR_CANNOT_DILUTE_ITS_OWN_TRIALS_BY_SENDING_MORE_ROWS() -> None:
     b_lean = (lean["admitted"] + lean["refused"])[0]["bar"]
     b_pad = next(r["bar"] for r in (padded["admitted"] + padded["refused"])
                  if r["name"] == "strong")
-    assert b_pad > b_lean
+    # TRIAL-COUNT GUARD: padding cannot LOWER the bar (the guard's point) and no longer raises it.
+    assert b_pad == pytest.approx(b_lean)
+    assert padded["batch_union_m"] > lean["batch_union_m"]
 
 
 def test_A_DONOR_IS_FREE_TO_BUILD_ITS_FACTORY_ANY_WAY_IT_LIKES() -> None:

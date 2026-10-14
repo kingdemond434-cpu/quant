@@ -208,9 +208,10 @@ def test_no_site_can_raise_its_bar_above_its_own_count() -> None:
     bad = []
     for rel, line, x, ctx in sites:
         # the historic floors the callee already applied: generation_roi's max(2, X) and
-        # release_gain's max(1, int(X)) -- each the exact count charged before the pin
+        # release_gain's max(1, int(X)), campaign_window's max(1, X) -- each the exact count
+        # charged before the pin
         ok = any(ctx.startswith(f"min({lo}, bar_n(")
-                 for lo in (x, f"max(2, {x})", f"max(1, int({x}))"))
+                 for lo in (x, f"max(2, {x})", f"max(1, int({x}))", f"max(1, {x})"))
         if not ok:
             bad.append(f"{rel}:{line} bar_n({x}) inside {ctx[:60]!r}")
     assert not bad, bad
