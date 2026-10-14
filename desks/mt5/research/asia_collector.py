@@ -21,6 +21,11 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
     UNCONFIGURED    the source declares `access: key` or `paid` and no key is present. NOT a
                     failure and NOT a silent skip: a named state, so a missing subscription can
                     never be mistaken for a dead endpoint.
+    IDEAS_ONLY / METHOD_BLOCKED / NEEDS_KEY  the per-source policy (libs/data/terms_fence.py,
+                    ruling of 2026-10-13: no source is banned). This collector builds LIVE INPUT
+                    series, so a source that is IDEAS_ONLY (StockTwits' pages, whose Terms s.5
+                    bar automated extraction -- `stocktwits_macro`) or held is not requested; the
+                    row carries the status, the why and the permitted route.
     (BLOCKED_BY_ROBOTS is RETIRED, 2026-09-23.) A robots.txt Disallow was a refusal here and is
                     now a LABEL: the reading is recorded on the row as `robots_disallows` and
                     `terms_note`, it routes what the desk may REDISTRIBUTE, and the page is
@@ -66,6 +71,8 @@ ROOT = BASE.parent.parent
 for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
 
 REGISTRY = BASE / "data" / "asia_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
@@ -171,7 +178,7 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
         rp = RobotFileParser()
         robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
         req = urllib.request.Request(robots, headers={"User-Agent": agent})
-        with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
+        with fenced_urlopen(req, timeout=12, context=_TLS) as r:   # the one fetch door
             rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
         return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
     except Exception as exc:
@@ -365,6 +372,19 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
+    # THE LIVE-INPUT CHECK (libs/data/terms_fence.py) -- NOT a robots or licence label (those
+    # stay labels, LAWS 5e). A collected series is live input, so a source that is IDEAS_ONLY or
+    # held is never requested, not even for robots.txt. The row names the policy row.
+    try:
+        from libs.data import terms_fence as _tf
+        fenced = _tf.input_source(url, sid)   # live input: IDEAS_ONLY or held
+    except Exception as exc:                 # fail CLOSED: a fence that cannot load fetches nothing
+        rec.update({"status": "BLOCKED_TERMS", "why": f"terms fence unavailable: {exc!r}"})
+        return rec
+    if fenced:
+        rec.update({**_tf.refusal(fenced)})
+        return rec
+
     # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading
     # rides on the row as provenance -- it routes what the desk may REDISTRIBUTE -- and the fetch
     # proceeds either way. The `BLOCKED_BY_ROBOTS` status it used to set is deleted.
@@ -394,13 +414,18 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
     req = urllib.request.Request(url, data=body_out, headers=headers)
+    from libs.data import terms_fence as _tfg
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        # THE ONE FETCH DOOR: a redirect into a login / CAPTCHA wall is refused, not followed.
+        with fenced_urlopen(req, timeout=timeout, context=_TLS) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
             last_mod = r.headers.get("Last-Modified")
             body = r.read(MAX_BYTES)
+    except _tfg.TermsFenced as e:
+        rec.update(_tfg.refusal(e.platform, redirected=True))
+        return rec
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
         if code == 304:
@@ -625,7 +650,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_WITH_SUBSTITUTE", "BLOCKED_TERMS", "BLOCKED_BY_ROBOTS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue

@@ -612,8 +612,33 @@ def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     return testable, coverage
 
 
+def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
+    """THE LIVE-INPUT CHECK (libs/data/terms_fence.py, rule 4 of the 2026-10-13 ruling): SKIP a row
+    only when its DECLARED LIVE INPUT DATA comes from an IDEAS_ONLY or held source, counted by
+    source. A row's idea lineage (Reddit, X, a forum) never skips it. The docket build checks
+    too; this is the second lock, because `test_grid.json` (the bridge) and the merged results
+    file reach this stage without passing through the docket build. A policy that cannot load
+    raises: no backtest runs on an unchecked grid."""
+    from libs.data import terms_fence as tf
+    kept: list[dict] = []
+    by_platform: Counter = Counter()
+    for r in rows:
+        p = tf.quarantined_row(r) if isinstance(r, dict) else None
+        if p:
+            by_platform[p] += 1
+            continue
+        kept.append(r)
+    return kept, {"skipped": sum(by_platform.values()), "by_platform": dict(by_platform),
+                  "reason": ("live input data from an IDEAS_ONLY or held source "
+                             "(libs/data/terms_fence.py)")}
+
+
 def run_all() -> list[dict]:
     raw_grid = _docket_rows()
+    raw_grid, terms_q = quarantine_terms_fenced(raw_grid)
+    if terms_q["skipped"]:
+        print(f"  live-input check: {terms_q['skipped']} row(s) QUARANTINED, not backtested "
+              f"{terms_q['by_platform']}")
     if not raw_grid:
         print("No candidates: neither the docket nor test_grid.json yielded a row.")
         return []
@@ -626,6 +651,7 @@ def run_all() -> list[dict]:
     grid, routing = route_by_lane(grid)
     grid, coverage = hold_uncoverable(grid)
     coverage["routing"] = routing
+    coverage["terms_quarantine"] = terms_q
     # THE MARKET CONSTITUTION, READ AND RECORDED (LAWS 5m compiler): which of these cells run
     # under a compiled session/settlement clause, and which symbols carry none. Never a gate.
     coverage["constraints"] = constraints_coverage([str(c.get("symbol") or "") for c in grid])
@@ -672,6 +698,13 @@ def run_all() -> list[dict]:
         prior_by_key = {_cell_key(r): r for r in prior} if isinstance(prior, list) else {}
     except (OSError, ValueError):
         prior_by_key = {}
+    # BANKED RESULTS PASS THE SAME LIVE-INPUT CHECK (the merge consumes them as a producer).
+    _kept_prior, _q_prior = quarantine_terms_fenced(list(prior_by_key.values()))
+    if _q_prior["skipped"]:
+        prior_by_key = {_cell_key(r): r for r in _kept_prior}
+        print(f"  live-input check: {_q_prior['skipped']} banked result row(s) "
+              f"dropped {_q_prior['by_platform']}")
+    terms_q["banked_results_dropped"] = _q_prior["skipped"]
 
     # Untested cells sort before tested ones ("" < any ISO timestamp), then oldest first.
     grid.sort(key=lambda c: (cursor.get(_cell_key(c), ""), str(c.get("symbol"))))

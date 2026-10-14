@@ -135,7 +135,7 @@ def test_the_principle_says_labels_never_stop_mining() -> None:
 def test_weight_caps_lower_evidence_and_never_block_research() -> None:
     """Fringe, retail and forum ground is a FIRST-CLASS INPUT: mined and tested exactly as hard
     as an official release, carrying less weight. Weight is about truth, permission is not."""
-    routed = ac.route({"source_id": "r/wallstreetbets", "url": "https://reddit.test/r/x",
+    routed = ac.route({"source_id": "forum/gold-board", "url": "https://forum.test/t/x",
                        "source_class": "retail_ecology"},
                       {"claim": "everyone is long gold", "credibility": "FRINGE"})
 
