@@ -47,6 +47,7 @@ point-in-time archive, and cursor updates. A fetcher that cannot run says WHY in
 """
 from __future__ import annotations
 
+import contextlib
 import csv
 import hashlib
 import html
@@ -64,11 +65,14 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise
+from pathlib import Path
 from typing import Any
 
+from libs.data.polite_fetch import DESK_UA
+
 UNMEASURED = "UNMEASURED"
-UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-      "Chrome/124.0.0.0 Safari/537.36 quant-desk-free-stack/1.0 (research)")
+#: The desk's honest User-Agent (auditor ruling 2026-10-14: browser impersonation is forbidden).
+UA = DESK_UA
 HTTP_TIMEOUT_S = 25.0
 MAX_BYTES = 40 * 1024 * 1024
 
@@ -1040,32 +1044,141 @@ def parse_trends_multiline(raw: bytes | None) -> list[tuple[str, float]]:
     return out
 
 
+#: THE HARD STOP for Google Trends (`desks/mt5/research/hard_stop.py`, shared with
+#: `side_channels/google_trends_miner.py`): one persisted backoff marker and one register entry,
+#: whichever of the two Trends readers was refused. While the marker is active nothing is sent.
+_DESK_ROOT = Path(__file__).resolve().parents[2] / "desks" / "mt5"
+GTRENDS_BLOCK_STATE = _DESK_ROOT / "data" / "google_trends_block.json"
+GTRENDS_REGISTER_KEY = "google_trends"
+GTRENDS_HOST = "trends.google.com"
+#: Set on every Trends observation: the merge stamps it no earlier than the fetch that returned
+#: it, never at its own period (`free_stack_hunter.merge_obs`). Each response rescales its whole
+#: window, so a point older than the first fetch was never knowable in this form at its date.
+STAMP_AT_FETCH = "stamp_at_fetch"
+
+
+def _hard_stop() -> Any:
+    """`desks/mt5/research/hard_stop.py`, loaded by path (libs does not import the desk tree)."""
+    import importlib.util
+    import sys
+    mod = sys.modules.get("research.hard_stop") or sys.modules.get("hard_stop")
+    if mod is not None:
+        return mod
+    spec = importlib.util.spec_from_file_location(
+        "hard_stop", _DESK_ROOT / "research" / "hard_stop.py")
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    sys.modules["hard_stop"] = mod
+    return mod
+
+
+def _refusal(exc: BaseException) -> tuple[int, dict[str, str]] | None:
+    """(status, response headers) when `exc` is a 401/403/429, else None."""
+    code: int | None = None
+    hdrs: Any = None
+    for e in (exc, exc.__cause__):
+        if isinstance(e, urllib.error.HTTPError):
+            code, hdrs = int(e.code), e.headers
+            break
+    if code is None and isinstance(exc, FetchError) and exc.reason.startswith("http_"):
+        with_code = exc.reason[5:]
+        code = int(with_code) if with_code.isdigit() else None
+    if code not in (401, 403, 429):
+        return None
+    return code, {str(k): str(v) for k, v in (hdrs.items() if hdrs is not None else [])}
+
+
+def _read_marker(path: Path) -> dict[str, Any] | None:
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
 def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
-                  now: datetime) -> Harvest:
+                  now: datetime, *, block_state: Path | None = None,
+                  register: Path | None = None) -> Harvest:
     """Interest over time for each term. THE PUBLISHED COLUMN IS THE LOG CHANGE, computed inside
     one response: Trends rescales every response to its own window maximum, so a LEVEL carries the
-    future through its normaliser, while a within-response ratio does not."""
+    future through its normaliser, while a within-response ratio does not.
+
+    UNDER THE HARD STOP: the shared marker is checked before EVERY request; a 401/403/429 writes
+    the marker, records the block in the register, sets BLOCKED and ends the pass -- nothing
+    from the refused term is kept, nothing more is sent. Every observation is stamped at fetch
+    time (`STAMP_AT_FETCH`), never back-dated to its own period; the trailing isPartial point is
+    dropped by the parser, never counted as final."""
+    hs = _hard_stop()
+    state = block_state or GTRENDS_BLOCK_STATE
+    reg = register or hs.BLOCKED_REGISTER
+    prior = _read_marker(state)
     h = Harvest(str(row["id"]))
+    hdr = {"User-Agent": UA, "Accept": "application/json"}
     base = "https://trends.google.com/trends/api"
+    answered = 0
+    blocked: dict[str, Any] | None = None
+
+    def _ask(url: str, url_class: str) -> bytes | None:
+        nonlocal blocked, answered
+        if blocked is not None:
+            return None
+        if hs.active(prior, now) or hs.active(_read_marker(state), now):
+            blocked = _read_marker(state) or prior or {}
+            return None
+        h.requests += 1
+        try:
+            raw = fetch(url, hdr, None)
+        except Exception as exc:
+            ref = _refusal(exc)
+            if ref is None:
+                h.failures[classify(exc)] += 1
+                h.notes.append(f"{classify(exc)}: {url[:120]}")
+                return None
+            marker = hs.block_marker(ref[0], url_class, ref[1], now, prior)
+            with contextlib.suppress(OSError):
+                state.parent.mkdir(parents=True, exist_ok=True)
+                state.write_text(json.dumps(marker, indent=1), encoding="utf-8")
+            with contextlib.suppress(OSError):
+                hs.record_block(marker, reg, key=GTRENDS_REGISTER_KEY, host=GTRENDS_HOST)
+            h.failures[marker["status"]] += 1
+            blocked = marker
+            return None
+        answered += 1
+        return raw
+
     for term, targets in row.get("terms") or TRENDS_TERMS:
         req = {"comparisonItem": [{"keyword": term, "geo": "", "time": "today 3-m"}],
                "category": 0, "property": ""}
         url = (f"{base}/explore?hl=en-US&tz=0&req="
                f"{urllib.parse.quote(json.dumps(req, separators=(',', ':')))}")
-        widget = parse_trends_explore(_get(fetch, h, url))
+        widget = parse_trends_explore(_ask(url, "explore"))
+        if blocked is not None:
+            break
         if not widget or not widget.get("token"):
             continue
         url2 = (f"{base}/widgetdata/multiline?hl=en-US&tz=0&req="
                 f"{urllib.parse.quote(json.dumps(widget['req'], separators=(',', ':')))}"
                 f"&token={urllib.parse.quote(str(widget['token']))}")
-        pts = parse_trends_multiline(_get(fetch, h, url2))
+        pts = parse_trends_multiline(_ask(url2, "widgetdata"))
+        if blocked is not None:
+            break                                   # nothing from the refused term is kept
         col = trends_col(term)
         h.columns[col] = {"hypothesis": list(targets), "event": [],
                           "why": f"search attention log-change, '{term}'"}
         for (_d0, v0), (d1, v1) in pairwise(pts):
-            h.obs.append({"key": col, "period_end": d1,
+            h.obs.append({"key": col, "period_end": d1, STAMP_AT_FETCH: True,
                           "value": round(math.log((1.0 + v1) / (1.0 + v0)), 5)})
         h.raw += [{"term": term, "day": d, "value": v} for d, v in pts[-7:]]
+    if blocked is not None:
+        h.status = str(blocked.get("status") or "METHOD_BLOCKED")
+        h.detail = (f"HARD STOP: HTTP {blocked.get('http_status')} on "
+                    f"{blocked.get('url_class')}, backed off until {blocked.get('until')}; "
+                    "no retry, no other route")
+        return h
+    if answered and prior is not None:
+        with contextlib.suppress(OSError):
+            state.unlink(missing_ok=True)   # an answered, unrefused pass ends the backoff ladder
     if not h.obs:
         h.status = "BLOCKED" if h.failures else "EMPTY"
         h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "no points"

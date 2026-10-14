@@ -16,6 +16,8 @@ WHAT ONE PASS DOES, in order, inside its own wall budget:
      an overwrite, and the research series always serves the FIRST vintage. A value present in a
      source's first-ever fetch is BACKFILL and is timed at period_end + the declared lag; every
      later value is timed at max(that, first_seen) -- it cannot be known before the box saw it.
+     An observation marked `stamp_at_fetch` (Google Trends, which rescales every response) is
+     never backfill: it is timed at max(period_end + lag, first_seen) on every fetch.
   4. PUBLISHES THE SERIES THE FAMILIES READ: `data/lake/series/fs_<id>.parquet` (an
      `available_time` column plus one numeric column per key) -- the exact frame
      `mt5desk.family_exogenous_conditioner` and `mt5desk.family_alt_series` load -- and
@@ -262,8 +264,11 @@ def merge_obs(path: Path, new: list[dict[str, Any]], *, now: datetime, lag_h: fl
             continue
         pub = _parse(o.get("publication_time"))
         avail = pub if pub is not None else pe + timedelta(hours=lag_h)
-        backfill = first_fetch and k not in last
-        archive = pub is not None and k not in last
+        # A source whose every response rescales its window (Google Trends) marks its points
+        # STAMP_AT_FETCH: none is ever back-dated to its own period, first fetch or not.
+        at_fetch = bool(o.get("stamp_at_fetch"))
+        backfill = first_fetch and k not in last and not at_fetch
+        archive = pub is not None and k not in last and not at_fetch
         at = avail if (backfill or archive) else max(avail, now)
         vintage = ("archive" if archive else BACKFILL if backfill else
                    "revision" if k in last else "first")
