@@ -2127,10 +2127,11 @@ def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
     try:
         from mt5desk.live_policy import admit
     except ImportError:                                    # pragma: no cover - box path only
-        return live, []
-    keep, refused = admit(live)
-    notes = [f"LIVE POLICY refused {r.get('name') or r.get('symbol')}: {why}"
-             for r, why in refused]
+        keep, notes = live, []
+    else:
+        keep, refused = admit(live)
+        notes = [f"LIVE POLICY refused {r.get('name') or r.get('symbol')}: {why}"
+                 for r, why in refused]
     # A PRINCIPAL STOP IS A RECORD, NOT A STATUS (2026-10-14). Three stopped gap-decay sleeves
     # came back LIVE overnight through heal_silent_demotions and the principal book; the stop
     # lives in data/PRINCIPAL_STOPS.json and only the principal's recorded resume lifts it.
@@ -2139,7 +2140,7 @@ def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
     notes += [f"PRINCIPAL STOP holds {r.get('name') or r.get('symbol')}: {why}"
               for r, why in stopped]
     if problem:
-        notes.append(f"PRINCIPAL STOPS UNMEASURED, nothing held by them this pass: {problem}")
+        notes.append(f"PRINCIPAL STOPS UNMEASURED, holding the built-in stops this pass: {problem}")
     # FEED HEALTH IS AN INPUT, NEVER A FILTER (LAWS 5m observatory; GROWTH_GOVERNANCE Rule 1).
     # The observatory (research/feed_clock_lab.py) stamps data/feed_health.json beside this
     # file; the reading rides on the row for entry timing to read and drops nothing.

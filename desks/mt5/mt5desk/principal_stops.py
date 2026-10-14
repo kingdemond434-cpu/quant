@@ -4,15 +4,17 @@ principal's own resume decision is recorded.
 WHY THIS EXISTS (measured 2026-10-14). On 2026-10-13 at 21:30Z the AUDCHF, EURZAR and USDZAR
 overnight-gap-decay sleeves were stood down on the box (status STANDBY, risk 0.0) after the
 principal said "Yes remove from fusion live" (20:41Z) and left them out of the book (20:53-20:57Z).
-The stand-down wrote its reason as `standby_reason`, a field `scripts/heal_silent_demotions.py`
-did not read, so the healer took it for an accident and lifted all three back to LIVE: EURZAR at
-21:48Z, USDZAR at 23:48Z and AUDCHF at 01:48Z. (#397 now makes the healer read any `*_reason`.) The promoter's principal-book path then found them LIVE and re-applied the
-0.10 risk from CERT_BOOK_LIVE.json. Nothing anywhere recorded that a human had stopped them.
+The stand-down wrote its reason as `standby_reason`, a field
+`scripts/heal_silent_demotions.py` did not read, so the healer took it for an accident and lifted
+all three back to LIVE: EURZAR at 21:48Z, USDZAR at 23:48Z and AUDCHF at 01:48Z (#397 makes the
+healer read any `*_reason`). The promoter's principal-book path then found them LIVE and
+re-applied the 0.10 risk from CERT_BOOK_LIVE.json. Nothing recorded that a human had stopped them.
 
 So a stop is now a RECORD, not a status. data/PRINCIPAL_STOPS.json lists each stopped identity
 with who stopped it and on whose word. While a stop is active:
   - the gateway's roster (`decision_core.load_sleeves_verbose`) drops every LIVE row it matches,
-    so no new risk is placed however the row became LIVE;
+    so no new risk is placed however the row became LIVE; with the file absent or unreadable it
+    holds the built-in stops (`BUILTIN`), never nothing;
   - `heal_silent_demotions` never lifts a matching row;
   - `scripts/check_principal_stops.py` goes RED for any matching LIVE row with risk above 0.
 Open positions are not touched here: the gateway manages them on the unfiltered roster.
@@ -24,6 +26,7 @@ MATCHING. A stop names a canonical identity `symbol|family|selector`, lowercased
 promoter and the gauntlet already use), or an exact sleeve name. An identity stop covers every
 re-mint of that sleeve: a `_principal_YYYYMMDD` copy, a new parameter hash, a different exec lane.
 """
+
 from __future__ import annotations
 
 import json
@@ -44,30 +47,69 @@ def identity(row: dict[str, Any]) -> str:
 def resumed(entry: dict[str, Any]) -> bool:
     """True only for a recorded principal resume decision."""
     res = entry.get("resumed")
-    return (isinstance(res, dict) and str(res.get("by") or "").strip().lower() == "principal"
-            and bool(str(res.get("message") or "").strip()))
+    return (
+        isinstance(res, dict)
+        and str(res.get("by") or "").strip().lower() == "principal"
+        and bool(str(res.get("message") or "").strip())
+    )
+
+
+#: THE STOPS THE PRINCIPAL ALREADY ORDERED, held by the gateway when the file is absent or
+#: unreadable, so a missing record never lets them trade (it fails closed on what was ordered, and
+#: holds nothing new). A stop added later lives only in the file; this list changes only with the
+#: principal's word, exactly as the file does.
+BUILTIN: tuple[dict[str, Any], ...] = (
+    {
+        "identity": "audchf|overnight_gap_decay|asia",
+        "by": "principal",
+        "at": "2026-10-13T20:41:00+00:00",
+        "authority": "built-in: 'Yes remove from fusion live'",
+    },
+    {
+        "identity": "usdzar|overnight_gap_decay|asia",
+        "by": "principal",
+        "at": "2026-10-13T20:53:00+00:00",
+        "authority": "built-in: left out of the 20:53Z book",
+    },
+    {
+        "identity": "eurzar|overnight_gap_decay|asia",
+        "by": "CRO stop-the-bleed",
+        "at": "2026-10-13T21:30:29+00:00",
+        "authority": "built-in: stood down 21:30Z",
+    },
+)
 
 
 def load(path: Path) -> tuple[list[dict[str, Any]], str | None]:
-    """(active stop entries, problem). An absent, unreadable or malformed file returns its problem:
-    the healer then restores nothing and the fence reads UNMEASURED or RED. It stops nothing it
-    cannot name, so the gateway logs the problem and holds nothing by it."""
+    """(active stop entries, problem).
+
+    An absent, unreadable or malformed file returns the built-in stops and its problem: the
+    gateway holds what the principal already ordered, the healer restores nothing, and the fence
+    reads UNMEASURED or RED. A single bad entry is skipped and named; the valid ones still hold.
+    Resumes in a file that cannot be read are not honoured, so the built-in stops hold there too.
+    """
     if not path.exists():
-        return [], f"{path.name} absent"
+        return list(BUILTIN), f"{path.name} absent"
     try:
         doc = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
-        return [], f"{path.name} unreadable ({type(exc).__name__}: {exc})"
+        return list(BUILTIN), f"{path.name} unreadable ({type(exc).__name__}: {exc})"
     stops = doc.get("stops") if isinstance(doc, dict) else None
     if not isinstance(stops, list):
-        return [], f"{path.name} has no `stops` list"
+        return list(BUILTIN), f"{path.name} has no `stops` list"
     active: list[dict[str, Any]] = []
+    bad: list[str] = []
     for e in stops:
         if not isinstance(e, dict) or not (e.get("identity") or e.get("name")):
-            return [], f"{path.name} holds an entry with neither identity nor name: {e!r}"
-        if not resumed(e):
+            bad.append(repr(e)[:80])
+        elif not resumed(e):
             active.append(e)
-    return active, None
+    return active, (
+        f"{path.name} skipped {len(bad)} entry(ies) with neither identity nor "
+        f"name: {'; '.join(bad)}"
+        if bad
+        else None
+    )
 
 
 def match(row: dict[str, Any], stops: list[dict[str, Any]]) -> dict[str, Any] | None:
@@ -82,12 +124,15 @@ def match(row: dict[str, Any], stops: list[dict[str, Any]]) -> dict[str, Any] | 
 
 
 def why(entry: dict[str, Any]) -> str:
-    return (f"principal stop on {entry.get('identity') or entry.get('name')} "
-            f"({entry.get('by')}, {entry.get('at')}): {entry.get('authority')}")
+    return (
+        f"principal stop on {entry.get('identity') or entry.get('name')} "
+        f"({entry.get('by')}, {entry.get('at')}): {entry.get('authority')}"
+    )
 
 
-def split(rows: list[dict[str, Any]], path: Path
-          ) -> tuple[list[dict[str, Any]], list[tuple[dict[str, Any], str]], str | None]:
+def split(
+    rows: list[dict[str, Any]], path: Path
+) -> tuple[list[dict[str, Any]], list[tuple[dict[str, Any], str]], str | None]:
     """(rows to keep, [(stopped row, why)], problem)."""
     stops, problem = load(path)
     keep: list[dict[str, Any]] = []
