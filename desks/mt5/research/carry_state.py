@@ -359,7 +359,8 @@ def log_daily_swaps(panel_dir: Path | None = None, out_dir: Path | None = None,
             "unreadable_logs": unreadable,
             "first_day": all_days[0] if all_days else None,
             "last_day": all_days[-1] if all_days else None,
-            "status": ("LOGGED" if days else
+            # an unreadable log was skipped (never overwritten): the pass is not a clean LOGGED
+            "status": (("LOGGED_WITH_UNREADABLE" if unreadable else "LOGGED") if days else
                        "UNMEASURED: no swap capture in the panel (no terminal evidence here)"),
             "rule": ("one row per symbol per complete UTC day: the day's last capture, "
                      "available_time = that capture's found_at; append-only, never rewritten")}
@@ -642,6 +643,10 @@ def main(argv: list[str] | None = None) -> int:
     lake = log_daily_swaps(args.panel, args.lake_dir)
     print(f"carry_state: swap log {lake['status']}: {lake['n_symbols']} symbols, "
           f"+{lake['n_rows_added']} day rows ({lake['n_rows_total']} held) -> {lake['out_dir']}")
+    if lake.get("unreadable_logs"):
+        print(f"carry_state: {len(lake['unreadable_logs'])} unreadable swap log(s) skipped, "
+              "never overwritten: " + ", ".join(str(u.get("symbol")) for u in
+                                                 lake["unreadable_logs"]))
     rep = build(args.panel, args.terms, args.universe)
     rep["swap_lake"] = lake
     if not rep["symbols"]:

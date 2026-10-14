@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 DESK = Path(__file__).resolve().parents[1]
 for _p in (str(DESK), str(DESK / "research"), str(DESK.parent.parent)):
@@ -101,3 +102,20 @@ def test_an_unreadable_log_is_skipped_and_never_overwritten(tmp_path: Path) -> N
     assert bad.read_bytes() == before                              # untouched
     assert [u["symbol"] for u in rep["unreadable_logs"]] == ["EURUSD"]
     assert (lake / "swap_USD_JPY.csv").exists()                    # other symbols still logged
+
+
+def test_an_unreadable_log_marks_the_pass_and_is_printed(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Auditor should-fix: a pass that skipped an unreadable log is LOGGED_WITH_UNREADABLE, not a
+    clean LOGGED, and main prints how many were skipped."""
+    panel, lake = _panel(tmp_path), tmp_path / "lake"
+    lake.mkdir()
+    (lake / "swap_EURUSD.csv").write_bytes(b"\x00\xff not,a\ncsv")
+    rep = C.log_daily_swaps(panel, lake, NOW)
+    assert rep["status"] == "LOGGED_WITH_UNREADABLE" and len(rep["unreadable_logs"]) == 1
+    C.main(["--panel", str(panel), "--terms", str(tmp_path / "noterms"),
+            "--universe", str(tmp_path / "nouni"), "--lake-dir", str(lake),
+            "--out", str(tmp_path / "carry_state.json")])
+    out = capsys.readouterr().out
+    assert "swap log LOGGED_WITH_UNREADABLE" in out
+    assert "1 unreadable swap log(s) skipped" in out and "EURUSD" in out

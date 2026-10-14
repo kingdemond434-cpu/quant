@@ -508,7 +508,7 @@ def test_rerouted_pages_are_fetched_with_the_index_agent(monkeypatch: pytest.Mon
     def get(url: str, headers: dict[str, str] | None = None, **k: Any) -> Any:
         sent.append((url, dict(headers or {})))
         return SimpleNamespace(ok=True, status=200, error=None,
-                               text="<html><title>t</title><body>" + "rule. " * 200
+                               text="<html><title>t</title><body>" + "rule. " * 600
                                     + "</body></html>")
     monkeypatch.setattr(D.pf, "get", get)
     monkeypatch.setattr(D.time, "sleep", lambda *_: None)
@@ -549,3 +549,18 @@ def test_a_subdomain_page_needs_its_own_hosts_robots() -> None:
     # read and disallowing, though the parent allows: never fetched
     out = D.site_index_urls("ex.com", get=make("User-agent: *\nDisallow: /ok/\n"))
     assert "https://m.ex.com/ok/y" not in out["urls"] and out["robots_disallowed"] == 1
+
+
+def test_tga_stamp_rolls_past_one_off_federal_closures() -> None:
+    """Auditor should-fix (gd-queue-rows, folded here): executive-order closures are a dated set
+    unioned into the business-day roll; late-biased, never early."""
+    body = json.dumps({"data": [{"record_date": "2025-01-08", "account_type":
+                                 "Treasury General Account (TGA) Closing Balance",
+                                 "close_today_bal": "null", "open_today_bal": "800000"}]})
+    (o,) = A.parse_net_liquidity(body.encode(), A.Ctx())
+    assert o.published_at == datetime(2025, 1, 10, 22, tzinfo=UTC)         # not 01-09
+    assert A.rule_net_liquidity(date(2025, 1, 8)) == datetime(2025, 1, 10, 22, tzinfo=UTC)
+    closures = {date(2024, 12, 24), date(2025, 1, 9), date(2025, 12, 24), date(2025, 12, 26)}
+    assert set(A.US_FEDERAL_CLOSURES) == closures
+    assert A.rule_net_liquidity(date(2024, 12, 23)) == datetime(2024, 12, 26, 22, tzinfo=UTC)
+    assert A.rule_net_liquidity(date(2025, 12, 23)) == datetime(2025, 12, 29, 22, tzinfo=UTC)

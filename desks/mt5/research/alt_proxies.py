@@ -1895,9 +1895,9 @@ def _observed(d: date) -> date:
 
 def us_federal_holidays(year: int) -> frozenset[date]:
     """5 U.S.C. 6103 holidays as observed: the days the Treasury publishes no DTS and the Board no
-    release (GD queue-rows audit MF1). An ad-hoc closure (a day of mourning) is not knowable in
-    advance and is not here; it can only make a real stamp LATER than this rule's, never earlier
-    than the record itself."""
+    release (GD queue-rows audit MF1). One-off closures by executive order are the dated set
+    US_FEDERAL_CLOSURES, unioned in by `_roll_business_day`; one not yet listed can only make a
+    real stamp LATER than this rule's, never earlier than the record itself."""
     days = {_observed(date(year, 1, 1)), _nth_weekday(year, 1, 0, 3), _nth_weekday(year, 2, 0, 3),
             _nth_weekday(year, 5, 0, -1), _observed(date(year, 7, 4)), _nth_weekday(year, 9, 0, 1),
             _nth_weekday(year, 10, 0, 2), _observed(date(year, 11, 11)),
@@ -1909,8 +1909,16 @@ def us_federal_holidays(year: int) -> frozenset[date]:
     return frozenset(days)
 
 
+#: ONE-OFF FEDERAL CLOSURES by executive order (federal offices shut, no DTS that day): the
+#: Christmas Eve closures of 2024-12-24 and 2025-12-24, 2025-12-26, and the 2025-01-09 national
+#: day of mourning. Unioned into the roll, so a stamp can only move LATER (late-biased).
+US_FEDERAL_CLOSURES: frozenset[date] = frozenset({
+    date(2024, 12, 24), date(2025, 1, 9), date(2025, 12, 24), date(2025, 12, 26)})
+
+
 def _roll_business_day(t: datetime) -> datetime:
-    while t.weekday() >= 5 or t.date() in us_federal_holidays(t.year):
+    while (t.weekday() >= 5 or t.date() in us_federal_holidays(t.year)
+           or t.date() in US_FEDERAL_CLOSURES):
         t += timedelta(days=1)
     return t
 
