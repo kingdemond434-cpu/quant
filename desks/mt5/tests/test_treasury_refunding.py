@@ -698,3 +698,33 @@ def test_a_voided_pair_is_no_step_either() -> None:
     ]
     got = tr.surprises(rows, gaps=[(date(2026, 2, 4), date(2026, 8, 5))])
     assert got[3]["size_surprise"] == pytest.approx(-0.1, abs=1e-6), "the +100% pair is void"
+
+
+@pytest.mark.parametrize(
+    ("text", "want"),
+    [
+        (
+            "Treasury anticipates no further reductions in nominal coupon auction sizes; "
+            "increases likely in the 2-year nominal coupon.",
+            None,
+        ),
+        (
+            "Treasury anticipates that, with no further reductions in bills, it will increase "
+            "nominal coupon auction sizes.",
+            1,
+        ),
+        (
+            "Treasury anticipates no need to reduce nominal coupon auction sizes, and will "
+            "increase them.",
+            None,
+        ),
+        (
+            "Treasury anticipates maintaining nominal coupon and FRN auction sizes for at least "
+            "the next several quarters.",
+            0,
+        ),
+    ],
+)
+def test_a_held_zero_needs_nothing_else_moving(text: str, want: int | None) -> None:
+    """Audit must-fix on #394 v7: a false 0 against a true +1 is never written."""
+    assert tr.guidance(text) == want

@@ -137,13 +137,30 @@ _OTHER_SUPPLY = re.compile(
 #: rely on bills") -- audit should-fix on #394 v3.
 _NEG_BEFORE = re.compile(
     r"\bnot\b(?!\s+only)|\bno longer\b|n't\b|\bwithout\b|\bcannot\b"
-    r"|\bnever\b|\bunlikely\b"
-    # a bare "no" negates only when the guided word follows within two
-    # words ("no increase", "no need to"), never "no later than", "no doubt"
-    r"|\bno\s+(?:[a-z]+\s+){0,2}?(?:increas|reduc|decreas|cuts?\b|need"
-    r"|expectation|intention|plans?\b|anticipat)",
+    r"|\bnever\b|\bunlikely\b",
     re.I,
 )
+#: A bare "no" negates a direction only when the word it binds, within two words, is THAT
+#: direction's own stem or need/expectation/intention/plan/anticipate ("no increase", "no need
+#: to"); never "no later than", "no doubt", and never "no further reductions" for an increase
+#: (audit must-fixes on #394 v6 and v7).
+_STEM = {1: r"increas", -1: r"reduc|decreas|cuts?\b|cutting\b"}
+_NO = {
+    v: re.compile(
+        r"\bno\s+(?:[a-z]+\s+){0,2}?(?:"
+        + stem
+        + r"|need|expectation|intention|plans?\b|anticipat)",
+        re.I,
+    )
+    for v, stem in _STEM.items()
+}
+_DIRECTION = {v: re.compile(r"\b(?:" + stem + r")", re.I) for v, stem in _STEM.items()}
+
+
+def _negated(text: str, v: int) -> bool:
+    return bool(_NEG_BEFORE.search(text) or _NO[v].search(text))
+
+
 _NEG_AFTER = re.compile(
     r"\b(?:not|no longer|unlikely to)\b(?:\s+be)?\s+"
     r"(?:needed|necessary|required|warranted)",
@@ -293,9 +310,9 @@ def _clause_reading(clause: str) -> int | None:
         prefix = _REASON.split(clause[:verb])[-1]
         phrase = _REASON.split(clause[max(0, mt.start() - NEG_LEAD) : mt.end()])[-1]
         after = _REASON.split(clause[mt.end() : mt.end() + 60])[0]
-        if _NEG_BEFORE.search(phrase) or _NEG_AFTER.search(after):
+        if _negated(phrase, v) or _NEG_AFTER.search(after):
             held = True  # "does not anticipate needing to increase": that direction held
-        elif _NEG_BEFORE.search(prefix) or any(
+        elif _negated(prefix, v) or any(
             not re.search(r"\bnot only\s*$", clause[: f.start()], re.I)
             for f in _FLAT.finditer(clause)
         ):
@@ -310,7 +327,11 @@ def _clause_reading(clause: str) -> int | None:
         return 0 if held else None
     bare = _VERB.search(clause)
     lead = clause[max(0, bare.start() - 40) : bare.start()] if bare else ""
-    if bare and _NEG_BEFORE.search(_REASON.split(lead)[-1]):
+    if (
+        (bare
+        and _NEG_BEFORE.search(_REASON.split(lead)[-1] + bare.group(0)))
+        or (bare and any(_NO[v].search(_REASON.split(lead)[-1] + bare.group(0)) for v in _STEM))
+    ):
         return 0  # "cannot foresee a need to increase", with no guidance verb
     if _FLAT.search(clause):
         return 0
@@ -323,6 +344,7 @@ def guidance(text: str) -> int | None:
     increase reads as held (audit must-fixes 1 and 2 on #394). Clauses that disagree, or none
     that say anything, are None: UNMEASURED, never a guess."""
     seen = set()
+    live = False
     for sent in _sentences(text):
         if not _ABOUT.search(sent):
             continue
@@ -330,7 +352,30 @@ def guidance(text: str) -> int | None:
             v = _clause_reading(clause)
             if v is not None:
                 seen.add(v)
-    return seen.pop() if len(seen) == 1 else None
+            live = live or _live_direction(clause)
+    if len(seen) != 1:
+        return None
+    got = seen.pop()
+    # A HELD 0 IS ONLY TRUE WHEN NOTHING IN THE STATEMENT MOVES (audit must-fix on #394 v7):
+    # "...; increases likely in the 2-year", "..., and will increase them" leave it UNMEASURED.
+    return None if got == 0 and live else got
+
+
+def _live_direction(clause: str) -> bool:
+    """The clause names an increase or a reduction that nothing before it in the clause
+    negates, whose object is not other supply (bills, TIPS, FRN). Read with or without a
+    guidance verb and whether or not the clause names coupons."""
+    for v, rx in _DIRECTION.items():
+        for mt in rx.finditer(clause):
+            lead = _REASON.split(clause[: mt.end()])[-1]
+            obj = _REASON.split(clause[mt.end() : mt.end() + 40])[0]
+            if (
+                not _negated(lead, v)
+                and not _NEG_AFTER.search(obj)
+                and not (_OTHER_SUPPLY.search(obj))
+            ):
+                return True
+    return False
 
 
 def parse(text: str, url: str, seen: str, *, today: date | None = None) -> dict[str, Any] | None:
