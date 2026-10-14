@@ -2226,7 +2226,7 @@ def regime_children(specs: list[LatentSpec], series_root: Path, state: dict[str,
         if res.get("verdict") == "PASS":
             cand["evidence"] = {k: res.get(k) for k in (
                 "n_in", "n_signals", "duty_cycle", "mean_in", "placebo_mean", "p_placebo",
-                "p_charged", "n_trials", "why")}
+                "p_bar", "n_trials", "why")}
             passed.append(cand)
     return passed, sum(by_family.values()), gates, by_family
 

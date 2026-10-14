@@ -527,7 +527,8 @@ def test_power_is_reported_and_a_low_power_miss_is_underpowered_not_fail() -> No
     assert by[("release_gain", 0.05)]["underpowered_rate"] > 0
     m250, m1000 = min_detectable_ic(250), min_detectable_ic(1000)
     assert m250 is not None and m1000 is not None and m1000 < m250
-    assert (min_detectable_ic(1000, 40) or 0.0) > m1000             # the charge costs power
+    from libs.research.release_gain import TIER_S_T_BAR
+    assert min_detectable_ic(1000, t_bar=TIER_S_T_BAR) == m1000     # the bar is fixed
 
 
 # ============================================================================ roster

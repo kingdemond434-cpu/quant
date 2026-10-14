@@ -19,9 +19,10 @@ overlapping windows are one observation counted several times.
 
 UNMEASURED is a verdict (L1.28a): fewer than `min_events` independent windows is not a zero.
 UNDERPOWERED is a verdict too, distinct from FAIL: a cell that did not pass AND whose minimum
-detectable IC (80% power at its own n and Bonferroni charge) is above `TARGET_IC` could not have
-detected a realistic edge, so its miss says nothing about the edge. `power_table` measures the
-detection rate by simulation with a planted IC; the null row is the false-positive rate.
+detectable IC (80% power at its own n against the fixed Tier S bar) is above `TARGET_IC` could
+not have detected a realistic edge, so its miss says nothing about the edge. `power_table`
+measures the detection rate by simulation with a planted IC; the null row is the
+false-positive rate.
 Pure numpy/pandas; no desk paths, so it is testable on synthetic data with a planted effect.
 """
 from __future__ import annotations
@@ -52,17 +53,26 @@ ALPHA_FAMILY = 0.05
 TARGET_IC = 0.05
 #: Power at which the minimum detectable IC is quoted.
 POWER = 0.80
+#: THE FIXED TIER S BAR: |t| >= 2.84 (N=5 pinned trials, 1/(T-1), as the desk defines Tier S),
+#: for EVERY family size -- never lower for a small family, never higher for a large one (the
+#: standing "the bar never rises" rule). It replaces the Bonferroni charge over n_cells, which
+#: sat BELOW Tier S up to 11 cells (|t| 2.69 at 7) and rose above it from 12 (audit
+#: PORTWATCH_LIVE_84602112c, 2026-10-14). Replaced by `libs.research.trial_count_guard`'s T8 bar
+#: when claude/trial-count-guard lands; one constant until then, no second bar.
+TIER_S_T_BAR = 2.84
+#: The same bar for a ONE-SIDED permutation p (`regime_placebo`): P(Z >= 2.84) ~= 0.00226.
+TIER_S_P_ONE_SIDED = 0.5 * math.erfc(TIER_S_T_BAR / math.sqrt(2.0))
 
 
-def min_detectable_ic(n: int, n_cells: int = 1, *, alpha: float = ALPHA_FAMILY,
-                      power: float = POWER, two_sided: bool = True) -> float | None:
-    """The smallest |IC| the t-leg detects with `power` at `n` independent windows and a
-    Bonferroni charge over `n_cells` (Fisher z, Spearman variance 1.06/(n-3)). A LOWER BOUND on
-    the gate's true MDE: the placebo leg and any autocorrelation can only raise it."""
+def min_detectable_ic(n: int, *, power: float = POWER,
+                      t_bar: float = TIER_S_T_BAR) -> float | None:
+    """The smallest |IC| the t-leg detects with `power` at `n` independent windows against the
+    fixed Tier S bar (Fisher z, Spearman variance 1.06/(n-3)). A LOWER BOUND on the gate's true
+    MDE: the placebo leg and any autocorrelation can only raise it. The family size does not
+    enter: the bar is fixed."""
     if n <= 4:
         return None
-    a = alpha / max(1, int(n_cells)) / (2.0 if two_sided else 1.0)
-    z = NormalDist().inv_cdf(1.0 - a) + NormalDist().inv_cdf(power)
+    z = float(t_bar) + NormalDist().inv_cdf(power)
     return round(math.tanh(z * math.sqrt(1.06 / (n - 3))), 4)
 
 
@@ -82,6 +92,7 @@ class GainResult:
     events_dropped: dict[str, int] = field(default_factory=dict)
     min_detectable_ic: float | None = None
     target_ic: float = TARGET_IC
+    t_bar: float = TIER_S_T_BAR
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -146,14 +157,14 @@ def event_returns(events: Sequence[tuple[Any, float]], close: pd.Series, horizon
 
 
 def release_gain(events: Sequence[tuple[Any, float]], close: pd.Series, *,
-                 horizon_bars: int = 120, n_cells: int = 1,
+                 horizon_bars: int = 120,
                  shifts_d: Sequence[int] = PLACEBO_SHIFTS_D, min_events: int = MIN_EVENTS,
                  clock_pad_h: int = CLOCK_PAD_H) -> GainResult:
     """IC of surprise on the post-release return, against shifted-date placebos.
 
-    PASS needs all three: enough independent windows, a Bonferroni-charged t across `n_cells`
-    (every cell the caller tested is charged, not only this one), and the true |IC| beating the
-    placebo distribution at ALPHA_PLACEBO.
+    PASS needs all three: enough independent windows, |t| at or above the fixed Tier S bar
+    (`TIER_S_T_BAR`, the same for every family size), and the true |IC| beating the placebo
+    distribution at ALPHA_PLACEBO.
     """
     dropped: dict[str, int] = {}
     x, y = event_returns(events, close, horizon_bars, clock_pad_h=clock_pad_h, dropped=dropped)
@@ -181,12 +192,11 @@ def release_gain(events: Sequence[tuple[Any, float]], close: pd.Series, *,
                           f"only {len(placebo)} placebo windows could be formed", dropped)
     arr = np.asarray(placebo)
     p_pl = float((1 + int((arr >= abs(ic)).sum())) / (1 + arr.size))
-    charged = min(1.0, p_t * max(1, int(n_cells)))
-    ok = charged <= ALPHA_FAMILY and p_pl <= ALPHA_PLACEBO
-    mde = min_detectable_ic(n, n_cells)
+    ok = abs(t) >= TIER_S_T_BAR and p_pl <= ALPHA_PLACEBO
+    mde = min_detectable_ic(n)
     under = not ok and mde is not None and mde > TARGET_IC
-    why = (f"IC {ic:+.3f} over {n} windows; t {t:+.2f} (Bonferroni over {n_cells} cells -> "
-           f"p {charged:.3g}); placebo p {p_pl:.3f} against {arr.size} shifted calendars; "
+    why = (f"IC {ic:+.3f} over {n} windows; t {t:+.2f} vs the fixed Tier S bar |t| >= "
+           f"{TIER_S_T_BAR}; placebo p {p_pl:.3f} against {arr.size} shifted calendars; "
            f"min detectable IC {mde} (80% power) vs target {TARGET_IC}")
     verdict = "PASS" if ok else ("UNDERPOWERED" if under else "FAIL")
     return GainResult(verdict, round(ic, 4), n, round(t, 3), p_t, round(p_pl, 4),
@@ -195,7 +205,7 @@ def release_gain(events: Sequence[tuple[Any, float]], close: pd.Series, *,
 
 
 #: Random-regime masks a conditioned child is compared against. Enough that the smallest
-#: reachable p (1/(N+1)) clears a Bonferroni charge over a full pass of children.
+#: reachable p (1/(N+1) ~= 0.0005) clears the fixed Tier S bar (TIER_S_P_ONE_SIDED ~= 0.0023).
 REGIME_MASKS = 2000
 #: A child with fewer in-regime parent signals than this is UNMEASURED, not a verdict.
 MIN_IN_REGIME = 20
@@ -204,8 +214,7 @@ MIN_IN_REGIME = 20
 def regime_placebo(sig_pos: Sequence[int] | np.ndarray, sig_ret: Sequence[float] | np.ndarray,
                    bar_mask: Sequence[bool] | np.ndarray, *, n_trials: int = 1,
                    n_masks: int = REGIME_MASKS, min_in: int = MIN_IN_REGIME,
-                   min_shift_frac: float = 0.0, alpha: float = ALPHA_FAMILY,
-                   seed: int = 0) -> dict[str, Any]:
+                   min_shift_frac: float = 0.0, seed: int = 0) -> dict[str, Any]:
     """THE PLACEBO-CONDITIONED TEST for a child that trades its parent only inside a regime.
 
     `sig_pos` are the bar positions of the PARENT's signals, `sig_ret` their forward returns
@@ -215,7 +224,8 @@ def regime_placebo(sig_pos: Sequence[int] | np.ndarray, sig_ret: Sequence[float]
     THE SAME RUN STRUCTURE: the mask circularly shifted by a random offset of at least
     `min_shift_frac` of the history, so a slow regime stays slow and only its alignment with the
     signals is destroyed. p is one-sided (the child must BEAT random regimes), with the +1
-    correction, and is charged Bonferroni over `n_trials` -- every child tested this pass.
+    correction, and is judged against the FIXED Tier S bar (`TIER_S_P_ONE_SIDED`, the one-sided
+    p of |t| >= TIER_S_T_BAR) whatever the family size; `n_trials` is recorded, never charged.
 
     THE SHIFT FLOOR IS 0 BY DEFAULT, MEASURED (`power_table`, 2026-09-30). Excluding shifts near
     zero drops exactly the placebo regimes that look most like the real one, so the real mask is
@@ -224,7 +234,7 @@ def regime_placebo(sig_pos: Sequence[int] | np.ndarray, sig_ret: Sequence[float]
     every shift eligible it was 0.039 and 0.052 (1,000 draws each), at a power cost of a few
     points (IC 0.05, n=1000: 0.47 -> 0.45).
 
-    PASS needs the in-regime mean > 0, n_in >= min_in and charged p <= alpha. Fewer in-regime
+    PASS needs the in-regime mean > 0, n_in >= min_in and p <= TIER_S_P_ONE_SIDED. Fewer in-regime
     signals, a regime that is always or never on, or too short a history is UNMEASURED.
     """
     pos = np.asarray(sig_pos, dtype=int)
@@ -262,12 +272,11 @@ def regime_placebo(sig_pos: Sequence[int] | np.ndarray, sig_ret: Sequence[float]
         return {**base, "verdict": "UNMEASURED", "n_in": n_in, "mean_in": round(real, 6),
                 "why": f"only {null.size} placebo regimes held enough signals"}
     p = float((1 + int((null >= real).sum())) / (1 + null.size))
-    charged = min(1.0, p * max(1, int(n_trials)))
-    passed = real > 0 and charged <= alpha
+    passed = real > 0 and p <= TIER_S_P_ONE_SIDED
     # Power, as the point-biserial IC between "inside the regime" and the signal's return: the
-    # smallest one detected with 80% power at this many signals and this charge (a lower bound:
-    # a slow regime has fewer independent blocks than signals).
-    mde = min_detectable_ic(int(pos.size), max(1, int(n_trials)), alpha=alpha, two_sided=False)
+    # smallest one detected with 80% power at this many signals against the fixed bar (a lower
+    # bound: a slow regime has fewer independent blocks than signals).
+    mde = min_detectable_ic(int(pos.size))
     under = not passed and mde is not None and mde > TARGET_IC
     verdict = "PASS" if passed else ("UNDERPOWERED" if under else "FAIL")
     return {**base, "verdict": verdict, "n_in": n_in,
@@ -276,10 +285,10 @@ def regime_placebo(sig_pos: Sequence[int] | np.ndarray, sig_ret: Sequence[float]
             "mean_all": round(float(ret.mean()), 6),
             "placebo_mean": round(float(null.mean()), 6),
             "placebo_p95": round(float(np.quantile(null, 0.95)), 6),
-            "p_placebo": round(p, 5), "p_charged": round(charged, 5),
+            "p_placebo": round(p, 5), "p_bar": round(TIER_S_P_ONE_SIDED, 5),
             "why": (f"in-regime mean {real:+.5f} over {n_in} parent signals vs {null.size} "
-                    f"circularly shifted regimes of duty {duty:.2f}: p {p:.4f}, Bonferroni over "
-                    f"{max(1, int(n_trials))} children -> {charged:.4f}")}
+                    f"circularly shifted regimes of duty {duty:.2f}: p {p:.4f} vs the fixed Tier S "
+                    f"bar {TIER_S_P_ONE_SIDED:.4f} ({max(1, int(n_trials))} children recorded)")}
 
 
 # ============================================================================ power
@@ -319,9 +328,11 @@ def _sim_regime(ic: float, n: int, rng: np.random.Generator, *, duty: float = 0.
 def power_table(ics: Sequence[float] = (0.0, 0.05, 0.10), ns: Sequence[int] = (250, 1000), *,
                 n_sims: int = 100, n_cells: int = 1, seed: int = 0,
                 gates: Sequence[str] = ("release_gain", "regime_placebo"),
-                regime_masks: int = 500) -> list[dict[str, Any]]:
+                regime_masks: int = REGIME_MASKS) -> list[dict[str, Any]]:
     """Detection rate (share of PASS) of each gate at each planted IC and n, over `n_sims`
-    synthetic draws. The ic=0 rows are the false-positive rate, which must stay <= alpha."""
+    synthetic draws. The ic=0 rows are the false-positive rate, which must stay <= alpha.
+    `regime_masks` defaults to the gate's own REGIME_MASKS: at 500 the smallest reachable p
+    (1/501) barely clears the fixed Tier S bar, so the simulation would understate power."""
     rows: list[dict[str, Any]] = []
     for gate in gates:
         for n in ns:
@@ -332,7 +343,7 @@ def power_table(ics: Sequence[float] = (0.0, 0.05, 0.10), ns: Sequence[int] = (2
                 for k in range(int(n_sims)):
                     if gate == "release_gain":
                         ev, close = _sim_release(ic, int(n), rng)
-                        v = release_gain(ev, close, horizon_bars=5, n_cells=n_cells).verdict
+                        v = release_gain(ev, close, horizon_bars=5).verdict
                     else:
                         pos, ret, mask = _sim_regime(ic, int(n), rng)
                         v = str(regime_placebo(pos, ret, mask, n_trials=n_cells,
@@ -343,6 +354,5 @@ def power_table(ics: Sequence[float] = (0.0, 0.05, 0.10), ns: Sequence[int] = (2
                              "n_sims": int(n_sims),
                              "pass_rate": round(hits / max(1, n_sims), 4),
                              "underpowered_rate": round(under / max(1, n_sims), 4),
-                             "min_detectable_ic": min_detectable_ic(
-                                 int(n), n_cells, two_sided=gate == "release_gain")})
+                             "min_detectable_ic": min_detectable_ic(int(n))})
     return rows
