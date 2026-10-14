@@ -1,7 +1,9 @@
 """A sleeve the principal or the CRO stopped stays off LIVE until the principal's recorded resume.
 
-2026-10-13/14: the AUDCHF, EURZAR and USDZAR gap-decay sleeves were stood down with no reason
-field; heal_silent_demotions lifted all three back to LIVE and the principal book re-sized them.
+2026-10-13/14: the AUDCHF, EURZAR and USDZAR gap-decay sleeves were stood down with a
+`standby_reason` heal_silent_demotions did not read; it lifted all three back to LIVE and the
+principal book re-sized them. #397 fixes the healer's read; this record holds a stop that carries
+no reason on the row at all.
 """
 from __future__ import annotations
 

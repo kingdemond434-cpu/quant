@@ -4,9 +4,9 @@ principal's own resume decision is recorded.
 WHY THIS EXISTS (measured 2026-10-14). On 2026-10-13 at 21:30Z the AUDCHF, EURZAR and USDZAR
 overnight-gap-decay sleeves were stood down on the box (status STANDBY, risk 0.0) after the
 principal said "Yes remove from fusion live" (20:41Z) and left them out of the book (20:53-20:57Z).
-The stand-down wrote no reason field. `scripts/heal_silent_demotions.py` reads a STANDBY row with
-no reason as an accident, so it lifted all three back to LIVE: EURZAR at 21:48Z, USDZAR at 23:48Z
-and AUDCHF at 01:48Z. The promoter's principal-book path then found them LIVE and re-applied the
+The stand-down wrote its reason as `standby_reason`, a field `scripts/heal_silent_demotions.py`
+did not read, so the healer took it for an accident and lifted all three back to LIVE: EURZAR at
+21:48Z, USDZAR at 23:48Z and AUDCHF at 01:48Z. (#397 now makes the healer read any `*_reason`.) The promoter's principal-book path then found them LIVE and re-applied the
 0.10 risk from CERT_BOOK_LIVE.json. Nothing anywhere recorded that a human had stopped them.
 
 So a stop is now a RECORD, not a status. data/PRINCIPAL_STOPS.json lists each stopped identity

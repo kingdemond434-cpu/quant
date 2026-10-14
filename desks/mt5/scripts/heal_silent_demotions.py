@@ -84,9 +84,10 @@ def heal(apply: bool) -> int:
     by_status = Counter(str(r.get("status") or "?") for r in rows)
     print(f"roster: {len(rows)} rows   {dict(by_status)}")
 
-    # A PRINCIPAL STOP IS NEVER HEALED (2026-10-14). The 10-13 stand-down of the AUDCHF, EURZAR
-    # and USDZAR gap-decay sleeves wrote no reason field, and this fixer lifted all three back to
-    # LIVE within four hours. Whatever the row records, a stop in PRINCIPAL_STOPS.json holds it.
+    # A PRINCIPAL STOP IS NEVER HEALED (2026-10-14). The `*_reason` read above covers a stop that
+    # wrote its reason on the row; this covers the one that did not -- a re-mint, a rewritten
+    # roster, a field someone dropped. A stop in PRINCIPAL_STOPS.json holds the identity whatever
+    # the row records.
     import sys as _sys
     _desk = str(ROOT / "desks" / "mt5")
     if _desk not in _sys.path:
