@@ -764,3 +764,26 @@ def test_a_held_zero_is_judged_on_the_whole_statement(text: str, want: int | Non
 def test_a_tips_tenor_is_not_a_coupon_object() -> None:
     assert tr._only_other_supply(" the 5-year TIPS auction sizes.")
     assert not tr._only_other_supply(" bills and the 7-year note is likely")
+
+
+_HELD = "Treasury anticipates maintaining nominal coupon auction sizes. Treasury "
+
+
+@pytest.mark.parametrize(
+    ("tail", "want"),
+    [
+        ("will increase bills, and the 2-, 3- and 5-year.", None),
+        ("will increase bills and, beginning in February, the 7-year note.", None),
+        ("will increase the 5-year inflation-protected and 7-year nominal securities.", None),
+        ("will increase bills and nominal auction sizes.", None),
+        ("will increase TIPS and long-end issuance.", None),
+        ("will continue to evaluate future increases to nominal coupon auction sizes.", 0),
+        ("plans to reduce the size of the buybacks.", 0),
+        ("will increase bill issuance.", 0),
+    ],
+)
+def test_the_object_of_a_move_is_read_to_the_end_of_its_sentence(
+    tail: str, want: int | None
+) -> None:
+    """Audit must-fix on #394 v9, and its coverage notes: hedges and buybacks are no move."""
+    assert tr.guidance(_HELD + tail) == want

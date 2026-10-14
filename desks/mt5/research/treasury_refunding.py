@@ -355,13 +355,20 @@ def guidance(text: str) -> int | None:
     # Statement-level and fail-closed (audit #394 v8): every sentence is scanned, not only the
     # ones about coupon sizes, because the next quarter's "increases will likely be needed"
     # often sits in a sentence of its own.
-    live = any(_live_direction(c) for sent in _sentences(text) for c in _CLAUSE.split(sent))
+    live = any(_live_direction(c, sent) for sent in _sentences(text) for c in _CLAUSE.split(sent))
     # A HELD 0 IS ONLY TRUE WHEN NOTHING IN THE STATEMENT MOVES (audit must-fix on #394 v7):
     # "...; increases likely in the 2-year", "..., and will increase them" leave it UNMEASURED.
     return None if got == 0 and live else got
 
 
-_COUPON_OBJECT = re.compile(r"\d+[-\s]year|\bnotes?\b|\bbonds?\b|\bcoupon", re.I)
+_COUPON_OBJECT = re.compile(
+    r"\d+[-\s]year|\bnotes?\b|\bbonds?\b|\bcoupon|\bnominal\b|long[- ]end", re.I
+)
+#: Supply a move may name without moving nominal coupon AUCTIONS: bills, TIPS, FRN, buybacks.
+_NON_AUCTION = re.compile(_OTHER_SUPPLY.pattern + r"|\bbuybacks?\b", re.I)
+#: A stem under an evaluation verb is a hedge, not guidance: "continue to evaluate future
+#: increases" is what a held statement says (audit coverage note on #394 v9).
+_HEDGE = re.compile(r"\b(?:evaluat|assess|monitor|consider|stud|review)\w*\b[^.;]{0,25}$", re.I)
 
 
 def _only_other_supply(obj: str) -> bool:
@@ -369,21 +376,27 @@ def _only_other_supply(obj: str) -> bool:
     7-year note" still moves coupons (audit #394 v8)."""
     # "the 5-year TIPS" names a TIPS tenor, not a nominal coupon, so the tenor is read away first
     nominal = re.sub(r"\d+[-\s]year\s+(?:TIPS|FRNs?|inflation)", " ", obj, flags=re.I)
-    return bool(_OTHER_SUPPLY.search(obj)) and not _COUPON_OBJECT.search(nominal)
+    return bool(_NON_AUCTION.search(obj)) and not _COUPON_OBJECT.search(nominal)
 
 
-def _live_direction(clause: str) -> bool:
+def _live_direction(clause: str, sentence: str | None = None) -> bool:
     """The clause names an increase or a reduction that nothing before it in the clause
-    negates, whose object is not other supply (bills, TIPS, FRN). Read with or without a
-    guidance verb and whether or not the clause names coupons."""
+    negates, that no evaluation verb hedges, and whose object -- the REST OF ITS SENTENCE, so a
+    tenor after ", and" or past 40 characters still counts (audit #394 v9) -- is not solely
+    other supply (bills, TIPS, FRN, buybacks). Read with or without a guidance verb and
+    whether or not the clause names coupons."""
+    sent = sentence if sentence is not None else clause
+    base = max(0, sent.find(clause))
     for v, rx in _DIRECTION.items():
         for mt in rx.finditer(clause):
             lead = _REASON.split(clause[: mt.end()])[-1]
             obj = _REASON.split(clause[mt.end() : mt.end() + 60])[0]
+            rest = _REASON.split(sent[base + mt.end() :])[0]
             if (
                 not _negated(lead, v)
+                and not _HEDGE.search(clause[: mt.start()])
                 and not _NEG_AFTER.search(obj)
-                and not _only_other_supply(obj[:40])
+                and not _only_other_supply(rest)
             ):
                 return True
     return False
