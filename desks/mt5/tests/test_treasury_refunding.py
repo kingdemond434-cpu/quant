@@ -341,8 +341,9 @@ def test_a_listed_statement_never_read_blocks_every_zero(tmp_path: Path,
     import collector_lab
     monkeypatch.setattr(collector_lab, "fetch", lambda url, _s, **_k: pages[url])
     doc = tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2026, 8, 10))
-    assert doc["measured_until"] is None
-    assert doc["blocking_zeros"] == ["https://home.treasury.gov/s2"]
+    assert doc["measured_until"] is not None
+    assert doc["blocking_zeros"] == [{"url": "https://home.treasury.gov/s2", "from": None,
+                                      "to": None}], "one dated neighbour cannot orient it"
     with (tmp_path / "series" / "treasury_refunding.csv").open() as fh:
         rows = {r["published_time"][:10]: r for r in csv.DictReader(fh)}
     assert rows["2026-08-05"]["size_surprise"] == ""
@@ -356,6 +357,9 @@ def test_a_listed_statement_never_read_blocks_every_zero(tmp_path: Path,
     pages["https://home.treasury.gov/s2"] = (_statement("August 5, 2026", 58, 42, 25, HOLD), "")
     again = tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2026, 8, 10))
     assert again["blocking_zeros"] == [] and again["measured_until"] is not None
+    with (tmp_path / "series" / "treasury_refunding.csv").open() as fh:
+        assert {r["size_surprise"] for r in csv.DictReader(fh)
+                if r["published_time"][:10] == "2026-07-01"} == {"0.0"}
 
 
 @pytest.mark.parametrize(("text", "want"), [
@@ -374,3 +378,67 @@ def test_a_list_sentence_that_mentions_a_reopening_keeps_its_list() -> None:
     text = ("Treasury will sell a $58 billion 3-year note, a $42 billion 10-year note, the "
             "$39 billion 10-year reopening, and a $25 billion 30-year bond.")
     assert tr.sizes(text) == {"3": 58.0, "10": 42.0, "30": 25.0}
+
+
+def _runner(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    for name, sub in (("STATE_DIR", "state"), ("SERIES_DIR", "series"),
+                      ("DONATE_DIR", "donate")):
+        monkeypatch.setattr(tr, name, tmp_path / sub)
+    monkeypatch.setattr(tr, "STATEMENTS", tmp_path / "state" / "statements.json")
+    monkeypatch.setattr(tr, "FETCHED", tmp_path / "state" / "fetched.json")
+    monkeypatch.setattr(tr, "REPORT", tmp_path / "REPORT.json")
+
+
+@pytest.mark.parametrize("descending", [False, True])
+def test_an_unread_statement_blanks_only_the_dates_its_neighbours_allow(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, descending: bool) -> None:
+    """Audit should-fix on #394 v4: one permanent 404 blanked the whole history."""
+    _runner(tmp_path, monkeypatch)
+    order = ["/s1", "/s2", "/s3", "/s4"]
+    if descending:
+        order.reverse()
+    index = b"".join(f'<a href="{u}">Quarterly Refunding Statement</a>'.encode() for u in order)
+    home = "https://home.treasury.gov"
+    pages = {tr.INDEXES[0]: (index, ""), tr.INDEXES[1]: (b"", ""),
+             f"{home}/s1": (_statement("February 1, 2026", 58, 42, 25, HOLD), ""),
+             f"{home}/s2": (_statement("May 6, 2026", 58, 42, 25, HOLD), ""),
+             f"{home}/s3": (b"", "HTTP_404"),
+             f"{home}/s4": (_statement("November 4, 2026", 58, 42, 25, HOLD), "")}
+    import collector_lab
+    monkeypatch.setattr(collector_lab, "fetch", lambda url, _s, **_k: pages[url])
+    doc = tr.run(uni={}, lane_ok=lambda s, f: True, today=date(2026, 12, 1))
+    assert doc["blocking_zeros"] == [{"url": f"{home}/s3", "from": "2026-05-06",
+                                      "to": "2026-11-04"}]
+    with (tmp_path / "series" / "treasury_refunding.csv").open() as fh:
+        rows = {r["published_time"][:10]: r for r in csv.DictReader(fh)}
+    assert rows["2026-03-01"]["size_surprise"] == "0.0", "before the window: measured"
+    assert rows["2026-08-05"]["size_surprise"] == "", "inside it: UNMEASURED"
+    assert rows["2026-11-20"]["size_surprise"] == "0.0", "after it: measured"
+
+
+@pytest.mark.parametrize(("text", "want"), [
+    ("Treasury does not currently anticipate that it will need to increase nominal coupon "
+     "auction sizes.", 0),
+    ("Treasury does not, as of now, anticipate needing to increase nominal coupon auction "
+     "sizes.", 0),
+    ("Treasury does not expect, as previously stated, to increase nominal coupon auction "
+     "sizes.", 0),
+    ("Treasury will not, given current projections, increase nominal coupon auction sizes.", 0),
+    ("It is not the case today that, over a long horizon, Treasury anticipates it will "
+     "increase nominal coupon auction sizes.", None),
+    ("Treasury will maintain nominal coupon auction sizes despite reduced demand.", None),
+    ("Treasury will complete the cutover of nominal coupon auction systems.", None),
+])
+def test_negation_parentheticals_and_mixed_readings(text: str, want: int | None) -> None:
+    """Audit must-fix and should-fixes on #394 v4: never the wrong sign."""
+    assert tr.guidance(text) == want
+
+
+def test_two_pages_on_one_date_are_one_statement() -> None:
+    a = {"date": "2026-02-01", "url": "a", "sizes": {"3": 50}, "guidance": 0}
+    same = {**a, "url": "b"}
+    other = {**a, "url": "c", "sizes": {"3": 60}}
+    prev = {"date": "2025-11-01", "url": "p", "sizes": {"3": 45}, "guidance": 0}
+    assert len(tr.surprises([prev, a, same])) == 2
+    got = tr.surprises([prev, a, other])
+    assert len(got) == 2 and got[1]["size_surprise"] is None, "disagreeing pages: UNMEASURED"
