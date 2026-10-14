@@ -290,3 +290,42 @@ def test_partial_and_kwargs_cannot_smuggle_a_count(tmp_path: Path) -> None:
                           "    return g(arr), deflated_sharpe_ratio(arr, **kw)\n"))
     assert _calls(got) == ["deflated_sharpe_ratio", "deflated_sharpe_ratio"], got["sites"]
     assert "**kwargs" in got["sites"][1]["trials_arg"]
+
+
+# ---- rule 4: a written-down Tier S t (auditor's proposal, coordinator's ruling 2026-10-14) ----
+
+def _lit(tmp_path: Path, files: dict[str, str]) -> dict:
+    return _check(fence.judge(_tree(tmp_path, files), now=NOW), "tier_s_t_literal")
+
+
+def test_a_named_tier_s_t_constant_fails(tmp_path: Path) -> None:
+    """GD's release_gain.TIER_S_T_BAR on portwatch-live f5dff2a44 is this exact shape."""
+    got = _lit(tmp_path, {"desks/mt5/research/release_gain.py":
+                          "TIER_S_T_BAR = 2.84\nSOME_T_BAR: float = 2.8\n"})
+    assert got["state"] == "FAIL"
+    assert sorted(s["value"] for s in got["sites"]) == [2.8, 2.84]
+
+
+def test_a_compared_tier_s_t_fails_in_either_sign_and_band(tmp_path: Path) -> None:
+    got = _lit(tmp_path, {"desks/mt5/research/cluster_judge.py":
+                          "def ok(t):\n    return t >= 2.79 or -2.89 > t or t > 2.8436\n"})
+    assert got["state"] == "FAIL" and len(got["sites"]) == 3
+    assert {s["use"] for s in got["sites"]} == {"comparison"}
+
+
+def test_a_keyword_or_dict_key_holding_it_fails(tmp_path: Path) -> None:
+    got = _lit(tmp_path, {"libs/x.py": "f(tier_s_t=2.84)\nd = {'TIER_S_T': 2.85}\n"})
+    assert got["state"] == "FAIL" and len(got["sites"]) == 2
+
+
+def test_numbers_outside_the_band_prose_and_unbarred_uses_pass(tmp_path: Path) -> None:
+    got = _lit(tmp_path, {"libs/x.py": ('"""t of about 2.84 in prose."""\n'
+                                        "VOL = 2.84\nTIER_S_T_BAR = 2.95\n"
+                                        "def g(t):\n    return t > 2.7 and t < 3.0\n")})
+    assert got["state"] == "OK", got["sites"]
+
+
+def test_the_helper_is_the_one_home_and_the_live_tree_is_clean(tmp_path: Path) -> None:
+    got = _lit(tmp_path, {"libs/research/tier_s_threshold.py": "X_T_BAR = 2.84\n"})
+    assert got["state"] == "OK"
+    assert fence.tier_s_literals(ROOT) == []

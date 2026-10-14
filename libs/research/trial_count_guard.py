@@ -169,3 +169,16 @@ def row_key(row: Mapping[str, Any]) -> str:
     """Content key of an aggregate trial row with its run fields removed. Re-appending the same
     pass's row (a retry, a re-run on unchanged inputs, a ledger rebuild) gives the same key."""
     return run_key({str(k): v for k, v in row.items() if str(k).lower() not in ROW_VOLATILE})
+
+
+#: THE TIER S t HELPERS, re-exported lazily from `libs.research.tier_s_threshold` so this module
+#: stays stdlib-only for the lanes that import it without numpy/scipy.
+_TIER_S_EXPORTS = frozenset({"tier_s_t_required", "tier_s_passes", "tier_s_sr0",
+                             "tier_s_variance", "TIER_S_DSR_THRESHOLD"})
+
+
+def __getattr__(name: str) -> Any:
+    if name in _TIER_S_EXPORTS:
+        from libs.research import tier_s_threshold
+        return getattr(tier_s_threshold, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

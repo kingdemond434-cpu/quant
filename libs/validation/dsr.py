@@ -34,6 +34,16 @@ def probabilistic_sharpe_ratio(returns: np.ndarray, *, sr_benchmark: float = 0.0
     sr = sharpe_ratio(r)
     g3 = float(skew(r, bias=False))
     g4 = float(kurtosis(r, fisher=False, bias=False))  # non-excess (normal = 3)
+    return psr_from_moments(sr, n, g3, g4, sr_benchmark=sr_benchmark)
+
+
+def psr_from_moments(sr: float, n: int, g3: float, g4: float, *,
+                     sr_benchmark: float = 0.0) -> float:
+    """The PSR arithmetic on a series' moments: per-period Sharpe `sr`, length `n`, skew `g3`
+    and NON-excess kurtosis `g4`. `probabilistic_sharpe_ratio` is exactly this on its sample's
+    moments; it is separate so a threshold can be inverted from the one formula, never a copy."""
+    if n < 3:
+        return 0.0
     denom = 1.0 - g3 * sr + ((g4 - 1.0) / 4.0) * sr**2
     if denom <= 0:
         return 0.0

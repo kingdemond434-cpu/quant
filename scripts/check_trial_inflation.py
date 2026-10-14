@@ -32,6 +32,12 @@ lawful source of a bar's N. This fence walks the tree and goes RED on:
    the share of charged trials that are repeats of an already-charged pass may not rise over the
    last reading. Before the dedupe it is MEASURED and published, never failed.
 
+4. A WRITTEN-DOWN TIER S t (auditor's proposal, coordinator's ruling 2026-10-14). A bare numeric
+   constant within +/-0.05 of 2.84 used as a bar -- an operand of a comparison, or the value bound
+   to a name like `*_T_BAR` / `TIER_S_*` -- outside `libs/research/tier_s_threshold.py`. The t
+   the Tier S bar demands depends on T, skew and kurtosis (4.56 at T=5, 2.89 at T=100); a typed
+   2.84 is a copy that stops tracking them. Import `tier_s_t_required` / `tier_s_passes` instead.
+
 Writes `desks/mt5/reports/TRIAL_INFLATION.json` with --report; exits 1 on any FAIL.
 """
 from __future__ import annotations
@@ -417,6 +423,82 @@ def scan(root: Path = ROOT) -> dict[str, Any]:
     return {"unpinned": unpinned, "union_charge": union, "pinned_inside": sorted(safe)}
 
 
+#: Rule 4: the Tier S t's asymptote, the band around it, and the one module allowed to hold it.
+TIER_S_T = 2.84
+TIER_S_T_TOL = 0.05
+TIER_S_HOME = frozenset({"libs/research/tier_s_threshold.py", "libs/research/trial_count_guard.py",
+                         "scripts/check_trial_inflation.py"})
+_TIER_S_TEXT = re.compile(r"(?<![\w.])2\.(79|8\d)\d*(?![\w.])")
+_TIER_S_NAME = re.compile(r"(_T_BAR$|^TIER_S_)", re.IGNORECASE)
+
+
+def _tier_s_const(e: ast.expr | None) -> float | None:
+    """The literal's magnitude when `e` is a bare number (or its negation) inside the band."""
+    if isinstance(e, ast.UnaryOp) and isinstance(e.op, (ast.USub, ast.UAdd)):
+        e = e.operand
+    if (isinstance(e, ast.Constant) and isinstance(e.value, (int, float))
+            and not isinstance(e.value, bool)
+            and abs(float(e.value) - TIER_S_T) <= TIER_S_T_TOL + 1e-12):
+        return float(e.value)
+    return None
+
+
+def _target_names(t: ast.expr) -> list[str]:
+    if isinstance(t, ast.Name):
+        return [t.id]
+    if isinstance(t, ast.Attribute):
+        return [t.attr]
+    if isinstance(t, (ast.Tuple, ast.List)):
+        return [n for el in t.elts for n in _target_names(el)]
+    return []
+
+
+def tier_s_literals(root: Path = ROOT) -> list[dict[str, Any]]:
+    """Rule 4: every bare ~2.84 constant used as a bar outside the helper."""
+    hits: list[dict[str, Any]] = []
+    for p in _files(root):
+        rel = p.relative_to(root).as_posix()
+        if rel in TIER_S_HOME:
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if not _TIER_S_TEXT.search(text):
+            continue
+        try:
+            tree = ast.parse(text)
+        except (SyntaxError, ValueError):
+            continue
+        for n in ast.walk(tree):
+            vals: list[tuple[float, str]] = []
+            if isinstance(n, ast.Compare):
+                for operand in (n.left, *n.comparators):
+                    v = _tier_s_const(operand)
+                    if v is not None:
+                        vals.append((v, "comparison"))
+            elif isinstance(n, (ast.Assign, ast.AnnAssign)):
+                targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+                names = [x for t in targets for x in _target_names(t)]
+                v = _tier_s_const(n.value)
+                if v is not None and any(_TIER_S_NAME.search(x) for x in names):
+                    vals.append((v, f"bound to {','.join(names)}"))
+            elif isinstance(n, ast.keyword) and n.arg and _TIER_S_NAME.search(n.arg):
+                v = _tier_s_const(n.value)
+                if v is not None:
+                    vals.append((v, f"keyword {n.arg}"))
+            elif isinstance(n, ast.Dict):
+                for k, val in zip(n.keys, n.values, strict=False):
+                    if (isinstance(k, ast.Constant) and isinstance(k.value, str)
+                            and _TIER_S_NAME.search(k.value)):
+                        v = _tier_s_const(val)
+                        if v is not None:
+                            vals.append((v, f"key {k.value}"))
+            hits += [{"file": rel, "line": getattr(n, "lineno", None), "value": v, "use": u}
+                     for v, u in vals]
+    return hits
+
+
 def _discovery_rerun_share(root: Path = ROOT) -> dict[str, Any]:
     """Share of discovery-file `tests_run` that repeats an already-charged pass."""
     raw = distinct = 0
@@ -479,6 +561,13 @@ def judge(root: Path = ROOT, *, now: datetime | None = None,
                        f"{rr['n_charged']} trials charged, {rr['n_distinct']} distinct: "
                        f"{rr['rerun_share']:.1%} are re-runs"
                        + ("" if landed else " (published; ratcheted once the dedupe lands)"))})
+    lit = tier_s_literals(root)
+    checks.append({"metric": "tier_s_t_literal", "state": "FAIL" if lit else "OK",
+                   "n": len(lit), "sites": lit[:50],
+                   "why": ("no bar holds a written-down Tier S t" if not lit else
+                           f"{len(lit)} bare ~{TIER_S_T} constant(s) used as a bar: import "
+                           "tier_s_t_required / tier_s_passes from "
+                           "libs.research.trial_count_guard instead")})
     verdict = "FAIL" if any(c["state"] == "FAIL" for c in checks) else "PASS"
     return {"at": at.isoformat(timespec="seconds"), "rule": RULE, "bar_n": BAR_N,
             "verdict": verdict, "checks": checks,
