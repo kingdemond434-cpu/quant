@@ -110,7 +110,7 @@ def generation_roi(
     for c in novel:
         res = deflated_sharpe_ratio(
             np.asarray(c.returns, dtype="float64"),
-            n_trials=bar_n(total_trials),
+            n_trials=min(max(2, total_trials), bar_n(total_trials)),  # never above max(2, n)
             variance_of_sharpes=variance_of_sharpes,
             threshold=dsr_threshold,
         )

@@ -30,8 +30,11 @@ def test_the_campaign_shape_cannot_resolve_a_world_class_edge():
     d = design_power(_N + 1, _T)
     assert d["n_trials"] == _N + 1                       # the count is reported...
     assert d["bar_n"] == BAR_N                           # ...and the bar charges the fixed N
-    for n in (1, 5, 30, _N + 1, 10_000):
+    for n in (5, 30, _N + 1, 10_000):
         assert design_power(n, _T)["hurdle_annual_sharpe"] == d["hurdle_annual_sharpe"]
+    # below BAR_N the charge is the count itself (min form): never above the fixed bar
+    for n in (1, 2, 4):
+        assert design_power(n, _T)["hurdle_annual_sharpe"] <= d["hurdle_annual_sharpe"]
     assert d["power_by_true_annual_sharpe"]["2"] < 0.5
     assert d["underpowered_below_annual_sharpe"] >= 2.0
 

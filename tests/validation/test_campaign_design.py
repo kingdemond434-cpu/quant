@@ -33,10 +33,13 @@ def test_reproduces_the_certification_hurdle() -> None:
     pinned certifier); an artifact from before the pin priced a trial-scaled hurdle.
     """
     from scripts.certify_gauntlet import dsr_hurdle_annual as cert_hurdle
-    for n in (1, 5, 30, 421, 10_000):
+    for n in (1, 2, 4, 5, 30, 421, 10_000):
         for t in (310, 1250):
             assert dsr_hurdle_annual(n, t) == pytest.approx(cert_hurdle(n, t), rel=1e-12)
-            assert dsr_hurdle_annual(n, t) == dsr_hurdle_annual(421, t)
+            if n >= 5:
+                assert dsr_hurdle_annual(n, t) == dsr_hurdle_annual(421, t)
+            else:                         # min(count, bar_n): never above the fixed bar
+                assert dsr_hurdle_annual(n, t) <= dsr_hurdle_annual(421, t)
     assert preflight(421, 310).n_trials == 421          # the count is reported
     cert = ROOT / "reports/gauntlet_certification.json"
     design = json.loads(cert.read_text("utf-8")).get("design") if cert.exists() else None

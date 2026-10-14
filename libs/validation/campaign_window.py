@@ -191,7 +191,7 @@ def detection_power(n_trials: int, n_obs: int,
     if n_obs <= 1 or n_trials < 1 or not 0.0 < alpha < 1.0:
         return 0.0
     from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
-    sr0 = expected_max_sharpe(bar_n(n_trials), 1.0 / n_obs)
+    sr0 = expected_max_sharpe(min(n_trials, bar_n(n_trials)), 1.0 / n_obs)
     hurdle = (sr0 + float(norm.ppf(1.0 - alpha)) / np.sqrt(n_obs - 1)) * np.sqrt(PPY)
     se = float(np.sqrt(PPY / n_obs))
     return float(1.0 - norm.cdf((hurdle - true_ann_sharpe) / se))
@@ -220,11 +220,11 @@ def _power_grid(m: np.ndarray, t_obs: np.ndarray, true_ann_sharpe: float,
         return out
     # THE BAR'S N IS FIXED (principal 2026-10-13, owner's T8 ruling), exactly as in
     # detection_power: the cohort size m still weights a stratum's expected discoveries in the
-    # planner, but it never raises the hurdle. The planner's cohorts are >= MIN_COHORT (12) > 5,
-    # so the pin only ever lowers a hurdle it touches.
+    # planner, but it never raises the hurdle -- min(m, BAR_N), so a cohort below BAR_N keeps
+    # exactly the hurdle it had and none rises above the fixed bar.
     from libs.research.trial_count_guard import BAR_N
     tt = t[ok]
-    mm = np.full(tt.shape, float(BAR_N))
+    mm = np.minimum(m[ok], float(BAR_N))
     a = norm.ppf(1.0 - 1.0 / mm)
     b = norm.ppf(1.0 - 1.0 / (mm * np.e))
     sr0 = np.sqrt(1.0 / tt) * ((1.0 - _EULER) * a + _EULER * b)

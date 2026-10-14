@@ -106,7 +106,7 @@ def complexity_penalty(obj: MathObject) -> float:
 def trials_penalty(effective_trials: int) -> float:
     """The expected maximum of N standard normals: what a search of size N gets for free."""
     from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
-    return math.sqrt(2.0 * math.log(bar_n(effective_trials)))
+    return math.sqrt(2.0 * math.log(min(effective_trials, bar_n(effective_trials))))
 
 
 def effective_trials(distinct_forms: int, lifetime: int = 0) -> int:

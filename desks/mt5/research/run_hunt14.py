@@ -78,11 +78,11 @@ def main() -> int:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     from libs.research.trial_count_guard import bar_n  # fixed N; the grid is reported
     grid = sweep_size(len(meta), len(h12.WINDOWS), len(h12.STATES))
-    h12.E_MAX = deflation(bar_n(grid))
+    h12.E_MAX = deflation(min(grid, bar_n(grid)))
     print(f"HUNT 14 — hunt12's grid, stall-tightening exit")
     print(f"{len(meta)} symbols x {len(h12.WINDOWS)} windows x "
           f"{len(h12.STATES)} states = {grid} cells (reported); "
-          f"E[max t] = {h12.E_MAX:.2f} at the fixed bar N={bar_n(grid)}, "
+          f"E[max t] = {h12.E_MAX:.2f} at the fixed bar N={min(grid, bar_n(grid))}, "
           f"gate needs deflated t > 2\n")
 
     old = {}

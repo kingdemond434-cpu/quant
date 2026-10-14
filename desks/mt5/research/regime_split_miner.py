@@ -208,7 +208,7 @@ def run(symbols: list[str] | None = None, budget_s: float = 1800.0) -> dict[str,
         # Each cell pays for the WHOLE union ever tried, never only this pass's width.
         n = max(int(r.get("n_tests_sweep") or 0), union_n)
         r["n_tests_sweep"] = n
-        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), bar_n(n)), 3)
+        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), min(n, bar_n(n))), 3)
         r["proposed"] = bool(r.get("clears_cost") and r["t_deflated_sweep"] > pc.PROPOSE_T
                              and int(r.get("n_independent", 0)) >= pc.MIN_TRADES)
     for r in rows:

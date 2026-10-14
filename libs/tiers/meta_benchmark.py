@@ -158,7 +158,8 @@ def reference_validator(cfg: ValidatorConfig | None = None) -> Validator:
             else:
                 from libs.research.trial_count_guard import bar_n  # fixed N, as the judge
                 from libs.validation.dsr import deflated_sharpe_ratio
-                res = deflated_sharpe_ratio(p, n_trials=bar_n(case.n_variants_tried),
+                n_bar = min(case.n_variants_tried, bar_n(case.n_variants_tried))
+                res = deflated_sharpe_ratio(p, n_trials=n_bar,
                                             variance_of_sharpes=1.0 / len(p),
                                             threshold=cfg.dsr_threshold)
                 if not res.passed:

@@ -51,7 +51,11 @@ def test_same_edge_survives_a_small_search_but_not_a_huge_one() -> None:
     drowned = generation_roi(strong, variance_of_sharpes=0.25, n_trials_prior=100_000)
     assert survives.survivors == 1        # a real edge clears a small search
     assert drowned.survivors == 1         # ...and the same edge clears a huge one
-    assert drowned.deflated_bar_sr0 == survives.deflated_bar_sr0
+    # the huge search faces the fixed bar; the one-trial search keeps its old max(2, n) charge,
+    # which is below it -- min(count, bar_n): a count can lower nothing below today, raise nothing
+    five = generation_roi(strong, variance_of_sharpes=0.25, n_trials_prior=4)
+    assert drowned.deflated_bar_sr0 == five.deflated_bar_sr0
+    assert survives.deflated_bar_sr0 <= drowned.deflated_bar_sr0
     assert (survives.total_trials, drowned.total_trials) == (1, 100_001)
 
 

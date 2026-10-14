@@ -304,7 +304,7 @@ def multiplicity_from_trials(n_trials: int | None, variance_of_sharpes: float | 
     try:
         from libs.research.trial_count_guard import bar_n
         from libs.validation.dsr import expected_max_sharpe
-        hurdle = float(expected_max_sharpe(bar_n(n), float(var)))
+        hurdle = float(expected_max_sharpe(min(n, bar_n(n)), float(var)))
     except Exception as exc:  # pragma: no cover - host without scipy
         return unpriced("multiplicity",
                         f"expected_max_sharpe unavailable ({type(exc).__name__}): the trial "

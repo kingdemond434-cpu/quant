@@ -220,7 +220,7 @@ def mine(live: list[tuple[str, float]], forward: list[tuple[str, str, float]]) -
                 n_tests += 1
                 rows.append({"basis": basis, "window": f"{w['start']}..{w['end']}",
                              "depth_r": w["depth_r"], "sleeve": s, **st})
-    emz = expected_max_z(bar_n(n_tests))  # fixed N: n_tests is reported, never charged
+    emz = expected_max_z(min(n_tests, bar_n(n_tests)))  # fixed N: n_tests is reported, never charged
     for row in rows:
         if row.get("status") == "MEASURED":
             row["t_deflated"] = round(float(row["t"]) - emz, 3)

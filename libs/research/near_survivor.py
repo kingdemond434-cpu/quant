@@ -155,7 +155,8 @@ def hurdle(ns: NearSurvivor, *, new: int = 1) -> float:
     and that is correct rather than unfair: by the twentieth, the desk has looked twenty times more.
     """
     from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
-    return math.sqrt(2.0 * math.log(bar_n(family_trials(ns, new=new))))
+    n = family_trials(ns, new=new)
+    return math.sqrt(2.0 * math.log(min(n, bar_n(n))))   # never above the count or BAR_N
 
 
 def report(ns: NearSurvivor, *, new: int = 1) -> str:

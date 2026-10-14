@@ -381,7 +381,7 @@ def run(write_queue: bool = True) -> dict[str, Any]:
         r["n_tests"] = n_tests
         if r.get("verdict") == UNMEASURED:
             continue
-        r["t_deflated"] = round(deflate_t(float(r.get("t_raw") or 0.0), bar_n(n_tests)), 3)
+        r["t_deflated"] = round(deflate_t(float(r.get("t_raw") or 0.0), min(n_tests, bar_n(n_tests))), 3)
         mean = float(r.get("mean_r_in_drawdown") or 0.0)
         if mean <= 0:
             r["verdict"] = NEGATIVE
@@ -406,7 +406,7 @@ def run(write_queue: bool = True) -> dict[str, Any]:
         "n_tests": n_tests,
         "n_rows_measured": len(measured),
         "n_rows_unmeasured": len(rows) - len(measured),
-        "expected_max_z": round(float(expected_max_z(bar_n(n_tests))), 3),
+        "expected_max_z": round(float(expected_max_z(min(n_tests, bar_n(n_tests)))), 3),
         "candidates": sorted([r for r in rows if r.get("verdict") == CANDIDATE],
                              key=lambda r: -(r.get("t_deflated") or 0.0)),
         "watch": sorted([r for r in rows if r.get("verdict") == WATCH],

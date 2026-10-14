@@ -1027,9 +1027,9 @@ def tier2(cell: Cell, world: World, t1: Tier1, evaluate: Any, rng: np.random.Gen
     out.family_trials = max(1, families.pass_count(cell.expr))
     try:
         from research.multiplicity import deflate_t
-        out.t_deflated = float(deflate_t(t1.t_all, bar_n(out.family_trials)))
+        out.t_deflated = float(deflate_t(t1.t_all, min(out.family_trials, bar_n(out.family_trials))))
     except Exception:
-        out.t_deflated = float(t1.t_all - math.sqrt(2.0 * math.log(bar_n(out.family_trials))))
+        out.t_deflated = float(t1.t_all - math.sqrt(2.0 * math.log(min(out.family_trials, bar_n(out.family_trials)))))
     if out.stability is not None and out.stability < T2["stability"]:
         out.passed, out.reason = False, f"stability {out.stability:.2f} < {T2['stability']}"
     elif out.split_positive is not None and out.split_positive < T2["split_positive"]:

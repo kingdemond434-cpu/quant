@@ -173,3 +173,52 @@ def test_a_mean_or_a_quantile_is_not_a_correction(tmp_path: Path) -> None:
                           "    mean = total / len(v)\n"
                           "    return mean, v[min(len(v) - 1, int(p * len(v)))]\n"))
     assert got["state"] == "OK", got["sites"]
+
+
+# ---- no site's bar can rise (auditor ruling 2026-10-14: the min form everywhere) -------------
+
+def _bar_n_sites(root: Path) -> list[tuple[str, int, str, str]]:
+    """Every bar_n(X) call in scanned, unsealed code: (file, line, X, enclosing call)."""
+    import ast
+    out: list[tuple[str, int, str, str]] = []
+    for p in fence._files(root):
+        rel = p.relative_to(root).as_posix()
+        if rel in fence.SEALED_OWED or rel in {"libs/research/trial_count_guard.py",
+                                              "scripts/check_trial_inflation.py"}:
+            continue
+        text = p.read_text("utf-8", errors="replace")
+        if "bar_n(" not in text:
+            continue
+        tree = ast.parse(text)
+        parent = {id(c): n for n in ast.walk(tree) for c in ast.iter_child_nodes(n)}
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "bar_n" and n.args:
+                par = parent.get(id(n))
+                ctx = ast.unparse(par) if isinstance(par, ast.Call) else ""
+                out.append((rel, n.lineno, ast.unparse(n.args[0]), ctx))
+    return out
+
+
+def test_no_site_can_raise_its_bar_above_its_own_count() -> None:
+    """Every bar_n(X) in the live tree sits inside min(X', bar_n(X)) where X' is X or a floor
+    of it (generation_roi keeps its historic max(2, X)). So the N a bar charges is never above
+    the count it charged before the pin, and never above the fixed bar: no bar rises."""
+    sites = _bar_n_sites(ROOT)
+    assert len(sites) > 30, "the scan lost the pinned sites"
+    bad = []
+    for rel, line, x, ctx in sites:
+        # the historic floors the callee already applied: generation_roi's max(2, X) and
+        # release_gain's max(1, int(X)) -- each the exact count charged before the pin
+        ok = any(ctx.startswith(f"min({lo}, bar_n(")
+                 for lo in (x, f"max(2, {x})", f"max(1, int({x}))"))
+        if not ok:
+            bad.append(f"{rel}:{line} bar_n({x}) inside {ctx[:60]!r}")
+    assert not bad, bad
+
+
+def test_the_min_form_never_rises_numerically() -> None:
+    from libs.validation.dsr import expected_max_sharpe
+    for n in range(1, 50):
+        pinned = expected_max_sharpe(min(n, tcg.bar_n(n)), 0.01)
+        assert pinned <= expected_max_sharpe(n, 0.01) + 1e-15      # never above today
+        assert pinned <= expected_max_sharpe(tcg.BAR_N, 0.01) + 1e-15  # never above the bar

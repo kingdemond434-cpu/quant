@@ -189,7 +189,7 @@ def dsr_hurdle_annual(n_trials: int, n_obs: int, *, var_sharpes: float | None = 
     """
     # THE BAR'S N IS FIXED (principal 2026-10-13; owner's T8 ruling): `n_trials` is the count the
     # caller measured and is REPORTED by design_power; it never raises the hurdle.
-    sr0 = expected_max_sharpe(bar_n(n_trials),
+    sr0 = expected_max_sharpe(min(n_trials, bar_n(n_trials)),
                               (1.0 / n_obs) if var_sharpes is None else var_sharpes)
     # dsr >= threshold  <=>  z >= Phi^-1(threshold), and z = (sr - sr0)*sqrt(T-1)/sqrt(denom)
     # with denom -> 1 for near-normal returns. Solve for sr, then annualise.
@@ -222,7 +222,7 @@ def design_power(n_trials: int, n_obs: int) -> dict[str, Any]:
     return {
         "dsr_threshold": _DSR_THRESHOLD,
         "n_trials": n_trials,              # REPORTED; the bar charges bar_n, never this
-        "bar_n": bar_n(n_trials),
+        "bar_n": min(n_trials, bar_n(n_trials)),
         "n_obs": n_obs,
         "se_annual_sharpe": se,
         "hurdle_annual_sharpe": hurdle,

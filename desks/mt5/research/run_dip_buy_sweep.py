@@ -81,7 +81,7 @@ CELLS = {
 def main() -> int:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     trials = sum(len(cells) for _, cells in CELLS.values()) * len(SYMBOLS)
-    bar = 1.96 + deflation(bar_n(trials))
+    bar = 1.96 + deflation(min(trials, bar_n(trials)))
     print(f"Dip-buy sweep: {trials} cells "
           f"({sum(len(c) for _, c in CELLS.values())} params x {len(SYMBOLS)} symbols)")
     print(f"required t >= {bar:.2f} (deflated for {trials} trials -- this sweep's own count)\n")

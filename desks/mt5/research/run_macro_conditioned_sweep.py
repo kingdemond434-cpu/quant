@@ -146,7 +146,7 @@ def main() -> int:
     trials = len(pairs) * 2          # each cell run unconditioned AND conditioned
     print(f"Macro-conditioned sweep: {len(pairs)} cells x 2 arms = {trials} runs")
     print(f"STAGE A = RANKING (TWO_STAGE_DISCOVERY_LAW). screening bar t >= {SCREEN_BAR}")
-    print(f"[deflated bar for {trials} would be {1.96 + deflation(bar_n(trials)):.2f} -- "
+    print(f"[deflated bar for {trials} would be {1.96 + deflation(min(trials, bar_n(trials))):.2f} -- "
           f"reference only, promotes nothing]\n")
 
     rows = []

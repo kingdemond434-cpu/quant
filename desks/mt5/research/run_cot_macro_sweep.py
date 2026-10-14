@@ -113,7 +113,7 @@ def flip_side(sigs: list, symbol: str):
 def main() -> int:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     trials = len(FAMILIES) * len(SYMBOL_COT)
-    bar = 1.96 + deflation(bar_n(trials))
+    bar = 1.96 + deflation(min(trials, bar_n(trials)))
     print(f"COT macro sweep: {len(FAMILIES)} families x {len(SYMBOL_COT)} symbols = "
           f"{trials} cells")
     print(f"required t >= {bar:.2f} (deflated for {trials} trials -- this sweep's own count, "

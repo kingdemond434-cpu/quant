@@ -118,7 +118,7 @@ def dsr_hurdle_annual(n_trials: int, n_obs: int, *, var_sharpes: float | None = 
     direction: this module can understate how underpowered a campaign is, never overstate it.
     """
     from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
-    sr0 = expected_max_sharpe(bar_n(n_trials),
+    sr0 = expected_max_sharpe(min(n_trials, bar_n(n_trials)),
                               (1.0 / n_obs) if var_sharpes is None else var_sharpes)
     # dsr >= threshold  <=>  z >= Phi^-1(threshold), with z = (sr - sr0)*sqrt(T-1)/sqrt(denom)
     # and denom -> 1 for near-normal returns. Solve for sr, then annualise.

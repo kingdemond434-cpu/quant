@@ -275,11 +275,11 @@ def deflate(rows: list[dict]) -> list[dict]:
             return 0
     for r in rows:
         r["n_tests_sweep"] = n
-        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), bar_n(n)), 3)
+        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), min(n, bar_n(n))), 3)
         fam = str(r.get("cell", "")).split(".")[1] if "." in str(r.get("cell", "")) else ""
         life = family_trials(fam) if fam else 0
         r["n_tests_lifetime"] = int(n + life)
-        r["t_deflated_lifetime"] = round(deflate_t(float(r["t_gross"]), bar_n(n + life)), 3)
+        r["t_deflated_lifetime"] = round(deflate_t(float(r["t_gross"]), min(n + life, bar_n(n + life))), 3)
         r["proposed"] = bool(r.get("clears_cost") and r["t_deflated_sweep"] > PROPOSE_T
                              and int(r.get("n_independent", 0)) >= MIN_TRADES)
     return rows

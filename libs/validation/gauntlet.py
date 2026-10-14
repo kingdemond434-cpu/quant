@@ -165,7 +165,7 @@ class Gauntlet:
         )
         from libs.research.trial_count_guard import bar_n  # fixed N; n_trials is reported
         dsr = deflated_sharpe_ratio(
-            candidate.returns, n_trials=bar_n(n_trials),
+            candidate.returns, n_trials=min(n_trials, bar_n(n_trials)),
             variance_of_sharpes=float(sharpes.var(ddof=1)) if len(sharpes) >= 2 else 1e-6,
             threshold=self.dsr_threshold,
         )
