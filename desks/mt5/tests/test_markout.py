@@ -17,7 +17,7 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
 from mt5desk.markout import (  # noqa: E402
-    IMPLAUSIBLE_R,
+    IMPLAUSIBLE_STOP_FRAC,
     Markout,
     _direction,
     broker_hour,
@@ -37,7 +37,7 @@ def _intent(ticket, intended, side="buy_stop", stop=19.1):
             "symbol": "XAUUSD", "sl": sl}
 
 
-def _deal(ticket, fill, side=BUY, risk=4.0):
+def _deal(ticket, fill, side=BUY, risk=19.1):
     return {"order": ticket, "fill_price": fill, "side": side, "risk_quote": risk,
             "sleeve": "gold_asia", "symbol": "XAUUSD", "deal": ticket * 10}
 
@@ -68,7 +68,7 @@ def test_a_favourable_fill_is_negative_slip():
 
 def test_slippage_is_reported_in_R_because_that_is_the_unit_of_every_gate():
     """0.5 quote on a 19.1 stop distance is 0.0262R -- against a +0.159R edge, 16% of it."""
-    m = compute([_intent(1, 2000.0, stop=19.1)], [_deal(1, 2000.5, BUY)])
+    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.5, BUY, risk=19.1)])
     assert m.mean_slip_r == pytest.approx(0.5 / 19.1, rel=1e-6)
     assert m.edge_share == pytest.approx((0.5 / 19.1) / 0.159, rel=1e-6)
 
@@ -102,7 +102,7 @@ def test_no_fills_yet_is_not_a_clean_bill_of_health():
 
 def test_the_report_escalates_when_slippage_eats_the_edge():
     """0.10R average against a 0.159R edge is 63% of everything the book earns."""
-    m = compute([_intent(1, 2000.0, stop=19.1)], [_deal(1, 2000.0 + 1.91, BUY)])
+    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.0 + 1.91, BUY, risk=19.1)])
     assert m.mean_slip_r == pytest.approx(0.10, abs=0.001)
     out = render(m)
     assert "eating the edge" in out
@@ -199,24 +199,42 @@ def test_the_gateway_writes_the_key_chain_and_filters_magic_in_python():
 # --- 2026-10-14: the R denominator, the breakdown and the quarantine -------------------------
 
 
-def test_R_is_the_intents_stop_distance_never_the_ledgers_account_money_risk():
-    """THE -44R ROW. The live ledger's risk_quote is account money at the traded lot (0.087 EUR on
-    a gold short whose stop sat 0.10 from its fill). Dividing price slip by it read -44.3R and
-    moved the whole book from about 0 to -0.20R."""
+def test_slip_r_math_is_unchanged_and_the_breakdown_marks_R_unmeasured():
+    """slip_r is still price / risk_quote (its denominator fix is owned by another lane); the
+    breakdown refuses to aggregate an incoherent unit and says why."""
     m = compute([_intent(1, 2000.0, "sell", stop=4.0)], [_deal(1, 2001.0, SELL, risk=0.087)],
                 points={})
-    assert m.rows[0]["slip_r"] == pytest.approx(-0.25)
-    assert m.rows[0]["r_basis"] == "intent_stop"
+    assert m.rows[0]["slip_r"] == pytest.approx(-1.0 / 0.087)
+    assert m.rows[0]["slip_stop_frac"] == pytest.approx(-0.25)
+    assert m.rows[0]["stop_basis"] == "intent_stop"
+    r = m.slip["pooled"]["all"]["r"]
+    assert r["mean"] is None and r["status"].startswith("UNMEASURED")
 
 
-def test_the_position_stop_is_the_fallback_and_no_stop_is_unmeasured_not_risk_quote():
+def test_the_44R_row_is_quarantined_on_its_stop_fraction():
+    """Ticket 222937609: a MARKET sell intended at 4338.91 filled at the live bid 4342.75, 0.10
+    under the stop the intent set from its stale price; risk_quote 0.087 EUR made it -44.3R."""
+    it = {"ticket": 222937609, "intended": 4338.91, "side": "sell", "symbol": "XAUUSD",
+          "sl": 4342.852255108066, "sleeve": "xau_m5_anti_breakout_overlap"}
+    d = {"entry_order": 222937609, "entry_price": 4342.75, "fill_price": 4342.89, "side": 0,
+         "sl": 4342.85, "risk_quote": 0.086688, "symbol": "XAUUSD", "deal": 200308589,
+         "sleeve": "xau_m5_anti_breakout_overla"}
+    m = compute([it], [d], points={"XAUUSD": 0.01})
+    row = m.rows[0]
+    assert row["slip_r"] == pytest.approx(-44.297, abs=0.01)
+    assert row["quarantine"] and "stop distance" in row["quarantine"][0]
+    assert m.slip["pooled"]["n_quarantined"] == 1
+    assert m.slip["quarantined"][0]["order"] == 222937609
+
+
+def test_the_position_stop_is_the_fallback_and_no_stop_is_unmeasured():
     it = {"ticket": 1, "intended": 2000.0, "side": "buy", "symbol": "XAUUSD"}
     m = compute([it], [{**_deal(1, 2000.5, BUY, risk=1.0), "sl": 1990.5}], points={})
-    assert m.rows[0]["slip_r"] == pytest.approx(0.05)
-    assert m.rows[0]["r_basis"] == "position_stop"
+    assert m.rows[0]["slip_stop_frac"] == pytest.approx(0.05)
+    assert m.rows[0]["stop_basis"] == "position_stop"
     m2 = compute([dict(it)], [_deal(1, 2000.5, BUY, risk=1.0)], points={})
-    assert m2.rows[0]["slip_r"] is None
-    assert m2.rows[0]["r_basis"].startswith("UNMEASURED")
+    assert m2.rows[0]["slip_stop_frac"] is None
+    assert m2.rows[0]["stop_basis"].startswith("UNMEASURED")
 
 
 def test_the_sign_is_stated_in_the_payload_positive_is_a_cost():
@@ -226,8 +244,9 @@ def test_the_sign_is_stated_in_the_payload_positive_is_a_cost():
     assert "positive = cost" in render(m)
 
 
-def _row(sleeve, sym, slip, r=None, pts=None, hour=10, spread=None, pending=False):
-    row = {"sleeve": sleeve, "symbol": sym, "slip_quote": slip, "slip_r": r, "slip_pts": pts,
+def _row(sleeve, sym, slip, frac=None, pts=None, hour=10, spread=None, pending=False):
+    row = {"sleeve": sleeve, "symbol": sym, "slip_quote": slip, "slip_stop_frac": frac,
+           "slip_pts": pts,
            "broker_hour": hour, "spread_pts_at_decision": spread, "pending": pending}
     from mt5desk.markout import _quarantine
     row["quarantine"] = _quarantine(row)
@@ -244,17 +263,19 @@ def test_breakdown_reports_n_mean_median_p75_per_sleeve_and_symbol_hour():
     assert s["median"] == pytest.approx(25.0)
     assert s["p75"] == pytest.approx(32.5)
     assert b["by_sleeve"]["a"]["n_small"] is True
-    cell = b["by_symbol_hour"]["XAUUSD"]["10"]["clean"]["r"]
-    assert cell["n"] == 2 and cell["mean"] == pytest.approx(0.0375)
+    cell = b["by_symbol_hour"]["XAUUSD"]["10"]["clean"]["pts"]
+    assert cell["n"] == 2 and cell["mean"] == pytest.approx(15.0)
+    assert b["by_symbol_hour"]["XAUUSD"]["11"]["all"]["quote"]["median"] == pytest.approx(0.35)
 
 
 def test_an_implausible_row_is_quarantined_by_name_kept_in_all_excluded_from_clean():
     rows = [_row("a", "XAUUSD", 0.1, 0.02), _row("a", "XAUUSD", -3.84, -0.974)]
     b = slip_breakdown(rows)
     assert b["by_sleeve"]["a"]["n_quarantined"] == 1
-    assert b["by_sleeve"]["a"]["all"]["r"]["n"] == 2
-    assert b["by_sleeve"]["a"]["clean"]["r"]["mean"] == pytest.approx(0.02)
-    assert len(b["quarantined"]) == 1 and str(IMPLAUSIBLE_R) in b["quarantined"][0]["quarantine"][0]
+    assert b["by_sleeve"]["a"]["all"]["quote"]["n"] == 2
+    assert b["by_sleeve"]["a"]["clean"]["quote"]["mean"] == pytest.approx(0.1)
+    assert len(b["quarantined"]) == 1
+    assert str(IMPLAUSIBLE_STOP_FRAC) in b["quarantined"][0]["quarantine"][0]
 
 
 def test_the_spread_rule_quarantines_a_market_order_but_not_a_pending_stop():
@@ -264,8 +285,8 @@ def test_the_spread_rule_quarantines_a_market_order_but_not_a_pending_stop():
 
 def test_an_empty_unit_is_unmeasured_not_zero():
     b = slip_breakdown([_row("a", "EURUSD", 0.0001, None, None)])
-    assert b["pooled"]["all"]["r"]["status"] == "UNMEASURED"
-    assert b["pooled"]["all"]["r"]["mean"] is None
+    assert b["pooled"]["all"]["pts"]["status"] == "UNMEASURED"
+    assert b["pooled"]["all"]["pts"]["mean"] is None
 
 
 def test_points_come_from_the_intent_then_the_surface(tmp_path):
