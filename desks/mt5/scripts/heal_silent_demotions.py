@@ -93,14 +93,25 @@ def _reason(row: dict) -> str:
     return _admission_reason(row)
 
 
+NON_CANON_CERTIFICATES = frozenset({"forward_clock"})
+
+
 def _replication_refusal(row: dict, gate: object | None, waived: set[str]) -> str:
     """THE LIVE DOOR, AT THIS WRITER TOO (coordinator ruling C, 2026-10-14). This script writes
     sleeves.json itself, outside the promoter's `save_sleeves`, so restoring a canon certificate
     to LIVE here needs the same REPLICATED verdict (or the principal's named waiver). Fails closed
     when the verdict book cannot be read. "" means the row may be restored."""
     cert = row.get("certificate")
-    cid = str(row.get("principal_certificate")
-              or (cert.get("cell") if isinstance(cert, dict) else "") or "")
+    # The same three shapes as `promoter.live_certificate` (a test pins the two together): a
+    # principal certificate, a `{"cell": ...}` certificate, or the lanes' clock-key string; the
+    # scalp lane's literal "forward_clock" names a lane, not a certificate.
+    if isinstance(cert, dict):
+        cell = str(cert.get("cell") or "")
+    elif isinstance(cert, str) and cert.strip() not in NON_CANON_CERTIFICATES:
+        cell = cert.strip()
+    else:
+        cell = ""
+    cid = str(row.get("principal_certificate") or cell or "")
     if not cid:
         return ""
     if gate is None:
@@ -138,12 +149,19 @@ def heal(apply: bool) -> int:
         if not _reason(r):
             refusal = _replication_refusal(r, gate, waived)
             if refusal:
-                r["demote_reason"] = refusal       # recorded, so it is a verdict from now on
+                # Recorded as the door's own field, NOT a `*_reason`: a reason would hold the row
+                # forever, while this is re-asked every pass and clears the pass the certificate
+                # replicates (audit of ruling C, 2026-10-14).
+                r["replication_refusal"] = refusal
+                reasoned.append(r)
+                continue
+            r.pop("replication_refusal", None)
         (reasoned if _reason(r) else silent).append(r)
 
     print(f"\nSTANDBY with a recorded reason : {len(reasoned)}  (left alone -- a real verdict)")
     for r in reasoned[:4]:
-        print(f"   {str(r.get('name'))[:46]:<48} {_reason(r)[:70]}")
+        why = _reason(r) or str(r.get("replication_refusal") or "")
+        print(f"   {str(r.get('name'))[:46]:<48} {why[:70]}")
     print(f"STANDBY with NO reason         : {len(silent)}  (restorable)")
     for r in silent[:8]:
         print(f"   {str(r.get('name'))[:46]:<48} exec={r.get('exec')} sym={r.get('symbol')}")

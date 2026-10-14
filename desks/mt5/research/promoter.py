@@ -79,9 +79,11 @@ import math
 import re
 import sys
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -337,12 +339,53 @@ def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, 
 REPLICATION_WAIVER = BASE / "data" / "REPLICATION_WAIVER.json"
 
 
+#: `certificate` values that name a LANE, not a canon certificate. The scalp lane writes the
+#: literal "forward_clock" (its sleeves trade on their own clock and carry no canon spec the
+#: replication lane could re-run); a gold window carries no `certificate` at all.
+NON_CANON_CERTIFICATES: frozenset[str] = frozenset({"forward_clock"})
+
+
 def live_certificate(row: dict) -> str:
-    """The canon certificate a sleeve row trades on, or "" for a row that carries none (a gold
-    window, a scalp lane's own clock): the replication door asks only about canon certificates."""
+    """The canon certificate a sleeve row trades on, or "" for a row that carries none.
+
+    THREE SHAPES, ONE ANSWER (audit of ruling C, 2026-10-14). The principal book writes
+    `principal_certificate`; certified rows carry `certificate: {"cell": ...}`; the main shadow and
+    generic lanes write `certificate` as the clock key STRING, which is the certificate id on this
+    desk (see `promote_generic`/`promote_main`). Reading only the first two let every automatic
+    promotion -- and every no-spec paper clock that matures -- past the door unexamined."""
     cert = row.get("certificate")
-    cell = cert.get("cell") if isinstance(cert, dict) else ""
+    if isinstance(cert, dict):
+        cell = str(cert.get("cell") or "")
+    elif isinstance(cert, str) and cert.strip() not in NON_CANON_CERTIFICATES:
+        cell = cert.strip()
+    else:
+        cell = ""
     return str(row.get("principal_certificate") or cell or "")
+
+
+def replication_check() -> Callable[[dict], str]:
+    """One loaded verdict book and waiver list, asked per row: the refusal text, or "" when the
+    row may go LIVE (no canon certificate, REPLICATED, or waived and not MISMATCH). Fails closed:
+    an unreadable book refuses every certificate-backed row. `replication_door` and
+    `reconcile_capital` ask the same question through this, so a restore the door would undo is
+    never written (and never logged as RESTORED) in the first place."""
+    why_gate = ""
+    gate: Any = None
+    try:
+        from admission_integrity import IntegrityGate
+        gate = IntegrityGate.load()
+    except Exception as exc:
+        why_gate = f"replication verdicts unreadable ({type(exc).__name__}: {exc})"
+    waived = _replication_waivers()
+
+    def check(row: dict) -> str:
+        cert = live_certificate(row)
+        if not cert:
+            return ""
+        if gate is None:
+            return f"REFUSED_UNREPLICATED: {why_gate}"
+        return str(gate.live_refusal(cert, waived=cert in waived) or "")
+    return check
 
 
 def _replication_waivers() -> dict[str, str]:
@@ -370,31 +413,32 @@ def replication_door(rows: list[dict], prior_live: set[str], *, gate: object | N
     reported by the caller, never reversed silently. An unreadable verdict book refuses every new
     certificate-backed LIVE row -- the door fails closed. Returns the names it refused.
     """
-    why_gate = ""
     if gate is None:
-        try:
-            from admission_integrity import IntegrityGate
-            gate = IntegrityGate.load()
-        except Exception as exc:
-            gate = None
-            why_gate = f"replication verdicts unreadable ({type(exc).__name__}: {exc})"
-    waived = _replication_waivers()
+        check = replication_check()
+    else:
+        waived = _replication_waivers()
+
+        def check(row: dict) -> str:
+            cert = live_certificate(row)
+            if not cert:
+                return ""
+            return str(gate.live_refusal(cert, waived=cert in waived) or "")  # type: ignore[attr-defined]
     refused: list[str] = []
     for row in rows:
         name = str(row.get("name") or "")
         if str(row.get("status") or "").upper() != "LIVE" or name in prior_live:
             continue
-        cert = live_certificate(row)
-        if not cert:
-            continue
-        why = (gate.live_refusal(cert, waived=cert in waived)  # type: ignore[attr-defined]
-               if gate is not None else f"REFUSED_UNREPLICATED: {why_gate}")
+        why = check(row)
         if not why:
             continue
         row.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
                     "demoted_at": stamp or datetime.now(tz=UTC).isoformat(timespec="seconds"),
                     "demote_reason": why})
         plog(f"{name}: LIVE refused at the replication door -- {why}")
+        # The lane that wrote this row LIVE may already have logged PROMOTED; the ledger gets the
+        # correction on the same pass so no reader is left with a LIVE that never traded.
+        note_door(name, door="REPLICATION_REFUSED", from_status="LIVE", to_status="STANDBY",
+                  reason=why, evidence={"certificate": live_certificate(row)})
         refused.append(name)
     return refused
 
@@ -2054,6 +2098,7 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
              f"Rows stand as they are -- an unmeasured reading removes nothing and adds nothing.")
         return False
     changed = False
+    repl: Callable[[dict], str] | None = None   # the replication door's check, loaded on first use
     at = str(view.get("at") or "")
     stamp = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
     for s in sleeves:
@@ -2126,6 +2171,19 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
             changed = changed or json.dumps(s, sort_keys=True, default=str) != before
             continue
         if cap["status"] == "LIVE" and status == "STANDBY":
+            if repl is None:
+                repl = replication_check()
+            refusal = repl(s)
+            if refusal:
+                # The replication door would put this row straight back (save_sleeves), so the
+                # restore is not written and no RESTORED event is logged for it (audit P3,
+                # 2026-10-14: three false RESTORED events in three passes). The reading stands.
+                if s.get("replication_refusal") != refusal:
+                    s["replication_refusal"] = refusal
+                    changed = True
+                plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- {refusal}")
+                continue
+            s.pop("replication_refusal", None)
             s.update({"status": "LIVE", "risk_frac": cap["risk_frac"],
                       "risk_frac_source": "allocator_marginal",
                       "restored_at": stamp, "restore_reason": cap["why"]})

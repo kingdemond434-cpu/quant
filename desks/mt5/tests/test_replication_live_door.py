@@ -89,6 +89,9 @@ def test_live_needs_replicated_and_fails_closed_otherwise(tmp_path: Path) -> Non
         assert str(gate.live_refusal(cert)).startswith(ai.REFUSED_UNREPLICATED), cert
 
 
+EVENTS: list[tuple[str, dict]] = []
+
+
 @pytest.fixture()
 def roster(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     path = tmp_path / "sleeves.json"
@@ -99,6 +102,8 @@ def roster(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(promoter, "_apply_live_policy", lambda rows: 0)
     monkeypatch.setattr(promoter, "plog", lambda *a, **k: None)
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {}))
+    EVENTS.clear()
+    monkeypatch.setattr(promoter, "note_door", lambda name, **k: EVENTS.append((name, k)))
 
     def save(prior: list[dict], rows: list[dict]) -> dict[str, dict]:
         path.write_text(json.dumps({"sleeves": prior}), "utf-8")
@@ -121,19 +126,83 @@ def test_the_principal_book_path_is_refused_when_unreplicated(roster) -> None:
     assert got["demote_reason"].startswith(ai.REFUSED_UNREPLICATED)
 
 
-def test_a_reconcile_restore_is_refused_when_unreplicated(roster, monkeypatch) -> None:
+def _reconcile(monkeypatch, rows: list[dict]) -> None:
     monkeypatch.setattr(promoter, "capital_verdict", lambda *a, **k: {
         "status": "LIVE", "risk_frac": 0.03, "streak": 2, "why": "funded"})
-    monkeypatch.setattr(promoter, "note_door", lambda *a, **k: None)
+    promoter.reconcile_capital(rows, {"fresh": True, "at": "2026-10-14T00:00:00+00:00",
+                                      "admission_at": "2026-10-14T01:00:00+00:00"})
+
+
+def test_a_reconcile_restore_is_refused_when_unreplicated(roster, monkeypatch) -> None:
     row = {**_principal_row("STANDBY"), "demote_reason": "the optimiser gives it 0% heat"}
     on_disk = dict(row)
     rows = [row]
-    promoter.reconcile_capital(rows, {"fresh": True, "at": "2026-10-14T00:00:00+00:00",
-                                      "admission_at": "2026-10-14T01:00:00+00:00"})
-    assert rows[0]["status"] == "LIVE"                       # the restore happened in memory
-    got = roster([on_disk], rows)["eurzar_carry_asia_p_8339edce23032d21"]
-    assert got["status"] == "STANDBY"                          # and never reached the file
+    for _ in range(3):                                # three passes, as the audit probe ran
+        _reconcile(monkeypatch, rows)
+        got = roster([on_disk], rows)["eurzar_carry_asia_p_8339edce23032d21"]
+    assert rows[0]["status"] == "STANDBY" and got["status"] == "STANDBY"
+    assert rows[0]["replication_refusal"].startswith(ai.REFUSED_UNREPLICATED)
+    assert not [e for e in EVENTS if e[1].get("door") == "RESTORED"]   # no false RESTORED
+
+
+def test_a_reconcile_restore_of_a_replicated_certificate_is_written(roster, tmp_path,
+                                                                   monkeypatch) -> None:
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS",
+                        _book(tmp_path, {CERT: {"verdict": "REPLICATED"}}))
+    rows = [{**_principal_row("STANDBY"), "replication_refusal": "old"}]
+    _reconcile(monkeypatch, rows)
+    assert rows[0]["status"] == "LIVE" and "replication_refusal" not in rows[0]
+    assert [e[1]["door"] for e in EVENTS] == ["RESTORED"]
+
+
+# The main shadow lane and the generic lane write `certificate` as the clock-key STRING
+# (promoter.promote_main / promote_generic); the scalp lane writes the literal "forward_clock".
+def _lane_row(cert: object, name: str = "EURZAR.carry.asia@M15") -> dict:
+    return {"name": name, "symbol": "EURZAR", "family": "carry", "status": "LIVE",
+            "risk_frac": 0.03, "certificate": cert, "sleeve_id": "sid"}
+
+
+@pytest.mark.parametrize("lane", ["main", "generic"])
+def test_a_string_certificate_lane_is_refused_when_unreplicated(roster, lane) -> None:
+    key = "EURZAR.carry.asia@M15" if lane == "main" else "AUDSGD.macro_conditional.asia@M5"
+    got = roster([], [_lane_row(key, key)])[key]
+    assert (got["status"], got["risk_frac"]) == ("STANDBY", 0.0)
     assert got["demote_reason"].startswith(ai.REFUSED_UNREPLICATED)
+    assert [e[1]["door"] for e in EVENTS] == ["REPLICATION_REFUSED"]   # the ledger is corrected
+
+
+def test_a_string_certificate_that_replicated_goes_live(roster, tmp_path, monkeypatch) -> None:
+    key = "EURZAR.carry.asia@M15"
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS",
+                        _book(tmp_path, {key: {"verdict": "REPLICATED"}}))
+    assert roster([], [_lane_row(key, key)])[key]["status"] == "LIVE"
+
+
+def test_a_matured_no_spec_paper_clock_cannot_go_live(roster, tmp_path, monkeypatch) -> None:
+    key = "CHFNOK.carry.asia#input_symbol=CHFNOK"
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {key: {
+        "verdict": "UNMEASURED", "why": [f"{ai.NO_SPEC_MARK} for family 'carry'"]}}))
+    assert roster([], [_lane_row(key, key)])[key]["status"] == "STANDBY"
+
+
+def test_the_scalp_lane_marker_is_not_a_certificate(roster) -> None:
+    got = roster([], [_lane_row("forward_clock", "xau_m5_anti_breakout_overlap")])
+    assert got["xau_m5_anti_breakout_overlap"]["status"] == "LIVE"
+    assert promoter.live_certificate({"certificate": "forward_clock"}) == ""
+
+
+def test_the_healer_and_the_promoter_read_the_certificate_the_same_way(tmp_path) -> None:
+    spec = importlib.util.spec_from_file_location(
+        "heal_silent_demotions_p", DESK / "scripts" / "heal_silent_demotions.py")
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.NON_CANON_CERTIFICATES == promoter.NON_CANON_CERTIFICATES
+    gate = _gate(tmp_path, {})
+    for row in (_principal_row(), _lane_row("EURZAR.carry.asia@M15"), _lane_row("forward_clock"),
+                _lane_row({"cell": CERT}), {"name": "gold_asia_v4"}):
+        assert bool(mod._replication_refusal(row, gate, set())) == bool(
+            promoter.live_certificate(row)), row
 
 
 def test_a_replicated_certificate_goes_live(roster, tmp_path, monkeypatch) -> None:
@@ -197,6 +266,13 @@ def healer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 def test_the_healer_never_restores_an_unreplicated_certificate(healer) -> None:
     got = healer([{**_principal_row("STANDBY"), "risk_frac": 0.0}], {})
     assert got["eurzar_carry_asia_p_8339edce23032d21"] == "STANDBY"
+
+
+def test_the_healer_refuses_a_string_certificate_and_does_not_make_it_sticky(healer) -> None:
+    key = "EURZAR.carry.asia@M15"
+    row = {**_lane_row(key, key), "status": "STANDBY", "risk_frac": 0.0}
+    assert healer([dict(row)], {})[key] == "STANDBY"
+    assert healer([dict(row)], {key: {"verdict": "REPLICATED"}})[key] == "LIVE"
 
 
 def test_the_healer_still_restores_a_replicated_silent_demotion(healer) -> None:
