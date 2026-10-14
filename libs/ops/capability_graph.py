@@ -856,6 +856,8 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/FALSIFIER_VERDICTS.json",)),
     Node("measurability", "scripts/check_measurability.py",
          writes=("desks/mt5/reports/MEASURABILITY.json",)),
+    Node("style_novelty", "desks/mt5/research/style_novelty.py",
+         writes=("desks/mt5/reports/STYLE_NOVELTY.json", "desks/mt5/reports/NOVELTY_WEEKLY.json")),
     Node("fill_attribution", "desks/mt5/research/fill_attribution.py",
          writes=("desks/mt5/reports/FILL_ATTRIBUTION.json",)),
     Node("forward_reconcile", "desks/mt5/research/forward_reconcile.py",
@@ -913,6 +915,8 @@ HUMAN_READ = frozenset({
     # code and the work orders it names; the converters are the organs that already own each
     # field, so nothing in the graph sizes on it.
     "desks/mt5/reports/MEASURABILITY.json",
+    # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
+    "desks/mt5/reports/NOVELTY_WEEKLY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
     # output is external_survivors.json, whose certificate consumer is declared above.
     "desks/mt5/data/hypotheses/merge_report.json",
@@ -1026,6 +1030,9 @@ HUMAN_READ = frozenset({
 #: prospector's targets, the box's PowerShell reads the manifest. DECLARED, so a DEAD_PRODUCER
 #: verdict cannot be silenced by an unnamed "something reads it".
 EXTERNAL_READERS = {
+    "desks/mt5/reports/STYLE_NOVELTY.json": ("judge_coverage.rank_by_value's novelty factor and "
+                                             "merge_hypotheses.breadth_order: the docket order "
+                                             "the sealed gauntlet judges in"),
     "desks/mt5/data/prospector_targets.json": "world_crawler (side_channels)",
     "desks/mt5/data/hypotheses/deepened_candidates.json": "external_gauntlet via compiler merge",
     "desks/mt5/data/state_fits.json": "state_vector_build (its own cache)",
