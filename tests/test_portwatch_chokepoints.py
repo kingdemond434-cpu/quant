@@ -373,18 +373,28 @@ def test_a_server_ignoring_result_offset_fails_on_the_first_repeat(tmp_path: Pat
     assert rec["status"] == "FAILED:OFFSET_IGNORED" and len(g.data_urls) == 2
 
 
+@pytest.mark.parametrize(("n", "want"), [(5, 4.56), (10, 3.45), (24, 3.06), (50, 2.94),
+                                         (100, 2.89), (500, 2.85)])
+def test_the_tier_s_bar_reproduces_the_canonical_dsr_table(n: int, want: float) -> None:
+    from libs.research import release_gain as RG
+    assert abs(RG.tier_s_t_required(n) - want) <= 0.01
+    # never below the canonical normal-shape bar, whatever the sample shape
+    for sk, ku in ((0.8, 2.2), (0.0, 2.5), (-1.0, 6.0), (1.5, 9.0)):
+        assert RG.tier_s_t_required(n, sk, ku) >= RG.tier_s_t_required(n) - 1e-12
+    assert RG.tier_s_t_required(4) == float("inf")
+
+
 @pytest.mark.parametrize("n_cells", [7, 10, 11, 12, 30])
-def test_the_gain_bar_is_the_fixed_tier_s_bar_at_every_family_size(n_cells: int) -> None:
+def test_no_family_size_enters_any_bar(n_cells: int) -> None:
     import inspect
 
     from libs.research import release_gain as RG
-    assert RG.TIER_S_T_BAR == 2.84
-    assert "n_cells" not in inspect.signature(RG.release_gain).parameters   # no count enters
-    assert RG.min_detectable_ic(250) == RG.min_detectable_ic(250, t_bar=2.84)
-    assert RG.GainResult("FAIL", None, 0, None, None, None, None, None, 0, 1, "").t_bar == 2.84
+    assert not hasattr(RG, "TIER_S_T_BAR")                 # no bare constant bar
+    assert "n_cells" not in inspect.signature(RG.release_gain).parameters
+    assert "n_trials" not in inspect.signature(RG.regime_placebo).parameters
     src = inspect.getsource(RG.release_gain) + inspect.getsource(RG.min_detectable_ic)
     assert "n_cells" not in src and "Bonferroni" not in src
-    # the caller records the family size and never charges it
     gsrc = inspect.getsource(A.gain_tests)
     assert "n_cells=" not in gsrc and "cells_in_family" in gsrc
-    assert n_cells > 0                                    # every size reads the same 2.84 bar
+    # the bar a cell meets is its own n's, identical for every family size
+    assert RG.tier_s_t_required(60) == RG.tier_s_t_required(60) and n_cells > 0
