@@ -184,7 +184,7 @@ def test_a_held_source_is_never_asked_and_an_unadmitted_cache_is_never_served(tm
     held = va.FredVolSource(fetch=lambda u, t: asked.append(u) or "",
                             evidence={**va.FRED_TERMS, "policy": "NEEDS_KEY"})
     got, prov = P.reference_history("^GVZ", held, cache_dir=tmp_path, now=NOW)
-    assert got == {} and prov["status"] == "HELD" and asked == []
+    assert got == {} and prov["status"] == va.UNMEASURED_TERMS and asked == []
     (tmp_path / "GVZ.json").write_text(json.dumps(
         {"ticker": "^GVZ", "fetched_at": NOW.isoformat(), "series": {"2026-10-02": 19.0}}))
     got2, prov2 = P.reference_history("^GVZ", None, cache_dir=tmp_path, now=NOW)
@@ -357,7 +357,9 @@ def test_one_pass_writes_series_feeds_the_forge_and_donates_each_cell_once(
     us500 = pd.read_parquet(tmp_path / "lake" / "series" / "oi_US500.parquet")
     assert us500["slope_9d_30d"].notna().sum() > 100           # the VIX curve reached US500
     assert {c["family"] for c in sent[0][1]} == {"implied_vol_state", "implied_vol_conditioned"}
-    assert sent[0][0] == "options_implied" and sent[0][2] == len(sent[0][1])
+    # #234 SF: tests_run is left to the door (None = the rows that actually leave).
+    assert sent[0][0] == "options_implied" and sent[0][2] is None
+    assert doc["donated"]["trials_charged"] == len(sent[0][1])
     assert doc["grid"]["by_symbol"]["US500"] > doc["grid"]["by_symbol"]["EURUSD"]
     rep = json.loads((tmp_path / "reports" / "OPTIONS_IMPLIED.json").read_text())
     assert rep["seat"] == "options_implied"
@@ -418,14 +420,18 @@ def test_with_every_route_held_the_pass_is_unmeasured_and_mints_nothing(monkeypa
     assert asked == [], "a held source sends no request"
     assert doc["status"] == "UNMEASURED" and doc["grid"]["total"] == 0 and sent == []
     assert {r["status"] for r in doc["symbols"].values()} == {"UNMEASURED"}
-    assert {p["status"] for p in doc["reference"].values()} == {"HELD"}
+    assert {p["status"] for p in doc["reference"].values()} == {va.UNMEASURED_TERMS}
     assert doc["sources"]["admitted"] is False
 
 
-def test_the_kept_fred_route_is_asked(tmp_path) -> None:
+def test_an_admitted_fred_route_is_asked_and_the_fenced_default_is_not(tmp_path) -> None:
     asked: list[str] = []
     fixture = "observation_date,GVZCLS\n2026-10-01,19.5\n2026-10-02,.\n"
-    src = va.FredVolSource(fetch=lambda u, t: asked.append(u) or fixture)
+    fenced = va.FredVolSource(fetch=lambda u, t: asked.append(u) or fixture)
+    got0, prov0 = P.reference_history("^GVZ", fenced, cache_dir=tmp_path, now=NOW)
+    assert got0 == {} and prov0["status"] == va.UNMEASURED_TERMS and asked == []
+    ok = {"policy": "PUBLIC_PAGE", "permits_use": True, "quotes": ["fixture clause"]}
+    src = va.FredVolSource(fetch=lambda u, t: asked.append(u) or fixture, evidence=ok)
     got, prov = P.reference_history("^GVZ", src, cache_dir=tmp_path, now=NOW)
     assert src.admitted and asked and got == {"2026-10-01": 19.5}
     assert prov["status"] == "FETCHED"
@@ -456,16 +462,23 @@ def test_the_forcer_no_longer_calls_the_cluster_unreachable() -> None:
     assert "UNREACHABLE BY VENUE" not in ecf.MISSING_ARTIFACT["options_implied"]
 
 
-def test_the_cluster_is_a_register_entry_and_is_admitted_by_the_kept_route(
+def test_the_cluster_is_held_while_the_terms_fence_admits_no_vol_route(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """#234 audit MF: the register defers to terms_fence, where Yahoo, FRED-CBOE and CBOE are
+    IDEAS_ONLY, so the cluster is HELD (UNMEASURED-terms), and admitted again only when a row
+    carries a quoted permitting clause."""
     import empty_cluster_forcer as ecf
     from recorders import vol_archive as va
 
     spec = ecf.CLUSTER_SOURCES["options_implied"]
     assert set(spec["sources"]) <= set(va.TERMS_EVIDENCE)
-    # Ruling 2026-10-13: LIVE's Yahoo route is kept, so the cluster is not held ...
-    assert va.TERMS_EVIDENCE["yahoo"]["route_kept"] is True
-    assert va.TERMS_EVIDENCE["yahoo"]["permits_use"] is False   # ... and the quote stays true
+    assert va.TERMS_EVIDENCE["yahoo"]["policy"] == "IDEAS_ONLY"
+    assert va.TERMS_EVIDENCE["yahoo"]["permits_use"] is False
+    hold = ecf.source_hold("options_implied")
+    assert hold and "yahoo: IDEAS_ONLY" in hold["reason"] and "fred: IDEAS_ONLY" in hold["reason"]
+    ok = {**va.TERMS_EVIDENCE, "fred": {**va.FRED_TERMS, "policy": "PUBLIC_PAGE",
+                                         "permits_use": True}}
+    monkeypatch.setattr(va, "TERMS_EVIDENCE", ok)
     assert ecf.source_hold("options_implied") is None
     for empty in ([], ["options_implied"]):
         (tmp_path / "b.json").write_text(json.dumps({"clusters": {"empty_in_both": empty}}))
@@ -492,3 +505,24 @@ def test_the_cluster_reads_held_only_when_the_register_holds_every_source(
     assert row["verdict"] == row["status"] == "HELD" and row["reason"] == hold["reason"]
     assert not [c for c in doc["cells"] if c.get("alpha_cluster") == "options_implied"]
     assert ecf.source_hold("news_reaction") is None
+
+
+def test_tests_run_counts_only_the_rows_the_door_lets_out(monkeypatch, tmp_path) -> None:
+    """#234 SF: five fresh cells, two turned away by the lane door and two more by the stamp
+    door -- the contract records tests_run == 1, the one row actually donated."""
+    import proposer_common as PC
+
+    monkeypatch.setattr(PC, "INTEL", tmp_path)
+    monkeypatch.setattr(PC, "_blinded", lambda s, c: (c, {}))
+    monkeypatch.setattr(PC, "_lane_filtered", lambda c: (c[:3], c[3:]))
+    monkeypatch.setattr(PC, "_stamped", lambda s, c: (c[:1], c[1:]))
+    monkeypatch.setattr(PC, "_preregister",
+                        lambda s, c: {"preregistered": len(c), "failed": 0})
+    monkeypatch.setattr(PC, "_record_in_registry", lambda s, c: None)
+    path = PC.donate("options_implied", [{"i": i} for i in range(5)], tests_run=None)
+    assert path is not None
+    doc = json.loads(path.read_text())
+    assert doc["tests_run"] == doc["counts"]["donated"] == 1
+    assert PC.donation_counts()["donated"] == 1
+    path2 = PC.donate("options_implied", [{"i": i} for i in range(5)], tests_run=9)
+    assert path2 is not None and json.loads(path2.read_text())["tests_run"] == 9

@@ -72,12 +72,11 @@ HTTP 404 and is therefore not in GROUND at all rather than sitting in it as a pe
 Absences are recorded as absences with the reason -- an unavailable series is a fact about the
 world, and a module that quietly drops it teaches its reader the series was never wanted.
 
-THE SOURCE, AS OF 2026-10-13: LIVE's ROUTE, KEPT. The principal's ruling of 2026-10-13 ("no
-source should be banned") keeps the Yahoo chart route MT5-VolArchive runs, with FRED as its
-fallback. `TERMS_EVIDENCE` is the per-source rule register: each row names its policy, a
-one-line why, whether the route is kept, and the terms read 2026-10-06 quoted verbatim
-(`permits_use` stays what those quotes say). A row whose policy holds it (METHOD_BLOCKED,
-NEEDS_KEY) sends no request and its grounds are recorded HELD. Every row and report carries
+THE SOURCE, AS OF 2026-10-14: THE ONE TERMS FENCE DECIDES. `TERMS_EVIDENCE` is a view of
+`libs/data/terms_fence.SOURCE_POLICY` (rows yahoo, fred_cboe, cboe_vol_indices), never a second
+register. A route serves live input only with a fence status of API_PERMITTED / PUBLIC_PAGE and
+a quoted permitting clause; today none qualifies, so no request is sent and every series reads
+UNMEASURED-terms (never zero; the archive's history is kept). Every row and report carries
 `terms_note` and the route that served (or held) it.
 
 NOTHING HERE IS A SIGNAL. Every row is an observation. The gauntlet decides, this measures, and
@@ -108,6 +107,7 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data import terms_fence as _tf  # noqa: E402
 from recorders.tape_store import _append_line  # noqa: E402
 
 SCHEMA = "vol-archive-1"
@@ -136,88 +136,63 @@ UA = "quant-mt5-research-desk/1.0 (point-in-time vol collector; internal researc
 #: them: the values are CBOE's copyright.
 TERMS_NOTE = "CBOE copyright: internal research only, never redistributed"
 
-#: THE PER-SOURCE RULE REGISTER for the vol indices (principal ruling 2026-10-13: "no source
-#: should be banned"; what stays off is a METHOD -- bypassing a login, paywall, CAPTCHA, rate
-#: limit or region lock). Each row carries its `policy` (API_PERMITTED / NEEDS_KEY / PUBLIC_PAGE /
-#: IDEAS_ONLY / METHOD_BLOCKED), a one-line `why`, and `route_kept`: whether the desk runs that
-#: source as a live-input route. The terms read 2026-10-06 stay QUOTED VERBATIM and
-#: `permits_use` stays what the quotes say -- keeping a route on the principal's ruling is
-#: recorded as exactly that, never as a permission the page does not grant.
-TERMS_EVIDENCE: dict[str, dict[str, Any]] = {
-    "yahoo": {
-        "source": "Yahoo Finance chart API (query1.finance.yahoo.com)",
-        "policy": "PUBLIC_PAGE",
-        "status": "ROUTE_KEPT",
-        "route_kept": True,
-        "why": ("LIVE's MT5-VolArchive route, kept by the principal's ruling of 2026-10-13; two "
-                "requests per index per daily pass, no login, CAPTCHA or rate limit is crossed. "
-                "Its ToS 2.4(i) is quoted below and the call on it is the principal's"),
-        "permits_use": False,
-        "read": "2026-10-06",
-        "pages": ["https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html"],
-        "quotes": [
-            "access or collect data, or attempt to access or collect data, from our Services "
-            "using any automated means, devices, programs, algorithms or methodologies, "
-            "including but not limited to robots, spiders, scrapers, data mining tools, or data "
-            "gathering or extraction tools, for any purpose without our express, prior "
-            "permission. (Terms of Service 2.4(i))",
-        ],
-    },
-    "fred": {
-        "source": "FRED (fred.stlouisfed.org), republishing CBOE indices",
-        "policy": "PUBLIC_PAGE",
-        "status": "ROUTE_KEPT",
-        "route_kept": True,
-        "why": ("LIVE's fallback after Yahoo (research/free_data.fred_series), kept as LIVE runs "
-                "it; public keyless series, fetched politely. The CBOE label below is recorded"),
-        "permits_use": False,
-        "read": "2026-10-06",
-        "pages": ["https://fred.stlouisfed.org/legal/",
-                  "https://fred.stlouisfed.org/series/VIXCLS",
-                  "https://fred.stlouisfed.org/series/GVZCLS"],
-        "quotes": [
-            "BEFORE USING DATA SERIES OWNED BY THIRD PARTIES FOR ANYTHING OTHER THAN YOUR OWN "
-            "PERSONAL USE, YOU MUST CONTACT THE DATA OWNER TO OBTAIN PERMISSION.",
-            "download or print a copy of any portion of the FRED® Content to which you have "
-            "properly gained access solely for your personal, non-commercial use",
-            "Series with the following copyright labels—Public Domain: Citation requested and "
-            "Copyrighted: Citation required—may be used for internal commercial uses",
-            "Copyright, 2016, Chicago Board Options Exchange, Inc. Reprinted with permission. "
-            "(the label on VIXCLS and GVZCLS)",
-        ],
-    },
-    "cboe": {
-        "source": "CBOE daily history CSVs and CBOE website content",
-        "policy": "IDEAS_ONLY",
-        "status": "NO_ROUTE",
-        "route_kept": False,
-        "why": ("no LIVE route reads CBOE's own files; its use-of-content page asks for a signed "
-                "licence, so it stays a source of ideas, not live input"),
-        "permits_use": False,
-        "read": "2026-10-06",
-        "pages": ["https://www.cboe.com/use-of-content"],
-        "quotes": [
-            "In order to use any Cboe logo, data, photo/image or other content contained in Cboe "
-            "websites (collectively \"Cboe Content\"), you must receive approval in advance from "
-            "Cboe.",
-            "You are not approved to use Cboe Content until a license agreement has been signed "
-            "by both you and Cboe.",
-        ],
-    },
+#: THE REGISTER DEFERS TO THE ONE TERMS FENCE (#234 audit MF, 2026-10-14). There is one policy
+#: table on the desk, `libs/data/terms_fence.SOURCE_POLICY`; this module keeps no rules of its
+#: own. Each register row below is a VIEW of a fence row (`fence_key`): its effective live-input
+#: status, its one-line why and its verbatim clauses. A source serves live input only when the
+#: fence's status for it is API_PERMITTED or PUBLIC_PAGE AND a quoted clause from its own terms
+#: page permits the use (`permits_use`) -- fail closed. Yahoo (Terms 2.d.9), FRED's republished
+#: CBOE series (third-party clause) and CBOE itself (signed licence) are all IDEAS_ONLY there, so
+#: no request is sent and every vol series reads UNMEASURED-terms: never a zero, never dropped,
+#: and the archive's history is kept as written. No direct official route serves these indices
+#: (claude/yahoo-direct-sources lists the VIX family NO_DIRECT_SOURCE); when one is found it
+#: gets its own fence row and a source class here. The hold is billed on the missed-growth
+#: ledger as rail `source_terms_hold` (`libs/portfolio/rails.py`).
+_FENCE_KEYS: dict[str, tuple[str, str]] = {
+    "yahoo": ("yahoo", "Yahoo Finance chart API (query1.finance.yahoo.com)"),
+    "fred": ("fred_cboe", "FRED (fred.stlouisfed.org), republishing CBOE indices"),
+    "cboe": ("cboe_vol_indices", "CBOE daily history CSVs and CBOE website content"),
 }
 
-#: Policies under which a source is HELD as live input (the ruling's two holding statuses).
-HOLDING: frozenset[str] = frozenset({"METHOD_BLOCKED", "NEEDS_KEY"})
+#: The status every series reads while its route is held on terms. A string, never a number.
+UNMEASURED_TERMS = "UNMEASURED-terms"
+
+#: Fence statuses under which a route MAY serve live input (still only with a permitting quote).
+_LIVE_OK: frozenset[str] = frozenset({_tf.API_PERMITTED, _tf.PUBLIC_PAGE})
+
+
+def register_row(name: str) -> dict[str, Any]:
+    """The register row for one vol source, read from its terms_fence row (never restated)."""
+    key, source = _FENCE_KEYS[name]
+    row = _tf.SOURCE_POLICY[key]
+    terms = row.get("terms") or {}
+    policy = _tf.live_input_status(key)
+    # A fence row may carry `permits_live_input: True` only beside a quoted permitting clause;
+    # none of these three does, and absence is never read as permission.
+    permits = bool(row.get("permits_live_input")) and bool(terms.get("clauses"))
+    kept = policy in _LIVE_OK and permits
+    return {"source": source, "fence_key": key, "policy": policy,
+            "status": "ROUTE_ADMITTED" if kept else UNMEASURED_TERMS,
+            "route_kept": kept, "why": str(row.get("why", "")), "permits_use": permits,
+            "read": str(terms.get("checked_at", "")),
+            "pages": [terms["url"]] if terms.get("url") else [],
+            "quotes": [str(v) for v in (terms.get("clauses") or {}).values()]}
+
+
+TERMS_EVIDENCE: dict[str, dict[str, Any]] = {n: register_row(n) for n in _FENCE_KEYS}
+
+#: Policies under which a source is HELD outright (the fence's holding statuses).
+HOLDING: frozenset[str] = _tf.HOLDING
 
 
 def route_admitted(row: dict[str, Any] | None) -> bool:
-    """True when a register row lets its source serve live input: the route is kept and its
-    policy does not hold it, or a quoted clause permits the use. Fails closed on a bad row."""
+    """True only when a register row's fence status allows live input (API_PERMITTED or
+    PUBLIC_PAGE) AND a quoted clause permits the use. `route_kept` alone admits nothing: a route
+    the desk would like to keep is not a permission. Fails closed on a bad row."""
     row = row or {}
-    if str(row.get("policy", "")) in HOLDING:
+    if str(row.get("policy", "")) not in _LIVE_OK:
         return False
-    return bool(row.get("route_kept")) or (bool(row.get("permits_use"))
-                                           and bool(row.get("quotes")))
+    return bool(row.get("permits_use")) and bool(row.get("quotes"))
 
 
 YAHOO_TERMS: dict[str, Any] = TERMS_EVIDENCE["yahoo"]
@@ -302,8 +277,8 @@ class FredVolSource:
 
     def series(self, ticker: str) -> dict[str, float] | None:
         if not self.admitted:
-            self.routes[ticker] = {"route": "fred_csv", "status": "HELD",
-                                   "why": self.evidence.get("why", "the register holds it"),
+            self.routes[ticker] = {"route": "fred_csv", "status": UNMEASURED_TERMS,
+                                   "why": self.evidence.get("why", "the fence holds it"),
                                    "requested": False, "terms_note": TERMS_NOTE}
             return None
         sid = FRED_SERIES.get(ticker)
@@ -393,8 +368,10 @@ class YahooVolSource:
             if got_fred:
                 self.routes[ticker] = {"route": "fred", "status": "OBSERVED", "n": len(got_fred)}
             elif not self.admitted:
-                self.routes[ticker] = {"route": "yahoo_chart", "status": "HELD",
-                                       "why": "the register holds every route", "requested": False}
+                self.routes[ticker] = {"route": "yahoo_chart", "status": UNMEASURED_TERMS,
+                                       "why": ("terms_fence admits no route for this series "
+                                               "(Yahoo, FRED-CBOE and CBOE are IDEAS_ONLY)"),
+                                       "requested": False}
             else:
                 self.routes[ticker] = {"route": "yahoo_chart", "status": "UNAVAILABLE"}
             return got_fred
@@ -668,12 +645,12 @@ def observe(source: VolSource, registry: dict[str, Any], universe_dir: Path,
         s = source.series(g.vol_ticker)
         route = route_of(source, g.vol_ticker)
         if not s:
-            held = route["source_status"] == "HELD"
+            held = route["source_status"] in ("HELD", UNMEASURED_TERMS)
             out.append(Observation(
                 **base, **route, value_date="",
                 status=route["source_status"] if held else "UNAVAILABLE",
-                reason=(f"{g.vol_ticker}: source held by its register row, no request sent "
-                        f"(TERMS_EVIDENCE)" if held else
+                reason=(f"{g.vol_ticker}: {UNMEASURED_TERMS} -- terms_fence admits no live "
+                        f"route, no request sent; UNMEASURED, never zero" if held else
                         f"{g.vol_ticker} returned no series -- recorded as an absence, not as "
                         f"a flat or missing value")))
             continue
@@ -820,7 +797,16 @@ def report(rows: list[dict[str, Any]], cycle: list[Observation],
         },
         "cycle": [asdict(o) for o in cycle],
         "unavailable": [o.vol_ticker for o in cycle if o.status == "UNAVAILABLE"],
-        "held_by_source_policy": [o.vol_ticker for o in cycle if o.status == "HELD"],
+        "held_by_source_policy": [o.vol_ticker for o in cycle
+                                  if o.status in ("HELD", UNMEASURED_TERMS)],
+        "unmeasured_terms": [o.vol_ticker for o in cycle if o.status == UNMEASURED_TERMS],
+        # THE MISSED-GROWTH LINE for this hold (rail `source_terms_hold`): what the fence keeps
+        # out of live input, read by research/missed_growth.measure_source_terms_hold.
+        "terms_hold": {"rail": "source_terms_hold",
+                       "held": [o.vol_ticker for o in cycle
+                                if o.status in ("HELD", UNMEASURED_TERMS)],
+                       "why": ("vol index routes held by libs/data/terms_fence (IDEAS_ONLY): "
+                               "no quoted clause permits automated live input")},
         "not_tradeable_here": [o.vol_ticker for o in cycle if o.status == "NOT_TRADEABLE_HERE"],
     }
 

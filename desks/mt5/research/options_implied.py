@@ -39,7 +39,7 @@ the daily lag) plus `world_model.CLOCK_PAD_H` -- D+1 04:00 UTC, about seven hour
 print. Realised vol for D uses this broker's bars up to broker-date D, which closes at 21:00 or
 22:00 UTC on D. The families then hold the stamp back a further `MAX_BROKER_OFFSET_H` before
 aligning it to a broker-labelled bar. Every expanding or rolling statistic uses only values at or
-before its own date. `tests/research/test_options_implied.py` corrupts the future and checks.
+before its own date. `desks/mt5/tests/test_options_implied.py` corrupts the future and checks.
 
 HISTORY, LABELLED HONESTLY. The desk's own vintages (what each index READ when vol_archive looked)
 start 2026-09-05 and override the public series on every date they cover; behind them sits the
@@ -48,10 +48,12 @@ judged on that reference history; each row's `vintage` column says which one it 
 report keeps vol_archive's own `backtestable` line -- false until MIN_VINTAGES desk observations
 exist. NOTHING HERE PROMOTES, SIZES OR CONDITIONS CAPITAL. The gauntlet decides.
 
-SOURCES (2026-10-13): history comes through `vol_archive.YahooVolSource` -- LIVE's MT5-VolArchive
-route (Yahoo chart, then FRED), kept by the principal's ruling -- and each step runs only while
-its row in `vol_archive.TERMS_EVIDENCE`, the per-source rule register, admits it. A source the
-register holds is never asked; a reference cache is used only if an admitted source wrote it; a
+SOURCES (2026-10-14): history comes through `vol_archive.YahooVolSource` (Yahoo chart, then
+FRED), and each step runs only while its row in `vol_archive.TERMS_EVIDENCE` -- a view of the one
+register, `libs/data/terms_fence.SOURCE_POLICY` -- admits it. Today none does (Yahoo, FRED's
+CBOE series and CBOE are IDEAS_ONLY there), so reference history reads UNMEASURED-terms and the
+leg mints nothing until a direct permitted route exists. A source not admitted is never asked;
+a reference cache is used only if an admitted source wrote it; a
 desk vintage counts unless its row was stamped as served by a held route. Every series row, the
 reference cache, the forge feed and the report carry `terms_note`.
 
@@ -249,9 +251,10 @@ def reference_history(ticker: str, source: va.VolSource | None, *, cache_dir: Pa
         return series, {"status": "CACHE_STALE", "fetched_at": fetched_at, "n": len(series),
                         "why": "source did not answer this pass; the last fetch is used"}
     if source is not None and not admitted:
-        return {}, {"status": "HELD", "n": 0, "requested": False,
-                    "why": (f"{type(source).__name__} is held by its vol_archive.TERMS_EVIDENCE "
-                            f"register row; no request sent and no unadmitted cache used")}
+        return {}, {"status": va.UNMEASURED_TERMS, "n": 0, "requested": False,
+                    "why": (f"{type(source).__name__} is not admitted by libs/data/terms_fence "
+                            f"(via vol_archive.TERMS_EVIDENCE); no request sent and no "
+                            f"unadmitted cache used -- UNMEASURED, never zero")}
     return {}, {"status": "UNMEASURED", "n": 0,
                 "why": ("no cache and the source did not answer (offline, or no egress from this "
                         "host)"),
@@ -533,7 +536,8 @@ def run(*, source: va.VolSource | None, dry_run: bool = False,
         feed = forge_feed(frames) if frames else {"status": "NO_FRAMES"}
         if fresh:
             from proposer_common import donate, donation_counts
-            path = donate(source=SEAT, candidates=fresh, tests_run=len(fresh))
+            # tests_run counts only the rows the door lets out (#234 SF).
+            path = donate(source=SEAT, candidates=fresh, tests_run=None)
             counts = donation_counts()
             if path is not None:
                 done |= {identity(c["symbol"], c["family"], c["params"]) for c in fresh}
@@ -573,7 +577,7 @@ def run(*, source: va.VolSource | None, dry_run: bool = False,
                     "minted": counts.get("donated", 0),
                     "refused_wrong_lane": counts.get("refused_wrong_lane", 0),
                     "refused_unstamped": counts.get("refused_unstamped", 0),
-                    "trials_charged": len(fresh) if path else 0,
+                    "trials_charged": int(counts.get("donated", 0)) if path else 0,
                     "rule": "each cell identity is donated once; the docket keeps it"},
         "seconds": round(time.monotonic() - t0, 2),
     }

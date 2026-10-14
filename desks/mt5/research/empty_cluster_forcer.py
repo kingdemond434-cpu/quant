@@ -134,9 +134,11 @@ CLUSTER_PROPOSER = {
 #: unreadable register admits nothing, so the hold fails closed.
 CLUSTER_SOURCES: dict[str, dict[str, Any]] = {
     "options_implied": {
-        "register": "desks/mt5/recorders/vol_archive.py TERMS_EVIDENCE",
+        "register": ("desks/mt5/recorders/vol_archive.py TERMS_EVIDENCE, a view of "
+                     "libs/data/terms_fence.SOURCE_POLICY (yahoo, fred_cboe, cboe_vol_indices)"),
         "sources": ("yahoo", "fred", "cboe"),
-        "unblocks_when": "any listed source's register row admits it (route_admitted)",
+        "unblocks_when": ("a direct route with a quoted clause permitting automated live input "
+                          "is added to terms_fence and vol_archive (route_admitted)"),
     },
 }
 

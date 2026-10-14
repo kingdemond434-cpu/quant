@@ -295,38 +295,53 @@ FRED_FIXTURE = "observation_date,GVZCLS\n2026-10-01,18.20\n2026-10-02,.\n2026-10
 POLICIES = {"API_PERMITTED", "NEEDS_KEY", "PUBLIC_PAGE", "IDEAS_ONLY", "METHOD_BLOCKED"}
 
 
-def test_every_register_row_names_a_policy_a_why_and_its_quotes() -> None:
-    for key, row in va.TERMS_EVIDENCE.items():
-        assert row["policy"] in POLICIES, key
-        assert row["why"] and row["quotes"] and row["pages"], key
-        assert row["permits_use"] is False, f"{key}: the quotes grant no permission; say so"
-    assert va.TERMS_EVIDENCE["yahoo"]["policy"] == "PUBLIC_PAGE"
-    assert va.TERMS_EVIDENCE["yahoo"]["route_kept"] is True          # LIVE's route, kept
+def test_every_register_row_is_a_view_of_its_terms_fence_row() -> None:
+    """#234 audit MF: ONE register. Each vol source row is read off libs/data/terms_fence."""
+    from libs.data import terms_fence as tf
+    keys = {"yahoo": "yahoo", "fred": "fred_cboe", "cboe": "cboe_vol_indices"}
+    for name, row in va.TERMS_EVIDENCE.items():
+        fence = tf.SOURCE_POLICY[keys[name]]
+        assert row["fence_key"] == keys[name]
+        assert row["policy"] == tf.live_input_status(keys[name]) in POLICIES, name
+        assert row["why"] == fence["why"]
+        assert row["quotes"] == list(fence["terms"]["clauses"].values()), name
+        assert row["permits_use"] is False, f"{name}: the quotes grant no permission; say so"
+        assert row["route_kept"] is False and row["status"] == va.UNMEASURED_TERMS
+    assert va.TERMS_EVIDENCE["yahoo"]["policy"] == "IDEAS_ONLY"
     assert "robots, spiders, scrapers" in va.TERMS_EVIDENCE["yahoo"]["quotes"][0]
-    assert va.TERMS_EVIDENCE["fred"]["route_kept"] is True           # LIVE's fallback, kept
+    assert va.TERMS_EVIDENCE["fred"]["policy"] == "IDEAS_ONLY"
     assert va.TERMS_EVIDENCE["cboe"]["policy"] == "IDEAS_ONLY"
-    assert va.TERMS_EVIDENCE["cboe"]["route_kept"] is False
+    src = (_DESK / "recorders" / "vol_archive.py").read_text("utf-8")
+    assert '"policy": "PUBLIC_PAGE"' not in src and '"route_kept": True' not in src, \
+        "vol_archive keeps no register of its own"
 
 
-def test_route_admitted_holds_only_method_blocked_or_needs_key() -> None:
-    assert va.route_admitted(va.YAHOO_TERMS) and va.route_admitted(va.FRED_TERMS)
+def test_route_admitted_needs_a_live_fence_status_and_a_permitting_quote() -> None:
+    assert not va.route_admitted(va.YAHOO_TERMS) and not va.route_admitted(va.FRED_TERMS)
     assert not va.route_admitted(va.CBOE_TERMS)
-    for held in ("METHOD_BLOCKED", "NEEDS_KEY"):
-        assert not va.route_admitted({**va.YAHOO_TERMS, "policy": held})
+    assert not va.route_admitted({**va.YAHOO_TERMS, "route_kept": True}), \
+        "a kept route is not a permission"
+    for held in ("METHOD_BLOCKED", "NEEDS_KEY", "IDEAS_ONLY", "UNREAD"):
+        assert not va.route_admitted({"policy": held, "permits_use": True, "quotes": ["c"]})
     assert not va.route_admitted(None) and not va.route_admitted({})
-    assert not va.route_admitted({"permits_use": True, "quotes": []}), \
+    assert not va.route_admitted({"policy": "PUBLIC_PAGE", "permits_use": True, "quotes": []}), \
         "a permission with no quoted clause is not a permission"
-    assert va.route_admitted({"permits_use": True, "quotes": ["clause"]})
+    assert va.route_admitted({"policy": "PUBLIC_PAGE", "permits_use": True, "quotes": ["c"]})
+    assert va.route_admitted({"policy": "API_PERMITTED", "permits_use": True, "quotes": ["c"]})
 
 
-def test_the_kept_fred_route_parses_and_routes() -> None:
+_PERMITTED = {"policy": "PUBLIC_PAGE", "permits_use": True, "quotes": ["fixture clause"],
+              "why": "fixture"}
+
+
+def test_an_admitted_fred_route_parses_and_routes() -> None:
     asked: list[str] = []
 
     def fetch(url: str, timeout: int) -> str:
         asked.append(url)
         return FRED_FIXTURE
 
-    src = va.FredVolSource(fetch=fetch)
+    src = va.FredVolSource(fetch=fetch, evidence=_PERMITTED)
     assert src.admitted
     assert src.series("^GVZ") == {"2026-10-01": 18.2, "2026-10-05": 19.05}
     assert src.series("^VIX9D") is None
@@ -334,19 +349,44 @@ def test_the_kept_fred_route_parses_and_routes() -> None:
     assert src.routes["^VIX9D"]["status"] == "UNMEASURED"
 
 
-def test_a_held_row_sends_no_request_and_every_ground_reads_held(tmp_path: Path) -> None:
+def test_the_fence_held_register_sends_no_request_and_every_ground_reads_unmeasured_terms(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def no_network(*_a: object, **_k: object) -> None:
+        raise AssertionError("a fenced route opened a connection")
+
+    monkeypatch.setattr(va.urllib.request, "urlopen", no_network)
     asked: list[str] = []
-    held = {**va.FRED_TERMS, "policy": "NEEDS_KEY"}
-    src = va.FredVolSource(fetch=lambda u, t: asked.append(u) or FRED_FIXTURE, evidence=held)
-    obs = va.observe(src, REGISTRY, tmp_path)
-    assert asked == [] and {o.status for o in obs} == {"HELD"}
-    assert all(o.source_route == "FredVolSource:fred_csv" and o.source_admitted is False
-               for o in obs)
-    rep = va.report([], obs, sources=src.provenance())
-    assert set(rep["held_by_source_policy"]) == {g.vol_ticker for g in va.GROUND}
+    for src in (va.FredVolSource(fetch=lambda u, t: asked.append(u) or FRED_FIXTURE),
+                va.YahooVolSource()):
+        assert src.admitted is False
+        obs = va.observe(src, REGISTRY, tmp_path)
+        assert asked == [] and {o.status for o in obs} == {va.UNMEASURED_TERMS}
+        assert all(o.implied_vol is None and o.source_admitted is False for o in obs), \
+            "UNMEASURED-terms is never a zero"
+        rep = va.report([], obs, sources=src.provenance())
+        tickers = {g.vol_ticker for g in va.GROUND}
+        assert set(rep["unmeasured_terms"]) == tickers
+        assert set(rep["held_by_source_policy"]) == tickers
+        assert rep["terms_hold"]["rail"] == "source_terms_hold"
+        assert set(rep["terms_hold"]["held"]) == tickers
 
 
-def test_the_yahoo_route_is_live_and_merges_history_with_the_fresh_tail(
+def test_the_fenced_cycle_keeps_the_archives_history(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    arc = tmp_path / "obs.jsonl"
+    old = va.observe(_full_source(), REGISTRY, tmp_path)
+    va.append(old, arc)
+    monkeypatch.setattr(va.urllib.request, "urlopen",
+                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("network")))
+    held = va.observe(va.YahooVolSource(), REGISTRY, tmp_path)
+    va.append(held, arc)
+    rows = va.read_archive(arc)
+    assert len(rows) == len(old) + len(held)
+    rep = va.report(rows, held)
+    assert rep["desk_vintages_per_ticker"], "earlier vintages survive the hold"
+
+
+def test_an_admitted_yahoo_route_merges_history_with_the_fresh_tail(
         monkeypatch: pytest.MonkeyPatch) -> None:
     import contextlib
     import io as _io
@@ -366,14 +406,12 @@ def test_the_yahoo_route_is_live_and_merges_history_with_the_fresh_tail(
         return contextlib.closing(_io.BytesIO(body))
 
     monkeypatch.setattr(va.urllib.request, "urlopen", fake_urlopen)
-    y = va.YahooVolSource()
+    y = va.YahooVolSource(evidence=_PERMITTED, fred_evidence=va.FRED_TERMS)
     got = y.series("^VIX")
     assert got == {"2025-10-01": 16.0, "2025-10-02": 16.4, "2025-10-03": 16.8}
     assert len(asked) == 2 and all("finance.yahoo.com/v8/finance/chart/" in u for u in asked)
     assert y.routes["^VIX"]["route"] == "yahoo_chart" and y.admitted
-    assert y.provenance()["register"]["yahoo"]["route_kept"] is True
     src = (_DESK / "recorders" / "vol_archive.py").read_text("utf-8")
-    assert "source = YahooVolSource()" in src, "MT5-VolArchive runs LIVE's Yahoo route"
     assert "daily_prices/{" not in src, "no request template for CBOE's IDEAS_ONLY files"
 
 
@@ -384,7 +422,7 @@ def test_a_held_yahoo_row_sends_nothing(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(va.urllib.request, "urlopen", no_network)
     y = va.YahooVolSource(evidence={**va.YAHOO_TERMS, "policy": "METHOD_BLOCKED"},
                           fred_evidence={**va.FRED_TERMS, "policy": "NEEDS_KEY"})
-    assert y.series("^VIX") is None and y.routes["^VIX"]["status"] == "HELD"
+    assert y.series("^VIX") is None and y.routes["^VIX"]["status"] == va.UNMEASURED_TERMS
     assert y.admitted is False
 
 
@@ -398,4 +436,28 @@ def test_terms_note_rides_on_every_row_and_the_report(tmp_path: Path) -> None:
     rep = va.report([], obs, sources=va.FredVolSource(fetch=lambda u, t: "").provenance())
     assert rep["terms_note"] == va.TERMS_NOTE
     assert set(rep["sources"]["register"]) == {"fred", "cboe"}
-    assert va.report([], obs)["sources"]["admitted"] is True
+    assert va.report([], obs)["sources"]["admitted"] is False
+
+
+def test_the_terms_hold_carries_its_missed_growth_line(tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    """A restriction carries a missed-growth line: rail `source_terms_hold`, measured from the
+    report's `terms_hold` block -- UNMEASURED with the names held, never a free zero."""
+    import json
+
+    from libs.portfolio import rails
+    from research import missed_growth as mg
+
+    assert rails.rail("source_terms_hold").measure in mg.MEASURES
+    monkeypatch.setattr(mg, "BASE", tmp_path)
+    assert mg.measure_source_terms_hold(None, {}, {})["verdict"] == mg.UNMEASURED
+    monkeypatch.setattr(va.urllib.request, "urlopen",
+                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("network")))
+    obs = va.observe(va.YahooVolSource(), REGISTRY, tmp_path)
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "VOL_ARCHIVE.json").write_text(json.dumps(va.report([], obs)))
+    got = mg.measure_source_terms_hold(None, {}, {})
+    assert got["verdict"] == mg.UNMEASURED and got["n_held"] == len(va.GROUND)
+    admitted = va.report([], va.observe(_full_source(), REGISTRY, tmp_path))
+    (tmp_path / "reports" / "VOL_ARCHIVE.json").write_text(json.dumps(admitted))
+    assert mg.measure_source_terms_hold(None, {}, {})["verdict"] == mg.NOT_BINDING

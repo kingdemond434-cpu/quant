@@ -191,6 +191,38 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                                       "but not limited to robots, spiders, scrapers, data mining "
                                       "tools, or data gathering or extraction tools, for any "
                                       "purpose without our express, prior permission.")}}},
+    # SERIES-LEVEL ROWS (url_level False: they govern LIVE INPUT of named series, never a host,
+    # so FRED's own public-domain series and cboe.com pages keep their PUBLIC_PAGE default).
+    # `recorders/vol_archive.py` reads its register from these rows and the yahoo row above.
+    "fred_cboe": {"hosts": (), "url_level": False, "status": IDEAS_ONLY,
+                  "sources": ("fred_cboe",),
+                  "why": ("FRED's republished CBOE vol indices (VIXCLS family) are third-party "
+                          "copyrighted series; FRED's legal terms clause requires the owner's "
+                          "permission beyond personal use, so they are never live input"),
+                  "terms": {"url": "https://fred.stlouisfed.org/legal/", "checked_at": "2026-10-06",
+                            "clauses": {
+                                "third_party": ("BEFORE USING DATA SERIES OWNED BY THIRD PARTIES "
+                                                "FOR ANYTHING OTHER THAN YOUR OWN PERSONAL USE, "
+                                                "YOU MUST CONTACT THE DATA OWNER TO OBTAIN "
+                                                "PERMISSION."),
+                                "label": ("Copyright, 2016, Chicago Board Options Exchange, "
+                                          "Inc. Reprinted with permission. (the label on "
+                                          "VIXCLS and GVZCLS)")}}},
+    "cboe_vol_indices": {"hosts": (), "url_level": False, "status": IDEAS_ONLY,
+                         "sources": ("cboe_vol_indices",),
+                         "why": ("CBOE's use-of-content terms require a signed licence for its "
+                                 "data, so its index values are a source of ideas, not live input"),
+                         "terms": {"url": "https://www.cboe.com/use-of-content",
+                                   "checked_at": "2026-10-06",
+                                   "clauses": {
+                                       "approval": ("In order to use any Cboe logo, data, "
+                                                    "photo/image or other content contained in "
+                                                    "Cboe websites (collectively \"Cboe "
+                                                    "Content\"), you must receive approval in "
+                                                    "advance from Cboe."),
+                                       "licence": ("You are not approved to use Cboe Content "
+                                                   "until a license agreement has been signed "
+                                                   "by both you and Cboe.")}}},
     "paywall_proxy": {"hosts": ("12ft.io",), "status": METHOD_BLOCKED, "reason": "paywall",
                       "why": "a proxy whose purpose is to get around paywalls"},
 }

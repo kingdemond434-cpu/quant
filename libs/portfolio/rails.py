@@ -167,6 +167,15 @@ RAILS: tuple[Rail, ...] = (
     Rail("e8_unowned_position_block", "integrity",
          "prop.e8_gold._retry_failed_legs <- position_since_failure",
          "measure_e8_unowned_block"),
+    # THE TERMS / METHOD HOLD ON DATA SOURCES (2026-10-14, #234 and producer-revival audits).
+    # A source whose own terms page grants no quoted permission for automated live input, or
+    # whose only route would need a forged header or a block workaround, is held fail-closed by
+    # libs/data/terms_fence. That is a refusal, so it carries this missed-growth line: each
+    # holding organ writes `terms_hold: {"rail": "source_terms_hold", "held": [...]}` into its
+    # report and missed_growth.measure_source_terms_hold counts what was kept out.
+    Rail("source_terms_hold", "gate",
+         "libs.data.terms_fence <- vol_archive / regional_survivor_hunters terms_hold",
+         "measure_source_terms_hold"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}

@@ -643,6 +643,46 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: Reports whose organs hold a data source on its terms or its method. Each carries
+#: `terms_hold: {"rail": "source_terms_hold", "held": [...], "why": ...}`; an absent report is
+#: skipped (that organ has not run here), never read as nothing held.
+TERMS_HOLD_REPORTS: tuple[str, ...] = ("VOL_ARCHIVE.json", "REGIONAL_SURVIVOR_HUNTERS.json")
+
+
+def measure_source_terms_hold(r: Any, _alloc: dict[str, Any],
+                              _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the terms / method hold on data sources keeps out of the desk, by name.
+
+    PRICING IT IN LOG-WEALTH NEEDS THE DATA IT WITHHOLDS. A held series was never fetched, so
+    no cell built on it was ever judged and there is no expectancy to bill; an invented number
+    would make a hold look free or look ruinous. So a binding hold is UNMEASURED with the count
+    and the names of what it held, and what would price it: a permitted direct route for the
+    same series, whose judged cells then carry the dE[log W] this rail forgoes.
+    """
+    held: dict[str, list[str]] = {}
+    read: list[str] = []
+    for name in TERMS_HOLD_REPORTS:
+        doc = _json(BASE / "reports" / name) or {}
+        if not doc:
+            continue
+        read.append(name)
+        th = doc.get("terms_hold") if isinstance(doc.get("terms_hold"), dict) else {}
+        items = [str(x) for x in (th or {}).get("held") or []]
+        if items:
+            held[name] = items
+    if not read:
+        return {"verdict": UNMEASURED,
+                "why": "no holding organ's report on this host: the hold has not been read"}
+    n = sum(len(v) for v in held.values())
+    if not n:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "reports": read, "why": "every source the holding organs read was admitted"}
+    return {"verdict": UNMEASURED, "n_held": n, "held": held, "reports": read,
+            "why": (f"{n} source series / ground(s) held fail-closed by libs/data/terms_fence; "
+                    f"none was fetched, so no cell on them was judged and the forgone "
+                    f"dE[log W] is UNMEASURED until a permitted direct route serves them")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
