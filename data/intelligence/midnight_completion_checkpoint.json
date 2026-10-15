@@ -15,13 +15,10 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/check_cert_yield.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-15T01:15:22.190099+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-15T02:01:20.131985+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "external_queue_projection": {
    "finished_at": "2026-10-15T00:51:28.952401+00:00",
@@ -36,7 +33,7 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-10-14T19:06:27.109905+00:00",
+   "finished_at": "2026-10-15T02:01:50.574261+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
@@ -84,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-15T01:15:22.190099+00:00"
+ "updated_at": "2026-10-15T02:01:50.574261+00:00"
 }
