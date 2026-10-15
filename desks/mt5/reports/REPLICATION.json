@@ -1,5 +1,5 @@
 {
- "at": "2026-10-15T05:39:48+00:00",
+ "at": "2026-10-15T07:43:22+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -18,113 +18,15 @@
  "n": 16,
  "counts": {
   "REPLICATED": 0,
-  "MISMATCH": 0,
-  "UNMEASURED": 16
+  "MISMATCH": 2,
+  "UNMEASURED": 14
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "GBPSEK.formula.p=449c3280438f8a09",
-   "certificate": "external.GBPSEK.formula.p=449c3280438f8a09",
-   "fp": "ab084b969deb3036",
-   "symbol": "GBPSEK",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPZAR.formula.p=5f13d684f7dd61a0",
-   "certificate": "external.GBPZAR.formula.p=5f13d684f7dd61a0",
-   "fp": "199f4f887ea2572b",
-   "symbol": "GBPZAR",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPZAR.formula.p=449c3280438f8a09",
-   "certificate": "external.GBPZAR.formula.p=449c3280438f8a09",
-   "fp": "87612e00ef94de17",
-   "symbol": "GBPZAR",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPZAR.formula.p=f5b697dc3ae02496",
-   "certificate": "external.GBPZAR.formula.p=f5b697dc3ae02496",
-   "fp": "d486133451fa6382",
-   "symbol": "GBPZAR",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPZAR.formula.p=1a09ad74fae25d3c",
-   "certificate": "external.GBPZAR.formula.p=1a09ad74fae25d3c",
-   "fp": "e6f644b1d1633f9d",
-   "symbol": "GBPZAR",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "USDMXN.formula.p=f5b697dc3ae02496",
-   "certificate": "external.USDMXN.formula.p=f5b697dc3ae02496",
-   "fp": "4cfb6f08a40371ff",
-   "symbol": "USDMXN",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "CHFDKK.spread_state.p=da57aaa44b6097e8",
-   "certificate": "external.CHFDKK.spread_state.p=da57aaa44b6097e8",
-   "fp": "939dda8837aee0b9",
-   "symbol": "CHFDKK",
-   "family": "spread_state",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'spread_state'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURCHF.spread_state.p=4e3e7963cfc9ce12",
-   "certificate": "external.EURCHF.spread_state.p=4e3e7963cfc9ce12",
-   "fp": "db5bde303951a25f",
+   "key": "EURCHF.spread_state.p=db20cbc22a628573",
+   "certificate": "external.EURCHF.spread_state.p=db20cbc22a628573",
+   "fp": "ead57402dd73c881",
    "symbol": "EURCHF",
    "family": "spread_state",
    "verdict": "UNMEASURED",
@@ -135,86 +37,106 @@
    "theirs": {}
   },
   {
-   "lane": "forward",
-   "key": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['abs', 'spread']_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+   "lane": "certificate",
+   "key": "EURZAR.spread_state.p=da57aaa44b6097e8",
+   "certificate": "external.EURZAR.spread_state.p=da57aaa44b6097e8",
+   "fp": "da2fe5b3316fcdc0",
+   "symbol": "EURZAR",
+   "family": "spread_state",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'spread_state'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPMXN.spread_state.p=4e3e7963cfc9ce12",
+   "certificate": "external.GBPMXN.spread_state.p=4e3e7963cfc9ce12",
+   "fp": "5bda813c036f2409",
+   "symbol": "GBPMXN",
+   "family": "spread_state",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'spread_state'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPNOK.spread_state.p=da57aaa44b6097e8",
+   "certificate": "external.GBPNOK.spread_state.p=da57aaa44b6097e8",
+   "fp": "ed5f231190e7bfc8",
+   "symbol": "GBPNOK",
+   "family": "spread_state",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'spread_state'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "EURCHF.spread_state.p=22cad2f50dc66221",
+   "certificate": "external.EURCHF.spread_state.p=22cad2f50dc66221",
+   "fp": "b5fb1de4237674ef",
    "symbol": "EURCHF",
+   "family": "spread_state",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'spread_state'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPNOK.spread_state.p=b7fa9c13b16d8255",
+   "certificate": "external.GBPNOK.spread_state.p=b7fa9c13b16d8255",
+   "fp": "bf83a0ebadf619c5",
+   "symbol": "GBPNOK",
+   "family": "spread_state",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'spread_state'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "CADCHF.formula.p=9a741960f344c2c8",
+   "certificate": "external.CADCHF.formula.p=9a741960f344c2c8",
+   "fp": "3b11a0f2f28b6c13",
+   "symbol": "CADCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
     "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
-   "theirs": {},
-   "divergence": {}
+   "theirs": {}
   },
   {
-   "lane": "forward",
-   "key": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', 'spread']_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
-   "symbol": "EURCHF",
+   "lane": "certificate",
+   "key": "CADCHF.formula.p=f0847d846cad8a63",
+   "certificate": "external.CADCHF.formula.p=f0847d846cad8a63",
+   "fp": "5bda6ae17c259552",
+   "symbol": "CADCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
     "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
-   "theirs": {},
-   "divergence": {}
+   "theirs": {}
   },
   {
    "lane": "forward",
-   "key": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
-   "symbol": "EURCHF",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
-   "symbol": "EURCHF",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=4_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
-   "symbol": "EURCHF",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 48]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
-   "symbol": "EURCHF",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_session=asia_spike_pct=0.98",
+   "key": "EURCHF.spread_state.asia#session=asia",
    "symbol": "EURCHF",
    "family": "spread_state",
    "verdict": "UNMEASURED",
@@ -227,8 +149,21 @@
   },
   {
    "lane": "forward",
-   "key": "EURCHF.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
-   "symbol": "EURCHF",
+   "key": "EURILS.formula.asia#atr_n=20_entry_z=1.5_expr=['min', ['delay', 'spread', 12], 5]_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0",
+   "symbol": "EURILS",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "EURMXN.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+   "symbol": "EURMXN",
    "family": "spread_state",
    "verdict": "UNMEASURED",
    "why": [
@@ -237,83 +172,213 @@
    "ours": {},
    "theirs": {},
    "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+   "symbol": "EURZAR",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['std', 'spread', 3]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+   "symbol": "EURZAR",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['std', 'spread', 3]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+   "symbol": "EURZAR",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "EURZAR.overnight_gap_decay.asia#session=asia",
+   "symbol": "EURZAR",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 5 rebuilt vs 33 in the ledger",
+    "only 5/33 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 5,
+    "pnl_R": 0.931,
+    "cost": {
+     "spread_per_lot": 421.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 18.57834,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 33,
+    "cost_fields": {
+     "spread_per_lot": 328.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 18.63575,
+     "swap_per_lot_per_night": 0.0
+    },
+    "forward_start": "2026-10-07T12:26:48+00:00"
+   },
+   "divergence": {
+    "n_ledger": 33,
+    "n_rebuilt": 5,
+    "matched": 5,
+    "match_share": 0.152,
+    "fill_ratio": 0.152,
+    "median_abs_dR": 0.0761,
+    "pnl_ledger_R": 13.332,
+    "pnl_rebuilt_R": 0.931,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.284,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 0.997
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "EURZAR.overnight_gap_decay.asia#session=overlap",
+   "symbol": "EURZAR",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 9 rebuilt vs 33 in the ledger",
+    "only 9/33 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 9,
+    "pnl_R": 2.228,
+    "cost": {
+     "spread_per_lot": 421.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 18.57834,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 33,
+    "cost_fields": {
+     "spread_per_lot": 328.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 18.63575,
+     "swap_per_lot_per_night": 0.0
+    },
+    "forward_start": "2026-09-30T05:32:20+00:00"
+   },
+   "divergence": {
+    "n_ledger": 33,
+    "n_rebuilt": 9,
+    "matched": 9,
+    "match_share": 0.273,
+    "fill_ratio": 0.273,
+    "median_abs_dR": 0.0761,
+    "pnl_ledger_R": 13.332,
+    "pnl_rebuilt_R": 2.228,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.284,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 0.997
+   }
   }
  ],
- "quarantined": [],
+ "quarantined": [
+  "EURZAR.overnight_gap_decay.asia#session=asia",
+  "EURZAR.overnight_gap_decay.asia#session=overlap"
+ ],
  "unmeasured": [
   {
-   "what": "GBPSEK.formula.p=449c3280438f8a09",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "GBPZAR.formula.p=5f13d684f7dd61a0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "GBPZAR.formula.p=449c3280438f8a09",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "GBPZAR.formula.p=f5b697dc3ae02496",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "GBPZAR.formula.p=1a09ad74fae25d3c",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "USDMXN.formula.p=f5b697dc3ae02496",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "CHFDKK.spread_state.p=da57aaa44b6097e8",
+   "what": "EURCHF.spread_state.p=db20cbc22a628573",
    "why": "no written specification in the spec book for family 'spread_state'"
   },
   {
-   "what": "EURCHF.spread_state.p=4e3e7963cfc9ce12",
+   "what": "EURZAR.spread_state.p=da57aaa44b6097e8",
    "why": "no written specification in the spec book for family 'spread_state'"
   },
   {
-   "what": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['abs', 'spread']_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', 'spread']_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=4_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 48]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "EURCHF.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_session=asia_spike_pct=0.98",
+   "what": "GBPMXN.spread_state.p=4e3e7963cfc9ce12",
    "why": "no written specification in the spec book for family 'spread_state'"
   },
   {
-   "what": "EURCHF.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+   "what": "GBPNOK.spread_state.p=da57aaa44b6097e8",
    "why": "no written specification in the spec book for family 'spread_state'"
+  },
+  {
+   "what": "EURCHF.spread_state.p=22cad2f50dc66221",
+   "why": "no written specification in the spec book for family 'spread_state'"
+  },
+  {
+   "what": "GBPNOK.spread_state.p=b7fa9c13b16d8255",
+   "why": "no written specification in the spec book for family 'spread_state'"
+  },
+  {
+   "what": "CADCHF.formula.p=9a741960f344c2c8",
+   "why": "no written specification in the spec book for family 'formula'"
+  },
+  {
+   "what": "CADCHF.formula.p=f0847d846cad8a63",
+   "why": "no written specification in the spec book for family 'formula'"
+  },
+  {
+   "what": "EURCHF.spread_state.asia#session=asia",
+   "why": "no written specification in the spec book for family 'spread_state'"
+  },
+  {
+   "what": "EURILS.formula.asia#atr_n=20_entry_z=1.5_expr=['min', ['delay', 'spread', 12], 5]_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0",
+   "why": "no written specification in the spec book for family 'formula'"
+  },
+  {
+   "what": "EURMXN.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+   "why": "no written specification in the spec book for family 'spread_state'"
+  },
+  {
+   "what": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+   "why": "no written specification in the spec book for family 'formula'"
+  },
+  {
+   "what": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['std', 'spread', 3]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+   "why": "no written specification in the spec book for family 'formula'"
+  },
+  {
+   "what": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['std', 'spread', 3]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+   "why": "no written specification in the spec book for family 'formula'"
   }
  ],
  "recorded": {
-  "quarantined": 0,
-  "memory": 0,
-  "candidates": 0
+  "quarantined": 2,
+  "memory": 2,
+  "candidates": 274
  },
  "cursor": {
-  "forward": 1327,
-  "at": "2026-10-15T04:37:46+00:00",
+  "forward": 1335,
+  "at": "2026-10-15T05:39:48+00:00",
   "certificates": 474
  },
  "notes": [],
@@ -331,24 +396,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CADCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CADCHF_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURILS_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 12.59
+ "seconds": 57.48
 }
