@@ -2,33 +2,22 @@
  "pid": 20660,
  "started_utc": "2026-10-14T18:11:13+00:00",
  "task_limit_s": 0.0,
- "sweeps": 1,
- "failures": 1,
+ "sweeps": 2,
+ "failures": 2,
  "lane_held": 0,
- "hung_kills": 1,
- "busy_seconds": 17283.1,
+ "hung_kills": 2,
+ "busy_seconds": 51846.9,
  "status": "SWEEPING",
  "longest_sweep_s": null,
- "consecutive_hangs": 1,
- "sweep_started_utc": "2026-10-14T22:59:32+00:00",
- "hang_limit_s": 34560.0,
+ "consecutive_hangs": 2,
+ "sweep_started_utc": "2026-10-15T08:36:06+00:00",
+ "hang_limit_s": 69120.0,
  "last_rc": 124,
- "last_sweep_s": 17283.1,
- "uptime_s": 17283.2,
- "last_sweep_ended_utc": "2026-10-14T22:59:16+00:00",
- "last_hung_utc": "2026-10-14T22:59:16+00:00",
+ "last_sweep_s": 34563.8,
+ "uptime_s": 51862.2,
+ "last_sweep_ended_utc": "2026-10-15T08:35:35+00:00",
+ "last_hung_utc": "2026-10-15T08:35:35+00:00",
  "killed_in_phase": {
-  "pid": 15980,
-  "sweep_started_utc": "2026-10-14T18:11:14+00:00",
-  "phases": {
-   "plan": 9974.6
-  },
-  "phase": "build_shards",
-  "phase_started_utc": "2026-10-14T20:57:29+00:00"
- },
- "backoff_s": 15,
- "heartbeat_utc": "2026-10-15T08:35:15+00:00",
- "sweep_phase": {
   "pid": 20940,
   "sweep_started_utc": "2026-10-14T22:59:41+00:00",
   "phases": {
@@ -36,5 +25,14 @@
   },
   "phase": "build_shards",
   "phase_started_utc": "2026-10-15T01:54:58+00:00"
+ },
+ "backoff_s": 30,
+ "heartbeat_utc": "2026-10-15T08:50:19+00:00",
+ "sweep_phase": {
+  "pid": 21096,
+  "sweep_started_utc": "2026-10-15T08:36:15+00:00",
+  "phases": {},
+  "phase": "plan",
+  "phase_started_utc": "2026-10-15T08:36:15+00:00"
  }
 }
