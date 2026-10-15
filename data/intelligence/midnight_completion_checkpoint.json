@@ -3,15 +3,10 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-15T18:16:19.156537+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-15T19:39:39.058966+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
    "finished_at": "2026-10-15T17:53:02.368521+00:00",
@@ -26,16 +21,16 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-15T17:40:10.030837+00:00",
+   "finished_at": "2026-10-15T19:40:32.320938+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-15T17:52:46.786834+00:00",
+   "finished_at": "2026-10-15T19:42:53.039110+00:00",
    "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
+   "returncode": 0,
+   "status": "DONE"
   },
   "forward_clock_fence": {
    "finished_at": "2026-10-15T17:55:52.104626+00:00",
@@ -86,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-15T18:16:19.156537+00:00"
+ "updated_at": "2026-10-15T19:42:53.039110+00:00"
 }
