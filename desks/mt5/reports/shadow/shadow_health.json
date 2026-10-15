@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-15T16:37:34+00:00",
+  "updated_at": "2026-10-15T17:35:19+00:00",
   "configured_sleeves": 693,
   "represented_sleeves": 693,
   "certified_sleeves_total": 974,
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 10
     },
     "age_measured": 49,
-    "median_age_days": 9.838,
+    "median_age_days": 9.878,
     "mature_14d_without_trade": 18,
     "fresh_attempts": 39,
     "naturally_inactive": 38,
@@ -42,8 +42,10 @@
   "missing_sleeves": [
     "128 certified sleeve(s)"
   ],
-  "errors": {},
-  "seconds": 2511.506,
+  "errors": {
+    "promoter": "OSError: [Errno 22] Invalid argument: 'C:\\\\opt\\\\quant\\\\desks\\\\mt5\\\\reports\\\\shadow\\\\shadow_state.json'"
+  },
+  "seconds": 2362.89,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -56,5 +58,5 @@
     "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
   ],
   "live_exposure_aliases": {},
-  "status": "ENROLMENT_GAP"
+  "status": "FAILED"
 }
