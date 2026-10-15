@@ -111,5 +111,71 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "i6-BtuGFr1U",
+  "published": "2026-10-15T15:55:10Z",
+  "title": "LIVE TRADING!  | NEW YORK SESSION W/ Thomas, Christoph | IQ Capital TV |  THURSDAY 15/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalofficial\n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\nTranscript",
+  "links": [
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "i6-BtuGFr1U",
+  "published": "2026-10-15T16:03:24Z",
+  "title": "LIVE TRADING!  | NEW YORK SESSION W/ Thomas, Christoph | IQ Capital TV |  THURSDAY 15/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalofficial\n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\nTranscript",
+  "links": [
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "fCWecHA0sDg",
+  "published": "2026-10-15T16:31:42Z",
+  "title": "I Will NEVER Replace This Chair!",
+  "description": "This chair has seen every win, every loss and every crash out. \ud83e\ude91",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCmrU1HFPpy5DfUySK6okqEA",
+  "channel": "Lewis Jackson",
+  "video_id": "kHjqSmGRLTU",
+  "published": "2026-10-15T16:41:09Z",
+  "title": "I Reverse Engineered the Bloomberg Terminal and Made It FREE",
+  "description": "Get the free prompt: https://lewiswjackson.com/q/bbterm-desc-l1\nLearn how to quant trade with AI (+ $500 trading competition): https://lewiswjackson.com/q/bbterm-desc-l2\n\nA Bloomberg Terminal costs $31,980 a year for one seat, on a two-year contract. I reverse engineered it from Bloomberg's public pages and public data, and called mine Amber Terminal. You paste one prompt into Claude Code or Codex and it installs on your own computer in about 30 seconds: 45 function codes like WEI, DES, GP, WIRP, OMON and ECO, four panels, the Bloomberg-style keyboard, news, SEC filings, rates, options and a backtester with quant checks. Mac, Windows or Linux.\n\nClaude connects to it, so you can ask about the markets in plain English and it answers from the same screens. The prompt page has 12 playbooks for trading with it: a morning brief, whether the earnings move is already priced, what the Fed is priced to do, insiders buying their own stock, and red flags in company filings.\n\nEvery number comes from a public source with no account or API key, and the DATA screen shows where each one comes from. Some stock and futures prices run up to 15 minutes behind. It doesn't have Bloomberg's newsroom or its chat.\n\nChapters\n0:00 A $32,000 Bloomberg Terminal, rebuilt\n1:09 What a Bloomberg Terminal is\n2:06 Charts, news and every market\n2:36 Ask Claude about any of it\n3:32 How to use it for trading with Claude\n4:53 Edge or luck? Backtest with quant checks\n5:44 Install it with one prompt\n5:54 Stuck? Where to get help\n6:14 What should I reverse engineer next?\n\nEducational content, not financial advice. Trading involves risk, and past results, backtests included, don't predict future ones. The strategy competition uses simulated money; competition rules: https://www.part-timequant.com/competition-terms\nAmber Terminal is an independent project, not affiliated with or endorsed by Bloomberg L.P. Bloomberg and Bloomberg Terminal are trademarks of Bloomberg Finance L.P. Charts use TradingView Lightweig",
+  "links": [
+   "https://lewiswjackson.com/q/bbterm-desc-l1",
+   "https://lewiswjackson.com/q/bbterm-desc-l2",
+   "https://www.part-timequant.com/competition-terms"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
