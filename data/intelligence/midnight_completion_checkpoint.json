@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-10-15T17:55:35.126565+00:00",
+   "finished_at": "2026-10-15T21:10:03.812553+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,53 +33,53 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-10-15T17:55:52.104626+00:00",
+   "finished_at": "2026-10-15T21:10:18.255259+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-15T17:54:06.325901+00:00",
+   "finished_at": "2026-10-15T20:53:22.872592+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-15T17:53:50.064184+00:00",
+   "finished_at": "2026-10-15T20:52:46.113825+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-15T17:54:19.010049+00:00",
+   "finished_at": "2026-10-15T20:56:43.248910+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-15T17:53:31.403988+00:00",
+   "finished_at": "2026-10-15T20:52:15.034374+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-15T17:54:59.893179+00:00",
+   "finished_at": "2026-10-15T21:03:26.516238+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-15T17:55:16.670682+00:00",
+   "finished_at": "2026-10-15T21:09:49.135981+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-15T17:54:39.873342+00:00",
+   "finished_at": "2026-10-15T20:59:41.015504+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-15T20:50:38.388389+00:00"
+ "updated_at": "2026-10-15T21:10:18.255259+00:00"
 }
