@@ -1,25 +1,20 @@
 {
- "generated_utc": "2026-10-12T04:51:22.850118+00:00",
+ "generated_utc": "2026-10-15T19:02:42.155173+00:00",
  "gaps": {},
  "timestamp_overlap": {
   "name": "timestamp_overlap",
   "status": "MEASURED",
-  "n_eff": 8.814,
-  "n_nominal": 473,
-  "n_obs": 8479260,
+  "n_eff": 9.049,
+  "n_nominal": 474,
+  "n_obs": 8805650,
   "informational": true,
   "in_headline": false,
-  "why": "473 sleeves, 111628 pairs, 14972 never in the market at the same minute; 2198 of 17244 same-mechanism pairs fire in disjoint hours",
+  "why": "474 sleeves, 112101 pairs, 15118 never in the market at the same minute; 2241 of 17375 same-mechanism pairs fire in disjoint hours",
   "rule": "Jaccard of the calendar minutes each pair of sleeves held a position, from the shadow ledgers' entry/exit stamps; n_eff = n^2 / sum_ij J_ij with J_ii = 1. INFORMATIONAL: published beside the readings and excluded from the headline minimum until the allocator consumes it. It can only raise measured breadth where same-mechanism sleeves fire in different hours; it never lowers the headline",
-  "n_pairs": 111628,
-  "mean_jaccard": 0.1116,
-  "n_disjoint_pairs": 14972,
+  "n_pairs": 112101,
+  "mean_jaccard": 0.1086,
+  "n_disjoint_pairs": 15118,
   "most_overlapping": [
-   [
-    "AUDCAD_clock_transition_asia",
-    "USDCHF_clock_transition_asia",
-    1.0
-   ],
    [
     "XAUAUD_joint_genome_continuous",
     "XAUAUD_momentum_volgate_continuous",
@@ -28,22 +23,17 @@
    [
     "AUDJPY_clock_transition_asia",
     "CHFDKK_clock_transition_asia",
-    0.988
+    0.989
    ],
    [
     "AUDCAD_clock_transition_asia",
     "GBPCAD_clock_transition_asia",
-    0.988
+    0.989
    ],
    [
-    "GBPCAD_clock_transition_asia",
+    "AUDCAD_clock_transition_asia",
     "USDCHF_clock_transition_asia",
-    0.988
-   ],
-   [
-    "CHFDKK_formula_asia",
-    "EURCHF_formula_asia",
-    0.978
+    0.989
    ],
    [
     "XAUEUR_turn_of_month_continuous",
@@ -51,15 +41,25 @@
     0.977
    ],
    [
-    "XAUAUD_macro_conditional_asia",
-    "XAUEUR_macro_conditional_asia",
-    0.976
+    "GBPCAD_clock_transition_asia",
+    "USDCHF_clock_transition_asia",
+    0.977
+   ],
+   [
+    "CHFDKK_formula_asia",
+    "GBPCHF_formula_asia",
+    0.977
+   ],
+   [
+    "CHFDKK_formula_asia",
+    "EURCHF_formula_asia",
+    0.977
    ]
   ],
   "same_mechanism": {
-   "n_pairs": 17244,
-   "mean_jaccard": 0.2288,
-   "n_disjoint_pairs": 2198,
+   "n_pairs": 17375,
+   "mean_jaccard": 0.2214,
+   "n_disjoint_pairs": 2241,
    "disjoint_pairs": [
     [
      "AUDCAD_clock_transition_asia",
@@ -124,7 +124,7 @@
    ]
   },
   "headline_unchanged": true,
-  "would_raise_headline_to": 8.814
+  "would_raise_headline_to": 9.049
  },
  "factor_rank": {
   "name": "exposure_notional_rank",
@@ -138,17 +138,44 @@
   "in_headline": false,
   "headline_unchanged": true
  },
+ "allocator_history": {
+  "name": "allocator_history_returns",
+  "informational": true,
+  "in_headline": false,
+  "headline_unchanged": true,
+  "source": "C:\\opt\\quant\\desks\\mt5\\data\\pf_allocator_cache\\daily_r.parquet",
+  "provenance": "backtest_replay (pf_allocator.build_evidence): gold windows + hunt survivors, not the funded book; never a headline or capital input",
+  "status": "MEASURED",
+  "n_eff": 2.896,
+  "n_nominal": 5,
+  "n_obs": 495,
+  "why": "10 pair(s) cleared the 20-day overlap floor, thinnest overlap 495d; rho <= 0.182 at the 95% upper bound (point 0.130), not the point estimate",
+  "detail": {
+   "n_pairs": 10,
+   "rho_upper": 0.1816,
+   "rho_point": 0.1301,
+   "se_z": 0.0321,
+   "se_rule": "mean_of_pair_se",
+   "evidence_ceiling": 4.129,
+   "n_sleeves_with_returns": 5,
+   "n_in_cleared_pairs": 5,
+   "pair_coverage": 1.0,
+   "evidence_limited": false
+  },
+  "n_sleeves": 5,
+  "source_mtime": "2026-10-15T17:25:32.449640+00:00",
+  "unit": "R (per-trade R multiples summed per date, as build_daily writes them)",
+  "rows_summed_into_a_day": 0
+ },
  "nominal": {
-  "sleeves_with_ledgers": 473,
-  "sleeves_in_the_measurement": 453,
+  "sleeves_with_ledgers": 474,
+  "sleeves_in_the_measurement": 456,
   "instruments": 99,
   "instruments_with_bars": 99,
   "dropped": {
    "undirectional": [
     "CADJPY_london_am_NORMAL_DAY",
-    "CHFSGD_pca_residual_asia",
     "FRA40_range_reversion_continuous",
-    "GBPDKK_cross_asset_residual_asia",
     "GBPNZD_pca_residual_continuous",
     "NAS100_trend_ma_cross_continuous",
     "US30_correlation_regime_continuous",
@@ -167,23 +194,23 @@
     "XAUUSD_range_reversion_continuous"
    ]
   },
-  "measured_share_of_sleeves": 0.9577
+  "measured_share_of_sleeves": 0.962
  },
  "effective": {
-  "n_nominal": 453,
-  "effective_breadth": 2.513,
+  "n_nominal": 456,
+  "effective_breadth": 2.918,
   "binding_reading": "realised_returns",
-  "breadth_ratio": 0.0055,
-  "sharpe_multiplier_vs_one_bet": 1.585,
+  "breadth_ratio": 0.0064,
+  "sharpe_multiplier_vs_one_bet": 1.708,
   "status": "MEASURED",
   "readings": [
    {
     "name": "exposure_full_sample",
     "status": "MEASURED",
-    "n_eff": 132.157,
-    "n_nominal": 453,
-    "n_obs": 515,
-    "why": "(sum|w|)^2 / x'Cx on 99 instruments over 515 observations",
+    "n_eff": 122.182,
+    "n_nominal": 456,
+    "n_obs": 519,
+    "why": "(sum|w|)^2 / x'Cx on 99 instruments over 519 observations",
     "detail": {
      "instruments": [
       "AUDCAD",
@@ -286,50 +313,58 @@
       "XTIUSD",
       "XZNUSD"
      ],
-     "mean_pairwise_corr": 0.0316,
-     "max_pairwise_corr": 0.9969
+     "mean_pairwise_corr": 0.0803,
+     "max_pairwise_corr": 0.997
     }
    },
    {
     "name": "exposure_systematic",
     "status": "MEASURED",
-    "n_eff": 181.274,
-    "n_nominal": 453,
-    "n_obs": 515,
-    "why": "3-factor systematic correlation explaining 62.8% of panel variance; idiosyncratic risk excluded from the diversification claim",
+    "n_eff": 160.882,
+    "n_nominal": 456,
+    "n_obs": 519,
+    "why": "3-factor systematic correlation explaining 61.9% of panel variance; idiosyncratic risk excluded from the diversification claim",
     "detail": {
      "k_factors": 3,
-     "variance_explained": 0.6282
+     "variance_explained": 0.6194
     }
    },
    {
     "name": "exposure_stress",
     "status": "MEASURED",
-    "n_eff": 61.35,
-    "n_nominal": 453,
-    "n_obs": 95,
-    "why": "correlation inside the top 20% of a LAGGED regime conditioner (95 observations); the conditioner is known before the returns it labels, so this selects a regime and not a realisation",
+    "n_eff": 57.931,
+    "n_nominal": 456,
+    "n_obs": 96,
+    "why": "correlation inside the top 20% of a LAGGED regime conditioner (96 observations); the conditioner is known before the returns it labels, so this selects a regime and not a realisation",
     "detail": {
      "quantile": 0.2,
      "high": true,
-     "mean_pairwise_corr": 0.0492
+     "mean_pairwise_corr": 0.0501
     }
    },
    {
     "name": "realised_returns",
     "status": "MEASURED",
-    "n_eff": 2.513,
-    "n_nominal": 473,
+    "n_eff": 2.918,
+    "n_nominal": 205,
     "n_obs": 20,
-    "why": "17369 pair(s) cleared the 20-day overlap floor, thinnest overlap 20d; rho <= 0.397 at the 95% upper bound, not the point estimate",
+    "why": "17710 pair(s) cleared the 20-day overlap floor, thinnest overlap 20d; rho <= 0.340 at the 95% upper bound (point 0.021), not the point estimate; EVIDENCE-LIMITED: a zero-correlation book would read 3.08 on this overlap",
     "detail": {
-     "n_pairs": 17369,
-     "rho_upper": 0.3967
+     "n_pairs": 17710,
+     "rho_upper": 0.3395,
+     "rho_point": 0.0207,
+     "se_z": 0.2024,
+     "se_rule": "mean_of_pair_se",
+     "evidence_ceiling": 3.082,
+     "n_sleeves_with_returns": 474,
+     "n_in_cleared_pairs": 205,
+     "pair_coverage": 0.847,
+     "evidence_limited": true
     }
    }
   ],
   "unmeasured": [],
-  "rule": "effective breadth is the MINIMUM over the measured readings, because a book is only as diversified as its worst true answer; combined Sharpe scales as sqrt(k_eff), so 453 nominal sleeves at k_eff 2.51 compound like 2.51 bets, not like 453"
+  "rule": "effective breadth is the MINIMUM over the measured readings, because a book is only as diversified as its worst true answer; combined Sharpe scales as sqrt(k_eff), so 456 nominal sleeves at k_eff 2.92 compound like 2.92 bets, not like 456"
  },
  "exposure_by_instrument": {
   "AUDCAD": 3.0,
@@ -349,7 +384,7 @@
   "CHFNOK": 0.0,
   "CHFPLN": -2.0,
   "CHFSEK": -5.0,
-  "CHFSGD": -2.0,
+  "CHFSGD": -3.0,
   "E35": 1.0,
   "EURAUD": 2.0,
   "EURCAD": 0.0,
@@ -372,7 +407,7 @@
   "GBPAUD": -1.0,
   "GBPCAD": 0.0,
   "GBPCHF": 5.0,
-  "GBPDKK": 2.0,
+  "GBPDKK": 3.0,
   "GBPHUF": -2.0,
   "GBPJPY": 5.0,
   "GBPMXN": -1.0,
@@ -421,9 +456,9 @@
   "XAGEUR": 0.0,
   "XAGUSD": 1.0,
   "XALUSD": 1.0,
-  "XAUAUD": 9.0,
+  "XAUAUD": 7.0,
   "XAUEUR": 6.0,
-  "XAUUSD": 1.0,
+  "XAUUSD": 4.0,
   "XBRUSD": -3.0,
   "XCUUSD": 0.0,
   "XNIUSD": 2.0,
@@ -471,11 +506,11 @@
    "news_reaction"
   ],
   "n_unclassified_traded": 76,
-  "n_unclassified_certified": 97,
+  "n_unclassified_certified": 107,
   "counts_traded": {
    "session_liquidity": 68,
    "macro_rates": 100,
-   "relative_value": 131,
+   "relative_value": 132,
    "fixing_roll_calendar": 13,
    "volatility_transition": 23,
    "trend": 9,
@@ -485,13 +520,13 @@
    "UNCLASSIFIED": 76
   },
   "counts_certified": {
-   "session_liquidity": 68,
+   "session_liquidity": 135,
    "macro_rates": 296,
    "relative_value": 379,
-   "mean_reversion": 34,
-   "UNCLASSIFIED": 97
+   "mean_reversion": 57,
+   "UNCLASSIFIED": 107
   },
-  "largest_cluster_share_traded": 0.277,
+  "largest_cluster_share_traded": 0.2785,
   "target_band": [
    8,
    15
@@ -951,6 +986,7 @@
   "XAUEUR_vol_mean_reversion_continuous": "volatility_transition",
   "XAUEUR_volume_spike_continuous": "UNCLASSIFIED",
   "XAUUSD_asia": "session_liquidity",
+  "XAUUSD_cross_asset_residual_asia": "relative_value",
   "XAUUSD_engulfing_reversal_continuous": "UNCLASSIFIED",
   "XAUUSD_joint_genome_continuous": "UNCLASSIFIED",
   "XAUUSD_level_breakout_continuous": "session_liquidity",
