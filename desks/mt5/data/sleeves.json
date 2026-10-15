@@ -198,13 +198,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'gold_asia_v2' (zeroed by this solve)",
-        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-04T04:54:50+00:00",
@@ -238,13 +238,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'gold_asia_v3' (zeroed by this solve)",
-        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-04T04:54:50+00:00",
@@ -278,13 +278,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'gold_asia_v4' (zeroed by this solve)",
-        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-04T04:54:50+00:00",
@@ -2166,13 +2166,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "UNMEASURED",
+        "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": null,
-        "joined": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
-        "why": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'session_range_breakout'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
@@ -12726,15 +12726,15 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "UNMEASURED",
+        "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": null,
-        "joined": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_e95ea804f8e3f059', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
-        "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_e95ea804f8e3f059', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "demoted_at": "2026-09-30T14:18:56+00:00",
       "demote_reason": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'session_range_breakout', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's",
@@ -25946,13 +25946,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_5a29a76a02065a5a' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "artifact": {
         "version_hash": "10ddca4a838028b6",
@@ -26012,13 +26012,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_8de5a3b89f6be0db' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "artifact": {
         "version_hash": "4ccaddeee1d96c6b",
@@ -26076,15 +26076,15 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "UNMEASURED",
+        "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": null,
-        "joined": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_2479d0d883199a4b', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
-        "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_2479d0d883199a4b', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "artifact": {
         "version_hash": "cf4655e7c5c2f174",
@@ -26142,15 +26142,15 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "UNMEASURED",
+        "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": null,
-        "joined": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
-        "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "artifact": {
         "version_hash": "272ea9dffad18748",
@@ -31568,13 +31568,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_49eee8b22060afb7' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "artifact": {
         "version_hash": "e1a43d9731ef313d",
@@ -31634,13 +31634,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_76a842aadaf3bd86' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "restored_at": "2026-09-30T08:48:07+00:00",
       "restore_reason": "already funded by the allocator at 0.00% heat; the allocator's current solve gives this sleeve 0.00% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))",
@@ -31701,13 +31701,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "restored_at": "2026-09-30T08:48:07+00:00",
       "restore_reason": "already funded by the allocator at 0.00% heat; the allocator's current solve gives this sleeve 0.00% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))",
@@ -31768,13 +31768,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_994638ee9bb08b37' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.002101,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.21% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
       "restored_at": "2026-09-30T08:48:07+00:00",
       "restore_reason": "already funded by the allocator at 0.00% heat; the allocator's current solve gives this sleeve 0.00% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))",
@@ -32034,13 +32034,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "UNMEASURED",
+        "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": null,
-        "joined": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_ff35bb7c8427d66f', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
-        "why": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_ff35bb7c8427d66f', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
@@ -34207,13 +34207,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "UNMEASURED",
+        "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": null,
-        "joined": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_f83412948ea922b5', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
-        "why": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_f83412948ea922b5', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-15T17:55:27.344895+00:00",
