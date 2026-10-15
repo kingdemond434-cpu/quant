@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-15T06:56:05.149067+00:00",
+  "updated_at": "2026-10-15T07:55:14.259522+00:00",
   "pipeline_status": "RETIRED_REDUNDANT",
   "replacement": "shadow_state.json / shadow_forward",
   "active_external_sleeves": 0,
