@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-15T04:04:36+00:00",
+  "updated_at": "2026-10-15T05:53:24+00:00",
   "configured_sleeves": 694,
   "represented_sleeves": 694,
   "certified_sleeves_total": 974,
@@ -9,19 +9,19 @@
   "n_mechanisms": 11,
   "retired_shadow_sleeves": 152,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 634,
+  "sleeves_with_forward_trades": 642,
   "zero_trade_clocks": {
-    "count": 60,
+    "count": 52,
     "by_status": {
-      "ACTIVE": 46,
+      "ACTIVE": 38,
       "BLOCKED_NO_BARS": 4,
       "IDENTITY_BROKEN": 10
     },
-    "age_measured": 60,
-    "median_age_days": 7.663,
+    "age_measured": 52,
+    "median_age_days": 9.391,
     "mature_14d_without_trade": 18,
-    "fresh_attempts": 50,
-    "naturally_inactive": 46,
+    "fresh_attempts": 42,
+    "naturally_inactive": 38,
     "suppressed_or_unproven": 14,
     "suppressed_examples": [
       "UNKNOWN",
@@ -46,7 +46,7 @@
     "128 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 4453.605,
+  "seconds": 3638.205,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
