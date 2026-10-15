@@ -121,6 +121,10 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     if age is not None and age > STALE_H:
         out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
                               "why": f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"})
+        if not require_state:
+            out["verdict"] = "UNMEASURED"
+            out["why"] = "stale exported coverage cannot establish current desk state"
+            return out
 
     fams: dict[str, Any] = {f: r for f, r in (doc.get("families") or {}).items()
                             if isinstance(r, dict)}
