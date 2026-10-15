@@ -64,7 +64,7 @@ OUT_REL = "desks/mt5/reports/QUEUE.json"
 #: Producers, in the order they run. Each is (name, callable(root, queue) -> dict). A producer
 #: that raises is recorded by name and the pass continues: the sweep in step 2 is what tells a
 #: person about failures, so it must not be skipped because a producer was broken.
-PRODUCERS = ("wiring_campaign", "coverage_governor", "cost_evidence")
+PRODUCERS = ("wiring_campaign", "coverage_governor", "cost_evidence", "pit_lag_rejudge")
 
 
 def queue_path(root: Path) -> Path:
@@ -131,8 +131,138 @@ def _cost_evidence(root: Path, queue: TaskQueue) -> dict[str, Any]:
                     "were fine")}
 
 
+#: Where the certificates live (`certificate_truth.Paths`): the gauntlet's authority file and its
+#: seal. Read only.
+CANON_RELS = ("desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+              "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json")
+#: Above the cost producer's understatement scale and below the clock-breach front of the queue
+#: (`clock_certificate.BREACH_PRIORITY`): a certificate judged on unpublished data is a wrong
+#: verdict, but not a clock running with no certificate at all.
+PIT_REJUDGE_PRIORITY = 500.0
+
+
+def _canon_rows(root: Path) -> dict[str, dict[str, Any]]:
+    rows: dict[str, dict[str, Any]] = {}
+    for rel in CANON_RELS:
+        try:
+            doc = json.loads((root / Path(*rel.split("/"))).read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            continue
+        surv = doc.get("survivors") if isinstance(doc, dict) else None
+        for name, row in (surv.items() if isinstance(surv, dict) else ()):
+            if isinstance(row, dict):
+                rows.setdefault(str(name), row)
+    return rows
+
+
+def _family_of(name: str, row: dict[str, Any]) -> str:
+    raw = row.get("shadow_spec")
+    spec: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    fam = spec.get("family") or row.get("family")
+    if fam:
+        return str(fam)
+    cell = str(row.get("cell") or name)
+    return next((p for p in cell.replace("#", ".").split(".") if p == "macro_conditional"), "")
+
+
+def conditioning_series(row: dict[str, Any], default: str) -> tuple[str, str]:
+    """(FRED id, how it was found) for a macro_conditional certificate: the `fred:<id>` its
+    identity records, else the gauntlet's default -- `external_gauntlet.build_cell` calls
+    `_macro_series(h1.index)` with no name, which picks the first `DAILY_MACRO_SERIES` entry."""
+    def _walk(v: Any) -> str | None:
+        if isinstance(v, str) and v.startswith("fred:") and len(v) > 5:
+            return v[5:]
+        if isinstance(v, dict):
+            for x in v.values():
+                got = _walk(x)
+                if got:
+                    return got
+        if isinstance(v, (list, tuple)):
+            for x in v:
+                got = _walk(x)
+                if got:
+                    return got
+        return None
+    got = _walk(row)
+    return (got, "recorded") if got else (default, "gauntlet_default")
+
+
+def _pit_lag_rejudge(root: Path, queue: TaskQueue) -> dict[str, Any]:
+    """Certificates judged under a publication lag the desk has since made LONGER.
+
+    THE REMEDY IS THE GAUNTLET, NOT A VETO (the `cost_evidence` rule). Each revision in
+    `data_os.LAG_REVISIONS` names a source, its series and the families that condition on them;
+    every certificate of those families conditioned on a revised series and GATED BEFORE THE
+    REVISION REACHED THIS BOX is listed in ONE `recertify` task, which the hourly
+    `recertify_canon` leg claims and answers by re-running the ten gates on every standing
+    certificate at today's declared lags. Nothing is demoted here; what the re-judge finds is the
+    gauntlet's verdict, read by the promoter the way every recertification is.
+
+    ONCE PER REVISION, EVER. The journal is the memory: a revision that already has a task in it
+    (any state) is not queued again, and the earliest such task's `created_at` is when the
+    revision reached this box -- a certificate gated after that was judged at the new lag and is
+    not listed. A canon that cannot be read queues nothing and says so (UNMEASURED, L1.28a).
+    """
+    from libs.tiers import data_os
+
+    rows = _canon_rows(root)
+    if not rows:
+        return {"queued": [], "skipped": [], "status": "UNMEASURED",
+                "why": "no canon readable at " + ", ".join(CANON_RELS)}
+    try:
+        import importlib
+        sweep = importlib.import_module("desks.mt5.research.orthogonal_sweep")
+        default = str(sweep.DAILY_MACRO_SERIES[0])
+    except Exception:                       # the box's import layout differs: use the default
+        default = "DTWEXBGS"
+    tasks = list(queue.tasks().values())
+    queued: list[str] = []
+    skipped: list[str] = []
+    revisions: dict[str, Any] = {}
+    for rev in data_os.LAG_REVISIONS:
+        key = f"recertify:pit_lag:{rev['id']}"
+        prior = [t for t in tasks if t.dedupe_key == key]
+        adopted = min((str(t.created_at) for t in prior), default=None)
+        hit: dict[str, list[str]] = {}
+        for name, row in sorted(rows.items()):
+            if _family_of(name, row) not in rev["families"]:
+                continue
+            sid, how = conditioning_series(row, default)
+            if sid not in rev["series"]:
+                continue
+            gated = str(row.get("gated_at") or "")
+            if adopted is not None and gated and gated >= adopted:
+                continue                                   # judged at the revised lag already
+            hit.setdefault(sid, []).append(f"{name} ({how})")
+        n = sum(len(v) for v in hit.values())
+        revisions[rev["id"]] = {"certificates": n, "by_series": {k: len(v) for k, v in hit.items()},
+                                "adopted_at": adopted}
+        if prior:
+            skipped.append(f"{rev['id']}: already queued at {adopted} "
+                           f"({prior[0].state}); {n} certificate(s) predate it")
+            continue
+        if not n:
+            skipped.append(f"{rev['id']}: no certificate conditioned on a revised series")
+            continue
+        task = desk_org().delegate(
+            queue, "recertify", frm="ops",
+            payload={"cell": f"pit_lag:{rev['id']}", "revision": rev["id"],
+                     "source": rev["source"], "was": rev["was"], "now": rev["now"],
+                     "why": rev["why"], "certificates": hit, "n_certificates": n,
+                     "remedy": ("re-run the ten gates on the standing canon at today's declared "
+                                "lags (recertify_canon); no certificate is demoted by this task")},
+            priority=PIT_REJUDGE_PRIORITY, dedupe_key=key)
+        if task is None:
+            skipped.append(f"{rev['id']}: the queue refused it (already live)")
+        else:
+            queued.append(rev["id"])
+    return {"queued": queued, "skipped": skipped, "revisions": revisions,
+            "why": ("a certificate conditioned on a print before it was published is re-judged "
+                    "at the declared lag through the gauntlet; the verdict is the gauntlet's")}
+
+
 _IMPL = {"wiring_campaign": _wiring_campaign, "coverage_governor": _coverage_governor,
-         "cost_evidence": _cost_evidence}
+         "cost_evidence": _cost_evidence, "pit_lag_rejudge": _pit_lag_rejudge}
 
 
 def human_inbox(queue: TaskQueue) -> list[dict[str, Any]]:

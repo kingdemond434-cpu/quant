@@ -1,0 +1,22 @@
+{
+ "_": "BITEMPORAL PRODUCER FLOOR (Tier S AC3): research-side macro/alt-data producers that do NOT read through libs/tiers/bitemporal.BitemporalStore. Only SHRINKS: a producer routed onto the store drops out (check_known_by_date.py --update); a new producer outside the store fails the fence and is never added here.",
+ "outside_store": [
+  "desks/mt5/mt5desk/cell_modifiers.py",
+  "desks/mt5/mt5desk/families_orthogonal.py",
+  "desks/mt5/mt5desk/family_alt_series.py",
+  "desks/mt5/mt5desk/family_exogenous_conditioner.py",
+  "desks/mt5/research/alt_proxies.py",
+  "desks/mt5/research/axis_ingest.py",
+  "desks/mt5/research/deep_forest_miner.py",
+  "desks/mt5/research/event_response_atlas.py",
+  "desks/mt5/research/event_surprise.py",
+  "desks/mt5/research/free_stack_hunter.py",
+  "desks/mt5/research/pf_allocator.py",
+  "desks/mt5/research/run_macro_swing_sweep.py",
+  "desks/mt5/research/world_dataset_hunter.py",
+  "desks/mt5/research/world_model.py",
+  "libs/regime/state_admission.py",
+  "libs/research/country_lab.py",
+  "libs/research/lead_schema.py"
+ ]
+}
