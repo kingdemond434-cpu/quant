@@ -81,6 +81,44 @@ function Get-ResearchTreeCpuSeconds {
   return $totalCpu
 }
 
+function Get-GauntletLauncherAncestor {
+  param([object]$Candidate, [object[]]$Snapshot)
+  $byId = @{}
+  foreach ($item in $Snapshot) { $byId[[int]$item.ProcessId] = $item }
+  $visited = @{}
+  $cursor = $Candidate
+  while ($null -ne $cursor) {
+    $cursorId = [int]$cursor.ProcessId
+    if ($visited.ContainsKey($cursorId)) { return $null }
+    $visited[$cursorId] = $true
+    if ([string]$cursor.CommandLine -match '[\\/]run_sharded_gauntlet\.py(?:["\s]|$)') {
+      return $cursorId
+    }
+    $parentId = [int]$cursor.ParentProcessId
+    if (-not $byId.ContainsKey($parentId)) { return $null }
+    $parent = $byId[$parentId]
+    if ($parent.CreationDate -and $cursor.CreationDate -and
+        $parent.CreationDate -gt $cursor.CreationDate) { return $null }
+    $cursor = $parent
+  }
+  return $null
+}
+
+function Get-ResearchStackedDisposition {
+  param([string]$Pattern, [object]$Keeper, [object]$Candidate, [object[]]$Snapshot)
+  if ($Candidate.ParentProcessId -eq $Keeper.ProcessId -or
+      $Candidate.ParentProcessId -eq $Keeper.ParentProcessId) { return 'KEEP_RELATED' }
+  if ($Pattern -eq 'external_gauntlet' -and
+      [string]$Keeper.CommandLine -match 'shard_worker\(' -and
+      [string]$Candidate.CommandLine -match 'shard_worker\(') {
+    $keeperRoot = Get-GauntletLauncherAncestor -Candidate $Keeper -Snapshot $Snapshot
+    $candidateRoot = Get-GauntletLauncherAncestor -Candidate $Candidate -Snapshot $Snapshot
+    if ($null -eq $keeperRoot -or $null -eq $candidateRoot) { return 'UNMEASURED_ANCESTRY' }
+    if ($keeperRoot -eq $candidateRoot) { return 'KEEP_SHARD_TREE' }
+  }
+  return 'KILL_DUPLICATE'
+}
+
 foreach ($pat in $patterns) {
   $procs = Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
            Where-Object { $_.CommandLine -match $pat } | Sort-Object CreationDate
@@ -96,7 +134,12 @@ foreach ($pat in $patterns) {
   # (rc 75) are what serialise those, not STACKED.
   $keeper = $procs[0]
   foreach ($p in ($procs | Select-Object -Skip 1)) {
-    if ($p.ParentProcessId -ne $keeper.ProcessId -and $p.ParentProcessId -ne $keeper.ParentProcessId) {
+    $disposition = Get-ResearchStackedDisposition -Pattern $pat -Keeper $keeper -Candidate $p -Snapshot $allProcs
+    if ($disposition -eq 'UNMEASURED_ANCESTRY') {
+      $actions += "ANCESTRY UNMEASURED ${pat}: pid $($p.ProcessId) left alone; shard launcher identity unavailable"
+      continue
+    }
+    if ($disposition -eq 'KILL_DUPLICATE') {
       Stop-Process -Id $p.ProcessId -Force
       $actions += "STACKED ${pat}: killed duplicate pid $($p.ProcessId) (kept oldest $($keeper.ProcessId))"
     }
