@@ -1,5 +1,5 @@
 {
- "at": "2026-10-16T18:27:43+00:00",
+ "at": "2026-10-16T19:01:04+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,31 +9,31 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-16T18:25:38+00:00",
+   "at": "2026-10-16T18:59:39+00:00",
    "bandit_at": "2026-10-16T04:21:49.959740+00:00",
-   "hour": "2026-10-16T18",
+   "hour": "2026-10-16T19",
    "arm": "treated",
    "wanted_s": 480,
    "floor_s": 240,
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 240,
-   "surplus_s": 1262.8,
-   "surplus_why": "department 'discovery' measured spare 1263s/hour",
+   "surplus_s": 1198.7,
+   "surplus_why": "department 'discovery' measured spare 1199s/hour",
    "contract": {
-    "n_treated": 27,
+    "n_treated": 28,
     "n_control": 3,
-    "mean_treated": 0.888889,
+    "mean_treated": 0.892857,
     "mean_control": 0.0,
-    "delta": 0.888889,
-    "t": 14.422,
+    "delta": 0.892857,
+    "t": 15.0,
     "verdict": "ADMITTED",
-    "why": "Welch t=14.422 over 27 treated vs 3 held-out leg-runs in the last 14 days",
+    "why": "Welch t=15.0 over 28 treated vs 3 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
    "authoritative": true,
-   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1263s/hour); contract ADMITTED",
+   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1199s/hour); contract ADMITTED",
    "share": 0.2819,
    "baseline": 0.2727,
    "ladder_factor": 1.0,
@@ -55,7 +55,7 @@
    "applied_s": 480,
    "applied": true,
    "granted": true,
-   "why": "share 0.282 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1263s/hour); contract ADMITTED"
+   "why": "share 0.282 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1199s/hour); contract ADMITTED"
   },
   "deepen": {
    "leg": "deepen",
@@ -112,7 +112,7 @@
   }
  },
  "authoritative": true,
- "authority_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=14.422)",
+ "authority_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=15.0)",
  "contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
@@ -124,14 +124,14 @@
   "admitted": 1.0,
   "legs": {
    "alpha_evolution": {
-    "n_treated": 27,
+    "n_treated": 28,
     "n_control": 3,
-    "mean_treated": 0.888889,
+    "mean_treated": 0.892857,
     "mean_control": 0.0,
-    "delta": 0.888889,
-    "t": 14.422,
+    "delta": 0.892857,
+    "t": 15.0,
     "verdict": "ADMITTED",
-    "why": "Welch t=14.422 over 27 treated vs 3 held-out leg-runs in the last 14 days",
+    "why": "Welch t=15.0 over 28 treated vs 3 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
