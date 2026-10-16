@@ -1,10 +1,10 @@
 {
- "generated_utc": "2026-10-16T11:53:58.254077+00:00",
+ "generated_utc": "2026-10-16T20:05:04.650456+00:00",
  "stages": {
   "intake": {
-   "files": 45175,
-   "files_7d": 7091,
-   "rows_recent_files": 3194
+   "files": 45504,
+   "files_7d": 7126,
+   "rows_recent_files": 3189
   },
   "proposers": {
    "factor_residual": {
@@ -23,22 +23,22 @@
     "last": null
    },
    "weak_signal_ensemble": {
-    "files": 150,
+    "files": 151,
     "rows_latest": 3,
-    "last": "2026-10-16T07:44:51.949490+00:00"
+    "last": "2026-10-16T12:39:57.147543+00:00"
    }
   },
   "compiled": {
    "candidates": 30560
   },
   "deepening": {
-   "queued": 1012,
-   "decided_total": 50831,
+   "queued": 1013,
+   "decided_total": 50930,
    "backlog": 0
   },
   "judged": {
-   "cells": 1000095,
-   "unmeasured": 10556
+   "cells": 996471,
+   "unmeasured": 2108
   },
   "certified": {
    "cells": 981,
@@ -53,33 +53,33 @@
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 851,
-   "clocks_ticked_24h": 833,
+   "clocks_ticked_24h": 832,
    "clocks_ticked_7d": 845,
-   "last_tick": "2026-10-16T11:52:05+00:00",
+   "last_tick": "2026-10-16T20:04:53+00:00",
    "engine_silent_hours": 0.0,
-   "n_certificates": 981,
+   "n_certificates": 982,
    "n_enrolled": 847,
-   "n_accruing": 657,
-   "n_blocked": 23,
+   "n_accruing": 663,
+   "n_blocked": 17,
    "n_missing": 0,
    "n_overdue": 0,
    "n_dropped_at_admission": 0,
    "blocked_by_status": {
-    "BLOCKED_NO_BARS": 10,
-    "IDENTITY_BROKEN": 13
+    "IDENTITY_BROKEN": 13,
+    "BLOCKED_NO_BARS": 4
    },
-   "census_at": "2026-10-16T09:10:32+00:00"
+   "census_at": "2026-10-16T16:57:14+00:00"
   },
   "recommendations": {
    "total": 784,
    "open": 216,
-   "open_median_age_days": 50.0
+   "open_median_age_days": 51.0
   }
  },
  "conversion": {
-  "intake_to_compiled": 9.5679,
+  "intake_to_compiled": 9.5829,
   "judged_to_certified": 0.001,
-  "certified_to_forward": 0.6697,
+  "certified_to_forward": 0.6758,
   "certified_to_clock": 0.8634
  },
  "bottleneck": "none obvious"
