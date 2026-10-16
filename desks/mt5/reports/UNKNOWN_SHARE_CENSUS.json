@@ -7,9 +7,9 @@
   "overlay": [],
   "complete": false,
   "stage": "siblings_minted",
-  "utc_day": "2026-10-15",
-  "started_at": "2026-10-15T09:50:37+00:00",
-  "written_at": "2026-10-15T10:02:12+00:00",
+  "utc_day": "2026-10-16",
+  "started_at": "2026-10-16T01:12:18+00:00",
+  "written_at": "2026-10-16T01:18:38+00:00",
   "cells_planned": 6292,
   "cells_visited": 0,
   "judge": {
@@ -20,14 +20,14 @@
   },
   "coarse_proxy": false,
   "memory": {
-    "available_mb": 55617,
-    "rss_cap_mb": 13904,
-    "peak_rss_mb": 441
+    "available_mb": 48446,
+    "rss_cap_mb": 12112,
+    "peak_rss_mb": 497
   },
   "lockbox_cut": null,
   "lockbox_frac": null,
   "cells_carved_at_own_tail": null,
-  "elapsed_s": 599.2,
+  "elapsed_s": 343.6,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 440,
