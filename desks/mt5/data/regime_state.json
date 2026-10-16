@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-16T06:30:26.557575+00:00",
+  "swept_at": "2026-10-16T06:45:32.255826+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -184,8 +184,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 55,
-      "shadow_exp_r": -0.5433,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.6149,
       "woke_on_shadow": false
     },
     "AUDNZD|discovered_asia": {
@@ -4199,8 +4199,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.8704,
+      "shadow_n": 29,
+      "shadow_exp_r": -0.2914,
       "woke_on_shadow": false
     },
     "XAGEUR|fx_fixing_reversal_continuous": {
@@ -4298,8 +4298,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 36,
-      "shadow_exp_r": -0.4702,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.1953,
       "woke_on_shadow": false
     },
     "XAGEUR|range_reversion_continuous": {
@@ -4827,7 +4827,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.041,
+      "shadow_exp_r": -0.0447,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
