@@ -3,15 +3,10 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-15T21:57:07.313228+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-16T00:37:12.991872+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
    "finished_at": "2026-10-15T20:50:38.388389+00:00",
@@ -26,10 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-15T19:40:32.320938+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/promote_external_to_queue.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-16T00:37:48.059128+00:00",
+   "status": "RUNNING"
   },
   "external_queue_reconciliation": {
    "finished_at": "2026-10-15T19:42:53.039110+00:00",
@@ -86,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-15T21:57:07.313228+00:00"
+ "updated_at": "2026-10-16T00:37:48.059128+00:00"
 }
