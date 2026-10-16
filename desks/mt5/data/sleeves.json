@@ -222,7 +222,7 @@
       "canonical_identity_declared_at": "2026-09-23T17:51:23+00:00",
       "restore_reason": "admitted: re-solving at 0.00% total heat with it raises robust growth +0.003518/day (+88.65%/yr) and it earns 3.70% heat -- standalone Sharpe 0.07, correlation to the book unmeasured; the allocator's current solve gives this sleeve 3.70% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia')",
       "cost_hash": "3fb04e33b406e1d7",
-      "cost_basis_source": "universe registry XAUUSD"
+      "cost_basis_source": "row"
     },
     {
       "name": "gold_asia_v3",
@@ -262,7 +262,7 @@
       "canonical_identity_declared_at": "2026-09-23T17:51:23+00:00",
       "restore_reason": "admitted: re-solving at 0.00% total heat with it raises robust growth +0.003518/day (+88.65%/yr) and it earns 3.70% heat -- standalone Sharpe 0.07, correlation to the book unmeasured; the allocator's current solve gives this sleeve 3.70% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia')",
       "cost_hash": "3fb04e33b406e1d7",
-      "cost_basis_source": "universe registry XAUUSD"
+      "cost_basis_source": "row"
     },
     {
       "name": "gold_asia_v4",
@@ -302,7 +302,7 @@
       "canonical_identity_declared_at": "2026-09-23T17:51:23+00:00",
       "restore_reason": "admitted: re-solving at 0.00% total heat with it raises robust growth +0.003518/day (+88.65%/yr) and it earns 3.70% heat -- standalone Sharpe 0.07, correlation to the book unmeasured; the allocator's current solve gives this sleeve 3.70% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia')",
       "cost_hash": "3fb04e33b406e1d7",
-      "cost_basis_source": "universe registry XAUUSD"
+      "cost_basis_source": "row"
     },
     {
       "name": "gold_london_am_v2",
@@ -2235,7 +2235,7 @@
         "delta_elogw_per_day": 0.0010974295,
         "heat_earned": 0.017764,
         "joined": "joined on 'xauusd_session_range_breakout_asia_5_wb_8'",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.001097/day (+27.66%/yr) and it earns 1.78% heat -- standalone Sharpe 1.73, correlation to the book unmeasured"
+        "why": "same admission scan (2026-10-16T05:54:28.443313+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.001097/day (+27.66%/yr) and it earns 1.78% heat -- standalone Sharpe 1.73, correlation to the book unmeasured"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-16T05:54:28.443313+00:00",
@@ -2298,7 +2298,7 @@
         "delta_elogw_per_day": 0.0009005961,
         "heat_earned": 0.0125,
         "joined": "joined on 'xauusd_session_range_breakout_asia_0_wb_12'",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000901/day (+22.70%/yr) and it earns 1.25% heat -- standalone Sharpe 2.13, correlation to the book unmeasured"
+        "why": "same admission scan (2026-10-16T05:54:28.443313+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000901/day (+22.70%/yr) and it earns 1.25% heat -- standalone Sharpe 2.13, correlation to the book unmeasured"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-16T05:54:28.443313+00:00",
@@ -32065,7 +32065,7 @@
       "restored_why": "demoted to STANDBY with no reason recorded on any of retire_reason, status_reason, reason, why, demoted_reason, retired_reason, gate_reason; a demotion that records nothing is not a verdict",
       "restore_reason": "admitted: re-solving at 0.00% total heat with it raises robust growth +0.003518/day (+88.65%/yr) and it earns 3.70% heat -- standalone Sharpe 0.07, correlation to the book unmeasured; the allocator's current solve gives this sleeve 3.70% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|range_reversion|asia')",
       "cost_hash": "3fb04e33b406e1d7",
-      "cost_basis_source": "universe registry XAUUSD"
+      "cost_basis_source": "row"
     },
     {
       "name": "xbrusd_cross_asset_residual_asia_p_3bdb4615ec1ace71",
@@ -34233,7 +34233,7 @@
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join",
       "restore_reason": "admitted: re-solving at 0.00% total heat with it raises robust growth +0.003518/day (+88.65%/yr) and it earns 3.70% heat -- standalone Sharpe 0.07, correlation to the book unmeasured; the allocator's current solve gives this sleeve 3.70% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|range_reversion|asia')",
       "cost_hash": "3fb04e33b406e1d7",
-      "cost_basis_source": "universe registry XAUUSD",
+      "cost_basis_source": "row",
       "artifact": {
         "version_hash": "3a3ad38f2a80bce8",
         "ok": true,
