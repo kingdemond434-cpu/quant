@@ -298,11 +298,12 @@ def test_the_two_labs_reach_the_expression_queue(monkeypatch: Any) -> None:
 # ------------------------------------------------------------------------------------------ S16
 
 def test_stressed_nights_charge_both_triple_days() -> None:
-    wed = pd.Timestamp("2026-09-30 20:00")                # a Wednesday
+    wed = pd.Timestamp("2026-09-30 23:00")                # a Wednesday, before server midnight
     assert swap_world.stressed_nights(wed, wed + pd.Timedelta(hours=2)) == 3
-    fri = pd.Timestamp("2026-10-02 20:00")
+    fri = pd.Timestamp("2026-10-02 23:00")
     assert swap_world.stressed_nights(fri, fri + pd.Timedelta(hours=2)) == 3
-    assert swap_world.stressed_nights(fri, fri + pd.Timedelta(hours=26)) == 4
+    # Saturday's server day ends in no stamp: the weekend is inside Friday's stressed triple.
+    assert swap_world.stressed_nights(fri, fri + pd.Timedelta(hours=26)) == 3
     assert swap_world.baseline_nights(fri, fri + pd.Timedelta(hours=2)) == 1.0
     assert swap_world.stressed_nights(wed, wed) == 0
 
@@ -331,7 +332,8 @@ def test_synthetic_regimes_carries_the_swap_world() -> None:
     idx = pd.date_range("2026-09-28", periods=100, freq="h", tz="UTC")
     bars = pd.DataFrame({"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0}, index=idx)
     w = sr.SCENARIOS[swap_world.NAME][1](bars, "EURUSD", 0, "x")
-    assert w.swap_stress and w.applied == 8                  # 21:00 and 22:00 on four days
+    # the 23:00 and 00:00 server-clock bars: five midnights and four 23:00s in these 100 hours
+    assert w.swap_stress and w.applied == 9
 
     class Costs:
         spread_per_lot, contract_oz = 4.0, 100.0

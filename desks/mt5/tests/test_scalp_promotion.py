@@ -39,6 +39,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, p)
 
 import promoter  # noqa: E402
+from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 from mt5desk import decision_core as _dc  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk import provenance  # noqa: E402
@@ -269,12 +270,15 @@ def _bars(n: int = 200, breakout: bool = True, seed: int = 0, recent: bool = Fal
           ) -> pd.DataFrame:
     """M15 bars: a quiet range, then a last closed bar that closes above the 20-bar high.
 
-    `recent` ends the frame at the current quarter-hour, so an executor test's time exit lies
-    in the future rather than firing on bars dated last week.
+    `recent` ends the frame at the current quarter-hour ON THE BROKER'S CLOCK (New York + 7h,
+    what the terminal stamps), so an executor test's time exit lies in the future rather than
+    firing on bars dated last week -- or two hours ago, once the deadline is read as true UTC.
     """
     rng = np.random.default_rng(seed)
     if recent:
-        end = pd.Timestamp.now(tz="UTC").floor("15min") - pd.Timedelta(minutes=15)
+        now = pd.Timestamp.now(tz="UTC")
+        broker_now = now + (now - broker_to_utc(now))
+        end = broker_now.floor("15min") - pd.Timedelta(minutes=15)
         idx = pd.date_range(end=end, periods=n, freq="15min", tz="UTC")
     else:
         idx = pd.date_range("2026-09-01 08:00", periods=n, freq="15min", tz="UTC")
@@ -508,7 +512,9 @@ def test_armed_the_first_slice_is_placed_with_the_plans_levels_once_per_bar(tmp_
     assert intent["sleeve"] == _NAME and intent["slice_depth"] == 1
     basket = st["scalp"][_NAME]["basket"]
     assert basket["side"] == -1 and basket["mode"] == "bounded_structural"
-    assert st["scalp"][_NAME]["open_ttl_until"] == plan.ttl_until
+    # Stored on the WALL clock (true UTC); the plan's own ttl_until stays on the bar clock.
+    assert st["scalp"][_NAME]["open_ttl_until"] == sx.ttl_deadline(
+        broker_to_utc(plan.bar_time), "M15", 6)
     # The same bar again: nothing new is placed.
     mt5.positions_get = lambda symbol=None: [SimpleNamespace(comment=f"DW{_NAME}", ticket=7,
                                                              volume=0.03, type=1)]

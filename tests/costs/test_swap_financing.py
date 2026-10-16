@@ -19,7 +19,7 @@ if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
 from mt5desk.engine import (  # noqa: E402
-    ROLLOVER_HOUR_UTC,
+    ROLLOVER_HOUR_SERVER,
     TRIPLE_SWAP_WEEKDAY,
     Costs,
     rollovers_between,
@@ -32,24 +32,47 @@ def test_financing_is_charged_at_an_instant_not_pro_rata():
     This is the whole reason `(t1 - t0).days` is the wrong implementation: it gets both of these
     backwards, and it is the version that looks obviously correct.
     """
-    short_but_crosses = rollovers_between(pd.Timestamp("2026-09-14 20:00"),
-                                          pd.Timestamp("2026-09-14 22:00"))
-    long_but_inside = rollovers_between(pd.Timestamp("2026-09-14 22:00"),
-                                        pd.Timestamp("2026-09-15 18:00"))
+    # Server stamps: the rollover is 00:00 (17:00 New York), not 21:00 (2026-10-13).
+    short_but_crosses = rollovers_between(pd.Timestamp("2026-09-14 23:00"),
+                                          pd.Timestamp("2026-09-15 01:00"))
+    long_but_inside = rollovers_between(pd.Timestamp("2026-09-15 00:00"),
+                                        pd.Timestamp("2026-09-15 23:00"))
     assert short_but_crosses == 1.0
     assert long_but_inside == 0.0
+
+
+def test_the_rollover_is_server_midnight_which_is_17_new_york_across_dst():
+    """Audit of #269: the bars are broker stamps (New York + 7 h), and the engine charged the night
+    at 21:00 server -- 18:00 UTC in summer, three hours before the venue. Server midnight is the
+    17:00 New York rollover on both sides of both DST changes, so no date needs special-casing."""
+    from libs.regime.session_clock import server_to_utc
+    for day, utc_hour in (("2026-10-28", 21),    # EU already on winter time, NY still summer
+                          ("2026-11-04", 22),    # both on winter time
+                          ("2026-03-11", 21),    # NY on summer time, EU not yet
+                          ("2026-01-14", 22), ("2026-07-15", 21)):
+        stamp = pd.Timestamp(day) + pd.Timedelta(days=1)      # 00:00 server, ending `day`
+        assert server_to_utc([stamp])[0].hour == utc_hour
+        assert server_to_utc([stamp])[0].tz_convert("America/New_York").hour == 17
+        # one night across server midnight, none across the old 21:00 server stamp
+        assert rollovers_between(stamp - pd.Timedelta(hours=1), stamp + pd.Timedelta(hours=1)) >= 1
+        assert rollovers_between(pd.Timestamp(day) + pd.Timedelta(hours=20),
+                                 pd.Timestamp(day) + pd.Timedelta(hours=22)) == 0.0
 
 
 def test_wednesday_rollover_carries_three_nights():
     """43% of a week's financing lands on one instant, and a family that holds pays it weekly."""
     wed = pd.Timestamp("2026-09-16")
     assert wed.weekday() == TRIPLE_SWAP_WEEKDAY
-    crossing = rollovers_between(wed + pd.Timedelta(hours=ROLLOVER_HOUR_UTC - 1),
-                                 wed + pd.Timedelta(hours=ROLLOVER_HOUR_UTC + 1))
+    crossing = rollovers_between(wed + pd.Timedelta(hours=ROLLOVER_HOUR_SERVER - 1),
+                                 wed + pd.Timedelta(hours=ROLLOVER_HOUR_SERVER + 1))
     assert crossing == 3.0
-    # A full week is seven rollovers with Wednesday counting three: 6 + 3 = 9, not 7.
+    # A full week is five rollovers (Monday-Friday server days; the venue is shut at the
+    # weekend) with Wednesday counting three: 4 + 3 = 7 -- the seven calendar nights, once each.
     assert rollovers_between(pd.Timestamp("2026-09-14 10:00"),
-                             pd.Timestamp("2026-09-21 10:00")) == 9.0
+                             pd.Timestamp("2026-09-21 10:00")) == 7.0
+    # Saturday's and Sunday's server days end in no rollover.
+    assert rollovers_between(pd.Timestamp("2026-09-19 10:00"),
+                             pd.Timestamp("2026-09-21 01:00")) == 0.0
 
 
 def test_intraday_holds_owe_nothing():

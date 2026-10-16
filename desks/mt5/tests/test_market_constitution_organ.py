@@ -165,7 +165,7 @@ def test_constraints_are_compiled_for_the_gateway_door_and_the_campaign_runner(d
     assert gold["instrument_class"] == "metals"
     assert gold["sessions"]["state_now"] == "CONTINUOUS"          # Tuesday 12:00 UTC
     assert gold["halts"]["desk_close_utc"] == "19:30"
-    assert gold["settlement"]["rollover_hour_utc"] == 21
+    assert gold["settlement"]["rollover_hour_server"] == 24
     # this fixture's registry carries only the asset class: tick and margin are UNMEASURED by
     # name on every row, and the file says so in its own counts
     assert gold["status"] == "UNMEASURED" and gold["tick"]["status"] == "UNMEASURED"
@@ -178,7 +178,7 @@ def test_constraints_are_compiled_for_the_gateway_door_and_the_campaign_runner(d
     assert core.stamp_market_constraints(rows, desk / "data" / "market_constraints.json") == 2
     got = rows[0]["constraints"]
     assert got["session_state"] == "CONTINUOUS" and got["input_not_cap"] is True
-    assert got["rollover_hour_utc"] == 21 and got["desk_close_utc"] == "19:30"
+    assert got["rollover_hour_server"] == 24 and got["desk_close_utc"] == "19:30"
     assert got["margin"] == "UNMEASURED" and got["status"] == "UNMEASURED"
     assert got["at"] == doc["generated_at"] and got["rule_version"] == gold["rule_version"]
     assert rows[1]["constraints"]["instrument_class"] == "equities"   # case-folded lookup

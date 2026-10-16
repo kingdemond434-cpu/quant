@@ -798,9 +798,10 @@ def venue_cffex(holidays: Iterable[str] = ()) -> Venue:
 
 
 # --------------------------------------------------------------------------- Fusion (the broker)
-_FUSION_ENGINE = Source(citation="desks/mt5/mt5desk/engine.py ROLLOVER_HOUR_UTC=21, "
-                                 "TRIPLE_SWAP_WEEKDAY=2 (server UTC+2 winter / UTC+3 summer; "
-                                 "the earlier hour is used deliberately)", verified=VERIFIED)
+_FUSION_ENGINE = Source(citation="desks/mt5/mt5desk/engine.py ROLLOVER_HOUR_SERVER=24, "
+                                 "TRIPLE_SWAP_WEEKDAY=2, ROLLOVER_WEEKDAYS Mon-Fri (server "
+                                 "midnight on the New York + 7h stamp clock = 17:00 New York "
+                                 "all year; libs/regime/session_clock)", verified=VERIFIED)
 _FUSION_CLOSE = Source(citation="desks/mt5/mt5desk/decision_core.py CLOSE_HOUR=19.5 (the desk "
                                 "force-closes the gold book at 19:30 UTC)", verified=VERIFIED)
 _FUSION_EQUITY_HOURS = Source(citation="NYSE/Nasdaq core trading session 09:30-16:00 New York "
@@ -828,8 +829,8 @@ def venue_fusion() -> Venue:
                 Window("us_closed", "23:00", "16:30", "CLOSED"))
     rules = (
         RuleRow("fusion.session.fx", v, "forex", "session", "2010-01-04", "", {"windows": fx},
-                "24/5 with a rollover at server midnight; the desk counts it at 21:00 UTC "
-                "and Wednesday's carries three days", _FUSION_HOURS),
+                "24/5 with a rollover at server midnight, where the desk counts it, and "
+                "Wednesday's carries three days", _FUSION_HOURS),
         RuleRow("fusion.session.metals", v, "metals", "session", "2010-01-04", "",
                 {"windows": metals}, "an hourly daily break around server midnight",
                 _FUSION_HOURS),
@@ -842,7 +843,8 @@ def venue_fusion() -> Venue:
                 "share CFDs trade the underlying's cash session only; an overnight gap is the "
                 "whole of the close-to-open move", _FUSION_EQUITY_HOURS),
         RuleRow("fusion.rollover.swap", v, "*", "rollover", "2010-01-04", "",
-                {"rollover_hour_utc": 21, "triple_swap_weekday": 2},
+                {"rollover_hour_server": 24, "triple_swap_weekday": 2,
+                 "rollover_weekdays": [0, 1, 2, 3, 4]},
                 "financing is charged at the rollover; a position held across it pays or "
                 "earns the swap, three times on Wednesday", _FUSION_ENGINE),
         RuleRow("fusion.settlement.cfd", v, "*", "settlement", "2010-01-04", "",
@@ -1319,10 +1321,12 @@ def compile_symbol(symbol: str, meta: Mapping[str, Any], broker: Venue, now: dat
                  "stops_level": None, "freeze_level": None, "stops_level_why": STOPS_LEVEL_WHY},
         "margin": margin,
         "settlement": {"state": st.settlement_state,
-                       "rollover_hour_utc": (roll.spec.get("rollover_hour_utc")
-                                             if roll is not None else None),
+                       "rollover_hour_server": (roll.spec.get("rollover_hour_server")
+                                                if roll is not None else None),
                        "triple_swap_weekday": (roll.spec.get("triple_swap_weekday")
                                                if roll is not None else None),
+                       "rollover_weekdays": (roll.spec.get("rollover_weekdays")
+                                             if roll is not None else None),
                        "swap_long": _num(meta.get("swap_long")),
                        "swap_short": _num(meta.get("swap_short")),
                        "currency_profit": meta.get("currency_profit"),
