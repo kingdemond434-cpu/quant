@@ -13,5 +13,16 @@
   "failure_derived": 0.115,
   "model_architecture": 0.0993,
   "external_screen": 0.0182
+ },
+ "authoritative": true,
+ "authority_evidence": "2 leg(s) spent by the controller's prices this hour (dislocation_lab, session_variant_remap); the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=13.844)",
+ "research_budget_authoritative": true,
+ "research_budget_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=13.844)",
+ "research_budget_contract": {
+  "gain": "INFO_PER_COMPUTE",
+  "metric": "control_arm.admitted",
+  "better": "up",
+  "bar": 1.0,
+  "organ": "report:RESEARCH_BUDGET.json"
  }
 }
