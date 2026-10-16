@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-16T01:40:51.047001+00:00",
+ "generated_utc": "2026-10-16T02:43:45.732131+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -7461,7 +7461,7 @@
    }
   },
   "external.CHFDKK@M5.macro_conditional.p=f80e0663022abaeb": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7472,7 +7472,7 @@
    }
   },
   "external.CHFDKK@M5.macro_conditional.p=0d30ee4dfb4821a3": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7483,7 +7483,7 @@
    }
   },
   "external.CHFDKK@M5.macro_conditional.p=22734a72fe3d25c8": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7494,7 +7494,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=c1d54ecc7df557ef": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7505,7 +7505,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=edf7d60d657a0734": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7516,7 +7516,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=bf706655c8fd78db": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7527,7 +7527,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=fff4e0924190b78a": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7538,7 +7538,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=785b8a50d5833962": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7549,7 +7549,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=918a3a1ebbff1f24": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7560,7 +7560,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=8c0e35b9c23f6e1c": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7571,7 +7571,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=ce0c5462339f4577": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7582,7 +7582,7 @@
    }
   },
   "external.EURILS@M15.macro_conditional.p=c0ad826ff159d9b9": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7593,7 +7593,7 @@
    }
   },
   "external.EURILS@M15.macro_conditional.p=5005c67b2b1dd26e": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7604,7 +7604,7 @@
    }
   },
   "external.EURILS@M15.macro_conditional.p=f6aca376644409a8": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7615,7 +7615,7 @@
    }
   },
   "external.EURNOK@M15.macro_conditional.p=c0ad826ff159d9b9": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -7626,7 +7626,7 @@
    }
   },
   "external.EURNOK@M15.macro_conditional.p=5005c67b2b1dd26e": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {

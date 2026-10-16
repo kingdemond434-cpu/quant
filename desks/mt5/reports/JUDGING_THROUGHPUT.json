@@ -1,21 +1,21 @@
 {
- "at": "2026-10-16T01:51:32+00:00",
+ "at": "2026-10-16T02:47:24+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 63718,
+  "free_phys_mb": 48358,
   "commit_limit_mb": 204793,
-  "commit_free_mb": 77799,
+  "commit_free_mb": 30582,
   "cpu_source": "psutil",
-  "busy_other_cores": 16.3,
-  "busy_judge_cores": 0.18,
+  "busy_other_cores": 11.23,
+  "busy_judge_cores": 4.27,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": true,
-  "n_python": 66,
+  "n_python": 85,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -38,7 +38,7 @@
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
   "source_at": "2026-10-03T12:38:16.788667+00:00",
-  "source_age_seconds": 1084392.845952,
+  "source_age_seconds": 1087747.449205,
   "why": "backpressure timestamp missing, invalid, future or stale; historical sweep is not current queue capacity"
  },
  "decision": {
@@ -52,7 +52,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "cores",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 41, commit 50 at 768MB a worker; the binding one is cores",
+  "why": "cores 15 (reserved 3), memory 31, commit 19 at 768MB a worker; the binding one is cores",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -106,31 +106,31 @@
  "limiting_resource": "cores",
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-16T01:51:32+00:00",
+  "at": "2026-10-16T02:47:24+00:00",
   "verdicts": {
    "status": "MEASURED",
    "rows_total": 874246,
    "rows_unstamped": 0,
    "last_verdict_at": "2026-10-16T01:18:53+00:00",
    "counts": {
-    "1h": 10004,
+    "1h": 0,
     "24h": 10004,
     "7d": 40936
    },
    "count_basis": "changed verdict events; unchanged retests do not append",
    "first_terminal_counts": {
-    "1h": 4022,
+    "1h": 0,
     "24h": 4022,
     "7d": 23110
    },
    "first_terminal_cells": 296876,
    "first_terminal_per_hour": {
-    "1h": 4022.0,
+    "1h": 0.0,
     "24h": 167.583,
     "7d": 137.56
    },
    "per_hour": {
-    "1h": 10004.0,
+    "1h": 0.0,
     "24h": 416.833,
     "7d": 243.667
    }
@@ -139,11 +139,11 @@
    "status": "MEASURED",
    "counts": {
     "24h": 13369,
-    "7d": 181605
+    "7d": 180525
    },
    "per_hour": {
     "24h": 557.042,
-    "7d": 1080.982
+    "7d": 1074.554
    }
   },
   "verdicts_per_hour": 416.833,
@@ -163,6 +163,6 @@
   "workers_last_sweep": "UNMEASURED",
   "cores_basis": "fixed_reservation"
  },
- "measure_seconds": 224.6,
- "seconds": 268.1
+ "measure_seconds": 90.2,
+ "seconds": 137.6
 }
