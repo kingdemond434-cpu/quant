@@ -1,5 +1,5 @@
 {
- "at": "2026-10-16T10:43:12+00:00",
+ "at": "2026-10-16T11:41:02+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -24,9 +24,65 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "CHFNOK@M15.carry.p=9f99e2feaf02802b",
-   "certificate": "external.CHFNOK@M15.carry.p=9f99e2feaf02802b",
-   "fp": "7a8c794984ba94a0",
+   "key": "GBPZAR@M15.carry.p=3411bcff02687f5a",
+   "certificate": "external.GBPZAR@M15.carry.p=3411bcff02687f5a",
+   "fp": "769ed8933d5637b5",
+   "symbol": "GBPZAR",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'carry'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "CHFDKK@M15.carry.p=514693b1c1e5ff83",
+   "certificate": "external.CHFDKK@M15.carry.p=514693b1c1e5ff83",
+   "fp": "1046a5243263b299",
+   "symbol": "CHFDKK",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'carry'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "CHFDKK@M15.carry.p=9e12bdbb7b6ff8d2",
+   "certificate": "external.CHFDKK@M15.carry.p=9e12bdbb7b6ff8d2",
+   "fp": "f66d82e6a7800845",
+   "symbol": "CHFDKK",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'carry'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "CHFDKK@M15.carry.p=4158330e0de3de54",
+   "certificate": "external.CHFDKK@M15.carry.p=4158330e0de3de54",
+   "fp": "1a5d279f20cf99b2",
+   "symbol": "CHFDKK",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'carry'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "CHFNOK@M15.carry.p=a9b4442bfb6951b8",
+   "certificate": "external.CHFNOK@M15.carry.p=a9b4442bfb6951b8",
+   "fp": "ca8c1dae3d3854ea",
    "symbol": "CHFNOK",
    "family": "carry",
    "verdict": "UNMEASURED",
@@ -38,9 +94,37 @@
   },
   {
    "lane": "certificate",
-   "key": "EURNOK@M15.carry.p=4cdfac86ed467144",
-   "certificate": "external.EURNOK@M15.carry.p=4cdfac86ed467144",
-   "fp": "cbec9ffafb694581",
+   "key": "EURILS@M15.carry.p=017fc4cbb3c84144",
+   "certificate": "external.EURILS@M15.carry.p=017fc4cbb3c84144",
+   "fp": "b569f3320aef96ff",
+   "symbol": "EURILS",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'carry'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "EURILS@M15.carry.p=7ecfd958ca47a418",
+   "certificate": "external.EURILS@M15.carry.p=7ecfd958ca47a418",
+   "fp": "089b481a654f4e11",
+   "symbol": "EURILS",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'carry'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "EURNOK@M15.carry.p=23567cc42fc0b964",
+   "certificate": "external.EURNOK@M15.carry.p=23567cc42fc0b964",
+   "fp": "ecc4b1cab559b2af",
    "symbol": "EURNOK",
    "family": "carry",
    "verdict": "UNMEASURED",
@@ -51,92 +135,8 @@
    "theirs": {}
   },
   {
-   "lane": "certificate",
-   "key": "EURNOK@M15.carry.p=65554ab3d93e2af4",
-   "certificate": "external.EURNOK@M15.carry.p=65554ab3d93e2af4",
-   "fp": "85ce65bd690cb8a9",
-   "symbol": "EURNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURNOK@M15.carry.p=ec7cbe22f758ba27",
-   "certificate": "external.EURNOK@M15.carry.p=ec7cbe22f758ba27",
-   "fp": "c18528b2858db021",
-   "symbol": "EURNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURNOK@M15.carry.p=50c5f79f6f882d4d",
-   "certificate": "external.EURNOK@M15.carry.p=50c5f79f6f882d4d",
-   "fp": "fcc6f47001da6108",
-   "symbol": "EURNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURZAR@M15.carry.p=3411bcff02687f5a",
-   "certificate": "external.EURZAR@M15.carry.p=3411bcff02687f5a",
-   "fp": "2fd99ec41d4102a1",
-   "symbol": "EURZAR",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURZAR@M15.carry.p=e338761de4991a2e",
-   "certificate": "external.EURZAR@M15.carry.p=e338761de4991a2e",
-   "fp": "db2497f7b4d37ed7",
-   "symbol": "EURZAR",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURZAR@M15.carry.p=7080004bc6219c63",
-   "certificate": "external.EURZAR@M15.carry.p=7080004bc6219c63",
-   "fp": "c3ec81ed38087a4a",
-   "symbol": "EURZAR",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
    "lane": "forward",
-   "key": "CHFNOK.carry.asia#input_symbol=eBay",
+   "key": "CHFNOK.carry.asia@M15#require_quiet=False",
    "symbol": "CHFNOK",
    "family": "carry",
    "verdict": "UNMEASURED",
@@ -149,7 +149,7 @@
   },
   {
    "lane": "forward",
-   "key": "CHFNOK.carry.asia#require_quiet=False_session=ny_symbol=CHFNOK",
+   "key": "CHFNOK.carry.asia@M15#require_quiet=True_symbol=CHFNOK",
    "symbol": "CHFNOK",
    "family": "carry",
    "verdict": "UNMEASURED",
@@ -162,46 +162,7 @@
   },
   {
    "lane": "forward",
-   "key": "CHFNOK.carry.asia#require_quiet=False_session=ny",
-   "symbol": "CHFNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "CHFNOK.carry.asia#require_quiet=True_session=ny_symbol=CHFNOK",
-   "symbol": "CHFNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "CHFNOK.carry.asia#require_quiet=True_symbol=CHFNOK",
-   "symbol": "CHFNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "CHFNOK.macro_conditional.asia#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
+   "key": "CHFNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
    "symbol": "CHFNOK",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
@@ -214,12 +175,12 @@
   },
   {
    "lane": "forward",
-   "key": "CHFNOK.carry.asia@M15#input_symbol=eBay_session=ny",
+   "key": "CHFNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
    "symbol": "CHFNOK",
-   "family": "carry",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'carry'"
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -227,12 +188,51 @@
   },
   {
    "lane": "forward",
-   "key": "CHFNOK.carry.asia@M15#require_quiet=False_symbol=CHFNOK",
+   "key": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=192",
    "symbol": "CHFNOK",
-   "family": "carry",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'carry'"
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=48",
+   "symbol": "CHFNOK",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=192",
+   "symbol": "CHFNOK",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=48",
+   "symbol": "CHFNOK",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -242,68 +242,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "CHFNOK@M15.carry.p=9f99e2feaf02802b",
+   "what": "GBPZAR@M15.carry.p=3411bcff02687f5a",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "EURNOK@M15.carry.p=4cdfac86ed467144",
+   "what": "CHFDKK@M15.carry.p=514693b1c1e5ff83",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "EURNOK@M15.carry.p=65554ab3d93e2af4",
+   "what": "CHFDKK@M15.carry.p=9e12bdbb7b6ff8d2",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "EURNOK@M15.carry.p=ec7cbe22f758ba27",
+   "what": "CHFDKK@M15.carry.p=4158330e0de3de54",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "EURNOK@M15.carry.p=50c5f79f6f882d4d",
+   "what": "CHFNOK@M15.carry.p=a9b4442bfb6951b8",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "EURZAR@M15.carry.p=3411bcff02687f5a",
+   "what": "EURILS@M15.carry.p=017fc4cbb3c84144",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "EURZAR@M15.carry.p=e338761de4991a2e",
+   "what": "EURILS@M15.carry.p=7ecfd958ca47a418",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "EURZAR@M15.carry.p=7080004bc6219c63",
+   "what": "EURNOK@M15.carry.p=23567cc42fc0b964",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "CHFNOK.carry.asia#input_symbol=eBay",
+   "what": "CHFNOK.carry.asia@M15#require_quiet=False",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "CHFNOK.carry.asia#require_quiet=False_session=ny_symbol=CHFNOK",
+   "what": "CHFNOK.carry.asia@M15#require_quiet=True_symbol=CHFNOK",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "CHFNOK.carry.asia#require_quiet=False_session=ny",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "CHFNOK.carry.asia#require_quiet=True_session=ny_symbol=CHFNOK",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "CHFNOK.carry.asia#require_quiet=True_symbol=CHFNOK",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "CHFNOK.macro_conditional.asia#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
+   "what": "CHFNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "CHFNOK.carry.asia@M15#input_symbol=eBay_session=ny",
-   "why": "no written specification in the spec book for family 'carry'"
+   "what": "CHFNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "CHFNOK.carry.asia@M15#require_quiet=False_symbol=CHFNOK",
-   "why": "no written specification in the spec book for family 'carry'"
+   "what": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=192",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
+  },
+  {
+   "what": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=48",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
+  },
+  {
+   "what": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=192",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
+  },
+  {
+   "what": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=48",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   }
  ],
  "recorded": {
@@ -312,8 +312,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 1543,
-  "at": "2026-10-16T09:42:53+00:00",
+  "forward": 1551,
+  "at": "2026-10-16T10:43:12+00:00",
   "certificates": 474
  },
  "notes": [],
@@ -331,24 +331,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_M15.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURILS_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURILS_M15.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M15.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M30.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 15.11
+ "seconds": 5.9
 }
