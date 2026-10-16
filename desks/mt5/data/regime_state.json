@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-16T19:30:28.263202+00:00",
+  "swept_at": "2026-10-16T19:45:19.956874+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -570,7 +570,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3898,
+      "shadow_exp_r": -0.3966,
       "woke_on_shadow": false
     },
     "CHFDKK|carry_continuous": {
@@ -636,7 +636,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4456,
+      "shadow_exp_r": -0.4613,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -2462,7 +2462,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0383,
+      "shadow_exp_r": 0.0072,
       "woke_on_shadow": false
     },
     "GBPSGD|overnight_gap_decay_continuous": {
@@ -2583,7 +2583,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.193,
+      "shadow_exp_r": -0.313,
       "woke_on_shadow": false
     },
     "GBPZAR|overnight_gap_decay_asia": {
@@ -2770,7 +2770,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3415,
+      "shadow_exp_r": -0.3536,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
@@ -2957,7 +2957,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1579,
+      "shadow_exp_r": -0.2276,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3023,7 +3023,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5279,
+      "shadow_exp_r": -0.5367,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3077,8 +3077,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 42,
-      "shadow_exp_r": -0.0368,
+      "shadow_n": 63,
+      "shadow_exp_r": -0.297,
       "woke_on_shadow": false
     },
     "NZDJPY|cross_asset_residual_continuous": {
@@ -3738,7 +3738,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0517,
+      "shadow_exp_r": 0.0545,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_continuous": {
