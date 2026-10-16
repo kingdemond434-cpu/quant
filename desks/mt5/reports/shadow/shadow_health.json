@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-15T23:04:31+00:00",
+  "updated_at": "2026-10-16T00:54:10+00:00",
   "configured_sleeves": 693,
   "represented_sleeves": 693,
   "certified_sleeves_total": 974,
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 48,
-    "median_age_days": 10.107,
+    "median_age_days": 10.183,
     "mature_14d_without_trade": 18,
     "fresh_attempts": 39,
     "naturally_inactive": 38,
@@ -42,32 +42,14 @@
     "128 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 4160.394,
+  "seconds": 3508.721,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
     "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "xauusd_cross_asset_residual_asia_p_2479d0d883199a4b",
-    "xauusd_cross_asset_residual_asia_p_49eee8b22060afb7",
-    "xauusd_cross_asset_residual_asia_p_5a29a76a02065a5a",
-    "xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf",
-    "xauusd_cross_asset_residual_asia_p_76a842aadaf3bd86",
-    "xauusd_cross_asset_residual_asia_p_8de5a3b89f6be0db",
-    "xauusd_cross_asset_residual_asia_p_994638ee9bb08b37",
-    "xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc",
-    "xauusd_cross_asset_residual_asia_p_e95ea804f8e3f059"
+    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
   ],
   "promoted_live_certificate_rows": [
-    "xauusd_cross_asset_residual_asia_p_e95ea804f8e3f059",
-    "xauusd_cross_asset_residual_asia_p_5a29a76a02065a5a",
-    "xauusd_cross_asset_residual_asia_p_8de5a3b89f6be0db",
-    "xauusd_cross_asset_residual_asia_p_2479d0d883199a4b",
-    "xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc",
-    "xauusd_cross_asset_residual_asia_p_49eee8b22060afb7",
-    "xauusd_cross_asset_residual_asia_p_76a842aadaf3bd86",
-    "xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf",
-    "xauusd_cross_asset_residual_asia_p_994638ee9bb08b37",
     "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
     "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
     "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
