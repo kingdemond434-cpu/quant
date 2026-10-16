@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-16T06:45:32.255826+00:00",
+  "swept_at": "2026-10-16T07:00:21.046021+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -53,7 +53,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 45,
-      "shadow_exp_r": 0.4773,
+      "shadow_exp_r": 0.4806,
       "woke_on_shadow": false
     },
     "AUDCHF|overnight_gap_decay_asia": {
@@ -184,8 +184,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.6149,
+      "shadow_n": 55,
+      "shadow_exp_r": -0.5433,
       "woke_on_shadow": false
     },
     "AUDNZD|discovered_asia": {
@@ -207,7 +207,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3692,
+      "shadow_exp_r": -0.376,
       "woke_on_shadow": false
     },
     "AUDSGD|clock_transition_asia": {
@@ -1659,7 +1659,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0186,
+      "shadow_exp_r": -0.0443,
       "woke_on_shadow": false
     },
     "EURZAR|formula_asia": {
@@ -1670,7 +1670,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 42,
-      "shadow_exp_r": 0.5112,
+      "shadow_exp_r": 0.5018,
       "woke_on_shadow": false
     },
     "EURZAR|formula_continuous": {
@@ -1868,7 +1868,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2099,
+      "shadow_exp_r": -0.1985,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -1901,7 +1901,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 45,
-      "shadow_exp_r": 0.3905,
+      "shadow_exp_r": 0.39,
       "woke_on_shadow": false
     },
     "GBPCHF|overnight_gap_decay_asia": {
@@ -3132,8 +3132,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 31,
-      "shadow_exp_r": 0.3956,
+      "shadow_n": 7,
+      "shadow_exp_r": 0.0136,
       "woke_on_shadow": false
     },
     "NZDSGD|cross_asset_residual_continuous": {
@@ -4013,7 +4013,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2279,
+      "shadow_exp_r": -0.2388,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
