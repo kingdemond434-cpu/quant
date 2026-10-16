@@ -3,13 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-16T07:39:47.275018+00:00",
+   "finished_at": "2026-10-16T09:39:57.174861+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-16T07:41:11.649602+00:00",
+   "finished_at": "2026-10-16T09:44:58.429226+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -21,13 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-16T07:40:07.182823+00:00",
+   "finished_at": "2026-10-16T09:40:36.727480+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-16T07:40:55.688682+00:00",
+   "finished_at": "2026-10-16T09:42:03.525381+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -81,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-16T07:48:32.952570+00:00"
+ "updated_at": "2026-10-16T09:44:58.429226+00:00"
 }
