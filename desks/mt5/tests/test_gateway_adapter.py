@@ -1464,6 +1464,47 @@ def test_a_fixed_family_position_uses_only_the_fast_floor_not_the_trail() -> Non
     assert not any("ATR unavailable" in x for x in ns["_logs"])
 
 
+def test_a_refused_family_position_off_the_roster_keeps_its_fixed_bracket() -> None:
+    """2026-10-13: a sleeve the live policy refuses leaves the roster, but its open position
+    was opened on a fixed bracket. It is still managed (its symbol may be on no other row), and
+    as a fixed bracket: the floor path, never the trail."""
+    sent: list = []
+    ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
+    st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
+    ns["manage_open_positions"](st, [])
+    assert sent == []
+    assert any("fewer than 1 M1 bars since entry" in x for x in ns["_logs"])
+    assert not any("H1 bars since entry" in x for x in ns["_logs"])
+
+
+def test_a_refused_position_on_a_roster_symbol_gets_the_floor_never_the_trail() -> None:
+    """Its symbol is still traded by another roster row: the refused name keeps its fixed
+    bracket there too (it is in the family lane's state), so the trail never runs on it."""
+    sent: list = []
+    ns = _manage_ns(_manage_mt5("DWretired_eurusd_fam", sent))
+    st = {"armed": True, "generic": {"retired_eurusd_fam": {"trail_k": 0.0}}}
+    ns["manage_open_positions"](st, [_sleeve()])
+    assert sent == []
+    assert any("fewer than 1 M1 bars since entry" in x for x in ns["_logs"])
+    assert not any("H1 bars since entry" in x for x in ns["_logs"])
+
+
+def test_an_exit_only_symbol_never_manages_an_untagged_position() -> None:
+    """A symbol on no roster row is visited only for a refused sleeve's own tagged positions;
+    a manual or untagged position sitting on it is left alone."""
+    sent: list = []
+    mt5 = _manage_mt5(f"DW{_NAME}", sent)
+    tagged = SimpleNamespace(ticket=501, type=0, price_open=1.1100, sl=1.1050, tp=1.1150,
+                             comment=f"DW{_NAME}", time=1_800_000_000, symbol="CHFNOK")
+    manual = SimpleNamespace(**{**vars(tagged), "ticket": 777, "comment": ""})
+    book = [tagged, manual]
+    mt5.positions_get = lambda symbol=None: [p for p in book if symbol in (None, p.symbol)]
+    ns = _manage_ns(mt5)
+    ns["manage_open_positions"]({"armed": True, "generic": {_NAME: {"trail_k": 0.0}}}, [])
+    seen = [x for x in ns["_logs"] if "bars since entry" in x]
+    assert sent == [] and len(seen) == 1           # the tagged position only, never the manual
+
+
 def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> None:
     sent: list = []
     ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
@@ -1515,6 +1556,75 @@ def test_retired_sleeves_open_positions_are_closed_from_the_queue(tmp_path) -> N
     book.clear()
     ns["close_retired_positions"]({"armed": True})
     assert len(sent) == 1 and json.loads(queue.read_text("utf-8"))["names"] == []
+
+
+def _refused_ns(book, sent, logs, booked, tmp_path):
+    mt5 = SimpleNamespace(
+        TRADE_ACTION_DEAL=1, ORDER_TYPE_BUY=0, ORDER_TYPE_SELL=1, POSITION_TYPE_BUY=0,
+        positions_get=lambda *a, **k: [p for p in book
+                                       if not k.get("symbol") or p.symbol == k["symbol"]],
+        symbol_info_tick=lambda symbol: SimpleNamespace(bid=0.7130, ask=0.7132),
+        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009)))
+    flag = tmp_path / "GENERIC_EXEC_ENABLED"
+    flag.write_text("1", "utf-8")
+    return _exec(("close_refused_sleeve_ttls", "close_sleeve_positions", "_sleeve_positions",
+                  "order_comment"),
+                 {"mt5": mt5, "log": logs.append, "MAGIC": 1, "GENERIC_EXEC_ENABLED": flag,
+                  "_book_target": lambda *a: booked.append(a)})
+
+
+def test_a_refused_sleeve_still_gets_its_time_exit(tmp_path) -> None:
+    """2026-10-13: the live policy refuses a quarantined row (no new entries), and the TTL loop
+    walks the roster, so its open position outlived its certified time exit. The family lane's
+    own state names it; once the deadline passes it is closed by its tag, on its own symbol."""
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    book = [SimpleNamespace(ticket=905, type=0, volume=0.02, symbol="CHFNOK",
+                            comment=f"DW{_NAME}")]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    st = {"armed": True, "generic": {_NAME: {"open_ttl_until": "2000-01-01T00:00:00+00:00"},
+                                      "on_roster": {"open_ttl_until": "2000-01-01T00:00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [{"name": "on_roster", "symbol": "AUDCHF"}])
+    (req,) = sent
+    assert req["position"] == 905 and req["symbol"] == "CHFNOK" and req["type"] == 1
+    assert booked == [(_NAME, "CHFNOK", 0.0, "ttl")]
+    assert "open_ttl_until" not in st["generic"][_NAME]
+    assert st["generic"]["on_roster"]["open_ttl_until"]     # the roster's own loop owns it
+
+
+def test_an_off_roster_name_sharing_a_live_rows_tag_is_never_ttl_closed(tmp_path) -> None:
+    """order_comment truncates to COMMENT_MAX: a retired name and a LIVE row can share one tag.
+    The retired name's expired deadline must never close the live sleeve's position."""
+    live = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    retired = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a"
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    ns = _refused_ns([], sent, logs, booked, tmp_path)
+    assert ns["order_comment"](live) == ns["order_comment"](retired)
+    book = [SimpleNamespace(ticket=907, type=0, volume=0.02, symbol="AUDCHF",
+                            comment=ns["order_comment"](live))]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    st = {"armed": True, "generic": {retired: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
+    assert sent == [] and booked == []
+    assert any("shared with a roster sleeve" in x for x in logs)
+
+
+def test_a_refused_sleeve_before_its_deadline_or_unarmed_is_left_alone(tmp_path) -> None:
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    book = [SimpleNamespace(ticket=906, type=1, volume=0.02, symbol="USDJPY",
+                            comment=f"DW{_NAME}")]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    st = {"armed": True, "generic": {_NAME: {"open_ttl_until": "2999-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [])
+    assert sent == [] and st["generic"][_NAME]["open_ttl_until"]
+    st = {"armed": False, "generic": {_NAME: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [])
+    assert sent == [] and any("SHADOW would TTL-close off-roster" in x for x in logs)
 
 
 def test_unarmed_the_retired_close_only_logs(tmp_path) -> None:

@@ -83,6 +83,7 @@ it first appears in the docket, with no edit to this file.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import sys
@@ -123,6 +124,62 @@ CAPACITY_LOOKBACK_H = 168.0
 #: build budget ran out before the cell was computed. Counting them as judged is precisely the
 #: trap `external_gauntlet._stamped_but_unjudged` documents: it starved 1,544 cells forever.
 NOT_JUDGED_PREFIX = "NOT_RUN"
+
+#: NOT TESTABLE, NOT UNJUDGED (2026-10-07). A cell parked in the unrunnable bank for a reason
+#: classed `not_testable` below WAS put through the judge and came back with fewer than the 60
+#: daily observations CPCV and walk-forward need. It is not work the judge owes this hour, and
+#: counting it as backlog forever is what made a box with 1.39M "unjudged" cells read GROWING while
+#: the judge ran: the count could only ever rise. It is now its own named class -- `not_testable`
+#: per family and per reason -- and it RE-ENTERS the backlog the moment `readmit_due` re-admits it
+#: (its history grew enough to reach 60 observations, or READMIT_MAX_DAYS passed). Nothing is
+#: deleted, no gate moves, and every cell stays in the docket and the bank.
+#:
+#: ONE TABLE, READ BY BOTH ORGANS (audit of PR #290, 2026-10-13). `judging_burndown` kept its own
+#: set and the two disagreed in both directions: the burn-down booked drain for cells this organ
+#: kept in the backlog, and this organ parked `no_series` and a BLANK reason as "never_fires" --
+#: absence parked as scarcity. Every UNKNOWN reason either organ can see is mapped here to exactly
+#: one class, and a reason not in the table is a DEFECT: only POSITIVE evidence of scarcity (a
+#: series that was built and is short, or signals that never became trades on bars that exist)
+#: may take a cell out of the backlog. `no_series`, an unnamed reason, the writer's generic
+#: `observations_under_60_days` fallback and `no_terminal_gate_recorded` name no cause, so they
+#: stay owed. Keys: the sealed judge's `classify_unknown` / `unknown_row_reason` vocabulary, then
+#: the names `name_unknowns` derives from it. A test enumerates the table against both organs.
+NOT_TESTABLE = "not_testable"
+DEFECT = "defect"
+UNKNOWN_REASON_CLASS: dict[str, str] = {
+    # the sealed judge's own words (external_gauntlet.classify_unknown / unknown_row_reason)
+    "no_signals": NOT_TESTABLE,
+    "signals_no_trades": NOT_TESTABLE,
+    "no_trades": NOT_TESTABLE,
+    "too_rare": NOT_TESTABLE,
+    "lockbox_consumed_history": NOT_TESTABLE,
+    "short_history_after_cut": NOT_TESTABLE,
+    "series_exception": DEFECT,
+    "no_series": DEFECT,
+    "observations_under_60_days": DEFECT,
+    "no_terminal_gate_recorded": DEFECT,
+    # the names `name_unknowns` gives a bank row
+    "never_fires": NOT_TESTABLE,
+    "missing_bars": DEFECT,
+    "missing_identity_input": DEFECT,
+    "unnamed": DEFECT,
+}
+
+
+def unknown_reason_class(reason: Any) -> str:
+    """`not_testable` or `defect` for one UNKNOWN reason. Unlisted or blank is a defect."""
+    return UNKNOWN_REASON_CLASS.get(str(reason or ""), DEFECT)
+
+
+NOT_TESTABLE_REASONS: frozenset[str] = frozenset(
+    r for r, c in UNKNOWN_REASON_CLASS.items() if c == NOT_TESTABLE)
+
+#: THE BACKLOG'S UNIT, stamped on every published reading (the `unknown_share_basis` pattern).
+#: `unjudged` stopped counting not-testable cells in PR #290; a prior reading on the old unit is
+#: no baseline, because the difference between the two is the whole parked stock and would read
+#: as one hour of drain -- DRAINING where the judge did nothing, and `judging_throughput` stands
+#: workers down on a drain status. Across a basis change, drain is UNMEASURED for that pass.
+BACKLOG_BASIS = "unjudged_excl_not_testable"
 
 
 def _read(path: Path) -> Any:
@@ -209,36 +266,51 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
     total: dict[str, int] = {}
     in_window: dict[str, int] = {}
     cutoff = (now or datetime.now(tz=UTC)).timestamp() - window_h * 3600.0
+    # STREAMED, never `readlines()` (2026-10-07): the ledger holds every changed verdict the desk
+    # has written, and loading it whole on each hourly pass is how this report went 56 h stale.
     try:
         with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+                    continue
+                if row.get("passed") is not True and str(
+                        row.get("terminal_gate") or "") in ("", "UNKNOWN"):
+                    continue
+                fam = str(row.get("family") or "")
+                cell = str(row.get("cell") or "")
+                if cell:
+                    seen.add(cell)
+                if not fam:
+                    continue
+                total[fam] = total.get(fam, 0) + 1
+                at = _ts(row.get("at"))
+                if at is not None and at.timestamp() >= cutoff:
+                    in_window[fam] = in_window.get(fam, 0) + 1
     except OSError:
-        return seen, total, in_window
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(row, dict):
-            continue
-        if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-            continue
-        if row.get("passed") is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
-            continue
-        fam = str(row.get("family") or "")
-        cell = str(row.get("cell") or "")
-        if cell:
-            seen.add(cell)
-        if not fam:
-            continue
-        total[fam] = total.get(fam, 0) + 1
-        at = _ts(row.get("at"))
-        if at is not None and at.timestamp() >= cutoff:
-            in_window[fam] = in_window.get(fam, 0) + 1
+        pass
     return seen, total, in_window
+
+
+def not_testable_index(bank: dict[str, dict[str, Any]] | None = None
+                       ) -> dict[str, str]:
+    """cell id -> reason, for every cell the unrunnable bank holds as NOT TESTABLE right now.
+
+    Read from the bank as it stands BEFORE this pass parks or re-admits anything, so a cell
+    re-admitted this pass is backlog again on the next reading -- never held out longer than the
+    bank's own re-admission rule says. An unreadable bank reads as empty: every cell is then
+    counted as backlog, exactly as before this class existed."""
+    rows = unrunnable_bank() if bank is None else bank
+    return {str(c): str(r.get("reason")) for c, r in rows.items()
+            if isinstance(r, dict) and r.get("reason") in NOT_TESTABLE_REASONS}
 
 
 def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
@@ -338,7 +410,8 @@ def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -
 
 
 def drain(backlog_now: int, per_hour: float | None, *, prior_backlog: int | None,
-          prior_at: datetime | None, now: datetime) -> dict[str, Any]:
+          prior_at: datetime | None, now: datetime, parked: int = 0,
+          rebased: str | None = None) -> dict[str, Any]:
     """Hours to drain on the SUSTAINED rate, and whether the backlog is falling at all.
 
     The backlog's own movement between two readings is the net of judging and creation, so it
@@ -347,17 +420,24 @@ def drain(backlog_now: int, per_hour: float | None, *, prior_backlog: int | None
     """
     out: dict[str, Any] = {"sustained_per_hour": per_hour}
     growth = None
+    # PARKING IS NOT DRAIN: a cell moved to the not-testable class since the prior reading left
+    # the count without a ruling, so it is added back before the movement is read. Without this
+    # every new parking reads as judging, and an overstated drain flips GROWING to DRAINING --
+    # the status `judging_throughput` raises workers on.
     if prior_backlog is not None and prior_at is not None:
         hours = (now.timestamp() - prior_at.timestamp()) / 3600.0
         if hours >= 0.25:
-            growth = (backlog_now - prior_backlog) / hours
+            growth = (backlog_now + max(0, int(parked)) - prior_backlog) / hours
     out["backlog_growth_per_hour"] = round(growth, 3) if growth is not None else None
+    out["parked_since_prior"] = max(0, int(parked))
     if not per_hour or per_hour <= 0:
         out.update(status="UNMEASURED", hours=None,
                    why="no judged verdicts in the last 24 h: the drain rate is unmeasured")
         return out
     out["hours_at_zero_creation"] = round(backlog_now / per_hour, 1)
-    if backlog_now == 0:
+    if rebased:
+        out.update(status="UNMEASURED", hours=None, rebased=True, why=rebased)
+    elif backlog_now == 0:
         out.update(status="DRAINED", hours=0.0)
     elif growth is not None and growth >= 0:
         out.update(status="GROWING", hours=None,
@@ -829,6 +909,15 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
             reason, route = "missing_bars", ("no H1 bar file for this symbol: the conversion "
                                              "organ's bar supply (research/local_converter.py) "
                                              "owns it")
+        elif unknown_reason_class(declared) != NOT_TESTABLE:
+            # NO POSITIVE EVIDENCE OF SCARCITY (audit of PR #290). `no_series` (no daily series
+            # was built at all), a blank reason and the writer's generic fallbacks name no cause,
+            # and this branch used to fall through to "never_fires" -- absence parked as scarcity,
+            # out of the backlog. It is named for what it is, classed a DEFECT, and stays owed.
+            reason = declared if declared in UNKNOWN_REASON_CLASS else "unnamed"
+            route = ("the judge named no scarcity for this cell (no series built, or no reason "
+                     "given): a defect the desk owes a fix for, kept in the backlog and re-asked "
+                     f"after {BUILD_FAILED_RETRY_DAYS:.0f} days like a build failure")
         elif days == 0:
             reason, route = "never_fires", ("the spec produced not one daily observation on bars "
                                             "that ARE present: an unrunnable spec, filtered at "
@@ -896,7 +985,8 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
         bars = bar_sizes[key]
     if parked_bytes <= 0:
         return bars > 0
-    if row.get("reason") in ("build_failed", "series_exception"):
+    if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
+                             "observations_under_60_days", "no_terminal_gate_recorded"):
         _at = _ts(row.get("parked_at"))
         _t = now or datetime.now(tz=UTC)
         if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
@@ -913,30 +1003,81 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
             and (t.timestamp() - parked_at.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
 
 
+#: WHEN NOT-TESTABLE CELLS RETURN TO THE BACKLOG, one line per pass that re-admitted any: the
+#: burn-down's inflow reads it (`judging_burndown.inflow`), because a re-admitted cell is owed
+#: again exactly like a newly minted one and leaving it out overstates the drain.
+READMISSION_LOG = HYP / "not_testable_readmissions.jsonl"
+
+
 def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
-                           path: Path | None = None) -> dict[str, Any]:
-    """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown."""
+                           path: Path | None = None,
+                           log: Path | None = None) -> dict[str, Any]:
+    """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown.
+
+    A cell the latest report names AGAIN is updated in place and never re-admitted on the same
+    pass (it would only be parked again a line later): its FIRST `parked_at` is kept, so a
+    rename never restarts the READMIT_MAX_DAYS clock. `not_testable_since` is stamped when a row
+    ENTERS the not-testable class (new, or re-named out of a defect), which is the moment it
+    leaves the backlog -- the coverage table books that as PARKING, never as drain.
+    """
     target = path or UNRUNNABLE_BANK
     bank = unrunnable_bank(target)
     now_ts = _ts(at)
     bar_sizes: dict[tuple[str, str], int] = {}
+    parkable = {c for c, r in named.items() if r.get("reason") != "missing_bars"}
     readmitted = [cell for cell, row in bank.items()
-                  if readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
+                  if cell not in parkable and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
+    readmitted_nt: dict[str, int] = {}
+    readmitted_nt_reason: dict[str, int] = {}
+
+    def _count_readmit(old_row: dict[str, Any]) -> None:
+        fam = str(old_row.get("family") or "")
+        rsn = str(old_row.get("reason") or "")
+        readmitted_nt[fam] = readmitted_nt.get(fam, 0) + 1
+        readmitted_nt_reason[rsn] = readmitted_nt_reason.get(rsn, 0) + 1
+
     for cell in readmitted:
-        bank.pop(cell, None)
+        old = bank.pop(cell, None)
+        if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
+            _count_readmit(old)
     added = 0
     for cell, row in named.items():
         if row.get("reason") == "missing_bars":
             continue                       # owned by the conversion organ, not filtered here
-        if cell not in bank:
+        prev = bank.get(cell)
+        if prev is None:
             added += 1
-        bank[cell] = {**row, "parked_at": at}
+        prev = prev if isinstance(prev, dict) else {}
+        was_nt = prev.get("reason") in NOT_TESTABLE_REASONS
+        is_nt = row.get("reason") in NOT_TESTABLE_REASONS
+        entry = {**row, "parked_at": prev.get("parked_at") or at}
+        if is_nt:
+            entry["not_testable_since"] = (prev.get("not_testable_since") or at) if was_nt else at
+        elif was_nt:
+            _count_readmit(prev)            # re-named OUT of the class: owed again
+        bank[cell] = entry
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
     except OSError:
         pass
+    n_re = sum(readmitted_nt.values())
+    # ONE LINE EVERY PASS, ZEROS INCLUDED (audit of PR #290, M1): the burn-down reads a missing
+    # or stale log as UNMEASURED, so a quiet pass must still say "0" by writing it.
+    # A failed write is caught by that staleness rule rather than raised here.
+    try:
+        # Beside the bank it describes, so a test's bank never writes the desk's log.
+        lp = log or target.parent / READMISSION_LOG.name
+        lp.parent.mkdir(parents=True, exist_ok=True)
+        with lp.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": at, "readmitted": n_re,
+                                 "by_reason": readmitted_nt_reason}) + "\n")
+    except OSError:
+        pass
     return {"parked_this_pass": added, "readmitted_on_bar_growth": len(readmitted),
+            "readmitted_not_testable": n_re,
+            "readmitted_not_testable_by_family": readmitted_nt,
+            "readmitted_not_testable_by_reason": readmitted_nt_reason,
             "bank_size": len(bank), "path": str(target)}
 
 
@@ -1111,7 +1252,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
 
         ev_per_cell = p_optimistic * net_value_if_it_passes * (1 + marginal_breadth)
                                    * orthogonality_factor * certificate_factor
-                                   * certified_breadth_factor
+                                   * certified_breadth_factor * novelty_factor
         ev_per_s    = ev_per_cell / (seconds_per_cell * this family's bar cost)
 
     Every term is something the desk already measures -- the learned prior, the net-of-cost slot
@@ -1139,6 +1280,32 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     # rows `build` stamped. One-sided like the two factors above, and exactly 1.0 for rows that
     # carry no stamp, so a caller that never scored is ranked as it always was.
     keff_f = _keff_family_factor(rows)
+    # THE NOVELTY FACTOR (principal 2026-10-13: "hunt tons of unknown styles"). 1 + the family's
+    # style novelty from research/style_novelty.py: the measured share of its certificates' P&L no
+    # known style reproduces, else its declared genealogy (0 textbook, 0.5 adjacent, 1.0
+    # discovered/generic/learned; an unclassified family is a neutral 0). One-sided like the
+    # factors above (>= 1.0), so the floor is untouched and no family's ev is reduced; an import
+    # failure is 1.0 for every family.
+    try:
+        from research import style_novelty as _sn
+        _nov_measured = _sn.family_values()
+
+        def novelty_factor(fam: str) -> float:
+            return 1.0 + max(0.0, min(1.0, _sn.family_novelty(fam, _nov_measured)))
+
+        def _nov_source(fam: str) -> str:
+            if fam in _nov_measured:
+                return "MEASURED"
+            cls = _sn.genealogy(fam)[1]
+            return "UNMEASURED" if cls.startswith("UNMEASURED") else "GENEALOGY"
+    except Exception:
+        _nov_measured = {}
+
+        def novelty_factor(fam: str) -> float:
+            return 1.0
+
+        def _nov_source(fam: str) -> str:
+            return "UNMEASURED"
     per_cell_s = judge_seconds_per_cell(capacity)
     cost_units: dict[str, list[float]] = {}
     for row in rows:
@@ -1163,8 +1330,9 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         # so neither the family floor nor any cell's eligibility is reduced. The candidate-level
         # scorer separately recognises a new session/chart/regime inside an incumbent family.
         cert_breadth = 2.0 - cert_share if cert_share is not None else 1.0
+        nov_f = novelty_factor(fam)
         ev_cell = (float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f
-                   * kf * cert_breadth)
+                   * kf * cert_breadth * nov_f)
         rl = realised.get(fam) or {}
         out.append({
             "family": fam, "unjudged": backlog[fam],
@@ -1193,6 +1361,8 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
             # 25% floor below is untouched: this re-orders the remainder, it never starves.
             "orthogonality_factor": round(ortho_f, 4), "certificate_factor": round(cert_f, 4),
             "keff_factor": round(kf, 4),
+            "novelty_factor": round(nov_f, 4),
+            "novelty_source": _nov_source(fam),
             "marginal_rank": sig.get("marginal_rank"),
             "certs_per_judge_hour": sig.get("certs_per_judge_hour"),
             # BANNED / UNMEASURED / UNDER_JUDGED / MEASURED_ZERO / CERTIFYING -- a zero pass rate
@@ -1435,6 +1605,182 @@ def _mined(docket: list[dict[str, Any]]) -> dict[str, int]:
     return mined
 
 
+#: NO CELL ENDS UNTESTABLE (principal, 2026-10-13 16:45Z: "all must always be converted to
+#: testible cells ... or no bars all must self resovle"). Every way the judge can fail to rule on a
+#: cell maps to ONE failure class here, and every class names its way out -- who resolves it and
+#: by which conversion. Nothing in this table is terminal: a class with no route is the defect, and
+#: a raw status no class recognises is published as `unrouted` so the hourly pass hunts it the day
+#: it appears. Only a real verdict (pass or fail) ends a cell.
+FAILURE_CLASS: dict[str, str] = {
+    # the sweep's own NOT_RUN statuses and pre-warm failure kinds
+    "NOT_RUN_DATA_MISSING": "no_bars",
+    "NOT_RUN_BUILD_FAILED": "build_fail",
+    "NOT_RUN_BUILD_BUDGET_DEFERRED": "budget_deferred",
+    "NOT_RUN_MODIFIER": "modifier_refused",
+    "NOT_RUN_UNTRADEABLE_SYMBOL": "untradeable_symbol",
+    "FAIL_3X": "fail_3x",
+    "ERROR": "build_fail",
+    "SAVE_FAILED": "save_fail",
+    # the bank's named reasons (`name_not_run`, `name_unknowns`)
+    "data_missing": "no_bars",
+    "missing_bars": "no_bars",
+    "build_failed": "build_fail",
+    "no_series": "no_series",
+    "series_exception": "no_series",
+    "observations_under_60_days": "short_history",
+    "short_history_after_cut": "short_history",
+    "lockbox_consumed_history": "short_history",
+    "no_signals": "untestable_as_specified",
+    "signals_no_trades": "untestable_as_specified",
+    "no_trades": "untestable_as_specified",
+    "too_rare": "untestable_as_specified",
+    "never_fires": "untestable_as_specified",
+    "missing_identity_input": "unnamed",
+    "no_terminal_gate_recorded": "unnamed",
+    "unnamed": "unnamed",
+}
+
+#: WHO RESOLVES EACH CLASS, AND HOW. `converter` is Breadth's conversion organ: the cell is handed
+#: over with these axes and comes back as a testable cell in the judge's queue. `judge` is work
+#: the judge itself still owes on its next sweep (ranked by UnlockValue), never a parking place.
+FAILURE_ROUTES: dict[str, dict[str, Any]] = {
+    "no_bars": {"owner": "converter",
+                "axes": ["backfill_bars", "proxy_series", "coarser_timeframe"]},
+    "no_series": {"owner": "converter",
+                  "axes": ["proxy_series", "coarser_timeframe", "event_study"]},
+    "build_fail": {"owner": "converter",
+                   "axes": ["regime_child", "coarser_timeframe", "family_defect_report"]},
+    "fail_3x": {"owner": "converter", "axes": ["coarser_timeframe", "regime_child"]},
+    "modifier_refused": {"owner": "converter", "axes": ["base_spec_without_modifier"]},
+    "untradeable_symbol": {"owner": "converter", "axes": ["cross_asset_transplant"]},
+    "short_history": {"owner": "converter",
+                      "axes": ["proxy_series", "cross_asset_transplant", "coarser_timeframe"]},
+    "untestable_as_specified": {"owner": "converter",
+                                "axes": ["event_study", "coarser_timeframe", "regime_child",
+                                         "cross_asset_transplant"]},
+    "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
+    "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
+    "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
+}
+
+#: Where cells for the converter are handed over, rewritten every pass from the bank (the bank
+#: stays the record; this file is the queue the converter consumes).
+CONVERSION_HANDOFF = HYP / "conversion_handoff.json"
+
+
+def failure_class(raw: Any) -> str | None:
+    """The failure class for one raw status or bank reason; None means UNROUTED (a defect)."""
+    return FAILURE_CLASS.get(str(raw or ""))
+
+
+def judging_failures(path: Path | None = None,
+                     bank: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Per-class counts of every way the judge failed to rule, last sweep and parked stock.
+
+    `last_sweep` reads the sealed judge's own report (verdict rows that never reached the gates,
+    UNKNOWN verdicts by named reason, and the pre-warm's failure kinds); `parked` reads the bank.
+    An absent report is UNMEASURED for the sweep half -- never zero failures.
+    """
+    out: dict[str, Any] = {"routes": FAILURE_ROUTES, "terminal_classes": []}
+    sweep: dict[str, int] = {}
+    unrouted: dict[str, int] = {}
+
+    def _book(raw: str, into: dict[str, int], n: int = 1) -> None:
+        cls = failure_class(raw)
+        if cls is None:
+            unrouted[raw] = unrouted.get(raw, 0) + n
+        else:
+            into[cls] = into.get(cls, 0) + n
+
+    doc = _read(path or GATES_REPORT)
+    verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
+    if isinstance(verdicts, list):
+        for v in verdicts:
+            if not isinstance(v, dict):
+                continue
+            st = str(v.get("downstream_status") or "")
+            if st.startswith(NOT_JUDGED_PREFIX) and st not in (
+                    "NOT_RUN_TERMINAL_GATE_1_REJECT", "NOT_RUN_NO_GATE_1_ELIGIBLE_CELLS"):
+                _book(st, sweep)
+        for row in name_unknowns(path).values():
+            _book(str(row.get("reason") or "unnamed"), sweep)
+        pw = doc.get("prewarm") if isinstance(doc, dict) else None
+        fails = pw.get("failures") if isinstance(pw, dict) else None
+        if isinstance(fails, dict):
+            for k, n in fails.items():
+                # NOT_RUN_* kinds are already booked once from the verdict rows.
+                if not str(k).startswith(NOT_JUDGED_PREFIX):
+                    _book(str(k), sweep, int(n or 0))
+        out["last_sweep"] = dict(sorted(sweep.items()))
+        out["last_sweep_status"] = "MEASURED"
+    else:
+        out["last_sweep"] = None
+        out["last_sweep_status"] = "UNMEASURED"
+        out["last_sweep_why"] = "the sealed judge has written no verdicts here"
+    parked: dict[str, int] = {}
+    for row in (unrunnable_bank() if bank is None else bank).values():
+        _book(str(row.get("reason") or "unnamed"), parked)
+    out["parked"] = dict(sorted(parked.items()))
+    out["parked_to_converter"] = sum(n for c, n in parked.items()
+                                     if FAILURE_ROUTES.get(c, {}).get("owner") == "converter")
+    out["unrouted"] = dict(sorted(unrouted.items()))
+    out["verdict"] = "UNROUTED" if unrouted else "ALL_ROUTED"
+    return out
+
+
+#: The handoff's contract with Breadth's converter. Bump on any field change.
+CONVERSION_HANDOFF_SCHEMA = 1
+#: The clock the universe bars are stamped on (CLAUDE.md: broker clock is NY+7).
+BAR_CLOCK = "broker NY+7"
+
+
+def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
+    """What a no_bars / no_series cell lacks, so the converter can backfill or proxy it."""
+    sym, tf = str(row.get("sym") or ""), str(row.get("tf") or "H1")
+    if cls == "no_bars":
+        return {"kind": "bars", "symbol": sym, "timeframe": tf,
+                "file": f"universe/{sym}_{tf}.parquet", "clock": BAR_CLOCK}
+    if cls == "no_series":
+        return {"kind": "series", "symbol": sym, "timeframe": tf, "clock": BAR_CLOCK,
+                "why": str(row.get("why") or "")[:200]}
+    return None
+
+
+def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
+                             path: Path | None = None) -> int:
+    """Hand every parked cell the converter owns to the converter, with its class and axes.
+
+    Written every pass, EMPTY included, so absence never reads as zero. `trial_family` is the
+    family the sealed judge charges the cell's trials to: a conversion stays inside it and is
+    never charged a second family. Attempts are the converter's own sidecar
+    (`conversion_attempts.jsonl`); this writer never touches it.
+    """
+    rows = []
+    for cell, row in sorted(bank.items()):
+        cls = failure_class(row.get("reason")) or "unnamed"
+        route = FAILURE_ROUTES.get(cls, {})
+        if route.get("owner") != "converter":
+            continue
+        fam = row.get("family")
+        rows.append({"cell": cell, "family": fam, "trial_family": fam,
+                     "symbol": row.get("sym"), "timeframe": row.get("tf") or "H1",
+                     "reason": row.get("reason"), "class": cls, "axes": route.get("axes"),
+                     "missing_input": _missing_input(cls, row), "why": row.get("why"),
+                     "first_parked_utc": row.get("parked_at")})
+    target = path or CONVERSION_HANDOFF
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps({"schema_version": CONVERSION_HANDOFF_SCHEMA,
+                                      "generated_utc": at, "n": len(rows), "rows": rows},
+                                     indent=1, default=str), "utf-8")
+    except OSError:
+        # Never leave the previous pass's file to read as this pass's count.
+        with contextlib.suppress(OSError):
+            target.unlink()
+        return -1
+    return len(rows)
+
+
 def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
           ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     """The per-family coverage table, the quotas, and the carried-cohort ratchet."""
@@ -1448,12 +1794,16 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
 
     prior = _read(ratchet or RATCHET) or {}
     judged_cells, judged_total, judged_window = judged_index(ledger, now=at)
+    bank_rows = unrunnable_bank()
+    not_testable_ids = not_testable_index(bank_rows)
     for row in rows:
         row["_cell"] = _cell_id(row)
 
     mined = _mined(rows)
     banned = banned_from_capital()
     study_only: dict[str, int] = {}
+    not_testable: dict[str, int] = {}
+    not_testable_by_reason: dict[str, int] = {}
     backlog: dict[str, int] = {}
     oldest: dict[str, float | None] = {}
     unjudged_ids: set[str] = set()
@@ -1466,6 +1816,13 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             # NOT backlog: a cell that cannot reach the book is not work the judge owes. It is
             # counted, named and kept -- it is simply not something the hour is allocated to.
             study_only[fam] = study_only.get(fam, 0) + 1
+            continue
+        if cid and cid in not_testable_ids:
+            # JUDGED TO THE LIMIT OF ITS DATA: named, counted, kept, and back in the backlog when
+            # the bank re-admits it (`NOT_TESTABLE_REASONS`).
+            not_testable[fam] = not_testable.get(fam, 0) + 1
+            _r = not_testable_ids[cid]
+            not_testable_by_reason[_r] = not_testable_by_reason.get(_r, 0) + 1
             continue
         backlog[fam] = backlog.get(fam, 0) + 1
         if cid:
@@ -1488,6 +1845,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     not_run = name_not_run()
     unrunnable = update_unrunnable_bank({**named_unknowns, **not_run},
                                         at=at.isoformat(timespec="seconds"))
+    _bank_now = unrunnable_bank()
+    failures = judging_failures(bank=_bank_now)
+    failures["handed_to_converter"] = write_conversion_handoff(
+        _bank_now, at=at.isoformat(timespec="seconds"))
     bars_wanted: dict[str, int] = {}
     for _r in not_run.values():
         if _r.get("reason") == "data_missing":
@@ -1519,10 +1880,21 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
 
     prior_fams = prior.get("families") if isinstance(prior, dict) else {}
     prior_fams = prior_fams if isinstance(prior_fams, dict) else {}
-    prior_at = _ts(prior.get("at") if isinstance(prior, dict) else None)
+    prior_at_raw = _ts(prior.get("at") if isinstance(prior, dict) else None)
+    # A PRIOR READING ON ANOTHER UNIT IS NO BASELINE (`BACKLOG_BASIS`). The first pass after the
+    # not-testable class shipped would otherwise subtract a backlog that held the whole parked
+    # stock from one that does not, and book the difference as an hour of drain. That pass
+    # re-bases: carried, drained and the drain status are UNMEASURED, and the next pass ratchets.
+    prior_basis = prior.get("backlog_basis") if isinstance(prior, dict) else None
+    rebased = prior_at_raw is not None and prior_basis != BACKLOG_BASIS
+    prior_at = None if rebased else prior_at_raw
     # THE CARRIED COHORT: rows already in the backlog at the previous reading and STILL unjudged.
-    # It can only fall, because a cell leaves it exactly one way -- by being judged.
+    # It can only fall, because a cell leaves it exactly one way -- by being judged -- once the
+    # two non-judging moves are booked by name: PARKED (the cell entered the not-testable class
+    # since the prior reading, `not_testable_since`) leaves the cohort without a ruling, and
+    # READMITTED (the prior pass's bank update returned it) joins it without being minted.
     carried: dict[str, int] = {}
+    parked_since: dict[str, int] = {}
     if prior_at is not None:
         for row in rows:
             cid = row.get("_cell")
@@ -1531,9 +1903,16 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             if str(row.get("family") or "") in banned:
                 continue
             seen = _ts(row.get("first_seen"))
-            if seen is not None and seen.timestamp() <= prior_at.timestamp():
-                fam = str(row.get("family") or "")
-                carried[fam] = carried.get(fam, 0) + 1
+            if seen is None or seen.timestamp() > prior_at.timestamp():
+                continue
+            fam = str(row.get("family") or "")
+            if cid and cid in not_testable_ids:
+                _since = _ts((bank_rows.get(str(cid)) or {}).get("not_testable_since")
+                             or (bank_rows.get(str(cid)) or {}).get("parked_at"))
+                if _since is not None and _since.timestamp() >= prior_at.timestamp():
+                    parked_since[fam] = parked_since.get(fam, 0) + 1
+                continue
+            carried[fam] = carried.get(fam, 0) + 1
 
     fams = sorted(set(mined) | set(backlog) | set(judged_window) | live_families())
     table: dict[str, dict[str, Any]] = {}
@@ -1548,18 +1927,31 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         window = WINDOW_H if q <= 0 else max(WINDOW_H, back / max(q, 1) * WINDOW_H)
         was = int(prior_fams.get(fam, {}).get("unjudged", 0)) if isinstance(
             prior_fams.get(fam), dict) else 0
+        readm = int(prior_fams.get(fam, {}).get("readmitted_to_next", 0) or 0) if isinstance(
+            prior_fams.get(fam), dict) else 0
+        parked_f = parked_since.get(fam, 0)
+        # The cohort the prior reading handed this one, on today's unit: what it held, plus what
+        # its bank update re-admitted, minus what was parked since. Drain is measured against it.
+        base = was + readm - parked_f
         table[fam] = {
             "mined": mined.get(fam, 0),
             "queued": queued.get(fam, 0),
             "judged_window": judged_window.get(fam, 0),
             "judged_total": judged_total.get(fam, 0),
             "unjudged": back,
+            "not_testable": not_testable.get(fam, 0),
             "oldest_unjudged_age_h": (round(float(oldest[fam] or 0.0), 2)
                                       if oldest.get(fam) is not None else None),
             "quota": q,
             "window_h": round(window, 2),
             "carried": carried.get(fam, 0) if prior_at is not None else None,
             "prior_unjudged": was if prior_at is not None else None,
+            "parked_since_prior": parked_f if prior_at is not None else None,
+            "readmitted_since_prior": readm if prior_at is not None else None,
+            "cohort_base": base if prior_at is not None else None,
+            # Re-admitted by THIS pass's bank update: backlog again from the next reading.
+            "readmitted_to_next": int((unrunnable.get("readmitted_not_testable_by_family")
+                                       or {}).get(fam, 0)),
             # The previous reading's oldest age, so the fence can ask the only question about an
             # age that a clock cannot answer for itself: is the oldest cell FALLING. An age rises
             # by the wall time between two readings whatever the desk does -- the coverage-drain
@@ -1567,7 +1959,8 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             # is movement, never the raw number.
             "prior_oldest_age_h": (prior_fams.get(fam, {}).get("oldest_unjudged_age_h")
                                    if isinstance(prior_fams.get(fam), dict) else None),
-            "drained": (was - carried.get(fam, 0)) if (prior_at is not None and was) else None,
+            "drained": ((base - carried.get(fam, 0)) if (prior_at is not None and base > 0)
+                        else None),
         }
         if fam in banned:
             table[fam]["judging_status"] = "STUDY_ONLY"
@@ -1608,8 +2001,12 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     rate = sustained_rate(ledger, now=at)
     _prior_total = (sum(int(v.get("unjudged", 0)) for v in prior_fams.values()
                         if isinstance(v, dict)) if prior_at is not None else None)
+    _parked_total = sum(parked_since.values()) if prior_at is not None else 0
     drain_eta = drain(total_backlog, rate.get("per_hour_24h"), prior_backlog=_prior_total,
-                      prior_at=prior_at, now=at)
+                      prior_at=prior_at, now=at, parked=_parked_total,
+                      rebased=(f"the prior reading's backlog basis is {prior_basis!r}, this "
+                               f"one's {BACKLOG_BASIS!r}: re-based, drain unmeasured this pass"
+                               if rebased else None))
     hours_to_drain = drain_eta.get("hours")
     _h_gross = drain_eta.get("hours_at_zero_creation")
     forgone_per_hour = (value_deferred / max(_h_gross or 1.0, 1.0) if _h_gross else 0.0)
@@ -1688,7 +2085,23 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                                      if isinstance(prior, dict) else None),
         "prior_drain_status": (prior.get("drain_status") if isinstance(prior, dict) else None),
         "unrunnable_parked": unrunnable.get("parked_this_pass"),
+        # THE BACKLOG'S UNIT and the non-judging moves, each its own figure, never drain.
+        "backlog_basis": BACKLOG_BASIS,
+        "backlog_rebased": rebased,
+        "prior_backlog_basis": prior_basis if prior_at_raw is not None else None,
+        "parked_not_testable_since_prior": (_parked_total if prior_at is not None else None),
+        "readmitted_not_testable_since_prior": (
+            sum(int(v.get("readmitted_to_next", 0) or 0) for v in prior_fams.values()
+                if isinstance(v, dict)) if prior_at is not None else None),
+        "readmitted_not_testable_to_next": unrunnable.get("readmitted_not_testable"),
+        # OUT OF THE BACKLOG, NOT OUT OF THE RECORD: cells the judge ruled NOT TESTABLE (under 60
+        # daily observations), per reason, until the bank re-admits them.
+        "not_testable_total": sum(not_testable.values()),
+        "not_testable_by_reason": not_testable_by_reason,
         "unrunnable_bank": unrunnable.get("bank_size"),
+        # EVERY WAY THE JUDGE FAILED TO RULE, per class, each with its route out (no terminal
+        # class exists): what the hourly pass reads to hunt judging's own unoptimalities.
+        "judging_failures": failures,
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
     }
@@ -1917,9 +2330,11 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
         "at": doc.get("at"),
         "families": {f: {"unjudged": int(r.get("unjudged") or 0),
                          "queued": int(r.get("queued") or 0),
-                         "oldest_unjudged_age_h": r.get("oldest_unjudged_age_h")}
+                         "oldest_unjudged_age_h": r.get("oldest_unjudged_age_h"),
+                         "readmitted_to_next": int(r.get("readmitted_to_next") or 0)}
                      for f, r in fams.items()},
         "unjudged_total": (doc.get("totals") or {}).get("unjudged_total"),
+        "backlog_basis": (doc.get("totals") or {}).get("backlog_basis"),
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
         "unknown_share_basis": (doc.get("totals") or {}).get("unknown_share_basis"),
         "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),

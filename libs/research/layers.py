@@ -84,6 +84,7 @@ LEG_LAYER: dict[str, str] = {
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
+    "style_novelty": "prediction",
     "opportunity_forecast": "prediction", "edge_reliability": "prediction",
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
@@ -231,7 +232,7 @@ LEG_LAYER: dict[str, str] = {
     # experimental budget accounts for principal-override heat inside the book: portfolio. The
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
-    "kelly_survival": "sizing",
+    "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
