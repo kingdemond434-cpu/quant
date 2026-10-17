@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-17T11:00:12.557125+00:00",
+  "swept_at": "2026-10-17T11:15:15.558328+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1714,7 +1714,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 34,
-      "shadow_exp_r": 0.5068,
+      "shadow_exp_r": 0.4046,
       "woke_on_shadow": false
     },
     "EURZAR|overnight_gap_decay_continuous": {
@@ -4563,7 +4563,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0241,
+      "shadow_exp_r": -0.1978,
       "woke_on_shadow": false
     },
     "XAUAUD|cross_asset_residual_continuous": {
