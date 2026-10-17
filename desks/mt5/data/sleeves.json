@@ -198,13 +198,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'gold_asia_v2' (zeroed by this solve)",
-        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
+        "heat_earned": 0.004799,
+        "joined": "joined on 'xauusd|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.48% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-17T16:41:20.347697+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-16T07:14:06+00:00",
@@ -238,13 +238,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'gold_asia_v3' (zeroed by this solve)",
-        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
+        "heat_earned": 0.004799,
+        "joined": "joined on 'xauusd|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.48% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-17T16:41:20.347697+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-16T07:14:06+00:00",
@@ -278,13 +278,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'gold_asia_v4' (zeroed by this solve)",
-        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
+        "heat_earned": 0.004799,
+        "joined": "joined on 'xauusd|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.48% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-17T16:41:20.347697+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-16T07:14:06+00:00",
