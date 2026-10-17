@@ -1,8 +1,8 @@
 {
   "schema": "ledger_view_adoption/1",
   "state": "ALREADY_VERIFIED",
-  "target": "2463680015cbd3210e1f5869365223dd2c588c65",
+  "target": "98c4fb42f232137f9c95158a421b21b059bbdafc",
   "rows": 257,
-  "verified_at": "2026-10-17T20:36:54.143018+00:00",
+  "verified_at": "2026-10-17T21:12:34.334720+00:00",
   "financial_facts_changed": false
 }
