@@ -1,9 +1,9 @@
 {
  "ok": true,
- "running_sha": "e5957136965a72bb85ba729e72735dba46681a9e",
+ "running_sha": "54c8b89b2772c51666dbf066b6a2343ea3df5c98",
  "release_sha": "22bffcfed4ef2902cd4c77a1522b44d2e0ca500e",
- "reason": "running e5957136965a is the sealed code 22bffcfed4ef plus seal/state commits only (754 path(s))",
- "age_h": 7.764,
+ "reason": "running 54c8b89b2772 is the sealed code 22bffcfed4ef plus seal/state commits only (852 path(s))",
+ "age_h": 8.759,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -14,10 +14,10 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-10-17T06:36:47+00:00",
+ "at": "2026-10-17T07:36:30+00:00",
  "tested_sha": "a2f9455f3f6de702fb530eae440ecc897e540809",
  "tested_gates": "fast",
- "allocator_certificate": "50d692a47d5a9dad@2026-10-17T05:33:04.956613+00:00 proof=FAILED book=multiperiod",
+ "allocator_certificate": "2f5792507607ec10@2026-10-17T07:02:22.955599+00:00 proof=FAILED book=multiperiod",
  "ci_run_id": "UNMEASURED",
  "allows_new_risk": true,
  "verdict": "OK"
