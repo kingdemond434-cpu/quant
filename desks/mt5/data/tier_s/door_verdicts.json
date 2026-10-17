@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-17T13:49:54.551039+00:00",
+ "generated_utc": "2026-10-17T14:59:52.145270+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -10765,6 +10765,224 @@
    "theory": {
     "status": "UNMEASURED",
     "n_oos": 0
+   }
+  },
+  "external.EURZAR@M15.relative_value.p=5187e337df0af6c2": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "relative_value",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.AUDCAD@M5.formula.p=3d3bf668857b19e0": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=ba013eb7096b4f76": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=671cb21b68699cdc": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=a9e5f61dbf209337": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=6274e7f36faf273e": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=5d43d6d0e01bab64": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=0b21bea2201c390d": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=824413ae617609b3": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=0e51edf756b4187c": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=b744451efef50049": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=0cbf006c46c49a95": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=c334918292c1df8b": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.AUDCHF@M5.formula.p=4f8841504607c179": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.NZDCAD@M5.formula.p=389fe42767236de9": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.NZDCAD@M5.formula.p=7a491b1e4ceef593": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.NZDCAD@M5.formula.p=6274e7f36faf273e": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.NZDCAD@M5.formula.p=c1d3f23f928c3e36": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=62d2558450b20630": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=f307a1653bb11036": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 11,
+    "confidence": 0.1455,
+    "sd": 0.066,
+    "status": "REFUTED"
    }
   }
  },
