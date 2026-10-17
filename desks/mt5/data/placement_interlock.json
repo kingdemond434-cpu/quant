@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-16T21:02:37+00:00",
+  "generated": "2026-10-16T23:57:51+00:00",
   "root": "C:\\opt\\quant",
   "thresholds": {
     "trailing_refusals_max": 30,
@@ -9,8 +9,7 @@
     "identity_max_age_hours": 3.0
   },
   "problems": [
-    "gold_asia has been refused 746 times in a row on 'release_identity_refused' since 2026-10-14T04:00:17+00:00 (54.0h) with no placement in between -- a halt this long has to be visible somewhere, and until this fence existed it was not",
-    "the release identity currently refuses new risk (REFUSED): running 9766aa777d11 carries 115 path(s) the sealed release ca669d8c2755 never named: ['.gitignore', 'REPO_MAP.md', 'context/CERT_BOOK_PROMOTION_DESKTOP_SPEC.md', 'context/patches/pr162_usdjpy_rr25_live_policy_quarantine"
+    "gold_asia has been refused 746 times in a row on 'release_identity_refused' since 2026-10-14T04:00:17+00:00 (54.0h) with no placement in between -- a halt this long has to be visible somewhere, and until this fence existed it was not"
   ],
   "notes": [
     "gold_afternoon: 4x 'margin_guard' is history, not a current halt (last row 2026-09-29T14:57:32+00:00 is older than 24h)",
@@ -24,7 +23,7 @@
       "first_at": "2026-10-14T04:00:17+00:00",
       "last_at": "2026-10-16T09:59:26+00:00",
       "span_h": 53.986,
-      "age_h": 11.053,
+      "age_h": 13.974,
       "venue_reason": false,
       "current": true
     },
@@ -34,7 +33,7 @@
       "first_at": "2026-09-28T14:49:57+00:00",
       "last_at": "2026-09-29T14:57:32+00:00",
       "span_h": 24.126,
-      "age_h": 414.085,
+      "age_h": 417.005,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-29T14:57:32+00:00 is older than 24h"
@@ -45,7 +44,7 @@
       "first_at": "2026-09-28T11:17:44+00:00",
       "last_at": "2026-09-28T11:17:44+00:00",
       "span_h": 0.0,
-      "age_h": 441.748,
+      "age_h": 444.669,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T11:17:44+00:00 is older than 24h"
@@ -56,7 +55,7 @@
       "first_at": "2026-09-11T10:26:59+00:00",
       "last_at": "2026-09-23T10:32:03+00:00",
       "span_h": 288.084,
-      "age_h": 562.51,
+      "age_h": 565.43,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-23T10:32:03+00:00 is older than 24h"
@@ -67,7 +66,7 @@
       "first_at": "2026-09-11T10:26:59+00:00",
       "last_at": "2026-09-11T10:38:46+00:00",
       "span_h": 0.196,
-      "age_h": 850.398,
+      "age_h": 853.318,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-11T10:38:46+00:00 is older than 24h"
@@ -78,7 +77,7 @@
       "first_at": "2026-09-28T06:41:57+00:00",
       "last_at": "2026-09-28T06:41:57+00:00",
       "span_h": 0.0,
-      "age_h": 446.345,
+      "age_h": 449.265,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
@@ -89,7 +88,7 @@
       "first_at": "2026-09-28T06:41:57+00:00",
       "last_at": "2026-09-28T06:41:57+00:00",
       "span_h": 0.0,
-      "age_h": 446.345,
+      "age_h": 449.265,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
@@ -100,7 +99,7 @@
       "first_at": "2026-09-23T04:00:04+00:00",
       "last_at": "2026-09-25T09:59:17+00:00",
       "span_h": 53.987,
-      "age_h": 515.056,
+      "age_h": 517.976,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-25T09:59:17+00:00 is older than 24h"
@@ -110,14 +109,14 @@
   "verdict": "HALTED",
   "applicable": true,
   "ledger_newest_at": "2026-10-16T09:59:26+00:00",
-  "ledger_age_h": 11.053,
+  "ledger_age_h": 13.974,
   "rows_scanned": 3952,
   "identity": {
-    "verdict": "REFUSED",
-    "allows_new_risk": false,
-    "at": "2026-10-16T21:02:06+00:00",
-    "reason": "running 9766aa777d11 carries 115 path(s) the sealed release ca669d8c2755 never named: ['.gitignore', 'REPO_MAP.md', 'context/CERT_BOOK_PROMOTION_DESKTOP_SPEC.md', 'context/patches/pr162_usdjpy_rr25_live_policy_quarantine.patch', 'desks/mt5/docs/MT5_DESK.md', 'desks/mt5/docs/MT5_DESK_STATE.json']; money path drifted on disk: ['desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/engine.py', 'desks/mt5",
-    "age_h": 0.009
+    "verdict": "OK",
+    "allows_new_risk": true,
+    "at": "2026-10-16T23:38:17+00:00",
+    "reason": "running 73d431930dc8 is the sealed code 22bffcfed4ef plus seal/state commits only (134 path(s))",
+    "age_h": 0.326
   },
   "host": {
     "verdict": "UNMEASURED",
