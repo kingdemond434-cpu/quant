@@ -1,5 +1,5 @@
 {
- "at": "2026-10-17T03:42:44+00:00",
+ "at": "2026-10-17T04:51:44+00:00",
  "verdicts": {
   "status": "MEASURED",
   "rows_total": 875216,
@@ -31,12 +31,12 @@
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 13476,
-   "7d": 172411
+   "24h": 17727,
+   "7d": 177029
   },
   "per_hour": {
-   "24h": 561.5,
-   "7d": 1026.256
+   "24h": 738.625,
+   "7d": 1053.744
   }
  },
  "verdicts_per_hour": 40.417,
@@ -45,7 +45,7 @@
  "first_judged_per_day": 344.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 13476.0,
+ "created_per_day": 17727.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
