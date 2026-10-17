@@ -1,10 +1,10 @@
 {
- "generated_utc": "2026-10-16T20:05:04.650456+00:00",
+ "generated_utc": "2026-10-17T02:00:17.945495+00:00",
  "stages": {
   "intake": {
-   "files": 45504,
-   "files_7d": 7126,
-   "rows_recent_files": 3189
+   "files": 45750,
+   "files_7d": 7210,
+   "rows_recent_files": 3211
   },
   "proposers": {
    "factor_residual": {
@@ -13,9 +13,9 @@
     "last": "2026-10-03T09:13:19.892529+00:00"
    },
    "plumbing": {
-    "files": 20,
+    "files": 21,
     "rows_latest": 11,
-    "last": "2026-10-16T06:19:19.641510+00:00"
+    "last": "2026-10-17T01:09:29.534890+00:00"
    },
    "transition_alpha": {
     "files": 0,
@@ -32,8 +32,8 @@
    "candidates": 30560
   },
   "deepening": {
-   "queued": 1013,
-   "decided_total": 50930,
+   "queued": 1085,
+   "decided_total": 51092,
    "backlog": 0
   },
   "judged": {
@@ -41,25 +41,25 @@
    "unmeasured": 2108
   },
   "certified": {
-   "cells": 981,
+   "cells": 982,
    "last_certified": "2026-10-16",
-   "certified_last_30d": 969
+   "certified_last_30d": 970
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 981,
+   "certificates": 982,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 981,
+   "forward_eligible_certificates": 982,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
-   "clock_rows": 851,
-   "clocks_ticked_24h": 832,
-   "clocks_ticked_7d": 845,
-   "last_tick": "2026-10-16T20:04:53+00:00",
+   "clock_rows": 853,
+   "clocks_ticked_24h": 834,
+   "clocks_ticked_7d": 847,
+   "last_tick": "2026-10-17T01:58:31+00:00",
    "engine_silent_hours": 0.0,
    "n_certificates": 982,
-   "n_enrolled": 847,
-   "n_accruing": 663,
+   "n_enrolled": 849,
+   "n_accruing": 662,
    "n_blocked": 17,
    "n_missing": 0,
    "n_overdue": 0,
@@ -68,7 +68,7 @@
     "IDENTITY_BROKEN": 13,
     "BLOCKED_NO_BARS": 4
    },
-   "census_at": "2026-10-16T16:57:14+00:00"
+   "census_at": "2026-10-17T00:59:43+00:00"
   },
   "recommendations": {
    "total": 784,
@@ -77,10 +77,10 @@
   }
  },
  "conversion": {
-  "intake_to_compiled": 9.5829,
+  "intake_to_compiled": 9.5173,
   "judged_to_certified": 0.001,
-  "certified_to_forward": 0.6758,
-  "certified_to_clock": 0.8634
+  "certified_to_forward": 0.6741,
+  "certified_to_clock": 0.8646
  },
  "bottleneck": "none obvious"
 }
