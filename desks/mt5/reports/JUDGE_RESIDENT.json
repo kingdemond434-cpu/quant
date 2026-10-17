@@ -27,14 +27,15 @@
   "phase_started_utc": "2026-10-15T01:54:58+00:00"
  },
  "backoff_s": 30,
- "heartbeat_utc": "2026-10-17T18:50:00+00:00",
+ "heartbeat_utc": "2026-10-17T19:05:01+00:00",
  "sweep_phase": {
   "pid": 18004,
   "sweep_started_utc": "2026-10-17T13:53:20+00:00",
   "phases": {
-   "plan": 10415.4
+   "plan": 10415.4,
+   "build_shards": 7411.4
   },
-  "phase": "build_shards",
-  "phase_started_utc": "2026-10-17T16:46:55+00:00"
+  "phase": "collect_and_cut",
+  "phase_started_utc": "2026-10-17T18:50:27+00:00"
  }
 }
