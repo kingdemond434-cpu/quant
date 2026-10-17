@@ -530,8 +530,8 @@
     }
   },
   "last_run": "2026-10-17",
-  "updated_at": "2026-10-17T01:58:31+00:00",
-  "configured_sleeves": 847,
+  "updated_at": "2026-10-17T02:51:41+00:00",
+  "configured_sleeves": 862,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
     "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1": {
@@ -55213,5 +55213,185 @@
       "status": "MEASURED",
       "at": "2026-10-17T01:07:30+00:00"
     }
+  },
+  "CHFSGD.overnight_gap_decay.asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "CHFSGD.overnight_gap_decay.asia#selector=asia_session=asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "CHFSGD.overnight_gap_decay.asia#session=asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "GBPZAR.overnight_gap_decay.asia#session=overlap": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "GBPZAR.overnight_gap_decay.asia#representation=price_only_session=overlap": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "CHFSGD.overnight_gap_decay.asia#representation=price_only_session=overlap": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "AUDNZD.overnight_gap_decay.asia#representation=price_only_session=asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "CHFSGD.overnight_gap_decay.asia#selector=asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "AUDNZD.overnight_gap_decay.asia#session=asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "AUDNZD.overnight_gap_decay.asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "AUDNZD.overnight_gap_decay.asia#selector=asia_session=asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "CHFSGD.overnight_gap_decay.asia#session=overlap": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "AUDNZD.overnight_gap_decay.asia#session=overlap": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "AUDNZD.overnight_gap_decay.asia#selector=asia": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
+  },
+  "AUDNZD.overnight_gap_decay.asia#representation=price_only_session=overlap": {
+    "n": 0,
+    "cum_r": 0.0,
+    "max_dd_r": 0.0,
+    "first_entry": null,
+    "last_entry": null,
+    "status": "ACTIVE",
+    "enrolled_at": "2026-10-17T02:51:41+00:00",
+    "promotion_authority": false,
+    "order_authority": false,
+    "evidence_note": "clock enrolled; forward replay pending"
   }
 }
