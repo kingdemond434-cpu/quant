@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-17T09:40:12.846825+00:00",
+ "generated_utc": "2026-10-17T10:42:01.758367+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -10189,7 +10189,7 @@
    }
   },
   "external.GBPSGD.clock_transition.p=39ec47e132030e47": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10200,7 +10200,7 @@
    }
   },
   "external.GBPZAR.clock_transition.p=39ec47e132030e47": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10211,7 +10211,7 @@
    }
   },
   "external.NZDCAD.clock_transition.p=39ec47e132030e47": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10222,7 +10222,7 @@
    }
   },
   "external.NZDCHF.clock_transition.p=39ec47e132030e47": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10233,7 +10233,7 @@
    }
   },
   "external.NZDJPY.clock_transition.p=39ec47e132030e47": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10244,7 +10244,7 @@
    }
   },
   "external.NZDSGD.clock_transition.p=39ec47e132030e47": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10255,7 +10255,7 @@
    }
   },
   "external.SGDJPY.clock_transition.p=39ec47e132030e47": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10266,7 +10266,7 @@
    }
   },
   "external.USDCNH.clock_transition.p=39ec47e132030e47": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10277,7 +10277,7 @@
    }
   },
   "external.USDMXN.clock_transition.p=39ec47e132030e47": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10288,7 +10288,7 @@
    }
   },
   "external.USDNOK.clock_transition.p=39ec47e132030e47": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10299,7 +10299,7 @@
    }
   },
   "external.USDPLN.clock_transition.p=39ec47e132030e47": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10310,7 +10310,7 @@
    }
   },
   "external.USDSGD.clock_transition.p=39ec47e132030e47": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10321,7 +10321,7 @@
    }
   },
   "external.USDZAR.clock_transition.p=39ec47e132030e47": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10332,7 +10332,7 @@
    }
   },
   "external.AUDCAD.clock_transition.p=99cdb0d39855b38f": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10343,7 +10343,7 @@
    }
   },
   "external.AUDCAD.clock_transition.p=aaf7fdb4641151c9": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -10354,7 +10354,7 @@
    }
   },
   "external.AUDJPY.clock_transition.p=b95e974aac459e97": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
