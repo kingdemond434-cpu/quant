@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-17T05:49:30.734597+00:00",
+ "generated_utc": "2026-10-17T07:09:38.734537+00:00",
  "over_budget": [
   {
    "test_id": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
@@ -2992,11 +2992,11 @@
    "over_budget": true
   },
   {
-   "test_id": "external.CADCHF@M15.relative_value.p=fa5430370057a06d",
-   "at": "2026-10-16T16:37:24.035625+00:00",
-   "family": "relative_value",
-   "p": 0.040200000000000014,
-   "e": 2.493773340269082,
+   "test_id": "external.CHFSGD@M30.cross_asset_residual.p=6bd670662b2d38ea",
+   "at": "2026-10-16T16:37:42.042505+00:00",
+   "family": "cross_asset_residual",
+   "p": 0.04910000000000003,
+   "e": 2.2564684120326204,
    "lord_level": 0.018458028240533185,
    "lord_reject": false,
    "elond_level": 3.377263964919676e-06,
@@ -3005,11 +3005,11 @@
    "over_budget": true
   },
   {
-   "test_id": "external.CHFDKK@M30.cross_asset_residual.p=f166d10e252f8592",
-   "at": "2026-10-16T16:37:34.158754+00:00",
-   "family": "cross_asset_residual",
-   "p": 0.033,
-   "e": 2.7524094128159016,
+   "test_id": "external.CADCHF@M15.relative_value.p=fa5430370057a06d",
+   "at": "2026-10-17T07:05:20.042134+00:00",
+   "family": "relative_value",
+   "p": 0.043,
+   "e": 2.4112141108520606,
    "lord_level": 0.013426139148321452,
    "lord_reject": false,
    "elond_level": 3.3772543887950768e-06,
@@ -3018,11 +3018,11 @@
    "over_budget": true
   },
   {
-   "test_id": "external.CHFSGD@M30.cross_asset_residual.p=6bd670662b2d38ea",
-   "at": "2026-10-16T16:37:42.042505+00:00",
+   "test_id": "external.CHFDKK@M30.cross_asset_residual.p=f166d10e252f8592",
+   "at": "2026-10-17T07:05:32.649129+00:00",
    "family": "cross_asset_residual",
-   "p": 0.04910000000000003,
-   "e": 2.2564684120326204,
+   "p": 0.043,
+   "e": 2.4112141108520606,
    "lord_level": 0.012401112930998194,
    "lord_reject": false,
    "elond_level": 3.37724481272319e-06,
@@ -15760,11 +15760,11 @@
    "over_budget": false
   },
   {
-   "test_id": "external.CADCHF@M15.relative_value.p=fa5430370057a06d",
-   "at": "2026-10-16T16:37:24.035625+00:00",
-   "family": "relative_value",
-   "p": 0.040200000000000014,
-   "e": 2.493773340269082,
+   "test_id": "external.CHFSGD@M30.cross_asset_residual.p=6bd670662b2d38ea",
+   "at": "2026-10-16T16:37:42.042505+00:00",
+   "family": "cross_asset_residual",
+   "p": 0.04910000000000003,
+   "e": 2.2564684120326204,
    "lord_level": 0.018458028240533185,
    "lord_reject": false,
    "elond_level": 3.377263964919676e-06,
@@ -15773,11 +15773,11 @@
    "over_budget": true
   },
   {
-   "test_id": "external.CHFDKK@M30.cross_asset_residual.p=f166d10e252f8592",
-   "at": "2026-10-16T16:37:34.158754+00:00",
-   "family": "cross_asset_residual",
-   "p": 0.033,
-   "e": 2.7524094128159016,
+   "test_id": "external.CADCHF@M15.relative_value.p=fa5430370057a06d",
+   "at": "2026-10-17T07:05:20.042134+00:00",
+   "family": "relative_value",
+   "p": 0.043,
+   "e": 2.4112141108520606,
    "lord_level": 0.013426139148321452,
    "lord_reject": false,
    "elond_level": 3.3772543887950768e-06,
@@ -15786,11 +15786,11 @@
    "over_budget": true
   },
   {
-   "test_id": "external.CHFSGD@M30.cross_asset_residual.p=6bd670662b2d38ea",
-   "at": "2026-10-16T16:37:42.042505+00:00",
+   "test_id": "external.CHFDKK@M30.cross_asset_residual.p=f166d10e252f8592",
+   "at": "2026-10-17T07:05:32.649129+00:00",
    "family": "cross_asset_residual",
-   "p": 0.04910000000000003,
-   "e": 2.2564684120326204,
+   "p": 0.043,
+   "e": 2.4112141108520606,
    "lord_level": 0.012401112930998194,
    "lord_reject": false,
    "elond_level": 3.37724481272319e-06,
