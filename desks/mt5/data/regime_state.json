@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-17T12:15:16.945488+00:00",
+  "swept_at": "2026-10-17T12:30:04.255534+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -4057,7 +4057,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 22,
-      "shadow_exp_r": 0.4808,
+      "shadow_exp_r": 0.4687,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_gap_decay_continuous": {
