@@ -368,10 +368,42 @@ try {
 $requiredTasks = @('MT5-Gauntlet','MT5-Shadow','MT5-Hourly','MT5-DeskState','MT5-MoatRecorder',
                    'MT5-MoatSilver','MT5-StallWatch','MT5-Universe','MT5-ShadowSync',
                    'MT5-TerminalBoot')
-$present = (schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | ForEach-Object { $_.TaskName -replace '^\\','' })
-foreach ($rt in $requiredTasks) {
-  if ($present -notcontains $rt) {
+# A whole-machine schtasks /Query can block this watchdog for hours. Query only the
+# same required root tasks, with a per-operation bound. An unreadable inventory is
+# UNMEASURED, never proof that a task was deleted. This census changes no task.
+function Get-RequiredTaskPresence {
+  param([string[]]$TaskNames, [scriptblock]$Query = {
+    param([string]$TaskName)
+    $escapedName = $TaskName.Replace("'", "''")
+    Get-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' `
+      -ClassName MSFT_ScheduledTask -Filter "TaskName='$escapedName' AND TaskPath='\\'" `
+      -OperationTimeoutSec 5 -ErrorAction Stop
+  })
+  foreach ($taskName in $TaskNames) {
+    $state = 'UNMEASURED'
+    $reason = ''
+    try {
+      $rows = @(& $Query $taskName)
+      if ($rows.Count -eq 0) {
+        $state = 'MISSING'
+      } elseif (@($rows | Where-Object { $_.TaskName -eq $taskName -and $_.TaskPath -eq '\' }).Count -gt 0) {
+        $state = 'PRESENT'
+      } else {
+        $reason = 'query returned no matching root task'
+      }
+    } catch {
+      $reason = $_.Exception.GetType().Name
+    }
+    [pscustomobject]@{ TaskName = $taskName; State = $state; Reason = $reason }
+  }
+}
+
+foreach ($taskPresence in @(Get-RequiredTaskPresence -TaskNames $requiredTasks)) {
+  $rt = $taskPresence.TaskName
+  if ($taskPresence.State -eq 'MISSING') {
     $actions += "TASK MISSING: $rt is not registered at all -- re-register from ops/ (deletion, not failure)"
+  } elseif ($taskPresence.State -eq 'UNMEASURED') {
+    $actions += "TASK CENSUS UNMEASURED: $rt could not be verified ($($taskPresence.Reason)); no deletion inferred"
   }
 }
 

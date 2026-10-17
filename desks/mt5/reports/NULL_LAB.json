@@ -1,11 +1,11 @@
 {
- "generated_utc": "2026-10-17T15:51:56+00:00",
+ "generated_utc": "2026-10-17T23:18:55+00:00",
  "status": "MEASURED",
  "budget_s": 600.0,
- "elapsed_s": 573.1,
- "draws_this_pass": 93,
- "run_this_pass": 68,
- "ledger_draws": 3088,
+ "elapsed_s": 624.51,
+ "draws_this_pass": 3,
+ "run_this_pass": 2,
+ "ledger_draws": 3091,
  "families_hunted": 100,
  "families_measured": 57,
  "unmeasured_families": [
@@ -3253,23 +3253,23 @@
    "fpr_charge": 1.0
   },
   "dav_supertrend_trail": {
-   "draws": 31,
-   "run": 30,
-   "not_run": 1,
+   "draws": 33,
+   "run": 31,
+   "not_run": 2,
    "not_run_why": [
     "build_cell: dav_supertrend_trail raised TypeError: dav_supertrend_trail() got an unexpected keyword argument 'chart'"
    ],
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 29,
+     "n": 30,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.116974
+      0.113517
      ],
-     "posterior_rate": 0.020408,
+     "posterior_rate": 0.02,
      "exceeds_nominal": false,
      "unmeasured_draws": 1,
      "per_arm": {
@@ -3284,7 +3284,7 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 10,
+       "n": 11,
        "passed": 0,
        "rate": 0.0
       }
@@ -3292,22 +3292,22 @@
      "null_distribution": {
       "q05": 0.0,
       "q25": 0.0,
-      "q50": 7e-06,
-      "q75": 0.003758,
-      "q95": 0.176838,
-      "q99": 0.383658
+      "q50": 4e-06,
+      "q75": 0.003073,
+      "q95": 0.175029,
+      "q99": 0.380987
      }
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 30,
+     "n": 31,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.113517
+      0.110259
      ],
-     "posterior_rate": 0.01,
+     "posterior_rate": 0.009804,
      "exceeds_nominal": false,
      "unmeasured_draws": 0,
      "per_arm": {
@@ -3322,30 +3322,30 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 10,
+       "n": 11,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -32.956922,
-      "q25": -13.217227,
-      "q50": -5.983071,
-      "q75": -2.722847,
-      "q95": -0.913056,
-      "q99": -0.324764
+      "q05": -32.868882,
+      "q25": -15.316774,
+      "q50": -6.07142,
+      "q75": -2.795262,
+      "q95": -0.918079,
+      "q99": -0.332413
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 29,
+     "n": 30,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.116974
+      0.113517
      ],
-     "posterior_rate": 0.204082,
+     "posterior_rate": 0.2,
      "exceeds_nominal": false,
      "unmeasured_draws": 1,
      "per_arm": {
@@ -3360,18 +3360,18 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 10,
+       "n": 11,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -0.912841,
-      "q25": -0.524094,
-      "q50": -0.188009,
-      "q75": -0.11021,
-      "q95": -0.032566,
-      "q99": -0.011528
+      "q05": -0.902974,
+      "q25": -0.505232,
+      "q50": -0.201422,
+      "q75": -0.11111,
+      "q95": -0.032627,
+      "q99": -0.011813
      }
     }
    },
@@ -3379,8 +3379,8 @@
    "fpr_charge": 1.0
   },
   "discovered": {
-   "draws": 30,
-   "run": 30,
+   "draws": 31,
+   "run": 31,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
@@ -3392,7 +3392,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 30,
+     "unmeasured_draws": 31,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -3420,7 +3420,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 30,
+     "unmeasured_draws": 31,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -3448,7 +3448,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 30,
+     "unmeasured_draws": 31,
      "per_arm": {
       "block_shuffle": {
        "n": 0,

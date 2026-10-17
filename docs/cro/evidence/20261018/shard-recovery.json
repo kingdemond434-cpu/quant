@@ -1,0 +1,881 @@
+{
+  "at": "2026-10-17T22:07:33.554531+00:00",
+  "cutoff_utc": "2026-10-16T22:50:09+00:00",
+  "phases": [
+    {
+      "invocation": "11ce77a265694649926bf45442c89f0d",
+      "phase": "build",
+      "initial_shards": 18,
+      "initial_successes": 18,
+      "initial_failures": 0,
+      "initial_unfinished": 0,
+      "retries": 0,
+      "receipts": [
+        {
+          "shard": 0,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:57.142648+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-0-attempt-0.log",
+          "tail_sha256": "f67cd1e15ec332e539c228fda814e53d1244e06ce414e8cfc91e4a0b40727bc5"
+        },
+        {
+          "shard": 1,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:57.451975+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-1-attempt-0.log",
+          "tail_sha256": "1b84b7e1651ee6569b22af82c5e2937edcbef4a63592c061b2f3e829d615a0dc"
+        },
+        {
+          "shard": 10,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:00.951018+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-10-attempt-0.log",
+          "tail_sha256": "e5fb2b35d9674db5cfb210d6651bc2a0b872b1929bc72f4d2eae204f196e8770"
+        },
+        {
+          "shard": 11,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:01.859547+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-11-attempt-0.log",
+          "tail_sha256": "c07f325c7d7cfaa02853f13a919d199adfb6aa6d47d21e94bc183a6a955a623a"
+        },
+        {
+          "shard": 12,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:03.253684+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-12-attempt-0.log",
+          "tail_sha256": "87fc35935e576a07447effe4314904d5f19f98ed3e67aa20352d623b579fb33e"
+        },
+        {
+          "shard": 13,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:04.636559+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-13-attempt-0.log",
+          "tail_sha256": "6aec7b8087a1393cb160ed46bb04032c1fac3175fec3c224f27546346e05fc5c"
+        },
+        {
+          "shard": 14,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:05.334218+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-14-attempt-0.log",
+          "tail_sha256": "a7ec4d084172d1dd9595fd6913cce1860abb54d2c44239e4656e6a550704197a"
+        },
+        {
+          "shard": 15,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:06.133067+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-15-attempt-0.log",
+          "tail_sha256": "d89a641e1f62829cd640ebddd94da4f6161b02610f3168634f4f2b9ccea0c37d"
+        },
+        {
+          "shard": 16,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:06.833030+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-16-attempt-0.log",
+          "tail_sha256": "f21a8a4664c5073b591356c8364ce086d57103901ef0951009bb21116f0df20f"
+        },
+        {
+          "shard": 17,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:07.631269+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-17-attempt-0.log",
+          "tail_sha256": "7279ef84933895137912cb07c66615f828fcd4e360de065b35986592300cb25b"
+        },
+        {
+          "shard": 2,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:57.756846+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-2-attempt-0.log",
+          "tail_sha256": "2347abe3369c2fb70418ff8321df020a75171dab1b6f00e9e28d466e758e8dc7"
+        },
+        {
+          "shard": 3,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:58.142428+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-3-attempt-0.log",
+          "tail_sha256": "f1119b233b7194b99ff802da10cab95e90afd71c0c000660a922223209ecbd56"
+        },
+        {
+          "shard": 4,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:58.535198+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-4-attempt-0.log",
+          "tail_sha256": "d2082b9ff3cc796fd34e767ff67fab1493c72efe1547b5ee90571e687fb167b8"
+        },
+        {
+          "shard": 5,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:58.837039+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-5-attempt-0.log",
+          "tail_sha256": "294ab38c07fe68709fd580d6b43158124979c7cd3827cbb65c57e33e98c6b7b6"
+        },
+        {
+          "shard": 6,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:59.141847+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-6-attempt-0.log",
+          "tail_sha256": "7549a9a6de8bc99c3e07b4f1ce3cfe33d5b5c61ca7d558b510f4024bbf67ddca"
+        },
+        {
+          "shard": 7,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:59.434335+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-7-attempt-0.log",
+          "tail_sha256": "8b6003ac9eeac920217c92b82989c8c0defce275501b1e5f8cc8844220118a96"
+        },
+        {
+          "shard": 8,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:46:59.842051+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-8-attempt-0.log",
+          "tail_sha256": "fa188a51abd3c826507a4e13adc118b742eb401a7fa64392ca89c1fecc5d8113"
+        },
+        {
+          "shard": 9,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T16:47:00.232865+00:00",
+          "receipt": "11ce77a265694649926bf45442c89f0d-build-9-attempt-0.log",
+          "tail_sha256": "ed9c650667d4797461b63af9bf2f3e0c27a4dc20e6d9a8c68af9bd26ac3fdba0"
+        }
+      ]
+    },
+    {
+      "invocation": "3f19a2c927ae47ab9064dc07d22cf881",
+      "phase": "build",
+      "initial_shards": 0,
+      "initial_successes": 0,
+      "initial_failures": 0,
+      "initial_unfinished": 0,
+      "retries": 10,
+      "receipts": [
+        {
+          "shard": 10,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T01:56:58.034660+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-10-attempt-1.log",
+          "tail_sha256": "e0fe16ae58e67fd22ca33005f85876d30e5613ef64820d825f4de2c685fef856"
+        },
+        {
+          "shard": 11,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T02:33:25.633735+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-11-attempt-1.log",
+          "tail_sha256": "2e03f99a36ba18a505a3ca8005d8c068f3b0d7b8f223f12fdedec273adea9daf"
+        },
+        {
+          "shard": 12,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T03:28:11.449763+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-12-attempt-1.log",
+          "tail_sha256": "1002d7acab4ac25dc3db11f6732278041db82fb339a3f82089fe4735c881b77d"
+        },
+        {
+          "shard": 13,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T03:54:40.040316+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-13-attempt-1.log",
+          "tail_sha256": "bade405f4f04f758ee27331b33f0393f2c5e1c81bb96f4e4e30dc929a97251dd"
+        },
+        {
+          "shard": 14,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T04:46:55.734069+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-14-attempt-1.log",
+          "tail_sha256": "dcaa31f7d958c9a1031887f5746b894b5870d75b6ddbeef392fb585437c97979"
+        },
+        {
+          "shard": 5,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-16T23:03:51.339423+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-5-attempt-1.log",
+          "tail_sha256": "8aa9c6f872d44f27bb9fcfd956399b7c1c2911c5e1e1ecea61150cc65d29fc56"
+        },
+        {
+          "shard": 6,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-16T23:27:45.564760+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-6-attempt-1.log",
+          "tail_sha256": "cc5e5a48c8330045c664653c5934f4082249f1e729341774f136f1c676905976"
+        },
+        {
+          "shard": 7,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T00:02:43.334918+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-7-attempt-1.log",
+          "tail_sha256": "02e1fe5cba19c9560c4f13b776a8c2abc9bb45eb96603b4caa71897220761c0d"
+        },
+        {
+          "shard": 8,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T00:32:22.149853+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-8-attempt-1.log",
+          "tail_sha256": "f074f2e49769bd28b5ff4f80b8f9d5ba752dab3da5494c67e34ce9d8dc58ddfc"
+        },
+        {
+          "shard": 9,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T01:13:41.949757+00:00",
+          "receipt": "3f19a2c927ae47ab9064dc07d22cf881-build-9-attempt-1.log",
+          "tail_sha256": "45a7ff33a2bfe0bf5a1f678d556761bca8b1e89362a51355a76de39cdb7ed2b2"
+        }
+      ]
+    },
+    {
+      "invocation": "401cfa4193f84e84a395892521e4fd4d",
+      "phase": "build",
+      "initial_shards": 18,
+      "initial_successes": 15,
+      "initial_failures": 0,
+      "initial_unfinished": 3,
+      "retries": 3,
+      "receipts": [
+        {
+          "shard": 0,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.160048+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-0-attempt-0.log",
+          "tail_sha256": "bcdffcdb76edc5a86a9d05bb54c3868e48748bb43ede7938dc7704601e6e1d2a"
+        },
+        {
+          "shard": 1,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.237233+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-1-attempt-0.log",
+          "tail_sha256": "9790b7ba8eebe74d96f830a42194bbf84a0d4cbd260893dd9fccab09fa9739e5"
+        },
+        {
+          "shard": 10,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.755556+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-10-attempt-0.log",
+          "tail_sha256": "c1c1424ca93d9d5af9ea021a268ee6d151cd68e37395b2d9d3bb9f349504fd6e"
+        },
+        {
+          "shard": 11,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.841314+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-11-attempt-0.log",
+          "tail_sha256": "b0dce09e0432b1b011c9d269964373adf92cbc875b7b936f8ddd8b55c69a138b"
+        },
+        {
+          "shard": 12,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.934527+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-12-attempt-0.log",
+          "tail_sha256": "4a7ba814b44245a8be3bc063f90a4cebe4bd3094c483e082e84892c188dd2ce2"
+        },
+        {
+          "shard": 13,
+          "attempt": 0,
+          "status": "UNFINISHED",
+          "started": "2026-10-17T09:46:23.038893+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-13-attempt-0.log",
+          "tail_sha256": "b98cf9135ac0da05ab2509e1eb662c29593857e42633f10329362312c5ad7969"
+        },
+        {
+          "shard": 13,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T11:50:18.934895+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-13-attempt-1.log",
+          "tail_sha256": "fc347d4ec11043c42e60a957b4c7baa2a5da5fd336b1c210d39dc47fdecda748"
+        },
+        {
+          "shard": 14,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:23.233380+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-14-attempt-0.log",
+          "tail_sha256": "134d8ceb1dd93eed69f711e7baf93f3604fbb6d738382415318b053005915fe6"
+        },
+        {
+          "shard": 15,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:23.242348+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-15-attempt-0.log",
+          "tail_sha256": "0bf0c24a641d1ad84df09914217453ddf0e4814080abfcbaa0a8af3d7f373d49"
+        },
+        {
+          "shard": 16,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T10:10:20.547170+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-16-attempt-0.log",
+          "tail_sha256": "5efb366e05f157f3f71d2c35805bc4290b6e225d32f2266bfd2d8c92b653d4b1"
+        },
+        {
+          "shard": 17,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T10:20:14.241705+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-17-attempt-0.log",
+          "tail_sha256": "1216491bd0e6a2ea265111124a99e09f1b772b2a6e9d09e19bc474ec523f6d3c"
+        },
+        {
+          "shard": 2,
+          "attempt": 0,
+          "status": "UNFINISHED",
+          "started": "2026-10-17T09:46:22.333850+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-2-attempt-0.log",
+          "tail_sha256": "e28fc83255ba18d3b8fad0bf7f74ecadb45c819d280fdc33fbe2dbed4fd7a141"
+        },
+        {
+          "shard": 2,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T10:52:20.537428+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-2-attempt-1.log",
+          "tail_sha256": "3c097dc2bc2ea441ce27873d43c84b233d9ffb5f137ab37359419e0da34ad117"
+        },
+        {
+          "shard": 3,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.354639+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-3-attempt-0.log",
+          "tail_sha256": "427ac1b4ca96160a830697691140adcf1f32bc1071fc131a426a2439215bea84"
+        },
+        {
+          "shard": 4,
+          "attempt": 0,
+          "status": "UNFINISHED",
+          "started": "2026-10-17T09:46:22.431106+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-4-attempt-0.log",
+          "tail_sha256": "e453dbdc3ab4cb7df06dddf8fe7893fbed78bfc9a210c011e47c7b8c72855cec"
+        },
+        {
+          "shard": 4,
+          "attempt": 1,
+          "status": "OK",
+          "started": "2026-10-17T11:16:16.643712+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-4-attempt-1.log",
+          "tail_sha256": "66da7230544a6fad3545792a78871e5b1dc57ca6b9fae5f08a177bc0f90ce481"
+        },
+        {
+          "shard": 5,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.453683+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-5-attempt-0.log",
+          "tail_sha256": "f4d7a38dcf023d5c42881305cb2b8e0e5fc348ccad42065b2f82a2d5312943ba"
+        },
+        {
+          "shard": 6,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.535628+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-6-attempt-0.log",
+          "tail_sha256": "17ed623f3cb8f154f63a85e4523b86bad0f88828baf82b46565b030c8d328d30"
+        },
+        {
+          "shard": 7,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.541499+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-7-attempt-0.log",
+          "tail_sha256": "da8b1bf49c136183085080409bec8eb58c75cfec0c66cb2076cd7fc30357c633"
+        },
+        {
+          "shard": 8,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.547129+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-8-attempt-0.log",
+          "tail_sha256": "a02a9a6511264f6ce01b288dd49276a3b383b3348ec26d0822e8bfa6a63924f3"
+        },
+        {
+          "shard": 9,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T09:46:22.738526+00:00",
+          "receipt": "401cfa4193f84e84a395892521e4fd4d-build-9-attempt-0.log",
+          "tail_sha256": "991aebb05eb60bf7df04b67f1e2461b1b59e2ea79ac8836c683c3f9da2a52e87"
+        }
+      ]
+    },
+    {
+      "invocation": "71f622ec95ae4edeb152306424bdc1b3",
+      "phase": "rule",
+      "initial_shards": 15,
+      "initial_successes": 15,
+      "initial_failures": 0,
+      "initial_unfinished": 0,
+      "retries": 0,
+      "receipts": [
+        {
+          "shard": 0,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.740894+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-0-attempt-0.log",
+          "tail_sha256": "e9563f9888a0166abfd680c8f3aabf333a62568856fcd7dd652664473b257911"
+        },
+        {
+          "shard": 1,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.744001+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-1-attempt-0.log",
+          "tail_sha256": "4db75a5f2291d7fd90e7f8109afb76f1c63b0fafa417a3d641a1711eb02439dc"
+        },
+        {
+          "shard": 10,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.858670+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-10-attempt-0.log",
+          "tail_sha256": "c94c2be36dce49c9039a9f923bc079aa10737ad2b684e0bfa21c3dd169265653"
+        },
+        {
+          "shard": 11,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:01.039491+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-11-attempt-0.log",
+          "tail_sha256": "3439f9d945c918f4080e0f429bb5dd9d8d8f87a65a056ec60bd3a666a4598755"
+        },
+        {
+          "shard": 12,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:01.042170+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-12-attempt-0.log",
+          "tail_sha256": "d416544efa1d6b936f10950e93caa0aaf32581b5a332cbe0820e74b8adf87d21"
+        },
+        {
+          "shard": 13,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:01.160731+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-13-attempt-0.log",
+          "tail_sha256": "aaf4edbb45b40060c86abe13527cbc69c312521622345a307d567df5ee39ee3f"
+        },
+        {
+          "shard": 14,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:01.252789+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-14-attempt-0.log",
+          "tail_sha256": "22bf0a7da762ad35ee021e35a2938b1e0e60686ae5f003c4860c96c0972016f3"
+        },
+        {
+          "shard": 2,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.744740+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-2-attempt-0.log",
+          "tail_sha256": "012cb963fbc455a7b8a017e029a143c8f3bdfc19c9754c854992781cb17cb616"
+        },
+        {
+          "shard": 3,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.746339+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-3-attempt-0.log",
+          "tail_sha256": "7ad2c9b6b9e6481e9d00d55f10a4084f0096ed39932bf058d5b42814dd6e1326"
+        },
+        {
+          "shard": 4,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.754737+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-4-attempt-0.log",
+          "tail_sha256": "3659136df7906e9daaff531b939ee566767b7b374d6744c3c697795543036f5b"
+        },
+        {
+          "shard": 5,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.758330+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-5-attempt-0.log",
+          "tail_sha256": "0ebcb90338488406a56d4df5aea0a4f27a9e578514b0b5bfd4d8bd27807cad93"
+        },
+        {
+          "shard": 6,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.836795+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-6-attempt-0.log",
+          "tail_sha256": "a8d7afbd41e7a97eee1220988f1f6c947b9009826297c3b4d2688f30b72c7b17"
+        },
+        {
+          "shard": 7,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.848787+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-7-attempt-0.log",
+          "tail_sha256": "1098127999db8fc9eeb887ef26562bce13b94384e104fc2683e8a51b73ab0b3a"
+        },
+        {
+          "shard": 8,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.853529+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-8-attempt-0.log",
+          "tail_sha256": "f252b79fe284cba0eb8513f113deff2ebeb071c44eabafdd97774f7423b7a421"
+        },
+        {
+          "shard": 9,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T05:40:00.855019+00:00",
+          "receipt": "71f622ec95ae4edeb152306424bdc1b3-rule-9-attempt-0.log",
+          "tail_sha256": "727199d4b0bb10089584e7e5e79b316fd707b66eaba7b18a28afffc7886aa2b8"
+        }
+      ]
+    },
+    {
+      "invocation": "9c6784b91d214d9bb08798fe7bde1513",
+      "phase": "rule",
+      "initial_shards": 18,
+      "initial_successes": 18,
+      "initial_failures": 0,
+      "initial_unfinished": 0,
+      "retries": 0,
+      "receipts": [
+        {
+          "shard": 0,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:02.839610+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-0-attempt-0.log",
+          "tail_sha256": "6ea3935b778b1499486e78e6be1ad12cc565bc172218bc47b0c75eb3651ca11e"
+        },
+        {
+          "shard": 1,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.138947+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-1-attempt-0.log",
+          "tail_sha256": "80ccb9064178e107ad785e3e6a9761eedfdac743b310a390d25a9309e8e3118d"
+        },
+        {
+          "shard": 10,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.947533+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-10-attempt-0.log",
+          "tail_sha256": "385f2c21981a36d1f7059ad3c0ca8dfe5a42cb91e4f3505d826d5333aa61f8d8"
+        },
+        {
+          "shard": 11,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:04.140579+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-11-attempt-0.log",
+          "tail_sha256": "cd36db29677a3fe5c46d2fce5ccc39621649f08f0c3c0c92d7291fe81976ec6a"
+        },
+        {
+          "shard": 12,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:04.255076+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-12-attempt-0.log",
+          "tail_sha256": "23b20785a18f680486bad1a4153f15983bb9e60971b594ab443f64d0fa6ccb09"
+        },
+        {
+          "shard": 13,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:04.930909+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-13-attempt-0.log",
+          "tail_sha256": "329688e2c1c2259c841face76292a7de401c9edbe76e9d2d7b906b275186b676"
+        },
+        {
+          "shard": 14,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:04.934255+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-14-attempt-0.log",
+          "tail_sha256": "75dcaa3709fdec4e0e949d3e228bb97d11429cf1fda7dae0fe5f9964e656cb02"
+        },
+        {
+          "shard": 15,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:05.033406+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-15-attempt-0.log",
+          "tail_sha256": "0e8b35f9bdb821e9b4579628398bcb5a556673e7bb30d52bf187ec075338dbeb"
+        },
+        {
+          "shard": 16,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:05.132856+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-16-attempt-0.log",
+          "tail_sha256": "3bc71aecfc4beab2e86090e3790f1f1d0000e0649ef2c0dba79d98ec7c2ec9c2"
+        },
+        {
+          "shard": 17,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:05.135793+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-17-attempt-0.log",
+          "tail_sha256": "f7f7b4a3c167aba28617fa1409ae4076122736992c365ee65a54b766b447452c"
+        },
+        {
+          "shard": 2,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.236013+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-2-attempt-0.log",
+          "tail_sha256": "15dce07eede38425d3171b9845bb99b4015b2226c5dbe068e232b2f918eea514"
+        },
+        {
+          "shard": 3,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.332607+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-3-attempt-0.log",
+          "tail_sha256": "6a100236551546cf92224e2f4cc0c337d83380b269b591da3b0358bb3df273ec"
+        },
+        {
+          "shard": 4,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.433793+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-4-attempt-0.log",
+          "tail_sha256": "62c09bd32ed212f67354106a44474407c389828b4f663509b722ed842c6eba75"
+        },
+        {
+          "shard": 5,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.532106+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-5-attempt-0.log",
+          "tail_sha256": "b8da6bcb8ed2853da35b99cced6feb998ec0c9314a0c8fc37e90adcbe38c48db"
+        },
+        {
+          "shard": 6,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.632643+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-6-attempt-0.log",
+          "tail_sha256": "31d82b15d33e989ac7e8cb66c2f4bfaacd0b5ff30e1e5d28ce691e6015407a1c"
+        },
+        {
+          "shard": 7,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.639860+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-7-attempt-0.log",
+          "tail_sha256": "532bc6051cf78976461679a6e34d1feb5d49850ba7bb864f0c4a039cafd13480"
+        },
+        {
+          "shard": 8,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.654607+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-8-attempt-0.log",
+          "tail_sha256": "05ad92c1ca2903d079f0590a1a56185d6530fbe9c6c7151d29b970537244e329"
+        },
+        {
+          "shard": 9,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T19:11:03.731494+00:00",
+          "receipt": "9c6784b91d214d9bb08798fe7bde1513-rule-9-attempt-0.log",
+          "tail_sha256": "a8789648046ec708da136ca682a5351b38bf0d88c65a40a53edfec8606bb9a07"
+        }
+      ]
+    },
+    {
+      "invocation": "ff750ef023924c2685e5895e90a1c4be",
+      "phase": "rule",
+      "initial_shards": 18,
+      "initial_successes": 18,
+      "initial_failures": 0,
+      "initial_unfinished": 0,
+      "retries": 0,
+      "receipts": [
+        {
+          "shard": 0,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:26.956474+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-0-attempt-0.log",
+          "tail_sha256": "a6d4e560b8588411699e94b199cb0925a9c33521384f82fd4707702063a312b2"
+        },
+        {
+          "shard": 1,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.031423+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-1-attempt-0.log",
+          "tail_sha256": "ed54b418ba2801d8a6b1d89de1a910d38d7a5b0df7de445a14c2600872edeb8f"
+        },
+        {
+          "shard": 10,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.140449+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-10-attempt-0.log",
+          "tail_sha256": "9f5e34cd98e4a92096285425448c937d924faa742e88f3cfe24a866444e88574"
+        },
+        {
+          "shard": 11,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.150573+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-11-attempt-0.log",
+          "tail_sha256": "c9d28e4d2db40ccc7a5ad3baf5e69700e79276275dac11dfeed91bd43d59fc4d"
+        },
+        {
+          "shard": 12,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.248540+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-12-attempt-0.log",
+          "tail_sha256": "9f2619918999908305b19893a2cf810b63993ba43e5a1d15b29a80c253fe37fb"
+        },
+        {
+          "shard": 13,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.257487+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-13-attempt-0.log",
+          "tail_sha256": "4ffddeeb3dfa9970912a2afc34d58ce2ebb8be9ab3dcfa26a3eb573633ebb103"
+        },
+        {
+          "shard": 14,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.359415+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-14-attempt-0.log",
+          "tail_sha256": "9b4125bf4d94d61f82a15c6182484b4855ccab0b11b66e5e3ac72340ae7c2216"
+        },
+        {
+          "shard": 15,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.432805+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-15-attempt-0.log",
+          "tail_sha256": "f270a0efeea8f1a87aba40e430d9740e58dcf862fe6ad642ec5fb24151fb2266"
+        },
+        {
+          "shard": 16,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.445173+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-16-attempt-0.log",
+          "tail_sha256": "5055d383603efc875193d5256747d9cc2c2117da2312afc0c2ce81cfcc02602d"
+        },
+        {
+          "shard": 17,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.538522+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-17-attempt-0.log",
+          "tail_sha256": "274f90926b622c288255711141f283957ec49a709c6ad2c6af693aba90f116a6"
+        },
+        {
+          "shard": 2,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.035055+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-2-attempt-0.log",
+          "tail_sha256": "d4cea9ce3867e6f7e2a24a094687958e1f8176e029348efa527073e8ffcf164a"
+        },
+        {
+          "shard": 3,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.039090+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-3-attempt-0.log",
+          "tail_sha256": "4ca68200e024f04d1c61755fb310b8d80ac4a137a82404a77be8c3159c1bb5d6"
+        },
+        {
+          "shard": 4,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.041709+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-4-attempt-0.log",
+          "tail_sha256": "6baf717b6fd8ed79bc4a08051526ce4c33b929e57cb30e647dffa7e759358826"
+        },
+        {
+          "shard": 5,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.043163+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-5-attempt-0.log",
+          "tail_sha256": "81be3b8019944efe6be80efd6b31b219fe0ef8b9b232879f364207cd9db162e6"
+        },
+        {
+          "shard": 6,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.045672+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-6-attempt-0.log",
+          "tail_sha256": "70b4d2965651aa5a41ce066da3a53e3ede5a28eaf1126c2998c7099149e198fa"
+        },
+        {
+          "shard": 7,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.051659+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-7-attempt-0.log",
+          "tail_sha256": "c8a4e08a32ad1bf0eac8a1d935a580fdb47fa6c2310fb80f92987533b89f6172"
+        },
+        {
+          "shard": 8,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.053642+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-8-attempt-0.log",
+          "tail_sha256": "1160356c25c57ff1dee0f6c817c02df516aedb43710b31a6b19c02058f838032"
+        },
+        {
+          "shard": 9,
+          "attempt": 0,
+          "status": "OK",
+          "started": "2026-10-17T12:39:27.129828+00:00",
+          "receipt": "ff750ef023924c2685e5895e90a1c4be-rule-9-attempt-0.log",
+          "tail_sha256": "95f569d6dcf755e922dfb2b8ff621d2664a402882ede43de3e58da0f0180cc2e"
+        }
+      ]
+    }
+  ],
+  "first_terminal_24h": 43716,
+  "prior_cycle_first_terminal_24h": 4366,
+  "observed_ratio": 10.0128,
+  "target_24h": 100000,
+  "target_gap": 56284,
+  "causality_limit": "Before/after observation; cache, docket and data changes also contribute. No isolated causal effect or sustainable100k/day claim.",
+  "orders_sent": 0,
+  "workers_stopped": 0,
+  "schedulers_created": 0
+}
