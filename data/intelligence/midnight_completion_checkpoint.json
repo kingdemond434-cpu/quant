@@ -14,6 +14,12 @@
    "returncode": 0,
    "status": "DONE"
   },
+  "certificate_yield_fence": {
+   "finished_at": "2026-10-17T04:47:27.624957+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
   "external_queue_projection": {
    "finished_at": "2026-10-17T03:40:12.565294+00:00",
    "passes_completed": 1,
@@ -24,6 +30,12 @@
    "finished_at": "2026-10-17T03:41:41.470849+00:00",
    "passes_completed": 1,
    "returncode": 0,
+   "status": "DONE"
+  },
+  "forward_clock_fence": {
+   "finished_at": "2026-10-17T04:47:42.720485+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
@@ -39,20 +51,35 @@
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/heal_forward_lane.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-17T03:49:42.512673+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-17T04:42:25.329122+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "fusion_state_pull": {
    "finished_at": "2026-10-17T03:43:26.815698+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
+  },
+  "mechanism_independence": {
+   "finished_at": "2026-10-17T04:44:56.828141+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "same_day_fence": {
+   "finished_at": "2026-10-17T04:47:09.104799+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "DONE"
+  },
+  "zero_capital_shadow_forward": {
+   "finished_at": "2026-10-17T04:43:01.345359+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   }
  },
- "updated_at": "2026-10-17T03:49:42.512673+00:00"
+ "updated_at": "2026-10-17T04:47:42.720485+00:00"
 }
