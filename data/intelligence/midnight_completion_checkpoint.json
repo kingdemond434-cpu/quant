@@ -3,7 +3,7 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-18T07:41:51.478104+00:00",
+   "finished_at": "2026-10-18T09:42:19.639513+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -15,25 +15,28 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-10-18T02:05:54.092838+00:00",
+   "finished_at": "2026-10-18T08:53:51.912199+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-18T07:42:40.187024+00:00",
+   "finished_at": "2026-10-18T09:43:02.588586+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-18T07:43:55.683160+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/reconcile_external_queue.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-18T09:49:36.806882+00:00",
+   "status": "RUNNING"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-10-18T02:06:02.509111+00:00",
+   "finished_at": "2026-10-18T08:54:16.616386+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
@@ -63,23 +66,23 @@
    "status": "DONE"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-18T02:04:42.196854+00:00",
+   "finished_at": "2026-10-18T08:52:59.983877+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-18T02:05:42.307427+00:00",
+   "finished_at": "2026-10-18T08:53:25.606958+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-18T02:04:24.009506+00:00",
+   "finished_at": "2026-10-18T08:52:34.181914+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-18T07:58:59.586277+00:00"
+ "updated_at": "2026-10-18T09:49:36.806882+00:00"
 }
