@@ -3,7 +3,7 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-18T09:42:19.639513+00:00",
+   "finished_at": "2026-10-18T11:42:36.398760+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -21,7 +21,7 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-18T09:43:02.588586+00:00",
+   "finished_at": "2026-10-18T11:47:12.815741+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -81,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-18T10:42:54.481554+00:00"
+ "updated_at": "2026-10-18T11:47:12.815741+00:00"
 }
