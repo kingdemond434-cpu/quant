@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-18T15:00:17.646531+00:00",
+  "swept_at": "2026-10-18T15:15:14.259576+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -5343,8 +5343,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.2506,
+      "shadow_n": 58,
+      "shadow_exp_r": -0.0005,
       "woke_on_shadow": false
     },
     "XTIUSD|cross_asset_residual_continuous": {
