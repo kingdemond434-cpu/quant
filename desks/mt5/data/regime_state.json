@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-18T00:45:09.055105+00:00",
+  "swept_at": "2026-10-18T01:00:38.053857+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -262,7 +262,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1062,
+      "shadow_exp_r": 0.107,
       "woke_on_shadow": false
     },
     "AUDSGD|pca_residual_asia": {
@@ -273,7 +273,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 36,
-      "shadow_exp_r": 0.2257,
+      "shadow_exp_r": 0.224,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {
@@ -779,7 +779,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1328,
+      "shadow_exp_r": -0.2047,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -822,8 +822,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 79,
-      "shadow_exp_r": 0.2019,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.4647,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -1009,8 +1009,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 51,
-      "shadow_exp_r": 0.0573,
+      "shadow_n": 71,
+      "shadow_exp_r": 0.144,
       "woke_on_shadow": false
     },
     "CHFSGD|pca_residual_continuous": {
@@ -2110,7 +2110,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6824,
+      "shadow_exp_r": -0.6834,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -2572,7 +2572,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4774,
+      "shadow_exp_r": -0.4901,
       "woke_on_shadow": false
     },
     "GBPZAR|clock_transition_asia": {
@@ -2605,7 +2605,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3178,
+      "shadow_exp_r": -0.1944,
       "woke_on_shadow": false
     },
     "GBPZAR|overnight_gap_decay_asia": {
