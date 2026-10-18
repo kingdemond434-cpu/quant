@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-10-16T22:50:56.435584+00:00",
- "live_sha": "22bffcfed4ef2902cd4c77a1522b44d2e0ca500e",
- "code_sha": "22bffcfed4ef2902cd4c77a1522b44d2e0ca500e",
- "parent_sha": "a991a44569592d4a97c02653f737a2e9c82e3a47",
- "tree_sha": "ae4db3bdd7a8c02700d6f250a0eedb822a940eb1",
+ "generated_utc": "2026-10-17T23:51:51.337320+00:00",
+ "live_sha": "a39f8ea8d878209140d5fedbf0593e5277f7ac0e",
+ "code_sha": "a39f8ea8d878209140d5fedbf0593e5277f7ac0e",
+ "parent_sha": "38b33a7d61d2a62cce8def1f931dffebc05a8e93",
+ "tree_sha": "0fc97a17a42512262fc949e90232e07cc98b13f7",
  "config_hash": "e0d1bfe75cb0d2c3",
  "survivor_registry_hash": "d3f308039b71e195",
  "allocator_hash": "063b38b3676ecd46",
@@ -111,16 +111,16 @@
   "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json"
  ],
  "immutable_hash": "261b4b3c48653265",
- "release_id": "03db99377d63",
+ "release_id": "a6e71071bb16",
  "sealed": true,
- "sealed_at": "2026-10-16T22:50:56.435584+00:00",
+ "sealed_at": "2026-10-17T23:51:51.337320+00:00",
  "sealed_by": "Adopt-And-Seal",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [],
  "worktree_dirty_scope": "release_code_paths",
- "previous_code_sha": "ca669d8c27550fa94c9e7429780dc556b4db5093",
- "previous_release_id": "f472831d0314",
+ "previous_code_sha": "22bffcfed4ef2902cd4c77a1522b44d2e0ca500e",
+ "previous_release_id": "03db99377d63",
  "signature_algo": "hmac-sha256-v1",
- "signature": "cecf5dfca50a0236fbc9f3a8ddc2194844bc329c9a7ca4c38708baac96da171b"
+ "signature": "64208e57212498ae049514b3f259beff961de29b5aea57787c380faa51242822"
 }
