@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-18T03:02:47+00:00",
+ "generated_utc": "2026-10-18T03:19:49+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -6722,15 +6722,15 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 92,
+   "runs": 93,
    "fetches": 14723,
    "ok": 10455,
    "http_errors": 2547,
    "transport_errors": 1721,
-   "seconds": 15525.9,
+   "seconds": 15538.0,
    "rows": 3468,
-   "last_run": "2026-10-17T20:32:44+00:00",
-   "fetches_per_s": 0.9483,
+   "last_run": "2026-10-18T03:19:49+00:00",
+   "fetches_per_s": 0.9475,
    "success_rate": 0.7101,
    "wall_s_24h": 1930.1,
    "cpu_s_24h": 680.7
@@ -6760,8 +6760,8 @@
    "last_run": "2026-10-17T21:02:58+00:00",
    "fetches_per_s": 0.3428,
    "success_rate": 0.6619,
-   "wall_s_24h": 1858.0,
-   "cpu_s_24h": 885.8
+   "wall_s_24h": 1347.0,
+   "cpu_s_24h": 649.9
   },
   "forest_china": {
    "runs": 24,
@@ -6956,8 +6956,8 @@
    "last_run": "2026-10-18T03:02:47+00:00",
    "fetches_per_s": 0.6722,
    "success_rate": 0.8789,
-   "wall_s_24h": 2089.0,
-   "cpu_s_24h": 646.2
+   "wall_s_24h": 2894.9,
+   "cpu_s_24h": 912.2
   }
  },
  "sources": {
