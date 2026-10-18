@@ -9,13 +9,10 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/build_gauntlet_survivors.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-18T03:50:16.594428+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-18T03:50:32.602439+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "certificate_yield_fence": {
    "finished_at": "2026-10-18T02:05:54.092838+00:00",
@@ -60,10 +57,15 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-18T02:03:31.199889+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-desk-pull.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-18T03:50:45.435303+00:00",
+   "status": "RUNNING"
   },
   "mechanism_independence": {
    "finished_at": "2026-10-18T02:04:42.196854+00:00",
@@ -84,5 +86,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-18T03:50:16.594428+00:00"
+ "updated_at": "2026-10-18T03:50:45.435303+00:00"
 }
