@@ -1,28 +1,17 @@
 {
- "generated_utc": "2026-10-16T23:58:07.346772+00:00",
+ "generated_utc": "2026-10-18T05:19:29.652109+00:00",
  "controller_variant": "A",
  "shares": {
   "new_mechanism": 0.0818,
-  "mutate_survivor": 0.1008,
-  "combine_survivors": 0.0993,
-  "conditional_state_edge": 0.1044,
-  "execution_improvement": 0.0945,
-  "exit_improvement": 0.1119,
-  "cross_asset_signal": 0.1566,
+  "mutate_survivor": 0.1026,
+  "combine_survivors": 0.0991,
+  "conditional_state_edge": 0.1048,
+  "execution_improvement": 0.0943,
+  "exit_improvement": 0.1101,
+  "cross_asset_signal": 0.1587,
   "alt_data_hypothesis": 0.0182,
-  "failure_derived": 0.115,
-  "model_architecture": 0.0993,
+  "failure_derived": 0.1139,
+  "model_architecture": 0.0983,
   "external_screen": 0.0182
- },
- "authoritative": true,
- "authority_evidence": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=15.0); cycle_pricing: every leg ran on its base budget (no price moved a leg's seconds)",
- "research_budget_authoritative": true,
- "research_budget_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=15.0)",
- "research_budget_contract": {
-  "gain": "INFO_PER_COMPUTE",
-  "metric": "control_arm.admitted",
-  "better": "up",
-  "bar": 1.0,
-  "organ": "report:RESEARCH_BUDGET.json"
  }
 }
