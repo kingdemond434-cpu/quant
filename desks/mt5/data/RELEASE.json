@@ -1,11 +1,11 @@
 {
- "generated_utc": "2026-10-17T23:51:51.337320+00:00",
- "live_sha": "a39f8ea8d878209140d5fedbf0593e5277f7ac0e",
- "code_sha": "a39f8ea8d878209140d5fedbf0593e5277f7ac0e",
- "parent_sha": "38b33a7d61d2a62cce8def1f931dffebc05a8e93",
- "tree_sha": "0fc97a17a42512262fc949e90232e07cc98b13f7",
+ "generated_utc": "2026-10-18T17:30:00.008389+00:00",
+ "live_sha": "044b59f4106d272b9a047f397e5248cc5d78743f",
+ "code_sha": "044b59f4106d272b9a047f397e5248cc5d78743f",
+ "parent_sha": "ff6b0ef549fe61f453366854b962075a6cbdaf08",
+ "tree_sha": "9269954e37955f4c4e8b6c5643232330c6c4c73d",
  "config_hash": "e0d1bfe75cb0d2c3",
- "survivor_registry_hash": "d3f308039b71e195",
+ "survivor_registry_hash": "86be58b6bd9aa141",
  "allocator_hash": "063b38b3676ecd46",
  "money_path_hash": "698c90e9634b8d4c",
  "data_schema_version": "pit-1;features-2026-09-04.1",
@@ -57,7 +57,7 @@
   "libs/portfolio/rails.py": "cef11ebb9d4e4ffc",
   "libs/portfolio/capital_modifiers.py": "91794462504a3e96"
  },
- "canon_sha256": "355aa79b27c15a1ef43273f5278fadf18fedea571f0704d4c32bf78a866c1e81",
+ "canon_sha256": "b31f05a63ac55c09fb739f5bb1dd698a0a746defaef8139c710cc4c5743f5bcc",
  "immutable_manifest": {
   "sha256_16": "261b4b3c48653265",
   "signed_utc": "2026-10-13T16:50:25.269944+00:00",
@@ -111,16 +111,15 @@
   "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json"
  ],
  "immutable_hash": "261b4b3c48653265",
- "release_id": "a6e71071bb16",
+ "release_id": "c34e3543be67",
  "sealed": true,
- "sealed_at": "2026-10-17T23:51:51.337320+00:00",
- "sealed_by": "Adopt-And-Seal",
- "ci_run_id": null,
- "tested_sha": null,
+ "sealed_at": "2026-10-18T17:30:00.008389+00:00",
+ "sealed_by": "ci:39146832547",
+ "ci_run_id": "39146832547",
+ "tested_sha": "044b59f4106d272b9a047f397e5248cc5d78743f",
  "worktree_dirty": [],
  "worktree_dirty_scope": "release_code_paths",
- "previous_code_sha": "22bffcfed4ef2902cd4c77a1522b44d2e0ca500e",
- "previous_release_id": "03db99377d63",
- "signature_algo": "hmac-sha256-v1",
- "signature": "64208e57212498ae049514b3f259beff961de29b5aea57787c380faa51242822"
+ "previous_code_sha": "a39f8ea8d878209140d5fedbf0593e5277f7ac0e",
+ "previous_release_id": "a6e71071bb16",
+ "signature_note": "no signing key at data/secrets/release_signing.key and QUANT_RELEASE_SIGNING_KEY unset"
 }
