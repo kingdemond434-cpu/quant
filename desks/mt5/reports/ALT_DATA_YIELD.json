@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-18T10:10:00+00:00",
+ "generated_utc": "2026-10-18T11:00:52+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -6722,16 +6722,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 91,
-   "fetches": 13890,
-   "ok": 9878,
-   "http_errors": 2400,
-   "transport_errors": 1612,
-   "seconds": 15660.9,
-   "rows": 3287,
-   "last_run": "2026-10-18T05:44:34+00:00",
-   "fetches_per_s": 0.8869,
-   "success_rate": 0.7112,
+   "runs": 97,
+   "fetches": 12693,
+   "ok": 8984,
+   "http_errors": 2167,
+   "transport_errors": 1542,
+   "seconds": 14744.5,
+   "rows": 3025,
+   "last_run": "2026-10-18T11:00:52+00:00",
+   "fetches_per_s": 0.8609,
+   "success_rate": 0.7078,
    "wall_s_24h": 982.1,
    "cpu_s_24h": 384.8
   },
@@ -6760,8 +6760,8 @@
    "last_run": "2026-10-18T10:10:00+00:00",
    "fetches_per_s": 0.3391,
    "success_rate": 0.6817,
-   "wall_s_24h": 2182.9,
-   "cpu_s_24h": 680.5
+   "wall_s_24h": 2848.6,
+   "cpu_s_24h": 892.7
   },
   "forest_china": {
    "runs": 24,
@@ -6788,8 +6788,8 @@
    "last_run": "2026-10-18T06:09:02+00:00",
    "fetches_per_s": 0.484,
    "success_rate": 0.794,
-   "wall_s_24h": 3734.2,
-   "cpu_s_24h": 1425.9
+   "wall_s_24h": 3189.0,
+   "cpu_s_24h": 1067.9
   },
   "forest_global_academic_code": {
    "runs": 22,
@@ -6890,30 +6890,30 @@
    "cpu_s_24h": 859.3
   },
   "forest_mena": {
-   "runs": 26,
-   "fetches": 3034,
-   "ok": 2023,
-   "http_errors": 141,
-   "transport_errors": 870,
-   "seconds": 9416.3,
-   "rows": 92,
+   "runs": 25,
+   "fetches": 2896,
+   "ok": 1977,
+   "http_errors": 136,
+   "transport_errors": 783,
+   "seconds": 9014.1,
+   "rows": 89,
    "last_run": "2026-10-18T07:51:26+00:00",
-   "fetches_per_s": 0.3222,
-   "success_rate": 0.6668,
+   "fetches_per_s": 0.3213,
+   "success_rate": 0.6827,
    "wall_s_24h": 2385.8,
    "cpu_s_24h": 705.0
   },
   "forest_north_america": {
-   "runs": 25,
-   "fetches": 9609,
-   "ok": 7204,
-   "http_errors": 1743,
-   "transport_errors": 662,
-   "seconds": 15226.2,
-   "rows": 1041,
+   "runs": 24,
+   "fetches": 9219,
+   "ok": 6897,
+   "http_errors": 1675,
+   "transport_errors": 647,
+   "seconds": 14672.3,
+   "rows": 993,
    "last_run": "2026-10-18T06:32:49+00:00",
-   "fetches_per_s": 0.6311,
-   "success_rate": 0.7497,
+   "fetches_per_s": 0.6283,
+   "success_rate": 0.7481,
    "wall_s_24h": 3140.8,
    "cpu_s_24h": 1104.1
   },
@@ -6946,16 +6946,16 @@
    "cpu_s_24h": 678.4
   },
   "forest_south_asia": {
-   "runs": 25,
-   "fetches": 7069,
-   "ok": 6254,
-   "http_errors": 291,
-   "transport_errors": 524,
-   "seconds": 10581.2,
-   "rows": 188,
+   "runs": 24,
+   "fetches": 6798,
+   "ok": 6005,
+   "http_errors": 279,
+   "transport_errors": 514,
+   "seconds": 10271.3,
+   "rows": 181,
    "last_run": "2026-10-18T08:40:28+00:00",
-   "fetches_per_s": 0.6681,
-   "success_rate": 0.8847,
+   "fetches_per_s": 0.6618,
+   "success_rate": 0.8833,
    "wall_s_24h": 2860.8,
    "cpu_s_24h": 904.3
   }
