@@ -27,15 +27,17 @@
   "phase_started_utc": "2026-10-15T01:54:58+00:00"
  },
  "backoff_s": 30,
- "heartbeat_utc": "2026-10-18T00:50:02+00:00",
+ "heartbeat_utc": "2026-10-18T01:05:04+00:00",
  "sweep_phase": {
   "pid": 11200,
   "sweep_started_utc": "2026-10-17T20:45:44+00:00",
   "phases": {
    "plan": 10079.0,
-   "build_shards": 4558.1
+   "build_shards": 4558.1,
+   "collect_and_cut": 537.7,
+   "rule_shards": 295.3
   },
-  "phase": "collect_and_cut",
-  "phase_started_utc": "2026-10-18T00:49:41+00:00"
+  "phase": "merge_and_publish",
+  "phase_started_utc": "2026-10-18T01:03:34+00:00"
  }
 }

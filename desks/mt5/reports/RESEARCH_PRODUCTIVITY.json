@@ -1,10 +1,10 @@
 {
- "generated_utc": "2026-10-17T17:16:10.541079+00:00",
+ "generated_utc": "2026-10-18T01:02:22.958724+00:00",
  "stages": {
   "intake": {
-   "files": 46211,
-   "files_7d": 6124,
-   "rows_recent_files": 3298
+   "files": 46490,
+   "files_7d": 6148,
+   "rows_recent_files": 3315
   },
   "proposers": {
    "factor_residual": {
@@ -32,32 +32,32 @@
    "candidates": 30560
   },
   "deepening": {
-   "queued": 760,
-   "decided_total": 52257,
+   "queued": 52,
+   "decided_total": 52376,
    "backlog": 0
   },
   "judged": {
-   "cells": 1000433,
-   "unmeasured": 10252
+   "cells": 1012614,
+   "unmeasured": 15564
   },
   "certified": {
-   "cells": 1002,
+   "cells": 1048,
    "last_certified": "2026-10-17",
-   "certified_last_30d": 990
+   "certified_last_30d": 1036
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 1002,
+   "certificates": 1048,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 1002,
+   "forward_eligible_certificates": 1048,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 876,
    "clocks_ticked_24h": 857,
    "clocks_ticked_7d": 870,
-   "last_tick": "2026-10-17T17:03:39+00:00",
-   "engine_silent_hours": 0.2,
-   "n_certificates": 1002,
+   "last_tick": "2026-10-18T00:57:18+00:00",
+   "engine_silent_hours": 0.1,
+   "n_certificates": 1048,
    "n_enrolled": 872,
    "n_accruing": 685,
    "n_blocked": 17,
@@ -68,19 +68,19 @@
     "IDENTITY_BROKEN": 13,
     "BLOCKED_NO_BARS": 4
    },
-   "census_at": "2026-10-17T15:22:57+00:00"
+   "census_at": "2026-10-17T22:47:37+00:00"
   },
   "recommendations": {
    "total": 784,
    "open": 216,
-   "open_median_age_days": 51.0
+   "open_median_age_days": 52.0
   }
  },
  "conversion": {
-  "intake_to_compiled": 9.2662,
+  "intake_to_compiled": 9.2187,
   "judged_to_certified": 0.001,
-  "certified_to_forward": 0.6836,
-  "certified_to_clock": 0.8703
+  "certified_to_forward": 0.6536,
+  "certified_to_clock": 0.8321
  },
  "bottleneck": "none obvious"
 }
