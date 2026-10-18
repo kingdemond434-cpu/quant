@@ -1,0 +1,1964 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs US Dollar (AUDUSD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/AUDUSD/",
+  "published": "2026-10-18T14:12:48+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e64e3306e8302282ee52",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency USD 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d3e901be63e1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Swiss Franc (CADCHF) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CADCHF/",
+  "published": "2026-10-18T14:12:50+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cf7ea8de9fc9e50c5c3a",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Japanese Yen (CADJPY) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CADJPY/",
+  "published": "2026-10-18T14:12:51+00:00",
+  "symbols": [
+   "CADJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "124a1f2e38004620c5a2",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "001 The time of trading session 00:05 - 23:55 Term currency JPY 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7beeccf822a6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swiss Franc vs Japanese Yen (CHFJPY) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CHFJPY/",
+  "published": "2026-10-18T14:12:54+00:00",
+  "symbols": [
+   "CHFJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5e351b13d30fb0a05531",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "001 The time of trading session 00:05 - 23:55 Term currency JPY 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7beeccf822a6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPAUD/",
+  "published": "2026-10-18T14:12:56+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "99292bc7cf31e4e35f12",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency AUD 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f7a068ba02ca"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPCAD/",
+  "published": "2026-10-18T14:12:58+00:00",
+  "symbols": [
+   "GBPCAD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6559345d3d17af5f82e1",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency CAD 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fac251f19497"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPCHF/",
+  "published": "2026-10-18T14:13:01+00:00",
+  "symbols": [
+   "GBPCHF",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5bbd1f3982467446f243",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency CHF 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2a0d66b70e12"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e2a\u0e34\u0e19\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e4c, \u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e21\u0e37\u0e2d\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/other-assets/",
+  "published": "2026-10-18T14:13:03+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "49916dcbd8a1819670de",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 MetaTrader 4 (MT4) - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a PC, \u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e30\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/platforms/metatrader4-mt4/",
+  "published": "2026-10-18T14:13:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9e955d2789da017ab46a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 MetaTrader 5 (MT5) - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a PC, \u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e30\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/platforms/metatrader5-mt5/",
+  "published": "2026-10-18T14:13:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fe807d7192c96e96129d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e27\u0e47\u0e1a\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 R StocksTrader: \u0e2b\u0e38\u0e49\u0e19, \u0e14\u0e31\u0e0a\u0e19\u0e35 \u0e41\u0e25\u0e30 ETF \u0e1a\u0e19\u0e1e\u0e31\u0e19\u0e18\u0e1a\u0e31\u0e15\u0e23 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/platforms/stock-market/",
+  "published": "2026-10-18T14:13:10+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cb93cdebfdfaf7b573c5",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "01 \u0e25\u0e47\u0e2d\u0e15) \u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e31\u0e49\u0e19\u0e2a\u0e39\u0e07 10,000,000 (100 \u0e25\u0e47\u0e2d\u0e15) \u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22 (\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08\u0e21\u0e32\u0e01\u0e01\u0e27\u0e48\u0e32 1:1) \u0e15\u0e31\u0e27\u0e41\u0e1b\u0e23 \u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22 (\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:1) - \u0e40\u0e27\u0e25\u0e32\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 (\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23) 00:15 - 23:59 \u0e08\u0e31\u0e19\u0e17\u0e23\u0e4c - \u0e28\u0e38\u0e01\u0e23\u0e4c \u0e40\u0e27\u0e25\u0e32\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 (\u0e02\u0e2d) \u0e15\u0e25\u0e2d\u0e14 24 \u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07 Stop Out 20% \u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 (\u0e08\u0e33\u0e40\u0e1b\u0e47\u0e19) - \u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 (\u0e42\u0e14\u0e22\u0e2a\u0e21\u0e31\u0e04\u0e23\u0e43\u0e08) - \u0e08\u0e33\u0e19\u0e27\u0e19\u0e02\u0e2d\u0e07\u0e15\u0e23\u0e32\u0e2a\u0e32\u0e23\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 32 \u0e2a\u0e27\u0e2d\u0e1b\u0e1f\u0e23\u0e35 (\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:1) \u0e14\u0e31\u0e0a\u0e19\u0e35 \u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:100 \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e15\u0e31\u0e49\u0e07\u0e41\u0e15\u0e48 1.",
+    "lang": "th",
+    "quantities": [
+     "\u0e2a\u0e40\u0e1b\u0e23\u0e14",
+     "\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22",
+     "\u0e14\u0e31\u0e0a\u0e19\u0e35"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "18687bc66718"
+   },
+   {
+    "claim": "\u0e27\u0e31\u0e19\u0e08\u0e31\u0e19\u0e17\u0e23\u0e4c - \u0e27\u0e31\u0e19\u0e28\u0e38\u0e01\u0e23\u0e4c \u0e40\u0e27\u0e25\u0e32\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 (\u0e02\u0e2d) 24 Stop Out 20% \u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 (\u0e08\u0e33\u0e40\u0e1b\u0e47\u0e19) - \u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 (\u0e42\u0e14\u0e22\u0e2a\u0e21\u0e31\u0e04\u0e23\u0e43\u0e08) - \u0e08\u0e33\u0e19\u0e27\u0e19\u0e02\u0e2d\u0e07\u0e15\u0e23\u0e32\u0e2a\u0e32\u0e23\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 2 \u0e2a\u0e27\u0e2d\u0e1b\u0e1f\u0e23\u0e35 (\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:1) CFDs \u0e1a\u0e19\u0e19\u0e49\u0e33\u0e21\u0e31\u0e19 \u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:20 \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e15\u0e31\u0e49\u0e07\u0e41\u0e15\u0e48 1.",
+    "lang": "th",
+    "quantities": [
+     "\u0e2a\u0e40\u0e1b\u0e23\u0e14",
+     "\u0e19\u0e49\u0e33\u0e21\u0e31\u0e19"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "\u0e27\u0e31\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f3f0b387601"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e27\u0e34\u0e18\u0e35\u0e01\u0e32\u0e23\u0e1d\u0e32\u0e01\u0e40\u0e07\u0e34\u0e19\u0e41\u0e25\u0e30\u0e16\u0e2d\u0e19\u0e40\u0e07\u0e34\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/clients/funds/deposit-withdrawal/",
+  "published": "2026-10-18T14:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4009b9eabc649afa8e46",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/",
+  "published": "2026-10-18T14:13:19+00:00",
+  "symbols": [
+   "ADAUSD",
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0a1eb561c70d07c5c64a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e08\u0e31\u0e14\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a Copy Trading - \u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01 - RoboForex",
+  "url": "https://th.roboforex.com/copy-trading/rating/",
+  "published": "2026-10-18T14:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e483ce041e192a89c0bd",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Preguntas frecuentes sobre el efectivo",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.es.html",
+  "published": "2026-10-18T14:13:23+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c8c340206dba4a9a980c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Korduma kippuvad k&amp;uuml;simused sularaha kohta",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.et.html",
+  "published": "2026-10-18T14:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f34a730795f50b1a1385",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Kysymyksi\u00e4 ja vastauksia k\u00e4teisrahasta",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.fi.html",
+  "published": "2026-10-18T14:13:27+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cd7b72107c673da598ad",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Questions fr\u00e9quemment pos\u00e9es (FAQ) sur les esp\u00e8ces",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.fr.html",
+  "published": "2026-10-18T14:13:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7227489cb58e5168b16e",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ on cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.ga.html",
+  "published": "2026-10-18T14:13:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "07cd7c1eb1c44fe8235c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u010cesta pitanja o gotovini",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.hr.html",
+  "published": "2026-10-18T14:13:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5386a303f2b92ffa0c89",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "GYIK a k\u00e9szp\u00e9nzr\u0151l",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.hu.html",
+  "published": "2026-10-18T14:13:37+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9fec596bcdae045b56f3",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u590d\u6743\u56e0\u5b50\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_adjust_factor",
+  "published": "2026-10-18T14:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d6e124ff653a30e79876",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "15\u5206\u949fK\u7ebf\uff08\u622a\u9762\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar15m_c",
+  "published": "2026-10-18T14:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b724ad05b3428f520cdb",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "30\u5206\u949fK\u7ebf\uff08\u9644\u76d8\u53e3\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar30m_derived",
+  "published": "2026-10-18T14:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eaa011f6cce9540fdf24",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "5\u5206\u949fK\u7ebf\uff08\u9644\u76d8\u53e3\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar5m_derived",
+  "published": "2026-10-18T14:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e5a44dff3f404ff088c",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u62a5\u53d8\u66f4\u65e5\u671f\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_changedate",
+  "published": "2026-10-18T14:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3aec40877783beeb5882",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5229\u6da6\u8868PIT\uff08\u4e00\u822c\u4f01\u4e1a\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_income_general_pit",
+  "published": "2026-10-18T14:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d205bd5ac49b5ee095d",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d44\u4ea7\u8d1f\u503a\u8868PIT\uff08\u4e00\u822c\u4f01\u4e1a\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_balance_general_pit",
+  "published": "2026-10-18T14:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7c96495ae775918af95e",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u805a\u7126 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/cwhxw.html",
+  "published": "2026-10-18T14:14:07+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "USDX",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "82fce9945d6a7815e229",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u4e09\u5927\u5238\u5546\u53d1\u58f0\uff1a\u4e94\u5927\u79ef\u6781\u4fe1\u53f7\u6b63\u5728\u7d2f\u79ef \u673a\u6784\uff1a\u5173\u6ce8\u79d1\u6280\u6210\u957f\u8d85\u8dcc\u540e\u7684\u4fee\u590d\u673a\u4f1a \u4e2d\u671f\u6d41\u52a8\u6027\u5de5\u5177\u52a0\u7801\uff1a\u56db\u5b63\u5ea6\u8d27\u5e01\u4e0e\u8d22\u653f\u5982\u4f55\u534f\u540c\uff5c\u4e2d\u56fd\u91d1\u878d\u89c2\u5bdf \u8c03\u6574\u4e4b\u4e0b \u79d1\u6280\u4ea7\u4e1a\u7684\u4e2d\u957f\u671f\u8d8b\u52bf\u53d8\u4e86\u5417\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u6d41\u52a8\u6027"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u7f8e\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7eb3\u65af\u8fbe\u514b",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u80a1\u6307\u671f\u8d27",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01",
+      "\u56fd\u503a\u671f\u8d27"
+     ],
+     "transfer_only": [
+      "\u80a1\u6307\u671f\u8d27->indices (China A-share)",
+      "\u56fd\u503a\u671f\u8d27->rates->fx carry"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities",
+      "\u65e5\u672c\u592e\u884c: policy: BoJ / MoF intervention -> JPY",
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "35ba0c6daad4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u8bc4\u8bba _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/cwhpl.html",
+  "published": "2026-10-18T14:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "779cb821fb5d203f5016",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u592e\u884c\u52a8\u6001 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/cyhdt.html",
+  "published": "2026-10-18T14:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68f7229d702d23fd4080",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7f8e\u5143 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aUSD.html",
+  "published": "2026-10-18T14:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1bb2d24bc5126abee2fc",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4eba\u6c11\u5e01 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aCNY.html",
+  "published": "2026-10-18T14:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4377205694ed77d8eb94",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6b27\u5143 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aEUR.html",
+  "published": "2026-10-18T14:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "67e9e286732af6597cf2",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u82f1\u9551 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aGBP.html",
+  "published": "2026-10-18T14:14:29+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "USDX",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "117b81a8afa29497a93e",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u4e09\u5927\u5238\u5546\u53d1\u58f0\uff1a\u4e94\u5927\u79ef\u6781\u4fe1\u53f7\u6b63\u5728\u7d2f\u79ef \u673a\u6784\uff1a\u5173\u6ce8\u79d1\u6280\u6210\u957f\u8d85\u8dcc\u540e\u7684\u4fee\u590d\u673a\u4f1a \u4e2d\u671f\u6d41\u52a8\u6027\u5de5\u5177\u52a0\u7801\uff1a\u56db\u5b63\u5ea6\u8d27\u5e01\u4e0e\u8d22\u653f\u5982\u4f55\u534f\u540c\uff5c\u4e2d\u56fd\u91d1\u878d\u89c2\u5bdf \u8c03\u6574\u4e4b\u4e0b \u79d1\u6280\u4ea7\u4e1a\u7684\u4e2d\u957f\u671f\u8d8b\u52bf\u53d8\u4e86\u5417\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u6d41\u52a8\u6027"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u7f8e\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7eb3\u65af\u8fbe\u514b",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u80a1\u6307\u671f\u8d27",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01",
+      "\u56fd\u503a\u671f\u8d27"
+     ],
+     "transfer_only": [
+      "\u80a1\u6307\u671f\u8d27->indices (China A-share)",
+      "\u56fd\u503a\u671f\u8d27->rates->fx carry"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities",
+      "\u65e5\u672c\u592e\u884c: policy: BoJ / MoF intervention -> JPY",
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "35ba0c6daad4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Implications of Inflation Dynamics for Monetary Policy Strategies",
+  "url": "https://www.federalreserve.gov/econres/feds/implications-of-inflation-dynamics-for-monetary-policy-strategies.htm",
+  "published": "2026-10-18T14:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.federalreserve.gov/econres/feds/files/feds2025072.zip"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d5af9475b5b279398ca1",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Conference on Monetary Policy Strategy, Tools, and Communication Practices (A Fed Listens Event)",
+  "url": "https://www.federalreserve.gov/conferences/conference-monetary-policy-strategy-tools-communications-20190605.htm",
+  "published": "2026-10-18T14:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8a3a11d645470631e13",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Reserve announces additional information about the periodic review of its monetary policy strategy, tools, and communications",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20241122a.htm",
+  "published": "2026-10-18T14:14:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d22455d4e202f27c2181",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Finance and Economics Discussion Series (FEDS)",
+  "url": "https://www.federalreserve.gov/econres/feds/index.htm",
+  "published": "2026-10-18T14:14:43+00:00",
+  "symbols": [
+   "US500",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.federalreserve.gov/econres/feds/files/feds2026006.zip",
+   "https://www.federalreserve.gov/econres/feds/files/feds2026004.zip",
+   "https://www.federalreserve.gov/econres/feds/files/feds2026003.zip",
+   "https://www.federalreserve.gov/econres/feds/files/feds2026002.zip",
+   "https://www.federalreserve.gov/econres/feds/files/feds2026001.zip",
+   "https://www.federalreserve.gov/econres/feds/exports-borders-distance-and-plant-size.htm",
+   "https://www.federalreserve.gov/econres/feds/importing-exporting-and-firm-level-employment-volatility.htm",
+   "https://www.federalreserve.gov/econres/feds/does-exporting-improve-matching-evidence-from-french-employer-employee-data.htm",
+   "https://www.federalreserve.gov/econres/feds/institutions-and-return-predictability-in-oil-exporting-countries.htm",
+   "https://www.federalreserve.gov/econres/feds/exporters-of-services-a-look-at-us-exporters-outside-of-the-manufacturing-sector.htm",
+   "https://www.federalreserve.gov/econres/feds/the-great-recession-and-a-missing-generation-of-exporters.htm",
+   "https://www.federalreserve.gov/econres/feds/exporting-and-frictions-in-input-markets-evidence-from-chinese-data.htm"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "32c6b689567087bd26bb",
+  "host": "www.federalreserve.gov",
+  "claims": [
+   {
+    "claim": "Empirical analysis using S&P 500 options demonstrates that the boosted tree-based specification achieves the lowest out-of-sample forecast errors across all horizons, reducing one-month-ahead RMSE by 13 percent versus the benchmark SHAR model.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "16f71c56a56e"
+   },
+   {
+    "claim": "The estimated tree presents economically interpretable segmentation: short-dated options exhibit higher daily persistence but lower monthly persistence than long-dated options, while deep out-of-the-money calls or puts display distinct dynamics from near-the-money contracts.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "short",
+     "higher"
+    ],
+    "horizon": [
+     "daily",
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "24f75f365e2f"
+   },
+   {
+    "claim": "Using a matched panel of 73 banks from 2000 to 2019, we find that quarterly mail volume growth was 18 percent lower when banks reported tightening credit card lending standards, a relationship robust to including credit demand indicators.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "quarterly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e43d8188f807"
+   },
+   {
+    "claim": "Using confidential HMDA data, we estimate that a one standard deviation increase in mortgage demand raises mortgage rate spreads by 3 to 8 basis points, loan quantities by 20 to 32 percent, and application processing times by 3 to 5 days.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "basis"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6aeeca0fd250"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/60686",
+  "published": "2026-10-18T14:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe87e5d3b4509f260d72",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/60756",
+  "published": "2026-10-18T14:14:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae5eca1c052e4a59de87",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/60617",
+  "published": "2026-10-18T14:14:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7896049cca22e4ec645f",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/59862",
+  "published": "2026-10-18T14:14:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "44f43b1fb052c12376b8",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/59756",
+  "published": "2026-10-18T14:14:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50c5bfd1974771f43228",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/59665",
+  "published": "2026-10-18T14:14:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3395217583ff4ee229a1",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/56939",
+  "published": "2026-10-18T14:14:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "892fc585dc9d4fed3710",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Forex Tester Desktop app [Free/Demo & Full Versions Available]",
+  "url": "https://forextester.com/download",
+  "published": "2026-10-18T14:14:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download",
+   "https://forextester.jp/download",
+   "https://forextester.com/templates/css/min/download.css",
+   "http://www.forextester.jp/download"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "d22118f231ebe965b600",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Terms and conditions - Forex Tester Online",
+  "url": "https://forextester.com/terms",
+  "published": "2026-10-18T14:15:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d80d0f7c72ba7f878072",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "We Know How to Become An Expert Trader",
+  "url": "https://forextester.com/AboutUs",
+  "published": "2026-10-18T14:15:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e31fd8f02531583ab4fc",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "We Know How to Become An Expert Trader",
+  "url": "https://forextester.com/aboutus",
+  "published": "2026-10-18T14:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "61e5da2606b927f0846c",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://forextester.com/request-refund",
+  "url": "https://forextester.com/request-refund",
+  "published": "2026-10-18T14:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1d993b8c07962ed9e819",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester quick start guide: how to master backtesting",
+  "url": "https://forextester.com/quickstart",
+  "published": "2026-10-18T14:15:10+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a4daed124f0d1a9bb386",
+  "host": "forextester.com",
+  "claims": [
+   {
+    "claim": "it is necessary to open a Sell Stop order .",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5fd162344694"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Support Center - Forex Tester Online",
+  "url": "https://forextester.com/support/",
+  "published": "2026-10-18T14:15:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c79a3c5c09a100d9cf77",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://www.egx.com.eg/downloads/News/\u0627\u064a\u062c\u062a\u0631\u0627\u0646\u0633 \u0628\u064a\u0627\u0646 \u0645\u0646 \u0627\u0644\u0634\u0631\u0643\u0629 12-08-2026.pdf",
+  "url": "https://www.egx.com.eg/downloads/News/\u0627\u064a\u062c\u062a\u0631\u0627\u0646\u0633 \u0628\u064a\u0627\u0646 \u0645\u0646 \u0627\u0644\u0634\u0631\u0643\u0629 12-08-2026.pdf",
+  "published": "2026-10-18T14:15:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0550f964f5a692fa0281",
+  "host": "www.egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://www.egx.com.eg/downloads/News/\u0631\u0627\u064a\u0629 \u0627\u0644\u0642\u0627\u0628\u0636\u0629 \u062a\u0642\u0631\u064a\u0631 \u0645\u062c\u0644\u0633 \u0627\u0644\u0627\u062f\u0627\u0631\u0629 \u0645\u0627\u062f\u0629  \u0627\u0646\u062c\u0644\u064a\u0632\u064a 40 17-08-2025.PDF",
+  "url": "https://www.egx.com.eg/downloads/News/\u0631\u0627\u064a\u0629 \u0627\u0644\u0642\u0627\u0628\u0636\u0629 \u062a\u0642\u0631\u064a\u0631 \u0645\u062c\u0644\u0633 \u0627\u0644\u0627\u062f\u0627\u0631\u0629 \u0645\u0627\u062f\u0629  \u0627\u0646\u062c\u0644\u064a\u0632\u064a 40 17-08-2025.PDF",
+  "published": "2026-10-18T14:15:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4507a8363794542a0759",
+  "host": "www.egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://www.egx.com.eg/downloads/News/\u062a\u0642\u0631\u064a\u0631 \u0645\u062c\u0644\u0633 \u0627\u0644\u0627\u062f\u0627\u0631\u0629 \u0627\u0646\u062c\u0644\u064a\u0632\u064a 18-05-2025.pdf",
+  "url": "https://www.egx.com.eg/downloads/News/\u062a\u0642\u0631\u064a\u0631 \u0645\u062c\u0644\u0633 \u0627\u0644\u0627\u062f\u0627\u0631\u0629 \u0627\u0646\u062c\u0644\u064a\u0632\u064a 18-05-2025.pdf",
+  "published": "2026-10-18T14:15:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "508701e807c5e2ce1d96",
+  "host": "www.egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://www.egx.com.eg/downloads/Bulletins/341179_1.pdf",
+  "url": "https://www.egx.com.eg/downloads/Bulletins/341179_1.pdf",
+  "published": "2026-10-18T14:15:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1ad0e838c90380f96863",
+  "host": "www.egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://www.egx.com.eg/downloads/Bulletins/342690_2.pdf",
+  "url": "https://www.egx.com.eg/downloads/Bulletins/342690_2.pdf",
+  "published": "2026-10-18T14:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b8bcaae0d992b04cad43",
+  "host": "www.egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47(waihui)\u80a1\u5427_\u5916\u6c47\u600e\u4e48\u6837_\u5206\u6790\u8ba8\u8bba\u793e\u533a\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://guba.eastmoney.com/list,waihui.html",
+  "published": "2026-10-18T14:15:22+00:00",
+  "symbols": [
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d6bab27da2d1f96b84f5",
+  "host": "guba.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u4eca\u65e5\u6709\u9152\u5f53\u65e5\u9189 10-17 08:07 131 0 \u6076\u610f\u5347\u503c \u97ed\u5bcc\u4e0d\u53ef 10-17 09:32 505 11 \u8fd9\u6b21\u5347\u503c\u662f\u770b\u5230\u4e86\u5373\u4f7f\u4eba\u6c11\u5e01\u5347\u503c\uff0c\u56fd\u5916\u8fd8\u662f\u8981\u4e2d\u56fd\u8d27\uff0c\u4e2d\u56fd\u8d27\u548c\u5176\u4ed6\u56fd\u5bb6\u6bd4\uff0c\u8fd8\u6709\u6027\u4ef7\u6bd4 \u7ecd\u5174\u67ab\u6865 10-16 10:16 203 2 \u672c\u5468\u4eba\u6c11\u5e01\u6c47\u7387\u5347\u503c0\uff0c1 0 \uff05\u7ee7\u7eed\u4fdd\u6301\u7a33\u5065\u5347\u503c\u6001\u52bf\uff0c\u652f\u6491\u4eba\u6c11\u5e01\u8d44\u4ea7\u4ef7\u503c\u2026\u2026 \u672a\u66fe\u75f4\u8ff7 10-17 08:14 37 1 \u8fd9\u4e2a\u600e\u4e48\u4e70\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u6c47\u7387"
+    ],
+    "direction": [
+     "\u5347\u503c"
+    ],
+    "horizon": [
+     "\u5f53\u65e5",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "29d20afbc29c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "_\u5916\u6c47(waihui)\u80a1\u5427_\u4e1c\u65b9\u8d22\u5bcc\u7f51\u80a1\u5427",
+  "url": "http://guba.eastmoney.com/news,waihui,1768527825.html",
+  "published": "2026-10-18T14:15:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a2d53495395d5e87d547",
+  "host": "guba.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
