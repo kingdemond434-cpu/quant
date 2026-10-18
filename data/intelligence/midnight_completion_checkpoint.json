@@ -3,21 +3,19 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-18T02:15:25.906287+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-18T03:48:18.334499+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-18T01:44:25.661451+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/build_gauntlet_survivors.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-18T03:50:16.594428+00:00",
+   "status": "RUNNING"
   },
   "certificate_yield_fence": {
    "finished_at": "2026-10-18T02:05:54.092838+00:00",
@@ -26,13 +24,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-18T01:43:07.304170+00:00",
+   "finished_at": "2026-10-18T03:49:00.837561+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-18T01:44:06.922133+00:00",
+   "finished_at": "2026-10-18T03:50:03.329655+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -86,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-18T02:15:25.906287+00:00"
+ "updated_at": "2026-10-18T03:50:16.594428+00:00"
 }
