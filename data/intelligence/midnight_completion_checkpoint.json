@@ -39,33 +39,28 @@
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-18T02:03:55.302366+00:00",
+   "finished_at": "2026-10-18T07:56:53.547939+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-18T02:03:45.798958+00:00",
+   "finished_at": "2026-10-18T07:56:40.092031+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-18T02:04:07.286138+00:00",
+   "finished_at": "2026-10-18T07:58:59.586277+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-desk-pull.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-18T07:46:42.144141+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-18T07:56:19.109373+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "mechanism_independence": {
    "finished_at": "2026-10-18T02:04:42.196854+00:00",
@@ -86,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-18T07:46:42.144141+00:00"
+ "updated_at": "2026-10-18T07:58:59.586277+00:00"
 }
