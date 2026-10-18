@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-18T08:00:09.053947+00:00",
+  "swept_at": "2026-10-18T08:15:18.347388+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2571,8 +2571,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.4901,
+      "shadow_n": 60,
+      "shadow_exp_r": 0.3032,
       "woke_on_shadow": false
     },
     "GBPZAR|clock_transition_asia": {
@@ -5233,8 +5233,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 56,
-      "shadow_exp_r": -0.0685,
+      "shadow_n": 0,
+      "shadow_exp_r": 0.0,
       "woke_on_shadow": false
     },
     "XCUUSD|cross_asset_residual_continuous": {
