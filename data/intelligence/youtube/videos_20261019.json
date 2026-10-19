@@ -94,5 +94,58 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UC7NJLsf6IonOy8QI8gt5BeA",
+  "channel": "Trading with DaviddTech",
+  "video_id": "-pFEwuP21kk",
+  "published": "2026-10-19T13:00:10Z",
+  "title": "I Built a FREE AI Trading Bot With DeepSeek + TradingView (Full Guide)",
+  "description": "\ud83d\udc49\ud83c\udffb Learn AI trading bots and algorithmic trading with us:\nhttps://www.skool.com/daviddtech/about\n\nTradingKit:\nhttps://tradingkit.com/\n\nI gave DeepSeek a 24-hour challenge: research, build and backtest trading strategies using a free AI model inside OpenCode.\n\nCould it find a trading bot that met my testing criteria, and could I prepare it for automated execution without paying for an AI coding subscription?\n\nIn this full guide, I show you how I connect DeepSeek to TradingKit, run the first backtest, create a strategy research loop, review the results and configure automated alerts through Trigger.trade.\n\nYou don't need to write the code yourself. I explain the setup step by step, from installing OpenCode to connecting the tools and configuring the broker webhook.\n\nThe strategies use Pine Script, TradingView's scripting language. However, the backtesting, incubation and alerts shown run inside TradingKit, so this workflow does not require a TradingView account.\n\nBut an impressive equity curve is only the beginning.\n\nI'll show you why I freeze a strategy's rules and paper test it on new data before considering real money, how I use TradingKit's Incubator, and what I check when moving from research to automated execution.\n\nIN THIS VIDEO, YOU'LL DISCOVER:\n\n\u2705 How to install OpenCode and select the free DeepSeek model shown\n\u2705 How to connect TradingKit's MCP backtesting tools to your AI agent\n\u2705 How to run a simple backtest to check the connection\n\u2705 How I set up a 24-hour research loop with 15-minute cycles\n\u2705 How the prompt screens strategies for trade count, drawdown and overfitting\n\u2705 How to review equity curves, trades, commissions and performance data\n\u2705 Why I incubate strategies before trusting a backtest\n\u2705 How TradingKit tracks forward-test results on new market data\n\u2705 How to create strategy alerts without a TradingView subscription\n\u2705 How broker API keys, permissions and Trigger.trade webhooks connect\n\u2705 How to configure entry, exit, stop-loss and take-profit alert event",
+  "links": [
+   "https://www.skool.com/daviddtech/about",
+   "https://tradingkit.com/",
+   "https://opencode.ai/",
+   "https://trigger.trade/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "QAdY5fsSWEw",
+  "published": "2026-10-19T13:00:40Z",
+  "title": "LIVE TRADING!  | NEW YORK SESSION W/ Thomas, Christian | IQ Capital TV |  MONDAY 19/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalofficial\n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\nTranscript",
+  "links": [
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCmrU1HFPpy5DfUySK6okqEA",
+  "channel": "Lewis Jackson",
+  "video_id": "LgarA3zdif4",
+  "published": "2026-10-19T13:14:31Z",
+  "title": "I Reverse Engineered 3 Polymarket Bots That Made $4.3M",
+  "description": "Get Bot X-Ray and all 3 strategies, free: https://part-timequant.com/polymarket\nJoin the $500 monthly trading competition in Part-Time Quant Academy: https://www.skool.com/part-time-quant-academy/about\n\nThree bots made over $4 million on Polymarket. I went through their 18 million trades with free public data and AI to work out what each one does, whether it was skill or luck, and whether it still works after Polymarket changed one setting. The tool I built to do it, Bot X-Ray, is free and runs on your own computer.\n\nChapters\n0:00 Intro\n1:21 How Polymarket works\n1:43 The 3 Kings of Polymarket\n2:13 Building Bot X-Ray\n3:14 The 3 Questions\n3:32 Polymarket King #1\n4:59 Skill or luck?\n6:01 Get the strategies free\n6:40 Polymarket King #2\n8:23 Polymarket King #3\n9:07 Odds\n10:04 Options Pricing\n10:45 The Converter\n12:00 Separating skill from luck\n12:32 A bot that still works today\n13:37 Get Bot X-Ray, the converter and the strategies\n14:44 The $500 monthly trading competition\n15:18 What should I reverse engineer next?\n\nNot financial advice. The profits shown are other people's past results, read from public data. They don't tell you what you'll make.",
+  "links": [
+   "https://part-timequant.com/polymarket",
+   "https://www.skool.com/part-time-quant-academy/about"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
