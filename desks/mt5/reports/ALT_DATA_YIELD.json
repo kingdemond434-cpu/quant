@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-19T00:40:49+00:00",
+ "generated_utc": "2026-10-19T01:06:30+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -7,8 +7,8 @@
   "vectors_attempted_this_week": 535,
   "vectors_never_attempted": 2,
   "vectors_by_outcome": {
-   "BLOCKED": 251,
-   "EMPTY": 267,
+   "BLOCKED": 253,
+   "EMPTY": 265,
    "YIELDED": 17,
    "NAMED_ONLY": 2
   }
@@ -258,8 +258,8 @@
  "vectors": {
   "named": 537,
   "by_outcome": {
-   "BLOCKED": 251,
-   "EMPTY": 267,
+   "BLOCKED": 253,
+   "EMPTY": 265,
    "YIELDED": 17,
    "NAMED_ONLY": 2
   },
@@ -2825,13 +2825,13 @@
    },
    "JPX 調査研究": {
     "outcome": "EMPTY",
-    "attempts": 304,
+    "attempts": 305,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-10-18T12:29:19.133745+00:00",
+    "last_attempt": "2026-10-19T01:06:26.405752+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -2897,13 +2897,13 @@
    },
    "Kabu-station / 個人トレーダーブログ": {
     "outcome": "BLOCKED",
-    "attempts": 306,
+    "attempts": 307,
     "successes": 2,
     "rows": 3,
     "findings_total": 15,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (94719 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14227 bytes)",
-    "last_attempt": "2026-10-18T12:29:28.648764+00:00",
+    "last_error": "bing: bing returned no parseable results (98665 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14226 bytes)",
+    "last_attempt": "2026-10-19T01:04:43.475195+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -3905,13 +3905,13 @@
    },
    "Qiita systemtrade": {
     "outcome": "EMPTY",
-    "attempts": 304,
+    "attempts": 305,
     "successes": 1,
     "rows": 1,
     "findings_total": 1,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-10-18T12:29:26.534468+00:00",
+    "last_attempt": "2026-10-19T01:04:38.476900+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -4385,13 +4385,13 @@
    },
    "SBI証券 マーケットレポート": {
     "outcome": "BLOCKED",
-    "attempts": 304,
+    "attempts": 305,
     "successes": 1,
     "rows": 3,
     "findings_total": 3,
     "datasets": 1,
-    "last_error": "bing: bing returned no parseable results (96712 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14263 bytes)",
-    "last_attempt": "2026-10-18T12:29:13.062078+00:00",
+    "last_error": "bing: bing returned no parseable results (98373 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14263 bytes)",
+    "last_attempt": "2026-10-19T01:04:15.002352+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -5237,13 +5237,13 @@
    },
    "X (nitter) JP trader talk": {
     "outcome": "BLOCKED",
-    "attempts": 304,
+    "attempts": 305,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "nitter.net: no tweets parsed; nitter.privacydev.net: no tweets parsed",
-    "last_attempt": "2026-10-18T12:29:19.341929+00:00",
+    "last_attempt": "2026-10-19T01:04:17.380232+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -5488,14 +5488,14 @@
     "region": "vn"
    },
    "Zenn quant": {
-    "outcome": "EMPTY",
-    "attempts": 305,
+    "outcome": "BLOCKED",
+    "attempts": 306,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "2026-10-18T12:29:11.533429+00:00",
+    "last_error": "BLOCKED",
+    "last_attempt": "2026-10-19T01:04:11.980503+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -5549,13 +5549,13 @@
    },
    "e-Stat": {
     "outcome": "EMPTY",
-    "attempts": 305,
-    "successes": 40,
+    "attempts": 306,
+    "successes": 41,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 226,
+    "datasets": 227,
     "last_error": "",
-    "last_attempt": "2026-10-18T12:29:34.842803+00:00",
+    "last_attempt": "2026-10-19T01:06:26.504087+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -5968,14 +5968,14 @@
     "region": "th"
    },
    "はてなブックマーク 投資": {
-    "outcome": "EMPTY",
-    "attempts": 305,
+    "outcome": "BLOCKED",
+    "attempts": 306,
     "successes": 2,
     "rows": 3,
     "findings_total": 3,
     "datasets": 0,
-    "last_error": "HTTPError: HTTP Error 429: Too Many Requests; hatena returned HTTP 429 earlier in this run -- backed off for the rest of it rather than hammering ",
-    "last_attempt": "2026-10-18T12:29:15.443414+00:00",
+    "last_error": "BLOCKED",
+    "last_attempt": "2026-10-19T01:04:11.994419+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -6257,13 +6257,13 @@
    },
    "日本証券アナリスト協会 論文": {
     "outcome": "BLOCKED",
-    "attempts": 304,
+    "attempts": 305,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-10-18T12:29:09.633238+00:00",
+    "last_attempt": "2026-10-19T01:05:27.389066+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -6281,13 +6281,13 @@
    },
    "日本銀行 金融政策決定会合": {
     "outcome": "EMPTY",
-    "attempts": 305,
+    "attempts": 306,
     "successes": 38,
     "rows": 0,
     "findings_total": 0,
     "datasets": 38,
     "last_error": "",
-    "last_attempt": "2026-10-18T12:29:32.731608+00:00",
+    "last_attempt": "2026-10-19T01:06:26.394598+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -6317,25 +6317,25 @@
    },
    "松井証券 マーケット情報": {
     "outcome": "EMPTY",
-    "attempts": 304,
+    "attempts": 305,
     "successes": 11,
     "rows": 11,
     "findings_total": 12,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-10-18T12:29:25.347555+00:00",
+    "last_attempt": "2026-10-19T01:06:26.304392+00:00",
     "language": "ja",
     "region": "jp"
    },
    "株探 マーケットニュース": {
     "outcome": "BLOCKED",
-    "attempts": 305,
+    "attempts": 306,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-10-18T12:29:08.234685+00:00",
+    "last_attempt": "2026-10-19T01:05:46.874222+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -6473,49 +6473,49 @@
    },
    "財務省 国債入札結果": {
     "outcome": "EMPTY",
-    "attempts": 305,
-    "successes": 40,
+    "attempts": 306,
+    "successes": 41,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 40,
+    "datasets": 41,
     "last_error": "",
-    "last_attempt": "2026-10-18T12:29:21.034490+00:00",
+    "last_attempt": "2026-10-19T01:06:26.494709+00:00",
     "language": "ja",
     "region": "jp"
    },
    "財務省 外国為替平衡操作の実施状況": {
     "outcome": "BLOCKED",
-    "attempts": 305,
+    "attempts": 306,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-10-18T12:29:07.955410+00:00",
+    "last_attempt": "2026-10-19T01:04:44.501956+00:00",
     "language": "ja",
     "region": "jp"
    },
    "財務省 対外及び対内証券売買契約等の状況": {
     "outcome": "EMPTY",
-    "attempts": 305,
-    "successes": 40,
+    "attempts": 306,
+    "successes": 41,
     "rows": 0,
     "findings_total": 1,
-    "datasets": 40,
+    "datasets": 41,
     "last_error": "",
-    "last_attempt": "2026-10-18T12:29:19.431556+00:00",
+    "last_attempt": "2026-10-19T01:06:26.481098+00:00",
     "language": "ja",
     "region": "jp"
    },
    "財務省 為替介入・要人発言": {
     "outcome": "EMPTY",
-    "attempts": 305,
+    "attempts": 306,
     "successes": 24,
     "rows": 0,
     "findings_total": 0,
     "datasets": 24,
     "last_error": "",
-    "last_attempt": "2026-10-18T12:29:31.964611+00:00",
+    "last_attempt": "2026-10-19T01:06:26.381383+00:00",
     "language": "ja",
     "region": "jp"
    },
@@ -6722,16 +6722,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 92,
-   "fetches": 12475,
-   "ok": 8951,
-   "http_errors": 2138,
-   "transport_errors": 1386,
-   "seconds": 14689.3,
-   "rows": 2982,
-   "last_run": "2026-10-18T21:56:54+00:00",
-   "fetches_per_s": 0.8493,
-   "success_rate": 0.7175,
+   "runs": 93,
+   "fetches": 12497,
+   "ok": 8965,
+   "http_errors": 2141,
+   "transport_errors": 1391,
+   "seconds": 15641.4,
+   "rows": 2985,
+   "last_run": "2026-10-19T01:06:30+00:00",
+   "fetches_per_s": 0.799,
+   "success_rate": 0.7174,
    "wall_s_24h": 958.1,
    "cpu_s_24h": 221.8
   },
@@ -6774,8 +6774,8 @@
    "last_run": "2026-10-19T00:40:49+00:00",
    "fetches_per_s": 0.5278,
    "success_rate": 0.7664,
-   "wall_s_24h": 2124.0,
-   "cpu_s_24h": 923.5
+   "wall_s_24h": 1699.5,
+   "cpu_s_24h": 881.1
   },
   "forest_europe": {
    "runs": 22,
@@ -6792,16 +6792,16 @@
    "cpu_s_24h": 1024.8
   },
   "forest_global_academic_code": {
-   "runs": 22,
-   "fetches": 13693,
-   "ok": 12478,
-   "http_errors": 537,
-   "transport_errors": 678,
-   "seconds": 23836.4,
-   "rows": 2268,
+   "runs": 21,
+   "fetches": 13067,
+   "ok": 11878,
+   "http_errors": 515,
+   "transport_errors": 674,
+   "seconds": 22796.0,
+   "rows": 2166,
    "last_run": "2026-10-18T22:50:05+00:00",
-   "fetches_per_s": 0.5745,
-   "success_rate": 0.9113,
+   "fetches_per_s": 0.5732,
+   "success_rate": 0.909,
    "wall_s_24h": 3780.1,
    "cpu_s_24h": 519.4
   },
@@ -6872,8 +6872,8 @@
    "last_run": "2026-10-19T00:29:23+00:00",
    "fetches_per_s": 0.2848,
    "success_rate": 0.8681,
-   "wall_s_24h": 1181.5,
-   "cpu_s_24h": 651.7
+   "wall_s_24h": 999.3,
+   "cpu_s_24h": 493.7
   },
   "forest_latam": {
    "runs": 24,
@@ -6914,8 +6914,8 @@
    "last_run": "2026-10-18T23:31:01+00:00",
    "fetches_per_s": 0.618,
    "success_rate": 0.7441,
-   "wall_s_24h": 3094.2,
-   "cpu_s_24h": 1023.3
+   "wall_s_24h": 2454.8,
+   "cpu_s_24h": 779.1
   },
   "forest_oceania": {
    "runs": 25,
