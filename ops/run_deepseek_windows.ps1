@@ -38,7 +38,7 @@ $utf8 = [System.Text.Encoding]::UTF8
 $out = & py -3 scripts\run_deepseek_cycle.py --state NORMAL --json 2>&1 | Out-String
 $rc = $LASTEXITCODE
 [System.IO.File]::AppendAllText($Log, $out, $utf8)
-[System.IO.File]::AppendAllText($Log, ("=== exit {0} at {1} ===`r`n" -f $rc, (Get-Date).ToUniversalTime().ToString('s') + 'Z'), $utf8)
+[System.IO.File]::AppendAllText($Log, ("=== exit {0} at {1}Z ===`r`n" -f $rc, (Get-Date).ToUniversalTime().ToString('s')), $utf8)
 
 $out -split "`r?`n" | Where-Object { $_ } | Select-Object -Last 4
 exit $rc
