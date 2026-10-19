@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-19T00:02:16+00:00",
+ "generated_utc": "2026-10-19T00:29:23+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -7,8 +7,8 @@
   "vectors_attempted_this_week": 535,
   "vectors_never_attempted": 2,
   "vectors_by_outcome": {
-   "BLOCKED": 249,
-   "EMPTY": 268,
+   "BLOCKED": 250,
+   "EMPTY": 267,
    "YIELDED": 18,
    "NAMED_ONLY": 2
   }
@@ -258,8 +258,8 @@
  "vectors": {
   "named": 537,
   "by_outcome": {
-   "BLOCKED": 249,
-   "EMPTY": 268,
+   "BLOCKED": 250,
+   "EMPTY": 267,
    "YIELDED": 18,
    "NAMED_ONLY": 2
   },
@@ -2873,25 +2873,25 @@
    },
    "KRX / 자본시장연구원 연구": {
     "outcome": "BLOCKED",
-    "attempts": 353,
+    "attempts": 354,
     "successes": 3,
     "rows": 14,
     "findings_total": 14,
     "datasets": 5,
-    "last_error": "bing: bing returned no parseable results (95272 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14241 bytes)",
-    "last_attempt": "2026-10-18T19:20:52.673306+00:00",
+    "last_error": "bing: bing returned no parseable results (100078 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14241 bytes)",
+    "last_attempt": "2026-10-19T00:27:44.177511+00:00",
     "language": "ko",
     "region": "kr"
    },
    "KRX 정보데이터시스템": {
     "outcome": "EMPTY",
-    "attempts": 359,
-    "successes": 109,
+    "attempts": 360,
+    "successes": 110,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 109,
+    "datasets": 110,
     "last_error": "",
-    "last_attempt": "2026-10-18T19:20:54.796822+00:00",
+    "last_attempt": "2026-10-19T00:28:26.283669+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -4793,13 +4793,13 @@
    },
    "Telegram KR 시장": {
     "outcome": "EMPTY",
-    "attempts": 352,
+    "attempts": 353,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-10-18T19:21:03.176163+00:00",
+    "last_attempt": "2026-10-19T00:28:56.186072+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5069,13 +5069,13 @@
    },
    "Velog quant": {
     "outcome": "BLOCKED",
-    "attempts": 368,
+    "attempts": 369,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismat; URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mism",
-    "last_attempt": "2026-10-18T19:20:38.197771+00:00",
+    "last_attempt": "2026-10-19T00:27:33.173856+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6617,13 +6617,13 @@
    },
    "관세청 수출입 통계": {
     "outcome": "EMPTY",
-    "attempts": 361,
-    "successes": 111,
+    "attempts": 362,
+    "successes": 112,
     "rows": 0,
     "findings_total": 1,
-    "datasets": 111,
+    "datasets": 112,
     "last_error": "",
-    "last_attempt": "2026-10-18T19:20:59.129267+00:00",
+    "last_attempt": "2026-10-19T00:28:26.295432+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6641,25 +6641,25 @@
    },
    "매일경제 / 연합인포맥스 시장": {
     "outcome": "BLOCKED",
-    "attempts": 354,
+    "attempts": 355,
     "successes": 2,
     "rows": 26,
     "findings_total": 64,
     "datasets": 4,
-    "last_error": "bing: bing returned no parseable results (93432 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14233 bytes)",
-    "last_attempt": "2026-10-18T19:21:00.217845+00:00",
+    "last_error": "bing: bing returned no parseable results (94314 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14239 bytes)",
+    "last_attempt": "2026-10-19T00:27:49.175121+00:00",
     "language": "ko",
     "region": "kr"
    },
    "팍스넷 검색": {
-    "outcome": "EMPTY",
-    "attempts": 354,
+    "outcome": "BLOCKED",
+    "attempts": 355,
     "successes": 1,
     "rows": 3,
     "findings_total": 27,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (97442 bytes -- an anti-bot shell or a layout change, not an empty forest); bing: bing returned no parseable results (93539 bytes -- an anti-bot shell or a lay",
-    "last_attempt": "2026-10-18T19:21:05.199799+00:00",
+    "last_error": "bing: bing returned no parseable results (97406 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14226 bytes)",
+    "last_attempt": "2026-10-19T00:27:46.678100+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6689,13 +6689,13 @@
    },
    "한국은행 경제통계시스템 ECOS": {
     "outcome": "BLOCKED",
-    "attempts": 363,
+    "attempts": 364,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-10-18T19:20:40.462622+00:00",
+    "last_attempt": "2026-10-19T00:28:29.596366+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6722,15 +6722,15 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 100,
+   "runs": 94,
    "fetches": 12475,
    "ok": 8951,
    "http_errors": 2138,
    "transport_errors": 1386,
-   "seconds": 14709.3,
+   "seconds": 14694.2,
    "rows": 2982,
    "last_run": "2026-10-18T21:56:54+00:00",
-   "fetches_per_s": 0.8481,
+   "fetches_per_s": 0.849,
    "success_rate": 0.7175,
    "wall_s_24h": 958.1,
    "cpu_s_24h": 221.8
@@ -6862,16 +6862,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 24,
-   "fetches": 1605,
-   "ok": 1391,
+   "runs": 25,
+   "fetches": 1622,
+   "ok": 1408,
    "http_errors": 71,
    "transport_errors": 143,
-   "seconds": 5576.9,
-   "rows": 206,
-   "last_run": "2026-10-18T19:21:42+00:00",
-   "fetches_per_s": 0.2878,
-   "success_rate": 0.8667,
+   "seconds": 5695.1,
+   "rows": 208,
+   "last_run": "2026-10-19T00:29:23+00:00",
+   "fetches_per_s": 0.2848,
+   "success_rate": 0.8681,
    "wall_s_24h": 817.3,
    "cpu_s_24h": 524.8
   },
@@ -6886,8 +6886,8 @@
    "last_run": "2026-10-19T00:02:16+00:00",
    "fetches_per_s": 0.3834,
    "success_rate": 0.647,
-   "wall_s_24h": 1531.0,
-   "cpu_s_24h": 591.6
+   "wall_s_24h": 1722.4,
+   "cpu_s_24h": 715.4
   },
   "forest_mena": {
    "runs": 25,

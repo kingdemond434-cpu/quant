@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-19T00:15:04.602686+00:00",
+  "swept_at": "2026-10-19T00:30:29.573251+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -581,7 +581,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4033,
+      "shadow_exp_r": -0.4041,
       "woke_on_shadow": false
     },
     "CHFDKK|carry_continuous": {
@@ -647,7 +647,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4469,
+      "shadow_exp_r": -0.1499,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -3738,7 +3738,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4813,
+      "shadow_exp_r": -0.4846,
       "woke_on_shadow": false
     },
     "USDMXN|formula_asia": {
@@ -3760,7 +3760,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0596,
+      "shadow_exp_r": 0.0616,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_continuous": {
