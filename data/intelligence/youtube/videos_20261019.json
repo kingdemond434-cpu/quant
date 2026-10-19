@@ -66,5 +66,33 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCa8rgzIMKFx2uJHVsf0oqjg",
+  "channel": "IQCapital",
+  "video_id": "oNAZVT8dYdA",
+  "published": "2026-10-19T10:05:24Z",
+  "title": "There's No Way This Trading Strategy Works!",
+  "description": "Nobody believed his strategy could be this simple, until it worked \ud83d\udc40",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "elRzx-ohDGI",
+  "published": "2026-10-19T10:25:54Z",
+  "title": "I Missed 35R By Managing My Trades!",
+  "description": "He went back through three months of trades at midnight, and the numbers were devastating. \ud83d\udcc9",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]

@@ -9,7 +9,7 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-19T05:43:56.982845+00:00",
+   "finished_at": "2026-10-19T10:01:27.911446+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -27,13 +27,10 @@
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/reconcile_external_queue.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-19T07:47:55.820981+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-19T10:01:04.867348+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "forward_clock_fence": {
    "finished_at": "2026-10-19T05:47:51.372458+00:00",
@@ -42,47 +39,50 @@
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-19T05:46:23.894964+00:00",
+   "finished_at": "2026-10-19T10:04:17.203649+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-19T05:45:58.959872+00:00",
+   "finished_at": "2026-10-19T10:03:34.046419+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-19T05:46:43.088273+00:00",
+   "finished_at": "2026-10-19T10:05:14.590052+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-19T05:45:38.563255+00:00",
+   "finished_at": "2026-10-19T10:02:51.706925+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-19T05:47:16.085133+00:00",
+   "finished_at": "2026-10-19T10:45:04.274100+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-19T05:47:28.664287+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/check_sameday_pipeline.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-19T10:46:58.286385+00:00",
+   "status": "RUNNING"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-19T05:47:01.995740+00:00",
+   "finished_at": "2026-10-19T10:10:04.872355+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-19T07:47:55.820981+00:00"
+ "updated_at": "2026-10-19T10:46:58.286385+00:00"
 }
