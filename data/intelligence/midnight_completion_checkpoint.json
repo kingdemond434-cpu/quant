@@ -3,18 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-18T22:56:48.589149+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-19T00:09:41.272760+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-18T22:43:49.173052+00:00",
+   "finished_at": "2026-10-19T00:43:41.759058+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -26,13 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-18T22:42:22.286442+00:00",
+   "finished_at": "2026-10-19T00:42:08.461972+00:00",
    "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "returncode": 124,
+   "status": "FAILED"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-18T22:43:24.128899+00:00",
+   "finished_at": "2026-10-19T00:43:13.333449+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -50,10 +45,13 @@
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-18T22:45:23.612300+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-19T00:44:32.444383+00:00",
+   "status": "RUNNING"
   },
   "forward_lane_heal": {
    "finished_at": "2026-10-18T22:46:10.481179+00:00",
@@ -62,7 +60,7 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-18T22:44:54.757914+00:00",
+   "finished_at": "2026-10-19T00:44:18.692658+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -86,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-18T22:56:48.589149+00:00"
+ "updated_at": "2026-10-19T00:44:32.444383+00:00"
 }
