@@ -1,5 +1,5 @@
 {
- "at": "2026-10-19T21:29:25+00:00",
+ "at": "2026-10-19T21:46:06+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-19T21:29:00+00:00",
+   "at": "2026-10-19T21:45:35+00:00",
    "bandit_at": "2026-10-19T00:36:19.174024+00:00",
    "hour": "2026-10-19T21",
    "arm": "treated",
@@ -18,8 +18,8 @@
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 240,
-   "surplus_s": 986.8,
-   "surplus_why": "department 'discovery' measured spare 987s/hour",
+   "surplus_s": 956.3,
+   "surplus_why": "department 'discovery' measured spare 956s/hour",
    "contract": {
     "n_treated": 34,
     "n_control": 5,
@@ -33,7 +33,7 @@
    },
    "trial": true,
    "authoritative": true,
-   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 987s/hour); contract ADMITTED",
+   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 956s/hour); contract ADMITTED",
    "share": 0.2827,
    "baseline": 0.2727,
    "ladder_factor": 1.001,
@@ -55,7 +55,7 @@
    "applied_s": 480,
    "applied": true,
    "granted": true,
-   "why": "share 0.283 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 987s/hour); contract ADMITTED"
+   "why": "share 0.283 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 956s/hour); contract ADMITTED"
   },
   "deepen": {
    "leg": "deepen",
