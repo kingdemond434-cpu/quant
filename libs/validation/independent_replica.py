@@ -68,8 +68,10 @@ import pandas as pd
 #: Contract terms restated, so the two implementations share a DOCUMENT and not a variable.
 COMMISSION_PER_LOT_SIDE = 2.00
 MIN_SPREAD_PER_LOT = 0.05
-ROLLOVER_HOUR_UTC = 21
-TRIPLE_WEEKDAY = 2   # Wednesday
+#: Server midnight in the bars' own (broker) clock: the night ending on server day d, d a
+#: Wednesday for the triple. It was 21, applied to server stamps -- three hours early.
+ROLLOVER_HOUR_SERVER = 24
+TRIPLE_WEEKDAY = 2   # Wednesday night
 
 SUPPORTED_FAMILIES: tuple[str, ...] = ("overnight_gap_decay", "session_range_breakout",
                                        "discovered")
@@ -320,13 +322,16 @@ def rollovers(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
     a, b = a.tz_localize(None), b.tz_localize(None)
     if not b > a:
         return 0.0
-    first = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
+    off = pd.Timedelta(hours=ROLLOVER_HOUR_SERVER)
+    first = a.normalize() + off
     if first <= a:
         first += pd.Timedelta(days=1)
     n = 0.0
     cur = first
     while cur <= b:
-        n += 3.0 if cur.weekday() == TRIPLE_WEEKDAY else 1.0
+        wd = (cur - off).weekday()
+        # Monday-Friday server days end in a rollover; the weekend is inside the triple.
+        n += 0.0 if wd >= 5 else 3.0 if wd == TRIPLE_WEEKDAY else 1.0
         cur += pd.Timedelta(days=1)
     return n
 

@@ -3349,12 +3349,16 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             return {"ok": False, "stage": "risk_envelope", "considered": True,
                     "mark": False, "last_bar": last_bar,
                     "why": f"final risk envelope unmeasured ({type(exc).__name__}: {exc})"}
+    from mt5desk.broker_clock import broker_to_utc as _broker_to_utc
     return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
             "lot": float(lot), "dist": float(dist),
             "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
             "tf": tf, "last_bar": last_bar, "mark": bool(step.mark), "note": step.note,
             "population": population,
-            "ttl_until": family_ttl_until(last_bar, g.ttl_bars, _BAR_MINUTES.get(tf, 60)),
+            # TRUE UTC: `last_bar` is a broker stamp labelled UTC, and this deadline is compared
+            # with the wall clock (broker_clock; it fired 2-3h late until 2026-10-13).
+            "ttl_until": family_ttl_until(_broker_to_utc(last_bar), g.ttl_bars,
+                                          _BAR_MINUTES.get(tf, 60)),
             "leg_mult": float(leg_mult), "leg_why": leg_why,
             "macro_mult": float(macro_mult), "macro_why": macro_why,
             "risk_envelope_capped": risk_envelope_capped,
@@ -3515,6 +3519,10 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
                        fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
                        deal_ticket=(getattr(res, "deal", None) if res else None),
+                       # The clock of this send's time exit (`ttl_until`, recorded beside it by
+                       # the trade autopsy's lane): TRUE UTC since 2026-10-14. A reader converts
+                       # only rows WITHOUT this field, which are broker-labelled.
+                       ttl_clock="utc",
                        **_sleeve_identity(s))
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
@@ -4013,7 +4021,12 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                          "scalp_market/add-on", price=price)
             _retarget_sleeve_positions(s["symbol"], name, stop, tp)
         else:
-            srec["open_ttl_until"] = plan["plan"].ttl_until
+            # The plan's `ttl_until` is on the BAR clock (the gauntlet replays against it);
+            # the gateway compares with the wall clock, so it stores the true UTC instant.
+            from mt5desk.broker_clock import broker_to_utc
+            from mt5desk.scalp_exec import ttl_deadline
+            srec["open_ttl_until"] = ttl_deadline(broker_to_utc(plan["plan"].bar_time),
+                                                  plan["plan"].tf, plan["plan"].max_hold)
             _book_fill(name, s["symbol"], side * per, fill_px)
             _record_exec_outcome(s["symbol"], side, per, price, tick, float(plan["dist"]),
                                  plan["plan"], fill_px)

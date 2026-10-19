@@ -1573,7 +1573,7 @@ def stamp_market_constraints(sleeves: list[dict[str, Any]], path: Path) -> int:
             "closed_today": sess.get("closed_today"),
             "next_closed_day": sess.get("next_closed_day"),
             "desk_close_utc": halts.get("desk_close_utc"), "price_band": halts.get("price_band"),
-            "rollover_hour_utc": settle.get("rollover_hour_utc"),
+            "rollover_hour_server": settle.get("rollover_hour_server"),
             "triple_swap_weekday": settle.get("triple_swap_weekday"),
             "swap_long": settle.get("swap_long"), "swap_short": settle.get("swap_short"),
             "margin": margin.get("status"), "unmeasured": list(row.get("unmeasured") or []),
@@ -2420,7 +2420,9 @@ def scalp_order_desc(plan: Any, per: float, symbol: str, mode: str) -> str:
     """The first slice's order line for the log."""
     return (f"{'BUY' if plan.side == 1 else 'SELL'} {per} {symbol} @market "
             f"sl={plan.stop:.5f} tp={plan.target:.5f} mode={mode} "
-            f"ttl_until={plan.ttl_until}")
+            # The plan's deadline is on the BAR (broker) clock; the gateway stores the true UTC
+            # one (`broker_clock.broker_to_utc`), which is 2-3h earlier.
+            f"ttl_until(bar clock)={plan.ttl_until}")
 
 
 def addon_desc(side: int, per: float, symbol: str, stop: float, new_tp: float,
