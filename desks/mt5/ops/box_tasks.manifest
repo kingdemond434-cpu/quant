@@ -137,13 +137,6 @@ TASK name="MT5-Forest-Latam" trigger="at startup + every 10 minutes (keep-alive 
 TASK name="MT5-Forest-Mena" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Forest-Africa" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
-# THE DEEPSEEK THIRD BRAIN ON THIS BOX (2026-10-20). The cycle formerly ran only as a systemd
-# unit on the Linux box, and only while that machine was awake; this box -- the one that holds the
-# live account, the cells and the judge -- had no DeepSeek clock at all. The addendum requires the
-# laboratory to run here, 24/7, with no session and no laptop. One hourly call, offset to :24 so it
-# does not coincide with the merge docket (:14/:44) or the gauntlet's :00/:05 slots. Research
-# generation only: it proposes, the canonical compiler and gauntlet decide.
-TASK name="MT5-DeepSeek"           trigger="every 1 hour, at :24"  runs="ops/run_deepseek_windows.ps1"  installer="desks/mt5/scripts/install_deepseek_brain_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat
 TASK name="MT5-TickRecorder"       trigger="every 1 hour"          runs="desks/mt5/recorders/tick_recorder.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"

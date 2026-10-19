@@ -50,8 +50,6 @@ __all__ = [
     "ESCALATION_STATES",
     "EVIDENCE",
     "INHERITED_REGISTRIES",
-    "OBJECT_TYPES",
-    "DISPOSITIONS",
     "SEED_ROLES",
     "budget_gate",
     "cold_context",
@@ -59,7 +57,6 @@ __all__ = [
     "fence",
     "inheritance_check",
     "policy_gate",
-    "research_packet",
     "run_role",
     "seal",
     "seat_state",
@@ -142,23 +139,6 @@ CONTAMINATION_KEYS: tuple[str, ...] = (
     "kimi_interpretation", "kimi_findings", "consensus", "consensus_summary", "agent_summary",
     "previous_deepseek_conclusion", "prior_conclusion", "desired_answer", "expected_answer",
     "recommendation", "verdict_hint", "research_brief", "peer_rationale",
-)
-
-#: The third-brain addendum section 8: no untyped prose-only result. A finding declares what it
-#: IS before anything decides where it goes, so a data gap cannot be silently filed as a failed
-#: strategy and a mechanism cannot be silently tested as if it were an executable candidate.
-OBJECT_TYPES: tuple[str, ...] = (
-    "EXACT_CANDIDATE", "MECHANISM_HYPOTHESIS", "DATA_REQUEST", "REPRESENTATION_REQUEST",
-    "DEEPENING_TASK", "CAPABILITY_CHALLENGER", "VALIDATION_ATTACK", "FAILURE_DESCENDANT",
-    "SURVIVOR_DESCENDANT", "SOURCE_ACQUISITION_REQUEST", "RESEARCH_METHOD_CHALLENGER",
-    "NEGATIVE_KNOWLEDGE",
-)
-
-#: Section 9: every object leaves the cycle with a named disposition. Silent loss is the defect.
-DISPOSITIONS: tuple[str, ...] = (
-    "TESTABLE_NOW", "NEEDS_RULE_EXTRACTION", "NEEDS_DATA", "NEEDS_PIT_SOURCE",
-    "NEEDS_REPRESENTATION", "NEEDS_NEW_EXECUTABLE_FAMILY", "DUPLICATE", "INVALID", "BLOCKED",
-    "TESTED",
 )
 
 #: CXCV-12..15. What DeepSeek may never do, whatever any model response says.
@@ -400,27 +380,6 @@ def cold_context(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def research_packet(root: Path | None = None) -> dict[str, Any]:
-    """The facts the cold phase is given (addendum section 3). Never returns an empty context.
-
-    A packet that cannot be built is a REPORTED state with a why, not `{}`. The failure this
-    replaces was the runner's `state={}`: confident generic prose with no way to tell it apart
-    from a finding grounded in this desk's measurements.
-    """
-    base = root or _ROOT
-    try:
-        from libs.ops.deepseek_packet import build
-
-        packet = build(base)
-        if not isinstance(packet, dict) or not packet.get("sections"):
-            raise ValueError("packet carried no sections")
-        return packet
-    except Exception as exc:
-        return {"packet_version": 1, "generated_utc": _now(), "status": "UNAVAILABLE",
-                "sections": {}, "packet_hash": None, "sections_measured": 0,
-                "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
-
-
 def seal(run_id: str, *, role: str, phase_a_output: Any, policy_hash: str,
          cold_context_hash: str, provider: str, model: str, prompt_version: str = "1",
          root: Path | None = None) -> dict[str, Any]:
@@ -638,8 +597,7 @@ def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tupl
         "(FX, gold, metals, indices, energy, equity-index CFDs). Zero crypto-exchange hunting.\n\n"
         f"YOUR ROLE THIS CYCLE: {role_name} -- {role_brief}\n\n"
         "Return ONLY valid JSON, no prose outside it:\n"
-        '{"findings": [{"type": one of ' + " | ".join(OBJECT_TYPES) +
-        ', "title": "short label", '
+        '{"findings": [{"title": "short label", '
         '"mechanism": "the economic reason someone is FORCED to transact -- who pays, and why '
         'they cannot stop", "testable_claim": "one falsifiable, measurable statement", '
         # SYMBOLS ARE THE DIFFERENCE BETWEEN A FINDING AND A CANDIDATE. `compile_row` cannot
@@ -660,10 +618,8 @@ def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tupl
         "Never pad with a restatement of what is already in the cold context below -- a finding "
         "this desk already has is not a finding."
     )
-    body = json.dumps(cold.get("cold_context") or {}, indent=1, default=str)
-    if len(body) > 12000:
-        body = body[:12000] + "\n... TRUNCATED (packet exceeded the prompt budget)"
-    user = ("COLD CONTEXT -- measured facts only, no other agent's conclusion is present:\n" + body)
+    user = ("COLD CONTEXT -- facts only, no other agent's conclusion is present in this:\n"
+           + json.dumps(cold.get("cold_context") or {}, indent=1, default=str)[:6000])
     return system, user
 
 
@@ -703,8 +659,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
     if not budget["ok"]:
         return {"status": "BUDGET_EXHAUSTED", "role": role_name, "why": budget["why"]}
 
-    packet = state if isinstance(state, dict) and state else research_packet(base)
-    cold = cold_context(packet)
+    cold = cold_context(state or {})
     if cold.get("blinded_fields"):
         from libs.tiers import blinding
         blinding.record(base, {"at": _now(), "stage": "context", "rows": 1, "violations": 1,
@@ -751,18 +706,8 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
                 if str(s).strip()] if isinstance(f.get("symbols"), list) else []
         fam = f.get("family")
         fam = str(fam).strip() if isinstance(fam, str) and fam.strip() else None
-        declared = str(f.get("type") or "").strip().upper()
-        if declared not in OBJECT_TYPES:
-            declared = "EXACT_CANDIDATE" if (syms and fam) else "MECHANISM_HYPOTHESIS"
-        disposition = ("TESTABLE_NOW" if (syms and fam) else
-                       "NEEDS_RULE_EXTRACTION" if not syms else
-                       "NEEDS_NEW_EXECUTABLE_FAMILY")
-        declared_disposition = str(f.get("disposition") or "").strip().upper()
-        if declared_disposition in DISPOSITIONS:
-            disposition = declared_disposition
         row = {"ts": _now(), "role": role_name, "model": model, "deep": deep,
               "seal_path": sealed.get("path"), "title": str(f.get("title"))[:300],
-              "type": declared, "disposition": disposition,
               "mechanism": str(f.get("mechanism") or "")[:2000],
               "testable_claim": str(f.get("testable_claim") or "")[:2000],
               "capability_source": f.get("capability_source"),
@@ -788,14 +733,8 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
 
     return {"status": "OK", "role": role_name, "model": model, "deep": deep,
            "seal": sealed["verdict"], "n_findings": len(findings), "routed_titles": routed,
-           "types": {t: sum(1 for r in donated if r["type"] == t)
-                     for t in sorted({r["type"] for r in donated})},
-           "dispositions": {d: sum(1 for r in donated if r["disposition"] == d)
-                            for d in sorted({r["disposition"] for r in donated})},
            "capability_walks_proposed": len(capability_walks),
            "donated_to": str(donated_path) if donated_path else None,
-           "packet_status": packet.get("status"), "packet_hash": packet.get("packet_hash"),
-           "packet_sections": packet.get("sections_measured"),
            "cold_context_removed_keys": cold["removed_keys"]}
 
 
@@ -827,7 +766,6 @@ def _donate(rows: list[dict[str, Any]], role_name: str, *, root: Path | None = N
 
     discoveries, refused = stamp_or_refuse([{
         "source": "deepseek", "title": r["title"], "symbols": r.get("symbols") or [],
-        "type": r.get("type"), "disposition": r.get("disposition"),
         "family": r.get("family"), "mechanism": r.get("mechanism"),
         "testable_claim": r.get("testable_claim"),
         "mechanism_tags": [t for t in [r.get("family")] if t], "kind": "hypothesis",

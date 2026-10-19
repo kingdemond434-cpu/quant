@@ -33,22 +33,6 @@ if str(_ROOT) not in sys.path:
 from libs.ops import deepseek_cycle as ds  # noqa: E402
 
 _CYCLE_STATE = _ROOT / "data" / "deepseek_cycle_state.json"
-_REPORT = _ROOT / "desks" / "mt5" / "reports" / "DEEPSEEK_RESEARCH.json"
-
-
-def _publish(report: dict[str, object]) -> None:
-    """Publish liveness and the packet hash even on a dark or budget-held cycle.
-
-    UNMEASURED is never rendered as healthy: the report carries the exact result and why, so a
-    silent seat cannot read as a working one.
-    """
-    try:
-        _REPORT.parent.mkdir(parents=True, exist_ok=True)
-        tmp = _REPORT.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(report, indent=1, default=str), "utf-8")
-        tmp.replace(_REPORT)
-    except OSError:
-        pass
 
 
 def _next_cycle_index() -> int:
@@ -87,7 +71,6 @@ def main(argv: list[str] | None = None) -> int:
     if not gate["ok"]:
         report["result"] = "BLOCKED_POLICY"
         report["why"] = gate["why"]
-        _publish(report)
         print(json.dumps(report, indent=1) if args.json else
               f"DEEPSEEK BLOCKED: {gate['verdict']} -- {gate['why']}")
         return 2
@@ -99,7 +82,6 @@ def main(argv: list[str] | None = None) -> int:
     report["budget"] = budget
     if not budget["ok"]:
         report["result"] = "BUDGET_EXHAUSTED"
-        _publish(report)
         print(json.dumps(report, indent=1) if args.json else
               f"DEEPSEEK HOLD: {budget['why']}")
         return 0
@@ -111,7 +93,6 @@ def main(argv: list[str] | None = None) -> int:
         report["result"] = "DARK"
         mix = ds.escalation_mix(args.state)
         report["would_run"] = {"roles": len(ds.SEED_ROLES), "escalation": mix}
-        _publish(report)
         if args.json:
             print(json.dumps(report, indent=1))
         else:
@@ -130,7 +111,6 @@ def main(argv: list[str] | None = None) -> int:
     report["identity"] = ident
     if not available:
         report["result"] = "MODEL_UNAVAILABLE"
-        _publish(report)
         print(json.dumps(report, indent=1) if args.json else
               "DEEPSEEK MODEL_UNAVAILABLE: DEEPSEEK_BULK_MODEL is unset. Recorded rather than "
               "substituted -- a silent substitution would corrupt the only measurement this "
@@ -151,12 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     mix = ds.escalation_mix(args.state)
     deep = random.random() < mix["deep_share"]  # noqa: S311 -- research-cadence draw, not security
 
-    packet = ds.research_packet(_ROOT)
-    report["packet"] = {"status": packet.get("status"), "hash": packet.get("packet_hash"),
-                        "sections": packet.get("sections_measured"),
-                        "generated_utc": packet.get("generated_utc"),
-                        "why": packet.get("why")}
-    result = ds.run_role(role_name, role_brief, deep=deep, state=packet, root=_ROOT)
+    result = ds.run_role(role_name, role_brief, deep=deep, state={}, root=_ROOT)
     report["result"] = result["status"]
     report["role"] = role_name
     report["cycle_index"] = idx
@@ -165,7 +140,6 @@ def main(argv: list[str] | None = None) -> int:
     report["run"] = result
     report["authority"] = ("RESEARCH GENERATION ONLY -- cannot promote a survivor, allocate "
                            "capital, override policy or merge authoritative code (CXCV-12..15)")
-    _publish(report)
     if args.json:
         print(json.dumps(report, indent=1))
     else:
