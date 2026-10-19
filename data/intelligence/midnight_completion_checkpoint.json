@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-10-18T22:47:45.314626+00:00",
+   "finished_at": "2026-10-19T01:34:08.322597+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,28 +33,25 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-10-18T22:48:07.486195+00:00",
+   "finished_at": "2026-10-19T01:36:12.943492+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-18T22:45:45.209686+00:00",
+   "finished_at": "2026-10-19T01:17:10.291425+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "desks/mt5/research/forward_reconcile.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-19T00:44:32.444383+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-19T01:16:49.169695+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-18T22:46:10.481179+00:00",
+   "finished_at": "2026-10-19T01:17:30.340429+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -66,23 +63,23 @@
    "status": "DONE"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-18T22:47:06.108802+00:00",
+   "finished_at": "2026-10-19T01:32:36.390501+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-18T22:47:25.836204+00:00",
+   "finished_at": "2026-10-19T01:33:49.866746+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-18T22:46:41.978150+00:00",
+   "finished_at": "2026-10-19T01:28:48.690377+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-19T00:44:32.444383+00:00"
+ "updated_at": "2026-10-19T01:36:12.943492+00:00"
 }
