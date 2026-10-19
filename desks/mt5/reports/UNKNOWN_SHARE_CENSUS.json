@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
+  "stage": "building",
   "utc_day": "2026-10-19",
   "started_at": "2026-10-19T01:35:22+00:00",
-  "written_at": "2026-10-19T01:38:10+00:00",
+  "written_at": "2026-10-19T02:09:38+00:00",
   "cells_planned": 6046,
-  "cells_visited": 0,
+  "cells_visited": 472,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 57652,
     "rss_cap_mb": 14413,
-    "peak_rss_mb": 479
+    "peak_rss_mb": 648
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 143.1,
+  "lockbox_cut": "2024-06-12",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 30,
+  "elapsed_s": 2030.8,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 123,
@@ -41,38 +41,134 @@
     }
   },
   "sampled_cells": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "cells": 472,
+    "gate0_rejected": {
+      "symbol_eligibility": 53
+    },
+    "preflight_refused": 163,
+    "build_failed": 6,
+    "build_failed_by_reason": {
+      "no_leg_symbol_named": 2,
+      "no_driver_symbol_named": 2,
+      "family_raised:TypeError": 1,
+      "BLOCKED_DATA: raw COT for EURILS: KeyError: 'no COT mapping ": 1
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 104,
+    "unknown_share_of_judged": 0.416,
+    "wilson95": [
+      0.3566,
+      0.4779
+    ],
+    "unknown_by_reason": {
+      "no_signals": 82,
+      "too_rare": 13,
+      "short_history_after_cut": 5,
+      "lockbox_consumed_history": 3,
+      "signals_no_trades": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 16,
+      "orderflow_imbalance": 12,
+      "overnight_drift": 9,
+      "liquidity_regime": 7,
+      "joint_genome": 6,
+      "session_range_breakout": 6,
+      "ensemble": 5,
+      "lvc_asia_london": 4,
+      "regime_transition": 3,
+      "vol_transition": 3,
+      "liquidity_gamma_reversal": 2,
+      "htf_anchor_trend": 2,
+      "alt_conditioned": 2,
+      "event_reaction": 2,
+      "monday_gap": 2
+    },
+    "unknown_by_chart": {
+      "M30": 32,
+      "H1": 26,
+      "M5": 19,
+      "M15": 17,
+      "M1": 5,
+      "H4": 3,
+      "D1": 2
+    },
+    "judged_by_chart": {
+      "H1": 78,
+      "M30": 72,
+      "M5": 44,
+      "M15": 42,
+      "H4": 7,
+      "M1": 5,
+      "D1": 2
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "cells": 472,
+    "gate0_rejected": {
+      "symbol_eligibility": 53
+    },
+    "preflight_refused": 163,
+    "build_failed": 6,
+    "build_failed_by_reason": {
+      "no_leg_symbol_named": 2,
+      "no_driver_symbol_named": 2,
+      "family_raised:TypeError": 1,
+      "BLOCKED_DATA: raw COT for EURILS: KeyError: 'no COT mapping ": 1
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 104,
+    "unknown_share_of_judged": 0.416,
+    "wilson95": [
+      0.3566,
+      0.4779
+    ],
+    "unknown_by_reason": {
+      "no_signals": 82,
+      "too_rare": 13,
+      "short_history_after_cut": 5,
+      "lockbox_consumed_history": 3,
+      "signals_no_trades": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 16,
+      "orderflow_imbalance": 12,
+      "overnight_drift": 9,
+      "liquidity_regime": 7,
+      "joint_genome": 6,
+      "session_range_breakout": 6,
+      "ensemble": 5,
+      "lvc_asia_london": 4,
+      "regime_transition": 3,
+      "vol_transition": 3,
+      "liquidity_gamma_reversal": 2,
+      "htf_anchor_trend": 2,
+      "alt_conditioned": 2,
+      "event_reaction": 2,
+      "monday_gap": 2
+    },
+    "unknown_by_chart": {
+      "M30": 32,
+      "H1": 26,
+      "M5": 19,
+      "M15": 17,
+      "M1": 5,
+      "H4": 3,
+      "D1": 2
+    },
+    "judged_by_chart": {
+      "H1": 78,
+      "M30": 72,
+      "M5": 44,
+      "M15": 42,
+      "H4": 7,
+      "M1": 5,
+      "D1": 2
+    }
   },
   "siblings_only": {
     "cells": 0,
