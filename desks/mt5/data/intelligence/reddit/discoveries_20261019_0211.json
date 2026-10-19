@@ -1,0 +1,310 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "45% win rate and 1:3 RR",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Title: Feedback on my GBPUSD PDH/PDL + SMT reversal strategy (1-minute entries)",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "reversal",
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Made $10k in a day",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "MY CURRENT OUTLOOK ON XAU/USD ON MONDAY",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "resistance"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "What should be good confirmation while taking entry ?",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [
+      "reversal",
+      "EMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "What Do You Look for Before Trusting an Automated Gold Trading System?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Im Full Short all expect \ud83c\uddec\ud83c\udde7 what do You think is this Smart ?",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Forex signals are worse than gambling.",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Looking for a trade partner in Calgary",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NzdUsd trade",
+    "url": "",
+    "symbols": [
+      "NZDUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NFP NEWS DONE BY ME",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "6 London opens on gold 5m: first 30 minute ranges from $10.45 to $25.05",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "USDCAD buy limit at 1.4151 waiting for a pullback",
+    "url": "",
+    "symbols": [
+      "USDCAD"
+    ],
+    "patterns": [
+      "pullback"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "A nice intra-day trade today on gold",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "One contract of gold, ES and NQ are three different sized bets, so my cross market test was partly a sizing test",
+    "url": "",
+    "symbols": [
+      "DXY",
+      "XAUUSD"
+    ],
+    "patterns": [
+      "breakout"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "Noise Band Trading Bot (back test) Results",
+    "url": "",
+    "symbols": [
+      "NAS100"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "My MT5 algo generated 2.5M cents in profit over 1 year how would you scale this 100x? (Vantage Markets, XAUUSD)",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "ORB strategy trading ea",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "Anyone willing to share clean historical daily QQQ constituent weights?",
+    "url": "",
+    "symbols": [
+      "NAS100"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "Going flat before every weekend cut this SPY strategy from 283% to 21% and deepened the drawdown",
+    "url": "",
+    "symbols": [
+      "US500"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "How much weight would you give seven untouched stress/OOS years? My 8-module XAUUSD portfolio + Monte Carlo",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "scalp"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "Improved my bitcoin trading strategy to beat buy and hold... by a lot",
+    "url": "",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "Back when Nasdaq was cheap, the spread wasn't! Argh...!",
+    "url": "",
+    "symbols": [
+      "NAS100"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "Gamma exposure = snake-oil?",
+    "url": "",
+    "symbols": [
+      "USOIL",
+      "US500"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "algotrading",
+    "title": "Follow-up: Tested the stuff from your comments on my 100+ strategies post (and found a mistake in my own test)",
+    "url": "",
+    "symbols": [
+      "US500"
+    ],
+    "patterns": [
+      "momentum"
+    ],
+    "confidence": 0.3
+  }
+]
