@@ -1,0 +1,12 @@
+[
+ {
+  "source": "mql5_signals",
+  "kind": "fetch_error",
+  "title": "503 Server Error: Service Unavailable for url: https://www.mql5.com/en/signals/mt5",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T14:33:02+00:00",
+  "needs_selector_work": true
+ }
+]
