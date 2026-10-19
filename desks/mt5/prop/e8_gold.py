@@ -572,6 +572,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     """One pass. `venue` is a connected TradeLockerVenue; `mt5` the MetaTrader5 module (bars
     and the server clock, read exactly as the gateway reads them)."""
     from mt5desk import order_door
+    from prop import cross_account
     from prop.e8_executor import E8_ROUND_TRIP_PER_PRICE_UNIT, _quantise, lot_for_risk
 
     # ONE DOOR FOR MONEY: place_stop / modify_stop / cancel / close go through the order door's
@@ -661,6 +662,18 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": due["window"], "why": why})
             log(f"[{due['window']}] DEFERRED: {why}")
         due_now = []
+    # NEVER AGAINST THE FUSION BOOK (E8 rule, 2026-10-13): opposite trades on one symbol across
+    # two of the trader's accounts are banned hedging. The terminal this pass already holds IS
+    # the Fusion account, so its positions are read here, every pass. An unreadable book defers
+    # the bracket without marking the window placed, exactly as an unreadable E8 side does.
+    fusion, fusion_src = cross_account.fusion_book(mt5)
+    doc["fusion_book"] = fusion_src
+    if fusion is None and due_now:
+        for due in due_now:
+            why = cross_account.refusal(SYMBOL, "buy", None, fusion_src)
+            doc["skipped"].append({"window": due["window"], "why": why})
+            log(f"[{due['window']}] DEFERRED: {why}")
+        due_now = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
         frac, frac_src = window_risk(name, kelly)
@@ -679,6 +692,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                        f"trade against them, so it is skipped and the agreeing leg is placed")
                 doc["skipped"].append({"window": name, "side": side, "why": why})
                 log(f"[{name}] {side} skipped: {why}")
+                continue
+            cross = cross_account.refusal(SYMBOL, side, fusion, fusion_src)
+            if cross is not None:
+                doc["skipped"].append({"window": name, "side": side, "why": cross})
+                _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                         "status": "CROSS_ACCOUNT_BLOCKED", "why": cross, "armed": bool(armed)})
+                log(f"[{name}] {side} skipped: {cross}")
                 continue
             s = spec[side]
             dist = abs(float(s["price"]) - float(s["sl"]))
@@ -765,7 +785,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                            orders_ok="orders_unreadable" not in doc, filled=filled,
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
-                           history_ok="history_unreadable" not in doc, instrument_id=iid)
+                           history_ok="history_unreadable" not in doc, instrument_id=iid,
+                           fusion=fusion, fusion_src=fusion_src)
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
@@ -790,6 +811,26 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             act["why"] = f"{type(exc).__name__}: {exc}"[:160]
             log(f"[{act['window']}] stale_cancel FAILED: {act['why']}")
         doc["actions"].append(act)
+
+    # A RESTING LEG THAT WOULD NOW FILL AGAINST FUSION IS CANCELLED. The bracket was legal when
+    # placed; if Fusion has since opened the other way, its fill would be the banned hedge.
+    for name, w in (state.get("windows") or {}).items():
+        if w.get("position_id") is not None:
+            continue          # filled: the OCO rule already cancels the other leg
+        for kind, oid in cross_account.opposing_resting(w.get("orders") or {}, SYMBOL, fusion):
+            if oid not in open_ids:
+                continue
+            act = {"act": "cross_account_cancel", "window": name, "side": kind,
+                   "order_id": oid}
+            try:
+                act["ok"] = bool(venue.cancel(int(oid)))
+                log(f"[{name}] cross_account_cancel: resting {kind} {oid} would open against "
+                    "the Fusion book; cancelled")
+            except Exception as exc:
+                act["ok"] = False
+                act["why"] = f"{type(exc).__name__}: {exc}"[:160]
+                log(f"[{name}] cross_account_cancel FAILED: {act['why']}")
+            doc["actions"].append(act)
 
     # The Fusion gold book and this E8 port are the same bracket strategy.  Both therefore use
     # the same measured stop ratchet.  Until this block existed E8 left every winner at its
@@ -909,7 +950,8 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                        open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
                        xau_positions: list[dict], positions_ok: bool, stood_down: bool,
                        armed: bool, hist_rows: list[dict], history_ok: bool,
-                       instrument_id: int) -> None:
+                       instrument_id: int, fusion: dict[str, set[int]] | None = None,
+                       fusion_src: str = "") -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
 
@@ -1025,6 +1067,15 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             row.update({"status": "SENT", "order_id": oid, "adopted": True})
             log(f"[{name}] {side} the failed send had landed: adopted order {oid}")
         else:
+            from prop import cross_account
+            cross = cross_account.refusal(SYMBOL, side, fusion, fusion_src)
+            if cross is not None:
+                # HELD, not abandoned: the leg is re-judged next pass, and the window's own end
+                # (`retry_decisions`) is what drops it if Fusion never clears.
+                act.update({"act": "leg_cross_account_hold", "ok": False, "why": cross})
+                log(f"[{name}] {side} retry held: {cross}")
+                doc["actions"].append(act)
+                continue
             try:
                 oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell",
                                        float(leg["lot"]), price=float(leg["price"]),

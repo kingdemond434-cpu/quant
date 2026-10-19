@@ -209,7 +209,8 @@ def _retry(venue: _Venue, st: dict, *, hour: float = 8.0, **kw: Any) -> dict:
     doc: dict = {"actions": []}
     args = {"open_orders": list(venue.book), "orders_ok": True, "filled": {},
             "xau_positions": [], "positions_ok": True, "stood_down": False, "armed": True,
-            "hist_rows": [], "history_ok": True, "instrument_id": IID, **kw}
+            "hist_rows": [], "history_ok": True, "instrument_id": IID, "fusion": {},
+            "fusion_src": "terminal", **kw}
     g._retry_failed_legs(venue, st, doc, hour=hour, now=datetime.now(UTC), **args)
     return doc
 
@@ -406,3 +407,19 @@ def test_the_rails_ledger_reads_every_block_from_the_journal(monkeypatch) -> Non
     got = mg.measure_e8_unowned_block(rail, {}, {})
     assert got["n"] == 1 and got["undeployed_risk_usd"] == 1000.0
     assert got["verdict"] == mg.UNMEASURED
+
+
+def test_a_retry_that_would_open_against_the_fusion_book_is_held_not_sent() -> None:
+    v, st = _Venue(), _state()
+    doc = _retry(v, st, fusion={"XAUUSD": {-1}})
+    assert v.sent == []
+    assert st["windows"]["asia"]["failed"]["buy_stop"]
+    assert [a["act"] for a in doc["actions"]] == ["leg_cross_account_hold"]
+    assert "CROSS_ACCOUNT_HEDGE" in doc["actions"][0]["why"]
+
+
+def test_a_retry_with_fusion_unreadable_is_held_not_sent() -> None:
+    v, st = _Venue(), _state()
+    doc = _retry(v, st, fusion=None, fusion_src="UNREADABLE")
+    assert v.sent == []
+    assert "CROSS_ACCOUNT_UNREAD" in doc["actions"][0]["why"]
