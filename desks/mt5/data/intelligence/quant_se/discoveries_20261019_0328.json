@@ -1,0 +1,452 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "how to calculate the Sharpe ratio based on a list of trades, with space between them?",
+  "url": "https://quant.stackexchange.com/questions/71003/how-to-calculate-the-sharpe-ratio-based-on-a-list-of-trades-with-space-between",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 6,
+  "tags": [
+   "sharpe-ratio"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How should I account for multiple strategy variants when evaluating out-of-sample crypto backtest results?",
+  "url": "https://quant.stackexchange.com/questions/86898/how-should-i-account-for-multiple-strategy-variants-when-evaluating-out-of-sampl",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "CDS vs Corps recovery rates",
+  "url": "https://quant.stackexchange.com/questions/85858/cds-vs-corps-recovery-rates",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "credit-risk",
+   "credit-derivatives"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Free Data Source for Credit Spreads?",
+  "url": "https://quant.stackexchange.com/questions/31373/free-data-source-for-credit-spreads",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 3,
+  "tags": [
+   "interest-rates",
+   "market-data",
+   "spread",
+   "credit",
+   "bond-yields"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does the regulatory feedback loop between PD and Asset Correlation under CRR imply a unique fixed-point MoC (for TTC PD)?",
+  "url": "https://quant.stackexchange.com/questions/85862/does-the-regulatory-feedback-loop-between-pd-and-asset-correlation-under-crr-imp",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 1,
+  "tags": [
+   "credit-risk"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does the sign of a walk-forward candidate\u2019s OOS P&amp;L measure selection quality, or mostly the test period\u2019s level?",
+  "url": "https://quant.stackexchange.com/questions/85893/does-the-sign-of-a-walk-forward-candidate-s-oos-pl-measure-selection-quality-o",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What&#39;s the price of a lookback call option in the arbitrage-free CRR-model?",
+  "url": "https://quant.stackexchange.com/questions/60563/whats-the-price-of-a-lookback-call-option-in-the-arbitrage-free-crr-model",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 1,
+  "tags": [
+   "option-pricing",
+   "risk-neutral-measure",
+   "martingale",
+   "binomial-tree",
+   "equivalent-measure"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Deflated Sharpe Ratio when the number of trials is unknown: bound it, estimate an effective N, or rely only on a fresh holdout?",
+  "url": "https://quant.stackexchange.com/questions/85879/deflated-sharpe-ratio-when-the-number-of-trials-is-unknown-bound-it-estimate-a",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "fx",
+   "statistics",
+   "backtesting",
+   "sharpe-ratio",
+   "statistical-significance"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Martingale property of the CEV model",
+  "url": "https://quant.stackexchange.com/questions/78843/martingale-property-of-the-cev-model",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 1,
+  "tags": [
+   "black-scholes",
+   "stochastic-processes",
+   "martingale"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Online sources for quantitative finance research",
+  "url": "https://quant.stackexchange.com/questions/73853/online-sources-for-quantitative-finance-research",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 8,
+  "tags": [
+   "quant-trading-strategies",
+   "research",
+   "resource"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Obtain B-S-M from a binomial tree as n goes to infinty using Lebesgue integral",
+  "url": "https://quant.stackexchange.com/questions/78828/obtain-b-s-m-from-a-binomial-tree-as-n-goes-to-infinty-using-lebesgue-integral",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "black-scholes",
+   "binomial-tree",
+   "call",
+   "integral"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Methods for tracking option open interest intraday",
+  "url": "https://quant.stackexchange.com/questions/75528/methods-for-tracking-option-open-interest-intraday",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 4,
+  "tags": [
+   "options",
+   "derivatives",
+   "quant-trading-strategies",
+   "algorithmic-trading",
+   "trading-systems"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Questions on calibrating risk-neutral/risk-adjusted densities to match realized densities",
+  "url": "https://quant.stackexchange.com/questions/81969/questions-on-calibrating-risk-neutral-risk-adjusted-densities-to-match-realized",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 2,
+  "tags": [
+   "options",
+   "risk-neutral-measure",
+   "probability",
+   "stochastic-discount",
+   "real-world-measure"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Industry factors without GICS",
+  "url": "https://quant.stackexchange.com/questions/7800/industry-factors-without-gics",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 7,
+  "tags": [
+   "factor-models"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Historical Economic Release Calendar",
+  "url": "https://quant.stackexchange.com/questions/63166/historical-economic-release-calendar",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 1,
+  "tags": [
+   "data",
+   "quant-trading-strategies",
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "database for economic &amp; finance timeseries",
+  "url": "https://quant.stackexchange.com/questions/68532/database-for-economic-finance-timeseries",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "time-series",
+   "economics",
+   "fundamentals",
+   "database"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "PBO algorithm &quot;The Probability of Backtest Overfitting&quot; paper",
+  "url": "https://quant.stackexchange.com/questions/75833/pbo-algorithm-the-probability-of-backtest-overfitting-paper",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 6,
+  "tags": [
+   "programming",
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Proper Use of CPCV for Hyperparameter Tuning and Backtesting in a Trading Strategy",
+  "url": "https://quant.stackexchange.com/questions/79503/proper-use-of-cpcv-for-hyperparameter-tuning-and-backtesting-in-a-trading-strate",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "backtesting",
+   "machine-learning"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "NYSE tails &#39;fatter&#39; in the &#39;00s and &#39;10s than in the &#39;80s. Has anyone perceived this?",
+  "url": "https://quant.stackexchange.com/questions/85885/nyse-tails-fatter-in-the-00s-and-10s-than-in-the-80s-has-anyone-perceived",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "statistics",
+   "distribution",
+   "kurtosis",
+   "nyse",
+   "expected-shortfall"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Treasury zero coupon curve for discounting two bonds but OAS different on Bloomberg",
+  "url": "https://quant.stackexchange.com/questions/53543/treasury-zero-coupon-curve-for-discounting-two-bonds-but-oas-different-on-bloomb",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 1,
+  "tags": [
+   "fixed-income"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Leakage and bias in XGBoost trading strategy",
+  "url": "https://quant.stackexchange.com/questions/60503/leakage-and-bias-in-xgboost-trading-strategy",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "fx",
+   "quant-trading-strategies",
+   "machine-learning"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Extracting Risk Neutral Default Probabilities using Option Adjusted Bond Prices",
+  "url": "https://quant.stackexchange.com/questions/45919/extracting-risk-neutral-default-probabilities-using-option-adjusted-bond-prices",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 2,
+  "tags": [
+   "fixed-income",
+   "bond",
+   "credit-risk",
+   "default-probability",
+   "default-risk"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "quantlib isda cds time-series",
+  "url": "https://quant.stackexchange.com/questions/50529/quantlib-isda-cds-time-series",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 2,
+  "tags": [
+   "programming",
+   "quantlib",
+   "credit"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Historical quotes / prices of multiasset options",
+  "url": "https://quant.stackexchange.com/questions/45284/historical-quotes-prices-of-multiasset-options",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 3,
+  "tags": [
+   "options",
+   "market-data",
+   "copula",
+   "multivariate"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Method for an additive decomposition of hypothetical P&amp;L by risk factor",
+  "url": "https://quant.stackexchange.com/questions/85875/method-for-an-additive-decomposition-of-hypothetical-pl-by-risk-factor",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 1,
+  "tags": [
+   "interest-rates",
+   "equities",
+   "inflation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Pricing curve for corporate bonds from EU, US, and GB?",
+  "url": "https://quant.stackexchange.com/questions/85834/pricing-curve-for-corporate-bonds-from-eu-us-and-gb",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "bond",
+   "yield-curve",
+   "libor",
+   "rfr"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "decomposition of yields into global and local components",
+  "url": "https://quant.stackexchange.com/questions/63256/decomposition-of-yields-into-global-and-local-components",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "bond-yields"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Backtesting with L3 data in very low-liquidity market",
+  "url": "https://quant.stackexchange.com/questions/85863/backtesting-with-l3-data-in-very-low-liquidity-market",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 0,
+  "tags": [
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How do you implement effective market data quality controls in a risk management environment?",
+  "url": "https://quant.stackexchange.com/questions/85874/how-do-you-implement-effective-market-data-quality-controls-in-a-risk-management",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 1,
+  "tags": [
+   "derivatives",
+   "market-data",
+   "risk-management",
+   "sabr",
+   "frtb"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Flexible horizon in Triple Barrier Method",
+  "url": "https://quant.stackexchange.com/questions/49314/flexible-horizon-in-triple-barrier-method",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-19T03:46:46+00:00",
+  "score": 2,
+  "tags": [
+   "machine-learning",
+   "quants"
+  ]
+ }
+]

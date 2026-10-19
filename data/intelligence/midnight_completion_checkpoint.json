@@ -3,16 +3,44 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
+   "finished_at": "2026-10-19T03:42:42.213789+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
+  },
+  "certificate_projection": {
+   "finished_at": "2026-10-19T03:48:51.682673+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "external_queue_projection": {
+   "finished_at": "2026-10-19T03:47:22.737605+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "external_queue_reconciliation": {
+   "finished_at": "2026-10-19T03:48:31.826298+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "forward_identity_reconciliation": {
    "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
    ],
    "passes_completed": 0,
-   "started_at": "2026-10-19T02:09:26.331402+00:00",
+   "started_at": "2026-10-19T03:50:21.803392+00:00",
    "status": "RUNNING"
+  },
+  "fusion_state_pull": {
+   "finished_at": "2026-10-19T03:49:58.154601+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   }
  },
- "updated_at": "2026-10-19T02:09:26.331402+00:00"
+ "updated_at": "2026-10-19T03:50:21.803392+00:00"
 }
