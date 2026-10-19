@@ -341,5 +341,21 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCBc1EqknL4xzwJsUP9w7asg",
+  "channel": "Unbiased Trading",
+  "video_id": "rsNe0BUJdNk",
+  "published": "2026-10-19T20:53:33Z",
+  "title": "He Sold at $100 Thinking He Was Clever. It Went to $400.",
+  "description": "Build your first live trading algorithm \ud83d\udc49https://cryptomomentumgroup.com/\n\nSir Chris Hohn bought Moody's at $50, sold at $100 feeling clever, and watched it run to $400-500 before buying back in. His lesson is that intrinsic compounding matters more than the stock price, and the multiple matters less than the growth over long horizons. Same thing with strategies: the edge that compounds for 5 years beats the flashy backtest that blows up in 6 months.\n\n\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\n\nThis channel shares educational content about systematic and algorithmic trading. Nothing here is financial advice, and I am not a registered investment adviser. Trading involves risk of loss. Always do your own research and consult a licensed financial professional before making investment decisions.",
+  "links": [
+   "https://cryptomomentumgroup.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
