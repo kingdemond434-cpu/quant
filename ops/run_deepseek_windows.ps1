@@ -30,11 +30,15 @@ if (Test-Path $envFile) {
 
 Set-Location $Root
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
-Add-Content -Path $Log -Value "=== deepseek cycle $stamp ==="
+$utf8 = [System.Text.Encoding]::UTF8
+[System.IO.File]::AppendAllText($Log, "=== deepseek cycle $stamp ===`r`n", $utf8)
 
-& py -3 scripts\run_deepseek_cycle.py --state NORMAL --json *>> $Log
+# CAPTURE, THEN APPEND AS UTF-8. `Add-Content` and `>>` disagree about encoding on PowerShell 5.1
+# (MEASURED 2026-10-20: the first live run wrote UTF-16, so the log read as NUL-spaced text).
+$out = & py -3 scripts\run_deepseek_cycle.py --state NORMAL --json 2>&1 | Out-String
 $rc = $LASTEXITCODE
+[System.IO.File]::AppendAllText($Log, $out, $utf8)
+[System.IO.File]::AppendAllText($Log, ("=== exit {0} at {1} ===`r`n" -f $rc, (Get-Date).ToUniversalTime().ToString('s') + 'Z'), $utf8)
 
-Add-Content -Path $Log -Value ("=== exit {0} at {1} ===" -f $rc, (Get-Date).ToUniversalTime().ToString('s') + 'Z')
-Get-Content $Log -Tail 6
+$out -split "`r?`n" | Where-Object { $_ } | Select-Object -Last 4
 exit $rc

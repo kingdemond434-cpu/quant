@@ -27,8 +27,10 @@ $LogDir   = Join-Path $Repo 'desks\mt5\logs'
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 $Log      = Join-Path $LogDir 'MT5-DeepSeek.log'
 
+# NO OUTER REDIRECT: the runner appends its own UTF-8 log. Two writers on one file wrote the
+# first live log as UTF-16 (MEASURED 2026-10-20), and a second copy of every line.
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -WorkingDirectory $Repo -Argument (
-    '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" >> "{1}" 2>&1' -f $Script, $Log)
+    '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}"' -f $Script)
 
 $start = (Get-Date).Date.AddMinutes(24)
 $trigger = New-ScheduledTaskTrigger -Daily -At $start
