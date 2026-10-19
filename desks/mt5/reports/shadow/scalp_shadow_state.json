@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18T16:27:32+00:00",
+  "updated_at": "2026-10-19T21:56:40+00:00",
   "certificate_lookup_error": null,
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
@@ -22,7 +22,7 @@
     "xau_m5_anti_breakout_overlap": {
       "forward_start": "2026-08-22T18:00:00+00:00",
       "first_trade_at": null,
-      "status": "PROMOTION_CANDIDATE",
+      "status": "STALE_SOURCE",
       "timeframe": "M5",
       "choice": {
         "family": "anti_donchian_breakout",
@@ -55,18 +55,16 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-10-16T23:50:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 0.0,
-      "source_stale": false,
+      "source_trading_lag_hours": 24.0,
+      "source_stale": true,
       "promotion_authority": false,
       "note": "Fusion-native forward shadow.",
-      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134).",
-      "canonical_identity": "xauusd|anti_donchian_breakout|overlap",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m5_anti_momentum_ny": {
       "forward_start": "2026-08-22T18:00:00+00:00",
       "first_trade_at": null,
-      "status": "KILL",
+      "status": "STALE_SOURCE",
       "timeframe": "M5",
       "choice": {
         "family": "anti_three_bar_momentum",
@@ -99,17 +97,16 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-10-16T23:50:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 0.0,
-      "source_stale": false,
-      "promotion_authority": true,
+      "source_trading_lag_hours": 24.0,
+      "source_stale": true,
+      "promotion_authority": false,
       "note": "Fusion-native forward shadow.",
-      "canonical_identity": "xauusd|anti_three_bar_momentum|new_york",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m15_anti_breakout": {
       "forward_start": "2026-08-22T18:00:00+00:00",
       "first_trade_at": null,
-      "status": "KILL",
+      "status": "STALE_SOURCE",
       "timeframe": "M15",
       "choice": {
         "family": "anti_donchian_breakout",
@@ -142,17 +139,16 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-10-16T23:30:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 0.0,
-      "source_stale": false,
-      "promotion_authority": true,
+      "source_trading_lag_hours": 24.0,
+      "source_stale": true,
+      "promotion_authority": false,
       "note": "Fusion-native forward shadow.",
-      "canonical_identity": "xauusd|anti_donchian_breakout|all",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m15_anti_momentum": {
       "forward_start": "2026-08-22T18:00:00+00:00",
       "first_trade_at": null,
-      "status": "KILL",
+      "status": "STALE_SOURCE",
       "timeframe": "M15",
       "choice": {
         "family": "anti_three_bar_momentum",
@@ -185,16 +181,13 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-10-16T23:30:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 0.0,
-      "source_stale": false,
-      "promotion_authority": true,
+      "source_trading_lag_hours": 24.0,
+      "source_stale": true,
+      "promotion_authority": false,
       "note": "Fusion-native forward shadow.",
-      "canonical_identity": "UNIDENTIFIABLE",
-      "canonical_identity_why": "row declares no symbol or family, its key has no shape this desk writes, and no other store declares one for its name; recorded so it is auditable later and excluded from the join denominator by declaration rather than by silence",
-      "canonical_identity_declared_at": "2026-10-18T20:11:21+00:00"
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     }
   },
   "quarantined_candidates": {},
-  "represented_sleeves": 4,
-  "identity_stamped_at": "2026-10-18T20:11:21+00:00"
+  "represented_sleeves": 4
 }
