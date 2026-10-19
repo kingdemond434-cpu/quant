@@ -1,0 +1,41 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Waiting Buys Exactly Two Moments: Endogenous Identification in Prediction-Driven Allocation",
+    "summary": "A planner with a fixed budget of preventive help must decide whom to help and when. Waiting reveals risk but removes intervention opportunities as higher-risk individuals leave first. We characterize ",
+    "url": "https://arxiv.org/abs/2610.23830v1",
+    "published": "2026-10-16T17:52:57Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Orbital Angular Momentum Currents and Textures in a Multiorbital Double Helix",
+    "summary": "The microscopic origin of chirality induced spin selectivity (CISS) in biomolecular structures has traditionally been discussed in terms of spin orbit coupling and spin angular momentum. However, orbi",
+    "url": "https://arxiv.org/abs/2610.23814v1",
+    "published": "2026-10-16T17:35:45Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Waiting Buys Exactly Two Moments: Endogenous Identification in Prediction-Driven Allocation",
+    "summary": "A planner with a fixed budget of preventive help must decide whom to help and when. Waiting reveals risk but removes intervention opportunities as higher-risk individuals leave first. We characterize ",
+    "url": "https://arxiv.org/abs/2610.23830v1",
+    "published": "2026-10-16T17:52:57Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
