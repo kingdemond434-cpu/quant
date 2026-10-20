@@ -14,10 +14,9 @@ import io
 import json
 import sys
 import urllib.error
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from email.message import Message
 from pathlib import Path
-from typing import ClassVar
 
 import pytest
 
