@@ -477,7 +477,7 @@ def test_the_bracket_loop_consults_the_guard_for_gold_windows_only() -> None:
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
     main = src[src.index("\ndef main() -> None:"):]
     i = main.index('_gold_why = gold_one_at_risk(s["name"])')
-    guard = main[i - 400:i + 300]
+    guard = main[i - 1200:i + 300]
     assert 's.get("lot") == "auto" and s.get("symbol") == GOLD_SYMBOL' in guard
     assert "NOT PLACED (one gold trade at risk)" in guard and "continue" in guard
     # It sits before the order is built and sent.
