@@ -42,8 +42,6 @@ ALLOWED: dict[str, tuple[str, str]] = {
     # ---- the audited wrappers
     "libs/data/polite_fetch.py": (WRAPPER, "THE polite seam: HostAccess holds + robots before "
                                             "every request and every redirect hop"),
-    "desks/mt5/side_channels/world_crawler.py": (WRAPPER, "the crawler's `_open` seam; every "
-                                                 "hop passes HostAccess.permits first"),
     # ---- not scraping: inference / LLM APIs the desk pays for
     "libs/ops/llm_seat.py": (NOT_SCRAPING, "LLM inference API (OpenRouter/DeepSeek/xAI), keyed"),
     "libs/ops/openrouter_guard.py": (NOT_SCRAPING, "OpenRouter credit/balance API, keyed"),

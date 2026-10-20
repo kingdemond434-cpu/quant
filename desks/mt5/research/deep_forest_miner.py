@@ -579,10 +579,9 @@ def _index_get(url: str) -> str:
 
 
 def robots_parser(robots_txt: str) -> Any:
-    import urllib.robotparser
-    rp = urllib.robotparser.RobotFileParser()
-    rp.parse(robots_txt.splitlines())
-    return rp
+    """robots.txt text -> THE ONE parser, `polite_fetch.RobotsRules` (RFC 9309: the desk's
+    product-token group, else `*`; longest match). No second robots reader lives here."""
+    return pf.parse_robots(robots_txt)
 
 
 def sitemap_locs(xml: str) -> tuple[list[str], list[str]]:
@@ -637,8 +636,8 @@ def robots_origin(url: str) -> str:
 
 def robots_allows(url: str, *, get: Any = None,
                   cache: dict[str, Any] | None = None) -> bool:
-    """True only when the robots.txt of `url`'s OWN origin was read and allows "*". An unread
-    robots.txt is not a permission."""
+    """True only when the robots.txt of `url`'s OWN origin was read and allows the desk's agent
+    (its product-token group, else "*"). An unread robots.txt is not a permission."""
     get = get or _index_get
     cache = cache if cache is not None else {}
     origin = robots_origin(url)
@@ -649,7 +648,7 @@ def robots_allows(url: str, *, get: Any = None,
         except Exception:
             cache[origin] = None
     rp = cache[origin]
-    return bool(rp is not None and rp.can_fetch("*", url))
+    return bool(rp is not None and rp.can_fetch(pf.DESK_UA_PRODUCT, url))
 
 
 class IndexRedirectHandler(_tf.FencedRedirectHandler):
@@ -777,7 +776,7 @@ def site_index_urls(site: str, *, get: Any = None, holds: Any = None) -> dict[st
         hrp = host_rp(robots_origin(u))
         if hrp is None:
             unread += 1
-        elif hrp.can_fetch("*", u):
+        elif hrp.can_fetch(pf.DESK_UA_PRODUCT, u):
             allowed.append(u)
         else:
             disallowed += 1
