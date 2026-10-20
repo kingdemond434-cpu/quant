@@ -1430,9 +1430,13 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
     """
     flags = 0
     if sys.platform == "win32":
-        # BELOW_NORMAL is the Task Scheduler's default priority (7) for MT5-Gauntlet, so the
-        # child keeps exactly the standing the judge has now: miners are never displaced by it.
-        flags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
+        # EQUAL TO THE MINERS, NEVER ABOVE (principal, 2026-10-20). The sweep child IS the judge's
+        # serial merge, so its class is the one that decides whether the merge gets a fair share.
+        # `judge_priority` measures every miner's class with psutil and returns the LOWEST of
+        # them (capped strictly below the live E8 clocks and at NORMAL); on any failure or an
+        # unmeasured census it returns BELOW_NORMAL -- the Task Scheduler's Priority 7 and
+        # exactly what this line hard-coded before. The shards inherit the child's class.
+        flags = _judge_flags()
     child = subprocess.Popen([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
                              cwd=DESK, env=_sweep_env(), creationflags=flags)
     sample = sampler or _sample_tree
@@ -1475,6 +1479,75 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
     return RESIDENT_HANG_RC
 
 
+#: The judge's priority decision for the last sweep child, published for the census.
+JUDGE_PRIORITY_DECISION = DESK / "reports" / "JUDGE_PRIORITY_SWEEP.json"
+
+
+def _judge_flags() -> int:
+    """The creation flag for the next sweep child (see `_one_sweep_child`). Never raises."""
+    import subprocess
+    fallback = int(getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000))
+    try:
+        from scripts.judge_priority import sweep_creationflags
+        flags, reading = sweep_creationflags()
+    except Exception as exc:
+        flags, reading = fallback, {"target": {"status": "UNMEASURED",
+                                               "why": f"{type(exc).__name__}: {exc}"}}
+    with contextlib.suppress(OSError, TypeError, ValueError):
+        JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
+        tmp = JUDGE_PRIORITY_DECISION.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                   "creationflags": int(flags), **reading}, default=str),
+                       encoding="utf-8")
+        os.replace(tmp, JUDGE_PRIORITY_DECISION)
+    return int(flags)
+
+
+#: THE BACKPRESSURE CORE, REPUBLISHED AFTER EVERY SWEEP (2026-10-20). Measured on the box:
+#: GAUNTLET_BACKPRESSURE.json was stamped 2026-10-03 on 2026-10-20 because its full build only
+#: ran as an hourly leg that timed out on every pass. The core (capacity + 24h testing rate) is
+#: seconds of work; it runs DETACHED so it never costs the judge a second, ONE AT A TIME so a
+#: slow one is skipped rather than stacked, and under a hard timeout so it can never hang.
+BACKPRESSURE_CORE_TIMEOUT_S = 900.0
+_BP_CHILD: list[Any] = []
+
+
+def _republish_backpressure(popen: Callable[..., Any] | None = None) -> str:
+    """Start `gauntlet_backpressure.py --core` unless the previous one is still running."""
+    import subprocess
+    if _BP_CHILD:
+        prev = _BP_CHILD[0]
+        if prev.poll() is None:
+            started = getattr(prev, "_started_at", None)
+            if started is not None and time.monotonic() - started > BACKPRESSURE_CORE_TIMEOUT_S:
+                with contextlib.suppress(Exception):
+                    _kill_sweep_tree(prev.pid)
+                _BP_CHILD.clear()
+                return "KILLED_OVERDUE"
+            return "SKIPPED_PREVIOUS_RUNNING"
+        _BP_CHILD.clear()
+    script = DESK / "research" / "gauntlet_backpressure.py"
+    if not script.exists():
+        return "MISSING"
+    flags = 0
+    if sys.platform == "win32":
+        flags = int(getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000))
+    try:
+        log = (DESK / "logs" / "gauntlet_backpressure_core.log")
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with log.open("ab") as fh:
+            child = (popen or subprocess.Popen)(
+                [sys.executable, "-u", str(script), "--core"], cwd=str(DESK),
+                stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                creationflags=flags)
+        with contextlib.suppress(AttributeError):
+            child._started_at = time.monotonic()
+        _BP_CHILD[:] = [child]
+        return "STARTED"
+    except Exception as exc:
+        return f"FAILED: {type(exc).__name__}: {exc}"
+
+
 def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> None:
     """Re-stamp the heartbeat while the main thread waits on a sweep."""
     while not stop.wait(every_s):
@@ -1503,7 +1576,9 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
             hang = _hang_limit_s(state.get("longest_sweep_s"),
                                  int(state.get("consecutive_hangs") or 0), _sweep_env())
             state["hang_limit_s"] = round(hang, 1)
-            return _one_sweep_child(hang)
+            rc = _one_sweep_child(hang)
+            state["backpressure_core"] = _republish_backpressure()
+            return rc
     stop = threading.Event()
     beat = threading.Thread(target=_heartbeat, args=(state, stop, heartbeat_s), daemon=True)
     beat.start()

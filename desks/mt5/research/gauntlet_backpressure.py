@@ -859,6 +859,57 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     }
 
 
+#: THE CORE REPUBLISH (2026-10-20). Measured on the box: GAUNTLET_BACKPRESSURE.json was stamped
+#: 2026-10-03 on 2026-10-20 -- the full build streams the 5.7M-line hypothesis graph TWICE and
+#: timed out its hourly leg on every pass, so `judging_throughput` read the queue as UNMEASURED
+#: for seventeen days. The judge's controllers need two things from this file: the last sweep's
+#: `capacity` (root scalars streamed off the sweep report) and the 24h testing rate (the verdict
+#: ledger, date-filtered by regex before any decode). `build_core` measures exactly those, never
+#: touches the graph or the registry, and is run (a) by the resident judge launcher after EVERY
+#: sweep and (b) at the START of every full run, so a full build that is killed still leaves a
+#: fresh core behind. Every heavy block it does not re-measure is carried forward UNCHANGED under
+#: `full_at`, so no reader can mistake a carried window for a fresh one.
+CORE_WINDOW_H = 24.0
+
+
+def build_core(now: datetime | None = None, prev: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The cheap, every-sweep half of the report, merged onto the previous full report."""
+    at = now or _now()
+    note: dict[str, str] = {}
+    since = at - timedelta(hours=CORE_WINDOW_H)
+    vers = verdicts(_read_jsonl(GATE_LEDGER, note, since=since))
+    v = [r for r in vers if r.get("_t") is not None and r["_t"] >= since]
+    judged = {str(r.get("cell") or "") for r in v if r.get("passed") is not None}
+    testing = {"verdicts": len(v), "cells_judged": len(judged),
+               "per_hour": round(len(judged) / CORE_WINDOW_H, 3),
+               "passed": sum(1 for r in v if r.get("passed") is True),
+               "measured_at": at.isoformat(timespec="seconds"), "source": "build_core"}
+    doc: dict[str, Any] = dict(prev) if isinstance(prev, dict) else {}
+    full_at = doc.get("full_at") or (doc.get("at") if doc.get("mode") != "core" else None)
+    windows = dict(doc.get("windows") or {})
+    w24 = dict(windows.get("24h") or {"hours": CORE_WINDOW_H})
+    w24["testing"] = testing
+    windows["24h"] = w24
+    doc.update({
+        "at": at.isoformat(timespec="seconds"), "mode": "core", "full_at": full_at,
+        "windows": windows, "capacity": capacity(note, at),
+        "core": {"at": at.isoformat(timespec="seconds"), "inputs": dict(note),
+                 "re_measured": ["capacity", "windows.24h.testing"],
+                 "carried_from_full_at": full_at,
+                 "why": ("every block other than `capacity` and `windows.24h.testing` is the "
+                         "last FULL build's, stamped `full_at`; a reader that needs a fresh "
+                         "window must check `full_at`, never `at`")},
+    })
+    return doc
+
+
+def write_core(now: datetime | None = None, path: Path | None = None) -> Path:
+    """Measure the core and publish it atomically over the previous report."""
+    target = path or OUT
+    prev = _read_json(target, {})
+    return write(build_core(now, prev if isinstance(prev, dict) else None), target)
+
+
 def _atomic_write(path: Path, text: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -875,8 +926,28 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true",
                     help="measure and print; write no report and no prior")
+    ap.add_argument("--core", action="store_true",
+                    help="re-measure only capacity and the 24h testing rate (seconds, not the "
+                         "graph) and publish them over the last full report; run every sweep")
     a = ap.parse_args(argv)
+    if a.core:
+        if a.dry_run:
+            core = build_core(prev=_read_json(OUT, {}) or None)
+            print(f"gauntlet backpressure core {core['at']} (dry run): "
+                  f"testing={core['windows']['24h']['testing']}")
+            return 0
+        print(f"-> {write_core()}  (core: capacity + 24h testing re-measured)")
+        return 0
+    if not a.dry_run:
+        # THE CORE GOES FIRST, so a full build killed by its leg budget still republishes the two
+        # blocks the judge's controllers read. Best effort: a core failure never stops the build.
+        try:
+            write_core()
+        except Exception as exc:  # pragma: no cover - defensive; the full build follows
+            print(f"  core republish failed: {type(exc).__name__}: {exc}")
     doc = build()
+    doc["mode"] = "full"
+    doc["full_at"] = doc["at"]
     w = doc["windows"][WINDOWS[0][0]]
     print(f"gauntlet backpressure {doc['at']}")
     for name, _ in WINDOWS:

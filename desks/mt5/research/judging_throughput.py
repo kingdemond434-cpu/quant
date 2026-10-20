@@ -387,6 +387,41 @@ BREACH_DOCKET = BASE / "reports" / "CLOCK_CERTIFICATE_BREACH.json"
 BACKPRESSURE_MAX_AGE_HOURS = 6
 
 
+def _age_s(value: Any, now: datetime | None = None) -> float | None:
+    """Seconds since an ISO stamp; None when it is missing, naive or unparseable."""
+    try:
+        stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if stamp.tzinfo is None:
+        return None
+    return (_now(now) - stamp).total_seconds()
+
+
+def backpressure_alarm(file_age_s: float | None, sweep_age_s: float | None) -> dict[str, Any]:
+    """A STALE INPUT ALARMS; IT NEVER PERSISTS QUIETLY (2026-10-20).
+
+    Measured on the box: GAUNTLET_BACKPRESSURE.json stamped 2026-10-03 was still the input on
+    2026-10-20 and the only trace was a `why` string inside an UNMEASURED block nobody reads. The
+    queue reading stays UNMEASURED exactly as before; this adds the named alarm, which `run()`
+    copies to the payload's `alarms` and to the event log as PLUMBING_DEFECT. Two codes, because
+    they have different owners: the FILE not being republished is the producer's defect
+    (`gauntlet_backpressure`), a fresh file over an old sweep is the judge not finishing sweeps.
+    """
+    limit = BACKPRESSURE_MAX_AGE_HOURS * 3600
+    if file_age_s is None or file_age_s < -60 or file_age_s > limit:
+        code, owner = "BACKPRESSURE_STALE", "desks/mt5/research/gauntlet_backpressure.py"
+        why = ("the backpressure file itself has not been republished inside "
+               f"{BACKPRESSURE_MAX_AGE_HOURS}h: its producer is not running or not finishing")
+    else:
+        code, owner = "JUDGE_SWEEP_STALE", "desks/mt5/scripts/run_sharded_gauntlet.py"
+        why = ("the file is fresh but the last sweep it reports is older than "
+               f"{BACKPRESSURE_MAX_AGE_HOURS}h: the judge has not finished a sweep")
+    return {"code": code, "severity": "ALARM", "owner": owner,
+            "file_age_seconds": file_age_s, "sweep_age_seconds": sweep_age_s,
+            "max_age_seconds": limit, "queue_reads": UNMEASURED, "why": why}
+
+
 def measure_queue(now: datetime | None = None) -> dict[str, Any]:
     """How deep the judging queue is and how many gates an hour the judge actually achieves.
 
@@ -412,9 +447,12 @@ def measure_queue(now: datetime | None = None) -> dict[str, Any]:
     except (TypeError, ValueError):
         age = None
     out.update(source_at=source_at, source_age_seconds=age)
+    file_age = _age_s(doc.get("at"), now)
+    out["file_at"], out["file_age_seconds"] = doc.get("at"), file_age
     if age is None or age < -60 or age > BACKPRESSURE_MAX_AGE_HOURS * 3600:
         out["why"] = ("backpressure timestamp missing, invalid, future or stale; "
                       "historical sweep is not current queue capacity")
+        out["alarm"] = backpressure_alarm(file_age, age)
         return out
     disc, judged = meas.get("n_cells_discovered"), meas.get("n_judged")
     win = (doc.get("windows") or {}).get("24h") or {}
@@ -681,15 +719,16 @@ _APPLY_DEADLINE: list[float] = []
 _MACHINE_ENV_KEY = r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
 
 
-def _sub_timeout() -> float:
+def _sub_timeout(cap: float | None = None) -> float:
     """Seconds the next subprocess may take: its own cap, never past the apply deadline."""
     import time as _time
+    cap = SUBPROCESS_TIMEOUT_S if cap is None else float(cap)
     if not _APPLY_DEADLINE:
-        return SUBPROCESS_TIMEOUT_S
+        return cap
     left = _APPLY_DEADLINE[0] - _time.monotonic()
     if left <= 1.0:
         raise TimeoutError("apply budget spent; the call was skipped and is recorded as such")
-    return min(SUBPROCESS_TIMEOUT_S, left)
+    return min(cap, left)
 
 
 ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_SHARDS", "GAUNTLET_MEMORY_BUDGET_MB",
@@ -923,7 +962,96 @@ def _next_run(task: str) -> str:
 CADENCE_DURATION = "9999:59"
 
 
+#: THE CADENCE STATE FILE (2026-10-20). Measured on the box: `schtasks /Change` timed out at 20 s
+#: on every pass (process_health's own `schtasks /query` timed out too: the scheduler service is
+#: slow under 17 busy cores), and the call was re-issued every hour although the interval had
+#: been 1 minute -- both bands -- since 2026-10-10. This file records the last outcome; a pass
+#: that finds the same interval APPLIED inside CADENCE_REAPPLY_S issues NO schtasks call at all.
+#: It is also the fallback: a failed apply still writes the wanted interval here, with the
+#: failure, so `judge_priority.py --census`, stall_watch and the next pass read what was wanted
+#: and why it is not in force -- never a silent hang and never a stale claim.
+CADENCE_STATE = BASE / "data" / "gauntlet_cadence_state.json"
+CADENCE_REAPPLY_S = 6 * 3600.0
+#: Per-attempt ceilings for `/Change`: a short first try, one longer retry. Every attempt is still
+#: bounded by the apply deadline, so the sum can never exceed APPLY_BUDGET_S.
+CADENCE_ATTEMPT_TIMEOUTS_S = (30.0, 60.0)
+
+
+def _cadence_state(path: Path | None = None) -> dict[str, Any]:
+    doc = _read_json(Path(path or CADENCE_STATE), {}) or {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _write_cadence_state(doc: dict[str, Any], path: Path | None = None) -> None:
+    with contextlib.suppress(OSError):
+        _write_atomic(Path(path or CADENCE_STATE), doc)
+
+
+def _cadence_fresh(state: dict[str, Any], minutes: int, now: datetime | None = None) -> bool:
+    if state.get("status") != "APPLIED" or int(state.get("minutes") or -1) != int(minutes):
+        return False
+    if state.get("duration") != CADENCE_DURATION:
+        return False
+    age = _age_s(state.get("applied_at"), now)
+    return age is not None and -60 <= age <= CADENCE_REAPPLY_S
+
+
+def _change_with_retry(minutes: int) -> tuple[bool, list[str]]:
+    """`schtasks /Change` with a retry and a longer second timeout, never past the deadline."""
+    import time as _time
+    errors: list[str] = []
+    for i, cap in enumerate(CADENCE_ATTEMPT_TIMEOUTS_S):
+        try:
+            subprocess.run(["schtasks", "/Change", "/TN", GAUNTLET_TASK, "/RI", str(int(minutes)),
+                            "/DU", CADENCE_DURATION],
+                           check=True, capture_output=True, timeout=_sub_timeout(cap))
+            return True, errors
+        except TimeoutError as exc:      # the apply budget is spent: stop, never hang
+            errors.append(f"attempt {i + 1}: {exc}")
+            break
+        except Exception as exc:
+            errors.append(f"attempt {i + 1}: {type(exc).__name__}: {exc}")
+            if i + 1 < len(CADENCE_ATTEMPT_TIMEOUTS_S):
+                _time.sleep(1.0)
+    return False, errors
+
+
 def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
+    """Apply the cadence only when it is not already in force; retry; always record the outcome.
+
+    See `apply_cadence_once` for what the scheduler call does. This wrapper is the 2026-10-20
+    robustness layer: skip when CADENCE_STATE says the same interval was APPLIED recently, try
+    `/Change` twice with a longer second timeout, and write CADENCE_STATE whatever happened.
+    """
+    if not box.get("is_judging_box") or sys.platform != "win32":
+        return {"status": "NOT_APPLIED", "minutes": int(minutes),
+                "why": "not the judging box, or not Windows: cadence is published, not applied"}
+    state = _cadence_state()
+    if _cadence_fresh(state, minutes):
+        return {"status": "ALREADY_APPLIED", "minutes": int(minutes), "task": GAUNTLET_TASK,
+                "applied_at": state.get("applied_at"), "state_file": str(CADENCE_STATE),
+                "why": (f"the same interval was applied and verified at {state.get('applied_at')}"
+                        f" (inside {CADENCE_REAPPLY_S / 3600:.0f}h); no scheduler call issued")}
+    res = apply_cadence_once(minutes, box)
+    now_s = _now().isoformat(timespec="seconds")
+    record = {"wanted_minutes": int(minutes), "minutes": int(minutes),
+              "duration": CADENCE_DURATION, "task": GAUNTLET_TASK, "status": res.get("status"),
+              "checked_at": now_s, "result": res}
+    if res.get("status") == "APPLIED":
+        record["applied_at"] = now_s
+    else:
+        record["applied_at"] = state.get("applied_at")
+        record["last_good"] = {k: state.get(k) for k in ("minutes", "applied_at")} \
+            if state.get("applied_at") else None
+        record["fallback"] = ("the scheduler did not confirm the interval; it stays recorded "
+                              "here as WANTED and the next pass retries. The resident judge "
+                              "does not depend on it: the trigger only respawns a dead launcher")
+    _write_cadence_state(record)
+    res["state_file"] = str(CADENCE_STATE)
+    return res
+
+
+def apply_cadence_once(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
     """Raise the gauntlet task's repetition interval on the judging box, and KEEP ITS WINDOW OPEN.
 
     CADENCE IS THROUGHPUT. The gauntlet's cache is content-addressed and cumulative, so halving
@@ -947,13 +1075,11 @@ def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
         return {"status": "NOT_APPLIED", "minutes": int(minutes),
                 "why": "not the judging box, or not Windows: cadence is published, not applied"}
     before = _next_run(GAUNTLET_TASK)
-    try:
-        subprocess.run(["schtasks", "/Change", "/TN", GAUNTLET_TASK, "/RI", str(int(minutes)),
-                        "/DU", CADENCE_DURATION],
-                       check=True, capture_output=True, timeout=_sub_timeout())
-    except Exception as exc:
+    ok, errors = _change_with_retry(minutes)
+    if not ok:
         return {"status": "FAILED", "minutes": int(minutes), "task": GAUNTLET_TASK,
-                "next_run_before": before, "why": f"{type(exc).__name__}: {exc}"}
+                "next_run_before": before, "attempts": errors,
+                "why": errors[-1] if errors else "schtasks /Change did not run"}
     after = _next_run(GAUNTLET_TASK)
     alive = bool(after) and after.lower() not in ("", "n/a")
     return {"status": "APPLIED" if alive else "APPLIED_BUT_STOPPED",
@@ -1023,6 +1149,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         "decision": decision,
         "applied": applied,
         "limiting_resource": decision["limiting_resource"],
+        "alarms": [a for a in (queue.get("alarm"),) if isinstance(a, dict)],
         "rule": ("throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the "
                  "plan is floored at the sealed baseline so this organ can never throttle the "
                  "judge; the live terminal always wins and standing down means returning to that "
@@ -1055,8 +1182,17 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     else:
         applied["machine_env"] = applied["cadence"] = "NOT_ATTEMPTED (dry run)"
     payload["seconds"] = round(_time.monotonic() - t0, 1)
+    alarms = payload["alarms"]
     if write:
         _write_atomic(OUT, payload)
+        for a in alarms:
+            try:
+                from libs.ops.events import emit
+                emit("PLUMBING_DEFECT", organ="judging_throughput", artifact=str(BACKPRESSURE),
+                     code=a.get("code"), owner=a.get("owner"),
+                     file_age_s=a.get("file_age_seconds"), sweep_age_s=a.get("sweep_age_seconds"))
+            except Exception as exc:
+                payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
         try:
             from libs.ops.events import leg_events
             leg_events("judging_throughput", "OK", workers=int(decision["workers"]),
