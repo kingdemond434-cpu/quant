@@ -643,6 +643,86 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: The gateway's refusal journal (`gateway.journal_refusal`): every order it declined to send.
+REFUSALS = BASE / "data" / "refused_orders.jsonl"
+SLEEVES = BASE / "data" / "sleeves.json"
+#: Refusals older than this are history, not today's gate.
+REFUSAL_WINDOW_DAYS = 7
+#: A sleeve's forward expectancy prices a refusal only on at least this many forward trades.
+REFUSAL_MIN_SHADOW_N = 10
+
+
+def _sleeve_prices() -> dict[str, float]:
+    """name -> forward log-wealth per trade (shadow mean R x the sleeve's risk fraction), for
+    sleeves with at least REFUSAL_MIN_SHADOW_N forward trades. Absent means unpriced."""
+    try:
+        doc = json.loads(SLEEVES.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc if isinstance(doc, list) else doc.get("sleeves", []) if isinstance(doc, dict) else []
+    out: dict[str, float] = {}
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        e, f, n = _num(r.get("shadow_exp")), _num(r.get("risk_frac")), _num(r.get("shadow_n"))
+        if e is not None and f is not None and n is not None and n >= REFUSAL_MIN_SHADOW_N:
+            out[str(r.get("name"))] = e * f
+    return out
+
+
+def gateway_refusal_lines(now: datetime | None = None) -> dict[str, Any]:
+    """What the gateway's own refusals cost, one line per refusal stage, read from its journal.
+
+    The gateway journals every order it declines (`journal_refusal`): the state-gate refusals
+    (`not_live_reproducible`, `short_history`, `panel_store_lag`), the symbol-side cap, stale
+    signals. Each is a gate with no rail of its own, so its bill is carried here beside the
+    rails'. A refusal is priced at the refused sleeve's forward expectancy x its risk fraction
+    (log-wealth per trade forgone); a sleeve without enough forward trades leaves the refusal
+    counted but unpriced. A stage with no priced refusal is UNMEASURED, said with its count --
+    never a clean zero. No journal on this host is UNMEASURED too."""
+    t_now = now or datetime.now(tz=UTC)
+    try:
+        text = REFUSALS.read_text("utf-8")
+    except OSError:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no data/refused_orders.jsonl on this host: the gateway has journalled "
+                       "no refusal here"}
+    prices = _sleeve_prices()
+    lines: dict[str, dict[str, Any]] = {}
+    for ln in text.splitlines():
+        try:
+            x = json.loads(ln)
+            at = datetime.fromisoformat(str(x.get("time")))
+        except (ValueError, TypeError):
+            continue
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        if (t_now - at).total_seconds() > REFUSAL_WINDOW_DAYS * 86400:
+            continue
+        stage = str(x.get("stage") or "unattributed")
+        row = lines.setdefault(stage, {"stage": stage, "n": 0, "n_priced": 0,
+                                       "logw_forgone": 0.0, "sleeves": []})
+        row["n"] += 1
+        name = str(x.get("sleeve") or "")
+        if name and name not in row["sleeves"] and len(row["sleeves"]) < 50:
+            row["sleeves"].append(name)
+        if name in prices:
+            row["n_priced"] += 1
+            row["logw_forgone"] += prices[name]
+    for row in lines.values():
+        row["logw_forgone"] = round(row["logw_forgone"], 10)
+        row["verdict"] = (UNMEASURED if row["n_priced"] == 0
+                          else COSTS if row["logw_forgone"] > 0 else EARNS)
+    out = sorted(lines.values(), key=lambda v: -v["n"])
+    if not out:
+        return {"verdict": NOT_BINDING, "lines": [], "window_days": REFUSAL_WINDOW_DAYS,
+                "why": f"no refusal journalled in the last {REFUSAL_WINDOW_DAYS} days"}
+    verdict = (COSTS if any(v["verdict"] == COSTS for v in out)
+               else UNMEASURED if any(v["verdict"] == UNMEASURED for v in out) else EARNS)
+    return {"verdict": verdict, "source": "data/refused_orders.jsonl",
+            "window_days": REFUSAL_WINDOW_DAYS, "lines": out,
+            "value_logw": round(sum(v["logw_forgone"] for v in out), 10)}
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +840,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "gateway_refusals": gateway_refusal_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
