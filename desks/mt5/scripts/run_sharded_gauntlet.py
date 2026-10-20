@@ -1260,6 +1260,38 @@ def _published_env() -> dict[str, str]:
 _LAUNCH: dict[str, dict[str, str]] = {}
 
 
+#: ONE BLAS THREAD PER JUDGE PROCESS -- OFF BY DEFAULT, A SEALED-CLASS CHANGE (2026-10-20).
+#: Evidence for it (merge-scaling worker): with 18 cores busy and 14 judge workers each starting a
+#: full OpenBLAS pool, `eigvalsh(2500)` measured 16-18 s against 1.4 s single-threaded and a
+#: 10k-cell merge 61.6 s against 6.95 s.
+#: Why it is OFF (auditor ruling, 2026-10-20): eigvalsh's last bits differ at 1, 2 and 4 threads,
+#: and the trial census in mt5desk/canonical.py uses that eigvalsh; its ceil'd ratio feeds the
+#: sealed DSR effective-trial charge. So the thread count is not provably verdict-neutral and can
+#: change trial charging. The gauntlet-speed harness batches came back byte-identical at 1, 4 and
+#: 18 threads, but that is not a proof for every docket.
+#: It is armed ONLY by the switch file holding exactly {"enabled": true}. Before anyone arms it:
+#: a byte-compare of verdicts on a recorded sweep at 1 thread against default threads, and
+#: zuck's sign. With the file absent, unreadable or holding anything else the env is untouched,
+#: byte-identical to today. A thread count the operator exported by hand always wins.
+BLAS_SWITCH = DESK / "data" / "JUDGE_BLAS_SINGLE_THREAD.json"
+BLAS_THREAD_VARS = ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")
+
+
+def _blas_single_thread_armed(path: Path | None = None) -> bool:
+    try:
+        return json.loads(Path(path or BLAS_SWITCH).read_text("utf-8")) == {"enabled": True}
+    except (OSError, ValueError):
+        return False
+
+
+def _blas_env(env: dict[str, str], path: Path | None = None) -> dict[str, str]:
+    """Pin the sweep child's (the merge's) and its shards' BLAS pools to 1, only when armed."""
+    if _blas_single_thread_armed(path):
+        for k in BLAS_THREAD_VARS:
+            env.setdefault(k, "1")
+    return env
+
+
 def _sweep_env() -> dict[str, str]:
     """The env for the next sweep: the launch env with judging_throughput's LATEST numbers.
 
@@ -1275,7 +1307,7 @@ def _sweep_env() -> dict[str, str]:
         launched = _LAUNCH["proc"].get(k)
         if launched is None or launched == _LAUNCH["file"].get(k):
             env[k] = v
-    return env
+    return _blas_env(env)
 
 
 def _hang_limit_s(longest_sweep_s: float | None, consecutive_hangs: int = 0,

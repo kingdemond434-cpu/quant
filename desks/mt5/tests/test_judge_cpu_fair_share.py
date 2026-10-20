@@ -368,3 +368,22 @@ def test_cadence_failure_writes_the_fallback_and_never_hangs(cadence, monkeypatc
     finally:
         jt._APPLY_DEADLINE[:] = []
     assert res["status"] == "FAILED" and "budget" in res["why"]
+
+
+# ------------------------------------------------------------- 4. one BLAS thread per judge proc
+def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(tmp_path) -> None:
+    sw = tmp_path / "JUDGE_BLAS_SINGLE_THREAD.json"
+    base = {"PATH": "x", "GAUNTLET_SHARDS": "14"}
+    # DEFAULT: absent file -> the env is byte-identical to today
+    assert rsg._blas_env(dict(base), sw) == base
+    for body in ('{"enabled": false}', '{"enabled": "true"}', '{"enabled": true, "x": 1}',
+                 "true", "not json", ""):
+        sw.write_text(body, "utf-8")
+        assert rsg._blas_env(dict(base), sw) == base, body
+    sw.write_text('{"enabled": true}', "utf-8")
+    on = rsg._blas_env(dict(base), sw)
+    assert on == {**base, **dict.fromkeys(rsg.BLAS_THREAD_VARS, "1")}
+    # an operator's own thread count always wins
+    assert rsg._blas_env({"OPENBLAS_NUM_THREADS": "6"}, sw)["OPENBLAS_NUM_THREADS"] == "6"
+    # the switch file is not shipped: the live default stays off
+    assert not rsg.BLAS_SWITCH.exists()
