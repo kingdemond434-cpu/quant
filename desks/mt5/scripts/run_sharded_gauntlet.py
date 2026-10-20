@@ -1576,14 +1576,49 @@ def _create_time(pid: int) -> float | None:
         return None
 
 
+#: How many times the revert re-walks the tree for a shard spawned while it ran (audit HOLD of
+#: 1235ab79c10). The child is lowered first, so from the first walk on nothing new is born raised;
+#: the passes only catch a spawn that was already under way.
+LAUNCH_REVERT_PASSES = 5
+
+
+def _own_tree(root: Any) -> tuple[list[Any], list[str]]:
+    """The judge's own tree, walked parent by parent: a node counts only if it started at or
+    after ITS OWN parent (audit HOLD of 1235ab79c10: psutil's recursive children compare each
+    descendant with the root alone, so an orphan miner whose dead parent's pid a shard reused
+    would be listed). A node that fails the check is skipped together with its subtree."""
+    out: list[Any] = []
+    errors: list[str] = []
+    stack = [(root, root.create_time())]
+    while stack:
+        parent, parent_born = stack.pop()
+        try:
+            kids = parent.children(recursive=False)
+        except Exception as exc:
+            errors.append(f"{getattr(parent, 'pid', '?')}: {type(exc).__name__}: {exc}")
+            continue
+        for k in kids:
+            try:
+                born = k.create_time()
+            except Exception as exc:
+                errors.append(f"{getattr(k, 'pid', '?')}: {type(exc).__name__}: {exc}")
+                continue
+            if born < parent_born:
+                continue                  # a reused parent pid: not this tree, never touched
+            out.append(k)
+            stack.append((k, born))
+    return out, errors
+
+
 def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None = None) -> None:
-    """Set the sweep child AND EVERY DESCENDANT back to BELOW_NORMAL (audit HOLD of f798fe7293d:
-    the line write may wait on its lock while the child, born raised, already starts shards
-    that inherit its class). The child must still be the process just started (its start time);
-    a descendant must have started after it. The child goes first, so anything it spawns after
-    the enumeration inherits BELOW_NORMAL. Only ever LOWERS, and only the judge's own tree.
-    Raises LookupError, after trying every process, if any could not be put back -- the caller
-    then reports the raise as standing (UNMEASURED line), never `changed: False`."""
+    """Set the sweep child AND EVERY DESCENDANT back to BELOW_NORMAL (audit HOLDs of f798fe7293d
+    and 1235ab79c10: the line write may wait on its lock while the child, born raised, already
+    starts shards that inherit its class). The child must still be the process just started (its
+    start time); each descendant must have started after its own parent. The child goes first,
+    and the tree is re-walked until a pass finds nothing above BELOW_NORMAL. Only ever LOWERS,
+    and only the judge's own tree. Raises LookupError, after trying every process, if any could
+    not be put back or the tree never settled -- the caller then reports the raise as standing
+    (UNMEASURED line), never `changed: False`."""
     import psutil  # type: ignore[import-untyped,unused-ignore]
 
     from scripts import judge_priority as jp
@@ -1595,20 +1630,29 @@ def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None 
         raise LookupError("pid reused or start time unreadable: not reverted")
     p.nice(bn)
     done, failed = [int(change["pid"])], []
-    for d in p.children(recursive=True):
-        try:
-            if d.create_time() < born:
-                continue                      # not a descendant born of this child: untouched
-            rank = jp.rank_of(d.nice())
-            if rank is None or rank > jp.CLASS_RANK[jp.BELOW_NORMAL]:
-                d.nice(bn)
-                done.append(int(d.pid))
-        except Exception as exc:
-            failed.append(f"{getattr(d, 'pid', '?')}: {type(exc).__name__}: {exc}")
+    settled = False
+    for _ in range(LAUNCH_REVERT_PASSES):
+        tree, errors = _own_tree(p)
+        lowered = 0
+        failed = list(errors)
+        for d in tree:
+            try:
+                rank = jp.rank_of(d.nice())
+                if rank is None or rank > jp.CLASS_RANK[jp.BELOW_NORMAL]:
+                    d.nice(bn)
+                    lowered += 1
+                    if int(d.pid) not in done:
+                        done.append(int(d.pid))
+            except Exception as exc:
+                failed.append(f"{getattr(d, 'pid', '?')}: {type(exc).__name__}: {exc}")
+        if not lowered and not failed:
+            settled = True
+            break
     change["tree_reverted"] = done
-    if failed:
-        change["tree_unreverted"] = failed
-        raise LookupError(f"{len(failed)} descendant(s) could not be put back: {failed[:3]}")
+    if failed or not settled:
+        change["tree_unreverted"] = failed or [f"tree not settled in {LAUNCH_REVERT_PASSES} passes"]
+        raise LookupError(f"{len(change['tree_unreverted'])} descendant(s) could not be put "
+                          f"back: {change['tree_unreverted'][:3]}")
 
 
 #: THE BACKPRESSURE CORE, REPUBLISHED AFTER EVERY SWEEP (2026-10-20). Measured on the box:
@@ -2344,6 +2388,14 @@ def _publish_priority(key: str, value: Any) -> None:
             base = got if isinstance(got, dict) else {}
         base[key] = {"value": value, "pid": os.getpid(),
                      "at": datetime.now(UTC).isoformat(timespec="seconds")}
+        # A LINE WHOSE SIDECAR WRITE FAILED TOO is kept here, under `unspilled`, past the next
+        # overwrite of `key` -- research/missed_growth.py carries it (audit HOLD of 1235ab79c10).
+        if isinstance(value, dict) and str(value.get("spill", "")).startswith("FAILED"):
+            kept = base.get("unspilled") if isinstance(base.get("unspilled"), dict) else {}
+            old = [x for x in kept.get("missed_growth") or [] if isinstance(x, dict)]
+            base["unspilled"] = {"spill": value["spill"], "missed_growth": [
+                *old, *(x for x in value.get("missed_growth") or [] if isinstance(x, dict))
+            ][-MISSED_GROWTH_HISTORY:]}
         JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
         tmp = JUDGE_PRIORITY_DECISION.with_name(
             f"{JUDGE_PRIORITY_DECISION.name}.{os.getpid()}.{uuid4().hex[:8]}.tmp")

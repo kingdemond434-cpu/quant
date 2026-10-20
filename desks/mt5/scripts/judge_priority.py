@@ -591,20 +591,37 @@ def spill_path(path: Path | None = None) -> Path:
     return target.with_name(target.stem + "_UNRECORDED.jsonl")
 
 
+#: How long a spill waits for its OWN lock (a different file from the artifact's).
+SPILL_LOCK_S = 5.0
+
+
 def _spill(lines: list[dict[str, Any]], path: Path | None = None) -> str:
-    """Append each line as ONE write to the sidecar (O_APPEND: no lock needed, no line lost to a
-    concurrent writer). Returns WRITTEN or the error -- never raises."""
+    """Append the lines to the sidecar under the sidecar's own lock, as ONE buffer written in
+    full (audit HOLD of 1235ab79c10: the Windows C runtime emulates O_APPEND with a seek before
+    each write, so two unlocked writers can overwrite each other). Returns WRITTEN or FAILED:
+    ... -- never raises; a FAILED spill stays visible through the caller's published record,
+    which `research/missed_growth.py` also reads."""
     if not lines:
         return "NONE"
     try:
+        from libs.research.artifact_chain import _locked
+
         target = spill_path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
-        fd = os.open(str(target), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
-        try:
-            for ln in lines:
-                os.write(fd, (json.dumps(ln, default=str) + "\n").encode("utf-8"))
-        finally:
-            os.close(fd)
+        data = "".join(json.dumps(ln, default=str) + "\n" for ln in lines).encode("utf-8")
+        with _locked(target, SPILL_LOCK_S) as held:
+            if not held:
+                return f"FAILED: LineUnrecorded: lock on {target.name} not held"
+            fd = os.open(str(target), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+            try:
+                view = memoryview(data)
+                while view:
+                    n = os.write(fd, view)
+                    if n <= 0:
+                        raise OSError("short write")
+                    view = view[n:]
+            finally:
+                os.close(fd)
         return "WRITTEN"
     except Exception as exc:
         return f"FAILED: {type(exc).__name__}: {exc}"

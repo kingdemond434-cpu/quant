@@ -1062,3 +1062,133 @@ def test_launcher_revert_puts_back_the_whole_tree(monkeypatch) -> None:
     with pytest.raises(LookupError, match="reused"):
         rsg._launch_revert(dict(change), process={100: other}.__getitem__)
     assert other.set == []
+
+
+# --------------------------------------- 8. v5 (audit HOLD of 1235ab79c10): the tree, hop by hop
+def _bn() -> int:
+    import psutil  # type: ignore[import-untyped,unused-ignore]
+
+    return int(getattr(psutil, "BELOW_NORMAL_PRIORITY_CLASS", 10))
+
+
+def test_tree_revert_checks_start_time_at_every_hop() -> None:
+    """An orphan miner Q (born after the child) whose dead parent's pid a later shard reused is
+    listed under that shard by ppid -- but it predates the shard, so it is not the judge's."""
+    q = _FakeProc(160, 60.0, N)  # the miner: born 60, BEFORE its "parent"
+    kid = _FakeProc(171, 75.0, N)  # a real grandchild: born after the shard
+    shard = _FakeProc(170, 70.0, N, kids=(q, kid))
+    child = _FakeProc(100, 50.0, N, kids=(shard,))
+    change = {"pid": 100, "create_time": 50.0, "from": "BELOW_NORMAL", "to": "NORMAL"}
+    rsg._launch_revert(change, process={100: child}.__getitem__)
+    assert q.set == [], "a miner reached through a reused pid is never touched"
+    assert shard.set == [_bn()] and kid.set == [_bn()]
+    assert change["tree_reverted"] == [100, 170, 171]
+
+
+def test_tree_revert_re_walks_for_a_shard_spawned_during_the_loop() -> None:
+    late = _FakeProc(190, 80.0, N)
+
+    class Spawning(_FakeProc):
+        calls = 0
+
+        def children(self, recursive=False):
+            Spawning.calls += 1
+            return [late] if Spawning.calls >= 2 else []
+
+    child = Spawning(100, 50.0, N)
+    change = {"pid": 100, "create_time": 50.0, "from": "BELOW_NORMAL", "to": "NORMAL"}
+    rsg._launch_revert(change, process={100: child}.__getitem__)
+    assert late.set == [_bn()] and change["tree_reverted"] == [100, 190]
+
+    # a tree that never settles is reported, never "changed: False"
+    class Forever(_FakeProc):
+        n = 0
+
+        def children(self, recursive=False):
+            Forever.n += 1
+            return [_FakeProc(300 + Forever.n, 90.0 + Forever.n, N)]
+
+    with pytest.raises(LookupError):
+        rsg._launch_revert(dict(change), process={100: Forever(100, 50.0, N)}.__getitem__)
+
+
+def test_a_torn_spill_line_is_counted_and_reads_unmeasured(tmp_path) -> None:
+    import missed_growth as mg
+
+    art = tmp_path / "JUDGE_PRIORITY_RAISES.json"
+    art.write_text(json.dumps({"missed_growth": []}), "utf-8")
+    spill = jp.spill_path(art)
+    spill.write_text('{"at": "2026-10-20T00:00:00+00:00", "verdict": "UNMEASURED"\n', "utf-8")
+    got = mg.organ_published_lines(art, spill=spill)
+    assert got["verdict"] == mg.UNMEASURED and got["torn_spill_lines"] == 1
+    spill.write_text('{"at": "a", "verdict": "UNMEASURED"}\n[1]\n{"at": "b"', "utf-8")
+    got = mg.organ_published_lines(art, spill=spill)
+    assert got["verdict"] == mg.UNMEASURED and got["torn_spill_lines"] == 2 and got["n_lines"] == 1
+
+
+def test_a_failed_spill_stays_in_the_record_and_reaches_the_ledger(monkeypatch, tmp_path) -> None:
+    import missed_growth as mg
+
+    decision = tmp_path / "JUDGE_PRIORITY_SWEEP.json"
+    monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", decision)
+    raises = tmp_path / "JUDGE_PRIORITY_RAISES.json"
+    monkeypatch.setattr(jp, "RAISES", raises)
+    monkeypatch.setattr(jp, "record_raises", _failing_record)
+    monkeypatch.setattr(jp, "_spill", lambda lines, path=None: "FAILED: OSError: disk full")
+
+    def cannot(c):
+        raise LookupError("pid reused")
+
+    out = rsg._record_launch_raise(N, 4321, revert=cannot)
+    assert out["changed"] is True and out["spill"].startswith("FAILED")
+    # the next launch overwrites `launcher_line`; the unspilled line survives it
+    rsg._publish_priority("launcher_line", {"changed": False})
+    doc = json.loads(decision.read_text("utf-8"))
+    assert doc["unspilled"]["missed_growth"][0]["pid"] == 4321
+    got = mg.organ_published_lines(raises, spill=jp.spill_path(raises), unspilled=(decision,))
+    assert got["verdict"] == mg.UNMEASURED and got["n_lines"] == 1
+    assert got["lines"][0]["spill_failed"].startswith("FAILED")
+    assert len(mg.JUDGE_PRIORITY_RECORDS) == 2
+
+
+def test_the_spill_takes_its_own_lock_and_writes_one_buffer(monkeypatch, tmp_path) -> None:
+    import contextlib
+
+    import libs.research.artifact_chain as ac
+
+    art = tmp_path / "r.json"
+    lines = [{"at": "a", "pid": 1}, {"at": "b", "pid": 2}]
+    writes: list[int] = []
+    real = jp.os.write
+
+    def counting(fd, data):
+        writes.append(len(data))
+        return real(fd, data)
+
+    monkeypatch.setattr(jp.os, "write", counting)
+    assert jp._spill(lines, art) == "WRITTEN" and len(writes) == 1
+    assert [json.loads(x)["pid"] for x in jp.spill_path(art).read_text().splitlines()] == [1, 2]
+
+    @contextlib.contextmanager
+    def never(path, timeout_s=10.0):
+        yield False
+
+    monkeypatch.setattr(ac, "_locked", never)
+    assert jp._spill(lines, art).startswith("FAILED: LineUnrecorded")
+
+
+def test_manual_apply_keeps_a_lowering_and_reverts_a_raise_behaviourally(
+    monkeypatch, tmp_path
+) -> None:
+    rows = _raisable_box(judge_nice=BN)
+    rows[0] = {**rows[0], "nice": HIGH}  # pid 10 above the miners
+    monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
+    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
+    monkeypatch.setattr(jp, "RAISES", tmp_path / "JUDGE_PRIORITY_RAISES.json")
+    monkeypatch.setattr(jp, "record_raises", _failing_record)
+    calls: list[tuple[int, int]] = []
+    monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: calls.append((pid, k)))
+    assert jp.main(["--apply", "--no-write", "--sample-s", "0"]) == 0
+    assert (10, N) in calls and (10, HIGH) not in calls  # the lowering stands
+    assert (11, N) in calls and (11, BN) in calls  # the raise is put back
+    assert all(pid in (10, 11, 12) for pid, _ in calls)  # judge pids only

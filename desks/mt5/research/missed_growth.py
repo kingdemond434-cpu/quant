@@ -653,36 +653,80 @@ JUDGE_PRIORITY_RAISES = BASE / "reports" / "JUDGE_PRIORITY_RAISES.json"
 #: ... and its append-only sidecar: the lines of changes that STAND although the locked write
 #: failed (a kept lowering, an unrevertable raise). Carried beside the artifact's own lines.
 JUDGE_PRIORITY_UNRECORDED = BASE / "reports" / "JUDGE_PRIORITY_RAISES_UNRECORDED.jsonl"
+#: ... and the organ's own records, which keep a line whose sidecar write failed as well.
+JUDGE_PRIORITY_RECORDS = (BASE / "reports" / "JUDGE_PRIORITY_SWEEP.json",
+                          BASE / "reports" / "JUDGE_PRIORITY.json")
 DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 
 
-def _spill_lines(spill: Path | None) -> list[dict[str, Any]]:
-    """An organ's append-only sidecar of lines its locked artifact could not take."""
+def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
+    """An organ's append-only sidecar of lines its locked artifact could not take, and how many
+    of its lines could not be read (a torn line is skipped, never fatal -- and COUNTED: a skipped
+    line is a cost the reader cannot see, so it reads UNMEASURED, never NOT_BINDING)."""
     if spill is None:
-        return []
-    out = []
+        return [], 0
+    out: list[dict[str, Any]] = []
+    torn = 0
     try:
         text = spill.read_text("utf-8")
+    except FileNotFoundError:
+        return [], 0
     except (OSError, ValueError):
-        return []
+        return [], 1                          # present but unreadable: every line unseen
     for ln in text.splitlines():
+        if not ln.strip():
+            continue
         try:
             got = json.loads(ln)
         except ValueError:
-            continue                          # a torn last line is skipped, never fatal
+            torn += 1
+            continue
         if isinstance(got, dict):
             out.append(got)
-    return out
+        else:
+            torn += 1
+    return out, torn
 
 
-def organ_published_lines(path: Path, *, recent: int = 20,
-                          spill: Path | None = None) -> dict[str, Any]:
+def _unspilled_lines(records: tuple[Path, ...]) -> list[dict[str, Any]]:
+    """Lines whose sidecar write ALSO failed: the organ keeps them in its own published record
+    (`unspilled` / any block whose `spill` reads FAILED), and they are carried from there."""
+    out: list[dict[str, Any]] = []
+
+    def walk(x: Any) -> None:
+        if isinstance(x, dict):
+            spill = x.get("spill")
+            if isinstance(spill, str) and spill.startswith("FAILED"):
+                out.extend({**ln, "spill_failed": spill} for ln in x.get("missed_growth") or []
+                           if isinstance(ln, dict))
+            for k, v in x.items():
+                if k != "missed_growth":
+                    walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+    for path in records:
+        walk(_json(path))
+    seen: set[tuple[Any, ...]] = set()
+    uniq = []
+    for ln in out:
+        key = (ln.get("at"), ln.get("pid"), ln.get("create_time"), ln.get("by"))
+        if key not in seen:
+            seen.add(key)
+            uniq.append(ln)
+    return uniq
+
+
+def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = None,
+                          unspilled: tuple[Path, ...] = ()) -> dict[str, Any]:
     """An organ's own published missed-growth lines, read from its artifact (plus its sidecar
-    `spill`, when it keeps one). Absent -> UNMEASURED (said, never a clean zero); present with no
-    lines -> NOT_BINDING (the rail never cost)."""
+    `spill`, and the lines its own records hold because even the sidecar write failed --
+    `unspilled`). Absent -> UNMEASURED (said, never a clean zero); present with no lines ->
+    NOT_BINDING (the rail never cost); any sidecar line that could not be read -> UNMEASURED."""
     doc = _json(path)
-    extra = _spill_lines(spill)
-    if not doc and not extra:
+    extra, torn = _spill_lines(spill)
+    extra = [*extra, *_unspilled_lines(unspilled)]
+    if not doc and not extra and not torn:
         return {"verdict": UNMEASURED, "lines": [],
                 "why": f"no {path.parent.name}/{path.name} on this host: the organ has not run"}
     doc = doc or {}
@@ -690,6 +734,10 @@ def organ_published_lines(path: Path, *, recent: int = 20,
     if extra:                                 # interleave the sidecar by time
         lines = sorted(lines, key=lambda x: str(x.get("at") or ""))
     lines = lines[-recent:]
+    if torn:
+        return {"verdict": UNMEASURED, "source": f"reports/{path.name}", "lines": lines,
+                "n_lines": len(lines), "torn_spill_lines": torn, "lost_s": None,
+                "why": f"{torn} sidecar line(s) could not be read: their cost is unseen"}
     if not lines:
         return {"verdict": NOT_BINDING, "lines": [], "source": f"reports/{path.name}",
                 "why": "the organ has published no missed-growth line: it never cost a wall"}
@@ -822,7 +870,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
                                     "judge_priority_raise": organ_published_lines(
                                         JUDGE_PRIORITY_RAISES,
-                                        spill=JUDGE_PRIORITY_UNRECORDED),
+                                        spill=JUDGE_PRIORITY_UNRECORDED,
+                                        unspilled=JUDGE_PRIORITY_RECORDS),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD)},
            "aggression_verdict": aggression.get("verdict"),
