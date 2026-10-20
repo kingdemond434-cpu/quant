@@ -685,6 +685,20 @@ $reportPaths = @(
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
+    # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
+    # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
+    # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
+    # expression_factory, desk_economics, the PIT audit) charged costs four weeks old.
+    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars (~1 MB, under
+    #                           the cap); no account field at all
+    #   cost_truth_quotes.json  the broker's quoted contract terms and deal costs; its writer
+    #                           (research/cost_truth.py) WITHHOLDS the login, and
+    #                           tests/ops/test_live_infrastructure_is_not_published.py fences it
+    #   tape/tape_state.json    the tick recorder's per-symbol cursor (last tick, last run)
+    # None holds a credential; tests/scripts/test_box_sync_publishes_cost_state.py pins that.
+    "desks/mt5/data/cost_surface.json",
+    "desks/mt5/data/cost_truth_quotes.json",
+    "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
