@@ -331,6 +331,88 @@ SOURCE_POLICY.update({
                                    "own bar lake are the preferred substitute for the vol "
                                    "archive and index/commodity levels")}}},
 })
+#: FRED SERIES OWNED BY THIRD PARTIES (follow-up to the Yahoo cut, 2026-10-14). FRED's own
+#: definition ("Copyrighted series contain the word 'Copyright' in their notes") decides the
+#: list, read per series from FRED's own series page -- never guessed. Each is IDEAS_ONLY: its
+#: page may still be read for ideas, but `free_data.fred_series` refuses it as LIVE INPUT before
+#: any URL is built (no cache, no DBnomics mirror: a mirror of a copyrighted series is the same
+#: series). FRED itself says it cannot grant the permission, so the unblock is the owner's.
+FRED_COPYRIGHTED_NOTES: dict[str, str] = {
+    "VIXCLS": ("Copyright, 2016, Chicago Board Options Exchange, Inc. Reprinted with "
+               "permission."),
+    "BAMLH0A0HYM2": ("Copyright, 2023, ICE Data Indices. [...] Reproduction of this data in any "
+                     "form is prohibited except with the prior written permission of ICE Data "
+                     "Indices."),
+    "UMCSENT": ("Copyright, 2016, Surveys of Consumers, University of Michigan. Reprinted with "
+                "permission."),
+    # FRED deleted every ICE Benchmark Administration series on 2022-01-31 (its notice, read
+    # 2026-10-14: "On January 31, 2022, FRED will no longer include data from ICE Benchmark
+    # Administration Limited (IBA)."), so the series page and its notes cannot be read: FAIL
+    # CLOSED, treated as copyrighted (LBMA Gold Price, IBA-administered).
+    "GOLDAMGBD228NLBM": ("UNREADABLE: series deleted from FRED 2022-01-31 (IBA data, LBMA Gold "
+                         "Price); treated as copyrighted, fail closed"),
+}
+SOURCE_POLICY.update({
+    "fred_copyrighted": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("fred_copyrighted",),
+        "series": tuple(FRED_COPYRIGHTED_NOTES),
+        # the series' own pages (fredgraph.csv names the series in its QUERY, which a route
+        # pattern does not read: `fred_series_source` answers for it by series id)
+        "url_patterns": tuple(r"^(?:[^/]*\.)?(?:fred|alfred)\.stlouisfed\.org/(?:series|data|"
+                              r"graph)/" + re.escape(s) + r"(?:[./]|$)"
+                              for s in FRED_COPYRIGHTED_NOTES),
+        "why": ("FRED series whose notes carry a third-party copyright notice (Cboe VIX, ICE BofA "
+                "HY OAS, University of Michigan sentiment, the deleted IBA/LBMA gold fix): FRED's "
+                "terms say any use beyond personal use needs the OWNER's permission, which FRED "
+                "cannot give; no owner's permission is on record, so they are never live input"),
+        "unblock": ("the copyright holder's written permission (Cboe / ICE Data Indices / "
+                    "University of Michigan / IBA), or a licensed vendor feed"),
+        "terms": {"url": "https://fred.stlouisfed.org/legal/", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "faq:copyright": ("Series with a copyright notice are owned by third "
+                                        "parties and have special restrictions."),
+                      "faq:permission": ("you must contact the data owner to obtain "
+                                         "permission"),
+                      "faq:cannot": ("Unfortunately, the Federal Reserve Bank of St. Louis "
+                                     "cannot give you such permission."),
+                      "tou:third_party": ("BEFORE USING DATA SERIES OWNED BY THIRD PARTIES FOR "
+                                          "ANYTHING OTHER THAN YOUR OWN PERSONAL USE, YOU MUST "
+                                          "CONTACT THE DATA OWNER TO OBTAIN PERMISSION."),
+                      "tou:no_grant": ("The Bank cannot give you such permission and making the "
+                                       "data series available does not constitute such "
+                                       "permission."),
+                      "api:definition": ("Copyrighted series contain the word 'Copyright' in "
+                                         "their notes."),
+                      # quoted so the principal can overrule: the summarized label VIXCLS also
+                      # carries reads more permissively than the full terms and the notice; the
+                      # stricter reading governs (fail closed)
+                      "summary:citation_required": ("These series are under copyright; but, "
+                                                    "provided you have not engaged in any "
+                                                    "prohibited uses")},
+                  "series_notes": dict(FRED_COPYRIGHTED_NOTES),
+                  # read the same day and NOT held: no 'Copyright' notice in the notes (FRED's own
+                  # definition), or the owner's own licence permits reuse
+                  "not_held": {
+                      "SOFR": "tag 'Copyrighted: Citation Required'; no notice in the notes",
+                      "RRPONTSYD": "tag 'Copyrighted: Citation Required'; no notice in the notes",
+                      "JPNCPIALLMINMEI": ("tag 'Copyrighted: Citation Required'; notes carry an "
+                                          "OECD citation instruction, no notice"),
+                      "CP0000EZ19M086NEST": (
+                          "notes: 'Copyright, European Union: https://commission.europa.eu/"
+                          "legal-notice_en#copyright-notice'; that page (read 2026-10-14): "
+                          "'This means that reuse is allowed, provided appropriate credit is "
+                          "given and changes are indicated.' (CC BY 4.0)")}}},
+})
+
+
+def fred_series_source(series_id: str) -> str | None:
+    """'fred_copyrighted' when a FRED series id is owned by a third party (its notes carry a
+    copyright notice, or it could not be read), else None. Case-insensitive: FRED ids are."""
+    sid = str(series_id or "").strip().upper()
+    return "fred_copyrighted" if sid in SOURCE_POLICY["fred_copyrighted"]["series"] else None
+
+
 #: JPX's site terms (Japanese and English pages), read 2026-10-14 for the pass-6 F4 holds. One
 #: reading shared by every JPX route held on it (a value, not a second register).
 _JPX_TERMS: dict[str, Any] = {

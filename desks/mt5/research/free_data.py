@@ -108,7 +108,13 @@ def fred_series(series_id: str, start: str = "2010-01-01",
     """Fetch a FRED series as {iso_date: value}. Keyless via fredgraph.csv.
     vintage_date => ALFRED point-in-time view of that series. `alternate=False` refuses the
     DBnomics mirror: a licensed substitute is read from the row whose terms were read, never a
-    mirror whose own terms were not."""
+    mirror whose own terms were not.
+
+    A series owned by a third party (terms_fence `fred_copyrighted`: its FRED notes carry a
+    copyright notice) is REFUSED AS LIVE INPUT before any URL is built: no request, no cache
+    read, no mirror. The caller sees None and records `fred_cut_line` (UNMEASURED, never zero)."""
+    if _terms_fence().fred_series_source(series_id):
+        return None
     base = "https://alfred.stlouisfed.org/graph/fredgraph.csv" if vintage \
         else "https://fred.stlouisfed.org/graph/fredgraph.csv"
     q = {"id": series_id, "cosd": start}
@@ -355,6 +361,59 @@ def licensed_daily(ticker: str, consumer: str = "free_data", *,
                       else "UNMEASURED_SUBSTITUTE_UNREACHABLE")
     prov["missed_growth"] = yahoo_cut_line(ticker, consumer, status=prov["status"])
     return None, prov
+
+
+#: THE FRED SERIES THIRD PARTIES OWN (terms_fence `fred_copyrighted`) and what stands in for each
+#: as live input. `route` None: no licensed source exists -> UNMEASURED_NO_LICENSED_SOURCE. The
+#: gold fix's stand-in is the desk's own XAUUSD, carried under its OWN name (the anchors' `GC`
+#: column, `GOLD_USD_MT5` in macro_state) -- never stored under the fix's id.
+FRED_COPYRIGHTED_SUBSTITUTES: dict[str, dict[str, Any]] = {
+    "VIXCLS": {"route": None, "series": None,
+               "why": ("Cboe owns VIX (FRED notes: 'Copyright, 2016, Chicago Board Options "
+                       "Exchange'); Cboe's own index-value route is held; no MT5 volatility-index "
+                       "CFD is in the universe registry. A realised-vol proxy from own bars is "
+                       "published under its OWN name (anchors `US500_RV21`), never as VIX")},
+    "BAMLH0A0HYM2": {"route": None, "series": None,
+                     "why": ("ICE Data Indices owns the ICE BofA HY OAS ('Reproduction of this "
+                             "data in any form is prohibited except with the prior written "
+                             "permission of ICE Data Indices'); no licensed credit-spread series "
+                             "is registered")},
+    "UMCSENT": {"route": None, "series": None,
+                "why": ("University of Michigan owns the sentiment index (FRED notes: 'Copyright, "
+                        "2016, Surveys of Consumers'); no licensed substitute is registered")},
+    "GOLDAMGBD228NLBM": {"route": "mt5_own_bars", "series": "XAUUSD",
+                         "note": ("spot XAUUSD daily close from the desk's own bars, not the LBMA "
+                                  "AM fix: carried as anchors `GC` / macro_state `GOLD_USD_MT5`")},
+}
+
+
+def fred_cut_line(series_id: str, consumer: str, *, status: str,
+                  past: dict | None = None) -> dict[str, Any]:
+    """The missed-growth line a refused third-party FRED series carries (kind
+    ideas_only_refusal, policy row `fred_copyrighted`): delta E[log W] UNMEASURED, never zero."""
+    sub = FRED_COPYRIGHTED_SUBSTITUTES.get(series_id) or {}
+    line = _terms_fence().held_missed_growth(
+        "fred_copyrighted", past, source=f"{consumer}:{series_id}", live_input_refusal=True)
+    line.update({"fred_series": series_id, "series_status": status,
+                 "substitute": (f"{sub['route']}:{sub['series']}" if sub.get("route") else None),
+                 "fred_notes": _terms_fence().FRED_COPYRIGHTED_NOTES.get(series_id, "")})
+    if status == UNMEASURED_NO_LICENSED_SOURCE:
+        line["why_unsubstituted"] = str(sub.get("why") or "no licensed source is registered")
+    return line
+
+
+def fred_refusal(series_id: str, consumer: str, *, substituted: bool = False
+                 ) -> dict[str, Any] | None:
+    """None for a series FRED may serve as live input; else its provenance row: status
+    (SUBSTITUTED when the caller carries the licensed stand-in, else
+    UNMEASURED_NO_LICENSED_SOURCE), the policy row, and its missed-growth line."""
+    if not _terms_fence().fred_series_source(series_id):
+        return None
+    sub = FRED_COPYRIGHTED_SUBSTITUTES.get(series_id) or {}
+    st = "SUBSTITUTED" if (substituted and sub.get("route")) else UNMEASURED_NO_LICENSED_SOURCE
+    return {"fred_series": series_id, "status": st, "policy_row": "fred_copyrighted",
+            "substitute": (f"{sub['route']}:{sub['series']}" if sub.get("route") else None),
+            "missed_growth": fred_cut_line(series_id, consumer, status=st)}
 
 
 # ------------------------------------------------------------------ RSS ----

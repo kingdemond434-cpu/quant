@@ -84,6 +84,23 @@ def offsets(root: Path | None = None) -> dict[str, int]:
     return out
 
 
+def provenance(root: Path | None = None) -> dict[str, Any]:
+    """Where the offsets on disk came from: {overall, per_season}. A file written before the
+    Yahoo cut carries no stamp, and its offsets were inferred against Yahoo futures bars, so it
+    reads `yahoo_inferred_legacy`; `own_tick_tape` once futures_lead_lag re-measured a season
+    from the desk's tape. {} when there is no clock on disk. A LABEL: `to_bar_time` is unchanged
+    (dropping the legacy offsets would drop every event-lane join)."""
+    doc = _read(Path(root or _ROOT))
+    seasons = doc.get("per_season") if isinstance(doc.get("per_season"), dict) else {}
+    if not seasons:
+        return {}
+    per = {str(k): str((v or {}).get("provenance") or "yahoo_inferred_legacy")
+           for k, v in seasons.items() if isinstance(v, dict)}
+    provs = set(per.values())
+    overall = str(doc.get("provenance") or (provs.pop() if len(provs) == 1 else "mixed"))
+    return {"overall": overall, "per_season": per}
+
+
 def season_of(when: datetime) -> str | None:
     """Which measured season an instant belongs to, or None in the shoulder."""
     mmdd = when.month * 100 + when.day

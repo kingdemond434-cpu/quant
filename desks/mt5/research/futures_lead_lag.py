@@ -53,9 +53,10 @@ input. `fetch_bars` now asks THE ONE FETCH DOOR with live_input=True and is refu
 request, and the Yahoo-era cache under data/reference/futures is never read again. No licensed
 source of intraday COMEX/NYMEX bars exists in the key set (CME is a held route), so every pair is
 UNMEASURED_NO_LICENSED_SOURCE with a missed_growth line, and BAR_CLOCK.json is NOT overwritten by
-an unmeasured pass: the clock on disk stays what the last measuring pass wrote, and this report
-says it was not re-measured. A licensed re-measurement (the desk's own tick tape: receipt time
-against the broker's time_msc) is the named unblock.
+an unmeasured pass: the offsets on disk stay what the last measuring pass wrote. Instead the
+licensed re-measure runs (`tape_offsets`: the desk's own tick tape, receipt time against the
+broker's time_msc) and `stamp_clock` stamps provenance per season -- `own_tick_tape` where the
+tape resolved the season, `yahoo_inferred_legacy` (kept, never dropped) where it has not yet.
 
     python desks/mt5/research/futures_lead_lag.py
     python desks/mt5/research/futures_lead_lag.py --no-fetch    # cached reference bars only
@@ -520,6 +521,144 @@ def census(*, fetch: bool = True) -> dict[str, Any]:
     }
 
 
+# ------------------------------------------------------------------ the tape re-measure
+#: THE LICENSED RE-MEASUREMENT OF THE BAR CLOCK (follow-up to the Yahoo cut, 2026-10-14). The
+#: offsets on disk were inferred against Yahoo's futures bars. The desk's own tick tape carries,
+#: on every row the recorder wrote, the broker's stamp (`time_msc`: broker wall time encoded as
+#: epoch ms) beside OUR receipt instant (`recv_utc`: genuinely UTC). Their difference is the
+#: broker offset minus the receipt latency, so the median rounded to a whole hour IS the offset --
+#: measured on the desk's own data, no third party read. Readers are feed_clock_lab's (one tape
+#: reader, never a second).
+TAPE_ROOT = BASE / "data" / "tape" / "ticks"
+PROV_LEGACY = "yahoo_inferred_legacy"
+PROV_TAPE = "own_tick_tape"
+#: |median delta - whole hours| above this and the day does not resolve an offset: a receipt
+#: latency of 15 minutes is not a poll offset, it is a stalled recorder.
+TAPE_RESIDUAL_MAX_MS = 15 * 60_000.0
+#: Rows with both stamps below this and the day is not a reading.
+TAPE_MIN_TICKS = 200
+#: The most recent tape days read per symbol (bounded: the build box has 8 GB).
+TAPE_MAX_DAYS = 30
+
+
+def tape_day_offset(tape: dict[str, Any]) -> dict[str, Any]:
+    """One tape day's offset reading from time_msc (broker) against recv_ms (OUR receipt, UTC):
+    {offset_h, residual_ms, n} or {status: UNMEASURED, why}. Never guesses."""
+    recv, arr = tape.get("recv_ms"), tape.get("arrival_ms")
+    if recv is None or arr is None:
+        return {"status": "UNMEASURED", "why": "no recv_utc beside time_msc on this day"}
+    delta = np.asarray(arr, dtype=float) - np.asarray(recv, dtype=float)
+    delta = delta[np.isfinite(delta)]
+    if delta.size < TAPE_MIN_TICKS:
+        return {"status": "UNMEASURED", "why": f"{delta.size} rows carry both stamps"}
+    med = float(np.median(delta))
+    off = round(med / 3_600_000.0)
+    resid = med - off * 3_600_000.0
+    if abs(resid) > TAPE_RESIDUAL_MAX_MS:
+        return {"status": "UNMEASURED", "n": int(delta.size), "median_delta_ms": round(med, 1),
+                "why": (f"median broker-minus-receipt is {resid / 60_000:.1f} min off a whole "
+                        "hour: the receipt lag is too large to resolve the offset")}
+    return {"status": "MEASURED", "offset_h": off, "residual_ms": round(resid, 1),
+            "n": int(delta.size)}
+
+
+def tape_offsets(tape_root: Path | None = None, *, max_days: int = TAPE_MAX_DAYS
+                 ) -> dict[str, Any]:
+    """The bar clock per season from the desk's own tick tape, in BAR_CLOCK.json's shape
+    (`per_season.<s>.offset_h` + `agrees_across_pairs`). A season with no tape day inside its
+    window, or whose days disagree, has offset_h None -- UNMEASURED, never a guess."""
+    import feed_clock_lab as fcl
+
+    from libs.research import bar_clock
+    root = tape_root or TAPE_ROOT
+    readings: dict[str, dict[str, list[dict[str, Any]]]] = {n: {} for n, _, _ in SEASONS}
+    unresolved = 0
+    for sym, days in sorted(fcl.tape_days(root).items()):
+        for day, path in sorted(days.items())[-max_days:]:
+            try:
+                when = datetime.fromisoformat(day)
+            except ValueError:
+                continue
+            season = bar_clock.season_of(when)
+            if season is None or season not in readings:
+                continue                       # a shoulder day measures neither season
+            tape = fcl.read_tape(path)
+            if tape is not None and tape.get("recv_ms") is None:
+                sib = fcl.sibling_receipt(path)
+                if sib is not None:
+                    tape = sib
+            got = tape_day_offset(tape or {})
+            if got.get("status") != "MEASURED":
+                unresolved += 1
+                continue
+            readings[season].setdefault(sym, []).append({"day": day, **got})
+    per_season: dict[str, dict[str, Any]] = {}
+    for name, rows in readings.items():
+        offs = {r["offset_h"] for days_ in rows.values() for r in days_}
+        per_season[name] = {
+            "offset_h": next(iter(offs)) if len(offs) == 1 else None,
+            "agrees_across_pairs": len(offs) == 1,
+            "n_symbols": len(rows), "n_days": sum(len(v) for v in rows.values()),
+            "readings": {k: {"days": len(v), "offsets": sorted({r["offset_h"] for r in v})}
+                         for k, v in rows.items()},
+        }
+    measured = [n for n, b in per_season.items() if b["offset_h"] is not None]
+    return {"status": "MEASURED" if measured else "UNMEASURED",
+            "measured_seasons": measured, "per_season": per_season,
+            "unresolved_days": unresolved, "tape_root": str(root),
+            "measured_by": ("broker time_msc minus OUR recv_utc on the desk's own tick tape, "
+                            "median per day rounded to whole hours")}
+
+
+def stamp_clock(prior: dict[str, Any], tape: dict[str, Any]) -> dict[str, Any]:
+    """BAR_CLOCK.json with provenance per season: a season the tape measured carries the tape's
+    offset (`own_tick_tape`); every other season keeps the offset on disk -- never dropped, or the
+    event lane would drop every event -- stamped `yahoo_inferred_legacy` (a file written before
+    the cut carries no provenance, and that is what it was). {} when there is nothing to stamp."""
+    old = prior.get("per_season") if isinstance(prior.get("per_season"), dict) else {}
+    new = tape.get("per_season") or {}
+    per_season: dict[str, dict[str, Any]] = {}
+    for name, _, _ in SEASONS:
+        t = new.get(name) or {}
+        o = old.get(name) if isinstance(old.get(name), dict) else None
+        if isinstance(t.get("offset_h"), int) and t.get("agrees_across_pairs"):
+            per_season[name] = {**t, "provenance": PROV_TAPE,
+                                "legacy_offset_h": (o or {}).get("offset_h")}
+        elif o is not None:
+            per_season[name] = {**o, "provenance": o.get("provenance") or PROV_LEGACY}
+    if not per_season:
+        return {}
+    provs = {b["provenance"] for b in per_season.values()}
+    doc = {k: v for k, v in prior.items() if k not in ("per_season", "provenance")}
+    doc.update({"per_season": per_season,
+                "provenance": provs.pop() if len(provs) == 1 else "mixed",
+                "provenance_by_season": {k: v["provenance"] for k, v in per_season.items()},
+                "stamped_at": datetime.now(tz=UTC).isoformat(),
+                "tape_remeasure": {k: v for k, v in tape.items() if k != "per_season"}})
+    summer = per_season.get("summer", {}).get("offset_h")
+    winter = per_season.get("winter", {}).get("offset_h")
+    doc["varies_with_dst"] = bool(summer is not None and winter is not None and summer != winter)
+    if any(b["provenance"] == PROV_LEGACY for b in per_season.values()):
+        doc["remeasure_needed"] = {
+            "status": "UNMEASURED",
+            "delta_elogw": "UNMEASURED",
+            "needs": ("tick tape days inside the season window (summer 05-01..09-15, winter "
+                      "12-01..02-15) carrying recv_utc beside time_msc (tick_recorder writes "
+                      "both); until then the season's offset is the Yahoo-inferred legacy value"),
+            "cause": ("the legacy offsets were inferred against Yahoo futures bars (IDEAS_ONLY, "
+                      "never live input); kept because dropping them drops every event-lane "
+                      "join, and their growth effect against a re-measured clock is UNMEASURED")}
+    return doc
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    try:
+        got = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
 def render(doc: dict[str, Any]) -> str:
     c = doc["clock"]
     lines = [f"BAR CLOCK  summer {c['per_season']['summer']['offset_h']}h  "
@@ -562,7 +701,27 @@ def main(argv: list[str] | None = None) -> int:
     doc["bar_clock_written"] = bool(doc["n_measured"])
     targets = [(OUT_REL, doc)]
     if doc["bar_clock_written"]:
-        targets.append((CLOCK_REL, {"at": doc["at"], **doc["clock"]}))
+        targets.append((CLOCK_REL, {"at": doc["at"], **doc["clock"],
+                                    "provenance": "reference_futures_bars"}))
+    else:
+        # THE LICENSED RE-MEASURE: the desk's own tick tape. Each season the tape resolves is
+        # re-stamped own_tick_tape; every other season keeps its on-disk offset, stamped
+        # yahoo_inferred_legacy (never dropped: the event lane would drop every event).
+        try:
+            tape = tape_offsets(ROOT / "desks" / "mt5" / "data" / "tape" / "ticks")
+        except Exception as exc:              # a reader fault is UNMEASURED, never a crash
+            tape = {"status": "UNMEASURED", "per_season": {},
+                    "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+        stamped = stamp_clock(_read_json(ROOT / Path(*CLOCK_REL.split("/"))), tape)
+        doc["bar_clock_remeasure"] = {k: v for k, v in tape.items() if k != "per_season"}
+        doc["bar_clock_provenance"] = stamped.get("provenance") or "UNMEASURED"
+        if stamped:
+            targets.append((CLOCK_REL, stamped))
+            if stamped.get("remeasure_needed"):
+                doc.setdefault("missed_growth", []).append({
+                    "source": "futures_lead_lag:BAR_CLOCK", "kind": "ideas_only_refusal",
+                    "policy_row": "yahoo", "series_status": "yahoo_inferred_legacy",
+                    **stamped["remeasure_needed"]})
     for rel, payload in targets:
         out = ROOT / Path(*rel.split("/"))
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -570,7 +729,8 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(doc, indent=1, default=str) if args.json else render(doc))
     print("written: " + " and ".join(rel for rel, _ in targets)
           + ("" if doc["bar_clock_written"] else
-             f" ({CLOCK_REL} NOT rewritten: no licensed reference measured the clock)"))
+             f" ({CLOCK_REL} provenance: {doc.get('bar_clock_provenance')}; offsets not "
+             "re-measured by a reference feed)"))
     return 0
 
 

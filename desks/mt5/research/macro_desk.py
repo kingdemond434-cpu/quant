@@ -84,6 +84,11 @@ def _mom(x: pd.Series, yoy: bool = False) -> float | None:
 
 
 def series_state(series_id: str) -> dict:
+    cut = fd.fred_refusal(series_id, "macro_desk.state")
+    if cut:
+        # a third-party FRED series (terms_fence fred_copyrighted): refused before any request,
+        # UNMEASURED_NO_LICENSED_SOURCE with its missed-growth line -- never a zero, never filled
+        return {"series": series_id, "ok": False, **cut}
     d = fd.fred_series(series_id)
     if not d:
         return {"series": series_id, "ok": False}
@@ -174,7 +179,66 @@ def purge_yahoo_columns(prev: pd.DataFrame, prior: dict[str, dict]) -> pd.DataFr
     return prev.drop(columns=drop)
 
 
-def _write_provenance(prov: dict[str, dict], prior: dict[str, dict]) -> None:
+#: The anchor ids FRED serves but a third party owns (terms_fence fred_copyrighted). They are
+#: never fetched, and a prior pickle's history of them is dropped (copyrighted history kept is
+#: still live input). The gold level rides on `GC` (MT5 XAUUSD) under its own name.
+FRED_COPYRIGHTED_ANCHORS: tuple[str, ...] = ("GOLDAMGBD228NLBM", "VIXCLS")
+#: The realised-vol PROXY from the desk's own US500 bars. A SEPARATE series name, never VIX:
+#: close-to-close realised vol (annualised %, 21 trading days) of the Fusion US500 CFD.
+RV_PROXY = "US500_RV21"
+RV_WINDOW = 21
+
+
+def realised_vol_proxy(spx: pd.Series | None, window: int = RV_WINDOW) -> pd.Series | None:
+    """Annualised close-to-close realised vol (%) of the MT5 US500 daily closes, or None when
+    there are too few. Labelled as what it is -- realised, own bars -- and never stored as VIX."""
+    if spx is None:
+        return None
+    s = pd.to_numeric(spx, errors="coerce").dropna().sort_index()
+    s = s[s > 0]
+    if len(s) <= window:
+        return None
+    rv = np.log(s).diff().rolling(window).std(ddof=1) * np.sqrt(252.0) * 100.0
+    rv = rv.dropna()
+    return rv if not rv.empty else None
+
+
+def fred_copyrighted_columns(cols: dict[str, pd.Series]) -> dict[str, dict]:
+    """The anchors' third-party FRED ids: each refused as live input with its missed-growth line,
+    plus the realised-vol proxy computed from the SPX column (MT5 US500) when it was filled.
+    Mutates `cols` only to add `US500_RV21`."""
+    out: dict[str, dict] = {}
+    for sid in FRED_COPYRIGHTED_ANCHORS:
+        cut = fd.fred_refusal(sid, "macro_desk.anchors", substituted="GC" in cols)
+        if cut:
+            if sid == "GOLDAMGBD228NLBM":
+                cut["carried_as"] = "GC" if "GC" in cols else None
+            out[sid] = cut
+    rv = realised_vol_proxy(cols.get("SPX"))
+    if rv is not None:
+        cols[RV_PROXY] = rv
+        out[RV_PROXY] = {"status": "MEASURED_OWN_BARS", "route": "mt5_own_bars",
+                         "series": "US500", "n_obs": int(rv.size),
+                         "label": ("realised vol (close-to-close, annualised %, 21d) of the "
+                                   "Fusion US500 CFD from the desk's own bars -- a PROXY, NOT "
+                                   "VIX and not implied vol")}
+    else:
+        out[RV_PROXY] = {"status": "UNMEASURED_NO_BARS_ON_HOST", "route": "mt5_own_bars",
+                         "series": "US500",
+                         "label": "realised-vol proxy needs the MT5 US500 column (SPX) filled"}
+    return out
+
+
+def purge_copyrighted_columns(prev: pd.DataFrame) -> pd.DataFrame:
+    """Drop every third-party FRED column from a prior pickle (they are never written again)."""
+    drop = [c for c in FRED_COPYRIGHTED_ANCHORS if c in prev.columns]
+    if drop:
+        log(f"anchors: third-party FRED columns dropped from the prior pickle: {', '.join(drop)}")
+    return prev.drop(columns=drop)
+
+
+def _write_provenance(prov: dict[str, dict], prior: dict[str, dict],
+                      fred_cut: dict[str, dict] | None = None) -> None:
     """The anchors' provenance sidecar. `prior_columns` records which pickle columns a licensed
     substitute has written (sticky: a pass whose substitute is unreachable keeps the record, so
     the substitute's own history is merged, never Yahoo's)."""
@@ -186,7 +250,9 @@ def _write_provenance(prov: dict[str, dict], prior: dict[str, dict]) -> None:
                                              f"({fd.UNMEASURED_NO_LICENSED_SOURCE})"),
            "pit": "cross_asset_anchors (data_os): 27h late-biased; H.10 FX weekly",
            "columns": prov, "prior_columns": sticky,
-           "missed_growth": [v["missed_growth"] for v in prov.values()
+           "fred_copyrighted": fred_cut or {},
+           "missed_growth": [v["missed_growth"] for v in (*prov.values(),
+                                                          *(fred_cut or {}).values())
                              if isinstance(v.get("missed_growth"), dict)],
            "unmeasured_no_licensed_source": sorted(
                k for k, v in prov.items() if v.get("status") == fd.UNMEASURED_NO_LICENSED_SOURCE)}
@@ -211,12 +277,14 @@ def anchors() -> None:
             cols[sid] = s
 
     with ThreadPoolExecutor(max_workers=6) as ex:
-        list(ex.map(fred_col, ["DTWEXBGS", "DGS10", "T10YIE",
-                               "GOLDAMGBD228NLBM", "DCOILWTICO", "VIXCLS"]))
+        # GOLDAMGBD228NLBM and VIXCLS are third-party FRED series: never fetched (see
+        # fred_copyrighted_columns); gold rides on GC (MT5 XAUUSD), VIX is UNMEASURED
+        list(ex.map(fred_col, ["DTWEXBGS", "DGS10", "T10YIE", "DCOILWTICO"]))
 
     prior = _prior_columns()                  # read BEFORE this pass rewrites the sidecar
     prov = licensed_anchor_columns(cols)
-    _write_provenance(prov, prior)
+    fred_cut = fred_copyrighted_columns(cols)
+    _write_provenance(prov, prior, fred_cut)
 
     prev = None
     if ANCHORS_F.exists():
@@ -226,7 +294,7 @@ def anchors() -> None:
             log(f"anchors: prior pickle unreadable, replacing ({e!r})")
     purged = False
     if isinstance(prev, pd.DataFrame) and not prev.empty:
-        kept = purge_yahoo_columns(prev, prior)
+        kept = purge_copyrighted_columns(purge_yahoo_columns(prev, prior))
         purged = kept.shape[1] != prev.shape[1]
         prev = kept
     if not cols:
@@ -250,10 +318,16 @@ def anchors() -> None:
     df.to_pickle(ANCHORS_F)
     log(f"anchors saved {df.shape[0]} daily rows x {df.shape[1]} cols "
         f"(last {df.index[-1].date()})")
-    for c in ["T10YIE", "DTWEXBGS", "DCOILWTICO", "GOLDAMGBD228NLBM"]:
+    for c in ["T10YIE", "DTWEXBGS", "DCOILWTICO", "GC"]:
         if c not in df.columns or df[c].dropna().empty:
             log(f"anchors WARNING: {c} missing/empty (families will emit no "
                 f"signals and gates will fail closed)")
+
+
+def _mt5_last(symbol: str) -> float | None:
+    """The last daily close of `symbol` from the desk's own bars, or None (never a zero)."""
+    d = fd.mt5_daily(symbol)
+    return float(d[max(d)]) if d else None
 
 
 def build_state() -> None:
@@ -287,7 +361,9 @@ def build_state() -> None:
         "POLICY_RATE": lv("DFEDTARU"),
         "EFF_RATE": lv("DFF"),
         "CURVE_T10Y2Y": lv("T10Y2Y"),
-        "GOLD_USD": lv("GOLDAMGBD228NLBM"),
+        # the LBMA fix (GOLDAMGBD228NLBM) is a third-party series: gold is the desk's own XAUUSD
+        "GOLD_USD": _mt5_last("XAUUSD"),
+        "GOLD_USD_SOURCE": "mt5_own_bars:XAUUSD (spot CFD daily close, not the LBMA fix)",
         "WTI": lv("DCOILWTICO"),
     }
 
@@ -317,6 +393,17 @@ def build_state() -> None:
     if us_cpi is not None and jp_yoy is not None:
         state["differentials"]["US_MINUS_JP_CPI_YOY"] = round(us_cpi - jp_yoy, 3)
     state["differentials"]["US10Y"] = lv("DGS10")
+    cut = {sid: {k: v for k, v in row.items() if k not in ("series", "ok")}
+           for sid, row in state["series"].items() if row.get("policy_row") == "fred_copyrighted"}
+    if "GOLDAMGBD228NLBM" in cut and state["states"]["GOLD_USD"] is not None:
+        cut["GOLDAMGBD228NLBM"] = {**(fd.fred_refusal("GOLDAMGBD228NLBM", "macro_desk.state",
+                                                      substituted=True) or {}),
+                                   "carried_as": "GOLD_USD"}
+    state["fred_copyrighted"] = cut
+    state["unmeasured_no_licensed_source"] = sorted(
+        k for k, v in cut.items() if v.get("status") == fd.UNMEASURED_NO_LICENSED_SOURCE)
+    state["missed_growth"] = [v["missed_growth"] for v in cut.values()
+                              if isinstance(v.get("missed_growth"), dict)]
 
     # ATOMIC. macro_state.json is read by the desks and the reaction atlas while this runs;
     # a partial write is a torn read, and json.loads of a half-file raises in the CONSUMER --
