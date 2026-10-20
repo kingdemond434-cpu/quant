@@ -110,7 +110,8 @@ def test_the_three_unknown_classes_are_what_the_judge_names(eg, _no_terminal,
     unk = {v["family"]: v for v in out["verdicts"] if v.get("unmeasured")}
     assert set(unk) == {"event_reaction", "vol_transition", "pca_residual"}
     assert unk["event_reaction"]["days"] == 0
-    assert unk["vol_transition"]["days"] == 30
+    assert unk["vol_transition"]["days_before_lockbox"] == 30
+    assert 0 < unk["vol_transition"]["days"] < 60
     assert unk["pca_residual"]["days_before_lockbox"] == 80
     assert unk["pca_residual"]["days"] < 60
     if "unknown_reason" in unk["pca_residual"]:          # stamped on the sealed stack's image
