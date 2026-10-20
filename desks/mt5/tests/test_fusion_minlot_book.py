@@ -705,8 +705,9 @@ def test_exposure_reads_both_venues_and_raises_on_an_unreadable_row() -> None:
         xa.exposure_from_rows([("XAUUSD", "flat")])
     venue = SimpleNamespace(_by_key={"XAUUSD": 6102, "USDNOK": 7})
     got = xa.tradelocker_exposure(
-        venue, positions=[{"tradableInstrumentId": 6102, "side": "buy"}],
-        orders=[{"tradableInstrumentId": 6102, "side": "sell"},             # its protective SL
+        venue, positions=[{"id": 1, "tradableInstrumentId": 6102, "side": "buy",
+                           "stopLossId": 5}],
+        orders=[{"id": 5, "tradableInstrumentId": 6102, "side": "sell"},    # its protective SL
                 {"tradableInstrumentId": 7, "side": "sell", "stopLoss": 10.9}])
     assert got == {"XAUUSD": {"long": True, "short": False},
                    "USDNOK": {"long": False, "short": True}}
