@@ -170,7 +170,11 @@ def _e8_evidence_writes_to_tmp(tmp_path_factory, monkeypatch):
     """THE E8 GOLD LANE'S HEARTBEAT AND DECISION LEDGER NEVER LAND IN THE REPO FROM A TEST.
     `prop/e8_evidence.py` writes both under `desks/mt5/data/` -- the box's placement evidence,
     read by scripts/check_placement_interlock.py -- and every test that drives `e8_gold.run`."""
-    monkeypatch.setenv("E8_EVIDENCE_DIR", str(tmp_path_factory.mktemp("e8_evidence")))
+    where = tmp_path_factory.mktemp("e8_evidence")
+    monkeypatch.setenv("E8_EVIDENCE_DIR", str(where))
+    # ...and the account pseudonym's key is never created under the repo's data/secrets/.
+    monkeypatch.setenv("E8_EVIDENCE_KEY_FILE", str(where / "e8_evidence.key"))
+    monkeypatch.delenv("E8_EVIDENCE_KEY", raising=False)
     yield
 
 

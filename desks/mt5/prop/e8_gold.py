@@ -759,7 +759,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     today = str(tnow.date())
     doc.update({"server_time": tnow.isoformat(), "hour": round(hour, 3)})
 
-    state = rollover_state(_read_json(STATE, {}), today)
+    prior = _read_json(STATE, {})
+    state = rollover_state(prior, today)
+    # Evidence rows a failed write kept ride across the rollover (prop/e8_evidence.py); nothing
+    # a placement reads is touched.
+    e8_evidence.carry_pending(prior, state)
     acct = venue.account()
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
@@ -985,18 +989,14 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if legs or failed:
             placed_this_pass.append(name)
         doc["placed"].append({"window": name, "legs": legs})
-        outcome, reason, why, sent_lot = e8_evidence.window_outcome(
-            legs, failed, armed=armed, unsizeable=any(
-                r.get("window") == name and r.get("status") == "UNSIZEABLE"
-                for r in doc["skipped"]))
-        decided.note(name, outcome, reason, why, lot=sent_lot, risk_usd=risk_usd)
-
-    # The decisions are written AFTER every order of this pass has been sent, so a write that
-    # fails or hangs on the disk has nothing left to delay; it never raises (e8_evidence).
-    doc["decisions"] = decided.rows
-    doc["decisions_recorded"] = len(e8_evidence.record_decisions(
-        decided, state, now=now, server_date=today, account=account, armed=armed, host=host,
-        symbol=SYMBOL, log=log))
+        try:
+            outcome, reason, why, sent_lot = e8_evidence.window_outcome(
+                legs, failed, armed=armed, unsizeable=any(
+                    r.get("window") == name and r.get("status") == "UNSIZEABLE"
+                    for r in doc["skipped"]))
+            decided.note(name, outcome, reason, why, lot=sent_lot, risk_usd=risk_usd)
+        except Exception as exc:
+            log(f"[{name}] decision evidence not derived ({type(exc).__name__}: {exc})")
 
     # -------------------------------------------------------------- management
     try:
@@ -1033,8 +1033,17 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                            orders_ok="orders_unreadable" not in doc, filled=filled,
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
-                           history_ok="history_unreadable" not in doc, instrument_id=iid)
+                           history_ok="history_unreadable" not in doc, instrument_id=iid,
+                           decided=decided)
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
+
+    # The decisions are written AFTER every placement and every re-send of a dropped leg this
+    # pass, so a write that fails or hangs on the disk has no order left to delay, and a re-send
+    # is on the same row set as the window it belongs to; it never raises (e8_evidence).
+    doc["decisions"] = decided.rows
+    doc["decisions_recorded"] = len(e8_evidence.record_decisions(
+        decided, state, now=now, server_date=today, account=account, armed=armed, host=host,
+        symbol=SYMBOL, log=log))
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
     # lost state file) can neither orphan a position from management nor leave a GTC leg resting.
@@ -1204,11 +1213,16 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     state["windows"] = {n: w for n, w in state["windows"].items() if not n.startswith("carried:")}
 
     doc.setdefault("status", "OK")
-    doc["heartbeat"] = e8_evidence.write_heartbeat(
-        str(doc["status"]), at=now, armed=armed, account=account, host=host, log=log, extra={
+    try:
+        beat_extra: dict[str, Any] = {
             "server_time": doc.get("server_time"), "hour": doc.get("hour"),
             "guard": (doc.get("guard_decision") or {}).get("verdict") or doc.get("guard"),
-            "open_xau_positions": len(xau_positions), "decisions": len(decided.rows)})
+            "open_xau_positions": len(xau_positions), "decisions": len(decided.rows)}
+    except Exception as exc:
+        beat_extra = {"extra_unreadable": f"{type(exc).__name__}: {exc}"[:160]}
+    doc["heartbeat"] = e8_evidence.write_heartbeat(
+        str(doc["status"]), at=now, armed=armed, account=account, host=host, log=log,
+        extra=beat_extra)
     try:
         STATE.parent.mkdir(parents=True, exist_ok=True)
         STATE.write_text(json.dumps(state, indent=1, default=str), encoding="utf-8")
@@ -1224,9 +1238,15 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                        open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
                        xau_positions: list[dict], positions_ok: bool, stood_down: bool,
                        armed: bool, hist_rows: list[dict], history_ok: bool,
-                       instrument_id: int) -> None:
+                       instrument_id: int,
+                       decided: e8_evidence.Decisions | None = None) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
+
+    EVERY OUTCOME IS EVIDENCE (prop/e8_evidence.py, v2): a re-send or an adopted landed send is
+    a PLACED row, an abandoned leg a row of its own (`abandon_reason`), a re-send the venue
+    refused again a `venue_rejected` deferral. Noted into `decided`, which never raises and is
+    read by nothing that sends.
 
     Fails CLOSED: nothing is re-sent on a disarmed pass, with the order book, the order history
     or the position book unreadable (a duplicate or a self-hedge is worse than a missing leg), or
@@ -1289,6 +1309,11 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             act["why"] = dec["why"]
             log(f"[{name}] {side} dropped leg abandoned: {dec['why']}")
             doc["actions"].append(act)
+            if decided is not None:
+                decided.note(name, e8_evidence.SKIPPED,
+                             e8_evidence.abandon_reason(dec["why"], w),
+                             f"{side} abandoned: {dec['why']}", lot=leg.get("lot"),
+                             risk_usd=leg.get("risk_usd"))
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
@@ -1333,6 +1358,9 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             log(f"[{name}] {side} dropped leg abandoned: {why}; MISSED GROWTH "
                 f"({UNOWNED_BLOCK_RAIL}): the leg's {float(missed):.0f} USD of certified risk "
                 "is not deployed")
+            if decided is not None:
+                decided.note(name, e8_evidence.SKIPPED, e8_evidence.R_UNOWNED_POSITION,
+                             f"{side} abandoned: {why}", lot=leg.get("lot"), risk_usd=missed)
             continue
         row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                **levels, "armed": True, "retry_of": leg.get("first_at")}
@@ -1355,6 +1383,10 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                 log(f"[{name}] {side} retry REJECTED: {leg['why']}")
                 _record(row)
                 doc["actions"].append(act)
+                if decided is not None:
+                    decided.note(name, e8_evidence.DEFERRED, e8_evidence.R_VENUE_REJECTED,
+                                 f"{side} re-send refused: {leg['why']}", lot=leg.get("lot"),
+                                 risk_usd=leg.get("risk_usd"))
                 continue
         _record(row)
         w.setdefault("orders", {})[side] = {"id": int(oid), **levels}
@@ -1364,6 +1396,11 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                             "stopPrice": float(leg["price"])})
         act.update({"ok": True, "order_id": int(oid), "adopted": bool(row.get("adopted"))})
         doc["actions"].append(act)
+        if decided is not None:
+            decided.note(name, e8_evidence.PLACED, e8_evidence.R_PLACED,
+                         (f"{side}: the failed send had landed, adopted order {oid}"
+                          if row.get("adopted") else f"{side} re-sent -> order {oid}"),
+                         lot=leg.get("lot"), risk_usd=leg.get("risk_usd"))
     for w in (state.get("windows") or {}).values():
         if "failed" in w and not w["failed"]:
             del w["failed"]

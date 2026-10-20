@@ -516,7 +516,7 @@ def test_e8_a_one_at_risk_deferral_on_consecutive_days_is_not_a_halt(tmp_path: P
     doc = fence.scan(tmp_path, now=NOW)
     lane = doc["lanes"]["e8_gold"]
     assert lane["verdict"] == "OK" and doc["verdict"] == "NOT_APPLICABLE", lane
-    assert lane["runs"]["e8_gold:afternoon"]["days"] == 4
+    assert lane["runs"]["e8_gold:afternoon@tradelocker:42"]["days"] == 4
     assert any("declared answer" in n for n in lane["notes"])
 
 
@@ -530,7 +530,7 @@ def test_e8_a_repeated_row_within_one_day_never_breaches(tmp_path: Path) -> None
             for i in range(60, 0, -1)]
     _write(tmp_path, E8_LEDGER, "\n".join(rows) + "\n")
     lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
-    assert lane["verdict"] == "OK" and lane["runs"]["e8_gold:asia"]["count"] == 60
+    assert lane["verdict"] == "OK" and lane["runs"]["e8_gold:asia@UNMEASURED"]["count"] == 60
 
 
 def test_e8_a_guard_stand_down_two_days_running_is_a_halt(tmp_path: Path) -> None:
@@ -542,7 +542,7 @@ def test_e8_a_guard_stand_down_two_days_running_is_a_halt(tmp_path: Path) -> Non
     assert doc["ok"] is False and doc["verdict"] == "HALTED" and doc["applicable"] is True
     assert any(p.startswith("[e8_gold] e8_gold:afternoon") and "tradelocker:42" in p
                and "vmi3571445" in p for p in doc["problems"]), doc["problems"]
-    assert doc["lanes"]["e8_gold"]["runs"]["e8_gold:afternoon"]["breach"] is True
+    assert doc["lanes"]["e8_gold"]["runs"]["e8_gold:afternoon@tradelocker:42"]["breach"] is True
 
 
 def test_e8_an_unknown_reason_breaches_and_a_placement_clears(tmp_path: Path) -> None:
@@ -598,4 +598,118 @@ def test_e8_a_halt_reaches_the_event_log(tmp_path: Path, monkeypatch: pytest.Mon
     _e8_rows(root, [(1, "DEFERRED", "risk_unmeasurable"), (0, "DEFERRED", "risk_unmeasurable")])
     assert fence.record_event(fence.scan(root, now=NOW), ROOT) == "PLACEMENT_HALTED"
     row = json.loads(log.read_text("utf-8").splitlines()[-1])
-    assert row["sleeves"] == ["e8_gold:afternoon"]
+    assert row["sleeves"] == ["e8_gold:afternoon@tradelocker:42"]
+
+
+# ------------------------------------- 7. v2 (audit of 75004b6a): the two false passes, and more
+
+def _e8_status(root: Path, status: str, *, failing_since: datetime | None = None,
+               last_ok_at: datetime | None = None, at: datetime = NOW) -> None:
+    _write(root, E8_HEARTBEAT, json.dumps({
+        "at": at.isoformat(), "lane": "e8_gold", "status": status,
+        "account_ref": "tradelocker:42",
+        "failing_since": failing_since.isoformat() if failing_since else None,
+        "last_ok_at": last_ok_at.isoformat() if last_ok_at else None,
+        "host": {"verdict": "TRADING", "hostname": "vmi3571445", "machine_id": BOX_ID}}))
+
+
+def test_e8_five_days_of_venue_rejected_with_nothing_placed_is_a_halt(tmp_path: Path) -> None:
+    """Must-fix 1, the audit's probe: v1 exempted venue_rejected and read this lane OK."""
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(d, "DEFERRED", "venue_rejected") for d in (4, 3, 2, 1, 0)])
+    doc = fence.scan(tmp_path, now=NOW)
+    lane = doc["lanes"]["e8_gold"]
+    assert lane["verdict"] == "HALTED" and doc["verdict"] == "HALTED", lane
+    assert "venue_rejected" not in fence.E8_EXEMPT_REASONS
+
+
+def test_e8_venue_rejected_breaches_only_after_the_trailing_days(tmp_path: Path) -> None:
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(0, "DEFERRED", "venue_rejected")])
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"
+    _e8_rows(tmp_path, [(d, "DEFERRED", "venue_rejected")
+                        for d in range(fence.E8_TRAILING_DAYS_MAX - 1, -1, -1)])
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "HALTED"
+
+
+def test_e8_a_re_send_that_landed_clears_the_venue_rejected_run(tmp_path: Path) -> None:
+    """The re-send's PLACED row (prop/e8_gold._retry_failed_legs, v2) ends the run."""
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(2, "DEFERRED", "venue_rejected"), (1, "DEFERRED", "venue_rejected"),
+                        (0, "DEFERRED", "venue_rejected"), (0, "PLACED", "placed")])
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"
+    # An abandon after nothing ever reached the venue continues the run, and still breaches.
+    _e8_rows(tmp_path, [(1, "DEFERRED", "venue_rejected"), (1, "SKIPPED", "venue_rejected"),
+                        (0, "DEFERRED", "venue_rejected")])
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "HALTED"
+
+
+@pytest.mark.parametrize("status", ["MT5_UNAVAILABLE", "VENUE_UNAVAILABLE", "NO_BARS"])
+def test_e8_a_failed_pass_heartbeat_is_unmeasured_never_ok(tmp_path: Path, status: str) -> None:
+    """Must-fix 2, the audit's probe: a live heartbeat from a failed pass read OK in v1."""
+    _e8_status(tmp_path, status, failing_since=NOW - timedelta(minutes=20),
+               last_ok_at=NOW - timedelta(minutes=25))
+    _e8_rows(tmp_path, [(0, "PLACED", "placed")])
+    doc = fence.scan(tmp_path, now=NOW)
+    lane = doc["lanes"]["e8_gold"]
+    assert lane["verdict"] == "UNMEASURED" and lane["ok"] is None, lane
+    assert lane["heartbeat"]["failing_h"] == pytest.approx(1 / 3, abs=1e-3)
+    assert doc["ok"] is not False
+
+
+@pytest.mark.parametrize("status", ["MT5_UNAVAILABLE", "VENUE_UNAVAILABLE", "NO_BARS"])
+def test_e8_a_lane_failing_past_the_limit_is_a_halt(tmp_path: Path, status: str) -> None:
+    since = NOW - timedelta(hours=fence.E8_FAILING_MAX_HOURS + 1)
+    _e8_status(tmp_path, status, failing_since=since, last_ok_at=since - timedelta(minutes=5))
+    _e8_rows(tmp_path, [(0, "PLACED", "placed")])
+    doc = fence.scan(tmp_path, now=NOW)
+    assert doc["verdict"] == "HALTED" and doc["ok"] is False
+    assert any(status in p and "has failed" in p for p in doc["problems"]), doc["problems"]
+
+
+def test_e8_a_failing_lane_with_no_ledger_and_only_last_ok_still_halts(tmp_path: Path) -> None:
+    _e8_status(tmp_path, "VENUE_UNAVAILABLE", last_ok_at=NOW - timedelta(days=1))
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "HALTED"
+
+
+def test_e8_a_v1_failed_heartbeat_with_no_stamps_is_unmeasured(tmp_path: Path) -> None:
+    _e8_status(tmp_path, "MT5_UNAVAILABLE")
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+
+
+def test_e8_a_failing_lane_halt_reaches_the_event_log(tmp_path: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import events
+    log = tmp_path / "events.jsonl"
+    monkeypatch.setattr(events, "PATH", log)
+    root = tmp_path / "root"
+    _e8_status(root, "VENUE_UNAVAILABLE", failing_since=NOW - timedelta(hours=30))
+    assert fence.record_event(fence.scan(root, now=NOW), ROOT) == "PLACEMENT_HALTED"
+    assert json.loads(log.read_text("utf-8").splitlines()[-1])["sleeves"] == ["e8_gold"]
+
+
+def test_e8_runs_are_keyed_by_window_and_account(tmp_path: Path) -> None:
+    """Should-fix: one day of a breachable reason on each of two accounts is not a two-day run."""
+    _e8_beat(tmp_path)
+    rows = []
+    for ago, acct in ((1, "tradelocker:aaaa"), (0, "tradelocker:bbbb")):
+        at = NOW - timedelta(days=ago)
+        rows.append(json.dumps({
+            "decided_at": at.isoformat(), "lane": "e8_gold", "account_ref": acct,
+            "sleeve": "e8_gold:afternoon", "server_date": at.date().isoformat(),
+            "outcome": "DEFERRED", "reason": "guard_stood_down", "taken": False}))
+    _write(tmp_path, E8_LEDGER, "\n".join(rows) + "\n")
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "OK", lane
+    assert set(lane["runs"]) == {"e8_gold:afternoon@tradelocker:aaaa",
+                                 "e8_gold:afternoon@tradelocker:bbbb"}
+
+
+def test_e8_torn_ledger_lines_are_counted(tmp_path: Path) -> None:
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(0, "PLACED", "placed")])
+    with (tmp_path / E8_LEDGER).open("a", encoding="utf-8") as fh:
+        fh.write('{"decided_at": "2026-09-24T10:00:0\n[1, 2]\n')
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["torn_lines"] == 2 and any("torn" in n for n in lane["notes"])
+    assert lane["verdict"] == "OK"
