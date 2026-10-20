@@ -1578,8 +1578,10 @@ def _create_time(pid: int) -> float | None:
 
 #: How many times the revert re-walks the tree for a shard spawned while it ran (audit HOLD of
 #: 1235ab79c10). The child is lowered first, so from the first walk on nothing new is born raised;
-#: the passes only catch a spawn that was already under way.
-LAUNCH_REVERT_PASSES = 5
+#: the passes only catch a spawn that was already under way. The tree counts as settled only
+#: after TWO consecutive walks that find nothing above BELOW_NORMAL.
+LAUNCH_REVERT_PASSES = 8
+LAUNCH_REVERT_CLEAN_WALKS = 2
 
 
 def _own_tree(root: Any) -> tuple[list[Any], list[str]]:
@@ -1615,7 +1617,7 @@ def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None 
     and 1235ab79c10: the line write may wait on its lock while the child, born raised, already
     starts shards that inherit its class). The child must still be the process just started (its
     start time); each descendant must have started after its own parent. The child goes first,
-    and the tree is re-walked until a pass finds nothing above BELOW_NORMAL. Only ever LOWERS,
+    and the tree is re-walked until two walks in a row find nothing above BELOW_NORMAL. Only ever LOWERS,
     and only the judge's own tree. Raises LookupError, after trying every process, if any could
     not be put back or the tree never settled -- the caller then reports the raise as standing
     (UNMEASURED line), never `changed: False`."""
@@ -1630,7 +1632,7 @@ def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None 
         raise LookupError("pid reused or start time unreadable: not reverted")
     p.nice(bn)
     done, failed = [int(change["pid"])], []
-    settled = False
+    settled, clean = False, 0
     for _ in range(LAUNCH_REVERT_PASSES):
         tree, errors = _own_tree(p)
         lowered = 0
@@ -1645,7 +1647,8 @@ def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None 
                         done.append(int(d.pid))
             except Exception as exc:
                 failed.append(f"{getattr(d, 'pid', '?')}: {type(exc).__name__}: {exc}")
-        if not lowered and not failed:
+        clean = clean + 1 if not lowered and not failed else 0
+        if clean >= LAUNCH_REVERT_CLEAN_WALKS:
             settled = True
             break
     change["tree_reverted"] = done
