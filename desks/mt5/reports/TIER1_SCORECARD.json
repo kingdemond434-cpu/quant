@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-18T05:19:22+00:00",
+ "generated_utc": "2026-10-20T12:52:06+00:00",
  "authority": "MEASUREMENT ONLY -- sizes nothing, gates nothing, certifies nothing. It reports where the fourteen Tier-1 dimensions stand, read from the artifacts that own them.",
  "n_rows": 14,
  "rows": [
@@ -22,7 +22,7 @@
    "max_solo_direction": "majority measured",
    "basis": "desks/mt5/reports/TIMEFRAME_COVERAGE.json + desks/mt5/reports/SESSION_CHART_EXPANSION.json + desks/mt5/data/sleeves.json + desks/mt5/reports/UNIVERSAL_SURVIVORS.json: distinct (timeframe, session) over certified rows; charts_hunted=7, cells_without_both_axes=1173",
    "verdict": "BELOW",
-   "measured_at": "2026-10-18T03:46:10+00:00",
+   "measured_at": "2026-10-20T10:34:51+00:00",
    "lower_is_better": false
   },
   {
@@ -33,7 +33,7 @@
    "max_solo_direction": "persistent expansion",
    "basis": "desks/mt5/reports/BREADTH_MANDATE.json occupied (declared_clusters=15)",
    "verdict": "BELOW",
-   "measured_at": "2026-10-17T12:30:02+00:00",
+   "measured_at": "2026-10-19T09:09:24+00:00",
    "lower_is_better": false
   },
   {
@@ -44,7 +44,7 @@
    "max_solo_direction": "whole executable universe",
    "basis": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json survivors[*].shadow_spec.symbol -> universe_policy.asset_class_of (unclassified=0)",
    "verdict": "ABOVE",
-   "measured_at": "2026-10-18T01:38:44.036217+00:00",
+   "measured_at": "2026-10-20T10:04:31.383572+00:00",
    "lower_is_better": false
   },
   {
@@ -55,7 +55,7 @@
    "max_solo_direction": "100% and held",
    "basis": "desks/mt5/reports/PIT_CENSUS.json canaries.green=None, census.stamped/sidecars + desks/mt5/reports/LAKE_PROMOTION.json silver_share; binding=lake silver_share",
    "verdict": "BELOW",
-   "measured_at": "2026-10-18T00:06:27.158394+00:00",
+   "measured_at": "2026-10-20T08:48:25.595954+00:00",
    "lower_is_better": false
   },
   {
@@ -66,7 +66,7 @@
    "max_solo_direction": "100",
    "basis": "desks/mt5/reports/ATTRIBUTION_RECONCILE.json attributed_pct (207/257 by exact name, unique prefix or tp/sl geometry); the exact-name join alone reads 6.61%",
    "verdict": "BELOW",
-   "measured_at": "2026-10-17T22:33:37+00:00",
+   "measured_at": "2026-10-20T09:25:50+00:00",
    "lower_is_better": false
   },
   {
@@ -77,7 +77,7 @@
    "max_solo_direction": "0",
    "basis": "desks/mt5/reports/process_health.json counts.FAILING+NOT_SCHEDULED + desks/mt5/data/sync_marker.json legs LEG_FAILED/TIMEOUT (legs=0)",
    "verdict": "AT",
-   "measured_at": "2026-10-18T05:15:02+00:00",
+   "measured_at": "2026-10-20T12:45:19+00:00",
    "lower_is_better": true
   },
   {
@@ -88,7 +88,7 @@
    "max_solo_direction": "100",
    "basis": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json survivors x desks/mt5/reports/shadow/shadow_state.json clock keys (symbol+selector, credit_assignment join): 1038/1048",
    "verdict": "BELOW",
-   "measured_at": "2026-10-18T01:38:44.036217+00:00",
+   "measured_at": "2026-10-20T10:04:31.383572+00:00",
    "lower_is_better": false
   },
   {
@@ -99,7 +99,7 @@
    "max_solo_direction": "3",
    "basis": "desks/mt5/data/cost_surface.json symbols[*].hours=True, size/regime/order_type dims=ABSENT, per-alpha distribution=ABSENT",
    "verdict": "BELOW",
-   "measured_at": "2026-10-18T02:21:39+00:00",
+   "measured_at": "2026-10-20T02:22:56+00:00",
    "lower_is_better": false
   },
   {
@@ -121,7 +121,7 @@
    "max_solo_direction": "3",
    "basis": "desks/mt5/data/macro_state.json series=22, per-country blocks=False (differentials=1), desks/mt5/data/state_vector.json sensitivities=True",
    "verdict": "BELOW",
-   "measured_at": "2026-10-18T04:55:43.854027+00:00",
+   "measured_at": "2026-10-20T12:26:02.194238+00:00",
    "lower_is_better": false
   },
   {
@@ -132,7 +132,7 @@
    "max_solo_direction": "3",
    "basis": "desks/mt5/reports/pf_allocation.json proof: passed=False, hysteresis=True, desks/mt5/reports/pf_allocation.json posterior fields=True",
    "verdict": "BELOW",
-   "measured_at": "2026-10-18T03:48:30.453642+00:00",
+   "measured_at": "2026-10-20T12:21:33.676505+00:00",
    "lower_is_better": false
   },
   {
@@ -141,9 +141,9 @@
    "unit": "days",
    "first_target": 365.0,
    "max_solo_direction": "years",
-   "basis": "desks/mt5/data/tape/ticks/*/YYYY-MM-DD.parquet distinct dates over 249 symbol dir(s); desks/mt5/data/moat_coverage.json newest_tape_write=2026-10-18T04:23:58+00:00, desks/mt5/reports/TAPE_RECORDER.json state=PAUSED",
+   "basis": "desks/mt5/data/tape/ticks/*/YYYY-MM-DD.parquet distinct dates over 249 symbol dir(s); desks/mt5/data/moat_coverage.json newest_tape_write=2026-10-18T19:23:11+00:00, desks/mt5/reports/TAPE_RECORDER.json state=PAUSED",
    "verdict": "BELOW",
-   "measured_at": "2026-10-18T05:10:06+00:00",
+   "measured_at": "2026-10-20T12:51:23+00:00",
    "lower_is_better": false
   },
   {
