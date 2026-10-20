@@ -285,6 +285,9 @@ from mt5desk.decision_core import (
     min_lot_risk_eur as min_lot_risk_eur,
 )
 from mt5desk.decision_core import (
+    gold_at_risk_block as gold_at_risk_block,
+)
+from mt5desk.decision_core import (
     MINLOT_OVERRIDE_SLEEVES as MINLOT_OVERRIDE_SLEEVES,
 )
 from mt5desk.decision_core import (
@@ -2284,6 +2287,20 @@ def _load_retired_gold() -> dict:
     reason `decision_core.load_retired_gold` states: an unreadable file must not silently stop a
     live book that is otherwise trading correctly."""
     return _core.load_retired_gold(GOLD_RETIRED_FILE)
+
+
+def gold_one_at_risk(name: str) -> str | None:
+    """Why gold window `name` may not be placed now under ONE GOLD TRADE AT RISK, or None.
+
+    Reads this account's XAUUSD positions and pending orders and asks
+    `decision_core.gold_at_risk_block`. A terminal that cannot answer blocks (fail closed).
+    """
+    try:
+        positions = mt5.positions_get(symbol=GOLD_SYMBOL)
+        orders = mt5.orders_get(symbol=GOLD_SYMBOL)
+    except Exception as exc:
+        return f"positions/orders unreadable ({type(exc).__name__}: {exc}); fail closed"
+    return gold_at_risk_block(positions, orders, own_tag=order_comment(name))
 
 
 def minlot_override_roster(sleeves: list[dict[str, object]],
@@ -4728,6 +4745,15 @@ def main() -> None:
             if not (lot > 0):
                 log(f"[{s['name']}] SKIPPED: allocator gave this sleeve no heat")
                 continue
+            if s.get("lot") == "auto" and s.get("symbol") == GOLD_SYMBOL:
+                # ONE GOLD TRADE AT RISK AT A TIME (Max-growth ruling, 2026-10-20): three windows
+                # at the 0.01 floor stacked ~17% of equity at risk. An earlier window's position
+                # still at risk, or its bracket still resting, holds this window back; a
+                # break-even-ratcheted position does not. Unreadable venue -> not placed.
+                _gold_why = gold_one_at_risk(s["name"])
+                if _gold_why:
+                    log(f"[{s['name']}] NOT PLACED (one gold trade at risk): {_gold_why}")
+                    continue
             log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
                 f"(realised q {q_real:.2%})")
             # THE INVARIANT, ASSERTED WHERE THE MONEY IS:

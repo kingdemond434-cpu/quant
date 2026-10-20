@@ -873,6 +873,57 @@ def minlot_override_rows(path: Path, active: frozenset[str],
     return rows, notes
 
 
+def gold_at_risk_block(positions: object, orders: object, *, own_tag: str = "",
+                       symbol: str = GOLD_SYMBOL) -> str | None:
+    """Why a gold window may NOT be placed now (one gold trade at risk at a time), or None.
+
+    Max-growth ruling for the six-sleeve Fusion book (2026-10-20): three gold windows at 0.01
+    lot put about EUR 84 a day (~17% of a EUR 485 account) at risk at once, and ruin at a zero
+    edge was 67-71%. So a window is skipped while
+      * any XAUUSD position on the account is still AT RISK -- its stop is absent, or below the
+        entry on a buy / above it on a sell (a break-even-ratcheted position does not block), or
+      * any XAUUSD pending order other than this window's own (`own_tag`) is resting -- an
+        earlier window's bracket that has not filled or been cancelled.
+    FAILS CLOSED: `positions` or `orders` of None (the terminal could not answer) blocks, and so
+    does a position whose side or prices cannot be read. Pure over the venue's readings.
+    """
+    if positions is None or orders is None:
+        return "positions or orders unreadable; one-gold-at-risk cannot be proven"
+    try:
+        pos_list = list(positions)  # type: ignore[call-overload]
+        ord_list = list(orders)  # type: ignore[call-overload]
+    except TypeError:
+        return "positions or orders unreadable; one-gold-at-risk cannot be proven"
+    for p in pos_list:
+        if str(getattr(p, "symbol", "") or "") != symbol:
+            continue
+        ticket = getattr(p, "ticket", "?")
+        try:
+            kind = int(getattr(p, "type"))
+            entry = float(getattr(p, "price_open"))
+            sl = float(getattr(p, "sl", 0.0) or 0.0)
+        except (AttributeError, TypeError, ValueError):
+            return f"{symbol} position {ticket} unreadable; treated as at risk"
+        if kind == 0:
+            protected = sl > 0.0 and sl >= entry
+        elif kind == 1:
+            protected = sl > 0.0 and sl <= entry
+        else:
+            return f"{symbol} position {ticket} has an unknown side {kind}; treated as at risk"
+        if not protected:
+            return (f"{symbol} position {ticket} ({'buy' if kind == 0 else 'sell'} @ {entry:g}, "
+                    f"sl {sl:g}) is still at risk (stop not at break-even or better)")
+    for o in ord_list:
+        if str(getattr(o, "symbol", "") or "") != symbol:
+            continue
+        comment = str(getattr(o, "comment", "") or "")
+        if own_tag and comment == own_tag:
+            continue
+        return (f"{symbol} pending order {getattr(o, 'ticket', '?')} ({comment or 'no comment'}) "
+                f"from an earlier window is still open")
+    return None
+
+
 def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) -> float:
     """The effective risk fraction of a NON-BOOK promoted sleeve: base clamp x authority x fade.
 

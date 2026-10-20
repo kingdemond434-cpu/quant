@@ -403,3 +403,82 @@ def test_no_organ_writes_the_switch() -> None:
     block = src[src.index("MINLOT_OVERRIDE_FILE ="):src.index("def ramped_fraction")]
     for writer in ("write_text", "json.dump(", "os.replace", ".open("):
         assert writer not in block
+
+
+# ------------------------------------------------------------ one gold trade at risk at a time
+
+def _pos(kind: int, entry: float, sl: float, symbol: str = "XAUUSD", ticket: int = 1):
+    return SimpleNamespace(symbol=symbol, type=kind, price_open=entry, sl=sl, ticket=ticket)
+
+
+def _ord(comment: str, symbol: str = "XAUUSD", ticket: int = 7):
+    return SimpleNamespace(symbol=symbol, comment=comment, ticket=ticket)
+
+
+def test_a_flat_gold_book_lets_the_window_place() -> None:
+    assert dc.gold_at_risk_block([], [], own_tag="DWgold_london_am") is None
+    # Other symbols never block gold.
+    assert dc.gold_at_risk_block([_pos(0, 1.10, 0.0, symbol="EURZAR")],
+                                 [_ord("DWx", symbol="USDNOK")], own_tag="DWgold_asia") is None
+
+
+@pytest.mark.parametrize("pos", [
+    _pos(0, 2400.0, 2390.0),          # buy, stop below entry
+    _pos(1, 2400.0, 2410.0),          # sell, stop above entry
+    _pos(0, 2400.0, 0.0),             # no stop at all
+    _pos(1, 2400.0, 0.0),
+])
+def test_an_earlier_gold_position_still_at_risk_blocks(pos) -> None:
+    why = dc.gold_at_risk_block([pos], [], own_tag="DWgold_london_am")
+    assert why and "at risk" in why
+
+
+@pytest.mark.parametrize("pos", [
+    _pos(0, 2400.0, 2400.0), _pos(0, 2400.0, 2405.0),     # buy at / above break-even
+    _pos(1, 2400.0, 2400.0), _pos(1, 2400.0, 2395.0),     # sell at / below break-even
+])
+def test_a_break_even_ratcheted_position_does_not_block(pos) -> None:
+    assert dc.gold_at_risk_block([pos], [], own_tag="DWgold_afternoon") is None
+
+
+def test_an_earlier_windows_resting_bracket_blocks_but_its_own_does_not() -> None:
+    why = dc.gold_at_risk_block([], [_ord("DWgold_asia")], own_tag="DWgold_london_am")
+    assert why and "pending order" in why
+    assert dc.gold_at_risk_block([], [_ord("DWgold_london_am")],
+                                 own_tag="DWgold_london_am") is None
+
+
+@pytest.mark.parametrize("positions,orders", [
+    (None, []), ([], None), (None, None), (5, []),
+    ([SimpleNamespace(symbol="XAUUSD", ticket=3)], []),           # side/prices unreadable
+    ([_pos(7, 2400.0, 2400.0)], []),                               # unknown side
+])
+def test_unreadable_positions_or_orders_fail_closed(positions, orders) -> None:
+    assert dc.gold_at_risk_block(positions, orders, own_tag="DWgold_asia")
+
+
+def test_the_gateway_reads_this_accounts_gold_book_and_fails_closed() -> None:
+    venue = SimpleNamespace(positions_get=lambda symbol=None: (_pos(0, 2400.0, 2390.0),),
+                            orders_get=lambda symbol=None: ())
+    ns = adapter._exec(("gold_one_at_risk", "order_comment"), {"mt5": venue})
+    assert "at risk" in ns["gold_one_at_risk"]("gold_london_am")
+    venue.positions_get = lambda symbol=None: (_pos(0, 2400.0, 2401.0),)
+    assert ns["gold_one_at_risk"]("gold_london_am") is None
+    venue.orders_get = lambda symbol=None: None                  # terminal error
+    assert ns["gold_one_at_risk"]("gold_london_am")
+
+    def boom(symbol=None):
+        raise RuntimeError("IPC down")
+    venue.positions_get = boom
+    assert "fail closed" in ns["gold_one_at_risk"]("gold_afternoon")
+
+
+def test_the_bracket_loop_consults_the_guard_for_gold_windows_only() -> None:
+    src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    main = src[src.index("\ndef main() -> None:"):]
+    i = main.index('_gold_why = gold_one_at_risk(s["name"])')
+    guard = main[i - 400:i + 300]
+    assert 's.get("lot") == "auto" and s.get("symbol") == GOLD_SYMBOL' in guard
+    assert "NOT PLACED (one gold trade at risk)" in guard and "continue" in guard
+    # It sits before the order is built and sent.
+    assert i < main.index("place_bracket(st, spec")
