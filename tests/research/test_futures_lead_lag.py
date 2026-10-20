@@ -225,7 +225,8 @@ def test_an_unmeasured_pass_never_overwrites_the_bar_clock(monkeypatch, tmp_path
     got = _json.loads(clock.read_text("utf-8"))
     assert got["per_season"]["summer"]["offset_h"] == 3
     assert got["per_season"]["summer"]["provenance"] == fll.PROV_LEGACY
-    assert got["provenance"] == fll.PROV_LEGACY and got["remeasure_needed"]["status"] == "UNMEASURED"
+    assert got["provenance"] == fll.PROV_LEGACY
+    assert got["remeasure_needed"]["status"] == "UNMEASURED"
     rep = _json.loads((tmp_path / "desks/mt5/reports/FUTURES_LEAD_LAG.json").read_text("utf-8"))
     assert rep["bar_clock_written"] is False and rep["missed_growth"]
     assert rep["bar_clock_provenance"] == fll.PROV_LEGACY
