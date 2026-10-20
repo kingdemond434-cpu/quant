@@ -1346,9 +1346,14 @@ def _seam_http_error(url: str, status: int, error: str) -> urllib.error.HTTPErro
 
 def _keyed_open(url: str, hdr: dict[str, str], data: bytes | None, method: str | None,
                 timeout: float, max_bytes: int, acc: HostAccess,
-                opener: Callable[..., Any] | None) -> SeamResponse:
+                opener: Callable[..., Any] | None, live_input: bool = False) -> SeamResponse:
     """A request whose URL carries a credential: admitted first (holds + robots), sent once
-    through the module's no-redirect door, and a 401/403/429 held on the REDACTED url."""
+    through the module's no-redirect door (a 30x is returned as HTTPError, never followed), and
+    a 401/403/429 held on the REDACTED url. `live_input` also refuses an IDEAS_ONLY route."""
+    if live_input:
+        src = _tf.input_source(url)
+        if src:
+            raise PoliteRefused(url, "terms_fenced", f"terms_fenced:{src}")
     ok, why = admit(url, access=acc, opener=opener)
     if not ok:
         raise PoliteRefused(url, why.split(" ")[0].split(":")[0], why)
@@ -1406,8 +1411,10 @@ def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
     acc = access if access is not None else default_access()
     hdr = honest_headers(hdrs)
     if carries_secret(url) or (method not in ("GET", "HEAD") and body is None):
-        return _keyed_open(url, hdr, body, method, timeout, max_bytes, acc, opener)
+        return _keyed_open(url, hdr, body, method, timeout, max_bytes, acc, opener, live_input)
     if body is not None:
+        if live_input and _tf.input_source(url):
+            raise PoliteRefused(url, "terms_fenced", f"terms_fenced:{_tf.input_source(url)}")
         try:
             text = post(url, body, headers=hdr, timeout=timeout, leg=leg, access=acc,
                         opener=opener)
@@ -1435,7 +1442,7 @@ class SeamRequestsResponse:
 
     def __init__(self, url: str, status: int, content: bytes, text: str, content_type: str,
                  verdict: str = "", error: str = "") -> None:
-        self.url = url
+        self.url = redact_url(url)               # a credential never rides on a response
         self.status_code = status
         self.content = content
         self.text = text

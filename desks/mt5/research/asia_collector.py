@@ -26,11 +26,12 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
                     series, so a source that is IDEAS_ONLY (StockTwits' pages, whose Terms s.5
                     bar automated extraction -- `stocktwits_macro`) or held is not requested; the
                     row carries the status, the why and the permitted route.
-    (BLOCKED_BY_ROBOTS is RETIRED, 2026-09-23.) A robots.txt Disallow was a refusal here and is
-                    now a LABEL: the reading is recorded on the row as `robots_disallows` and
-                    `terms_note`, it routes what the desk may REDISTRIBUTE, and the page is
-                    fetched like any other open page (LAWS 5e). The status name stays in the
-                    census tuple below so an OLD row already carrying it still prints.
+    BLOCKED_BY_ROBOTS  the url's own origin robots.txt disallows it for the desk's token (or `*`),
+                    or is unreadable (5xx/unreachable): nothing is requested (LAWS 5e AS AMENDED
+                    BY THE PRINCIPAL 2026-10-14 -- robots.txt is respected desk-wide; the
+                    2026-09-23 "label, never a gate" reading is withdrawn). Read by
+                    `polite_fetch.HostAccess`, the desk's one robots reader; a 401/403/429 holds
+                    the site there and later passes send nothing to it.
 
 EVERYTHING IS VAULTED POINT-IN-TIME. The raw bytes are written under their own content hash and
 never overwritten, so a claim made today can be re-read against exactly what the page said when
@@ -72,7 +73,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+from libs.data.polite_fetch import DESK_UA, PoliteRefused, admit, polite_urlopen  # noqa: E402
 
 REGISTRY = BASE / "data" / "asia_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
@@ -158,31 +159,22 @@ def _key_present(src: dict[str, Any]) -> bool:
     return bool(env and os.environ.get(env))
 
 
-def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
-    """Ask the host's robots.txt and RECORD what it said. The answer is a LABEL, not a gate.
+def _robots_allows(url: str, agent: str = "") -> tuple[bool, str]:
+    """The site's holds and the url's own origin robots.txt, read by THE ONE implementation
+    (`polite_fetch.HostAccess`, via `admit`: the desk's product token, then `*`, longest match).
 
-    LAWS 5e (rewritten 2026-09-23): licence, robots, source class and credibility route
-    REDISTRIBUTION and WEIGHT and never stop discovery, ingestion, representation or testing.
-    This helper used to return False on a served DISALLOW and `_fetch` turned that into
-    BLOCKED_BY_ROBOTS -- a discovery brake, and the last one left in the shared fetch path that
-    `event_surprise` and `data_acquisition_scientist` both call.
-
-    The reading is still MADE and still travels with the row, because provenance is the half of
-    the old behaviour worth keeping. What is gone is the refusal. The five refused ACTS are
-    untouched and none of them is robots.txt: a login, a paywall, a credential or an access
-    control is still never crossed (see the auth/subscription branch above this call).
+    LAWS 5e AS AMENDED BY THE PRINCIPAL 2026-10-14: robots.txt is RESPECTED desk-wide. A
+    Disallow, an unreadable robots.txt (5xx, unreachable) or a 401/403/429 site hold means the
+    url is NOT requested -- the 2026-09-23 "label, never a gate" reading is withdrawn. A 404
+    robots.txt allows everything (RFC 9309). `agent` is kept for callers; the desk is matched as
+    itself only (`DESK_UA_PRODUCT`), never as another agent.
     """
+    del agent
     try:
-        from urllib.robotparser import RobotFileParser
-        parts = urllib.parse.urlsplit(url)
-        rp = RobotFileParser()
-        robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
-        req = urllib.request.Request(robots, headers={"User-Agent": agent})
-        with fenced_urlopen(req, timeout=12, context=_TLS) as r:   # the one fetch door
-            rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
-        return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
+        ok, why = admit(url)
     except Exception as exc:
-        return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
+        return False, f"robots/holds check failed ({type(exc).__name__}): not fetched"
+    return (True, "robots.txt consulted: allowed") if ok else (False, why)
 
 
 def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
@@ -385,15 +377,17 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
         rec.update({**_tf.refusal(fenced)})
         return rec
 
-    # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading
-    # rides on the row as provenance -- it routes what the desk may REDISTRIBUTE -- and the fetch
-    # proceeds either way. The `BLOCKED_BY_ROBOTS` status it used to set is deleted.
+    # ROBOTS DECIDES (LAWS 5e amended by the principal 2026-10-14): a Disallow, an unreadable
+    # robots.txt or a 401/403/429 site hold means the source is NOT requested this pass. The
+    # row names the refusal; a held site waits for a person (or the 429 clock), never a retry.
     allowed, why_robots = _robots_allows(url)
     rec["robots"] = why_robots
     rec["robots_disallows"] = not allowed
     if not allowed:
-        rec["terms_note"] = ("robots.txt disallows this path: recorded as a REDISTRIBUTION "
-                             "label, mined and tested like any other open page")
+        rec.update({"status": "BLOCKED_BY_ROBOTS",
+                    "why": (f"{why_robots}. robots.txt is respected desk-wide (LAWS 5e amended "
+                            "2026-10-14): nothing was requested")})
+        return rec
 
     # CONDITIONAL GET. A 304 costs a round trip and no body, and most of these sources publish
     # daily or monthly against a pass that may run hourly -- so the default behaviour is to
@@ -404,8 +398,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # exactly what a point-in-time store wants to hear. It is recorded as UNCHANGED so a reader
     # can tell "nothing new" from "nothing fetched", which is the same distinction this file
     # draws everywhere else.
-    headers = {"User-Agent": "quant-desk-collector/1.0 (+public data collection)",
-               "Accept": "*/*"}
+    headers = {"User-Agent": DESK_UA, "Accept": "*/*"}
     if isinstance(validators, dict):
         if validators.get("etag"):
             headers["If-None-Match"] = str(validators["etag"])
@@ -416,8 +409,11 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     req = urllib.request.Request(url, data=body_out, headers=headers)
     from libs.data import terms_fence as _tfg
     try:
-        # THE ONE FETCH DOOR: a redirect into a login / CAPTCHA wall is refused, not followed.
-        with fenced_urlopen(req, timeout=timeout, context=_TLS, live_input=True) as r:
+        # polite_fetch's seam: THE ONE FETCH DOOR behind the site's holds and the origin's
+        # robots.txt on every hop; a login / CAPTCHA wall is refused, not followed; 401/403/429
+        # hold the site (no re-request on the next cadence -- the hold stands).
+        with polite_urlopen(req, timeout=timeout, live_input=True, max_bytes=MAX_BYTES,
+                            retries=0, leg="asia_collector") as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
@@ -425,6 +421,15 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             body = r.read(MAX_BYTES)
     except _tfg.TermsFenced as e:
         rec.update(_tfg.refusal(e.platform, redirected=True))
+        return rec
+    except PoliteRefused as e:
+        if e.verdict:
+            rec.update({"status": ("BLOCKED_BY_ROBOTS" if e.verdict.startswith("ROBOTS")
+                                   else "BLOCKED_TERMS" if e.verdict == "terms_fenced"
+                                   else "HTTP_ERROR"),
+                        "verdict": e.verdict, "why": f"{e.verdict}: {e.error[:120]}"})
+        else:
+            rec.update({"status": "UNREACHABLE", "why": f"{e.error[:120]}"})
         return rec
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)

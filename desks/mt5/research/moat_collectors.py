@@ -72,6 +72,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parents[1]
@@ -81,7 +82,7 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research"), str(_DESK / "side_ch
 
 import deep_forest_miner as dfm  # noqa: E402  (the desk's ONE http client)
 
-from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+from libs.data.polite_fetch import admit, polite_urlopen  # noqa: E402
 from libs.moat import registry as reg  # noqa: E402
 from libs.research import lead_schema as ls  # noqa: E402
 
@@ -260,26 +261,33 @@ def translation_note(script: str) -> str:
 
 # --------------------------------------------------------------------------- fetching (reused)
 def robots_barred(url: str) -> str:
-    """Why this url must not be fetched, or "". The measured hard stops first, then a live
-    re-probe through `seed_miners._robots_still_disallows` when it can be imported -- fail
-    closed, because an unreachable robots.txt is not consent."""
+    """Why this url must not be fetched, or "". The measured hard stops first, then the LIVE
+    check (LAWS 5e amended 2026-10-14): the site's holds and the url's own origin robots.txt,
+    read by THE ONE implementation (`polite_fetch.HostAccess` via `admit`). Fails closed: an
+    unreadable (5xx/unreachable) robots.txt is not consent, and neither is a check that raised."""
     low = str(url or "").lower()
     for host, prefix in ROBOTS_BARRED:
         if host in low and prefix in low:
             return f"{host}{prefix} is Disallow in {host}/robots.txt (measured 2026-08-27)"
-    return ""
+    if not url:
+        return ""
+    try:
+        ok, why = admit(url)
+    except Exception as exc:  # a check that fails proves nothing; the wall stands
+        return f"robots/holds check failed ({type(exc).__name__}): not fetched"
+    return "" if ok else f"{why}: {urlsplit(url).netloc} robots.txt or hold (live check)"
 
 
 def robots_still_disallows(host: str, user_agent: str = "*") -> bool:
-    """The desk's one robots reader, borrowed. True (refused) when it cannot be reached."""
+    """The desk's one robots reader (`polite_fetch.HostAccess`, via `admit`) at `host`'s root.
+    True (refused) when it cannot be read. `user_agent` is kept for callers; the desk is matched
+    as itself (DESK_UA_PRODUCT, then `*`)."""
+    del user_agent
     try:
-        from seed_miners import _robots_still_disallows
-    except ImportError:
-        return True
-    try:
-        return bool(_robots_still_disallows(host, user_agent))
+        ok, _why = admit(f"https://{host}/")
     except Exception:  # a probe that fails proves nothing; the wall stands
         return True
+    return not ok
 
 
 def fetch_text(url: str, lang: str = "") -> tuple[str, int, str]:
@@ -304,8 +312,10 @@ def fetch_bytes(url: str, lang: str = "") -> tuple[bytes, int, str]:
     hdr = {**dfm._UA, "Accept-Language": dfm.accept_language(lang)}
     req = urllib.request.Request(url, headers=hdr)
     try:
-        # THE ONE FETCH DOOR: a redirect into a login / CAPTCHA wall is refused, not followed.
-        with fenced_urlopen(req, timeout=FETCH_TIMEOUT_S) as fh:
+        # polite_fetch's seam: THE ONE FETCH DOOR behind the site's holds and the origin's
+        # robots.txt on every hop; a login / CAPTCHA wall is refused, not followed.
+        with polite_urlopen(req, timeout=FETCH_TIMEOUT_S, max_bytes=MAX_BYTES, retries=0,
+                            leg="moat_collectors") as fh:
             return fh.read(MAX_BYTES), int(getattr(fh, "status", 200) or 200), ""
     except urllib.error.HTTPError as exc:
         return b"", int(exc.code), f"HTTPError {exc.code}"

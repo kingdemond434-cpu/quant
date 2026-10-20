@@ -37,15 +37,18 @@ LINK_RE = re.compile(r"https?://[^\s)\"'<>]+")
 
 
 def fetch(url: str, as_json: bool = False, timeout: int = 20):
-    """One polite GET through THE ONE FETCH DOOR (`polite_fetch.fenced_urlopen`): a held source,
-    or a redirect into a login / sign-in / CAPTCHA wall, raises `MethodRefused` (METHOD_BLOCKED)
-    instead of being followed or read; an HTTP error raises HTTPError, as `raise_for_status` did."""
+    """One polite GET through polite_fetch's seam (THE ONE FETCH DOOR behind the site's holds and
+    the origin's robots.txt, every hop -- LAWS 5e amended 2026-10-14): a held source, a Disallow,
+    or a redirect into a login / sign-in / CAPTCHA wall raises (PoliteRefused, a URLError)
+    instead of being followed or read; an HTTP error raises HTTPError, as `raise_for_status` did,
+    and a 401/403/429 holds the site for every later pass."""
     import urllib.request
 
-    from libs.data.polite_fetch import decode_body, fenced_urlopen
+    from libs.data.polite_fetch import decode_body, polite_urlopen
     time.sleep(1.0)
     req = urllib.request.Request(url, headers=HEADERS)
-    with fenced_urlopen(req, timeout=timeout) as fh:
+    with polite_urlopen(req, timeout=timeout, max_bytes=MAX_BYTES, retries=0,
+                        leg="seed_miners") as fh:
         text = decode_body(fh.read(MAX_BYTES), str(fh.headers.get("Content-Type") or ""),
                            str(fh.headers.get("Content-Encoding") or ""))
     return json.loads(text) if as_json else text
@@ -175,27 +178,20 @@ def _wall_due(name: str, st: dict) -> bool:
 
 
 def _robots_still_disallows(host: str, ua_token: str) -> bool:
-    """Re-read robots.txt and report whether this agent is still refused.
+    """Whether the desk is still refused at `host`'s root: its holds and its robots.txt, read by
+    THE ONE implementation (`polite_fetch.HostAccess`, product-token group then `*`, longest
+    match). `ua_token` is kept for the wall rows' shape; the desk is matched as itself only.
 
-    Fails CLOSED: any error means we could not prove the refusal was lifted, so the wall
-    stands. An unreachable robots.txt is not consent.
+    Fails CLOSED: an unreadable robots.txt (5xx, unreachable) or a hold keeps the wall standing.
+    An unreachable robots.txt is not consent.
     """
+    del ua_token
     try:
-        txt = fetch(f"https://{host}/robots.txt")
+        from libs.data.polite_fetch import admit
+        ok, _why = admit(f"https://{host}/")
     except Exception:
         return True
-    group_ua, disallowed = None, False
-    for raw in txt.splitlines():
-        line = raw.split("#", 1)[0].strip()
-        if not line or ":" not in line:
-            continue
-        key, _, val = line.partition(":")
-        key, val = key.strip().lower(), val.strip()
-        if key == "user-agent":
-            group_ua = val.lower()
-        elif key == "disallow" and group_ua == ua_token.lower() and val == "/":
-            disallowed = True
-    return disallowed
+    return not ok
 
 
 def _probe_wall(name: str, wall: dict) -> tuple[bool, str]:

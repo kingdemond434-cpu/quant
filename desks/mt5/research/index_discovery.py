@@ -62,7 +62,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+from libs.data.polite_fetch import PoliteRefused, polite_urlopen  # noqa: E402
 
 REGISTRY = BASE / "data" / "asia_sources.json"
 SEEDS = BASE / "data" / "deep_forest_sources.json"
@@ -124,8 +124,13 @@ def _get(url: str, timeout: float = 25.0, cap: int = 2_000_000) -> tuple[bytes |
         return None, f"{_tf.PLATFORMS[p]['status']}:{p}"
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     try:
-        with fenced_urlopen(req, timeout=timeout, context=_TLS) as r:   # the one fetch door
+        # polite_fetch's seam: the one fetch door, behind the site's holds and the origin's
+        # robots.txt on every hop (LAWS 5e amended 2026-10-14); 401/403/429 hold the site.
+        with polite_urlopen(req, timeout=timeout, max_bytes=cap, retries=0,
+                            leg="index_discovery") as r:
             return r.read(cap), f"HTTP {getattr(r, 'status', 0)}"
+    except PoliteRefused as exc:
+        return None, (exc.verdict or "FETCH_FAILED") + f": {exc.error[:70]}"
     except _tf.TermsFenced as exc:
         _count_fenced("fetches", exc.platform)
         return None, f"{exc.status}:{exc.platform}"

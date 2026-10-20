@@ -3906,8 +3906,11 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, st
     # THE ONE FETCH DOOR, LIVE INPUT (it feeds the vintage store): the first URL and every
     # redirect hop must be a live-input route -- a 30x into a held or IDEAS_ONLY route raises
     # TermsFenced (pass-6 audit cf305e3d2 SHOULD-FIX 1).
-    from libs.data import terms_fence as _tf_live
-    with _tf_live.guarded_urlopen(req, timeout=TIMEOUT, context=_tls(), live_input=True) as r:
+    # polite_fetch's seam opens through that door AND checks the site's holds and the origin's
+    # robots.txt on every hop first (LAWS 5e amended 2026-10-14); 401/403/429 hold the site.
+    from libs.data import polite_fetch as _pf_live
+    with _pf_live.polite_urlopen(req, timeout=TIMEOUT, live_input=True, max_bytes=MAX_BYTES,
+                                 leg="alt_proxies") as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 

@@ -66,6 +66,13 @@ import urllib.request
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[4]))
+    from libs.data.polite_fetch import polite_urlopen
 
 UTC = UTC
 BASE = "https://datafeed.dukascopy.com/datafeed"
@@ -163,7 +170,7 @@ def fetch_hour(symbol: str, t: datetime, timeout: float = 30.0,
     for attempt in range(retries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "aurum/1.0"})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with polite_urlopen(req, timeout=timeout) as r:
                 blob = r.read()
             if pause:
                 time.sleep(pause)
@@ -172,8 +179,12 @@ def fetch_hour(symbol: str, t: datetime, timeout: float = 30.0,
             if e.code == 404:
                 return [], "missing"          # weekend/holiday — expected
             last = f"http {e.code}"
-            if e.code in (400, 401, 403):
-                return [], last               # not transient; do not hammer
+            if e.code in (400, 401, 403, 429):
+                return [], last               # not transient; 401/403/429 also hold the site
+        except urllib.error.URLError as e:
+            if getattr(e, "verdict", ""):     # robots.txt or a site hold: nothing was sent
+                return [], f"refused {e.verdict}"
+            last = type(e).__name__
         except Exception as e:
             last = type(e).__name__
         if attempt < retries - 1:

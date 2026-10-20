@@ -45,6 +45,13 @@ from typing import Any, ClassVar
 from countries._declared_data_plane import ACQUISITION_OWNER, declared_lanes
 from countries._declared_data_plane import report_path as _report_path
 from countries._declared_data_plane import run as _declared_run
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[5]))
+    from libs.data.polite_fetch import polite_urlopen
 
 CODE = "sa"
 DESK = Path(__file__).resolve().parents[3]
@@ -272,7 +279,7 @@ class Guard:
                                                     "Accept": "application/json"})
         self.calls += 1
         try:
-            with urllib.request.urlopen(req, timeout=min(self.timeout_s,
+            with polite_urlopen(req, timeout=min(self.timeout_s,
                                                          max(1.0, self.budget_s))) as resp:
                 raw = resp.read()
         except (OSError, ValueError) as exc:

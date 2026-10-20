@@ -45,7 +45,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
+try:
+    from libs.data.polite_fetch import polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_requests_get
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -92,7 +98,7 @@ _DELAY_RE = re.compile(r"(\d{4})年(\d{2})月(\d{2})日")
 
 def _fred_csv(url: str, col: str, timeout: int = 45) -> pd.Series | None:
     try:
-        r = requests.get(url, timeout=timeout)
+        r = polite_requests_get(url, timeout=timeout)
         r.raise_for_status()
     except Exception as exc:                                        # noqa: BLE001
         print(f"  {col}: {type(exc).__name__}: {exc}", flush=True)
@@ -141,7 +147,7 @@ def fetch_sge() -> tuple[dict[str, tuple[pd.Timestamp, float]], str]:
     prints: dict[str, tuple[pd.Timestamp, float]] = {}
     for col, instid in SGE_CONTRACTS.items():
         try:
-            r = requests.get(SGE_GRAPH, params={"instid": instid}, timeout=45,
+            r = polite_requests_get(SGE_GRAPH, params={"instid": instid}, timeout=45,
                              headers={"User-Agent": "quant-research-desk/1.0"})
             r.raise_for_status()
             parsed = _parse_graph(r.json(), instid)
@@ -201,7 +207,7 @@ def _ecb_usdcny() -> pd.Series | None:
     """USDCNY crossed from ECB reference EUR rates (same 16:00 CET snapshot both legs)."""
     import xml.etree.ElementTree as ET
     try:
-        r = requests.get(ECB_90D, timeout=45)
+        r = polite_requests_get(ECB_90D, timeout=45)
         r.raise_for_status()
         root = ET.fromstring(r.content)
     except Exception as exc:                                        # noqa: BLE001
