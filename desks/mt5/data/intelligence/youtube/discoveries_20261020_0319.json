@@ -1,0 +1,19 @@
+[
+  {
+    "source": "youtube",
+    "title": "DeMark Pro Expert Advisor \u2013 Smart Gold Trading",
+    "channel": "Trading EA Store",
+    "url": "https://youtube.com/watch?v=G05crzqmoq8",
+    "published": "2026-10-19T15:00:02Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "EMA",
+      "SMA",
+      "RSI"
+    ],
+    "confidence": 0.6499999999999999
+  }
+]
