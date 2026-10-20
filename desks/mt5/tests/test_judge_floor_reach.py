@@ -858,9 +858,21 @@ def _tranche_report(at: datetime, **line: Any) -> str:
     return json.dumps({"at": at.isoformat(), "missed_growth_lines": [base]})
 
 
+def _raw_lines(at: datetime, lines: list[dict[str, Any]]) -> str:
+    return json.dumps({"at": at.isoformat(), "missed_growth_lines": lines})
+
+
+#: Audit of 8fef5c9f4: each of these is malformed, never RAISED and never a clean verdict.
+_MALFORMED_CASES = {"list", "null", "nan_cells", "str_cells", "inf_value", "nan_value",
+                    "lines_not_list", "no_count_with_value", "bare_line", "sum_overflows",
+                    "huge_int_value", "absurd_count", "zero_cells_nonzero_value"}
+
+
 @pytest.mark.parametrize("case", ["absent", "stale", "future_1h", "future_30d", "list",
                                   "null", "nan_cells", "str_cells", "inf_value", "nan_value",
-                                  "lines_not_list"])
+                                  "lines_not_list", "no_count_with_value", "bare_line",
+                                  "sum_overflows", "huge_int_value", "absurd_count",
+                                  "zero_cells_nonzero_value"])
 def test_a_bad_tranche_report_is_unmeasured_and_never_costs_the_rails_their_lines(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str) -> None:
     """Audit of bd241ee4a, must-fixes: a future stamp is never fresh, and malformed input reads
@@ -881,6 +893,13 @@ def test_a_bad_tranche_report_is_unmeasured_and_never_costs_the_rails_their_line
         "inf_value": _tranche_report(now, value=float("inf")),
         "nan_value": _tranche_report(now, value=float("nan")),
         "lines_not_list": json.dumps({"at": now.isoformat(), "missed_growth_lines": {"x": 1}}),
+        "no_count_with_value": _raw_lines(now, [{"rail": "judge_tape_tranche", "value": -1.0}]),
+        "bare_line": _raw_lines(now, [{"rail": "judge_tape_tranche"}]),
+        "sum_overflows": _raw_lines(now, [{"rail": "judge_tape_tranche", "cells_displaced": 1,
+                                           "value": 1.7e308}] * 2),
+        "huge_int_value": _tranche_report(now, value=10**400),
+        "absurd_count": _tranche_report(now, cells_displaced=1e300),
+        "zero_cells_nonzero_value": _tranche_report(now, cells_displaced=0, value=-5.0),
     }.get(case)
     if text is not None:
         path.write_text(text, "utf-8")
@@ -889,6 +908,8 @@ def test_a_bad_tranche_report_is_unmeasured_and_never_costs_the_rails_their_line
     assert got["verdict"] == mg.UNMEASURED, got
     if case.startswith("future"):
         assert got["reason"] == "FUTURE_DATED"
+    if case in _MALFORMED_CASES:
+        assert got["reason"] == "MALFORMED", got
     assert doc["rails"] and len(doc["rails"]) == len(mg.RAILS)
     assert "stop_geometry_robustness_gate" in doc["published_gate_lines"]
     # the positive control: the same report, fresh and well formed, is billed

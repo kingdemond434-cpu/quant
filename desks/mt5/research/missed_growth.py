@@ -798,15 +798,33 @@ def _bad_line(why: str, reason: str, age_h: float | None = None) -> dict[str, An
     return out
 
 
+#: No hour's judge allocation displaces more cells than this; a larger count is not a count.
+MAX_CELLS_DISPLACED = 10**9
+
+
 def _count(raw: Any) -> int | None:
-    """A displaced-cell count: a non-negative whole number, or None (never coerced)."""
+    """A displaced-cell count: a whole number in [0, MAX_CELLS_DISPLACED], or None (never
+    coerced). A missing count arrives here as None and is therefore malformed, never 0."""
     if isinstance(raw, bool):
         return None
     if isinstance(raw, int):
-        return raw if raw >= 0 else None
-    if isinstance(raw, float) and math.isfinite(raw) and raw.is_integer() and raw >= 0:
+        return raw if 0 <= raw <= MAX_CELLS_DISPLACED else None
+    if isinstance(raw, float) and math.isfinite(raw) and raw.is_integer() \
+            and 0 <= raw <= MAX_CELLS_DISPLACED:
         return int(raw)
     return None
+
+
+def _finite(raw: Any) -> float | None:
+    """A value as a finite float, or None: bools, non-numbers, NaN, inf and ints too large for a
+    float (10**400 overflows the conversion) are all rejected, never raised."""
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        return None
+    try:
+        f = float(raw)
+    except (OverflowError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
 
 
 def judge_tape_tranche_lines(now: datetime | None = None) -> dict[str, Any]:
@@ -850,27 +868,37 @@ def judge_tape_tranche_lines(now: datetime | None = None) -> dict[str, Any]:
     if not lines:
         return _bad_line("the report carries no judge_tape_tranche line (a pre-tranche build, or "
                          "an empty docket that allocated nothing)", "NO_LINE", age_h)
-    counts = [_count(x.get("cells_displaced", 0)) for x in lines]
+    # The producer always writes cells_displaced (judge_coverage.tape_tranche_missed_growth):
+    # a line without it is malformed, and an absent count never resolves to a clean 0.
+    counts = [_count(x.get("cells_displaced")) for x in lines]
     if any(c is None for c in counts):
-        return _bad_line("a judge_tape_tranche line's cells_displaced is not a non-negative "
-                         "whole number", "MALFORMED", age_h)
+        return _bad_line("a judge_tape_tranche line's cells_displaced is missing or not a whole "
+                         f"number in [0, {MAX_CELLS_DISPLACED}]", "MALFORMED", age_h)
     values: list[float | None] = []
-    for x in lines:
+    for x, c in zip(lines, counts, strict=True):
         v = x.get("value")
         if v is None:
             values.append(None)                        # unpriced by the producer: said so
-        elif isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
-            values.append(float(v))
-        else:
+            continue
+        f = _finite(v)
+        if f is None:
             return _bad_line("a judge_tape_tranche line's value is not a finite number",
                              "MALFORMED", age_h)
+        if c == 0 and f != 0.0:
+            return _bad_line("a judge_tape_tranche line displaces 0 cells yet carries a nonzero "
+                             "value: internally inconsistent", "MALFORMED", age_h)
+        values.append(f)
     cells = sum(c for c in counts if c is not None)
     unpriced = any(v is None for v in values)
+    total = sum(v for v in values if v is not None)    # may overflow to inf: checked below
+    if not math.isfinite(total):
+        return _bad_line("the judge_tape_tranche lines' values sum to a non-finite number",
+                         "MALFORMED", age_h)
     verdict = COSTS if (cells > 0 or any(x.get("verdict") == COSTS for x in lines)) \
         else NOT_BINDING
     return {"verdict": verdict, "source": "reports/JUDGE_COVERAGE.json",
             "age_h": round(age_h, 2), "lines": lines, "cells_displaced": cells,
-            "value": None if unpriced else round(sum(v for v in values if v is not None), 12),
+            "value": None if unpriced else round(total, 12),
             "value_status": UNMEASURED if unpriced else "MEASURED",
             "units": lines[0].get("units")}
 
