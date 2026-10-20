@@ -177,7 +177,8 @@ def test_row06_an_empty_ledger_is_UNMEASURED_and_never_one_hundred(sandbox: Path
 
 def test_row07_sums_failing_organs_and_failed_or_timed_out_legs(sandbox: Path) -> None:
     _write(sandbox, "PROCESS_HEALTH", {"at": "2026-09-12T07:15:01+00:00",
-                                       "scheduler_status": "OK schtasks",
+                                       "scheduler_status": "OK schtasks", "status": "ATTENTION",
+                                       "processes": [],
                                        "counts": {"FAILING": 7, "NOT_SCHEDULED": 1, "OK": 15}})
     _write(sandbox, "SYNC_MARKER", {"last_cycle": "2026-09-16T13:53:37+00:00",
                                     "daily": {"status": "TIMEOUT"},
@@ -216,6 +217,24 @@ def test_row07_an_unread_scheduler_is_UNMEASURED_never_zero_failures(
     assert row["basis"].startswith("UNMEASURED:")
 
 
+@pytest.mark.parametrize("health", [
+    {"scheduler_status": "OK schtasks", "status": "OK", "processes": []},             # no counts
+    {"scheduler_status": "OK schtasks", "status": "OK", "processes": [], "counts": [1]},
+    {"scheduler_status": "OK schtasks", "status": "OK", "counts": {"OK": 3}},         # no rows
+    {"scheduler_status": "OK schtasks", "status": "OK", "counts": {"OK": 3},
+     "processes": None},
+    {"scheduler_status": "OK schtasks", "status": "UNMEASURED", "counts": {"OK": 3},
+     "processes": []},                                       # the producer's own verdict
+], ids=["no-counts", "counts-not-object", "no-processes", "processes-null", "headline-unmeasured"])
+def test_row07_a_malformed_or_self_unmeasured_reading_is_UNMEASURED(
+        sandbox: Path, health: dict) -> None:
+    # audit v4: each of these used to score 0.0 AT from the legs alone
+    _write(sandbox, "PROCESS_HEALTH", {"at": "2026-10-20T18:15:00+00:00", **health})
+    _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and row["verdict"] == sc.UNMEASURED
+
+
 def test_row07_no_process_health_reading_is_UNMEASURED_even_with_the_legs(sandbox: Path) -> None:
     # audit v3: the legs alone used to score 0.0 AT with process_health.json absent
     _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
@@ -226,7 +245,7 @@ def test_row07_no_process_health_reading_is_UNMEASURED_even_with_the_legs(sandbo
 
 def test_row07_a_component_row_without_a_code_is_not_an_unread_result(sandbox: Path) -> None:
     _write(sandbox, "PROCESS_HEALTH", {
-        "at": "2026-10-20T18:15:00+00:00", "scheduler_status": "OK schtasks",
+        "at": "2026-10-20T18:15:00+00:00", "scheduler_status": "OK schtasks", "status": "OK",
         "counts": {"OK": 2},
         "processes": [{"name": "MT5-Gauntlet", "verdict": "OK", "state": "Running",
                        "last_result_code": 267009},
