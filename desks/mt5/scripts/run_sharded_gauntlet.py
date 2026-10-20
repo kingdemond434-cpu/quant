@@ -1576,13 +1576,39 @@ def _create_time(pid: int) -> float | None:
         return None
 
 
-def _launch_revert(change: dict[str, Any]) -> None:
-    """Set the sweep child back to BELOW_NORMAL -- only if it is still the process just started."""
+def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None = None) -> None:
+    """Set the sweep child AND EVERY DESCENDANT back to BELOW_NORMAL (audit HOLD of f798fe7293d:
+    the line write may wait on its lock while the child, born raised, already starts shards
+    that inherit its class). The child must still be the process just started (its start time);
+    a descendant must have started after it. The child goes first, so anything it spawns after
+    the enumeration inherits BELOW_NORMAL. Only ever LOWERS, and only the judge's own tree.
+    Raises LookupError, after trying every process, if any could not be put back -- the caller
+    then reports the raise as standing (UNMEASURED line), never `changed: False`."""
     import psutil  # type: ignore[import-untyped,unused-ignore]
-    p = psutil.Process(int(change["pid"]))
-    if change.get("create_time") is None or p.create_time() != change["create_time"]:
+
+    from scripts import judge_priority as jp
+    make = process or psutil.Process
+    bn = int(getattr(psutil, "BELOW_NORMAL_PRIORITY_CLASS", 10))
+    p = make(int(change["pid"]))
+    born = change.get("create_time")
+    if born is None or p.create_time() != born:
         raise LookupError("pid reused or start time unreadable: not reverted")
-    p.nice(int(getattr(psutil, "BELOW_NORMAL_PRIORITY_CLASS", 10)))
+    p.nice(bn)
+    done, failed = [int(change["pid"])], []
+    for d in p.children(recursive=True):
+        try:
+            if d.create_time() < born:
+                continue                      # not a descendant born of this child: untouched
+            rank = jp.rank_of(d.nice())
+            if rank is None or rank > jp.CLASS_RANK[jp.BELOW_NORMAL]:
+                d.nice(bn)
+                done.append(int(d.pid))
+        except Exception as exc:
+            failed.append(f"{getattr(d, 'pid', '?')}: {type(exc).__name__}: {exc}")
+    change["tree_reverted"] = done
+    if failed:
+        change["tree_unreverted"] = failed
+        raise LookupError(f"{len(failed)} descendant(s) could not be put back: {failed[:3]}")
 
 
 #: THE BACKPRESSURE CORE, REPUBLISHED AFTER EVERY SWEEP (2026-10-20). Measured on the box:

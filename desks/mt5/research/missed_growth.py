@@ -650,17 +650,46 @@ def published_gate_lines() -> dict[str, Any]:
 GAUNTLET_STALL = BASE / "reports" / "GAUNTLET_STALL.json"
 #: The judge's priority rule (judge_cpu_fair_share): one line per applied raise to EQUAL.
 JUDGE_PRIORITY_RAISES = BASE / "reports" / "JUDGE_PRIORITY_RAISES.json"
+#: ... and its append-only sidecar: the lines of changes that STAND although the locked write
+#: failed (a kept lowering, an unrevertable raise). Carried beside the artifact's own lines.
+JUDGE_PRIORITY_UNRECORDED = BASE / "reports" / "JUDGE_PRIORITY_RAISES_UNRECORDED.jsonl"
 DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 
 
-def organ_published_lines(path: Path, *, recent: int = 20) -> dict[str, Any]:
-    """An organ's own published missed-growth lines, read from its artifact. Absent -> UNMEASURED
-    (said, never a clean zero); present with no lines -> NOT_BINDING (the rail never cost)."""
+def _spill_lines(spill: Path | None) -> list[dict[str, Any]]:
+    """An organ's append-only sidecar of lines its locked artifact could not take."""
+    if spill is None:
+        return []
+    out = []
+    try:
+        text = spill.read_text("utf-8")
+    except (OSError, ValueError):
+        return []
+    for ln in text.splitlines():
+        try:
+            got = json.loads(ln)
+        except ValueError:
+            continue                          # a torn last line is skipped, never fatal
+        if isinstance(got, dict):
+            out.append(got)
+    return out
+
+
+def organ_published_lines(path: Path, *, recent: int = 20,
+                          spill: Path | None = None) -> dict[str, Any]:
+    """An organ's own published missed-growth lines, read from its artifact (plus its sidecar
+    `spill`, when it keeps one). Absent -> UNMEASURED (said, never a clean zero); present with no
+    lines -> NOT_BINDING (the rail never cost)."""
     doc = _json(path)
-    if not doc:
+    extra = _spill_lines(spill)
+    if not doc and not extra:
         return {"verdict": UNMEASURED, "lines": [],
                 "why": f"no {path.parent.name}/{path.name} on this host: the organ has not run"}
-    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)][-recent:]
+    doc = doc or {}
+    lines = [*(x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)), *extra]
+    if extra:                                 # interleave the sidecar by time
+        lines = sorted(lines, key=lambda x: str(x.get("at") or ""))
+    lines = lines[-recent:]
     if not lines:
         return {"verdict": NOT_BINDING, "lines": [], "source": f"reports/{path.name}",
                 "why": "the organ has published no missed-growth line: it never cost a wall"}
@@ -792,7 +821,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
                                     "judge_priority_raise": organ_published_lines(
-                                        JUDGE_PRIORITY_RAISES),
+                                        JUDGE_PRIORITY_RAISES,
+                                        spill=JUDGE_PRIORITY_UNRECORDED),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD)},
            "aggression_verdict": aggression.get("verdict"),

@@ -8,6 +8,7 @@ Three rules are pinned here:
   3. a stale GAUNTLET_BACKPRESSURE input reads UNMEASURED and ALARMS; the backpressure core is
      republished cheaply; the cadence apply skips, retries, records and never hangs.
 """
+
 from __future__ import annotations
 
 import json
@@ -37,21 +38,42 @@ R = jp.CLASS_RANK
 
 def _p(pid, ppid, name, cmd, nice, created=None):
     # start time follows pid in the fixtures: a parent (lower pid) always predates its child
-    return {"pid": pid, "ppid": ppid, "name": name, "cmdline": cmd, "nice": nice,
-            "cpu_cores": 0.5, "create_time": float(pid if created is None else created)}
+    return {
+        "pid": pid,
+        "ppid": ppid,
+        "name": name,
+        "cmdline": cmd,
+        "nice": nice,
+        "cpu_cores": 0.5,
+        "create_time": float(pid if created is None else created),
+    }
 
 
 def _box(miner_nice=BN, judge_nice=BN, e8_nice=N, term_nice=BN, gw_nice=N, extra=()):
     py = r"C:\Program Files\Python314\python.exe"
     return [
         _p(10, 1, "python.exe", [py, "-u", r"scripts\run_sharded_gauntlet.py"], judge_nice),
-        _p(11, 10, "python.exe",
-           [py, "-u", r"C:\opt\quant\desks\mt5\scripts\run_sharded_gauntlet.py", "--once"],
-           judge_nice),
-        _p(12, 11, "python.exe", [py, "-c", "from multiprocessing.spawn import spawn_main"],
-           judge_nice),
-        _p(20, 1, "python.exe", [py, r"research\department_resident.py", "--dept", "fx"],
-           miner_nice),
+        _p(
+            11,
+            10,
+            "python.exe",
+            [py, "-u", r"C:\opt\quant\desks\mt5\scripts\run_sharded_gauntlet.py", "--once"],
+            judge_nice,
+        ),
+        _p(
+            12,
+            11,
+            "python.exe",
+            [py, "-c", "from multiprocessing.spawn import spawn_main"],
+            judge_nice,
+        ),
+        _p(
+            20,
+            1,
+            "python.exe",
+            [py, r"research\department_resident.py", "--dept", "fx"],
+            miner_nice,
+        ),
         _p(21, 1, "python.exe", [py, r"research\scout_swarm.py"], miner_nice),
         _p(30, 1, "cmd.exe", ["cmd.exe", "/c", r"C:\opt\quant\ops\run_frontier_audit.cmd"], BN),
         _p(31, 30, "python.exe", [py, "-u", r"desks\mt5\research\world_model.py", "--apply"], BN),
@@ -66,10 +88,10 @@ def _box(miner_nice=BN, judge_nice=BN, e8_nice=N, term_nice=BN, gw_nice=N, extra
 # ------------------------------------------------------------------ 1. the priority-equality rule
 def test_classification_follows_command_line_then_ancestry() -> None:
     cls = {r["pid"]: r["cls"] for r in jp.classify(_box())}
-    assert cls[10] == cls[11] == cls[12] == "judge"       # pool child inherits the judge
+    assert cls[10] == cls[11] == cls[12] == "judge"  # pool child inherits the judge
     assert cls[20] == cls[21] == "miner"
-    assert cls[30] == cls[31] == "audit"                  # organ under the audit cmd
-    assert cls[40] == cls[41] == cls[42] == "live"        # E8, terminal64, the gateway
+    assert cls[30] == cls[31] == "audit"  # organ under the audit cmd
+    assert cls[40] == cls[41] == cls[42] == "live"  # E8, terminal64, the gateway
     assert cls[50] == "judge_warm"
 
 
@@ -88,8 +110,9 @@ def test_only_an_interpreter_is_the_judge_and_a_reused_parent_is_no_parent() -> 
     assert cls[62] == "miner"
 
 
-@pytest.mark.parametrize("miners", [[R[BN]], [R[N]], [R[BN], R[N]], [R[N], R[AN]],
-                                    [R[HIGH]], [R[AN], R[HIGH]]])
+@pytest.mark.parametrize(
+    "miners", [[R[BN]], [R[N]], [R[BN], R[N]], [R[N], R[AN]], [R[HIGH]], [R[AN], R[HIGH]]]
+)
 @pytest.mark.parametrize("lives", [[], [R[N]], [R[BN]], [R[AN]]])
 @pytest.mark.parametrize("registered", [None, R[N], R[AN], R[HIGH]])
 @pytest.mark.parametrize("unreadable", [0, 1])
@@ -161,8 +184,12 @@ def test_census_verdict_and_equalise_touch_only_the_judge() -> None:
     c = jp.census(_raisable_box(judge_nice=BN), registered_live=R[AN])
     assert c["target"]["rank"] == R[N] and c["verdict"] == "JUDGE_BELOW_MINERS"
     calls: list[tuple[int, int]] = []
-    ch = jp.equalise(c["rows"], c["target"]["rank"], apply=True,
-                     setter=lambda pid, k, row: calls.append((pid, k)))
+    ch = jp.equalise(
+        c["rows"],
+        c["target"]["rank"],
+        apply=True,
+        setter=lambda pid, k, row: calls.append((pid, k)),
+    )
     assert sorted(p for p, _ in calls) == [10, 11, 12]
     assert all(k == N for _, k in calls)
     assert all(x["applied"] for x in ch)
@@ -178,7 +205,7 @@ def test_apply_refuses_a_pid_that_is_no_longer_the_censused_process(monkeypatch)
             self.set_to = None
 
         def create_time(self):
-            return 999.0                       # a different process now holds the pid
+            return 999.0  # a different process now holds the pid
 
         def cmdline(self):
             return ["python", "something_else.py"]
@@ -187,6 +214,7 @@ def test_apply_refuses_a_pid_that_is_no_longer_the_censused_process(monkeypatch)
             self.set_to = v
 
     import types
+
     made: list[Proc] = []
     fake = types.SimpleNamespace(Process=lambda pid: made.append(Proc(pid)) or made[-1])
     monkeypatch.setitem(sys.modules, "psutil", fake)
@@ -201,8 +229,12 @@ def test_a_judge_above_the_miners_is_brought_down_to_equal() -> None:
     c = jp.census(_box(miner_nice=BN, judge_nice=N, e8_nice=N))
     assert c["verdict"] == "JUDGE_ABOVE_MINERS" and c["target"]["rank"] == R[BN]
     calls: list[tuple[int, int]] = []
-    jp.equalise(c["rows"], c["target"]["rank"], apply=True,
-                setter=lambda pid, k, row: calls.append((pid, k)))
+    jp.equalise(
+        c["rows"],
+        c["target"]["rank"],
+        apply=True,
+        setter=lambda pid, k, row: calls.append((pid, k)),
+    )
     assert {k for _, k in calls} == {BN}
 
 
@@ -215,8 +247,10 @@ def test_today_on_paper_is_already_equal() -> None:
 def test_duplicates_count_distinct_parents_not_pool_workers() -> None:
     py = "python.exe"
     extra = [_p(60 + i, 100 + i, py, [py, r"research\scout_swarm.py"], BN) for i in range(3)]
-    pool = [_p(70 + i, 20, py, [py, "-c", "from multiprocessing.spawn import spawn_main"], BN)
-            for i in range(5)]
+    pool = [
+        _p(70 + i, 20, py, [py, "-c", "from multiprocessing.spawn import spawn_main"], BN)
+        for i in range(5)
+    ]
     dups = jp.census(_box(extra=[*extra, *pool]))["duplicates"]
     swarm = next(d for d in dups if d["command"].startswith("scout_swarm.py"))
     assert swarm["distinct_parents"] == 4
@@ -236,31 +270,36 @@ def test_the_launcher_takes_its_class_from_the_rule_and_falls_back(monkeypatch, 
 
     def boom(*a, **k):
         raise RuntimeError("psutil refused")
+
     monkeypatch.setattr(jp, "snapshot", boom)
     assert rsg._judge_flags() == BN
     src = (DESK / "scripts" / "run_sharded_gauntlet.py").read_text("utf-8")
-    body = src[src.index("def _one_sweep_child"):src.index("def _judge_flags")]
+    body = src[src.index("def _one_sweep_child") : src.index("def _judge_flags")]
     assert "flags = _judge_flags()" in body and "_record_launch_raise(flags, child.pid)" in body
     assert "ABOVE_NORMAL" not in body and "HIGH_PRIORITY" not in body
 
 
-def test_a_raise_publishes_a_missed_growth_line_from_launcher_and_child(monkeypatch,
-                                                                         tmp_path) -> None:
+def test_a_raise_publishes_a_missed_growth_line_from_launcher_and_child(
+    monkeypatch, tmp_path
+) -> None:
     import missed_growth as mg
+
     raises = tmp_path / "JUDGE_PRIORITY_RAISES.json"
     monkeypatch.setattr(jp, "RAISES", raises)
     monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", tmp_path / "JUDGE_PRIORITY_SWEEP.json")
     # the launcher started the child at NORMAL: its line is written even though the child,
     # born at target, will find nothing to change
     assert rsg._record_launch_raise(N, 4321)["missed_growth_lines"] == 1
-    assert rsg._record_launch_raise(BN, 4322)["missed_growth_lines"] == 0   # no raise, no line
+    assert rsg._record_launch_raise(BN, 4322)["missed_growth_lines"] == 0  # no raise, no line
     # once per (day, pid, create_time, by)
     assert rsg._record_launch_raise(N, 4321)["missed_growth_lines"] == 0
     # the child raising itself writes its own line
     import os
+
     me = os.getpid()
-    rows = _raisable_box(extra=[_p(me, 1, "python.exe",
-                                   ["python", "run_sharded_gauntlet.py", "--once"], BN)])
+    rows = _raisable_box(
+        extra=[_p(me, 1, "python.exe", ["python", "run_sharded_gauntlet.py", "--once"], BN)]
+    )
     monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
     monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
     monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: None)
@@ -268,8 +307,10 @@ def test_a_raise_publishes_a_missed_growth_line_from_launcher_and_child(monkeypa
     assert out["changed"] and out["missed_growth_lines"] == 1
     doc = json.loads(raises.read_text("utf-8"))
     assert [x["by"] for x in doc["missed_growth"]] == ["launcher", "sweep_child"]
-    assert all(x["rail"] == "judge_priority_raise" and x["verdict"] == "UNMEASURED"
-               for x in doc["missed_growth"])
+    assert all(
+        x["rail"] == "judge_priority_raise" and x["verdict"] == "UNMEASURED"
+        for x in doc["missed_growth"]
+    )
     # carried by the missed-growth organ exactly like the watchdog's lines
     carried = mg.organ_published_lines(raises)
     assert carried["n_lines"] == 2 and carried["verdict"] == mg.UNMEASURED
@@ -291,8 +332,11 @@ def test_no_miner_spawn_site_or_installer_is_lowered_or_capped() -> None:
     """Rule 2 of the principal's constraints, pinned at the source: the miners' spawn sites keep
     BELOW_NORMAL (unchanged), nothing in this change sets an affinity, and MT5-Gauntlet is never
     raised to AboveNormal by an installer."""
-    for f in ("research/department_resident.py", "research/scout_swarm.py",
-              "research/moat_swarms.py"):
+    for f in (
+        "research/department_resident.py",
+        "research/scout_swarm.py",
+        "research/moat_swarms.py",
+    ):
         assert "BELOW_NORMAL_PRIORITY_CLASS" in (DESK / f).read_text("utf-8")
     jp_src = (DESK / "scripts" / "judge_priority.py").read_text("utf-8")
     assert "cpu_affinity(" not in jp_src
@@ -310,24 +354,32 @@ MANIFEST = DESK / "ops" / "box_tasks.manifest"
 def test_frontier_audit_registers_and_enforces_a_single_instance() -> None:
     inst = FA_INSTALLER.read_text("utf-8")
     assert "-MultipleInstances IgnoreNew" in inst
-    ens = inst[inst.index("if ($EnsureSingleInstance)"):inst.index("if ($IfMissing -and")]
+    ens = inst[inst.index("if ($EnsureSingleInstance)") : inst.index("if ($IfMissing -and")]
     assert "$live.Settings.MultipleInstances = 'IgnoreNew'" in ens
     assert "Set-ScheduledTask -InputObject $live" in ens
     # It changes one setting on the LIVE task: never re-registers, never rebuilds the trigger.
-    for forbidden in ("Unregister-ScheduledTask", "Register-ScheduledTask",
-                      "New-ScheduledTaskTrigger", "New-ScheduledTaskSettingsSet"):
+    for forbidden in (
+        "Unregister-ScheduledTask",
+        "Register-ScheduledTask",
+        "New-ScheduledTaskTrigger",
+        "New-ScheduledTaskSettingsSet",
+    ):
         assert forbidden not in ens
 
 
 def test_frontier_audit_work_per_day_is_unchanged() -> None:
-    row = next(ln for ln in MANIFEST.read_text("utf-8").splitlines()
-               if 'name="MT5-FrontierAudit"' in ln)
-    assert 'trigger="daily 05:10"' in row                     # once a day, as before
-    lines = [ln.strip() for ln in FA_RUNNER.read_text("utf-8").splitlines()
-             if ln.strip() and not ln.strip().lower().startswith("rem")]
-    body = lines[:lines.index(":run")]
+    row = next(
+        ln for ln in MANIFEST.read_text("utf-8").splitlines() if 'name="MT5-FrontierAudit"' in ln
+    )
+    assert 'trigger="daily 05:10"' in row  # once a day, as before
+    lines = [
+        ln.strip()
+        for ln in FA_RUNNER.read_text("utf-8").splitlines()
+        if ln.strip() and not ln.strip().lower().startswith("rem")
+    ]
+    body = lines[: lines.index(":run")]
     organs = [ln for ln in body if ln.startswith("call :run ")]
-    assert len(organs) == 34                                  # every organ, every day
+    assert len(organs) == 34  # every organ, every day
     # Sequential: nothing in the lane is backgrounded, so one pass is one python at a time.
     assert not [ln for ln in lines if ln.lower().startswith("start ")]
 
@@ -338,9 +390,23 @@ NOW = datetime(2026, 10, 20, 15, 43, tzinfo=UTC)
 
 def _bp(tmp_path: Path, monkeypatch, *, file_at: datetime, swept_at: datetime) -> None:
     p = tmp_path / "bp.json"
-    p.write_text(json.dumps({"at": file_at.isoformat(), "capacity": {"measured": {
-        "swept_at": swept_at.isoformat(), "n_cells_discovered": 10, "n_judged": 4,
-        "workers": 14}}, "windows": {"24h": {"testing": {"per_hour": 3.0}}}}), encoding="utf-8")
+    p.write_text(
+        json.dumps(
+            {
+                "at": file_at.isoformat(),
+                "capacity": {
+                    "measured": {
+                        "swept_at": swept_at.isoformat(),
+                        "n_cells_discovered": 10,
+                        "n_judged": 4,
+                        "workers": 14,
+                    }
+                },
+                "windows": {"24h": {"testing": {"per_hour": 3.0}}},
+            }
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(jt, "BACKPRESSURE", p)
     monkeypatch.setattr(jt, "BURNDOWN", tmp_path / "none_bd.json")
     monkeypatch.setattr(jt, "BREACH_DOCKET", tmp_path / "none_breach.json")
@@ -357,16 +423,21 @@ def test_a_stale_backpressure_file_reads_unmeasured_and_alarms(tmp_path, monkeyp
 
 
 def test_a_fresh_file_over_an_old_sweep_names_the_judge(tmp_path, monkeypatch) -> None:
-    _bp(tmp_path, monkeypatch, file_at=NOW - timedelta(minutes=5),
-        swept_at=NOW - timedelta(hours=14))
+    _bp(
+        tmp_path,
+        monkeypatch,
+        file_at=NOW - timedelta(minutes=5),
+        swept_at=NOW - timedelta(hours=14),
+    )
     q = jt.measure_queue(NOW)
     assert q["status"] == jt.UNMEASURED
     assert q["alarm"]["code"] == "JUDGE_SWEEP_STALE"
 
 
 def test_a_fresh_backpressure_input_is_measured_and_raises_no_alarm(tmp_path, monkeypatch) -> None:
-    _bp(tmp_path, monkeypatch, file_at=NOW - timedelta(minutes=5),
-        swept_at=NOW - timedelta(hours=1))
+    _bp(
+        tmp_path, monkeypatch, file_at=NOW - timedelta(minutes=5), swept_at=NOW - timedelta(hours=1)
+    )
     q = jt.measure_queue(NOW)
     assert q["status"] == "MEASURED" and q["depth"] == 6
     assert "alarm" not in q
@@ -374,15 +445,28 @@ def test_a_fresh_backpressure_input_is_measured_and_raises_no_alarm(tmp_path, mo
 
 def test_the_backpressure_core_republishes_without_the_graph(tmp_path, monkeypatch) -> None:
     ledger = tmp_path / "ledger.jsonl"
-    rows = [{"at": (NOW - timedelta(hours=h)).isoformat(), "cell": f"c{h}", "passed": False}
-            for h in (1, 2, 30)]
+    rows = [
+        {"at": (NOW - timedelta(hours=h)).isoformat(), "cell": f"c{h}", "passed": False}
+        for h in (1, 2, 30)
+    ]
     ledger.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     rep = tmp_path / "universal_gates_external.json"
-    rep.write_text(json.dumps({"swept_at": (NOW - timedelta(hours=1)).isoformat(),
-                               "n_cells_discovered": 9, "n_judged": 2}), encoding="utf-8")
+    rep.write_text(
+        json.dumps(
+            {
+                "swept_at": (NOW - timedelta(hours=1)).isoformat(),
+                "n_cells_discovered": 9,
+                "n_judged": 2,
+            }
+        ),
+        encoding="utf-8",
+    )
     out = tmp_path / "GAUNTLET_BACKPRESSURE.json"
-    old_full = {"at": "2026-10-03T12:44:22+00:00", "windows": {"7d": {"keep": 1},
-                "24h": {"intake": {"born_cells": 5}}}, "messages": ["kept"]}
+    old_full = {
+        "at": "2026-10-03T12:44:22+00:00",
+        "windows": {"7d": {"keep": 1}, "24h": {"intake": {"born_cells": 5}}},
+        "messages": ["kept"],
+    }
     out.write_text(json.dumps(old_full), encoding="utf-8")
     monkeypatch.setattr(gb, "GATE_LEDGER", ledger)
     monkeypatch.setattr(gb, "GAUNTLET_REPORT", rep)
@@ -391,12 +475,13 @@ def test_the_backpressure_core_republishes_without_the_graph(tmp_path, monkeypat
 
     def no_graph(*a, **k):
         raise AssertionError("the core must never read the hypothesis graph")
+
     monkeypatch.setattr(gb, "born_cells", no_graph)
     gb.write_core(now=NOW)
     doc = json.loads(out.read_text("utf-8"))
     assert doc["mode"] == "core" and doc["at"] == NOW.isoformat(timespec="seconds")
-    assert doc["full_at"] == "2026-10-03T12:44:22+00:00"       # carried blocks say how old
-    assert doc["core"]["testing_24h"]["cells_judged"] == 2   # the 30h-old row is outside
+    assert doc["full_at"] == "2026-10-03T12:44:22+00:00"  # carried blocks say how old
+    assert doc["core"]["testing_24h"]["cells_judged"] == 2  # the 30h-old row is outside
     # ONE VINTAGE PER BLOCK: the full build's windows are carried untouched
     assert doc["windows"] == old_full["windows"] and doc["messages"] == ["kept"]
     assert doc["capacity"]["measured"]["n_judged"] == 2
@@ -426,8 +511,9 @@ def test_an_absent_ledger_publishes_unmeasured_never_zero(tmp_path, monkeypatch)
     assert jt.measure_queue(NOW)["gates_per_hour"] == jt.UNMEASURED
 
 
-def test_a_core_never_replaces_a_full_build_that_landed_after_its_read(tmp_path,
-                                                                       monkeypatch) -> None:
+def test_a_core_never_replaces_a_full_build_that_landed_after_its_read(
+    tmp_path, monkeypatch
+) -> None:
     """The core measures outside the lock, then re-reads the CURRENT file inside it: a full
     build written in between is the base it merges onto, never what it overwrites."""
     out = tmp_path / "bp.json"
@@ -440,9 +526,17 @@ def test_a_core_never_replaces_a_full_build_that_landed_after_its_read(tmp_path,
 
     def measured_then_full_lands(at):
         res = real(at)
-        gb.write({"at": NOW.isoformat(), "mode": "full", "full_at": NOW.isoformat(),
-                  "messages": ["fresh full"]}, out)
+        gb.write(
+            {
+                "at": NOW.isoformat(),
+                "mode": "full",
+                "full_at": NOW.isoformat(),
+                "messages": ["fresh full"],
+            },
+            out,
+        )
         return res
+
     monkeypatch.setattr(gb, "_core_testing", measured_then_full_lands)
     gb.write_core(now=NOW)
     doc = json.loads(out.read_text("utf-8"))
@@ -464,9 +558,8 @@ def test_the_launcher_republishes_one_core_at_a_time(monkeypatch, tmp_path) -> N
     is_alive = alive.__contains__
     assert rsg._republish_backpressure(popen=Child, alive=is_alive) == "STARTED"
     assert started[0][-1] == "--core" and started[0][-2].endswith("gauntlet_backpressure.py")
-    assert rsg._republish_backpressure(popen=Child, alive=is_alive) == \
-        "SKIPPED_PREVIOUS_RUNNING"
-    alive.clear()                                   # the previous core finished
+    assert rsg._republish_backpressure(popen=Child, alive=is_alive) == "SKIPPED_PREVIOUS_RUNNING"
+    alive.clear()  # the previous core finished
     assert rsg._republish_backpressure(popen=Child, alive=is_alive) == "STARTED"
     assert len(started) == 2
     # a recycled pid that is not a core never blocks the next one
@@ -474,7 +567,7 @@ def test_the_launcher_republishes_one_core_at_a_time(monkeypatch, tmp_path) -> N
     # the sweep child, not the resident parent, starts it -- so an adopted release takes
     # effect on the next sweep without restarting the launcher
     src = (DESK / "scripts" / "run_sharded_gauntlet.py").read_text("utf-8")
-    once = src[src.index("def _sweep_once() -> int:"):src.index("def _publish_priority")]
+    once = src[src.index("def _sweep_once() -> int:") : src.index("def _publish_priority")]
     assert "_equalise_self()" in once and "_republish_backpressure()" in once
 
 
@@ -487,8 +580,9 @@ def cadence(tmp_path, monkeypatch):
     monkeypatch.setattr(jt, "CADENCE_STATE", tmp_path / "cadence.json")
     monkeypatch.setattr(jt.sys, "platform", "win32")
     monkeypatch.setattr(jt, "_next_run", lambda task: "10/20/2026 5:51:00 PM")
-    monkeypatch.setattr(jt.time if hasattr(jt, "time") else __import__("time"), "sleep",
-                        lambda s: None)
+    monkeypatch.setattr(
+        jt.time if hasattr(jt, "time") else __import__("time"), "sleep", lambda s: None
+    )
     return tmp_path / "cadence.json"
 
 
@@ -500,6 +594,7 @@ def test_cadence_retries_with_a_longer_timeout_then_records(cadence, monkeypatch
         if len(seen) == 1:
             raise subprocess.TimeoutExpired(argv, kw["timeout"])
         return subprocess.CompletedProcess(argv, 0)
+
     monkeypatch.setattr(jt.subprocess, "run", run)
     res = jt.apply_cadence(1, BOX)
     assert res["status"] == "APPLIED"
@@ -509,12 +604,21 @@ def test_cadence_retries_with_a_longer_timeout_then_records(cadence, monkeypatch
 
 
 def test_cadence_already_applied_issues_no_scheduler_call(cadence, monkeypatch) -> None:
-    cadence.write_text(json.dumps({"status": "APPLIED", "minutes": 1,
-                                   "duration": jt.CADENCE_DURATION,
-                                   "applied_at": datetime.now(UTC).isoformat()}), "utf-8")
+    cadence.write_text(
+        json.dumps(
+            {
+                "status": "APPLIED",
+                "minutes": 1,
+                "duration": jt.CADENCE_DURATION,
+                "applied_at": datetime.now(UTC).isoformat(),
+            }
+        ),
+        "utf-8",
+    )
 
     def run(*a, **k):
         raise AssertionError("no schtasks call when the interval is already in force")
+
     monkeypatch.setattr(jt.subprocess, "run", run)
     assert jt.apply_cadence(1, BOX)["status"] == "ALREADY_APPLIED"
 
@@ -524,6 +628,7 @@ def test_cadence_failure_writes_the_fallback_and_never_hangs(cadence, monkeypatc
 
     def run(argv, **kw):
         raise subprocess.TimeoutExpired(argv, kw["timeout"])
+
     monkeypatch.setattr(jt.subprocess, "run", run)
     jt._APPLY_DEADLINE[:] = [time.monotonic() + 50.0]
     try:
@@ -548,9 +653,19 @@ def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(t
     base = {"PATH": "x", "GAUNTLET_SHARDS": "14"}
     # DEFAULT: absent file -> the env is byte-identical to today
     assert rsg._blas_env(dict(base), sw) == base
-    for body in ('{"enabled": false}', '{"enabled": "true"}', '{"enabled": true, "x": 1}',
-                 '{"enabled": 1}', '{"enabled": 1.0}', '{"enabled": false, "enabled": true}',
-                 '{"enabled": true, "enabled": true}', "[true]", "true", "not json", ""):
+    for body in (
+        '{"enabled": false}',
+        '{"enabled": "true"}',
+        '{"enabled": true, "x": 1}',
+        '{"enabled": 1}',
+        '{"enabled": 1.0}',
+        '{"enabled": false, "enabled": true}',
+        '{"enabled": true, "enabled": true}',
+        "[true]",
+        "true",
+        "not json",
+        "",
+    ):
         sw.write_text(body, "utf-8")
         assert rsg._blas_env(dict(base), sw) == base, body
     sw.write_text('{"enabled": true}', "utf-8")
@@ -565,8 +680,12 @@ def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(t
 # ------------------------------------------------- 3c. a malformed cadence state never sticks
 @pytest.mark.parametrize("minutes", [True, "1", 1.0, None, [1]])
 def test_a_malformed_minutes_is_not_fresh(minutes) -> None:
-    st = {"status": "APPLIED", "minutes": minutes, "duration": jt.CADENCE_DURATION,
-          "applied_at": datetime.now(UTC).isoformat()}
+    st = {
+        "status": "APPLIED",
+        "minutes": minutes,
+        "duration": jt.CADENCE_DURATION,
+        "applied_at": datetime.now(UTC).isoformat(),
+    }
     assert jt._cadence_fresh(st, 1) is False
     assert jt._cadence_fresh({**st, "minutes": 1}, 1) is True
 
@@ -574,6 +693,7 @@ def test_a_malformed_minutes_is_not_fresh(minutes) -> None:
 # ------------------------------------- 5. the watchdog and the fair share, in ONE sweep_once
 def test_sweep_once_keeps_the_watchdog_and_the_fair_share_together(monkeypatch) -> None:
     import research.judging_throughput as rjt
+
     events: list[str] = []
 
     class Dog:
@@ -591,18 +711,29 @@ def test_sweep_once_keeps_the_watchdog_and_the_fair_share_together(monkeypatch) 
     monkeypatch.setattr(rsg, "_equalise_self", lambda: events.append("equalise") or {})
     monkeypatch.setattr(rsg, "_phase", lambda name: events.append(f"phase:{name}"))
     monkeypatch.setattr(rsg, "_publish_priority", lambda k, v: events.append(f"publish:{k}"))
-    monkeypatch.setattr(rsg, "_republish_backpressure",
-                        lambda: events.append("republish") or "STARTED")
+    monkeypatch.setattr(
+        rsg, "_republish_backpressure", lambda: events.append("republish") or "STARTED"
+    )
     fail_finish = False
     monkeypatch.setattr(rsg, "_sweep_logged", lambda: events.append("sweep") or 0)
     assert rsg._sweep_once() == 0
-    assert events == ["dog.start", "apply_env", "equalise", "publish:child", "phase:plan",
-                      "sweep", "dog.finish(0)", "republish", "publish:backpressure_core"]
+    assert events == [
+        "dog.start",
+        "apply_env",
+        "equalise",
+        "publish:child",
+        "phase:plan",
+        "sweep",
+        "dog.finish(0)",
+        "republish",
+        "publish:backpressure_core",
+    ]
     # a sweep that raises: the watchdog still records rc=1, the core is still republished
     events.clear()
 
     def boom():
         raise RuntimeError("judge crashed")
+
     monkeypatch.setattr(rsg, "_sweep_logged", boom)
     with pytest.raises(RuntimeError, match="judge crashed"):
         rsg._sweep_once()
@@ -617,10 +748,22 @@ def test_sweep_once_keeps_the_watchdog_and_the_fair_share_together(monkeypatch) 
 
 
 # ------------------------------------------- 6. v3 (audit HOLD of d465792f118): nothing silent
-@pytest.mark.parametrize("bad", [{"pid": "abc"}, {"pid": [1]}, {"pid": 7, "started": "x"},
-                                 {"pid": True}, {"pid": 1.5}, [1, 2], "x", None])
-def test_a_malformed_core_pid_file_never_raises_and_is_overwritten(monkeypatch, tmp_path,
-                                                                   bad) -> None:
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"pid": "abc"},
+        {"pid": [1]},
+        {"pid": 7, "started": "x"},
+        {"pid": True},
+        {"pid": 1.5},
+        [1, 2],
+        "x",
+        None,
+    ],
+)
+def test_a_malformed_core_pid_file_never_raises_and_is_overwritten(
+    monkeypatch, tmp_path, bad
+) -> None:
     lock = tmp_path / "core.json"
     lock.write_text(json.dumps(bad), "utf-8")
     monkeypatch.setattr(rsg, "BACKPRESSURE_CORE_LOCK", lock)
@@ -630,9 +773,10 @@ def test_a_malformed_core_pid_file_never_raises_and_is_overwritten(monkeypatch, 
 
         def __init__(self, argv, **kw):
             pass
+
     # alive(7) would say "running": a malformed file must not reach it at all
     assert rsg._republish_backpressure(popen=Child, alive=lambda pid: True) == "STARTED"
-    assert json.loads(lock.read_text("utf-8"))["pid"] == 4242      # rewritten, not wedged
+    assert json.loads(lock.read_text("utf-8"))["pid"] == 4242  # rewritten, not wedged
 
 
 def test_the_republish_returns_failed_instead_of_raising(monkeypatch, tmp_path) -> None:
@@ -641,6 +785,7 @@ def test_the_republish_returns_failed_instead_of_raising(monkeypatch, tmp_path) 
 
     def alive(pid):
         raise TypeError("alive blew up")
+
     got = rsg._republish_backpressure(popen=None, alive=alive)
     assert got.startswith("FAILED: TypeError")
 
@@ -654,6 +799,7 @@ def test_a_raising_republish_never_replaces_the_sweep_rc(monkeypatch) -> None:
 
         def finish(self, rc):
             pass
+
     monkeypatch.setattr(rsg, "SweepWatchdog", Dog)
     monkeypatch.setattr(rjt, "apply_env", lambda *a, **k: None)
     monkeypatch.setattr(rsg, "_equalise_self", lambda: {})
@@ -662,16 +808,18 @@ def test_a_raising_republish_never_replaces_the_sweep_rc(monkeypatch) -> None:
     def publish(k, v):
         if k == "backpressure_core":
             raise KeyError("publish blew up")
+
     monkeypatch.setattr(rsg, "_publish_priority", publish)
 
     def republish():
         raise ValueError("republish blew up")
+
     for rc in (0, 3):
         monkeypatch.setattr(rsg, "_sweep_logged", lambda rc=rc: rc)
         monkeypatch.setattr(rsg, "_republish_backpressure", republish)
         assert rsg._sweep_once() == rc
         monkeypatch.setattr(rsg, "_republish_backpressure", lambda: "STARTED")
-        assert rsg._sweep_once() == rc                    # the publish itself raising too
+        assert rsg._sweep_once() == rc  # the publish itself raising too
 
 
 def _failing_record(*a, **k):
@@ -693,6 +841,7 @@ def test_launcher_reverts_a_raise_whose_line_cannot_be_written(monkeypatch, tmp_
     # neither recorded nor reverted: said, truthfully, as a standing UNMEASURED change
     def cannot(c):
         raise LookupError("pid reused")
+
     out = rsg._record_launch_raise(N, 4321, revert=cannot)
     assert out["changed"] is True and out["unreverted"] == [4321]
     assert out["missed_growth"][0]["verdict"] == "UNMEASURED"
@@ -701,16 +850,18 @@ def test_launcher_reverts_a_raise_whose_line_cannot_be_written(monkeypatch, tmp_
 
 def test_child_reverts_its_own_raise_when_the_line_fails(monkeypatch, tmp_path) -> None:
     import os
+
     me = os.getpid()
-    rows = _raisable_box(extra=[_p(me, 1, "python.exe",
-                                   ["python", "run_sharded_gauntlet.py", "--once"], BN)])
+    rows = _raisable_box(
+        extra=[_p(me, 1, "python.exe", ["python", "run_sharded_gauntlet.py", "--once"], BN)]
+    )
     monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
     monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
     calls: list[tuple[int, int]] = []
     monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: calls.append((pid, k)))
     monkeypatch.setattr(jp, "record_raises", _failing_record)
     out = rsg._equalise_self()
-    assert calls == [(me, N), (me, BN)]                   # raised, then put back
+    assert calls == [(me, N), (me, BN)]  # raised, then put back
     assert out["line"] == "UNMEASURED" and out["reverted"] == [me]
     assert out["changed"] is False and out["changes"][0]["reverted"] is True
     # a revert refused (pid reused): changed True, never a silent False
@@ -720,6 +871,7 @@ def test_child_reverts_its_own_raise_when_the_line_fails(monkeypatch, tmp_path) 
         if k == BN:
             raise LookupError("pid reused")
         calls.append((pid, k))
+
     monkeypatch.setattr(jp, "_default_setter", setter)
     out = rsg._equalise_self()
     assert calls == [(me, N)] and out["changed"] is True and out["unreverted"] == [me]
@@ -729,14 +881,15 @@ def test_record_raises_skips_rather_than_writes_unlocked(monkeypatch, tmp_path) 
     import contextlib
 
     import libs.research.artifact_chain as ac
+
     target = tmp_path / "raises.json"
 
     @contextlib.contextmanager
     def never(path, timeout_s=10.0):
         yield False
+
     monkeypatch.setattr(ac, "_locked", never)
-    ch = [{"pid": 9, "from": "BELOW_NORMAL", "to": "NORMAL", "applied": True,
-           "create_time": 1.0}]
+    ch = [{"pid": 9, "from": "BELOW_NORMAL", "to": "NORMAL", "applied": True, "create_time": 1.0}]
     with pytest.raises(jp.LineUnrecorded):
         jp.record_raises(ch, "t", target)
     assert not target.exists()
@@ -758,8 +911,7 @@ def test_dedup_key_carries_create_time_and_lowerings_write_lines(tmp_path) -> No
     assert lines[-1]["units"].startswith("judge CPU") and lines[-1]["verdict"] == "UNMEASURED"
     # unapplied or unchanged: no line
     assert jp.record_raises([{**down, "applied": False, "create_time": 4.0}], "t", target) == 0
-    assert jp.record_raises([{**up, "to": "BELOW_NORMAL", "create_time": 5.0}], "t",
-                            target) == 0
+    assert jp.record_raises([{**up, "to": "BELOW_NORMAL", "create_time": 5.0}], "t", target) == 0
 
 
 @pytest.mark.parametrize("name", [None, "", "  "])
@@ -772,18 +924,138 @@ def test_an_unnamed_row_is_unreadable_and_blocks_a_raise(name) -> None:
 
 def test_a_full_build_never_overwrites_a_fresher_core(tmp_path, monkeypatch) -> None:
     out = tmp_path / "bp.json"
-    full_at = NOW - timedelta(minutes=40)            # the full build measured 40 min ago ...
+    full_at = NOW - timedelta(minutes=40)  # the full build measured 40 min ago ...
     core = {"at": NOW.isoformat(), "testing_24h": {"per_hour": 12.0}}
-    out.write_text(json.dumps({"at": NOW.isoformat(), "mode": "core",          # ... a core
-                               "capacity": {"sweep": 3}, "core": core}), "utf-8")  # since
-    gb.write({"at": full_at.isoformat(), "mode": "full", "full_at": full_at.isoformat(),
-              "capacity": {"sweep": 2}, "messages": ["full"]}, out)
+    out.write_text(
+        json.dumps(
+            {
+                "at": NOW.isoformat(),
+                "mode": "core",  # ... a core
+                "capacity": {"sweep": 3},
+                "core": core,
+            }
+        ),
+        "utf-8",
+    )  # since
+    gb.write(
+        {
+            "at": full_at.isoformat(),
+            "mode": "full",
+            "full_at": full_at.isoformat(),
+            "capacity": {"sweep": 2},
+            "messages": ["full"],
+        },
+        out,
+    )
     doc = json.loads(out.read_text("utf-8"))
     assert doc["messages"] == ["full"] and doc["mode"] == "full"
     assert doc["capacity"] == {"sweep": 3}
     assert doc["core"]["testing_24h"] == {"per_hour": 12.0}
     # a full build newer than the core replaces both
-    gb.write({"at": (NOW + timedelta(minutes=1)).isoformat(), "mode": "full",
-              "capacity": {"sweep": 4}}, out)
+    gb.write(
+        {"at": (NOW + timedelta(minutes=1)).isoformat(), "mode": "full", "capacity": {"sweep": 4}},
+        out,
+    )
     doc = json.loads(out.read_text("utf-8"))
     assert doc["capacity"] == {"sweep": 4} and "core" not in doc
+
+
+# ------------------------------- 7. v4 (audit HOLD of f798fe7293d): a lowering is never undone
+def test_a_lowering_whose_line_fails_stands_and_reaches_the_ledger(monkeypatch, tmp_path) -> None:
+    """Probe: the child at HIGH, miners at NORMAL -> lowered to NORMAL, the line write fails.
+    The judge must STAY at NORMAL (never put back above the miners), and the record must say
+    changed True with an UNMEASURED line that the missed-growth organ carries."""
+    import os
+
+    import missed_growth as mg
+
+    raises = tmp_path / "JUDGE_PRIORITY_RAISES.json"
+    monkeypatch.setattr(jp, "RAISES", raises)
+    me = os.getpid()
+    rows = _raisable_box(
+        extra=[_p(me, 1, "python.exe", ["python", "run_sharded_gauntlet.py", "--once"], HIGH)]
+    )
+    monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
+    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
+    calls: list[tuple[int, int]] = []
+    monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: calls.append((pid, k)))
+    monkeypatch.setattr(jp, "record_raises", _failing_record)
+    out = rsg._equalise_self()
+    assert out["verdict_before"] == "JUDGE_ABOVE_MINERS"
+    assert calls == [(me, N)]  # lowered once, NEVER set back to HIGH
+    assert out["changed"] is True and out["line"] == "UNMEASURED"
+    assert out["kept_lowered"] == [me] and out["reverted"] == []
+    line = out["missed_growth"][0]
+    assert line["verdict"] == "UNMEASURED" and line["direction"] == "lower"
+    assert line["from"] == "HIGH" and line["to"] == "NORMAL"
+    assert out["spill"] == "WRITTEN"
+    carried = mg.organ_published_lines(raises, spill=jp.spill_path(raises))
+    assert carried["n_lines"] == 1 and carried["verdict"] == mg.UNMEASURED
+    assert carried["lines"][0]["direction"] == "lower"
+    src = (DESK / "research" / "missed_growth.py").read_text("utf-8")
+    assert "spill=JUDGE_PRIORITY_UNRECORDED" in src
+    assert mg.JUDGE_PRIORITY_UNRECORDED.name == jp.spill_path(mg.JUDGE_PRIORITY_RAISES).name
+
+
+def test_account_reverts_raises_only_on_the_manual_apply_path_too(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(jp, "record_raises", _failing_record)
+    undone: list[int] = []
+    ch = [
+        {"pid": 1, "from": "BELOW_NORMAL", "to": "NORMAL", "applied": True, "create_time": 1.0},
+        {"pid": 2, "from": "HIGH", "to": "NORMAL", "applied": True, "create_time": 2.0},
+    ]
+    got = jp.account(
+        ch, "judge_priority --apply", lambda c: undone.append(c["pid"]), tmp_path / "r.json"
+    )
+    assert undone == [1] and got["reverted"] == [1] and got["kept_lowered"] == [2]
+    assert got["changed"] is True
+    spilled = [
+        json.loads(x) for x in jp.spill_path(tmp_path / "r.json").read_text("utf-8").splitlines()
+    ]
+    assert [x["pid"] for x in spilled] == [2]
+    src = (DESK / "scripts" / "judge_priority.py").read_text("utf-8")
+    main = src[src.index("def main(") :]
+    assert "account(changes" in main and "record_raises(" not in main
+
+
+class _FakeProc:
+    def __init__(self, pid, created, nice, kids=(), refuse=False):
+        self.pid, self._c, self._n, self._kids, self._refuse = pid, created, nice, kids, refuse
+        self.set: list[int] = []
+
+    def create_time(self):
+        return self._c
+
+    def nice(self, v=None):
+        if v is None:
+            return self._n
+        if self._refuse:
+            raise PermissionError("denied")
+        self.set.append(v)
+        self._n = v
+        return None
+
+    def children(self, recursive=False):
+        return list(self._kids)
+
+
+def test_launcher_revert_puts_back_the_whole_tree(monkeypatch) -> None:
+    shard = _FakeProc(101, 50.0, N)
+    warm = _FakeProc(102, 51.0, BN)  # already BELOW_NORMAL: untouched
+    stale = _FakeProc(103, 10.0, N)  # older than the child: not its tree
+    child = _FakeProc(100, 50.0, N, kids=(shard, warm, stale))
+    procs = {100: child}
+    change = {"pid": 100, "create_time": 50.0, "from": "BELOW_NORMAL", "to": "NORMAL"}
+    rsg._launch_revert(change, process=procs.__getitem__)
+    assert child.set == [BN] and shard.set == [BN] and warm.set == [] and stale.set == []
+    assert change["tree_reverted"] == [100, 101]
+    # a descendant that refuses: the raise is reported standing, never "changed False"
+    bad = _FakeProc(104, 52.0, N, refuse=True)
+    child2 = _FakeProc(100, 50.0, N, kids=(bad,))
+    with pytest.raises(LookupError, match="descendant"):
+        rsg._launch_revert(dict(change), process={100: child2}.__getitem__)
+    # a reused pid (start time moved) is never touched
+    other = _FakeProc(100, 99.0, N)
+    with pytest.raises(LookupError, match="reused"):
+        rsg._launch_revert(dict(change), process={100: other}.__getitem__)
+    assert other.set == []
