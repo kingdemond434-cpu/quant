@@ -623,6 +623,18 @@ def test_e8_five_days_of_venue_rejected_with_nothing_placed_is_a_halt(tmp_path: 
     assert "venue_rejected" not in fence.E8_EXEMPT_REASONS
 
 
+@pytest.mark.parametrize("reason", ["lot_ceiling", "bracket_daily_floor", "daily_profit_cap"])
+def test_e8_days_of_a_sizing_rail_refusal_with_nothing_placed_is_a_halt(
+        tmp_path: Path, reason: str) -> None:
+    """Bracket guard v4: a rail that refuses (lot under the venue minimum) day after day is the
+    desk declining to trade. Non-exempt, so it breaches like any refusal."""
+    assert reason in fence.E8_RAIL_REASONS and reason not in fence.E8_EXEMPT_REASONS
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(d, "SKIPPED", reason) for d in (4, 3, 2, 1, 0)])
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "HALTED", lane
+
+
 def test_e8_venue_rejected_breaches_only_after_the_trailing_days(tmp_path: Path) -> None:
     _e8_beat(tmp_path)
     _e8_rows(tmp_path, [(0, "DEFERRED", "venue_rejected")])

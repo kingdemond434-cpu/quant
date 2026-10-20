@@ -253,7 +253,16 @@ _EXPECTED_EXEMPT = {
 _EXPECTED_BREACH = {
     ev.R_UNSIZEABLE, ev.R_SIDE_UNREADABLE, ev.R_RISK_UNMEASURABLE, ev.R_EQUITY_UNREADABLE,
     ev.R_GUARD_UNREADABLE, ev.R_POSITIONS_UNREADABLE, "guard_stood_down", ev.R_VENUE_REJECTED,
+    # Bracket guard v4: a rail refuses only below the venue minimum, and that breaches.
+    ev.R_LOT_CEILING, ev.R_BRACKET_DAILY_FLOOR, ev.R_DAILY_PROFIT_CAP,
 }
+
+
+def test_the_sizing_rails_are_classified_non_exempt_and_never_risk_budget() -> None:
+    rails = {ev.R_LOT_CEILING, ev.R_BRACKET_DAILY_FLOOR, ev.R_DAILY_PROFIT_CAP}
+    assert rails == set(fence.E8_RAIL_REASONS)
+    assert not rails & fence.E8_EXEMPT_REASONS and not rails & fence.VENUE_REASONS
+    assert ev.R_RISK_BUDGET not in rails
 
 
 def test_every_reason_code_the_lane_writes_is_classified_by_the_fence() -> None:

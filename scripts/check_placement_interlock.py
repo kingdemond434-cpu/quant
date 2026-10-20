@@ -220,6 +220,16 @@ E8_EXEMPT_REASONS: frozenset[str] = frozenset({
     "cross_account_opposite",
 })
 
+#: The bracket lane's sizing rails (prop/e8_evidence R_LOT_CEILING, R_BRACKET_DAILY_FLOOR,
+#: R_DAILY_PROFIT_CAP). Declared so their semantics are decided on purpose: NON-EXEMPT. Each rail
+#: shrinks the lot and is only a refusal when the fitted lot falls under the venue minimum, so a
+#: run of them is the desk declining to trade and breaches like any other refusal. Never exempt,
+#: never folded into `risk_budget` (pinned by the fence's tests).
+E8_RAIL_REASONS: frozenset[str] = frozenset({
+    "lot_ceiling", "bracket_daily_floor", "daily_profit_cap",
+})
+assert not (E8_RAIL_REASONS & E8_EXEMPT_REASONS), "a sizing rail is never exempt"
+
 #: Reasons that are the VENUE's answer rather than the desk's own refusal. A broker rejection or
 #: a freeze-band skip is the market saying no to one order; it is not the desk declining to
 #: trade, and a run of them means something different. They are reported, never breached on.
