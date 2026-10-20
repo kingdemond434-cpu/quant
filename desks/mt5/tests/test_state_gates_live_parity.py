@@ -308,10 +308,22 @@ def rates(sym, tf, pos, n):
     t = np.array([(99 * 3600,), (100 * 3600,)], dtype=[("time", "i8")])
     return None if sym == "NONE" else t
 stub.copy_rates_from_pos = rates
-out["lag"] = gw._panel_store_lag({"family": "sync_gated"})
+D = 99 * H                                   # the decision bar: the traded symbol's closed bar
+out["lag"] = gw._panel_store_lag({"family": "sync_gated"}, D)
 panel.pop("BBB")
-out["current"] = gw._panel_store_lag({"family": "sync_gated"})
-out["own_bars"] = gw._panel_store_lag({"family": "fisher_rao_gated"})
+out["current"] = gw._panel_store_lag({"family": "sync_gated"}, D)
+out["own_bars"] = gw._panel_store_lag({"family": "fisher_rao_gated"}, D)
+# MUST-FIX 1 (5341bfe53): a member whose market closed at 90h has a final, CLOSED bar at 90h that
+# refresh_tail dropped; its [-2] (89h) is in the store, and the old check passed that read.
+panel["CLOSED"] = (np.arange(90, dtype="int64") * H, np.ones(90))
+def closed_rates(sym, tf, pos, n):
+    if sym == "CLOSED":
+        return np.array([(89 * 3600,), (90 * 3600,)], dtype=[("time", "i8")])
+    return rates(sym, tf, pos, n)
+stub.copy_rates_from_pos = closed_rates
+out["weekend"] = gw._panel_store_lag({"family": "sync_gated"}, D)
+panel.clear()
+out["empty"] = gw._panel_store_lag({"family": "sync_gated"}, D)
 print(json.dumps(out, default=str))
 """
 
@@ -335,12 +347,16 @@ def test_the_gateway_reads_what_the_certificate_needs() -> None:
     assert is_gate and need is None and "multi_speed_trend" in why
     assert out["lag"] and "BBB(2h)" in out["lag"] and "1 of 2" in out["lag"]
     assert out["current"] is None and out["own_bars"] is None
+    assert out["weekend"] and "CLOSED(1h)" in out["weekend"]
+    assert out["empty"] and "UNMEASURED" in out["empty"]
 
 
 def test_the_gateway_refuses_by_name_and_never_shrinks_the_read() -> None:
     src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
     for stage in ('"not_live_reproducible"', '"short_history"', '"panel_store_lag"'):
         assert stage in src, stage
+        # every refusal is journalled, so the wait is priced rather than silent (5341bfe53 MF2)
+        assert f"journal_refusal(name, s[\"symbol\"], side, {stage}" in src, stage
     assert "len(h1) < gate_need" in src
     tree = ast.parse(src)
     fns = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}

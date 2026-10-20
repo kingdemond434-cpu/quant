@@ -2703,15 +2703,26 @@ def _state_gate_bars(s: dict) -> tuple[bool, int | None, str]:
     return True, live_h1_bars(fam, params), ""
 
 
-def _panel_store_lag(s: dict) -> str | None:
-    """For a PANEL state gate: why the bar store the panel is read from is behind the terminal,
-    or None when every member's last stored bar is the terminal's last CLOSED bar (or later).
+#: Terminal bars read per panel member to find its last bar at or before the decision bar: ten
+#: days of H1, so a member closed over a weekend or a long holiday is still found.
+PANEL_LAG_LOOKBACK = 240
 
-    The replay reads every member's bar at t; live, a store that has not ingested the latest
-    closed bars hands the gate an older panel under the certified name. Both stamps are the
-    terminal's own epoch, as `h1_frame` and the store both carry it. A member the terminal
-    cannot read is named, never assumed current (audit of #403, must-fix 2 and the should-fix
-    "one bar behind")."""
+
+def _panel_store_lag(s: dict, decision_ns: int) -> str | None:
+    """For a PANEL state gate deciding on the bar stamped `decision_ns`: why the bar store the
+    panel is read from does not hold, for some member, the bar the replay would read at that
+    instant -- or None when every member's last stored bar at or before the decision bar is the
+    terminal's own.
+
+    The replay reads every member's bar at t; live, a store that has not ingested it hands the
+    gate an older panel under the certified name. The reference is the bar the LIVE READ uses,
+    the member's latest bar at or before the decision bar, never the member's own second-to-last
+    bar: `refresh_tail` drops each file's newest row, so a member whose market has closed (a
+    weekend, a session break) lacks its final, already-closed bar, and comparing with the
+    member's [-2] passed that read on 746 of 763 weekend readings (audit of #403 at 5341bfe53,
+    must-fix 1). Every bar stamped at or before the decision bar is closed, because the
+    decision bar is itself closed. Both stamps are the terminal's epoch. A member the terminal
+    cannot read, and an empty panel, are named, never assumed current."""
     try:
         from mt5desk import family_state_gates as fsg
     except Exception as exc:
@@ -2720,16 +2731,23 @@ def _panel_store_lag(s: dict) -> str | None:
     if fam not in fsg.PANEL_WRAPPERS:
         return None
     panel = fsg.load_panel() if fam == "sync_gated" else fsg.load_absorption_panel()
+    if not panel:
+        return "panel bar store UNMEASURED: the panel holds no members"
     behind: list[str] = []
     for sym, (stamps, _closes) in sorted(panel.items()):
-        rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 2)
-        if rates is None or len(rates) < 2:
+        rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, PANEL_LAG_LOOKBACK)
+        if rates is None or len(rates) == 0:
             behind.append(f"{sym}(terminal unreadable)")
             continue
-        closed = int(rates[-2]["time"]) * 10**9
-        last = int(stamps[-1]) if len(stamps) else 0
-        if last < closed:
-            behind.append(f"{sym}({(closed - last) // (3600 * 10**9)}h)")
+        term = [int(t) * 10**9 for t in rates["time"] if int(t) * 10**9 <= decision_ns]
+        if not term:
+            behind.append(f"{sym}(no terminal bar at or before the decision bar)")
+            continue
+        want = max(term)
+        held = [int(x) for x in stamps if int(x) <= decision_ns]
+        last = max(held) if held else 0
+        if last < want:
+            behind.append(f"{sym}({(want - last) // (3600 * 10**9)}h)")
     if behind:
         return (f"panel bar store behind the terminal on {len(behind)} of {len(panel)} members: "
                 + ", ".join(behind[:8]))
@@ -3142,14 +3160,16 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         return {"ok": False, "stage": "no_bars", "why": f"{tf} bars unavailable; skipped"}
     is_gate, gate_need, gate_why = _state_gate_bars(s)
     if is_gate and gate_need is None:
-        return {"ok": False, "stage": "not_live_reproducible",
-                "sep": " ", "why": f"refused: {gate_why or 'state gate read unavailable'}"}
+        _why = f"refused: {gate_why or 'state gate read unavailable'}"
+        journal_refusal(name, s["symbol"], side, "not_live_reproducible", _why)
+        return {"ok": False, "stage": "not_live_reproducible", "sep": " ", "why": _why}
     if is_gate and gate_need is not None and len(h1) < gate_need:
         # REFUSED BY NAME, never computed on a shorter history: the gate ranks against the
         # trailing rank span, and fewer bars rank against a different history than certified.
-        return {"ok": False, "stage": "short_history",
-                "sep": " ", "why": f"refused: state gate needs {gate_need} {tf} bars, the "
-                                   f"terminal returned {len(h1)} (raise Max bars in chart)"}
+        _why = (f"refused: state gate needs {gate_need} {tf} bars, the terminal returned "
+                f"{len(h1)} (raise Max bars in chart)")
+        journal_refusal(name, s["symbol"], side, "short_history", _why)
+        return {"ok": False, "stage": "short_history", "sep": " ", "why": _why}
 
     # `frame` KEEPS THE FORMING BAR; `closed` drops it. Both are needed and they are not
     # interchangeable: every decision below is made on CLOSED data only, but the family's own
@@ -3190,8 +3210,11 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         return {"ok": False, "stage": "no_signal_bar", "why": "no signal bar due on these bars"}
     if is_gate:
         # Checked only for a bar not yet considered, so a quiet pass costs no terminal reads.
-        lag = _panel_store_lag(s)
+        lag = _panel_store_lag(s, int(pd.Timestamp(last_bar).value))
         if lag:
+            # PRICED, NEVER SILENT: the panel store refreshes hourly, so a new panel-gate bar can
+            # wait on it, and `missed_growth` reads this journal to put a number on the wait.
+            journal_refusal(name, s["symbol"], side, "panel_store_lag", f"refused: {lag}")
             return {"ok": False, "stage": "panel_store_lag", "sep": " ", "why": f"refused: {lag}"}
     # SINGLE-POSITION DISCIPLINE, BECAUSE THAT IS WHAT THE CERTIFICATE WAS EARNED UNDER.
     #
