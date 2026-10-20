@@ -1,5 +1,5 @@
 {
- "at": "2026-10-20T17:55:48+00:00",
+ "at": "2026-10-20T18:29:25+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -66,9 +66,9 @@
     "alt_data_hypothesis",
     "failure_derived"
    ],
-   "at": "2026-10-20T11:17:06+00:00",
+   "at": "2026-10-20T18:29:24+00:00",
    "bandit_at": "2026-10-20T00:09:08.696922+00:00",
-   "hour": "2026-10-20T11",
+   "hour": "2026-10-20T18",
    "arm": "none",
    "wanted_s": 0,
    "floor_s": 0,
@@ -97,7 +97,7 @@
    "auction_factor": 2.0,
    "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-10-20T10",
    "engine_factor": 1.0,
-   "engine_why": "engine registry: leg share 0.0000 vs equal share 0.1111 = x0.00 -> x1.00 (one-sided: this factor may fund a leg above par and may never take one below it)",
+   "engine_why": "engine registry: leg share 0.0000 vs equal share 0.1250 = x0.00 -> x1.00 (one-sided: this factor may fund a leg above par and may never take one below it)",
    "meta_factor": 1.0,
    "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.002028 on the info_per_cell board vs median 0.0493 = x0.04 -> x1.00 (one-sided: it may fund above par and never below it)",
    "graveyard_factor": 1.0,
