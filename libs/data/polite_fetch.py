@@ -452,17 +452,25 @@ def person_hold(url: str, access: HostAccess | None = None) -> str:
 
 
 def hold_site(url: str, status: int | str, cause: str = "",
-              access: HostAccess | None = None) -> str:
-    """Record a person-held hold on `url`'s site (a 401/403/429 or "WAF") and save it at once."""
-    return (access if access is not None else default_access()).block(url, status, cause=cause)
+              access: HostAccess | None = None, *,
+              mirror: Mapping[str, Any] | None = None) -> str:
+    """Record a person-held hold on `url`'s site (a 401/403/429 or "WAF") and save it at once.
+    `mirror` names the other register's hold this one was placed with ({key, held_at}), so a
+    person's release of THAT hold is recognised as covering this one (`adopt_release`)."""
+    extra = ({"mirror_key": str(mirror.get("key") or ""), "mirror_held_at": mirror.get("held_at")}
+             if mirror else None)
+    return (access if access is not None else default_access()).block(url, status, cause=cause,
+                                                                      extra=extra)
 
 
-def adopt_release(url: str, by: Any, released_at: Any,
+def adopt_release(url: str, by: Any, released_at: Any, key: str = "",
                   access: HostAccess | None = None) -> bool:
     """A PERSON'S release recorded in another person-held register (research/hard_stop's, for
     the same site) releases this record's hold on `url`'s site too -- but only a hold placed AT
-    OR BEFORE that release: a refusal after it is a new hold the release never covered. Nothing
-    is released without a named person; no timestamp alone releases anything. True if released."""
+    OR BEFORE that release: a refusal after it is a new hold the release never covered. A hold
+    placed WITH that register's hold (`mirror_key` == `key`) is dated by the mirrored hold's
+    `held_at`, on that register's clock. Nothing is released without a named person; no
+    timestamp alone releases anything. True if released."""
     who = str(by or "").strip()
     try:
         at = float(released_at)
@@ -474,7 +482,15 @@ def adopt_release(url: str, by: Any, released_at: Any,
     site = site_of(hostname_of(url))
     with acc._lock:
         row = acc.blocked.get(site)
-        if not person_held(row) or _held_at(row) > at:
+        if not isinstance(row, dict) or not person_held(row):
+            return False
+        placed = _held_at(row)
+        if key and row.get("mirror_key") == key:
+            try:
+                placed = float(row.get("mirror_held_at") or "")
+            except (TypeError, ValueError):
+                return False
+        if placed > at:
             return False
     release(f"site:{site}", who, path=acc.path or ACCESS_STATE)
     with acc._lock:
@@ -629,7 +645,8 @@ class HostAccess:
             assert isinstance(row, dict)
             return str(row.get("verdict") or "METHOD_BLOCKED")
 
-    def block(self, url: str, status: int | str, verdict: str = "", cause: str = "") -> str:
+    def block(self, url: str, status: int | str, verdict: str = "", cause: str = "",
+              extra: Mapping[str, Any] | None = None) -> str:
         """Record a hold for the URL's site and SAVE IT AT ONCE, so a run killed mid-loop keeps
         it. `status` is the HTTP code, or "WAF" for a challenge page. Every hold, 429 and WAF
         included, waits for a person: the row is the shared person-held record (`hold_record`)."""
@@ -642,6 +659,8 @@ class HostAccess:
                 site, url, verdict, status, self.now(),
                 missed_growth=hold_missed_growth(site, verdict, status,
                                                  cause or f"HTTP {status} from {host}"))
+            if extra:
+                self.blocked[site].update(dict(extra))
         self.save()
         return verdict
 

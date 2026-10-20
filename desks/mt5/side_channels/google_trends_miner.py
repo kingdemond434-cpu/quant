@@ -167,7 +167,8 @@ def _hold(verdict: str, status: int | None, url: str, now: datetime) -> None:
         LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
     try:
         _pf.hold_site(url, status if status in hard_stop.HARD_STOP else "WAF",
-                      f"{verdict} on Google Trends (google_trends_miner)")
+                      f"{verdict} on Google Trends (google_trends_miner)",
+                      mirror=LAST_PASS.get("block") or None)
     except Exception as exc:
         LAST_PASS["persist_error_pf"] = f"{type(exc).__name__}: {exc}"[:200]
 
@@ -209,7 +210,8 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
     rel = (hard_stop._register(BLOCKED_REGISTER).get("holds") or {}).get(
         hard_stop.host_key(HOST)) or {}
     if hard_stop._named(rel.get("released_by")):
-        _pf.adopt_release(f"https://{HOST}/", rel.get("released_by"), rel.get("released_at"))
+        _pf.adopt_release(f"https://{HOST}/", rel.get("released_by"), rel.get("released_at"),
+                          key=hard_stop.host_key(HOST))
     pf_held = _pf.person_hold(f"https://{HOST}/")
     if held is None and pf_held:
         held = {"key": f"site:{_pf.site_of(HOST)}", "verdict": pf_held, "status": None,

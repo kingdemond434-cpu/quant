@@ -1105,7 +1105,7 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
     rel = (hs._register(register).get("holds") or {}).get(hs.host_key(GTRENDS_HOST)) or {}
     if hs._named(rel.get("released_by")):
         _pf.adopt_release(f"https://{GTRENDS_HOST}/", rel.get("released_by"),
-                          rel.get("released_at"))
+                          rel.get("released_at"), key=hs.host_key(GTRENDS_HOST))
     pf_held = _pf.person_hold(f"https://{GTRENDS_HOST}/")
     if held is None and pf_held:
         held = {"key": f"site:{_pf.site_of(GTRENDS_HOST)}", "verdict": pf_held, "status": None,
@@ -1129,7 +1129,7 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
             h.notes.append(f"hold not registered: {type(exc).__name__}")
         try:                                  # ... and in the shared polite_fetch access record
             _pf.hold_site(url, status if status in hs.HARD_STOP else "WAF",
-                          f"{verdict} on Google Trends (free_stack gtrends)")
+                          f"{verdict} on Google Trends (free_stack gtrends)", mirror=record)
         except Exception as exc:
             h.notes.append(f"access hold not recorded: {type(exc).__name__}")
 
