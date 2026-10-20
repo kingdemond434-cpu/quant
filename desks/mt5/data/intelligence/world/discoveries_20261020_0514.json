@@ -1,0 +1,2030 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Leverage hanggang 1:2000 kasama ang broker - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/2000-up-leverage/",
+  "published": "2026-10-20T05:12:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6de0564ae6944438848b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Withdrawal Nang Walang Komisyon - RoboForex",
+  "url": "https://roboforex.com/ph/clients/funds/free-withdrawal/",
+  "published": "2026-10-20T05:12:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1c834ecc071d73e183b6",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hanggang 10% ng dagdag na pondo sa balanse ng account para sa pangangalakal - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/up-to-10-percents-on-account-balance/",
+  "published": "2026-10-20T05:12:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7422e86a789a3582d248",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cashback, Rebates Program - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/rebate/",
+  "published": "2026-10-20T05:12:45+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b0a0c1179dd4c7bf0402",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Full Swap-free - RoboForex",
+  "url": "https://roboforex.com/ph/promo/full-swap-free/",
+  "published": "2026-10-20T05:12:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "19ea2c879a35f619df03",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Libreng VPS-Server para sa pangangalakal - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/forex-vps/",
+  "published": "2026-10-20T05:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6abf3daf3afdd7e83a27",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "VIP Client - mga level at benepisyo ng programa - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/vip-client/",
+  "published": "2026-10-20T05:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fe51c40c8858f6702445",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Swiss Franc (CADCHF) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CADCHF/",
+  "published": "2026-10-20T05:12:51+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6f3bd3f3f5acc70dcfba",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Japanese Yen (CADJPY) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CADJPY/",
+  "published": "2026-10-20T05:12:53+00:00",
+  "symbols": [
+   "CADJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f0adf6d5c7b10f99c40e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swiss Franc vs Japanese Yen (CHFJPY) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CHFJPY/",
+  "published": "2026-10-20T05:12:55+00:00",
+  "symbols": [
+   "CHFJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fef9e1c18548a96941a8",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPAUD/",
+  "published": "2026-10-20T05:12:57+00:00",
+  "symbols": [
+   "GBPAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2e33880b0c6e1b03aea1",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPCAD/",
+  "published": "2026-10-20T05:12:59+00:00",
+  "symbols": [
+   "GBPCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "547a9553a4b5d61fd128",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPCHF/",
+  "published": "2026-10-20T05:13:01+00:00",
+  "symbols": [
+   "GBPCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fb4bca452189057b2c29",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Japanese Yen (GBPJPY) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPJPY/",
+  "published": "2026-10-20T05:13:03+00:00",
+  "symbols": [
+   "GBPJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8ff35164ee38a89dafd9",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.nl.html",
+  "published": "2026-10-20T05:13:04+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c09c97a92d2c18b76b7e",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dost\u0119pno\u015b\u0107 i&amp;nbsp;akceptacja got&amp;oacute;wki",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.pl.html",
+  "published": "2026-10-20T05:13:06+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fdfa7c2305fa47a70c48",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.pt.html",
+  "published": "2026-10-20T05:13:08+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6f932fa02b1cc3dc8495",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.ro.html",
+  "published": "2026-10-20T05:13:10+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f9154f17e09794872b5c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sk.html",
+  "published": "2026-10-20T05:13:12+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7f7f2f27411d055aeb97",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sl.html",
+  "published": "2026-10-20T05:13:14+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "16dfd7b8c6be35ec139d",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tillg\u00e5ng till och godtagande av kontanter",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sv.html",
+  "published": "2026-10-20T05:13:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0e1eb7934a5a07aaee63",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Comparativa IG y CME: futuros, diferencias clave 2026",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/5237327-ig-vs-cme-markets-comparativa-productos-futuros",
+  "published": "2026-10-20T05:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f7796d92d1cf0ec6e70",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Exchanges para invertir en futuros: top 2026",
+  "url": "https://www.rankia.com/blog/operativa-con-futuros/5167425-mejores-exchanges-para-invertir-futuros",
+  "published": "2026-10-20T05:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af7375c538da094e81d0",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading con Futuros - Rankia",
+  "url": "https://www.rankia.com/categorias/trading-futuros/articulos?page=2",
+  "published": "2026-10-20T05:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "mean_reversion",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "98d4471d74836074a00f",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading con Futuros - Rankia",
+  "url": "https://www.rankia.com/categorias/trading-futuros/articulos?page=3",
+  "published": "2026-10-20T05:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af4b2f28462c81375fb1",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estrategia de cobertura con opciones: call cubierta y put protectora | Rankia",
+  "url": "https://www.rankia.com/blog/opciones-desde-cero/3088085-estrategia-cobertura-opciones-call-cubierta-put-protectora",
+  "published": "2026-10-20T05:13:25+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a7fe0cfba735d75981c9",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "No importa cuanto caiga el precio, ni el tama\u00f1o del GAP de apertura, nuestro derecho a vender a un precio determinado nos permitir\u00e1 salir de la posici\u00f3n a ese nivel aunque el subyacente cotice a precio muy inferior.",
+    "lang": "es",
+    "quantities": [
+     "gap",
+     "apertura",
+     "cot"
+    ],
+    "direction": [
+     "vend"
+    ],
+    "horizon": [
+     "apertura"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "213ba4ee9f9d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bull Spread en opciones: \u00bfQu\u00e9 es y c\u00f3mo se hace? | Rankia",
+  "url": "https://www.rankia.com/blog/opciones-desde-cero/3395977-estrategias-opciones-bull-spread-cuando-utilizarlo",
+  "published": "2026-10-20T05:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0bfbbe4756cf61be64ec",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Volatilidad impl\u00edcita y su aplicaci\u00f3n efectiva en el trading con opciones | Rankia",
+  "url": "https://www.rankia.com/blog/opcion-maestro/4308769-volatilidad-implicita-aplicacion-efectiva-trading-opciones",
+  "published": "2026-10-20T05:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "mean_reversion",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6e15e96bf30912bc67ec",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/89",
+  "published": "2026-10-20T05:13:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "74f45b274ef40c53f929",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34522",
+  "published": "2026-10-20T05:13:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "37faacbe18e14dc56a25",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34535",
+  "published": "2026-10-20T05:13:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "40c1af810c311f498096",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Vacated&dir=ASC&col=Organization",
+  "published": "2026-10-20T05:13:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e030b83e96047f9e176",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Vacated&dir=ASC&col=Status",
+  "published": "2026-10-20T05:13:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e5b53c96fccbfd237a6",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Vacated&dir=ASC&col=Date",
+  "published": "2026-10-20T05:13:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea61fc250ddddbf54a33",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Vacated&dir=ASC&col=Remarks",
+  "published": "2026-10-20T05:13:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "33f8f0d91b61ca2753f9",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Guides for Traders | FTO Blog",
+  "url": "https://forextester.com/blog/tag/guides/",
+  "published": "2026-10-20T05:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "530396f3f6bc6b1cf4b0",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Indicators: Guides, Strategies &amp; Analysis | FTO Blog",
+  "url": "https://forextester.com/blog/tag/indicators/",
+  "published": "2026-10-20T05:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c7121dbb34a52b2c6af1",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "News for traders &amp; partners | FTO Blog",
+  "url": "https://forextester.com/blog/tag/news/",
+  "published": "2026-10-20T05:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4d4399150356b6a9f66d",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Strategies Articles | FTO Blog",
+  "url": "https://forextester.com/blog/tag/trading-strategies/",
+  "published": "2026-10-20T05:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dbe85d1818be190f5a5b",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Technical Analysis Articles | FTO Blog",
+  "url": "https://forextester.com/blog/tag/technical-analysis/",
+  "published": "2026-10-20T05:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5e726f93085fb62c884f",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Tools Articles | FTO Blog",
+  "url": "https://forextester.com/blog/tag/tools/",
+  "published": "2026-10-20T05:13:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "79aa53b786a9903f4244",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Psychology Articles | FTO Blog",
+  "url": "https://forextester.com/blog/tag/trading-psychology/",
+  "published": "2026-10-20T05:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d440422e2246f9ea99af",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MT4 and MT5 Trading Accounts :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/mt4-accounts/",
+  "published": "2026-10-20T05:13:57+00:00",
+  "symbols": [
+   "COTTON",
+   "UKGILT",
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "EURJPY",
+   "GBPJPY",
+   "AUDJPY",
+   "EURGBP",
+   "USDCNH",
+   "USDHKD",
+   "USDTHB",
+   "USDSGD",
+   "USDMXN",
+   "USDTRY",
+   "USDZAR"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader5.com&utm_campaign=download.mt5.macos",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt4/MetaTrader4.dmg"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "a96b55fb56deb4181797",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "It is displayed in percentage in real-time and calculated as follows: Margin Level = Equity Used margin * 100% MetaTrader 4 and MetaTrader 5 trading system constantly oversees the Margin Level of all open positions in real-time and automatically liquidates positions when the Margin Level falls below a predefined value.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "falls"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDCNH",
+      "USDHKD",
+      "USDTHB",
+      "USDSGD",
+      "USDMXN",
+      "USDTRY",
+      "USDZAR",
+      "USDILS",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDSEK",
+      "USDNOK",
+      "USDDKK",
+      "SOYBEAN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "USCOCOA",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "xau",
+      "xag",
+      "copper",
+      "brent",
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "usd/chf",
+      "nzd/usd",
+      "eur/jpy",
+      "gbp/jpy",
+      "aud/jpy",
+      "eur/gbp",
+      "cnh",
+      "usd/hkd",
+      "usd/thb",
+      "sgd",
+      "mxn",
+      "try",
+      "zar",
+      "ils",
+      "pln",
+      "huf",
+      "czk",
+      "sek",
+      "nok",
+      "dkk",
+      "soybean",
+      "sugar",
+      "cotton",
+      "coffee",
+      "cocoa",
+      "ukgilt"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d0b0881939a2"
+   },
+   {
+    "claim": "com SWFX Sentiment Index Indicator SWFX Sentiment Index is an indicator designed to show long and short ratios in open positions of Dukascopy customers directly in the MetaTrader platforms.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDCNH",
+      "USDHKD",
+      "USDTHB",
+      "USDSGD",
+      "USDMXN",
+      "USDTRY",
+      "USDZAR",
+      "USDILS",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDSEK",
+      "USDNOK",
+      "USDDKK",
+      "SOYBEAN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "USCOCOA",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "xau",
+      "xag",
+      "copper",
+      "brent",
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "usd/chf",
+      "nzd/usd",
+      "eur/jpy",
+      "gbp/jpy",
+      "aud/jpy",
+      "eur/gbp",
+      "cnh",
+      "usd/hkd",
+      "usd/thb",
+      "sgd",
+      "mxn",
+      "try",
+      "zar",
+      "ils",
+      "pln",
+      "huf",
+      "czk",
+      "sek",
+      "nok",
+      "dkk",
+      "soybean",
+      "sugar",
+      "cotton",
+      "coffee",
+      "cocoa",
+      "ukgilt"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a5596e59a1fb"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dukascopy Wealth Management \u2014 LP PAMM :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/wealth-management/lp-pamm/",
+  "published": "2026-10-20T05:13:58+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "887ad2c8e868d3388f06",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Additionally, the client is provided with a risk management tool (stop-loss functionality) allowing him to instruct the system to automatically stop the trading and to close all positions on his account in case the account balance at the end of the trading day (settlement time) becomes equal or lower than the set stop-loss level.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "624149c5bb1d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Income Generating Programs :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/wealth-management/dukascoin-reward-programs/",
+  "published": "2026-10-20T05:14:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "51bbb49c9f7c448e9fde",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex/CFD Trading Platform | Online Currency Trading Platform | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/dealstation/",
+  "published": "2026-10-20T05:14:02+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.pkg.zip",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt4/MetaTrader4.dmg",
+   "https://download.terminal.free/cdn/mobile/mt4/ios?hl=en",
+   "https://download.terminal.free/cdn/mobile/mt4/android?hl=en"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "e6bc92174cbc8cb63b35",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Open a Live account : Once you have gained some confidence, open a Live account at Dukascopy Bank and start trading.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "36a3bd4fe5d1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JForex API :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+  "published": "2026-10-20T05:14:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/french/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/deutsch/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/russian/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/spanish/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/pl/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/cz/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/pt/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/it/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/sk/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/chinese/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/arabic/forex/api/jforex-api/",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "9472ee40a38a63475489",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FIX API :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+  "published": "2026-10-20T05:14:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/french/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/deutsch/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/russian/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/spanish/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/pl/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/cz/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/pt/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/it/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/sk/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/chinese/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/arabic/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "4ffe45b1f979329ba313",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dukascopy Support Board &bull; Index page",
+  "url": "https://www.dukascopy.com/swiss/english/forex/jforex/forum/",
+  "published": "2026-10-20T05:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-gb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fff0a456d13679dfda98",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u9886\u5148\u6307\u6807\u7ec8\u503c _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/foreign_3_4.html",
+  "published": "2026-10-20T05:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e80f55aea04aefb26bc2",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u6c38\u5eb7\u4e94\u91d1\u4ea4\u6613\u4ef7\u683c\u6307\u6570:\u603b\u6307\u6570 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/hyzs_list_EMI00316914.html",
+  "published": "2026-10-20T05:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "858ee4d31197497391f4",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u4ea4\u6613\u666f\u6c14\u6307\u6570:\u5b89\u9632\u4ea7\u54c1 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/hyzs_list_EMI00319930.html",
+  "published": "2026-10-20T05:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "268ec416799886315754",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u8bc1\u5238\u5e02\u573a\u4ea4\u6613\u7ed3\u7b97\u8d44\u91d1\u4f59\u989d:\u671f\u672b\u6570 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/hyzs_list_EMI00301953.html",
+  "published": "2026-10-20T05:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09860fb65e9d2bb3c0f5",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u4ea4\u6613\u4ef7\u683c\u6307\u6570:\u7535\u5b50\u7535\u5de5:\u7535\u7ebf\u3001\u7535\u7f06:\u7535\u6c14\u8bbe\u5907\u7528\u7535\u7f06 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/hyzs_list_EMI00319429.html",
+  "published": "2026-10-20T05:14:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7398e4b6049b5dbfaafd",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5173\u8054\u4ea4\u6613 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/gljy/",
+  "published": "2026-10-20T05:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e353e9da23f3f2cac0cb",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u4ea4\u6613\u7ed3\u7b97\u8d44\u91d1(\u94f6\u8bc1\u8f6c\u8d26) _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/bankTransfer.html",
+  "published": "2026-10-20T05:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7a4fd5f8090270989c94",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\uc54c\uace0\ub9ac\uc998 \ud2b8\ub808\uc774\ub529 \uad00\ub828 \uae00 \u2014 \uac00\uc774\ub4dc \ubc0f \uc608\uc2dc | MetaTrader",
+  "url": "https://www.metatrader.com/ko/algotrading",
+  "published": "2026-10-20T05:14:23+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ko/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ko&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ko&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ko&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "0205aa452b6ed8b5dbc8",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "\uc6b0\ub9ac\ub294 \ud50c\ub7ab\ud3fc\uc758 \ud55c\uacc4\ub97c \uace0\ub824\ud558\uba70 \uc2a4\ud2b8\ub808\uc2a4 \ud14c\uc2a4\ud2b8(\uc2a4\ud504\ub808\ub4dc\uc758 \ud655\ub300, \uc190\uc808\ub9e4 \uc218\uc900 \ubcc0\uacbd)\ub97c \ud558\uae30 \uc704\ud55c \ud2f1 \uc9d1\uacc4 \ubc0f \ud788\uc2a4\ud1a0\ub9ac \uc218\uc815\uc744 \ubd84\uc11d\ud560 \uac83\uc785\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc2a4\ud504\ub808\ub4dc"
+    ],
+    "direction": [
+     "\uc190\uc808"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ud2f1"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "591282836ad8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Articles sur le trading algorithmique \u2014 Guides et exemples | MetaTrader",
+  "url": "https://www.metatrader.com/fr/algotrading",
+  "published": "2026-10-20T05:14:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/fr/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=fr&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=fr&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=fr&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "397384fd81decb2281e5",
+  "host": "www.metatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Articoli sul Trading Algoritmico \u2014 Guide ed Esempi | MetaTrader",
+  "url": "https://www.metatrader.com/it/algotrading",
+  "published": "2026-10-20T05:14:27+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "it",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/it/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=it&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=it&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=it&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "204745cf77eb58e1e6b6",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "Analizzeremo l'aggregazione dei tick e la modifica dello storico per gli stress test (allargamento dello spread, variazioni del livello di stop) tenendo conto delle limitazioni della piattaforma.",
+    "lang": "it",
+    "quantities": [
+     "spread"
+    ],
+    "direction": [
+     "stop"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eur/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0e01db908382"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Algoritmik Al\u0131m-Sat\u0131m Makaleleri - K\u0131lavuzlar ve \u00d6rnekler | MetaTrader",
+  "url": "https://www.metatrader.com/tr/algotrading",
+  "published": "2026-10-20T05:14:29+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "tr",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/tr/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=tr&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=tr&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=tr&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "f0d42bd983bfa64384fd",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "MetaTrader 5'in G\u00fcc\u00fc: Birle\u015fik Bir Ortamda Ad\u0131m Ad\u0131m Hata Ay\u0131klamadan EX5 Korumas\u0131na Bu makale, al\u0131m-sat\u0131m algoritmalar\u0131n\u0131n geli\u015ftirilmesine y\u00f6nelik kapsaml\u0131 bir yakla\u015f\u0131m\u0131 incelemektedir: projenin kurulmas\u0131ndan ve mant\u0131k hatalar\u0131n\u0131n giderilmesinden, bitmi\u015f \u00fcr\u00fcn\u00fcn korunmas\u0131na kadar.",
+    "lang": "tr",
+    "quantities": [
+     "kur"
+    ],
+    "direction": [
+     "ay\u0131",
+     "al\u0131m"
+    ],
+    "horizon": [
+     "ay"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7ca6ca1952f3"
+   },
+   {
+    "claim": "Bir yandan d\u00fc\u015f\u00fck risk, di\u011fer yandan kabul edilebilir uzun vadeli karl\u0131l\u0131k elde edece\u011fimiz portf\u00f6y teorisine dayal\u0131 bir kod olu\u015fturuyoruz.",
+    "lang": "tr",
+    "quantities": [
+     "vade"
+    ],
+    "direction": [
+     "d\u00fc\u015f"
+    ],
+    "horizon": [
+     "uzun vade"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "061b0c090904"
+   },
+   {
+    "claim": "Ayr\u0131ca 3D \u00e7ubuklar\u0131n fiyat d\u00f6n\u00fc\u015flerini nas\u0131l tahmin etti\u011fini ve Python ve MetaTrader 5'in bu hacim \u00e7ubuklar\u0131n\u0131 ger\u00e7ek zamanl\u0131 olarak \u00e7izmemize nas\u0131l olanak sa\u011flad\u0131\u011f\u0131n\u0131 da ele alaca\u011f\u0131z.",
+    "lang": "tr",
+    "quantities": [
+     "d\u00f6n\u00fc\u015f",
+     "hacim"
+    ],
+    "direction": [
+     "d\u00f6n"
+    ],
+    "horizon": [
+     "ay"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "efb88b758ea1"
+   }
+  ],
+  "n_claims": 3
+ }
+]
