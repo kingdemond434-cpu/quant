@@ -1322,6 +1322,31 @@ def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) 
     return clamp_risk_frac(risk_frac) * authority_ramp(live_n) * decay_factor(decay_faded)
 
 
+def promoted_fraction(live_n: int, risk_frac: object, decay_faded: object = None,
+                      from_book: bool = False) -> float:
+    """The equity fraction `promoted_lot` sizes a sleeve at, BEFORE any lot rounding.
+
+    ONE LADDER, NOW THREE READERS (2026-10-20): the sizer, the heat charge and the realised-risk
+    invariant (`risk_intent`). The invariant compares the EUR the final venue lot puts at the
+    stop against the EUR this fraction of equity intends, so it must read the very number the
+    sizer used -- a second copy is how the two would come to disagree.
+
+    Book rows: the allocator's h_i, capped by the outer per-trade envelope, times the fade.
+    A non-positive or unreadable h_i is 0.0 here; whether that sends nothing (sovereign) or the
+    venue minimum (the revert) is `promoted_lot`'s decision, not this one's. Other rows: the
+    ramped fraction.
+    """
+    if from_book:
+        try:
+            h_i = float(risk_frac)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return 0.0
+        if not (h_i > 0.0):
+            return 0.0
+        return min(h_i, MAX_RISK_FRAC) * decay_factor(decay_faded)
+    return ramped_fraction(risk_frac, live_n, decay_faded)
+
+
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
                  symbol: str = GOLD_SYMBOL, info: object | None = None,
                  risk_frac: float | None = None,
@@ -1383,9 +1408,7 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
             # rest of the book gets it now. The venue minimum is the symbol's OWN minimum, so a
             # share CFD gets 0.1 and not an order the broker refuses.
             return float(min(venue_min_lot(symbol, info), 5.0))
-        q_eff = min(h_i, MAX_RISK_FRAC) * decay_factor(decay_faded)
-    else:
-        q_eff = ramped_fraction(risk_frac, live_n, decay_faded)
+    q_eff = promoted_fraction(live_n, risk_frac, decay_faded, from_book=from_book)
     if allocator_sovereign():
         # BELOW THE MINIMUM IS UNIMPLEMENTABLE, NOT 0.01 (2026-09-29). `auto_lot` lifts to 0.01;
         # the raw fraction is sized here instead and refused under the symbol's own minimum.

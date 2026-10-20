@@ -2133,6 +2133,14 @@ def collapse_opposing_gold_positions(st: dict) -> int:
 MAX_SAME_SIDE_PER_SYMBOL = 2
 MAX_SAME_SIDE_PER_SYMBOL = int(os.environ.get("MAX_SAME_SIDE_PER_SYMBOL", MAX_SAME_SIDE_PER_SYMBOL))
 REFUSALS = BASE / "data" / "refused_orders.jsonl"
+#: THE REALISED-RISK INVARIANT'S ARTIFACTS (`mt5desk.risk_intent`, 2026-10-20). Every market fill
+#: on the family and scalp lanes is priced at its own fill price and stop against the EUR the
+#: allocator intended (one row in RISK_FILLS); a fill over POST_TOL x intent also lands in
+#: RISK_BREACHES and halts that sleeve's new entries until RISK_ACK names the breach (or the
+#: sleeve) or a pass re-measures its held risk within the bound.
+RISK_FILLS = BASE / "data" / "realised_risk_fills.jsonl"
+RISK_BREACHES = BASE / "data" / "realised_risk_breaches.jsonl"
+RISK_ACK = BASE / "data" / "realised_risk_ack.json"
 
 
 def same_side_count(symbol: str, side: int, positions: object,
@@ -3742,6 +3750,16 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         return {"ok": False, "stage": "desk_stale", "considered": True, "sep": " ",
                 "why": f"desk stale ({_DESK_STALE['verdict']}): no new risk", "mark": False,
                 "last_bar": last_bar}
+    # A REALISED-RISK HALT REFUSES NEW ENTRIES FOR THIS SLEEVE ALONE (`risk_intent`). Its open
+    # position, and every other sleeve, are untouched; the bar is marked so the refusal is
+    # journalled once per signal, not once per pass.
+    _rhalt = (st.get("risk_halt") or {}).get(name)
+    if isinstance(_rhalt, dict):
+        from mt5desk import risk_intent as _ri
+        _hwhy = _ri.halt_why(_rhalt)
+        journal_refusal(name, s["symbol"], side, "risk_halt", _hwhy)
+        return {"ok": False, "stage": "risk_halt", "considered": True, "sep": " ",
+                "why": _hwhy, "mark": True, "last_bar": last_bar}
     _open_now = _sleeve_positions(s["symbol"], name)
     if _open_now:
         _lots = sum(float(getattr(p, "volume", 0.0) or 0.0) for p in _open_now)
@@ -3891,6 +3909,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         return {"ok": False, "stage": "symbol_side_cap", "considered": True, "sep": " ",
                 "why": _why, "mark": True, "last_bar": last_bar}
     leg_mult, leg_why = 1.0, ""
+    # Bound before the try: an early leg_balance failure must still leave a macro term to report.
+    macro_mult, macro_why = 1.0, ""
     try:
         from mt5desk import leg_balance
         leg_mult, leg_why = leg_balance.multiplier(s["symbol"], side,
@@ -3961,6 +3981,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         # UNMEASURED IS 1.0, NEVER A SILENT SHRINK: a decomposition that cannot be trusted must
         # not quietly become a reason to trade smaller.
         leg_mult, leg_why = 1.0, f"leg balance UNMEASURED ({type(exc).__name__}: {exc})"
+        # Neither modifier reached the lot on this path, so neither is part of the intent.
+        macro_mult, macro_why = 1.0, (macro_why or "") + " (not applied: leg balance failed)"
     # The nominal fraction was capped before currency-leg and macro modifiers. Enforce that
     # same existing per-order envelope on the final venue volume: boosts and nearest-step
     # rounding otherwise turn a 10% allocation into a 14% stop. Price in account currency,
@@ -4001,6 +4023,48 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         if float(lot) > float(_ov) + 1e-12:
             _book_clipped_from = float(lot)
         lot = min(float(lot), float(_ov))
+    # THE PER-SLEEVE INVARIANT (`mt5desk.risk_intent`, 2026-10-20). The envelope above is one
+    # house number for every order; this holds THIS order to what THIS sleeve was meant to risk.
+    # INTENDED = the fraction promoted_lot sized at x leg_mult x macro_mult x equity -- the
+    # modifiers' boosts are intent and are never clipped. REALISED = final lot x stop x EUR per
+    # price unit. Only the overshoot nobody decided (nearest-step rounding, the min-lot lift) is
+    # removed: floored to the venue step under PRE_TOL x intent, refused -- never lifted -- below
+    # the venue minimum, refused by name when an input cannot be measured.
+    _intent: dict = {}
+    if float(lot) > 0.0:
+        try:
+            from mt5desk import risk_intent as _ri
+            if _ov is not None:
+                # THE FUSION BOOK IS ITS OWN INTENT: its lot (the 0.75% target, or the 0.01
+                # floor the principal decided) at this stop. The modifiers above only ever damp
+                # it (`min`), so the invariant here prices the book's decided lot and the
+                # post-fill check holds the FILL to it; the floor is never refused as overshoot.
+                _frac = (float(_ov) * float(dist)
+                         * float(_core._eur_per_price_unit(s["symbol"], sym)) / float(equity))
+            else:
+                _frac = (float(_core.promoted_fraction(n_live, s.get("risk_frac"),
+                                                       s.get("decay_faded"),
+                                                       from_book=from_book))
+                         * float(leg_mult) * float(macro_mult))
+            _intent = _ri.enforce_on_venue(
+                float(lot), _frac, float(equity), float(dist), sym,
+                lambda: float(_core._eur_per_price_unit(s["symbol"], sym)),
+                sovereign=bool(_core.allocator_sovereign()))
+        except Exception as exc:
+            return {"ok": False, "stage": "risk_intent", "considered": True,
+                    "mark": False, "last_bar": last_bar,
+                    "why": f"realised-risk intent unmeasured ({type(exc).__name__}: {exc})"}
+        if not _intent.get("ok"):
+            journal_refusal(name, s["symbol"], side, "risk_intent", str(_intent.get("why")),
+                            lot=_intent.get("pre_lot"), price=float(entry_ref))
+            return {"ok": False, "stage": "risk_intent", "considered": True, "sep": " ",
+                    "mark": True, "last_bar": last_bar,
+                    "intended_eur": _intent.get("intended_eur"),
+                    "realised_eur": _intent.get("realised_eur"),
+                    "why": f"refused: {_intent.get('why')}"}
+        if _intent.get("floored"):
+            log(f"[{name}] RISK-INTENT {_intent.get('why')}")
+        lot = float(_intent["lot"])
     return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
             "lot": float(lot), "dist": float(dist),
             "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
@@ -4012,6 +4076,10 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             "risk_envelope_capped": risk_envelope_capped,
             "fusion_book_lot": _ov, "fusion_book_target": _ov_target,
             "fusion_book_clipped_from": _book_clipped_from,
+            "intended_eur": _intent.get("intended_eur"),
+            "realised_eur": _intent.get("realised_eur"),
+            "risk_ratio": _intent.get("ratio"), "risk_intent_floored": bool(_intent.get("floored")),
+            "pre_intent_lot": _intent.get("pre_lot"),
             "basis": ((f"{_ov_basis}; " if _ov is not None else "")
                       + f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
                       f"{' from the allocator book' if from_book else ''} at the signal's own "
@@ -4232,6 +4300,28 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             fill_px = float(getattr(res, "price", 0.0) or entry_ref)
             _book_fill(name, s["symbol"], side * lot, fill_px)
             _record_exec_outcome(s["symbol"], side, lot, entry_ref, tick, dist, g, fill_px)
+            # POST-FILL: the risk this fill ACTUALLY carries, at its own price and its stop.
+            # Over POST_TOL x intent halts this sleeve's NEW entries; nothing is closed.
+            with contextlib.suppress(Exception):
+                from mt5desk import risk_intent as _ri
+                _unit = None
+                with contextlib.suppress(Exception):
+                    _unit = float(_core._eur_per_price_unit(s["symbol"], sym))
+                _rrow = _ri.measure_fill(
+                    sleeve=name, symbol=s["symbol"], side=side,
+                    volume=float(getattr(res, "volume", 0.0) or lot), fill_price=fill_px,
+                    sl=float(g.stop), unit=_unit, intended_eur=plan.get("intended_eur"),
+                    lane="family_market", deal=getattr(res, "deal", None),
+                    pre_lot=plan.get("pre_intent_lot"),
+                    floored=plan.get("risk_intent_floored"))
+                if _rrow.get("breach"):
+                    _ri.halt(st, _rrow)
+                    log(f"[{name}] REALISED-RISK BREACH {_rrow['realised_eur']} EUR vs "
+                        f"{_rrow['intended_eur']} intended ({_rrow['ratio']}x): new entries "
+                        f"halted for this sleeve; the position is left open")
+                _ri.append_jsonl(RISK_FILLS, _rrow)
+                if _rrow.get("breach"):
+                    _ri.append_jsonl(RISK_BREACHES, _rrow)
     # TTL housekeeping: positions past their deadline are closed regardless of P&L -- the
     # replay's ttl exit is part of the certified strategy, not an optional tidy-up.
     for s in fam_sleeves:
@@ -4471,6 +4561,28 @@ def scalp_open_basket_q(st: dict, s: dict, equity: float, sym: object) -> tuple[
         return 0.0, f"open basket unpriceable ({type(exc).__name__}: {exc})"
 
 
+def scalp_risk_intent(s: dict, equity: float, n_live: int, per: float, dist: float,
+                      sym: object) -> dict:
+    """The realised-risk invariant for one scalp slice (`mt5desk.risk_intent.enforce`).
+
+    The intent is the sleeve's whole promoted fraction x equity -- the basket's budget -- so a
+    slice can never be floored by it in normal operation (`slice_lot` floors to a quarter of
+    the sized lot); it binds only when a lift or an inconsistent lot would put one slice above
+    the whole basket's intent. Unmeasurable inputs return `ok: False` with the reason and
+    `mark: False` (a transient read failure retries next pass)."""
+    try:
+        from mt5desk import risk_intent as _ri
+        frac = float(_core.promoted_fraction(n_live, s.get("risk_frac"), s.get("decay_faded"),
+                                             from_book=(s.get("sized_by") == "allocator_book")))
+        return _ri.enforce_on_venue(
+            float(per), frac, float(equity), float(dist), sym,
+            lambda: float(_core._eur_per_price_unit(s["symbol"], sym)),
+            sovereign=bool(_core.allocator_sovereign()))
+    except Exception as exc:
+        return {"ok": False, "mark": False,
+                "why": f"realised-risk intent unmeasured ({type(exc).__name__}: {exc})"}
+
+
 def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     """The slice this scalp sleeve would send THIS pass, priced -- read-only, no state written.
 
@@ -4520,6 +4632,13 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     if srec.get("last_signal_bar") == str(forming):
         return {"ok": False, "stage": "already_considered", "forming": forming,
                 "why": "this bar's open was already considered"}
+    _rhalt = (st.get("risk_halt") or {}).get(name)
+    if isinstance(_rhalt, dict):
+        # A REALISED-RISK HALT: no entry and no add-on for THIS sleeve (`risk_intent`). Its
+        # basket keeps its exits; `manage_scalp_baskets` already ran.
+        from mt5desk import risk_intent as _ri
+        return {"ok": False, "stage": "risk_halt", "forming": forming, "mark": True,
+                "why": _ri.halt_why(_rhalt)}
     tick = mt5.symbol_info_tick(s["symbol"])
     sym = mt5.symbol_info(s["symbol"])
     if tick is None or sym is None:
@@ -4556,6 +4675,11 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
         if mode != "bounded_structural" or not (per > 0):
             return {"ok": False, "stage": "no_slice", "forming": forming, "mark": True,
                     "why": f"add-on slice {per} is not a bounded_structural lot"}
+        _intent = scalp_risk_intent(s, equity, n_live, per, dist, sym)
+        if not _intent.get("ok"):
+            return {"ok": False, "stage": "risk_intent", "forming": forming,
+                    "mark": bool(_intent.get("mark", True)), "why": f"refused: {_intent['why']}"}
+        per = float(_intent["lot"])
         entries = addon_entries(basket["entries"], price, per)
         new_tp = sx.basket_target(entries, side, float(basket["target_atr"]),
                                   float(basket["atr"]))
@@ -4574,6 +4698,10 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
                 "mark": True, "per": float(per), "mode": mode, "side": side, "price": price,
                 "stop": float(stop_now), "tp": float(new_tp), "dist": float(dist),
                 "sym": sym, "tick": tick, "entries": [[float(p), float(u)] for p, u in entries],
+                "intended_eur": _intent.get("intended_eur"),
+                "realised_eur": _intent.get("realised_eur"), "risk_ratio": _intent.get("ratio"),
+                "risk_intent_floored": bool(_intent.get("floored")),
+                "pre_intent_lot": _intent.get("pre_lot"),
                 "desc": addon_desc(side, per, s["symbol"], float(stop_now), new_tp,
                                    len(entries)),
                 "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live}) "
@@ -4620,10 +4748,19 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     if not (per > 0):
         return {"ok": False, "stage": "below_min", "forming": forming, "mark": True,
                 "why": f"lot {lot} below the symbol's minimum; skipped"}
+    _intent = scalp_risk_intent(s, equity, n_live, per, float(plan.stop_dist), sym)
+    if not _intent.get("ok"):
+        return {"ok": False, "stage": "risk_intent", "forming": forming,
+                "mark": bool(_intent.get("mark", True)), "why": f"refused: {_intent['why']}"}
+    per = float(_intent["lot"])
     return {"ok": True, "stage": "ok", "why": "resolved", "kind": "entry", "forming": forming,
             "mark": True, "per": float(per), "mode": mode, "side": int(plan.side),
             "price": float(plan.entry_ref), "stop": float(plan.stop), "tp": float(plan.target),
             "dist": float(plan.stop_dist), "sym": sym, "tick": tick, "plan": plan,
+            "intended_eur": _intent.get("intended_eur"),
+            "realised_eur": _intent.get("realised_eur"),
+            "risk_ratio": _intent.get("ratio"), "risk_intent_floored": bool(_intent.get("floored")),
+            "pre_intent_lot": _intent.get("pre_lot"),
             "family": family, "target_atr": target_atr,
             "desc": scalp_order_desc(plan, per, s["symbol"], mode),
             "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live}) at "
@@ -4745,6 +4882,27 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if rc not in (10008, 10009):
             continue
         fill_px = float(getattr(res, "price", 0.0) or price)
+        # POST-FILL, as the family lane: this slice's risk at its fill and its stop against the
+        # sleeve's intent; a breach halts this sleeve's further slices and entries only.
+        with contextlib.suppress(Exception):
+            from mt5desk import risk_intent as _ri
+            _unit = None
+            with contextlib.suppress(Exception):
+                _unit = float(_core._eur_per_price_unit(s["symbol"], sym))
+            _rrow = _ri.measure_fill(
+                sleeve=name, symbol=s["symbol"], side=side,
+                volume=float(getattr(res, "volume", 0.0) or per), fill_price=fill_px, sl=stop,
+                unit=_unit, intended_eur=plan.get("intended_eur"), lane="scalp_market",
+                deal=getattr(res, "deal", None), pre_lot=plan.get("pre_intent_lot"),
+                floored=plan.get("risk_intent_floored"))
+            if _rrow.get("breach"):
+                _ri.halt(st, _rrow)
+                log(f"[{name}] REALISED-RISK BREACH {_rrow['realised_eur']} EUR vs "
+                    f"{_rrow['intended_eur']} intended ({_rrow['ratio']}x): new entries "
+                    f"halted for this sleeve; the basket is left open")
+            _ri.append_jsonl(RISK_FILLS, _rrow)
+            if _rrow.get("breach"):
+                _ri.append_jsonl(RISK_BREACHES, _rrow)
         if is_addon:
             basket = srec.get("basket") or {}
             basket["entries"] = [[p, u] for p, u in plan["entries"]]
@@ -5231,6 +5389,16 @@ def main() -> None:
     # both take the full fresh-leg boost. That is precisely the doubled EURCHF 0.05 and USDCHF
     # 0.02 pairs that went out in the same second on 2026-09-15 and lost together.
     _pending_legs: dict[str, float] = {}
+    # REALISED-RISK HALTS ARE REVIEWED BEFORE ANY SLEEVE IS RESOLVED: an acknowledged breach, or
+    # a halted sleeve whose held risk re-measures within the bound, trades again this pass.
+    try:
+        from mt5desk import risk_intent as _ri
+        for _note in _ri.review_halts(
+                st, _ri.read_acks(RISK_ACK), _sleeve_positions,
+                lambda _sym: float(_core._eur_per_price_unit(_sym, mt5.symbol_info(_sym)))):
+            log(_note)
+    except Exception as _exc:
+        log(f"realised-risk halt review FAILED (halts stand): {type(_exc).__name__}: {_exc}")
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None
