@@ -294,6 +294,8 @@ def test_deep_forest_holds_a_held_ground_before_any_request(
     import deep_forest_miner as dfm
     called: list[str] = []
     monkeypatch.setattr(dfm, "_http", lambda url, **kw: called.append(url) or "")
+    # page() fetches hop by hop through polite_fetch.get (pass-6 lanes audit MF1): watch it too
+    monkeypatch.setattr(dfm.pf, "get", lambda url, **kw: called.append(url))
     assert dfm.fenced_ground(ground)
     assert not dfm.schedule([ground])
     run = dfm._Run.__new__(dfm._Run)
@@ -308,6 +310,8 @@ def test_deep_forest_page_and_nitter_route_hold_without_a_request(
     import deep_forest_miner as dfm
     called: list[str] = []
     monkeypatch.setattr(dfm, "_http", lambda url, **kw: called.append(url) or "")
+    # page() fetches hop by hop through polite_fetch.get (pass-6 lanes audit MF1): watch it too
+    monkeypatch.setattr(dfm.pf, "get", lambda url, **kw: called.append(url))
     run = dfm._Run.__new__(dfm._Run)
     run.status = []
     run._net_ok = lambda: True  # type: ignore[method-assign]

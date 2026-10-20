@@ -780,6 +780,8 @@ class TermsFenced(urllib.error.URLError, RuntimeError):
         self.why = str(v["reason"])
         self.status = str(v["status"])
         self.url = str(url)
+        #: The missed-growth line of a CUT REDIRECT HOP (`record_redirect_cut`), else None.
+        self.missed_growth: dict[str, Any] | None = None
         msg = f"{self.status}:{platform}: {self.url[:160]} -- {self.why}"
         super().__init__(msg)
         self.args = (msg,)
@@ -945,8 +947,13 @@ def _wrapped_url(url: str) -> str | None:
         if qv:
             return unquote(str(qv[0]))
         segs = parts.path.split("/", 3)
-        if len(segs) == 4 and segs[1] == "web" and segs[3]:
+        if len(segs) == 4 and segs[1] == "web" and segs[3] and ":" not in segs[2]:
             return segs[3] + tail
+        if len(segs) >= 3 and segs[1] in ("wait", "save", "wayback", "web"):
+            # archive.org/wait/<url>, /save/<url>, /web/<url> with no stamp (pass-6 lanes audit
+            # a7698187e SF): the archived page is still the page.
+            inner = _embedded("/".join(segs[2:]))
+            return (inner + tail) if inner else None
         return None
     if _on(h, _ARCHIVE_TODAY) or _on(h, _READER_HOSTS):
         for k in ("url", "q", "u"):
@@ -960,7 +967,7 @@ def _wrapped_url(url: str) -> str | None:
 
 
 
-def _route_path(path: str, *, params: str = "decoded") -> str:
+def _route_path(path: str, *, params: str = "decoded", decodes: int = 3) -> str:
     """The path a route is matched on, as the server resolves it: percent-decoded (repeatedly,
     so a double-encoded `%255F` cannot hide `_`), NFKC-folded, every run of `/` collapsed, and the
     `.` / `..` dot segments removed (RFC 3986 5.2.4). `params` says where a `;param` is cut:
@@ -970,7 +977,7 @@ def _route_path(path: str, *, params: str = "decoded") -> str:
     p = str(path or "")
     if params == "raw":
         p = "/".join(seg.split(";", 1)[0] for seg in p.split("/"))
-    for _ in range(3):
+    for _ in range(max(0, int(decodes))):
         q = unquote(p)
         if q == p:
             break
@@ -997,7 +1004,12 @@ def _route_paths(path: str) -> tuple[str, ...]:
     SHOULD-FIX 2): the path with nothing cut, with only RAW `;params` cut before decoding, and
     with `;params` cut after decoding. A route held under ANY reading is held, so neither
     `..;x` nor `..%3Bx` can pop a segment out of a held folder."""
-    return tuple(dict.fromkeys(_route_path(path, params=m) for m in ("none", "raw", "decoded")))
+    # EVERY DECODE DEPTH, not only the deepest (pass-6 lanes audit a7698187e SHOULD-FIX): a
+    # server that decodes once serves `%252e%252e` as the literal segment `%2e%2e` -- INSIDE the
+    # held folder -- while a three-fold decode reads it as `..` and pops out. Held under any
+    # depth (0 to 3) is held, so neither the double- nor the triple-encoded dot-dot leaves it.
+    return tuple(dict.fromkeys(_route_path(path, params=m, decodes=d)
+                               for m in ("none", "raw", "decoded") for d in (3, 2, 1, 0)))
 
 
 def _pattern_source(url: str) -> str | None:
@@ -1138,19 +1150,113 @@ class FencedRedirectHandler(urllib.request.HTTPRedirectHandler):
 
     def redirect_request(self, req: urllib.request.Request, fp: Any, code: int, msg: str,
                          headers: Any, newurl: str) -> urllib.request.Request | None:
+        first = self.chain[0][1] if self.chain else str(req.full_url)
         self.chain.append((int(code), str(req.full_url), str(newurl)))
-        held = platform_of_url(newurl) or (input_source(newurl) if self.live_input else None)
+        held = platform_of_url(newurl)
+        ideas = input_source(newurl) if (self.live_input and not held) else None
+        if ideas and same_source_hop(first, newurl):
+            # A hop that stays inside the FIRST URL's own registered source (one policy row:
+            # query1 -> query2.finance.yahoo.com, www -> old.reddit.com) is the same read the
+            # first URL already was, never a route into ANOTHER held route (pass-6 lanes audit
+            # a7698187e MUST-FIX 3). A route row is its own source, so a hop from an open
+            # jpx.co.jp page into the held short-selling folder is still cut.
+            ideas = None
         # METHOD: a redirect into a held source or a login / CAPTCHA wall is refused, never
-        # followed; the 3xx response's socket is released before the refusal is raised.
-        if held or login_wall(newurl):
+        # followed; the 3xx response's socket is released before the refusal is raised. Every
+        # cut hop leaves its missed-growth line (`record_redirect_cut`), never a silent None.
+        cut = held or ideas or ("login_wall" if login_wall(newurl) else None)
+        if cut:
             with contextlib.suppress(Exception):
                 fp.read()
                 fp.close()
-            raise TermsFenced(held or "login_wall", newurl)
+            exc = TermsFenced(cut, newurl)
+            exc.missed_growth = record_redirect_cut(cut, str(req.full_url), str(newurl),
+                                                    first, live_input=bool(ideas))
+            raise exc
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new is not None:
             check_request(new.full_url, _req_headers(new))
         return new
+
+
+def same_source_hop(first_url: str, new_url: str) -> bool:
+    """True when a redirect from a chain that began at `first_url` lands on the SAME policy row
+    (`source_of_url`) -- the first URL's own registered source -- and that row is not held. A
+    row is the register's unit of a source, so a route row (a held folder on an open host) is
+    never the same source as the host's open pages."""
+    k2 = source_of_url(new_url)
+    return k2 is not None and k2 == source_of_url(first_url) and status(k2) not in HOLDING
+
+
+#: Where every cut redirect hop's missed-growth line is appended (state, one JSON per line).
+#: `QUANT_REDIRECT_CUTS` overrides it; under pytest with no override the line is kept in
+#: memory only, so a test never writes the box's ledger.
+REDIRECT_CUTS_PATH = (os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "desks", "mt5", "data", "redirect_cuts.jsonl"))
+#: The process's recent cut-hop lines (bounded), for an organ that reports them in-process.
+REDIRECT_CUTS: list[dict[str, Any]] = []
+_REDIRECT_CUTS_MAX = 500
+
+
+def _redirect_cuts_path() -> str | None:
+    env = os.environ.get("QUANT_REDIRECT_CUTS", "").strip()
+    if env:
+        return None if env.lower() in ("off", "0", "none") else env
+    return None if os.environ.get("PYTEST_CURRENT_TEST") else REDIRECT_CUTS_PATH
+
+
+def record_redirect_cut(cut: str, from_url: str, to_url: str, first_url: str = "", *,
+                        live_input: bool = False) -> dict[str, Any]:
+    """GROWTH GOVERNANCE: the missed-growth line a CUT REDIRECT HOP carries (kind redirect_cut,
+    delta E[log W] UNMEASURED, never zero, with its cause). Kept in `REDIRECT_CUTS` and appended
+    to the ledger (`_redirect_cuts_path`); a failed write is LOUD, never fatal to the refusal."""
+    from datetime import UTC, datetime
+    try:
+        v = _view(cut)
+        policy_status, why = str(v.get("status") or ""), str(v.get("reason") or "")
+    except Exception:
+        policy_status, why = "", ""
+    line: dict[str, Any] = {
+        "kind": "redirect_cut", "source": cut, "policy_status": policy_status,
+        "status": IDEAS_ONLY if live_input else (policy_status or "REFUSED"),
+        "from": str(from_url)[:300], "to": str(to_url)[:300], "first_url": str(first_url)[:300],
+        "delta_elogw": "UNMEASURED",
+        "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "cause": (f"a redirect hop into {cut} ({why or 'refused'}) was cut "
+                  f"{'as live input ' if live_input else ''}and never followed, so the series "
+                  "the first URL would have returned was not read; the growth forgone is "
+                  "UNMEASURED, never zero"),
+        "unblock": ("the source's own terms permitting automated access for this use (a "
+                    "SOURCE_POLICY row change), or a fetcher whose first URL is that source")}
+    REDIRECT_CUTS.append(line)
+    del REDIRECT_CUTS[:-_REDIRECT_CUTS_MAX]
+    path = _redirect_cuts_path()
+    if path:
+        try:
+            os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+            with open(path, "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(line, sort_keys=True) + "\n")
+        except OSError as exc:
+            print(f"terms_fence: redirect cut line NOT written ({type(exc).__name__}: {exc})",
+                  flush=True)
+    return line
+
+
+def redirect_cut_lines(path: str | None = None, *, limit: int = 200) -> list[dict[str, Any]]:
+    """The last `limit` cut-hop missed-growth lines on the ledger (an absent ledger: none)."""
+    p = path or _redirect_cuts_path() or REDIRECT_CUTS_PATH
+    try:
+        with open(p, encoding="utf-8") as fh:
+            rows = fh.read().splitlines()[-max(0, int(limit)):]
+    except OSError:
+        return list(REDIRECT_CUTS[-limit:])
+    out: list[dict[str, Any]] = []
+    for ln in rows:
+        with contextlib.suppress(ValueError):
+            row = json.loads(ln)
+            if isinstance(row, dict):
+                out.append(row)
+    return out
 
 
 class TermsGuardProcessor(urllib.request.BaseHandler):

@@ -675,6 +675,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     report = build_report(rows, complaints, cursor, columns, ran, store, now,
                           seconds=time.monotonic() - t0, alloc=alloc, live=live)
     report["missed_growth_lines"] = terms_hold_lines(rows, cursor, columns)
+    # Every redirect hop THE ONE FETCH DOOR cut (any organ, `terms_fence.record_redirect_cut`):
+    # each carries its own missed-growth line, reported here hourly (pass-6 lanes audit MF3).
+    report["redirect_cut_lines"] = _tf.redirect_cut_lines(limit=50)
     write_json(store.report, report)
     return report
 
