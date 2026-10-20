@@ -26,10 +26,24 @@ Demo IS good evidence for the things that break loudly: contract sizes, stop and
 symbol suffixes, session hours, margin maths, whether an order is even accepted. Those are real
 bugs worth finding without real money. So demo trades are SEGREGATED, never discarded, and never
 averaged together with live ones.
+
+THE STAMP IS A HASH, NOT THE LOGIN (2026-10-20, audit v3 of publish_sync_schtasks). Both files
+this stamps are tracked and published from the box, and on LIVE `live_ledger.jsonl` carried the
+live login 257 times and `order_intents.jsonl` 44 times, under `account`. A row now carries
+`account_key` = `account_key(login, server)`, a truncated SHA-256 of "<login>@<server>" -- the
+SAME key Fusion r4's `mt5desk/cross_account.py` stamps on its books (that module is not on this
+base, so the function is mirrored here, byte for byte in what it computes). Comparing two keys
+is comparing the (login, server) pairs they hash, so `same_account` decides exactly what it did.
+
+LEGACY ROWS STILL CARRY THE RAW LOGIN and cannot be rewritten (the ledger's prefix is sealed in
+IMMUTABLE_MANIFEST.json and libs/ops/live_ledger_view.py raises on a changed prefix). `row_account`
+therefore HASHES a legacy row's `account`+`server` on read, so a ledger holding both shapes is one
+account to every reader -- markout's MIXED check, the promoter's admission, independence's k_eff.
 """
 
 from __future__ import annotations
 
+import hashlib
 from collections import defaultdict
 from typing import Any
 
@@ -75,9 +89,32 @@ def current_account(acc: Any) -> dict:
             "kind": account_kind(getattr(acc, "trade_mode", None))}
 
 
+def account_key(login: object, server: object) -> str | None:
+    """A truncated SHA-256 of "<login>@<server>": names the account without carrying the login.
+
+    Mirrors `mt5desk.cross_account.account_key` (Fusion r4) in what it computes. That one
+    RAISES on an unreadable login or server; this returns None instead, because here an
+    unreadable pair means "row with no provenance", which every caller already treats as
+    matching nothing -- the same verdict the raw comparison gave a row with no login."""
+    if login in (None, "") or isinstance(login, bool) or server in (None, ""):
+        return None
+    return "sha256:" + hashlib.sha256(f"{login}@{server}".encode()).hexdigest()[:16]
+
+
+def row_key(row: dict) -> str | None:
+    """The row's account identity as a key: its `account_key`, or a legacy row's raw
+    `account`+`server` hashed on read. None when the row names no account."""
+    key = row.get("account_key")
+    if isinstance(key, str) and key.startswith("sha256:"):
+        return key
+    return account_key(row.get("account"), row.get("server"))
+
+
 def row_account(row: dict) -> tuple:
-    """The account key of a ledger row. Rows predating provenance key as fully unknown."""
-    return (row.get("account"), row.get("server"), row.get("account_kind", UNKNOWN))
+    """The account identity of a ledger row: (key, server, kind). Rows predating provenance
+    key as fully unknown. The key replaces the raw login that used to stand first here; for a
+    legacy row it is that login, hashed (see `row_key`)."""
+    return (row_key(row), row.get("server"), row.get("account_kind", UNKNOWN))
 
 
 def same_account(row: dict, acc: dict) -> bool:
@@ -92,11 +129,13 @@ def same_account(row: dict, acc: dict) -> bool:
     in hand. That is a deliberate loss of history: the alternative is silently treating pre-switch
     trades as belonging to whatever account is connected today.
     """
-    login, server, kind = row_account(row)
-    if kind == UNKNOWN or login is None:
+    key, server, kind = row_account(row)
+    if kind == UNKNOWN or key is None:
         return False
-    return (login == acc.get("login") and server == acc.get("server")
-            and kind == acc.get("kind"))
+    # The key hashes (login, server), so key equality is login AND server equality; server is
+    # still compared on its own for a row whose key came from the writer, not from this file.
+    return (key == account_key(acc.get("login"), acc.get("server"))
+            and server == acc.get("server") and kind == acc.get("kind"))
 
 
 def split_by_account(rows: list[dict]) -> dict[tuple, list[dict]]:
@@ -108,6 +147,7 @@ def split_by_account(rows: list[dict]) -> dict[tuple, list[dict]]:
 
 
 def stamp(acc: dict) -> dict:
-    """The provenance fields to merge into a ledger row."""
-    return {"account": acc.get("login"), "server": acc.get("server"),
-            "account_kind": acc.get("kind", UNKNOWN)}
+    """The provenance fields to merge into a ledger row. `account_key`, never the raw login: the
+    ledger is tracked and published (see the module docstring)."""
+    return {"account_key": account_key(acc.get("login"), acc.get("server")),
+            "server": acc.get("server"), "account_kind": acc.get("kind", UNKNOWN)}

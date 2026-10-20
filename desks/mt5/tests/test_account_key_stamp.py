@@ -1,0 +1,124 @@
+"""The ledgers stamp a HASHED account key, and every account decision is unchanged by it.
+
+2026-10-20 (audit v3 of publish_sync_schtasks): `live_ledger.jsonl` and `order_intents.jsonl` are
+tracked and published from the box, and on LIVE they carried the live login 257 and 44 times
+under `account`. Their writers now stamp `account_key` -- sha256("<login>@<server>")[:16], the key
+Fusion r4's `mt5desk/cross_account.py` uses -- and every reader hashes a legacy row on read.
+
+THE MONEY PATH IS PINNED HERE, not asserted in prose. `same_account` decides which ledger rows
+are evidence for the account in hand: the promoter's retirements and admissions, the gold
+retirement re-derivation, and `independence.measure_from_ledger` (k_eff -> the heat budget ->
+size). So the old comparison is restated below as the reference and the new one must agree with
+it on every (row, account) pair, for legacy rows and for rows the new writer stamps.
+"""
+from __future__ import annotations
+
+import hashlib
+import itertools
+import sys
+from pathlib import Path
+
+import pytest
+
+_DESK = Path(__file__).resolve().parents[1]
+for p in (str(_DESK), str(_DESK.parents[1])):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from mt5desk import provenance  # noqa: E402
+from mt5desk.provenance import DEMO, LIVE, UNKNOWN  # noqa: E402
+
+_GW = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+
+
+def _old_same_account(row: dict, acc: dict) -> bool:
+    """`provenance.same_account` as it was before the hashed stamp (2026-10-20), verbatim."""
+    login, server, kind = (row.get("account"), row.get("server"),
+                           row.get("account_kind", UNKNOWN))
+    if kind == UNKNOWN or login is None:
+        return False
+    return (login == acc.get("login") and server == acc.get("server")
+            and kind == acc.get("kind"))
+
+
+_LOGINS = (5551234, 9990001, 1)
+_SERVERS = ("FusionMarkets-Live", "FusionMarkets-Demo")
+_KINDS = (LIVE, DEMO, UNKNOWN)
+_ACCS = [{"login": lg, "server": sv, "kind": k}
+         for lg, sv, k in itertools.product(_LOGINS, _SERVERS, _KINDS)]
+_ACCS += [{"login": None, "server": None, "kind": UNKNOWN}]
+_LEGACY = [{"account": lg, "server": sv, "account_kind": k, "sleeve": "gold_asia"}
+           for lg, sv, k in itertools.product((*_LOGINS, None), _SERVERS, _KINDS)]
+_LEGACY += [{"sleeve": "x"}]
+
+
+def test_the_key_is_cross_account_s_key() -> None:
+    """Same computation as mt5desk/cross_account.py:account_key on Fusion r4 (not on this base,
+    so mirrored): "sha256:" + sha256("<login>@<server>").hexdigest()[:16]."""
+    want = "sha256:" + hashlib.sha256(b"5551234@FusionMarkets-Live").hexdigest()[:16]
+    assert provenance.account_key(5551234, "FusionMarkets-Live") == want
+    for bad in ((None, "S"), ("", "S"), (True, "S"), (1, None), (1, "")):
+        assert provenance.account_key(*bad) is None
+
+
+@pytest.mark.parametrize("acc", _ACCS, ids=lambda a: f"{a['login']}@{a['server']}/{a['kind']}")
+def test_same_account_is_unchanged_on_legacy_rows(acc: dict) -> None:
+    for row in _LEGACY:
+        assert provenance.same_account(row, acc) is _old_same_account(row, acc), (row, acc)
+
+
+@pytest.mark.parametrize("acc", _ACCS, ids=lambda a: f"{a['login']}@{a['server']}/{a['kind']}")
+def test_a_row_the_new_writer_stamps_matches_exactly_where_the_old_stamp_did(acc: dict) -> None:
+    for writer_acc in _ACCS:
+        old_row = {"account": writer_acc["login"], "server": writer_acc["server"],
+                   "account_kind": writer_acc["kind"]}
+        new_row = provenance.stamp(writer_acc)
+        assert "account" not in new_row, "the writer still stamps the raw login"
+        assert provenance.same_account(new_row, acc) is _old_same_account(old_row, acc), (
+            writer_acc, acc)
+
+
+def test_a_ledger_of_both_shapes_is_one_account_to_every_grouping_reader() -> None:
+    acc = {"login": 5551234, "server": "FusionMarkets-Live", "kind": LIVE}
+    legacy = {"account": 5551234, "server": "FusionMarkets-Live", "account_kind": LIVE}
+    groups = provenance.split_by_account([legacy, provenance.stamp(acc)])
+    assert len(groups) == 1, "markout would read a one-account ledger as MIXED"
+    assert provenance.row_key(legacy) == provenance.row_key(provenance.stamp(acc))
+
+
+def test_k_eff_and_the_promoter_admission_are_identical_across_the_cutover() -> None:
+    """independence.measure_from_ledger sizes the heat budget from the rows same_account keeps;
+    the same rows stamped either way must give the same k_eff, word for word."""
+    from mt5desk import independence
+    acc = {"login": 5551234, "server": "FusionMarkets-Live", "kind": LIVE}
+    other = {"login": 9990001, "server": "FusionMarkets-Demo", "kind": DEMO}
+    base = []
+    for day in range(1, 29):
+        for i, sleeve in enumerate(("a", "b", "c")):
+            base.append({"time": f"2026-09-{day:02d}T1{i}:00:00+00:00", "sleeve": sleeve,
+                         "r_multiple": ((day * (i + 2)) % 7 - 3) / 3.0})
+    def as_old(row: dict, a: dict) -> dict:
+        return {**row, "account": a["login"], "server": a["server"], "account_kind": a["kind"]}
+    def as_new(row: dict, a: dict) -> dict:
+        return {**row, **provenance.stamp(a)}
+    old = [as_old(r, acc if n % 4 else other) for n, r in enumerate(base)]
+    new = [as_new(r, acc if n % 4 else other) for n, r in enumerate(base)]
+    mixed = [o if n % 2 else w for n, (o, w) in enumerate(zip(old, new, strict=True))]
+    want = independence.measure_from_ledger(old, acc)
+    assert independence.measure_from_ledger(new, acc) == want
+    assert independence.measure_from_ledger(mixed, acc) == want
+    keep = [provenance.same_account(r, acc) for r in old]
+    assert [provenance.same_account(r, acc) for r in new] == keep
+    assert [provenance.same_account(r, acc) for r in mixed] == keep
+
+
+def test_the_gateway_writes_the_key_and_never_the_raw_login() -> None:
+    """Both tracked writers. The ledger row is `provenance.stamp` (pinned above). The intent
+    key is set inside `_record_intent`, the append-only recorder whose only output is the row
+    it writes and its intent_id -- so the change cannot reach what is sent, sized or refused."""
+    assert "_prov.stamp(_prov.current_account(mt5.account_info()))" in _GW
+    assert 'row.setdefault("account", ' not in _GW, "an intent row stamps the raw login again"
+    body = _GW[_GW.index("def _record_intent"):]
+    body = body[:body.index("\ndef ")]
+    assert 'row.setdefault("account_key", _akey(' in body
+    assert "order_send" not in body and "order_check" not in body

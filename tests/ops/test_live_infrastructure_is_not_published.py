@@ -65,12 +65,6 @@ MAX_RETIRED_SITES = 44
 #: provenance check, which is a real safety property. The right fix is that these paths stop being
 #: tracked at all, which is a state-path change and is queued rather than done here.
 ALLOWED: dict[str, str] = {
-    "desks/mt5/data/order_intents.jsonl":
-        "per-intent account/server provenance joins decisions to broker acknowledgements; "
-        "removing it breaks account reconciliation. Migrate to a private raw ledger "
-        "and public projection.",
-    "desks/mt5/data/live_ledger.jsonl":
-        "per-fill account stamp; removing it breaks ledger provenance. Untrack this path.",
     "desks/mt5/data/universe/broker_info.json":
         "broker registry snapshot written by the desk. Untrack this path.",
     # Box-written state: editing the committed copy on origin is reverted by the box's next push
@@ -81,6 +75,39 @@ ALLOWED: dict[str, str] = {
         "box-written state; writer fixed in desks/mt5/research/cost_truth.py, clears on the "
         "box's next write",
 }
+
+
+#: THE TWO LEDGERS ARE NO LONGER WHOLE-FILE DEBTS (2026-10-20). Their writers stamp a hashed
+#: `account_key` (mt5desk/provenance.py, gateway `_record_intent`) and every reader hashes a
+#: legacy row on read, so from the first `account_key` row onward these files are fenced like any
+#: other: a live identifier in a row after the cutover fails `test_no_LIVE_...` below.
+#:
+#: The rows BEFORE the cutover keep the raw login, deliberately. They cannot be rewritten in place:
+#: `live_ledger.jsonl`'s prefix is sealed in IMMUTABLE_MANIFEST.json and every audited reader
+#: (libs/ops/live_ledger_view.py) raises on a changed prefix -- which would stop the promoter, the
+#: allocator and k_eff, i.e. the money path -- and the gateway appends to both files while it runs.
+#: Rewriting them buys nothing either: the rows are already on origin and in history, and
+#: scrubbing history is `git filter-repo`, the principal's call alone.
+#: REMOVAL TRIGGER: `test_the_legacy_prefixes_still_need_the_exemption` fails once a prefix no
+#: longer carries a forbidden identifier (history scrubbed and the file restarted). Delete the
+#: entry from `libs/ops/login_fence.LEGACY_PREFIX` then; this fence and the publisher's share it.
+from libs.ops.login_fence import CUTOVER_MARK, LEGACY_PREFIX  # noqa: E402
+
+
+def _judged_text(path: str, text: str) -> str:
+    """What the fence judges: the whole file, or for a legacy-prefix ledger only the rows from
+    its first `account_key` row onward (nothing at all before the cutover is written)."""
+    if path not in LEGACY_PREFIX:
+        return text
+    lines = text.splitlines(keepends=True)
+    start = next((i for i, ln in enumerate(lines) if CUTOVER_MARK in ln), len(lines))
+    return "".join(lines[start:])
+
+
+def _legacy_prefix(path: str, text: str) -> str:
+    lines = text.splitlines(keepends=True)
+    start = next((i for i, ln in enumerate(lines) if CUTOVER_MARK in ln), len(lines))
+    return "".join(lines[:start])
 
 
 def _tracked() -> list[str]:
@@ -115,7 +142,8 @@ def _hits(needle: str) -> list[str]:
     me = Path(__file__).resolve().relative_to(ROOT).as_posix()
     return [q for q in (ln.strip().replace("\\", "/") for ln in out.stdout.splitlines())
             if q and q != me and _contains_identifier(
-                (ROOT / q).read_text(encoding="utf-8", errors="replace"), needle)]
+                _judged_text(q, (ROOT / q).read_text(encoding="utf-8", errors="replace")),
+                needle)]
 
 
 def _offenders(table: dict[str, str]) -> list[str]:
@@ -166,3 +194,37 @@ def test_the_allowlist_entries_actually_still_need_the_exemption() -> None:
     assert not unneeded, (
         f"these files no longer contain a forbidden identifier and their exemption is stale: "
         f"{unneeded}. Delete the ALLOWED entries.")
+
+
+def test_the_two_ledgers_are_fenced_and_not_whole_file_allowed() -> None:
+    for path in LEGACY_PREFIX:
+        assert path not in ALLOWED, f"{path} is a whole-file debt again; it is fenced by rows"
+    assert set(LEGACY_PREFIX) == {"desks/mt5/data/live_ledger.jsonl",
+                                  "desks/mt5/data/order_intents.jsonl"}
+
+
+def test_the_legacy_prefixes_still_need_the_exemption() -> None:
+    """The removal trigger. A prefix that no longer carries a forbidden identifier is a paid
+    debt: delete its LEGACY_PREFIX entry so the whole file is fenced."""
+    unneeded = []
+    for path in LEGACY_PREFIX:
+        full = ROOT / path
+        if not full.exists():
+            continue
+        prefix = _legacy_prefix(path, full.read_text(encoding="utf-8", errors="replace"))
+        if not any(_contains_identifier(prefix, n) for n in FORBIDDEN):
+            unneeded.append(path)
+    assert not unneeded, (
+        f"these ledgers' legacy prefixes no longer carry a forbidden identifier: {unneeded}. "
+        f"Delete their libs/ops/login_fence.LEGACY_PREFIX entries.")
+
+
+def test_a_row_after_the_cutover_is_judged() -> None:
+    needle = next(iter(LIVE))
+    path = "desks/mt5/data/live_ledger.jsonl"
+    old = '{"deal": 1, "account": ' + needle + '}\n'
+    new = '{"deal": 2, "account_key": "sha256:0123456789abcdef"}\n'
+    assert not _contains_identifier(_judged_text(path, old * 3), needle)
+    assert not _contains_identifier(_judged_text(path, old + new), needle)
+    assert _contains_identifier(_judged_text(path, old + new + old), needle)
+    assert _contains_identifier(_judged_text("desks/mt5/data/other.jsonl", old), needle)
