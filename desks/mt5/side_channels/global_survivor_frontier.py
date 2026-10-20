@@ -24,15 +24,19 @@ import re
 import sys
 import time
 import urllib.parse
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
-
-import requests
 
 _dir = str(Path(__file__).resolve().parent)
 if _dir not in sys.path:
     sys.path.insert(0, _dir)
+_root = str(Path(__file__).resolve().parents[3])
+if _root not in sys.path:
+    sys.path.insert(0, _root)
 from lang_intel import LEXICON  # noqa: E402
+
+from libs.data.polite_fetch import decode_body, fenced_urlopen  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
@@ -42,6 +46,17 @@ FRONTIER = INTEL / "frontier_coverage.json"
 STATE = INTEL / "frontier_state.json"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                          "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
+MAX_BYTES = 2_000_000
+
+
+def _get_text(url: str, timeout: float) -> str:
+    """One GET through THE ONE FETCH DOOR (polite_fetch.fenced_urlopen): a redirect into a login
+    or CAPTCHA wall raises instead of being followed; an HTTP error raises HTTPError."""
+    req = urllib.request.Request(url, headers=HEADERS)
+    with fenced_urlopen(req, timeout=timeout) as fh:
+        raw = fh.read(MAX_BYTES)
+        return decode_body(raw, str(fh.headers.get("Content-Type") or ""),
+                           str(fh.headers.get("Content-Encoding") or ""))
 
 #: Every locale is a permanent cell. "open_frontier" cells are the ones no strong native
 #: survivor pool has been found for YET -- they get canary priority, never a "done" flag.
@@ -129,9 +144,8 @@ def search(query: str) -> list[dict]:
             break
         try:
             time.sleep(1.5)
-            r = requests.get(url, headers=HEADERS, timeout=25)
-            r.raise_for_status()
-            for m in re.finditer(pat, r.text, re.DOTALL):
+            text = _get_text(url, 25)
+            for m in re.finditer(pat, text, re.DOTALL):
                 title = re.sub(r"<[^>]+>", "", m.group(2)).strip()
                 hits.append({"url": urllib.parse.unquote(m.group(1)), "title": title,
                              "engine": engine})
@@ -146,9 +160,7 @@ def score_source(url: str) -> dict:
     """Fetch once and score what the page actually EXPOSES, in any language."""
     try:
         time.sleep(1.2)
-        r = requests.get(url, headers=HEADERS, timeout=20)
-        r.raise_for_status()
-        low = r.text.lower()
+        low = _get_text(url, 20).lower()
     except Exception as exc:                                             # noqa: BLE001
         return {"reachable": False, "error": type(exc).__name__, "score": 0}
     flags = {k: any(t.lower() in low for t in terms)

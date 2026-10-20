@@ -62,6 +62,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+
 REGISTRY = BASE / "data" / "asia_sources.json"
 SEEDS = BASE / "data" / "deep_forest_sources.json"
 OUT = BASE / "reports" / "INDEX_DISCOVERY.json"
@@ -89,7 +91,7 @@ def _ctx():
 def _get(url: str, timeout: float = 25.0, cap: int = 2_000_000) -> tuple[bytes | None, str]:
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        with fenced_urlopen(req, timeout=timeout, context=_TLS) as r:   # the one fetch door
             return r.read(cap), f"HTTP {getattr(r, 'status', 0)}"
     except urllib.error.HTTPError as e:
         return None, f"HTTP {getattr(e, 'code', 0)}"
