@@ -653,6 +653,93 @@ def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
                     "published rather than priced as zero")}
 
 
+#: THE REALISED-RISK INVARIANT'S LEDGERS (`mt5desk.risk_intent`, 2026-10-20), written by the
+#: gateway: every family/scalp fill priced at its fill and stop against intent, the breaches
+#: among them, and the journal every refused order lands in (stages `risk_intent`, `risk_halt`).
+RISK_FILLS = BASE / "data" / "realised_risk_fills.jsonl"
+RISK_BREACHES = BASE / "data" / "realised_risk_breaches.jsonl"
+REFUSED_ORDERS = BASE / "data" / "refused_orders.jsonl"
+#: The rail names the two measures below are billed under. The rail register is sealed, so
+#: until the sealed pass lands the `rails.py` hunk they are carried in `published_gate_lines`.
+RISK_INTENT_RAILS = ("risk_intent_floor", "realised_risk_halt")
+
+
+def _jsonl_rows(path: Path) -> list[dict[str, Any]] | None:
+    """Rows of a JSONL ledger; None when it does not exist or cannot be read (UNMEASURED)."""
+    try:
+        text = path.read_text("utf-8")
+    except OSError:
+        return None
+    rows: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        try:
+            row = json.loads(line) if line.strip() else None
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+
+def measure_risk_intent_floor(r: Any, _alloc: dict[str, Any],
+                              _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the pre-order realised-risk invariant trimmed or refused.
+
+    The invariant removes only the part of an order above PRE_TOL x the sleeve's intended EUR
+    (rounding overshoot, a minimum-lot lift); the allocator's fraction and its two-sided
+    modifiers are inside the intent and are never cut. Its cost is the trimmed lots on the
+    floored fills plus the orders refused because the venue minimum sits above the intent.
+    Neither is priced in log-wealth yet -- that needs each refused order's forward outcome --
+    so the verdict is UNMEASURED with the counts published, or NOT_BINDING when it never fired."""
+    fills = _jsonl_rows(RISK_FILLS)
+    refused = _jsonl_rows(REFUSED_ORDERS)
+    if fills is None and refused is None:
+        return {"verdict": UNMEASURED, "rail": r.name,
+                "why": "neither the realised-risk fill ledger nor the refusal journal exists "
+                       "on this host"}
+    floored = [x for x in fills or [] if x.get("floored")]
+    trimmed = 0.0
+    for x in floored:
+        try:
+            trimmed += max(0.0, float(x["pre_lot"]) - float(x["volume"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+    n_ref = sum(1 for x in refused or [] if x.get("stage") == "risk_intent")
+    if not floored and not n_ref:
+        return {"verdict": NOT_BINDING, "rail": r.name, "n_floored": 0, "n_refused": 0,
+                "value_logw_per_day": 0.0,
+                "why": "no fill was floored and no order refused by the risk intent"}
+    return {"verdict": UNMEASURED, "rail": r.name, "n_floored": len(floored),
+            "trimmed_lots": round(trimmed, 6), "n_refused": n_ref,
+            "why": ("the trimmed lots were rounding overshoot above the sleeve's own intent and "
+                    "the refusals were minimum lots above it; pricing either in log-wealth "
+                    "needs the forward outcome of each order, which no row carries yet")}
+
+
+def measure_realised_risk_halt(r: Any, _alloc: dict[str, Any],
+                               _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the post-fill realised-risk halt stood aside from.
+
+    A breach (risk at the fill price and real stop above POST_TOL x intent) halts that sleeve's
+    NEW entries until acknowledged or re-measured clean. Each refused family entry is journalled
+    `risk_halt`; scalp refusals are not journalled per bar, so the breach count is the floor on
+    the halts this rail imposed. UNMEASURED with counts until refused entries carry outcomes."""
+    breaches = _jsonl_rows(RISK_BREACHES)
+    refused = _jsonl_rows(REFUSED_ORDERS)
+    if breaches is None or not breaches:
+        return {"verdict": NOT_BINDING, "rail": r.name, "n_breaches": 0,
+                "value_logw_per_day": 0.0,
+                "why": "no realised-risk breach has halted a sleeve on this host"}
+    halted = sorted({str(x.get("sleeve")) for x in breaches})
+    n_ref = sum(1 for x in refused or [] if x.get("stage") == "risk_halt")
+    return {"verdict": UNMEASURED, "rail": r.name, "n_breaches": len(breaches),
+            "sleeves": halted[:50], "n_refused_entries": n_ref,
+            "last_breach_at": breaches[-1].get("at"),
+            "why": ("each refused entry forgoes that signal's forward R if the breach was a "
+                    "one-off bad fill, and saves a repeat if it was not; the journal cannot "
+                    "yet tell which, so it is published rather than priced as zero")}
+
+
 #: The hourly stop-geometry re-solve's report. Its robustness gate registers no rail (the rail
 #: register is a sealed immutable-evaluator file), so its missed-growth lines are PUBLISHED on
 #: that artifact in `forward_slot_ranker`'s shape and carried here, never appended to LEDGER.
@@ -1030,6 +1117,13 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
+class _PendingRail:
+    """The `r` a measure reads, for a rail the sealed register does not list yet."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
 # --------------------------------------------------------------------------- the ledger
 def _rows() -> list[dict]:
     try:
@@ -1144,17 +1238,22 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
-                                    "fusion_book_rails": published_fusion_book_lines(),
-                                    "ftmo_follower_rails": published_ftmo_follower_lines(),
-                                    "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
-                                    "judge_priority_raise": organ_published_lines(
-                                        JUDGE_PRIORITY_RAISES,
-                                        spill=JUDGE_PRIORITY_UNRECORDED,
-                                        unspilled=JUDGE_PRIORITY_RECORDS),
-                                    "deepening_memory_guard": organ_published_lines(
-                                        DEEPENING_GUARD),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                     "fusion_book_rails": published_fusion_book_lines(),
+                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
+                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
+                                     "judge_priority_raise": organ_published_lines(
+                                         JUDGE_PRIORITY_RAISES,
+                                         spill=JUDGE_PRIORITY_UNRECORDED,
+                                         unspilled=JUDGE_PRIORITY_RECORDS),
+                                     "deepening_memory_guard": organ_published_lines(
+                                         DEEPENING_GUARD),
+                                     "admission_scan_cadence": admission_cadence_line(alloc),
+                                     # Unregistered until the sealed rails.py hunk lands
+                                     # (RISK_INTENT_RAILS).
+                                     **{name: MEASURES[f"measure_{name}"](_PendingRail(name),
+                                                                          alloc, fv)
+                                        for name in RISK_INTENT_RAILS}},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
