@@ -44,6 +44,14 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import polite_urlopen
+
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -108,7 +116,7 @@ def search(kind: str, query: str, *, timeout: int = 25) -> int | str:
     """
     url = _API.format(kind=kind, q=urllib.parse.quote(query))
     try:
-        with urllib.request.urlopen(
+        with polite_urlopen(
                 urllib.request.Request(url, headers=_UA), timeout=timeout) as resp:
             body = json.loads(resp.read())
     except urllib.error.HTTPError as exc:

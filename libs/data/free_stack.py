@@ -110,11 +110,17 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
     hdr.update(dict(headers or {}))
     req = urllib.request.Request(url, headers=hdr, data=body,
                                  method="POST" if body is not None else "GET")
+    from libs.data import polite_fetch as _pf
     from libs.data import terms_fence as _tf
     try:
-        # THE REDIRECT GUARD: a 30x into a held source or a login wall raises, never followed.
-        with _tf.guarded_urlopen(req, timeout=HTTP_TIMEOUT_S, live_input=True) as resp:
+        # polite_fetch's seam: THE REDIRECT GUARD (a 30x into a held source or a login wall
+        # raises, never followed) behind the site's holds and each hop's own robots.txt
+        # (LAWS 5e amended 2026-10-14); a 401/403/429 holds the site.
+        with _pf.polite_urlopen(req, timeout=HTTP_TIMEOUT_S, live_input=True,
+                                max_bytes=MAX_BYTES + 1, leg="free_stack") as resp:
             raw: bytes = resp.read(MAX_BYTES + 1)
+    except _pf.PoliteRefused as exc:
+        raise FetchError(exc.verdict or classify(exc), f"{exc.error[:120]}: {url}") from exc
     except _tf.TermsFenced as exc:
         raise FetchError(str(exc.status), f"terms fence ({exc.platform}): {url}") from exc
     except urllib.error.HTTPError as exc:

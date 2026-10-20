@@ -43,12 +43,12 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -110,7 +110,7 @@ SEARCH_SPACE: dict[str, list[tuple[str, str]]] = {
 def _probe(url: str, timeout: int = 25) -> tuple[bool, str]:
     try:
         req = urllib.request.Request(url, headers=_UA)
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with polite_urlopen(req, timeout=timeout) as r:
             body = r.read(200)
         return True, f"HTTP {r.status}, {len(body)}b"
     except urllib.error.HTTPError as e:
