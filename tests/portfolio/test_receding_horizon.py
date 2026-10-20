@@ -94,3 +94,35 @@ def test_five_day_rule_is_checked_per_opportunity() -> None:
     if "s0" in out["actions"]:
         a = out["actions"]["s0"]
         assert a["persistence_days"] == pytest.approx(1 / 24, abs=1e-4)
+
+
+def test_state_ensemble_reweights_worlds_per_stage(tmp_path) -> None:
+    """N11 (2026-10-20): a stage the ensemble expects in stress is scored on stress worlds."""
+    import json
+    from datetime import UTC, datetime
+
+    from libs.portfolio.multiperiod_worlds import load_state_ensemble, stage_weights_from_ensemble
+    rng = np.random.default_rng(1)
+    n_w = 40
+    calm = rng.normal(0.004, 0.005, size=(20, 64, 1))
+    crash = rng.normal(-0.02, 0.03, size=(20, 64, 1))
+    w = Worlds(r=np.concatenate([calm, crash]).astype(np.float32), names=("s0",),
+               crisis=np.zeros(n_w, bool), mu_draws=np.zeros((n_w, 1)),
+               regimes=tuple(["calm"] * 20 + ["stress"] * 20))
+    p = tmp_path / "STATE_ENSEMBLE.json"
+    doc = {"status": "OK", "asof_utc": datetime.now(UTC).isoformat(), "states": ["calm", "stress"],
+           "stage_days": [1 / 24, 3 / 24, 20 / 24, 4.0],
+           "stage_probs": [{"calm": 1.0}, {"calm": 1.0}, {"stress": 1.0}, {"stress": 1.0}]}
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    ens = load_state_ensemble(p)
+    assert ens["status"] == "OK"
+    sww = stage_weights_from_ensemble(w, ens)
+    assert sww is not None and float(sww[0][:20].sum()) == pytest.approx(1.0)
+    out = plan_receding(w, {}, cap=0.05, cost_one_way=0.0, stage_world_weights=sww,
+                        stage_days=ens["stage_days"])
+    assert out["path_total_heat"][0] > out["path_total_heat"][-1]
+    # Stale, malformed or not-OK reads UNMEASURED and changes nothing.
+    doc["stage_probs"][0] = {"calm": 0.4}
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    assert load_state_ensemble(p)["status"] == "UNMEASURED"
+    assert load_state_ensemble(tmp_path / "absent.json")["status"] == "UNMEASURED"

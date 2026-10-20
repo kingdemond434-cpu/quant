@@ -246,15 +246,33 @@ def forward_path(forecasts: Sequence[tuple[float, Mapping[str, float]]],
     return out
 
 
-def _robust_stage(r: np.ndarray, h: np.ndarray, lam: float, alpha: float
-                  ) -> tuple[float, np.ndarray]:
-    """(1 - lam) mean + lam CVaR_alpha of per-world mean log growth, and its supergradient."""
+def _robust_stage(r: np.ndarray, h: np.ndarray, lam: float, alpha: float,
+                  pw: np.ndarray | None = None) -> tuple[float, np.ndarray]:
+    """(1 - lam) mean + lam CVaR_alpha of per-world mean log growth, and its supergradient.
+
+    `pw` is a probability over WORLDS (N11, 2026-10-20): the state ensemble's belief about which
+    regime this stage is in, carried onto the worlds drawn in each regime. The mean is `pw`-
+    weighted and the CVaR is the lower `alpha` of the `pw` mass, so a stage the ensemble expects
+    to be in stress is scored on stress worlds. None is uniform -- exactly the old arithmetic.
+    """
     port = np.einsum("wtn,n->wt", r, h.astype(np.float32), optimize=True).astype(np.float64)
     one_plus = 1.0 + port
     if not np.all(one_plus > 1e-9):
         return -np.inf, np.zeros_like(h)
     g_w = np.log(one_plus).mean(axis=1)
     n_w = g_w.size
+    if pw is not None:
+        w = np.asarray(pw, dtype=float)
+        order = np.argsort(g_w)
+        cum = np.cumsum(w[order])
+        tail_w = np.zeros(n_w)
+        prev = np.concatenate([[0.0], cum[:-1]])
+        tail_w[order] = np.clip(np.minimum(cum, alpha) - prev, 0.0, None)
+        a = (1.0 - lam) * w + lam * tail_w / max(float(tail_w.sum()), 1e-12)
+        u = (1.0 / one_plus) * a[:, None] / one_plus.shape[1]
+        grad = np.einsum("wtn,wt->n", r, u.astype(np.float32), optimize=True).astype(
+            np.float64)
+        return float(a @ g_w), grad
     n_tail = max(1, round(alpha * n_w))
     tail = np.argpartition(g_w, n_tail - 1)[:n_tail]
     a = np.full(n_w, (1.0 - lam) / n_w)
@@ -274,8 +292,13 @@ def plan_receding(worlds: Worlds, h_prev: Mapping[str, float], *,
                   available_from: Mapping[str, int] | None = None,
                   robust_lambda: float = 0.5, cvar_alpha: float = 0.2,
                   iterations: int = 300, step: float = 0.02,
-                  action_tol: float = 1e-4) -> dict[str, Any]:
+                  action_tol: float = 1e-4,
+                  stage_world_weights: Sequence[np.ndarray | None] | None = None,
+                  ) -> dict[str, Any]:
     """Receding-horizon E[log W] plan from the held book. See the block comment above.
+
+    `stage_world_weights` (N11): one probability vector over worlds per stage, from the state
+    ensemble's per-stage regime probabilities (`stage_weights_from_ensemble`); None is uniform.
 
     `cap` is total heat per stage (a sequence lets margin be preserved ahead of a known event);
     `cost_one_way` is account fraction per unit of heat moved, per sleeve or flat (the desk's
@@ -323,7 +346,8 @@ def plan_receding(worlds: Worlds, h_prev: Mapping[str, float], *,
     def total(hs: np.ndarray) -> tuple[float, np.ndarray]:
         val, grad = 0.0, np.zeros_like(hs)
         for s in range(s_n):
-            g, gr = _robust_stage(stage_r[s], hs[s], robust_lambda, cvar_alpha)
+            g, gr = _robust_stage(stage_r[s], hs[s], robust_lambda, cvar_alpha,
+                                  None if not stage_world_weights else stage_world_weights[s])
             if not np.isfinite(g):
                 return -np.inf, grad
             val += lengths[s] * g
@@ -436,3 +460,93 @@ def plan_receding(worlds: Worlds, h_prev: Mapping[str, float], *,
                     "A sleeve in `disagree` is one where a flat five days is the wrong horizon."),
         },
     }
+
+
+# ===============================================================================================
+# N11: THE STATE ENSEMBLE'S WORLD DISTRIBUTION (proposed schema, 2026-10-20)
+#
+# reports/STATE_ENSEMBLE.json, written by the state-engine ensemble thread:
+#   asof_utc, pit_cutoff_utc, status "OK" | "UNMEASURED", states [str],
+#   stage_days [float]   (the planner's stages; default DEFAULT_STAGE_DAYS)
+#   stage_probs [{state: p}] one per stage, each summing to 1
+#   forecasts [[horizon_days, {sleeve: cumulative R}]]   optional, horizon-consistent
+#   disagreement_js, engines                              reported, not used for sizing
+# Anything absent, malformed, stale or not "OK" reads UNMEASURED and the planner runs exactly as
+# before: uniform worlds per stage, no forecasts. The ensemble can only move the MIX of the
+# desk's own worlds and add forecasts; it never adds a world the desk did not draw.
+# ===============================================================================================
+
+def load_state_ensemble(path: Any, *, max_age_s: float = 2 * 3600.0,
+                        now: float | None = None) -> dict[str, Any]:
+    """Parse and validate STATE_ENSEMBLE.json; UNMEASURED with a reason on any doubt."""
+    import json
+    import time as _time
+    from datetime import datetime
+    from pathlib import Path
+    p = Path(path)
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"status": "UNMEASURED", "why": f"unreadable: {type(exc).__name__}"}
+    if not isinstance(doc, dict) or doc.get("status") != "OK":
+        got = doc.get("status") if isinstance(doc, dict) else "?"
+        return {"status": "UNMEASURED", "why": f"status {got}"}
+    try:
+        asof = datetime.fromisoformat(str(doc["asof_utc"]).replace("Z", "+00:00")).timestamp()
+    except (KeyError, ValueError):
+        return {"status": "UNMEASURED", "why": "no readable asof_utc"}
+    age = (now if now is not None else _time.time()) - asof
+    if age > max_age_s:
+        return {"status": "UNMEASURED", "why": f"stale: {age / 3600:.1f}h old"}
+    probs = doc.get("stage_probs")
+    if not isinstance(probs, list) or not probs:
+        return {"status": "UNMEASURED", "why": "no stage_probs"}
+    clean: list[dict[str, float]] = []
+    for row in probs:
+        if not isinstance(row, dict):
+            return {"status": "UNMEASURED", "why": "malformed stage_probs row"}
+        vals = {str(k): float(v) for k, v in row.items()
+                if isinstance(v, (int, float)) and np.isfinite(float(v)) and float(v) >= 0}
+        tot = sum(vals.values())
+        if not vals or abs(tot - 1.0) > 1e-3:
+            return {"status": "UNMEASURED", "why": f"stage_probs row sums to {tot:.4f}, not 1"}
+        clean.append({k: v / tot for k, v in vals.items()})
+    stage_days = [float(x) for x in (doc.get("stage_days") or DEFAULT_STAGE_DAYS)]
+    if len(stage_days) != len(clean):
+        return {"status": "UNMEASURED", "why": "stage_days and stage_probs differ in length"}
+    fc: list[tuple[float, dict[str, float]]] = []
+    for item in doc.get("forecasts") or []:
+        try:
+            hz, f = float(item[0]), {str(k): float(v) for k, v in dict(item[1]).items()}
+        except (TypeError, ValueError, IndexError):
+            continue
+        if hz > 0:
+            fc.append((hz, f))
+    return {"status": "OK", "stage_days": stage_days, "stage_probs": clean, "forecasts": fc,
+            "asof_utc": doc.get("asof_utc"), "pit_cutoff_utc": doc.get("pit_cutoff_utc"),
+            "disagreement_js": doc.get("disagreement_js"), "engines": doc.get("engines")}
+
+
+def stage_weights_from_ensemble(worlds: Worlds, ens: Mapping[str, Any]
+                                ) -> list[np.ndarray | None] | None:
+    """Per-stage probability over the drawn worlds: P_s(regime) spread evenly over its worlds.
+
+    A world whose regime the ensemble does not name, or a stage whose named regimes have no
+    worlds, falls back to uniform for that stage -- the ensemble may re-weight what was drawn,
+    never claim a world that was not.
+    """
+    if ens.get("status") != "OK":
+        return None
+    regs = list(getattr(worlds, "regimes", ()) or [])
+    n_w = int(worlds.r.shape[0])
+    if len(regs) != n_w or not any(regs):
+        return None
+    out: list[np.ndarray | None] = []
+    for probs in ens["stage_probs"]:
+        w = np.zeros(n_w)
+        for state, p in probs.items():
+            idx = [i for i, g in enumerate(regs) if g == state]
+            if idx:
+                w[idx] += p / len(idx)
+        out.append(w / w.sum() if w.sum() > 0 else None)
+    return out

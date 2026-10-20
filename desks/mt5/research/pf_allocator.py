@@ -5229,7 +5229,19 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     receding: dict[str, Any] = {"status": "SKIPPED", "why": f"{mode} clock"}
     if mode != "fast" and worlds is not None and verdict.total_heat > 0:
         try:
-            from libs.portfolio.multiperiod_worlds import plan_receding
+            from libs.portfolio.multiperiod_worlds import (
+                DEFAULT_STAGE_DAYS,
+                load_state_ensemble,
+                plan_receding,
+                stage_weights_from_ensemble,
+            )
+            # N11: THE STATE ENSEMBLE'S PER-STAGE WORLD DISTRIBUTION. When the ensemble reports
+            # OK and fresh, each stage is scored on the worlds of the regimes it expects then,
+            # and its horizon-consistent forecasts enter the plan; otherwise UNMEASURED and the
+            # plan is exactly as before (uniform worlds, no forecasts).
+            _ens = load_state_ensemble(BASE / "reports" / "STATE_ENSEMBLE.json")
+            _sww = stage_weights_from_ensemble(worlds, _ens) if _ens["status"] == "OK" else None
+            _stages = _ens.get("stage_days") if _sww else DEFAULT_STAGE_DAYS
             # EACH SLEEVE'S EDGE HALF-LIFE FROM ITS OWN HAZARD (ALLOC-04/07): a 90-day hazard p is
             # a constant rate lam = -ln(1 - p) / 90, half-life ln 2 / lam. Without it the planner
             # treated every edge as durable and the horizon check had nothing to compare.
@@ -5242,9 +5254,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                   0.0) / 2.0 or TURNOVER_COST_R / 2.0 for e in ev}
             _rh = plan_receding(worlds, prev_book, cap=float(verdict.total_heat),
                                 upper=ub or None, cost_one_way=_kappa,
-                                half_life_days=_hl,
+                                half_life_days=_hl, stage_days=_stages,
+                                forecasts=_ens.get("forecasts") or (),
+                                stage_world_weights=_sww,
                                 robust_lambda=cfg.robust_lambda, cvar_alpha=cfg.cvar_alpha)
             receding = {"status": "MEASURED", "n_half_lives": len(_hl),
+                        "state_ensemble": {k: _ens.get(k) for k in
+                                           ("status", "why", "asof_utc", "disagreement_js")},
                         "forecasts": ("none supplied: no term-structured sleeve forecast exists "
                                       "on this desk yet (forecast_contract carries no live "
                                       "DIRECTION_MEAN source besides the posterior)"),
