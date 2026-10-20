@@ -11,13 +11,13 @@
  },
  "e8": {
   "gold_asia": 0.0075,
-  "gold_london_am": 0.0,
-  "gold_afternoon": 0.0,
+  "gold_london_am": 0.0075,
+  "gold_afternoon": 0.0075,
   "USDJPY_session_range_breakout_asia": 0.0,
   "NZDJPY_clock_transition_asia": 0.0,
   "AUDCHF_overnight_gap_decay_asia": 0.0
  },
- "e8_by": "principal zuck, decision card cmsg_012XFUfE12Rvggnu86fDb8pr1miNkYN9MrEoqLvGcMpBDA option 'Add USDJPY' 2026-10-14T05:54:44Z (USDJPY at 0.004, gold_asia at 0.0075), over the 2026-10-13 21:25Z book cmsg_012XFUfE12Rvggnu86fDb8prYF2bx4BV24eVPLfJMbNLxD. USDJPY is held at 0.0, FORWARD-ONLY, until certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 is re-certified from a clean lineage (live_sleeve_policy reddit_lineage_quarantine; CERT_BOOK_LIVE excluded). The approved target, once certified, is 0.004.",
+ "e8_by": "principal zuck 2026-10-20 16:55Z max-pass solve, re-confirmed 17:16Z (relayed by the coordinator): gold_asia, gold_london_am and gold_afternoon at 0.0075 each; USDJPY, NZDJPY and AUDCHF at 0.0 (zuck 17:02Z: USDJPY is not added to either account). Supersedes: principal zuck, decision card cmsg_012XFUfE12Rvggnu86fDb8pr1miNkYN9MrEoqLvGcMpBDA option 'Add USDJPY' 2026-10-14T05:54:44Z (USDJPY at 0.004, gold_asia at 0.0075), over the 2026-10-13 21:25Z book cmsg_012XFUfE12Rvggnu86fDb8prYF2bx4BV24eVPLfJMbNLxD. USDJPY is held at 0.0, FORWARD-ONLY, until certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 is re-certified from a clean lineage (live_sleeve_policy reddit_lineage_quarantine; CERT_BOOK_LIVE excluded). The approved target, once certified, is 0.004.",
  "e8_pins": {
   "gold_asia": "gateway window gold_asia, clock XAUUSD.asia",
   "USDJPY_session_range_breakout_asia": "certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12, clock USDJPY.asia#rr=2.5 (alias usdjpy_session_range_breakout_asia_rr25_wb12); FORWARD-ONLY at 0.0"

@@ -23,8 +23,9 @@ from mt5desk.sizing import MAX_RISK_FRAC  # noqa: E402
 #: and the three FX book sleeves trade at 0.01 through decision_core.MINLOT_OVERRIDE_SLEEVES.
 FUSION = {"EURZAR_overnight_gap_decay_asia": 0.0, "USDZAR_overnight_gap_decay_asia": 0.0,
           "AUDCHF_overnight_gap_decay_asia": 0.0}
-#: The E8 book (patches/e8_book_79 v6): gold_asia 0.0075, every other window and sleeve 0.0.
-E8 = {"gold_asia": 0.0075, "gold_london_am": 0.0, "gold_afternoon": 0.0,
+#: The E8 book (zuck 2026-10-20 16:55Z max-pass solve, re-confirmed 17:16Z): the three gold windows
+#: at 0.0075 each; USDJPY, NZDJPY and AUDCHF at 0.0.
+E8 = {"gold_asia": 0.0075, "gold_london_am": 0.0075, "gold_afternoon": 0.0075,
       "USDJPY_session_range_breakout_asia": 0.0, "NZDJPY_clock_transition_asia": 0.0,
       "AUDCHF_overnight_gap_decay_asia": 0.0}
 
@@ -39,7 +40,7 @@ def test_committed_book_carries_the_principals_sizes() -> None:
     assert load_cert_book(CERT_BOOK_FILE, "fusion") == FUSION
     assert load_cert_book(CERT_BOOK_FILE, "e8") == E8
     assert not any(k.startswith(("USDJPY", "CHFNOK", "gold_")) for k in FUSION)
-    assert all(v == 0.0 for k, v in E8.items() if k != "gold_asia")
+    assert all(v == 0.0 for k, v in E8.items() if not k.startswith("gold_"))
     doc = json.loads(CERT_BOOK_FILE.read_text(encoding="utf-8"))
     assert doc["e8_pending"] == {"USDJPY_session_range_breakout_asia": 0.004}
     assert set(doc["e8_pins"]) == {"gold_asia", "USDJPY_session_range_breakout_asia"}
@@ -68,11 +69,11 @@ def test_e8_gold_maps_book_keys_to_window_names() -> None:
     pytest.importorskip("MetaTrader5")
     from prop import e8_gold
     windows = e8_gold.cert_gold_windows(E8)
-    assert windows == {"asia": 0.0075, "london_am": 0.0, "afternoon": 0.0}
-    assert e8_gold.window_risk("asia", windows) == (0.0075, "kelly_survival")
-    # The explicit 0.0 keys stand the two windows aside on E8 (the placement loop skips frac 0).
-    assert e8_gold.window_risk("london_am", windows) == (0.0, "kelly_survival")
-    assert e8_gold.window_risk("afternoon", windows) == (0.0, "kelly_survival")
+    assert windows == {"asia": 0.0075, "london_am": 0.0075, "afternoon": 0.0075}
+    for name in ("asia", "london_am", "afternoon"):
+        assert e8_gold.window_risk(name, windows) == (0.0075, "kelly_survival")
+    # An explicit 0.0 key stands a window aside (the placement loop skips frac 0).
+    assert e8_gold.window_risk("london_am", {"london_am": 0.0}) == (0.0, "kelly_survival")
 
 
 def test_gateway_overlays_only_the_named_keys(monkeypatch: pytest.MonkeyPatch,
