@@ -67,6 +67,9 @@ def test_deep_forest_page_route_is_honest_and_stops_on_403(wire: _Wire,
                                                            monkeypatch: pytest.MonkeyPatch) -> None:
     import deep_forest_miner as D
     monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    # page() follows redirects by hand since pass6-lanes (fetch_hops): its one-request opener
+    # is the seam every page byte goes through, so the wire answers there too.
+    monkeypatch.setattr(D, "hop_opener", lambda sink: wire)
     r = D._Run(60.0, True, None, None)
     r.ground = {"name": "g"}
     assert r.page("https://ex.example/a.html") == ""

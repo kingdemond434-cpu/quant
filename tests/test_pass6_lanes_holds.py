@@ -291,6 +291,10 @@ def test_mf3_the_fetch_door_cut_writes_its_line_end_to_end(
             pass
 
         def do_GET(self) -> None:
+            if self.path == "/robots.txt":      # the door reads robots.txt first: allow all
+                self.send_response(404)
+                self.end_headers()
+                return
             self.send_response(302)
             self.send_header("Location", JPX + "/x.xls")
             self.end_headers()
