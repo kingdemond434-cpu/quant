@@ -447,6 +447,30 @@ def test_budget_defers_named_stages_and_still_writes_the_report(tmp_path: Path,
     assert free["budget"]["deferred_stages"] == []
 
 
+def test_a_deferred_never_judged_step_is_published_deferred_not_zero(tmp_path: Path) -> None:
+    """Audit of 0bf4ce83e: with the stage skipped, `families_never_judged` read 0 -- a claim
+    the pass never measured."""
+    rows = [{"symbol": f"S{i}", "family": "f", "params": {"rr": 1.0 + i},
+             "first_seen": (NOW - timedelta(hours=500)).isoformat()} for i in range(5)]
+    ledger = _ledger(tmp_path, [{"at": NOW.isoformat(), "cell": "x", "family": "g",
+                                 "terminal_gate": "cpcv"}])
+    late = jc.build(rows, ledger=ledger, now=NOW, deadline=time.monotonic() - 1.0)
+    assert "never_judged" in late["budget"]["deferred_stages"]
+    assert late["totals"]["families_never_judged"] == "DEFERRED"
+    assert late["never_judged_status"] == "DEFERRED"
+    on_time = jc.build(rows, ledger=ledger, now=NOW)
+    assert on_time["never_judged_status"] == "MEASURED"
+    assert on_time["totals"]["families_never_judged"] == 1
+
+
+@pytest.mark.parametrize("bad", [math.inf, -math.inf, math.nan])
+def test_fence_reads_a_non_finite_rate_as_unmeasured(bad: float) -> None:
+    jr = {"status": "MEASURED", "verdicts_24h": bad, "target_per_day": bad}
+    loose = fence.judging_rate(_doc(jr), require_state=False, armed=False)
+    assert loose["state"] == "UNMEASURED" and loose["verdicts_24h"] is None
+    assert fence.judging_rate(_doc(jr), require_state=True, armed=True)["state"] == "FAIL"
+
+
 def test_main_enforces_budget_s(tmp_path: Path, monkeypatch) -> None:
     seen: dict[str, Any] = {}
 

@@ -2906,8 +2906,12 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # verdict, with the oldest wait and every reason this desk can read for it.
     for fam, row in table.items():
         row["tape_priority"] = tape_tranche.get(fam, 0)
+    # A DEFERRED STEP IS NOT A ZERO (audit of 0bf4ce83e): when the budget skips this stage the
+    # count is published as "DEFERRED", never `len({}) == 0` -- "no family is never-judged" is a
+    # claim this pass did not measure. The fence keeps its own reading from the family table.
+    never_judged_measured = budget.allow("never_judged")
     never_judged = (never_judged_families(table, parked_by_reason, parked_why)
-                    if budget.allow("never_judged") else {})
+                    if never_judged_measured else {})
     # THE TAPE BLOCK (2026-10-14): named verdicts per tape family in the last 24 h, read by the
     # same judged rule as `judged_index` (a real terminal gate or a pass; UNKNOWN never counts).
     _named_24h = judged_index(ledger, now=at, window_h=24.0)[2] if tape_fams else {}
@@ -2991,7 +2995,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "unrunnable_bank": unrunnable.get("bank_size"),
         "shippable_total": sum(shippable.values()),
         "parked_unrunnable_total": sum(parked_unrunnable.values()),
-        "families_never_judged": len(never_judged),
+        "families_never_judged": len(never_judged) if never_judged_measured else "DEFERRED",
         # EVERY WAY THE JUDGE FAILED TO RULE, per class, each with its route out (no terminal
         # class exists): what the hourly pass reads to hunt judging's own unoptimalities.
         "judging_failures": failures,
@@ -3022,6 +3026,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "quota": quota,
         "starved": starved[:20],
         "never_judged": never_judged,
+        "never_judged_status": "MEASURED" if never_judged_measured else "DEFERRED",
         "tape": tape,
         # THE TAPE TRANCHE'S MISSED-GROWTH LINE (audit of ad7d4ac6a): what the tranche took from
         # the value remainder, by family, at the ranking's own ev per cell. Published here in the

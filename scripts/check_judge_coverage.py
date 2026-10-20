@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from collections.abc import Mapping
@@ -216,13 +217,15 @@ def judging_rate(doc: Mapping[str, Any], *, require_state: bool, armed: bool) ->
     jr: Mapping[str, Any] | None = raw if isinstance(raw, Mapping) else None
     try:
         target = int((jr or {}).get("target_per_day") or JUDGING_RATE_TARGET_PER_DAY)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):        # Infinity / NaN -> the floor
         target = JUDGING_RATE_TARGET_PER_DAY
     target = max(target, JUDGING_RATE_TARGET_PER_DAY)       # the floor only ratchets up (L1.50)
     got_raw = (jr or {}).get("verdicts_24h")
     status = str((jr or {}).get("status") or "")
+    # A NON-FINITE RATE IS UNMEASURED, never a crash (audit of 0bf4ce83e: Infinity raised
+    # OverflowError here) and never a pass: only a finite count is a reading.
     got: int | None = (int(got_raw) if isinstance(got_raw, (int, float))
-                       and not isinstance(got_raw, bool) and got_raw == got_raw else None)
+                       and not isinstance(got_raw, bool) and math.isfinite(got_raw) else None)
     measured = got is not None and status in ("MEASURED", "PARTIAL")
     if got is not None and measured and got >= target:
         return {"metric": "judging_rate", "state": "OK", "verdicts_24h": got, "target": target,
