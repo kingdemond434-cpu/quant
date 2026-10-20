@@ -160,6 +160,20 @@ def lockbox_independence(gates: Any, basis: str | None = None) -> dict[str, Any]
             "lockbox_sharpe": lb_sr, "wf_sharpe": wf_sr, "cut": lb.get("cut")}
 
 
+def evidenced_not_independent(gates: Any, basis: str | None) -> str | None:
+    """The reason a row's numeric lockbox is not held out, or None (also when it has no number).
+
+    The canon's re-stamp guard (`canon_publication.restamp_reason`) refuses on POSITIVE evidence
+    only; a gates record with no lockbox reading at all is reported UNMEASURED here instead.
+    """
+    gates = gates if isinstance(gates, dict) else {}
+    lb = gates.get("lockbox") if isinstance(gates.get("lockbox"), dict) else {}
+    if _num(lb.get("lockbox_sharpe")) is None:
+        return None
+    ind = lockbox_independence(gates, basis)
+    return None if ind["verdict"] == INDEPENDENT else f"{NOT_INDEPENDENT}: " + "; ".join(ind["why"])
+
+
 def _version(doc: Any) -> str | None:
     gp = doc.get("gate_policy") if isinstance(doc, dict) else None
     return str(gp.get("version")) if isinstance(gp, dict) and gp.get("version") else None

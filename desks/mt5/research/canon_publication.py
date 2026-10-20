@@ -686,71 +686,6 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
     return out
 
 
-def restamp_reason(row: dict[str, Any], attestation: Any, judge_holds: bool,
-                   republished: bool) -> str | None:
-    """Why `row` may not sit under `attestation`'s header, or None when it may.
-
-    Two refusals, both on positive evidence (a row whose gates carry no lockbox reading at all is
-    not refused here; `lockbox_recert` reports it UNMEASURED):
-      * the judge's own report holds the key outside its survivor set (pending re-judge, or
-        retired under the attestation in force) and the judge did not republish it this pass;
-      * the attestation carries a reserved-lockbox basis and the row's lockbox is a number that
-        is not an independent held-out reading (`lockbox_recert.lockbox_independence`).
-    """
-    if judge_holds and not republished:
-        return ("the judge holds this key outside its survivor set (pending_rejudge or "
-                "retired_certificates) under the attestation in force")
-    basis = attestation.get("lockbox_basis") if isinstance(attestation, dict) else None
-    gates = row.get("gates") if isinstance(row.get("gates"), dict) else {}
-    lb = gates.get("lockbox") if isinstance(gates.get("lockbox"), dict) else {}
-    if basis and lb.get("lockbox_sharpe") is not None:
-        try:
-            from lockbox_recert import INDEPENDENT, lockbox_independence
-        except ImportError:                              # pragma: no cover - import-context dep
-            from research.lockbox_recert import (  # type: ignore[no-redef]
-                INDEPENDENT,
-                lockbox_independence,
-            )
-        ind = lockbox_independence(gates, str(basis))
-        if ind["verdict"] != INDEPENDENT:
-            return "LOCKBOX_NOT_INDEPENDENT: " + "; ".join(ind["why"])
-    return None
-
-
-def restamp_holdback(merged: dict[str, Any], doc_seal: dict[str, Any], doc_report: dict[str, Any],
-                     republished: set[str], attestation: Any,
-                     now_iso: str) -> tuple[dict[str, Any], list[str]]:
-    """Move every row of `merged` that would be re-stamped into the seal's `pending_rejudge`.
-
-    Mutates `merged`. Returns (the seal's pending block after this pass, the keys moved now). A
-    pending row the judge republishes this pass leaves the block -- the fresh row is in `merged`.
-    """
-    old = doc_seal.get("pending_rejudge")
-    pending: dict[str, Any] = dict(old) if isinstance(old, dict) else {}
-    for key in republished:
-        if key in merged:
-            pending.pop(key, None)
-    holds: set[str] = set()
-    for block in ("pending_rejudge", "retired_certificates"):
-        b = doc_report.get(block) if isinstance(doc_report, dict) else None
-        if isinstance(b, dict):
-            holds |= set(b)
-    moved: list[str] = []
-    for key in sorted(merged):
-        row = merged[key]
-        if not isinstance(row, dict):
-            continue
-        why = restamp_reason(row, attestation, key in holds, key in republished)
-        if why is None:
-            continue
-        back = dict(merged.pop(key))
-        back.setdefault("pending_since", now_iso)
-        back["pending_reason"] = why
-        pending[key] = back
-        moved.append(key)
-    return pending, moved
-
-
 def publish(report: Path = REPORT, seal: Path = SEAL,
             recovered: dict[str, Any] | None = None) -> dict[str, Any]:
     """Seal the judge's latest completed sweep into the canonical store, atomically.
@@ -954,6 +889,66 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
                   seal_n_after=len(merged), seal_swept_at_after=swept_at,
                   atomic="tempfile + fsync + os.replace in the destination directory")
     return record
+
+
+def restamp_reason(row: dict[str, Any], attestation: Any, judge_holds: bool,
+                   republished: bool) -> str | None:
+    """Why `row` may not sit under `attestation`'s header, or None when it may.
+
+    Two refusals, both on positive evidence (a row whose gates carry no lockbox reading at all is
+    not refused here; `lockbox_recert` reports it UNMEASURED):
+      * the judge's own report holds the key outside its survivor set (pending re-judge, or
+        retired under the attestation in force) and the judge did not republish it this pass;
+      * the attestation carries a reserved-lockbox basis and the row's lockbox is a number that
+        is not an independent held-out reading (`lockbox_recert.lockbox_independence`).
+    """
+    if judge_holds and not republished:
+        return ("the judge holds this key outside its survivor set (pending_rejudge or "
+                "retired_certificates) under the attestation in force")
+    basis = attestation.get("lockbox_basis") if isinstance(attestation, dict) else None
+    if not basis:
+        return None
+    try:
+        from lockbox_recert import evidenced_not_independent
+    except ImportError:                                  # pragma: no cover - import-context dep
+        from research.lockbox_recert import (  # type: ignore[no-redef]
+            evidenced_not_independent,
+        )
+    return evidenced_not_independent(row.get("gates"), str(basis))
+
+
+def restamp_holdback(merged: dict[str, Any], doc_seal: dict[str, Any], doc_report: dict[str, Any],
+                     republished: set[str], attestation: Any,
+                     now_iso: str) -> tuple[dict[str, Any], list[str]]:
+    """Move every row of `merged` that would be re-stamped into the seal's `pending_rejudge`.
+
+    Mutates `merged`. Returns (the seal's pending block after this pass, the keys moved now). A
+    pending row the judge republishes this pass leaves the block -- the fresh row is in `merged`.
+    """
+    old = doc_seal.get("pending_rejudge")
+    pending: dict[str, Any] = dict(old) if isinstance(old, dict) else {}
+    for key in republished:
+        if key in merged:
+            pending.pop(key, None)
+    holds: set[str] = set()
+    for block in ("pending_rejudge", "retired_certificates"):
+        b = doc_report.get(block) if isinstance(doc_report, dict) else None
+        if isinstance(b, dict):
+            holds |= set(b)
+    moved: list[str] = []
+    for key in sorted(merged):
+        row = merged[key]
+        if not isinstance(row, dict):
+            continue
+        why = restamp_reason(row, attestation, key in holds, key in republished)
+        if why is None:
+            continue
+        back = dict(merged.pop(key))
+        back.setdefault("pending_since", now_iso)
+        back["pending_reason"] = why
+        pending[key] = back
+        moved.append(key)
+    return pending, moved
 
 
 def main(argv: list[str] | None = None) -> int:
