@@ -680,13 +680,16 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
 
 #: THE PRINCIPAL'S MINIMUM-LOT BOOK ON FUSION (zuck, "BOOKS_PATCH v5", approved 2026-10-13;
 #: /mnt/project-files/sizing/seven_sleeve_2026-10-13/BOOKS_PATCH.md items 1 and 6, auto-survival
-#: heat v12 §v12-Book). At ~EUR 485 every one of these sizes BELOW the venue minimum, so under
-#: ALLOCATOR SOVEREIGNTY (`implementable_lot`) none of them would ever send an order. The
-#: principal accepted the disclosed one-year ruin of the four at 0.01 (54.5% measured / 42.2%
-#: pooled / 3.5% certificate, equity < EUR 300) and ordered exactly these four at EXACTLY the
-#: venue minimum:
+#: heat v12 §v12-Book; WIDENED by zuck 2026-10-20 16:58Z to all three gold windows). At ~EUR 485
+#: every one of these sizes BELOW the venue minimum, so under ALLOCATOR SOVEREIGNTY
+#: (`implementable_lot`) none of them would ever send an order. The principal accepted the
+#: disclosed one-year ruin of the four at 0.01 (54.5% measured / 42.2% pooled / 3.5% certificate,
+#: equity < EUR 300; the two added gold windows were NOT in that simulation and raise it) and
+#: ordered exactly these six at EXACTLY the venue minimum:
 #:
 #:     gold_asia                               gateway window gold_asia, clock XAUUSD.asia
+#:     gold_london_am                          gateway window gold_london_am
+#:     gold_afternoon                          gateway window gold_afternoon
 #:     usdnok_carry_asia_p_ff35bb7c8427d66f    external.USDNOK@M5.carry.p=ff35bb7c8427d66f
 #:     eurils_formula_asia_p_673857a649d3c271  external.EURILS.formula.p=673857a649d3c271
 #:     eurzar_carry_asia_p_8339edce23032d21    external.EURZAR@M15.carry.p=8339edce23032d21
@@ -694,19 +697,24 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
 #: SCOPE IS THE CODE CONSTANT AND NOTHING ELSE. `MINLOT_OVERRIDE.json` can only NARROW it (a name
 #: not here is ignored); its absence, an unreadable file, `enabled` other than literal true, a
 #: `lot` other than 0.01 or an `account` other than the terminal's login turns the override OFF,
-#: and every sleeve -- these four included -- is then sized exactly as sovereignty sizes it. The
+#: and every sleeve -- these six included -- is then sized exactly as sovereignty sizes it. The
 #: lot is never more than 0.01 and never applied to any other name. The twins
 #: (`usdnok_carry_asia_p_d5391837ec28998b`, `eurzar_carry_asia_p_55e2dabcb8c43d1f`) are NOT here.
 MINLOT_OVERRIDE_SLEEVES: frozenset[str] = frozenset({
     "gold_asia",
+    "gold_london_am",
+    "gold_afternoon",
     "usdnok_carry_asia_p_ff35bb7c8427d66f",
     "eurils_formula_asia_p_673857a649d3c271",
     "eurzar_carry_asia_p_8339edce23032d21",
 })
 #: Each pinned row's certificate cell. A sleeves.json row of that name carrying any other cell is
-#: not the sleeve the principal funded and gets no override. gold_asia is the gateway's own window.
+#: not the sleeve the principal funded and gets no override. The gold rows are the gateway's own
+#: windows (decision_core.GOLD_WINDOWS), never a sleeves.json row.
 MINLOT_OVERRIDE_PINS: dict[str, str | None] = {
     "gold_asia": None,
+    "gold_london_am": None,
+    "gold_afternoon": None,
     "usdnok_carry_asia_p_ff35bb7c8427d66f": "external.USDNOK@M5.carry.p=ff35bb7c8427d66f",
     "eurils_formula_asia_p_673857a649d3c271": "external.EURILS.formula.p=673857a649d3c271",
     "eurzar_carry_asia_p_8339edce23032d21": "external.EURZAR@M15.carry.p=8339edce23032d21",

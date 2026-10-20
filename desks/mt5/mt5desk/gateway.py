@@ -4189,7 +4189,7 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     _ov = minlot_override_lot(s, s["symbol"], sym)
     if _ov is not None:
         # THE PRINCIPAL'S MINIMUM-LOT BOOK (decision_core.MINLOT_OVERRIDE_SLEEVES): exactly the
-        # venue minimum for the four named sleeves, never more, whatever the allocator says.
+        # venue minimum for the six named sleeves, never more, whatever the allocator says.
         return float(_ov), (f"minlot_override: exactly {_ov:.2f} lot (principal BOOKS_PATCH v5, "
                             f"data/MINLOT_OVERRIDE.json)")
     mode = s.get("lot")

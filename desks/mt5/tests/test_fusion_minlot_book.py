@@ -1,16 +1,18 @@
-"""The principal's Fusion minimum-lot book (zuck, BOOKS_PATCH v5, approved 2026-10-13).
+"""The principal's Fusion minimum-lot book (zuck, BOOKS_PATCH v5, approved 2026-10-13; widened to
+all three gold windows by zuck 2026-10-20 16:58Z).
 
     python -m pytest desks/mt5/tests/test_fusion_minlot_book.py -q
 
-The live Fusion account trades exactly FOUR sleeves, each at a FIXED 0.01 lot, and nothing else:
-gold_asia, usdnok_carry_asia_p_ff35bb7c8427d66f, eurils_formula_asia_p_673857a649d3c271 and
-eurzar_carry_asia_p_8339edce23032d21. The three overnight_gap_decay principal rows, NZDJPY, the
-XAU m5 scalp and USDJPY send nothing. Pinned here:
+The live Fusion account trades exactly SIX sleeves, each at a FIXED 0.01 lot, and nothing else:
+gold_asia, gold_london_am, gold_afternoon, usdnok_carry_asia_p_ff35bb7c8427d66f,
+eurils_formula_asia_p_673857a649d3c271 and eurzar_carry_asia_p_8339edce23032d21. The three
+overnight_gap_decay principal rows, NZDJPY, the XAU m5 scalp and USDJPY (zuck 17:02Z: 0.0 on
+both accounts) send nothing. Pinned here:
 
   * one order per signal at exactly 0.01 for each of the three FX names (RETIRED in sleeves.json,
-    exactly as on origin) and gold_asia's lot is exactly 0.01;
+    exactly as on origin) and each gold window's lot is exactly 0.01;
   * 0 orders for NZDJPY, XAU m5, USDJPY and the three gap_decay rows;
-  * a fifth name cannot ride the override, and the file can only narrow the code's set;
+  * a seventh name cannot ride the override, and the file can only narrow the code's set;
   * an absent / unreadable / disabled / wrong-typed file is NO override;
   * nothing the override sizes exceeds 0.01.
 """
@@ -47,7 +49,8 @@ GOLD = "gold_asia"
 USDNOK = "usdnok_carry_asia_p_ff35bb7c8427d66f"
 EURILS = "eurils_formula_asia_p_673857a649d3c271"
 EURZAR = "eurzar_carry_asia_p_8339edce23032d21"
-FOUR = {GOLD, USDNOK, EURILS, EURZAR}
+GOLDS = {"gold_asia", "gold_london_am", "gold_afternoon"}
+FOUR = GOLDS | {USDNOK, EURILS, EURZAR}             # the six (name kept from the v5 four)
 FX = (USDNOK, EURILS, EURZAR)
 TWINS = ("usdnok_carry_asia_p_d5391837ec28998b", "eurzar_carry_asia_p_55e2dabcb8c43d1f")
 GAP_DECAY = tuple(f"{s}_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
@@ -78,20 +81,20 @@ def _sovereign(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 
 # ------------------------------------------------------------------ the set and the switch
 
-def test_the_code_names_exactly_the_four_and_pins_each_certificate() -> None:
+def test_the_code_names_exactly_the_six_and_pins_each_certificate() -> None:
     assert dc.MINLOT_OVERRIDE_SLEEVES == FOUR
     assert dc.MINLOT_OVERRIDE_LOT == 0.01
     assert dc.MINLOT_OVERRIDE_PINS == {
-        GOLD: None,
+        "gold_asia": None, "gold_london_am": None, "gold_afternoon": None,
         USDNOK: "external.USDNOK@M5.carry.p=ff35bb7c8427d66f",
         EURILS: "external.EURILS.formula.p=673857a649d3c271",
         EURZAR: "external.EURZAR@M15.carry.p=8339edce23032d21"}
-    for name in (*TWINS, *GAP_DECAY, NZDJPY, "xau_m5_anti_breakout_overlap", "gold_london_am",
-                 "gold_afternoon"):
+    for name in (*TWINS, *GAP_DECAY, NZDJPY, "xau_m5_anti_breakout_overlap",
+                 "USDJPY.asia#rr=2.5", "gold_asia_v2", "gold_ny_open"):
         assert name not in dc.MINLOT_OVERRIDE_SLEEVES
 
 
-def test_the_committed_switch_turns_on_exactly_the_four() -> None:
+def test_the_committed_switch_turns_on_exactly_the_six() -> None:
     active, why = dc.minlot_override_active(None)
     assert active == FOUR, why
 
@@ -133,16 +136,17 @@ def test_the_account_binding_holds_when_the_file_names_one(tmp_path: Path) -> No
 
 
 def test_the_file_can_only_narrow_the_code_set(tmp_path: Path) -> None:
-    p = _override_file(tmp_path, sleeves=[USDNOK, NZDJPY, TWINS[0], 7, "gold_london_am"])
+    p = _override_file(tmp_path, sleeves=[USDNOK, NZDJPY, TWINS[0], 7, "gold_london_am",
+                                          "gold_asia_v3"])
     active, why = dc.minlot_override_active(None, p)
-    assert active == {USDNOK}
+    assert active == {USDNOK, "gold_london_am"}
     assert NZDJPY in why and "ignored" in why
 
 
 # ------------------------------------------------------------------ the mark and the lot
 
 def test_only_named_and_active_entries_are_marked_and_a_written_mark_is_popped() -> None:
-    rows = [{"name": n} for n in (*FOUR, NZDJPY, "gold_london_am", "gold_afternoon")]
+    rows = [{"name": n} for n in (*FOUR, NZDJPY, "gold_asia_v2", *GAP_DECAY)]
     rows[-1]["minlot_override"] = True           # a mark arriving from a file is not authority
     dc.stamp_minlot_override(rows, frozenset(FOUR), EQUITY)
     assert {r["name"] for r in rows if r.get("minlot_override")} == FOUR
@@ -153,7 +157,7 @@ def test_only_named_and_active_entries_are_marked_and_a_written_mark_is_popped()
 def test_below_the_ruin_line_nothing_is_marked() -> None:
     rows = [{"name": n} for n in FOUR]
     notes = dc.stamp_minlot_override(rows, frozenset(FOUR), dc.PROMOTED_MIN_EQUITY - 1)
-    assert not any(r.get("minlot_override") for r in rows) and len(notes) == 4
+    assert not any(r.get("minlot_override") for r in rows) and len(notes) == 6
     dc.stamp_minlot_override(rows, frozenset(FOUR), float("nan"))
     assert not any(r.get("minlot_override") for r in rows)
 
@@ -165,7 +169,7 @@ def test_the_lot_is_exactly_the_venue_minimum_and_never_more() -> None:
         assert dc.minlot_override_lot({"name": name, "minlot_override": True}, "EURZAR",
                                       info) == 0.01
         assert dc.minlot_override_lot({"name": name}, "EURZAR", info) is None
-    # A fifth name with the mark set by hand still gets none.
+    # A seventh name with the mark set by hand still gets none.
     assert dc.minlot_override_lot({"name": NZDJPY, "minlot_override": True}, "NZDJPY",
                                   info) is None
     # A venue that cannot take exactly 0.01 gets 0.0 (no order), never a larger lot.
@@ -312,7 +316,7 @@ def test_without_the_mark_sovereignty_sends_nothing(tmp_path, monkeypatch, name)
     assert venue.sent == []
 
 
-def test_a_fifth_name_cannot_ride_the_override(tmp_path, monkeypatch) -> None:
+def test_a_seventh_name_cannot_ride_the_override(tmp_path, monkeypatch) -> None:
     ns, venue = _family_ns(tmp_path, monkeypatch)
     sleeve = _fx_sleeve(NZDJPY, minlot_override=True)             # mark forged by hand
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
@@ -327,24 +331,29 @@ def _bracket_ns() -> dict:
                          {"sleeve_live_n": lambda name: 0})
 
 
-def test_gold_asia_sends_exactly_001_and_the_other_windows_stay_sovereign() -> None:
+def test_every_gold_window_sends_exactly_001() -> None:
     ns = _bracket_ns()
     sleeves = [{"name": f"gold_{w[0]}", "symbol": "XAUUSD", "lot": "auto",
                 "sized_by": "allocator_book", "risk_frac": 0.0} for w in dc.GOLD_WINDOWS]
+    assert {s["name"] for s in sleeves} == GOLDS
     dc.stamp_minlot_override(sleeves, frozenset(FOUR), EQUITY)
-    lots = {s["name"]: ns["bracket_lane_lot"](s, EQUITY, 19.1, None) for s in sleeves}
-    assert lots[GOLD][0] == 0.01 and lots[GOLD][1].startswith("minlot_override")
-    assert lots["gold_london_am"][0] == 0.0 and lots["gold_afternoon"][0] == 0.0
+    for s in sleeves:
+        lot, basis = ns["bracket_lane_lot"](s, EQUITY, 19.1, None)
+        assert lot == 0.01 and basis.startswith("minlot_override")
     # Even an allocator fraction that would size gold above 0.01 sends exactly 0.01.
     big = {**sleeves[0], "risk_frac": 0.10}
     dc.stamp_minlot_override([big], frozenset(FOUR), 50_000.0)
     assert ns["bracket_lane_lot"](big, 50_000.0, 19.1, None)[0] == 0.01
-    # Override off: gold_asia is sovereign again (sub-minimum at 485 -> no order).
+    # A file that narrows to gold_asia leaves the other two windows sovereign (sub-minimum).
+    dc.stamp_minlot_override(sleeves, frozenset({GOLD}), EQUITY)
+    lots = {s["name"]: ns["bracket_lane_lot"](s, EQUITY, 19.1, None)[0] for s in sleeves}
+    assert lots == {"gold_asia": 0.01, "gold_london_am": 0.0, "gold_afternoon": 0.0}
+    # Override off: every window is sovereign again (sub-minimum at 485 -> no order).
     dc.stamp_minlot_override(sleeves, frozenset(), EQUITY)
-    assert ns["bracket_lane_lot"](sleeves[0], EQUITY, 19.1, None)[0] == 0.0
+    assert all(ns["bracket_lane_lot"](s, EQUITY, 19.1, None)[0] == 0.0 for s in sleeves)
 
 
-def test_the_gateway_roster_appends_the_three_and_marks_the_four(tmp_path, monkeypatch) -> None:
+def test_the_gateway_roster_appends_the_three_and_marks_the_six(tmp_path, monkeypatch) -> None:
     rows = _committed_rows()
     pool = [rows[n] for n in (*FX, *TWINS, *GAP_DECAY) if n in rows]
     logs: list[str] = []

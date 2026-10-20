@@ -29,5 +29,5 @@
   "USDJPY_session_range_breakout_asia": "Reddit-only lineage (PR #162); quarantined in live_sleeve_policy.json until re-certified from a clean lineage",
   "CHFNOK_carry_asia": "carry lookahead, pending re-judge (PR #269); quarantined in live_sleeve_policy.json"
  },
- "fusion_by": "principal zuck, BOOKS_PATCH v5 (approved 2026-10-13): the three gap_decay keys stay at 0.0 (never an empty block: load_cert_book returns None on {}); gold_asia's 0.082 is removed. gold_asia and the three FX book sleeves trade at a fixed 0.01 lot through decision_core.MINLOT_OVERRIDE_SLEEVES, not through this block."
+ "fusion_by": "principal zuck, BOOKS_PATCH v5 (approved 2026-10-13): the three gap_decay keys stay at 0.0 (never an empty block: load_cert_book returns None on {}); gold_asia's 0.082 is removed. The three gold windows (zuck 2026-10-20 16:58Z) and the three FX book sleeves trade at a fixed 0.01 lot through decision_core.MINLOT_OVERRIDE_SLEEVES, not through this block."
 }

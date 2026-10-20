@@ -3,10 +3,12 @@
  "lot": 0.01,
  "sleeves": [
   "gold_asia",
+  "gold_london_am",
+  "gold_afternoon",
   "usdnok_carry_asia_p_ff35bb7c8427d66f",
   "eurils_formula_asia_p_673857a649d3c271",
   "eurzar_carry_asia_p_8339edce23032d21"
  ],
- "by": "principal zuck, BOOKS_PATCH v5, approved 2026-10-13 (sizing/seven_sleeve_2026-10-13/BOOKS_PATCH.md; auto-survival heat v12 \u00a7v12-Book)",
+ "by": "principal zuck, BOOKS_PATCH v5, approved 2026-10-13 (sizing/seven_sleeve_2026-10-13/BOOKS_PATCH.md; auto-survival heat v12 \u00a7v12-Book); widened by zuck 2026-10-20 16:58Z to all three gold windows (six sleeves)",
  "rule": "Read by mt5desk/gateway.py through decision_core.minlot_override_active only; no organ writes it. It can only NARROW decision_core.MINLOT_OVERRIDE_SLEEVES. Off (sovereign sizing for all) when absent, unreadable, enabled is not true, lot is not 0.01, or an optional integer \"account\" differs from the terminal's login. To stop the four without a push: set \"enabled\": false."
 }
