@@ -22,7 +22,7 @@ import pandas as pd
 import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
-for _p in (str(_DESK), str(_DESK.parent.parent)):
+for _p in (str(_DESK), str(_DESK.parent.parent), str(_DESK / "tests")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -306,3 +306,67 @@ def test_a_winning_break_even_leg_still_counts_its_floating_profit_in_the_fail_s
     assert not g.stop_is_at_risk(p, _ENTRY)
     usd = g.position_risk_usd(p, _ENTRY, bid=4279.6, ask=4280.0, contract_size=100.0)
     assert usd == pytest.approx(20.0 * _QTY * 100.0)
+
+
+# --------------------------------------------- FIX 4: a stop move the venue keeps refusing
+
+def _refusing_harness(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, bid: float, ask: float
+                      ) -> tuple[Any, Any, Path]:
+    import test_stop_rests_at_venue as harness
+
+    class _Refusing(harness._GoldVenue):
+        def modify_stop(self, position_id: int, stop: float) -> bool:
+            self.modified.append((int(position_id), float(stop)))
+            return False                                   # TradeLocker says no, every time
+
+    monkeypatch.setattr(harness, "_GoldVenue", _Refusing)
+    doc, venue = harness._seed(monkeypatch, tmp_path, bid, ask)
+    return harness, venue, tmp_path / "state.json"
+
+
+def test_a_refused_stop_move_is_retried_only_a_bounded_number_of_times_then_held(
+        monkeypatch, tmp_path) -> None:
+    # 4248.00/4248.40: the ratchet rests and is wanted, but the short is only ~0.77R in profit,
+    # short of the break-even trigger -- so after the bound the resting stop is HELD.
+    harness, venue, state = _refusing_harness(monkeypatch, tmp_path, 4248.00, 4248.40)
+    for _ in range(g.MAX_STOP_REFUSALS - 1):
+        g.run(venue, harness._MT5(), armed=True)
+    assert len(venue.modified) == g.MAX_STOP_REFUSALS
+    saved = json.loads(state.read_text(encoding="utf-8"))
+    assert saved["windows"]["asia"]["stop_refusals"]["count"] == g.MAX_STOP_REFUSALS
+    doc = g.run(venue, harness._MT5(), armed=True)
+    assert len(venue.modified) == g.MAX_STOP_REFUSALS, "no stop move is sent past the bound"
+    held = [a for a in doc["actions"] if a["act"] == "stop_refused_hold"]
+    assert held and "held" in held[0]["why"] and doc.get("alerts")
+    assert venue.closed == []
+    doc = g.run(venue, harness._MT5(), armed=True)
+    assert not [a for a in doc["actions"] if a["act"] == "stop_refused_hold"], "alerted once"
+    assert len(venue.modified) == g.MAX_STOP_REFUSALS
+
+
+def test_a_refused_stop_on_a_trade_beyond_the_trigger_is_closed_at_market(
+        monkeypatch, tmp_path) -> None:
+    harness, venue, state = _refusing_harness(monkeypatch, tmp_path, 4248.00, 4248.40)
+    for _ in range(g.MAX_STOP_REFUSALS - 1):
+        g.run(venue, harness._MT5(), armed=True)
+    venue._bid, venue._ask = 4236.00, 4236.40          # ~1.16R in the short's favour
+    doc = g.run(venue, harness._MT5(), armed=True)
+    closes = [a for a in doc["actions"] if a["act"] == "stop_refused_close"]
+    assert closes and closes[0]["ok"] and venue.closed == [harness._POSITION_ID]
+    assert "closed at market" in closes[0]["why"]
+
+
+def test_a_successful_stop_move_clears_the_refusal_count(monkeypatch, tmp_path) -> None:
+    harness, venue, state = _refusing_harness(monkeypatch, tmp_path, 4248.00, 4248.40)
+    assert json.loads(state.read_text("utf-8"))["windows"]["asia"]["stop_refusals"]["count"] == 1
+    type(venue).modify_stop = lambda self, pid, stop: True  # type: ignore[method-assign]
+    g.run(venue, harness._MT5(), armed=True)
+    assert "stop_refusals" not in json.loads(state.read_text("utf-8"))["windows"]["asia"]
+
+
+def test_the_refusal_response_is_close_beyond_the_trigger_else_hold() -> None:
+    w = {"orders": {"sell_stop": {"price": 4272.36, "sl": 4303.25}}}
+    p = {"side": "sell", "avgPrice": 4272.36}
+    assert g.stop_refusal_response(p, w, bid=4235.6, ask=4236.0)[0] == "close"
+    assert g.stop_refusal_response(p, w, bid=4250.0, ask=4250.4)[0] == "hold"
+    assert g.stop_refusal_response(p, {"orders": {}}, bid=4200.0, ask=4200.4)[0] == "hold"

@@ -122,6 +122,13 @@ SLIP_BUFFER = 1.25
 #: Kept clear of the floor on top of the buffer: spread and commission on the closes, and the
 #: equity read being seconds old. 0.10% of the starting balance.
 ROOM_MARGIN_USD = 100.0
+# A STOP MOVE THE VENUE KEEPS REFUSING IS BOUNDED (2026-10-20). On 2026-09-25 an asia short's
+# break-even ratchet was refused by TradeLocker pass after pass; each refusal was logged and the
+# same modify re-sent five minutes later, forever, while the trade gave back ~680 USD. After this
+# many consecutive venue refusals for one position the lane stops re-sending: a position in profit
+# beyond the break-even trigger is closed at market (the protection the stop could not give),
+# otherwise its existing stop is held and the refusal raised as an alert.
+MAX_STOP_REFUSALS = 3
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -526,6 +533,31 @@ def trail_decision(position: dict, window: dict, bars: Any, current_stop: float,
     return _pm.ratchet(entry=entry, current_stop=float(current_stop), stop_distance=dist,
                        extreme=extreme, atr=atr, side=side, bars_since_extreme=stalled,
                        cost_per_unit=float(cost_per_unit), spread=max(0.0, float(spread)))
+
+
+def stop_refusal_response(position: dict, window: dict, *, bid: float, ask: float,
+                          cost_per_unit: float = 0.0) -> tuple[str, str]:
+    """What to do with a position whose stop moves the venue has refused MAX_STOP_REFUSALS times.
+
+    ("close", why) when it stands in profit at least BREAKEVEN_TRIGGER_R beyond its entry, net of
+    the round-trip cost, at the price it would close on (bid for a long, ask for a short): the
+    ratchet exists to protect exactly that profit and the venue will not let it. Otherwise
+    ("hold", why): the stop already resting is kept and nothing more is sent. Pure.
+    """
+    side = 1 if str(position.get("side") or "").lower() == "buy" else -1
+    leg = (window.get("orders") or {}).get("buy_stop" if side == 1 else "sell_stop") or {}
+    entry = float(position.get("avgPrice") or leg.get("price") or 0.0)
+    dist = abs(entry - float(leg.get("sl") or 0.0))
+    if not (entry > 0 and dist > 0):
+        return "hold", "entry or original stop unreadable; the resting stop is held"
+    mark = float(bid) if side == 1 else float(ask)
+    r_now = (side * (mark - entry) - float(cost_per_unit)) / dist
+    trigger = _pm.BREAKEVEN_TRIGGER_R
+    if r_now >= trigger:
+        return "close", (f"+{r_now:.2f}R at {mark:.2f}, beyond the {trigger}R break-even trigger, "
+                         f"and the venue refuses to move the stop: closed at market")
+    return "hold", (f"{r_now:+.2f}R at {mark:.2f}, short of the {trigger}R trigger: the resting "
+                    f"stop is held and no further stop move is sent")
 
 
 def position_risk_usd(position: dict, stop: float, *, bid: float, ask: float,
@@ -999,6 +1031,36 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if mapped is None or not (current_stop > 0):
             continue
         name, w = mapped
+        refused = w.get("stop_refusals") or {}
+        if int(refused.get("count") or 0) >= MAX_STOP_REFUSALS:
+            # BOUNDED: no more stop moves for this position (see MAX_STOP_REFUSALS).
+            verdict, why = stop_refusal_response(
+                p, w, bid=float(bid), ask=float(ask),
+                cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT)
+            if verdict == "close":
+                act = {"act": "stop_refused_close", "window": name, "position_id": int(p["id"]),
+                       "why": why, "ok": False}
+                try:
+                    if armed or not w.get("shadow", False):
+                        act["ok"] = bool(venue.close(int(p["id"])))
+                    else:
+                        act.update({"ok": True, "shadow": True})
+                    if act["ok"]:
+                        w["closed"] = True
+                    else:
+                        act["why"] += "; the venue did not acknowledge the close"
+                except Exception as exc:
+                    act["why"] += f"; close FAILED: {type(exc).__name__}: {exc}"[:160]
+                log(f"[{name}] ALERT position {p['id']}: {act['why']}")
+                doc.setdefault("alerts", []).append(act["why"])
+                doc["actions"].append(act)
+            elif not refused.get("held"):
+                refused["held"] = True
+                log(f"[{name}] ALERT position {p['id']}: {why}")
+                doc.setdefault("alerts", []).append(f"position {p['id']}: {why}")
+                doc["actions"].append({"act": "stop_refused_hold", "window": name,
+                                       "position_id": int(p["id"]), "why": why, "ok": True})
+            continue
         decision = trail_decision(
             p, w, df, current_stop,
             cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT,
@@ -1041,6 +1103,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 action["ok"] = True
                 action["shadow"] = True
             if action["ok"]:
+                w.pop("stop_refusals", None)
                 log(f"[{name}] {'SHADOW would ratchet' if action.get('shadow') else 'RATCHET'} "
                     f"position {p['id']} stop {current_stop:.2f} -> "
                     f"{float(decision.new_stop):.2f}; {decision.reason}")
@@ -1050,6 +1113,17 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         except Exception as exc:
             action["why"] = f"{type(exc).__name__}: {exc}"[:160]
             log(f"[{name}] stop ratchet FAILED: {action['why']}")
+        if not action["ok"]:
+            count = int((w.get("stop_refusals") or {}).get("count") or 0) + 1
+            w["stop_refusals"] = {"count": count, "last_at": now.isoformat(timespec="seconds"),
+                                  "last_why": action.get("why")}
+            action["refusals"] = count
+            if count >= MAX_STOP_REFUSALS:
+                log(f"[{name}] ALERT position {p['id']}: the venue refused {count} stop moves in "
+                    f"a row; no further moves are sent (close if beyond the break-even trigger, "
+                    f"else hold the resting stop)")
+                doc.setdefault("alerts", []).append(
+                    f"position {p['id']}: {count} consecutive stop moves refused by the venue")
         doc["actions"].append(action)
     # Positions carried from a previous day are closed at the close hour like today's.
     for name, w in list((state.get("carried") or {}).items()):
