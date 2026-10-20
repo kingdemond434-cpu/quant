@@ -1202,3 +1202,11 @@ def test_the_sweep_publishes_the_resume_line_before_it_clears():
 
     src = inspect.getsource(runner._sweep_logged)
     assert src.index("record_resume_delay(rc)") < src.index("_sweep_succeeded()")
+
+
+def test_the_launcher_reads_the_resume_record_where_the_judge_writes_it():
+    from scripts import external_gauntlet as judge
+
+    if not hasattr(judge, "PLAN_RESUME_NAME"):
+        pytest.skip("the funnel v2 sealed patch is not applied to the judge")
+    assert Path(judge.SHARD_DIR) / judge.PLAN_RESUME_NAME == runner.PLAN_RESUME

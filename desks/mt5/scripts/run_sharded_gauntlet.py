@@ -224,8 +224,9 @@ MERGE_OUTPUTS = (DESK / "reports" / "universal_gates_external.json",
 MERGE_SNAPSHOT = DESK / "reports" / ".judge_merge_snapshot"
 MISSED_GROWTH_HISTORY = 50
 #: What the sealed judge's plan resume did this sweep (written by `external_gauntlet._resume_plan`
-#: and `_run_shards`, stamped with the sweep's pid): the cells it set aside and the wall it saved.
-PLAN_RESUME = DESK / "reports" / "gauntlet_cache" / "plan_resume.json"
+#: and `_run_shards` beside the plan, in the judge's SHARD_DIR, as PLAN_RESUME_NAME; stamped with
+#: the sweep's pid): the cells it set aside and the wall it saved.
+PLAN_RESUME = DESK / "reports" / "gauntlet_cache" / "shards" / "plan_resume.json"
 
 #: Shard progress for the heartbeat, written by `dispatch` and read by the watchdog thread.
 _PROGRESS: dict[str, Any] = {}
