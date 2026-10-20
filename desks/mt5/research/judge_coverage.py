@@ -2096,6 +2096,70 @@ def tape_depth(root: Path | None = None, *, now: datetime | None = None) -> dict
     return out
 
 
+def tape_tranche_gate(tape_fams: frozenset[str] | set[str], shippable: dict[str, int],
+                      capacity: int, depth: dict[str, Any]) -> dict[str, Any]:
+    """Which tape families may draw the tranche THIS hour, and the share returned to value.
+
+    The tranche (principal 2026-10-14) is kept, but only for cells the judge can actually rule
+    on: a tape family draws it when the tape holds the need (60 development days + lockbox on at
+    least one symbol, `tape_depth.meets_need`) AND the family has shippable cells. Below the need
+    every tape cell can only come back UNKNOWN (too short a series), so the whole share is handed
+    back to the value remainder this hour (audit of ad7d4ac6a, must-fix 1)."""
+    pool = int(max(capacity, 0) * max(0.0, min(1.0, TAPE_PRIORITY_SHARE)))
+    ready = depth.get("status") == "MEASURED" and bool(depth.get("meets_need"))
+    fams = sorted(f for f in tape_fams if ready and int(shippable.get(f, 0)) > 0)
+    if not tape_fams:
+        why = "no tape family derived from the builders' code"
+    elif depth.get("status") != "MEASURED":
+        why = f"tape depth UNMEASURED ({depth.get('why')}): no tape cell is known judgeable"
+    elif not ready:
+        why = (f"tape below its need ({depth.get('max_days')} trading days on the deepest symbol "
+               f"vs {depth.get('days_needed')}; ETA {depth.get('eta_days_to_judgeable')}d): a "
+               "tape cell can only return UNKNOWN, so the share goes back to value")
+    elif not fams:
+        why = "tape at need but no tape family has a shippable cell"
+    else:
+        why = "tape at need: the tape families with shippable cells draw the tranche"
+    return {"in_force": bool(fams), "families": fams, "share": TAPE_PRIORITY_SHARE,
+            "pool": pool if fams else 0, "returned_to_value": 0 if fams else pool, "why": why}
+
+
+def tape_tranche_missed_growth(shippable: dict[str, int], capacity: int,
+                               ranking: list[dict[str, Any]], quota: dict[str, int],
+                               tranche: dict[str, int], rec: dict[str, Any], *,
+                               at: datetime) -> dict[str, Any]:
+    """The tranche's cost, measured: cells each non-tape family lost against the same allocation
+    without the tranche, valued at the ranking's ev_per_cell. Unused pool is returned to value
+    (`returned_to_value` grows by it). Every pass emits a line: zero when nothing was displaced
+    (NOT_BINDING), never silence."""
+    used = sum(tranche.values())
+    out: dict[str, Any] = {"used": used}
+    if rec.get("in_force"):
+        out["returned_to_value"] = max(0, int(rec.get("pool") or 0) - used)
+    plain = allocate(shippable, capacity, ranking=ranking)
+    ev = {str(r.get("family")): float(r.get("ev_per_cell") or 0.0) for r in ranking}
+    displaced = {f: n - quota.get(f, 0) for f, n in plain.items()
+                 if f not in tranche and n - quota.get(f, 0) > 0}
+    value = -sum(ev.get(f, 0.0) * n for f, n in displaced.items())
+    line: dict[str, Any] = {
+        "day": at.date().isoformat(), "at": at.isoformat(timespec="seconds"),
+        "rail": "judge_tape_tranche", "kind": "opportunity_cost",
+        "units": "expected value (ranking ev_per_cell x cells) of value-ranked judge cells the "
+                 "tape tranche displaced this hour",
+        "cells_displaced": sum(displaced.values()), "by_family": dict(sorted(
+            displaced.items(), key=lambda kv: -kv[1])[:20]),
+        "tranche_cells": used, "value": round(value, 10),
+        "verdict": "COSTS_GROWTH" if value < 0 else "NOT_BINDING",
+        "why": ("the tape tranche (principal 2026-10-14) moves judge cells from the value "
+                "remainder to the tape families; this is what that move forgoes at the "
+                "ranking's own expected value. PUBLISHED in JUDGE_COVERAGE.json, never appended "
+                "to data/missed_growth.jsonl (libs/portfolio/rails.py is sealed)")}
+    if not displaced and used == 0:
+        line["why"] = f"tranche not in force this hour ({rec.get('why')}): nothing displaced"
+    out["missed_growth_line"] = line
+    return out
+
+
 def tape_block(table: dict[str, dict[str, Any]], named_24h: dict[str, int],
                *, depth: dict[str, Any] | None = None,
                certs: tuple[dict[str, int] | None, str] | None = None) -> dict[str, Any]:
@@ -2320,9 +2384,15 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     shippable = {f: max(0, n - parked_unrunnable.get(f, 0)) for f, n in backlog.items()}
     ranking = rank_by_value(backlog, rows, capacity)
     tape_fams = tape_families()
+    tape_depth_now = tape_depth(now=at) if tape_fams else {"status": "UNMEASURED",
+                                                           "why": "no tape family derived"}
     tape_tranche: dict[str, int] = {}
-    quota = allocate(shippable, capacity, ranking=ranking, priority=tape_fams,
+    tranche_rec = tape_tranche_gate(tape_fams, shippable, capacity, tape_depth_now)
+    quota = allocate(shippable, capacity, ranking=ranking,
+                     priority=frozenset(tranche_rec["families"]),
                      tranche_out=tape_tranche)
+    tranche_rec.update(tape_tranche_missed_growth(
+        shippable, capacity, ranking, quota, tape_tranche, tranche_rec, at=at))
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned
                  and str(r.get("_cell") or "") not in _bank_now]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
@@ -2506,7 +2576,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # THE TAPE BLOCK (2026-10-14): named verdicts per tape family in the last 24 h, read by the
     # same judged rule as `judged_index` (a real terminal gate or a pass; UNKNOWN never counts).
     _named_24h = judged_index(ledger, now=at, window_h=24.0)[2] if tape_fams else {}
-    tape = tape_block(table, _named_24h)
+    tape = tape_block(table, _named_24h, depth=tape_depth_now)
+    tape["tranche"] = tranche_rec
     for fam, nj in never_judged.items():
         table[fam]["never_judged_reason"] = nj["reason"]
     # A family whose whole backlog is parked ships nothing and is given nothing: it is not
@@ -2609,6 +2680,11 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "starved": starved[:20],
         "never_judged": never_judged,
         "tape": tape,
+        # THE TAPE TRANCHE'S MISSED-GROWTH LINE (audit of ad7d4ac6a): what the tranche took from
+        # the value remainder, by family, at the ranking's own ev per cell. Published here in the
+        # shape `research_departments` / `stop_geometry_derivation` use, never appended to
+        # data/missed_growth.jsonl (that ledger is keyed by the sealed libs/portfolio/rails.RAILS).
+        "missed_growth_lines": [tranche_rec["missed_growth_line"]],
         "never_judged_rule": (
             "a family with mined cells and judged_total 0 (no real terminal gate or pass ever "
             "recorded), with its oldest unjudged age and every reason published: cells parked "
