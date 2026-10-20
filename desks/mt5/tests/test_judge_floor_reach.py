@@ -539,7 +539,14 @@ def test_a_deep_tape_keeps_its_tranche_and_bills_what_it_displaced(
     assert tr["used"] > 0 and doc["families"]["orderflow_imbalance"]["tape_priority"] == tr["used"]
     line = doc["missed_growth_lines"][0]
     assert line["tranche_cells"] == tr["used"]
-    assert line["cells_displaced"] > 0 and line["by_family"].get("alpha", 0) > 0
+    # What the tranche displaced is measured against the same allocation without it, with the
+    # published ranking: whatever that is, the line states it (zero only if nothing moved).
+    rank = [{"family": r["family"]} for r in doc["value_ranking"]]
+    ship = {f: r["shippable"] for f, r in doc["families"].items()}
+    plain = jc.allocate(ship, int(doc["totals"]["capacity_measured"]), ranking=rank)
+    lost = {f: n - doc["quota"].get(f, 0) for f, n in plain.items()
+            if f != "orderflow_imbalance" and n > doc["quota"].get(f, 0)}
+    assert line["cells_displaced"] == sum(lost.values()) and line["by_family"] == lost
     # Valued at the ranking's own ev per cell: a positive ev makes it a measured cost.
     rec = jc.tape_tranche_gate({"tape"}, {"tape": 500, "alpha": 5000}, 1000,
                                {"status": "MEASURED", "meets_need": True})
