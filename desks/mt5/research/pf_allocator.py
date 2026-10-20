@@ -3188,6 +3188,48 @@ def without_explore(book: dict[str, float], lend: dict[str, float]) -> dict[str,
     return {k: v * (s + x) / s for k, v in inc.items()}
 
 
+def exclude_non_live(funded: Mapping[str, float], sleeves_file: Path | None = None
+                     ) -> tuple[dict[str, float], dict[str, str]]:
+    """The published book minus every key that names a roster row the desk may not trade.
+
+    MEASURED 2026-10-20 23:14Z: an ARMED pf_allocation.json funded the RETIRED scalp sleeve
+    `xau_m5_anti_breakout_overlap` at 4.3% heat. It did not trade only because the gateway reads
+    sleeves.json too; the allocator's own book -- the number every reader of the artifact sizes
+    from -- carried capital for a sleeve the desk retired. A book key that IS a sleeves.json row
+    is kept only when that row is LIVE and admitted by the live policy (`decision_core.
+    load_sleeves_verbose`: the principal's stop fence, re-checked every pass); a RETIRED, STANDBY
+    or policy-refused row goes to ZERO. Keys that name no row (a base window a versioned row
+    joins, a derived key) are left to the gateway's join, exactly as before. A LIVE row whose
+    name, or name with `_vN` stripped, is the key keeps it.
+
+    NOTHING IS RE-SPREAD: the freed heat is not moved onto the live sleeves -- total heat falls --
+    because re-sizing needs the allocator's own solve, never a proportional top-up here.
+    Returns (kept book, {excluded key: why}). Unreadable roster: nothing is excluded, said so.
+    """
+    path = sleeves_file or (BASE / "data" / "sleeves.json")
+    try:
+        rows = json.loads(path.read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError):
+        return dict(funded), {}
+    status = {str(r.get("name")): str(r.get("status") or "").upper() for r in rows
+              if isinstance(r, dict) and r.get("name")}
+    try:
+        from mt5desk.decision_core import load_sleeves_verbose
+        admitted = {str(r.get("name")) for r in load_sleeves_verbose(path)[0]}
+    except Exception:                                             # pragma: no cover
+        admitted = {n for n, st in status.items() if st == "LIVE"}
+    joins = admitted | {re.sub(r"_v\d+$", "", n) for n in admitted}
+    kept: dict[str, float] = {}
+    excluded: dict[str, str] = {}
+    for k, v in funded.items():
+        if k in status and k not in joins:
+            excluded[k] = (f"roster row is {status[k] or 'UNKNOWN'}"
+                           + ("" if status[k] != "LIVE" else " but refused by the live policy"))
+            continue
+        kept[k] = v
+    return kept, excluded
+
+
 def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
                 extra: dict[str, float] | None = None,
                 recorded: dict[str, str] | None = None) -> dict[str, str]:
@@ -4680,8 +4722,23 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     except Exception as exc:
         _log(f"capital modifier ledger not written: {type(exc).__name__}: {exc}")
 
+    # NO CAPITAL FOR A ROW THE DESK MAY NOT TRADE (2026-10-20, see `exclude_non_live`).
+    funded, _excluded = exclude_non_live(funded)
+    if _excluded:
+        _sc = score_book(ev, funded, cfg=cfg, worlds=worlds) if funded else None
+        book = AllocationResult(
+            heat=dict(funded), total_heat=float(sum(funded.values())),
+            robust_score=float(_sc["robust_score"]) if _sc else 0.0,
+            mean_log_growth=float(_sc["mean_log_growth"]) if _sc else 0.0,
+            cvar_log_growth=float(_sc["cvar_log_growth"]) if _sc else 0.0,
+            annual_growth_pct=float(_sc["annual_growth_pct"]) if _sc else 0.0,
+            prob_annual_loss=float(_sc["prob_annual_loss"]) if _sc else 0.0,
+            note=f"non-LIVE rows excluded at publication: {sorted(_excluded)}")
+        _log(f"EXCLUDED non-LIVE rows from the book: {_excluded}")
+
     art: dict[str, Any] = {
         "generated_utc": datetime.now(UTC).isoformat(),
+        "excluded_non_live": _excluded,
         "mode": mode,
         "elapsed_s": round(time.time() - t0, 1),
         "armed": ARMED.exists(),
@@ -4690,7 +4747,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # `total` is the heat of the book PUBLISHED below -- the number the gateway caps at
             # and the fence checks the book sums to. When the no-trade verdict binds, that is
             # the held book; `resolved` keeps the target this pass solved for either way.
-            "total": round(book.total_heat if nt.get("binding") else verdict.total_heat, 6),
+            "total": round(book.total_heat if (nt.get("binding") or _excluded)
+                           else verdict.total_heat, 6),
             "resolved": round(verdict.total_heat, 6),
             "held": bool(nt.get("binding")),
             "free_optimum": round(verdict.free_optimum, 6),
