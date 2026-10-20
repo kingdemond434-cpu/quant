@@ -9,9 +9,10 @@ spec is wrong:
 
   * `event_reaction`: the judge hands the family every calendar event, and the family places each
     one on the bar clock with `libs.research.bar_clock.to_bar_time`. With no measured bar clock
-    (`desks/mt5/reports/BAR_CLOCK.json`, written by `research/futures_lead_lag.py`) every event is
-    dropped. In a shoulder month (16 Sep - 30 Nov, 16 Feb - 30 Apr) every event of a calendar that
-    holds only recent weeks is dropped too. Either way the family returns [] on any bars.
+    (`desks/mt5/reports/BAR_CLOCK.json`, written by `research/futures_lead_lag.py`, or the
+    release-spike reading `libs/research/bar_clock_release.py` takes from the desk's own calendar
+    and bars) every event is dropped. In a shoulder month (16 Sep - 30 Nov, 16 Feb - 30 Apr)
+    every event of a calendar that holds only recent weeks is dropped too. Either way the family returns [] on any bars.
   * `cot_positioning`: `orthogonal_sweep._cot_frame(sym)` serves a series only for the symbols
     `scripts/refresh_cot_zcache.py` maps (11) or from the legacy JSON files. Every other symbol
     gets `cot=None`, and the family returns [] on its first line.
@@ -130,7 +131,8 @@ def _probe_event(sym: str) -> dict[str, Any]:
         missing, why = "bar_clock", (
             f"{n_unmeasured} of {len(events)} calendar events fall in a season with no measured "
             "bar-clock offset (desks/mt5/reports/BAR_CLOCK.json, written by "
-            "research/futures_lead_lag.py, does not answer it): to_bar_time drops them, and "
+            "research/futures_lead_lag.py, does not answer it, and the release-spike reading of "
+            "libs/research/bar_clock_release.py does not resolve it): to_bar_time drops them, and "
             f"{n_shoulder} more fall in a shoulder month, so family_event_reaction returns [] on "
             "any bars")
     else:

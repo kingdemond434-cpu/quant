@@ -66,14 +66,8 @@ def _read(root: Path) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
-def offsets(root: Path | None = None) -> dict[str, int]:
-    """The measured offset per season, or {} when nothing has measured one.
-
-    EMPTY IS A REAL ANSWER. A caller that receives {} must drop the join, not fall back to zero:
-    zero is the one value guaranteed wrong, since these bars are on no UTC-equivalent clock in
-    either season.
-    """
-    doc = _read(Path(root or _ROOT))
+def _file_offsets(root: Path) -> dict[str, int]:
+    doc = _read(root)
     out: dict[str, int] = {}
     for name, block in (doc.get("per_season") or {}).items():
         if not isinstance(block, dict):
@@ -81,6 +75,47 @@ def offsets(root: Path | None = None) -> dict[str, int]:
         off = block.get("offset_h")
         if isinstance(off, int) and block.get("agrees_across_pairs"):
             out[str(name)] = off
+    return out
+
+
+def _release_offsets(root: Path) -> dict[str, int]:
+    try:
+        from libs.research import bar_clock_release
+    except ImportError:                                                 # pragma: no cover
+        return {}
+    try:
+        return bar_clock_release.offsets(root)
+    except Exception:                                                   # fail closed: no clock
+        return {}
+
+
+def sources(root: Path | None = None) -> dict[str, str]:
+    """Which measurement answered each season: BAR_CLOCK.json, or the release-spike reading."""
+    base = Path(root or _ROOT)
+    out = dict.fromkeys(_file_offsets(base), "BAR_CLOCK.json")
+    for name in _release_offsets(base):
+        out.setdefault(name, "release_spike")
+    return out
+
+
+def offsets(root: Path | None = None) -> dict[str, int]:
+    """The measured offset per season, or {} when nothing has measured one.
+
+    EMPTY IS A REAL ANSWER. A caller that receives {} must drop the join, not fall back to zero:
+    zero is the one value guaranteed wrong, since these bars are on no UTC-equivalent clock in
+    either season.
+
+    TWO MEASUREMENTS, NEVER A GUESS (2026-10-20). `BAR_CLOCK.json` (futures_lead_lag, a feed
+    stamped in epoch seconds) answers first, season by season. A season it does not answer -- the
+    file absent, as it is on any checkout where that producer has not run -- is taken from
+    `bar_clock_release`, which measures the same offset from the desk's own UTC-stamped release
+    calendar against the bars' range spike, and answers only when several instruments agree. With
+    neither, the season is absent and the caller still drops the join.
+    """
+    base = Path(root or _ROOT)
+    out = _file_offsets(base)
+    for name, off in _release_offsets(base).items():
+        out.setdefault(name, off)
     return out
 
 
@@ -105,8 +140,9 @@ def to_bar_time(when: datetime, root: Path | None = None
     table = offsets(root)
     if not table:
         return None, UNMEASURED, (
-            "no measured bar clock on disk: run desks/mt5/research/futures_lead_lag.py. The bars "
-            "are broker-stamped and no offset is knowable, so the join cannot be made")
+            "no measured bar clock on disk: run desks/mt5/research/futures_lead_lag.py (and the "
+            "release-spike reading of libs/research/bar_clock_release.py resolved no season). "
+            "The bars are broker-stamped and no offset is knowable, so the join cannot be made")
     season = season_of(when)
     if season is None:
         return None, SHOULDER, (
