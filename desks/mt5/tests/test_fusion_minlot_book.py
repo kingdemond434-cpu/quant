@@ -16,6 +16,7 @@ XAU m5 scalp and USDJPY send nothing. Pinned here:
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -30,10 +31,17 @@ for _p in (str(_DESK), str(_ROOT)):
         sys.path.insert(0, _p)
 
 import mt5desk  # noqa: E402
-import test_gateway_adapter as adapter  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
 from mt5desk import live_policy  # noqa: E402
 from mt5desk import provenance as _prov  # noqa: E402
+
+# The gateway adapter harness (AST-extracted gateway functions over the real core), loaded by
+# path so this file collects under --import-mode=importlib as well as from the tests directory.
+_spec = importlib.util.spec_from_file_location("_fusion_minlot_adapter",
+                                               _DESK / "tests" / "test_gateway_adapter.py")
+assert _spec is not None and _spec.loader is not None
+adapter = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(adapter)
 
 GOLD = "gold_asia"
 USDNOK = "usdnok_carry_asia_p_ff35bb7c8427d66f"
@@ -376,7 +384,12 @@ def test_no_organ_writes_the_switch() -> None:
                 continue
             if "MINLOT_OVERRIDE.json" in text or "MINLOT_OVERRIDE_FILE" in text:
                 hits.append(path.relative_to(_ROOT).as_posix())
-    assert hits == ["desks/mt5/mt5desk/decision_core.py"], hits
+    # The core reads it; the gateway only names it in a log/basis line. Nothing else may.
+    assert sorted(hits) == ["desks/mt5/mt5desk/decision_core.py",
+                            "desks/mt5/mt5desk/gateway.py"], hits
+    for line in (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8").splitlines():
+        if "MINLOT_OVERRIDE" in line:
+            assert not any(w in line for w in ("write_text", "json.dump", "os.replace"))
     src = (_DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8")
     block = src[src.index("MINLOT_OVERRIDE_FILE ="):src.index("def ramped_fraction")]
     for writer in ("write_text", "json.dump(", "os.replace", ".open("):
