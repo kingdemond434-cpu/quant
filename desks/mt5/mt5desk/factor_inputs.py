@@ -240,7 +240,7 @@ def build_basket(names: list[str], params: dict[str, Any], primary: Any,
         prov["factors"].append({"factor": str(name), "source": "MISSING", "own_bars": cause})
     if needs:
         prov["needs"] = [n.split(" (", 1)[0] for n in needs]
-        return None, (f"{NEEDS_PROXY_FACTOR}: " + "; ".join(needs)
+        return None, (f"{NEEDS_PROXY_FACTOR}: factor bars unavailable for " + "; ".join(needs)
                       + f" -- all {len(names)} named factors are required to preserve the "
                         "certified model"), prov
     if p is None:
