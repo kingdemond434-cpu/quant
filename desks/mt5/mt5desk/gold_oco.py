@@ -141,10 +141,12 @@ def oco_account_key(login: object, server: object) -> str:
                                   "login is unreadable); accounts cannot be named")
     if not _xa.valid_key(key):
         raise IdentityUnavailable("provenance.account_key did not answer a sha256:<16 hex> key")
+    plain: str | None = None
     with contextlib.suppress(ValueError):
-        if key == _xa.account_key(login, server):
-            raise IdentityUnavailable("provenance.account_key answered the UNKEYED sha256 of "
-                                      "login@server, which reverses to the login")
+        plain = _xa.account_key(login, server)
+    if plain is not None and key == plain:
+        raise IdentityUnavailable("provenance.account_key answered the UNKEYED sha256 of "
+                                  "login@server, which reverses to the login")
     return str(key)
 
 
