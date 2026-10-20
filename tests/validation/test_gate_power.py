@@ -93,16 +93,20 @@ def test_fdr_buys_no_power_for_the_best_candidate():
     # rank 1 FDR is no looser than the FWER bar; the count (420) no longer sets either.
     from libs.research.trial_count_guard import BAR_N
     m_bar = min(m, BAR_N)
-    hm = float(sum(1.0 / i for i in range(1, m_bar + 1)))
+    hm = float(sum(1.0 / i for i in range(1, m + 1)))
     # a lone candidate just inside the pinned Bonferroni boundary, the rest pure noise
     p = np.concatenate([[q / m_bar * 0.99], np.linspace(0.2, 1.0, m - 1)])
     assert benjamini_hochberg(p, alpha=q).rejected[0] is True
     # ...and just outside it, BH rejects nothing -- identical to Bonferroni, not looser
     p_out = np.concatenate([[q / m_bar * 1.01], np.linspace(0.2, 1.0, m - 1)])
     assert benjamini_hochberg(p_out, alpha=q).n_rejected == 0
-    # BY, which is what screen_select is actually wired with (method="by"), is STRICTER
-    assert benjamini_yekutieli(p, alpha=q).n_rejected == 0
-    assert q / (m_bar * hm) < q / m_bar
+    # BY (what screen_select is wired with, method="by"): each rank is charged min(its own
+    # charge m*H_m/i, BAR_N) (re-audit of 6de7b1a99), so at rank 1 BY is Bonferroni at BAR_N
+    # exactly too -- never looser, and the harmonic factor (H_m ~ 6.6 at m=420) no longer
+    # stacks a count-driven penalty on top of the fixed bar.
+    assert q / (m * hm) < q / m_bar
+    assert benjamini_yekutieli(p, alpha=q).rejected[0] is True
+    assert benjamini_yekutieli(p_out, alpha=q).n_rejected == 0
 
 
 def test_the_screen_selection_is_computed_but_does_not_gate():
