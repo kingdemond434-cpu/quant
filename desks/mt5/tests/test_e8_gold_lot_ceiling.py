@@ -127,7 +127,7 @@ def test_the_capped_leg_is_fitted_to_the_budget_not_deferred(
     assert not [s for s in doc["skipped"] if s["window"] == "afternoon"]
     ceil = [x for x in doc["shrunk"] if x["rail"] == g.LOT_CEILING_RAIL]
     assert ceil and ceil[-1]["lots"] == {"buy_stop": 0.44, "sell_stop": 0.44}
-    assert ceil[-1]["unshrunk_lots"] == {"buy_stop": 1.49, "sell_stop": 1.49}
+    assert ceil[0]["unshrunk_lots"] == {"buy_stop": 1.49, "sell_stop": 1.49}
 
 
 def test_a_100oz_leg_over_the_ceiling_is_fitted_and_sent(
