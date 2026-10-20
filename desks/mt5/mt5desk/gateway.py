@@ -304,6 +304,8 @@ from mt5desk.decision_core import (
     FUSION_ACCOUNT_FILE as FUSION_ACCOUNT_FILE,
     fusion_live_login as fusion_live_login,
     FUSION_DAILY_LOSS_FRAC as FUSION_DAILY_LOSS_FRAC,
+    FUSION_MAX_TRADE_RISK_FRAC as FUSION_MAX_TRADE_RISK_FRAC,
+    FUSION_TRADE_RISK_REFUSAL as FUSION_TRADE_RISK_REFUSAL,
 )
 from mt5desk.decision_core import (
     fusion_daily_loss as fusion_daily_loss,
@@ -3351,6 +3353,13 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     if _book_size is not None:
         _ov, _ov_target, _ov_basis = _book_size
         if not (_ov > 0.0):
+            if _ov_basis.startswith(FUSION_TRADE_RISK_REFUSAL):
+                # THE PER-TRADE REFUSAL IS A MISSED-GROWTH LINE, NEVER SILENT (audit round 2).
+                from mt5desk import fusion_rails as _rails
+                _rails.line_once("fusion_trade_risk_cap",
+                                 f"{s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
+                                 sleeve=s["name"], symbol=s["symbol"], dist=dist,
+                                 lot=MINLOT_OVERRIDE_LOT, why=_ov_basis)
             return {"ok": False, "stage": "fusion_book_refused", "considered": True,
                     "why": _ov_basis, "mark": bool(step.mark), "last_bar": last_bar,
                     "note": step.note}
@@ -3657,7 +3666,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                 })
                 _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
                 try:
-                    _xa.publish("fusion", _xa.mt5_exposure(mt5), source="gateway")
+                    _xa.publish_mt5(mt5, source="gateway")
                 except Exception as exc:
                     log(f"cross-account: Fusion book not published after [{name}] "
                         f"({type(exc).__name__}: {exc})")
@@ -4175,7 +4184,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                 })
                 _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
                 try:
-                    _xa.publish("fusion", _xa.mt5_exposure(mt5), source="gateway")
+                    _xa.publish_mt5(mt5, source="gateway")
                 except Exception as exc:
                     log(f"cross-account: Fusion book not published after [{name}] "
                         f"({type(exc).__name__}: {exc})")
@@ -4330,6 +4339,13 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
         # bill a floor lift (rail `fusion_book_floor_lift`).
         _blot, _btarget, _bbasis = _book_size
         s["fusion_book_target"] = float(_btarget)
+        if not (_blot > 0.0) and _bbasis.startswith(FUSION_TRADE_RISK_REFUSAL):
+            # THE PER-TRADE REFUSAL IS A MISSED-GROWTH LINE, NEVER SILENT (audit round 2).
+            from mt5desk import fusion_rails as _rails
+            _rails.line_once("fusion_trade_risk_cap",
+                             f"{s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
+                             sleeve=s["name"], symbol=s["symbol"], dist=dist,
+                             lot=MINLOT_OVERRIDE_LOT, why=_bbasis)
         return float(_blot), _bbasis
     mode = s.get("lot")
     if mode == "auto":
@@ -4483,6 +4499,11 @@ def main() -> None:
     # -10% of the server day's starting equity the account takes no new risk for the rest of the
     # day, through the same NEW_RISK_OK gate every lane already obeys (so no bar is burned), and
     # the resting gold brackets are cancelled once. Management above has already run.
+    from mt5desk import fusion_rails as _rails_pass
+    if not _rails_pass.ensure():
+        log("fusion rails: the ledger cannot be created; every rail line this pass is lost")
+    if _rails_pass.WRITE_FAILURES:
+        log(f"fusion rails: lines NOT written in this process: {_rails_pass.WRITE_FAILURES}")
     _dl_was_down = st.get("daily_loss_stood_down") == day_key
     _dl_down, _dl_why = fusion_daily_loss(st, equity, day_key)
     if _dl_down:
@@ -4501,12 +4522,14 @@ def main() -> None:
     save_state(st)
     # THE FUSION BOOK FOR THE OTHER ACCOUNT'S FENCE (mt5desk.cross_account), every pass, so an E8
     # lane never reads a book older than this pass. Never takes the pass down.
-    try:
-        from mt5desk import cross_account as _xa
-        _xa.publish("fusion", _xa.mt5_exposure(mt5), source="gateway")
-    except Exception as exc:
-        log(f"cross-account: Fusion book not published ({type(exc).__name__}: {exc}); the E8 "
-            f"lanes fail closed on a stale book")
+    # Under the placement lock, from a reading taken under it (audit round 2, must-fix 2): a
+    # snapshot older than an E8 lane's send can never overwrite the book that send produced.
+    from mt5desk import cross_account as _xa
+    _pub_why = _xa.publish_under_lock(lambda: _xa.publish_mt5(mt5, source="gateway"),
+                                      holder="gateway:pass")
+    if _pub_why:
+        log(f"cross-account: Fusion book not published ({_pub_why}); the E8 lanes fail closed "
+            f"on a stale book")
 
     # THE SCALP LANE'S OWN MANAGEMENT, HERE AND NOT INSIDE ITS EXECUTOR (2026-09-09). A basket
     # the broker has closed and a basket past its time exit are POSITIONS, and this desk's
@@ -5069,7 +5092,7 @@ def main() -> None:
                         for o in (res.get("orders") or [])):
                     _gold_placed_this_pass.append(s["name"])
                 try:
-                    _xa.publish("fusion", _xa.mt5_exposure(mt5), source="gateway")
+                    _xa.publish_mt5(mt5, source="gateway")
                 except Exception as exc:
                     log(f"cross-account: Fusion book not published after [{s['name']}] "
                         f"({type(exc).__name__}: {exc})")

@@ -652,7 +652,7 @@ def published_gate_lines() -> dict[str, Any]:
 FUSION_RAILS = BASE / "data" / "fusion_book_rails.jsonl"
 E8_EXEC_INTENTS = BASE / "data" / "e8_intents.jsonl"
 FUSION_RAIL_NAMES = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily_loss",
-                     "fusion_book_floor_lift", "fusion_book_ceiling")
+                     "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap")
 
 
 def _jsonl(p: Path) -> list[dict[str, Any]] | None:
@@ -678,15 +678,17 @@ def published_fusion_book_lines() -> dict[str, Any]:
     lot it added or clipped. None of them is priced in log-wealth here -- whether a held-back
     order would have won is not in the line -- so every rail with lines is UNMEASURED with its
     count and its held-back (or added) risk published, and a rail with none is NOT_BINDING. An
-    unreadable ledger is UNMEASURED, never a clean zero."""
-    rows = _jsonl(FUSION_RAILS)
+    ABSENT or unreadable ledger is UNMEASURED, never a clean zero (L1.28a; audit round 2): the
+    gateway creates the ledger every pass (`fusion_rails.ensure`), so absent means this machine
+    has not received it, not that no rail fired."""
+    rows = _jsonl(FUSION_RAILS) if FUSION_RAILS.exists() else None
     e8_rows: list[dict[str, Any]] = []
     unreadable: list[str] = []
     if rows is None:
         unreadable.append(FUSION_RAILS.name)
         rows = []
     for jp in (E8_INTENTS, E8_EXEC_INTENTS):
-        got = _jsonl(jp)
+        got = _jsonl(jp) if jp.exists() else None
         if got is None:
             unreadable.append(jp.name)
             continue
@@ -696,8 +698,10 @@ def published_fusion_book_lines() -> dict[str, Any]:
     for rail in FUSION_RAIL_NAMES:
         mine = [r for r in rows if r.get("rail") == rail]
         e8 = e8_rows if rail == "cross_account_opposite" else []
+        blind = FUSION_RAILS.name in unreadable or (
+            rail == "cross_account_opposite" and any(n != FUSION_RAILS.name for n in unreadable))
         if not mine and not e8:
-            lines[rail] = {"verdict": UNMEASURED if unreadable else NOT_BINDING, "n": 0}
+            lines[rail] = {"verdict": UNMEASURED if blind else NOT_BINDING, "n": 0}
             continue
         fr = [float(r["risk_frac"]) for r in mine
               if isinstance(r.get("risk_frac"), (int, float)) and not isinstance(r.get(

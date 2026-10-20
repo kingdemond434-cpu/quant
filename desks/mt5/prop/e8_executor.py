@@ -924,14 +924,14 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                                          if outstanding_usd is not None else None)
     doc["outstanding_stop_risk_why"] = outstanding_why
     # THIS ACCOUNT'S BOOK FOR THE FUSION LANE'S CROSS-ACCOUNT FENCE (mt5desk.cross_account),
-    # from the same broker snapshot. A book that cannot be read is not published (never raises).
-    try:
-        from mt5desk import cross_account as _xa
-        _xa.publish("e8", _xa.tradelocker_exposure(venue, positions=open_positions,
-                                                   orders=resting_orders),
-                    source="e8_executor")
-    except Exception as exc:
-        doc["xacct_unpublished"] = f"{type(exc).__name__}: {exc}"[:160]
+    # published UNDER the placement lock from a broker reading taken under it -- never from the
+    # snapshot above, which another lane's send may already have outdated (audit round 2). A
+    # book that cannot be read, or a lock not taken, is not published (never raises).
+    from mt5desk import cross_account as _xa
+    _pub_why = _xa.publish_under_lock(
+        lambda: _xa.publish_tradelocker(venue, source="e8_executor"), holder="e8_executor:pass")
+    if _pub_why:
+        doc["xacct_unpublished"] = _pub_why
     # THE DEDUPE KEY IS THE INSTRUMENT AND SIDE, BECAUSE THIS VENUE HAS NO COMMENTS.
     #
     # MEASURED 2026-09-15, and it cost the account 0.85% in half an hour. This read
@@ -1315,7 +1315,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         row["status"] = "REJECTED"
                         row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"
                     with contextlib.suppress(Exception):
-                        _xa.publish("e8", _xa.tradelocker_exposure(venue), source="e8_executor")
+                        _xa.publish_tradelocker(venue, source="e8_executor")
             if _xwhy is not None:
                 row["status"] = "RAIL_BLOCKED"
                 row["rail"] = "cross_account_opposite"

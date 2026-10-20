@@ -879,6 +879,12 @@ def minlot_override_size(s: dict[str, Any], symbol: str, info: object | None,
     step = float(getattr(info, "volume_step", 0.01) or 0.01) if info is not None else 0.01
     vmax = float(getattr(info, "volume_max", 5.0) or 5.0) if info is not None else 5.0
     vmin = venue_min_lot(symbol, info)
+    # THE TERMINAL'S OWN volume_min IS HONOURED EVEN WHEN ITS tick_value IS NOT (audit round 2):
+    # `venue_min_lot` reads the risk unit, which raises on an unreadable tick value and falls
+    # back to the snapshot/desk floor -- 0.01 against a live minimum of 0.1 or 1.0.
+    _live_min = _num_or_nan(getattr(info, "volume_min", None)) if info is not None else math.nan
+    if math.isfinite(_live_min) and _live_min > vmin:
+        vmin = _live_min
     n_floor = MINLOT_OVERRIDE_LOT / step
     if not (step > 0.0 and abs(n_floor - round(n_floor)) < 1e-6):
         return 0.0, 0.0, (f"fusion book: the venue step {step:g} cannot express the 0.01 "
@@ -889,12 +895,13 @@ def minlot_override_size(s: dict[str, Any], symbol: str, info: object | None,
     per_lot = d * unit                                 # account currency lost per lot at the stop
     target = math.floor(MINLOT_OVERRIDE_TARGET_FRAC * eq / per_lot / step + 1e-9) * step
     lot = max(MINLOT_OVERRIDE_LOT, target)
-    cap = math.floor(min(float(MAX_RISK_FRAC) * eq / per_lot, vmax, 5.0) / step + 1e-9) * step
+    env = min(float(MAX_RISK_FRAC), FUSION_MAX_TRADE_RISK_FRAC)
+    cap = math.floor(min(env * eq / per_lot, vmax, 5.0) / step + 1e-9) * step
     if lot > cap + 1e-9:
         if cap + 1e-9 < MINLOT_OVERRIDE_LOT:
-            return 0.0, 0.0, (f"fusion book: the {MINLOT_OVERRIDE_LOT} floor risks "
-                              f"{MINLOT_OVERRIDE_LOT * per_lot / eq:.2%}, above the "
-                              f"{float(MAX_RISK_FRAC):.0%} per-order envelope; no order")
+            return 0.0, 0.0, (f"{FUSION_TRADE_RISK_REFUSAL}: the {MINLOT_OVERRIDE_LOT} floor "
+                              f"risks {MINLOT_OVERRIDE_LOT * per_lot / eq:.2%} at its {d:.5g} "
+                              f"stop, above the {env:.0%} per-trade limit; no order")
         lot = cap
     lot = round(lot, 8)
     q = lot * per_lot / eq
@@ -1062,10 +1069,20 @@ def gold_at_risk_block(positions: object, orders: object, *, own_tag: str = "",
 #: stood the book down on a bad day (`venue_heat_cap` reads none: the fusion-live profile declares
 #: no daily loss limit). When equity falls to (1 - this) x the day's starting equity, the gateway
 #: takes NO NEW RISK for the rest of the server day and cancels its resting gold brackets; open
-#: positions keep their stops and their management. 10% is two gold stop-outs at the 0.01 floor
-#: on a ~EUR 485 account (~5.8% each). Every stand-down is written to the rails ledger
-#: (data/fusion_book_rails.jsonl, rail "fusion_daily_loss") for `missed_growth` to bill.
-FUSION_DAILY_LOSS_FRAC = 0.10
+#: positions keep their stops and their management. COORDINATOR'S RE-DECISION (audit round 2,
+#: 2026-10-20): 5%. The round-2 premise ("one 0.01 gold stop ~3.4%") was wrong: measured gold
+#: stops run 18-111 USD (3.2-19.7% of ~EUR 484 at 0.01), and one-gold-at-risk limits CONCURRENT
+#: gold, not gold per day, so windows can stop out one after another. The latch fires on the
+#: first loss that reaches -5%; what can still land after it is the risk already open, and no
+#: single entry may risk more than `FUSION_MAX_TRADE_RISK_FRAC`. Every stand-down is written to
+#: the rails ledger (data/fusion_book_rails.jsonl, rail "fusion_daily_loss").
+FUSION_DAILY_LOSS_FRAC = 0.05
+#: THE PER-TRADE REFUSAL (coordinator, audit round 2): no Fusion book entry whose stop risk
+#: exceeds this fraction of equity -- the 0.01 floor at a wide gold stop is REFUSED, never sent,
+#: and every refusal is a missed-growth line (rail "fusion_trade_risk_cap").
+FUSION_MAX_TRADE_RISK_FRAC = 0.10
+#: The basis prefix of that refusal, so the gateway can bill it without re-deriving it.
+FUSION_TRADE_RISK_REFUSAL = "fusion book: per-trade risk cap"
 
 
 def fusion_daily_loss(st: dict[str, Any], equity: object, day_key: str) -> tuple[bool, str]:

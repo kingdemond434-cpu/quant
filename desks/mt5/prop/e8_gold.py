@@ -731,19 +731,54 @@ def publish_books(venue: Any, mt5: Any, doc: dict[str, Any],
 
     E8's from TradeLocker (every position and resting entry on the account), Fusion's from the
     MT5 terminal this lane is attached to -- so the Fusion book stays fresh for the E8 executor
-    even while the gateway task is disabled. A book that cannot be read is NOT published (the
-    readers then fail closed on a stale one); never raises."""
+    even while the gateway task is disabled. Each is published UNDER the placement lock from a
+    reading taken under it (audit round 2: a pass-start snapshot published later could erase a
+    send another lane made in between); `positions` is accepted for the caller's shape and not
+    used. A book that cannot be read, or a lock not taken, publishes nothing (the readers then
+    fail closed on a stale book); never raises, and waits at most `PUBLISH_WAIT_S` each."""
+    del positions
     from mt5desk import cross_account as _xa
-    try:
-        _xa.publish("e8", _xa.tradelocker_exposure(venue, positions=positions),
-                    source="e8_gold")
-    except Exception as exc:
-        doc.setdefault("xacct_unpublished", []).append(f"e8: {type(exc).__name__}: {exc}"[:160])
-    try:
-        _xa.publish("fusion", _xa.mt5_exposure(mt5), source="e8_gold via the Fusion terminal")
-    except Exception as exc:
-        doc.setdefault("xacct_unpublished", []).append(
-            f"fusion: {type(exc).__name__}: {exc}"[:160])
+    why = _xa.publish_under_lock(lambda: _xa.publish_tradelocker(venue, source="e8_gold"),
+                                 holder="e8_gold:publish")
+    if why:
+        doc.setdefault("xacct_unpublished", []).append(f"e8: {why}"[:160])
+    why = _xa.publish_under_lock(
+        lambda: _xa.publish_mt5(mt5, source="e8_gold via the Fusion terminal"),
+        holder="e8_gold:publish")
+    if why:
+        doc.setdefault("xacct_unpublished", []).append(f"fusion: {why}"[:160])
+
+
+#: How long one E8-Gold placement waits for the cross-account lock. After one miss in a pass the
+#: rest of the pass waits 0 (`xacct_lock_wait`), so a stuck lock delays stop management by at
+#: most this, never by a wait per window.
+E8_LOCK_WAIT_S = 5.0
+
+
+def xacct_lock_wait(doc: dict[str, Any]) -> float:
+    return 0.0 if doc.get("xacct_lock_missed") else E8_LOCK_WAIT_S
+
+
+def fenced_send(mt5: Any, venue: Any, doc: dict[str, Any], *, holder: str, side: str,
+                send: Any) -> tuple[Any, str | None]:
+    """Run `send()` under the cross-account fence: (its result, None), or (None, why) when the
+    Fusion account holds or rests the opposite side of XAUUSD, its book cannot be read live, or
+    the lock is not taken. This account's book is republished under the same lock."""
+    from mt5desk import cross_account as _xa
+    with _xa.placement_lock(holder, wait_s=xacct_lock_wait(doc)) as locked:
+        if not locked:
+            doc["xacct_lock_missed"] = True
+            return None, ("cross-account fence: the placement lock is held by the other "
+                          "account's lane; fail closed")
+        book, why = _xa.mt5_book_checked(mt5)
+        xwhy = _xa.opposite_block(book, SYMBOL, side, account="fusion", why_absent=why)
+        if xwhy:
+            return None, xwhy
+        try:
+            return send(), None
+        finally:
+            with contextlib.suppress(Exception):
+                _xa.publish_tradelocker(venue, source="e8_gold")
 
 
 def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
@@ -925,17 +960,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         # lock the gateway also takes, and this account's book is published before the lock is
         # released. Unreadable book or lock not taken -> every leg is fenced (fail closed).
         from mt5desk import cross_account as _xa
-        _xctx = (_xa.placement_lock(f"e8_gold:{name}") if armed
+        _xctx = (_xa.placement_lock(f"e8_gold:{name}", wait_s=xacct_lock_wait(doc)) if armed
                  else contextlib.nullcontext(True))
         with _xctx as _xlocked:
             fusion_book: Any = None
             fusion_why = ""
+            if armed and not _xlocked:
+                doc["xacct_lock_missed"] = True
             if armed and _xlocked:
-                try:
-                    fusion_book = _xa.mt5_exposure(mt5)
-                except Exception as exc:
-                    fusion_why = (f"the Fusion terminal book is unreadable "
-                                  f"({type(exc).__name__}: {exc})")
+                fusion_book, fusion_why = _xa.mt5_book_checked(mt5)
             for side in ("buy_stop", "sell_stop"):
                 if side == blocked:
                     _ids = ", ".join(str(p.get("id")) for p in xau_positions)
@@ -1011,7 +1044,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                         {"window": name, "side": side, "order_id": row.get("order_id")})
             if armed and _xlocked:
                 with contextlib.suppress(Exception):
-                    _xa.publish("e8", _xa.tradelocker_exposure(venue), source="e8_gold")
+                    _xa.publish_tradelocker(venue, source="e8_gold")
         if fenced and not legs and not failed:
             # Every leg fenced: the window waits, NOT marked placed, and its risk is not committed.
             committed = (committed or 0.0) - risk_usd
@@ -1060,7 +1093,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                            orders_ok="orders_unreadable" not in doc, filled=filled,
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
-                           history_ok="history_unreadable" not in doc, instrument_id=iid)
+                           history_ok="history_unreadable" not in doc, instrument_id=iid,
+                           mt5=mt5)
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
@@ -1242,11 +1276,28 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     return doc
 
 
+def _xa_retry_blocked(doc: dict, state: dict, row: dict, act: dict, name: str, side: str,
+                      leg: dict, xwhy: str, now: datetime) -> None:
+    """A dropped leg the cross-account fence refused on retry: logged, billed once per window,
+    leg and day (`RAIL_BLOCKED` / cross_account_opposite), and left dropped for a later pass."""
+    log(f"[{name}] {side} retry fenced: {xwhy}")
+    act.update({"ok": False, "why": xwhy, "rail": "cross_account_opposite"})
+    doc["actions"].append(act)
+    seen = state.setdefault("xacct_logged", {})
+    day = now.date().isoformat()
+    if seen.get(f"{name}/{side}/retry") != day:
+        seen[f"{name}/{side}/retry"] = day
+        risk = leg.get("risk_usd")
+        _record({**row, "status": "RAIL_BLOCKED", "rail": "cross_account_opposite",
+                 "why": xwhy, "missed_growth_risk_usd": round(float(risk), 2)
+                 if isinstance(risk, (int, float)) else None})
+
+
 def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: datetime,
                        open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
                        xau_positions: list[dict], positions_ok: bool, stood_down: bool,
                        armed: bool, hist_rows: list[dict], history_ok: bool,
-                       instrument_id: int) -> None:
+                       instrument_id: int, mt5: Any = None) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
 
@@ -1363,9 +1414,17 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             log(f"[{name}] {side} the failed send had landed: adopted order {oid}")
         else:
             try:
-                oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell",
-                                       float(leg["lot"]), price=float(leg["price"]),
-                                       stop=float(leg["sl"]), take_profit=float(leg["tp"]))
+                # THE RETRY IS FENCED TOO (audit round 2, must-fix 1): the same cross-account
+                # check and placement lock as a first send. A fenced leg stays dropped, is not
+                # counted as an attempt, and is retried on a later pass while its window holds.
+                oid, xwhy = fenced_send(mt5, venue, doc, holder=f"e8_gold:{name}:retry",
+                                        side=side, send=lambda: venue.place_stop(
+                                            SYMBOL, "buy" if side == "buy_stop" else "sell",
+                                            float(leg["lot"]), price=float(leg["price"]),
+                                            stop=float(leg["sl"]), take_profit=float(leg["tp"])))
+                if xwhy:
+                    _xa_retry_blocked(doc, state, row, act, name, side, leg, xwhy, now)
+                    continue
                 row.update({"status": "SENT", "order_id": oid})
                 log(f"[{name}] RE-PLACED {side} {leg['lot']} {SYMBOL} @ {leg['price']:.2f} "
                     f"-> order {oid} (attempt {int(leg.get('attempts') or 0) + 1})")

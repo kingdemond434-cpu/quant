@@ -23,7 +23,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 from typing import ClassVar
@@ -655,12 +657,12 @@ def test_the_gateway_counts_todays_journalled_gold_tickets_and_fails_closed_on_a
 # ------------------------------------------------------------------- the Fusion daily-loss rail
 
 def test_the_daily_loss_rail_anchors_once_latches_and_resets_with_the_day() -> None:
-    assert dc.FUSION_DAILY_LOSS_FRAC == 0.10
+    assert dc.FUSION_DAILY_LOSS_FRAC == 0.05                 # coordinator, audit round 2
     st: dict = {}
     assert dc.fusion_daily_loss(st, 500.0, "2026-10-20")[0] is False
     assert st["day_start_equity"] == {"date": "2026-10-20", "equity": 500.0}
-    assert dc.fusion_daily_loss(st, 451.0, "2026-10-20")[0] is False     # above 450
-    down, why = dc.fusion_daily_loss(st, 450.0, "2026-10-20")
+    assert dc.fusion_daily_loss(st, 476.0, "2026-10-20")[0] is False     # above 475
+    down, why = dc.fusion_daily_loss(st, 475.0, "2026-10-20")
     assert down and "rest of 2026-10-20" in why
     # Latched: a bounce back does not re-open the day; the next day re-anchors.
     assert dc.fusion_daily_loss(st, 520.0, "2026-10-20")[0] is True
@@ -714,7 +716,8 @@ def test_exposure_reads_both_venues_and_raises_on_an_unreadable_row() -> None:
 
 
 def test_the_fence_blocks_only_the_opposite_side_and_fails_closed_on_any_unknown() -> None:
-    xa.publish("e8", {"XAUUSD": {"long": False, "short": True}}, source="test")
+    xa.publish("e8", {"XAUUSD": {"long": False, "short": True}}, source="test",
+               key=xa.account_key("e8-test", "tl"))
     book, _why = xa.read_book("e8")
     assert book is not None
     assert xa.opposite_block(book, "XAUUSD", "buy_stop", account="e8")
@@ -730,7 +733,8 @@ def test_an_absent_stale_or_foreign_book_is_no_book(tmp_path) -> None:
     from datetime import UTC, datetime, timedelta
     xa.book_path("e8").unlink()
     assert xa.read_book("e8")[0] is None
-    xa.publish("e8", {}, source="t", now=datetime.now(tz=UTC) - timedelta(seconds=1000))
+    xa.publish("e8", {}, source="t", now=datetime.now(tz=UTC) - timedelta(seconds=1000),
+               key=xa.account_key("e8-test", "tl"))
     book, why = xa.read_book("e8")
     assert book is None and "old" in why
     xa.book_path("e8").write_text(json.dumps({"account": "fusion", "covers": "all",
@@ -739,19 +743,102 @@ def test_an_absent_stale_or_foreign_book_is_no_book(tmp_path) -> None:
     assert xa.read_book("e8")[0] is None
 
 
-def test_the_placement_lock_is_exclusive_and_breaks_a_dead_holder() -> None:
-    import os
-    with xa.placement_lock("a") as first:
-        assert first
-        with xa.placement_lock("b", wait_s=0.0) as second:
-            assert not second
-    with xa.placement_lock("c", wait_s=0.0) as again:
-        assert again                                    # released on exit
+def _foreign_lock(**doc) -> Path:
     lock = xa.XACCT_DIR / "placement.lock"
-    lock.write_text("{}", encoding="utf-8")
-    os.utime(lock, (1.0, 1.0))                          # a crashed holder, long ago
-    with xa.placement_lock("d", wait_s=0.0) as taken:
-        assert taken
+    lock.write_text(json.dumps({"holder": "other", "token": "t-other", **doc}), encoding="utf-8")
+    return lock
+
+
+def test_the_lock_is_reentrant_in_process_and_released_only_by_its_owner() -> None:
+    lock = xa.XACCT_DIR / "placement.lock"
+    with xa.placement_lock("a") as first:
+        assert first and lock.exists()
+        with xa.placement_lock("a-nested", wait_s=0.0) as nested:
+            assert nested                                 # a publish inside a placement
+        assert lock.exists()                              # the inner exit released nothing
+    assert not lock.exists()
+    # Release checks the token: a lock someone else holds now is never deleted by us.
+    with xa.placement_lock("b") as got:
+        assert got
+        _foreign_lock(pid=os.getpid(), host=xa._HOST)
+    assert lock.exists()
+
+
+def test_a_live_foreign_holder_is_never_broken_however_old() -> None:
+    lock = _foreign_lock(pid=os.getpid(), host=xa._HOST)            # alive: this process
+    os.utime(lock, (1.0, 1.0))
+    t0 = time.monotonic()
+    with xa.placement_lock("me", wait_s=0.5) as got:
+        assert not got
+    assert 0.4 <= time.monotonic() - t0 < 5.0                        # waited, then gave up
+    assert json.loads(lock.read_text())["token"] == "t-other"
+
+
+def test_a_miss_makes_the_rest_of_the_pass_wait_nothing() -> None:
+    _foreign_lock(pid=os.getpid(), host=xa._HOST)
+    with xa.placement_lock("me", wait_s=0.3) as got:
+        assert not got
+    t0 = time.monotonic()
+    with xa.placement_lock("me-again", wait_s=10.0) as got:
+        assert not got
+    assert time.monotonic() - t0 < 1.0
+
+
+def test_a_dead_or_released_holder_is_broken() -> None:
+    _foreign_lock(pid=2**22 + 12345, host=xa._HOST)                 # no such pid
+    with xa.placement_lock("me", wait_s=1.0) as got:
+        assert got
+    xa._RELEASED.add("t-mine")
+    lock = xa.XACCT_DIR / "placement.lock"
+    lock.write_text(json.dumps({"token": "t-mine", "pid": os.getpid(), "host": xa._HOST}),
+                    encoding="utf-8")
+    with xa.placement_lock("me", wait_s=1.0) as got:
+        assert got
+
+
+def test_an_unprovable_holder_is_broken_only_when_abandoned() -> None:
+    lock = _foreign_lock(pid=1, host="another-host")
+    with xa.placement_lock("me", wait_s=0.0) as got:
+        assert not got
+    xa._MISSED_AT.clear()
+    os.utime(lock, (1.0, 1.0))                                         # older than abandoned
+    with xa.placement_lock("me", wait_s=0.5) as got:
+        assert got
+
+
+def test_a_break_the_os_refuses_waits_to_its_deadline_and_never_spins(monkeypatch) -> None:
+    lock = _foreign_lock(pid=2**22 + 12345, host=xa._HOST)           # dead: breakable
+    calls = []
+
+    def refused(src, dst):                                             # WinError 32 / 5
+        calls.append(src)
+        raise PermissionError(32, "The process cannot access the file")
+    monkeypatch.setattr(xa.os, "replace", refused)
+    t0 = time.monotonic()
+    with xa.placement_lock("me", wait_s=0.6) as got:
+        assert not got
+    took = time.monotonic() - t0
+    assert 0.5 <= took < 5.0
+    assert 1 <= len(calls) <= 10, len(calls)                           # slept between tries
+    assert lock.exists()
+
+
+def test_every_publish_runs_under_the_lock_from_a_fresh_read() -> None:
+    _foreign_lock(pid=os.getpid(), host=xa._HOST)
+    reads = []
+    why = xa.publish_under_lock(lambda: reads.append(1), holder="t", wait_s=0.0)
+    assert why and "not published" in why and reads == []
+    src = {n: (_DESK / n).read_text(encoding="utf-8")
+           for n in ("mt5desk/gateway.py", "prop/e8_gold.py", "prop/e8_executor.py")}
+    # No publish from a snapshot: every site reads inside the call (publish_mt5 /
+    # publish_tradelocker) and none passes an earlier positions/orders reading.
+    for text in src.values():
+        assert "_xa.publish(" not in text
+        assert "tradelocker_exposure(venue, positions=" not in text
+    assert "publish_under_lock(lambda: _xa.publish_mt5(mt5" in src["mt5desk/gateway.py"]
+    assert "publish_under_lock(\n        lambda: _xa.publish_tradelocker(venue" \
+        in src["prop/e8_executor.py"]
+    assert src["prop/e8_gold.py"].count("_xa.publish_under_lock(") == 2
 
 
 def test_a_family_order_opposite_an_e8_position_is_refused_and_billed(
@@ -760,7 +847,8 @@ def test_a_family_order_opposite_an_e8_position_is_refused_and_billed(
     ns, venue = _family_ns(tmp_path, monkeypatch)
     sleeve = _fx_sleeve(USDNOK)                         # LONG
     dc.stamp_minlot_override([sleeve], frozenset(FOUR), EQUITY)
-    xa.publish("e8", {"USDNOK": {"long": False, "short": True}}, source="test")
+    xa.publish("e8", {"USDNOK": {"long": False, "short": True}}, source="test",
+               key=xa.account_key("e8-test", "tl"))
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
     assert venue.sent == []
     (row,) = [json.loads(ln) for ln in (tmp_path / "rails.jsonl").read_text().splitlines()]
@@ -782,9 +870,11 @@ def test_a_same_side_e8_position_does_not_block_and_the_fusion_book_is_published
     ns, venue = _family_ns(tmp_path, monkeypatch)
     venue.positions_get = lambda *a, **k: ()
     venue.orders_get = lambda *a, **k: ()
+    venue.account_info = lambda: SimpleNamespace(login=LOGIN, server=SERVER, trade_mode=2)
     sleeve = _fx_sleeve(USDNOK)
     dc.stamp_minlot_override([sleeve], frozenset(FOUR), EQUITY)
-    xa.publish("e8", {"USDNOK": {"long": True, "short": False}}, source="test")
+    xa.publish("e8", {"USDNOK": {"long": True, "short": False}}, source="test",
+               key=xa.account_key("e8-test", "tl"))
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
     assert len(venue.sent) == 1
     book, _ = xa.read_book("fusion")
@@ -800,7 +890,7 @@ def test_the_bracket_loop_fences_each_leg_under_the_lock_and_waits_when_both_are
     assert '_xa.read_book("e8")' in block and "opposite_block" in block
     assert '{"buy_stop", "sell_stop"} <= _all_blocked' in block and "continue" in block
     assert '_rails.line("cross_account_opposite"' in block
-    assert '_xa.publish("fusion"' in main[j:j + 900]
+    assert '_xa.publish_mt5(mt5, source="gateway")' in main[j:j + 900]
 
 
 def test_e8_executor_fences_its_send_against_the_fusion_book() -> None:
@@ -810,12 +900,13 @@ def test_e8_executor_fences_its_send_against_the_fusion_book() -> None:
     assert '_xa.read_book("fusion")' in block and "opposite_block" in block
     assert 'row["rail"] = "cross_account_opposite"' in block
     assert "missed_growth_risk_usd" in block
-    assert '_xa.publish("e8"' in src[src.index("def run") if "def run" in src else 0:]
+    assert '_xa.publish_tradelocker(venue, source="e8_executor")' in block
 
 
 # --------------------------------------------------- E8-Gold: the same fence from the other side
 
-def _e8_harness(monkeypatch, tmp_path, fusion_positions=(), fusion_orders=()):
+def _e8_harness(monkeypatch, tmp_path, fusion_positions=(), fusion_orders=(),
+                fusion_login=LOGIN):
     sys.path.insert(0, str(_DESK / "tests"))
     import test_e8_gold_guard_and_open_risk as h
 
@@ -825,12 +916,16 @@ def _e8_harness(monkeypatch, tmp_path, fusion_positions=(), fusion_orders=()):
         def __init__(self) -> None:
             super().__init__()
             self.placed: list[tuple] = []
+            self._raw_api = SimpleNamespace(acc_id=31337)
 
         def place_stop(self, symbol, side, lot, *, price, stop, take_profit):
             self.placed.append((side, lot))
             return 500 + len(self.placed)
 
     class _M(h._MT5):
+        def account_info(self):
+            return SimpleNamespace(login=fusion_login, server=SERVER, trade_mode=2)
+
         def positions_get(self, symbol=None):
             return fusion_positions
 
@@ -868,6 +963,9 @@ def test_e8_gold_waits_unplaced_when_fusion_rests_both_sides_or_cannot_be_read(
     # Not marked placed: the next pass retries -- and an unreadable Fusion book fences it again.
     doc, venue, _ = _e8_harness(monkeypatch, tmp_path, fusion_positions=None)
     assert venue.placed == [] and doc["placed"] == []
+    # And a terminal on another account than the declared Fusion one is no Fusion book.
+    doc, venue, _ = _e8_harness(monkeypatch, tmp_path, fusion_login=LOGIN + 1)
+    assert venue.placed == [] and doc["placed"] == []
 
 
 # --------------------------------------------------------------------------- the rails' bill
@@ -880,7 +978,19 @@ def test_every_fusion_rail_publishes_its_bill_in_missed_growth(tmp_path, monkeyp
     monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "e8_gold_intents.jsonl")
     monkeypatch.setattr(mg, "E8_EXEC_INTENTS", tmp_path / "e8_intents.jsonl")
     out = mg.published_fusion_book_lines()
+    # ABSENT IS NOT A CLEAN ZERO (L1.28a): no ledger on this machine reads UNMEASURED.
+    assert all(v["verdict"] == mg.UNMEASURED for v in out["rails"].values())
+    assert fusion_rails.ensure()
+    for name in ("e8_gold_intents.jsonl", "e8_intents.jsonl"):
+        (tmp_path / name).write_text("", encoding="utf-8")
+    out = mg.published_fusion_book_lines()
     assert all(v["verdict"] == mg.NOT_BINDING for v in out["rails"].values())
+    # A missing E8 ledger blinds only the rail it feeds.
+    (tmp_path / "e8_intents.jsonl").unlink()
+    out = mg.published_fusion_book_lines()["rails"]
+    assert out["cross_account_opposite"]["verdict"] == mg.UNMEASURED
+    assert out["one_gold_at_risk"]["verdict"] == mg.NOT_BINDING
+    (tmp_path / "e8_intents.jsonl").write_text("", encoding="utf-8")
     fusion_rails.line("one_gold_at_risk", sleeve="gold_london_am", lot=0.01, risk_frac=0.034)
     fusion_rails.line("fusion_book_floor_lift", sleeve="gold_asia", lot=0.01, risk_frac=0.034)
     (tmp_path / "e8_gold_intents.jsonl").write_text(json.dumps(
@@ -894,3 +1004,128 @@ def test_every_fusion_rail_publishes_its_bill_in_missed_growth(tmp_path, monkeyp
     assert out["fusion_daily_loss"]["verdict"] == mg.NOT_BINDING
     (tmp_path / "rails.jsonl").write_text("{broken\n", encoding="utf-8")
     assert "unreadable" in mg.published_fusion_book_lines()
+
+
+# ----------------------------------------------------------------------- audit round 2 (r4)
+
+@pytest.mark.parametrize("raw", ["XAUUSD", "XAUUSD+", "XAUUSD.pro", "XAUUSD_i", "XAUUSD#",
+                                 "XAUUSDm", "XAUUSDpro", "GOLD", "gold", "xau/usd", "XAU/USD"])
+def test_every_alias_of_gold_is_gold(raw) -> None:
+    assert xa.norm(raw) == "XAUUSD"
+
+
+def test_an_unknown_suffix_blocks_rather_than_passes() -> None:
+    book = {"XAUUSDX": {"long": False, "short": True}}
+    assert xa.opposite_block(book, "XAUUSD", "buy", account="e8")
+    assert xa.opposite_block({"XAUUSD": {"long": False, "short": True}}, "XAUUSDX", "buy",
+                             account="e8")
+    assert xa.opposite_block(book, "EURUSD", "buy", account="e8") is None
+    with pytest.raises(ValueError):
+        xa.exposure_from_rows([("??", "buy")])
+    assert "fail closed" in xa.opposite_block({}, "", "buy", account="e8")
+
+
+def test_a_tradelocker_entry_without_a_stop_counts_and_only_named_protection_is_skipped() -> None:
+    venue = SimpleNamespace(_by_key={"XAUUSD": 6102})
+    pos = [{"id": 1, "tradableInstrumentId": 6102, "side": "buy", "stopLossId": 11,
+            "takeProfitId": 12}]
+    orders = [{"id": 11, "tradableInstrumentId": 6102, "side": "sell"},       # its SL
+              {"id": 12, "tradableInstrumentId": 6102, "side": "sell"}]       # its TP
+    assert xa.tradelocker_exposure(venue, positions=pos, orders=orders) == {
+        "XAUUSD": {"long": True, "short": False}}
+    # A resting entry with NO stopLoss is an entry (round 2 skipped it: fail open).
+    got = xa.tradelocker_exposure(venue, positions=[], orders=[
+        {"id": 13, "tradableInstrumentId": 6102, "side": "sell"}])
+    assert got == {"XAUUSD": {"long": False, "short": True}}
+    # An order that names its position is protective too.
+    got = xa.tradelocker_exposure(venue, positions=[{"id": 2, "tradableInstrumentId": 6102,
+                                                     "side": "sell"}],
+                                  orders=[{"id": 14, "tradableInstrumentId": 6102,
+                                           "side": "buy", "positionId": 2}])
+    assert got == {"XAUUSD": {"long": False, "short": True}}
+
+
+def test_a_book_names_its_account_hashed_and_a_wrong_or_unnamed_one_is_refused() -> None:
+    key = xa.account_key(LOGIN, SERVER)
+    assert key.startswith("sha256:") and str(LOGIN) not in key
+    xa.publish("fusion", {}, source="t", key=key)
+    assert str(LOGIN) not in xa.book_path("fusion").read_text(encoding="utf-8")
+    assert xa.read_book("fusion")[0] == {}                     # the declared account
+    xa.publish("fusion", {}, source="t", key=xa.account_key(LOGIN + 1, SERVER))
+    book, why = xa.read_book("fusion")
+    assert book is None and "another account" in why
+    with pytest.raises(ValueError):
+        xa.publish("fusion", {}, source="t", key="")
+    doc = json.loads(xa.book_path("fusion").read_text(encoding="utf-8"))
+    doc.pop("account_key")
+    xa.book_path("fusion").write_text(json.dumps(doc), encoding="utf-8")
+    assert xa.read_book("fusion")[0] is None
+    with pytest.raises(ValueError):
+        xa.account_key(None, SERVER)
+
+
+def test_the_e8_gold_retry_goes_through_the_fence_and_the_lock() -> None:
+    from prop import e8_gold as g
+    src = (_DESK / "prop" / "e8_gold.py").read_text(encoding="utf-8")
+    body = src[src.index("def _retry_failed_legs("):src.index("def connect_terminal(")]
+    assert "fenced_send(mt5, venue, doc" in body and "venue.place_stop(" in body
+    assert body.index("fenced_send(") < body.index("venue.place_stop(")
+    assert "_xa_retry_blocked(" in body
+    sent: list[int] = []
+    m = SimpleNamespace(account_info=lambda: SimpleNamespace(login=LOGIN, server=SERVER),
+                        positions_get=lambda: (SimpleNamespace(symbol="XAUUSD", type=1),),
+                        orders_get=lambda: ())
+    v = SimpleNamespace(_by_key={"XAUUSD": 6102}, _raw_api=SimpleNamespace(acc_id=7),
+                        positions=lambda: [], orders=lambda: [])
+    doc: dict = {}
+    res, why = g.fenced_send(m, v, doc, holder="t", side="buy_stop",
+                             send=lambda: sent.append(1) or 99)
+    assert res is None and why and "short" in why and sent == []
+    res, why = g.fenced_send(m, v, doc, holder="t", side="sell_stop",
+                             send=lambda: sent.append(1) or 99)
+    assert (res, why) == (99, None) and sent == [1]
+    assert xa.read_book("e8")[0] == {}                         # republished under the lock
+    m.positions_get = lambda: None                              # Fusion unreadable
+    assert g.fenced_send(m, v, doc, holder="t", side="sell_stop", send=lambda: 1)[0] is None
+    _foreign_lock(pid=os.getpid(), host=xa._HOST)
+    m.positions_get = lambda: ()
+    res, why = g.fenced_send(m, v, doc, holder="t", side="sell_stop", send=lambda: 1)
+    assert res is None and "lock" in why and doc["xacct_lock_missed"] is True
+
+
+def test_no_entry_risks_more_than_ten_percent_and_each_refusal_is_billed_once(
+        tmp_path, monkeypatch) -> None:
+    assert dc.FUSION_MAX_TRADE_RISK_FRAC == 0.10
+    monkeypatch.setattr(dc, "MAX_RISK_FRAC", 0.50)              # even a wider envelope
+    lot, _t, why = _size("gold_afternoon", "XAUUSD", None, EQUITY, 111.0)
+    assert lot == 0.0 and why.startswith(dc.FUSION_TRADE_RISK_REFUSAL)
+    monkeypatch.setattr(fusion_rails, "LEDGER", tmp_path / "rails.jsonl")
+    ns = _bracket_ns()
+    s = {"name": "gold_afternoon", "symbol": "XAUUSD", "lot": "auto"}
+    dc.stamp_minlot_override([s], frozenset(FOUR), EQUITY)
+    for _ in range(3):                                          # re-checked every pass
+        assert ns["bracket_lane_lot"](s, EQUITY, 111.0, None)[0] == 0.0
+    rows = [json.loads(ln) for ln in (tmp_path / "rails.jsonl").read_text().splitlines()]
+    assert [r["rail"] for r in rows] == ["fusion_trade_risk_cap"]
+    assert rows[0]["sleeve"] == "gold_afternoon" and rows[0]["dist"] == 111.0
+    # A stop the cap allows sends, and writes no refusal.
+    assert ns["bracket_lane_lot"](s, EQUITY, 19.1, None)[0] == 0.01
+
+
+def test_the_terminal_volume_min_is_honoured_when_its_tick_value_is_not() -> None:
+    info = SimpleNamespace(volume_min=0.1, volume_step=0.01, volume_max=100.0,
+                           trade_tick_size=None, trade_tick_value=None)
+    lot, _t, why = _size("gold_asia", "XAUUSD", info, EQUITY, 19.1)
+    assert lot == 0.0 and "venue minimum" in why
+
+
+def test_a_rails_line_that_cannot_be_written_is_surfaced(tmp_path, monkeypatch, capsys) -> None:
+    (tmp_path / "blocker").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(fusion_rails, "LEDGER", tmp_path / "blocker" / "rails.jsonl")
+    monkeypatch.setattr(fusion_rails, "WRITE_FAILURES", {})
+    assert fusion_rails.line("one_gold_at_risk", sleeve="gold_asia") is False
+    assert fusion_rails.WRITE_FAILURES == {"one_gold_at_risk": 1}
+    assert "NOT written" in capsys.readouterr().err
+    assert fusion_rails.ensure() is False
+    src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    assert "_rails_pass.WRITE_FAILURES" in src and "_rails_pass.ensure()" in src

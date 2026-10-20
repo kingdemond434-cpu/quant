@@ -176,8 +176,14 @@ def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
     from mt5desk import cross_account
     d = tmp_path_factory.mktemp("xacct")
     monkeypatch.setattr(cross_account, "XACCT_DIR", d)
+    # Per-process lock state never leaks between tests (re-entry, released tokens, the miss
+    # cooldown).
+    monkeypatch.setattr(cross_account, "_HELD", {})
+    monkeypatch.setattr(cross_account, "_RELEASED", set())
+    monkeypatch.setattr(cross_account, "_MISSED_AT", [])
     for account in cross_account.ACCOUNTS:
-        cross_account.publish(account, {}, source="conftest")
+        cross_account.publish(account, {}, source="conftest",
+                              key=cross_account.account_key(f"conftest-{account}", "test"))
     # The Fusion book's rails ledger (mt5desk.fusion_rails) is box state too: a test that sends
     # a floor-lifted order would otherwise append its bill to the repo's data/ file.
     from mt5desk import fusion_rails

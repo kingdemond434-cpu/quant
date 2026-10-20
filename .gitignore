@@ -493,3 +493,11 @@ desks/mt5/data/hypotheses/conversion_handoff.json
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
 desks/mt5/data/account_positions.json
 desks/mt5/data/account_positions.json.tmp
+
+# apply_fusion_state.py's backups and temp files (patches/fusion_book_go_live). A backup of
+# FUSION_LIVE_ACCOUNT.json carries the live login, and box-repair stages desks/mt5/data with
+# `git add -A`, so these must never be trackable. Kept last: in gitignore the last match wins.
+desks/mt5/data/*.bak_fusionbook
+desks/mt5/data/*.bak_fusionbook.*
+desks/mt5/data/*.tmp_fusionbook
+desks/mt5/data/FUSION_LIVE_ACCOUNT.json*
