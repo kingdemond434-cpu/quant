@@ -308,11 +308,12 @@ def test_seed_accrues_under_floor_and_donates_once_with_width_one(tmp_path, monk
     monkeypatch.setenv("QUANT_OPTIONS_STATE_STORE", str(tmp_path / "none.jsonl"))
     donated: list[list[dict]] = []
 
-    def fake_donate(source, rows, tests_run):
+    def fake_donate(source, rows, tests_run, suffix=""):
         donated.append(rows)
-        assert source == bsc.SOURCE and tests_run == len(rows)
+        assert source == bsc.SOURCE and tests_run == len(rows) and suffix
         return tmp_path / "x.json"
 
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
     monkeypatch.setattr(pc, "donate", fake_donate)
     monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(donated[-1])})
     state = tmp_path / "state.json"
@@ -325,6 +326,44 @@ def test_seed_accrues_under_floor_and_donates_once_with_width_one(tmp_path, monk
     assert rep["by_item"]["N7_broker_risk"]["unmeasured_no_bars"] > 0     # no bars, named
     again = bsc.seed(universe=uni, state_path=state)
     assert again["donated_this_pass"] == 0 and len(donated) == 1         # never re-donated
+
+
+def test_seed_settles_a_crashed_donation_and_stands_down_when_locked(tmp_path, monkeypatch):
+    """A crash between the door and the state write is settled from the door's own file; a
+    second concurrent pass holds no lock and touches nothing."""
+    from research import proposer_common as pc
+    uni = tmp_path / "universe"
+    uni.mkdir()
+    _bars(24 * 400, seed=9).to_parquet(uni / "US500_H1.parquet")
+    (uni / "universe.json").write_text(json.dumps({"US500": {"asset_class": "Indices"}}),
+                                       "utf-8")
+    _store(tmp_path, monkeypatch, [])
+    monkeypatch.setenv("QUANT_OPTIONS_STATE_STORE", str(tmp_path / "none.jsonl"))
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
+    calls: list[int] = []
+
+    def door(source, rows, tests_run, suffix=""):
+        out = tmp_path / "intel" / source / f"discoveries_20261014_0000_{suffix}.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({"tests_run": tests_run}), "utf-8")
+        calls.append(tests_run)
+        raise RuntimeError("killed after the door")
+
+    monkeypatch.setattr(pc, "donate", door)
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": 1})
+    state = tmp_path / "state.json"
+    with pytest.raises(RuntimeError):
+        bsc.seed(universe=uni, state_path=state)
+    assert len(calls) == 1
+    rep = bsc.seed(universe=uni, state_path=state)
+    assert len(calls) == 1 and rep["donation"]["recovered"] == {"landed": 1, "dropped": 0}
+    st = json.loads(state.read_text("utf-8"))
+    assert all(v.get("donated_at") for v in st["cells"].values()
+               if v.get("status") == "DONATED")
+    with pc.run_lock(state) as held:
+        assert held
+        locked = bsc.seed(universe=uni, state_path=state)
+    assert locked["donation"]["status"] == "LOCKED" and len(calls) == 1
 
 
 # ------------------------------------------------------------------------- registration -----

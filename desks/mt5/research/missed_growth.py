@@ -647,12 +647,14 @@ SPREAD_RECOVERY = BASE / "reports" / "SPREAD_RECOVERY.json"
 SPREAD_RECOVERY_MAX_AGE_H = 6.0
 
 
-def spread_gate_lines() -> dict[str, Any]:
-    """The spread-recovery ENTRY GATE's lines (`spread_gate`, a declared cell modifier), read from
-    `reports/SPREAD_RECOVERY.json`. The gate moves an entry EARLIER or LATER than the fixed one-bar
-    wait and never drops one, so each line prices both directions: net log return entered at the
-    gated bar minus at the fixed wait, same exit, each charged its own entry spread. Absent or
-    stale is UNMEASURED with its age, never a clean zero."""
+def spread_recovery_wait_lines() -> dict[str, Any]:
+    """The spread-recovery ENTRY WAIT's lines (`spread_recovery_wait`, a declared cell modifier),
+    read from `reports/SPREAD_RECOVERY.json`. The wait moves an entry EARLIER or LATER than the
+    fixed one-bar wait and never drops one, so each line prices both directions: net log return
+    entered at the gated bar minus at the fixed wait, same exit, each charged the full spread at
+    its own entry bar. A line that does not say `cost_priced: true` is not a price -- it is
+    carried but the verdict is UNMEASURED. Absent or stale is UNMEASURED with its age, never a
+    clean zero."""
     doc = _json(SPREAD_RECOVERY)
     if not doc:
         return {"verdict": UNMEASURED, "lines": [],
@@ -671,12 +673,19 @@ def spread_gate_lines() -> dict[str, Any]:
     lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
     if not lines:
         return {"verdict": UNMEASURED, "lines": [], "why": "the report carries no lines"}
+    unpriced = [str(x.get("gate")) for x in lines if x.get("cost_priced") is not True]
+    if unpriced:
+        return {"verdict": UNMEASURED, "lines": lines, "cost_priced": False,
+                "age_h": round(age_h, 2),
+                "why": f"{len(unpriced)} line(s) do not state that the spread cost was priced: "
+                       + ", ".join(unpriced[:4])}
     priced = [float(x["value"]) for x in lines if isinstance(x.get("value"), (int, float))]
     verdict = (COSTS if any(x.get("verdict") == COSTS for x in lines)
                else UNMEASURED if any(x.get("verdict") == UNMEASURED for x in lines)
                else EARNS if any(x.get("verdict") == EARNS for x in lines) else NOT_BINDING)
     return {"verdict": verdict, "source": "reports/SPREAD_RECOVERY.json",
-            "age_h": round(age_h, 2), "lines": lines,
+            "age_h": round(age_h, 2), "lines": lines, "cost_priced": True,
+            "cost_model": lines[0].get("cost_model"),
             "value_logw_per_day": round(sum(priced), 12),
             "by_direction": {"advanced": sum(int(x.get("n_advanced") or 0) for x in lines),
                              "delayed": sum(int(x.get("n_delayed") or 0) for x in lines)}}
@@ -800,7 +809,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
-                                    "spread_recovery_entry_gate": spread_gate_lines()},
+                                    "spread_recovery_wait": spread_recovery_wait_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

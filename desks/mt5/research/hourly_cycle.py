@@ -1951,8 +1951,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Stops itself at --budget-s 480 (half measuring, half seeding) and resumes from its state
     # file; the cap sits above it.
     "spread_recovery": 600,
-    # Hourly read of two artifact ages; when either is 7 days old it refits inside --budget-s
-    # 900 (miner pass at half, contract in the rest, both deadline-bounded). Cap above it.
+    # Hourly stat of the contract on its one clock (CONTRACT_EVERY_S); when due it runs one
+    # deadline-bounded pass inside --budget-s 900 with the contract carved out. Cap above it.
     "learned_miners_weekly": 1_080,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
@@ -4040,13 +4040,14 @@ def main() -> None:
     # SPREAD RECOVERY (P8-M2): the half-life of the spread after the week open, the Tokyo open
     # and broker rollover per symbol, on ticks / M15 / H1, and the two cell uses it buys: the
     # spread_recovery_fade family (24 preregistered points per symbol, each charged once) and
-    # the gap fade under the two-sided `spread_gate` entry modifier, whose every move is billed
-    # in the report's missed_growth lines. Writes reports/SPREAD_RECOVERY.json.
+    # the gap fade under the two-sided `spread_recovery_wait` entry modifier, whose every move is
+    # billed in the report's missed_growth lines. Writes reports/SPREAD_RECOVERY.json.
     sprr = _costed("spread_recovery", lambda: _producer(
         "spread_recovery", "research/spread_recovery.py", "--once", "--budget-s", "480"))
     # THE LEARNED MINERS' WEEKLY REFIT: the daily door had not turned since 2026-09-30 (GNN net
-    # Sharpe -1.07, never refit). Hourly it costs two artifact reads; at 7 days it refits the
-    # miners and the OOS contract and charges one trial per model in the set.
+    # Sharpe -1.07, never refit). It drives LIVE's ONE contract clock (CONTRACT_EVERY_S): hourly
+    # it costs one stat; when the contract is due (or PARTIAL) it runs one pass with the contract
+    # forced on, and a complete contract charges one trial per model in the full set.
     lmw = _costed("learned_miners_weekly", lambda: _producer(
         "learned_miners_weekly", "research/learned_miners.py", "--weekly", "--budget-s", "900"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the

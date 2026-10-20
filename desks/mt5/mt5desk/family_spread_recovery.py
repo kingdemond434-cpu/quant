@@ -18,7 +18,7 @@ bound, never as a fitted number. The organ prefers ticks, then M15, then H1.
 
 TWO USES, BOTH CAUSAL:
 
-  gate_waits   the ENTRY GATE behind the declared cell modifier `spread_gate`
+  gate_waits   the ENTRY WAIT behind the declared cell modifier `spread_recovery_wait`
                (`mt5desk.cell_modifiers`). It replaces the cell's fixed one-bar wait with a
                MEASURED one: `k:<mult>` enters at the first bar whose spread is back within
                <mult> x the pre-signal baseline; `hl:<h>` waits <h> half-lives, the half-life
@@ -169,6 +169,14 @@ def fit_half_life(profile: Sequence[float], bar_hours: float) -> dict[str, Any]:
         return {"state": "NO_DECAY", "half_life_h": None, "excess_t0": round(a0, 4),
                 "fit_bars": len(run), "why": "the excess does not fall across the fitted run"}
     hl_bars = math.log(2.0) / -float(slope)
+    if hl_bars < 1.0:
+        # A decay faster than one bar is a number the bars cannot resolve: the fit is reading the
+        # first step, not the curve. Reported with the bar length as its upper bound.
+        return {"state": "BELOW_RESOLUTION", "half_life_h": None,
+                "half_life_upper_bound_h": round(bar_hours, 4), "excess_t0": round(a0, 4),
+                "fit_bars": len(run),
+                "why": (f"the fitted half-life is {hl_bars:.3f} bars, under one bar: this bar "
+                        "size cannot resolve it")}
     return {"state": "FITTED" if len(run) >= 3 else "TWO_POINT",
             "half_life_h": round(hl_bars * bar_hours, 4),
             "half_life_bars": round(hl_bars, 4), "excess_t0": round(a0, 4),
@@ -284,7 +292,12 @@ def gate_waits(df: pd.DataFrame, positions: Sequence[int], gate: tuple[str, floa
 def apply_gate(sigs: list[Any], df: pd.DataFrame, value: Any, *,
                max_wait: int = DEFAULT_MAX_WAIT) -> list[Any]:
     """Move each signal to its gated bar. A signal whose gated bar is past the end is dropped
-    exactly as `entry_timing=delayed` drops a last-bar signal -- there is no bar to fill on."""
+    exactly as `entry_timing=delayed` drops a last-bar signal -- there is no bar to fill on.
+
+    FORWARD/BACKTEST PARITY. Dropping it is not losing it: the wait is causal (bar q's spread is
+    read at q), so the forward pass re-run on the bar the wait lands on emits the SAME signal on
+    that bar as its newest -- the backtest's signal at idx[p + w] and the forward pass's newest
+    signal at idx[p + w] are one signal (tests/research/test_spread_recovery.py pins it)."""
     gate = parse_gate(value)
     if gate is None or "spread" not in df.columns or not sigs:
         return list(sigs or [])
@@ -354,7 +367,9 @@ def family_spread_recovery_fade(
         j = None
         for k in range(1, max_wait + 1):
             q = p + k
-            if q >= n - 1:
+            # The recovery bar may be the NEWEST bar: its spread is known at its close, so the
+            # forward pass fires on it exactly as the backtest does (no one-bar look-ahead guard).
+            if q >= n:
                 break
             if np.isfinite(sp[q]) and sp[q] <= k_mult * b:
                 j = q

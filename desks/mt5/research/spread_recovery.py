@@ -22,19 +22,28 @@ WHAT A PASS DOES
   2. SEED two cell sets on the symbol's H1 bars, fixed before any result (PREREGISTERED below):
        spread_recovery_fade   FADE_GRID: 3 events x 2 recovery multiples x 2 displacement floors
                               x 2 holds = 24 points per symbol
-       overnight_gap_decay    with the declared cell modifier `spread_gate` in GATE_VALUES: the
-                              gap fade entered on the spread's recovery instead of a fixed bar
+       overnight_gap_decay    with the declared cell modifier `spread_recovery_wait` in
+                              GATE_VALUES: the gap fade entered on the spread's recovery instead
+                              of a fixed bar
      Firing is counted from signals only (`cross_sectional_breadth.firing`); a cell whose
      trade-day lower bound clears SEED_FLOOR is donated ONCE through `proposer_common.donate`.
-  3. CHARGE every grid point ONCE: the first donation from a symbol's grid carries `tests_run`
-     for every point of that grid not yet charged (the ones that did not fire enough included),
-     recorded in the state file so no point is ever charged twice and none is skipped.
+  3. CHARGE THE WHOLE PREREGISTERED PLAN ONCE, AT ITS FIRST DONATION, keyed by lineage
+     (`PLAN_LINEAGE`, a hash of the grids). That first donation's `tests_run` is every point of
+     the plan over every hypothesis-lane symbol -- points that did not fire enough, were never
+     measured or were cut by the budget included -- so no point waits on a later donation that
+     may never come. A symbol that joins the lane later is charged at the next donation. The
+     donation is two-phase (`proposer_common.donate_once`): the intent is written to the state
+     before the door is called and the door's file is named by its id, so a crash between the
+     door and the state write is settled from the file on the next pass and never charges or
+     donates twice. One pass at a time (`proposer_common.run_lock`).
   4. BILL THE GATE. The gate moves entries both ways, so each move is priced: for every gap-fade
      signal, the net log return entered at the gated bar minus entered at the fixed one-bar wait,
-     to the same exit, each charged the spread paid at its own entry bar. Summed per gate value
-     into `missed_growth` lines (n, advanced, delayed, mean, t, log-wealth per day at unit
-     notional, verdict) that `research/missed_growth.published_gate_lines` carries into
-     MISSED_GROWTH.json. The gate never drops a signal, so there is no veto to price.
+     to the same exit, each charged the full spread paid at its own entry bar (points x
+     tick_size / price). A symbol with no tick_size cannot have its spread priced, so it is left
+     out of the line and named, never counted at zero cost. Summed per gate value into
+     `missed_growth` lines (n, advanced, delayed, mean, t, log-wealth per day at unit notional,
+     verdict, `cost_priced`) that `research/missed_growth.spread_recovery_wait_lines` carries
+     into MISSED_GROWTH.json. The gate never drops a signal, so there is no veto to price.
   5. Write `reports/SPREAD_RECOVERY.json`.
 
 UNMEASURED IS AN ANSWER (L1.28a): no spread column, no bars, or no occurrence with a baseline is
@@ -43,6 +52,7 @@ UNMEASURED with its reason, never a half-life of zero.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 import json
 import math
@@ -81,6 +91,15 @@ FADE_GRID: dict[str, list[Any]] = {"event": list(fsr.EVENTS), "k_mult": [1.25, 1
 GATE_VALUES: tuple[str, ...] = ("k:1.25", "k:1.5", "hl:1", "hl:2")
 GATE_FAMILY = "overnight_gap_decay"
 FADE_FAMILY = "spread_recovery_fade"
+#: The declared cell modifier the gate cells carry (`mt5desk.cell_modifiers.SPREAD_WAIT_KEY`).
+GATE_KEY = "spread_recovery_wait"
+#: The preregistered plan's lineage: the charge for it is made once, keyed by this id.
+PLAN_LINEAGE = "srplan-" + hashlib.sha256(json.dumps(
+    {"fade": FADE_GRID, "gate": list(GATE_VALUES), "families": [FADE_FAMILY, GATE_FAMILY],
+     "gate_key": GATE_KEY, "preregistered": "2026-10-14"}, sort_keys=True).encode()
+).hexdigest()[:10]
+COST_MODEL = ("each entry charged the full spread at its own entry bar: spread points x "
+              "tick_size / entry open; the common exit's cost cancels in the difference")
 #: The fixed wait the gate replaces: the desk's `entry_timing=delayed` convention, one bar.
 FIXED_WAIT = 1
 MIN_N = 10
@@ -194,7 +213,12 @@ def gate_deltas(d: pd.DataFrame, gate: str, tick_size: float | None) -> dict[str
     """Per gap-fade signal: net log return gated minus fixed-wait, same exit, own entry spread."""
     from mt5desk.families_orthogonal import family_overnight_gap_decay
     if "spread" not in d.columns:
-        return {"n": 0, "why": "no spread column"}
+        return {"n": 0, "why": "no spread column", "cost_priced": False}
+    if not tick_size or float(tick_size) <= 0:
+        # Without the point size the spread paid cannot be priced; a delta at zero cost would
+        # bill the gate for a move whose whole point is the cost it avoids.
+        return {"n": 0, "why": "no tick_size: the spread cost cannot be priced",
+                "cost_priced": False}
     sigs = family_overnight_gap_decay(d)
     if not sigs:
         return {"n": 0, "why": "the gap fade fired nothing on these bars"}
@@ -205,7 +229,7 @@ def gate_deltas(d: pd.DataFrame, gate: str, tick_size: float | None) -> dict[str
     o = d["open"].to_numpy(float)
     c = d["close"].to_numpy(float)
     sp = pd.to_numeric(d["spread"], errors="coerce").to_numpy(float)
-    ts = float(tick_size or 0.0)
+    ts = float(tick_size)
     sides = {pos[s.time]: int(s.side) for s in sigs if s.time in pos}
     deltas: list[float] = []
     moves = Counter()
@@ -218,9 +242,9 @@ def gate_deltas(d: pd.DataFrame, gate: str, tick_size: float | None) -> dict[str
         if x >= n or eg >= n or ef >= n:
             continue
         side = sides[p]
-        net = [side * math.log(c[x] / o[e])
-               - ((sp[e] * ts / o[e]) if ts > 0 and np.isfinite(sp[e]) and o[e] > 0 else 0.0)
-               for e in (eg, ef)]
+        if not all(np.isfinite(sp[e]) and o[e] > 0 for e in (eg, ef)):
+            continue          # an entry whose spread is unknown cannot be priced: not counted
+        net = [side * math.log(c[x] / o[e]) - sp[e] * ts / o[e] for e in (eg, ef)]
         dlt = net[0] - net[1]
         if not np.isfinite(dlt):
             continue
@@ -228,7 +252,7 @@ def gate_deltas(d: pd.DataFrame, gate: str, tick_size: float | None) -> dict[str
         moves["advanced" if w < FIXED_WAIT else "delayed" if w > FIXED_WAIT else "same"] += 1
     days = max(1.0, (idx[-1] - idx[0]).total_seconds() / 86400.0)
     return {"n": len(deltas), "deltas": deltas, "moves": dict(moves), "days": days,
-            "cost_priced": ts > 0}
+            "cost_priced": True}
 
 
 def gate_lines(per_symbol: dict[str, dict[str, dict[str, Any]]]) -> list[dict[str, Any]]:
@@ -238,15 +262,21 @@ def gate_lines(per_symbol: dict[str, dict[str, dict[str, Any]]]) -> list[dict[st
         ds: list[float] = []
         moves: Counter = Counter()
         rate = 0.0
-        for g in per_symbol.values():
+        unpriced: list[str] = []
+        for sym, g in sorted(per_symbol.items()):
             r = g.get(gate) or {}
+            if not r.get("cost_priced"):
+                unpriced.append(sym)
+                continue
             ds.extend(r.get("deltas") or [])
             moves.update(r.get("moves") or {})
             if r.get("n"):
                 rate += float(r["n"]) / float(r["days"])
         arr = np.asarray(ds, dtype=float)
-        line: dict[str, Any] = {"gate": f"spread_gate={gate}", "family": GATE_FAMILY,
+        line: dict[str, Any] = {"gate": f"{GATE_KEY}={gate}", "family": GATE_FAMILY,
                                 "direction": "two_sided", "n": int(arr.size),
+                                "cost_priced": True, "cost_model": COST_MODEL,
+                                "symbols_unpriced": unpriced,
                                 "n_advanced": moves.get("advanced", 0),
                                 "n_delayed": moves.get("delayed", 0),
                                 "n_same": moves.get("same", 0),
@@ -276,7 +306,7 @@ def plan(syms: list[str]) -> list[dict[str, Any]]:
             cells.append({"family": FADE_FAMILY, "symbol": sym, "params": dict(p)})
         for g in GATE_VALUES:
             cells.append({"family": GATE_FAMILY, "symbol": sym,
-                          "params": {"spread_gate": g}})
+                          "params": {GATE_KEY: g}})
     return cells
 
 
@@ -292,8 +322,26 @@ def _signals(fam: str, d: pd.DataFrame, params: dict[str, Any]) -> list[Any]:
 
 
 def seed(syms: list[str], bars: dict[str, pd.DataFrame | None], *, budget_s: float,
-         dry_run: bool, state_path: Path = STATE, started: float | None = None
-         ) -> dict[str, Any]:
+         dry_run: bool, state_path: Path = STATE, started: float | None = None,
+         plan_syms: list[str] | None = None) -> dict[str, Any]:
+    """One seeding pass under the organ's run lock (a dry run reads only and takes none)."""
+    if dry_run:
+        return _seed(syms, bars, budget_s=budget_s, dry_run=True, state_path=state_path,
+                     started=started, plan_syms=plan_syms)
+    from research import proposer_common as pc
+    with pc.run_lock(state_path) as held:
+        if not held:
+            return {"stopped_because": "LOCKED: another spread_recovery pass holds the state",
+                    "cells_planned": len(plan(plan_syms or syms)), "by_family": {},
+                    "donation": {"status": "LOCKED"}, "errors": {}}
+        return _seed(syms, bars, budget_s=budget_s, dry_run=False, state_path=state_path,
+                     started=started, plan_syms=plan_syms)
+
+
+def _seed(syms: list[str], bars: dict[str, pd.DataFrame | None], *, budget_s: float,
+          dry_run: bool, state_path: Path, started: float | None,
+          plan_syms: list[str] | None) -> dict[str, Any]:
+    from research import proposer_common as pc
     from research.cross_sectional_breadth import firing, identity
     started = started if started is not None else time.monotonic()
     today = datetime.now(tz=UTC).date().isoformat()
@@ -301,6 +349,24 @@ def seed(syms: list[str], bars: dict[str, pd.DataFrame | None], *, budget_s: flo
     state: dict[str, Any] = st if isinstance(st, dict) and isinstance(st.get("cells"), dict) \
         else {"cells": {}}
     cs: dict[str, Any] = state["cells"]
+    charged_map: dict[str, Any] = state.setdefault("plan_charged", {})
+    # A pre-lineage state recorded the charge per cell: carried over, never charged again.
+    for k, v in cs.items():
+        if isinstance(v, dict) and v.get("charged_at") and k not in charged_map:
+            charged_map[k] = v["charged_at"]
+
+    def settle(intent: dict[str, Any], at: str) -> None:
+        for k in intent.get("cells") or []:
+            if isinstance(cs.get(k), dict):
+                cs[k]["donated_at"] = at
+        for k in intent.get("charged") or []:
+            charged_map.setdefault(k, at)
+
+    recovered = ({"landed": 0, "dropped": 0} if dry_run
+                 else pc.reconcile_donations(state, SOURCE, settle))
+    # THE WHOLE PREREGISTERED PLAN, over every hypothesis-lane symbol: what gets charged.
+    full_plan = plan(sorted(set(plan_syms or syms) | set(syms)))
+    plan_ids = [identity(c["symbol"], c["family"], c["params"]) for c in full_plan]
     cells = plan(syms)
     by_family: dict[str, Counter] = {}
     cands: list[dict[str, Any]] = []
@@ -340,12 +406,11 @@ def seed(syms: list[str], bars: dict[str, pd.DataFrame | None], *, budget_s: flo
             status = ACCRUING
         prior["status"] = status
         cnt[status.lower()] += 1
-    # THE CHARGE: every planned point not yet charged, once, carried by the next donation.
-    uncharged = [k for k, v in cs.items() if isinstance(v, dict) and not v.get("charged_at")
-                 and v.get("status") != UNMEASURED]
-    donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW"}
+    # THE CHARGE: every point of the plan not yet charged, all of it on this donation.
+    uncharged = [k for k in dict.fromkeys(plan_ids) if k not in charged_map]
+    donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW",
+                                "recovered": recovered}
     if cands and not dry_run:
-        from research import proposer_common as pc
         rows = []
         for c in cands:
             p = cs[c["ident"]]
@@ -354,34 +419,35 @@ def seed(syms: list[str], bars: dict[str, pd.DataFrame | None], *, budget_s: flo
                                f"{c['symbol']} {c['family']} {json.dumps(c['params'])}"[:120],
                                {"firing": {k: p.get(k) for k in ("signal_days",
                                                                  "trade_days_lb")},
-                                "seed_floor": SEED_FLOOR,
+                                "seed_floor": SEED_FLOOR, "plan_lineage": PLAN_LINEAGE,
                                 "preregistered_grid": (FADE_GRID if c["family"] == FADE_FAMILY
                                                        else list(GATE_VALUES))})
             row["evidence"]["screen"] = ("input-only firing count (signals, never returns): no "
-                                         "outcome screen; every grid point charged once")
+                                         "outcome screen; the whole preregistered plan charged "
+                                         "once, at its first donation")
             row["declared_width"] = 1
             rows.append(row)
-        path = pc.donate(SOURCE, rows, len(uncharged))
+        path = pc.donate_once(
+            state, lambda: _write_atomic(state_path, json.dumps(state, sort_keys=True,
+                                                                default=str)),
+            SOURCE, rows, len(uncharged), lineage=PLAN_LINEAGE,
+            cells=[c["ident"] for c in cands], charged=uncharged, apply=settle)
         counts = pc.donation_counts()
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
                     "path": str(path) if path else None,
                     "donated": counts.get("donated"),
                     "trials_charged": len(uncharged) if path else 0,
+                    "lineage": PLAN_LINEAGE, "recovered": recovered,
                     "refused_wrong_lane": counts.get("refused_wrong_lane")}
-        if path:
-            at = _now()
-            for c in cands:
-                cs[c["ident"]]["donated_at"] = at
-            for k in uncharged:
-                cs[k]["charged_at"] = at
     if not dry_run:
         _write_atomic(state_path, json.dumps(state, sort_keys=True, default=str))
-    charged = sum(1 for v in cs.values() if isinstance(v, dict) and v.get("charged_at"))
-    return {"stopped_because": stopped, "cells_planned": len(cells),
+    charged = sum(1 for k in dict.fromkeys(plan_ids) if k in charged_map)
+    return {"stopped_because": stopped, "cells_planned": len(full_plan),
+            "cells_seeded_this_host": len(cells), "plan_lineage": PLAN_LINEAGE,
             "seed_floor_trade_days": SEED_FLOOR,
             "by_family": {k: dict(v) for k, v in by_family.items()},
             "trials_charged_total": charged,
-            "trials_pending_charge": len(cs) - charged,
+            "trials_pending_charge": len(set(plan_ids)) - charged,
             "donation": donation, "errors": dict(errors)}
 
 
@@ -416,11 +482,12 @@ def run(*, budget_s: float = 480.0, dry_run: bool = False, out: Path = OUT,
             gates[sym] = {g: gate_deltas(h1, g, ts) for g in GATE_VALUES}
     lines = gate_lines(gates)
     seeded = seed([s for s in syms if s in bars], bars, budget_s=budget_s, dry_run=dry_run,
-                  state_path=state_path, started=started)
+                  state_path=state_path, started=started, plan_syms=syms)
     rep = {"generated_at": _now(), "source": SOURCE, "dry_run": dry_run,
            "rule": ("half-life = ln2 / lambda of an exponential fit to the median excess-spread "
                     "profile; a bar size that cannot resolve it is BELOW_RESOLUTION with its "
-                    "upper bound; every preregistered grid point is one trial charged once"),
+                    "upper bound; the whole preregistered plan is charged once, at its "
+                    "first donation, keyed by its lineage"),
            "events": {"sunday_open": "first bar after a > 30 h gap",
                       "rollover": "server midnight on the bars' own clock, week open excluded",
                       "tokyo_open": "00:00 UTC via session_clock.utc_to_server"},

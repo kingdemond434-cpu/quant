@@ -611,7 +611,31 @@ def _n_events(cell: dict[str, Any]) -> int | None:
 
 def seed(*, budget_s: float = 600.0, dry_run: bool = False, universe: Path = UNIVERSE,
          state_path: Path = STATE) -> dict[str, Any]:
-    """Measure every cell's firing and donate the ones that clear SEED_FLOOR, once each."""
+    """Measure every cell's firing and donate the ones that clear SEED_FLOOR, once each.
+
+    One pass at a time (`proposer_common.run_lock` on the state file); the donation is
+    two-phase (`proposer_common.donate_once`), so a crash between the door and the state write
+    is settled from the door's own file on the next pass and never donates or charges twice."""
+    if dry_run:
+        return _seed(budget_s=budget_s, dry_run=True, universe=universe, state_path=state_path)
+    from research import proposer_common as pc
+    with pc.run_lock(state_path) as held:
+        if not held:
+            return {"stopped_because": "LOCKED: another broker_state_cells pass holds the state",
+                    "elapsed_s": 0.0, "seed_floor_trade_days": SEED_FLOOR, "cells_planned": 0,
+                    "by_item": {}, "donated_this_pass": 0, "donation": {"status": "LOCKED"},
+                    "errors": {}, "cells": []}
+        return _seed(budget_s=budget_s, dry_run=False, universe=universe, state_path=state_path)
+
+
+#: The donation lineage of the broker-state grids: each donated cell is one trial, charged by the
+#: donation that carries it, and the donation's id is this lineage plus exactly its cells.
+DONATION_LINEAGE = "bsc-v1"
+
+
+def _seed(*, budget_s: float, dry_run: bool, universe: Path,
+          state_path: Path) -> dict[str, Any]:
+    from research import proposer_common as pc
     from research.cross_sectional_breadth import firing, identity
     started = time.monotonic()
     today = datetime.now(tz=UTC).date().isoformat()
@@ -620,6 +644,14 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False, universe: Path = UNI
     state: dict[str, Any] = st if isinstance(st, dict) and isinstance(st.get("cells"), dict) \
         else {"cells": {}}
     cells_state: dict[str, Any] = state["cells"]
+
+    def settle(intent: dict[str, Any], at: str) -> None:
+        for k in intent.get("cells") or []:
+            if isinstance(cells_state.get(k), dict):
+                cells_state[k]["donated_at"] = at
+
+    recovered = ({"landed": 0, "dropped": 0} if dry_run
+                 else pc.reconcile_donations(state, SOURCE, settle))
     cells = plan(registry, universe)
     bars: dict[str, pd.DataFrame | None] = {}
     by_item: dict[str, Counter] = {}
@@ -677,9 +709,9 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False, universe: Path = UNI
                              "n_events": n_ev, "signal_days": prior.get("signal_days"),
                              "trade_days_lb": prior.get("trade_days_lb")})
     donated = 0
-    donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW"}
+    donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW",
+                                "recovered": recovered}
     if cands and not dry_run:
-        from research import proposer_common as pc
         rows = []
         for c in cands:
             row = pc.candidate(SOURCE, c["symbol"], c["family"], c["params"],
@@ -691,17 +723,20 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False, universe: Path = UNI
                                          "no outcome screen, so no selection to charge")
             row["declared_width"] = 1
             rows.append(row)
-        path = pc.donate(SOURCE, rows, len(rows))
+        idents = [c["ident"] for c in cands]
+        path = pc.donate_once(
+            state, lambda: _write_atomic(state_path, json.dumps(state, sort_keys=True,
+                                                                default=str)),
+            SOURCE, rows, len(rows), lineage=DONATION_LINEAGE, cells=idents, charged=idents,
+            apply=settle)
         counts = pc.donation_counts()
         donated = int(counts.get("donated") or 0)
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
-                    "path": str(path) if path else None,
+                    "path": str(path) if path else None, "recovered": recovered,
                     "refused_wrong_lane": counts.get("refused_wrong_lane"),
                     "refused_unstamped": counts.get("refused_unstamped")}
         if path:
-            at = _now()
             for c in cands:
-                cells_state[c["ident"]]["donated_at"] = at
                 by_item[c["item"]]["donated_this_pass"] += 1
     if not dry_run:
         _write_atomic(state_path, json.dumps(state, sort_keys=True, default=str))

@@ -206,10 +206,35 @@ def _set_aside_entry(key: str) -> tuple[str, dict[str, Any]] | None:
     return None
 
 
-def _superseded(name: str, n: int | None, seats: dict[str, int], median: int) -> dict[str, Any]:
-    """The verdict for a superseded producer, judged on its SUCCESSOR's measured output."""
+def _successor_cells(succ: str, window_days: float) -> int | None:
+    """The successor's MEASURED output: cells inside its own discovery artifacts whose
+    `generated_at` stamp falls in the window. Never a file mtime and never a line count -- a
+    touched file, or one unrelated line in any recent file, is not a successor producing.
+    None (UNMEASURED) when no discovery artifact of the successor carries a readable stamp."""
+    cutoff = datetime.now(UTC) - timedelta(days=window_days)
+    seen_stamp = False
+    cells = 0
+    for root in (DESK / "data" / "intelligence", ROOT / "data" / "intelligence"):
+        for f in glob.glob(str(root / succ / "discoveries_*.json")):
+            try:
+                doc = json.loads(Path(f).read_text("utf-8"))
+                at = datetime.fromisoformat(str(doc.get("generated_at")).replace("Z", "+00:00"))
+            except (OSError, ValueError, TypeError, AttributeError):
+                continue
+            if at.tzinfo is None:
+                at = at.replace(tzinfo=UTC)
+            seen_stamp = True
+            if at >= cutoff:
+                rows = doc.get("discoveries")
+                cells += sum(1 for r in rows if isinstance(r, dict)) if isinstance(rows,
+                                                                                  list) else 0
+    return cells if seen_stamp else None
+
+
+def _superseded(name: str, n: int | None, window_days: float, median: int) -> dict[str, Any]:
+    """The verdict for a superseded producer, judged on its SUCCESSOR's measured cells."""
     succ = SUPERSEDED_BY[name]
-    sn = seats.get(succ)
+    sn = _successor_cells(succ, window_days)
     if sn is None:
         sv = "UNMEASURED"
     elif sn == 0:
@@ -220,11 +245,12 @@ def _superseded(name: str, n: int | None, seats: dict[str, int], median: int) ->
         sv = "PRODUCING"
     if sv in SUCCESSOR_ALIVE:
         return {"verdict": "SUPERSEDED", "superseded_by": succ, "successor_verdict": sv,
-                "successor_rows_in_window": sn,
+                "successor_cells_in_window": sn,
                 "why": (f"{n if n is not None else 'no'} row(s) of its own; its ground is "
-                        f"worked by {succ}, measured {sv} with {sn} row(s) in the window")}
+                        f"worked by {succ}, measured {sv} with {sn} cell(s) stamped in the "
+                        "window")}
     return {"verdict": "DEAD", "superseded_by": succ, "successor_verdict": sv,
-            "successor_rows_in_window": sn, "successor_not_alive": True,
+            "successor_cells_in_window": sn, "successor_not_alive": True,
             "why": f"superseded by {succ}, which is itself {sv} -- the declaration points at "
                    "nothing that produces",
             "replacement": (f"NONE LIVE -- declared successor {succ} is {sv}; revive it or "
@@ -305,7 +331,7 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
         rec: dict[str, Any] = {"producer": name, "rows_in_window": n,
                                "window_days": window_days}
         if name in SUPERSEDED_BY and not n:
-            rec.update(_superseded(name, n, seats, median))
+            rec.update(_superseded(name, n, window_days, median))
         elif n is None:
             rec.update({"verdict": "UNMEASURED",
                         "why": ("no intelligence seat records this producer's output. It may "

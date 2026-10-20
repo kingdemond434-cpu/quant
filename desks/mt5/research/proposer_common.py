@@ -13,10 +13,12 @@ thing that certifies.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import math
-from collections.abc import Sequence
+import sys
+from collections.abc import Callable, Iterator, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -631,3 +633,110 @@ def _record_in_registry(source: str, candidates: list[dict]) -> None:
 def identity(symbol: str, family: str, params: dict) -> str:
     return hashlib.sha256(json.dumps({"symbol": symbol, "family": family, "params": params},
                                      sort_keys=True, default=str).encode()).hexdigest()[:16]
+
+
+# ============================================================== one run at a time, one charge
+@contextlib.contextmanager
+def run_lock(state_path: Path) -> Iterator[bool]:
+    """A non-blocking, cross-process lock on `<state_path>.lock`. Yields whether it is held; a
+    pass that does not hold it must not read-modify-write its state (two concurrent passes would
+    each donate and charge the same cells). The sidecar is left on disk: deleting it races every
+    other holder on Windows."""
+    lock = state_path.with_name(state_path.name + ".lock")
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fh = lock.open("a+b")
+    except OSError:
+        yield False
+        return
+    held = False
+    try:
+        if fh.tell() == 0:
+            fh.write(b"\0")
+            fh.flush()
+        try:
+            if sys.platform == "win32":
+                import msvcrt
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            held = True
+        except (OSError, ImportError):
+            held = False
+        yield held
+    finally:
+        if held:
+            with contextlib.suppress(OSError, ImportError):
+                if sys.platform == "win32":
+                    import msvcrt
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+        with contextlib.suppress(OSError):
+            fh.close()
+
+
+def donation_id(lineage: str, cells: Sequence[str], charged: Sequence[str]) -> str:
+    """The id of one donation: its lineage plus exactly what it donates and what it charges."""
+    blob = json.dumps({"lineage": lineage, "cells": sorted(cells), "charged": sorted(charged)},
+                      sort_keys=True)
+    return f"{lineage}-{hashlib.sha256(blob.encode()).hexdigest()[:12]}"
+
+
+def _landed(source: str, did: str, intel: Path | None = None) -> Path | None:
+    hits = sorted((intel or INTEL / source).glob(f"discoveries_*_{did}.json"))
+    return hits[-1] if hits else None
+
+
+def reconcile_donations(state: dict[str, Any], source: str,
+                        apply: Callable[[dict[str, Any], str], None],
+                        intel: Path | None = None) -> dict[str, int]:
+    """Settle every donation a crashed pass left PENDING in `state["donations"]`.
+
+    A PENDING intent is written to the state BEFORE the door is called, and the door's file is
+    named by the intent's id. So after a crash between the door and the state write, the file is
+    the proof: present -> the donation and its charge landed, `apply(intent, at)` marks them and
+    nothing is donated or charged again; absent -> the door never wrote, the intent is dropped
+    and this pass recomputes it."""
+    out = {"landed": 0, "dropped": 0}
+    dons = state.setdefault("donations", {})
+    for did, intent in list(dons.items()):
+        if not isinstance(intent, dict) or intent.get("status") != "PENDING":
+            continue
+        hit = _landed(source, did, intel)
+        if hit is not None:
+            at = str(intent.get("at") or datetime.now(tz=UTC).isoformat(timespec="seconds"))
+            apply(intent, at)
+            intent.update({"status": "LANDED", "path": str(hit), "recovered": True})
+            out["landed"] += 1
+        else:
+            del dons[did]
+            out["dropped"] += 1
+    return out
+
+
+def donate_once(state: dict[str, Any], write_state: Callable[[], None], source: str,
+                rows: list[dict], tests_run: int, *, lineage: str, cells: Sequence[str],
+                charged: Sequence[str] = (),
+                apply: Callable[[dict[str, Any], str], None]) -> Path | None:
+    """Donate through `donate` with a crash-safe, idempotent charge (see reconcile_donations):
+    record the intent, write the state, call the door with the intent's id as the file suffix,
+    then mark it LANDED and `apply` it. A refused donation leaves no intent behind."""
+    did = donation_id(lineage, cells, charged)
+    at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    intent = {"status": "PENDING", "lineage": lineage, "at": at, "cells": sorted(cells),
+              "charged": sorted(charged), "tests_run": int(tests_run)}
+    dons = state.setdefault("donations", {})
+    dons[did] = intent
+    write_state()
+    path = donate(source, rows, int(tests_run), suffix=did)
+    if path is None:
+        del dons[did]
+        return None
+    apply(intent, at)
+    intent.update({"status": "LANDED", "path": str(path)})
+    return path
