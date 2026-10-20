@@ -274,11 +274,13 @@ def pit_aligned(name: str, primary: Any, root: Any = None) -> pd.DataFrame | Non
     p = _frame(primary)
     if s is None or p is None:
         return None
-    idx = pd.DatetimeIndex(p.index)
+    idx = pd.DatetimeIndex(p.index).as_unit("ns")
+    stamps = pd.DatetimeIndex(s.index).as_unit("ns")
     if idx.tz is None:
-        s.index = s.index.tz_convert(None)
+        stamps = stamps.tz_convert(None)
+    # One resolution on both sides: a parquet stamp reads back in us, a bar index in ns.
     left = pd.DataFrame({"t": idx}).sort_values("t")
-    right = pd.DataFrame({"t": s.index, "v": s.to_numpy()})
+    right = pd.DataFrame({"t": stamps, "v": s.to_numpy()})
     joined = pd.merge_asof(left, right, on="t", direction="backward", tolerance=PIT_MAX_HOLD)
     v = pd.Series(joined["v"].to_numpy(), index=pd.DatetimeIndex(joined["t"])).dropna()
     if v.empty:
