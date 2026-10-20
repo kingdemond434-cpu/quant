@@ -51,7 +51,7 @@ import argparse
 import json
 import os
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -451,6 +451,165 @@ def _exit(status: object) -> int:
     return fence_exit(status, _PASSING, fail=1)
 
 
+# ------------------------------------------------------------------------ the out-of-band page
+#: A RED COVERAGE CHECK PAGES (2026-10-20). Until now a coverage red lived only in records --
+#: `data/law_gate.json` from the MT5-LawGate rotation, this fence's audit, check_fence_yield and
+#: capability_ratchet -- so a stalled judge (2026-10-20: the report stopped at 19:44Z with zero
+#: verdicts in its window) waited for a reader. The box-side run (`--require-state` against the
+#: box's own report) now also pages through the desk's existing sender,
+#: `libs.ops.alert_channels.send_all`, deduplicated the way `state_publication.page_flow` is:
+#: one page when an incident OPENS, a reminder every REPAGE_H hours while it stands, one RESOLVED
+#: notice when it clears. It is a side effect only: `judge()` is untouched, and the verdict, the
+#: printed lines, the audit and the exit code are byte-identical. A pager failure is recorded in
+#: the state file (and one stderr line) and never reaches any of them. The portable run (source
+#: view, any run without --require-state, or one pointed at another --report) never pages.
+#:
+#: The incidents, each its own persisted key:
+#:   red           the verdict is FAIL (green, UNMEASURED or no prior state -> red pages)
+#:   stale         the report is older than STALE_H while the box runs this fence
+#:   zero_judged   a fresh report whose trailing window recorded no verdict in any family
+#: Box-local state (desks/mt5/logs/ is gitignored), never published.
+PAGE_STATE_REL = "desks/mt5/logs/judge_coverage_page.json"
+#: The desk's reminder convention (state_publication.REPAGE_H, run_alerts._DEDUPE_S).
+REPAGE_H = 6.0
+INCIDENTS = ("red", "stale", "zero_judged")
+
+PageSender = Callable[[str, str], Any]
+
+
+def _default_page_sender(root: Path) -> PageSender:
+    def send(title: str, body: str) -> Any:
+        if str(root) not in sys.path:
+            sys.path.insert(0, str(root))
+        from libs.ops import alert_channels
+        # Anchored on the repo root so the leg's working directory cannot make an armed box look
+        # unarmed. Nothing here reads, prints or records a channel's credentials.
+        return alert_channels.send_all(
+            title, body, config=root / "data/secrets/alert_channels.json",
+            ledger=root / "data/alert_delivery.jsonl")
+    return send
+
+
+def incidents(doc: Mapping[str, Any], report_doc: Any) -> dict[str, str]:
+    """The open incidents in one fence reading, each with a one-line reason."""
+    out: dict[str, str] = {}
+    if doc.get("verdict") == "FAIL":
+        out["red"] = str(doc.get("why") or "judge coverage FAIL")
+    fresh = next((c for c in doc.get("checks") or () if c.get("metric") == "freshness"
+                  and c.get("state") == "FAIL"), None)
+    fams = report_doc.get("families") if isinstance(report_doc, dict) else None
+    if fresh is not None:
+        out["stale"] = str(fresh.get("why"))
+    elif isinstance(fams, dict) and fams:
+        rows = [r for r in fams.values() if isinstance(r, dict)]
+        with suppress(TypeError, ValueError):
+            if rows and sum(int(r.get("judged_window") or 0) for r in rows) == 0:
+                out["zero_judged"] = (f"the judge recorded no verdict in any of {len(rows)} "
+                                      f"families over the report's window (report at "
+                                      f"{report_doc.get('at')})")
+    return out
+
+
+def page_coverage(doc: Mapping[str, Any], report_doc: Any, *, root: Path | None = None,
+                  now: datetime | None = None, sender: PageSender | None = None,
+                  repage_h: float = REPAGE_H) -> dict[str, Any]:
+    """Page opened incidents, reminders and resolutions, deduplicated. Never raises."""
+    try:
+        return _page_coverage(doc, report_doc, root=root or ROOT,
+                              now=now or datetime.now(tz=UTC), sender=sender, repage_h=repage_h)
+    except Exception as exc:  # the pager must never touch the verdict
+        return {"sent": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def _page_coverage(doc: Mapping[str, Any], report_doc: Any, *, root: Path, now: datetime,
+                   sender: PageSender | None, repage_h: float) -> dict[str, Any]:
+    if doc.get("verdict") not in ("PASS", "FAIL"):
+        # UNMEASURED neither pages nor clears: absence is not recovery.
+        return {"sent": False, "reason": f"{doc.get('verdict')}: nothing to page"}
+    path = root / PAGE_STATE_REL
+    prev = _read(path)
+    prev = prev if isinstance(prev, dict) else {}
+    raw_open = prev.get("open")
+    open_prev: dict[str, dict[str, Any]] = {
+        k: v for k, v in (raw_open.items() if isinstance(raw_open, dict) else ())
+        if k in INCIDENTS and isinstance(v, dict)}
+    now_open = incidents(doc, report_doc)
+    stamp = now.isoformat(timespec="seconds")
+    opened = [k for k in INCIDENTS if k in now_open and k not in open_prev]
+    resolved = [k for k in INCIDENTS if k in open_prev and k not in now_open]
+    due: list[str] = []
+    for k in INCIDENTS:
+        if k not in now_open or k not in open_prev:
+            continue
+        last = None
+        with suppress(TypeError, ValueError):
+            last = datetime.fromisoformat(str(open_prev[k].get("paged_at")))
+        # An unreadable or future stamp (a failed send, a clock step) never silences a reminder.
+        if last is None or last > now or (now - last).total_seconds() / 3600 >= repage_h:
+            due.append(k)
+    state_open: dict[str, dict[str, Any]] = {}
+    for k in now_open:
+        row = dict(open_prev.get(k) or {})
+        row.setdefault("opened_at", stamp)
+        row["incident"] = f"judge_coverage:{k}@{row['opened_at']}"
+        row["why"] = now_open[k][:300]
+        state_open[k] = row
+    out: dict[str, Any] = {"sent": False, "open": sorted(now_open), "opened": opened,
+                           "reminded": due, "resolved": resolved}
+    to_page = opened + due
+    if to_page or resolved:
+        if to_page:
+            title = ("JUDGE COVERAGE " + ("RED" if "red" in now_open else "ALERT") + ": "
+                     + ", ".join(sorted(now_open)))
+        else:
+            title = "JUDGE COVERAGE RESOLVED: " + ", ".join(resolved)
+        lines = [f"{'OPEN' if k in opened else 'STILL'} {k}: {now_open[k]}" for k in to_page]
+        lines += [f"RESOLVED {k} (opened {open_prev[k].get('opened_at')})" for k in resolved]
+        lines.append(f"verdict {doc.get('verdict')} -- {doc.get('why')}")
+        lines.append(f"measured {doc.get('at')} by check_judge_coverage.py --require-state "
+                     f"({Path(str(doc.get('report'))).name})")
+        err: object = None
+        try:
+            res = (sender or _default_page_sender(root))(title, "\n".join(lines)[:3500])
+            res = res if isinstance(res, dict) else {}
+            err = res.get("error")
+        except Exception as exc:
+            res, err = {}, f"{type(exc).__name__}: {exc}"
+        armed, delivered = res.get("armed"), res.get("delivered")
+        # An armed pager that delivered nothing, or a sender that raised, leaves the incident
+        # UNPAGED so the next box run retries. NOT ARMED is a recorded state (send_all ledgers
+        # it in data/alert_delivery.jsonl), so it counts as sent, exactly as page_flow does.
+        failed = bool(err) or (bool(armed) and not delivered)
+        out.update({"sent": not failed, "title": title, "armed": armed, "delivered": delivered})
+        if err:
+            out["error"] = str(err)[:200]
+        for k in to_page:
+            if failed:
+                state_open[k]["last_error"] = out.get("error") or "no armed channel delivered"
+                state_open[k]["last_error_at"] = stamp
+            else:
+                state_open[k]["paged_at"] = stamp
+                state_open[k].pop("last_error", None)
+                state_open[k].pop("last_error_at", None)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"at": stamp, "verdict": doc.get("verdict"),
+                                    "open": state_open,
+                                    "last": {k: out.get(k) for k in (
+                                        "sent", "title", "armed", "delivered", "error",
+                                        "opened", "reminded", "resolved")}},
+                                   indent=1, default=str), "utf-8")
+    except OSError as exc:
+        out["state_write_error"] = f"{type(exc).__name__}: {exc}"[:200]
+    return out
+
+
+def _box_pages(args: argparse.Namespace) -> bool:
+    """Only the box-side state run against the box's own report pages."""
+    return (bool(args.require_state) and args.report is None
+            and not _source_view(bool(args.require_state)))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__ or "")
     ap.add_argument("--require-state", action="store_true",
@@ -470,11 +629,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.audit and not _source_view(bool(args.require_state)):
         with suppress(OSError):
             _write(Path(args.audit), doc)
+    if _box_pages(args):
+        page = page_coverage(doc, _read(REPORT))
+        if page.get("error") or page.get("state_write_error"):
+            print(f"judge coverage pager: {page.get('error') or page.get('state_write_error')}",
+                  file=sys.stderr)
     return _exit(doc["verdict"])
 
 
-__all__ = ["BOX_STATE_ELSEWHERE", "RATCHET", "REPORT", "RULE", "SOURCE_VIEW_ENV", "STALE_H",
-           "WINDOW_SLACK", "judge", "main", "render"]
+__all__ = ["BOX_STATE_ELSEWHERE", "INCIDENTS", "PAGE_STATE_REL", "RATCHET", "REPAGE_H", "REPORT",
+           "RULE", "SOURCE_VIEW_ENV", "STALE_H", "WINDOW_SLACK", "incidents", "judge", "main",
+           "page_coverage", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
