@@ -22,8 +22,11 @@ EVIDENCE, AND WHAT MAKES A ROW UNMEASURED.
   * Cost per sleeve = max(|clean markout slip R|, SLIP_FLOOR_PTS in R) (`reports/markout.json`
     slip.by_symbol, #391) plus half the spread surface's median spread, both put in R through
     tick_size / the sleeve's own stop distance (median |exit - entry| / |R| of forward rows).
-  * Scalp ledgers (`opened_at`/`closed_at`) are on the broker clock and are shifted to UTC by
-    the clock's stamped `broker_offset_h`; with none stamped the sleeve is UNMEASURED.
+  * Scalp ledgers (`opened_at`/`closed_at`) are shifted by the clock's stamped
+    `broker_offset_h`, else by `h1_source.broker_utc_offset_hours` (0.0 today: the desk treats
+    them as UTC). SCALP SLEEVES ARE ALWAYS UNMEASURED: their rows carry no entry/exit prices,
+    so no stop -- and no R-per-point -- can be inferred. A book holding any scalp sleeve can
+    therefore only ever read PARTIAL.
   * Either cost source older than MAX_COST_AGE_H (72h,
     as run_desk_integrity), or any input non-positive / non-finite -> UNMEASURED. Never zero.
 
@@ -63,7 +66,6 @@ OUT = DESK / "reports" / "REBALANCE_INTERVAL.json"
 MEASURED, UNMEASURED, PARTIAL = "MEASURED", "UNMEASURED", "PARTIAL"
 #: ASSUMPTION: wealth at risk per 1R of a sleeve at its full target weight.
 RISK_UNIT = 0.01
-MIN_HOURS = 24 * 5
 #: A sleeve needs rows on at least this share of the window's days.
 MIN_DAY_COVERAGE = 0.5
 #: Cost inputs older than this are stale (run_desk_integrity's cost_surface horizon).
@@ -73,6 +75,11 @@ WIN_PROB = 0.80
 N_BOOT = 200
 #: Block length: at least a week and at least the longest fixed candidate period.
 BLOCK_H = 168
+#: Below three blocks the circular block bootstrap is a rotation of the whole series and its
+#: p measures phase, not sampling noise (audit v3: 5-7 day noise windows gave p = 1.00).
+MIN_HOURS = 3 * BLOCK_H
+#: Rows a sleeve needs before its inferred stop (median |exit-entry|/|R|) is used.
+MIN_STOP_ROWS = 5
 #: Seeds the bootstrap is run under; the verdict uses the MEAN p and the spread is reported.
 SEEDS = (7, 11, 13, 17, 19)
 #: Clock skew tolerated on a cost stamp before a future stamp is refused.
@@ -172,6 +179,20 @@ def broker_offset(name: str, states: list[Any]) -> float | None:
     return None
 
 
+def _desk_offset() -> float:
+    """The desk's own broker-vs-UTC offset (h1_source; 0.0 when it cannot be measured)."""
+    try:
+        from research.h1_source import broker_utc_offset_hours
+        try:
+            import MetaTrader5 as mt5_mod
+        except Exception:
+            mt5_mod = None
+        v = _num(broker_utc_offset_hours(mt5_mod))
+        return v if v is not None else 0.0
+    except Exception:
+        return 0.0
+
+
 def forward_trades(rows: Any, start: datetime, offset_h: float | None = 0.0
                    ) -> tuple[list[tuple[datetime, float]], int, list[float], bool]:
     """(exit-time-booked (when_utc, R) for trades ENTERED at or after `start`, n dropped for no
@@ -183,7 +204,7 @@ def forward_trades(rows: Any, start: datetime, offset_h: float | None = 0.0
     scalp = any(isinstance(r, dict) and r.get("opened_at") and not r.get("entry_time")
                 for r in lst)
     if scalp and offset_h is None:
-        return [], 0, [], True
+        offset_h = _desk_offset()
     shift = timedelta(hours=(offset_h or 0.0) if scalp else 0.0)
     for row in lst:
         if not isinstance(row, dict):
@@ -251,8 +272,8 @@ def symbol_cost(symbol: str, markout: Any, surface: Any,
     if tick is None:
         missing.append("no finite positive tick_size on the spread surface")
     if stop is None:
-        missing.append("no stop distance: forward rows carry no entry/exit with |R| >= "
-                       f"{MIN_R_FOR_STOP}")
+        missing.append(f"no inferred stop: fewer than {MIN_STOP_ROWS} forward rows carry "
+                       f"entry/exit prices with |R| >= {MIN_R_FOR_STOP} (scalp ledgers never do)")
     if missing:
         return {"status": UNMEASURED, "why": "; ".join(missing)}
     assert slip_r is not None and spread_pts is not None and tick is not None and stop
@@ -333,6 +354,11 @@ def evaluate(trades: dict[str, list[tuple[datetime, float]]], target: dict[str, 
     target = {k: v / tot for k, v in target.items()}
     grid = hourly_returns(trades, start, end)
     days = len(grid) / 24.0
+    if len(grid) < MIN_HOURS:
+        return {"status": UNMEASURED, "hours": len(grid), "chosen": None, "verdict": None,
+                "p_beats_hold": None, "candidates": [],
+                "why": f"{len(grid)}h window < {MIN_HOURS}h (3 x {BLOCK_H}h blocks): the "
+                       "block bootstrap would measure phase, not noise"}
     base = simulate(grid, target, cost_r, None, None)
     rows = []
     for name, period, drift in CANDIDATES:
@@ -368,7 +394,7 @@ def evaluate(trades: dict[str, list[tuple[datetime, float]]], target: dict[str, 
             "p_spread": (max(p_seeds) - min(p_seeds)) if p_seeds else None,
             "chosen": chosen, "verdict": chosen or "no_clear_winner",
             "chosen_net_gain_elogw_per_day": point[chosen] if chosen else None,
-            "beats_hold": bool(chosen and chosen != HOLD), "why": why}
+            "beats_hold": bool(chosen and chosen != HOLD), "why": why, "status": MEASURED}
 
 
 # ------------------------------------------------------------------------------------- build
@@ -403,7 +429,7 @@ def build(now: datetime | None = None, shadow_dir: Path = SHADOW_DIR, sleeves_pa
         if fs is not None and (shadow_dir / lname).exists():
             tr, no_exit, stops, needs_off = forward_trades(
                 _read(shadow_dir / lname), fs, broker_offset(name, states))
-        stop = sorted(stops)[len(stops) // 2] if stops else None
+        stop = sorted(stops)[len(stops) // 2] if len(stops) >= MIN_STOP_ROWS else None
         cost = (symbol_cost(sym, markout, surface, stop) if fresh["status"] == MEASURED
                 else {"status": UNMEASURED, "why": f"stale cost: {fresh['why']}"})
         per_symbol.setdefault(sym, {})[name] = cost
@@ -441,7 +467,14 @@ def build(now: datetime | None = None, shadow_dir: Path = SHADOW_DIR, sleeves_pa
                   "block_h": BLOCK_H, "seeds": list(SEEDS), "comparator": "hold",
                   "slip_floor_pts": SLIP_FLOOR_PTS, "max_skew_s": MAX_SKEW_S,
                   "recent_share": RECENT_SHARE,
-                  "r_per_point": "tick_size / median stop (|exit-entry|/|R|) of forward rows"},
+                  "r_per_point": "tick_size / INFERRED stop: median |exit-entry|/|R| over >= "
+                                 f"{MIN_STOP_ROWS} forward rows (R is net of cost and partial "
+                                 "exits, so the stop is approximate)",
+                  "slip_floor_bias": "the 0.5pt floor only ever RAISES cost, so it biases the "
+                                     "verdict toward hold (conservative; report-only)",
+                  "scalp_sleeves": "always UNMEASURED (ledgers carry no prices); a book with "
+                                   "any scalp sleeve reads PARTIAL at best",
+                  "min_window": "3 x block_h; shorter windows are UNMEASURED"},
         "candidates_considered": [HOLD] + [c[0] for c in CANDIDATES],
         "cost_freshness": fresh, "n_live_sleeves": len(book),
         "sleeves": per_sleeve, "symbols": per_symbol,
@@ -453,7 +486,7 @@ def build(now: datetime | None = None, shadow_dir: Path = SHADOW_DIR, sleeves_pa
         for row in per_sleeve:
             if row["sleeve"] not in trades:
                 continue
-            tr = [t for t in trades[row["sleeve"]] if t[0] >= start]
+            tr = [t for t in trades[row["sleeve"]] if start <= t[0] <= now]
             hit = {(t[0] - start).days for t in tr}
             cov = len(hit) / days
             recent_days = max(1, math.ceil(days * RECENT_SHARE))
@@ -481,9 +514,12 @@ def build(now: datetime | None = None, shadow_dir: Path = SHADOW_DIR, sleeves_pa
     start = max(starts)
     if (now - start) < timedelta(hours=MIN_HOURS):
         doc.update(status=UNMEASURED, chosen=None, verdict=None,
-                   why=f"the common forward window is under {MIN_HOURS // 24} days")
+                   why=f"the common forward window is under {MIN_HOURS}h (3 bootstrap blocks)")
         return doc
     res = evaluate(trades, target, costs, start, now)
+    if res.pop("status") != MEASURED:
+        doc.update(status=UNMEASURED, **res)
+        return doc
     status = MEASURED if n_meas == len(book) else PARTIAL
     why = res.pop("why")
     doc.update(status=status, **res,

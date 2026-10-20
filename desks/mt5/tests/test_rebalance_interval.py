@@ -121,9 +121,9 @@ def test_pre_forward_rows_are_never_read(tmp_path: Path) -> None:
 
 def test_rebalancing_harvests_pumping_without_cost() -> None:
     # Two anti-correlated sleeves that each go nowhere: hold drifts, constant mix pumps.
-    start = NOW - timedelta(days=20)
+    start = NOW - timedelta(days=30)
     a, b = [], []
-    for h in range(0, 20 * 24, 1):
+    for h in range(0, 30 * 24, 1):
         x = 30.0 if (h // 1) % 2 == 0 else -27.0
         a.append((start + timedelta(hours=h), x))
         b.append((start + timedelta(hours=h), -x))
@@ -206,8 +206,8 @@ def test_trade_is_booked_at_exit_not_entry() -> None:
 
 
 def test_hold_chosen_when_nothing_beats_it() -> None:
-    start = NOW - timedelta(days=10)
-    a = [(start + timedelta(hours=h), 0.1) for h in range(0, 240, 3)]
+    start = NOW - timedelta(days=30)
+    a = [(start + timedelta(hours=h), 0.1) for h in range(0, 720, 3)]
     res = RI.evaluate({"a": a, "b": list(a)}, {"a": 1.0, "b": 1.0}, {"a": 5.0, "b": 5.0},
                       start, NOW)
     assert res["chosen"] == RI.HOLD and "hold stands" in res["why"]
@@ -243,7 +243,9 @@ def test_scalp_schema_on_broker_clock() -> None:
     tr, no_exit, _s, needs = RI.forward_trades(rows, start, 3.0)
     assert not needs and no_exit == 0
     assert tr == [(start + timedelta(hours=4), -1.0)]
-    assert RI.forward_trades(rows, start, None)[3] is True
+    # no stamped offset -> the desk's own (0.0 today): rows read as UTC, never refused
+    tr0, _n, _s0, needs0 = RI.forward_trades(rows, start, None)
+    assert needs0 is False and len(tr0) == 2
     assert RI.broker_offset("sc", [{"sleeves": {"sc": {"broker_offset_h": 3.0}}}]) == 3.0
 
 
@@ -254,9 +256,9 @@ def test_trailing_silence_is_unmeasured(tmp_path: Path) -> None:
 
 
 def test_bootstrap_is_against_hold_with_seed_spread() -> None:
-    start = NOW - timedelta(days=20)
+    start = NOW - timedelta(days=30)
     a, b = [], []
-    for h in range(20 * 24):
+    for h in range(30 * 24):
         x = 30.0 if h % 2 == 0 else -27.0
         a.append((start + timedelta(hours=h), x))
         b.append((start + timedelta(hours=h), -x))
@@ -264,3 +266,41 @@ def test_bootstrap_is_against_hold_with_seed_spread() -> None:
     assert max(c[1] or 0 for c in RI.CANDIDATES) <= RI.BLOCK_H
     assert res["point_best"] != RI.HOLD
     assert len(res["p_beats_hold_by_seed"]) == len(RI.SEEDS) and res["p_spread"] is not None
+
+
+def test_short_noise_window_never_reports_certainty() -> None:
+    for days in (5, 7, 20):
+        start = NOW - timedelta(days=days)
+        rng = random.Random(days)  # noqa: S311 - fixture noise
+        tr = {k: [(start + timedelta(hours=h), rng.gauss(0, 3)) for h in range(days * 24)]
+              for k in ("a", "b")}
+        res = RI.evaluate(tr, {"a": 1.0, "b": 1.0}, {"a": 0.0, "b": 0.0}, start, NOW)
+        assert res["status"] == RI.UNMEASURED and res["p_beats_hold"] is None
+    assert RI.MIN_HOURS >= 3 * RI.BLOCK_H
+
+
+def test_rows_after_now_are_clipped(tmp_path: Path) -> None:
+    w = _world(tmp_path)
+    rows = json.loads((w["shadow_dir"] / "ledger_fx_b.json").read_text())
+    for h in range(1, 400, 6):
+        rows.append({"entry_time": (NOW - timedelta(hours=1)).isoformat(),
+                     "exit_time": (NOW + timedelta(hours=h)).isoformat(),
+                     "r_multiple": 1.0, "entry": 100.0, "exit": 102.0})
+    (w["shadow_dir"] / "ledger_fx_b.json").write_text(json.dumps(rows))
+    doc = RI.build(NOW, **w)
+    fx = next(s for s in doc["sleeves"] if s["sleeve"] == "fx_b")
+    assert fx["day_coverage"] <= 1.0 and fx["recent_day_coverage"] <= 1.0
+
+
+def test_stop_needs_five_rows(tmp_path: Path) -> None:
+    w = _world(tmp_path)
+    rows = json.loads((w["shadow_dir"] / "ledger_gold_a.json").read_text())
+    for r in rows:
+        r.pop("entry", None)
+        r.pop("exit", None)
+    for r in rows[-4:]:
+        r.update(entry=0.0, exit=2000.0, r_multiple=1.0)
+    (w["shadow_dir"] / "ledger_gold_a.json").write_text(json.dumps(rows))
+    doc = RI.build(NOW, **w)
+    c = doc["symbols"]["XAUUSD"]["gold_a"]
+    assert c["status"] == RI.UNMEASURED and "fewer than 5" in c["why"]
