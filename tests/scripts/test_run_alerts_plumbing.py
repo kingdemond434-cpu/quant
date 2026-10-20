@@ -148,7 +148,7 @@ def test_md_without_severity_column_is_unmeasured_not_assumed_major(tmp_path: Pa
     md.write_text(_MD_OLD.format(at=NOW.isoformat()), "utf-8")
     out = _plumb(tmp_path, md_path=md)
     assert set(out) == {"plumbing_unmeasured"}
-    assert "carry no severity" in out["plumbing_unmeasured"]
+    assert "carry no known severity" in out["plumbing_unmeasured"]
 
 
 def test_the_newer_source_wins(tmp_path: Path) -> None:
@@ -272,3 +272,135 @@ def test_page_text_never_carries_the_topic(
     checks = _M._plumbing_checks(NOW, json_path=tmp_path / "absent.json", md_path=md)
     pushes = _tick(monkeypatch, tmp_path, 1_800_000_000.0, checks)
     assert pushes and all("SECRETTOPIC" not in t + b for t, b in pushes)
+
+
+# ------------------------------------------------------------ audit HOLD fixes (2026-10-20)
+def test_a_future_try_stamp_never_silences_the_backoff(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    # clock stepped back 24h: the 30-min push backoff stamp now sits in the future
+    t0 = 1_800_000_000.0
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / ".last_alerts.json").write_text(
+        json.dumps({"_try_judge_stalled": t0 + 86_400}), "utf-8")
+    assert len(_tick(monkeypatch, tmp_path, t0, [("judge_stalled", "x")])) == 1
+
+
+@pytest.mark.parametrize("raw", [b"[]", b"null", b"\xff\xfe\x00garbage", b'{"_paged": 7}',
+                                 b'{"judge_stalled": "soon", "_try_judge_stalled": [1]}',
+                                 b'{"judge_stalled": true}'])
+def test_a_corrupt_state_file_neither_crashes_nor_storms(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, raw: bytes) -> None:
+    t0 = 1_800_000_000.0
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / ".last_alerts.json").write_bytes(raw)
+    checks = [("judge_stalled", "x")]
+    assert len(_tick(monkeypatch, tmp_path, t0, checks)) == 1           # pages once
+    assert _tick(monkeypatch, tmp_path, t0 + 180, checks) == []         # and does not storm
+
+
+def test_an_unknown_severity_pages_unmeasured(tmp_path: Path) -> None:
+    p = _report(tmp_path, [_row("git_writer_lock", "GIT_WRITER_LOCK")])
+    out = _plumb(tmp_path, json_path=p)
+    assert set(out) == {"plumbing_unmeasured"} and "known severity" in out["plumbing_unmeasured"]
+
+
+def test_a_row_with_the_wrong_cell_count_is_unmeasured_not_dropped(tmp_path: Path) -> None:
+    md = tmp_path / "PLUMBING_ALERTS.md"
+    md.write_text(_MD_NEW.format(at=NOW.isoformat()).replace(
+        "| `MT5-AdoptRelease` | adoption_task |", "| `MT5|Adopt` | adoption_task |"), "utf-8")
+    out = _plumb(tmp_path, md_path=md)
+    assert "plumbing_unmeasured" in out and "malformed row" in out["plumbing_unmeasured"]
+
+
+def test_producer_escapes_a_pipe_in_every_cell(tmp_path: Path) -> None:
+    pw = _load("plumbing_watchdog_for_pager_pipe",
+               _ROOT / "desks" / "mt5" / "research" / "plumbing_watchdog.py")
+    md = tmp_path / "PLUMBING_ALERTS.md"
+    pw.render_alerts({"at": NOW.isoformat(), "defects": [{
+        **_row("git_writer_lock", "CRITICAL", organ="Global|MT5-GitWriter", evidence="a|b"),
+        "repair": "x|y", "age_s": 0, "passes": 2}]}, md)
+    rows = _M._parse_plumbing_md(md.read_text("utf-8"))["rows"]
+    assert [(r["organ"], r["severity"], r["evidence"]) for r in rows] == [
+        ("Global|MT5-GitWriter", "CRITICAL", "a|b")]
+
+
+def test_small_future_skew_is_allowed_and_large_is_not(tmp_path: Path) -> None:
+    p = _report(tmp_path, [], at=NOW + timedelta(seconds=5))
+    assert _plumb(tmp_path, json_path=p) == {}
+    p = _report(tmp_path, [], at=NOW + timedelta(hours=1))
+    assert set(_plumb(tmp_path, json_path=p)) == {"plumbing_unmeasured"}
+    # the judge meter: a verdict 5s "ahead" is skew; a meter stamped 1h ahead is UNMEASURED
+    assert _judge(_rate(tmp_path, at=NOW + timedelta(seconds=5),
+                        last=NOW + timedelta(seconds=5))) == {}
+    assert set(_judge(_rate(tmp_path, at=NOW + timedelta(hours=1),
+                            last=NOW - timedelta(hours=1)))) == {"judge_rate_unmeasured"}
+
+
+def test_judge_throughput_unmeasured_and_budget_skips_page(tmp_path: Path) -> None:
+    p = tmp_path / "PLUMBING_WATCHDOG.json"
+    p.write_text(json.dumps({
+        "at": NOW.isoformat(), "defects": [],
+        "checks_skipped_for_budget": ["edge_paths", "fences_ran"],
+        "facts": {"judge_throughput": {"status": "UNMEASURED",
+                                       "why": "JUDGE_COVERAGE has no throughput block"}}}),
+        "utf-8")
+    out = _plumb(tmp_path, json_path=p)
+    assert set(out) == {"plumbing_unmeasured", "judge_throughput_unmeasured"}
+    assert "edge_paths" in out["plumbing_unmeasured"]
+    assert "throughput block" in out["judge_throughput_unmeasured"]
+
+
+def test_the_vps_tick_no_longer_runs_the_box_input_checks(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.chdir(tmp_path)
+    keys = {k for k, _ in _M._checks()}
+    assert not keys & set(_M._PLUMBING_KEYS)
+
+
+def _box(monkeypatch: pytest.MonkeyPatch, tmp: Path) -> list[tuple[str, str, str]]:
+    pushes: list[tuple[str, str, str]] = []
+    monkeypatch.chdir(tmp)                      # restored after the test; box_main chdirs
+    monkeypatch.setattr(_M, "_ROOT", tmp)
+    monkeypatch.setattr(_M, "_push", lambda topic, t, b: pushes.append((topic, t, b)))
+    monkeypatch.setattr(_M, "_box_checks", lambda: [("judge_stalled", "judge STALLED")])
+    return pushes
+
+
+def test_box_without_a_secret_logs_and_never_mints_or_pages(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    pushes = _box(monkeypatch, tmp_path)
+    monkeypatch.setattr(_M, "_topic", lambda: pytest.fail("the box path minted a topic"))
+    assert _M.box_main() == 2
+    assert pushes == []
+    assert not (tmp_path / "data" / "secrets" / "ntfy.json").exists()
+    out = capsys.readouterr().out
+    assert "NOT ARMED" in out and "ntfy.sh/" not in out
+
+
+def test_box_with_a_secret_pages_through_the_existing_sender(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    pushes = _box(monkeypatch, tmp_path)
+    (tmp_path / "data" / "secrets").mkdir(parents=True)
+    (tmp_path / "data" / "secrets" / "ntfy.json").write_text(
+        json.dumps({"topic": "quant-desk-BOXSECRET"}), "utf-8")
+    assert _M.box_main() == 0
+    assert [(p[0], p[1]) for p in pushes] == [
+        ("quant-desk-BOXSECRET", "WARNING Quant desk: judge_stalled")]
+    assert (tmp_path / "desks" / "mt5" / "logs" / "plumbing_pager_state.json").exists()
+    assert _M.box_main() == 0 and len(pushes) == 1                # deduped on the next pass
+    assert "BOXSECRET" not in capsys.readouterr().out
+
+
+def test_the_box_pager_is_wired_to_a_clock() -> None:
+    """UNWIRED OR IDLE IS A DEFECT: the box path needs an installer, a manifest row and a
+    declared name the plumbing watchdog checks for."""
+    inst = (_ROOT / "desks/mt5/scripts/install_plumbing_pager_task.ps1").read_text("utf-8")
+    assert "MT5-PlumbingPager" in inst and "run_alerts.py" in inst and "--box" in inst
+    assert "-Daily" in inst and "-Minutes 15" in inst
+    manifest = (_ROOT / "desks/mt5/ops/box_tasks.manifest").read_text("utf-8")
+    assert ('TASK name="MT5-PlumbingPager" trigger="every 15 minutes" '
+            'runs="scripts/run_alerts.py"') in manifest
+    cst = _load("check_scheduled_tasks_for_pager", _ROOT / "scripts" / "check_scheduled_tasks.py")
+    assert "MT5-PlumbingPager" in cst.EXTRA_DECLARED

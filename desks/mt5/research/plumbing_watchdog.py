@@ -1121,13 +1121,17 @@ def render_alerts(doc: Mapping[str, Any], path: Path | None = None) -> str:
         # CRITICAL or the pager cannot tell a stop from a nag.
         lines += ["| organ | check | severity | age | passes | evidence | repair |",
                   "|---|---|---|---|---|---|---|"]
+        def _cell(v: Any, n: int = 300) -> str:
+            # EVERY cell is escaped: an unescaped `|` in any one of them shifts the cells after
+            # it, and the pager (scripts/run_alerts.py) then reads a CRITICAL row's severity
+            # from the wrong column. Truncate BEFORE escaping so no cut lands inside a `\|`.
+            return str(v if v is not None else "")[:n].replace("\n", " ").replace("|", "\\|")
+
         for r in sorted(rows, key=lambda x: (-int(x.get("age_s") or 0), str(x.get("organ")))):
-            ev = str(r.get("evidence") or "").replace("|", "\\|").replace("\n", " ")
-            rp = str(r.get("repair") or "").replace("|", "\\|").replace("\n", " ")
-            lines.append(f"| `{r.get('organ')}` | {r.get('check')} | "
-                         f"{r.get('severity') or 'UNMEASURED'} | "
-                         f"{int(r.get('age_s') or 0) // 3600}h | {r.get('passes')} | "
-                         f"{ev[:300]} | {rp[:220]} |")
+            lines.append(f"| `{_cell(r.get('organ'), 120)}` | {_cell(r.get('check'), 60)} | "
+                         f"{_cell(r.get('severity') or 'UNMEASURED', 20)} | "
+                         f"{int(r.get('age_s') or 0) // 3600}h | {_cell(r.get('passes'), 12)} | "
+                         f"{_cell(r.get('evidence'))} | {_cell(r.get('repair'), 220)} |")
         lines.append("")
     lines += [
         "## Why this page exists",
