@@ -1653,7 +1653,8 @@ def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None 
             break
     change["tree_reverted"] = done
     if failed or not settled:
-        change["tree_unreverted"] = failed or [f"tree not settled in {LAUNCH_REVERT_PASSES} passes"]
+        change["tree_unreverted"] = failed or [
+            f"tree not settled in {LAUNCH_REVERT_PASSES} passes"]
         raise LookupError(f"{len(change['tree_unreverted'])} descendant(s) could not be put "
                           f"back: {change['tree_unreverted'][:3]}")
 
