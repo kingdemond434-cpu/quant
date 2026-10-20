@@ -98,7 +98,8 @@ def test_gateway_key_join_reaches_the_cert_rows() -> None:
     row = {"name": "eurzar_overnight_gap_decay_asia_p_44136fa3", "symbol": "EURZAR",
            "family": "overnight_gap_decay", "selector": "asia"}
     assert gateway._book_key(row, FUSION) == "EURZAR_overnight_gap_decay_asia"
-    assert gateway._book_key({"name": "gold_asia_v3", "symbol": "XAUUSD"}, FUSION) == "gold_asia"
+    # gold_asia left the fusion block (v5); the version-suffix join is pinned on the e8 keys.
+    assert gateway._book_key({"name": "gold_asia_v3", "symbol": "XAUUSD"}, E8) == "gold_asia"
 
 
 def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None:
