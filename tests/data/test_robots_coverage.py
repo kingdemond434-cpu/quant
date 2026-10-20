@@ -297,7 +297,7 @@ def test_no_second_robots_parser_in_non_test_code() -> None:
         if "/tests/" in p.as_posix() or p.name.startswith("test_"):
             continue
         txt = p.read_text(encoding="utf-8", errors="replace")
-        if "RobotFileParser(" in txt or "import robotparser" in txt or (
-                "urllib.robotparser" in txt and "import" in txt.split("urllib.robotparser")[0][-40:]):
+        if any(m in txt for m in ("RobotFileParser(", "import robotparser",
+                                  "import urllib.robotparser", "from urllib.robotparser")):
             hits.append(str(p.relative_to(ROOT)))
     assert hits == [], hits

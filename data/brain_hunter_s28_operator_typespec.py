@@ -25,9 +25,16 @@ import json
 import pathlib
 import re
 import tempfile
-import urllib.request
 from collections.abc import Iterator
 from typing import Any
+
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import polite_urlopen
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC_URL = ("https://raw.githubusercontent.com/AshSwing/FastPlus/dev/src/operator.rs")
@@ -50,7 +57,7 @@ KW = re.compile(r'"(?P<n>[a-z0-9_]+)"\s*=>\s*\((?P<t>[A-Za-z]+),\s*(?P<d>[^)]*?)
 
 def main() -> None:
     if not SRC.exists():                       # fetch once, cache; TEXT only, never executed
-        with urllib.request.urlopen(SRC_URL, timeout=30) as r:
+        with polite_urlopen(SRC_URL, timeout=30) as r:
             SRC.write_bytes(r.read())
     text = SRC.read_text()
     ops: dict[str, dict[str, Any]] = {}
