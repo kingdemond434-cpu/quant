@@ -141,8 +141,9 @@ MAX_STOP_REFUSALS = 3
 # fails growth-governance Rule 1: a tight stop is exactly where a capped leg is safe (its risk,
 # ceiling x stop x contract, is at most the certified risk, and the dollars-per-point bound is
 # kept), and skipping forwent 38-87 USD a window against <= 35 shrunk. So every leg over the
-# ceiling is sent AT the ceiling; the window's budget is re-checked on the shrunk risk plus a
-# points-slip allowance (CEILING_SLIP_POINTS); and the risk withheld is journalled (status
+# ceiling is sent AT the ceiling; the window's budget is re-checked on the shrunk risk plus the
+# points-slip allowance (`bracket_slip`, points), and v4 FITS the lot to that budget rather than
+# deferring a window that can never pass it; and the risk withheld is journalled (status
 # RAIL_SHRUNK, rail LOT_CEILING_RAIL, reason LOT_CEILING_REASON) and published two-sided by
 # `research/missed_growth.published_e8_gold_lines` -- the risk withheld, the saving UNMEASURED.
 GOLD_MAX_LOT = 0.75
@@ -153,9 +154,6 @@ GOLD_MAX_LOT_CAP = 20.0
 #: venue's minimum lot (which would idle the lane) also means GOLD_MAX_LOT, said in the pass
 #: report -- a bad file never switches the ceiling off, and never sets one the venue cannot send.
 GOLD_MAX_LOT_FILE = DESK / "data" / "E8_GOLD_MAX_LOT.json"
-#: Fill-through allowed for on a shrunk leg's budget, in price points: 2026-09-24 a buy stop on
-#: this venue filled 24.13 points through its level.
-CEILING_SLIP_POINTS = 24.0
 #: The name the withheld risk is journalled under (status RAIL_SHRUNK, missed_growth_risk_usd).
 #: Not yet in libs/portfolio/rails.py, which is a sealed file: registering it is the principal's.
 LOT_CEILING_RAIL = "e8_gold_lot_ceiling"
@@ -169,22 +167,39 @@ LOT_CEILING_REASON = "lot_ceiling"
 # journalled entry orders still resting (`stand_down_cancels`); filled positions and their stops
 # are never touched, and a cancel the venue refuses is logged and tried again next pass.
 STAND_DOWN_CANCEL = "stand_down_cancel"
-# A TWO-LEGGED BRACKET IS BUDGETED AGAINST TODAY'S FLOOR AS BOTH LEGS (2026-10-20). One fill
-# cancels the other, but the OCO is this lane's 5-minute pass, not the venue's: in a fast spike
-# both legs can fill and both stop out before the pass sees the first. So, as the E8 executor
-# checks its whole book against `room_to_daily_floor` before it sends anything, each leg's risk
-# grossed up for slippage is summed and must fit the guard's room to today's floor. A bracket
-# that does not fit is SHRUNK, both legs alike, until it does (`floor_fit_lots`, coordinator
-# 2026-10-20: shrink, not skip), journalled RAIL_SHRUNK; only a leg that would fall under the
-# venue minimum skips the window (RAIL_BLOCKED).
-#: Slippage on a stop that fills at market, as a fraction of the leg's risk, when the lane has no
-#: measurement of its own (BRACKET_SLIP_FILE).
-DEFAULT_BRACKET_SLIP = 0.3
-#: The lane's measured slip, written by `prop/e8_gold_slip.py` from its own stop exits: {"slip":
-#: <p95 loss beyond the stop, in R>, "n", "measured_at", "sources"}. Absent, UNMEASURED,
-#: unreadable, non-numeric, non-finite or negative means DEFAULT_BRACKET_SLIP, said in the report.
+# A TWO-LEGGED BRACKET IS BUDGETED AGAINST TODAY'S FLOOR (2026-10-20; v4 per the audit HOLD on
+# 3ce5aaf85). One fill cancels the other, but the OCO is this lane's 5-minute pass, not the
+# venue's: in a fast spike both legs can fill and stop out before the pass sees the first. So
+# both legs' risk to their stops PLUS ONE LEG'S SLIP IN POINTS at the lot sent must fit the
+# nearer of the guard's floors:
+#
+#     sum(leg_risk) + slip_points x lot x contract  <=  min(room_to_daily_floor, room_to_static)
+#
+# SLIP IS IN POINTS, NEVER R. The worst measured fill-through, 24.13 points on 2026-09-24, was
+# 0.82R of a 29.55-point stop, but 1.86R of a 13-point one and 0.22R of a 110-point one: a slip in
+# R mis-prices every stop but the one it was measured on. 0 of 41 E8 window-days filled both legs,
+# so one leg carries the slip. A bracket that does not fit is SHRUNK, both legs alike, until it
+# does (`floor_fit_lots`), journalled RAIL_SHRUNK; only a leg under the venue minimum skips the
+# window (RAIL_BLOCKED, with its reason).
+#: The worst measured single-leg fill-through on this venue, in price points (2026-09-24).
+DEFAULT_SLIP_POINTS = 24.13
+#: Stop exits the lane must have measured before their p95 replaces DEFAULT_SLIP_POINTS.
+MIN_SLIP_EXITS = 20
+#: The lane's measured slip, written by `prop/e8_gold_slip.py` from its own stop exits:
+#: {"status": "MEASURED", "slip_points": <p95, points>, "n", "measured_at", "sources"}. Absent,
+#: not MEASURED, n < MIN_SLIP_EXITS, unreadable, non-finite or negative -> DEFAULT_SLIP_POINTS.
 BRACKET_SLIP_FILE = DESK / "data" / "E8_GOLD_SLIP.json"
+#: Where the lane records each stop exit it can see in the venue's order history (one row per
+#: filled protective stop of a position its own entry opened), for `e8_gold_slip` to measure.
+STOP_EXITS = DESK / "data" / "e8_gold_stop_exits.jsonl"
+# A TAKE-PROFIT THE DAILY CAP WOULD STRIP IS SHRUNK, NOT REFUSED (v4). E8 strips profit above the
+# daily cap at rollover, so a target past the guard's `profit_cap_headroom` earns nothing beyond
+# it while its stop still costs in full. Refusing the trade (v3) cost most fresh days above about
+# 105.3k equity to save 10-108 USD of stripped excess; the lot is now cut so the target fits the
+# headroom (`profit_fit_lots`), and only a lot under the venue minimum skips.
 #: The rails these binds are journalled under (RAIL_SHRUNK / RAIL_BLOCKED, missed_growth_risk_usd).
+#: Each is a NON-EXEMPT evidence reason (prop/e8_evidence + scripts/check_placement_interlock):
+#: lot_ceiling, bracket_daily_floor, daily_profit_cap.
 DAILY_FLOOR_RAIL = "e8_gold_bracket_daily_floor"
 PROFIT_CAP_RAIL = "e8_gold_daily_profit_cap"
 #: Their decision reason codes (prop/e8_evidence; see the README's merge note for the fence).
@@ -266,84 +281,124 @@ def cap_lot(lot: float, max_lot: float, quantise: Any = None) -> tuple[float, bo
     return min(capped, float(max_lot)), True
 
 
-def shrunk_budget_risk(lot: float, stop_dist: float, contract_size: float) -> float:
-    """A shrunk leg's risk for the budget: its stop at the level PLUS CEILING_SLIP_POINTS of
+def shrunk_budget_risk(lot: float, stop_dist: float, contract_size: float,
+                       slip_points: float = DEFAULT_SLIP_POINTS) -> float:
+    """A shrunk leg's risk for the budget: its stop at the level PLUS `slip_points` of
     fill-through, at the leg's own dollars per point. Pure."""
     per_point = float(lot) * float(contract_size)
-    return per_point * (float(stop_dist) + CEILING_SLIP_POINTS)
+    return per_point * (float(stop_dist) + float(slip_points))
 
 
-def bracket_slip(path: Path | None = None) -> tuple[float, str]:
-    """(slippage as a fraction of a leg's risk, where it came from). Never raises.
+def ceiling_budget_lot(committed: float, room: float, stop_dist: float, contract_size: float,
+                       slip_points: float) -> float:
+    """The largest lot whose `shrunk_budget_risk` still passes `risk_budget_allows`. Pure.
 
-    `path` (default BRACKET_SLIP_FILE) may hold the lane's measured {"slip": <fraction>}. A
-    missing file is DEFAULT_BRACKET_SLIP; so is an unreadable file or a value that is not a finite
-    number at or above zero, with the reason in the source string.
+    (committed + L x contract x (stop + slip)) x SLIP_BUFFER <= room - ROOM_MARGIN_USD, solved for
+    L. v3 deferred a ceiling-shrunk window that failed this check, and at a stop under about 13
+    points on a 100 oz contract it fails on every pass: never sent, never journalled. v4 sends L.
+    """
+    unit = float(contract_size) * (float(stop_dist) + float(slip_points))
+    if not unit > 0:
+        return 0.0
+    return max(0.0, ((float(room) - ROOM_MARGIN_USD) / SLIP_BUFFER - float(committed)) / unit)
+
+
+def bracket_slip(path: Path | None = None, *, window: str | None = None) -> tuple[float, str]:
+    """(one leg's fill-through allowance in price POINTS, where it came from). Never raises.
+
+    The measured p95 from `path` (default BRACKET_SLIP_FILE) once it holds at least
+    MIN_SLIP_EXITS stop exits; otherwise DEFAULT_SLIP_POINTS, the worst single-leg slip measured,
+    with the reason in the source string. With `window`, that window's own p95 is used when its
+    block is MEASURED on at least MIN_SLIP_EXITS of its exits; otherwise the pooled rule above.
     """
     p = BRACKET_SLIP_FILE if path is None else path
+    default = "default DEFAULT_SLIP_POINTS (worst measured single-leg slip, 2026-09-24)"
     try:
         if not p.exists():
-            return DEFAULT_BRACKET_SLIP, "default DEFAULT_BRACKET_SLIP (no measured slip)"
+            return DEFAULT_SLIP_POINTS, f"{default}: no {p.name}"
         doc = json.loads(p.read_text(encoding="utf-8-sig"))
-        if isinstance(doc, dict) and str(doc.get("status") or "") == "UNMEASURED":
-            return DEFAULT_BRACKET_SLIP, (f"default DEFAULT_BRACKET_SLIP ({p.name} is UNMEASURED, "
-                                          f"n={doc.get('n')})")
-        raw = doc.get("slip") if isinstance(doc, dict) else None
+        if not isinstance(doc, dict):
+            return DEFAULT_SLIP_POINTS, f"{default}: {p.name} is not an object"
+        wins = doc.get("windows")
+        wdoc = wins.get(window) if window and isinstance(wins, dict) else None
+        if isinstance(wdoc, dict) and str(wdoc.get("status") or "") == "MEASURED":
+            wn, wraw = wdoc.get("n"), wdoc.get("slip_points")
+            if isinstance(wn, int) and not isinstance(wn, bool) and wn >= MIN_SLIP_EXITS \
+                    and isinstance(wraw, (int, float)) and not isinstance(wraw, bool) \
+                    and math.isfinite(float(wraw)) and float(wraw) >= 0:
+                return float(wraw), f"{p.name} [{window}] (p95 of {wn} stop exits)"
+        n = doc.get("n")
+        if str(doc.get("status") or "") != "MEASURED":
+            return DEFAULT_SLIP_POINTS, f"{default}: {p.name} is {doc.get('status')}, n={n}"
+        if isinstance(n, bool) or not isinstance(n, int) or n < MIN_SLIP_EXITS:
+            return DEFAULT_SLIP_POINTS, (f"{default}: {p.name} has n={n!r}, under "
+                                         f"{MIN_SLIP_EXITS} stop exits")
+        raw = doc.get("slip_points")
         if isinstance(raw, bool) or not isinstance(raw, (int, float)) \
                 or not math.isfinite(float(raw)) or float(raw) < 0:
-            return DEFAULT_BRACKET_SLIP, (f"default DEFAULT_BRACKET_SLIP ({p.name} slip={raw!r} "
-                                          f"is not a number >= 0)")
-        return float(raw), p.name
+            return DEFAULT_SLIP_POINTS, f"{default}: {p.name} slip_points={raw!r} is not >= 0"
+        return float(raw), f"{p.name} (p95 of {n} stop exits)"
     except Exception as exc:
-        return DEFAULT_BRACKET_SLIP, (f"default DEFAULT_BRACKET_SLIP ({p.name} unreadable: "
-                                      f"{type(exc).__name__})")
+        return DEFAULT_SLIP_POINTS, f"{default}: {p.name} unreadable ({type(exc).__name__})"
 
 
-def bracket_floor_breach(n_legs: int, leg_risk: float, slip: float, room: float) -> str | None:
-    """Why a bracket is skipped by today's floor, or None when it fits. Pure.
+def bracket_floor_need(leg_risk: dict[str, float], lots: dict[str, float], slip_points: float,
+                       contract_size: float) -> float:
+    """Every leg's risk to its stop plus ONE leg's slip at the largest lot sent, in USD. Pure."""
+    if not lots:
+        return 0.0
+    return (sum(float(v) for v in leg_risk.values())
+            + float(slip_points) * max(float(x) for x in lots.values()) * float(contract_size))
 
-    `n_legs` x `leg_risk` x (1 + `slip`) must be at most `room` (the guard's
-    `room_to_daily_floor`): every leg the window would send, as if each stopped out with slip.
+
+def floor_room(guard_decision: Any) -> float:
+    """The nearer of the guard's two floors: today's (daily) and the account's (static)."""
+    return min(float(guard_decision.room_to_daily_floor),
+               float(guard_decision.room_to_static_floor))
+
+
+def fit_lots(lots: dict[str, float], caps: dict[str, float], *, min_lot: float | None,
+             quantise: Any = None) -> tuple[dict[str, float] | None, dict[str, float], str | None]:
+    """Cut each leg to its cap: (new lots, {side: lot before} for the legs cut, None), or
+    (None, {}, why) when a cut leg would fall under the venue minimum. Never raises a lot. Pure.
     """
-    need = int(n_legs) * float(leg_risk) * (1.0 + float(slip))
-    if need <= float(room):
-        return None
-    return (f"bracket would breach today's floor: {int(n_legs)} legs x {float(leg_risk):,.0f} USD "
-            f"x (1 + {float(slip):g} slip) = {need:,.0f} exceeds the {float(room):,.0f} left to "
-            f"today's floor")
+    out: dict[str, float] = {}
+    before: dict[str, float] = {}
+    for side, lot in lots.items():
+        cap = float(caps.get(side, math.inf))
+        if float(lot) <= cap + 1e-12:
+            out[side] = float(lot)
+            continue
+        if not cap > 0 or (min_lot is not None and cap < float(min_lot) - 1e-12):
+            return None, {}, (f"{side} would need {max(cap, 0.0):.4f} lots, under the venue "
+                              f"minimum {float(min_lot or 0):g}")
+        q = float(quantise(cap)) if quantise is not None else cap
+        out[side] = min(q, cap, float(lot))
+        before[side] = float(lot)
+    return out, before, None
 
 
-def floor_fit_lots(lots: dict[str, float], dists: dict[str, float], *, slip: float,
+def floor_fit_lots(lots: dict[str, float], dists: dict[str, float], *, slip_points: float,
                    room: float, contract_size: float, min_lot: float | None,
                    quantise: Any = None) -> tuple[dict[str, float] | None, str | None]:
-    """Shrink BOTH legs so the bracket fits today's floor: (new lots, None), or (None, why). Pure.
+    """Shrink BOTH legs so the bracket fits the floor: (new lots, None), or (None, why). Pure.
 
-    Every leg gets the same share of the room, `room / (n_legs x (1 + slip))`, which is exactly
-    what `bracket_floor_breach` requires. A leg is never made bigger. Each lot is taken down to
-    the venue's step (`quantise`). If any leg would end up below the venue minimum (`min_lot`),
-    or the result still does not fit, the window cannot be sent and the reason is returned.
+    One common lot L for every leg, the largest with sum(L x stop_k x contract) + slip_points x L x
+    contract <= room. A leg is never made bigger; a leg under the venue minimum cannot be sent.
     """
-    n = len(lots)
-    if n == 0:
+    if not lots:
         return dict(lots), None
-    per_leg = float(room) / (n * (1.0 + float(slip)))
-    out: dict[str, float] = {}
-    for side, lot in lots.items():
-        unit = float(dists[side]) * float(contract_size)
-        if not (unit > 0) or not (per_leg > 0):
-            return None, (f"bracket cannot fit today's floor: {float(room):,.0f} USD of room "
-                          f"leaves nothing for a {side} leg")
-        raw = min(float(lot), per_leg / unit)
-        if min_lot is not None and raw < float(min_lot) - 1e-12:
-            return None, (f"bracket cannot fit today's floor even shrunk: {side} would need "
-                          f"{raw:.4f} lots, under the venue minimum {float(min_lot):g}")
-        q = float(quantise(raw)) if quantise is not None else raw
-        out[side] = min(q, float(lot))
-    need = sum(float(dists[k]) * v * float(contract_size) for k, v in out.items()) \
-        * (1.0 + float(slip))
-    if not out or min(out.values()) <= 0 or need > float(room) + 1e-9:
-        return None, (f"bracket cannot fit today's floor: the shrunk legs still need "
-                      f"{need:,.0f} USD against {float(room):,.0f}")
+    unit = float(contract_size) * (sum(float(dists[k]) for k in lots) + float(slip_points))
+    cap = float(room) / unit if unit > 0 else 0.0
+    out, _before, why = fit_lots(lots, dict.fromkeys(lots, cap), min_lot=min_lot,
+                                 quantise=quantise)
+    if out is None:
+        return None, f"bracket cannot fit {float(room):,.0f} USD of floor room even shrunk: {why}"
+    risk = {k: float(dists[k]) * v * float(contract_size) for k, v in out.items()}
+    need = bracket_floor_need(risk, out, slip_points, contract_size)
+    if need > float(room) + 1e-9:
+        return None, (f"bracket cannot fit the floor: the shrunk legs still need {need:,.0f} USD "
+                      f"against {float(room):,.0f}")
     return out, None
 
 
@@ -353,19 +408,110 @@ def leg_target_profit(spec_leg: dict[str, Any], lot: float, contract_size: float
             * float(contract_size))
 
 
-def profit_cap_breach(profits: dict[str, float], headroom: float) -> str | None:
-    """Why a window is skipped by the daily profit cap, or None when every target fits. Pure.
+def profit_fit_caps(spec: dict[str, Any], sides: Any, headroom: float,
+                    contract_size: float) -> dict[str, float]:
+    """Each leg's largest lot whose take-profit still fits the cap headroom. Pure."""
+    caps: dict[str, float] = {}
+    for side in sides:
+        per_lot = leg_target_profit(spec[side], 1.0, contract_size)
+        caps[side] = max(0.0, float(headroom)) / per_lot if per_lot > 0 else math.inf
+    return caps
 
-    `profits` is each leg's take-profit in USD (`leg_target_profit`); `headroom` the guard's
-    `profit_cap_headroom` (the cap less today's profit). A target past the headroom is profit E8
-    strips at rollover while the stop's loss is kept, so the leg is refused and the bracket with it.
+
+def stop_exits_from_history(hist_rows: list[dict[str, Any]], filled: dict[int, int],
+                            own: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
+    """The protective-stop fills of positions this lane's own entries opened, from the venue's
+    order history: one row per exit with its side, stop level and fill price. Pure.
+
+    A row qualifies when it is FILLED, carries a stopPrice and a fill price, belongs to a position
+    one of our entry orders opened, and is not itself one of our entry orders -- so a take-profit
+    (a limit, no stopPrice), an entry stop and anything on a position we did not open never count.
     """
-    over = {side: usd for side, usd in profits.items() if float(usd) > float(headroom) + 1e-9}
-    if not over:
-        return None
-    legs = ", ".join(f"{side} {usd:,.0f} USD" for side, usd in sorted(over.items()))
-    return (f"daily profit cap: take-profit {legs} exceeds the {float(headroom):,.0f} USD of "
-            f"counted profit left today; the excess would be stripped at rollover")
+    entry_of = {int(pid): int(oid) for oid, pid in filled.items() if int(oid) in own}
+    owned = set(entry_of)
+    entry_fill: dict[int, float] = {}
+    for h in hist_rows:
+        try:
+            if h.get("id") is not None and int(h["id"]) in own:
+                entry_fill[int(h["id"])] = float(h.get("avgPrice") or h.get("filledPrice") or 0.0)
+        except (TypeError, ValueError):
+            continue
+    out: list[dict[str, Any]] = []
+    for h in hist_rows:
+        try:
+            if str(h.get("status") or "").lower() != "filled" or h.get("id") is None:
+                continue
+            oid, pid = int(h["id"]), int(h.get("positionId") or 0)
+            if oid in own or pid not in owned:
+                continue
+            stop = float(h.get("stopPrice") or 0.0)
+            fill = float(h.get("avgPrice") or h.get("filledPrice") or 0.0)
+            side = str(h.get("side") or "").lower()
+        except (TypeError, ValueError):
+            continue
+        if stop > 0 and fill > 0 and side in ("buy", "sell") \
+                and math.isfinite(stop) and math.isfinite(fill):
+            row: dict[str, Any] = {"order_id": oid, "position_id": pid, "side": side,
+                                   "stop": stop, "fill": fill, "venue_ms": _order_ms(h)}
+            leg = own.get(entry_of[pid]) or {}
+            if leg.get("window"):
+                row["window"] = str(leg["window"])
+            try:
+                trigger = float(leg.get("price") or 0.0)
+            except (TypeError, ValueError):
+                trigger = 0.0
+            entry = entry_fill.get(entry_of[pid], 0.0)
+            entry_side = str(leg.get("side") or "").lower()
+            entry_side = {"buy_stop": "buy", "sell_stop": "sell"}.get(entry_side, entry_side)
+            if trigger > 0 and entry > 0 and entry_side in ("buy", "sell") \
+                    and math.isfinite(trigger) and math.isfinite(entry):
+                row.update(trigger=trigger, entry=entry, entry_side=entry_side)
+            out.append(row)
+    return out
+
+
+def _record_stop_exits(rows: list[dict[str, Any]], *, now: datetime) -> int:
+    """Append the stop exits not yet journalled. Never raises; `publish_slip` re-measures."""
+    try:
+        from prop import e8_gold_slip
+        seen = {int(r["order_id"]) for r in e8_gold_slip.read_stop_exits(STOP_EXITS)
+                if r.get("order_id") is not None}
+        new = [r for r in rows if int(r["order_id"]) not in seen]
+        if new:
+            STOP_EXITS.parent.mkdir(parents=True, exist_ok=True)
+            with STOP_EXITS.open("a", encoding="utf-8") as fh:
+                for r in new:
+                    fh.write(json.dumps({"at": now.isoformat(timespec="seconds"), **r}) + "\n")
+        return len(new)
+    except Exception as exc:
+        log(f"stop-exit journal not updated ({type(exc).__name__}: {exc})")
+        return 0
+
+
+def publish_slip(*, now: datetime) -> dict[str, Any]:
+    """Re-measure the slip from the lane's stop-exit journal, write E8_GOLD_SLIP.json and return
+    the publication for E8_GOLD.json: overall and PER WINDOW, in points, with n, p95, max,
+    measured_at and sources. Called on every pass AFTER placement, so it can never delay a send.
+
+    NEVER RAISES. Any failure is logged and published as UNMEASURED with the error, and the guard
+    keeps DEFAULT_SLIP_POINTS (`bracket_slip` reads only a MEASURED file with n >= 20).
+    """
+    try:
+        from prop import e8_gold_slip
+        d = e8_gold_slip.refresh(exits=STOP_EXITS, out=BRACKET_SLIP_FILE,
+                                 measured_at=now.date().isoformat())
+        keep = ("status", "n", "unit", "slip_points", "provisional_p95_points", "p50_points",
+                "max_points", "measured_at", "sources", "min_n", "windows")
+        pub = {k: d[k] for k in keep if k in d}
+        pub["guard_slip_points"] = bracket_slip()[0]
+        return pub
+    except Exception as exc:
+        log(f"slip not published ({type(exc).__name__}: {exc}); guard keeps "
+            f"{DEFAULT_SLIP_POINTS:g} points")
+        return {"status": "UNMEASURED", "n": 0, "unit": "points",
+                "measured_at": now.date().isoformat(), "sources": [],
+                "error": f"{type(exc).__name__}: {exc}"[:160],
+                "guard_slip_points": DEFAULT_SLIP_POINTS}
 
 
 def stand_down_cancels(open_ids: set[int], filled: dict[int, int],
@@ -887,34 +1033,28 @@ def risk_budget_allows(committed: float, new_risk: float, room: float) -> tuple[
 
 # ------------------------------------------------------------------ the pass
 
-def _bracket_rails(spec: dict[str, Any], lots: dict[str, float], *, risk_usd: float,
-                   slip: float, slip_src: str, guard_decision: Any,
-                   contract: float, check_floor: bool = True) -> dict[str, Any] | None:
-    """The skip (rail, why and its figures) for a sized window, or None when no rail binds.
+class _CutBook:
+    """One window's sizing as each rail cuts it: the lots, the legs' risk and the cuts made."""
 
-    `lots` holds every leg the window would send. Raises when the guard's figures are missing;
-    the caller turns that into a deferral.
-    """
-    if guard_decision is None:
-        raise ValueError("no guard decision to budget against")
-    if not lots:
-        return None
-    room = float(guard_decision.room_to_daily_floor)
-    floor_why = bracket_floor_breach(len(lots), risk_usd, slip, room) if check_floor else None
-    if floor_why is not None:
-        return {"rail": DAILY_FLOOR_RAIL, "reason": DAILY_FLOOR_REASON, "why": floor_why,
-                "legs": len(lots),
-                "leg_risk_usd": round(risk_usd, 2), "slip": slip, "slip_source": slip_src,
-                "room_to_daily_floor": round(room, 2)}
-    headroom = float(guard_decision.profit_cap_headroom)
-    profits = {side: round(leg_target_profit(spec[side], lot, contract), 2)
-               for side, lot in lots.items()}
-    cap_why = profit_cap_breach(profits, headroom)
-    if cap_why is not None:
-        return {"rail": PROFIT_CAP_RAIL, "reason": PROFIT_CAP_REASON, "why": cap_why,
-                "target_profit_usd": profits,
-                "profit_cap_headroom_usd": round(headroom, 2)}
-    return None
+    def __init__(self, sized: dict[str, tuple[float, str]], leg_risk: dict[str, float],
+                 dists: dict[str, float], contract: float, risk_usd: float,
+                 cuts: list[dict[str, Any]]) -> None:
+        self.sized, self.leg_risk, self.dists = sized, leg_risk, dists
+        self.contract, self.risk_usd, self.cuts = contract, risk_usd, cuts
+
+    def apply(self, new: dict[str, float], before: dict[str, float], rail: str, reason: str,
+              why: str, **extra: Any) -> None:
+        """Take the cut legs to their new lots; record the cut with the risk it withheld."""
+        risk_before = max(self.leg_risk.values()) if self.leg_risk else self.risk_usd
+        for k, lot in new.items():
+            if k in before:
+                self.sized[k] = (lot, self.sized[k][1])
+                self.leg_risk[k] = self.dists[k] * lot * self.contract
+        if before:
+            self.cuts.append({"rail": rail, "reason": reason, "why": why,
+                              "unshrunk_lots": dict(before),
+                              "withheld": max(0.0, risk_before - max(self.leg_risk.values())),
+                              **extra})
 
 
 def _cancel_on_stand_down(venue: Any, state: dict[str, Any], doc: dict[str, Any], *,
@@ -1162,11 +1302,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         venue_min_lot = None
     max_lot, max_lot_src = gold_max_lot(min_lot=venue_min_lot)
     doc["lot_ceiling"] = {"max_lot": max_lot, "source": max_lot_src}
-    slip, slip_src = bracket_slip()
-    doc["bracket_slip"] = {"slip": slip, "source": slip_src}
+    slip_pts, slip_src = bracket_slip()
+    doc["bracket_slip"] = {"slip_points": slip_pts, "source": slip_src, "windows": {}}
     placed_this_pass: list[str] = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
+        slip_pts, slip_src = bracket_slip(window=name)
+        doc["bracket_slip"]["windows"][name] = {"slip_points": slip_pts, "source": slip_src}
         frac, frac_src = window_risk(name, kelly)
         if not frac > 0:
             doc["skipped"].append({"window": name, "why": (
@@ -1186,13 +1328,17 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": name, "why": blocker})
             log(f"[{name}] DEFERRED: {blocker}")
             continue
-        # THE LOT CEILING (GOLD_MAX_LOT), v2: every leg this window would send is sized BEFORE
-        # any is sent, and a leg over the ceiling is sent AT it (`cap_lot`) -- smaller, never
-        # skipped. `sized[side]` is the lot the send loop below uses.
+        # SIZING, v4 (audit HOLD on 3ce5aaf85): every leg this window would send is sized BEFORE
+        # any is sent, then each rail that binds CUTS the lot rather than refusing the window --
+        #   1. the lot ceiling (GOLD_MAX_LOT), and the budget on the capped leg plus slip;
+        #   2. today's floor (and the static one) for both legs plus one leg's slip in points;
+        #   3. the daily profit cap: no target past the guard's headroom.
+        # A cut is journalled RAIL_SHRUNK with the risk it withheld. A rail is a skip only when its
+        # lot would fall under the venue minimum, and then it writes a RAIL_BLOCKED row with its
+        # reason and marks the window spent. `sized[side]` is the lot the send loop sends.
         sized: dict[str, tuple[float, str]] = {}
-        unshrunk: dict[str, float] = {}
         leg_risk: dict[str, float] = {}
-        budget_risk = risk_usd
+        dists: dict[str, float] = {}
         for side in ("buy_stop", "sell_stop"):
             s = spec[side]
             if side == blocked or not leg_is_legal(side, float(s["price"]), float(bid),
@@ -1200,68 +1346,92 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 continue
             dist = abs(float(s["price"]) - float(s["sl"]))
             lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
-            full = _quantise(lot, venue, SYMBOL)
-            sent_lot, shrunk = cap_lot(full, max_lot,
-                                       lambda x: _quantise(x, venue, SYMBOL))
-            sized[side] = (sent_lot, basis)
+            sized[side] = (_quantise(lot, venue, SYMBOL), basis)
             leg_risk[side] = risk_usd
-            if shrunk:
-                unshrunk[side] = full
-                leg_risk[side] = dist * sent_lot * contract
-        if unshrunk:
-            # The budget is re-checked on what is actually sent: the shrunk risk to the stop
-            # plus CEILING_SLIP_POINTS of fill-through at the leg's dollars per point.
-            budget_risk = max(
-                shrunk_budget_risk(sized[k][0], abs(float(spec[k]["price"])
-                                                    - float(spec[k]["sl"])), contract)
-                if k in unshrunk else risk_usd for k in sized)
-        fits, budget_why = risk_budget_allows(committed or 0.0, budget_risk, room)
-        if not fits:
-            blocker = f"concurrent risk would reach today's floor: {budget_why}"
-            doc["skipped"].append({"window": name, "why": blocker})
-            log(f"[{name}] DEFERRED: {blocker}")
-            continue
-        window_risk_usd = max(leg_risk.values()) if leg_risk else risk_usd
-        ceiling_risk_usd = window_risk_usd
-        # TODAY'S FLOOR FOR BOTH LEGS, AND THE DAILY PROFIT CAP (see DAILY_FLOOR_RAIL), on the
-        # risk and lots actually sent -- a leg the ceiling shrank is budgeted at its shrunk risk.
-        # A bracket that does not fit the floor is SHRUNK to fit (both legs, `floor_fit_lots`),
-        # and skipped only when the shrunk lot would fall under the venue minimum. A check that
-        # cannot be computed defers the window unmarked; it never raises into the send.
-        floor_shrunk: dict[str, float] = {}
+            dists[side] = dist
+        cuts: list[dict[str, Any]] = []
+        rail_skip: dict[str, Any] | None = None
+
+        def _quant(x: float) -> float:
+            return float(_quantise(x, venue, SYMBOL))
+
+        book = _CutBook(sized, leg_risk, dists, contract, risk_usd, cuts)
+        _apply = book.apply
         try:
-            if guard_decision is None:
-                raise ValueError("no guard decision to budget against")
-            rail_skip = None
-            fitted = False
-            room_floor = float(guard_decision.room_to_daily_floor)
-            if sized and bracket_floor_breach(len(sized), window_risk_usd, slip,
-                                              room_floor) is not None:
-                dists = {k: abs(float(spec[k]["price"]) - float(spec[k]["sl"])) for k in sized}
-                fit, fit_why = floor_fit_lots(
-                    {k: v[0] for k, v in sized.items()}, dists, slip=slip, room=room_floor,
-                    contract_size=contract, min_lot=venue_min_lot,
-                    quantise=lambda x: _quantise(x, venue, SYMBOL))
-                if fit is None:
-                    rail_skip = {"rail": DAILY_FLOOR_RAIL, "reason": DAILY_FLOOR_REASON,
-                                 "why": str(fit_why), "legs": len(sized),
-                                 "leg_risk_usd": round(window_risk_usd, 2), "slip": slip,
-                                 "slip_source": slip_src,
-                                 "room_to_daily_floor": round(room_floor, 2)}
-                else:
-                    # The floor is now judged on what each leg actually risks at its lot.
-                    for k, lot in fit.items():
-                        if lot < sized[k][0] - 1e-12:
-                            floor_shrunk[k] = sized[k][0]
-                            sized[k] = (lot, sized[k][1])
-                        leg_risk[k] = dists[k] * lot * contract
-                    window_risk_usd = max(leg_risk.values())
-                    fitted = True
-            if rail_skip is None:
-                rail_skip = _bracket_rails(spec, {k: v[0] for k, v in sized.items()},
-                                           risk_usd=window_risk_usd, slip=slip,
-                                           slip_src=slip_src, guard_decision=guard_decision,
-                                           contract=contract, check_floor=not fitted)
+            # 1. THE LOT CEILING, then the budget on what the capped leg risks with its slip.
+            capped, before, _ = fit_lots({k: v[0] for k, v in sized.items()},
+                                         dict.fromkeys(sized, max_lot), min_lot=None,
+                                         quantise=_quant)
+            if capped is not None and before:
+                over = ", ".join(f"{k} {v:g}" for k, v in sorted(before.items()))
+                _apply(capped, before, LOT_CEILING_RAIL, LOT_CEILING_REASON,
+                       f"lot ceiling: {over} lots shrunk to the {max_lot:g}-lot ceiling for one "
+                       f"gold leg", max_lot=max_lot, max_lot_source=max_lot_src)
+                caps = {k: ceiling_budget_lot(committed or 0.0, room, dists[k], contract,
+                                              slip_pts) for k in before}
+                fitted, cut, cut_why = fit_lots({k: sized[k][0] for k in sized}, caps,
+                                                min_lot=venue_min_lot, quantise=_quant)
+                if fitted is None:
+                    rail_skip = {"rail": LOT_CEILING_RAIL, "reason": LOT_CEILING_REASON,
+                                 "why": (f"lot ceiling: the capped leg cannot fit the "
+                                         f"concurrent-risk budget with {slip_pts:g} points of "
+                                         f"slip: {cut_why}"),
+                                 "slip_points": slip_pts}
+                elif cut:
+                    _apply(fitted, cut, LOT_CEILING_RAIL, LOT_CEILING_REASON,
+                           f"lot ceiling: capped leg cut further to fit the concurrent-risk "
+                           f"budget with {slip_pts:g} points of slip",
+                           slip_points=slip_pts, slip_source=slip_src)
+            else:
+                fits, budget_why = risk_budget_allows(committed or 0.0, risk_usd, room)
+                if not fits:
+                    blocker = f"concurrent risk would reach today's floor: {budget_why}"
+                    doc["skipped"].append({"window": name, "why": blocker})
+                    log(f"[{name}] DEFERRED: {blocker}")
+                    continue
+            # 2. TODAY'S FLOOR (and the static floor) for both legs plus one leg's slip.
+            if rail_skip is None and sized:
+                if guard_decision is None:
+                    raise ValueError("no guard decision to budget against")
+                room_floor = floor_room(guard_decision)
+                lots_now = {k: v[0] for k, v in sized.items()}
+                need = bracket_floor_need(leg_risk, lots_now, slip_pts, contract)
+                if need > room_floor + 1e-9:
+                    fit, fit_why = floor_fit_lots(lots_now, dists, slip_points=slip_pts,
+                                                  room=room_floor, contract_size=contract,
+                                                  min_lot=venue_min_lot, quantise=_quant)
+                    floor_extra = {"slip_points": slip_pts, "slip_source": slip_src,
+                                   "room_to_floor": round(room_floor, 2),
+                                   "need_usd": round(need, 2)}
+                    if fit is None:
+                        rail_skip = {"rail": DAILY_FLOOR_RAIL, "reason": DAILY_FLOOR_REASON,
+                                     "why": str(fit_why), **floor_extra}
+                    else:
+                        # Judged on what each leg actually risks at its lot from here on.
+                        for k in fit:
+                            leg_risk[k] = dists[k] * sized[k][0] * contract
+                        _apply(fit, {k: lots_now[k] for k in fit if fit[k] < lots_now[k] - 1e-12},
+                               DAILY_FLOOR_RAIL, DAILY_FLOOR_REASON,
+                               (f"bracket floor: {len(fit)} legs plus {slip_pts:g} points of "
+                                f"one leg's slip needed {need:,.0f} USD against "
+                                f"{room_floor:,.0f} to the nearer floor; shrunk to fit"),
+                               **floor_extra)
+            # 3. THE DAILY PROFIT CAP: no target past the headroom the guard reports.
+            if rail_skip is None and sized:
+                headroom = float(guard_decision.profit_cap_headroom)
+                caps = profit_fit_caps(spec, sized.keys(), headroom, contract)
+                fitted, cut, cut_why = fit_lots({k: v[0] for k, v in sized.items()}, caps,
+                                                min_lot=venue_min_lot, quantise=_quant)
+                cap_extra = {"profit_cap_headroom_usd": round(headroom, 2)}
+                if fitted is None:
+                    rail_skip = {"rail": PROFIT_CAP_RAIL, "reason": PROFIT_CAP_REASON,
+                                 "why": (f"daily profit cap: {headroom:,.0f} USD of counted "
+                                         f"profit left today: {cut_why}"), **cap_extra}
+                elif cut:
+                    _apply(fitted, cut, PROFIT_CAP_RAIL, PROFIT_CAP_REASON,
+                           (f"daily profit cap: target cut to fit the {headroom:,.0f} USD of "
+                            f"counted profit left today; the excess would be stripped"),
+                           **cap_extra)
         except Exception as exc:
             why = (f"bracket rails unmeasurable ({type(exc).__name__}: {exc}"[:200]
                    + "); deferred")
@@ -1283,46 +1453,28 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             log(f"[{name}] SKIPPED: {skip['why']}; MISSED GROWTH ({rail}): the window's "
                 f"{risk_usd:.0f} USD of certified risk is not deployed")
             continue
-        if unshrunk:
-            # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1), two-sided: the risk the ceiling withheld
-            # is journalled; what the smaller leg saved in a fill-through tail is UNMEASURED
-            # (research/missed_growth.published_e8_gold_lines).
-            withheld = max(0.0, risk_usd - ceiling_risk_usd)
-            over = ", ".join(f"{k} {v:g}" for k, v in sorted(unshrunk.items()))
-            shrink = {"window": name, "rail": LOT_CEILING_RAIL, "reason": LOT_CEILING_REASON,
-                      "why": (f"lot ceiling: {over} lots shrunk to the {max_lot:g}-lot ceiling "
-                              f"for one gold leg; sent smaller, not skipped"),
-                      "lots": {k: v[0] for k, v in sized.items()}, "unshrunk_lots": unshrunk,
-                      "max_lot": max_lot, "max_lot_source": max_lot_src,
-                      "risk_usd": round(ceiling_risk_usd, 2),
-                      "certified_risk_usd": round(risk_usd, 2),
-                      "missed_growth_risk_usd": round(withheld, 2)}
-            doc.setdefault("shrunk", []).append(shrink)
-            _record({"at": now.isoformat(timespec="seconds"), **shrink, "status": "RAIL_SHRUNK",
-                     "risk_frac": frac, "armed": bool(armed)})
-            log(f"[{name}] SHRUNK: {shrink['why']}; MISSED GROWTH ({LOT_CEILING_RAIL}): "
-                f"{withheld:.0f} of the window's {risk_usd:.0f} USD of certified risk withheld")
-        if floor_shrunk:
-            # The same two-sided bill for the floor: what the smaller bracket withheld is a
-            # number; what it spared on a two-stop day is UNMEASURED.
-            withheld = max(0.0, ceiling_risk_usd - window_risk_usd)
-            before = ", ".join(f"{k} {v:g}" for k, v in sorted(floor_shrunk.items()))
-            shrink = {"window": name, "rail": DAILY_FLOOR_RAIL, "reason": DAILY_FLOOR_REASON,
-                      "why": (f"bracket daily floor: {before} lots shrunk so {len(sized)} legs x "
-                              f"(1 + {slip:g} slip) fit the "
-                              f"{float(guard_decision.room_to_daily_floor):,.0f} USD left to "
-                              f"today's floor; sent smaller, not skipped"),
+        window_risk_usd = max(leg_risk.values()) if leg_risk else risk_usd
+        shrunk_by: dict[str, dict[str, Any]] = {}
+        for cut_row in cuts:
+            # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1), two-sided: the risk each cut withheld is
+            # journalled; what the smaller leg saved is UNMEASURED (published_e8_gold_lines).
+            shrink = {"window": name, "rail": cut_row["rail"], "reason": cut_row["reason"],
+                      "why": cut_row["why"] + "; sent smaller, not skipped",
                       "lots": {k: v[0] for k, v in sized.items()},
-                      "unshrunk_lots": floor_shrunk, "slip": slip, "slip_source": slip_src,
-                      "room_to_daily_floor": round(float(guard_decision.room_to_daily_floor), 2),
+                      "unshrunk_lots": cut_row["unshrunk_lots"],
                       "risk_usd": round(window_risk_usd, 2),
                       "certified_risk_usd": round(risk_usd, 2),
-                      "missed_growth_risk_usd": round(withheld, 2)}
+                      "missed_growth_risk_usd": round(cut_row["withheld"], 2),
+                      **{k: v for k, v in cut_row.items()
+                         if k not in ("rail", "reason", "why", "unshrunk_lots", "withheld")}}
             doc.setdefault("shrunk", []).append(shrink)
             _record({"at": now.isoformat(timespec="seconds"), **shrink, "status": "RAIL_SHRUNK",
                      "risk_frac": frac, "armed": bool(armed)})
-            log(f"[{name}] SHRUNK: {shrink['why']}; MISSED GROWTH ({DAILY_FLOOR_RAIL}): "
-                f"{withheld:.0f} USD of risk withheld")
+            log(f"[{name}] SHRUNK: {shrink['why']}; MISSED GROWTH ({cut_row['rail']}): "
+                f"{cut_row['withheld']:.0f} USD of risk withheld")
+            for k, lot in cut_row["unshrunk_lots"].items():
+                shrunk_by.setdefault(k, {"unshrunk_lot": lot, "by": []})["by"].append(
+                    cut_row["reason"])
         committed = (committed or 0.0) + window_risk_usd
         legs: dict[str, dict] = {}
         failed: dict[str, dict] = {}
@@ -1348,12 +1500,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                    "risk_usd": round(leg_risk.get(side, risk_usd), 2),
                    "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
                    "armed": bool(armed)}
-            if side in unshrunk:
-                row["lot_ceiling"] = {"max_lot": max_lot, "unshrunk_lot": unshrunk[side],
-                                      "reason": LOT_CEILING_REASON}
-            if side in floor_shrunk:
-                row["daily_floor"] = {"unshrunk_lot": floor_shrunk[side],
-                                      "reason": DAILY_FLOOR_REASON}
+            if side in shrunk_by:
+                row["shrunk"] = shrunk_by[side]
             if not (lot > 0):
                 row["status"] = "UNSIZEABLE"
                 doc["skipped"].append(row)
@@ -1410,6 +1558,16 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 filled[int(o["id"])] = int(o["positionId"])
     except Exception as exc:
         doc["history_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+    # THE SLIP IS MEASURED FROM THE LANE'S OWN STOP EXITS (prop/e8_gold_slip.py): each protective
+    # stop that filled on a position our entry opened is journalled once, and E8_GOLD_SLIP.json is
+    # re-measured from the journal. Never raises; nothing below reads it this pass.
+    if hist_rows:
+        try:
+            exits = stop_exits_from_history(hist_rows, filled,
+                                            own_entry_orders(_journal_rows(), state))
+            doc["stop_exits_recorded"] = _record_stop_exits(exits, now=now)
+        except Exception as exc:
+            log(f"stop exits not derived ({type(exc).__name__}: {exc})")
     positions_ok = True
     try:
         venue_positions = venue.positions()
@@ -1610,6 +1768,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         doc["actions"].append(act)
     state["windows"] = {n: w for n, w in state["windows"].items() if not n.startswith("carried:")}
 
+    # THE SLIP IS PUBLISHED ON EVERY PASS, AFTER PLACEMENT (coordinator, hourly pass 15): overall
+    # and per window, in points, into E8_GOLD_SLIP.json and this report. `publish_slip` never
+    # raises; a failure publishes UNMEASURED and the guard keeps DEFAULT_SLIP_POINTS.
+    doc["slip"] = publish_slip(now=now)
     doc.setdefault("status", "OK")
     try:
         STATE.parent.mkdir(parents=True, exist_ok=True)

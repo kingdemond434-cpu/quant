@@ -198,13 +198,46 @@ E8_LOGIN_FENCED: tuple[str, ...] = (
 )
 
 
+#: Every written form of a whole number the fence reads (audit 2026-10-20, v4), each between
+#: digit boundaries -- never `\b`: a plain run, the same with a zero fraction ("<ID>.0", what a
+#: float column prints), scientific notation ("1.234567e6", "1.234567E+06") and thousands
+#: separators ("1,234,567", "1 234 567", "1_234_567", with a no-break or thin space too). A
+#: candidate counts only when it is a whole number with exactly `digits` digits.
+_SEP = "[,_ \u00a0\u202f]"
+_NUMBER_FORMS = (
+    re.compile(_BEFORE + r"(\d+)(?:\.0+)?(?!\d|\.\d|[eE][+-]?\d)"),
+    re.compile(_BEFORE + r"(\d+(?:\.\d+)?[eE][+-]?\d+)(?![\d.])"),
+    re.compile(_BEFORE + r"(\d{1,3}(?:" + _SEP + r"\d{3})+)(?:\.0+)?(?!\d|\.\d)"),
+)
+
+
+def _whole_numbers(text: str) -> set[str]:
+    """Every whole number written in `text`, in any of `_NUMBER_FORMS`, as plain digits."""
+    from decimal import Decimal, InvalidOperation
+    out: set[str] = set()
+    for i, form in enumerate(_NUMBER_FORMS):
+        for m in form.finditer(text):
+            raw = m.group(1)
+            if i == 0:
+                out.add(raw)
+            elif i == 1:
+                try:
+                    v = Decimal(raw)
+                except InvalidOperation:
+                    continue
+                if v == v.to_integral_value() and abs(v.adjusted()) < 64:
+                    out.add(str(int(v)))
+            else:
+                out.add(re.sub(_SEP, "", raw))
+    return out
+
+
 def _carries_hashed_identifier(text: str, sha256: str, digits: int) -> bool:
-    """Does `text` hold, between digit boundaries, a `digits`-long number hashing to `sha256`?"""
+    """Does `text` write, in any form `_whole_numbers` reads, a `digits`-digit whole number whose
+    sha256 is `sha256`?"""
     import hashlib
-    for m in re.finditer(_BEFORE + r"\d{" + str(int(digits)) + r"}" + _AFTER, text):
-        if hashlib.sha256(m.group(0).encode()).hexdigest() == sha256:
-            return True
-    return False
+    return any(len(n) == int(digits) and hashlib.sha256(n.encode()).hexdigest() == sha256
+               for n in _whole_numbers(text))
 
 
 def test_the_hashed_matcher_uses_digit_boundaries() -> None:
@@ -215,6 +248,22 @@ def test_the_hashed_matcher_uses_digit_boundaries() -> None:
                 '"login": ' + probe + ",", "E8TradeLockerPro/" + probe):
         assert _carries_hashed_identifier(hit, sha, 7), hit
     for miss in ("1" + probe, probe + "8", "7." + probe, probe + ".5", "123456"):
+        assert not _carries_hashed_identifier(miss, sha, 7), miss
+
+
+def test_the_hashed_matcher_reads_every_written_form_of_the_number() -> None:
+    """A FAKE identifier, never the login: its float, scientific and grouped spellings."""
+    import hashlib
+    probe = "1234567"
+    sha = hashlib.sha256(probe.encode()).hexdigest()
+    for hit in (probe + ".0", '"login": ' + probe + ".00,", "login " + probe + ".0.",
+                "1.234567e6", "1.234567E+06", "12.34567e5", "login=1.234567e6;",
+                "1,234,567", "acct 1,234,567.", "1 234 567", "1_234_567",
+                "1\u00a0234\u00a0567", "1\u202f234\u202f567", "1,234,567.0"):
+        assert _carries_hashed_identifier(hit, sha, 7), hit
+    for miss in (probe + ".05", "1.2345675e6", "1.234567e7", "1.234567e5", "11,234,567",
+                 "1,234,5678", "1,234,567.5", "1,234,567,000", "0.1234567",
+                 "1 23 4567", "12,34,567"):
         assert not _carries_hashed_identifier(miss, sha, 7), miss
 
 

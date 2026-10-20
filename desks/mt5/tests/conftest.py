@@ -157,6 +157,23 @@ def measured_dsr_inputs_module(tmp_path_factory: pytest.TempPathFactory) -> Iter
 
 
 @pytest.fixture(autouse=True)
+def _e8_gold_slip_writes_to_tmp(tmp_path_factory, monkeypatch):
+    """THE E8 GOLD SLIP FILE NEVER LANDS IN THE REPO FROM A TEST. `e8_gold.run` re-measures and
+    writes data/E8_GOLD_SLIP.json (and appends data/e8_gold_stop_exits.jsonl) on every pass, so
+    any test that drives the lane would otherwise rewrite the tracked file. A test that sets its
+    own paths afterwards still wins."""
+    import sys
+    mods = [sys.modules.get(k) for k in ("prop.e8_gold", "desks.mt5.prop.e8_gold")]
+    live = [g for g in mods if g is not None and hasattr(g, "BRACKET_SLIP_FILE")]
+    if live:
+        d = tmp_path_factory.mktemp("e8_gold_slip")
+        for g in live:
+            monkeypatch.setattr(g, "BRACKET_SLIP_FILE", d / "E8_GOLD_SLIP.json")
+            monkeypatch.setattr(g, "STOP_EXITS", d / "e8_gold_stop_exits.jsonl")
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     """THE ORDER DOOR'S LEDGER NEVER LANDS IN THE REPO FROM A TEST. `mt5desk.order_door` appends
     one row per money action to `desks/mt5/data/order_door_ledger.jsonl` -- the box's real
