@@ -90,7 +90,9 @@ STATE_RUNNING = frozenset({
     "em execução", "wordt uitgevoerd", "uruchomione", "выполняется",
 })
 STATE_LIVE = STATE_RUNNING | frozenset({
-    "ready", "enabled", "queued", "could not start",
+    # "Could not start" is deliberately absent: it is a start that failed, so it reads
+    # UNMEASURED (no state this file can vouch for), never live (audit v2, 2026-10-14).
+    "ready", "enabled", "queued",
     "bereit", "aktiviert", "in warteschlange",
     "prêt", "activé", "en file d'attente",
     "listo", "preparado", "habilitado", "activado", "en cola",
@@ -235,10 +237,13 @@ def _normalise_code(raw: Any) -> int | None:
     past it -- which is exactly the attention this board exists to spend well.
 
     An absent, blank or non-numeric result is None, not 0: the audit of 2026-10-14 probed a
-    verbose header without "Last Result" and got a clean OK for a run nobody had read.
+    verbose header without "Last Result" and got a clean OK for a run nobody had read. A `0x`
+    code is parsed as hex, as `desks/mt5/scripts/check_desk_health.py:_result_code` does, so the
+    two readers of one scheduler never disagree about the same row.
     """
+    text = str(raw if raw is not None else "").strip()
     try:
-        code = int(str(raw if raw is not None else "").strip())
+        code = int(text, 16) if text.lower().startswith("0x") else int(text)
     except ValueError:
         return None
     return code + 0x1_0000_0000 if code < 0 else code
@@ -275,7 +280,11 @@ def build() -> dict[str, Any]:
         # "OK" for a task whose last run was never read (L1.28a), so the code stays None.
         result_unmeasured = str(t.get("ResultUnmeasured") or "")
         code: int | None = None if result_unmeasured else _normalise_code(t.get("Last Result"))
-        if code is None and not result_unmeasured:
+        # The verbose query ANSWERED for this row but its code is blank, "N/A" or garbage: that
+        # is an unread result on a row that claimed to have one, so the row is UNMEASURED below,
+        # unlike a brief-only row whose history was simply not asked for this pass.
+        code_unreadable = code is None and not result_unmeasured
+        if code_unreadable:
             result_unmeasured = f"last result {str(t.get('Last Result') or 'absent')!r} not a code"
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
         age = _age_min(ROOT / artifact) if artifact else None
@@ -300,6 +309,9 @@ def build() -> dict[str, Any]:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif artifact and max_age and age is not None and age > max_age:
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+        elif code_unreadable:
+            verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
+                                                    "succeeded is UNMEASURED")
         elif code is not None and code not in (0, 267009, 267011) and not _running:
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
         elif not artifact:
@@ -381,8 +393,11 @@ def build() -> dict[str, Any]:
         "n_processes": len(rows),
         "counts": counts,
         # The headline is the WORST row, never the proportion that are fine. "38 of 41 healthy"
-        # is how a dead gateway hides behind a green majority.
-        "status": "OK" if not bad else "ATTENTION",
+        # is how a dead gateway hides behind a green majority. An unread scheduler, or a board
+        # with no rows at all (UNMEASURED inventory and `_contracts()` swallowing a failed
+        # import), is UNMEASURED: zero rows of trouble out of zero rows read is not "OK".
+        "status": ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
+                   else "OK" if not bad else "ATTENTION"),
         "n_needing_attention": len(bad),
         "processes": rows,
     }

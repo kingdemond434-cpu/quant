@@ -80,3 +80,54 @@ def test_the_quotes_writer_withholds_the_login() -> None:
     assert '"login_withheld"' in src, (
         "cost_truth.py no longer withholds the login, and its quotes file is now published "
         "from the box every hour")
+
+
+# THE PUBLISH-TIME LOGIN FENCE (audit v2, 2026-10-14). The committed 2026-09-23
+# cost_truth_quotes.json still carries the live login and the live-identifier test exempts that
+# whole file, so nothing but the publisher itself can stop a regressed writer re-publishing it.
+# pwsh is absent off the box; the pattern is pulled out of the script and run here as written.
+def _login_pattern() -> re.Pattern[str]:
+    src = SYNC.read_text("utf-8", errors="ignore")
+    m = re.search(r"^\$LoginKeyPattern = '([^']+)'", src, re.M)
+    assert m, "sync_shadow_to_git.ps1 no longer defines $LoginKeyPattern"
+    return re.compile(m.group(1), re.I)
+
+
+@pytest.mark.parametrize("text, refused", [
+    ('{"account": {"login": 51234567, "server": "X"}}', True),
+    ('{"account": {"Login": "51234567"}}', True),
+    ('{"mt5_login": 51234567}', True),
+    ('{"account_login" : 51234567}', True),
+    ('{"account": {"login_withheld": true, "server": "X"}}', False),   # what cost_truth writes
+    ('{"login": null}', False),
+    ('{"note": "login to the terminal"}', False),
+], ids=["int", "string-cased", "prefixed", "spaced", "withheld-bool", "null", "prose"])
+def test_the_login_fence_refuses_a_login_value_and_passes_the_withheld_flag(
+        text: str, refused: bool) -> None:
+    assert bool(_login_pattern().search(text)) is refused
+
+
+def test_the_login_fence_runs_inside_the_publisher_before_any_blob_is_hashed() -> None:
+    src = SYNC.read_text("utf-8", errors="ignore")
+    body = src[src.index("function Publish-StateOnto"):]
+    fence, hashed = body.index("$LoginKeyPattern"), body.index("hash-object -w --stdin-paths")
+    assert fence < hashed, "the login fence must run before the state blobs are written"
+    refusal = next(ln for ln in body.splitlines() if "REFUSED $rel -- it carries" in ln)
+    assert "$text" not in refusal and "$m" not in refusal, "the refusal must not log the value"
+
+
+def test_the_committed_quotes_copy_is_exactly_what_the_fence_would_refuse() -> None:
+    # Until the box publishes a fresh copy this checkout holds the 2026-09-23 file with the
+    # login in it, so the fence refuses it; after that publish, nothing on the wire matches.
+    # Either way no OTHER listed state file may carry a login value.
+    pat = _login_pattern()
+    src = SYNC.read_text("utf-8", errors="ignore")
+    listed = set(_report_paths())
+    start = src.index("$relPaths = @(")
+    block = src[start:src.index("\n)", start)]
+    listed |= {p for p in re.findall(r'"([^"]+)"',
+                                     "\n".join(ln.split("#", 1)[0] for ln in block.splitlines()))
+               if "/" in p}
+    hits = sorted(rel for rel in listed if rel.endswith(".json") and (ROOT / rel).is_file()
+                  and pat.search((ROOT / rel).read_text("utf-8", errors="ignore")))
+    assert set(hits) <= {"desks/mt5/data/cost_truth_quotes.json"}, hits

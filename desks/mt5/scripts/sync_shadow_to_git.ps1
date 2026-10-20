@@ -418,6 +418,16 @@ function Push-Logged {
     return $rc
 }
 
+# A BROKERAGE LOGIN NEVER CROSSES THIS WIRE (audit v2, 2026-10-14). The live-identifier fence
+# (tests/ops/test_live_infrastructure_is_not_published.py) is a pytest: it can only notice a
+# login AFTER origin holds it, and its ALLOWED entry for cost_truth_quotes.json blinds it to that
+# one path entirely. So the publisher refuses, at publish time, any text state file carrying a
+# login-shaped key ("login", "account_login", "mt5_login", ...) with a value. `login_withheld`
+# (the bool research/cost_truth.py writes) does not match, and neither does a null/true/false.
+# A refused file is dropped from THIS pass by name only -- the value is never read into the log.
+# tests/scripts/test_box_sync_publishes_cost_state.py runs this exact pattern against the files.
+$LoginKeyPattern = '"(?:[A-Za-z0-9]*_)?login"\s*:\s*(?!null\b|false\b|true\b)'
+
 function Publish-StateOnto {
     param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
     if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
@@ -428,6 +438,25 @@ function Publish-StateOnto {
         Write-SyncLog "publish: allowlist refusal ($($ignored.Count) ignored path(s)); nothing published"
         return $false
     }
+    # The login fence, per file, before anything is hashed. Binary state (the .pkl) is skipped:
+    # it holds market frames, and a regex over pickled bytes would only ever false-alarm.
+    $kept = @()
+    foreach ($rel in $Paths) {
+        if ($rel -notmatch '\.(json|jsonl|csv|txt|md)$') { $kept += $rel; continue }
+        try {
+            $text = [System.IO.File]::ReadAllText((Join-Path $RepoRoot $rel))
+        } catch {
+            Write-SyncLog "publish: REFUSED $rel -- unreadable for the login fence"
+            continue
+        }
+        if ([regex]::IsMatch($text, $LoginKeyPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
+            Write-SyncLog "publish: REFUSED $rel -- it carries an account login key (value withheld from this log); fix its writer"
+            continue
+        }
+        $kept += $rel
+    }
+    $Paths = [string[]]$kept
+    if ($Paths.Count -eq 0) { Write-SyncLog "publish: every state path refused; nothing published"; return $false }
     # One git process hashes the allowlisted snapshot. Starting a separate git process for every
     # state file exhausted the ten-minute task window on the trading box before any push began.
     # --stdin-paths emits one hash per input path, in order; reject partial or malformed output.

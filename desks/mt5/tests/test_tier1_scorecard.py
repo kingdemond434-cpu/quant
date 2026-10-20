@@ -177,6 +177,7 @@ def test_row06_an_empty_ledger_is_UNMEASURED_and_never_one_hundred(sandbox: Path
 
 def test_row07_sums_failing_organs_and_failed_or_timed_out_legs(sandbox: Path) -> None:
     _write(sandbox, "PROCESS_HEALTH", {"at": "2026-09-12T07:15:01+00:00",
+                                       "scheduler_status": "OK schtasks",
                                        "counts": {"FAILING": 7, "NOT_SCHEDULED": 1, "OK": 15}})
     _write(sandbox, "SYNC_MARKER", {"last_cycle": "2026-09-16T13:53:37+00:00",
                                     "daily": {"status": "TIMEOUT"},
@@ -185,6 +186,24 @@ def test_row07_sums_failing_organs_and_failed_or_timed_out_legs(sandbox: Path) -
     row = sc._r07_silent_failures()
     assert row["current"] == 10.0 and row["verdict"] == sc.BELOW
     assert row["lower_is_better"] is True and "legs=2" in row["basis"]
+
+
+@pytest.mark.parametrize("health", [
+    # the committed 2026-10-20 18:15Z reading: every row unread, scored 0.0 AT before the fix
+    {"scheduler_status": "UNMEASURED: schtasks /fo csv TimeoutExpired",
+     "counts": {"SCHEDULER_UNMEASURED": 73}},
+    # inventory read, but some rows could not be judged
+    {"scheduler_status": "OK schtasks", "counts": {"SCHEDULER_UNMEASURED": 2, "OK": 40}},
+    # a reading with no scheduler status at all
+    {"counts": {"OK": 40}},
+], ids=["all-unread", "some-unread", "no-scheduler-status"])
+def test_row07_an_unread_scheduler_is_UNMEASURED_never_zero_failures(
+        sandbox: Path, health: dict) -> None:
+    _write(sandbox, "PROCESS_HEALTH", {"at": "2026-10-20T18:15:00+00:00", **health})
+    _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and row["verdict"] == sc.UNMEASURED
+    assert row["basis"].startswith("UNMEASURED:")
 
 
 def test_row08_joins_certificates_to_forward_clocks_on_symbol_and_selector(sandbox: Path) -> None:

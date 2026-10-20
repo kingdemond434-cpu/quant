@@ -356,6 +356,19 @@ def _r07_silent_failures() -> dict[str, Any]:
         total += bad_legs
     if not read:
         return _gone(dim, [PROCESS_HEALTH, SYNC_MARKER])
+    # AN UNREAD SCHEDULER IS NOT ZERO FAILURES. process_health marks every organ it could not
+    # judge SCHEDULER_UNMEASURED, which the FAILING+NOT_SCHEDULED sum never sees -- so 73 unread
+    # rows scored 0.0 and verdict AT (audit v2, 2026-10-14, measured on the committed artifact).
+    # Any unread row, or a scheduler status that is not "OK ...", leaves this row UNMEASURED.
+    if isinstance(health, dict):
+        unread = _num(counts.get("SCHEDULER_UNMEASURED")) or 0.0
+        sched = str(health.get("scheduler_status") or "")
+        if unread > 0 or not sched.startswith("OK "):
+            return _mk(dim, None,
+                       f"UNMEASURED: {_rel(PROCESS_HEALTH)} scheduler_status "
+                       f"{sched[:80] or 'absent'!r}, SCHEDULER_UNMEASURED={unread:.0f} "
+                       f"(legs={bad_legs} is a floor, not the count)",
+                       _stamp(health) or _stamp(marker))
     return _mk(dim, total, f"{' + '.join(read)} (legs={bad_legs})",
                _stamp(health) or _stamp(marker))
 
