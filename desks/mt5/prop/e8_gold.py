@@ -25,8 +25,11 @@ SIZED FOR THIS ACCOUNT, NOT COPIED FROM THE OTHER. E8 risks RISK_FRAC of equity 
 `lot_for_risk`, which reads the venue's own contract size.
 
 SHADOW UNLESS data/E8_GOLD_ARMED EXISTS. Unarmed passes log the exact orders they would send.
-The daily guard `e8_guard_state.json` (written by the E8 executor) stands new placements down
-when it says so; management of what is already open never stands down.
+The daily guard (`e8_guard.assess`, the one guard, shared with the E8 executor) stands new
+placements down on any verdict but OK; management of what is already open never stands down.
+ONE GOLD TRADE AT RISK AT A TIME: a window waits while an earlier XAU position still has its stop
+short of break-even or an earlier bracket still rests (`one_at_risk_blocker`), and as a fail-safe
+the gold risk committed plus its own must fit the guard's room to today's floor (SLIP_BUFFER).
 
     python prop/e8_gold.py            one pass, shadow unless armed
     python prop/e8_gold.py --armed    one pass, armed for this pass only
@@ -106,6 +109,19 @@ XAU_OZ_PER_LOT = 100.0  # fallback for a leg journalled before risk_usd was kept
 UNMEASURED_SKEW_MS = 24 * 3600 * 1000
 #: The growth-governance rail the unowned-position block is billed under (libs/portfolio/rails).
 UNOWNED_BLOCK_RAIL = "e8_unowned_position_block"
+# CONCURRENT OPEN RISK (2026-10-20). The three windows place independently and the AGREEING leg is
+# placed while an earlier window is still open, so three windows at 0.75% each can be live in
+# the same direction at once: 2.25% of the account to the stops, and more once a stop fills
+# through its level. E8's daily floor is 2.5%. Before any window is placed, the risk already
+# committed (open positions to their current stops, this lane's resting legs) plus the new
+# window's must fit inside the guard's `room_to_daily_floor`, after both of these:
+#: Stops on this venue fill at market, not at the level: 2026-09-24 a buy stop filled 24 points
+#: through. Every committed dollar is grossed up by this before it is compared with the room, so
+#: 2.25% of stop risk reads as ~2.8% and cannot be placed against a 2.5% floor.
+SLIP_BUFFER = 1.25
+#: Kept clear of the floor on top of the buffer: spread and commission on the closes, and the
+#: equity read being seconds old. 0.10% of the starting balance.
+ROOM_MARGIN_USD = 100.0
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -512,6 +528,115 @@ def trail_decision(position: dict, window: dict, bars: Any, current_stop: float,
                        cost_per_unit=float(cost_per_unit), spread=max(0.0, float(spread)))
 
 
+def position_risk_usd(position: dict, stop: float, *, bid: float, ask: float,
+                      contract_size: float) -> float:
+    """Dollars this open position loses if its stop fills AT the level, measured from whichever
+    is further from the stop: the entry, or the current mark (bid for a long, ask for a short).
+
+    From the entry, a stop at or beyond it -- ratcheted to break-even or better -- risks nothing.
+    From the mark, a winner still has its floating profit to give back, and the guard's room is
+    measured on EQUITY, which already includes that profit; leaving it out would let a winning
+    break-even leg fund new risk with money the floor can still take back.
+    """
+    side = str(position.get("side") or "").strip().lower()
+    entry = float(position.get("avgPrice") or 0.0)
+    qty = float(position.get("qty") or 0.0)
+    if side not in ("buy", "sell") or not (entry > 0) or not (qty > 0) or not (stop > 0):
+        raise ValueError(f"position {position.get('id')} has no readable side/entry/qty/stop")
+    sign = 1.0 if side == "buy" else -1.0
+    mark = float(bid) if side == "buy" else float(ask)
+    per_unit = max(0.0, sign * (entry - stop), sign * (mark - stop))
+    return per_unit * qty * float(contract_size)
+
+
+def stop_is_at_risk(position: dict, stop: float) -> bool:
+    """Is this position's stop still on the losing side of its entry (not yet at break-even)?"""
+    side = str(position.get("side") or "").strip().lower()
+    entry = float(position.get("avgPrice") or 0.0)
+    return (entry - float(stop)) > 0 if side == "buy" else (float(stop) - entry) > 0
+
+
+def one_at_risk_blocker(detail: dict[str, Any]) -> str | None:
+    """ONE GOLD TRADE AT RISK AT A TIME ON E8 -- the reason a window must wait, or None.
+
+    Gold is force-closed only at CLOSE_HOUR, so all three windows can be open together, and the
+    agreeing-leg rule lets them stack in one direction. The max-growth simulation (2026-10-20,
+    sizing/e8_three_gold_2026-10-20.md) put that at an 8-31% daily-breach rate at 0.75% per
+    window, and at 0% breach with a 65-89% pass rate when a window waits while an earlier one is
+    still at risk. "At risk" is a position whose stop is not yet at break-even or better, or a
+    resting bracket of this lane that has not filled or been cancelled; a position ratcheted to
+    break-even risks nothing and does not block.
+    """
+    risky = [str(r["position_id"]) for r in detail.get("positions") or [] if r.get("at_risk")]
+    pending = sorted((detail.get("pending_brackets") or {}).keys())
+    if risky:
+        return (f"one gold trade at risk at a time: position(s) {', '.join(risky)} still have "
+                f"their stop short of break-even")
+    if pending:
+        return (f"one gold trade at risk at a time: bracket(s) {', '.join(pending)} still rest "
+                f"at the venue")
+    return None
+
+
+def committed_risk(positions: list[dict], open_orders: list[dict], journal: list[dict],
+                   state: dict, *, bid: float, ask: float, contract_size: float
+                   ) -> tuple[float, dict[str, Any]]:
+    """Risk already on the account in gold, before a new window is placed.
+
+    * every OPEN XAU position, to its current stop (`position_risk_usd`);
+    * every RESTING entry leg this lane placed (its journalled `risk_usd`), with a bracket
+      counted ONCE at its larger leg -- one fill cancels the other, so only one can become risk.
+
+    Raises ValueError when a position's stop cannot be read: a position with no readable stop is
+    unbounded risk, and new risk is not added on top of an unknown.
+    """
+    by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+    pos_rows: list[dict[str, Any]] = []
+    for p in positions:
+        stop_order = by_id.get(int(p.get("stopLossId") or 0)) or {}
+        stop = float(stop_order.get("stopPrice") or p.get("stopLoss") or 0.0)
+        usd = position_risk_usd(p, stop, bid=bid, ask=ask, contract_size=contract_size)
+        pos_rows.append({"position_id": p.get("id"), "stop": stop, "risk_usd": round(usd, 2),
+                         "at_risk": stop_is_at_risk(p, stop)})
+    # THE JOURNAL IS THE LANE'S MARK ON THE VENUE; the state's legs cover a lost journal row.
+    legs: dict[int, tuple[str, float]] = {}
+    for row in journal:
+        if row.get("status") != "SENT" or row.get("order_id") is None:
+            continue
+        risk = row.get("risk_usd")
+        if risk is None:
+            risk = (abs(float(row.get("price") or 0) - float(row.get("sl") or 0))
+                    * float(row.get("lot") or 0) * float(contract_size))
+        legs[int(row["order_id"])] = (f"{str(row.get('at') or '')[:10]}/{row.get('window')}",
+                                      float(risk))
+    today = str(state.get("date") or "")
+    for bucket in ("carried", "windows"):
+        for name, w in (state.get(bucket) or {}).items():
+            for leg in (w.get("orders") or {}).values():
+                if leg.get("id") is None or int(leg["id"]) in legs:
+                    continue
+                risk = (abs(float(leg.get("price") or 0) - float(leg.get("sl") or 0))
+                        * float(leg.get("lot") or 0) * float(contract_size))
+                legs[int(leg["id"])] = (f"{today}/{name}", risk)
+    brackets: dict[str, float] = {}
+    for oid, (group, risk) in legs.items():
+        if oid in by_id:                                  # still resting at the venue
+            brackets[group] = max(brackets.get(group, 0.0), risk)
+    total = sum(r["risk_usd"] for r in pos_rows) + sum(brackets.values())
+    return total, {"positions": pos_rows,
+                   "pending_brackets": {k: round(v, 2) for k, v in brackets.items()}}
+
+
+def risk_budget_allows(committed: float, new_risk: float, room: float) -> tuple[bool, str]:
+    """May a window risking `new_risk` be added to `committed`, against `room` to today's floor?"""
+    need = (float(committed) + float(new_risk)) * SLIP_BUFFER
+    allowed = float(room) - ROOM_MARGIN_USD
+    why = (f"committed {committed:,.0f} + this window {new_risk:,.0f} USD, x{SLIP_BUFFER} slippage "
+           f"= {need:,.0f}, against {room:,.0f} to today's floor less a {ROOM_MARGIN_USD:,.0f} "
+           f"margin = {allowed:,.0f}")
+    return need <= allowed, why
+
+
 # ------------------------------------------------------------------ the pass
 
 def _read_json(p: Path, default: Any) -> Any:
@@ -607,11 +732,32 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 "cert_book_windows": cert or None,
                 "sizing_source": "kelly_survival" if kelly is not None else "policy RISK_FRAC",
                 "kelly_risk": kelly})
-    guard = _read_json(GUARD, {})
-    stood_down = bool(guard.get("stood_down"))
-    if stood_down:
-        doc["guard"] = "stood down: no new placements this pass"
-        log("guard stood down; managing open exposure only")
+    # THE ONE GUARD DECIDES (2026-10-20). This read the raw `stood_down` flag out of the guard's
+    # state file, which only the executor's `assess` call ever rolled to a new server day: on
+    # 2026-10-15 a flag latched on 10-14 stood the gold book down from 00:01Z to 23:56Z with no
+    # placement, and the flag-only read never saw CAPPED, BREACHED or PASSED at all. `assess` is
+    # the verdict; it re-anchors a stale day itself. An equity that cannot be read is not
+    # anchored on (a zero would be persisted as the day's start), and a guard that raises refuses.
+    from prop import e8_guard
+    guard_decision: Any = None
+    if not equity > 0:
+        stood_down = True
+        doc["guard"] = "equity unreadable: no new placements this pass"
+        log("guard not consulted: the venue reported no equity; managing open exposure only")
+    else:
+        try:
+            guard_decision = e8_guard.assess(equity, now=now, state_path=GUARD)
+            doc["guard_decision"] = guard_decision.as_dict()
+            stood_down = not guard_decision.may_open
+            if stood_down:
+                doc["guard"] = (f"{guard_decision.verdict.value}: no new placements this pass "
+                                f"({guard_decision.why})")
+                log(f"guard {guard_decision.verdict.value}: {guard_decision.why}; managing open "
+                    f"exposure only")
+        except Exception as exc:
+            stood_down = True
+            doc["guard"] = f"guard unreadable ({type(exc).__name__}: {exc}"[:200] + ")"
+            log(f"guard raised {type(exc).__name__}: {exc}; no new placements this pass")
 
     bid, ask = venue.quote(SYMBOL)
     try:
@@ -661,6 +807,34 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": due["window"], "why": why})
             log(f"[{due['window']}] DEFERRED: {why}")
         due_now = []
+    committed: float | None = None
+    if due_now:
+        # CONCURRENT OPEN RISK, measured once, before any window is placed (see SLIP_BUFFER).
+        # Anything unreadable -- the order book, the journal, a position's stop -- refuses every
+        # window this pass and marks none placed, so the next pass decides again.
+        try:
+            budget_orders = venue.orders(SYMBOL)
+            journal = [] if not INTENTS.exists() else _journal_read()
+            if journal is None:
+                raise ValueError("the intents journal is unreadable, so this lane's resting "
+                                 "legs cannot be counted")
+            try:
+                contract = float(venue.details(SYMBOL).get("contractSize") or XAU_OZ_PER_LOT)
+            except Exception:
+                contract = XAU_OZ_PER_LOT
+            committed, doc["committed_risk"] = committed_risk(
+                xau_positions, budget_orders, journal, state, bid=float(bid), ask=float(ask),
+                contract_size=contract)
+            doc["committed_risk"]["total_usd"] = round(committed, 2)
+        except Exception as exc:
+            why = (f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}"[:200]
+                   + "); no window placed this pass")
+            for due in due_now:
+                doc["skipped"].append({"window": due["window"], "why": why})
+                log(f"[{due['window']}] DEFERRED: {why}")
+            due_now = []
+    room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
+    placed_this_pass: list[str] = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
         frac, frac_src = window_risk(name, kelly)
@@ -670,6 +844,23 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
             continue
         risk_usd = equity * frac
+        # FIRST: one gold trade at risk at a time (`one_at_risk_blocker`). SECOND, a fail-safe
+        # under it: everything committed plus this window, grossed up for slippage, must fit the
+        # guard's room to today's floor. Either refusal defers the window without marking it
+        # placed, so a later pass inside its session places it once the earlier risk is gone.
+        blocker = one_at_risk_blocker(doc.get("committed_risk") or {})
+        if blocker is None and placed_this_pass:
+            blocker = (f"one gold trade at risk at a time: {', '.join(placed_this_pass)} was "
+                       f"placed earlier in this pass")
+        if blocker is None:
+            fits, budget_why = risk_budget_allows(committed or 0.0, risk_usd, room)
+            if not fits:
+                blocker = f"concurrent risk would reach today's floor: {budget_why}"
+        if blocker is not None:
+            doc["skipped"].append({"window": name, "why": blocker})
+            log(f"[{name}] DEFERRED: {blocker}")
+            continue
+        committed = (committed or 0.0) + risk_usd
         legs: dict[str, dict] = {}
         failed: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
@@ -728,6 +919,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                                   "orders": legs, "position_id": None, "shadow": not armed}
         if failed:
             state["windows"][name]["failed"] = failed
+        if legs or failed:
+            placed_this_pass.append(name)
         doc["placed"].append({"window": name, "legs": legs})
 
     # -------------------------------------------------------------- management
