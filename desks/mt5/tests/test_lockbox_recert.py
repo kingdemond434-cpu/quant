@@ -209,3 +209,18 @@ def test_the_sleeves_holding_an_affected_certificate_are_named(tmp_path: Path) -
     assert [h["sleeve"] for h in got["sleeves"]] == ["s1", "s2"]
     assert got["n_live"] == 1 and got["n_standby"] == 1
     assert lr.sleeve_holders({"e"}, tmp_path / "absent.json")["status"] == lr.UNMEASURED
+
+
+def test_the_holdback_publishes_an_unmeasured_missed_growth_line(tmp_path: Path) -> None:
+    _baseline(tmp_path, ["e"])
+    reg = _write(tmp_path / "sleeves.json", {"sleeves": [
+        {"name": "s1", "status": "STANDBY", "risk_frac": 0.0, "certificate": {"cell": "e"}}]})
+    doc = lr.build(canon=_write(tmp_path / "canon.json", {
+        "gate_policy": {"version": NEW},
+        "survivors": {"e": _row(0.2, 0.2, "2026-08-26T00:00:00+00:00")}}),
+        report=_write(tmp_path / "report.json", {}), baseline=tmp_path / "baseline.json",
+        current=NEW, now=NOW, sleeves=reg)
+    (line,) = doc["missed_growth"]
+    assert line["value"] is None and line["value_status"] == lr.UNMEASURED
+    assert line["n_certificates"] == 1 and line["n_sleeves"] == 1
+    assert line["risk_frac_withheld"] == 0.0

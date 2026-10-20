@@ -329,6 +329,9 @@ def test_main_publishes_without_a_terminal_and_never_crashes(
     monkeypatch.setattr(CT, "SPREAD_PROVENANCE", tmp_path / "SPREAD_PROVENANCE.json")
     monkeypatch.setattr(CT, "VERIFIED", tmp_path / "spread_repair_verified.json")
     monkeypatch.setattr(CT, "SLEEVE_REGISTRY", tmp_path / "sleeve_registry.json")
+    # the tracked event log is never written by a test (audit 2026-10-20)
+    from libs.ops import events as _events
+    monkeypatch.setattr(_events, "PATH", tmp_path / "events.jsonl")
     (tmp_path / "universe.json").write_text(json.dumps(
         {"EURCHF": {"median_spread_pts": 0.5, "tick_size": 1e-5, "contract_size": 1e5}}), "utf-8")
     (tmp_path / "live_ledger.jsonl").write_text(
@@ -556,3 +559,34 @@ def test_fence_fails_a_fresh_report_priced_from_stale_quotes() -> None:
     assert got["verdict"] == FENCE.QUOTES_STALE and got["exit"] == 2
     rep["quotes"]["verdict"] = "FRESH"
     assert FENCE.judge(rep, {"commission_total_overcharge": 9.0}, None)["exit"] == 0
+
+
+def test_one_stale_reading_makes_the_set_stale() -> None:
+    now = datetime.now(UTC).isoformat()
+    old = (datetime.now(UTC) - timedelta(seconds=CT.QUOTES_STALE_AFTER_S + 60)).isoformat()
+    got = CT.quotes_freshness({"symbols": {"A": _info(now), "B": _info(old)}}, measured_now=True)
+    assert got["verdict"] == "STALE" and got["n_stale"] == 1
+    assert CT.quotes_freshness({"symbols": {"A": _info(now)}}, measured_now=True)["verdict"] \
+        == "FRESH"
+    assert CT.QUOTES_STALE_AFTER_S <= 12 * 3600
+
+
+def test_stale_quotes_never_mask_an_overcharge() -> None:
+    rep = _report(datetime.now(UTC).isoformat(),
+                  symbols=[_sym("NEWX", 9.0, 1.0, CT.OVERCHARGED, 9.0)])
+    rep["quotes"] = {"verdict": "STALE", "at": "2026-09-23T05:13:05+00:00", "why": "old"}
+    got = FENCE.judge(rep, {"commission_total_overcharge": 9.0}, None)
+    assert got["verdict"] == FENCE.OVERCHARGED and got["exit"] == 2
+    assert [f["verdict"] for f in got["findings"]] == [FENCE.OVERCHARGED, FENCE.QUOTES_STALE]
+
+
+def test_the_terminal_is_never_spawned_when_the_helper_cannot_be_imported(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import types
+    calls: list[str] = []
+    fake = types.SimpleNamespace(initialize=lambda *a, **k: calls.append("init") or True,
+                                 terminal_info=lambda: None, last_error=lambda: (0, ""))
+    monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
+    monkeypatch.setitem(sys.modules, "research.mt5_session", None)
+    got = CT.terminal_snapshot(["EURUSD"], 1.0, 10)
+    assert got["status"] == CT.UNMEASURED and calls == []

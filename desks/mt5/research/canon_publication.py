@@ -857,12 +857,16 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     if pending:
         doc_new["pending_rejudge"] = pending
     if held_back:
-        # the explicit revocation record the authority ratchet accepts for a falling count
-        doc_new["revocation"] = {"kind": "reattestation", "at": now.isoformat(),
-                                 "left_survivor_set": len(held_back),
-                                 "by": "research/canon_publication.py",
-                                 "why": "rows not judged under the attestation stamped on this "
-                                        "seal wait for a fresh verdict; never re-stamped"}
+        # The explicit revocation record the authority ratchet accepts for a falling count.
+        # APPEND-ONLY (audit 2026-10-20): a list deduped on (kind, at, keys) that never shrinks;
+        # the previous single dict was overwritten by the next pass (2 -> 1).
+        from libs.ops.revocation_log import merge_revocations
+        doc_new["revocation"] = merge_revocations(
+            doc_seal.get("revocation"),
+            {"kind": "reattestation", "at": now.isoformat(), "keys": sorted(held_back),
+             "left_survivor_set": len(held_back), "by": "research/canon_publication.py",
+             "why": "rows not judged under the attestation stamped on this seal wait for a "
+                    "fresh verdict; never re-stamped"})
     doc_new.update({
         "n": len(merged),
         "survivors": merged,
@@ -895,12 +899,13 @@ def restamp_reason(row: dict[str, Any], attestation: Any, judge_holds: bool,
                    republished: bool) -> str | None:
     """Why `row` may not sit under `attestation`'s header, or None when it may.
 
-    Two refusals, both on positive evidence (a row whose gates carry no lockbox reading at all is
-    not refused here; `lockbox_recert` reports it UNMEASURED):
+    Two refusals:
       * the judge's own report holds the key outside its survivor set (pending re-judge, or
         retired under the attestation in force) and the judge did not republish it this pass;
-      * the attestation carries a reserved-lockbox basis and the row's lockbox is a number that
-        is not an independent held-out reading (`lockbox_recert.lockbox_independence`).
+      * the attestation carries a reserved-lockbox basis and the row's lockbox is not an
+        independent held-out reading (`lockbox_recert.lockbox_independence`) -- INCLUDING a row
+        with no lockbox number at all. Auditor's ruling 2026-10-20: the holdback is reversible,
+        and keeping the row would read an absent gate 9 as a pass (L1.28a).
     """
     if judge_holds and not republished:
         return ("the judge holds this key outside its survivor set (pending_rejudge or "
@@ -909,12 +914,15 @@ def restamp_reason(row: dict[str, Any], attestation: Any, judge_holds: bool,
     if not basis:
         return None
     try:
-        from lockbox_recert import evidenced_not_independent
+        from lockbox_recert import INDEPENDENT, NOT_INDEPENDENT, lockbox_independence
     except ImportError:                                  # pragma: no cover - import-context dep
         from research.lockbox_recert import (  # type: ignore[no-redef]
-            evidenced_not_independent,
+            INDEPENDENT,
+            NOT_INDEPENDENT,
+            lockbox_independence,
         )
-    return evidenced_not_independent(row.get("gates"), str(basis))
+    ind = lockbox_independence(row.get("gates"), str(basis))
+    return None if ind["verdict"] == INDEPENDENT else f"{NOT_INDEPENDENT}: " + "; ".join(ind["why"])
 
 
 def restamp_holdback(merged: dict[str, Any], doc_seal: dict[str, Any], doc_report: dict[str, Any],

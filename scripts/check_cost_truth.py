@@ -153,23 +153,29 @@ def judge(rep: Any, ratchet: Any, surface: Any) -> dict[str, Any]:
     out["quotes"] = {k: quotes.get(k) for k in ("verdict", "at", "age_s", "stale_after_s",
                                                 "n_readings", "n_stale",
                                                 "n_zero_or_absent_spread")} if quotes else None
-    if quotes.get("verdict") == "STALE":
-        out["verdict"], out["exit"] = QUOTES_STALE, 2
-        out["why"] = (f"COST_TRUTH.json is fresh but priced from terminal readings stamped "
-                      f"{quotes.get('at')} ({quotes.get('why')}); terminal: "
-                      f"{rep.get('terminal_why')}")
-        return out
+    # EVERY FINDING IS EVALUATED AND REPORTED (audit 2026-10-20): a stale quote set must not
+    # mask a new overcharge or a rising commission, so all three are judged and listed, and the
+    # headline is the first in the order OVERCHARGED, RATCHET-UP, QUOTES-STALE.
+    findings: list[tuple[str, str]] = []
     if new:
-        out["verdict"], out["exit"] = OVERCHARGED, 2
-        out["why"] = (f"{len(new)} symbol(s) charged above {tol}x what the broker quotes and not "
-                      f"in the declaration: {', '.join(new[:8])}. Either correct the charge or "
-                      "declare it with an owner -- an overcharged symbol kills real edge and "
-                      "leaves no other trace")
-        return out
+        findings.append((OVERCHARGED,
+                         f"{len(new)} symbol(s) charged above {tol}x what the broker quotes and "
+                         f"not in the declaration: {', '.join(new[:8])}. Either correct the "
+                         "charge or declare it with an owner -- an overcharged symbol kills real "
+                         "edge and leaves no other trace"))
     if comm is not None and declared_comm is not None and comm > declared_comm + 1e-9:
-        out["verdict"], out["exit"] = RATCHET_UP, 2
-        out["why"] = (f"the commission overcharge rose from {declared_comm}x to {comm}x; "
-                      "commission is the dominant term of every refusal on this account")
+        findings.append((RATCHET_UP,
+                         f"the commission overcharge rose from {declared_comm}x to {comm}x; "
+                         "commission is the dominant term of every refusal on this account"))
+    if str(quotes.get("verdict") or "") == "STALE":
+        findings.append((QUOTES_STALE,
+                         f"COST_TRUTH.json is fresh but priced from terminal readings stamped "
+                         f"{quotes.get('at')} ({quotes.get('why')}); terminal: "
+                         f"{rep.get('terminal_why')}"))
+    out["findings"] = [{"verdict": v, "why": w} for v, w in findings]
+    if findings:
+        out["verdict"], out["exit"] = findings[0][0], 2
+        out["why"] = " | ".join(f"{v}: {w}" for v, w in findings)
         return out
     out["verdict"], out["exit"] = OK, 0
     out["why"] = (f"{len(found)} overcharged symbol(s), all declared; commission overcharge "

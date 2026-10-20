@@ -172,10 +172,11 @@ STALE_AFTER_S = 4 * CADENCE_S
 #: HOW OLD A CACHED TERMINAL READING MAY BE BEFORE IT IS NOT A QUOTE (2026-10-20). The report is
 #: re-stamped every hour, but on a pass where the terminal does not answer it is rebuilt from
 #: `cost_truth_quotes.json` -- and that cache was measured 27 days old (stamped 2026-09-23) while
-#: `COST_TRUTH.json` read fresh and its fence read OK. 48 cadences: a weekend plus a day of
-#: outage, after which a reading is history, not the venue. Older readings are UNMEASURED for
-#: quoting (they still describe the contract for the realised join) and the fence alarms.
-QUOTES_STALE_AFTER_S = 48 * CADENCE_S
+#: `COST_TRUTH.json` read fresh and its fence read OK. 12 cadences (auditor's ruling 2026-10-20:
+#: at most 12h; a reading's `at` is its read time, so no weekend allowance applies, and an hourly
+#: leg covers the whole universe in about two passes). Older readings are UNMEASURED for quoting
+#: (they still describe the contract for the realised join) and the fence alarms.
+QUOTES_STALE_AFTER_S = 12 * CADENCE_S
 #: Session buckets in UTC, mirroring `cost_surface._PHASES` exactly so the two agree.
 PHASES = ((0, 7, "asia"), (7, 12, "london"), (12, 17, "ny"), (17, 24, "late"))
 #: Bytes one M1 bar costs in the terminal's numpy record, measured: 8+5*8+8+8 -> 64, +50% slack.
@@ -268,12 +269,15 @@ def quotes_freshness(snapshot: dict[str, Any], measured_now: bool,
                            "source": "desks/mt5/data/cost_truth_quotes.json"}
     if not readings:
         out.update(verdict=UNMEASURED, why="no terminal reading on this box, cached or live")
-    elif age is None or age > QUOTES_STALE_AFTER_S:
+    elif age is None or age > QUOTES_STALE_AFTER_S or fresh < len(readings):
+        # ANY STALE READING MAKES THE SET STALE (audit 2026-10-20): a measured pass that ran out
+        # of budget keeps older per-symbol readings, and FRESH on the pass stamp hid them.
         out.update(verdict="STALE",
-                   why=(f"the terminal readings are "
-                        f"{'unstamped' if age is None else f'{round(age / 3600, 1)}h old'} "
-                        f"against a {QUOTES_STALE_AFTER_S // 3600}h limit: every quote read from "
-                        "them is UNMEASURED this pass and no spread repair is verified on them"))
+                   why=(f"{len(readings) - fresh} of {len(readings)} terminal readings are older "
+                        f"than the {QUOTES_STALE_AFTER_S // 3600}h limit (set stamped "
+                        f"{'never' if age is None else f'{round(age / 3600, 1)}h ago'}): every "
+                        "quote read from them is UNMEASURED this pass and no spread repair is "
+                        "verified on them"))
     else:
         out.update(verdict="FRESH", why=f"{fresh} of {len(readings)} readings inside the limit")
     return out
@@ -918,10 +922,15 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         from mt5desk.config import terminal_path
 
         from research.mt5_session import attach_or_initialize, windows_session_id
-        attached = attach_or_initialize(mt5, path=terminal_path(), timeout=60_000)
+        # allow_autostart=False, as cost_to_edge: research residents run as SYSTEM in Session 0,
+        # where initialize() would launch a second terminal that takes the listener from the
+        # execution terminal. Attach to one already attached in this session, or read UNMEASURED.
+        attached = attach_or_initialize(mt5, path=terminal_path(), allow_autostart=False)
         session_id = windows_session_id()
-    except ImportError:
-        attached, session_id = bool(mt5.initialize()), None
+    except ImportError as exc:
+        # NO BARE initialize() FALLBACK (audit 2026-10-20): that is the Session-0 spawn class.
+        return {"status": UNMEASURED,
+                "why": f"session helper unimportable ({exc}); the terminal is not touched"}
     if not attached:
         return {"status": UNMEASURED,
                 "why": (f"terminal not attached from Windows session {session_id}: "

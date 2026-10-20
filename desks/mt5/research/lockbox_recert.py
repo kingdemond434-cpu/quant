@@ -160,20 +160,6 @@ def lockbox_independence(gates: Any, basis: str | None = None) -> dict[str, Any]
             "lockbox_sharpe": lb_sr, "wf_sharpe": wf_sr, "cut": lb.get("cut")}
 
 
-def evidenced_not_independent(gates: Any, basis: str | None) -> str | None:
-    """The reason a row's numeric lockbox is not held out, or None (also when it has no number).
-
-    The canon's re-stamp guard (`canon_publication.restamp_reason`) refuses on POSITIVE evidence
-    only; a gates record with no lockbox reading at all is reported UNMEASURED here instead.
-    """
-    gates = gates if isinstance(gates, dict) else {}
-    lb = gates.get("lockbox") if isinstance(gates.get("lockbox"), dict) else {}
-    if _num(lb.get("lockbox_sharpe")) is None:
-        return None
-    ind = lockbox_independence(gates, basis)
-    return None if ind["verdict"] == INDEPENDENT else f"{NOT_INDEPENDENT}: " + "; ".join(ind["why"])
-
-
 def _version(doc: Any) -> str | None:
     gp = doc.get("gate_policy") if isinstance(doc, dict) else None
     return str(gp.get("version")) if isinstance(gp, dict) and gp.get("version") else None
@@ -307,8 +293,36 @@ def build(*, canon: Path = CANON, report: Path = REPORT, baseline: Path = BASELI
         "rejudge_required": rejudge,
         "n_rejudge_required": len(rejudge),
         "held_by_sleeves": holders,
+        "missed_growth": missed_growth_lines(rejudge, holders, now),
         "certificates": rows,
     }
+
+
+def missed_growth_lines(rejudge: list[str], holders: dict[str, Any],
+                        now: datetime) -> list[dict[str, Any]]:
+    """The holdback's missed-growth line (GROWTH GOVERNANCE Rule 1; auditor's ruling 2026-10-20).
+
+    Holding a certificate for a fresh verdict is a capital modifier, so it publishes its bill.
+    The sleeves holding these certificates are STANDBY at 0 risk, so the deployed risk withheld
+    is 0; what the held certificates WOULD have earned is unknown until they are re-judged, so
+    the value is UNMEASURED -- never a clean zero. Published here, in the shape
+    `missed_growth.published_gate_lines` carries into MISSED_GROWTH.json; never appended to the
+    rail-keyed ledger (the rail register is a sealed file this hold is not registered in).
+    """
+    if not rejudge:
+        return []
+    sl = holders.get("sleeves") if isinstance(holders, dict) else None
+    sl = sl if isinstance(sl, list) else []
+    risk = sum(float(h.get("risk_frac") or 0.0) for h in sl
+               if isinstance(h.get("risk_frac"), (int, float)))
+    return [{"day": now.date().isoformat(), "gate": "lockbox_rejudge_holdback",
+             "verdict": UNMEASURED, "value": None, "value_status": UNMEASURED,
+             "n_certificates": len(rejudge), "n_sleeves": len(sl),
+             "n_live_sleeves": int(holders.get("n_live") or 0) if isinstance(holders, dict)
+             else 0, "risk_frac_withheld": round(risk, 6),
+             "why": ("certificates held for a fresh judge verdict under the attestation in "
+                     "force; their sleeves hold no capital, and the growth they would add is "
+                     "unknown until they are re-judged")}]
 
 
 def sleeve_holders(keys: set[str], path: Path | None = SLEEVES) -> dict[str, Any]:
