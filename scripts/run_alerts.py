@@ -17,14 +17,17 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import secrets
 import subprocess
 import sys
 import time
 import urllib.request
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from libs.ops.fresh import stamp_age_h
@@ -45,6 +48,29 @@ _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
                        # the chain runs once a day; its failures can only change once a day
                        "research_chain_failed": 24 * 3600}
+
+# PLUMBING + JUDGE STALL (2026-10-20). The plumbing watchdog escalated into three places a human
+# meets only by LOOKING (desk state, the events log, docs/research/PLUMBING_ALERTS.md), and the
+# judge's rate meter (JUDGING_RATE.json) recorded a judge with zero verdicts for days -- and
+# this pager read neither, so a stalled judge paged no one. Both are read here now.
+#: The watchdog's full report (box-local: gitignored, so absent on the VPS) and its published
+#: escalation page (tracked, so it reaches the VPS). Whichever is newer and readable is used.
+_PLUMBING_JSON = Path("desks/mt5/reports/PLUMBING_WATCHDOG.json")
+_PLUMBING_MD = Path("docs/research/PLUMBING_ALERTS.md")
+#: verdicts/hour from the judge's own ledger (desks/mt5/research/judging_throughput.py).
+_JUDGING_RATE = Path("desks/mt5/reports/JUDGING_RATE.json")
+#: No new verdict for this long is a STALLED judge. The judge runs on a minutes cadence, so six
+#: hours of silence is a stop, not a slow hour.
+JUDGE_STALL_H = 6.0
+#: The watchdog runs every 15 min; a report older than this means the watchdog itself stopped
+#: (or stopped being published), which is UNMEASURED plumbing -- never a quiet pass.
+PLUMBING_MAX_AGE_H = 3.0
+#: Re-page every REPAGE_H while still failing (box_heartbeat's convention): these are stops,
+#: and a stop should nag until someone repairs it.
+REPAGE_H = 2.0
+_PLUMBING_KEYS = ("plumbing_critical", "plumbing_unmeasured", "judge_throughput_critical",
+                  "judge_stalled", "judge_rate_unmeasured")
+_DEDUPE_OVERRIDES_S.update(dict.fromkeys(_PLUMBING_KEYS, int(REPAGE_H * 3600)))
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -132,7 +158,7 @@ _REPLY_STATE = Path("data/.reply_poll_state.json")
 def _poll_replies(topic: str) -> None:
     """Fail-quiet by design: paging must never break because reply-polling did."""
     try:
-        st: dict = {}
+        st: dict[str, Any] = {}
         with contextlib.suppress(Exception):
             st = json.loads(_REPLY_STATE.read_text("utf-8"))
         since = str(st.get("last_id") or "24h")
@@ -255,6 +281,171 @@ def _second_channel(text: str) -> None:
                                          data=text.encode("utf-8", "ignore")[:900])
             with urllib.request.urlopen(req, timeout=10):
                 pass
+
+
+def _parse_at(raw: object) -> datetime | None:
+    """A timezone-aware ISO stamp, or None. A naive stamp is not a time (it cannot be aged)."""
+    try:
+        t = datetime.fromisoformat(str(raw).strip().replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo is not None else None
+
+
+_MD_GENERATED = re.compile(r"^Generated\s+(\S+)\s+from", re.MULTILINE)
+_MD_CELL_SPLIT = re.compile(r"(?<!\\)\|")
+
+
+def _parse_plumbing_md(text: str) -> dict[str, Any]:
+    """PLUMBING_ALERTS.md -> {at, rows}. Only escalated rows are rendered there, so every row
+    read is escalated. A page without a `severity` column (older producer) yields rows whose
+    severity is UNMEASURED -- reported as such, never assumed MAJOR."""
+    m = _MD_GENERATED.search(text)
+    rows: list[dict[str, Any]] = []
+    header: list[str] | None = None
+    for ln in text.splitlines():
+        s = ln.strip()
+        if not (s.startswith("|") and s.endswith("|")):
+            header = None if not s else header
+            continue
+        cells = [c.strip().strip("`").replace("\\|", "|")
+                 for c in _MD_CELL_SPLIT.split(s)[1:-1]]
+        if header is None:
+            header = [c.lower() for c in cells]
+            continue
+        if all(set(c) <= {"-", ":"} for c in cells):
+            continue
+        row = dict(zip(header, cells, strict=False))
+        rows.append({"check": row.get("check", ""), "organ": row.get("organ", ""),
+                     "severity": (row.get("severity") or "UNMEASURED").upper(),
+                     "escalated": True, "evidence": row.get("evidence", "")})
+    return {"at": _parse_at(m.group(1)) if m else None, "rows": rows}
+
+
+def _read_plumbing(json_path: Path, md_path: Path) -> dict[str, Any]:
+    """The newest READABLE plumbing source: {source, at, rows} or {source: None, why}."""
+    cands: list[dict[str, Any]] = []
+    whys: list[str] = []
+    try:
+        doc = json.loads(json_path.read_text("utf-8-sig"))
+        if not isinstance(doc, dict) or not isinstance(doc.get("defects"), list):
+            raise ValueError("no defects list")
+        cands.append({"source": json_path.name, "at": _parse_at(doc.get("at")),
+                      "rows": [r for r in doc["defects"] if isinstance(r, dict)]})
+    except (OSError, ValueError) as exc:
+        whys.append(f"{json_path.name} {type(exc).__name__}")
+    try:
+        md = _parse_plumbing_md(md_path.read_text("utf-8-sig"))
+        cands.append({"source": md_path.name, **md})
+    except (OSError, ValueError) as exc:
+        whys.append(f"{md_path.name} {type(exc).__name__}")
+    if not cands:
+        return {"source": None, "why": "; ".join(whys)}
+    floor = datetime.min.replace(tzinfo=UTC)
+    return max(cands, key=lambda c: c["at"] or floor)
+
+
+def _row_line(r: dict[str, Any]) -> str:
+    return f"{str(r.get('organ'))[:40]} ({r.get('check')}): {str(r.get('evidence'))[:70]}"
+
+
+def _plumbing_checks(now: datetime | None = None, *, json_path: Path = _PLUMBING_JSON,
+                     md_path: Path = _PLUMBING_MD) -> list[tuple[str, str]]:
+    """CRITICAL escalated plumbing rows, a CRITICAL judge_throughput row on its own key, and an
+    UNMEASURED page when the watchdog's output is missing, unreadable, unstamped or stale."""
+    t = now or datetime.now(tz=UTC)
+    src = _read_plumbing(json_path, md_path)
+    if src.get("source") is None:
+        return [("plumbing_unmeasured",
+                 f"plumbing watchdog output missing/unreadable ({src.get('why')}) -- the desk's "
+                 "plumbing is UNMEASURED, not fine; run desks/mt5/research/plumbing_watchdog.py "
+                 "--once on the box")]
+    out: list[tuple[str, str]] = []
+    at = src.get("at")
+    age_h = (t - at).total_seconds() / 3600 if at else None
+    if age_h is None or age_h < 0 or age_h > PLUMBING_MAX_AGE_H:
+        seen = "carries no parseable stamp" if age_h is None else (
+            "carries a future stamp" if age_h < 0
+            else f"is {age_h:.1f}h old (> {PLUMBING_MAX_AGE_H:g}h)")
+        out.append(("plumbing_unmeasured",
+                     f"plumbing watchdog report {src['source']} {seen} -- the watchdog "
+                     "(MT5-PlumbingWatchdog) or its publication stopped; plumbing is UNMEASURED"))
+    rows = [r for r in src.get("rows") or []
+            if r.get("escalated", True) is not False]
+    crit = [r for r in rows if str(r.get("severity")).upper() == "CRITICAL"]
+    judge = [r for r in crit if r.get("check") == "judge_throughput"]
+    other = [r for r in crit if r.get("check") != "judge_throughput"]
+    asof = f" (as of {at.isoformat(timespec='minutes') if at else '?'}, {src['source']})"
+    if judge:
+        out.append(("judge_throughput_critical",
+                    "CRITICAL judge_throughput defect: " + _row_line(judge[0]) + asof))
+    if other:
+        more = f" +{len(other) - 3} more" if len(other) > 3 else ""
+        out.append(("plumbing_critical",
+                    f"{len(other)} CRITICAL plumbing defect(s): "
+                    + "; ".join(_row_line(r) for r in other[:3]) + more + asof))
+    unsev = [r for r in rows if str(r.get("severity")).upper() == "UNMEASURED"]
+    if unsev:
+        out.append(("plumbing_unmeasured",
+                    f"{len(unsev)} escalated plumbing defect(s) in {src['source']} carry no "
+                    "severity -- whether any is CRITICAL is UNMEASURED: "
+                    + "; ".join(_row_line(r) for r in unsev[:2])))
+    # one key may only page once per tick: merge duplicate keys' messages
+    merged: dict[str, str] = {}
+    for k, msg in out:
+        merged[k] = f"{merged[k]} | {msg}" if k in merged else msg
+    return list(merged.items())
+
+
+def _judge_checks(now: datetime | None = None, *,
+                  rate_path: Path = _JUDGING_RATE) -> list[tuple[str, str]]:
+    """A STALLED judge (no new verdict in JUDGE_STALL_H), read straight from JUDGING_RATE.json's
+    own last_verdict_at and stamp. A rate meter that cannot be read is UNMEASURED, never 'fine'."""
+    t = now or datetime.now(tz=UTC)
+    try:
+        doc = json.loads(rate_path.read_text("utf-8-sig"))
+        if not isinstance(doc, dict):
+            raise ValueError("not an object")
+    except (OSError, ValueError) as exc:
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} missing/unreadable ({type(exc).__name__}) -- whether the "
+                 "judge is producing verdicts is UNMEASURED")]
+    at = _parse_at(doc.get("at"))
+    meter = (f"rate meter {(t - at).total_seconds() / 3600:.1f}h old" if at
+             else "rate meter unstamped")
+    raw_ver = doc.get("verdicts")
+    ver: dict[str, Any] = raw_ver if isinstance(raw_ver, dict) else {}
+    if ver.get("status") != "MEASURED":
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} verdicts {ver.get('status') or 'absent'}: "
+                 f"{str(ver.get('why') or '')[:100]} -- judge liveness is UNMEASURED ({meter})")]
+    last = _parse_at(ver.get("last_verdict_at"))
+    if last is None:
+        if ver.get("last_verdict_at") is None and not ver.get("rows_total"):
+            return [("judge_stalled", f"the judge's ledger holds NO verdict at all ({meter})")]
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} last_verdict_at unparseable -- judge liveness is "
+                 f"UNMEASURED ({meter})")]
+    age_h = (t - last).total_seconds() / 3600
+    if age_h < 0:
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} last_verdict_at is in the future -- UNMEASURED ({meter})")]
+    if age_h > JUDGE_STALL_H:
+        return [("judge_stalled",
+                 f"judge STALLED: no new verdict in {age_h:.1f}h (> {JUDGE_STALL_H:g}h); last "
+                 f"{last.isoformat(timespec='minutes')}, verdicts/h(24h)="
+                 f"{doc.get('verdicts_per_hour')}; {meter}. Check MT5-Gauntlet on the box")]
+    if at is None:
+        return [("judge_rate_unmeasured", f"{rate_path.name} carries no parseable stamp")]
+    return []
+
+
+def _guarded(key: str, fn: Callable[[], list[tuple[str, str]]]) -> list[tuple[str, str]]:
+    """A check that raises pages as UNMEASURED: it may never silence the pager or itself."""
+    try:
+        return fn()
+    except Exception as exc:
+        return [(key, f"{key} check raised {type(exc).__name__} -- UNMEASURED, not fine")]
 
 
 def _checks() -> list[tuple[str, str]]:
@@ -442,6 +633,8 @@ def _checks() -> list[tuple[str, str]]:
                     "diggers are dead on arrival. Fix on the VPS: "
                     "sudo -u quant -i ; claude setup-token"))
     out.extend(_digger_health())
+    out.extend(_guarded("plumbing_unmeasured", _plumbing_checks))
+    out.extend(_guarded("judge_rate_unmeasured", _judge_checks))
     return out
 
 
@@ -453,7 +646,7 @@ def _brain_running() -> bool:
         return False
 
 
-def _brain_should_trigger(state: dict, active: set, *, healthy_today: bool, hour: int,
+def _brain_should_trigger(state: dict[str, Any], active: set[str], *, healthy_today: bool, hour: int,
                           now: float) -> str | None:
     """PURE decision (drill-testable): should the brain be auto-triggered? Rate-limited to one
     trigger per 3h. AUTO-RETRY when today's cycle failed/near-empty and it is past ~11:00 UTC
@@ -468,7 +661,7 @@ def _brain_should_trigger(state: dict, active: set, *, healthy_today: bool, hour
     return None
 
 
-def _brain_watchdog(state: dict, active: set) -> str | None:
+def _brain_watchdog(state: dict[str, Any], active: set[str]) -> str | None:
     """Self-heal the AI brain WITHOUT the operator (2026-07-18): auto-retry a failed daily cycle
     (e.g. the 07-18 session-limit lost-day) + event-trigger on a remediable alert. Never two
     brains; the brain's own CI + escalation keep it safe; risk/money still page the operator."""
@@ -534,7 +727,8 @@ def main() -> None:
     active = {k for k, _ in checks}
     paged = set(state.get("_paged", []))
     for key, msg in checks:
-        if now - float(state.get(key, 0)) < _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S):
+        # a FUTURE stamp (clock step, hand edit) is overdue, never what keeps the pager quiet
+        if 0 <= now - float(state.get(key, 0)) < _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S):
             paged.add(key)                                 # still-alerting, still track for resolve
             continue
         # FAILURE BACKOFF (2026-07-16): a failed push used to retry every 3-min tick forever --

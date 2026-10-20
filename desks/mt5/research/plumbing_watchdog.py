@@ -1116,12 +1116,16 @@ def render_alerts(doc: Mapping[str, Any], path: Path | None = None) -> str:
                   "process table, the declared task set, the pipeline's path pairs and the law "
                   "battery were all observed, not assumed.", ""]
     else:
-        lines += ["| organ | check | age | passes | evidence | repair |",
-                  "|---|---|---|---|---|---|"]
+        # `severity` is read by scripts/run_alerts.py, the pager: on the VPS this page is the
+        # only plumbing source (the JSON report is box-local), so it must say which rows are
+        # CRITICAL or the pager cannot tell a stop from a nag.
+        lines += ["| organ | check | severity | age | passes | evidence | repair |",
+                  "|---|---|---|---|---|---|---|"]
         for r in sorted(rows, key=lambda x: (-int(x.get("age_s") or 0), str(x.get("organ")))):
             ev = str(r.get("evidence") or "").replace("|", "\\|").replace("\n", " ")
             rp = str(r.get("repair") or "").replace("|", "\\|").replace("\n", " ")
             lines.append(f"| `{r.get('organ')}` | {r.get('check')} | "
+                         f"{r.get('severity') or 'UNMEASURED'} | "
                          f"{int(r.get('age_s') or 0) // 3600}h | {r.get('passes')} | "
                          f"{ev[:300]} | {rp[:220]} |")
         lines.append("")
