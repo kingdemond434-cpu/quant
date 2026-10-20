@@ -20,6 +20,7 @@ and write only under pytest's tmp_path.
 """
 from __future__ import annotations
 
+import io
 import json
 import sys
 import urllib.error
@@ -303,10 +304,11 @@ def iso(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 class _Resp:
-    def __init__(self, body: bytes, ctype: str = "text/csv") -> None:
+    def __init__(self, body: bytes, ctype: str = "text/csv",
+                 extra: dict[str, str] | None = None) -> None:
         self._body = body
         self.status = 200
-        self.headers = {"Content-Type": ctype}
+        self.headers = {"Content-Type": ctype, **(extra or {})}
 
     def __enter__(self) -> _Resp:
         return self
@@ -326,8 +328,11 @@ class _Net:
     exception instance (unreachable); it can be changed between passes. `seen` records every
     (url, user-agent) requested, in order."""
 
-    def __init__(self, robots: Any) -> None:
+    def __init__(self, robots: Any, page: Any = None) -> None:
         self.robots = robots
+        #: None = 200 CSV; an int = that HTTP error with an empty body; a tuple
+        #: (code, headers, body) = that response (code 200 succeeds with those headers).
+        self.page = page
         self.seen: list[tuple[str, str]] = []
 
     def __call__(self, req: Any, *a: Any, **k: Any) -> _Resp:
@@ -340,14 +345,19 @@ class _Net:
             if isinstance(self.robots, int):
                 raise urllib.error.HTTPError(url, self.robots, "stub", None, None)  # type: ignore[arg-type]
             raise self.robots
-        return _Resp(CSV)
+        if self.page is None:
+            return _Resp(CSV)
+        code, hdrs, body = (self.page, {}, b"") if isinstance(self.page, int) else self.page
+        if code == 200:
+            return _Resp(body or CSV, extra=hdrs)
+        raise urllib.error.HTTPError(url, code, "stub", hdrs, io.BytesIO(body))
 
     def urls(self) -> list[str]:
         return [u for u, _ in self.seen]
 
 
-def _net(monkeypatch: pytest.MonkeyPatch, robots: Any) -> _Net:
-    net = _Net(robots)
+def _net(monkeypatch: pytest.MonkeyPatch, robots: Any, page: Any = None) -> _Net:
+    net = _Net(robots, page)
     monkeypatch.setattr(urllib.request, "urlopen", net)
     return net
 
@@ -528,3 +538,91 @@ def test_the_acquisition_scientist_never_requests_a_disallowed_sample(
     assert net.seen[0][1] == aq._UA
     assert out["status"] == "BLOCKED_BY_ROBOTS" and out["hold_cause"] == "robots:disallow"
     assert out["robots_disallows"] is True and "robots" in out and out["terms_note"]
+
+
+# --------------------------------------- the page itself: 401/403/429 or a WAF is a HARD_STOP
+
+ALLOW_ALL = b"User-agent: *\nAllow: /\n"
+CF_PAGE = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head>"
+           b"<body>Checking your browser</body></html>")
+
+
+@pytest.mark.parametrize("code", [401, 403, 429])
+def test_a_page_401_403_429_is_a_hard_stop_and_the_host_gets_nothing_after(
+        code: int, iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The principal's standing rule. The row stays visible with its hold_cause; a pass at +25h
+    sends ZERO requests -- not even robots.txt -- and after release the next pass fetches."""
+    acol = iso.acol
+    net = _net(monkeypatch, ALLOW_ALL, code)
+    rec = _collect(iso)
+    assert net.urls() == [ROBOTS, PAGE]
+    assert rec["status"] == "HARD_STOP" and rec["hold_cause"] == f"hard_stop:{code}"
+    assert rec["id"] == "robots_probe" and rec["http"] == code
+    hold = acol.active_site_hold(HOST)
+    assert hold is not None and hold["verdict"] == "HARD_STOP" and hold["status"] == code
+    assert hold["key"] == f"site:{HOST}" and hold["released_by"] is None
+    assert hold == rec["site_hold"]
+
+    net.page = None                                   # the site would answer now; still held
+    iso.clock.t = T0 + 25 * 3600
+    rec = _collect(iso)
+    assert rec["status"] == "HARD_STOP" and rec["hold_cause"] == f"hard_stop:{code}"
+    assert net.urls() == [ROBOTS, PAGE], "zero requests to a HARD_STOP host at +25h"
+
+    acol.release_site_hold(HOST, "zuck")
+    rec = _collect(iso)
+    assert rec["status"] not in ("HARD_STOP", "BLOCKED_BY_ROBOTS")
+    assert net.urls()[-1] == PAGE, "after release the next pass fetches"
+
+
+def test_a_cf_mitigated_challenge_header_is_a_hard_stop_even_on_a_200(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    _net(monkeypatch, ALLOW_ALL, (200, {"cf-mitigated": "challenge"}, CF_PAGE))
+    rec = _collect(iso)
+    assert rec["status"] == "HARD_STOP" and rec["hold_cause"] == "hard_stop:200"
+    assert iso.acol.active_site_hold(HOST)["status"] == 200
+    assert not (iso.tmp / "vault").exists(), "a challenge page is never vaulted as data"
+
+
+def test_a_503_carrying_the_cloudflare_challenge_title_is_a_hard_stop(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    _net(monkeypatch, ALLOW_ALL, (503, {}, CF_PAGE))
+    rec = _collect(iso)
+    assert rec["status"] == "HARD_STOP" and rec["hold_cause"] == "hard_stop:503"
+
+
+def test_a_plain_503_is_an_ordinary_error_not_a_hold(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, ALLOW_ALL, (503, {}, b"<html><title>Service Unavailable</title>"))
+    rec = _collect(iso)
+    assert rec["status"] == "HTTP_ERROR" and rec["http"] == 503
+    assert iso.acol.active_site_hold(HOST) is None
+    _collect(iso)
+    assert net.urls().count(PAGE) == 2, "a 5xx host is asked again"
+
+
+def test_challenge_text_on_a_200_page_is_never_a_hold() -> None:
+    """Forum text quoting the title has false-positived before: a 200 body is not read."""
+    acol, _ = _desk_modules()
+    assert acol.is_challenge(200, {}, CF_PAGE) is False
+    assert acol.is_challenge(403, {}, CF_PAGE) is True
+    assert acol.is_challenge(503, {}, b"just a moment please") is False
+    assert acol.is_challenge(200, {"cf-mitigated": "Challenge"}, b"") is True
+
+
+def test_the_acquisition_scientist_sample_writes_a_hard_stop_on_403(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    das = iso.das
+    net = _net(monkeypatch, ALLOW_ALL, 403)
+    verdict = ac.classify({"url": PAGE, "source_class": "official"})
+    contract = SimpleNamespace(admissible=lambda: True)
+    out = das.sample({"dataset": "probe", "url": PAGE}, contract, verdict,
+                     at="2026-10-14T08:00:00+00:00", code="test", marks=set())
+    assert out["status"] == "HARD_STOP" and out["hold_cause"] == "hard_stop:403"
+    assert iso.acol.active_site_hold(HOST)["verdict"] == "HARD_STOP"
+    assert out["site_hold"] == iso.acol.active_site_hold(HOST)
+    iso.clock.t = T0 + 25 * 3600
+    out = das.sample({"dataset": "probe", "url": PAGE}, contract, verdict,
+                     at="2026-10-15T09:00:00+00:00", code="test", marks=set())
+    assert out["status"] == "HARD_STOP" and out["hold_cause"] == "hard_stop:403"
+    assert net.urls() == [ROBOTS, PAGE], "zero requests to the held host"

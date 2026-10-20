@@ -18,6 +18,8 @@ reading was a discovery brake and is deleted. ROBOTS IS THE ONE EXCEPTION AT FET
 AMENDED 2026-10-14 07:35Z by the principal, decision card
 cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): a robots.txt Disallow means the sample page
 is NOT fetched, and the skip is recorded as a BLOCKED_BY_ROBOTS hold with its named cause.
+A 401/403/429 or a WAF challenge on the sample page itself is a HARD_STOP `site:<host>` hold
+(`asia_collector.fetch_bytes`): zero requests to that host until a person releases it.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
 SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`, behind
@@ -37,6 +39,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -528,11 +531,27 @@ def _robots_verdict(url: str) -> Any:
 
 
 def _fetch(url: str) -> tuple[bytes | None, str]:
+    """The sample GET: `acquire_datasets`' agent, byte cap, timeout and HTML-at-the-header
+    rejection, sent through `asia_collector.fetch_bytes` so the principal's standing rule holds
+    here too -- a 401/403/429 or a WAF challenge on the page writes a HARD_STOP `site:<host>`
+    hold (reason `hard_stop:<status>`), and a held host gets no request at all (`held:...`)."""
     try:
         from research import acquire_datasets as AQ
+        from research import asia_collector as ACOL
     except ImportError:                                                      # pragma: no cover
         import acquire_datasets as AQ  # type: ignore[no-redef]
-    return AQ._fetch(url)
+        import asia_collector as ACOL  # type: ignore[no-redef]
+    return ACOL.fetch_bytes(url, agent=AQ._UA, max_bytes=AQ.MAX_BYTES + 1,
+                            timeout=float(AQ.FETCH_TIMEOUT_S), reject_html=True)
+
+
+def _site_hold(url: str) -> dict[str, Any] | None:
+    """The unreleased `site:<host>` hold on `url`'s host, or None (`asia_collector`'s state)."""
+    try:
+        from research import asia_collector as ACOL
+    except ImportError:                                                      # pragma: no cover
+        import asia_collector as ACOL  # type: ignore[no-redef]
+    return ACOL.active_site_hold(urllib.parse.urlsplit(url).netloc)
 
 
 def _rows_of(raw: bytes, url: str) -> tuple[list[dict[str, Any]], list[str]]:
@@ -583,14 +602,25 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
                 + f" | robots.txt hold ({rv.cause}): this page is not fetched (LAWS 5e, amended "
                   f"2026-10-14); content about it obtained lawfully by other means is still "
                   f"labelled and mined")
-        return {"dataset": cand["dataset"], "status": "BLOCKED_BY_ROBOTS", "url": url,
-                "hold_cause": f"robots:{rv.cause}", "robots": robots_note,
+        hold = getattr(rv, "hold", None)
+        hard = isinstance(hold, dict) and hold.get("verdict") == "HARD_STOP"
+        return {"dataset": cand["dataset"],
+                "status": "HARD_STOP" if hard else "BLOCKED_BY_ROBOTS", "url": url,
+                "hold_cause": (f"hard_stop:{hold.get('status')}" if hard and hold
+                               else f"robots:{rv.cause}"), "robots": robots_note,
                 "robots_disallows": True, "robots_recheck": bool(rv.recheck),
                 "site_hold": getattr(rv, "hold", None),
                 "terms_note": note.strip(" |"),
                 "why": f"HOLD, not a drop: {robots_note}"}
     terms_note = verdict.terms_note or ""
     raw, ctype = _fetch(url)
+    if raw is None and str(ctype).startswith(("hard_stop:", "held:")):
+        return {"dataset": cand["dataset"], "status": "HARD_STOP", "url": url,
+                "hold_cause": str(ctype), "robots": robots_note, "robots_disallows": False,
+                "site_hold": _site_hold(url),
+                "terms_note": terms_note.strip(" |"),
+                "why": (f"HOLD, not a drop: {ctype} -- a 401/403/429 or WAF challenge is a "
+                        f"HARD_STOP; zero requests to that host until a person releases it")}
     if raw is None:
         return {"dataset": cand["dataset"], "status": "UNREACHABLE", "url": url,
                 "robots": robots_note, "robots_disallows": False,

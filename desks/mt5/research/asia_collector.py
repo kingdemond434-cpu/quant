@@ -34,6 +34,11 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
                     PERSON-RELEASED hold (`site:<host>` in the collector state; zero requests to
                     that host until `--release-host HOST --released-by NAME`). A robots.txt that
                     was read is re-read at most once per 24h per origin.
+    HARD_STOP       a HOLD, not a drop: the PAGE itself (or robots.txt) answered 401, 403 or 429,
+                    or a WAF challenge (a `cf-mitigated: challenge` header, or a 403/503 whose body
+                    carries Cloudflare's "Just a moment..." title -- never text on a 200 page).
+                    Recorded as `site:<host>` with verdict HARD_STOP and the status; the host gets
+                    zero requests until a person releases it. A plain 5xx stays HTTP_ERROR.
 
 EVERYTHING IS VAULTED POINT-IN-TIME. The raw bytes are written under their own content hash and
 never overwritten, so a claim made today can be re-read against exactly what the page said when
@@ -58,6 +63,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -245,6 +251,74 @@ def _record_site_hold(rec: dict[str, Any]) -> None:
         _write_atomic(STATE, json.dumps(state, indent=1))
 
 
+#: Cloudflare's interstitial title. Matched ONLY on a 403/503 body -- never on a 200 page, where
+#: forum text quoting it has false-positived before.
+_CHALLENGE_TITLE = re.compile(rb"<title>\s*just a moment\.\.\.\s*</title>", re.IGNORECASE)
+
+
+def is_challenge(code: int | None, headers: Any, body: bytes | None) -> bool:
+    """A WAF / bot challenge: a `cf-mitigated: challenge` header on any response, or a 403/503
+    whose body carries Cloudflare's "Just a moment..." title. Plain body text on a 200 page is
+    never read as a challenge."""
+    try:
+        mitigated = str((headers.get("cf-mitigated") if headers is not None else "") or "")
+    except Exception:
+        mitigated = ""
+    if mitigated.strip().lower() == "challenge":
+        return True
+    return code in (403, 503) and bool(body) and bool(_CHALLENGE_TITLE.search(body or b""))
+
+
+def hard_stop_for(url: str, code: int | None, headers: Any = None,
+                  body: bytes | None = None) -> dict[str, Any] | None:
+    """THE PRINCIPAL'S STANDING RULE: a 401, 403 or 429 on a PAGE, or a WAF challenge, is a HARD
+    STOP. Records `site:<host>` (verdict HARD_STOP, status recorded) and returns the record; the
+    host then gets zero requests until `release_site_hold`. A plain 5xx returns None -- it stays
+    an ordinary error."""
+    if not (code in PERSON_HOLD_STATUSES or is_challenge(code, headers, body)):
+        return None
+    rec = site_hold_record(_host(url), url, code, "HARD_STOP")
+    _record_site_hold(rec)
+    return rec
+
+
+def _error_body(e: urllib.error.HTTPError, limit: int = 65536) -> bytes:
+    try:
+        return bytes(e.read(limit) or b"")
+    except Exception:
+        return b""
+
+
+def fetch_bytes(url: str, *, agent: str = DESK_UA, max_bytes: int = MAX_BYTES,
+                timeout: float = 25.0, reject_html: bool = False) -> tuple[bytes | None, str]:
+    """One GET through the hold rules: (body, content-type) or (None, reason).
+
+    The reason is `held:<verdict>` when the host already carries an unreleased site hold (no
+    request is sent), `hard_stop:<status>` when this response put it under one, `html` when
+    `reject_html` and the header says HTML, else `unreachable`. Robots is NOT read here -- the
+    caller does that first (`robots_verdict`), exactly as `collect_one` does."""
+    held = active_site_hold(_host(url))
+    if held is not None:
+        return None, f"held:{held.get('verdict')}"
+    req = urllib.request.Request(url, headers={"User-Agent": agent, "Accept": "*/*"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+            code = int(getattr(r, "status", 0) or 0)
+            ctype = str(r.headers.get("Content-Type") or "").lower()
+            if hard_stop_for(url, code, r.headers, None) is not None:
+                return None, f"hard_stop:{code}"
+            if reject_html and "html" in ctype:
+                return None, "html"
+            return r.read(max_bytes), ctype
+    except urllib.error.HTTPError as e:
+        code = int(getattr(e, "code", 0) or 0)
+        if hard_stop_for(url, code, getattr(e, "headers", None), _error_body(e)) is not None:
+            return None, f"hard_stop:{code}"
+        return None, "unreachable"
+    except (urllib.error.URLError, OSError, ValueError):
+        return None, "unreachable"
+
+
 def release_site_hold(host: str, released_by: str, at: float | None = None) -> dict[str, Any]:
     """THE ONLY WAY A SITE HOLD ENDS: a named person releases it. No timer ever does.
 
@@ -324,9 +398,24 @@ def robots_verdict(url: str, agent: str = DESK_UA) -> RobotsVerdict:
         req = urllib.request.Request(robots, headers={"User-Agent": agent})
         try:
             with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
+                if is_challenge(int(getattr(r, "status", 0) or 0), r.headers, None):
+                    rec = site_hold_record(host, url, int(getattr(r, "status", 0) or 0),
+                                           "HARD_STOP", at=now)
+                    _record_site_hold(rec)
+                    return RobotsVerdict(False, "person_hold",
+                                         f"{robots} carried cf-mitigated: challenge: HARD_STOP on "
+                                         f"{host}, zero requests until a person releases it",
+                                         robots, hold=rec)
                 body = r.read(ROBOTS_MAX_BYTES)
         except urllib.error.HTTPError as e:
             code = int(getattr(e, "code", 0) or 0)
+            if is_challenge(code, getattr(e, "headers", None), _error_body(e)):
+                rec = site_hold_record(host, url, code, "HARD_STOP", at=now)
+                _record_site_hold(rec)
+                return RobotsVerdict(False, "person_hold",
+                                     f"{robots} answered a WAF challenge (HTTP {code}): HARD_STOP "
+                                     f"on {host}, zero requests until a person releases it",
+                                     robots, hold=rec)
             if code in PERSON_HOLD_STATUSES:
                 rec = site_hold_record(host, url, code, "ROBOTS_HOLD", at=now)
                 _record_site_hold(rec)
@@ -534,6 +623,16 @@ def _declared_headers(src: dict[str, Any]) -> dict[str, str]:
             if str(k).lower() not in banned}
 
 
+def _hard_stop_row(rec: dict[str, Any], stop: dict[str, Any]) -> dict[str, Any]:
+    """The visible row for a page that answered 401/403/429 or a WAF challenge."""
+    rec.update({"status": "HARD_STOP", "http": stop.get("status"),
+                "hold_cause": f"hard_stop:{stop.get('status')}", "site_hold": stop,
+                "why": (f"HOLD, not a drop: HTTP {stop.get('status')} or a WAF challenge on "
+                        f"{stop.get('host')} -- HARD_STOP, zero requests to that host until a "
+                        f"person releases it (release_site_hold)")})
+    return rec
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
@@ -561,8 +660,11 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     rec["robots"] = rv.why
     rec["robots_disallows"] = not rv.allowed
     if not rv.allowed:
+        hard = bool(rv.hold and rv.hold.get("verdict") == "HARD_STOP")
         rec.update({
-            "status": "BLOCKED_BY_ROBOTS", "hold_cause": f"robots:{rv.cause}",
+            "status": "HARD_STOP" if hard else "BLOCKED_BY_ROBOTS",
+            "hold_cause": (f"hard_stop:{rv.hold.get('status')}" if hard and rv.hold
+                           else f"robots:{rv.cause}"),
             "robots_recheck": rv.recheck, "site_hold": rv.hold,
             "terms_note": (f"robots.txt hold ({rv.cause}): this page is not fetched (LAWS 5e, "
                            f"amended 2026-10-14); content about it obtained lawfully by other "
@@ -596,9 +698,13 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
             last_mod = r.headers.get("Last-Modified")
-            body = r.read(MAX_BYTES)
+            stop = hard_stop_for(url, status, r.headers, None)
+            body = b"" if stop is not None else r.read(MAX_BYTES)
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
+        stop = hard_stop_for(url, code, getattr(e, "headers", None), _error_body(e))
+        if stop is not None:
+            return _hard_stop_row(rec, stop)
         if code == 304:
             rec.update({"status": "UNCHANGED", "http": 304,
                         "why": ("the source has not changed since the last fetch (conditional "
@@ -617,6 +723,8 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
         rec.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
         return rec
 
+    if stop is not None:
+        return _hard_stop_row(rec, stop)
     rec.update({"http": status, "content_type": ctype, "bytes": len(body)})
     accept = _ACCEPT.get(expect, ())
     looks_html = ("html" in ctype) or body[:200].lstrip().lower().startswith(
@@ -845,7 +953,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_BY_ROBOTS", "HARD_STOP"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue
