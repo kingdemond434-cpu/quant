@@ -468,6 +468,8 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/JUDGE_RESIDENT.json
 !desks/mt5/reports/GAUNTLET_HEARTBEAT.json
 !desks/mt5/reports/GAUNTLET_STALL.json
+!desks/mt5/reports/judge_alive_fence.json
+!desks/mt5/reports/DEEPENING_MEMORY_GUARD.json
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json

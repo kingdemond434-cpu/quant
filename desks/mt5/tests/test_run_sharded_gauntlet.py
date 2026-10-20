@@ -39,6 +39,8 @@ def _isolated_state(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "STALL", tmp_path / "GAUNTLET_STALL.json")
     monkeypatch.setattr(runner, "PHASE_TIMES", tmp_path / "judge_phase_times.json")
     monkeypatch.setattr(runner, "_PROGRESS", {})
+    monkeypatch.setattr(runner, "MERGE_SNAPSHOT", tmp_path / "snap")
+    monkeypatch.setattr(runner, "MERGE_OUTPUTS", (tmp_path / "ug.json", tmp_path / "us.json"))
     runner._ABORT.clear()
 
 
@@ -124,7 +126,7 @@ def test_dispatch_propagates_a_failed_shard(monkeypatch, tmp_path) -> None:
 
 
 def test_actual_child_stderr_survives_retries_and_shard_cleanup(monkeypatch, tmp_path):
-    from libs.ops.proctree import run as child_run
+    child_run = runner._watched_run           # the real shard runner, on a stand-in child
 
     shard_dir = tmp_path / "shards"
     shard_dir.mkdir()
@@ -361,9 +363,13 @@ def test_a_hung_sweep_is_killed_recorded_and_the_next_one_starts(monkeypatch, tm
     monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: _Child())
     monkeypatch.setattr(runner, "_kill_sweep_tree", lambda pid: seen.setdefault("killed", pid))
     monkeypatch.setattr(runner, "_sweep_env", lambda: {})
-    ticks = iter([0.0, 0.0] + [10.0] * 10)
-    assert runner._one_sweep_child(5.0, clock=lambda: next(ticks)) == runner.RESIDENT_HANG_RC
-    assert seen["timeouts"][0] == 5.0 and seen["killed"] == 4242
+    # A HUNG SWEEP IS AN IDLE ONE (audit of 2832cebd1): the resident kills on its own measurement
+    # of the child's tree burning nothing, never on a wall-clock ceiling.
+    ticks = iter(float(60 * i) for i in range(10_000))
+    assert runner._one_sweep_child(5.0, poll_s=60.0, clock=lambda: next(ticks),
+                                   sampler=lambda pid: {"cpu": {pid: 1.0}, "rss_mb": 1.0,
+                                                        "procs": 1}) == runner.RESIDENT_HANG_RC
+    assert seen["timeouts"][0] == 60.0 and seen["killed"] == 4242
     stall = json.loads(runner.STALL.read_text("utf-8"))
     assert stall["status"] == "STALLED" and stall["reason"] == "resident_kill"
 
@@ -409,8 +415,9 @@ def test_the_tree_kill_leaves_no_orphan_while_the_root_respawns(tmp_path) -> Non
         _t.sleep(1.5)
         before = {c.pid for c in psutil.Process(root.pid).children(recursive=True)}
         assert len(before) >= 4
-        runner._kill_sweep_tree(root.pid)
+        rep = runner._kill_sweep_tree(root.pid)
         root.wait(timeout=15)
+        assert rep["orphans"] == [], rep             # the kill names what it could not reach
         _t.sleep(0.5)
         spawned = {int(x) for x in log.read_text().split()} | before
         alive = [p for p in spawned if psutil.pid_exists(p)

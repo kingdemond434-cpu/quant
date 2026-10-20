@@ -959,6 +959,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
     # It reads three small files and writes one, so it runs on BOTH plans, every hour.
     "placement_interlock",
+    # THE JUDGE'S PULSE, EVERY HOUR (audit of 2832cebd1, 2026-10-20): the sweep watchdog's
+    # heartbeat and stall record were read only by the law gate's rotation, which reaches a given
+    # fence every few hours -- so a stalled judge could sit unread that long. Two small JSON reads.
+    "judge_alive",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -2968,6 +2972,16 @@ def placement_interlock() -> dict:
     return _producer("placement_interlock", "scripts/check_placement_interlock.py")
 
 
+def judge_alive() -> dict:
+    """`judge_alive`: is the judge's --once sweep alive and progressing? `scripts/
+    check_judge_coverage.py --liveness --require-state` reads the sweep watchdog's
+    GAUNTLET_HEARTBEAT.json and GAUNTLET_STALL.json and writes reports/judge_alive_fence.json:
+    FAIL on a no-progress kill no finished sweep has cleared or a wedged watchdog, amber (exit 0)
+    on a SLOW sweep that is still burning CPU. Hourly here, and in the law gate's rotation."""
+    return _producer("judge_alive", "scripts/check_judge_coverage.py", "--liveness",
+                     "--require-state")
+
+
 def pit_canaries() -> dict:
     """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
     when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
@@ -3860,6 +3874,7 @@ def main() -> None:
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     pil = _costed("placement_interlock", placement_interlock)
+    jal = _costed("judge_alive", judge_alive)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -5768,7 +5783,7 @@ def main() -> None:
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "placement_interlock": pil,
+                    "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
