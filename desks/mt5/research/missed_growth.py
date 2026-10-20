@@ -611,10 +611,15 @@ def lockbox_holdback_lines() -> dict[str, Any]:
         return {"verdict": UNMEASURED, "lines": [],
                 "why": "no reports/LOCKBOX_RECERT.json on this host"}
     lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
-    return {"verdict": UNMEASURED if lines else NOT_BINDING,
+    # NOT_BINDING NEEDS A MEASURED RECERT (audit 2026-10-20, v2 delta): a recert that could read
+    # nothing has no lines because it saw nothing, not because nothing is held.
+    unread = str(doc.get("status") or "") == UNMEASURED
+    return {"verdict": UNMEASURED if (lines or unread) else NOT_BINDING,
             "source": "reports/LOCKBOX_RECERT.json", "at": doc.get("generated_utc"),
             "lines": lines,
             "why": ("held certificates' growth is unknown until re-judged" if lines else
+                    "the re-certification itself is UNMEASURED, so whether anything is held "
+                    "is unknown" if unread else
                     "no certificate is held for a re-judge")}
 
 

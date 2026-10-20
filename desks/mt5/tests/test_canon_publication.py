@@ -397,6 +397,25 @@ def test_the_revocation_record_only_grows(desk: Path) -> None:
     assert second[0]["kind"] == "legacy"
 
 
+def test_a_row_the_judge_keeps_republishing_adds_one_revocation_and_keeps_its_wait(
+        desk: Path) -> None:
+    """Audit 2026-10-20 v2 delta: dedupe on (kind, keys), not `at`; `pending_since` survives."""
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    seal.write_text(json.dumps({"n": 0, "survivors": {}}), "utf-8")
+    report.write_text(json.dumps(_report({"external.A": _v2_row("EURNOK")},
+                                         "2026-10-20T11:00:00+00:00")), "utf-8")
+    cp.publish(report, seal)
+    first = json.loads(seal.read_text("utf-8"))
+    since = first["pending_rejudge"]["external.A"]["pending_since"]
+    for _ in range(3):
+        cp.publish(report, seal)
+    doc = json.loads(seal.read_text("utf-8"))
+    assert "external.A" not in doc["survivors"]
+    assert doc["pending_rejudge"]["external.A"]["pending_since"] == since
+    held = [e for e in doc["revocation"] if e.get("keys") == ["external.A"]]
+    assert len(held) == 1 and held[0]["at"] == first["revocation"][-1]["at"]
+
+
 def test_the_authority_heal_never_undoes_the_holdback(desk: Path,
                                                       monkeypatch: pytest.MonkeyPatch) -> None:
     """Audit 2026-10-20: heal_canon copied the report over the canon, deleting the holdback."""

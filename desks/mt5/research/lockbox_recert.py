@@ -311,15 +311,21 @@ def missed_growth_lines(rejudge: list[str], holders: dict[str, Any],
     """
     if not rejudge:
         return []
-    sl = holders.get("sleeves") if isinstance(holders, dict) else None
+    # AN UNREAD REGISTRY IS NOT ZERO RISK (audit 2026-10-20, v2 delta): when the sleeve registry
+    # is UNMEASURED, or any holder's risk_frac is unreadable, the withheld risk is UNMEASURED too.
+    measured = isinstance(holders, dict) and holders.get("status") == "MEASURED"
+    sl = holders.get("sleeves") if measured else None
     sl = sl if isinstance(sl, list) else []
-    risk = sum(float(h.get("risk_frac") or 0.0) for h in sl
-               if isinstance(h.get("risk_frac"), (int, float)))
+    readable = measured and all(isinstance(h.get("risk_frac"), (int, float))
+                                or h.get("risk_frac") is None for h in sl)
+    risk: float | None = (round(sum(float(h.get("risk_frac") or 0.0) for h in sl), 6)
+                          if readable else None)
     return [{"day": now.date().isoformat(), "gate": "lockbox_rejudge_holdback",
              "verdict": UNMEASURED, "value": None, "value_status": UNMEASURED,
-             "n_certificates": len(rejudge), "n_sleeves": len(sl),
-             "n_live_sleeves": int(holders.get("n_live") or 0) if isinstance(holders, dict)
-             else 0, "risk_frac_withheld": round(risk, 6),
+             "n_certificates": len(rejudge), "n_sleeves": len(sl) if measured else None,
+             "n_live_sleeves": int(holders.get("n_live") or 0) if measured else None,
+             "risk_frac_withheld": risk,
+             "risk_frac_status": "MEASURED" if readable else UNMEASURED,
              "why": ("certificates held for a fresh judge verdict under the attestation in "
                      "force; their sleeves hold no capital, and the growth they would add is "
                      "unknown until they are re-judged")}]

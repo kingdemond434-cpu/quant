@@ -237,22 +237,44 @@ def _age_s(stamp: Any, now: datetime | None = None) -> float | None:
     return ((now or datetime.now(tz=UTC)) - when).total_seconds()
 
 
+#: How far in the FUTURE a reading's stamp may sit and still count. Readings are stamped by this
+#: box's own clock (`_now`), so anything beyond ordinary clock jitter is not a reading from now:
+#: a future stamp is not fresh (audit 2026-10-20, v2 delta).
+FUTURE_SKEW_S = 60.0
+
+
+def _age_ok(age: float | None, max_age_s: float) -> bool:
+    return age is not None and -FUTURE_SKEW_S <= age <= max_age_s
+
+
 def quote_is_fresh(info: Any, now: datetime | None = None,
                    max_age_s: float = QUOTES_STALE_AFTER_S) -> bool:
     """A terminal reading is a quote only while its own `at` is inside QUOTES_STALE_AFTER_S.
 
-    An unstamped reading is not fresh: absence never resolves to a clean verdict (L1.28a).
+    An unstamped reading is not fresh: absence never resolves to a clean verdict (L1.28a). Nor is
+    a reading stamped in the future: its age is unknowable, not zero.
     """
     if not isinstance(info, dict):
         return False
-    age = _age_s(info.get("at"), now)
-    return age is not None and age <= max_age_s
+    return _age_ok(_age_s(info.get("at"), now), max_age_s)
 
 
 def quotes_freshness(snapshot: dict[str, Any], measured_now: bool,
-                     now: datetime | None = None) -> dict[str, Any]:
-    """The age of the terminal readings this pass priced from, with a verdict and the reason."""
+                     now: datetime | None = None,
+                     universe: Any = None) -> dict[str, Any]:
+    """The age of the terminal readings this pass priced from, with a verdict and the reason.
+
+    `universe` (any container of symbol names) restricts the judgment to symbols the desk still
+    holds: a cached reading for a symbol that has LEFT the universe is never refreshed by any
+    pass, so counting it would hold the set STALE forever (audit 2026-10-20, v2 delta). Such
+    readings are counted and named, not judged. None keeps every cached reading in scope.
+    """
     syms = snapshot.get("symbols") if isinstance(snapshot.get("symbols"), dict) else {}
+    departed: list[str] = []
+    if universe is not None:
+        keep = {str(u) for u in universe}
+        departed = sorted(str(k) for k in syms if str(k) not in keep)
+        syms = {k: v for k, v in syms.items() if str(k) in keep}
     readings = [v for v in syms.values() if isinstance(v, dict) and v.get("status") != UNMEASURED]
     fresh = sum(1 for v in readings if quote_is_fresh(v, now))
     stamp = _now() if measured_now else (snapshot.get("cached_at") or snapshot.get("at"))
@@ -266,10 +288,12 @@ def quotes_freshness(snapshot: dict[str, Any], measured_now: bool,
                            "n_stale": len(readings) - fresh,
                            "n_zero_or_absent_spread": len(zero),
                            "zero_or_absent_spread_symbols": zero[:200],
+                           "n_outside_universe": len(departed),
+                           "outside_universe_symbols": departed[:200],
                            "source": "desks/mt5/data/cost_truth_quotes.json"}
     if not readings:
         out.update(verdict=UNMEASURED, why="no terminal reading on this box, cached or live")
-    elif age is None or age > QUOTES_STALE_AFTER_S or fresh < len(readings):
+    elif not _age_ok(age, QUOTES_STALE_AFTER_S) or fresh < len(readings):
         # ANY STALE READING MAKES THE SET STALE (audit 2026-10-20): a measured pass that ran out
         # of budget keeps older per-symbol readings, and FRESH on the pass stamp hid them.
         out.update(verdict="STALE",
@@ -922,10 +946,11 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         from mt5desk.config import terminal_path
 
         from research.mt5_session import attach_or_initialize, windows_session_id
-        # allow_autostart=False, as cost_to_edge: research residents run as SYSTEM in Session 0,
-        # where initialize() would launch a second terminal that takes the listener from the
-        # execution terminal. Attach to one already attached in this session, or read UNMEASURED.
-        attached = attach_or_initialize(mt5, path=terminal_path(), allow_autostart=False)
+        # THE HELPER'S DEFAULT autostart (audit 2026-10-20, v2 delta; the v1 ask walked back).
+        # `attach_or_initialize` already refuses Session 0 and a competing terminal by itself;
+        # `allow_autostart=False` on top meant a fresh process could never attach, so the quotes
+        # read STALE forever -- loud, and no information gathered.
+        attached = attach_or_initialize(mt5, path=terminal_path(), timeout=60_000)
         session_id = windows_session_id()
     except ImportError as exc:
         # NO BARE initialize() FALLBACK (audit 2026-10-20): that is the Session-0 spawn class.
@@ -1462,7 +1487,8 @@ def main(argv: list[str] | None = None) -> int:
     measured_now = snapshot.get("status") == MEASURED
     rep = build(universe, fusion, cost_to_edge, snapshot, ledger, intents,
                 net_edge_doc, ranks_doc, symbols, venue, prov)
-    rep["quotes"] = quotes_freshness(snapshot, measured_now)
+    rep["quotes"] = quotes_freshness(snapshot, measured_now,
+                                     universe=universe if isinstance(universe, dict) else None)
     if rep["quotes"]["verdict"] != "FRESH":
         try:
             from libs.ops.events import emit

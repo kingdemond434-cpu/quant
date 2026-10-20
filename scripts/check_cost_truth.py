@@ -177,6 +177,16 @@ def judge(rep: Any, ratchet: Any, surface: Any) -> dict[str, Any]:
         out["verdict"], out["exit"] = findings[0][0], 2
         out["why"] = " | ".join(f"{v}: {w}" for v, w in findings)
         return out
+    # OK NEEDS QUOTES THAT WERE MEASURED (audit 2026-10-20, v2 delta must-fix 1). A report with no
+    # `quotes` block, or one whose quotes are UNMEASURED, priced its comparison on nothing the
+    # terminal said this cadence; reading that as OK turned absence into a pass (L1.28a).
+    qv = str(quotes.get("verdict") or "") if quotes else ""
+    if qv != "FRESH":
+        out["verdict"], out["exit"] = UNMEASURED, 0
+        out["why"] = ("no quotes block in COST_TRUTH.json" if not quotes else
+                      f"terminal quotes are {qv or 'unlabelled'} ({quotes.get('why')}); the "
+                      "overcharge comparison has no measured broker side, so it is not OK")
+        return out
     out["verdict"], out["exit"] = OK, 0
     out["why"] = (f"{len(found)} overcharged symbol(s), all declared; commission overcharge "
                   f"{comm}x at or under the declared {declared_comm}x")

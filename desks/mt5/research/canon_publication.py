@@ -858,7 +858,7 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
         doc_new["pending_rejudge"] = pending
     if held_back:
         # The explicit revocation record the authority ratchet accepts for a falling count.
-        # APPEND-ONLY (audit 2026-10-20): a list deduped on (kind, at, keys) that never shrinks;
+        # APPEND-ONLY (audit 2026-10-20): a list deduped on (kind, keys) that never shrinks;
         # the previous single dict was overwritten by the next pass (2 -> 1).
         from libs.ops.revocation_log import merge_revocations
         doc_new["revocation"] = merge_revocations(
@@ -952,7 +952,11 @@ def restamp_holdback(merged: dict[str, Any], doc_seal: dict[str, Any], doc_repor
         if why is None:
             continue
         back = dict(merged.pop(key))
-        back.setdefault("pending_since", now_iso)
+        # THE WAIT KEEPS ITS AGE (audit 2026-10-20, v2 delta): a row the judge republishes every
+        # pass returns here every pass, and stamping `now` each time erased how long it has waited.
+        prior = old.get(key) if isinstance(old, dict) else None
+        since = prior.get("pending_since") if isinstance(prior, dict) else None
+        back["pending_since"] = since or back.get("pending_since") or now_iso
         back["pending_reason"] = why
         pending[key] = back
         moved.append(key)

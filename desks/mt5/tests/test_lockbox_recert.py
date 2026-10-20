@@ -224,3 +224,26 @@ def test_the_holdback_publishes_an_unmeasured_missed_growth_line(tmp_path: Path)
     assert line["value"] is None and line["value_status"] == lr.UNMEASURED
     assert line["n_certificates"] == 1 and line["n_sleeves"] == 1
     assert line["risk_frac_withheld"] == 0.0
+
+
+def test_an_unread_registry_withholds_unmeasured_risk_not_zero(tmp_path: Path) -> None:
+    """Audit 2026-10-20 v2 delta: an UNMEASURED sleeve registry never publishes 0 withheld."""
+    now = datetime(2026, 10, 20, tzinfo=UTC)
+    (line,) = lr.missed_growth_lines(["e"], {"status": lr.UNMEASURED, "why": "absent"}, now)
+    assert line["risk_frac_withheld"] is None and line["risk_frac_status"] == lr.UNMEASURED
+    assert line["n_sleeves"] is None and line["n_live_sleeves"] is None
+    (ok,) = lr.missed_growth_lines(["e"], {"status": "MEASURED", "n_live": 0, "sleeves": [
+        {"sleeve": "s", "status": "STANDBY", "risk_frac": 0.0}]}, now)
+    assert ok["risk_frac_withheld"] == 0.0 and ok["risk_frac_status"] == "MEASURED"
+
+
+def test_missed_growth_reads_an_unmeasured_recert_as_unmeasured(tmp_path: Path,
+                                                               monkeypatch) -> None:
+    import missed_growth as mg
+
+    path = _write(tmp_path / "LOCKBOX_RECERT.json", {"status": lr.UNMEASURED,
+                                                      "missed_growth": []})
+    monkeypatch.setattr(mg, "LOCKBOX_RECERT", path)
+    assert mg.lockbox_holdback_lines()["verdict"] == mg.UNMEASURED
+    _write(path, {"status": "DONE", "missed_growth": []})
+    assert mg.lockbox_holdback_lines()["verdict"] == mg.NOT_BINDING

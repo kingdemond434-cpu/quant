@@ -354,7 +354,8 @@ def test_main_publishes_without_a_terminal_and_never_crashes(
 def _report(at: str, *, symbols: list[dict[str, object]], comm: float = 5.625) -> dict[str, object]:
     return {"at": at, "overcharge_tolerance": 1.5, "stale_after_s": 4 * 3600,
             "n_symbols": len(symbols), "terminal_status": CT.MEASURED,
-            "commission": {"total_overcharge": comm}, "symbols": symbols}
+            "commission": {"total_overcharge": comm}, "symbols": symbols,
+            "quotes": {"verdict": "FRESH", "at": at, "why": "test"}}
 
 
 def _sym(symbol: str, charged: float, ref: float, verdict: str,
@@ -590,3 +591,40 @@ def test_the_terminal_is_never_spawned_when_the_helper_cannot_be_imported(
     monkeypatch.setitem(sys.modules, "research.mt5_session", None)
     got = CT.terminal_snapshot(["EURUSD"], 1.0, 10)
     assert got["status"] == CT.UNMEASURED and calls == []
+
+
+def test_fence_never_reads_missing_or_unmeasured_quotes_as_ok(tmp_path: Path) -> None:
+    """Audit 2026-10-20 v2 delta must-fix 1: no quotes block, or UNMEASURED quotes, is UNMEASURED,
+    and an UNMEASURED verdict never lowers the ratchet."""
+    rep = _report(datetime.now(UTC).isoformat(), symbols=[_sym("A", 1.0, 1.0, "OK", 1.0)])
+    declared = {"overcharged_symbols": ["GBPCHF"], "commission_total_overcharge": 9.0}
+    rep.pop("quotes")
+    got = FENCE.judge(rep, declared, None)
+    assert got["verdict"] == FENCE.UNMEASURED and got["exit"] == 0
+    assert FENCE.rewrite_ratchet(tmp_path / "r.json", got, declared) is False
+    rep["quotes"] = {"verdict": "UNMEASURED", "why": "no terminal reading"}
+    got = FENCE.judge(rep, declared, None)
+    assert got["verdict"] == FENCE.UNMEASURED and "UNMEASURED" in got["why"]
+    rep["quotes"]["verdict"] = "FRESH"
+    assert FENCE.judge(rep, declared, None)["verdict"] == FENCE.OK
+
+
+def test_a_future_stamped_reading_is_not_fresh() -> None:
+    """Audit 2026-10-20 v2 delta: a reading stamped in the future has no knowable age."""
+    future = (datetime.now(UTC) + timedelta(hours=3)).isoformat()
+    assert CT.quote_is_fresh(_info(future)) is False
+    skew = (datetime.now(UTC) + timedelta(seconds=5)).isoformat()
+    assert CT.quote_is_fresh(_info(skew)) is True
+    got = CT.quotes_freshness({"at": future, "symbols": {"A": _info(future)}},
+                              measured_now=False)
+    assert got["verdict"] == "STALE"
+
+
+def test_a_symbol_that_left_the_universe_never_holds_the_set_stale() -> None:
+    now = datetime.now(UTC).isoformat()
+    old = (datetime.now(UTC) - timedelta(seconds=CT.QUOTES_STALE_AFTER_S + 60)).isoformat()
+    snap = {"symbols": {"A": _info(now), "GONE": _info(old)}}
+    assert CT.quotes_freshness(snap, measured_now=True)["verdict"] == "STALE"
+    got = CT.quotes_freshness(snap, measured_now=True, universe={"A": {}})
+    assert got["verdict"] == "FRESH"
+    assert got["outside_universe_symbols"] == ["GONE"] and got["n_outside_universe"] == 1
