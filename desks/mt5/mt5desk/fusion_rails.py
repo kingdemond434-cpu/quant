@@ -13,6 +13,8 @@ bill into MISSED_GROWTH.json beside the registered rails.
     fusion_trade_risk_cap        veto   an entry refused because its stop risks > 10% of equity
     fusion_book_floor_lift       lift   an order sent at the 0.01 floor above its 0.75% target
     fusion_book_ceiling          cap    a boost clipped back to the book's own lot
+    gold_oco_direction_lock      veto   a gold leg refused by the cross-account direction lock
+                                        (mt5desk.gold_oco), fail-closed refusals included
 
 Each line carries the lot and, where it can be priced, the risk fraction (`risk_frac`) that was
 forgone, clipped or added, so the bill is in the desk's own units. Never raises: a ledger that
@@ -36,7 +38,8 @@ RAILS = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily_loss",
          "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap",
          "principal_zero_pin", "cert_book_absent_window", "gold_late_send",
          "cert_book_void", "gold_retry_abandoned", "e8_cert_ceiling",
-         "cert_book_zero", "e8_account_undeclared")
+         "cert_book_zero", "e8_account_undeclared",
+         "gold_oco_direction_lock")
 #: Lines this process could not write (rail -> count). The gateway logs it every pass.
 WRITE_FAILURES: dict[str, int] = {}
 

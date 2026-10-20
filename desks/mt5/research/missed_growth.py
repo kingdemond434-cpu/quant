@@ -655,13 +655,15 @@ FUSION_RAIL_NAMES = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily
                      "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap",
                      "principal_zero_pin", "cert_book_absent_window", "gold_late_send",
                      "cert_book_void", "gold_retry_abandoned", "e8_cert_ceiling",
-                     "cert_book_zero", "e8_account_undeclared")
+                     "cert_book_zero", "e8_account_undeclared",
+                     "gold_oco_direction_lock")
 
 #: The rails the E8 lanes bill in their intents journals (RAIL_BLOCKED rows; a late gold send is
 #: a SKIPPED row with reason late_send).
 _E8_BILLED_RAILS = ("cross_account_opposite", "principal_zero_pin", "cert_book_absent_window",
                     "gold_late_send", "cert_book_void", "gold_retry_abandoned",
-                    "e8_cert_ceiling", "cert_book_zero", "e8_account_undeclared")
+                    "e8_cert_ceiling", "cert_book_zero", "e8_account_undeclared",
+                    "gold_oco_direction_lock")
 
 
 def _jsonl(p: Path) -> list[dict[str, Any]] | None:

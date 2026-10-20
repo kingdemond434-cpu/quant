@@ -841,6 +841,110 @@ def publish_books(venue: Any, mt5: Any, doc: dict[str, Any],
         doc.setdefault("xacct_unpublished", []).append(f"fusion: {why}"[:160])
 
 
+def oco_sync(venue: Any, mt5: Any, doc: dict[str, Any], *, today: str) -> dict[str, Any]:
+    """THE CROSS-ACCOUNT GOLD DIRECTION LOCK (mt5desk.gold_oco), once per pass: name this account
+    by its KEYED account key, publish E8's gold state (from TradeLocker) and Fusion's (from the
+    terminal this lane is attached to), and claim the day's direction from either account's fills.
+
+    Returns the context the placement gate reads: {"date", "key"} (key None -> every gold leg is
+    refused, with the reason in "why"). Never raises; recorded on the pass report as `gold_oco`."""
+    from mt5desk import gold_oco as _oco
+    ctx: dict[str, Any] = {"date": today, "key": None}
+    try:
+        ctx["key"] = _oco.tradelocker_oco_key(venue)
+    except _oco.IdentityUnavailable as exc:
+        ctx["why"] = f"gold OCO identity: {exc}"
+    if ctx["key"]:
+        def e8_rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+            return _oco.tradelocker_gold_rows(venue.positions(), venue.orders(),
+                                              venue.instrument_id(SYMBOL))
+        ctx["e8"] = _oco.sync_lane("e8", ctx["key"], e8_rows, date=today, holder="e8_gold")
+    try:
+        fkey = _oco.mt5_oco_key(mt5)
+        ctx["fusion"] = _oco.sync_lane("fusion", fkey, lambda: _oco.mt5_gold_rows(mt5),
+                                       date=today, holder="e8_gold")
+    except _oco.IdentityUnavailable as exc:
+        ctx["fusion_why"] = str(exc)
+    for lane in ("e8", "fusion"):
+        for c in (ctx.get(lane) or {}).get("claims") or []:
+            if c.get("won"):
+                log(f"gold OCO: a {lane} fill set {today}'s direction {c.get('direction')}")
+            elif c.get("conflict"):
+                log(f"ALERT gold OCO: {lane} holds a fill AGAINST {today}'s direction "
+                    f"{c.get('direction')} (set by {c.get('first_fill_lane')})")
+                doc.setdefault("alerts", []).append(
+                    f"gold OCO: {lane} fill against {today}'s direction")
+    doc["gold_oco"] = {k: v for k, v in ctx.items()}
+    return ctx
+
+
+def oco_block(doc: dict[str, Any], side: str) -> str | None:
+    """Why the gold direction lock refuses an E8 gold leg of `side` now, or None. Fails closed:
+    no pass context, no keyed identity, or any unreadable/stale/torn state refuses."""
+    from mt5desk import gold_oco as _oco
+    ctx = doc.get("gold_oco") or {}
+    if not ctx.get("key") or not ctx.get("date"):
+        return f"{ctx.get('why') or 'gold OCO: no keyed identity this pass'}; fail closed"
+    v = _oco.gate("e8", side, key=ctx["key"], date=str(ctx["date"]))
+    return None if v.allowed else v.why
+
+
+def _oco_blocked(doc: dict, state: dict, *, name: str, side: str, why: str, risk_usd: float,
+                 now: datetime, today: str, armed: bool, retry: bool = False) -> None:
+    """A leg the gold direction lock refused: logged, on the report, and billed ONCE per window,
+    leg and day as a RAIL_BLOCKED row (rail gold_oco_direction_lock) with its missed growth."""
+    from mt5desk import gold_oco as _oco
+    doc["skipped"].append({"window": name, "side": side, "why": why, "rail": _oco.RAIL})
+    log(f"[{name}] {side} {'retry ' if retry else ''}refused by the gold OCO: {why}")
+    seen = state.setdefault("xacct_logged", {})
+    tag = f"{_oco.RAIL}/{name}/{side}" + ("/retry" if retry else "")
+    if seen.get(tag) != today:
+        seen[tag] = today
+        _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                 "status": "RAIL_BLOCKED", "rail": _oco.RAIL, "why": why,
+                 "missed_growth_risk_usd": round(float(risk_usd), 2), "armed": bool(armed)})
+
+
+def oco_cancel_opposite(venue: Any, state: dict, doc: dict, open_ids: set[int], *,
+                        armed: bool) -> set[int]:
+    """Cancel E8's resting gold legs against the day's direction when ANOTHER account's fill set
+    it (on a day E8 set, its own twin cancel keeps its behaviour). Returns the ids cancelled."""
+    from mt5desk import gold_oco as _oco
+    ctx = doc.get("gold_oco") or {}
+    today = str(ctx.get("date") or state.get("date") or "")
+    entry, why = _oco.day_entry(today)
+    if why is not None:
+        doc.setdefault("gold_oco_unreadable", why)
+        return set()
+    legs = [{"id": int(leg["id"]), "side": side, "window": name}
+            for name, w in (state.get("windows") or {}).items() if not name.startswith("carried:")
+            for side, leg in (w.get("orders") or {}).items()
+            if leg.get("id") is not None and int(leg["id"]) in open_ids]
+    gone: set[int] = set()
+    for leg in _oco.legs_to_cancel("e8", entry, legs):
+        w = state["windows"].get(leg["window"]) or {}
+        act = {"act": "oco_direction_cancel", "window": leg["window"], "side": leg["side"],
+               "order_id": leg["id"], "ok": False,
+               "why": f"{today}'s gold direction is {(entry or {}).get('direction')} (first fill "
+                      f"on {(entry or {}).get('first_fill_lane')})"}
+        try:
+            if armed or not w.get("shadow", False):
+                act["ok"] = bool(venue.cancel(int(leg["id"])))
+            else:
+                act.update({"ok": True, "shadow": True})
+        except Exception as exc:
+            act["why"] += f"; cancel FAILED: {type(exc).__name__}: {exc}"[:160]
+        if act["ok"]:
+            gone.add(int(leg["id"]))
+            if not act.get("shadow") and ctx.get("key"):
+                _oco.note_cancelled(today, "e8", ctx["key"], leg["id"], leg["side"],
+                                    holder="e8_gold")
+        log(f"[{leg['window']}] gold OCO cancel {leg['side']} order {leg['id']}: "
+            f"{'ok' if act['ok'] else 'NOT acknowledged'}; {act['why']}")
+        doc["actions"].append(act)
+    return gone
+
+
 #: How long one E8-Gold placement waits for the cross-account lock. After one miss in a pass the
 #: rest of the pass waits 0 (`xacct_lock_wait`), so a stuck lock delays stop management by at
 #: most this, never by a wait per window.
@@ -870,6 +974,9 @@ def fenced_send(mt5: Any, venue: Any, doc: dict[str, Any], *, holder: str, side:
         xwhy = _xa.opposite_block(book, SYMBOL, side, account="fusion", why_absent=why)
         if xwhy:
             return None, xwhy
+        owhy = oco_block(doc, side)
+        if owhy:
+            return None, owhy
         try:
             return _xa.bounded(send, what=f"{holder} send", account="e8", symbol=SYMBOL), None
         finally:
@@ -1012,6 +1119,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         log("position book unreadable; no new E8 gold placement this pass")
     publish_books(venue, mt5, doc,
                   positions=None if "positions_unreadable" in doc else venue_positions)
+    oco_sync(venue, mt5, doc, today=today)
     # -------------------------------------------------------------- placements
     due_now = [] if stood_down else plan(df, hour, state)
     # A LATE GOLD SEND IS REFUSED (Judge 2026-10-21, r6; decision_core.GOLD_SEND_GRACE_MIN): a
@@ -1215,6 +1323,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                                      "rail": "cross_account_opposite", "why": xwhy,
                                      "missed_growth_risk_usd": round(risk_usd, 2),
                                      "armed": bool(armed)})
+                        continue
+                if armed and _xlocked:
+                    # THE GOLD DIRECTION LOCK (mt5desk.gold_oco), under the same lock, after
+                    # the two-account fence (whose refusal, when both bind, is the one billed).
+                    owhy = oco_block(doc, side)
+                    if owhy:
+                        fenced[side] = owhy
+                        _oco_blocked(doc, state, name=name, side=side, why=owhy,
+                                     risk_usd=risk_usd, now=now, today=today, armed=armed)
                         continue
                 s = spec[side]
                 dist = abs(float(s["price"]) - float(s["sl"]))
@@ -1454,6 +1571,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 doc.setdefault("alerts", []).append(
                     f"position {p['id']}: {count} consecutive stop moves refused by the venue")
         doc["actions"].append(action)
+    # THE GOLD DIRECTION LOCK'S CANCEL LEG: another account's first fill cancels E8's opposite
+    # resting leg (mt5desk.gold_oco). Only with a readable order book.
+    if "orders_unreadable" not in doc:
+        open_ids -= oco_cancel_opposite(venue, state, doc, open_ids, armed=armed)
     # Positions carried from a previous day are closed at the close hour like today's.
     for name, w in list((state.get("carried") or {}).items()):
         state["windows"].setdefault(f"carried:{name}",
@@ -1676,6 +1797,15 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                                             SYMBOL, "buy" if side == "buy_stop" else "sell",
                                             float(leg["lot"]), price=float(leg["price"]),
                                             stop=float(leg["sl"]), take_profit=float(leg["tp"])))
+                if xwhy and xwhy.startswith("gold OCO"):
+                    act.update({"ok": False, "why": xwhy, "rail": "gold_oco_direction_lock"})
+                    doc["actions"].append(act)
+                    _risk = leg.get("risk_usd")
+                    _oco_blocked(doc, state, name=name, side=side, why=xwhy,
+                                 risk_usd=float(_risk) if isinstance(_risk, (int, float)) else 0.0,
+                                 now=now, today=str(state.get("date") or now.date()),
+                                 armed=armed, retry=True)
+                    continue
                 if xwhy:
                     _xa_retry_blocked(doc, state, row, act, name, side, leg, xwhy, now)
                     continue

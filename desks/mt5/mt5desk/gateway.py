@@ -1632,6 +1632,59 @@ def cancel_filled_gold_siblings(st: dict) -> int:
     return removed
 
 
+def cancel_gold_against_direction(st: dict, lane: str, key: str | None, day_key: str) -> int:
+    """THE CROSS-ACCOUNT GOLD DIRECTION LOCK'S CANCEL LEG (mt5desk.gold_oco), every pass.
+
+    Once the day's gold direction is set by the first fill on ANY account, this desk's own
+    resting gold legs on the other side are removed (MAGIC only: manual orders are never touched;
+    they still block the other accounts through the published gold state). Each removal is
+    confirmed absent and noted in the direction state's `legs_cancelled`. Shadow logs only.
+    Returns how many were removed. An unreadable direction state cancels nothing (and places
+    nothing: the gate fails closed on the same reading)."""
+    from mt5desk import gold_oco as _oco
+    entry, why = _oco.day_entry(day_key)
+    if why is not None:
+        log(f"gold OCO: {why}; no direction cancel this pass (no gold leg is placed either)")
+        return 0
+    if entry is None:
+        return 0
+    legs = []
+    for o in (mt5.orders_get(symbol=GOLD_SYMBOL) or []):
+        if int(getattr(o, "magic", 0) or 0) != MAGIC:
+            continue
+        t = int(getattr(o, "type", -1))
+        if t == 8:
+            continue
+        legs.append({"id": int(o.ticket), "side": ("long" if t in (0, 2, 4, 6) else
+                                                   "short" if t in (1, 3, 5, 7) else None)})
+    removed = 0
+    for leg in _oco.legs_to_cancel(lane, entry, legs):
+        ticket = int(leg["id"])
+        if not st.get("armed"):
+            log(f"SHADOW gold OCO would cancel {leg['side']} order {ticket}: today's direction "
+                f"is {entry.get('direction')} (first fill on {entry.get('first_fill_lane')})")
+            continue
+        try:
+            res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": ticket,
+                                  "magic": MAGIC, "comment": order_comment("oco_xacct")})
+        except Exception as exc:
+            log(f"gold OCO cancel FAILED for order {ticket}: {type(exc).__name__}: {exc}; it may "
+                f"still rest")
+            continue
+        still = any(int(getattr(x, "ticket", 0) or 0) == ticket
+                    for x in (mt5.orders_get(symbol=GOLD_SYMBOL) or []))
+        if still:
+            log(f"gold OCO cancel NOT CONFIRMED for order {ticket} "
+                f"retcode={getattr(res, 'retcode', None)}; it remains live")
+            continue
+        removed += 1
+        if key:
+            _oco.note_cancelled(day_key, lane, key, ticket, leg["side"], holder="gateway")
+        log(f"gold OCO cancelled {leg['side']} order {ticket}: today's direction is "
+            f"{entry.get('direction')} (first fill on {entry.get('first_fill_lane')})")
+    return removed
+
+
 def collapse_opposing_gold_positions(st: dict) -> int:
     """Close-by redundant opposing gold-bracket positions while preserving net exposure."""
     positions = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
@@ -4601,6 +4654,42 @@ def main() -> None:
     if _pub_why:
         log(f"cross-account: Fusion book not published ({_pub_why}); the E8 lanes fail closed "
             f"on a stale book")
+    # THE CROSS-ACCOUNT GOLD DIRECTION LOCK (mt5desk.gold_oco): publish this account's gold
+    # state, claim the day's direction from its fills, and cancel this desk's resting gold legs
+    # against the direction. Identity is the keyed account key only; without it (or with no lane)
+    # nothing is published and the gold gate below refuses every gold leg (fail closed).
+    from mt5desk import gold_oco as _oco
+    _oco_lane = _oco.gateway_lane()
+    _oco_key: str | None = None
+    _oco_why = "" if _oco_lane else (f"{_oco.LANE_ENV} names no non-leader gold lane; no gold "
+                                     f"leg is placed")
+    try:
+        _oco_key = _oco.mt5_oco_key(mt5)
+    except _oco.IdentityUnavailable as exc:
+        _oco_why = _oco_why or f"gold OCO identity: {exc}"
+    if _oco_lane and _oco_key:
+        for _round in range(2):
+            _sync = _oco.sync_lane(_oco_lane, _oco_key, lambda: _oco.mt5_gold_rows(mt5),
+                                   date=day_key, holder="gateway")
+            if not _sync.get("published"):
+                log(f"gold OCO: {_oco_lane} gold state not published ({_sync.get('why')}); "
+                    f"the other lanes fail closed on it")
+            for _c in _sync.get("claims") or []:
+                if _c.get("won"):
+                    log(f"gold OCO: {_oco_lane} fill set {day_key}'s direction "
+                        f"{_c.get('direction')}")
+                elif _c.get("conflict"):
+                    log(f"ALERT gold OCO: {_oco_lane} holds a fill AGAINST {day_key}'s direction "
+                        f"{_c.get('direction')} (set by {_c.get('first_fill_lane')})")
+            try:
+                _gone = cancel_gold_against_direction(st, _oco_lane, _oco_key, day_key)
+            except Exception as exc:
+                _gone = 0
+                log(f"gold OCO: direction cancel failed ({type(exc).__name__}: {exc})")
+            if not _gone:
+                break                         # republish only when a leg was removed
+    elif _oco_why:
+        log(f"gold OCO: {_oco_why}")
 
     # THE SCALP LANE'S OWN MANAGEMENT, HERE AND NOT INSIDE ITS EXECUTOR (2026-09-09). A basket
     # the broker has closed and a basket past its time exit are POSITIONS, and this desk's
@@ -5165,9 +5254,30 @@ def main() -> None:
                                                 why_absent=_e8_why)
                         if _w:
                             _xblocked[_leg] = _w
+                # THE GOLD DIRECTION LOCK (mt5desk.gold_oco): read under the same lock, every
+                # gold leg, fail closed on an unreadable, stale or torn state or no identity.
+                _oblocked: dict[str, str] = {}
+                if st.get("armed") and s["symbol"] == GOLD_SYMBOL:
+                    for _leg in ("buy_stop", "sell_stop"):
+                        if _leg in _xblocked:
+                            continue                   # the two-account fence already refused
+                        if not (_oco_lane and _oco_key):
+                            _oblocked[_leg] = f"gold OCO: {_oco_why}; fail closed"
+                            continue
+                        _v = _oco.gate(_oco_lane, _leg, key=_oco_key, date=day_key)
+                        if not _v.allowed:
+                            _oblocked[_leg] = _v.why
                 _self_blocked = OPPOSING_LEG.get(_direction)
-                _all_blocked = set(_xblocked) | ({_self_blocked} if _self_blocked else set())
+                _all_blocked = (set(_xblocked) | set(_oblocked)
+                                | ({_self_blocked} if _self_blocked else set()))
                 _rails_seen = st.setdefault("rails_logged", {})
+                for _leg, _w in _oblocked.items():
+                    log(f"[{s['name']}] {_leg} NOT SENT: {_w}")
+                    if _rails_seen.get(f"{_oco.RAIL}/{s['name']}/{_leg}") != day_key:
+                        _rails_seen[f"{_oco.RAIL}/{s['name']}/{_leg}"] = day_key
+                        _rails.line(_oco.RAIL, sleeve=s["name"], symbol=s["symbol"], side=_leg,
+                                    day=day_key, lot=lot, risk_frac=q_real, why=_w,
+                                    lane=_oco_lane)
                 for _leg, _w in _xblocked.items():
                     log(f"[{s['name']}] {_leg} NOT SENT: {_w}")
                     if _rails_seen.get(f"cross_account_opposite/{s['name']}/{_leg}") != day_key:
@@ -5183,7 +5293,8 @@ def main() -> None:
                 _blocked_leg = next(iter(_all_blocked)) if _all_blocked else None
                 res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s,
                                     blocked_side=_blocked_leg,
-                                    blocked_why=_xblocked.get(_blocked_leg or ""))
+                                    blocked_why=(_xblocked.get(_blocked_leg or "")
+                                                 or _oblocked.get(_blocked_leg or "")))
                 if s["symbol"] == GOLD_SYMBOL and any(
                         not o.get("blocked") and o.get("retcode") in (10008, 10009)
                         for o in (res.get("orders") or [])):
