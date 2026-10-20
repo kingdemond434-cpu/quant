@@ -268,3 +268,82 @@ def test_pit_factor_is_joined_as_of_its_stamp_never_earlier(tmp_path, monkeypatc
     assert why == "ok" and prov["factors"][0]["source"] == "PIT_SERIES"
     _f, why, prov = fi.build_basket(["fred_ust:y_DGS30"], {}, prim, lambda s: None)
     assert why.startswith("NEEDS_PROXY_FACTOR") and prov["needs"] == ["fred_ust:y_DGS30"]
+
+
+# ------------------------------------------------------------------------------- false positives
+
+def _roster(tmp: Path, certs: list[dict]) -> Path:
+    path = tmp / "sleeves.json"
+    path.write_text(json.dumps({"sleeves": [
+        {"name": f"s{i}", "status": "LIVE", "risk_frac": 0.01, "certificate": {"cell": c["name"]}}
+        for i, c in enumerate(certs)]}))
+    return path
+
+
+def test_same_family_and_period_with_every_factor_intraday_is_never_flagged(isolated) -> None:
+    """Same family, same pre-fix certification date, but every named factor HAS intraday bars:
+    not a mismatch, never retired, no missed-growth line."""
+    healthy = [_cert("XAUAUD", dict(BASE, factor_symbols=["USDX", "UST05Y"])),
+               _cert("XAUEUR", dict(BASE, factor_symbols=["USDX"])),
+               _cert("XAUUSD", dict(BASE, factor_symbols=["USDX", "UST05Y"]),
+                     family="pca_residual")]
+    doc = bm.detect(healthy)
+    assert doc["n_hits"] == 0 and doc["certificates"] == []
+    path = _roster(isolated, healthy)
+    before = path.read_text()
+    assert bm.retire_sleeves(doc, path, apply=True) == []
+    assert path.read_text() == before
+    assert bm.missed_growth_lines([], doc, "t") == []
+
+
+def test_basket_certified_after_the_fix_is_never_flagged(isolated) -> None:
+    """The same USDX+UST10Y identity certified after ef11ff615 was built on its full basket
+    (build_cell refuses a partial one), so it is not a mismatch, and its boundary is exact."""
+    fixed = bm.PARTIAL_BASKET_FIXED_AT.isoformat()
+    after = [_cert("XAUAUD", at=AFTER), _cert("XAUEUR", at=fixed)]
+    doc = bm.detect(after)
+    assert doc["n_hits"] == 0
+    path = _roster(isolated, after)
+    before = path.read_text()
+    assert bm.retire_sleeves(doc, path, apply=True) == []
+    assert path.read_text() == before
+    one_second_before = "2026-09-28T06:00:58+00:00"
+    assert bm.detect([_cert("XAUEUR", at=one_second_before)])["n_hits"] == 1
+
+
+# ------------------------------------------------------------------------------- missed growth
+
+def test_every_retirement_carries_an_unmeasured_missed_growth_line(isolated) -> None:
+    hit = _cert()
+    doc = bm.detect([hit])
+    path = isolated / "sleeves.json"
+    path.write_text(json.dumps({"sleeves": [
+        {"name": "a", "status": "STANDBY", "risk_frac": 0.0, "certificate": {"cell": hit["name"]}},
+        {"name": "b", "status": "LIVE", "risk_frac": 0.012, "risk_frac_source": "allocator",
+         "certificate": {"cell": hit["name"]}}]}))
+    retired = bm.retire_sleeves(doc, path, apply=True)
+    lines = bm.missed_growth_lines(retired, doc, "2026-10-20T00:00:00+00:00")
+    assert [x["sleeve"] for x in lines] == ["a", "b"]
+    b = lines[1]
+    assert b["gate"] == "basket_mismatch" and b["certificate"] == hit["name"]
+    assert b["risk_frac_before"] == 0.012 and b["from_status"] == "LIVE"
+    assert b["forward_evidence"]["status"] == "UNMEASURED" and b["verdict"] == "UNMEASURED"
+    assert "UST10Y" in b["why"] and b["value"] is None
+    # cumulative: the next pass retires nothing new and keeps the bill
+    again = bm.missed_growth_lines([], doc, "later", lines)
+    assert again == lines
+
+
+def test_missed_growth_carries_the_gates_published_lines(tmp_path, monkeypatch) -> None:
+    import missed_growth as mg
+    path = tmp_path / "BASKET_MISMATCH.json"
+    monkeypatch.setattr(mg, "BASKET_MISMATCH", path)
+    assert mg.basket_mismatch_lines()["verdict"] == mg.UNMEASURED      # absent: never a zero
+    path.write_text(json.dumps({"missed_growth": []}))
+    assert mg.basket_mismatch_lines()["verdict"] == mg.NOT_BINDING
+    path.write_text(json.dumps({"missed_growth": [
+        {"gate": "basket_mismatch", "sleeve": "b", "risk_frac_before": 0.012,
+         "verdict": "UNMEASURED"}]}))
+    m = mg.basket_mismatch_lines()
+    assert m["verdict"] == mg.UNMEASURED and m["n_retired"] == 1
+    assert m["risk_frac_retired"] == pytest.approx(0.012)

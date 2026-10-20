@@ -473,7 +473,9 @@ def retire_sleeves(doc: dict[str, Any], path: Path = SLEEVES,
         cell = cert.get("cell") if isinstance(cert, dict) else None
         if cell not in certs or str(r.get("status") or "").upper() not in ("LIVE", "STANDBY"):
             continue
-        out.append({"name": r.get("name"), "status": r.get("status"), "certificate": cell})
+        out.append({"name": r.get("name"), "status": r.get("status"), "certificate": cell,
+                    "risk_frac": r.get("risk_frac"),
+                    "risk_frac_source": r.get("risk_frac_source")})
         if apply:
             r.update(status="RETIRED", risk_frac=0.0, risk_frac_source="none",
                      retired_at=stamp, retired_by="basket_mismatch",
@@ -483,6 +485,43 @@ def retire_sleeves(doc: dict[str, Any], path: Path = SLEEVES,
     if apply and out:
         _atomic(path, roster)
     return out
+
+
+GATE = "basket_mismatch"
+UNMEASURED_EVIDENCE = "UNMEASURED"
+
+
+def missed_growth_lines(retired: list[dict[str, Any]], doc: dict[str, Any], stamp: str,
+                        previous: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """One missed-growth line per sleeve this gate moved LIVE/STANDBY -> RETIRED (a veto).
+
+    GROWTH GOVERNANCE, Rule 1: every veto carries its bill. The forward evidence for a
+    USDX+UST10Y identity is UNMEASURED BY CONSTRUCTION -- the certifier never had the named
+    basket, so no forward reading can be evidence for it -- and the line says so rather than
+    pricing the veto at zero. Lines are cumulative: a retirement fires once, so earlier lines
+    are carried forward from the previous report, keyed by sleeve.
+    """
+    hits = {str(h.get("certificate")): h for h in doc.get("hits") or []}
+    lines = {str(x.get("sleeve")): x for x in previous or []
+             if isinstance(x, dict) and x.get("gate") == GATE}
+    for r in retired:
+        h = hits.get(str(r.get("certificate"))) or {}
+        missing = [m.get("factor") for m in h.get("missing_factors") or []]
+        named = h.get("named_basket") or []
+        why = (f"identity {named} names {missing}, which the certifier never had (no bars on "
+               f"the certificate's chart before ef11ff615): no forward reading is evidence for "
+               f"this identity, so the veto's cost in forward E[log W] is UNMEASURED by "
+               f"construction, not zero")
+        lines[str(r.get("name"))] = {
+            "gate": GATE, "sleeve": r.get("name"), "certificate": r.get("certificate"),
+            "from_status": r.get("status"), "risk_frac_before": r.get("risk_frac"),
+            "risk_frac_source_before": r.get("risk_frac_source"),
+            "forward_evidence": {"status": UNMEASURED_EVIDENCE, "why": why},
+            "verdict": UNMEASURED_EVIDENCE, "value": None, "why": why,
+            "true_basket_rejudge": (h.get("rejudge") or {}).get("status"),
+            "at": stamp}
+    return [lines[k] for k in sorted(lines)]
+
 
 
 def _atomic(path: Path, doc: Any) -> None:
@@ -518,14 +557,20 @@ def main(argv: list[str] | None = None) -> int:
     fresh, ledger = emit_once(rows, now=doc["at"])
     doc["minted_cells"] = sorted(ledger["cells"])
     doc["emitted_this_run"] = len(fresh)
+    previous = (_read(OUT, {}) or {}).get("missed_growth")
     doc["sleeves_live_or_standby"] = retire_sleeves(doc, apply=a.apply)
     doc["sleeves_retired"] = bool(a.apply and doc["sleeves_live_or_standby"])
+    doc["missed_growth"] = missed_growth_lines(
+        doc["sleeves_live_or_standby"] if a.apply else [], doc, doc["at"],
+        previous if isinstance(previous, list) else None)
+    doc["n_missed_growth_lines"] = len(doc["missed_growth"])
     _atomic(OUT, doc)
     _atomic(REJUDGE, {"generated_at": doc["at"], "source": SOURCE, "hypotheses": fresh})
     _atomic(MINTED_LEDGER, ledger)
     print(f"BASKET_MISMATCH: {doc['n_hits']} certificate(s); re-judge linked {doc['n_linked']}, "
           f"minted {doc['n_minted']} ({len(rows)} distinct cell(s), {len(fresh)} emitted now); "
-          f"PIT re-mint {remint['status']} ({remint['minted']}); LIVE/STANDBY sleeves "
+          f"PIT re-mint {remint['status']} ({remint['minted']}); missed-growth lines "
+          f"{doc['n_missed_growth_lines']}; LIVE/STANDBY sleeves "
           f"{len(doc['sleeves_live_or_standby'])}"
           + (" -> RETIRED" if doc["sleeves_retired"] else ""))
     return 0

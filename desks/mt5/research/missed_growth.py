@@ -643,6 +643,33 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+BASKET_MISMATCH = BASE / "reports" / "BASKET_MISMATCH.json"
+
+
+def basket_mismatch_lines() -> dict[str, Any]:
+    """The BASKET_MISMATCH gate's retirements, read from its own report (`basket_mismatch.py`).
+
+    Each retirement of a LIVE/STANDBY sleeve is a veto and carries a line: gate, sleeve,
+    certificate, risk_frac before, and the forward evidence -- UNMEASURED by construction for an
+    identity the certifier never had. Absent report: UNMEASURED, never a clean zero; a report with
+    no retirements is NOT_BINDING."""
+    doc = _json(BASKET_MISMATCH)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/BASKET_MISMATCH.json on this host: the hourly "
+                       "basket_mismatch leg has not written one"}
+    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
+    if not lines:
+        return {"verdict": NOT_BINDING, "lines": [], "source": "reports/BASKET_MISMATCH.json",
+                "why": "the gate has retired no LIVE/STANDBY sleeve"}
+    return {"verdict": (UNMEASURED if any(x.get("verdict") == UNMEASURED for x in lines)
+                        else COSTS if any(x.get("verdict") == COSTS for x in lines)
+                        else NOT_BINDING),
+            "source": "reports/BASKET_MISMATCH.json", "lines": lines, "n_retired": len(lines),
+            "risk_frac_retired": round(sum(float(x.get("risk_frac_before") or 0.0)
+                                           for x in lines), 8)}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +787,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "basket_mismatch": basket_mismatch_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

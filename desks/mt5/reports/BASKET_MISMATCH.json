@@ -1,5 +1,5 @@
 {
- "at": "2026-10-20T15:38:10+00:00",
+ "at": "2026-10-20T15:46:35+00:00",
  "ruling": "judge 2026-10-20: identity names a factor the certifier never had -> BASKET_MISMATCH, never promotes, clock runs as UNMEASURED_BASKET_MISMATCH; the true basket is re-judged (linked or minted once at the fixed N bar)",
  "rule": {
   "families": [
@@ -1465,8 +1465,12 @@
   {
    "name": "xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc",
    "status": "STANDBY",
-   "certificate": "external.XAUUSD@M5.cross_asset_residual.p=cec9a82bd34685dc"
+   "certificate": "external.XAUUSD@M5.cross_asset_residual.p=cec9a82bd34685dc",
+   "risk_frac": 0.0,
+   "risk_frac_source": "none"
   }
  ],
- "sleeves_retired": false
+ "sleeves_retired": false,
+ "missed_growth": [],
+ "n_missed_growth_lines": 0
 }
