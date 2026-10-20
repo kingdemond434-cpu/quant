@@ -46,7 +46,7 @@ def test_the_fred_copyrighted_row_quotes_fred_and_each_series_notes() -> None:
     row = tf.SOURCE_POLICY["fred_copyrighted"]
     assert tf.status("fred_copyrighted") == tf.IDEAS_ONLY
     assert tf.terms_state("fred_copyrighted") == "READ"
-    assert set(row["series"]) == set(THIRD_PARTY)
+    assert set(THIRD_PARTY) <= set(row["series"])   # the fetch_fred lake added more
     cl = row["terms"]["clauses"]
     assert "cannot give you such permission" in cl["faq:cannot"]
     assert "MUST CONTACT THE DATA OWNER" in cl["tou:third_party"]
