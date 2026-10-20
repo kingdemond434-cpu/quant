@@ -269,7 +269,7 @@ def test_unmarked_or_seventh_names_or_sovereignty_off_are_not_sized_here(
                          trade_tick_value=1.0), EQUITY, 0.02, "step"),
     ({}, SimpleNamespace(volume_min=0.02, volume_step=0.01, trade_tick_size=0.00001,
                          trade_tick_value=1.0), EQUITY, 0.02, "venue minimum"),
-    ({}, _FX_INFO, EQUITY, 60.0, "envelope"),           # 0.01 at this stop > 10% of equity
+    ({}, _FX_INFO, EQUITY, 60.0, "per-trade"),          # 0.01 at this stop > 10% of equity
 ])
 def test_a_zero_an_unpriceable_stop_or_the_envelope_sends_nothing(row, info, equity, dist,
                                                                  flag) -> None:
