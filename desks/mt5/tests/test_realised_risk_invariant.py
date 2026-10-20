@@ -233,7 +233,9 @@ def test_the_health_row_reads_unmeasured_then_p50_p95(tmp_path, monkeypatch):
     spec.loader.exec_module(ph)
     fills = tmp_path / "fills.jsonl"
     monkeypatch.setattr(ph, "RISK_FILLS", fills)
-    assert ph._realised_risk_row()["verdict"] == "UNMEASURED"
+    assert ph._realised_risk_row()["verdict"] == "NO_FILLS"          # absent: named, not OK
+    fills.write_text(json.dumps({"status": "UNMEASURED", "why": "no stop"}) + "\n", "utf-8")
+    assert ph._realised_risk_row()["verdict"] == "UNMEASURED"        # filled, not priceable
     fills.write_text("\n".join(json.dumps({"status": "MEASURED", "ratio": r})
                                for r in (1.0, 1.0, 1.05, 0.9)) + "\n", "utf-8")
     row = ph._realised_risk_row()

@@ -669,9 +669,13 @@ def needs_attention(row: dict[str, Any]) -> bool:
 def _realised_risk_row() -> dict[str, Any]:
     """realised/intended EUR risk over the last fills: p50, p95, max and breaches.
 
-    NOT A SCHEDULED TASK: the gateway writes the ledger as it fills. No measured fill reads
-    UNMEASURED -- never OK -- and a p95 above the post-fill tolerance reads RISK_BREACH, which
-    needs attention: fills are risking materially more than the allocator intended."""
+    NOT A SCHEDULED TASK: the gateway writes the ledger as it fills. Three non-OK readings, never
+    folded into OK:
+      NO_FILLS     the ledger is absent or empty: no family/scalp fill has happened on this box
+                   (the lanes are unarmed or idle). Named as an absence, not counted as clean.
+      UNMEASURED   fills were recorded but none could be priced, or the ledger is unreadable.
+      RISK_BREACH  p95 above the post-fill tolerance: fills risk materially more than intended.
+    """
     try:
         desk = str(ROOT / "desks" / "mt5")
         if desk not in sys.path:
@@ -682,7 +686,10 @@ def _realised_risk_row() -> dict[str, Any]:
     except Exception as exc:
         summary, tol = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}, 1.5
     age = _age_min(RISK_FILLS)
-    if summary.get("status") != "MEASURED":
+    if summary.get("status") != "MEASURED" and summary.get("n_rows") == 0:
+        verdict, why = "NO_FILLS", ("no family/scalp fill recorded on this box yet: nothing to "
+                                    "measure, which is not the same as clean")
+    elif summary.get("status") != "MEASURED":
         verdict, why = "UNMEASURED", str(summary.get("why") or "no measured fill")
     else:
         why = (f"realised/intended over the last {summary['n']} fill(s): p50 {summary['p50']}, "
@@ -901,7 +908,7 @@ def build() -> dict[str, Any]:
              "SCHEDULER_UNMEASURED": 0,
              "FAILING": 1, "OVERLAP": 1, "FINDING": 1, "RISK_BREACH": 1,
              "NO_ARTIFACT": 2, "STALE": 3, "UNMEASURED": 3,
-             "DISABLED": 4, "UNCONTRACTED": 5, "RUNNING": 6, "OK": 6}
+             "DISABLED": 4, "UNCONTRACTED": 5, "NO_FILLS": 5, "RUNNING": 6, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     basis: dict[str, int] = {}
