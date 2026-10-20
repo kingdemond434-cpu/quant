@@ -367,4 +367,5 @@ def test_a_404_then_a_budget_cut_names_both(tmp_path: Path) -> None:
                           sleep=lambda _s: None, clock=lambda: NOW)
     assert len(g.data_urls) == 1                            # the second zone was cut
     assert rec["status"].startswith("FAILED:ALL_WINDOWS_404")
-    assert rec["status"].endswith("budget cut before every zone caught up")
+    assert rec["status"] == "FAILED:ALL_WINDOWS_404"
+    assert rec["why"].endswith("budget cut before every zone caught up")
