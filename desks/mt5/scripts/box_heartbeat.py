@@ -287,16 +287,21 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
                                           or ("silent" in doc["failing"]
                                               and bool(now_new - prev_new)))
     last_page = prev.get("last_paged_at") if doc["verdict"] == "FAIL" else None
+    page_age = _stamp_age_min(last_page, time.time()) if last_page else None
+    # an unparseable or future stamp is overdue: it must never be what keeps the pager quiet
     overdue = (doc["verdict"] == "FAIL" and not newly and (
-        last_page is None or (_stamp_age_min(last_page, time.time()) or 0.0) > REPAGE_H * 60))
+        page_age is None or page_age < 0 or page_age > REPAGE_H * 60))
     doc["paged"] = None
     doc["last_paged_at"] = last_page
     if (newly or overdue) and not dry_run:
-        doc["last_paged_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         try:
             from libs.ops.alert_channels import send_all
             res = send_all("MT5 box unhealthy", body)
             doc["paged"] = {k: v for k, v in res.items() if k in ("armed", "delivered", "status")}
+            # a failed send retries next pass, not in REPAGE_H; with nothing armed there is no
+            # one to retry for -- the `alerts` check itself carries that failure
+            if res.get("delivered") or not res.get("armed"):
+                doc["last_paged_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         except Exception as exc:
             doc["paged"] = {"status": "ERROR", "detail": type(exc).__name__}
     doc["since"] = (prev.get("since") if doc["verdict"] == prev.get("verdict") and prev.get("since")

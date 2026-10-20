@@ -87,7 +87,8 @@ def test_unarmed_is_recorded_and_page_fires_once(tmp_path: Path,
                "failing": ["disk"], "verdict": "FAIL"}
     sent: list[str] = []
     import libs.ops.alert_channels as ac
-    monkeypatch.setattr(ac, "send_all", lambda t, b, **k: sent.append(b) or {"status": "ok"})
+    monkeypatch.setattr(ac, "send_all",
+                        lambda t, b, **k: sent.append(b) or {"armed": 1, "delivered": 1})
     d1 = hb.run(out=out, secrets=(tmp_path / "absent.json",), reading=dict(reading))
     assert d1["ping"]["status"] == "NOT_ARMED" and len(sent) == 1
     hb.run(out=out, secrets=(tmp_path / "absent.json",), reading=dict(reading))
@@ -178,7 +179,8 @@ def test_still_failing_repages_after_repage_h(tmp_path: Path,
                "failing": ["deadman"], "verdict": "FAIL"}
     sent: list[str] = []
     import libs.ops.alert_channels as ac
-    monkeypatch.setattr(ac, "send_all", lambda t, b, **k: sent.append(b) or {"status": "ok"})
+    monkeypatch.setattr(ac, "send_all",
+                        lambda t, b, **k: sent.append(b) or {"armed": 1, "delivered": 1})
     absent = (tmp_path / "absent.json",)
     hb.run(out=out, secrets=absent, reading=dict(reading))
     hb.run(out=out, secrets=absent, reading=dict(reading))
@@ -191,3 +193,27 @@ def test_still_failing_repages_after_repage_h(tmp_path: Path,
     hb.run(out=out, secrets=absent, reading={"at": "x", "checks": {}, "failing": [],
                                              "verdict": "OK"})
     assert json.loads(out.read_text())["last_paged_at"] is None
+
+
+def test_failed_send_and_bad_stamp_retry_next_pass(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    out = tmp_path / "BOX_HEARTBEAT.json"
+    reading = {"at": "x", "checks": {"deadman": {"age_min": 999, "fail": True}},
+               "failing": ["deadman"], "verdict": "FAIL"}
+    sent: list[str] = []
+    import libs.ops.alert_channels as ac
+    monkeypatch.setattr(ac, "send_all", lambda t, b, **k: sent.append(b) or {"armed": 1,
+                                                                              "delivered": 0})
+    absent = (tmp_path / "absent.json",)
+    hb.run(out=out, secrets=absent, reading=dict(reading))
+    hb.run(out=out, secrets=absent, reading=dict(reading))
+    assert len(sent) == 2                     # undelivered: retried on the very next pass
+    monkeypatch.setattr(ac, "send_all", lambda t, b, **k: sent.append(b) or {"armed": 1,
+                                                                              "delivered": 1})
+    for stamp in ("garbage", "2999-01-01T00:00:00+00:00"):
+        doc = json.loads(out.read_text())
+        doc["last_paged_at"] = stamp
+        out.write_text(json.dumps(doc))
+        n = len(sent)
+        hb.run(out=out, secrets=absent, reading=dict(reading))
+        assert len(sent) == n + 1
