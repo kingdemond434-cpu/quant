@@ -377,6 +377,26 @@ def test_a_finished_sweep_clears_the_stall_records_its_walls_and_drops_the_snaps
     assert not runner.MERGE_SNAPSHOT.exists()
 
 
+def test_the_snapshot_is_dropped_only_on_positive_evidence():
+    """v4.1: an output that is absent or unparseable at removal time keeps the snapshot."""
+    runner.MERGE_OUTPUTS[0].write_text("{}")
+    runner.snapshot_merge_outputs()
+    runner.MERGE_OUTPUTS[0].write_text("{trunc")            # the sealed writer died mid-file
+    runner._PARSE_CACHE.clear()
+    assert runner._drop_merge_snapshot() is False
+    assert (runner.MERGE_SNAPSHOT / "universal_gates_external.json").exists()
+    runner.MERGE_OUTPUTS[0].unlink()                        # absent: still kept
+    assert runner._drop_merge_snapshot() is False
+    runner.MERGE_OUTPUTS[0].write_text("{}")                # read back and parses: removed
+    runner._PARSE_CACHE.clear()
+    assert runner._drop_merge_snapshot() is True
+    assert not runner.MERGE_SNAPSHOT.exists()
+    from libs.ops import reference_freshness as rf
+
+    row = [p for p in rf.DESTRUCTIVE_PATHS if p.function == "_drop_merge_snapshot"]
+    assert len(row) == 1 and row[0].status == "positive"
+
+
 def test_a_slow_record_never_washes_an_unanswered_stall_amber():
     runner.record_stall("no_progress", detail="x")
     runner.record_slow("phase_deadline:plan", detail="slow")

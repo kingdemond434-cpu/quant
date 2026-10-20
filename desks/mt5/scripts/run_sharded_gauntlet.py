@@ -830,11 +830,23 @@ def restore_merge_outputs() -> list[str]:
     return restored
 
 
-def _drop_merge_snapshot() -> None:
+def _drop_merge_snapshot() -> bool:
+    """Remove the merge snapshot ON POSITIVE EVIDENCE ONLY (watchdog v4.1).
+
+    The snapshot is the one copy a restore can use, so it is removed only when every output it
+    holds a copy of is READ BACK now and parses -- the copy is then provably never needed
+    (`restore_merge_outputs` skips a parsing destination). An output that is absent, or no
+    longer parses, keeps the snapshot for the next restore: an absence never removes it.
+    Declared in `libs/ops/reference_freshness.DESTRUCTIVE_PATHS` as `positive`.
+    """
     import shutil
 
+    for dst in MERGE_OUTPUTS:
+        if (MERGE_SNAPSHOT / dst.name).exists() and not (dst.exists() and _parses(dst)):
+            return False
     with contextlib.suppress(OSError):
         shutil.rmtree(MERGE_SNAPSHOT)
+    return not MERGE_SNAPSHOT.exists()
 
 
 def _watched_run(argv: list[str], *, cwd: Path | str | None = None,

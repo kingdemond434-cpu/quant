@@ -667,6 +667,21 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="run_sharded_gauntlet.drop_merge_snapshot",
+        module="desks/mt5/scripts/run_sharded_gauntlet.py",
+        function="_drop_merge_snapshot",
+        removes="reports/.judge_merge_snapshot -- the judge's own copy of its two merge outputs, "
+                "taken at merge start for a restore after a kill",
+        reference="the two merge outputs themselves (universal_gates_external.json, "
+                  "UNIVERSAL_SURVIVORS.json), read back and parsed at removal time",
+        status="positive",
+        guard_site="_drop_merge_snapshot",
+        note="Added by gauntlet watchdog v4 (b121b16f7); declared in v4.1. Runs only from "
+             "_sweep_succeeded (a FINISHED sweep), and removes the snapshot only when every "
+             "output it holds a copy of exists and parses now, so the copy is provably never "
+             "needed. An absent or unparseable output keeps it. It retires no evidence row.",
+    ),
+    DestructivePath(
         path_id="forward_cure_route.accumulate",
         module="desks/mt5/research/forward_cure_route.py",
         function="accumulate",
