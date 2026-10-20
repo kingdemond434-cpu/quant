@@ -1582,6 +1582,9 @@ def _create_time(pid: int) -> float | None:
 #: after TWO consecutive walks that find nothing above BELOW_NORMAL.
 LAUNCH_REVERT_PASSES = 8
 LAUNCH_REVERT_CLEAN_WALKS = 2
+#: The pause between two walks, so a spawn already under way has time to appear (audit of
+#: f54ac4dd007: back-to-back walks could both run before it did).
+LAUNCH_REVERT_PAUSE_S = 0.05
 
 
 def _own_tree(root: Any) -> tuple[list[Any], list[str]]:
@@ -1633,7 +1636,9 @@ def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None 
     p.nice(bn)
     done, failed = [int(change["pid"])], []
     settled, clean = False, 0
-    for _ in range(LAUNCH_REVERT_PASSES):
+    for walk in range(LAUNCH_REVERT_PASSES):
+        if walk:
+            time.sleep(LAUNCH_REVERT_PAUSE_S)
         tree, errors = _own_tree(p)
         lowered = 0
         failed = list(errors)
@@ -2379,32 +2384,49 @@ def _sweep_once() -> int:
                 _publish_priority("backpressure_core", _republish_backpressure())
 
 
-def _publish_priority(key: str, value: Any) -> None:
+#: How long a JUDGE_PRIORITY_SWEEP.json publish waits for the record's lock.
+PUBLISH_PRIORITY_LOCK_S = 10.0
+
+
+def _publish_priority(key: str, value: Any) -> str:
     """Merge one block into JUDGE_PRIORITY_SWEEP.json under `key`; no writer erases another's.
 
-    The launcher writes `launcher`, the sweep child `child` and `backpressure_core`. A unique
-    temporary name per writer, so two processes can never replace each other's half-written file.
-    """
-    with contextlib.suppress(OSError, TypeError, ValueError):
-        base: dict[str, Any] = {}
-        with contextlib.suppress(OSError, ValueError):
-            got = json.loads(JUDGE_PRIORITY_DECISION.read_text("utf-8"))
-            base = got if isinstance(got, dict) else {}
-        base[key] = {"value": value, "pid": os.getpid(),
-                     "at": datetime.now(UTC).isoformat(timespec="seconds")}
-        # A LINE WHOSE SIDECAR WRITE FAILED TOO is kept here, under `unspilled`, past the next
-        # overwrite of `key` -- research/missed_growth.py carries it (audit HOLD of 1235ab79c10).
-        if isinstance(value, dict) and str(value.get("spill", "")).startswith("FAILED"):
-            kept = base.get("unspilled") if isinstance(base.get("unspilled"), dict) else {}
-            old = [x for x in kept.get("missed_growth") or [] if isinstance(x, dict)]
-            base["unspilled"] = {"spill": value["spill"], "missed_growth": [
-                *old, *(x for x in value.get("missed_growth") or [] if isinstance(x, dict))
-            ][-MISSED_GROWTH_HISTORY:]}
+    The launcher writes `launcher`/`launcher_line`, the sweep child `child` and
+    `backpressure_core`. The read-modify-replace runs UNDER THE RECORD'S LOCK (audit of
+    f54ac4dd007: two processes merging at once could each drop the other's block, and with it an
+    `unspilled` line), and the temporary name is unique per writer. Returns WRITTEN or FAILED:
+    ... and never raises; a FAILED publish is printed to stderr, never silent."""
+    from libs.research.artifact_chain import _locked
+    from scripts import judge_priority as jp
+
+    status = "WRITTEN"
+    try:
         JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
-        tmp = JUDGE_PRIORITY_DECISION.with_name(
-            f"{JUDGE_PRIORITY_DECISION.name}.{os.getpid()}.{uuid4().hex[:8]}.tmp")
-        tmp.write_text(json.dumps(base, default=str), encoding="utf-8")
-        os.replace(tmp, JUDGE_PRIORITY_DECISION)
+        with _locked(JUDGE_PRIORITY_DECISION, PUBLISH_PRIORITY_LOCK_S) as held:
+            if not held:
+                status = f"FAILED: lock on {JUDGE_PRIORITY_DECISION.name} not held"
+            else:
+                base: dict[str, Any] = {}
+                with contextlib.suppress(OSError, ValueError):
+                    got = json.loads(JUDGE_PRIORITY_DECISION.read_text("utf-8"))
+                    base = got if isinstance(got, dict) else {}
+                base[key] = {"value": value, "pid": os.getpid(),
+                             "at": datetime.now(UTC).isoformat(timespec="seconds")}
+                # A LINE WHOSE SIDECAR WRITE FAILED TOO is kept under `unspilled`, past the next
+                # overwrite of `key`; past the cap it is dropped AND COUNTED (`n_dropped`).
+                carried = jp.carry_unspilled(base.get("unspilled"), value, MISSED_GROWTH_HISTORY)
+                if carried is not None:
+                    base["unspilled"] = carried
+                tmp = JUDGE_PRIORITY_DECISION.with_name(
+                    f"{JUDGE_PRIORITY_DECISION.name}.{os.getpid()}.{uuid4().hex[:8]}.tmp")
+                tmp.write_text(json.dumps(base, default=str), encoding="utf-8")
+                os.replace(tmp, JUDGE_PRIORITY_DECISION)
+    except Exception as exc:
+        status = f"FAILED: {type(exc).__name__}: {exc}"
+    if status != "WRITTEN":
+        with contextlib.suppress(Exception):
+            print(f"judge priority: {key} NOT published ({status})", file=sys.stderr, flush=True)
+    return status
 
 
 def _sweep_logged() -> int:

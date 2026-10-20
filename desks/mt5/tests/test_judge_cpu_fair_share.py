@@ -1192,3 +1192,90 @@ def test_manual_apply_keeps_a_lowering_and_reverts_a_raise_behaviourally(
     assert (10, N) in calls and (10, HIGH) not in calls  # the lowering stands
     assert (11, N) in calls and (11, BN) in calls  # the raise is put back
     assert all(pid in (10, 11, 12) for pid, _ in calls)  # judge pids only
+
+
+# ------------------------------------ 9. v5.1 (audit of f54ac4dd007): locked, counted, carried
+def test_publish_priority_holds_the_lock_and_says_when_it_cannot(monkeypatch, tmp_path) -> None:
+    import contextlib
+
+    import libs.research.artifact_chain as ac
+
+    decision = tmp_path / "JUDGE_PRIORITY_SWEEP.json"
+    monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", decision)
+    held: list[bool] = []
+    real = ac._locked
+
+    @contextlib.contextmanager
+    def spy(path, timeout_s=10.0):
+        with real(path, timeout_s) as h:
+            held.append(h)
+            yield h
+
+    monkeypatch.setattr(ac, "_locked", spy)
+    assert rsg._publish_priority("child", {"x": 1}) == "WRITTEN" and held == [True]
+
+    @contextlib.contextmanager
+    def never(path, timeout_s=10.0):
+        yield False
+
+    monkeypatch.setattr(ac, "_locked", never)
+    assert rsg._publish_priority("child", {"x": 2}).startswith("FAILED")
+    assert json.loads(decision.read_text("utf-8"))["child"]["value"] == {"x": 1}
+
+
+def test_unspilled_past_the_cap_is_counted_and_reads_unmeasured(monkeypatch, tmp_path) -> None:
+    import missed_growth as mg
+
+    decision = tmp_path / "JUDGE_PRIORITY_SWEEP.json"
+    monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", decision)
+    monkeypatch.setattr(rsg, "MISSED_GROWTH_HISTORY", 3)
+    for i in range(5):
+        rsg._publish_priority(
+            "launcher_line",
+            {
+                "spill": "FAILED: disk",
+                "missed_growth": [
+                    {"at": f"2026-10-20T00:00:0{i}+00:00", "pid": i, "verdict": "UNMEASURED"}
+                ],
+            },
+        )
+    u = json.loads(decision.read_text("utf-8"))["unspilled"]
+    assert [x["pid"] for x in u["missed_growth"]] == [2, 3, 4] and u["n_dropped"] == 2
+    art = tmp_path / "JUDGE_PRIORITY_RAISES.json"
+    art.write_text(json.dumps({"missed_growth": []}), "utf-8")
+    got = mg.organ_published_lines(art, spill=jp.spill_path(art), unspilled=(decision,))
+    assert got["verdict"] == mg.UNMEASURED and got["unspilled_dropped"] == 2
+
+
+def test_manual_apply_never_overwrites_a_kept_spill_line(monkeypatch, tmp_path) -> None:
+    report = tmp_path / "JUDGE_PRIORITY.json"
+    kept_line = {"at": "2026-10-19T00:00:00+00:00", "pid": 77, "verdict": "UNMEASURED"}
+    report.write_text(
+        json.dumps(
+            {"accounted": {"spill": "FAILED: OSError: disk full", "missed_growth": [kept_line]}}
+        ),
+        "utf-8",
+    )
+    monkeypatch.setattr(jp, "REPORT", report)
+    rows = _raisable_box(judge_nice=BN)
+    monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
+    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
+    monkeypatch.setattr(jp, "RAISES", tmp_path / "JUDGE_PRIORITY_RAISES.json")
+    monkeypatch.setattr(jp, "record_raises", lambda *a, **k: 1)
+    monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: None)
+    assert jp.main(["--apply", "--sample-s", "0"]) == 0
+    doc = json.loads(report.read_text("utf-8"))
+    assert doc["accounted"]["line"] == "WRITTEN"
+    assert doc["unspilled"]["missed_growth"] == [kept_line] and doc["unspilled"]["n_dropped"] == 0
+    assert jp.main(["--apply", "--sample-s", "0"]) == 0  # and again: still carried once
+    assert json.loads(report.read_text("utf-8"))["unspilled"]["missed_growth"] == [kept_line]
+
+
+def test_the_tree_revert_pauses_between_walks(monkeypatch) -> None:
+    pauses: list[float] = []
+    monkeypatch.setattr(rsg.time, "sleep", pauses.append)
+    child = _FakeProc(100, 50.0, N)
+    change = {"pid": 100, "create_time": 50.0, "from": "BELOW_NORMAL", "to": "NORMAL"}
+    rsg._launch_revert(change, process={100: child}.__getitem__)
+    assert pauses == [rsg.LAUNCH_REVERT_PAUSE_S] * (rsg.LAUNCH_REVERT_CLEAN_WALKS - 1)
+    assert 0 < rsg.LAUNCH_REVERT_PAUSE_S <= 0.25

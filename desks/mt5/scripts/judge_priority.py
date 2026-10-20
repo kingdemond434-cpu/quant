@@ -627,6 +627,39 @@ def _spill(lines: list[dict[str, Any]], path: Path | None = None) -> str:
         return f"FAILED: {type(exc).__name__}: {exc}"
 
 
+#: How many failed-spill lines a record keeps under `unspilled`. Older ones are DROPPED AND
+#: COUNTED (`n_dropped`); research/missed_growth.py reads a non-zero count as UNMEASURED.
+UNSPILLED_HISTORY = 50
+
+
+def carry_unspilled(prior: Any, block: Any, cap: int = UNSPILLED_HISTORY) -> dict[str, Any] | None:
+    """The `unspilled` record after `block` is published over `prior` (audit of f54ac4dd007).
+
+    `prior` is the record's previous `unspilled` value, `block` any newly published block. A block
+    whose `spill` reads FAILED holds the only copy of its lines, so they are appended; anything past
+    `cap` is dropped oldest first and its count accumulated in `n_dropped`. Returns None when there
+    is nothing to keep."""
+    kept = prior if isinstance(prior, dict) else {}
+    old = [x for x in kept.get("missed_growth") or [] if isinstance(x, dict)]
+    dropped = int(kept.get("n_dropped") or 0)
+    spill = kept.get("spill")
+    if isinstance(block, dict) and str(block.get("spill", "")).startswith("FAILED"):
+        spill = block["spill"]
+        seen = {(x.get("at"), x.get("pid"), x.get("create_time"), x.get("by")) for x in old}
+        for x in block.get("missed_growth") or []:
+            if isinstance(x, dict):
+                k = (x.get("at"), x.get("pid"), x.get("create_time"), x.get("by"))
+                if k not in seen:
+                    seen.add(k)
+                    old.append(x)
+    if not old and not dropped:
+        return None
+    if len(old) > cap:
+        dropped += len(old) - cap
+        old = old[-cap:]
+    return {"spill": spill or "FAILED: carried", "missed_growth": old, "n_dropped": dropped}
+
+
 def account(
     changes: list[dict[str, Any]], by: str, revert: Any, path: Path | None = None
 ) -> dict[str, Any]:
@@ -779,6 +812,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  DUPLICATE x{d['distinct_parents']:<3} {d['class']:<6} {d['command']}")
     if not a.no_write:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
+        # A MANUAL --apply NEVER OVERWRITES A KEPT LINE (audit of f54ac4dd007): the previous
+        # report's failed-spill lines (its `accounted` block and its own `unspilled`) are carried.
+        prior: dict[str, Any] = {}
+        try:
+            got = json.loads(REPORT.read_text("utf-8"))
+            prior = got if isinstance(got, dict) else {}
+        except (OSError, ValueError):
+            prior = {}
+        carried = carry_unspilled(prior.get("unspilled"), prior.get("accounted"))
+        carried = carry_unspilled(carried, accounted)
+        if carried is not None:
+            doc["unspilled"] = carried
         tmp = REPORT.with_name(f"{REPORT.name}.{os.getpid()}.tmp")
         tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
         os.replace(tmp, REPORT)
