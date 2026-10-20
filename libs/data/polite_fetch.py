@@ -655,9 +655,13 @@ class HostAccess:
         """Fetch origin/robots.txt. Returns a row: state allow_all | rules | unreadable | blocked.
         Its redirects are followed (each hop held-checked) up to the cap."""
         url = origin + "/robots.txt"
-        for _ in range(MAX_REDIRECTS + 1):
+        for hop in range(MAX_REDIRECTS + 1):
             if self.hold(url):
                 return {"state": "blocked"}
+            if hop and (_tf.platform_of_url(url) or _tf.login_wall(url)):
+                # a robots.txt redirect into a held source or a login wall is never followed:
+                # the rules cannot be read, so nothing on the origin is fetched (fail closed)
+                return {"state": "unreadable", "why": "robots redirect into a fenced route"}
             with self._lock:
                 self.robots_fetches += 1
             try:

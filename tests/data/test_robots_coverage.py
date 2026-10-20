@@ -281,6 +281,27 @@ def test_another_agents_group_does_not_bind_the_desk() -> None:
     assert pf.parse_robots("").can_fetch(pf.DESK_UA_PRODUCT, "https://a.org/x")
 
 
+@pytest.mark.parametrize("loc", ["https://example.org/login?next=/robots.txt",
+                                 "https://nitter.net/robots.txt"])
+def test_a_robots_redirect_into_a_fenced_route_is_not_followed(tmp_path: Path,
+                                                                loc: str) -> None:
+    """robots.txt 302 -> a login wall or a held source: the hop is never requested, the rules
+    are unreadable, and nothing on the origin is fetched (fail closed)."""
+    import email.message
+    sent: list[str] = []
+
+    def send(req: urllib.request.Request, t: float) -> Any:
+        sent.append(req.full_url)
+        h = email.message.Message()
+        h["Location"] = loc
+        raise urllib.error.HTTPError(req.full_url, 302, "Found", h, None)
+
+    acc = pf.HostAccess(tmp_path / "access.json")
+    ok, why = acc.permits("https://origin.example.org/data.csv", send=send)
+    assert not ok and why.startswith("ROBOTS_UNREADABLE"), why
+    assert sent == ["https://origin.example.org/robots.txt"]
+
+
 def test_the_deep_forest_index_route_uses_the_one_parser() -> None:
     from research import deep_forest_miner as dfm
     rp = dfm.robots_parser("User-agent: *\nAllow: /\nDisallow: /private\n")

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import sys
+import urllib.error
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -467,8 +468,10 @@ class _FakeWeb(urllib.request.BaseHandler):
         import email.message
         import io
         import urllib.response
-        self.served.append(req.full_url)
         hdrs = email.message.Message()
+        if req.full_url.endswith("/robots.txt"):
+            raise urllib.error.HTTPError(req.full_url, 404, "Not Found", hdrs, None)
+        self.served.append(req.full_url)
         if req.full_url == _START:
             hdrs["Location"] = self.target
             r = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, 302)
@@ -576,8 +579,12 @@ class _RedirectEverything(urllib.request.BaseHandler):
         import email.message
         import io
         import urllib.response
-        self.served.append(req.full_url)
         hdrs = email.message.Message()
+        if req.full_url.endswith("/robots.txt"):
+            # LAWS 5e amended 2026-10-14: every fetcher reads the origin's robots.txt first;
+            # a 404 allows, and the read is not the page fetch this test counts
+            raise urllib.error.HTTPError(req.full_url, 404, "Not Found", hdrs, None)
+        self.served.append(req.full_url)
         if req.full_url != self.target:
             hdrs["Location"] = self.target
             r = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, 302)
