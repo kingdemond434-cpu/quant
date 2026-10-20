@@ -137,7 +137,7 @@ _PAIR = re.compile(
 #: `acct no. 5551234`, `5551234@Server`, and the MT5 journal's `'5551234': authorized`.
 _PROSE = re.compile(r"(?i)(?<![a-z0-9_])(?:account|acct)\s*(?:#|no\.?|number|id)?\s*"
                     r"(\d{4,12})(?![\d\-:/]|\.\d)")
-_AT_SERVER = re.compile(r"(?<![\d.])(\d{4,12})@[A-Za-z]")
+_AT_SERVER = re.compile(r"(?<![\w.])(\d{4,12})@[A-Za-z]")   # not `_2023@DF_...`
 _JOURNAL = re.compile(r"(?i)(?<!\d)(\d{4,12})['\"]?\s*:\s*authori[sz]ed")
 _XML_ELEM = re.compile(r"<\s*(?P<key>[A-Za-z][\w\-.:]{0,40})(?:\s[^<>]*)?>\s*"
                        r"(?P<val>" + _NUM + r")\s*</\s*(?P=key)\s*>")

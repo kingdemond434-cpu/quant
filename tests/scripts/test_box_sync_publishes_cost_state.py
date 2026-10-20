@@ -291,7 +291,7 @@ _IDS = frozenset({_ID})
                          ids=["prose-period", "underscore", "letter-prefix", "in-a-string", "bare"])
 def test_a_declared_number_is_refused_between_any_non_digits(text: str) -> None:
     got = lf.findings("desks/mt5/data/x.json", text.encode(), _IDS)
-    assert [h["key"] for h in got] == [lf.ID_FINDING]
+    assert lf.ID_FINDING in [h["key"] for h in got]   # (v5: "acct N" is also a prose hit)
     assert _ID not in json.dumps(got), "a finding must never carry the number"
 
 
