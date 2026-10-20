@@ -801,10 +801,12 @@ def test_the_acquisition_scientist_reads_and_fetches_under_desk_ua(
         iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Never `acquire_datasets._UA` (a browser string): robots AND the fetch carry DESK_UA."""
     das = iso.das
-    net = _net(monkeypatch, ALLOW_ALL)
+    # An HTML answer ends the sample at the header, before any contract snapshot is built.
+    net = _net(monkeypatch, ALLOW_ALL, (200, {"Content-Type": "text/html"}, b"<html></html>"))
     verdict = ac.classify({"url": PAGE, "source_class": "official"})
     contract = SimpleNamespace(admissible=lambda: True)
-    das.sample({"dataset": "probe", "url": PAGE}, contract, verdict,
-               at="2026-10-14T08:00:00+00:00", code="test", marks=set())
+    out = das.sample({"dataset": "probe", "url": PAGE}, contract, verdict,
+                     at="2026-10-14T08:00:00+00:00", code="test", marks=set())
+    assert out["status"] == "UNREACHABLE" and "html" in out["why"]
     assert net.urls() == [ROBOTS, PAGE]
     assert {ua for _, ua in net.seen} == {iso.acol.DESK_UA}
