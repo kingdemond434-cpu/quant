@@ -47,6 +47,21 @@ def test_committed_book_carries_the_principals_sizes() -> None:
     assert doc["e8_by"].startswith("principal zuck")
 
 
+def test_the_committed_e8_block_is_safe_to_adopt_over_the_box() -> None:
+    """THE REPO COPY IS WHAT ADOPTION WRITES. Adopt-Release.ps1 commits only uncommitted CODE
+    in step 1 (line 817: the dirty scan is `$ReleaseCodePaths`, which omits desks/mt5/data),
+    `Test-KeptByBox` (line 981) keeps a state path only if the box COMMITTED a change to it since
+    the merge base, and MT5-ShadowSync never commits into HEAD -- so a hand edit of the box's
+    data/CERT_BOOK_LIVE.json is not "the box's", and step 2 (line 1085) writes the target's bytes
+    over it whenever the adopted range touches this file. The committed e8 block must therefore
+    be the principal's live one (three gold windows at 0.0075), never the old 1.0% gold_asia."""
+    e8 = load_cert_book(CERT_BOOK_FILE, "e8")
+    assert e8 is not None
+    assert max(e8.values()) <= 0.0075, e8
+    assert {k for k, v in e8.items() if v > 0} == {"gold_asia", "gold_london_am",
+                                                   "gold_afternoon"}
+
+
 @pytest.mark.parametrize("doc", [
     {"enabled": False, "fusion": {"gold_asia": 0.05}},
     {"fusion": {"gold_asia": 0.05}},

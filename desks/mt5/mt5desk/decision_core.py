@@ -899,8 +899,8 @@ def gold_at_risk_block(positions: object, orders: object, *, own_tag: str = "",
             continue
         ticket = getattr(p, "ticket", "?")
         try:
-            kind = int(getattr(p, "type"))
-            entry = float(getattr(p, "price_open"))
+            kind = int(p.type)
+            entry = float(p.price_open)
             sl = float(getattr(p, "sl", 0.0) or 0.0)
         except (AttributeError, TypeError, ValueError):
             return f"{symbol} position {ticket} unreadable; treated as at risk"
