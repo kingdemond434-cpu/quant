@@ -1,0 +1,13 @@
+[
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Trudy",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Trudy - may impact energy prices"
+  }
+]
