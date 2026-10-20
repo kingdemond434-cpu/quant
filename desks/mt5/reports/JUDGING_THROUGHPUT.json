@@ -1,21 +1,21 @@
 {
- "at": "2026-10-20T05:44:04+00:00",
+ "at": "2026-10-20T06:41:20+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 28885,
+  "free_phys_mb": 34270,
   "commit_limit_mb": 192505,
-  "commit_free_mb": 27207,
+  "commit_free_mb": 71508,
   "cpu_source": "psutil",
-  "busy_other_cores": 19.55,
-  "busy_judge_cores": 0.06,
+  "busy_other_cores": 16.32,
+  "busy_judge_cores": 0.02,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": true,
-  "n_python": 83,
+  "n_python": 70,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -33,12 +33,12 @@
   "clock_breach_overdue": 0,
   "clock_breach_source": "CLOCK_CERTIFICATE_BREACH.json",
   "burndown_status": "GROWING",
-  "burndown_net_per_day": -17385.0,
-  "burndown_needed_per_hour": 2801.4,
+  "burndown_net_per_day": -17611.7,
+  "burndown_needed_per_hour": 2812.7,
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
   "source_at": "2026-10-03T12:38:16.788667+00:00",
-  "source_age_seconds": 1443945.397312,
+  "source_age_seconds": 1447376.410253,
   "why": "backpressure timestamp missing, invalid, future or stale; historical sweep is not current queue capacity"
  },
  "decision": {
@@ -52,7 +52,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "backlog_growing",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 18, commit 17 at 768MB a worker; the binding one is backlog_growing",
+  "why": "cores 15 (reserved 3), memory 22, commit 46 at 768MB a worker; the binding one is backlog_growing",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -96,7 +96,7 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "",
+   "next_run_before": "10/20/2026 8:46:00 AM",
    "why": "TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 20.0 seconds"
   },
   "process_env": {
@@ -106,7 +106,7 @@
  "limiting_resource": "backlog_growing",
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-20T05:44:04+00:00",
+  "at": "2026-10-20T06:41:20+00:00",
   "verdicts": {
    "status": "MEASURED",
    "rows_total": 940793,
@@ -138,12 +138,12 @@
   "created": {
    "status": "MEASURED",
    "counts": {
-    "24h": 125425,
-    "7d": 266816
+    "24h": 122566,
+    "7d": 265346
    },
    "per_hour": {
-    "24h": 5226.042,
-    "7d": 1588.19
+    "24h": 5106.917,
+    "7d": 1579.44
    }
   },
   "verdicts_per_hour": 0.0,
@@ -151,20 +151,18 @@
   "verdict_rate_basis": "changed verdict events, not total completed tests",
   "first_judged_per_day": 0.0,
   "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
-  "coverage_backlog_fresh": true,
-  "created_per_day": 125425.0,
-  "backlog": 1205514,
-  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
+  "coverage_backlog_fresh": false,
+  "created_per_day": 122566.0,
+  "backlog": "UNMEASURED",
+  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
   "eta_to_drain": {
-   "status": "GROWING",
-   "hours": null,
-   "net_per_day": -125425.0,
-   "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
+   "status": "UNMEASURED",
+   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
   },
   "workers_planned": 15,
   "workers_last_sweep": "UNMEASURED",
   "cores_basis": "fixed_reservation"
  },
- "measure_seconds": 182.6,
- "seconds": 225.7
+ "measure_seconds": 91.1,
+ "seconds": 111.9
 }
