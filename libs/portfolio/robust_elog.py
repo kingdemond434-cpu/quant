@@ -664,11 +664,11 @@ def decay_prob_of(e: SleeveEvidence, cfg: WorldConfig) -> float:
 
     TWO-SIDED (2026-10-06; it was `min(own, blanket)` -- relief-only -- from 2026-09-08). A
     measured probability above the blanket now charges MORE than the blanket, so a breaking
-    mechanism is sized down; below it, it relieves. None, a non-finite or a negative value falls
-    back to the blanket -- an unpriced or malformed decay is the blanket, never zero, and a
-    negative is not clamped to 0 because that would turn a corrupt number into full relief. Above
-    1 is clamped to 1. A population drawn with `cfg.decay_prob == 0` is decay-free whatever the
-    sleeves carry: that switch is how the decay-free reference is drawn.
+    mechanism is sized down; below it, it relieves. None (unmeasured) pays the blanket; a
+    malformed value -- non-finite, negative or unparseable -- is charged 1.0 (see below), never
+    zero and never the blanket. Above 1 is clamped to 1. A population drawn with
+    `cfg.decay_prob == 0` is decay-free whatever the sleeves carry: that switch is how the
+    decay-free reference is drawn.
     """
     blanket = float(cfg.decay_prob)
     if blanket <= 0.0:
@@ -676,12 +676,17 @@ def decay_prob_of(e: SleeveEvidence, cfg: WorldConfig) -> float:
     p = getattr(e, "decay_prob_i", None)
     if p is None:
         return blanket
+    # MALFORMED IS NOT UNMEASURED (decision_replay finding, 2026-10-07). None means nothing was
+    # measured and pays the blanket. A value that is PRESENT but unreadable, non-finite or
+    # negative is a broken measurement of something that may be well above the blanket -- the
+    # replay measured a 0.6 sleeve gaining heat when its value went NaN -- so it is charged the
+    # worst case, 1.0: a corrupt input may cost growth, never authorise risk.
     try:
         v = float(p)
     except (TypeError, ValueError):
-        return blanket
+        return 1.0
     if not math.isfinite(v) or v < 0.0:
-        return blanket
+        return 1.0
     return min(v, 1.0)
 
 
@@ -793,9 +798,19 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
     # `max(0.0, nan)` returned 0.0, so a broken cost measurement priced the sleeve as costless.
     # Unknown is charged one more modelled cost (|cost_r|) -- missing information is never a
     # favourable zero.
+    _fin = [float(getattr(x, "cost_bias_r", 0.0) or 0.0) for x in ev]
+    _dearest = max([abs(float(x.cost_r or 0.0)) + max(0.0, b)
+                    for x, b in zip(ev, _fin, strict=True) if math.isfinite(b)] or [0.0])
+
     def _bias(e: SleeveEvidence) -> float:
         v = float(getattr(e, "cost_bias_r", 0.0) or 0.0)
-        return max(0.0, v) if math.isfinite(v) else abs(float(e.cost_r or 0.0))
+        if math.isfinite(v):
+            return max(0.0, v)
+        # An unknown cost is priced as bad as the worst known one in this book AND as large as
+        # the sleeve's own measured edge, so a broken cost measurement can buy no heat at all.
+        own = e.own_r
+        edge = max(0.0, float(own.mean())) if own.size else 0.0
+        return max(abs(float(e.cost_r or 0.0)), _dearest, edge)
     cost_bias = np.array([_bias(e) for e in ev])
     cost_draw = (cost_draw + cost_bias[None, :]) * activity[None, :]
 

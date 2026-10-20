@@ -266,9 +266,6 @@ def test_missing_cost_bias_is_not_a_free_fill(
     assert not missing[("cost_bias_r", "A")]["raised_heat"]
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "FINDING: decay_prob_of maps a non-finite decay_prob_i to the BLANKET; for a sleeve measured "
-    "above the blanket (0.6 vs 0.3) a corrupt value is relief and the sleeve gains heat"))
 def test_missing_decay_is_not_relief(missing: dict[tuple[str, str], dict[str, object]]) -> None:
     assert not missing[("decay_prob_i", "A")]["raised_heat"]
 
