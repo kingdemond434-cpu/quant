@@ -160,6 +160,9 @@ UNKNOWN_REASON_CLASS: dict[str, str] = {
     "no_terminal_gate_recorded": DEFECT,
     # the names `name_unknowns` gives a bank row
     "never_fires": NOT_TESTABLE,
+    # a never-firing cell whose family PROVABLY emits nothing for want of a named input
+    # (`research/fire_inputs.py`): parked like never_fires, re-admitted when the input appears
+    "needs_data": NOT_TESTABLE,
     "missing_bars": DEFECT,
     "missing_identity_input": DEFECT,
     "unnamed": DEFECT,
@@ -852,6 +855,27 @@ def name_not_run(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return out
 
 
+#: One probe per (family, symbol) per process pass: both probed families' answers depend on
+#: the symbol alone (`fire_inputs.probe`). Cleared by `_fire_probe_reset` at each pass start.
+_FIRE_MEMO: dict[tuple[str, str], dict[str, Any]] = {}
+
+
+def _fire_probe_reset() -> None:
+    _FIRE_MEMO.clear()
+
+
+def _fire_probe(sym: str, family: str) -> dict[str, Any]:
+    """`research.fire_inputs.probe`, or UNMEASURED when it cannot be imported (fail open)."""
+    try:
+        try:
+            from fire_inputs import probe
+        except ImportError:                                    # pragma: no cover - import context
+            from research.fire_inputs import probe  # type: ignore[no-redef]
+        return probe(sym, family, memo=_FIRE_MEMO)
+    except Exception as exc:                                   # never costs the pass
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
+
+
 def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
     """EVERY UNKNOWN GETS A NAMED REASON. The class stops existing as a category.
 
@@ -918,6 +942,19 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
             route = ("the judge named no scarcity for this cell (no series built, or no reason "
                      "given): a defect the desk owes a fix for, kept in the backlog and re-asked "
                      f"after {BUILD_FAILED_RETRY_DAYS:.0f} days like a build failure")
+        elif days == 0 and (_fire := _fire_probe(sym, fam)).get("status") == "NEEDS_DATA":
+            # NAMED FOR THE INPUT IT LACKS (2026-10-20). The family's own guard returns [] on the
+            # inputs the judge hands it, on any bars, so this is not scarcity of signals: it is a
+            # missing input, handed to the converter by name and re-admitted when it appears.
+            reason, route = "needs_data", (
+                f"the family cannot fire without {_fire.get('missing_input')}: "
+                f"{_fire.get('why')}. Re-admitted the moment that input is present")
+            out[cell] = {"reason": reason, "route": route, "sym": sym, "family": fam,
+                         "tf": tf, "days": days, "bar_bytes": bars, "why": why[:200],
+                         "missing_input": _fire.get("missing_input"),
+                         "input_stamp": _fire.get("stamp"),
+                         **({"detail": declared} if declared else {})}
+            continue
         elif days == 0:
             reason, route = "never_fires", ("the spec produced not one daily observation on bars "
                                             "that ARE present: an unrunnable spec, filtered at "
@@ -983,6 +1020,18 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
         if key not in bar_sizes:
             bar_sizes[key] = _bar_bytes(*key)
         bars = bar_sizes[key]
+    if row.get("reason") == "needs_data":
+        # THE INPUT IS THE BINDING CAUSE: the family returns [] on any bars without it, so bar
+        # growth cannot change the outcome. Back the moment the probe stops answering NEEDS_DATA
+        # (the input appeared, or the probe can no longer say: fail open toward judging), and
+        # after READMIT_MAX_DAYS regardless, like every parked cell.
+        if _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
+                "status") != "NEEDS_DATA":
+            return True
+        _pa = _ts(row.get("parked_at"))
+        _tn = now or datetime.now(tz=UTC)
+        return (_pa is not None
+                and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
     if parked_bytes <= 0:
         return bars > 0
     if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
@@ -1635,6 +1684,7 @@ FAILURE_CLASS: dict[str, str] = {
     "no_trades": "untestable_as_specified",
     "too_rare": "untestable_as_specified",
     "never_fires": "untestable_as_specified",
+    "needs_data": "needs_data",
     "missing_identity_input": "unnamed",
     "no_terminal_gate_recorded": "unnamed",
     "unnamed": "unnamed",
@@ -1658,6 +1708,8 @@ FAILURE_ROUTES: dict[str, dict[str, Any]] = {
     "untestable_as_specified": {"owner": "converter",
                                 "axes": ["event_study", "coarser_timeframe", "regime_child",
                                          "cross_asset_transplant"]},
+    "needs_data": {"owner": "converter",
+                   "axes": ["acquire_named_input", "proxy_series", "cross_asset_transplant"]},
     "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
     "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
     "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
@@ -1743,6 +1795,10 @@ def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
     if cls == "no_series":
         return {"kind": "series", "symbol": sym, "timeframe": tf, "clock": BAR_CLOCK,
                 "why": str(row.get("why") or "")[:200]}
+    if cls == "needs_data":
+        return {"kind": "input", "input": row.get("missing_input"), "symbol": sym,
+                "family": row.get("family"), "timeframe": tf,
+                "why": str(row.get("route") or "")[:300]}
     return None
 
 
@@ -1785,6 +1841,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
           ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     """The per-family coverage table, the quotas, and the carried-cohort ratchet."""
     at = now or datetime.now(tz=UTC)
+    _fire_probe_reset()            # inputs are read afresh every pass, never across passes
     rows = docket if docket is not None else (_read(DOCKET) or [])
     rows = [r for r in rows if isinstance(r, dict)]
     if not rows:
@@ -2204,7 +2261,7 @@ def never_fire_pairs(bank: dict[str, dict[str, Any]],
                      fired: set[tuple[str, str]]) -> set[tuple[str, str]]:
     counts: dict[tuple[str, str], int] = {}
     for row in bank.values():
-        if row.get("reason") != "never_fires":
+        if row.get("reason") not in ("never_fires", "needs_data"):
             continue
         key = (str(row.get("family") or ""), str(row.get("sym") or ""))
         counts[key] = counts.get(key, 0) + 1
@@ -2213,6 +2270,43 @@ def never_fire_pairs(bank: dict[str, dict[str, Any]],
 
 def _row_sym(row: dict[str, Any]) -> str:
     return str(row.get("sym") or row.get("symbol") or "")
+
+
+def fireability_order(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """THE INTAKE TAG: rows whose family provably cannot fire on today's inputs rank last.
+
+    ORDER ONLY, the never_fire_ground rule applied before the first verdict instead of after the
+    twentieth. Every row stays in the docket, minted and visible, and is judged -- and counted --
+    by the sealed judge exactly as before whenever its turn comes; the published block names each
+    held row's missing input. A NEEDS_DATA cell's family returns [] on any bars
+    (`research/fire_inputs.py`), so its series is empty, adds no date to the lockbox union and
+    enters no program matrix: moving it changes no other cell's verdict
+    (`test_fire_prescreen_not_separable.py`). UNMEASURED probes are not tagged (fail open).
+    """
+    live: list[dict[str, Any]] = []
+    tail: list[dict[str, Any]] = []
+    by_family: dict[str, int] = {}
+    by_input: dict[str, int] = {}
+    probed = 0
+    for r in rows:
+        fam, sym = str(r.get("family") or ""), _row_sym(r)
+        res = _fire_probe(sym, fam)
+        if res.get("status") != "UNMEASURED" or res.get("why") != "family not probed":
+            probed += 1
+        if res.get("status") == "NEEDS_DATA":
+            tail.append(r)
+            by_family[fam] = by_family.get(fam, 0) + 1
+            mi = str(res.get("missing_input") or "")
+            by_input[mi] = by_input.get(mi, 0) + 1
+        else:
+            live.append(r)
+    return live + tail, {
+        "rows": len(rows), "rows_probed": probed, "rows_needs_data_to_tail": len(tail),
+        "by_family": dict(sorted(by_family.items(), key=lambda kv: -kv[1])),
+        "by_missing_input": dict(sorted(by_input.items(), key=lambda kv: -kv[1])[:40]),
+        "rule": ("a row whose family's own input guard returns no signal on the inputs the "
+                 "judge would hand it ranks after every other row; nothing dropped, nothing "
+                 "skipped, every row still judged and counted by the sealed judge in its turn")}
 
 
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
@@ -2270,6 +2364,7 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
                 "min_never_fires": SIBLING_NEVER_FIRES_MIN,
                 "rule": ("a (family, symbol) with this many parked never-firing cells and no "
                          "verdict with a named gate ranks after every other row; nothing dropped")}
+        ordered_j, doc["fireability"] = fireability_order(ordered_j)
         ordered = ordered_j + study
         was, now_ = _unseen_in_prefix(before, cap), _unseen_in_prefix(ordered_j, cap)
         # THE ORDERING EVIDENCE: what the judge's measured capacity head holds under the shipped
