@@ -372,8 +372,9 @@ def test_delta_every_cut_hop_writes_exactly_one_missed_growth_line(
     ledger = tmp_path / "cuts.jsonl"
     monkeypatch.setenv("QUANT_REDIRECT_CUTS", str(ledger))
     r = _run()
-    r.holds.hold(f"http://localhost:{cutsrv}/", 403)
-    r.holds.hold("http://127.0.0.2/", 403)
+    if kind == "site_held":
+        r.holds.hold(f"http://localhost:{cutsrv}/", 403)
+        r.holds.hold("http://127.0.0.2/", 403)
     assert getattr(r, route)(f"http://127.0.0.1:{cutsrv}{path}") == ""
     rows = tf.redirect_cut_lines(str(ledger))
     assert len(rows) == 1, rows
