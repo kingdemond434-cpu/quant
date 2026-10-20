@@ -1163,6 +1163,9 @@ CONFIG_INPUTS = frozenset({
     "desks/mt5/data/universe/universe.json",
     # Box-produced inputs: acquire_datasets fills this from the prospector's targets.
     "desks/mt5/data/acquired/",
+    # Box-produced: research/cost_surface.py rebuilds the per-symbol spread surface from the
+    # box's bars; it is not an hourly organ in this graph. rebalance_interval reads it.
+    "desks/mt5/data/cost_surface.json",
     # Hand-written doctrine the research memory ingests as method and failure memories.
     "docs/graveyard.md", "docs/research/search_operator_library.md", "docs/GROWTH_GOVERNANCE.md",
 })
