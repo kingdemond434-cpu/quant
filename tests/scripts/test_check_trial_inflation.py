@@ -195,8 +195,22 @@ def _bar_n_sites(root: Path) -> list[tuple[str, int, str, str]]:
             if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "bar_n" and n.args:
                 par = parent.get(id(n))
                 ctx = ast.unparse(par) if isinstance(par, ast.Call) else ""
+                if (isinstance(par, ast.BinOp) and isinstance(par.op, ast.Div)
+                        and par.right is n):
+                    # c / bar_n(X) directly inside max(...) / np.maximum(...): a floor on a
+                    # per-rank LEVEL at c/BAR_N, i.e. that rank's charge is min(own, BAR_N)
+                    gp = parent.get(id(par))
+                    if isinstance(gp, ast.Call) and getattr(gp.func, "id", getattr(
+                            gp.func, "attr", "")) in {"max", "maximum"}:
+                        ctx = f"LEVEL_FLOOR {ast.unparse(gp)}"
                 out.append((rel, n.lineno, ast.unparse(n.args[0]), ctx))
     return out
+
+
+#: Per-rank charges of a step-up / step-down family (re-audit of 6de7b1a99, 2026-10-20): rank i
+#: is charged min(its own LIVE charge, BAR_N), never min(m, BAR_N) for the family. Each first
+#: argument here is LIVE's charge for that rank -- BH/e-BH m/i, Holm m - r + 1 -- reviewed by name.
+RANK_CHARGES = ("m / ranks", "max(1, m - min(rank, m) + 1)")
 
 
 def test_no_site_can_raise_its_bar_above_its_own_count() -> None:
@@ -212,6 +226,10 @@ def test_no_site_can_raise_its_bar_above_its_own_count() -> None:
         # charged before the pin
         ok = any(ctx.startswith(f"min({lo}, bar_n(")
                  for lo in (x, f"max(2, {x})", f"max(1, int({x}))", f"max(1, {x})"))
+        # a rank's own charge capped at the fixed bar, or a level floored at alpha / BAR_N
+        ok = ok or any(ctx.startswith(f"{f}({c}, bar_n(") for f in ("min", "np.minimum")
+                       for c in RANK_CHARGES)
+        ok = ok or ctx.startswith("LEVEL_FLOOR ")
         if not ok:
             bad.append(f"{rel}:{line} bar_n({x}) inside {ctx[:60]!r}")
     assert not bad, bad
