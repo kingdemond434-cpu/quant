@@ -250,6 +250,19 @@ def atr_h1(df: pd.DataFrame, n: int = ATR_N) -> float | None:
     return v if np.isfinite(v) and v > 0 else None
 
 
+def atr_through(df: pd.DataFrame) -> str | None:
+    """The open time of the newest H1 bar the ATR was computed through (venue clock, ISO).
+
+    An ATR with no as-of date cannot be told apart from a stale one; this is its date.
+    """
+    if df.empty:
+        return None
+    try:
+        return pd.Timestamp(df.index[-1]).isoformat()
+    except (TypeError, ValueError):
+        return None
+
+
 def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
                  root: Path | None = None) -> dict | None:
     """Per broker hour, the quoted spread of every tick on the silver tape, in points.
@@ -340,6 +353,7 @@ def build(universe_dir: Path | None = None) -> dict:
         prof["atr20_h1"] = round(atr, 8) if atr is not None else None
         prof["atr20_h1_pts"] = (round(atr / prof["tick_size"], 2)
                                 if atr is not None and prof["tick_size"] > 0 else None)
+        prof["atr20_h1_through"] = atr_through(ohlc) if atr is not None else None
         try:
             tp = tick_profile(sym, prof["tick_size"])
         except Exception as exc:                 # a tape problem must never cost the surface

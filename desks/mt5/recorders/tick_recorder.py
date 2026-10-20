@@ -199,6 +199,15 @@ PAUSE_RECORD_MS = 15 * 60 * 1000
 MAX_COMPACTIONS_PER_CYCLE = 4
 DEFAULT_COMPACT_BUDGET_S = 15.0
 
+#: Resident watchdog (audit 2026-10-20). No completed cycle for this long = HUNG (exit 5); no
+#: new tick for this long while connected and unpaused = STALLED (exit 6). Both hand the task
+#: slot back to its 10-minute trigger. The stall bound is generous on purpose: a broker whose
+#: only 24/7 symbols are quiet costs a restart every two hours, which loses nothing.
+HANG_EXIT_S = 600.0
+STALL_EXIT_S = 7200.0
+EXIT_HUNG = 5
+EXIT_STALLED = 6
+
 STATE_CURSORS = "cursors"
 STATE_RECORDER = "recorder"
 HEARTBEAT = "heartbeat"
@@ -237,17 +246,29 @@ class RecorderConfig:
     priority_symbols: tuple[str, ...] = ()
     priority_lag_ms: int = DEFAULT_PRIORITY_LAG_MS
     priority_share: float = DEFAULT_PRIORITY_SHARE
-    #: How far the venue's tick clock runs ahead of UTC, in ms, or None to derive it every cycle
-    #: from `libs.regime.session_clock.utc_offset_h` (New York + 7 h: 3 h in US summer, else 2).
+    #: END EACH PULL AT THE BROKER'S MEASURED NOW (2026-10-14, re-done after audit 2026-10-20).
     #:
-    #: THE PULL WINDOW IS IN THE VENUE'S CLOCK, NOT UTC (2026-10-14). `copy_ticks_range` compares
-    #: its bounds with `time_msc` as plain numbers, and `time_msc` is the venue's wall clock. A
-    #: window ending at UTC-now therefore ends two or three hours in the venue's past: measured on
-    #: the silver tape, 245 symbols pulled at 22:40:35 UTC all ended at broker 22:40:3x, and the FX
-    #: majors' Friday close sits at broker 23:59 (= 17:00 New York). Every pull left the newest
-    #: 2-3 h for later -- nothing lost, but the tape was never within hours of the market. The
-    #: library default stays 0 so the clock-free tests keep their arithmetic; `main()` sets None.
-    server_offset_ms: int | None = 0
+    #: `copy_ticks_range` compares its bounds with `time_msc` as plain numbers, and `time_msc` is
+    #: the venue's wall clock (New York + 7 h). A window ending at UTC-now ends two or three hours
+    #: in the venue's past: on the silver tape a 22:40:35 UTC pass ended every crypto CFD at broker
+    #: 22:40:3x. Late, never lossy -- but never within hours of the market either.
+    #:
+    #: The first fix added the DST rule's offset to the BOX clock, and the audit reproduced two
+    #: silent losses from it: a box clock more than SETTLE+OVERLAP (7 s) ahead of the broker put
+    #: the window end past ticks not yet stamped (20% lost at +20 s), and the New York fall-back
+    #: dropped the venue clock an hour below the cursor so the repeated hour was never queried
+    #: (3,533 of 13,981 ticks on a 24/7 symbol). Neither the box clock nor a calendar rule is the
+    #: broker's clock. So when this is True the window ends at the newest `time_msc` the broker
+    #: itself reports (`TickSource.server_now_ms`: max of `symbol_info_tick` over the universe),
+    #: which can only be at or behind its true now. When the broker cannot be measured the window
+    #: falls back to UTC-now -- the old, late, lossless bound. A measured clock that STEPS BACK
+    #: (the fall-back) rewinds every cursor to where the step landed, so the repeated hour is
+    #: re-queried rather than skipped (`_rewind_for_clock_step`).
+    #:
+    #: Library default False keeps the clock-free tests' arithmetic; `main()` sets True.
+    measure_broker_clock: bool = False
+    #: A measured broker clock this far BELOW the last one is a step back, not noise.
+    clock_step_ms: int = 60_000
 
 
 @dataclass
@@ -282,6 +303,11 @@ class CycleReport:
     compacted: int = 0
     bytes_reclaimed: int = 0
     sides_filled: int = 0
+    #: Milliseconds the broker's clock stepped BACK since the last cycle (the New York fall-back);
+    #: every cursor was rewound to re-query the repeated span. Zero on every other cycle.
+    clock_stepped_back_ms: int = 0
+    #: Where this cycle's window end came from: "broker" (measured) or "utc" (fallback).
+    clock_source: str = "utc"
     paused: str = ""
     errors: dict[str, str] = field(default_factory=dict)
     budget_exhausted: bool = False
@@ -338,7 +364,6 @@ class TickRecorder:
         self.store = store or TapeStore(self.config.tape_root)
         self._swept = False
         self._cycle = 0
-        self._last_offset_ms = 0
 
     # ----------------------------------------------------------------- state --
     def _cursors(self) -> dict[str, dict[str, Any]]:
@@ -353,24 +378,29 @@ class TickRecorder:
         """One capture cycle. Everything in this method is safe to interrupt at any point."""
         t_start = time.monotonic()
         now_ms = int(time.time() * 1000) if now_ms is None else int(now_ms)
-        # `now_ms` is the WALL clock (liveness, heartbeat, report stamps); `tick_now` is the same
-        # instant on the venue's tick clock, which is what every window, cursor and broker day is
-        # measured in. They differ by `server_offset_ms` (see RecorderConfig).
-        tick_now = now_ms + self._offset_ms(now_ms)
+        # `now_ms` is the WALL clock (liveness, heartbeat, report stamps); `tick_now` is the
+        # broker's clock, which every window, cursor and broker day is measured in -- MEASURED
+        # from the broker when `measure_broker_clock`, else UTC-now (see RecorderConfig).
+        cursors = self._cursors()
+        state = self._recorder_state()
+        tick_now, clock_source = self._broker_now(now_ms, cursors)
         end_ms = tick_now - self.config.settle_ms
+        self._tick_now = tick_now
         self._cycle += 1
         cycle_id = f"{now_ms}-{self._cycle}"
         rep = CycleReport(cycle_id=cycle_id,
                           at=datetime.fromtimestamp(now_ms / 1000.0,
                                                     tz=UTC).isoformat(timespec="seconds"),
                           window_ms=(0, end_ms), symbols_seen=0, symbols_pulled=0)
+        rep.clock_source = clock_source
 
         if not self._swept:
             self.store.sweep_temp()
             self._swept = True
 
-        cursors = self._cursors()
-        state = self._recorder_state()
+        if clock_source == "broker":
+            rep.clock_stepped_back_ms = self._rewind_for_clock_step(
+                state, cursors, tick_now, now_ms)
         active = [s for s, c in cursors.items() if c.get("active", True)]
 
         # -- THE OUTAGE CHECK COMES FIRST, BEFORE ANY PULL. A recorder that backfills and then
@@ -379,7 +409,7 @@ class TickRecorder:
         last_finished = int(state.get("last_cycle_finished_ms") or last_end)
         down_window: tuple[int, int] | None = None
         max_gap_ms = self.config.cycle_s * 1000 * MAX_CYCLE_GAP_MULT
-        if last_end and (now_ms - last_finished) > max_gap_ms:
+        if last_end and (now_ms - last_finished) > max_gap_ms and end_ms > last_end:
             down_window = (last_end, end_ms)
             for sym in active:
                 g = GapRecord(
@@ -534,23 +564,64 @@ class TickRecorder:
             after = int((cursors.get(sym) or {}).get("cursor_ms") or end_ms)
             if after <= cur:
                 todo.remove(sym)
-    def _offset_ms(self, wall_ms: int) -> int:
-        """The venue tick clock's lead over UTC at `wall_ms`. A configured value wins; None
-        derives it (DST included). Underivable -> 0, the pre-2026-10-14 behaviour: a late tape,
-        never a broken one."""
-        fixed = self.config.server_offset_ms
-        if fixed is not None:
-            self._last_offset_ms = int(fixed)
-            return self._last_offset_ms
+
+    def _broker_now(self, wall_ms: int,
+                    cursors: dict[str, dict[str, Any]]) -> tuple[int, str]:
+        """(tick-clock now, source). The broker's measured clock when configured and readable,
+        else UTC-now -- which on this venue is two or three hours LATE, and so never lossy."""
+        if not self.config.measure_broker_clock:
+            return wall_ms, "utc"
+        fn = getattr(self.source, "server_now_ms", None)
+        measured: int | None = None
+        if callable(fn):
+            try:
+                v = fn([s for s, c in cursors.items() if c.get("active", True)])
+                measured = int(v) if v else None
+            except Exception:
+                measured = None
+        if not measured or measured <= 0:
+            return wall_ms, "utc"
+        # A symbol stamped implausibly far ahead (a broker glitch) must not drag the window into
+        # the future: bound by the calendar's venue lead plus slack. A box clock BEHIND the
+        # broker by more than the slack only makes the window late.
+        lead = 3 * 3_600_000
         try:
             import pandas as pd
 
             from libs.regime.session_clock import utc_offset_h
-            off = int(utc_offset_h(pd.Timestamp(wall_ms, unit="ms", tz="UTC"))) * 3_600_000
+            lead = int(utc_offset_h(pd.Timestamp(wall_ms, unit="ms", tz="UTC"))) * 3_600_000
         except Exception:
-            off = 0
-        self._last_offset_ms = off
-        return off
+            pass
+        return min(measured, wall_ms + lead + 120_000), "broker"
+
+    def _rewind_for_clock_step(self, state: dict[str, Any], cursors: dict[str, dict[str, Any]],
+                               tick_now: int, wall_ms: int) -> int:
+        """Rewind every cursor when the broker's clock has stepped BACK (the fall-back hour).
+
+        After a step back the broker stamps new ticks LOWER than ticks already recorded, so a
+        cursor left where it was would never query them. The step landed no later than
+        `tick_now - (wall elapsed since the last reading)`, so every cursor is pulled back to
+        there; the re-query also returns the first occurrence's ticks, which dedupe on read.
+        Returns the step in ms (0 when none)."""
+        prev = int(state.get("broker_clock_ms") or 0)
+        prev_wall = int(state.get("broker_clock_wall_ms") or 0)
+        state["broker_clock_ms"] = tick_now
+        state["broker_clock_wall_ms"] = wall_ms
+        if not prev or tick_now >= prev - self.config.clock_step_ms:
+            return 0
+        elapsed = max(0, wall_ms - prev_wall) if prev_wall else 0
+        landed = tick_now - elapsed - self.config.settle_ms
+        for row in cursors.values():
+            if int(row.get("cursor_ms") or 0) > landed:
+                row["cursor_ms"] = landed
+                # A pull never starts below `enrolled_ms`; a symbol enrolled inside the hour
+                # being repeated would otherwise lose the repeat's first part to that clamp.
+                if int(row.get("enrolled_ms") or 0) > landed:
+                    row["enrolled_ms"] = landed
+                row["clock_rewound_at"] = wall_ms
+        state["last_clock_step"] = {"at_wall_ms": wall_ms, "from_ms": prev, "to_ms": tick_now,
+                                    "cursors_rewound_to_ms": landed}
+        return prev - tick_now
 
     def _sync_universe(self, listed: list[str], cursors: dict[str, dict[str, Any]],
                        now_ms: int, cycle_id: str, rep: CycleReport) -> None:
@@ -1021,14 +1092,15 @@ class TickRecorder:
             active = [c for c in cursors.values() if c.get("active", True)]
             behind = [int(c.get("cursor_ms") or 0) for c in active if c.get("cursor_ms")]
             # Lag is measured on the TICK clock the cursors live on.
-            now_ms = int(time.time() * 1000) + self._last_offset_ms
+            now_ms = int(getattr(self, "_tick_now", 0) or time.time() * 1000)
             doc = {
                 "schema": "tape-recorder-1",
                 "at": rep.completed_at, "capture_started_at": rep.at,
                 "state": "PAUSED" if rep.paused else "RECORDING",
                 "paused_reason": rep.paused,
                 "tape_root": str(self.config.tape_root),
-                "server_offset_ms": self._last_offset_ms,
+                "clock_source": rep.clock_source,
+                "clock_stepped_back_ms": rep.clock_stepped_back_ms,
                 "cycle_id": rep.cycle_id,
                 "cycle_elapsed_s": rep.elapsed_s,
                 "symbols_enrolled": len(active),
@@ -1064,6 +1136,10 @@ class TickRecorder:
                 # organ_contract and scripts/check_tape_fresh.py judge MT5-TickRecorder on, so
                 # a recorder that beats while capturing nothing still reads STALE.
                 **_newest_tick(active),
+                # PER SYMBOL, so a fence can see one dead symbol among live ones (broker clock).
+                "symbols_last_tick_ms": {
+                    sym: int(c.get("last_tick_ms") or 0)
+                    for sym, c in sorted(cursors.items()) if c.get("active", True)},
                 "errors": dict(sorted(rep.errors.items())[:20]),
                 "added": rep.added[:20],
                 "removed": rep.removed[:20],
@@ -1076,30 +1152,76 @@ class TickRecorder:
             pass
 
     def run_forever(self, max_cycles: int | None = None,
-                    sleep: Any = time.sleep) -> int:
-        """The resident loop. Returns only on max_cycles or KeyboardInterrupt.
+                    sleep: Any = time.sleep, *, hang_s: float = HANG_EXIT_S,
+                    stall_s: float = STALL_EXIT_S, exit_fn: Any = None) -> int:
+        """The resident loop. Returns on max_cycles, KeyboardInterrupt or a STALL.
 
         NOTHING IN HERE MAY RAISE PAST THIS FRAME. A recorder that dies on an unexpected
         exception converts a one-cycle problem into an unbounded, permanent loss of tape, and
         the exceptions that matter are by definition the ones nobody predicted.
+
+        BUT A RECORDER THAT IS ALIVE AND NOT RECORDING MUST NOT STAY ALIVE (audit 2026-10-20).
+        The task's MultipleInstances IgnoreNew makes every restart a no-op while this process
+        exists, so a hung or wedged resident would hold the slot forever. Two exits hand it
+        back to the 10-minute trigger:
+          * HUNG: no cycle completes for `hang_s` (a call into the terminal that never returns)
+            -- a watchdog thread ends the process with EXIT_HUNG, since the loop cannot;
+          * STALLED: cycles complete, the source is connected and not paused, yet the newest
+            tick on the tape has not advanced for `stall_s` -- returns EXIT_STALLED.
+        The fresh process re-initialises the terminal link, which is the cure for both.
         """
+        import threading
+
+        beat = [time.monotonic()]
+        done = threading.Event()
+        quit_ = exit_fn or os._exit
+
+        def _watch() -> None:
+            while not done.wait(min(30.0, max(0.05, hang_s / 4))):
+                if time.monotonic() - beat[0] > hang_s:
+                    print(f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} HUNG: no cycle "
+                          f"completed in {hang_s:.0f}s -- exiting so the scheduler restarts a "
+                          f"fresh recorder", flush=True)
+                    quit_(EXIT_HUNG)
+                    return
+
+        threading.Thread(target=_watch, name="tick-recorder-watchdog", daemon=True).start()
+        newest = 0
+        progressed = time.monotonic()
         n = 0
-        while max_cycles is None or n < max_cycles:
-            n += 1
-            try:
-                rep = self.run_once()
-                print(rep.render(), flush=True)
-            except KeyboardInterrupt:
-                print("stopped by operator", flush=True)
-                return 0
-            except Exception as exc:                # deliberate: see the docstring
-                print(f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} CYCLE FAILED "
-                      f"{type(exc).__name__}: {exc} -- continuing; the cursor did not move, so "
-                      f"the window is re-pulled next cycle", flush=True)
-            try:
-                sleep(self.config.cycle_s)
-            except KeyboardInterrupt:
-                return 0
+        try:
+            while max_cycles is None or n < max_cycles:
+                n += 1
+                try:
+                    rep = self.run_once()
+                    print(rep.render(), flush=True)
+                    top = max((int(c.get("last_tick_ms") or 0)
+                               for c in self._cursors().values()), default=0)
+                    if top > newest or rep.paused:
+                        # A pause (terminal down, disk floor) is already filed as a gap and is
+                        # cured by the source returning, not by a restart.
+                        newest = max(newest, top)
+                        progressed = time.monotonic()
+                    elif time.monotonic() - progressed > stall_s:
+                        print(f"STALLED: connected, not paused, and no new tick for "
+                              f"{stall_s:.0f}s -- exiting so the scheduler restarts a fresh "
+                              f"recorder", flush=True)
+                        return EXIT_STALLED
+                except KeyboardInterrupt:
+                    print("stopped by operator", flush=True)
+                    return 0
+                except Exception as exc:                # deliberate: see the docstring
+                    print(f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} CYCLE FAILED "
+                          f"{type(exc).__name__}: {exc} -- continuing; the cursor did not move, "
+                          f"so the window is re-pulled next cycle", flush=True)
+                beat[0] = time.monotonic()
+                try:
+                    sleep(self.config.cycle_s)
+                except KeyboardInterrupt:
+                    return 0
+                beat[0] = time.monotonic()
+        finally:
+            done.set()
         return 0
 
 
@@ -1225,7 +1347,7 @@ def main(argv: list[str] | None = None) -> int:
         disk_floor_bytes=int(args.disk_floor_gb * 1024**3),
         cycle_budget_s=args.cycle_budget_s,
         priority_symbols=book_symbols(),
-        server_offset_ms=None,                 # derive the venue clock's lead every cycle
+        measure_broker_clock=True,             # end every pull at the broker's own now
     )
     from mt5desk.config import terminal_path
 

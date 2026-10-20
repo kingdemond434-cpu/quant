@@ -2,9 +2,11 @@
 
 MT5-TickRecorder returned 1 at 2026-10-12 19:56 box time and never ran again: boot/logon
 triggers only, no organ contract, and a pull window that ended at UTC-now on a venue clock two or
-three hours ahead. These pin: a tape over 2 h old in FX hours is RED, an absent, unstamped or
-future tape is UNMEASURED (and RED), the weekend is not RED, the contract reads the tape's own
-stamp, the recorder pulls to the venue's now, and the leg is wired, contracted and published.
+three hours ahead. These pin: a symbol over 2 h old inside ITS OWN session is RED (one dead
+symbol among live ones included, and a crypto CFD at the weekend), an absent, unstamped or future
+stamp is UNMEASURED (and RED), a shut session is not RED, the contract reads the tape's own stamp,
+the recorder stamps every symbol on the broker's clock, and the leg is wired, contracted and
+published (per-symbol, per-session judgement: audit 2026-10-20).
 """
 from __future__ import annotations
 
@@ -14,6 +16,7 @@ import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -42,6 +45,11 @@ def _broker_ms(utc: datetime) -> int:
     return int((utc + timedelta(hours=utc_offset_h(utc))).timestamp() * 1000)
 
 
+#: Sessions by registry class -- the fallback the fence uses when a symbol has no H1 bars.
+SESS = {"EURUSD": fence.class_slots("Forex"), "XAUUSD": fence.class_slots("Metals"),
+        "BTCUSD": fence.class_slots("Crypto")}
+
+
 def _desk(tmp: Path, bronze: dict | None, silver: dict | None) -> Path:
     if bronze is not None:
         p = tmp / "reports" / "TAPE_RECORDER.json"
@@ -54,88 +62,148 @@ def _desk(tmp: Path, bronze: dict | None, silver: dict | None) -> Path:
     return tmp
 
 
-def _both(tmp: Path, age_h: float, now: datetime = WED) -> Path:
-    ms = _broker_ms(now - timedelta(hours=age_h))
-    return _desk(tmp, {"last_tick_ms": ms},
-                 {"EURUSD": {"last_tick_ms": ms - 5_000}, "XAUUSD": {"last_tick_ms": ms}})
+def _ages(tmp: Path, now: datetime, **age_h: float) -> Path:
+    """Both tapes, each symbol's newest tick `age_h[sym]` hours before `now`."""
+    ms = {sym: _broker_ms(now - timedelta(hours=a)) for sym, a in age_h.items()}
+    return _desk(tmp, {"state": "RECORDING", "symbols_last_tick_ms": ms},
+                 {sym: {"last_tick_ms": v} for sym, v in ms.items()})
+
+
+def _build(desk: Path, now: datetime) -> dict:
+    return fence.build(desk, now, sess=SESS)
 
 
 def test_a_fresh_tape_is_green(tmp_path: Path) -> None:
-    rep = fence.build(_both(tmp_path, 0.2), WED)
+    rep = _build(_ages(tmp_path, WED, EURUSD=0.2, XAUUSD=0.1, BTCUSD=0.0), WED)
     assert rep["status"] == "GREEN", rep
     assert {r["status"] for r in rep["tapes"]} == {"FRESH"}
     # The venue stamp was converted: a raw read would sit three hours in the future.
-    assert abs(rep["tapes"][0]["age_h"] - 0.2) < 0.01
+    assert abs(rep["tapes"][0]["symbols"]["EURUSD"]["age_h"] - 0.2) < 0.01
 
 
-def test_over_two_hours_in_fx_hours_is_red(tmp_path: Path) -> None:
-    rep = fence.build(_both(tmp_path, 2.5), WED)
+def test_over_two_hours_in_its_own_session_is_red(tmp_path: Path) -> None:
+    rep = _build(_ages(tmp_path, WED, EURUSD=2.5, XAUUSD=2.5, BTCUSD=2.5), WED)
     assert rep["status"] == "RED" and set(rep["red"]) == {"bronze", "silver"}
     assert {r["status"] for r in rep["tapes"]} == {"STALE"}
 
 
+def test_one_dead_symbol_among_live_ones_is_red_and_named(tmp_path: Path) -> None:
+    """Audit: the newest tick over every symbol let one live symbol hide 244 dead ones."""
+    rep = _build(_ages(tmp_path, WED, EURUSD=0.1, XAUUSD=5.0, BTCUSD=0.0), WED)
+    assert rep["status"] == "RED"
+    for row in rep["tapes"]:
+        assert row["status"] == "STALE" and row["stale"] == ["XAUUSD"]
+        assert row["counts"] == {"FRESH": 2, "STALE": 1}
+
+
+def test_a_weekend_with_crypto_live_and_fx_shut(tmp_path: Path) -> None:
+    """Audit: the FX calendar read GREEN all weekend while the crypto CFDs trade."""
+    sat = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
+    fri_close = datetime(2026, 10, 16, 20, 59, tzinfo=UTC)
+    fx = (sat - fri_close).total_seconds() / 3600
+    live = _build(_ages(tmp_path / "a", sat, EURUSD=fx, XAUUSD=fx, BTCUSD=0.1), sat)
+    assert live["status"] == "GREEN"
+    row = live["tapes"][0]
+    assert row["counts"] == {"CLOSED": 2, "FRESH": 1} and "EURUSD" not in row["symbols"]
+    dead = _build(_ages(tmp_path / "b", sat, EURUSD=fx, XAUUSD=fx, BTCUSD=fx), sat)
+    assert dead["status"] == "RED" and dead["tapes"][0]["stale"] == ["BTCUSD"]
+
+
+def test_every_session_shut_is_market_closed_not_red(tmp_path: Path) -> None:
+    sat = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
+    rep = fence.build(_ages(tmp_path, sat, EURUSD=15.0), sat, sess={"EURUSD": SESS["EURUSD"]})
+    assert rep["status"] == "GREEN"
+    assert {r["status"] for r in rep["tapes"]} == {"MARKET_CLOSED"}
+
+
+def test_sunday_open_is_measured_from_the_open_not_friday(tmp_path: Path) -> None:
+    fri_close = datetime(2026, 10, 16, 20, 59, tzinfo=UTC)
+    sun = datetime(2026, 10, 18, 22, 0, tzinfo=UTC)          # one hour after the FX open
+    ms = _broker_ms(fri_close)
+    desk = _desk(tmp_path, {"symbols_last_tick_ms": {"EURUSD": ms}},
+                 {"EURUSD": {"last_tick_ms": ms}})
+    one = {"EURUSD": SESS["EURUSD"]}
+    assert fence.build(desk, sun, sess=one)["status"] == "GREEN"
+    assert fence.build(desk, sun + timedelta(hours=1, minutes=30), sess=one)["status"] == "RED"
+
+
+@pytest.mark.parametrize("now,open_", [
+    (datetime(2026, 10, 16, 20, 59, tzinfo=UTC), True),      # NY Fri 16:59 (daylight time)
+    (datetime(2026, 10, 16, 21, 0, tzinfo=UTC), False),
+    (datetime(2026, 10, 18, 20, 59, tzinfo=UTC), False),
+    (datetime(2026, 10, 18, 21, 0, tzinfo=UTC), True),       # NY Sun 17:00
+    (datetime(2026, 11, 13, 21, 59, tzinfo=UTC), True),      # winter: NY Fri 16:59
+    (datetime(2026, 11, 13, 22, 0, tzinfo=UTC), False),
+])
+def test_the_fx_class_week_is_new_york_sunday_17_to_friday_17(now: datetime, open_: bool) -> None:
+    v_now = now.replace(tzinfo=None) + fence.venue_lead(now)
+    assert (fence.session_open(fence.class_slots("Forex"), v_now) is not None) is open_
+
+
+def test_a_symbols_session_is_read_from_its_own_bars(tmp_path: Path) -> None:
+    """No hard-coded list: the slots come from the symbol's own H1 bars, else its class."""
+    idx = pd.date_range("2026-08-17", "2026-10-16 23:00", freq="h")
+    idx = idx[(idx.weekday < 5) & (idx.hour >= 1) & (idx.hour < 23)]     # a 01-23 venue index
+    uni = tmp_path / "data" / "universe"
+    uni.mkdir(parents=True)
+    pd.DataFrame({"close": 1.0}, index=idx).to_parquet(uni / "US500_H1.parquet")
+    (uni / "universe.json").write_text(json.dumps(
+        {"US500": {"asset_class": "Indices"}, "ETHUSD": {"asset_class": "Crypto"}}), "utf-8")
+    sess = fence.sessions(tmp_path, WED)
+    assert 0 not in sess["US500"] and 1 in sess["US500"] and 23 not in sess["US500"]
+    assert 5 * 24 + 1 not in sess["US500"]                    # Saturday
+    assert sess["ETHUSD"] == set(range(168))
+    assert json.loads((tmp_path / fence.SESSION_CACHE).read_text("utf-8"))["symbols"]["US500"]
+    # Enrolment is the tape's: a registry symbol the tape never carried is counted, not RED.
+    rep = fence.build(_ages(tmp_path, WED, ETHUSD=0.1), WED)
+    assert rep["status"] == "GREEN" and rep["tapes"][0]["not_enrolled"] == ["US500"]
+
+
 def test_an_absent_tape_is_unmeasured_and_red(tmp_path: Path) -> None:
     ms = _broker_ms(WED - timedelta(minutes=10))
-    rep = fence.build(_desk(tmp_path, {"last_tick_ms": ms}, None), WED)
+    rep = _build(_desk(tmp_path, {"symbols_last_tick_ms": {"EURUSD": ms}}, None), WED)
     row = {r["tape"]: r for r in rep["tapes"]}["silver"]
     assert row["status"] == "UNMEASURED" and rep["status"] == "RED"
     assert rep["n_unmeasured"] == 1
 
 
 def test_an_unstamped_tape_is_unmeasured(tmp_path: Path) -> None:
-    rep = fence.build(_desk(tmp_path, {"state": "RECORDING", "last_tick_ms": None},
-                            {"EURUSD": {"last_run": "2026-10-14T05:00:00+00:00"}}), WED)
+    rep = _build(_desk(tmp_path, {"state": "RECORDING", "last_tick_ms": None},
+                       {"EURUSD": {"last_run": "2026-10-14T05:00:00+00:00"}}), WED)
     assert [r["status"] for r in rep["tapes"]] == ["UNMEASURED", "UNMEASURED"]
     assert rep["status"] == "RED"
 
 
+def test_a_bronze_status_without_per_symbol_stamps_is_unmeasured(tmp_path: Path) -> None:
+    """The pre-audit bronze shape carried one newest stamp; it cannot be judged per symbol."""
+    ms = _broker_ms(WED - timedelta(minutes=5))
+    rep = _build(_desk(tmp_path, {"state": "RECORDING", "last_tick_ms": ms},
+                       {"EURUSD": {"last_tick_ms": ms}}), WED)
+    assert [r["status"] for r in rep["tapes"]] == ["UNMEASURED", "FRESH"]
+
+
 def test_a_future_stamp_is_unmeasured_never_fresh(tmp_path: Path) -> None:
-    rep = fence.build(_both(tmp_path, -1.0), WED)
-    assert {r["status"] for r in rep["tapes"]} == {"UNMEASURED"}
+    rep = _build(_ages(tmp_path, WED, EURUSD=-1.0), WED)
+    assert {r["status"] for r in rep["tapes"]} == {"STALE"}
+    assert rep["tapes"][0]["unmeasured"] == ["EURUSD"]
     assert rep["status"] == "RED"
 
 
 def test_a_red_tape_names_the_terminal_link_as_its_cause(tmp_path: Path) -> None:
-    desk = _both(tmp_path, 30.0)
-    rep = fence.build(desk, WED)
+    desk = _ages(tmp_path, WED, EURUSD=30.0)
+    rep = _build(desk, WED)
     assert rep["terminal_link"]["status"] == "UNMEASURED" and "IPC probe" in rep["cause"]
     ok = desk / "data" / "terminal_boot_ok.json"
     ok.write_text("\ufeff" + json.dumps({"at": (WED - timedelta(hours=50)).isoformat()}), "utf-8")
-    rep = fence.build(desk, WED)
+    rep = _build(desk, WED)
     assert rep["status"] == "RED" and rep["terminal_link"]["status"] == "DOWN"
     assert "MT5 Python link is down" in rep["cause"]
     ok.write_text(json.dumps({"at": (WED - timedelta(minutes=5)).isoformat()}), "utf-8")
     (desk / "reports" / "TAPE_RECORDER.json").write_text(json.dumps(
-        {"last_tick_ms": _broker_ms(WED - timedelta(hours=30)),
+        {"symbols_last_tick_ms": {"EURUSD": _broker_ms(WED - timedelta(hours=30))},
          "paused_reason": "source not connected"}), "utf-8")
-    assert "PAUSED: source not connected" in fence.build(desk, WED)["cause"]
-    assert fence.build(_both(tmp_path / "f", 0.1), WED)["cause"] == ""
-
-
-def test_the_weekend_is_market_closed_not_red(tmp_path: Path) -> None:
-    sat = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
-    rep = fence.build(_both(tmp_path, 15.0, sat), sat)
-    assert rep["fx_open"] is False and rep["status"] == "GREEN"
-    assert {r["status"] for r in rep["tapes"]} == {"MARKET_CLOSED"}
-
-
-def test_sunday_open_is_measured_from_the_open_not_friday(tmp_path: Path) -> None:
-    fri_close = datetime(2026, 10, 16, 21, 0, tzinfo=UTC)
-    sun = datetime(2026, 10, 18, 23, 0, tzinfo=UTC)          # one hour after the open
-    ms = _broker_ms(fri_close)
-    desk = _desk(tmp_path, {"last_tick_ms": ms}, {"EURUSD": {"last_tick_ms": ms}})
-    assert fence.build(desk, sun)["status"] == "GREEN"
-    assert fence.build(desk, sun + timedelta(hours=1, minutes=30))["status"] == "RED"
-
-
-@pytest.mark.parametrize("now,open_", [
-    (datetime(2026, 10, 16, 21, 59, tzinfo=UTC), True),
-    (datetime(2026, 10, 16, 22, 0, tzinfo=UTC), False),
-    (datetime(2026, 10, 18, 21, 59, tzinfo=UTC), False),
-    (datetime(2026, 10, 18, 22, 0, tzinfo=UTC), True),
-])
-def test_fx_hours_are_sunday_2200_to_friday_2200(now: datetime, open_: bool) -> None:
-    assert fence.fx_open(now) is open_
+    assert "PAUSED: source not connected" in _build(desk, WED)["cause"]
+    assert _build(_ages(tmp_path / "f", WED, EURUSD=0.1), WED)["cause"] == ""
 
 
 def test_the_contract_reads_the_tapes_own_stamp(tmp_path: Path) -> None:
@@ -156,22 +224,28 @@ def test_the_contract_reads_the_tapes_own_stamp(tmp_path: Path) -> None:
     assert contract.artifact_age_min(rel, now, root=tmp_path) is None     # future: no artifact
 
 
-def test_the_recorder_pulls_to_the_venue_clock_and_stamps_its_newest_tick(
-        tmp_path: Path) -> None:
+def test_the_recorder_stamps_every_symbols_newest_tick(tmp_path: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    from recorders import tick_recorder
     from recorders.tick_recorder import RecorderConfig, TickRecorder, _newest_tick
     from recorders.tick_source import FakeTickSource
+    status = tmp_path / "TAPE_RECORDER.json"
+    monkeypatch.setattr(tick_recorder, "STATUS", status)
     t0 = 1_780_000_000_000
-    src = FakeTickSource(["EURUSD"], ticks_per_day=20_000)
-    rec = TickRecorder(src, RecorderConfig(tape_root=tmp_path, cold_start_days=0,
-                                           disk_floor_bytes=0,
-                                           server_offset_ms=3 * 3_600_000))
-    rec.run_once(now_ms=t0)
-    rep = rec.run_once(now_ms=t0 + 60_000)
+    src = FakeTickSource(["EURUSD", "GBPUSD"], ticks_per_day=20_000)
+    src.server_clock_ms = t0 + 3 * 3_600_000
+    rec = TickRecorder(src, RecorderConfig(tape_root=tmp_path / "tape", cold_start_days=1,
+                                           disk_floor_bytes=0, measure_broker_clock=True))
+    rep = rec.run_once(now_ms=t0)
+    assert rep.ticks > 0 and rep.clock_source == "broker"
     state = rec.store.read_state("recorder")
-    # Windows end at the VENUE's now; liveness stays on the wall clock.
-    assert state["last_cycle_end_ms"] == t0 + 60_000 + 3 * 3_600_000 - rec.config.settle_ms
+    # Windows end at the BROKER's measured now; liveness stays on the wall clock.
+    assert state["last_cycle_end_ms"] == t0 + 3 * 3_600_000 - rec.config.settle_ms
     assert state["last_cycle_finished_ms"] < t0 + 3_600_000
-    assert rep.ticks > 0
+    doc = json.loads(status.read_text("utf-8"))
+    assert set(doc["symbols_last_tick_ms"]) == {"EURUSD", "GBPUSD"}
+    assert all(v > 0 for v in doc["symbols_last_tick_ms"].values())
+    assert doc["clock_source"] == "broker"
     newest = _newest_tick([{"last_tick_ms": 1_788_566_339_990}, {"last_tick_ms": 0}])
     # Friday 2026-09-04 broker 23:58:59.99 is 20:58:59.99 UTC (New York + 7 h, daylight time).
     assert newest["last_tick_utc"].startswith("2026-09-04T20:58:59")

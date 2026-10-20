@@ -59,3 +59,11 @@ def test_atr20_is_the_mean_true_range_of_the_newest_twenty_bars() -> None:
     assert abs(CS.atr_h1(df) - 0.002) < 1e-12
     assert CS.atr_h1(df.iloc[:10]) is None
     assert CS.atr_h1(df[["close"]]) is None
+
+
+def test_atr_carries_the_bar_it_was_computed_through() -> None:
+    """Audit 2026-10-14: an ATR with no as-of date cannot be told from a stale one."""
+    idx = pd.date_range("2026-10-01", periods=30, freq="h", tz="UTC")
+    df = pd.DataFrame({"high": 1.001, "low": 0.999, "close": 1.0}, index=idx)
+    assert CS.atr_through(df) == idx[-1].isoformat()
+    assert CS.atr_through(df.iloc[:0]) is None

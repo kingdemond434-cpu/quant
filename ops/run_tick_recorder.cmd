@@ -6,6 +6,7 @@ rem log, so when it returned 1 at 2026-10-12 19:56 box time nothing on the box s
 rem cause could only be inferred. Every line it prints now lands in MT5-TickRecorder.log.
 rem
 rem THE EXIT IS THE RECORDER'S. Exit 4 = started in Windows Session 0 (re-register Interactive);
+rem 5 = HUNG (no cycle in 10 min); 6 = STALLED (no new tick in 2 h while connected);
 rem 1 = a traceback or a kill. The resident loop never returns on its own, so any exit at all is
 rem a finding, and the task's repetition trigger relaunches it within ten minutes.
 rem

@@ -109,6 +109,14 @@ TASK_DIAGNOSIS = {
         "the recorder started in Windows Session 0, where the MT5 bridge cannot reach the "
         "logged-on terminal. Restarting reproduces it: re-register with LogonType Interactive "
         "(desks/mt5/recorders/install_tape_tasks.ps1) and keep the trading user signed in."),
+    ("MT5-TickRecorder", 5): (
+        "the recorder HUNG (no cycle completed in 10 min, usually a terminal call that never "
+        "returned) and ended itself so its 10-minute trigger starts a fresh one. If it repeats, "
+        "the terminal link is the fault: read MT5-TerminalBoot and MT5-TickRecorder.log."),
+    ("MT5-TickRecorder", 6): (
+        "the recorder STALLED (connected, unpaused, no new tick for 2 h) and ended itself for a "
+        "fresh start. Repeating outside a weekend means the terminal serves no ticks: check the "
+        "terminal's connection, not the recorder."),
     ("MT5-TickRecorder", 1): (
         "a Python traceback or a kill (taskkill /F exits 1) -- since 2026-10-14 a terminal that "
         "is down at start no longer exits. Read the tail of desks/mt5/logs/MT5-TickRecorder.log; "

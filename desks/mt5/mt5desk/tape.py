@@ -681,6 +681,19 @@ def write_day(chunk: pd.DataFrame, out: Path) -> int:
     return len(merged)
 
 
+def _broker_now_ms(mt5: object, symbols: list[str]) -> int | None:
+    """The newest `time_msc` any symbol's last tick carries: the broker's clock, never ahead of
+    it. None when nothing answers."""
+    best = 0
+    for sym in symbols:
+        try:
+            t = mt5.symbol_info_tick(sym)  # type: ignore[attr-defined]
+        except Exception:
+            continue
+        best = max(best, int(getattr(t, "time_msc", 0) or 0) if t is not None else 0)
+    return best or None
+
+
 def _venue_lead_h(now: datetime) -> int:
     """Hours the venue's tick clock runs ahead of UTC at `now` (3 in US summer, else 2), from
     `libs.regime.session_clock`; 0 when that cannot be imported -- a late window, never a wrong
@@ -715,13 +728,32 @@ def record_ticks(symbols: list[str]) -> dict:
     # bounds with `time_msc` as plain numbers, and `time_msc` is the venue clock (New York + 7 h),
     # so a window ending at UTC-now stopped two or three hours short: on 2026-09-06 a pass at
     # 22:40:35 UTC ended every crypto CFD at broker 22:40:3x. `start` is already on that clock.
-    end = now + timedelta(hours=_venue_lead_h(now))
+    lead_h = _venue_lead_h(now)
+    end = now + timedelta(hours=lead_h)
+    # BOUNDED BY THE BROKER'S OWN CLOCK (audit 2026-10-20): the box clock plus a calendar lead
+    # can run ahead of the broker; the newest stamp any symbol carries cannot.
+    measured = _broker_now_ms(mt5, symbols)
+    if measured:
+        end = min(end, datetime.fromtimestamp(measured / 1000.0, tz=UTC))
     summary: dict[str, dict] = {}
 
     for sym in symbols:
         last = state.get(sym, {}).get("last_tick_ms")
         start = (datetime.fromtimestamp(last / 1000.0, tz=UTC) + timedelta(milliseconds=1)
                  if last else now - timedelta(days=COLD_START_DAYS))
+        # THE FALL-BACK HOUR (audit 2026-10-20). When New York leaves daylight time the venue
+        # clock steps back an hour and re-stamps it, so ticks arrive LOWER than `last`. Resuming
+        # at last+1 skipped the whole repeated hour on every 24/7 symbol. When the lead this run
+        # is smaller than the lead `last` was recorded under, start that much earlier; the
+        # re-read first occurrence dedupes in `write_day`.
+        prev_lead = state.get(sym, {}).get("lead_h")
+        if last and isinstance(prev_lead, int) and prev_lead > lead_h:
+            start -= timedelta(hours=prev_lead - lead_h)
+        # ...and for the rest of the repeated hour, resume where the last run's QUERY ended
+        # rather than after the first occurrence's later ticks (which `last` still holds).
+        queried = state.get(sym, {}).get("queried_to_ms")
+        if last and isinstance(queried, int) and queried < last:
+            start = min(start, datetime.fromtimestamp((queried - 5_000) / 1000.0, tz=UTC))
         try:
             ticks = mt5.copy_ticks_range(sym, start, end, mt5.COPY_TICKS_ALL)
         except Exception as exc:
@@ -744,7 +776,9 @@ def record_ticks(symbols: list[str]) -> dict:
             # the new ticks, deduplicated on (time_msc, bid, ask, last), `ts` derived, written
             # as an explicit Arrow table (see merge_day for the failure this replaced).
             written += write_day(chunk, out)
-        state[sym] = {"last_tick_ms": int(df["time_msc"].iloc[-1]),
+        state[sym] = {"last_tick_ms": int(df["time_msc"].max()),
+                      "lead_h": lead_h,
+                      "queried_to_ms": int(end.timestamp() * 1000),
                       "last_run": now.isoformat(timespec="seconds"),
                       "last_tick_utc": str(df["ts"].iloc[-1])}
         summary[sym] = {"new_ticks": len(df), "rows_on_disk_touched": written,
