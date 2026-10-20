@@ -725,6 +725,27 @@ def _record(row: dict[str, Any]) -> bool:
         return False
 
 
+def publish_books(venue: Any, mt5: Any, doc: dict[str, Any],
+                  positions: list[dict[str, Any]] | None = None) -> None:
+    """Publish BOTH accounts' books for the cross-account fence (mt5desk.cross_account).
+
+    E8's from TradeLocker (every position and resting entry on the account), Fusion's from the
+    MT5 terminal this lane is attached to -- so the Fusion book stays fresh for the E8 executor
+    even while the gateway task is disabled. A book that cannot be read is NOT published (the
+    readers then fail closed on a stale one); never raises."""
+    from mt5desk import cross_account as _xa
+    try:
+        _xa.publish("e8", _xa.tradelocker_exposure(venue, positions=positions),
+                    source="e8_gold")
+    except Exception as exc:
+        doc.setdefault("xacct_unpublished", []).append(f"e8: {type(exc).__name__}: {exc}"[:160])
+    try:
+        _xa.publish("fusion", _xa.mt5_exposure(mt5), source="e8_gold via the Fusion terminal")
+    except Exception as exc:
+        doc.setdefault("xacct_unpublished", []).append(
+            f"fusion: {type(exc).__name__}: {exc}"[:160])
+
+
 def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     """One pass. `venue` is a connected TradeLockerVenue; `mt5` the MetaTrader5 module (bars
     and the server clock, read exactly as the gateway reads them)."""
@@ -804,6 +825,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         stood_down = True
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
         log("position book unreadable; no new E8 gold placement this pass")
+    publish_books(venue, mt5, doc,
+                  positions=None if "positions_unreadable" in doc else venue_positions)
     # -------------------------------------------------------------- placements
     due_now = [] if stood_down else plan(df, hour, state)
     # THE SELF-HEDGE RULE IS PER LEG, NOT PER BRACKET (principal, 2026-09-24).
@@ -895,57 +918,104 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         committed = (committed or 0.0) + risk_usd
         legs: dict[str, dict] = {}
         failed: dict[str, dict] = {}
-        for side in ("buy_stop", "sell_stop"):
-            if side == blocked:
-                why = (f"open XAU position(s) {', '.join(str(p.get('id')) for p in xau_positions)}"
-                       f" already lean {'long' if direction == 1 else 'short'}; this leg would "
-                       f"trade against them, so it is skipped and the agreeing leg is placed")
-                doc["skipped"].append({"window": name, "side": side, "why": why})
-                log(f"[{name}] {side} skipped: {why}")
-                continue
-            s = spec[side]
-            dist = abs(float(s["price"]) - float(s["sl"]))
-            legal, why = leg_is_legal(side, float(s["price"]), float(bid), float(ask))
-            if not legal:
-                doc["skipped"].append({"window": name, "side": side, "why": why})
-                log(f"[{name}] {side} not available: {why}")
-                continue
-            lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
-            lot = _quantise(lot, venue, SYMBOL)
-            row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
-                   "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
-                   "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
-                   "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
-                   "armed": bool(armed)}
-            if not (lot > 0):
-                row["status"] = "UNSIZEABLE"
-                doc["skipped"].append(row)
-                _record(row)
-                continue
-            if not armed:
-                row["status"] = "WOULD_PLACE"
-                log(f"[{name}] SHADOW would place {side} {lot} {SYMBOL} @ {s['price']:.2f} "
-                    f"sl {s['sl']:.2f} tp {s['tp']:.2f} (risk {risk_usd:.0f} USD)")
-                _record(row)
-                legs[side] = {"id": None, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
-                continue
-            try:
-                oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell", lot,
-                                       price=float(s["price"]), stop=float(s["sl"]),
-                                       take_profit=float(s["tp"]))
-                row.update({"status": "SENT", "order_id": oid})
-                legs[side] = {"id": oid, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
-                log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} sl {s['sl']:.2f} "
-                    f"tp {s['tp']:.2f} -> order {oid}")
-            except Exception as exc:
-                row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
-                log(f"[{name}] REJECTED {side}: {row['why']} (will retry while the window holds)")
-                failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
-                                "attempts": 1, "why": row["why"],
-                                "first_at": row["at"]}
-            if not _record(row):
-                doc.setdefault("journal_write_failed", []).append(
-                    {"window": name, "side": side, "order_id": row.get("order_id")})
+        fenced: dict[str, str] = {}
+        # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE (mt5desk.cross_account; audit HOLD 2026-10-20):
+        # a leg opposite an open or resting FUSION position on XAUUSD is not sent. The Fusion
+        # book is read LIVE from the terminal this lane is attached to, under the one placement
+        # lock the gateway also takes, and this account's book is published before the lock is
+        # released. Unreadable book or lock not taken -> every leg is fenced (fail closed).
+        from mt5desk import cross_account as _xa
+        _xctx = (_xa.placement_lock(f"e8_gold:{name}") if armed
+                 else contextlib.nullcontext(True))
+        with _xctx as _xlocked:
+            fusion_book: Any = None
+            fusion_why = ""
+            if armed and _xlocked:
+                try:
+                    fusion_book = _xa.mt5_exposure(mt5)
+                except Exception as exc:
+                    fusion_why = (f"the Fusion terminal book is unreadable "
+                                  f"({type(exc).__name__}: {exc})")
+            for side in ("buy_stop", "sell_stop"):
+                if side == blocked:
+                    _ids = ", ".join(str(p.get("id")) for p in xau_positions)
+                    why = (f"open XAU position(s) {_ids}"
+                           f" already lean {'long' if direction == 1 else 'short'}; this leg would "
+                           f"trade against them, so it is skipped and the agreeing leg is placed")
+                    doc["skipped"].append({"window": name, "side": side, "why": why})
+                    log(f"[{name}] {side} skipped: {why}")
+                    continue
+                if armed:
+                    xwhy = (_xa.opposite_block(fusion_book, SYMBOL, side, account="fusion",
+                                               why_absent=fusion_why) if _xlocked
+                            else ("cross-account fence: the placement lock is held by the other "
+                                  "account's lane; fail closed"))
+                    if xwhy:
+                        fenced[side] = xwhy
+                        doc["skipped"].append({"window": name, "side": side, "why": xwhy})
+                        log(f"[{name}] {side} fenced: {xwhy}")
+                        # One missed-growth line per window and leg per day (the rail is
+                        # re-checked every five minutes; the bill is one forgone leg).
+                        _seen = state.setdefault("xacct_logged", {})
+                        if _seen.get(f"{name}/{side}") != today:
+                            _seen[f"{name}/{side}"] = today
+                            _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                                     "side": side, "status": "RAIL_BLOCKED",
+                                     "rail": "cross_account_opposite", "why": xwhy,
+                                     "missed_growth_risk_usd": round(risk_usd, 2),
+                                     "armed": bool(armed)})
+                        continue
+                s = spec[side]
+                dist = abs(float(s["price"]) - float(s["sl"]))
+                legal, why = leg_is_legal(side, float(s["price"]), float(bid), float(ask))
+                if not legal:
+                    doc["skipped"].append({"window": name, "side": side, "why": why})
+                    log(f"[{name}] {side} not available: {why}")
+                    continue
+                lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
+                lot = _quantise(lot, venue, SYMBOL)
+                row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                       "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
+                       "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
+                       "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
+                       "armed": bool(armed)}
+                if not (lot > 0):
+                    row["status"] = "UNSIZEABLE"
+                    doc["skipped"].append(row)
+                    _record(row)
+                    continue
+                if not armed:
+                    row["status"] = "WOULD_PLACE"
+                    log(f"[{name}] SHADOW would place {side} {lot} {SYMBOL} @ {s['price']:.2f} "
+                        f"sl {s['sl']:.2f} tp {s['tp']:.2f} (risk {risk_usd:.0f} USD)")
+                    _record(row)
+                    legs[side] = {"id": None, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
+                    continue
+                try:
+                    oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell", lot,
+                                           price=float(s["price"]), stop=float(s["sl"]),
+                                           take_profit=float(s["tp"]))
+                    row.update({"status": "SENT", "order_id": oid})
+                    legs[side] = {"id": oid, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
+                    log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} "
+                        f"sl {s['sl']:.2f} tp {s['tp']:.2f} -> order {oid}")
+                except Exception as exc:
+                    row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
+                    log(f"[{name}] REJECTED {side}: {row['why']} "
+                        f"(will retry while the window holds)")
+                    failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
+                                    "attempts": 1, "why": row["why"],
+                                    "first_at": row["at"]}
+                if not _record(row):
+                    doc.setdefault("journal_write_failed", []).append(
+                        {"window": name, "side": side, "order_id": row.get("order_id")})
+            if armed and _xlocked:
+                with contextlib.suppress(Exception):
+                    _xa.publish("e8", _xa.tradelocker_exposure(venue), source="e8_gold")
+        if fenced and not legs and not failed:
+            # Every leg fenced: the window waits, NOT marked placed, and its risk is not committed.
+            committed = (committed or 0.0) - risk_usd
+            continue
         state["windows"][name] = {"placed_at": now.isoformat(timespec="seconds"),
                                   "placed_hour": hour, "hi": due["hi"], "lo": due["lo"],
                                   "orders": legs, "position_id": None, "shadow": not armed}

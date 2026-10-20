@@ -252,6 +252,14 @@ desks/mt5/data/task_queue.jsonl
 desks/mt5/data/dsr_trial_sharpes.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
+# Cross-account fence (mt5desk.cross_account): each account's book as THIS box's lanes last read
+# it, and the placement lock. A book or lock carried to another checkout would be read there as
+# the live account's state; both are box-local by construction.
+desks/mt5/data/xacct/
+# The Fusion live login the Fusion book is bound to (decision_core.FUSION_ACCOUNT_FILE). A live
+# brokerage login is never tracked (tests/ops/test_live_infrastructure_is_not_published.py); the
+# operator writes this once on the box.
+desks/mt5/data/FUSION_LIVE_ACCOUNT.json
 
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have

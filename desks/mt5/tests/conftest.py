@@ -165,6 +165,26 @@ def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     yield
 
 
+@pytest.fixture(autouse=True)
+def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
+    """THE CROSS-ACCOUNT FENCE'S (AND THE RAILS LEDGER'S) FILES NEVER LAND IN THE REPO FROM A
+    TEST, AND EVERY TEST STARTS IN A READABLE WORLD. `mt5desk.cross_account` keeps both
+    accounts' books and the placement lock under `data/xacct/`; here that directory is a fresh
+    tmp one holding a just-published, FLAT book for each account, so a lane under test sees
+    "the other account holds nothing" -- exactly what it saw before the fence existed. A test of
+    the fence itself writes its own books (or deletes these) to exercise the refusals."""
+    from mt5desk import cross_account
+    d = tmp_path_factory.mktemp("xacct")
+    monkeypatch.setattr(cross_account, "XACCT_DIR", d)
+    for account in cross_account.ACCOUNTS:
+        cross_account.publish(account, {}, source="conftest")
+    # The Fusion book's rails ledger (mt5desk.fusion_rails) is box state too: a test that sends
+    # a floor-lifted order would otherwise append its bill to the repo's data/ file.
+    from mt5desk import fusion_rails
+    monkeypatch.setattr(fusion_rails, "LEDGER", d / "fusion_book_rails.jsonl")
+    yield d
+
+
 @pytest.fixture
 def portable_gateway(monkeypatch, tmp_path):
     """Import the entire venue adapter on every OS; no SDK operation is permitted.
