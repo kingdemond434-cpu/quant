@@ -419,33 +419,27 @@ Send = Callable[[urllib.request.Request, float], Any]
 
 
 # --------------------------------------------------------------------------- robots.txt rules
-_SAFE_PATH = "/:@!$&'()*+,;=?~-._%"
-
-
-def _robots_norm(s: str) -> str:
-    """One percent-encoding for both sides of a match (RFC 9309 s2.2.2): decoded, then
-    re-encoded with reserved characters kept literal, so `%7E` and `~` compare equal."""
-    from urllib.parse import unquote
-    return quote(unquote(s), safe=_SAFE_PATH)
-
-
 class RobotsRules:
     """robots.txt per RFC 9309, the desk's ONE reading of it (`HostAccess` is its only caller
     on the network path; nothing else in the desk parses robots.txt).
 
-    * GROUP: every group whose `user-agent` line names the product token (case-insensitive;
-      `quant-mt5-research-desk/1.0` names it too) -- several such groups are merged; when none
-      does, the `*` group(s); when neither exists, everything is allowed.
+    SEMANTICS, kept identical to `research/hard_stop.robots_verdict` (alt-seat-cells
+    bc6549361) -- `tests/data/robots_parity_fixtures.json` is the shared table both must pass:
+    * GROUP: every group whose `User-agent` value equals the product token (case-insensitive)
+      -- stacked `User-agent` lines accumulate into one group, and several matching groups are
+      merged; when none names it, the `*` group(s); when neither exists, everything is allowed.
+      A group ends only when a `User-agent` line follows an Allow/Disallow line.
     * MATCH: the LONGEST matching Allow/Disallow pattern wins; an Allow wins a tie. `*` matches
-      any run of characters and a trailing `$` anchors the end. An empty Disallow is no rule.
-      `/robots.txt` itself is always allowed.
+      any run of characters and a trailing `$` anchors the end. An empty pattern is no rule.
+      Patterns and the path+query are compared as written (no percent-decoding).
+      `/robots.txt` itself is always allowed. A leading UTF-8 BOM is ignored.
     `urllib.robotparser` is NOT used: it takes the first matching rule in file order (so
     `Allow: /` above `Disallow: /private` let the private path through) and reads `*`/`$` as
     literal characters (so `Disallow: /*.pdf` matched nothing)."""
 
     def __init__(self, text: str = "") -> None:
-        self.groups: list[tuple[list[str], list[tuple[bool, str]], float | None]] = []
-        agents: list[str] = []
+        self.groups: list[tuple[set[str], list[tuple[bool, str]], float | None]] = []
+        agents: set[str] = set()
         rules: list[tuple[bool, str]] = []
         delay: float | None = None
         in_rules = False
@@ -454,36 +448,31 @@ class RobotsRules:
             if ":" not in line:
                 continue
             key, _, val = line.partition(":")
-            key = key.strip().lower().replace(" ", "-").replace("_", "-")
-            val = val.strip()
-            if key in ("user-agent", "useragent"):
-                if in_rules:
+            key, val = key.strip().lower(), val.strip()
+            if key == "user-agent":
+                if in_rules:                      # a new group starts after the last one's rules
                     self.groups.append((agents, rules, delay))
-                    agents, rules, delay, in_rules = [], [], None, False
-                agents.append(val.lower())
-            elif key in ("allow", "disallow"):
-                if not agents:
-                    continue                      # a rule before any user-agent line is void
+                    agents, rules, delay, in_rules = set(), [], None, False
+                agents.add(val.lower())           # stacked User-agent lines ACCUMULATE
+            elif key in ("allow", "disallow") and agents:
                 in_rules = True
-                if val:
-                    rules.append((key == "allow", val))
-            elif key == "crawl-delay":
-                if not agents:
-                    continue
-                in_rules = True
+                rules.append((key == "allow", val))
+            elif key == "crawl-delay" and agents and delay is None:
                 with contextlib.suppress(ValueError):
-                    delay = delay if delay is not None else max(0.0, float(val))
+                    delay = max(0.0, float(val))  # not a rule line: it never ends a group
         if agents:
             self.groups.append((agents, rules, delay))
 
     def _group(self, product: str) -> tuple[list[tuple[bool, str]], float | None] | None:
-        token = str(product or "").split("/", 1)[0].strip().lower()
+        token = str(product or "").lower()
         for want in (token, "*"):
+            if not want:
+                continue
             rules: list[tuple[bool, str]] = []
             delay: float | None = None
             hit = False
             for agents, grules, gdelay in self.groups:
-                if any(a.split("/", 1)[0].strip() == want for a in agents):
+                if want in agents:
                     hit = True
                     rules.extend(grules)
                     delay = gdelay if delay is None else delay
@@ -494,26 +483,25 @@ class RobotsRules:
     @staticmethod
     def _matches(pattern: str, target: str) -> bool:
         anchored = pattern.endswith("$")
-        body = _robots_norm(pattern[:-1] if anchored else pattern)
-        rx = ".*".join(re.escape(part) for part in body.split("*"))
+        body = pattern[:-1] if anchored else pattern
+        rx = "".join(".*" if ch == "*" else re.escape(ch) for ch in body)
         return re.match(rx + ("$" if anchored else ""), target) is not None
 
     def can_fetch(self, product: str, url: str) -> bool:
         parts = urlsplit(url)
-        path = parts.path or "/"
-        if path == "/robots.txt":
+        target = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
+        if target == "/robots.txt":
             return True
-        target = _robots_norm(path + (f"?{parts.query}" if parts.query else ""))
         group = self._group(product)
         if group is None:
             return True
-        best_len, allowed = -1, True
+        best: tuple[int, bool] | None = None      # (pattern length, allow): longest wins
         for allow, pattern in group[0]:
-            if self._matches(pattern, target):
-                n = len(pattern)
-                if n > best_len or (n == best_len and allow):
-                    best_len, allowed = n, allow
-        return allowed
+            if not pattern or not self._matches(pattern, target):
+                continue
+            if best is None or len(pattern) > best[0] or (len(pattern) == best[0] and allow):
+                best = (len(pattern), allow)
+        return best is None or best[1]
 
     def crawl_delay(self, product: str) -> float | None:
         group = self._group(product)
