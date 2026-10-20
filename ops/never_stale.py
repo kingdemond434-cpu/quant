@@ -322,7 +322,10 @@ def _health_age_min(doc: Any) -> float | None:
             t = datetime.fromisoformat(str(doc.get("at")).replace("Z", "+00:00"))
             if t.tzinfo is None:
                 t = t.replace(tzinfo=UTC)
-            return max(0.0, (datetime.now(tz=UTC) - t).total_seconds() / 60.0)
+            secs = (datetime.now(tz=UTC) - t).total_seconds()
+            # A board stamped beyond ordinary skew in the future measures nothing (re-audit of
+            # 72a2277f4): UNMEASURED, never age 0.
+            return None if secs < -300 else max(0.0, secs / 60.0)
         except ValueError:
             pass
     return _age_min(HEALTH)

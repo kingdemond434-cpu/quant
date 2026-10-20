@@ -596,7 +596,8 @@ def deadman_invariant(*, state_path: Path | None = None, sleeves_path: Path | No
             # A dict, a renamed key or a null is not "no sleeves": LIVE risk is UNMEASURED.
             raise ValueError(f"no sleeves list (got {type(sl).__name__})")
         live = sorted(str(r.get("name") or "?") for r in sl
-                      if isinstance(r, dict) and str(r.get("status", "")).upper() == "LIVE")
+                      if isinstance(r, dict)
+                      and str(r.get("status") or "").strip().upper() == "LIVE")
     except (OSError, ValueError, AttributeError) as exc:
         row.update(verdict="UNMEASURED", state="UNMEASURED",
                    why=(f"sleeves.json unreadable ({type(exc).__name__}): whether LIVE risk "

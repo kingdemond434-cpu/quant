@@ -50,9 +50,10 @@ MAX_RAW_PER_SYMBOL = 2016
 
 def _write_atomic(path: pathlib.Path, text: str) -> None:
     """A reader (the cost model, the publisher) never sees a half-written file."""
+    from libs.ops.win_write import replace_resilient  # retries a Windows reader's share lock
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(text, encoding="utf-8")
-    tmp.replace(path)
+    replace_resilient(tmp, path)
 
 v = TradeLockerVenue().connect()
 samples: dict[str, list[tuple[int, float]]] = collections.defaultdict(list)

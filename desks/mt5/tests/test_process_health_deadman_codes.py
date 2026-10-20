@@ -259,7 +259,9 @@ def test_the_e8_sampler_pass_fits_its_task_limit() -> None:
     assert "RUN_BUDGET_S = 45 * 60" in src and "HOURS*3600" not in src
     # re-audit: bounded raw, atomic write, a slow venue cannot overrun, and the installer's
     # trigger is the manifest's hourly one, not at-startup
-    assert "MAX_RAW_PER_SYMBOL" in src and "_write_atomic(OUT" in src and "last_pass_s" in src
+    assert "MAX_RAW_PER_SYMBOL" in src and "_write_atomic(OUT" in src
+    assert "replace_resilient(tmp, path)" in src
+    assert "MAX_RAW_PER_SYMBOL" in src and "last_pass_s" in src
     i = inst.index('Set-E8Task -Name "E8-Spreads"')
     assert "-RepetitionInterval (New-TimeSpan -Hours 1)" in inst[i:i + 400]
     assert "-AtStartup" not in inst[i:i + 400]
@@ -318,3 +320,14 @@ def test_a_far_future_stamp_reads_unmeasured_in_the_organ_contract(tmp_path: Pat
         p.write_text(json.dumps({"generated_at": (NOW + ahead).isoformat()}), "utf-8")
         got = oc.read_artifact_age("a.json", root=tmp_path, now=NOW, spec="key:generated_at")
         assert (got.get("age_min") is not None) is measured, (ahead, got)
+
+
+def test_a_padded_live_status_still_binds_the_invariant(tmp_path: Path) -> None:
+    body = json.dumps({"sleeves": [{"name": "a", "status": " live "}]})
+    assert _dm(tmp_path, sleeves=body, state=None)["verdict"] == "DEADMAN_UNARMED"
+
+
+def test_a_future_board_stamp_is_unmeasured(monkeypatch: pytest.MonkeyPatch) -> None:
+    ahead = (datetime.now(UTC) + timedelta(hours=3)).isoformat()
+    assert ns._health_age_min({"at": ahead}) is None
+    assert ns._health_age_min({"at": datetime.now(UTC).isoformat()}) is not None
