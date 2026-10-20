@@ -16,6 +16,7 @@ each helper against the call it stands in for:
 """
 from __future__ import annotations
 
+import json
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -129,3 +130,49 @@ def test_program_reads_take_a_shards_reads_only_when_they_match(eg) -> None:
     for bad in ({**sentinel, "dsr_bar": 0.96}, {**sentinel, "n": 399},
                 {**sentinel, "n_held": 99}, {**sentinel, "dsr": [True, 9.0, 0.0]}):
         assert eg._program_reads(arr, held, bad, threshold=0.95) == (dsr, lock)
+
+
+# ---------------------------------------------------------------- audit on b879ac50 (2026-10-20)
+@pytest.mark.parametrize("idx_unit", ["s", "ms", "us", "ns"])
+@pytest.mark.parametrize("cut", ["2020-01-09 10:00:00.5", "2020-01-09 10:00:00.000001",
+                                 "2020-01-09 10:00:00.000000001", "2020-01-09"])
+def test_split_at_is_the_masks_when_the_cut_is_finer_than_the_index(eg, idx_unit, cut) -> None:
+    """pandas 3 `searchsorted` refuses a cut it cannot convert losslessly; the masks do not."""
+    idx = pd.date_range("2020-01-01 10:00", periods=30, freq="D").as_unit(idx_unit)
+    c = pd.Timestamp(cut)
+    for s in (_series(idx), _series(idx[:0])):
+        dev, held = eg._split_at(s, c)
+        assert dev.equals(s[s.index < c]) and held.equals(s[s.index >= c])
+
+
+@pytest.mark.parametrize("unit", ["s", "ms", "us", "ns"])
+def test_daily_index_is_the_original_expression_dtype_included(eg, unit) -> None:
+    idx = pd.date_range("2020-01-01 13:00", periods=40, freq="D").as_unit(unit)
+    ref = pd.DatetimeIndex(pd.to_datetime(list(idx))).normalize()
+    got = eg._daily_index(_series(idx))
+    assert got.dtype == ref.dtype and got.equals(ref)
+
+
+def test_the_content_memo_lives_for_one_judging_call(eg) -> None:
+    import inspect
+    for fn in (eg.run_gauntlet, eg._shard_rule):
+        assert "_PURE_MEMO.clear()" in inspect.getsource(fn)
+
+
+def test_the_digest_facts_are_the_full_reads_facts(eg, tmp_path) -> None:
+    rows = [{"sym": "EURUSD", "family": f"f{i % 3}", "params": {"i": i % 4},
+             "stages": ({} if i % 5 == 0 else {"cpcv": {"passed": i % 2 == 0}}),
+             **({"unmeasured": True} if i % 7 == 0 else {}),
+             **({"cell_id": f"c{i}"} if i % 4 == 0 else {})} for i in range(60)]
+    rows += ["junk", 5, {"family": ""}]
+    report = tmp_path / "reports" / "universal_gates_external.json"
+    report.parent.mkdir(parents=True)
+    report.write_text(json.dumps({"verdicts": rows}), encoding="utf-8")
+    eg._write_report_digest(report, {"verdicts": rows})
+    facts = eg._report_facts(tmp_path)
+    assert facts is not None
+    rt = json.loads(report.read_text("utf-8"))["verdicts"]
+    ruled, power_def = eg._yield_counts(rt)
+    assert facts["unjudged"] == sorted(eg._unjudged_cells(rt))
+    assert list(facts["ruled"].items()) == list(ruled.items())
+    assert list(facts["power_def"].items()) == list(power_def.items())
