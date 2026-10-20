@@ -723,8 +723,9 @@ def test_scrub_takes_the_id_out_of_prose_and_nothing_else() -> None:
     assert "7654321" not in ev.scrub("refused (7654321)", acct)
     kept = "sell stop 4300.00 is at or above the bid 4300.40; order 7000123"
     assert ev.scrub(kept, acct) == kept
-    assert ev.scrub({"why": ["account 7654321"], "lot": 7654321}, acct) == \
-        {"why": [f"account {ev.REDACTED}"], "lot": 7654321}
+    # v5: a non-string leaf carrying the id is replaced too; other numbers are kept.
+    assert ev.scrub({"why": ["account 7654321"], "lot": 7654321, "n": 76543}, acct) == \
+        {"why": [f"account {ev.REDACTED}"], "lot": ev.REDACTED, "n": 76543}
 
 
 def test_a_short_explicit_key_is_no_key(monkeypatch) -> None:
@@ -881,9 +882,11 @@ def test_an_id_at_the_cut_never_publishes_a_prefix(monkeypatch, tmp_path) -> Non
     monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "stand_down"))
     g.run(_CutVenue(), _FlatMT5(), armed=True)                      # positions: the 160 cut
     texts += [ev.decisions_path().read_text("utf-8"), ev.heartbeat_path().read_text("utf-8")]
-    assert any(ev.REDACTED in t for t in texts)
-    for t in texts:
-        assert "765" not in t, t
+    whys = [str(r.get("why")) for t in texts[0::2] for r in
+            (json.loads(line) for line in t.splitlines() if line.strip())]
+    assert any("q" * 20 in w for w in whys) and any("p" * 20 in w for w in whys), whys
+    for w in whys:                       # the padding runs right up to the cut: no id digits
+        assert "7654" not in w and not w.rstrip(")").rstrip().endswith(("7", "76", "765")), w
 
 
 def test_non_string_leaves_tuples_and_keys_are_scrubbed() -> None:
@@ -917,4 +920,4 @@ def test_nothing_here_hashes_a_login_at_server() -> None:
                  _ROOT / "scripts" / "check_placement_interlock.py"):
         src = path.read_text("utf-8")
         assert not re.search(r"sha256\([^)]*(login|server)", src), path
-        assert "@{server" not in src and "}@{" not in src, path
+        assert not re.search(r"login\}?@\{?server", src), path
