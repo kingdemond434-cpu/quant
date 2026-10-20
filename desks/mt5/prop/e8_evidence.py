@@ -11,12 +11,13 @@ TWO FILES, BOTH OWNED BY THIS LANE AND NEVER BY THE GATEWAY:
 
   `data/e8_gold_heartbeat.json`   rewritten on EVERY pass, flat or not, failed or not: the
                                   `libs/ops/host_identity` verdict, hostname, machine id, the pass
-                                  time, its status and the account. One small file, so its age is
-                                  the lane's age.
+                                  time, its status, `last_ok_at` / `failing_since` and the
+                                  account's pseudonym. One small file, written via a temporary
+                                  file and `os.replace`.
   `data/e8_decision_ledger.jsonl` one row per DECISION, never per pass: a due window's outcome
                                   (PLACED / WOULD_PLACE / DEFERRED / SKIPPED), a stable reason
                                   code, the prose why, its window, lot and risk_usd, attributed to
-                                  `lane: e8_gold` and the venue account so no reader can mix it
+                                  `lane: e8_gold` and the account pseudonym so no reader can mix it
                                   with Fusion's rows. Separate from the gateway's ledger because
                                   two processes appending to one file is a second writer to a
                                   record the gateway owns.
