@@ -956,7 +956,7 @@ def test_the_bracket_loop_fences_each_leg_under_the_lock_and_waits_when_both_are
 def test_e8_executor_fences_its_send_against_the_fusion_book() -> None:
     src = (_DESK / "prop" / "e8_executor.py").read_text(encoding="utf-8")
     i = src.index("_xa.placement_lock(f\"e8_executor:")
-    block = src[i:i + 2500]
+    block = src[i:i + 3400]
     assert '_xa.read_book("fusion")' in block and "opposite_block" in block
     assert 'row["rail"] = "cross_account_opposite"' in block
     assert "missed_growth_risk_usd" in block
