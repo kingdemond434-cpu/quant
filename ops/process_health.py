@@ -97,18 +97,22 @@ def parse_schtasks_csv(text: str) -> list[dict[str, str]]:
     seen: set[str] = set()
     reader = csv.reader(io.StringIO(text.lstrip("\ufeff")))
     header: list[str] | None = None
+    col = 0
     for rec in reader:
         if not rec or not any(c.strip() for c in rec):
             continue
-        first = rec[0].strip()
-        if first == "TaskName":
-            header = [c.strip() for c in rec]
+        cells = [c.strip() for c in rec]
+        if "TaskName" in cells:  # the verbose dump puts HostName first, so find the column
+            header, col = cells, cells.index("TaskName")
             continue
-        if header is None or not first.startswith("\\"):
+        if header is None:
             continue
-        if first.startswith("\\Microsoft") or first in seen:
+        name = cells[col] if col < len(cells) else ""
+        if not name.startswith("\\"):
             continue
-        seen.add(first)
+        if name.startswith("\\Microsoft") or name in seen:
+            continue
+        seen.add(name)
         rows.append({k: (rec[i].strip() if i < len(rec) else "") for i, k in enumerate(header)})
     return rows
 
