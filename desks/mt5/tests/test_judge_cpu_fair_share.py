@@ -278,26 +278,32 @@ def test_the_backpressure_core_republishes_without_the_graph(tmp_path, monkeypat
     assert q["status"] == "MEASURED" and "alarm" not in q
 
 
-def test_the_launcher_republishes_one_core_at_a_time(monkeypatch) -> None:
+def test_the_launcher_republishes_one_core_at_a_time(monkeypatch, tmp_path) -> None:
     started: list[list[str]] = []
+    alive: set[int] = set()
 
     class Child:
-        pid = 4242
-
         def __init__(self, argv, **kw):
             started.append(argv)
-            self._alive = True
+            self.pid = 4000 + len(started)
+            alive.add(self.pid)
 
-        def poll(self):
-            return None if self._alive else 0
-
-    monkeypatch.setattr(rsg, "_BP_CHILD", [])
-    assert rsg._republish_backpressure(popen=Child) == "STARTED"
+    monkeypatch.setattr(rsg, "BACKPRESSURE_CORE_LOCK", tmp_path / "core.json")
+    is_alive = alive.__contains__
+    assert rsg._republish_backpressure(popen=Child, alive=is_alive) == "STARTED"
     assert started[0][-1] == "--core" and started[0][-2].endswith("gauntlet_backpressure.py")
-    assert rsg._republish_backpressure(popen=Child) == "SKIPPED_PREVIOUS_RUNNING"
-    rsg._BP_CHILD[0]._alive = False
-    assert rsg._republish_backpressure(popen=Child) == "STARTED"
+    assert rsg._republish_backpressure(popen=Child, alive=is_alive) == \
+        "SKIPPED_PREVIOUS_RUNNING"
+    alive.clear()                                   # the previous core finished
+    assert rsg._republish_backpressure(popen=Child, alive=is_alive) == "STARTED"
     assert len(started) == 2
+    # a recycled pid that is not a core never blocks the next one
+    assert rsg._core_alive(1) is False
+    # the sweep child, not the resident parent, starts it -- so an adopted release takes
+    # effect on the next sweep without restarting the launcher
+    src = (DESK / "scripts" / "run_sharded_gauntlet.py").read_text("utf-8")
+    once = src[src.index("def _sweep_once() -> int:"):src.index("def _publish_priority")]
+    assert "_equalise_self()" in once and "_republish_backpressure()" in once
 
 
 # ------------------------------------------------------------------ 3b. the cadence apply

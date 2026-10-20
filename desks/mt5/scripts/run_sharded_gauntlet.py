@@ -1493,59 +1493,90 @@ def _judge_flags() -> int:
     except Exception as exc:
         flags, reading = fallback, {"target": {"status": "UNMEASURED",
                                                "why": f"{type(exc).__name__}: {exc}"}}
-    with contextlib.suppress(OSError, TypeError, ValueError):
-        JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
-        tmp = JUDGE_PRIORITY_DECISION.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
-                                   "creationflags": int(flags), **reading}, default=str),
-                       encoding="utf-8")
-        os.replace(tmp, JUDGE_PRIORITY_DECISION)
+    _publish_priority("launcher", {"creationflags": int(flags), **reading})
     return int(flags)
 
 
 #: THE BACKPRESSURE CORE, REPUBLISHED AFTER EVERY SWEEP (2026-10-20). Measured on the box:
 #: GAUNTLET_BACKPRESSURE.json was stamped 2026-10-03 on 2026-10-20 because its full build only
 #: ran as an hourly leg that timed out on every pass. The core (capacity + 24h testing rate) is
-#: seconds of work; it runs DETACHED so it never costs the judge a second, ONE AT A TIME so a
-#: slow one is skipped rather than stacked, and under a hard timeout so it can never hang.
+#: seconds of work. It is started by the SWEEP CHILD as it finishes (the child loads fresh code
+#: every sweep, so an adopted release takes effect without restarting the resident launcher),
+#: DETACHED so it never costs the judge a second, and ONE AT A TIME through a pid file whose
+#: process is checked by command line, so a slow one is skipped rather than stacked and a
+#: recycled pid is never mistaken for it. Nothing here kills anything.
+BACKPRESSURE_CORE_LOCK = DESK / "data" / "gauntlet_backpressure_core.json"
 BACKPRESSURE_CORE_TIMEOUT_S = 900.0
-_BP_CHILD: list[Any] = []
 
 
-def _republish_backpressure(popen: Callable[..., Any] | None = None) -> str:
+def _core_alive(pid: int) -> bool:
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        cmd = " ".join(psutil.Process(int(pid)).cmdline())
+    except Exception:
+        return False
+    return "gauntlet_backpressure.py" in cmd and "--core" in cmd
+
+
+def _republish_backpressure(popen: Callable[..., Any] | None = None,
+                            alive: Callable[[int], bool] = _core_alive) -> str:
     """Start `gauntlet_backpressure.py --core` unless the previous one is still running."""
     import subprocess
-    if _BP_CHILD:
-        prev = _BP_CHILD[0]
-        if prev.poll() is None:
-            started = getattr(prev, "_started_at", None)
-            if started is not None and time.monotonic() - started > BACKPRESSURE_CORE_TIMEOUT_S:
-                with contextlib.suppress(Exception):
-                    _kill_sweep_tree(prev.pid)
-                _BP_CHILD.clear()
-                return "KILLED_OVERDUE"
-            return "SKIPPED_PREVIOUS_RUNNING"
-        _BP_CHILD.clear()
+    try:
+        prev = json.loads(BACKPRESSURE_CORE_LOCK.read_text("utf-8"))
+    except (OSError, ValueError):
+        prev = {}
+    if isinstance(prev, dict) and prev.get("pid") and alive(int(prev["pid"])):
+        age = time.time() - float(prev.get("started") or 0.0)
+        return ("PREVIOUS_OVERDUE" if age > BACKPRESSURE_CORE_TIMEOUT_S
+                else "SKIPPED_PREVIOUS_RUNNING")
     script = DESK / "research" / "gauntlet_backpressure.py"
     if not script.exists():
         return "MISSING"
     flags = 0
     if sys.platform == "win32":
-        flags = int(getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000))
+        flags = int(getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000)) | int(
+            getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
     try:
-        log = (DESK / "logs" / "gauntlet_backpressure_core.log")
+        log = DESK / "logs" / "gauntlet_backpressure_core.log"
         log.parent.mkdir(parents=True, exist_ok=True)
         with log.open("ab") as fh:
             child = (popen or subprocess.Popen)(
                 [sys.executable, "-u", str(script), "--core"], cwd=str(DESK),
                 stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                 creationflags=flags)
-        with contextlib.suppress(AttributeError):
-            child._started_at = time.monotonic()
-        _BP_CHILD[:] = [child]
+        BACKPRESSURE_CORE_LOCK.parent.mkdir(parents=True, exist_ok=True)
+        BACKPRESSURE_CORE_LOCK.write_text(json.dumps({"pid": int(child.pid),
+                                                      "started": time.time()}), "utf-8")
         return "STARTED"
     except Exception as exc:
         return f"FAILED: {type(exc).__name__}: {exc}"
+
+
+def _equalise_self() -> dict[str, Any]:
+    """Put THIS sweep process (the serial merge) at the rule's class before any shard starts.
+
+    The resident launcher only reloads its own code when it respawns; the sweep child is a fresh
+    interpreter every sweep. So the child re-derives the rule itself and raises -- or, if it was
+    started above the miners, lowers -- its own class to the target. The shards it starts
+    afterwards inherit it. Never raises; an unmeasured target changes nothing.
+    """
+    try:
+        from scripts import judge_priority as jp
+        c = jp.census(jp.snapshot())
+        t = c["target"]
+        out: dict[str, Any] = {"target": t, "verdict_before": c["verdict"]}
+        if t.get("status") != "MEASURED":
+            return {**out, "changed": False}
+        me = os.getpid()
+        rows = [r for r in c["rows"] if int(r.get("pid") or 0) == me]
+        for r in rows:
+            r["cls"] = "judge"            # this process IS the judge whatever its argv says
+        out["changes"] = jp.equalise(rows, t["rank"], apply=True)
+        return {**out, "changed": bool(out["changes"])}
+    except Exception as exc:
+        return {"target": {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"},
+                "changed": False}
 
 
 def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> None:
@@ -1576,9 +1607,7 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
             hang = _hang_limit_s(state.get("longest_sweep_s"),
                                  int(state.get("consecutive_hangs") or 0), _sweep_env())
             state["hang_limit_s"] = round(hang, 1)
-            rc = _one_sweep_child(hang)
-            state["backpressure_core"] = _republish_backpressure()
-            return rc
+            return _one_sweep_child(hang)
     stop = threading.Event()
     beat = threading.Thread(target=_heartbeat, args=(state, stop, heartbeat_s), daemon=True)
     beat.start()
@@ -2137,11 +2166,40 @@ def _sweep_once() -> int:
         from research.judging_throughput import apply_env
 
         apply_env()
+        # EQUAL TO THE MINERS, NEVER ABOVE (judge_cpu_fair_share): before any shard starts, so
+        # every shard inherits the class. Never raises.
+        _publish_priority("child", _equalise_self())
         _phase("plan")
         rc = _sweep_logged()
         return rc
     finally:
-        dog.finish(rc)
+        # ONE finally, BOTH behaviours: the watchdog records the outcome first, then the
+        # backpressure core is republished (detached, single-instance, never raises). Neither can
+        # stop the other: the republish runs even if `finish` raised.
+        try:
+            dog.finish(rc)
+        finally:
+            _publish_priority("backpressure_core", _republish_backpressure())
+
+
+def _publish_priority(key: str, value: Any) -> None:
+    """Merge one block into JUDGE_PRIORITY_SWEEP.json under `key`; no writer erases another's.
+
+    The launcher writes `launcher`, the sweep child `child` and `backpressure_core`. A unique
+    temporary name per writer, so two processes can never replace each other's half-written file.
+    """
+    with contextlib.suppress(OSError, TypeError, ValueError):
+        base: dict[str, Any] = {}
+        with contextlib.suppress(OSError, ValueError):
+            got = json.loads(JUDGE_PRIORITY_DECISION.read_text("utf-8"))
+            base = got if isinstance(got, dict) else {}
+        base[key] = {"value": value, "pid": os.getpid(),
+                     "at": datetime.now(UTC).isoformat(timespec="seconds")}
+        JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
+        tmp = JUDGE_PRIORITY_DECISION.with_name(
+            f"{JUDGE_PRIORITY_DECISION.name}.{os.getpid()}.{uuid4().hex[:8]}.tmp")
+        tmp.write_text(json.dumps(base, default=str), encoding="utf-8")
+        os.replace(tmp, JUDGE_PRIORITY_DECISION)
 
 
 def _sweep_logged() -> int:
