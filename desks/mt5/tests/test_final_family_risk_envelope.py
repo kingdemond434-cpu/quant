@@ -8,7 +8,9 @@ from types import SimpleNamespace
 import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
-for _path in (str(_DESK), str(_DESK.parent.parent)):
+# The tests directory too: under --import-mode=importlib it is not on sys.path, and the shared
+# harness below is imported by name (this module did not collect without it).
+for _path in (str(_DESK), str(_DESK.parent.parent), str(Path(__file__).resolve().parent)):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
