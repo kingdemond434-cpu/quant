@@ -241,22 +241,22 @@ def v2(eg):
     return eg
 
 
-def test_a_budget_deferred_shard_is_rebuilt_under_the_fresh_budget(v2, shard) -> None:
-    """audit of b94babf39: reusing it kept its deferred cells deferred despite the new budget."""
+def test_a_reused_shard_keeps_its_deferrals_and_they_are_counted(v2, shard) -> None:
+    """audit of b94babf39 asked that deferred rows not be reused. Rebuilding every shard that
+    holds one ended reuse outright (fs_resume: no shard reused in 16 of 16 resume scenarios), so
+    the shard is reused and its kept deferrals are billed on the resume's missed-growth line."""
     eg, d = v2, shard / "shards"
     mine = [(0, _spec(0)), (2, _spec(2))]
-    plan = {"token": "t", "n": 2, "code": "code-v1", "lockbox_frac": 0.2, "meta_digest": "m"}
-    basis = eg._shard_basis(plan, mine)
     rows = [
         {"kind": "blocked", "idx": 0, "obj": {"downstream_status": "NOT_RUN_MODIFIER"}},
         {"kind": "deferred", "idx": 2, "obj": {}},
     ]
-    assert eg._rows_current(rows, mine) is False
-    eg._pickle_atomic(
-        d / "shard_0.pkl",
-        {"protocol": eg.SHARD_PROTOCOL, "phase": "build", "basis": basis, "rows": rows},
-    )
-    assert eg._resume_shard_build(d, plan, 0, mine, basis) is None
+    assert eg._rows_current(rows, mine) is True
+    import inspect
+
+    src = inspect.getsource(eg._shard_collect)
+    assert '"resumed_kept_deferred"' in src and 'r.get("kind") == "deferred"' in src
+    assert "cells_kept_deferred" in inspect.getsource(eg._run_shards)
 
 
 def test_a_resume_reads_seen_and_cursor_from_disk(v2, shard, stand_ins, monkeypatch) -> None:

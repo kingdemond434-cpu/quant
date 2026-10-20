@@ -1147,7 +1147,8 @@ def _resume_record(**over):
     doc = {"resumed": True, "pid": os.getpid(), "at": datetime.now(UTC).isoformat(),
            "plan_age_s": 3600.0, "max_age_s": 86400.0, "docket_unchanged": False,
            "cells_changed_replanned": 4, "cells_removed": 1, "cells_not_in_this_plan": 120,
-           "plan_seconds_saved": 9729.0, "build_seconds_saved": 4400.5, "shards_reused": [0, 3]}
+           "plan_seconds_saved": 9729.0, "build_seconds_saved": 4400.5, "shards_reused": [0, 3],
+           "cells_kept_deferred": 17}
     doc.update(over)
     path = runner.STALL.parent / "plan_resume.json"
     path.write_text(json.dumps(doc))
@@ -1161,6 +1162,7 @@ def test_a_resumed_plan_publishes_a_two_sided_missed_growth_line():
     assert line is not None and line["rail"] == "gauntlet_plan_resume"
     cost, benefit = line["cost"], line["benefit"]
     assert cost["cells_delayed"] == 120 and cost["plan_kept_for_the_next_sweep"] is False
+    assert cost["cells_kept_deferred"] == 17
     assert 1790 <= cost["delay_s_floor"] <= 1900
     assert cost["delay_s_ceiling"] == cost["delay_s_floor"]
     assert benefit["plan_s_saved"] == 9729.0 and benefit["build_s_saved"] == 4400.5

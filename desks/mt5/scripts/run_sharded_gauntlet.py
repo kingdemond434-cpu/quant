@@ -689,6 +689,8 @@ def _resume_delay_line(doc: dict[str, Any], sweep_s: float | None, *,
             "cost": {"cells_delayed": cells,
                      "cells_changed_replanned": int(_num("cells_changed_replanned") or 0),
                      "cells_removed": int(_num("cells_removed") or 0),
+                     # deferred by the killed sweep's budget and kept so by shard reuse
+                     "cells_kept_deferred": int(_num("cells_kept_deferred") or 0),
                      "delay_s_floor": floor_s, "delay_s_ceiling": ceil_s,
                      "cell_hours_floor": (None if floor_s is None
                                           else round(cells * floor_s / 3600.0, 2)),
@@ -703,7 +705,9 @@ def _resume_delay_line(doc: dict[str, Any], sweep_s: float | None, *,
                         "shards_reused": doc.get("shards_reused") or [],
                         "judge_s_saved": round(sum(saved), 1) if saved else None},
             "why": (f"the sweep resumed a plan {age if age is not None else '?'}s old: "
-                    f"{cells} docket cell(s) not in it wait for the next full plan, against "
+                    f"{cells} docket cell(s) not in it wait for the next full plan and "
+                    f"{int(_num('cells_kept_deferred') or 0)} stay deferred in reused shards, "
+                    "against "
                     f"{round(sum(saved), 1) if saved else 'UNMEASURED'} judge wall-seconds "
                     "not spent re-planning and re-building; the E[log W] price of either side "
                     "is not measured")}
