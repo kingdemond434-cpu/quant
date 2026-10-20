@@ -1373,7 +1373,11 @@ def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_se
     ns["main"]()                                          # same day, state intact: the guard
     assert len(mt5.sent) == 2
 
-    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"])
+    # The resting legs carry the window's own comment, as the venue's do: the one-gold-at-risk
+    # guard (decision_core.gold_at_risk_block) lets a window's OWN pending bracket through to
+    # this recovery path and blocks only another window's, or an unlabelled one.
+    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"],
+                                   comment=r["comment"])
                    for i, r in enumerate(mt5.sent)]
     ns["_state_file"].write_text(json.dumps({"armed": True, "brackets": {},
                                              "last_bracket_date": None}), "utf-8")
@@ -1391,10 +1395,12 @@ def test_fusion_suppresses_the_same_opposing_gold_leg_as_e8(tmp_path, monkeypatc
     mt5 = _Terminal(rows, *_quote(rows))
     # Any readable open long XAU exposure makes a new sell-stop a self-hedge.  The position is
     # deliberately manual (magic 0), proving the rule reads economic exposure rather than a
-    # fragile comment convention.
+    # fragile comment convention.  Its stop is at break-even (sl == entry): since the
+    # one-gold-trade-at-risk guard, a long still AT RISK blocks the whole window, so the
+    # self-hedge fence is exercised on the exposure that guard lets through.
     mt5.positions = [SimpleNamespace(symbol="XAUUSD", type=mt5.POSITION_TYPE_BUY,
                                      volume=0.01, magic=0, comment="manual", ticket=77,
-                                     price_open=2000.0, sl=1900.0, tp=2200.0,
+                                     price_open=2000.0, sl=2000.0, tp=2200.0,
                                      time=int(_WHEN.timestamp()))]
     ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
 

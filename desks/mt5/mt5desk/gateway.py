@@ -289,6 +289,8 @@ from mt5desk.decision_core import (
 )
 from mt5desk.decision_core import (
     MINLOT_OVERRIDE_SLEEVES as MINLOT_OVERRIDE_SLEEVES,
+    MINLOT_OVERRIDE_FILE as MINLOT_OVERRIDE_FILE,
+    MINLOT_OVERRIDE_LOT as MINLOT_OVERRIDE_LOT,
 )
 from mt5desk.decision_core import (
     minlot_override_active as minlot_override_active,
