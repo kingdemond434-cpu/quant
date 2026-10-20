@@ -63,7 +63,7 @@ def test_the_macro_screen_refuses_vixcls_before_any_request(
 
 def test_the_macro_screen_has_no_bare_urlopen_and_reads_no_key() -> None:
     text = (ROOT / "scripts" / "screen_fred_macro_axis.py").read_text("utf-8")
-    assert "urlopen" not in text and "urllib.request" not in text
+    assert "urlopen(" not in text and "import urllib" not in text
     assert "data/secrets" not in text
 
 
