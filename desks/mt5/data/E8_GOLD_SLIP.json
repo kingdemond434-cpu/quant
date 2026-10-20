@@ -1,0 +1,23 @@
+{
+ "measured_at": "2026-10-20",
+ "n": 0,
+ "rows_read": 41,
+ "quantile": 0.95,
+ "unit": "R",
+ "measure": "realised loss beyond the stop in force, in R of the planned stop distance, over stop exits",
+ "sources": [
+  "box-only, untracked: desks/mt5/data/e8_gold_intents.jsonl",
+  "/mnt/project-files/reports/markout_2026-10-20/e8_fills_20261020.csv"
+ ],
+ "notes": [
+  "e8_fills_20261020.csv holds 41 E8 gold ENTRY fills (2026-09-17..10-16: entry, sl, tp, lot, position id) and no exit price, so no stop exit is measurable from it",
+  "2026-09-24 (asia short, position ...246861): a ratcheted stop filled 24.13 points through its level, about 0.82R of the 29.55-point stop; known only from a comment in prop/e8_gold.py, not from a fill record, so not counted",
+  "2026-09-11: no E8 gold fill exists for that date (the lane's first fill is 2026-09-17); the 09-11 double stop-out in reports/mt5_e8_losses_2026-09-30.md has no exit fills in any tracked file, so not counted"
+ ],
+ "status": "UNMEASURED",
+ "missing": [
+  "exit fills of the E8 gold positions: the venue's filled stop-loss orders (fill price and the stopPrice in force), or closed-position history, per position id. TradeLocker holds them (get_all_orders(history=True)); no tracked file does",
+  "the intended trigger level of each leg, which `data/e8_gold_intents.jsonl` (SENT rows: price, sl) holds on the box and is not tracked in git"
+ ],
+ "why": "no stop exit among the fills read: the lane keeps its fallback slip"
+}
