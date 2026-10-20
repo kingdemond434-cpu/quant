@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-20T11:07:27.486269+00:00",
+  "at": "2026-10-20T14:05:13.093299+00:00",
   "law": "L1.102",
   "alert_id": "certificate_clock_law",
   "host_why": "MetaTrader5 is installed: this host advances forward clocks",
@@ -18062,7 +18062,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.43,
+      "clockless_h": 65.39,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18081,7 +18081,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.27,
+      "clockless_h": 72.23,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18100,7 +18100,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.99,
+      "clockless_h": 198.96,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18119,7 +18119,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.87,
+      "clockless_h": 198.83,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18138,7 +18138,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.71,
+      "clockless_h": 108.67,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18157,7 +18157,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.71,
+      "clockless_h": 108.67,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18176,7 +18176,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.71,
+      "clockless_h": 108.67,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18195,7 +18195,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.75,
+      "clockless_h": 221.71,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18214,7 +18214,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.7,
+      "clockless_h": 108.67,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18233,7 +18233,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.75,
+      "clockless_h": 221.71,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18252,7 +18252,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.75,
+      "clockless_h": 221.71,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18271,7 +18271,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.75,
+      "clockless_h": 221.71,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18290,7 +18290,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.75,
+      "clockless_h": 221.71,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18309,7 +18309,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.75,
+      "clockless_h": 221.71,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18328,7 +18328,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.75,
+      "clockless_h": 221.71,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18347,7 +18347,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.7,
+      "clockless_h": 108.66,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18366,7 +18366,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.64,
+      "clockless_h": 108.6,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18385,7 +18385,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.67,
+      "clockless_h": 108.63,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18404,7 +18404,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.67,
+      "clockless_h": 108.63,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18423,7 +18423,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.67,
+      "clockless_h": 108.63,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18442,7 +18442,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.74,
+      "clockless_h": 221.7,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18461,7 +18461,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.74,
+      "clockless_h": 221.7,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18480,7 +18480,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.66,
+      "clockless_h": 108.62,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18499,7 +18499,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.66,
+      "clockless_h": 108.62,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -18518,7 +18518,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 218.74,
+      "clockless_h": 221.7,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19043,7 +19043,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.7,
+      "clockless_h": 108.66,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19062,7 +19062,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.69,
+      "clockless_h": 108.65,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19081,7 +19081,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.69,
+      "clockless_h": 108.65,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19100,7 +19100,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.68,
+      "clockless_h": 108.64,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19119,7 +19119,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.68,
+      "clockless_h": 108.64,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19138,7 +19138,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.65,
+      "clockless_h": 108.62,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19157,7 +19157,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.6,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19176,7 +19176,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.6,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19195,7 +19195,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.6,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19214,7 +19214,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.6,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19233,7 +19233,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19252,7 +19252,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19271,7 +19271,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19290,7 +19290,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19309,7 +19309,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19328,7 +19328,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19347,7 +19347,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19366,7 +19366,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19385,7 +19385,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19404,7 +19404,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19423,7 +19423,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19442,7 +19442,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19461,7 +19461,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19480,7 +19480,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19499,7 +19499,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19518,7 +19518,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19537,7 +19537,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19556,7 +19556,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19575,7 +19575,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19594,7 +19594,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19613,7 +19613,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19632,7 +19632,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19651,7 +19651,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19670,7 +19670,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19689,7 +19689,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19708,7 +19708,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19727,7 +19727,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19746,7 +19746,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19765,7 +19765,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19784,7 +19784,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19803,7 +19803,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19822,7 +19822,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19841,7 +19841,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.59,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19860,7 +19860,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19879,7 +19879,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19898,7 +19898,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19917,7 +19917,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19936,7 +19936,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19955,7 +19955,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19974,7 +19974,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -19993,7 +19993,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20012,7 +20012,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20031,7 +20031,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20050,7 +20050,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20069,7 +20069,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20088,7 +20088,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20107,7 +20107,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20126,7 +20126,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20145,7 +20145,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.62,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20164,7 +20164,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.61,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20183,7 +20183,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.61,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20202,7 +20202,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.61,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20221,7 +20221,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.61,
+      "clockless_h": 108.58,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20240,7 +20240,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.61,
+      "clockless_h": 108.57,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20259,7 +20259,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.61,
+      "clockless_h": 108.57,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20278,7 +20278,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.61,
+      "clockless_h": 108.57,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20297,7 +20297,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.61,
+      "clockless_h": 108.57,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20316,7 +20316,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20335,7 +20335,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20354,7 +20354,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20373,7 +20373,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20392,7 +20392,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20411,7 +20411,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20430,7 +20430,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20449,7 +20449,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20468,7 +20468,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20487,7 +20487,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 195.86,
+      "clockless_h": 198.82,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20506,7 +20506,7 @@
       "threshold_h": "UNMEASURED",
       "threshold_why": "no clock in `relative_value` has two forward observations yet, so its inter-observation gap is UNMEASURED",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.72,
+      "clockless_h": 108.68,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20525,7 +20525,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.43,
+      "clockless_h": 65.39,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20544,7 +20544,7 @@
       "threshold_h": 72.0,
       "threshold_why": "measured gap 12.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 72.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.7,
+      "clockless_h": 108.66,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20563,7 +20563,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.65,
+      "clockless_h": 108.61,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20582,7 +20582,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.65,
+      "clockless_h": 108.61,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20601,7 +20601,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.6,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20620,7 +20620,7 @@
       "threshold_h": 92.57,
       "threshold_why": "measured gap 30.86h x3, floored at 72h so a weekend cannot manufacture a breach -> 92.6h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 105.63,
+      "clockless_h": 108.6,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20639,7 +20639,7 @@
       "threshold_h": "UNMEASURED",
       "threshold_why": "no clock in `relative_value` has two forward observations yet, so its inter-observation gap is UNMEASURED",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.3,
+      "clockless_h": 72.26,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20658,7 +20658,7 @@
       "threshold_h": "UNMEASURED",
       "threshold_why": "no clock in `relative_value` has two forward observations yet, so its inter-observation gap is UNMEASURED",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.43,
+      "clockless_h": 65.39,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20677,7 +20677,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.29,
+      "clockless_h": 72.26,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20696,7 +20696,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.29,
+      "clockless_h": 72.26,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20715,7 +20715,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.29,
+      "clockless_h": 72.25,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20734,7 +20734,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.29,
+      "clockless_h": 72.25,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20753,7 +20753,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.29,
+      "clockless_h": 72.25,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20772,7 +20772,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.29,
+      "clockless_h": 72.25,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20791,7 +20791,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.29,
+      "clockless_h": 72.25,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20810,7 +20810,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.25,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20829,7 +20829,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.25,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20848,7 +20848,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.25,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20867,7 +20867,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20886,7 +20886,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20905,7 +20905,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20924,7 +20924,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20943,7 +20943,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20962,7 +20962,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -20981,7 +20981,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21000,7 +21000,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21019,7 +21019,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 69.28,
+      "clockless_h": 72.24,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21038,7 +21038,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.5,
+      "clockless_h": 65.47,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21057,7 +21057,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.5,
+      "clockless_h": 65.46,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21076,7 +21076,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.5,
+      "clockless_h": 65.46,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21095,7 +21095,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.5,
+      "clockless_h": 65.46,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21114,7 +21114,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.5,
+      "clockless_h": 65.46,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21133,7 +21133,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.5,
+      "clockless_h": 65.46,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21152,7 +21152,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.49,
+      "clockless_h": 65.46,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21171,7 +21171,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.49,
+      "clockless_h": 65.46,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21190,7 +21190,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.49,
+      "clockless_h": 65.45,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21209,7 +21209,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.49,
+      "clockless_h": 65.45,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21228,7 +21228,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.49,
+      "clockless_h": 65.45,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21247,7 +21247,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.48,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21266,7 +21266,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.48,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21285,7 +21285,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.48,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21304,7 +21304,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.48,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21323,7 +21323,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.48,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21342,7 +21342,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.48,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21361,7 +21361,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.47,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21380,7 +21380,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.47,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21399,7 +21399,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.47,
+      "clockless_h": 65.44,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21418,7 +21418,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.47,
+      "clockless_h": 65.43,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21437,7 +21437,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.47,
+      "clockless_h": 65.43,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21456,7 +21456,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.47,
+      "clockless_h": 65.43,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21475,7 +21475,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.47,
+      "clockless_h": 65.43,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21494,7 +21494,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.47,
+      "clockless_h": 65.43,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21513,7 +21513,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.46,
+      "clockless_h": 65.43,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21532,7 +21532,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.46,
+      "clockless_h": 65.42,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21551,7 +21551,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.46,
+      "clockless_h": 65.42,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21570,7 +21570,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.46,
+      "clockless_h": 65.42,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21589,7 +21589,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.46,
+      "clockless_h": 65.42,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21608,7 +21608,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.45,
+      "clockless_h": 65.42,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21627,7 +21627,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.45,
+      "clockless_h": 65.42,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21646,7 +21646,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.45,
+      "clockless_h": 65.41,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21665,7 +21665,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.45,
+      "clockless_h": 65.41,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21684,7 +21684,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.45,
+      "clockless_h": 65.41,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21703,7 +21703,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.45,
+      "clockless_h": 65.41,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21722,7 +21722,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.45,
+      "clockless_h": 65.41,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21741,7 +21741,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.44,
+      "clockless_h": 65.41,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21760,7 +21760,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.44,
+      "clockless_h": 65.41,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21779,7 +21779,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.44,
+      "clockless_h": 65.4,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21798,7 +21798,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.44,
+      "clockless_h": 65.4,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21817,7 +21817,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.44,
+      "clockless_h": 65.4,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21836,7 +21836,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.43,
+      "clockless_h": 65.4,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21855,7 +21855,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.43,
+      "clockless_h": 65.4,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21874,7 +21874,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.43,
+      "clockless_h": 65.39,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
@@ -21893,7 +21893,7 @@
       "threshold_h": 96.0,
       "threshold_why": "measured gap 32.00h x3, floored at 72h so a weekend cannot manufacture a breach -> 96.0h",
       "latency_h": "UNMEASURED",
-      "clockless_h": 62.43,
+      "clockless_h": 65.39,
       "verdict": "NO_CLOCK",
       "breach": true,
       "why": "BREACH: certified and holds no forward clock at all, so it can never mature and can never be promoted. Remedy: enrol it -- never withdraw the certificate"
