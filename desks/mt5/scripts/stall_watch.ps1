@@ -541,7 +541,9 @@ try {
 #   RELEASE.json, LIVE_MANIFEST.jsonl, sleeve_registry.json -- the identity chain
 # A candidate under one of these is skipped, not trimmed. The floor is never worth the moat.
 $DiskFloorGB = 5
-$Protected = @('\data\tape', '\data\secrets', '\data\universe',
+# The judge's in-flight shard plan lives under gauntlet_cache\shards: deleting it mid-sweep makes
+# every shard fail closed and discards the whole sweep (the sweep removes its own files).
+$Protected = @('\data\tape', '\data\secrets', '\data\universe', '\gauntlet_cache\shards',
                'RELEASE.json', 'LIVE_MANIFEST.jsonl', 'sleeve_registry.json')
 
 function Test-DeskProtected([string]$Path) {
@@ -555,13 +557,18 @@ if ($free -lt $DiskFloorGB) {
   # cheapest first. `age` prunes files older than N days; `all` takes the whole pool.
   $tiers = @(
     @{ name = 'logs>14d';        path = "$base\logs";                    age = 14 },
-    @{ name = 'gauntlet_cache';  path = "$base\reports\gauntlet_cache";  age = 0  },
+    # YESTERDAY'S CACHE FIRST, TODAY'S LAST (2026-10-20). A cache key carries its data-day, so an
+    # entry older than a day is a key no sweep will ask for again; today's entries are the running
+    # sweep's own pre-warm output, and taking them at age 0 throws away hours of building that the
+    # sweep then defers (sweep 23324 warmed 14,235 and loaded 6,057). Today's go only at the end.
+    @{ name = 'gauntlet_cache';  path = "$base\reports\gauntlet_cache";  age = 1  },
     @{ name = 'pycache';         path = $q;                              age = -1 },
     @{ name = 'logs>3d';         path = "$base\logs";                    age = 3  },
     @{ name = 'free_data_cache'; path = "$base\data\free_data_cache";    age = 0  },
     @{ name = 'alloc_cache';     path = "$base\data\pf_allocator_cache"; age = 0  },
     @{ name = 'reports>7d';      path = "$base\reports";                 age = 7  },
-    @{ name = 'temp';            path = $env:TEMP;                       age = 1  }
+    @{ name = 'temp';            path = $env:TEMP;                       age = 1  },
+    @{ name = 'gauntlet_cache_today'; path = "$base\reports\gauntlet_cache"; age = 0 }
   )
   $before = $free
   foreach ($t in $tiers) {

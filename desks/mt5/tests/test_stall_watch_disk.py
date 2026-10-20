@@ -49,6 +49,18 @@ def test_there_is_a_real_ladder_not_one_pool() -> None:
     assert names[1] == "gauntlet_cache"
 
 
+def test_todays_gauntlet_cache_goes_last_and_the_shard_plan_never() -> None:
+    """2026-10-20, sweep 23324: the pre-warm put 14,235 cells in the cache and the shards loaded
+    6,057. A cache key carries its data-day, so yesterday's entries are dead keys and go first;
+    today's are the running sweep's own work and go only after every other pool. The in-flight
+    shard plan is never pruned: deleting it fails every shard closed and discards the sweep."""
+    tiers = re.findall(r"name\s*=\s*'([^']+)';\s*path\s*=\s*\"[^\"]*\";\s*age\s*=\s*(-?\d+)", BLOCK)
+    by = dict(tiers)
+    assert by["gauntlet_cache"] == "1"
+    assert tiers[-1] == ("gauntlet_cache_today", "0")
+    assert "\\gauntlet_cache\\shards" in BLOCK
+
+
 def test_it_stops_as_soon_as_the_floor_is_cleared() -> None:
     """A mild shortage must cost a cache and nothing more. Running every tier regardless would
     throw away days of reports to recover a gigabyte nobody needed."""
