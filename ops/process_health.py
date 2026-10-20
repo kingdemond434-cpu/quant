@@ -77,6 +77,31 @@ SCHTASKS_TIMEOUT_S = 45
 BRIEF_FIELDS = ("TaskName", "Next Run Time", "Status")
 VERBOSE_FIELDS = ("Last Run Time", "Last Result", "Scheduled Task State")
 
+#: Task states, lower-cased, in the locales a Windows box is plausibly installed in. schtasks
+#: prints the state in the OS language, so a bare `== "disabled"` read a German "Deaktiviert"
+#: as healthy (audit 2026-10-14). A state in none of these sets is UNMEASURED, never assumed
+#: enabled: a monitor that cannot read whether a task can run does not get to say it can.
+STATE_DISABLED = frozenset({
+    "disabled", "deaktiviert", "désactivé", "desactivado", "deshabilitado", "disabilitato",
+    "desabilitado", "desativado", "uitgeschakeld", "wyłączone", "отключено",
+})
+STATE_RUNNING = frozenset({
+    "running", "wird ausgeführt", "en cours d'exécution", "en ejecución", "in esecuzione",
+    "em execução", "wordt uitgevoerd", "uruchomione", "выполняется",
+})
+STATE_LIVE = STATE_RUNNING | frozenset({
+    "ready", "enabled", "queued", "could not start",
+    "bereit", "aktiviert", "in warteschlange",
+    "prêt", "activé", "en file d'attente",
+    "listo", "preparado", "habilitado", "activado", "en cola",
+    "pronto", "abilitato", "in coda", "ativado",
+    "gereed", "ingeschakeld", "gotowe", "włączone", "готово", "включено",
+})
+
+
+class SchtasksUnreadable(ValueError):
+    """schtasks answered, but not in a shape this parser can read as an inventory."""
+
 
 def _run_schtasks(args: list[str]) -> tuple[int, str, str]:
     """One `schtasks` call, bounded. Raises OSError/SubprocessError for the caller to name."""
@@ -92,6 +117,12 @@ def parse_schtasks_csv(text: str) -> list[dict[str, str]]:
     quotes. schtasks repeats the header row once per task folder (skipped), may print a
     "Folder: ..." line in some builds (skipped: a real task name always starts with a backslash)
     and, verbose, prints one row PER TRIGGER (the first row of each task is kept).
+
+    Non-empty text with no `TaskName` header raises SchtasksUnreadable rather than returning
+    []. Both shapes the audit of 2026-10-14 probed land here -- a localised header
+    ("Aufgabenname") and the access-denied "INFO: There are no scheduled tasks presently
+    available at your access level." at exit 0 -- and an empty list would read as an empty
+    scheduler, which turns every contracted organ into the false claim NOT_SCHEDULED.
     """
     rows: list[dict[str, str]] = []
     seen: set[str] = set()
@@ -114,7 +145,14 @@ def parse_schtasks_csv(text: str) -> list[dict[str, str]]:
             continue
         seen.add(name)
         rows.append({k: (rec[i].strip() if i < len(rec) else "") for i, k in enumerate(header)})
+    if header is None and text.strip():
+        raise SchtasksUnreadable("no TaskName header in: " + " ".join(text.split())[:160])
     return rows
+
+
+def _missing(rows: list[dict[str, str]], fields: tuple[str, ...]) -> list[str]:
+    """The required columns the dump's header did not carry (every row shares one header)."""
+    return [f for f in fields if rows and f not in rows[0]]
 
 
 def _tasks() -> tuple[list[dict[str, str]], str]:
@@ -132,9 +170,19 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
     try:
         rc, out, err = _run_schtasks(["/query", "/fo", "csv"])
         if rc == 0 and out.strip():
-            brief = parse_schtasks_csv(out)
+            parsed = parse_schtasks_csv(out)
+            # A box with no task of its own is not this desk's box: zero non-Microsoft rows is
+            # a read that saw nothing (wrong account, filtered view), never "nothing scheduled".
+            if not parsed:
+                errors.append("schtasks /fo csv listed no non-Microsoft task")
+            elif lost := _missing(parsed, BRIEF_FIELDS):
+                errors.append(f"schtasks /fo csv header lacks {', '.join(lost)}")
+            else:
+                brief = parsed
         else:
             errors.append(f"schtasks /fo csv exit {rc}: {err.strip()[:160]}")
+    except SchtasksUnreadable as exc:
+        errors.append(f"schtasks /fo csv unreadable: {exc}")
     except (OSError, subprocess.SubprocessError) as exc:
         errors.append(f"schtasks /fo csv {type(exc).__name__}: {exc}")
     if brief is None:
@@ -144,9 +192,19 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
     try:
         rc, out, err = _run_schtasks(["/query", "/fo", "csv", "/v"])
         if rc == 0 and out.strip():
-            verbose = {r["TaskName"]: r for r in parse_schtasks_csv(out)}
+            parsed = parse_schtasks_csv(out)
+            # Without "Last Result" the code would normalise to 0 and read OK, so a verbose dump
+            # missing any column the verdict reads is treated as not having answered at all.
+            if not parsed:
+                errors.append("schtasks /v listed no non-Microsoft task")
+            elif lost := _missing(parsed, VERBOSE_FIELDS):
+                errors.append(f"schtasks /v header lacks {', '.join(lost)}")
+            else:
+                verbose = {r["TaskName"]: r for r in parsed}
         else:
             errors.append(f"schtasks /v exit {rc}: {err.strip()[:160]}")
+    except SchtasksUnreadable as exc:
+        errors.append(f"schtasks /v unreadable: {exc}")
     except (OSError, subprocess.SubprocessError) as exc:
         errors.append(f"schtasks /v {type(exc).__name__}: {exc}")
 
@@ -163,7 +221,7 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
                   + "; ".join(errors) + ")")
 
 
-def _normalise_code(raw: Any) -> int:
+def _normalise_code(raw: Any) -> int | None:
     """One task result, as ONE number, whichever tool printed it.
 
     THE BUG THIS ENDS, found on this file's own first day (2026-09-12). `schtasks` prints result
@@ -175,11 +233,14 @@ def _normalise_code(raw: Any) -> int:
 
     A monitor that cries wolf is worse than no monitor, because the operator learns to scroll
     past it -- which is exactly the attention this board exists to spend well.
+
+    An absent, blank or non-numeric result is None, not 0: the audit of 2026-10-14 probed a
+    verbose header without "Last Result" and got a clean OK for a run nobody had read.
     """
     try:
-        code = int(str(raw or "0").strip() or 0)
+        code = int(str(raw if raw is not None else "").strip())
     except ValueError:
-        return 0
+        return None
     return code + 0x1_0000_0000 if code < 0 else code
 
 
@@ -214,22 +275,32 @@ def build() -> dict[str, Any]:
         # "OK" for a task whose last run was never read (L1.28a), so the code stays None.
         result_unmeasured = str(t.get("ResultUnmeasured") or "")
         code: int | None = None if result_unmeasured else _normalise_code(t.get("Last Result"))
+        if code is None and not result_unmeasured:
+            result_unmeasured = f"last result {str(t.get('Last Result') or 'absent')!r} not a code"
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
         age = _age_min(ROOT / artifact) if artifact else None
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
         # returned 0 is not healthy if nothing appeared. Averaging is how a board reassures.
-        _state = str(t.get("Scheduled Task State") or t.get("Status") or "").strip().lower()
+        # Both state columns are read: verbose "Scheduled Task State" says Enabled/Disabled and
+        # brief "Status" says Ready/Running/Disabled, in the OS language either way.
+        _states = {str(t.get(k) or "").strip().lower() for k in ("Scheduled Task State", "Status")}
+        _states.discard("")
+        _running = bool(_states & STATE_RUNNING)
         if t.get("TaskInfoError"):
             verdict, why = "SCHEDULER_UNMEASURED", str(t["TaskInfoError"])
-        elif _state == "disabled":
+        elif _states & STATE_DISABLED:
             verdict, why = "DISABLED", "the scheduler will never start this"
+        elif not _states or not _states <= STATE_LIVE:
+            verdict, why = "SCHEDULER_UNMEASURED", (
+                f"task state {sorted(_states) or 'blank'} not recognised: whether the scheduler "
+                "will start this is UNMEASURED")
         elif artifact and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif artifact and max_age and age is not None and age > max_age:
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
-        elif code is not None and code not in (0, 267009, 267011) and _state != "running":
+        elif code is not None and code not in (0, 267009, 267011) and not _running:
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "

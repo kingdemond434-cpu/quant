@@ -8,7 +8,9 @@ unread inventory still UNMEASURED -- never NOT_SCHEDULED, and an unread result n
 """
 from __future__ import annotations
 
+import csv
 import importlib.util
+import io
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -159,3 +161,109 @@ def test_a_nonzero_exit_is_unmeasured(monkeypatch: pytest.MonkeyPatch, tmp_path:
     monkeypatch.setattr(ph.subprocess, "run", run)
     rows, status = ph._tasks()
     assert rows == [] and status.startswith("UNMEASURED: ") and "Access is denied" in status
+
+
+# AUDIT HOLD 2026-10-14 (PUBLISH_SYNC_SCHTASKS_55cd0c44a): output schtasks printed but this
+# parser could not read was returned as [], which `_tasks()` reported as "OK schtasks" and
+# `build()` then turned into NOT_SCHEDULED for every contracted organ. Each shape probed there
+# is pinned below as UNMEASURED.
+
+GERMAN_BRIEF = (
+    '"Aufgabenname","Nächste Laufzeit","Status"\r\n'
+    '"\\MT5-Gateway","20.10.2026 19:00:00","Wird ausgeführt"\r\n'
+)
+ACCESS_LEVEL_INFO = ("INFO: There are no scheduled tasks presently available at your "
+                     "access level.\r\n")
+MICROSOFT_ONLY = (
+    '"TaskName","Next Run Time","Status"\r\n'
+    '"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag","N/A","Ready"\r\n'
+)
+
+
+@pytest.mark.parametrize("brief, needle", [
+    (GERMAN_BRIEF, "no TaskName header"),
+    (ACCESS_LEVEL_INFO, "no TaskName header"),
+    (MICROSOFT_ONLY, "no non-Microsoft task"),
+], ids=["localised-header", "access-level-info-at-exit-0", "zero-non-microsoft-rows"])
+def test_an_unparseable_or_empty_inventory_is_unmeasured_not_unscheduled(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, brief: str, needle: str) -> None:
+    calls = _fake(monkeypatch, brief, VERBOSE)
+    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
+    assert doc["scheduler_status"].startswith("UNMEASURED: ")
+    assert needle in doc["scheduler_status"]
+    assert len(calls) == 1, "verbose must not be tried when the inventory itself was unread"
+    assert doc["counts"].get("NOT_SCHEDULED", 0) == 0
+    assert {r["verdict"] for r in by.values()} == {"SCHEDULER_UNMEASURED"}
+    assert doc["status"] == "ATTENTION"
+
+
+def test_the_parser_refuses_text_with_no_header_and_accepts_empty_text() -> None:
+    with pytest.raises(ph.SchtasksUnreadable):
+        ph.parse_schtasks_csv(ACCESS_LEVEL_INFO)
+    assert ph.parse_schtasks_csv("") == []
+    assert ph.parse_schtasks_csv(MICROSOFT_ONLY) == []
+
+
+def test_a_verbose_dump_without_last_result_is_unmeasured_not_a_clean_zero(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    buf = io.StringIO()
+    writer = csv.writer(buf, quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    for rec in csv.reader(io.StringIO(VERBOSE)):
+        writer.writerow([c for i, c in enumerate(rec) if i != 6])   # drop "Last Result"
+    no_result = buf.getvalue()
+    assert "Last Result" not in no_result and "Last Run Time" in no_result
+    _fake(monkeypatch, BRIEF, no_result)
+    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
+    assert doc["scheduler_status"].startswith("OK schtasks (brief")
+    assert "lacks Last Result" in doc["scheduler_status"]
+    for name in ("MT5-Hourly", "MT5-Gateway"):
+        assert by[name]["last_result_code"] is None
+        assert by[name]["last_result"].startswith("UNMEASURED")
+
+
+@pytest.mark.parametrize("raw", [None, "", "  ", "n/a", "Nicht zutreffend"])
+def test_an_unreadable_result_code_is_none_never_zero(raw: Any) -> None:
+    assert ph._normalise_code(raw) is None
+
+
+def test_a_row_without_a_result_column_is_not_published_as_ok_zero(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(ph, "_tasks", lambda: ([
+        {"TaskName": "\\MT5-Hourly", "Status": "Ready", "Scheduled Task State": "Enabled"},
+    ], "OK schtasks"))
+    _doc, by = _build(monkeypatch, tmp_path, {"MT5-Hourly": ("fresh.json", 120, "hourly")})
+    assert by["MT5-Hourly"]["last_result_code"] is None
+    assert by["MT5-Hourly"]["last_result"].startswith("UNMEASURED")
+    assert "not read" in by["MT5-Hourly"]["why"]
+
+
+@pytest.mark.parametrize("state, status, verdict", [
+    ("Deaktiviert", "Deaktiviert", "DISABLED"),
+    ("Désactivé", "", "DISABLED"),
+    ("", "Deshabilitado", "DISABLED"),
+    ("Aktiviert", "Bereit", "OK"),
+    ("Aktiviert", "Wird ausgeführt", "OK"),
+    ("Gesperrt", "Bereit", "SCHEDULER_UNMEASURED"),   # a state this file has never seen
+    ("", "", "SCHEDULER_UNMEASURED"),                 # no state read at all
+])
+def test_the_task_state_is_read_in_any_locale_and_unknown_is_unmeasured(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        state: str, status: str, verdict: str) -> None:
+    monkeypatch.setattr(ph, "_tasks", lambda: ([
+        {"TaskName": "\\MT5-Hourly", "Status": status, "Scheduled Task State": state,
+         "Last Result": "0"},
+    ], "OK schtasks"))
+    _doc, by = _build(monkeypatch, tmp_path, {"MT5-Hourly": ("fresh.json", 120, "hourly")})
+    assert by["MT5-Hourly"]["verdict"] == verdict, by["MT5-Hourly"]["why"]
+    if verdict == "SCHEDULER_UNMEASURED":
+        assert "not recognised" in by["MT5-Hourly"]["why"]
+
+
+def test_a_localised_running_state_excuses_an_overlap_code(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(ph, "_tasks", lambda: ([
+        {"TaskName": "\\MT5-Gateway", "Status": "Wird ausgeführt",
+         "Scheduled Task State": "Aktiviert", "Last Result": "-2147020576"},
+    ], "OK schtasks"))
+    _doc, by = _build(monkeypatch, tmp_path, {"MT5-Gateway": ("fresh.json", 120, "gateway")})
+    assert by["MT5-Gateway"]["verdict"] == "OK"
