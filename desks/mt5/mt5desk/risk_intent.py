@@ -18,7 +18,8 @@ goes out as resolved, to within one venue step at or under PRE_TOL x intent.
     post-fill   risk at the FILL price and the actual SL > POST_TOL x intended
                 -> breach row + halt THAT sleeve's new entries (no close, no other sleeve)
 
-The halt lifts when the breach is acknowledged (`ACK` file, breach id or sleeve name) or a pass
+The halt lifts when the breach is acknowledged (`ACK` file: the breach id, or the sleeve with an
+ack time later than the halt -- a bare sleeve name never counts, see `read_acks`) or a pass
 re-measures the sleeve's held positions within POST_TOL. A sleeve with nothing open has nothing
 to re-measure: that is UNMEASURED, never clean (L1.28a), so it waits for the acknowledgement.
 
@@ -67,7 +68,8 @@ def _floor_steps(x: float, step: float) -> float:
 
 
 def enforce(lot: float, intended_frac: float, equity: float, dist: float, unit: float,
-            vstep: float, vmin: float, *, sovereign: bool = True) -> dict[str, Any]:
+            vstep: float, vmin: float, *, sovereign: bool = True,
+            revert_min: float | None = None) -> dict[str, Any]:
     """Hold the final lot to PRE_TOL x the intended EUR at the stop.
 
     Returns `ok`, `stage`, `why`, `lot`, `realised_eur` (of the RETURNED lot), `intended_eur`,
@@ -76,7 +78,10 @@ def enforce(lot: float, intended_frac: float, equity: float, dist: float, unit: 
 
     Under the revert (`sovereign=False`, the principal's `ALLOCATOR_SOVEREIGN.json` switch) the
     venue-minimum lift is the documented behaviour, so a floor that would fall below the minimum
-    sends the minimum and says so instead of refusing.
+    sends the minimum and says so instead of refusing. That minimum is `revert_min` -- the
+    caller passes `decision_core.venue_min_lot`, the same floor the revert's `promoted_lot`
+    lifts to (it honours a MIN_LOT.json desk floor above the venue's) -- or the venue's own
+    `vmin` when none is given.
     """
     lot = float(lot)
     if not (math.isfinite(lot) and lot > 0.0):
@@ -117,7 +122,7 @@ def enforce(lot: float, intended_frac: float, equity: float, dist: float, unit: 
                     "why": (f"venue minimum {vmin:g} lot risks {vmin * per_lot:.2f} EUR against "
                             f"an intent of {intended:.2f} EUR ({PRE_TOL:g}x = {bound:.2f}); "
                             f"snapped down, never lifted")}
-        capped = vmin
+        capped = max(vmin, float(revert_min)) if revert_min and revert_min > 0 else vmin
     new_real = capped * per_lot
     return {**base, "ok": True, "stage": "ok", "lot": float(capped), "floored": True,
             "realised_eur": round(new_real, 6), "ratio": round(new_real / intended, 6),
@@ -127,7 +132,8 @@ def enforce(lot: float, intended_frac: float, equity: float, dist: float, unit: 
 
 def enforce_on_venue(lot: float, intended_frac: float, equity: float, dist: float,
                      sym: object, unit_fn: Callable[[], float], *,
-                     sovereign: bool = True) -> dict[str, Any]:
+                     sovereign: bool = True,
+                     revert_min_fn: Callable[[], float] | None = None) -> dict[str, Any]:
     """`enforce` with the venue's own step, minimum and EUR conversion read off `sym`.
 
     No defaults: a symbol that does not state its step or minimum, or a conversion that raises,
@@ -140,7 +146,30 @@ def enforce_on_venue(lot: float, intended_frac: float, equity: float, dist: floa
     return enforce(lot, intended_frac, equity, dist, unit,
                    getattr(sym, "volume_step", None),  # type: ignore[arg-type]
                    getattr(sym, "volume_min", None),  # type: ignore[arg-type]
-                   sovereign=sovereign)
+                   sovereign=sovereign,
+                   revert_min=(None if sovereign or revert_min_fn is None
+                               else float(revert_min_fn())))
+
+
+def position_sl(mt5mod: Any, ticket: object, requested: float) -> tuple[float, str]:
+    """The stop the venue actually holds on the position this fill opened.
+
+    Read back by ticket (`positions_get(ticket=...)`), because the post-fill check is about what
+    the account carries, not what was asked for. Unreadable, absent or stop-less falls back to
+    the REQUESTED stop and the returned source says so -- named, never silent."""
+    try:
+        t = int(ticket)  # type: ignore[call-overload]
+        if t <= 0:
+            raise ValueError(f"ticket {ticket!r}")
+        got = list(mt5mod.positions_get(ticket=t) or [])
+        if not got:
+            raise LookupError(f"no open position with ticket {t}")
+        sl = float(getattr(got[0], "sl", 0.0) or 0.0)
+        if not (math.isfinite(sl) and sl > 0.0):
+            raise ValueError(f"position {t} carries no stop")
+        return sl, "position"
+    except Exception as exc:
+        return float(requested), f"requested (position SL unreadable: {type(exc).__name__}: {exc})"
 
 
 def fill_risk_eur(volume: object, fill_price: object, sl: object, side: int,
@@ -158,13 +187,13 @@ def fill_risk_eur(volume: object, fill_price: object, sl: object, side: int,
 def measure_fill(*, sleeve: str, symbol: str, side: int, volume: object, fill_price: object,
                  sl: object, unit: object, intended_eur: object, lane: str,
                  deal: object = None, pre_lot: object = None,
-                 floored: object = None) -> dict[str, Any]:
+                 floored: object = None, sl_source: str = "requested") -> dict[str, Any]:
     """One post-fill measurement row. Unmeasurable inputs give a row saying so, never a ratio."""
     row: dict[str, Any] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                            "sleeve": sleeve, "symbol": symbol, "lane": lane,
                            "side": "buy" if int(side) > 0 else "sell", "deal": deal,
                            "volume": volume, "fill_price": fill_price, "sl": sl,
-                           "pre_lot": pre_lot, "floored": floored}
+                           "pre_lot": pre_lot, "floored": floored, "sl_source": sl_source}
     try:
         intended = _pos(intended_eur, "intended EUR")
         realised = fill_risk_eur(volume, fill_price, sl, side, unit)
@@ -211,17 +240,50 @@ def halt_why(h: dict[str, Any]) -> str:
             f"{h.get('breach_id')} to be acknowledged or re-measured clean")
 
 
-def read_acks(path: Path) -> set[str]:
-    """Acknowledged breach ids or sleeve names: {"acknowledged": [...]}. Unreadable -> none."""
+def _when(value: object) -> datetime | None:
+    try:
+        at = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return at if at.tzinfo else at.replace(tzinfo=UTC)
+
+
+def read_acks(path: Path) -> dict[str, Any]:
+    """Acknowledgements from {"acknowledged": [...]}. Unreadable -> none.
+
+    Two forms, and only two, because an acknowledgement must name ONE breach:
+      "<breach_id>"                        -- that breach exactly
+      {"sleeve": "<name>", "at": "<iso>"}  -- any halt of that sleeve that STARTED BEFORE `at`
+    A bare sleeve name is NOT an acknowledgement: it never expires, so it would silently lift
+    every later breach of that sleeve on the next pass (audit 2026-10-20, probe P5). It is
+    reported under `ignored` and lifts nothing."""
+    out: dict[str, Any] = {"ids": set(), "sleeves": {}, "ignored": []}
     try:
         doc = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
-        return set()
+        return out
     vals = doc.get("acknowledged") if isinstance(doc, dict) else doc
-    return {str(x) for x in vals} if isinstance(vals, list) else set()
+    for v in vals if isinstance(vals, list) else []:
+        if isinstance(v, str) and ":" in v:
+            out["ids"].add(v)
+        elif isinstance(v, dict) and v.get("sleeve") and _when(v.get("at")) is not None:
+            name, at = str(v["sleeve"]), _when(v["at"])
+            prev = out["sleeves"].get(name)
+            out["sleeves"][name] = at if prev is None or at > prev else prev
+        else:
+            out["ignored"].append(v)
+    return out
 
 
-def review_halts(st: dict[str, Any], acks: set[str],
+def _acknowledged(name: str, h: dict[str, Any], acks: dict[str, Any]) -> bool:
+    if h.get("breach_id") and str(h["breach_id"]) in (acks.get("ids") or set()):
+        return True
+    ack_at = (acks.get("sleeves") or {}).get(name)
+    halt_at = _when(h.get("at"))
+    return bool(ack_at is not None and halt_at is not None and ack_at > halt_at)
+
+
+def review_halts(st: dict[str, Any], acks: dict[str, Any],
                  positions_for: Callable[[str, str], Iterable[Any]],
                  unit_for: Callable[[str], float]) -> list[str]:
     """Lift halts that are acknowledged or re-measured clean. Returns one note per halt read.
@@ -234,7 +296,7 @@ def review_halts(st: dict[str, Any], acks: set[str],
     book = st.get("risk_halt") or {}
     for name in list(book):
         h = book[name] if isinstance(book[name], dict) else {}
-        if name in acks or (h.get("breach_id") and str(h["breach_id"]) in acks):
+        if _acknowledged(name, h, acks):
             book.pop(name, None)
             notes.append(f"[{name}] realised-risk halt LIFTED: acknowledged")
             continue
