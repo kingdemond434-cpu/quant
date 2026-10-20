@@ -988,6 +988,7 @@ def test_live_ledger_sees_broker_wall_time_close_once_and_filters_other_magic(tm
     ledger = tmp_path/"live_ledger.jsonl"
     ns = _exec(("record_trades",), {
         "mt5":venue, "datetime":FrozenClock, "LEDGER":ledger, "log":lambda *_:None,
+        "_tag_history_names":lambda: [],
         "now":lambda:observed.isoformat(),
         "_prov":SimpleNamespace(current_account=lambda _:None, stamp=lambda _:{}),
         "_position_entry":lambda _:{"entry_price":0.57865,"sl":0.577,"tp":0.57870,
@@ -1041,6 +1042,7 @@ def test_partial_closes_allocate_entry_cost_once_proportionally(tmp_path, cost_m
     ledger=tmp_path/"ledger.jsonl"
     ns = _exec(("record_trades",), {"mt5":venue,"LEDGER":ledger,
         "log":lambda *_:None,"now":lambda:"2026-10-09T00:00:00Z",
+        "_tag_history_names":lambda: [],
         "_prov":SimpleNamespace(current_account=lambda _:None,stamp=lambda _:{}),
         "_position_entry":lambda _:{"entry_price":1.2,"sl":1.19,"tp":1.22,
             "comment":"DWtest","entry_side":0,"entry_time":None,
@@ -1581,7 +1583,7 @@ def _refused_ns(book, sent, logs, booked, tmp_path):
     flag = tmp_path / "GENERIC_EXEC_ENABLED"
     flag.write_text("1", "utf-8")
     return _exec(("close_refused_sleeve_ttls", "close_sleeve_positions", "_sleeve_positions",
-                  "order_comment"),
+                  "order_comment", "owned_tags"),
                  {"mt5": mt5, "log": logs.append, "MAGIC": 1, "GENERIC_EXEC_ENABLED": flag,
                   "_book_target": lambda *a: booked.append(a)})
 
@@ -1607,22 +1609,33 @@ def test_a_refused_sleeve_still_gets_its_time_exit(tmp_path) -> None:
 
 
 def test_an_off_roster_name_sharing_a_live_rows_tag_is_never_ttl_closed(tmp_path) -> None:
-    """order_comment truncates to COMMENT_MAX: a retired name and a LIVE row can share one tag.
-    The retired name's expired deadline must never close the live sleeve's position."""
+    """The LEGACY plain truncation (positions opened before 2026-10-06) gave a retired name and a
+    LIVE row one tag; the current hashed tag (`decision_core.sleeve_tag`) tells them apart. The
+    retired name's expired deadline must never close the live sleeve's position under either
+    tag -- and still closes the retired name's own position under its own hashed tag."""
     live = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
     retired = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a"
     sent: list[dict] = []
     logs: list[str] = []
     booked: list[tuple] = []
     ns = _refused_ns([], sent, logs, booked, tmp_path)
-    assert ns["order_comment"](live) == ns["order_comment"](retired)
+    assert ns["order_comment"](live) != ns["order_comment"](retired)
+    assert ns["owned_tags"](live) & ns["owned_tags"](retired)      # the shared legacy tag
+    (shared,) = ns["owned_tags"](live) & ns["owned_tags"](retired)
     book = [SimpleNamespace(ticket=907, type=0, volume=0.02, symbol="AUDCHF",
-                            comment=ns["order_comment"](live))]
+                            comment=ns["order_comment"](live)),
+            SimpleNamespace(ticket=908, type=0, volume=0.02, symbol="AUDCHF", comment=shared)]
     ns = _refused_ns(book, sent, logs, booked, tmp_path)
     st = {"armed": True, "generic": {retired: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
     ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
     assert sent == [] and booked == []
     assert any("shared with a roster sleeve" in x for x in logs)
+    # The retired name's own hashed-tag position is still closed; the shared ones are not.
+    book.append(SimpleNamespace(ticket=909, type=0, volume=0.02, symbol="AUDCHF",
+                                comment=ns["order_comment"](retired)))
+    st = {"armed": True, "generic": {retired: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
+    assert [r["position"] for r in sent] == [909]
 
 
 def test_a_refused_sleeve_before_its_deadline_or_unarmed_is_left_alone(tmp_path) -> None:

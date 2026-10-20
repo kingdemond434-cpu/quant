@@ -4361,9 +4361,13 @@ def expire_family_residuals(st: dict) -> int:
     return retired
 
 
-def _sleeve_positions(symbol: str, name: str) -> list:
-    """Open positions this sleeve owns: the order comment is the sleeve's tag."""
-    tags = owned_tags(name)
+def _sleeve_positions(symbol: str, name: str, tags: frozenset[str] | None = None) -> list:
+    """Open positions this sleeve owns: the order comment is one of the sleeve's tags.
+
+    `tags` narrows the match to a SUBSET of `owned_tags(name)` (never widens it): the off-roster
+    TTL close passes the sleeve's tags minus any a roster sleeve also carries."""
+    owned = owned_tags(name)
+    tags = owned if tags is None else frozenset(tags) & owned
     return [p for p in (mt5.positions_get(symbol=symbol) or [])
             if str(getattr(p, "comment", "") or "") in tags]
 
@@ -4437,10 +4441,12 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
     every other close here; the roster's own sleeves are left to their own loop.
     """
     on_roster = {str(s.get("name") or "") for s in sleeves}
-    # order_comment cuts a tag to COMMENT_MAX, so an off-roster name can share its tag with a
-    # LIVE row (the *_principal_20261007 gap-decay rows did). Closing by that tag would take the
-    # live sleeve's position on the retired name's deadline: a shared tag is never closed here.
-    roster_tags = {order_comment(n) for n in on_roster if n}
+    # An off-roster name can share a tag with a LIVE row: the legacy plain truncation (positions
+    # opened before 2026-10-06) cut the *_principal_20261007 gap-decay rows to their retired
+    # parent's tag. Closing by that tag would take the live sleeve's position on the retired
+    # name's deadline: a tag any roster sleeve owns (`owned_tags`, both forms) is never closed
+    # here; the name's remaining tags are.
+    roster_tags = {t for n in on_roster if n for t in owned_tags(n)}
     gstate = st.get("generic") or {}
     now_iso = datetime.now(tz=UTC).isoformat()
     for name, srec in list(gstate.items()):
@@ -4448,24 +4454,25 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
             continue
         if not ttl_expired(srec.get("open_ttl_until"), now_iso):
             continue
-        tag = order_comment(str(name))
-        if tag in roster_tags:
+        own = owned_tags(str(name))
+        shared = own & roster_tags
+        for tag in sorted(shared):
             log(f"[{name}] OFF-ROSTER TTL skipped: its tag {tag!r} is shared with a roster sleeve")
-            srec.pop("open_ttl_until", None)
-            continue
+        closable = own - shared
         held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+                if str(getattr(p, "comment", "") or "") in closable]
         for symbol in sorted({str(p.symbol) for p in held}):
             _book_target(str(name), symbol, 0.0, "ttl")
             if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
                 log(f"[{name}] OFF-ROSTER TTL: closing its {symbol} position(s)")
-                close_sleeve_positions(st, symbol, str(name))
+                close_sleeve_positions(st, symbol, str(name), tags=closable)
             else:
                 log(f"[{name}] SHADOW would TTL-close off-roster position(s) on {symbol}")
         srec.pop("open_ttl_until", None)
 
 
-def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
+def close_sleeve_positions(st: dict, symbol: str, name: str,
+                           tags: frozenset[str] | None = None) -> None:
     """Close ONE sleeve's positions on a symbol, never the symbol's whole book.
 
     `close_positions` closes every position on the symbol, which on XAUUSD would take the armed
@@ -4474,7 +4481,7 @@ def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
     if not st.get("armed"):
         log(f"[{name}] SHADOW would close its open position(s)")
         return
-    for p in _sleeve_positions(symbol, name):
+    for p in _sleeve_positions(symbol, name, tags):
         tick = mt5.symbol_info_tick(symbol)
         if tick is None:
             continue
