@@ -1319,10 +1319,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         row["status"] = "REJECTED"
                         row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"
                     with contextlib.suppress(Exception):
-                        _xa.bounded(lambda: _xa.publish_tradelocker(venue,
-                                                                    source="e8_executor"),
-                                    timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
-                                    what="e8_executor publish")
+                        _xa.bounded(
+                            lambda: _xa.publish_tradelocker(venue, source="e8_executor"),
+                            timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S, what="e8_executor publish")
             if _xwhy is not None:
                 row["status"] = "RAIL_BLOCKED"
                 row["rail"] = "cross_account_opposite"

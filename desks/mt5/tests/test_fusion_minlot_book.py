@@ -1339,7 +1339,8 @@ def test_every_tradelocker_send_and_publish_under_the_lock_is_bounded() -> None:
         # publish_under_lock (which bounds it).
         for i in [k for k in range(len(text)) if text.startswith("_xa.publish_tradelocker(", k)]:
             head = text[max(0, i - 120):i]
-            assert "bounded(lambda: " in head or "publish_under_lock(" in head, head
+            assert head.rstrip().endswith("lambda:"), head
+            assert "bounded(" in head or "publish_under_lock(" in head, head
 
 
 def test_the_fusion_trade_risk_cap_line_carries_its_risk_frac_at_both_sites() -> None:
