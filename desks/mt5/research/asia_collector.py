@@ -76,6 +76,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+if __package__:
+    from . import hard_stop as _HS
+else:                                                                        # pragma: no cover
+    import hard_stop as _HS  # type: ignore[no-redef]
+
 BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE.parent.parent
 for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
@@ -239,7 +244,7 @@ def active_site_hold(host: str) -> dict[str, Any] | None:
     """The host's unreleased site hold, or None. Read from the collector STATE file."""
     row = (_read(STATE, {}) or {}).get(f"site:{host.lower()}")
     if isinstance(row, dict) and row.get("verdict") in SITE_HOLD_VERDICTS \
-            and row.get("released_by") is None:
+            and not str(row.get("released_by") or "").strip():
         return row
     return None
 
@@ -289,34 +294,136 @@ def _error_body(e: urllib.error.HTTPError, limit: int = 65536) -> bytes:
         return b""
 
 
+#: Redirects are followed BY HAND, at most this many hops, and every hop is checked before its
+#: request: the target host's site hold, then robots.txt for the target url under the same agent
+#: (audit 22b9c91a7: urllib's silent redirect following let a page on A reach a held host B, a
+#: robots-disallowed path on B, and held A for a 403 that B sent).
+MAX_REDIRECTS = 5
+_REDIRECT_CODES: frozenset[int] = frozenset({301, 302, 303, 307, 308})
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Hands every 3xx back to the caller as an HTTPError instead of following it."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> None:
+        return None
+
+
+def _urlopen(req: urllib.request.Request, timeout: float) -> Any:
+    """Open ONE hop. No redirect is followed: a 3xx raises HTTPError with its Location."""
+    handlers: list[Any] = [_NoRedirect()]
+    if _TLS is not None:
+        handlers.append(urllib.request.HTTPSHandler(context=_TLS))
+    return urllib.request.build_opener(*handlers).open(req, timeout=timeout)
+
+
+def _header(headers: Any, name: str) -> str:
+    if headers is None:
+        return ""
+    try:
+        v = headers.get(name)
+        if v is None and isinstance(headers, dict):
+            v = next((x for k, x in headers.items() if str(k).lower() == name.lower()), None)
+    except Exception:
+        return ""
+    return str(v or "")
+
+
+@dataclass
+class _Hop:
+    """What a hand-followed GET ended on. `url` is the url that ANSWERED (or the hop that was
+    refused before its request); a hold for this response belongs to `url`'s host."""
+
+    url: str
+    status: int = 0
+    headers: Any = None
+    body: bytes = b""
+    http_error: bool = False
+    exc: BaseException | None = None
+    #: A hop refused BEFORE its request: the target host is held, or its robots disallows it.
+    blocked: RobotsVerdict | None = None
+    hops: tuple[str, ...] = ()
+
+
+def _get(url: str, headers: dict[str, str], *, timeout: float, max_bytes: int,
+         agent: str = DESK_UA, data: bytes | None = None, check_robots: bool = True,
+         read: Any = None) -> _Hop:
+    """GET `url`, following redirects by hand (at most MAX_REDIRECTS). Before EVERY request the
+    target host's site hold is read; before every redirect hop, when `check_robots`, robots.txt
+    for the target url is read under `agent` too (the first url's robots is the caller's).
+    `read(headers) -> bool` may decline the body; a challenge header's body is never read."""
+    cur = url
+    sent: list[str] = []
+    for n in range(MAX_REDIRECTS + 1):
+        if n > 0 and check_robots:
+            rv = robots_verdict(cur, agent)
+            if not rv.allowed:
+                return _Hop(cur, blocked=rv, hops=tuple(sent))
+        else:
+            held = active_site_hold(_host(cur))
+            if held is not None:
+                return _Hop(cur, blocked=RobotsVerdict(
+                    False, "person_hold",
+                    f"{_host(cur)} carries an unreleased {held.get('verdict')} (HTTP "
+                    f"{held.get('status')}) since {held.get('held_at')}: zero requests until a "
+                    f"person releases it", _HS.robots_url(cur), hold=held), hops=tuple(sent))
+        sent.append(cur)
+        req = urllib.request.Request(cur, data=data, headers=headers)
+        try:
+            with _urlopen(req, timeout) as r:
+                status = int(getattr(r, "status", 0) or 0)
+                hdrs = r.headers
+                if is_challenge(status, hdrs, None) or (read is not None and not read(hdrs)):
+                    return _Hop(cur, status, hdrs, b"", hops=tuple(sent))
+                return _Hop(cur, status, hdrs, bytes(r.read(max_bytes) or b""),
+                            hops=tuple(sent))
+        except urllib.error.HTTPError as e:
+            code = int(getattr(e, "code", 0) or 0)
+            hdrs = getattr(e, "headers", None)
+            loc = _header(hdrs, "Location")
+            if code in _REDIRECT_CODES and loc:
+                if code == 303 or (code in (301, 302) and data is not None):
+                    data = None                       # the method becomes GET, as browsers do
+                cur = urllib.parse.urljoin(cur, loc)
+                continue
+            return _Hop(cur, code, hdrs, _error_body(e), http_error=True, hops=tuple(sent))
+        except Exception as exc:
+            return _Hop(cur, exc=exc, hops=tuple(sent))
+    return _Hop(cur, exc=urllib.error.URLError(f"more than {MAX_REDIRECTS} redirects"),
+                hops=tuple(sent))
+
+
 def fetch_bytes(url: str, *, agent: str = DESK_UA, max_bytes: int = MAX_BYTES,
                 timeout: float = 25.0, reject_html: bool = False) -> tuple[bytes | None, str]:
     """One GET through the hold rules: (body, content-type) or (None, reason).
 
-    The reason is `held:<verdict>` when the host already carries an unreleased site hold (no
-    request is sent), `hard_stop:<status>` when this response put it under one, `html` when
-    `reject_html` and the header says HTML, else `unreachable`. Robots is NOT read here -- the
-    caller does that first (`robots_verdict`), exactly as `collect_one` does."""
-    held = active_site_hold(_host(url))
-    if held is not None:
-        return None, f"held:{held.get('verdict')}"
-    req = urllib.request.Request(url, headers={"User-Agent": agent, "Accept": "*/*"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
-            code = int(getattr(r, "status", 0) or 0)
-            ctype = str(r.headers.get("Content-Type") or "").lower()
-            if hard_stop_for(url, code, r.headers, None) is not None:
-                return None, f"hard_stop:{code}"
-            if reject_html and "html" in ctype:
-                return None, "html"
-            return r.read(max_bytes), ctype
-    except urllib.error.HTTPError as e:
-        code = int(getattr(e, "code", 0) or 0)
-        if hard_stop_for(url, code, getattr(e, "headers", None), _error_body(e)) is not None:
-            return None, f"hard_stop:{code}"
+    The reason is `held:<verdict>` when the host (or a redirect target's host) carries an
+    unreleased site hold (no request is sent to it), `robots:<cause>` when a redirect target's
+    robots.txt refuses it, `hard_stop:<status>` when a response put the ANSWERING host under a
+    hold, `html` when `reject_html` and the header says HTML, else `unreachable`. Robots for the
+    first url is NOT read here -- the caller does that first (`robots_verdict`), exactly as
+    `collect_one` does; every redirect hop is checked here."""
+    def _wanted(h: Any) -> bool:
+        return not (reject_html and "html" in _header(h, "Content-Type").lower())
+
+    hop = _get(url, {"User-Agent": agent, "Accept": "*/*"}, timeout=timeout,
+               max_bytes=max_bytes, agent=agent, read=_wanted)
+    if hop.blocked is not None:
+        bv = hop.blocked
+        if bv.hold is not None:
+            return None, f"held:{bv.hold.get('verdict')}"
+        return None, f"robots:{bv.cause}"
+    if hop.exc is not None:
         return None, "unreachable"
-    except (urllib.error.URLError, OSError, ValueError):
+    if hard_stop_for(hop.url, hop.status, hop.headers, hop.body) is not None:
+        return None, f"hard_stop:{hop.status}"
+    if hop.http_error:
         return None, "unreachable"
+    ctype = _header(hop.headers, "Content-Type").lower()
+    if reject_html and "html" in ctype:
+        return None, "html"
+    return hop.body, ctype
 
 
 def release_site_hold(host: str, released_by: str, at: float | None = None) -> dict[str, Any]:
@@ -374,7 +481,6 @@ def robots_verdict(url: str, agent: str = DESK_UA) -> RobotsVerdict:
     robots.txt is a PERSON-RELEASED hold (auditor's ruling 2026-10-14): the host is recorded as
     `site:<host>` and gets zero requests until `release_site_hold` names who released it.
     """
-    from urllib.robotparser import RobotFileParser
     parts = urllib.parse.urlsplit(url)
     host = parts.netloc.lower()
     origin = f"{parts.scheme}://{parts.netloc}"
@@ -395,57 +501,63 @@ def robots_verdict(url: str, agent: str = DESK_UA) -> RobotsVerdict:
                                  f"rules, allow", robots)
         body = str(cached.get("body") or "").encode("utf-8")
     else:
-        req = urllib.request.Request(robots, headers={"User-Agent": agent})
-        try:
-            with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
-                if is_challenge(int(getattr(r, "status", 0) or 0), r.headers, None):
-                    rec = site_hold_record(host, url, int(getattr(r, "status", 0) or 0),
-                                           "HARD_STOP", at=now)
-                    _record_site_hold(rec)
-                    return RobotsVerdict(False, "person_hold",
-                                         f"{robots} carried cf-mitigated: challenge: HARD_STOP on "
-                                         f"{host}, zero requests until a person releases it",
-                                         robots, hold=rec)
-                body = r.read(ROBOTS_MAX_BYTES)
-        except urllib.error.HTTPError as e:
-            code = int(getattr(e, "code", 0) or 0)
-            if is_challenge(code, getattr(e, "headers", None), _error_body(e)):
-                rec = site_hold_record(host, url, code, "HARD_STOP", at=now)
-                _record_site_hold(rec)
-                return RobotsVerdict(False, "person_hold",
-                                     f"{robots} answered a WAF challenge (HTTP {code}): HARD_STOP "
-                                     f"on {host}, zero requests until a person releases it",
-                                     robots, hold=rec)
+        # Followed BY HAND: a robots.txt that redirects is read from wherever it lands (RFC 9309
+        # 2.3.1.2), but a held target host gets no request, and a refusal holds the host that
+        # ANSWERED, never the one that redirected.
+        hop = _get(robots, {"User-Agent": agent}, timeout=12, max_bytes=ROBOTS_MAX_BYTES,
+                   agent=agent, check_robots=False)
+        ans = _host(hop.url)
+        via = "" if hop.url == robots else f" (redirected to {hop.url})"
+        hold_url = url if ans == host else hop.url
+        if hop.blocked is not None:
+            return RobotsVerdict(False, "person_hold",
+                                 f"{robots}{via}: {hop.blocked.why}", robots,
+                                 hold=hop.blocked.hold)
+        if hop.exc is not None:
+            return RobotsVerdict(False, "robots_unreachable",
+                                 f"{robots} unreachable ({type(hop.exc).__name__}): treated as "
+                                 f"disallow for now (RFC 9309 2.3.1.4), re-checked later",
+                                 robots, recheck=True)
+        code = hop.status
+        if is_challenge(code, hop.headers, hop.body if hop.http_error else None):
+            rec = site_hold_record(ans, hold_url, code, "HARD_STOP", at=now)
+            _record_site_hold(rec)
+            return RobotsVerdict(False, "person_hold",
+                                 f"{robots}{via} answered a WAF challenge (HTTP {code}): "
+                                 f"HARD_STOP on {ans}, zero requests until a person releases "
+                                 f"it", robots, hold=rec)
+        if hop.http_error or not 200 <= code < 300:
             if code in PERSON_HOLD_STATUSES:
-                rec = site_hold_record(host, url, code, "ROBOTS_HOLD", at=now)
+                rec = site_hold_record(ans, hold_url, code, "ROBOTS_HOLD", at=now)
                 _record_site_hold(rec)
                 return RobotsVerdict(False, "person_hold",
-                                     f"{robots} answered HTTP {code}: ROBOTS_HOLD on {host}, "
+                                     f"{robots}{via} answered HTTP {code}: ROBOTS_HOLD on {ans}, "
                                      f"zero requests until a person releases it", robots,
                                      hold=rec)
-            if code >= 500:
+            if code >= 500 or not 400 <= code < 500:
                 return RobotsVerdict(False, "robots_5xx",
-                                     f"{robots} answered HTTP {code}: treated as disallow for "
-                                     f"now (RFC 9309 2.3.1.4), re-checked later", robots,
+                                     f"{robots}{via} answered HTTP {code}: treated as disallow "
+                                     f"for now (RFC 9309 2.3.1.4), re-checked later", robots,
                                      recheck=True)
             _cache_robots(origin, {"fetched_at": now, "status": code, "absent": True})
             return RobotsVerdict(True, "robots_absent",
-                                 f"{robots} answered HTTP {code}: no rules, allow "
+                                 f"{robots}{via} answered HTTP {code}: no rules, allow "
                                  f"(RFC 9309 2.3.1.3)", robots)
-        except Exception as exc:
-            return RobotsVerdict(False, "robots_unreachable",
-                                 f"{robots} unreachable ({type(exc).__name__}): treated as "
-                                 f"disallow for now (RFC 9309 2.3.1.4), re-checked later",
-                                 robots, recheck=True)
+        body = hop.body
         _cache_robots(origin, {"fetched_at": now, "status": 200,
                                "body": body.decode("utf-8", errors="replace")})
+    # ONE ROBOTS MATCHER FOR THE DESK: `hard_stop.robots_verdict` (CLEARed on alt-seat-cells
+    # bc6549361) -- the group naming our product token (stacked User-agent lines merged; '*' only
+    # when none names us), longest match wins, `*` and `$` honoured, Allow wins a tie, matched on
+    # the exact path and query. The stdlib RobotFileParser took the FIRST matching rule and knew
+    # no wildcards: audit 22b9c91a7 let four disallowed pages through and refused two allowed.
     token = agent.split("/")[0].strip() or agent
-    rp = RobotFileParser()
-    rp.parse(body.decode("utf-8", errors="replace").splitlines())
-    if rp.can_fetch(token, url):
-        return RobotsVerdict(True, "allowed", f"{robots} consulted: allowed for {token!r}",
-                             robots)
-    return RobotsVerdict(False, "disallow", f"{robots} disallows this path for {token!r}", robots)
+    hv = _HS.robots_verdict(url, 200, body, product=token)
+    if hv.get("allowed"):
+        return RobotsVerdict(True, "allowed", f"{robots} consulted: allowed for {token!r} "
+                                              f"({hv.get('group')} group)", robots)
+    return RobotsVerdict(False, "disallow", f"{robots} disallows this path for {token!r} "
+                                            f"({hv.get('group')} group)", robots)
 
 
 def _robots_allows(url: str, agent: str = DESK_UA) -> tuple[bool, str]:
@@ -633,6 +745,26 @@ def _hard_stop_row(rec: dict[str, Any], stop: dict[str, Any]) -> dict[str, Any]:
     return rec
 
 
+def _robots_row(rec: dict[str, Any], rv: RobotsVerdict, via: str = "") -> dict[str, Any]:
+    """The visible row for a page robots.txt (or a site hold) keeps us from fetching. `via` names
+    the redirect hop the refusal was read at, when it was not the source's own url."""
+    hard = bool(rv.hold and rv.hold.get("verdict") == "HARD_STOP")
+    if via:
+        rec["redirected_to"] = via
+    rec.update({
+        "status": "HARD_STOP" if hard else "BLOCKED_BY_ROBOTS",
+        "hold_cause": (f"hard_stop:{rv.hold.get('status')}" if hard and rv.hold
+                       else f"robots:{rv.cause}"),
+        "robots_recheck": rv.recheck, "site_hold": rv.hold,
+        "terms_note": (f"robots.txt hold ({rv.cause}): this page is not fetched (LAWS 5e, "
+                       f"amended 2026-10-14); content about it obtained lawfully by other "
+                       f"means is still labelled and mined"),
+        "why": (f"HOLD, not a drop: {rv.why}"
+                + ("; re-checked next pass" if rv.recheck else "")
+                + ("; released only by a person (release_site_hold)" if rv.hold else ""))})
+    return rec
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
@@ -660,19 +792,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     rec["robots"] = rv.why
     rec["robots_disallows"] = not rv.allowed
     if not rv.allowed:
-        hard = bool(rv.hold and rv.hold.get("verdict") == "HARD_STOP")
-        rec.update({
-            "status": "HARD_STOP" if hard else "BLOCKED_BY_ROBOTS",
-            "hold_cause": (f"hard_stop:{rv.hold.get('status')}" if hard and rv.hold
-                           else f"robots:{rv.cause}"),
-            "robots_recheck": rv.recheck, "site_hold": rv.hold,
-            "terms_note": (f"robots.txt hold ({rv.cause}): this page is not fetched (LAWS 5e, "
-                           f"amended 2026-10-14); content about it obtained lawfully by other "
-                           f"means is still labelled and mined"),
-            "why": (f"HOLD, not a drop: {rv.why}"
-                    + ("; re-checked next pass" if rv.recheck else "")
-                    + ("; released only by a person (release_site_hold)" if rv.hold else ""))})
-        return rec
+        return _robots_row(rec, rv)
 
     # CONDITIONAL GET. A 304 costs a round trip and no body, and most of these sources publish
     # daily or monthly against a pass that may run hourly -- so the default behaviour is to
@@ -691,20 +811,28 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             headers["If-Modified-Since"] = str(validators["last_modified"])
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
-    req = urllib.request.Request(url, data=body_out, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
-            status = int(getattr(r, "status", 0) or 0)
-            ctype = str(r.headers.get("Content-Type") or "").lower()
-            etag = r.headers.get("ETag")
-            last_mod = r.headers.get("Last-Modified")
-            stop = hard_stop_for(url, status, r.headers, None)
-            body = b"" if stop is not None else r.read(MAX_BYTES)
-    except urllib.error.HTTPError as e:
-        code = int(getattr(e, "code", 0) or 0)
-        stop = hard_stop_for(url, code, getattr(e, "headers", None), _error_body(e))
-        if stop is not None:
-            return _hard_stop_row(rec, stop)
+    # Every redirect hop is checked before its request (hold, then robots under DESK_UA), and a
+    # 401/403/429 or challenge holds the host that ANSWERED it.
+    hop = _get(url, headers, timeout=timeout, max_bytes=MAX_BYTES, agent=DESK_UA, data=body_out)
+    if hop.url != url:
+        rec["redirected_to"] = hop.url
+    if hop.blocked is not None:
+        rec["robots"] = hop.blocked.why
+        rec["robots_disallows"] = True
+        return _robots_row(rec, hop.blocked, via=hop.url)
+    stop = (hard_stop_for(hop.url, hop.status, hop.headers, hop.body)
+            if hop.exc is None else None)
+    if stop is not None:
+        return _hard_stop_row(rec, stop)
+    if hop.exc is not None:
+        e = hop.exc
+        if isinstance(e, (urllib.error.URLError, TimeoutError, OSError)):
+            rec.update({"status": "UNREACHABLE", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+        else:
+            rec.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+        return rec
+    if hop.http_error:
+        code = hop.status
         if code == 304:
             rec.update({"status": "UNCHANGED", "http": 304,
                         "why": ("the source has not changed since the last fetch (conditional "
@@ -716,15 +844,12 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             else f"HTTP {code}: authentication or access control, not a route "
                                  f"change")})
         return rec
-    except (urllib.error.URLError, TimeoutError, OSError) as e:
-        rec.update({"status": "UNREACHABLE", "why": f"{type(e).__name__}: {str(e)[:90]}"})
-        return rec
-    except Exception as e:
-        rec.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
-        return rec
 
-    if stop is not None:
-        return _hard_stop_row(rec, stop)
+    status = hop.status
+    ctype = _header(hop.headers, "Content-Type").lower()
+    etag = _header(hop.headers, "ETag") or None
+    last_mod = _header(hop.headers, "Last-Modified") or None
+    body = hop.body
     rec.update({"http": status, "content_type": ctype, "bytes": len(body)})
     accept = _ACCEPT.get(expect, ())
     looks_html = ("html" in ctype) or body[:200].lstrip().lower().startswith(

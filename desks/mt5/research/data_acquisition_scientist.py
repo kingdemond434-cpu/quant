@@ -22,9 +22,9 @@ A 401/403/429 or a WAF challenge on the sample page itself is a HARD_STOP `site:
 (`asia_collector.fetch_bytes`): zero requests to that host until a person releases it.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
-SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`, behind
-`asia_collector.robots_verdict` read under the SAME User-Agent that fetch sends -- a Disallow is a
-recorded hold and no fetch; never a new scraper),
+SAMPLE through the desk's shared fetch path (`asia_collector.fetch_bytes` under the desk's one
+declared User-Agent `DESK_UA`, behind `asia_collector.robots_verdict` read under that SAME agent
+-- a Disallow is a recorded hold and no fetch; never a new scraper),
 content-hashes it into a Vintage and a
 LineageRecord, and records a `dataset_request` discovery in `data/intelligence/<seat>/` carrying
 the contract and the expected value. Report: `reports/DATA_ACQUISITION.json`. Runs as the hourly
@@ -518,30 +518,31 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
 
 # --------------------------------------------------------------------------- the sample
 def _robots_verdict(url: str) -> Any:
-    """`asia_collector.robots_verdict` for `url`, read under the User-Agent that
-    `acquire_datasets._fetch` actually SENDS (RFC 9309: the rule obeyed is the rule written for
-    the agent presented)."""
+    """`asia_collector.robots_verdict` for `url`, read under `asia_collector.DESK_UA` -- the agent
+    `_fetch` SENDS (RFC 9309: the rule obeyed is the rule written for the agent presented).
+    Never `acquire_datasets._UA`: that is a browser string, and robots read under its "Mozilla"
+    token obeys a rule nobody wrote for us (audit 22b9c91a7)."""
     try:
-        from research import acquire_datasets as AQ
         from research import asia_collector as ACOL
     except ImportError:                                                      # pragma: no cover
-        import acquire_datasets as AQ  # type: ignore[no-redef]
         import asia_collector as ACOL  # type: ignore[no-redef]
-    return ACOL.robots_verdict(url, agent=AQ._UA)
+    return ACOL.robots_verdict(url, agent=ACOL.DESK_UA)
 
 
 def _fetch(url: str) -> tuple[bytes | None, str]:
-    """The sample GET: `acquire_datasets`' agent, byte cap, timeout and HTML-at-the-header
-    rejection, sent through `asia_collector.fetch_bytes` so the principal's standing rule holds
-    here too -- a 401/403/429 or a WAF challenge on the page writes a HARD_STOP `site:<host>`
-    hold (reason `hard_stop:<status>`), and a held host gets no request at all (`held:...`)."""
+    """The sample GET through `asia_collector.fetch_bytes` under the desk's honest `DESK_UA`
+    (never `acquire_datasets`' browser string), with `acquire_datasets`' byte cap, timeout and
+    HTML-at-the-header rejection. The principal's standing rule holds here too: a 401/403/429 or
+    a WAF challenge writes a HARD_STOP `site:<host>` hold on the host that answered (reason
+    `hard_stop:<status>`), a held host gets no request at all (`held:...`), and every redirect
+    hop is checked against holds and robots (`robots:<cause>`)."""
     try:
         from research import acquire_datasets as AQ
         from research import asia_collector as ACOL
     except ImportError:                                                      # pragma: no cover
         import acquire_datasets as AQ  # type: ignore[no-redef]
         import asia_collector as ACOL  # type: ignore[no-redef]
-    return ACOL.fetch_bytes(url, agent=AQ._UA, max_bytes=AQ.MAX_BYTES + 1,
+    return ACOL.fetch_bytes(url, agent=ACOL.DESK_UA, max_bytes=AQ.MAX_BYTES + 1,
                             timeout=float(AQ.FETCH_TIMEOUT_S), reject_html=True)
 
 
@@ -614,13 +615,17 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
                 "why": f"HOLD, not a drop: {robots_note}"}
     terms_note = verdict.terms_note or ""
     raw, ctype = _fetch(url)
-    if raw is None and str(ctype).startswith(("hard_stop:", "held:")):
-        return {"dataset": cand["dataset"], "status": "HARD_STOP", "url": url,
-                "hold_cause": str(ctype), "robots": robots_note, "robots_disallows": False,
-                "site_hold": _site_hold(url),
+    if raw is None and str(ctype).startswith(("hard_stop:", "held:", "robots:")):
+        kind = str(ctype)
+        hard = kind.startswith("hard_stop:") or kind == "held:HARD_STOP"
+        return {"dataset": cand["dataset"], "status": "HARD_STOP" if hard else "BLOCKED_BY_ROBOTS",
+                "url": url,
+                "hold_cause": kind, "robots": robots_note,
+                "robots_disallows": kind.startswith("robots:"), "site_hold": _site_hold(url),
                 "terms_note": terms_note.strip(" |"),
                 "why": (f"HOLD, not a drop: {ctype} -- a 401/403/429 or WAF challenge is a "
-                        f"HARD_STOP; zero requests to that host until a person releases it")}
+                        f"HARD_STOP and a held host or a robots-disallowed redirect target "
+                        f"gets no request; a hold lasts until a person releases it")}
     if raw is None:
         return {"dataset": cand["dataset"], "status": "UNREACHABLE", "url": url,
                 "robots": robots_note, "robots_disallows": False,

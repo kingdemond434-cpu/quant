@@ -333,12 +333,29 @@ class _Net:
         #: None = 200 CSV; an int = that HTTP error with an empty body; a tuple
         #: (code, headers, body) = that response (code 200 succeeds with those headers).
         self.page = page
+        #: Per-url answers that win over the defaults: ("redirect", location[, code]), or a
+        #: robots/page spec of the shapes above.
+        self.routes: dict[str, Any] = {}
         self.seen: list[tuple[str, str]] = []
 
     def __call__(self, req: Any, *a: Any, **k: Any) -> _Resp:
         url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
         ua = req.get_header("User-agent") if isinstance(req, urllib.request.Request) else ""
         self.seen.append((url, str(ua or "")))
+        spec = self.routes.get(url)
+        if isinstance(spec, tuple) and spec and spec[0] == "redirect":
+            code = spec[2] if len(spec) > 2 else 302
+            raise urllib.error.HTTPError(url, code, "stub", {"Location": spec[1]},  # type: ignore[arg-type]
+                                         io.BytesIO(b""))
+        if spec is not None and url.endswith("/robots.txt"):
+            if isinstance(spec, bytes):
+                return _Resp(spec, "text/plain")
+            raise urllib.error.HTTPError(url, int(spec), "stub", {}, io.BytesIO(b""))  # type: ignore[arg-type]
+        if spec is not None:
+            code, hdrs, body = (spec, {}, b"") if isinstance(spec, int) else spec
+            if code == 200:
+                return _Resp(body or CSV, extra=hdrs)
+            raise urllib.error.HTTPError(url, code, "stub", hdrs, io.BytesIO(body))
         if url.endswith("/robots.txt"):
             if isinstance(self.robots, bytes):
                 return _Resp(self.robots, "text/plain")
@@ -359,6 +376,8 @@ class _Net:
 def _net(monkeypatch: pytest.MonkeyPatch, robots: Any, page: Any = None) -> _Net:
     net = _Net(robots, page)
     monkeypatch.setattr(urllib.request, "urlopen", net)
+    # The collector opens ONE hop at a time through `_urlopen` (no redirect following).
+    monkeypatch.setattr(_desk_modules()[0], "_urlopen", net)
     return net
 
 
@@ -535,7 +554,7 @@ def test_the_acquisition_scientist_never_requests_a_disallowed_sample(
     out = das.sample({"dataset": "probe", "url": PAGE}, contract, verdict,
                      at="2026-10-14T08:00:00+00:00", code="test", marks=set())
     assert net.urls() == [ROBOTS]
-    assert net.seen[0][1] == aq._UA
+    assert net.seen[0][1] == iso.acol.DESK_UA != aq._UA, "robots read under the honest UA"
     assert out["status"] == "BLOCKED_BY_ROBOTS" and out["hold_cause"] == "robots:disallow"
     assert out["robots_disallows"] is True and "robots" in out and out["terms_note"]
 
@@ -626,3 +645,166 @@ def test_the_acquisition_scientist_sample_writes_a_hard_stop_on_403(
                      at="2026-10-15T09:00:00+00:00", code="test", marks=set())
     assert out["status"] == "HARD_STOP" and out["hold_cause"] == "hard_stop:403"
     assert net.urls() == [ROBOTS, PAGE], "zero requests to the held host"
+
+
+# ------------------------------------- one robots matcher: hard_stop.robots_verdict (audit probes)
+
+def test_hard_stop_is_byte_identical_to_the_cleared_matcher() -> None:
+    """`desks/mt5/research/hard_stop.py` is carried BYTE-IDENTICAL from alt-seat-cells bc6549361
+    (CLEARed by the auditor), so the two branches merge cleanly. Pinned by its git blob id."""
+    import hashlib
+    raw = (_DESK / "research" / "hard_stop.py").read_bytes()
+    blob = hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+    assert blob == "2bffab948c03a4a14795b38289e648d65ed81e29"
+    acol, _ = _desk_modules()
+    assert acol._HS.DESK_UA == acol.DESK_UA
+
+
+ORIGIN = "https://data.robots.test:8443"
+
+
+@pytest.mark.parametrize(("robots", "path", "allowed"), [
+    # four pages the stdlib parser let through (audit 22b9c91a7)
+    (b"User-agent: *\nAllow: /\nDisallow: /private\n", "/private/x.csv", False),
+    (b"User-agent: *\nDisallow: /*.pdf\n", "/papers/a.pdf", False),
+    (b"User-agent: *\nDisallow: /*.php$\n", "/index.php", False),
+    (b"User-agent: quant-mt5-research-desk\nDisallow: /a\n\n"
+     b"User-agent: quant-mt5-research-desk\nDisallow: /b\n", "/b/x.csv", False),
+    # two pages it refused
+    (b"User-agent: *\nDisallow: /data\nAllow: /data/public\n", "/data/public/x.csv", True),
+    (b"User-agent: *\nDisallow: /x\nAllow: /x\n", "/x", True),
+    # and the edges of the same rules
+    (b"User-agent: *\nDisallow: /*.php$\n", "/index.php?q=1", True),
+    (b"User-agent: *\nDisallow: /*.pdf\n", "/papers/a.csv", True),
+])
+def test_the_audit_robots_probes(robots: bytes, path: str, allowed: bool, iso: Any,
+                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, robots)
+    url = ORIGIN + path
+    v = iso.acol.robots_verdict(url)
+    assert v.allowed is allowed, v.why
+    assert v.cause == ("allowed" if allowed else "disallow")
+    rec = dict(iso.acol.collect_one({"id": "probe", "url": url, "expect": "csv"}))
+    assert (url in net.urls()) is allowed, "a disallowed page is never requested"
+    assert (rec["status"] == "BLOCKED_BY_ROBOTS") is (not allowed)
+
+
+# ----------------------------------------------------------- every redirect hop is checked
+
+B_HOST = "mirror.other.test"
+B_ORIGIN = f"https://{B_HOST}"
+B_ROBOTS = f"{B_ORIGIN}/robots.txt"
+
+
+def _b_urls(net: _Net) -> list[str]:
+    return [u for u in net.urls() if u.startswith(B_ORIGIN)]
+
+
+def test_a_redirect_to_a_held_host_sends_it_nothing(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    acol = iso.acol
+    acol._record_site_hold(acol.site_hold_record(B_HOST, f"{B_ORIGIN}/x", 403, "HARD_STOP"))
+    net = _net(monkeypatch, ALLOW_ALL)
+    net.routes[PAGE] = ("redirect", f"{B_ORIGIN}/series/x.csv")
+    rec = _collect(iso)
+    assert _b_urls(net) == [], "zero requests to the held redirect target"
+    assert rec["status"] == "HARD_STOP" and rec["redirected_to"] == f"{B_ORIGIN}/series/x.csv"
+    assert acol.active_site_hold(HOST) is None, "the redirecting host is not held"
+    # the scientist's path, through fetch_bytes, refuses the same hop
+    raw, why = acol.fetch_bytes(PAGE)
+    assert raw is None and why == "held:HARD_STOP" and _b_urls(net) == []
+
+
+def test_a_redirect_to_a_robots_disallowed_path_is_not_fetched(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, b"User-agent: *\nDisallow: /blocked/\n")
+    target = f"{B_ORIGIN}/blocked/x.csv"
+    net.routes[PAGE] = ("redirect", target, 301)
+    rec = _collect(iso)
+    assert B_ROBOTS in net.urls(), "robots is read for the redirect target's own host"
+    assert target not in net.urls()
+    assert rec["status"] == "BLOCKED_BY_ROBOTS" and rec["hold_cause"] == "robots:disallow"
+    assert rec["robots_disallows"] is True and rec["redirected_to"] == target
+    raw, why = iso.acol.fetch_bytes(PAGE)
+    assert raw is None and why == "robots:disallow" and target not in net.urls()
+
+
+def test_a_403_after_a_redirect_holds_the_host_that_answered(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    acol = iso.acol
+    net = _net(monkeypatch, ALLOW_ALL)
+    target = f"{B_ORIGIN}/series/x.csv"
+    net.routes[PAGE] = ("redirect", target)
+    net.routes[target] = 403
+    rec = _collect(iso)
+    assert rec["status"] == "HARD_STOP" and rec["hold_cause"] == "hard_stop:403"
+    held = acol.active_site_hold(B_HOST)
+    assert held is not None and held["key"] == f"site:{B_HOST}" and held["url"] == target
+    assert acol.active_site_hold(HOST) is None, "never the host that only redirected"
+    n = len(_b_urls(net))
+    iso.clock.t = T0 + 25 * 3600
+    _collect(iso)
+    assert len(_b_urls(net)) == n, "the answering host gets nothing after"
+
+
+def test_a_followed_redirect_on_an_allowed_path_fetches(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, ALLOW_ALL)
+    target = f"{B_ORIGIN}/series/x.csv"
+    net.routes[PAGE] = ("redirect", target, 308)
+    rec = _collect(iso)
+    assert net.urls() == [ROBOTS, PAGE, B_ROBOTS, target]
+    assert rec["status"] in ("COLLECTED", "NEEDS_PARSER") and rec["redirected_to"] == target
+
+
+def test_redirects_are_capped(iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    net = _net(monkeypatch, ALLOW_ALL)
+    net.routes[PAGE] = ("redirect", PAGE)
+    rec = _collect(iso)
+    assert rec["status"] == "UNREACHABLE" and "redirects" in rec["why"]
+    assert net.urls().count(PAGE) == iso.acol.MAX_REDIRECTS + 1
+
+
+def test_a_robots_txt_redirect_to_a_held_host_sends_it_nothing(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    acol = iso.acol
+    acol._record_site_hold(acol.site_hold_record(B_HOST, B_ROBOTS, 429, "ROBOTS_HOLD"))
+    net = _net(monkeypatch, ALLOW_ALL)
+    net.routes[ROBOTS] = ("redirect", B_ROBOTS)
+    v = acol.robots_verdict(PAGE)
+    assert v.allowed is False and v.cause == "person_hold"
+    assert _b_urls(net) == [] and PAGE not in net.urls()
+
+
+def test_a_robots_txt_redirect_that_answers_403_holds_the_answering_host(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    acol = iso.acol
+    net = _net(monkeypatch, ALLOW_ALL)
+    net.routes[ROBOTS] = ("redirect", B_ROBOTS)
+    net.routes[B_ROBOTS] = 403
+    v = acol.robots_verdict(PAGE)
+    assert v.allowed is False and v.cause == "person_hold"
+    assert acol.active_site_hold(B_HOST)["verdict"] == "ROBOTS_HOLD"
+    assert acol.active_site_hold(HOST) is None
+
+
+def test_a_blank_released_by_releases_nothing(iso: Any) -> None:
+    """An edited state file with released_by "" or whitespace is still a hold (audit should-fix)."""
+    acol = iso.acol
+    for blank in ("", "   "):
+        rec = {**acol.site_hold_record(HOST, PAGE, 403, "HARD_STOP"), "released_by": blank}
+        acol._record_site_hold(rec)
+        assert acol.active_site_hold(HOST) is not None
+
+
+def test_the_acquisition_scientist_reads_and_fetches_under_desk_ua(
+        iso: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never `acquire_datasets._UA` (a browser string): robots AND the fetch carry DESK_UA."""
+    das = iso.das
+    net = _net(monkeypatch, ALLOW_ALL)
+    verdict = ac.classify({"url": PAGE, "source_class": "official"})
+    contract = SimpleNamespace(admissible=lambda: True)
+    das.sample({"dataset": "probe", "url": PAGE}, contract, verdict,
+               at="2026-10-14T08:00:00+00:00", code="test", marks=set())
+    assert net.urls() == [ROBOTS, PAGE]
+    assert {ua for _, ua in net.seen} == {iso.acol.DESK_UA}

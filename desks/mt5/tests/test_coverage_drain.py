@@ -733,3 +733,49 @@ def test_distance_from_maximum_sums_the_three_shortfalls() -> None:
     """A pack cannot hide a hollow axis behind a strong one, so the ordering is the SUM."""
     got = CD.verify_layers(None)
     assert "parity" not in got or isinstance(got.get("parity"), dict)
+
+
+def test_a_refused_robots_row_reopens_only_when_a_live_robots_read_allows_it(db: Path) -> None:
+    """Audit 22b9c91a7: `moat_collectors.robots_barred` is a STATIC 2026-08-27 list, so a
+    `refused-robots` row reopened blindly could be fetched against a live Disallow. It reopens
+    only on a live robots read that allows its url; a disallow keeps it held, named."""
+    conn = CD.connect(db)
+    assert conn is not None
+    asked: list[str] = []
+
+    def robots(url: str) -> tuple[bool, str]:
+        asked.append(url)
+        return ("example-media" not in url,
+                "disallow: robots.txt disallows this path" if "example-media" in url
+                else "allowed")
+
+    with closing(conn), conn:
+        CD.register_refusal(conn, "old_media", "refused-robots", "ROBOTS_DISALLOW: /markets")
+        CD.register_refusal(conn, "old_official", "refused-robots", "ROBOTS_DISALLOW: /stats")
+        CD.register_refusal(conn, "fresh_ground", "refused-machine-use", "machine_use=false")
+        conn.commit()
+        out = CD.reopen_deleted_brakes(conn, robots_check=robots)
+        rows = {r["source_id"]: dict(r) for r in
+                conn.execute("SELECT source_id, status, last_crawled FROM sources")}
+    assert sorted(asked) == ["https://news.example-media.test/markets",
+                             "https://www.example-cb.test/statistics"]
+    assert rows["old_media"]["status"] == "refused-robots" and rows["old_media"]["last_crawled"]
+    assert rows["old_official"]["status"] == CD.CLEARED
+    assert rows["fresh_ground"]["status"] == CD.CLEARED, "a deleted brake still reopens"
+    assert out["reopened"] == 2 and out["robots_held"] == 1
+    assert out["robots_named"][0]["url"] == "https://news.example-media.test/markets"
+
+
+def test_robots_refusals_are_counted_as_robots_holds_by_name() -> None:
+    collector = {"refused": [{"source": "y", "why": "youtube.com/api/ is Disallow in "
+                                                    "youtube.com/robots.txt"},
+                             {"source": "b", "why": "registry: machine_use_allowed=false"}]}
+    held = CD.robots_holds(collector)
+    assert [r["source"] for r in held] == ["y"] and held[0]["hold"] == "robots"
+    assert [r["source"] for r in CD.deleted_brake_refusals(collector)] == ["b"]
+
+
+def test_the_drain_does_not_claim_robots_barred_is_a_live_check() -> None:
+    doc = CD.refusal_for.__doc__ or ""
+    assert "STATIC" in doc and "not a live robots read" in doc
+    assert "not a live robots read" in (CD.deleted_brake_refusals.__doc__ or "")
