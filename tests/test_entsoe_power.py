@@ -7,7 +7,6 @@ from __future__ import annotations
 import io
 import json
 import sys
-import time
 import urllib.error
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -274,18 +273,25 @@ def test_a_reread_with_nothing_new_is_unchanged(tmp_path: Path) -> None:
     assert rec2["outcome"] == "UNCHANGED"
 
 
-def test_a_budget_cut_is_partial_and_keeps_the_cursor(tmp_path: Path) -> None:
-    class Slow(Poster):
-        def __call__(self, url: str, body: bytes, headers: dict[str, str]) -> tuple[bytes, str]:
-            out = super().__call__(url, body, headers)
-            self.t = time.monotonic()
-            return out
-    p = Slow()
-    deadline = time.monotonic() + E.MIN_INTERVAL_S * 2.5      # room for DE-LU only
-    rec, sst, _st = _collect(tmp_path, p, deadline=deadline)
-    assert rec["outcome"] == "PARTIAL:BUDGET"
+def test_a_budget_cut_is_partial_and_keeps_the_cursor(tmp_path: Path, monkeypatch: Any) -> None:
+    clock = {"t": 0.0}
+
+    class FakeTime:
+        @staticmethod
+        def monotonic() -> float:
+            return clock["t"]
+
+    def sleep(s: float) -> None:
+        clock["t"] += s
+    monkeypatch.setattr(E, "time", FakeTime)
+    sst: dict[str, Any] = {"cursor": {"DE-LU": "2026-10-01", "FR": "2026-10-01"}}
+    rec = E.collect(A, A.Paths(tmp_path / "desk"), E.make_source(A), sst, {}, NOW, fetch=True,
+                    fixtures=None, deadline=E.MIN_INTERVAL_S * 2.5, poster=Poster(),
+                    getter=_robots(), environ=ENV, sleep=sleep, clock=lambda: NOW)
+    assert rec["outcome"] == "PARTIAL:BUDGET"                   # DE-LU read, FR owed
     assert rec["caught_up"] == {"DE-LU": True, "FR": False}
     assert sst["cursor"]["FR"] == "2026-10-01"
+    assert rec["parsed"] > 0
 
 
 def test_a_pass_cut_before_any_window_completes_is_failed_budget(tmp_path: Path) -> None:
@@ -419,7 +425,7 @@ def test_cells_are_judged_by_the_canonical_tier_s_helper(tmp_path: Path,
     gains = E.gain_tests(A, A.Paths(tmp_path), src, pts)
     g = gains[f"{E.SOURCE_ID}|de_lu_residual_load|XNGUSD"]
     assert g["t_bar_judge"] == "libs.research.release_gain.tier_s_t_required"
-    assert g["t_bar"] is not None and g["t_bar"] >= tier_s_t_required(int(g["n"])) - 1e-9
+    assert g["t_bar"] is not None and g["t_bar"] >= round(tier_s_t_required(int(g["n"])), 4)
     assert g["live_input"] is False
     text = (DESK / "research" / "entsoe_power.py").read_text("utf-8")
     assert "2.84" not in text                                   # no bare bar literal
