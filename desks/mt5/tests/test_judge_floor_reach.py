@@ -573,7 +573,7 @@ def test_the_tranche_skips_a_tape_family_with_nothing_shippable() -> None:
 def _deep_tape_doc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, periods: int = 150
                    ) -> dict[str, Any]:
     rows = _rows({"alpha": 3000, "orderflow_imbalance": 3000})
-    store = tmp_path / "tape"
+    store = tmp_path / f"tape_{periods}"
     _tape_store(store, "S0", [d.strftime("%Y-%m-%d") for d in
                               pd.bdate_range(end="2026-10-13", periods=periods)])
     monkeypatch.setattr(jc, "TAPE_DIR", store)
