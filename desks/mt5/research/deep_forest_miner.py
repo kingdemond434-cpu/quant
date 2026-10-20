@@ -839,7 +839,7 @@ def fetch_hops(url: str, *, headers: dict[str, str], held: Any, allows: Any,
                 return r, cur, stop
         sink: dict[str, Any] = {}
         r = pf.get(cur, headers=headers, timeout=timeout, retries=0, leg=LEG,
-                   max_bytes=max_bytes, opener=hop_opener(sink))
+                   max_bytes=max_bytes, opener=hop_opener(sink), follow_redirects=False)
         loc = str(sink.get("location") or "")
         if loc and r.status == sink.get("code") and loc.startswith(("http://", "https://")):
             hops.append((int(sink["code"]), cur, loc))

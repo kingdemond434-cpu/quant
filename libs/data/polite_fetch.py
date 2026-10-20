@@ -932,7 +932,8 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         retries: int = 2, backoff_s: float = 1.5, deadline: float | None = None,
         max_bytes: int = MAX_BYTES, leg: str = "default", gate: HostGate | None = GATE,
         opener: Callable[..., Any] | None = None, access: HostAccess | None = None,
-        sleep: Callable[[float], None] = time.sleep, live_input: bool = False) -> Response:
+        sleep: Callable[[float], None] = time.sleep, live_input: bool = False,
+        follow_redirects: bool = True) -> Response:
     """GET `url` once, politely, with bounded retries. NEVER RAISES: the Response carries the
     status or the error, so a caller can record what happened rather than a stack trace.
 
@@ -940,6 +941,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     holds and the hop's own origin robots.txt (read through the same `opener`). A refusal
     returns with `verdict` set and nothing sent. 401/403/429 record a site hold and stop: no
     retry, no other route. The User-Agent sent is always honest (`honest_headers`).
+
+    `follow_redirects=False` stops at the first 30x: the Response carries that status and the
+    hop in `.redirects`, and the target is NOT requested -- for a caller that checks each hop
+    against its own holds first (deep_forest `fetch_hops`).
 
     `timeout` is per attempt; `deadline` (a `time.monotonic()` value) caps the whole call,
     retries and backoff included, so no fetch can outlive the budget of the leg that made it.
@@ -1076,6 +1081,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                     break
                 nxt = urljoin(cur, str(loc))
                 resp.redirects.append((code, cur, nxt))    # redirects are VISIBLE
+                if not follow_redirects:
+                    resp.status, resp.final_url = code, cur
+                    resp.error = f"HTTP {code}: redirect to {nxt[:160]} not followed"
+                    break
                 cur = nxt                          # the next pass checks THIS hop's fence + robots
                 continue
             resp.status = code
