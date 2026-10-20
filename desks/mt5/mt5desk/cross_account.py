@@ -36,7 +36,16 @@ until that deadline, never spun on. Stop management never takes this lock.
 
 THE BOOKS NAME THEIR ACCOUNT, HASHED (`account_key`): a book of the wrong account is refused. The
 key is a truncated SHA-256 of "<login>@<server>", never the login itself, and no log line or
-report prints it.
+report prints it. Its VALUE is checked, not only its presence: it must be exactly
+`sha256:<16 hex>` (`KEY_RE`), and when the box declares an account (Fusion's login in the
+gitignored FUSION_LIVE_ACCOUNT.json; E8's key in the gitignored `E8_ACCOUNT_FILE`) a book of any
+other key is refused by the reader and never written by the publisher.
+
+A SEND UNDER THE LOCK IS BOUNDED (`bounded`, audit round 4): a TradeLocker call that hangs would
+otherwise hold the lock, and fail every lane's new entries closed, for as long as it hangs. Past
+`LOCKED_SEND_TIMEOUT_S` the caller gets `LockedCallTimeout`, the lock is released, and the call is
+treated as a failed send that MAY STILL LAND -- the lane's own reconciliation (E8-Gold adopts a
+failed send that landed) owns it from there.
 
 Pure functions over readings, plus small atomic file helpers. Never sends anything.
 """
@@ -48,6 +57,7 @@ import json
 import os
 import re
 import socket
+import threading
 import time
 import uuid
 from collections.abc import Iterable, Iterator
@@ -72,6 +82,15 @@ PUBLISH_WAIT_S = 2.0
 #: is broken only past this age: a send under the lock takes seconds, so this is a dead holder.
 LOCK_ABANDONED_S = 900.0
 _POLL_S = 0.2
+#: The longest one send (or one publish) may run while it holds the placement lock.
+LOCKED_SEND_TIMEOUT_S = 30.0
+LOCKED_PUBLISH_TIMEOUT_S = 10.0
+#: The only shape an account key has (`account_key`).
+KEY_RE = re.compile(r"^sha256:[0-9a-f]{16}$")
+#: The E8 account this box trades, declared by the operator as {"account_key": "sha256:..."}
+#: (gitignored; the key is the one E8-Gold publishes in data/xacct/e8_book.json). Absent: the key
+#: is format-checked only.
+E8_ACCOUNT_FILE = _DESK / "data" / "E8_ACCOUNT.json"
 
 Exposure = dict[str, dict[str, bool]]
 
@@ -86,8 +105,14 @@ def norm(symbol: object) -> str:
     `xau/usd` are all XAUUSD. A name that does not reduce to a plain code is returned as "",
     which every caller treats as unreadable (fail closed)."""
     raw = re.split(r"[._#]", str(symbol or "").strip(), maxsplit=1)[0]
+    whole = re.sub(r"[^A-Za-z0-9]", "", raw).upper()
+    if whole in ALIASES:
+        return ALIASES[whole]                         # `Gold`, `gold`, `Silver`: case never matters
     m = re.match(r"^(.*[A-Z0-9])[a-z]+$", raw)
-    if m and re.search(r"[A-Z]", m.group(1)):
+    # A lower-case broker suffix is stripped only after a code of at least four characters:
+    # `XAUUSDm` -> XAUUSD, `US30m` -> US30, but `Gold` is not `G` and `EURusd` is not `EUR`.
+    if m and re.search(r"[A-Z]", m.group(1)) and len(re.sub(r"[^A-Za-z0-9]", "",
+                                                             m.group(1))) >= 4:
         raw = m.group(1)
     s = re.sub(r"[^A-Za-z0-9]", "", raw).upper()
     s = ALIASES.get(s, s)
@@ -139,9 +164,24 @@ def tradelocker_account_key(venue: Any) -> str:
     raise ValueError("the TradeLocker venue names no account")
 
 
+def valid_key(key: object) -> bool:
+    return isinstance(key, str) and bool(KEY_RE.match(key))
+
+
 def expected_key(account: str) -> str | None:
-    """The key the box DECLARES for `account`, or None when it declares none. Only the Fusion
-    live account is declared (decision_core.FUSION_ACCOUNT_FILE, gitignored)."""
+    """The key the box DECLARES for `account`, or None when it declares none: Fusion from its live
+    login (decision_core.FUSION_ACCOUNT_FILE), E8 from `E8_ACCOUNT_FILE` (both gitignored). An E8
+    declaration that is present but not a valid key is an INVALID sentinel, so every E8 book is
+    refused rather than the check silently skipped."""
+    if account == "e8":
+        try:
+            doc = json.loads(E8_ACCOUNT_FILE.read_text(encoding="utf-8-sig"))
+        except FileNotFoundError:
+            return None
+        except (OSError, ValueError):
+            return "invalid:unreadable E8 declaration"
+        key = doc.get("account_key") if isinstance(doc, dict) else None
+        return key if valid_key(key) else "invalid:E8 declaration carries no valid account_key"
     if account != "fusion":
         return None
     try:
@@ -222,7 +262,10 @@ def tradelocker_exposure(venue: Any, positions: list[dict[str, Any]] | None = No
     an entry with no stopLoss, which failed open). Instruments are named through the venue's own
     catalogue; an instrument the catalogue cannot name RAISES, because an unnamed position could
     be on any symbol."""
-    iid_to_sym = {int(v): str(k) for k, v in (getattr(venue, "_by_key", {}) or {}).items()}
+    # Upper-cased here: a catalogue that spells `Gold` or `xauUsd` names the same instrument, and
+    # an unnamed row makes the whole book unreadable (audit round 4: E8's names are UNMEASURED).
+    iid_to_sym = {int(v): str(k).strip().upper()
+                  for k, v in (getattr(venue, "_by_key", {}) or {}).items()}
     if positions is None:
         positions = venue.positions()
     if orders is None:
@@ -269,8 +312,12 @@ def publish(account: str, exposure: Exposure, *, source: str, key: str,
 
     Call it UNDER `placement_lock`, from a reading taken under it (`publish_under_lock` does
     both): a book written from an older snapshot can erase another lane's fresh send."""
-    if not (isinstance(key, str) and key.startswith("sha256:")):
-        raise ValueError("a book must carry its account key")
+    if not valid_key(key):
+        raise ValueError("a book must carry a valid account key")
+    want = expected_key(account)
+    if want is not None and key != want:
+        raise ValueError(f"the {account} venue is not on the account this box declares; "
+                         f"its book is not published as {account}'s")
     p = book_path(account)
     p.parent.mkdir(parents=True, exist_ok=True)
     doc = {"account": account, "account_key": key,
@@ -323,7 +370,7 @@ def publish_under_lock(fn: Any, *, holder: str, wait_s: float = PUBLISH_WAIT_S) 
         with placement_lock(holder, wait_s=wait_s) as ok:
             if not ok:
                 return "the placement lock is held elsewhere; not published (the book ages)"
-            fn()
+            bounded(fn, timeout_s=LOCKED_PUBLISH_TIMEOUT_S, what=f"{holder} publish")
     except Exception as exc:
         return f"{type(exc).__name__}: {exc}"[:200]
     return None
@@ -348,8 +395,8 @@ def read_book(account: str, *, now: datetime | None = None, max_age_s: float = M
                 or not isinstance(symbols, dict):
             raise ValueError("not a full book of this account")
         key = doc.get("account_key")
-        if not (isinstance(key, str) and key.startswith("sha256:")):
-            raise ValueError("the book names no account")
+        if not valid_key(key):
+            raise ValueError("the book names no account (account_key is not sha256:<16 hex>)")
         book: Exposure = {}
         for k, v in symbols.items():
             sym = norm(k)
@@ -426,6 +473,16 @@ def _pid_alive(pid: int) -> bool | None:
     return True
 
 
+def _proc_started(pid: int) -> float | None:
+    """The process's start time (`psutil.Process.create_time`), or None when it cannot be read.
+    With the pid it names ONE process: a pid reused by another process has another start."""
+    try:
+        import psutil
+        return round(float(psutil.Process(int(pid)).create_time()), 3)
+    except Exception:
+        return None
+
+
 def _read_lock(path: Path) -> dict[str, Any] | None:
     try:
         doc = json.loads(path.read_text(encoding="utf-8"))
@@ -447,8 +504,19 @@ def _holder_gone(doc: dict[str, Any] | None, age_s: float) -> bool:
         if alive is False:
             return True
         if alive is True:
-            return False
-    return age_s > LOCK_ABANDONED_S
+            # A LIVE pid is the holder only if it is the SAME process (audit round 4): the lock
+            # records the holder's start time, and a pid reused by another process has another.
+            # A mismatch is unprovable, not "alive" -- it falls to the abandoned age below,
+            # never to "held forever". No recorded start (an older lock): alive, as before.
+            rec = doc.get("started")
+            if not isinstance(rec, (int, float)) or isinstance(rec, bool):
+                return False
+            now_started = _proc_started(int(doc["pid"]))
+            if now_started is None or abs(now_started - float(rec)) <= 1.0:
+                return False
+    # abs(): a backward clock jump puts the lock's mtime in the future, and a negative age must
+    # not keep a dead holder's lock forever.
+    return abs(age_s) > LOCK_ABANDONED_S
 
 
 @contextlib.contextmanager
@@ -482,11 +550,19 @@ def placement_lock(holder: str, *, wait_s: float = LOCK_WAIT_S,
         try:
             fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             try:
-                os.write(fd, json.dumps({"holder": holder, "pid": os.getpid(), "host": _HOST,
-                                         "token": token,
-                                         "at": datetime.now(tz=UTC).isoformat()}).encode())
-            finally:
-                os.close(fd)
+                try:
+                    os.write(fd, json.dumps({"holder": holder, "pid": os.getpid(),
+                                             "host": _HOST, "token": token,
+                                             "started": _proc_started(os.getpid()),
+                                             "at": datetime.now(tz=UTC).isoformat()}).encode())
+                finally:
+                    os.close(fd)
+            except OSError:
+                # A WRITE THAT FAILED LEAVES NO ORPHAN (audit round 4): the file is ours (O_EXCL),
+                # and an empty one would block every lane until LOCK_STALE_S.
+                with contextlib.suppress(OSError):
+                    path.unlink()
+                raise
             taken = True
             break
         except FileExistsError:
@@ -506,6 +582,38 @@ def placement_lock(holder: str, *, wait_s: float = LOCK_WAIT_S,
         if taken:
             _HELD.pop(key, None)
             _release(path, token)
+
+
+class LockedCallTimeout(TimeoutError):
+    """A call made under the placement lock did not return in time. It MAY STILL LAND."""
+
+
+def bounded(fn: Any, *, timeout_s: float | None = None, what: str = "send") -> Any:
+    """`fn()`, or `LockedCallTimeout` when it has not returned within `timeout_s` (default
+    `LOCKED_SEND_TIMEOUT_S`, read at call time).
+
+    Run in a daemon thread so the caller -- and the lock it holds -- is released on time. The
+    thread is NOT killed (Python cannot), so a timed-out send may still reach the venue: the
+    caller treats it as a failed send whose outcome is unknown, never as "not sent". An exception
+    `fn` raises is re-raised here unchanged."""
+    box: dict[str, Any] = {}
+
+    def run() -> None:
+        try:
+            box["v"] = fn()
+        except BaseException as exc:                 # re-raised in the caller's thread
+            box["e"] = exc
+
+    t = threading.Thread(target=run, name=f"xacct-bounded:{what}"[:60], daemon=True)
+    t.start()
+    limit = float(LOCKED_SEND_TIMEOUT_S if timeout_s is None else timeout_s)
+    t.join(max(0.0, limit))
+    if t.is_alive():
+        raise LockedCallTimeout(f"{what} did not return within {limit:g}s under the placement "
+                                f"lock; it may still land")
+    if "e" in box:
+        raise box["e"]
+    return box.get("v")
 
 
 def _try_break(path: Path) -> None:

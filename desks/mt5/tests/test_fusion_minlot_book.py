@@ -3,10 +3,13 @@ gold windows 2026-10-20 16:58Z; sizing changed 2026-10-20 after the audit HOLD o
 
     python -m pytest desks/mt5/tests/test_fusion_minlot_book.py -q
 
-The live Fusion account trades exactly SIX sleeves and nothing else: gold_asia, gold_london_am,
-gold_afternoon, usdnok_carry_asia_p_ff35bb7c8427d66f, eurils_formula_asia_p_673857a649d3c271 and
+The code set names SIX sleeves: gold_asia, gold_london_am, gold_afternoon,
+usdnok_carry_asia_p_ff35bb7c8427d66f, eurils_formula_asia_p_673857a649d3c271 and
 eurzar_carry_asia_p_8339edce23032d21, each at max(0.01, the lot at 0.75% risk at its own stop),
-inside the MAX_RISK_FRAC envelope. The three overnight_gap_decay principal rows, NZDJPY, the XAU m5
+inside the MAX_RISK_FRAC envelope. The COMMITTED switch narrows it to FOUR (zuck 2026-10-20 21:52Z,
+"trade only gold asia for fusion and mt5"): gold_asia and the three FX names; the cert book pins
+gold_london_am and gold_afternoon at 0.0, which sends nothing on the sovereign and the revert
+path. The three overnight_gap_decay principal rows, NZDJPY, the XAU m5
 scalp and USDJPY send nothing. Pinned here:
 
   * the book's lot: the 0.01 floor at a small equity, 0.75% risk once equity carries it, the
@@ -56,7 +59,9 @@ USDNOK = "usdnok_carry_asia_p_ff35bb7c8427d66f"
 EURILS = "eurils_formula_asia_p_673857a649d3c271"
 EURZAR = "eurzar_carry_asia_p_8339edce23032d21"
 GOLDS = {"gold_asia", "gold_london_am", "gold_afternoon"}
-FOUR = GOLDS | {USDNOK, EURILS, EURZAR}             # the six (name kept from the v5 four)
+FOUR = GOLDS | {USDNOK, EURILS, EURZAR}             # the code's six (name kept from the v5 four)
+LIVE = frozenset({GOLD, USDNOK, EURILS, EURZAR})    # the committed switch (zuck 2026-10-20 21:52Z)
+ZEROED = GOLDS - {GOLD}                              # pinned at 0.0 in the cert book's fusion block
 FX = (USDNOK, EURILS, EURZAR)
 TWINS = ("usdnok_carry_asia_p_d5391837ec28998b", "eurzar_carry_asia_p_55e2dabcb8c43d1f")
 GAP_DECAY = tuple(f"{s}_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
@@ -126,9 +131,11 @@ def test_the_code_names_exactly_the_six_and_pins_each_certificate() -> None:
         assert name not in dc.MINLOT_OVERRIDE_SLEEVES
 
 
-def test_the_committed_switch_turns_on_exactly_the_six_on_the_declared_live_account() -> None:
+def test_the_committed_switch_turns_on_exactly_the_four_on_the_declared_live_account() -> None:
+    """gold_asia and the three FX names, COMMITTED (audit round 4 on c07dd71d): a box-only edit
+    would be reverted by Adopt-Release or a restore to HEAD, re-opening the two gold windows."""
     active, why = _on()
-    assert active == FOUR, why
+    assert active == LIVE, why
     doc = json.loads(dc.MINLOT_OVERRIDE_FILE.read_text(encoding="utf-8"))
     assert "account" not in doc and doc["server"] == SERVER
     assert doc["lot"] == 0.01 and doc["target_risk"] == 0.0075
@@ -455,7 +462,11 @@ def _bracket_ns() -> dict:
                          {"sleeve_live_n": lambda name: 0})
 
 
-def test_every_gold_window_sends_the_book_lot() -> None:
+def test_every_gold_window_sends_the_book_lot(monkeypatch, tmp_path) -> None:
+    # The code path for all six, under a cert book that pins no gold window (the committed one
+    # pins two: test_a_cert_book_zero_sends_nothing_on_either_path).
+    from mt5desk import kelly_sizing
+    monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", tmp_path / "no_cert_book.json")
     ns = _bracket_ns()
     sleeves = [{"name": f"gold_{w[0]}", "symbol": "XAUUSD", "lot": "auto",
                 "sized_by": "allocator_book", "risk_frac": 0.001} for w in dc.GOLD_WINDOWS]
@@ -481,6 +492,54 @@ def test_every_gold_window_sends_the_book_lot() -> None:
     # Override off: every window is sovereign again (sub-minimum at 485 -> no order).
     dc.stamp_minlot_override(sleeves, frozenset(), EQUITY)
     assert all(ns["bracket_lane_lot"](s, EQUITY, 19.1, None)[0] == 0.0 for s in sleeves)
+
+
+def _gold_row(name: str, h: object = 0.0) -> dict:
+    return {"name": name, "symbol": "XAUUSD", "lot": "auto", "sized_by": "allocator_book",
+            "risk_frac": h}
+
+
+def test_the_committed_cert_book_pins_exactly_the_two_dropped_gold_windows() -> None:
+    from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
+    fusion = load_cert_book(CERT_BOOK_FILE, "fusion")
+    assert fusion is not None and {k for k in fusion if k.startswith("gold_")} == ZEROED
+    assert all(fusion[k] == 0.0 for k in ZEROED) and GOLD not in fusion
+    assert {n for n in GOLDS if dc.cert_book_zero(n)} == ZEROED
+    assert not dc.cert_book_zero(None) and not dc.cert_book_zero("")
+
+
+def test_a_cert_book_zero_sends_nothing_on_either_path(tmp_path, monkeypatch) -> None:
+    """THE REVERT PATH MUST NOT UN-ZERO GOLD (audit round 4 on c07dd71d). With
+    ALLOCATOR_SOVEREIGN.json {"enabled": false}, gold_book_lot lifts an ALLOCATOR zero to the
+    policy lot on purpose; a window the principal pinned at 0.0 in the cert book sends nothing."""
+    from mt5desk import kelly_sizing
+    ns = _bracket_ns()
+    # Sovereign, even a marked row with a positive (non-overlaid) fraction sends nothing.
+    for name in ZEROED:
+        row = _gold_row(name, 0.001)
+        dc.stamp_minlot_override([row], frozenset(FOUR), EQUITY)
+        lot, basis = ns["bracket_lane_lot"](row, EQUITY, 19.1, None)
+        assert lot == 0.0 and "cert book pins" in basis, basis
+    # Revert path.
+    (tmp_path / "ALLOCATOR_SOVEREIGN.json").write_text('{"enabled": false}', encoding="utf-8")
+    assert not dc.allocator_sovereign()
+    for name in ZEROED:
+        for h in (0.0, None, "x"):
+            row = _gold_row(name, h)
+            dc.stamp_minlot_override([row], frozenset(FOUR), EQUITY)
+            lot, basis = ns["bracket_lane_lot"](row, EQUITY, 19.1, None)
+            assert lot == 0.0 and basis.startswith("cert book pins"), (name, h, basis)
+        assert dc.gold_book_lot(EQUITY, 19.1, None, 0.0, name=name)[0] == 0.0
+    # gold_asia is not pinned: the revert path's floor is unchanged for it, and for a caller that
+    # names no window.
+    lot, basis = ns["bracket_lane_lot"](_gold_row(GOLD, 0.0), EQUITY, 19.1, None)
+    assert lot > 0.0 and basis == "gold_lot: the allocator gave this window no heat"
+    assert dc.gold_book_lot(EQUITY, 19.1, None, 0.0)[0] == lot
+    # No readable cert book: nothing is pinned, every window is the revert path's as before.
+    monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", tmp_path / "absent.json")
+    for name in ZEROED:
+        assert not dc.cert_book_zero(name)
+        assert dc.gold_book_lot(EQUITY, 19.1, None, 0.0, name=name)[0] == lot
 
 
 def test_the_gateway_roster_appends_the_three_and_marks_the_six(tmp_path, monkeypatch) -> None:
@@ -1052,7 +1111,13 @@ def test_a_book_names_its_account_hashed_and_a_wrong_or_unnamed_one_is_refused()
     xa.publish("fusion", {}, source="t", key=key)
     assert str(LOGIN) not in xa.book_path("fusion").read_text(encoding="utf-8")
     assert xa.read_book("fusion")[0] == {}                     # the declared account
-    xa.publish("fusion", {}, source="t", key=xa.account_key(LOGIN + 1, SERVER))
+    # The publisher refuses to write another account's book as Fusion's ...
+    with pytest.raises(ValueError, match="declares"):
+        xa.publish("fusion", {}, source="t", key=xa.account_key(LOGIN + 1, SERVER))
+    # ... and the reader refuses one that got there anyway.
+    doc = json.loads(xa.book_path("fusion").read_text(encoding="utf-8"))
+    xa.book_path("fusion").write_text(
+        json.dumps({**doc, "account_key": xa.account_key(LOGIN + 1, SERVER)}), encoding="utf-8")
     book, why = xa.read_book("fusion")
     assert book is None and "another account" in why
     with pytest.raises(ValueError):
@@ -1098,17 +1163,22 @@ def test_no_entry_risks_more_than_ten_percent_and_each_refusal_is_billed_once(
         tmp_path, monkeypatch) -> None:
     assert dc.FUSION_MAX_TRADE_RISK_FRAC == 0.10
     monkeypatch.setattr(dc, "MAX_RISK_FRAC", 0.50)              # even a wider envelope
-    lot, _t, why = _size("gold_afternoon", "XAUUSD", None, EQUITY, 111.0)
+    lot, _t, why = _size("gold_asia", "XAUUSD", None, EQUITY, 111.0)
     assert lot == 0.0 and why.startswith(dc.FUSION_TRADE_RISK_REFUSAL)
     monkeypatch.setattr(fusion_rails, "LEDGER", tmp_path / "rails.jsonl")
     ns = _bracket_ns()
-    s = {"name": "gold_afternoon", "symbol": "XAUUSD", "lot": "auto"}
+    s = {"name": "gold_asia", "symbol": "XAUUSD", "lot": "auto"}
     dc.stamp_minlot_override([s], frozenset(FOUR), EQUITY)
     for _ in range(3):                                          # re-checked every pass
         assert ns["bracket_lane_lot"](s, EQUITY, 111.0, None)[0] == 0.0
     rows = [json.loads(ln) for ln in (tmp_path / "rails.jsonl").read_text().splitlines()]
     assert [r["rail"] for r in rows] == ["fusion_trade_risk_cap"]
-    assert rows[0]["sleeve"] == "gold_afternoon" and rows[0]["dist"] == 111.0
+    assert rows[0]["sleeve"] == "gold_asia" and rows[0]["dist"] == 111.0
+    # The bill states the risk it refused: 0.01 x per-lot loss at the stop / equity.
+    rf = dc.minlot_floor_risk_frac("XAUUSD", None, EQUITY, 111.0)
+    assert rf is not None and rf > dc.FUSION_MAX_TRADE_RISK_FRAC
+    assert rows[0]["risk_frac"] == rf
+    assert dc.minlot_floor_risk_frac("XAUUSD", None, 0.0, 111.0) is None
     # A stop the cap allows sends, and writes no refusal.
     assert ns["bracket_lane_lot"](s, EQUITY, 19.1, None)[0] == 0.01
 
@@ -1130,3 +1200,152 @@ def test_a_rails_line_that_cannot_be_written_is_surfaced(tmp_path, monkeypatch, 
     assert fusion_rails.ensure() is False
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
     assert "_rails_pass.WRITE_FAILURES" in src and "_rails_pass.ensure()" in src
+
+
+# ------------------------------------------------------------------ audit round 4 should-fixes
+
+@pytest.mark.parametrize("raw", ["Gold", "gold", "GOLD", "Gold+", "Gold.pro"])
+def test_a_mixed_case_gold_is_gold(raw) -> None:
+    assert xa.norm(raw) == "XAUUSD"
+
+
+def test_a_lower_case_suffix_is_stripped_only_after_a_real_code() -> None:
+    assert xa.norm("XAUUSDm") == "XAUUSD" and xa.norm("US30m") == "US30"
+    assert xa.norm("Silver") == "XAGUSD"
+    assert xa.norm("EURusd") == "EURUSD"                       # never the 3-letter "EUR"
+    assert xa.norm("xauusd") == "XAUUSD"
+
+
+def test_a_mixed_case_tradelocker_catalogue_reads_the_e8_book() -> None:
+    venue = SimpleNamespace(_by_key={"Gold": 6102, "usdNok": 7})
+    got = xa.tradelocker_exposure(
+        venue, positions=[{"id": 1, "tradableInstrumentId": 6102, "side": "sell"}],
+        orders=[{"tradableInstrumentId": 7, "side": "buy"}])
+    assert got == {"XAUUSD": {"long": False, "short": True},
+                   "USDNOK": {"long": True, "short": False}}
+
+
+@pytest.mark.parametrize("key", ["sha256:", "sha256:zz", "sha256:" + "0" * 15,
+                                 "sha256:" + "A" * 16, "sha256:" + "0" * 17, "md5:" + "0" * 16])
+def test_the_account_key_value_is_checked_not_only_its_presence(key) -> None:
+    assert not xa.valid_key(key)
+    with pytest.raises(ValueError):
+        xa.publish("e8", {}, source="t", key=key)
+    doc = json.loads(xa.book_path("e8").read_text(encoding="utf-8"))
+    xa.book_path("e8").write_text(json.dumps({**doc, "account_key": key}), encoding="utf-8")
+    book, why = xa.read_book("e8")
+    assert book is None and "account_key" in why
+
+
+def test_a_declared_e8_account_binds_the_e8_book(tmp_path, monkeypatch) -> None:
+    mine, other = xa.account_key("e8-acc", "tl"), xa.account_key("e8-other", "tl")
+    decl = tmp_path / "E8_ACCOUNT.json"
+    monkeypatch.setattr(xa, "E8_ACCOUNT_FILE", decl)
+    assert xa.expected_key("e8") is None                       # undeclared: format only
+    xa.publish("e8", {}, source="t", key=other)
+    assert xa.read_book("e8")[0] == {}
+    decl.write_text(json.dumps({"account_key": mine}), encoding="utf-8")
+    assert xa.expected_key("e8") == mine
+    assert xa.read_book("e8")[0] is None                       # the other account's book
+    with pytest.raises(ValueError, match="declares"):
+        xa.publish("e8", {}, source="t", key=other)
+    xa.publish("e8", {}, source="t", key=mine)
+    assert xa.read_book("e8")[0] == {}
+    # A declaration that is present but unreadable or invalid refuses every book.
+    for bad in ("{", json.dumps({"account_key": "sha256:nothex"}), json.dumps([mine])):
+        decl.write_text(bad, encoding="utf-8")
+        assert xa.read_book("e8")[0] is None
+
+
+def test_a_failed_lock_write_leaves_no_orphan(monkeypatch) -> None:
+    lock = xa.XACCT_DIR / "placement.lock"
+    real_write = os.write
+
+    def broken(fd, data):
+        raise OSError(28, "No space left on device")
+    monkeypatch.setattr(xa.os, "write", broken)
+    with xa.placement_lock("me", wait_s=0.3) as got:
+        assert not got
+    assert not lock.exists()
+    monkeypatch.setattr(xa.os, "write", real_write)
+    xa._MISSED_AT.clear()
+    with xa.placement_lock("me", wait_s=0.3) as got:          # the next lane is not blocked
+        assert got
+
+
+def test_the_lock_records_its_holders_start_and_a_reused_pid_is_not_the_holder(
+        monkeypatch) -> None:
+    pytest.importorskip("psutil")
+    with xa.placement_lock("me") as got:
+        assert got
+        doc = json.loads((xa.XACCT_DIR / "placement.lock").read_text(encoding="utf-8"))
+        assert doc["started"] == xa._proc_started(os.getpid()) is not None
+    started = xa._proc_started(os.getpid())
+    live = {"pid": os.getpid(), "host": xa._HOST, "token": "t"}
+    # Same pid, same start: the live holder, never broken however old.
+    assert not xa._holder_gone({**live, "started": started}, 10_000.0)
+    # Same pid, another start (pid reuse): unprovable, so broken once abandoned, not before.
+    assert not xa._holder_gone({**live, "started": started - 500.0}, 30.0)
+    assert xa._holder_gone({**live, "started": started - 500.0}, xa.LOCK_ABANDONED_S + 1)
+    # A lock from before this round (no start recorded) keeps the old rule: alive is alive.
+    assert not xa._holder_gone(live, 10_000.0)
+
+
+def test_a_backward_clock_jump_cannot_pin_a_dead_holders_lock() -> None:
+    gone = {"pid": 1, "host": "another-host", "token": "t"}
+    assert not xa._holder_gone(gone, -30.0)
+    assert xa._holder_gone(gone, -(xa.LOCK_ABANDONED_S + 1))
+
+
+def test_a_send_under_the_lock_is_bounded() -> None:
+    assert xa.bounded(lambda: 7, timeout_s=1.0) == 7
+    with pytest.raises(KeyError):
+        xa.bounded(lambda: {}["x"], timeout_s=1.0)
+    t0 = time.monotonic()
+    with pytest.raises(xa.LockedCallTimeout, match="may still land"):
+        xa.bounded(lambda: time.sleep(2.0), timeout_s=0.2, what="hung send")
+    assert time.monotonic() - t0 < 1.5
+
+
+def test_a_hung_e8_send_releases_the_lock_and_is_a_failed_send(monkeypatch) -> None:
+    from prop import e8_gold as g
+    monkeypatch.setattr(xa, "LOCKED_SEND_TIMEOUT_S", 0.2)
+    monkeypatch.setattr(xa, "LOCKED_PUBLISH_TIMEOUT_S", 0.2)
+    flat = SimpleNamespace(positions_get=lambda symbol=None: (),
+                           orders_get=lambda symbol=None: (),
+                           account_info=lambda: SimpleNamespace(login=LOGIN, server=SERVER))
+    venue = SimpleNamespace(_by_key={"XAUUSD": 6102}, positions=lambda: [], orders=lambda: [],
+                            _raw_api=SimpleNamespace(acc_id=31337))
+    lock = xa.XACCT_DIR / "placement.lock"
+    t0 = time.monotonic()
+    with pytest.raises(xa.LockedCallTimeout):
+        g.fenced_send(flat, venue, {}, holder="e8_gold:test", side="buy_stop",
+                      send=lambda: time.sleep(3.0))
+    assert time.monotonic() - t0 < 2.5
+    assert not lock.exists()                                   # released on time
+    with xa.placement_lock("next-lane", wait_s=0.0) as got:
+        assert got
+
+
+def test_every_tradelocker_send_and_publish_under_the_lock_is_bounded() -> None:
+    src = {rel: (_DESK / rel).read_text(encoding="utf-8")
+           for rel in ("prop/e8_gold.py", "prop/e8_executor.py")}
+    gold, ex = src["prop/e8_gold.py"], src["prop/e8_executor.py"]
+    assert "return _xa.bounded(send," in gold
+    assert "oid = _xa.bounded(_send," in gold
+    assert 'row["order_id"] = _xa.bounded(' in ex
+    for text in (gold, ex):
+        # No bare publish_tradelocker call under a lock: each is bounded or inside
+        # publish_under_lock (which bounds it).
+        for i in [k for k in range(len(text)) if text.startswith("_xa.publish_tradelocker(", k)]:
+            head = text[max(0, i - 120):i]
+            assert "bounded(lambda: " in head or "publish_under_lock(" in head, head
+
+
+def test_the_fusion_trade_risk_cap_line_carries_its_risk_frac_at_both_sites() -> None:
+    src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    sites = [k for k in range(len(src)) if src.startswith('line_once("fusion_trade_risk_cap"', k)]
+    assert len(sites) == 2
+    for k in sites:
+        assert "risk_frac=minlot_floor_risk_frac(" in src[k:k + 400]
+

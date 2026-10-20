@@ -889,6 +889,10 @@ def minlot_override_size(s: dict[str, Any], symbol: str, info: object | None,
         return None
     if not allocator_sovereign():
         return None
+    if cert_book_zero(s.get("name")):
+        # The principal's 0.0 in CERT_BOOK_LIVE.json binds even a marked row whose allocator
+        # fraction did not come through the overlay (zuck 2026-10-20 21:52Z: gold_asia only).
+        return 0.0, 0.0, (f"fusion book: the cert book pins {s.get('name')} at 0.0; no order")
     if s.get("sized_by") == "allocator_book":
         h = _num_or_nan(s.get("risk_frac"))
         if not h > 0.0:
@@ -937,6 +941,23 @@ def minlot_override_size(s: dict[str, Any], symbol: str, info: object | None,
     basis = (f"fusion book: {lot:.2f} lot from {src} (target {target:.2f} at "
              f"{MINLOT_OVERRIDE_TARGET_FRAC:.2%}; this order runs {q:.2%} at its {d:.5g} stop)")
     return lot, round(target, 8), basis
+
+
+def minlot_floor_risk_frac(symbol: str, info: object | None, equity: object,
+                           dist: object) -> float | None:
+    """The fraction of equity the 0.01-lot floor risks at stop `dist`:
+    `MINLOT_OVERRIDE_LOT x dist x EUR per price unit / equity`, or None when any term cannot be
+    priced. Carried on every `fusion_trade_risk_cap` line so the bill states the risk it refused,
+    not only that it refused (audit round 4 on c07dd71d)."""
+    try:
+        eq = float(equity)  # type: ignore[arg-type]
+        d = float(dist)  # type: ignore[arg-type]
+        unit = float(_eur_per_price_unit(symbol, info))
+    except Exception:
+        return None
+    if not all(math.isfinite(v) and v > 0.0 for v in (eq, d, unit)):
+        return None
+    return round(MINLOT_OVERRIDE_LOT * d * unit / eq, 6)
 
 
 def _num_or_nan(v: object) -> float:

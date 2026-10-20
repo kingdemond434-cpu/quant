@@ -763,7 +763,11 @@ def fenced_send(mt5: Any, venue: Any, doc: dict[str, Any], *, holder: str, side:
                 send: Any) -> tuple[Any, str | None]:
     """Run `send()` under the cross-account fence: (its result, None), or (None, why) when the
     Fusion account holds or rests the opposite side of XAUUSD, its book cannot be read live, or
-    the lock is not taken. This account's book is republished under the same lock."""
+    the lock is not taken. This account's book is republished under the same lock.
+
+    The send is BOUNDED (`cross_account.bounded`, audit round 4): past LOCKED_SEND_TIMEOUT_S it
+    raises `LockedCallTimeout` and the lock is released. The caller's `except` records it as a
+    failed send; it may still land, and the next pass's retry adopts it if it did."""
     from mt5desk import cross_account as _xa
     with _xa.placement_lock(holder, wait_s=xacct_lock_wait(doc)) as locked:
         if not locked:
@@ -775,10 +779,11 @@ def fenced_send(mt5: Any, venue: Any, doc: dict[str, Any], *, holder: str, side:
         if xwhy:
             return None, xwhy
         try:
-            return send(), None
+            return _xa.bounded(send, what=f"{holder} send"), None
         finally:
             with contextlib.suppress(Exception):
-                _xa.publish_tradelocker(venue, source="e8_gold")
+                _xa.bounded(lambda: _xa.publish_tradelocker(venue, source="e8_gold"),
+                            timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S, what=f"{holder} publish")
 
 
 def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
@@ -1025,9 +1030,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                     legs[side] = {"id": None, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
                     continue
                 try:
-                    oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell", lot,
-                                           price=float(s["price"]), stop=float(s["sl"]),
-                                           take_profit=float(s["tp"]))
+                    # BOUNDED UNDER THE LOCK (audit round 4): a hung call raises
+                    # LockedCallTimeout -> REJECTED below -> the retry adopts it if it landed.
+                    _send = (lambda side=side, lot=lot, s=s: venue.place_stop(
+                        SYMBOL, "buy" if side == "buy_stop" else "sell", lot,
+                        price=float(s["price"]), stop=float(s["sl"]),
+                        take_profit=float(s["tp"])))
+                    oid = _xa.bounded(_send, what=f"e8_gold:{name}:{side} send")
                     row.update({"status": "SENT", "order_id": oid})
                     legs[side] = {"id": oid, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
                     log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} "
@@ -1044,7 +1053,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                         {"window": name, "side": side, "order_id": row.get("order_id")})
             if armed and _xlocked:
                 with contextlib.suppress(Exception):
-                    _xa.publish_tradelocker(venue, source="e8_gold")
+                    _xa.bounded(lambda: _xa.publish_tradelocker(venue, source="e8_gold"),
+                                timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
+                                what=f"e8_gold:{name} publish")
         if fenced and not legs and not failed:
             # Every leg fenced: the window waits, NOT marked placed, and its risk is not committed.
             committed = (committed or 0.0) - risk_usd

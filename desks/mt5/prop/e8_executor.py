@@ -1302,8 +1302,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                     _t0 = time.perf_counter()
                     _sent_at = datetime.now(tz=UTC)
                     try:
-                        row["order_id"] = venue.place(sym, side, lot, stop=float(g.stop),
-                                                      take_profit=float(g.target))
+                        # BOUNDED UNDER THE LOCK (audit round 4): a hung call raises
+                        # LockedCallTimeout -> REJECTED below; it may still have landed.
+                        row["order_id"] = _xa.bounded(
+                            lambda: venue.place(sym, side, lot, stop=float(g.stop),
+                                                take_profit=float(g.target)),
+                            what=f"e8_executor:{sym} send")
                         row["status"] = "SENT"
                         row["sent_at"] = _sent_at.isoformat()
                         row["acked_at"] = datetime.now(tz=UTC).isoformat()
@@ -1315,7 +1319,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         row["status"] = "REJECTED"
                         row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"
                     with contextlib.suppress(Exception):
-                        _xa.publish_tradelocker(venue, source="e8_executor")
+                        _xa.bounded(lambda: _xa.publish_tradelocker(venue,
+                                                                    source="e8_executor"),
+                                    timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
+                                    what="e8_executor publish")
             if _xwhy is not None:
                 row["status"] = "RAIL_BLOCKED"
                 row["rail"] = "cross_account_opposite"

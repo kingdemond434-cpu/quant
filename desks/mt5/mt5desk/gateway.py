@@ -299,6 +299,9 @@ from mt5desk.decision_core import (
     minlot_override_size as minlot_override_size,
 )
 from mt5desk.decision_core import (
+    minlot_floor_risk_frac as minlot_floor_risk_frac,
+)
+from mt5desk.decision_core import (
     MINLOT_OVERRIDE_TARGET_FRAC as MINLOT_OVERRIDE_TARGET_FRAC,
     FUSION_LIVE_SERVER as FUSION_LIVE_SERVER,
     FUSION_ACCOUNT_FILE as FUSION_ACCOUNT_FILE,
@@ -3359,7 +3362,10 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                 _rails.line_once("fusion_trade_risk_cap",
                                  f"{s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
                                  sleeve=s["name"], symbol=s["symbol"], dist=dist,
-                                 lot=MINLOT_OVERRIDE_LOT, why=_ov_basis)
+                                 lot=MINLOT_OVERRIDE_LOT,
+                                 risk_frac=minlot_floor_risk_frac(s["symbol"], sym, equity,
+                                                                  dist),
+                                 why=_ov_basis)
             return {"ok": False, "stage": "fusion_book_refused", "considered": True,
                     "why": _ov_basis, "mark": bool(step.mark), "last_bar": last_bar,
                     "note": step.note}
@@ -4345,7 +4351,9 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
             _rails.line_once("fusion_trade_risk_cap",
                              f"{s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
                              sleeve=s["name"], symbol=s["symbol"], dist=dist,
-                             lot=MINLOT_OVERRIDE_LOT, why=_bbasis)
+                             lot=MINLOT_OVERRIDE_LOT,
+                             risk_frac=minlot_floor_risk_frac(s["symbol"], sym, equity, dist),
+                             why=_bbasis)
         return float(_blot), _bbasis
     mode = s.get("lot")
     if mode == "auto":

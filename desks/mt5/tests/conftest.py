@@ -181,6 +181,12 @@ def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
     monkeypatch.setattr(cross_account, "_HELD", {})
     monkeypatch.setattr(cross_account, "_RELEASED", set())
     monkeypatch.setattr(cross_account, "_MISSED_AT", [])
+    # HERMETIC ON THE BOX TOO: the box declares its real accounts in gitignored files
+    # (FUSION_LIVE_ACCOUNT.json, E8_ACCOUNT.json), and a declared account makes every test book
+    # "another account's". A test of the binding points these at its own tmp copies.
+    from mt5desk import decision_core as _dc
+    monkeypatch.setattr(cross_account, "E8_ACCOUNT_FILE", d / "E8_ACCOUNT.json")
+    monkeypatch.setattr(_dc, "FUSION_ACCOUNT_FILE", d / "FUSION_LIVE_ACCOUNT.json")
     for account in cross_account.ACCOUNTS:
         cross_account.publish(account, {}, source="conftest",
                               key=cross_account.account_key(f"conftest-{account}", "test"))
