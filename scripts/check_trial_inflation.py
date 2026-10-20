@@ -32,9 +32,13 @@ lawful source of a bar's N. This fence walks the tree and goes RED on:
    the share of charged trials that are repeats of an already-charged pass may not rise over the
    last reading. Before the dedupe it is MEASURED and published, never failed.
 
-4. A WRITTEN-DOWN TIER S t (auditor's proposal, coordinator's ruling 2026-10-14). A bare numeric
-   constant within +/-0.05 of 2.84 used as a bar -- an operand of a comparison, or the value bound
-   to a name like `*_T_BAR` / `TIER_S_*` -- outside `libs/research/tier_s_threshold.py`. The t
+4. A WRITTEN-DOWN TIER S t (auditor's proposal, coordinator's ruling 2026-10-14; widened on the
+   re-audit of 6de7b1a99). A numeric constant in 2.79..2.90, in any notation (2.8, 284e-2), used
+   as a bar -- an operand of a comparison or of np.greater_equal & co, directly, wrapped
+   (np.float64) or in arithmetic; bound to a t-bar name (`*_T_BAR`, `TIER_S_*`, `t_min`); bound to
+   any name or a parameter default that is then compared against a t; a keyword or dict value
+   under a t-bar name -- outside `libs/research/tier_s_threshold.py`. A comparison with a moment
+   (`kurt > 2.85`) is not a t bar. The t
    the Tier S bar demands depends on T, skew and kurtosis (4.56 at T=5, 2.89 at T=100); a typed
    2.84 is a copy that stops tracking them. Import `tier_s_t_required` / `tier_s_passes` instead.
 
@@ -45,6 +49,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import math
 import os
 import re
 import sys
@@ -424,23 +429,176 @@ def scan(root: Path = ROOT) -> dict[str, Any]:
 
 
 #: Rule 4: the Tier S t's asymptote, the band around it, and the one module allowed to hold it.
+#: The band is 2.79..2.90 in ANY notation (2.8, 2.84, 284e-2, 2_84e-2): the t the bar demands runs
+#: 2.886 at T=100 down to 2.838, and the old +/-0.05 band is kept as its lower edge.
 TIER_S_T = 2.84
-TIER_S_T_TOL = 0.05
+TIER_S_LO, TIER_S_HI = 2.79, 2.90
 TIER_S_HOME = frozenset({"libs/research/tier_s_threshold.py", "libs/research/trial_count_guard.py",
                          "scripts/check_trial_inflation.py"})
-_TIER_S_TEXT = re.compile(r"(?<![\w.])2\.(79|8\d)\d*(?![\w.])")
+#: Cheap lexical gate: any numeric token. Its VALUE decides (float() of the token), so 2.8,
+#: 284e-2 and 2.8_4 reach the AST pass and an unrelated 0.284 does not.
+_NUM_TOKEN = re.compile(r"(?<![\w.])(?:\d[\d_]*\.?[\d_]*|\.\d[\d_]*)(?:[eE][-+]?\d+)?(?![\w.])")
 _TIER_S_NAME = re.compile(r"(_T_BAR$|^TIER_S_)", re.IGNORECASE)
+#: Identifier segments that read as a t statistic or its bar, and as a distribution moment. A
+#: moment compared with ~2.85 (`kurt > 2.85`, near the normal's 3) is not a t threshold.
+_T_SEGMENTS = frozenset({"t", "tstat", "tstats", "tval", "tvalue", "hurdle", "tier", "nwt",
+                         "tgross", "traw", "tnet"})
+_MOMENT_HINTS = ("kurt", "skew", "moment", "g3", "g4", "excess")
+_COMPARE_CALLS = frozenset({"greater", "greater_equal", "less", "less_equal", "gt", "ge", "lt",
+                            "le"})
+_WRAPPERS = frozenset({"float", "float64", "float32", "float_", "double", "asarray", "array"})
 
 
-def _tier_s_const(e: ast.expr | None) -> float | None:
-    """The literal's magnitude when `e` is a bare number (or its negation) inside the band."""
+def _in_band(v: float) -> bool:
+    return TIER_S_LO - 1e-12 <= abs(v) <= TIER_S_HI + 1e-12
+
+
+def _band_value(e: ast.expr | None) -> float | None:
+    """The band literal carried by `e`: a bare number, its negation, a float()/np.float64()
+    wrapper of one, or an operand of arithmetic on one (2.84 * k, base + 2.84)."""
+    if e is None:
+        return None
     if isinstance(e, ast.UnaryOp) and isinstance(e.op, (ast.USub, ast.UAdd)):
-        e = e.operand
+        return _band_value(e.operand)
     if (isinstance(e, ast.Constant) and isinstance(e.value, (int, float))
-            and not isinstance(e.value, bool)
-            and abs(float(e.value) - TIER_S_T) <= TIER_S_T_TOL + 1e-12):
-        return float(e.value)
+            and not isinstance(e.value, bool)):
+        return float(e.value) if _in_band(float(e.value)) else None
+    if isinstance(e, ast.Call) and _callee(e) in _WRAPPERS and e.args:
+        return _band_value(e.args[0])
+    if isinstance(e, (ast.List, ast.Tuple)) and len(e.elts) == 1:
+        return _band_value(e.elts[0])
+    if isinstance(e, ast.BinOp):
+        return _band_value(e.left) if _band_value(e.left) is not None else _band_value(e.right)
     return None
+
+
+def _segments(name: str) -> set[str]:
+    return {s for s in re.split(r"_+", name.lower()) if s}
+
+
+def _names_in(e: ast.expr) -> list[str]:
+    out: list[str] = []
+    for n in ast.walk(e):
+        if isinstance(n, ast.Name):
+            out.append(n.id)
+        elif isinstance(n, ast.Attribute):
+            out.append(n.attr)
+        elif isinstance(n, ast.Constant) and isinstance(n.value, str):
+            out.append(n.value)                  # r["t_gross"], row.get("kurtosis")
+    return out
+
+
+def _t_ish(name: str) -> bool:
+    return bool(_TIER_S_NAME.search(name)) or bool(_segments(name) & _T_SEGMENTS)
+
+
+def _moment_ish(e: ast.expr) -> bool:
+    return any(h in nm.lower() for nm in _names_in(e) for h in _MOMENT_HINTS)
+
+
+def _comparisons(tree: ast.AST) -> list[list[ast.expr]]:
+    """Every comparison's operands: `a < b <= c` and np.greater_equal(a, b) / operator.ge(a, b)."""
+    out: list[list[ast.expr]] = []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Compare):
+            out.append([n.left, *n.comparators])
+        elif isinstance(n, ast.Call) and _callee(n) in _COMPARE_CALLS and len(n.args) >= 2:
+            out.append(list(n.args[:2]))
+    return out
+
+
+def _compared_in_t_context(name: str, comps: list[list[ast.expr]]) -> bool:
+    """`name` is an operand of a comparison whose other side reads as a t, and none as a moment."""
+    for ops in comps:
+        mine = [o for o in ops if name in _names_in(o)]
+        if not mine or any(_moment_ish(o) for o in ops):
+            continue
+        others = [o for o in ops if o not in mine]
+        if any(_t_ish(nm) for o in others for nm in _names_in(o)):
+            return True
+    return False
+
+
+def tier_s_literals(root: Path = ROOT) -> list[dict[str, Any]]:
+    """Rule 4: every ~2.84 constant (2.79..2.90, any notation) used as a t bar outside the helper.
+
+    USED AS A BAR means one of: an operand of a comparison (`t >= 2.84`, `t > 2.84 * k`,
+    np.greater_equal(t, 2.84)); bound to a name that reads as a t bar (`TIER_S_*`, `*_T_BAR`,
+    `t_min`, `hurdle`); bound to any name, or a parameter's default, that is then compared
+    against a t (`bar = 2.8` ... `if t_gross >= bar`); or a keyword / dict value under a t-bar
+    name. A comparison any of whose operands names a moment (kurt, skew, g3, g4) is not a t bar."""
+    hits: list[dict[str, Any]] = []
+    for p in _files(root):
+        rel = p.relative_to(root).as_posix()
+        if rel in TIER_S_HOME:
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if not any(_in_band(_num(m.group(0))) for m in _NUM_TOKEN.finditer(text)):
+            continue
+        try:
+            tree = ast.parse(text)
+        except (SyntaxError, ValueError):
+            continue
+        comps = _comparisons(tree)
+        found: dict[tuple[int | None, float, str], None] = {}
+
+        def hit(node: ast.AST, v: float, use: str,
+                _f: dict[tuple[int | None, float, str], None] = found) -> None:
+            _f[(getattr(node, "lineno", None), v, use)] = None
+
+        for ops in comps:
+            if any(_moment_ish(o) for o in ops):
+                continue
+            for o in ops:
+                v = _band_value(o)
+                if v is not None:
+                    hit(o, v, "comparison")
+        for n in ast.walk(tree):
+            if isinstance(n, (ast.Assign, ast.AnnAssign)):
+                targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+                names = [x for tg in targets for x in _target_names(tg)]
+                v = _band_value(n.value)
+                if v is None:
+                    continue
+                if any(_t_ish(x) for x in names):
+                    hit(n, v, f"bound to {','.join(names)}")
+                elif any(_compared_in_t_context(x, comps) for x in names):
+                    hit(n, v, f"bound to {','.join(names)}, compared against a t")
+            elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                a = n.args
+                pos = [*a.posonlyargs, *a.args]
+                pairs = list(zip(pos[len(pos) - len(a.defaults):], a.defaults, strict=False))
+                pairs += [(k, d) for k, d in zip(a.kwonlyargs, a.kw_defaults, strict=False)
+                          if d is not None]
+                body_comps = _comparisons(n)
+                for arg, d in pairs:
+                    v = _band_value(d)
+                    if v is not None and (_t_ish(arg.arg)
+                                          or _compared_in_t_context(arg.arg, body_comps)):
+                        hit(d, v, f"default of {arg.arg}")
+            elif isinstance(n, ast.keyword) and n.arg and _t_ish(n.arg):
+                v = _band_value(n.value)
+                if v is not None:
+                    hit(n.value, v, f"keyword {n.arg}")
+            elif isinstance(n, ast.Dict):
+                for k, val in zip(n.keys, n.values, strict=False):
+                    if isinstance(k, ast.Constant) and isinstance(k.value, str) \
+                            and _t_ish(k.value):
+                        v = _band_value(val)
+                        if v is not None:
+                            hit(val, v, f"key {k.value}")
+        hits += [{"file": rel, "line": ln, "value": v, "use": u} for ln, v, u in found]
+    return hits
+
+
+def _num(tok: str) -> float:
+    try:
+        return float(tok.replace("_", ""))
+    except ValueError:
+        return math.nan
 
 
 def _target_names(t: ast.expr) -> list[str]:
@@ -451,52 +609,6 @@ def _target_names(t: ast.expr) -> list[str]:
     if isinstance(t, (ast.Tuple, ast.List)):
         return [n for el in t.elts for n in _target_names(el)]
     return []
-
-
-def tier_s_literals(root: Path = ROOT) -> list[dict[str, Any]]:
-    """Rule 4: every bare ~2.84 constant used as a bar outside the helper."""
-    hits: list[dict[str, Any]] = []
-    for p in _files(root):
-        rel = p.relative_to(root).as_posix()
-        if rel in TIER_S_HOME:
-            continue
-        try:
-            text = p.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        if not _TIER_S_TEXT.search(text):
-            continue
-        try:
-            tree = ast.parse(text)
-        except (SyntaxError, ValueError):
-            continue
-        for n in ast.walk(tree):
-            vals: list[tuple[float, str]] = []
-            if isinstance(n, ast.Compare):
-                for operand in (n.left, *n.comparators):
-                    v = _tier_s_const(operand)
-                    if v is not None:
-                        vals.append((v, "comparison"))
-            elif isinstance(n, (ast.Assign, ast.AnnAssign)):
-                targets = n.targets if isinstance(n, ast.Assign) else [n.target]
-                names = [x for t in targets for x in _target_names(t)]
-                v = _tier_s_const(n.value)
-                if v is not None and any(_TIER_S_NAME.search(x) for x in names):
-                    vals.append((v, f"bound to {','.join(names)}"))
-            elif isinstance(n, ast.keyword) and n.arg and _TIER_S_NAME.search(n.arg):
-                v = _tier_s_const(n.value)
-                if v is not None:
-                    vals.append((v, f"keyword {n.arg}"))
-            elif isinstance(n, ast.Dict):
-                for k, val in zip(n.keys, n.values, strict=False):
-                    if (isinstance(k, ast.Constant) and isinstance(k.value, str)
-                            and _TIER_S_NAME.search(k.value)):
-                        v = _tier_s_const(val)
-                        if v is not None:
-                            vals.append((v, f"key {k.value}"))
-            hits += [{"file": rel, "line": getattr(n, "lineno", None), "value": v, "use": u}
-                     for v, u in vals]
-    return hits
 
 
 def _discovery_rerun_share(root: Path = ROOT) -> dict[str, Any]:

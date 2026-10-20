@@ -347,3 +347,35 @@ def test_the_helper_is_the_one_home_and_the_live_tree_is_clean(tmp_path: Path) -
     got = _lit(tmp_path, {"libs/research/tier_s_threshold.py": "X_T_BAR = 2.84\n"})
     assert got["state"] == "OK"
     assert fence.tier_s_literals(ROOT) == []
+
+
+# ---- rule 4 widened (re-audit of 6de7b1a99, 2026-10-20): the auditor's missed forms -----------
+@pytest.mark.parametrize("src", [
+    "def ok(t):\n    return t >= 2.8\n",
+    "def ok(t):\n    return t >= 284e-2\n",
+    "def ok(t):\n    return t >= 2_84e-2\n",
+    "BAR = 2.84\ndef ok(t_gross):\n    return t_gross >= BAR\n",
+    "CFG = {'min_t': 2.84}\n",
+    "import numpy as np\ndef ok(t):\n    return np.greater_equal(t, 2.84)\n",
+    "import numpy as np\ndef ok(t):\n    return t >= np.float64(2.84)\n",
+    "def ok(t, bar=2.84):\n    return t >= bar\n",
+    "def ok(x, t_min=2.85):\n    return x\n",
+    "def ok(t, k):\n    return t > 2.84 * k\n",
+    "def ok(row):\n    return row['t_gross'] >= 2.9\n",
+])
+def test_rule4_catches_the_realistic_forms(tmp_path: Path, src: str) -> None:
+    got = _lit(tmp_path, {"libs/x.py": src})
+    assert got["state"] == "FAIL", src
+
+
+@pytest.mark.parametrize("src", [
+    "def ok(kurt):\n    return kurt > 2.85\n",
+    "from scipy.stats import kurtosis\ndef ok(x):\n    return kurtosis(x, fisher=False) > 2.85\n",
+    "def ok(row):\n    return row['skew'] < -2.8\n",
+    "STOP_ATR = 2.8\ndef ok(move, atr):\n    return move > STOP_ATR * atr\n",
+    "def ok(x, mult=2.85):\n    return x * mult\n",
+    "X = 0.284\nY = 28.4\ndef ok(t):\n    return t > 2.95 or t < 2.75\n",
+])
+def test_rule4_leaves_moments_and_non_t_numbers_alone(tmp_path: Path, src: str) -> None:
+    got = _lit(tmp_path, {"libs/x.py": src})
+    assert got["state"] == "OK", (src, got["sites"])
