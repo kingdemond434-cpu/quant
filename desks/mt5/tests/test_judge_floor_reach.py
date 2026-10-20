@@ -505,6 +505,88 @@ def test_judge_coverage_publishes_a_tape_block(tmp_path: Path,
     assert tape["certificates_total"] == 1
 
 
+def test_a_short_tape_returns_its_tranche_to_value(tmp_path: Path,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of ad7d4ac6a, must-fix 1: below 60 + lockbox every tape cell can only come back
+    UNKNOWN, so the 20% share is handed back to the value remainder that hour."""
+    rows = _rows({"alpha": 3000, "orderflow_imbalance": 3000})
+    store = tmp_path / "tape"
+    _tape_store(store, "S0", [d.strftime("%Y-%m-%d") for d in
+                              pd.bdate_range(end="2026-10-13", periods=20)])
+    monkeypatch.setattr(jc, "TAPE_DIR", store)
+    doc = jc.build(rows, ledger=tmp_path / "no.jsonl", ratchet=tmp_path / "no.json", now=NOW)
+    tr = doc["tape"]["tranche"]
+    assert tr["in_force"] is False and tr["families"] == [] and tr["used"] == 0
+    cap = int(doc["totals"]["capacity_measured"])
+    assert tr["pool"] == 0 and tr["returned_to_value"] == int(cap * jc.TAPE_PRIORITY_SHARE) > 0
+    assert "below its need" in tr["why"]
+    assert doc["families"]["orderflow_imbalance"]["tape_priority"] == 0
+    line = doc["missed_growth_lines"][0]
+    assert line["rail"] == "judge_tape_tranche" and line["verdict"] == "NOT_BINDING"
+    assert line["cells_displaced"] == 0
+
+
+def test_a_deep_tape_keeps_its_tranche_and_bills_what_it_displaced(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = _rows({"alpha": 3000, "orderflow_imbalance": 3000})
+    store = tmp_path / "tape"
+    _tape_store(store, "S0", [d.strftime("%Y-%m-%d") for d in
+                              pd.bdate_range(end="2026-10-13", periods=150)])
+    monkeypatch.setattr(jc, "TAPE_DIR", store)
+    doc = jc.build(rows, ledger=tmp_path / "no.jsonl", ratchet=tmp_path / "no.json", now=NOW)
+    tr = doc["tape"]["tranche"]
+    assert tr["in_force"] is True and tr["families"] == ["orderflow_imbalance"]
+    assert tr["used"] > 0 and doc["families"]["orderflow_imbalance"]["tape_priority"] == tr["used"]
+    line = doc["missed_growth_lines"][0]
+    assert line["tranche_cells"] == tr["used"]
+    # What the tranche displaced is measured against the same allocation without it, with the
+    # published ranking: whatever that is, the line states it (zero only if nothing moved).
+    rank = [{"family": r["family"]} for r in doc["value_ranking"]]
+    ship = {f: r["shippable"] for f, r in doc["families"].items()}
+    plain = jc.allocate(ship, int(doc["totals"]["capacity_measured"]), ranking=rank)
+    lost = {f: n - doc["quota"].get(f, 0) for f, n in plain.items()
+            if f != "orderflow_imbalance" and n > doc["quota"].get(f, 0)}
+    assert line["cells_displaced"] == sum(lost.values()) and line["by_family"] == lost
+    # Valued at the ranking's own ev per cell: a positive ev makes it a measured cost.
+    rec = jc.tape_tranche_gate({"tape"}, {"tape": 500, "alpha": 5000}, 1000,
+                               {"status": "MEASURED", "meets_need": True})
+    tranche: dict[str, int] = {}
+    ranking = [{"family": "alpha", "ev_per_cell": 2.0}, {"family": "tape", "ev_per_cell": 1.0}]
+    q = jc.allocate({"tape": 500, "alpha": 5000}, 1000, ranking=ranking,
+                    priority=frozenset(rec["families"]), tranche_out=tranche)
+    mg = jc.tape_tranche_missed_growth({"tape": 500, "alpha": 5000}, 1000, ranking, q, tranche,
+                                       rec, at=NOW)
+    assert mg["missed_growth_line"]["verdict"] == "COSTS_GROWTH"
+    assert mg["missed_growth_line"]["value"] == -2.0 * mg["missed_growth_line"]["cells_displaced"]
+    assert mg["returned_to_value"] == rec["pool"] - mg["used"]
+
+
+def test_the_tranche_skips_a_tape_family_with_nothing_shippable() -> None:
+    rec = jc.tape_tranche_gate({"tape"}, {"tape": 0, "alpha": 10}, 1000,
+                               {"status": "MEASURED", "meets_need": True})
+    assert rec["in_force"] is False and rec["returned_to_value"] == 200 and rec["pool"] == 0
+    assert "no tape family has a shippable cell" in rec["why"]
+    assert jc.tape_tranche_gate({"tape"}, {"tape": 9}, 1000,
+                                {"status": "UNMEASURED", "why": "x"})["in_force"] is False
+
+
+def test_a_symbol_with_no_tape_takes_no_cache_slot() -> None:
+    from research import orthogonal_sweep as osw
+    calls: list[str] = []
+
+    def frame(sym: str):
+        calls.append(sym)
+        return None if sym.startswith("none") else pd.DataFrame({"x": np.zeros(10)})
+
+    lru = osw._SymbolLRU(frame, max_items=1, max_bytes=10**9)
+    lru("REAL")
+    for k in range(5):
+        assert lru(f"none{k}") is None
+    lru("REAL")
+    assert calls.count("REAL") == 1, "absent symbols never evicted the real tape"
+    assert lru("none0") is None and calls.count("none0") == 1
+
+
 def _tape_doc(**over: Any) -> dict:
     depth = {"status": "MEASURED", "max_days": 150, "median_days": 150, "symbols": 1,
              "symbols_at_need": 1, "days_needed": 100, "meets_need": True,

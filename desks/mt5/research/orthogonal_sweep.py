@@ -220,11 +220,15 @@ TAPE_CACHE_MAX_BYTES = 256 * 1024 * 1024
 
 class _SymbolLRU:
     """`fn(symbol)` cached per symbol, evicted least-recently-used past a count OR byte bound.
-    Keeps the `cache_clear()` / `cache_info()` surface of `functools.lru_cache`."""
+    Keeps the `cache_clear()` / `cache_info()` surface of `functools.lru_cache`. A None result
+    (no tape) is held in a separate set of names, so it costs no slot."""
+
+    MAX_ABSENT = 4096
 
     def __init__(self, fn, max_items: int, max_bytes: int) -> None:
         self._fn, self._max_items, self._max_bytes = fn, max_items, max_bytes
         self._store: OrderedDict[str, tuple[object, int]] = OrderedDict()
+        self._absent: set[str] = set()
         self.hits = self.misses = 0
         self.__doc__, self.__wrapped__ = fn.__doc__, fn
 
@@ -240,8 +244,18 @@ class _SymbolLRU:
             self._store.move_to_end(symbol)
             self.hits += 1
             return self._store[symbol][0]
+        if symbol in self._absent:
+            self.hits += 1
+            return None
         self.misses += 1
         v = self._fn(symbol)
+        if v is None:
+            # A symbol with NO tape is remembered apart (audit of ad7d4ac6a): it must never take
+            # one of the bounded slots and evict a symbol that has a tape to re-read.
+            if len(self._absent) >= self.MAX_ABSENT:
+                self._absent.clear()
+            self._absent.add(symbol)
+            return None
         self._store[symbol] = (v, self._size(v))
         while len(self._store) > 1 and (
                 len(self._store) > self._max_items
@@ -251,10 +265,12 @@ class _SymbolLRU:
 
     def cache_clear(self) -> None:
         self._store.clear()
+        self._absent.clear()
         self.hits = self.misses = 0
 
     def cache_info(self) -> dict[str, int]:
         return {"hits": self.hits, "misses": self.misses, "currsize": len(self._store),
+                "absent": len(self._absent),
                 "bytes": sum(b for _, b in self._store.values()),
                 "max_items": self._max_items, "max_bytes": self._max_bytes}
 
