@@ -408,3 +408,82 @@ def test_delta_a_non_utf8_frontier_is_damaged_and_kept(
     assert D.frontier_damaged(fp)
     assert D._record_frontier([], [{"name": "g", "site": "u.org"}])["status"] == "UNMEASURED"
     assert fp.read_bytes() == raw
+
+
+# ------------------------- robots.txt status on a hop (RFC 9309; the desk rule agreed 2026-10)
+@pytest.fixture
+def robots_srv(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[int, dict[str, int],
+                                                                  list[str]]]:
+    """127.0.0.1 whose robots.txt answers with `state["robots"]`; /hop -> /page (same origin)."""
+    for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("no_proxy", "*")
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+    state = {"robots": 404}
+    hits: list[str] = []
+
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, *a: Any) -> None:
+            pass
+
+        def do_GET(self) -> None:
+            hits.append(self.path)
+            if self.path == "/robots.txt":
+                self.send_response(state["robots"])
+                self.end_headers()
+                return
+            if self.path == "/hop":
+                self.send_response(302)
+                self.send_header("Location", "/page")
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(BODY)
+    s = HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=s.serve_forever, daemon=True).start()
+    yield s.server_address[1], state, hits
+    s.shutdown()
+    s.server_close()
+
+
+@pytest.mark.parametrize("code", [404, 410])
+@pytest.mark.parametrize("route", ["page", "index_page"])
+def test_robots_404_allows_a_same_origin_hop(robots_srv: Any, code: int, route: str) -> None:
+    port, state, hits = robots_srv
+    state["robots"] = code
+    r = _run()
+    assert "gold breakout" in getattr(r, route)(f"http://127.0.0.1:{port}/hop")
+    assert hits == ["/hop", "/robots.txt", "/page"] and not r.holds.sites
+
+
+@pytest.mark.parametrize("code", [500, 503])
+@pytest.mark.parametrize("route", ["page", "index_page"])
+def test_robots_5xx_disallows_a_same_origin_hop(robots_srv: Any, code: int, route: str) -> None:
+    port, state, hits = robots_srv
+    state["robots"] = code
+    r = _run()
+    assert getattr(r, route)(f"http://127.0.0.1:{port}/hop") == ""
+    assert "/page" not in hits and not r.holds.sites
+    (st,) = [x for x in r.status if x.get("redirect_stopped")]
+    assert st["missed_growth"]["source"] == "robots"
+
+
+@pytest.mark.parametrize("code", [401, 403, 429])
+def test_robots_refusal_on_a_hop_holds_the_site_and_stops(robots_srv: Any, code: int) -> None:
+    port, state, hits = robots_srv
+    state["robots"] = code
+    r = _run()
+    assert r.page(f"http://127.0.0.1:{port}/hop") == ""
+    assert "/page" not in hits and r.holds.sites["127.0.0.1"]["status"] == code
+
+
+def test_robots_unreachable_disallows() -> None:
+    def down(url: str) -> str:
+        raise OSError("connection refused")
+    assert D.robots_allows("https://ex.example/a", get=down) is False
+    assert D.robots_allows("https://ex.example/a",
+                           get=lambda u: (_ for _ in ()).throw(D.FetchStatus(u, 404))) is True
+    assert D.robots_allows("https://ex.example/a",
+                           get=lambda u: (_ for _ in ()).throw(D.FetchStatus(u, 503))) is False
+    assert D.robots_allows("https://ex.example/a", get=lambda u: "") is True   # empty file

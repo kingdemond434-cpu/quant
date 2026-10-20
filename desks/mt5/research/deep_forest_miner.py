@@ -649,6 +649,35 @@ class SiteRefused(OSError):
         self.url, self.status = url, int(status)
 
 
+class FetchStatus(OSError):
+    """An HTTP failure that is not a refusal (not 401/403/429), carrying its status, so a
+    robots.txt reader can tell a 404 (no file: ALLOW, RFC 9309 2.3.1.3) from a 5xx or an
+    unreachable host (unread: DISALLOW, 2.3.1.4)."""
+
+    def __init__(self, url: str, status: int, msg: str = "") -> None:
+        super().__init__(msg or f"HTTP {status}")
+        self.url, self.status = url, int(status)
+
+
+def read_robots(origin: str, get: Any) -> Any:
+    """THE DESK'S robots.txt RULE for one origin (RFC 9309; agreed with Breadth and the auditor):
+    a parser for the file read (an empty 200 is an empty file: allow all); a 4xx other than
+    401/403/429 -- 404, 410 -- means NO robots.txt, so ALLOW (an empty parser); 401/403/429 is a
+    refusal (`SiteRefused`: the `get` wrapper holds the site for a person) and 5xx, a transport
+    failure or anything unexplained is UNREAD -- None, which disallows."""
+    try:
+        txt = get(f"{origin}/robots.txt")
+    except SiteRefused:
+        return None
+    except FetchStatus as exc:
+        if 400 <= exc.status < 500 and exc.status not in ACCESS_STOP:
+            return robots_parser("")
+        return None
+    except Exception:
+        return None
+    return robots_parser(str(txt or ""))
+
+
 def _index_get(url: str) -> str:
     """One polite GET with the honest index agent. Raises SiteRefused on a 401/403/429 and
     OSError on any other failure. retries=0: a 429 is a stop, never a retry (MF-C)."""
@@ -658,6 +687,8 @@ def _index_get(url: str) -> str:
         return r.text
     if r.status in ACCESS_STOP:
         raise SiteRefused(url, int(r.status or 0))
+    if r.status is not None and int(r.status) >= 400:
+        raise FetchStatus(url, int(r.status), str(r.error or f"HTTP {r.status}"))
     raise OSError(r.error or f"HTTP {r.status}")
 
 
@@ -720,17 +751,14 @@ def robots_origin(url: str) -> str:
 
 def robots_allows(url: str, *, get: Any = None,
                   cache: dict[str, Any] | None = None) -> bool:
-    """True only when the robots.txt of `url`'s OWN origin was read and allows "*". An unread
-    robots.txt is not a permission."""
+    """True only when the robots.txt of `url`'s OWN origin allows "*" under `read_robots`: a
+    file read and allowing, or a 404/410 (no file: allow). An UNREAD robots.txt (5xx,
+    unreachable) is not a permission, and a 401/403/429 holds the site."""
     get = get or _index_get
     cache = cache if cache is not None else {}
     origin = robots_origin(url)
     if origin not in cache:
-        try:
-            txt = get(f"{origin}/robots.txt")
-            cache[origin] = robots_parser(txt) if txt else None
-        except Exception:
-            cache[origin] = None
+        cache[origin] = read_robots(origin, get)
     rp = cache[origin]
     return bool(rp is not None and rp.can_fetch("*", url))
 
@@ -1740,6 +1768,8 @@ class _Run:
         if not stop and r.status in ACCESS_STOP:
             self._hold_site(at, int(r.status or 0))
             raise SiteRefused(at, int(r.status or 0))
+        if not stop and r.status is not None and int(r.status) >= 400:
+            raise FetchStatus(at, int(r.status), str(r.error or f"HTTP {r.status}"))
         raise OSError(stop or r.error or f"HTTP {r.status}")
 
     def rendered(self, url: str) -> str:
