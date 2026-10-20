@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-19T00:36:19.174024+00:00",
+ "generated_utc": "2026-10-20T00:09:08.696922+00:00",
  "controller_variant": "A",
  "shares": {
   "new_mechanism": 0.0818,
@@ -8,16 +8,16 @@
   "conditional_state_edge": 0.1048,
   "execution_improvement": 0.0943,
   "exit_improvement": 0.1101,
-  "cross_asset_signal": 0.1594,
+  "cross_asset_signal": 0.1593,
   "alt_data_hypothesis": 0.0182,
   "failure_derived": 0.1139,
   "model_architecture": 0.0983,
   "external_screen": 0.0182
  },
  "authoritative": true,
- "authority_evidence": "1 leg(s) spent by the controller's prices this hour (mass_screen); the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=10.902)",
+ "authority_evidence": "1 leg(s) spent by the controller's prices this hour (edges_macro_fusion_sweep); the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=10.356)",
  "research_budget_authoritative": true,
- "research_budget_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=10.902)",
+ "research_budget_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=10.356)",
  "research_budget_contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
