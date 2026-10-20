@@ -570,6 +570,101 @@ def test_the_tranche_skips_a_tape_family_with_nothing_shippable() -> None:
                                 {"status": "UNMEASURED", "why": "x"})["in_force"] is False
 
 
+def _deep_tape_doc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, periods: int = 150
+                   ) -> dict[str, Any]:
+    rows = _rows({"alpha": 3000, "orderflow_imbalance": 3000})
+    store = tmp_path / "tape"
+    _tape_store(store, "S0", [d.strftime("%Y-%m-%d") for d in
+                              pd.bdate_range(end="2026-10-13", periods=periods)])
+    monkeypatch.setattr(jc, "TAPE_DIR", store)
+    return jc.build(rows, ledger=tmp_path / "no.jsonl", ratchet=tmp_path / "no.json", now=NOW)
+
+
+def test_the_tranche_and_its_bill_are_printed_in_the_hourly_render(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of 58765e3eb, must-fix: the hourly leg's printed lines carry the tranche (share
+    given, used, returned, cells displaced, value) and every missed-growth line."""
+    doc = _deep_tape_doc(tmp_path, monkeypatch)
+    tr = doc["tape"]["tranche"]
+    line = doc["missed_growth_lines"][0]
+    tape_out = jc.render_tape(doc["tape"])
+    assert "tape tranche [IN FORCE]" in tape_out
+    assert f"share {tr['share']} given (pool {tr['pool']} cells)" in tape_out
+    assert f"used {tr['used']}" in tape_out
+    assert f"returned to value {tr['returned_to_value']}" in tape_out
+    assert f"cells displaced {line['cells_displaced']}" in tape_out
+    assert f"missed growth [judge_tape_tranche] {line['verdict']}" in tape_out
+    out = "\n".join(jc.render(doc))
+    assert tape_out in out and out.count("missed growth [judge_tape_tranche]") == 1
+    # A line the tranche does not own is printed by render() itself.
+    extra = {"rail": "other_gate", "verdict": "COSTS_GROWTH", "cells_displaced": 3,
+             "value": None, "unvalued_cells": 3}
+    doc["missed_growth_lines"].append(extra)
+    out = "\n".join(jc.render(doc))
+    assert "missed growth [other_gate] COSTS_GROWTH: 3 cells displaced, value UNMEASURED" in out
+    short = _deep_tape_doc(tmp_path, monkeypatch, periods=20)
+    s_out = jc.render_tape(short["tape"])
+    assert "tape tranche [RETURNED]" in s_out and "used 0" in s_out
+    assert "missed growth [judge_tape_tranche] NOT_BINDING: 0 cells displaced" in s_out
+    assert "tape tranche: UNMEASURED" in jc.render_tape({"status": "MEASURED"})
+
+
+def test_the_tranche_line_is_published_in_the_missed_growth_gate_lines(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of 58765e3eb, must-fix: MISSED_GROWTH.json `published_gate_lines` carries the
+    tranche's line, read from JUDGE_COVERAGE.json; absent or stale is UNMEASURED."""
+    from research import missed_growth as mg
+    monkeypatch.setattr(mg, "JUDGE_COVERAGE", jc.REPORT)
+    absent = mg.judge_tape_tranche_lines(now=NOW)
+    assert absent["verdict"] == mg.UNMEASURED and absent["lines"] == []
+    doc = _deep_tape_doc(tmp_path, monkeypatch)
+    jc.write(doc)
+    line = doc["missed_growth_lines"][0]
+    got = mg.judge_tape_tranche_lines(now=NOW + timedelta(hours=1))
+    assert got["lines"] == [json.loads(json.dumps(line, default=str))]
+    assert got["cells_displaced"] == line["cells_displaced"]
+    assert got["verdict"] == (mg.COSTS if line["cells_displaced"] > 0 else mg.NOT_BINDING)
+    stale = mg.judge_tape_tranche_lines(now=NOW + timedelta(hours=7))
+    assert stale["verdict"] == mg.UNMEASURED and "older than" in stale["why"]
+    # The daily organ publishes it beside the other gates' lines.
+    monkeypatch.setattr(mg, "STOP_GEOMETRY", tmp_path / "absent.json")
+    published = mg.run(write=False)["published_gate_lines"]
+    assert set(published) >= {"stop_geometry_robustness_gate", "judge_tape_tranche"}
+    assert published["judge_tape_tranche"]["verdict"] in (mg.COSTS, mg.NOT_BINDING,
+                                                          mg.UNMEASURED)
+    # An unpriced displaced cell is billed, its value UNMEASURED, never a zero.
+    unpriced = dict(line, cells_displaced=200, value=None, verdict="COSTS_GROWTH")
+    jc.REPORT.write_text(json.dumps({"at": NOW.isoformat(), "missed_growth_lines": [unpriced]}),
+                         "utf-8")
+    got = mg.judge_tape_tranche_lines(now=NOW)
+    assert got["verdict"] == mg.COSTS and got["value"] is None
+    assert got["value_status"] == mg.UNMEASURED
+
+
+def test_displaced_cells_from_a_zero_or_unknown_ev_family_still_bind() -> None:
+    """Audit of 58765e3eb, should-fix (the auditor's probe): 200 cells displaced from a family
+    whose ev_per_cell is 0 read NOT_BINDING with value -0.0. The verdict keys on cells, and an
+    unknown ev makes the value UNMEASURED, never 0."""
+    ship = {"tape": 500, "alpha": 5000}
+    rec = jc.tape_tranche_gate({"tape"}, ship, 1000, {"status": "MEASURED", "meets_need": True})
+    for ranking, value, status in (
+            ([{"family": "alpha", "ev_per_cell": 0.0}, {"family": "tape", "ev_per_cell": 1.0}],
+             0.0, "MEASURED"),
+            ([{"family": "alpha"}, {"family": "tape", "ev_per_cell": 1.0}], None, "UNMEASURED"),
+            ([{"family": "alpha", "ev_per_cell": float("nan")},
+              {"family": "tape", "ev_per_cell": 1.0}], None, "UNMEASURED")):
+        tranche: dict[str, int] = {}
+        q = jc.allocate(ship, 1000, ranking=ranking, priority=frozenset(rec["families"]),
+                        tranche_out=tranche)
+        ln = jc.tape_tranche_missed_growth(ship, 1000, ranking, q, tranche, rec,
+                                           at=NOW)["missed_growth_line"]
+        assert ln["cells_displaced"] == 200 and ln["by_family"] == {"alpha": 200}
+        assert ln["verdict"] == "COSTS_GROWTH", ranking
+        assert ln["value"] == value and ln["value_status"] == status
+        assert ln["unvalued_cells"] == (0 if status == "MEASURED" else 200)
+        assert "value UNMEASURED" in jc.render_missed_growth_line(ln) or value is not None
+
+
 def test_a_symbol_with_no_tape_takes_no_cache_slot() -> None:
     from research import orthogonal_sweep as osw
     calls: list[str] = []

@@ -2137,23 +2137,42 @@ def tape_tranche_missed_growth(shippable: dict[str, int], capacity: int,
     if rec.get("in_force"):
         out["returned_to_value"] = max(0, int(rec.get("pool") or 0) - used)
     plain = allocate(shippable, capacity, ranking=ranking)
-    ev = {str(r.get("family")): float(r.get("ev_per_cell") or 0.0) for r in ranking}
+    # AN UNKNOWN EV IS NEVER A ZERO (audit of 58765e3eb, should-fix). A family absent from the
+    # ranking, or ranked with a missing or non-finite ev_per_cell, has no measured value per
+    # cell; its displaced cells are counted, and the line's value reads UNMEASURED.
+    ev: dict[str, float] = {}
+    for r in ranking:
+        raw = r.get("ev_per_cell")
+        if isinstance(raw, (int, float)) and not isinstance(raw, bool) \
+                and math.isfinite(float(raw)):
+            ev[str(r.get("family"))] = float(raw)
     displaced = {f: n - quota.get(f, 0) for f, n in plain.items()
                  if f not in tranche and n - quota.get(f, 0) > 0}
-    value = -sum(ev.get(f, 0.0) * n for f, n in displaced.items())
+    cells = sum(displaced.values())
+    unvalued = {f: n for f, n in displaced.items() if f not in ev}
+    priced = -sum(ev[f] * n for f, n in displaced.items() if f in ev)
+    value: float | None = None if unvalued else round(priced, 10)
     line: dict[str, Any] = {
         "day": at.date().isoformat(), "at": at.isoformat(timespec="seconds"),
         "rail": "judge_tape_tranche", "kind": "opportunity_cost",
         "units": "expected value (ranking ev_per_cell x cells) of value-ranked judge cells the "
                  "tape tranche displaced this hour",
-        "cells_displaced": sum(displaced.values()), "by_family": dict(sorted(
+        "cells_displaced": cells, "by_family": dict(sorted(
             displaced.items(), key=lambda kv: -kv[1])[:20]),
-        "tranche_cells": used, "value": round(value, 10),
-        "verdict": "COSTS_GROWTH" if value < 0 else "NOT_BINDING",
+        "tranche_cells": used, "value": value,
+        "value_status": "UNMEASURED" if unvalued else "MEASURED",
+        "unvalued_cells": sum(unvalued.values()),
+        "value_priced_part": round(priced, 10),
+        # BINDING IS KEYED ON CELLS, NOT ON VALUE: a displaced cell from a family valued at 0 or
+        # not valued at all was still taken from the value walk, so it is never NOT_BINDING.
+        "verdict": "COSTS_GROWTH" if cells > 0 else "NOT_BINDING",
         "why": ("the tape tranche (principal 2026-10-14) moves judge cells from the value "
                 "remainder to the tape families; this is what that move forgoes at the "
                 "ranking's own expected value. PUBLISHED in JUDGE_COVERAGE.json, never appended "
                 "to data/missed_growth.jsonl (libs/portfolio/rails.py is sealed)")}
+    if unvalued:
+        line["why"] += (f"; {sum(unvalued.values())} displaced cells come from families with no "
+                        "measured ev_per_cell, so the value is UNMEASURED (never a zero)")
     if not displaced and used == 0:
         line["why"] = f"tranche not in force this hour ({rec.get('why')}): nothing displaced"
     out["missed_growth_line"] = line
@@ -2949,11 +2968,57 @@ def render(doc: dict[str, Any]) -> list[str]:
         lines.append(f"  {row['family']}: mined {row['mined']} unjudged {row['unjudged']} "
                      f"queued {row['queued']} oldest {row['oldest_unjudged_age_h']}h")
     lines.append(render_tape(doc.get("tape")))
+    # EVERY MISSED-GROWTH LINE IS PRINTED (audit of 58765e3eb, must-fix): a bill nobody reads
+    # is not a bill. The tranche's own line is printed inside render_tape; any other line the
+    # report carries is printed here, so the hourly leg's output shows all of them.
+    tape_raw = doc.get("tape")
+    tape: dict[str, Any] = tape_raw if isinstance(tape_raw, dict) else {}
+    tranche_raw = tape.get("tranche")
+    shown = tranche_raw.get("missed_growth_line") if isinstance(tranche_raw, dict) else None
+    for ln in doc.get("missed_growth_lines") or []:
+        if isinstance(ln, dict) and ln != shown:
+            lines.append(render_missed_growth_line(ln))
     return lines
 
 
+def render_missed_growth_line(line: dict[str, Any]) -> str:
+    """One missed-growth line: rail, verdict, cells displaced, value (UNMEASURED, never 0)."""
+    value = line.get("value")
+    shown = ("UNMEASURED" if not isinstance(value, (int, float))
+             else f"{float(value):.3e}")
+    by = line.get("by_family") or {}
+    top = ", ".join(f"{f} {n}" for f, n in list(by.items())[:3])
+    return (f"  missed growth [{line.get('rail')}] {line.get('verdict')}: "
+            f"{line.get('cells_displaced')} cells displaced"
+            + (f" ({top})" if top else "")
+            + f", value {shown}"
+            + (f" ({line.get('unvalued_cells')} cells unvalued)"
+               if line.get("unvalued_cells") else ""))
+
+
+def render_tranche(tranche: Any) -> list[str]:
+    """The tape tranche: share given, used, returned to value, displaced, and its bill."""
+    if not isinstance(tranche, dict):
+        return ["  tape tranche: UNMEASURED -- this report carries no tranche record"]
+    line = tranche.get("missed_growth_line")
+    displaced = line.get("cells_displaced") if isinstance(line, dict) else None
+    value = line.get("value") if isinstance(line, dict) else None
+    out = [f"  tape tranche [{'IN FORCE' if tranche.get('in_force') else 'RETURNED'}]: share "
+           f"{tranche.get('share')} given (pool {tranche.get('pool')} cells), used "
+           f"{tranche.get('used')}, returned to value {tranche.get('returned_to_value')}, "
+           f"cells displaced {displaced}, value "
+           f"{'UNMEASURED' if not isinstance(value, (int, float)) else f'{float(value):.3e}'}"
+           f" -- {tranche.get('why')}"]
+    if isinstance(line, dict):
+        out.append(render_missed_growth_line(line))
+    else:
+        out.append("  missed growth [judge_tape_tranche] UNMEASURED: no line on this report")
+    return out
+
+
 def render_tape(tape: Any) -> str:
-    """The tape block's one line: depth vs need (ETA), judged, named 24 h, certificates."""
+    """The tape block: depth vs need (ETA), judged, named 24 h, certificates; then the tranche
+    (share given, used, returned, cells displaced, value) and its missed-growth line."""
     if not isinstance(tape, dict):
         return "  tape: UNMEASURED -- this report carries no tape block"
     d = tape.get("depth") or {}
@@ -2964,8 +3029,9 @@ def render_tape(tape: Any) -> str:
     fams = ", ".join(f"{f} judged {r.get('judged_total')} / 24h {r.get('named_verdicts_24h')} / "
                      f"certs {r.get('certificates')}"
                      for f, r in sorted((tape.get("families") or {}).items()))
-    return (f"  tape [{tape.get('status')}]: {depth}; certificates "
+    head = (f"  tape [{tape.get('status')}]: {depth}; certificates "
             f"{tape.get('certificates_total')}; {fams or 'no tape family derived'}")
+    return "\n".join([head, *render_tranche(tape.get("tranche"))])
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -3008,6 +3074,9 @@ __all__ = [
     "order_docket",
     "rank_by_value",
     "render",
+    "render_missed_growth_line",
+    "render_tape",
+    "render_tranche",
     "unknown_breakdown",
     "unrunnable_bank",
     "update_unrunnable_bank",

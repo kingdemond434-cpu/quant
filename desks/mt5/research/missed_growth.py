@@ -766,10 +766,64 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
                     "COSTS_GROWTH is weakened within its bounds (tunable) or queued for review "
                     "(binary); a rail is never strengthened by this loop")}
+    # The judge's tape tranche registers no rail either (rails.py is sealed): its line rides
+    # JUDGE_COVERAGE.json and is carried here beside the other gates' (audit of 58765e3eb).
+    doc["published_gate_lines"]["judge_tape_tranche"] = judge_tape_tranche_lines()
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     return doc
+
+
+#: The hourly judge-coverage leg's report. Its tape tranche (principal 2026-10-14) moves judge
+#: cells off the value walk, and its missed-growth line is PUBLISHED there as
+#: `missed_growth_lines` (rail `judge_tape_tranche`), never appended to LEDGER.
+JUDGE_COVERAGE = BASE / "reports" / "JUDGE_COVERAGE.json"
+#: The leg is hourly: a report older than this is six missed passes, not today's tranche.
+JUDGE_COVERAGE_MAX_AGE_H = 6.0
+JUDGE_TAPE_TRANCHE_RAIL = "judge_tape_tranche"
+
+
+def judge_tape_tranche_lines(now: datetime | None = None) -> dict[str, Any]:
+    """The judge tape tranche's missed-growth line, read from JUDGE_COVERAGE.json.
+
+    The line counts the value-ranked judge cells the tranche displaced this hour (against the
+    same allocation without it) and values them at the ranking's ev_per_cell. Any displaced cell
+    is COSTS_GROWTH whatever its value; a value the ranking could not price is UNMEASURED, said
+    so, never summed as zero. A missing, stale or line-less report is UNMEASURED with its age."""
+    doc = _json(JUDGE_COVERAGE)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/JUDGE_COVERAGE.json on this host: the hourly judge_coverage "
+                       "leg has not written one"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("at")))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        age_h = ((now or datetime.now(tz=UTC)) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    if not age_h <= JUDGE_COVERAGE_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": [],
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the judge-coverage report is older than {JUDGE_COVERAGE_MAX_AGE_H:g}h "
+                       "or unstamped: the tranche's state today is unknown"}
+    lines = [x for x in (doc.get("missed_growth_lines") or [])
+             if isinstance(x, dict) and x.get("rail") == JUDGE_TAPE_TRANCHE_RAIL]
+    if not lines:
+        return {"verdict": UNMEASURED, "lines": [], "age_h": round(age_h, 2),
+                "why": "the report carries no judge_tape_tranche line (a pre-tranche build, or "
+                       "an empty docket that allocated nothing)"}
+    values = [x.get("value") for x in lines]
+    unpriced = any(not isinstance(v, (int, float)) or isinstance(v, bool) for v in values)
+    cells = sum(int(x.get("cells_displaced") or 0) for x in lines)
+    verdict = COSTS if (cells > 0 or any(x.get("verdict") == COSTS for x in lines)) \
+        else NOT_BINDING
+    return {"verdict": verdict, "source": "reports/JUDGE_COVERAGE.json",
+            "age_h": round(age_h, 2), "lines": lines, "cells_displaced": cells,
+            "value": None if unpriced else round(sum(float(v) for v in values), 12),
+            "value_status": UNMEASURED if unpriced else "MEASURED",
+            "units": lines[0].get("units")}
 
 
 def main() -> int:
@@ -784,6 +838,10 @@ def main() -> int:
         print(f"  {name:26s} {v.get('kind', ''):9s} {v.get('verdict', ''):16s}{extra}")
     if d["calibration_changes"]:
         print(f"  calibration: {d['calibration_changes']}")
+    for gate, g in (d.get("published_gate_lines") or {}).items():
+        extra = "".join(f" {k}={g[k]}" for k in ("cells_displaced", "value", "n_held")
+                        if k in g)
+        print(f"  {gate:26s} {'gate':9s} {g.get('verdict', ''):16s}{extra}")
     if d.get("aggression_verdict"):
         print(f"  aggression: {d['aggression_verdict']} unused_upside={d['unused_upside_heat']}")
     print(f"written: {OUT}")
