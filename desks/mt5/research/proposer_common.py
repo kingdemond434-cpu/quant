@@ -532,7 +532,11 @@ def donate(source: str, candidates: list[dict], tests_run: int,
     path = out / (f"discoveries_{stamp}_{suffix}.json" if suffix else f"discoveries_{stamp}.json")
     LAST_DONATION["donated"] = len(candidates)
     LAST_DONATION["path"] = str(path)
-    path.write_text(json.dumps({"source": source,
+    # Written to a sibling temp file and renamed into place: a donation cut off mid-write must
+    # never sit at its final name, because `_landed` reads that name as proof the trial charge
+    # landed while the experiment ledger skips the unreadable file -- trials charged nowhere.
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps({"source": source,
                                 "generated_at": datetime.now(tz=UTC).isoformat(),
                                 "tests_run": tests_run, "discoveries": candidates,
                                 "counts": {"donated": len(candidates),
@@ -547,6 +551,8 @@ def donate(source: str, candidates: list[dict], tests_run: int,
                                          "here and counted, never written: absence of an "
                                          "available_time is not permission to use the row")},
                                indent=1, default=str), "utf-8")
+    from libs.ops.win_write import replace_resilient
+    replace_resilient(tmp, path)
     _record_in_registry(source, candidates)
     return path
 
@@ -688,8 +694,19 @@ def donation_id(lineage: str, cells: Sequence[str], charged: Sequence[str]) -> s
 
 
 def _landed(source: str, did: str, intel: Path | None = None) -> Path | None:
-    hits = sorted((intel or INTEL / source).glob(f"discoveries_*_{did}.json"))
-    return hits[-1] if hits else None
+    """The donation file for `did`, ONLY if it is whole: parseable JSON with an integer
+    `tests_run`. A truncated or unreadable file is not proof of a landed charge -- the experiment
+    ledger skips it, so reading it as LANDED would mark trials charged that were charged nowhere.
+    Such an intent is dropped and recomputed, and the next donation charges it."""
+    for hit in sorted((intel or INTEL / source).glob(f"discoveries_*_{did}.json"), reverse=True):
+        try:
+            doc = json.loads(hit.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        tr = doc.get("tests_run") if isinstance(doc, dict) else None
+        if isinstance(tr, int) and not isinstance(tr, bool):
+            return hit
+    return None
 
 
 def reconcile_donations(state: dict[str, Any], source: str,

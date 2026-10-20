@@ -324,6 +324,47 @@ def test_a_crash_after_the_door_never_charges_or_donates_twice(
     assert [v["status"] for v in st["donations"].values()] == ["LANDED"]
 
 
+def test_a_truncated_donation_file_is_not_proof_of_a_charge(
+        universe: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit probe 27125a759: a donation cut off mid-write sat at its final name, `_landed`
+    read its existence as LANDED, and the ledger (which skips unreadable files) charged 0 of 28.
+    A file that does not parse to an integer `tests_run` is now dropped and recharged."""
+    from research import proposer_common as pc
+    from research import spread_recovery as sr
+    donated: list[tuple[int, int]] = []
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": 1})
+    kw: dict[str, Any] = {"universe": universe, "git_bars": tmp_path / "none",
+                          "ticks": tmp_path / "none", "state_path": tmp_path / "state.json",
+                          "out": tmp_path / "SPREAD_RECOVERY.json"}
+    monkeypatch.setattr(pc, "donate", _door(tmp_path, donated, crash=True))
+    with pytest.raises(RuntimeError):
+        sr.run(budget_s=600, **kw)
+    (landed,) = (tmp_path / "intel").rglob("discoveries_*.json")
+    landed.write_text(landed.read_text()[:40])
+    monkeypatch.setattr(pc, "donate", _door(tmp_path, donated))
+    rep = sr.run(budget_s=600, **kw)
+    assert rep["cells"]["donation"]["recovered"] == {"landed": 0, "dropped": 1}
+    assert len(donated) == 2 and donated[1][1] == len(sr.plan(["EURUSD"])), "recharged in full"
+
+
+def test_donate_never_leaves_a_partial_file_at_its_final_name(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import proposer_common as pc
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
+    assert pc._landed("src", "abc", tmp_path / "intel") is None
+    d = tmp_path / "intel"
+    d.mkdir()
+    (d / "discoveries_20261014_0000_abc.json").write_text('{"tests_run": 3')
+    assert pc._landed("src", "abc", d) is None
+    (d / "discoveries_20261014_0001_abc.json").write_text('{"tests_run": 3}')
+    assert pc._landed("src", "abc", d) == d / "discoveries_20261014_0001_abc.json"
+    import inspect
+    src = inspect.getsource(pc.donate)
+    assert "tmp.write_text(" in src and "replace_resilient(tmp, path)" in src
+    assert "path.write_text(" not in src
+
+
 def test_a_second_concurrent_pass_stands_down(universe: Path, tmp_path: Path,
                                               monkeypatch: pytest.MonkeyPatch) -> None:
     from research import proposer_common as pc
