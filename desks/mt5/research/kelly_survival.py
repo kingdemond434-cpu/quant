@@ -215,7 +215,30 @@ def e8_barrier(r: np.ndarray, h: np.ndarray, equity: float = E8_INITIAL
             "median_days": float(np.median(days[passed])) if passed.any() else None}
 
 
-def solve(*, seed: int = 0) -> dict[str, Any]:
+#: THE E8 BOOK'S GOLD WINDOWS COME FROM THE BOOK THE E8 LANE TRADES (2026-10-20). `prop/e8_gold.py`
+#: lays `data/CERT_BOOK_LIVE.json`'s `e8` block over this file's `e8` windows, so a window the
+#: book does not fund must be 0 HERE too: otherwise the solve hands it a positive fraction
+#: (measured: afternoon 0.0025) that the lane would place. The book currently names gold_asia
+#: only, so london_am and afternoon are 0 and the solve spends its search on asia alone.
+CERT_BOOK = BASE / "data" / "CERT_BOOK_LIVE.json"
+
+
+def e8_enabled_windows(path: Path | None = None) -> tuple[tuple[str, ...], str]:
+    """(the gold windows the live E8 book funds, where that came from). Pure read.
+
+    A window is enabled when the certified book (enabled, valid) names `gold_<window>` in its `e8`
+    block with a positive fraction. An absent, disabled or invalid book, or one naming no gold
+    key at all, restricts nothing: every window stays in the solve, as before this existed.
+    """
+    from mt5desk.kelly_sizing import load_cert_book
+    book = load_cert_book(path or CERT_BOOK, "e8")
+    if not book or not any(k.startswith("gold_") for k in book):
+        return WINDOWS, "all windows (no valid e8 gold keys in CERT_BOOK_LIVE.json)"
+    on = tuple(w for w in WINDOWS if book.get(f"gold_{w}", 0.0) > 0)
+    return on, f"CERT_BOOK_LIVE.json e8 block: {list(on)}"
+
+
+def solve(*, seed: int = 0, cert_book: Path | None = None) -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     doc: dict[str, Any] = {"generated_at": now.isoformat(timespec="seconds"),
                            "objective": "max ruin-counted E[log W] s.t. P(death) <= eps (Fusion);"
@@ -319,8 +342,11 @@ def solve(*, seed: int = 0) -> dict[str, Any]:
     days = min(E8_DAYS, r8.shape[1])
     r8 = r8[:, :days, :]
     eq_e8 = eq8 or E8_INITIAL
+    on8, on8_src = e8_enabled_windows(cert_book)
+    e8["enabled_windows"], e8["enabled_source"] = list(on8), on8_src
+    grids = [E8_RISKS if w in on8 else (0.0,) for w in WINDOWS]
     best8: tuple[tuple[float, float], tuple[float, ...], dict[str, Any]] | None = None
-    for risks in itertools.product(E8_RISKS, repeat=len(WINDOWS)):
+    for risks in itertools.product(*grids):
         if not any(risks):
             continue
         res = e8_barrier(r8, np.array(risks), eq_e8)
@@ -330,7 +356,7 @@ def solve(*, seed: int = 0) -> dict[str, Any]:
         key = (-md, res["p_pass"] or 0.0)
         if best8 is None or key > best8[0]:
             best8 = (key, risks, res)
-    today8 = e8_barrier(r8, np.array([0.005] * len(WINDOWS)), eq_e8)
+    today8 = e8_barrier(r8, np.array([0.005 if w in on8 else 0.0 for w in WINDOWS]), eq_e8)
     if best8 is None:
         e8["status"] = "NO_SURVIVING_BOOK: every size fails the account too often; today stands"
     else:
@@ -677,6 +703,13 @@ def solve_book(*, seed: int = 0) -> dict[str, Any]:
     return out
 
 
+def _write(out: Path, doc: dict[str, Any]) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=float), encoding="utf-8")
+    tmp.replace(out)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=OUT)
@@ -685,12 +718,15 @@ def main(argv: list[str] | None = None) -> int:
                          "size the gold windows ignore it)")
     a = ap.parse_args(argv)
     doc = solve()
+    # THE GOLD BLOCK IS WRITTEN FIRST (2026-10-20). The readers (`load_kelly_survival`, 2h expiry)
+    # need only `fusion`/`e8`, which solve in seconds. `--book` replays every certificate the
+    # allocator never priced (`_replayed_certificates`, cached a day) and searches O(n^2); on a
+    # box holding hundreds of certificates that outran the leg's cycle budget, the leg was killed
+    # before its single write, and the gold sizing went stale with it (last write 2026-10-11).
+    _write(a.out, doc)
     if a.book:
         doc["book"] = solve_book()
-    a.out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = a.out.with_suffix(".tmp")
-    tmp.write_text(json.dumps(doc, indent=1, default=float), encoding="utf-8")
-    tmp.replace(a.out)
+        _write(a.out, doc)
     fus, e8 = doc.get("fusion") or {}, doc.get("e8") or {}
     print(f"kelly_survival: {doc['status']} -- fusion {fus.get('status')} "
           f"{ {w: v['lots'] for w, v in (fus.get('windows') or {}).items()} }; "
