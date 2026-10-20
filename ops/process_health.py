@@ -40,6 +40,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "desks" / "mt5" / "reports" / "process_health.json"
+#: Every family/scalp fill priced at its own fill price and stop against the sleeve's intended
+#: EUR risk (`mt5desk.risk_intent`, written by the gateway). Summarised as one board row.
+RISK_FILLS = ROOT / "desks" / "mt5" / "data" / "realised_risk_fills.jsonl"
+RISK_ROW = "MT5 realised-risk invariant (fills)"
 
 #: Windows scheduled-task result codes this desk has actually seen, in plain words. Anything not
 #: here is reported as its raw code rather than guessed at.
@@ -165,6 +169,42 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
         return {}
 
 
+def _realised_risk_row() -> dict[str, Any]:
+    """realised/intended EUR risk over the last fills: p50, p95, max and breaches.
+
+    NOT A SCHEDULED TASK: the gateway writes the ledger as it fills. No measured fill reads
+    UNMEASURED -- never OK -- and a p95 above the post-fill tolerance reads RISK_BREACH, which
+    needs attention: fills are risking materially more than the allocator intended."""
+    try:
+        desk = str(ROOT / "desks" / "mt5")
+        if desk not in sys.path:
+            sys.path.insert(0, desk)
+        from mt5desk import risk_intent as _ri
+        summary = _ri.ratio_summary(RISK_FILLS)
+        tol = float(_ri.POST_TOL)
+    except Exception as exc:
+        summary, tol = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}, 1.5
+    age = _age_min(RISK_FILLS)
+    if summary.get("status") != "MEASURED":
+        verdict, why = "UNMEASURED", str(summary.get("why") or "no measured fill")
+    else:
+        why = (f"realised/intended over the last {summary['n']} fill(s): p50 {summary['p50']}, "
+               f"p95 {summary['p95']}, max {summary['max']}, {summary['n_breaches']} above "
+               f"{tol:g}x")
+        verdict = "RISK_BREACH" if float(summary["p95"]) > tol else "OK"
+    try:
+        artifact = str(RISK_FILLS.relative_to(ROOT))
+    except ValueError:
+        artifact = str(RISK_FILLS)
+    return {"name": RISK_ROW, "verdict": verdict, "why": why, "state": "MEASUREMENT",
+            "last_run": "", "next_run": "", "last_result_code": None,
+            "last_result": "written by the gateway on each fill", "artifact": artifact,
+            "artifact_age_min": None if age is None else round(age, 1),
+            "contract_max_age_min": None,
+            "purpose": "final order risk in EUR held to the allocator's intent",
+            "metric": summary}
+
+
 def build() -> dict[str, Any]:
     contracts = _contracts()
     now = datetime.now(tz=UTC)
@@ -253,16 +293,19 @@ def build() -> dict[str, Any]:
             "contract_max_age_min": max_age, "purpose": purpose,
         })
 
-    order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
+    rows.append(_realised_risk_row())
+
+    order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1, "RISK_BREACH": 1,
              "NO_ARTIFACT": 2, "STALE": 3,
-             "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
+             "DISABLED": 4, "UNCONTRACTED": 5, "UNMEASURED": 5, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     for r in rows:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
 
     bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
-                                             "FAILING", "NO_ARTIFACT", "STALE")]
+                                             "FAILING", "NO_ARTIFACT", "STALE",
+                                             "RISK_BREACH")]
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
