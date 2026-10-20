@@ -1060,3 +1060,145 @@ def test_a_fail_pages_through_the_issue_board_and_a_pass_clears_it(tmp_path):
     assert any(a[0] == "JUDGE_ALIVE_ALARM.txt" for a in board.ALARMS)
     assert any(c[1].endswith("judge_alive_fence.json") for c in board.CADENCE)
     assert fence.LIVENESS_ALARM.parent.name == "data"
+
+
+# ------------------------------------------ funnel v2: the snapshot repairs, never just waits
+def _torn_after_snapshot(owner_pid: int | None = None) -> tuple[Path, str]:
+    """The auditor's probe (b94babf39): a merge output is snapshotted, then a kill lands while the
+    sealed writer is mid-file (`:5576` is not atomic). `owner_pid` stamps the snapshot as the
+    killed sweep's own, as `snapshot_merge_outputs` does in that sweep's process."""
+    a, b = runner.MERGE_OUTPUTS
+    good = json.dumps({"survivors": list(range(20))}, indent=2)
+    a.write_text(good)
+    b.write_text(json.dumps({"s": 1}, indent=2))
+    runner.snapshot_merge_outputs()
+    if owner_pid is not None:
+        man = runner.MERGE_SNAPSHOT / "manifest.json"
+        runner._write_json_atomic(man, {**json.loads(man.read_text("utf-8")), "pid": owner_pid})
+    a.write_text(good[: len(good) // 2])                  # killed mid-write
+    runner._PARSE_CACHE.clear()
+    assert runner._parses(a) is False
+    return a, good
+
+
+def test_a_kill_mid_write_is_repaired_when_the_dead_sweep_is_taken_over():
+    dead = subprocess.Popen([sys.executable, "-c", "pass"])
+    dead.wait()
+    a, good = _torn_after_snapshot(owner_pid=dead.pid)
+    _write_hb(dead.pid, beat_age_s=5, create_time=1.0)
+    took = runner.take_over_stale()
+    assert took["action"] == "recorded_dead" and took["restored"] == [a.name]
+    assert a.read_text() == good, "the torn authority file is put back, not merely preserved"
+    st = _stall()
+    assert st["reason"] == "died_unrecorded" and st["restored_from_merge_snapshot"] == [a.name]
+    # The next sweep returns 0 without writing (an empty docket, a firewall HALT): the outputs
+    # now parse, so the snapshot goes, and the only good copy is the file itself.
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 10.0)
+    assert runner._sweep_succeeded() == []
+    assert a.read_text() == good and not runner.MERGE_SNAPSHOT.exists()
+
+
+def test_a_finished_sweep_repairs_a_torn_output_before_it_drops_the_snapshot():
+    a, good = _torn_after_snapshot()
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 10.0)
+    assert runner._sweep_succeeded() == [a.name]
+    assert a.read_text() == good and not runner.MERGE_SNAPSHOT.exists()
+
+
+def test_a_dead_sweep_never_restores_another_sweeps_snapshot():
+    dead = subprocess.Popen([sys.executable, "-c", "pass"])
+    dead.wait()
+    a, _good = _torn_after_snapshot(owner_pid=dead.pid + 100000)
+    _write_hb(dead.pid, beat_age_s=5, create_time=1.0)
+    assert runner.take_over_stale()["restored"] == []
+    assert "not the recovered sweep" in runner._RESTORE_REFUSED[a.name]
+    assert runner._parses(a) is False and (runner.MERGE_SNAPSHOT / a.name).exists()
+
+
+def test_a_restore_puts_back_only_what_the_manifest_vouches_for():
+    a, good = _torn_after_snapshot()
+    snap = runner.MERGE_SNAPSHOT
+    man = json.loads((snap / "manifest.json").read_text("utf-8"))
+    # a snapshot taken BEFORE the recovered sweep started is an older sweep's
+    assert runner.restore_merge_outputs(since=time.time() + 60.0) == []
+    assert "predates" in runner._RESTORE_REFUSED[a.name]
+    # the merge-start snapshot found the file torn (or was SKIPPED for disk): the copy left
+    # behind is the previous snapshot's, and is never restored as if it were this one's
+    runner._write_json_atomic(snap / "manifest.json",
+                              {**man, "files": {a.name: "SKIPPED: under 2x 1 bytes free"}})
+    assert runner.restore_merge_outputs() == []
+    assert "did not copy it" in runner._RESTORE_REFUSED[a.name]
+    # a copy whose size is not the one the manifest recorded is not that copy
+    runner._write_json_atomic(snap / "manifest.json",
+                              {**man, "files": {**man["files"], a.name: 7}})
+    assert runner.restore_merge_outputs() == []
+    # a partial rmtree took the manifest and left the copy
+    (snap / "manifest.json").unlink()
+    assert runner.restore_merge_outputs() == []
+    assert "no readable manifest" in runner._RESTORE_REFUSED[a.name]
+    assert runner._drop_merge_snapshot() is False, "a refused restore keeps the snapshot"
+    # the vouching manifest back: restored
+    runner._write_json_atomic(snap / "manifest.json", man)
+    assert runner.restore_merge_outputs(pid=man["pid"], since=time.time() - 60.0) == [a.name]
+    assert a.read_text() == good
+
+
+def _resume_record(**over):
+    doc = {"resumed": True, "pid": os.getpid(), "at": datetime.now(UTC).isoformat(),
+           "plan_age_s": 3600.0, "max_age_s": 86400.0, "docket_unchanged": False,
+           "cells_changed_replanned": 4, "cells_removed": 1, "cells_not_in_this_plan": 120,
+           "plan_seconds_saved": 9729.0, "build_seconds_saved": 4400.5, "shards_reused": [0, 3]}
+    doc.update(over)
+    path = runner.STALL.parent / "plan_resume.json"
+    path.write_text(json.dumps(doc))
+    return path
+
+
+def test_a_resumed_plan_publishes_a_two_sided_missed_growth_line():
+    path = _resume_record()
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 1800.0)
+    line = runner.record_resume_delay(0, path=path)
+    assert line is not None and line["rail"] == "gauntlet_plan_resume"
+    cost, benefit = line["cost"], line["benefit"]
+    assert cost["cells_delayed"] == 120 and cost["plan_kept_for_the_next_sweep"] is False
+    assert 1790 <= cost["delay_s_floor"] <= 1900
+    assert cost["delay_s_ceiling"] == cost["delay_s_floor"]
+    assert benefit["plan_s_saved"] == 9729.0 and benefit["build_s_saved"] == 4400.5
+    assert benefit["judge_s_saved"] == 14129.5 and benefit["shards_reused"] == [0, 3]
+    assert line["verdict"] == "UNMEASURED" and line["value"] is None
+    st = _stall()
+    assert st["missed_growth"][-1] == line and st["plan_resume"] == line
+    assert "status" not in st, "a resume line never writes a status"
+    from research.missed_growth import organ_published_lines
+
+    carried = organ_published_lines(runner.STALL)
+    assert carried["lines"][-1]["rail"] == "gauntlet_plan_resume"
+    assert carried["verdict"] == "UNMEASURED"
+
+
+def test_a_killed_resumed_sweep_bounds_the_delay_by_the_plans_remaining_age():
+    path = _resume_record(plan_age_s=80000.0)
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 100.0)
+    line = runner.record_resume_delay(runner.STALL_RC, path=path)
+    cost = line["cost"]
+    assert cost["plan_kept_for_the_next_sweep"] is True
+    assert cost["delay_s_ceiling"] == pytest.approx(6400.0 + cost["delay_s_floor"], abs=1.0)
+    want = 120 * cost["delay_s_ceiling"] / 3600
+    assert cost["cell_hours_ceiling"] == pytest.approx(want, abs=0.1)
+
+
+def test_only_this_sweeps_resume_publishes_a_line():
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 100.0)
+    assert runner.record_resume_delay(0, path=_resume_record(pid=os.getpid() + 1)) is None
+    old = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
+    assert runner.record_resume_delay(0, path=_resume_record(at=old)) is None
+    assert runner.record_resume_delay(0, path=_resume_record(resumed=False)) is None
+    assert runner.record_resume_delay(0, path=runner.STALL.parent / "absent.json") is None
+    assert not runner.STALL.exists()
+
+
+def test_the_sweep_publishes_the_resume_line_before_it_clears():
+    import inspect
+
+    src = inspect.getsource(runner._sweep_logged)
+    assert src.index("record_resume_delay(rc)") < src.index("_sweep_succeeded()")

@@ -52,13 +52,26 @@ def plans(root: Path = ROOT) -> list[dict[str, Any]]:
     except OSError:
         return []
     for d in dirs:
-        files = sorted(d.glob("shard_*.json"))
+        # THE MERGE PRUNES OLD PLANS WHILE THIS READS (audit of b94babf39): a directory or a file
+        # that is gone by the time it is stat'ed was pruned, so it is skipped -- never an
+        # OSError that turns the whole digest UNREADABLE.
+        dir_mtime = _mtime(d)
+        if dir_mtime is None:
+            continue
+        stamped = [(f, m) for f in sorted(d.glob("shard_*.json")) if (m := _mtime(f)) is not None]
         merged = _read(d / "MERGED.json")
-        newest = max((f.stat().st_mtime for f in files), default=d.stat().st_mtime)
-        out.append({"token": d.name, "dir": d, "files": files, "merged": merged,
-                    "mtime": max(newest, (d / "MERGED.json").stat().st_mtime
-                                 if merged is not None else 0.0)})
+        merged_mtime = _mtime(d / "MERGED.json") if merged is not None else None
+        newest = max((m for _f, m in stamped), default=dir_mtime)
+        out.append({"token": d.name, "dir": d, "files": [f for f, _m in stamped],
+                    "merged": merged, "mtime": max(newest, merged_mtime or 0.0)})
     return sorted(out, key=lambda p: p["mtime"], reverse=True)
+
+
+def _mtime(path: Path) -> float | None:
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return None
 
 
 def rows_of(plan: dict[str, Any]) -> Iterator[dict[str, Any]]:

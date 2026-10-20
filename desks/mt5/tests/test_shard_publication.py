@@ -266,3 +266,33 @@ def test_publication_charges_no_trial_and_computes_no_program_statistic(eg) -> N
         src = inspect.getsource(fn)
         hit = [b for b in banned if b in src]
         assert not hit, f"{fn.__name__} reaches {hit}"
+
+
+def test_a_plan_pruned_while_it_is_read_is_skipped_never_unreadable(tmp_path, monkeypatch):
+    """audit of b94babf39: the merge prunes old plans while `plans()` stats them."""
+
+    live, pruned = tmp_path / "live", tmp_path / "pruned"
+    live.mkdir()
+    pruned.mkdir()
+    (live / "shard_0.json").write_text(json.dumps({"schema": sv.SCHEMA, "rows": []}))
+    real_glob = Path.glob
+
+    def racing_glob(self, pat):
+        got = list(real_glob(self, pat))
+        if self == live and pat == "shard_*.json":
+            return [*got, live / "shard_9.json"]      # listed, then pruned before its stat
+        return got
+
+    real_iterdir = Path.iterdir
+
+    def racing_iterdir(self):
+        got = list(real_iterdir(self))
+        if self == tmp_path:
+            pruned.rmdir()                            # listed, then pruned before its stat
+        return got
+
+    monkeypatch.setattr(Path, "glob", racing_glob)
+    monkeypatch.setattr(Path, "iterdir", racing_iterdir)
+    ps = sv.plans(tmp_path)
+    assert [p["token"] for p in ps] == ["live"]
+    assert [f.name for f in ps[0]["files"]] == ["shard_0.json"]

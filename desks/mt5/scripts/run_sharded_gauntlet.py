@@ -223,6 +223,9 @@ MERGE_OUTPUTS = (DESK / "reports" / "universal_gates_external.json",
                  DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
 MERGE_SNAPSHOT = DESK / "reports" / ".judge_merge_snapshot"
 MISSED_GROWTH_HISTORY = 50
+#: What the sealed judge's plan resume did this sweep (written by `external_gauntlet._resume_plan`
+#: and `_run_shards`, stamped with the sweep's pid): the cells it set aside and the wall it saved.
+PLAN_RESUME = DESK / "reports" / "gauntlet_cache" / "plan_resume.json"
 
 #: Shard progress for the heartbeat, written by `dispatch` and read by the watchdog thread.
 _PROGRESS: dict[str, Any] = {}
@@ -658,6 +661,78 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
     return doc
 
 
+def _resume_delay_line(doc: dict[str, Any], sweep_s: float | None, *,
+                       plan_kept: bool) -> dict[str, Any]:
+    """THE RESUME'S TWO-SIDED LINE (audit HOLD of b94babf39). A resumed plan judges the docket
+    it was made from: a cell added since waits for the next full plan (`_replan_changed`'s
+    `cells_not_in_this_plan`), and a sweep killed again resumes again, up to the plan's maximum
+    age. That delay is the rail's cost; the planning and build wall the resume did not spend
+    again is what it bought. Both are measured in their own units; neither is priced in
+    E[log W], so the verdict is UNMEASURED, never a clean zero."""
+    def _num(key: str) -> float | None:
+        v = doc.get(key)
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+    cells = int(_num("cells_not_in_this_plan") or 0)
+    age, max_age = _num("plan_age_s"), _num("max_age_s")
+    floor_s = round(float(sweep_s), 1) if sweep_s is not None else None
+    ceil_s = (None if floor_s is None or age is None or max_age is None
+              else round(max(0.0, max_age - age) + floor_s, 1)) if plan_kept else floor_s
+    plan_saved, build_saved = _num("plan_seconds_saved"), _num("build_seconds_saved")
+    saved = [x for x in (plan_saved, build_saved) if x is not None]
+    now = datetime.now(UTC)
+    return {"day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
+            "rail": "gauntlet_plan_resume", "kind": "opportunity_cost", "value": None,
+            "verdict": "UNMEASURED", "reason": "plan_resumed", "lost_s": None,
+            "units": "docket cells x hours delayed (cost) / judge wall-seconds saved (benefit)",
+            "cost": {"cells_delayed": cells,
+                     "cells_changed_replanned": int(_num("cells_changed_replanned") or 0),
+                     "cells_removed": int(_num("cells_removed") or 0),
+                     "delay_s_floor": floor_s, "delay_s_ceiling": ceil_s,
+                     "cell_hours_floor": (None if floor_s is None
+                                          else round(cells * floor_s / 3600.0, 2)),
+                     "cell_hours_ceiling": (None if ceil_s is None
+                                            else round(cells * ceil_s / 3600.0, 2)),
+                     "plan_kept_for_the_next_sweep": plan_kept,
+                     "basis": ("floor: this sweep's own wall, which every delayed cell waited "
+                               "out; ceiling: the plan's remaining resumable age plus that wall "
+                               "when the plan is kept (a kill), else the wall alone -- the next "
+                               "sweep's gap is not counted")},
+            "benefit": {"plan_s_saved": plan_saved, "build_s_saved": build_saved,
+                        "shards_reused": doc.get("shards_reused") or [],
+                        "judge_s_saved": round(sum(saved), 1) if saved else None},
+            "why": (f"the sweep resumed a plan {age if age is not None else '?'}s old: "
+                    f"{cells} docket cell(s) not in it wait for the next full plan, against "
+                    f"{round(sum(saved), 1) if saved else 'UNMEASURED'} judge wall-seconds "
+                    "not spent re-planning and re-building; the E[log W] price of either side "
+                    "is not measured")}
+
+
+@_stall_locked
+def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
+                        path: Path | None = None) -> dict[str, Any] | None:
+    """Publish the resume's two-sided missed-growth line on GAUNTLET_STALL.json, where
+    `research/missed_growth.py` carries the watchdog's lines. Only for THIS sweep's resume:
+    the sealed judge stamps its record with this process's pid and the time it resumed, so an
+    older record (or none: the plan was made, not resumed) publishes nothing."""
+    doc = _read_json(path or PLAN_RESUME)
+    at = _ts(doc.get("at"))
+    t0 = sweep_t0 if sweep_t0 is not None else _PHASE_DOC.get("_t0")
+    if (not doc.get("resumed") or doc.get("pid") != os.getpid() or at is None
+            or (isinstance(t0, float) and at < t0 - 2.0)):
+        return None
+    sweep_s = (time.time() - t0) if isinstance(t0, float) else None
+    line = _resume_delay_line(doc, sweep_s, plan_kept=rc != 0)
+    prev = _read_json(STALL)
+    mg = [*(prev.get("missed_growth") or []), line][-MISSED_GROWTH_HISTORY:]
+    _write_json_atomic(STALL, {**prev, **_lock_stamp(prev), "missed_growth": mg,
+                               "plan_resume": line})
+    with contextlib.suppress(Exception):
+        print(f"{datetime.now(UTC).isoformat()} plan resume: {line['cost']['cells_delayed']} "
+              f"cell(s) delayed, {line['benefit']['judge_s_saved']} judge s saved", flush=True)
+    return line
+
+
 @_stall_locked
 def record_slow(reason: str, *, detail: str = "", shard: dict[str, Any] | None = None,
                 pid: int | None = None,
@@ -802,14 +877,59 @@ def snapshot_merge_outputs() -> dict[str, Any]:
     return out
 
 
-def restore_merge_outputs() -> list[str]:
+#: Why the last `restore_merge_outputs` left a torn output torn (name -> reason), for the record.
+_RESTORE_REFUSED: dict[str, str] = {}
+
+
+def _snapshot_vouches(manifest: dict[str, Any], name: str, copy: Path, *,
+                      pid: int | None, since: float | None) -> str | None:
+    """None when the snapshot's manifest vouches for `copy`; otherwise why it does not.
+
+    A copy is put back only when the manifest written by the SAME snapshot call recorded it as
+    copied, at the size it has now (audit of b94babf39): a snapshot that was SKIPPED (disk) or
+    that found the file torn says so in the manifest, and a copy left behind by an older
+    snapshot -- a suppressed partial rmtree, a skip -- is never restored as if it were current.
+    When the caller names the sweep it is recovering, the manifest must be that sweep's (`pid`)
+    and taken no earlier than it started (`since`)."""
+    if not manifest:
+        return "no readable manifest: the copy cannot be shown to be this snapshot's"
+    if pid is not None and manifest.get("pid") != pid:
+        return f"snapshot taken by pid {manifest.get('pid')}, not the recovered sweep {pid}"
+    at = _ts(manifest.get("at"))
+    if since is not None and (at is None or at < since - 2.0):
+        return (f"snapshot at {manifest.get('at')} predates the recovered sweep's start "
+                f"{_iso(since)}")
+    want = (manifest.get("files") or {}).get(name)
+    if not isinstance(want, int) or isinstance(want, bool):
+        return f"the manifest did not copy it: {want!r}"
+    try:
+        size = copy.stat().st_size
+    except OSError:
+        return "the copy is unreadable"
+    if size != want:
+        return f"the copy is {size} bytes, the manifest copied {want}"
+    return None
+
+
+def restore_merge_outputs(*, pid: int | None = None, since: float | None = None) -> list[str]:
     """After a kill: put back every merge output that no longer parses, from the snapshot, and
-    remove any partial copy the kill left behind."""
+    remove any partial copy the kill left behind.
+
+    Only a copy the snapshot's manifest vouches for is put back (`_snapshot_vouches`); `pid` and
+    `since` name the sweep being recovered when the caller knows it. A refusal is kept in
+    `_RESTORE_REFUSED` and the torn file stays torn -- which also keeps the snapshot
+    (`_drop_merge_snapshot` removes it only when every output parses)."""
     restored: list[str] = []
+    _RESTORE_REFUSED.clear()
     _clean_merge_tmp()
+    manifest = _read_json(MERGE_SNAPSHOT / "manifest.json")
     for dst in MERGE_OUTPUTS:
         copy = MERGE_SNAPSHOT / dst.name
         if not copy.exists() or (dst.exists() and _parses(dst)) or not _parses(copy):
+            continue
+        why = _snapshot_vouches(manifest, dst.name, copy, pid=pid, since=since)
+        if why is not None:
+            _RESTORE_REFUSED[dst.name] = why
             continue
         try:
             import shutil
@@ -1465,7 +1585,8 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
     kill = _kill_report(_kill_sweep_tree(child.pid))
     with contextlib.suppress(subprocess.TimeoutExpired):
         child.wait(timeout=30)
-    restored = restore_merge_outputs()
+    restored = restore_merge_outputs(
+        pid=child.pid, since=_ts(hb.get("started_utc")) if hb.get("pid") == child.pid else None)
     record_stall("resident_kill", detail=f"sweep pid {child.pid}: {why}", pid=child.pid,
                  last_heartbeat=hb if hb.get("pid") == child.pid else {},
                  lost_s=round(now - t0, 1), kill=kill, restored=restored)
@@ -1803,15 +1924,22 @@ def take_over_stale(now: float | None = None, *, sample_s: float | None = None,
     beat = _ts(hb.get("beat_utc"))
     age = None if beat is None else t - beat
     if not _alive_as(pid, hb.get("create_time")):
+        # THE DEAD SWEEP MAY HAVE DIED MID-WRITE (audit HOLD of b94babf39): the sealed writer is
+        # not atomic, so an OOM kill or a reboot inside the merge leaves a torn authority file.
+        # Nobody else will repair it -- the next sweep can return 0 without writing it (an empty
+        # docket, a firewall HALT) -- so it is put back here, from that sweep's own snapshot.
+        restored = restore_merge_outputs(pid=pid, since=_ts(hb.get("started_utc")))
         record_stall("died_unrecorded", detail=(
             f"sweep pid {pid} is gone (or no longer provably the process that wrote the "
             f"heartbeat) and left a RUNNING heartbeat "
             f"{'' if age is None else f'{age:.0f}s old '}in phase {hb.get('phase')}: it was "
-            "killed from outside (OOM, reboot, hand kill) before it could record why"),
-            pid=pid, counts=False, last_heartbeat=hb)
+            "killed from outside (OOM, reboot, hand kill) before it could record why"
+            + (f"; restored {restored}" if restored else "")
+            + (f"; NOT restored {dict(_RESTORE_REFUSED)}" if _RESTORE_REFUSED else "")),
+            pid=pid, counts=False, last_heartbeat=hb, restored=restored)
         _write_json_atomic(HEARTBEAT, {**hb, "status": "DEAD",
                                        "noticed_utc": _iso(t), "noticed_by": os.getpid()})
-        return {"action": "recorded_dead", "pid": pid}
+        return {"action": "recorded_dead", "pid": pid, "restored": restored}
     # A FRESH BEAT IS ITS OWN WATCHDOG'S BUSINESS, however far past a threshold the sweep is:
     # that watchdog is measuring the tree every beat and kills it the moment it goes idle.
     if age is None or age <= HEARTBEAT_STALE_S:
@@ -1864,7 +1992,7 @@ def take_over_stale(now: float | None = None, *, sample_s: float | None = None,
     why = (f"{quiet}; its tree burned < {NO_PROGRESS_CORES} core since that beat and over a live "
            f"sample; cmdline and create_time verified")
     kill = _kill_report(_kill_sweep_tree(pid))
-    restored = restore_merge_outputs()
+    restored = restore_merge_outputs(pid=pid, since=_ts(hb.get("started_utc")))
     record_stall("takeover", detail=(f"sweep pid {pid} {why}; killed {kill.get('killed')} "
                                      f"process(es), orphans {kill.get('orphans')}"),
                  pid=pid, last_heartbeat=hb, kill=kill, restored=restored)
@@ -2010,7 +2138,7 @@ class SweepWatchdog:
                                            "stalled", "slow", "shard_idle_kill_s")}
                  if str(doc.get("phase") or "").endswith("_shards") else None)
         kill = _kill_report(_kill_descendants(os.getpid()))
-        restored = restore_merge_outputs()
+        restored = restore_merge_outputs(pid=os.getpid())
         released = _release_own_locks()
         record_stall(reason, detail=detail, shard=shard, last_heartbeat=doc,
                      lost_s=round(self.clock() - self.started, 1), kill=kill, restored=restored)
@@ -2036,14 +2164,27 @@ class SweepWatchdog:
                                                        None, None), "rc": rc})
 
 
-def _sweep_succeeded() -> None:
-    """Record the measured walls of a FINISHED sweep and end any run of stalls."""
+def _sweep_succeeded() -> list[str]:
+    """Record the measured walls of a FINISHED sweep and end any run of stalls.
+
+    THE SNAPSHOT IS USED BEFORE IT IS DROPPED (audit HOLD of b94babf39). A sweep can return 0
+    without writing the authority files (an empty docket, a firewall HALT), so an output a
+    killed sweep tore may still be torn here. It is repaired from the snapshot first, and the
+    snapshot is dropped only when every output then parses. Returns what was restored."""
     phases = dict(_PHASE_DOC.get("phases") or {})
     t0 = _PHASE_DOC.get("_t0")
     _record_phase_times(phases=phases,
                         sweep_s=(time.time() - t0) if isinstance(t0, float) else None)
+    restored: list[str] = []
+    with contextlib.suppress(Exception):
+        restored = restore_merge_outputs()
+    if restored or _RESTORE_REFUSED:
+        with contextlib.suppress(Exception):
+            print(f"{datetime.now(UTC).isoformat()} finished sweep: merge outputs restored "
+                  f"{restored}, not restored {dict(_RESTORE_REFUSED)}", flush=True)
     _record_clear()
     _drop_merge_snapshot()
+    return restored
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -2115,6 +2256,8 @@ def _sweep_logged() -> int:
                 print(f"{datetime.now(UTC).isoformat()} sweep stopped: {exc}", flush=True)
                 return STALL_RC
             _phase("done")
+            with contextlib.suppress(Exception):   # bookkeeping: never a reason to fail a sweep
+                record_resume_delay(rc)
             if rc == 0:
                 _sweep_succeeded()
             return rc
