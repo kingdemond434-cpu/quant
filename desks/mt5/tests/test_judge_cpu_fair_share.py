@@ -1047,7 +1047,10 @@ def test_launcher_revert_puts_back_the_whole_tree(monkeypatch) -> None:
     procs = {100: child}
     change = {"pid": 100, "create_time": 50.0, "from": "BELOW_NORMAL", "to": "NORMAL"}
     rsg._launch_revert(change, process=procs.__getitem__)
-    assert child.set == [BN] and shard.set == [BN] and warm.set == [] and stale.set == []
+    import psutil  # type: ignore[import-untyped,unused-ignore]
+
+    bn = int(getattr(psutil, "BELOW_NORMAL_PRIORITY_CLASS", 10))  # nice 10 off Windows
+    assert child.set == [bn] and shard.set == [bn] and warm.set == [] and stale.set == []
     assert change["tree_reverted"] == [100, 101]
     # a descendant that refuses: the raise is reported standing, never "changed False"
     bad = _FakeProc(104, 52.0, N, refuse=True)
