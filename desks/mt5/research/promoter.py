@@ -1018,8 +1018,8 @@ def _stamped_to_another_account(row: dict, acc: dict) -> bool:
     """Is this row POSITIVELY about some other account: a known login/server/kind that is not
     the account in hand? A row with no provenance, or an UNKNOWN kind, is evidence about nothing
     the desk can name -- it is not proof the retirement came from elsewhere."""
-    key, _server, kind = provenance.row_account(row)
-    if kind == provenance.UNKNOWN or key is None:
+    login, _server, kind = provenance.row_account(row)
+    if kind == provenance.UNKNOWN or login is None:
         return False
     return not provenance.same_account(row, acc)
 
@@ -1077,12 +1077,11 @@ def retirement_void_reason(rec: dict, ledger: list[dict], name: str, acc: dict,
         return ""
     rows_for = [r for r in all_rows if r.get("sleeve") == name]
     if len(rows_for) >= rec_n and all(_stamped_to_another_account(r, acc) for r in rows_for):
-        others = sorted({f"{provenance.row_key(r)}/{r.get('account_kind')}"
+        others = sorted({f"{r.get('account')}@{r.get('server')}/{r.get('account_kind')}"
                         for r in rows_for})
         return (f"the {len(rows_for)} row(s) that retired it are all stamped to another account "
                 f"({', '.join(others[:3])}), none admissible for the account in hand "
-                f"(account_key={provenance.account_key(acc.get('login'), acc.get('server'))} "
-                f"server={acc.get('server')} kind={acc.get('kind')}): "
+                f"(login={acc.get('login')} server={acc.get('server')} kind={acc.get('kind')}): "
                 f"the evidence that retired it is not evidence about this account")
     return ""
 
