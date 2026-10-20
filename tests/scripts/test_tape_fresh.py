@@ -146,6 +146,7 @@ def test_the_recorder_pulls_to_the_venue_clock_and_stamps_its_newest_tick(
     t0 = 1_780_000_000_000
     src = FakeTickSource(["EURUSD"], ticks_per_day=20_000)
     rec = TickRecorder(src, RecorderConfig(tape_root=tmp_path, cold_start_days=0,
+                                           disk_floor_bytes=0,
                                            server_offset_ms=3 * 3_600_000))
     rec.run_once(now_ms=t0)
     rep = rec.run_once(now_ms=t0 + 60_000)
