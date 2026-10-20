@@ -289,18 +289,31 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
     # refusal (convert_swarm pins one model per lane from the secrets file).
     pin_refused = bool(seat.model) and openrouter_guard.refusal(
         f"{seat.base_url}/chat/completions", {"model": seat.model}) is not None
-    if seat.model and not pin_refused:
+    # A PIN THE PROVIDER HAS STOPPED SERVING IS NOT HONOURED EITHER (2026-10-20). The box ran
+    # MT5-DeepSeek hourly with rc0 while every call 404'd "No endpoints found for
+    # deepseek/deepseek-r1:free": the pin was trusted forever because nothing here ever asked
+    # whether it was still listed. A dead pin is now learned from the refusal itself
+    # (`note_dead`, written by `_post_live`) and swapped below for the best listed id of the
+    # SAME VENDOR, so a retired id costs one request a day instead of every request.
+    dead = dead_models(seat.base_url)
+    pin_dead = bool(seat.model) and seat.model in dead
+    if seat.model and not pin_refused and not pin_dead:
         return seat.model, None
     body, err = _get(f"{seat.base_url}/models", seat.key, timeout=timeout)
     if err:
         return "", err
     ids = [str(m.get("id") or "") for m in (body.get("data") or [])]
-    ids = [i for i in ids if i]
+    ids = [i for i in ids if i and i not in dead]
     if not ids:
         return "", "provider listed no models"
+    if pin_dead and not pin_refused:
+        swap = _same_vendor(seat.model, ids)
+        if swap:
+            _note_swap(seat, seat.model, swap)
+            return swap, None
     guarded = openrouter_guard.refusal(f"{seat.base_url}/chat/completions",
                                        {"model": ""}) is not None
-    if free_tier_only() or guarded:
+    if free_tier_only() or guarded or (pin_dead and _is_free(seat.model)):
         # FREE FIRST -- AND THE SUFFIX MUST COME OFF BEFORE RANKING, or this goes dark.
         #
         # `:free` and `-free` are in _DOWNGRADE_TOKENS, so flagship_rank REFUSES every free id by
@@ -312,7 +325,7 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
         #
         # Stripping the suffix and ranking the BASE name keeps the auto-upgrade property inside
         # the free tier: the day a better free model is listed, it wins on version, with no edit.
-        free_ids = [i for i in ids if i.endswith((":free", "-free"))]
+        free_ids = [i for i in ids if _is_free(i)]
         if free_ids:
             base = {re.sub(r"[:\-]free$", "", i): i for i in free_ids}
             # VARIABLE-LENGTH RANK KEY, because the two rankers return different arities:
@@ -348,6 +361,139 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
                 f"(e.g. {', '.join(sorted(ids)[:5])}) -- every candidate carried a downgrade "
                 f"marker {_DOWNGRADE_TOKENS[:6]}... or carried no version at all. Set "
                 "<PROVIDER>_MODEL explicitly.")
+
+
+#: Where a retired model id is learned and where every swap away from one is recorded. One
+#: append-only ledger, read by `dead_models`; a swap is never silent.
+SWAP_LEDGER = _ROOT / "data" / "llm_model_swaps.jsonl"
+
+#: How long a refusal keeps an id dead. A day, so a provider that re-lists the id gets it back
+#: on the next day's first call rather than never.
+DEAD_TTL_H = 24.0
+
+#: The provider's words for "this id is not served", as OpenRouter and the OpenAI-compatible
+#: servers phrase them. A 429 or a 5xx is NOT here: those are a busy model, not a retired one.
+_DEAD_RE = re.compile(
+    r"no endpoints found|not a valid model id|model[^.]{0,80}?(?:does not exist|not found)"
+    r"|unknown model", re.I)
+
+
+def _is_free(model_id: str) -> bool:
+    return model_id.endswith((":free", "-free"))
+
+
+def is_dead_endpoint(err: str | None) -> bool:
+    """The provider refused the MODEL ID (retired or unknown), not the request or the rate."""
+    if not err or not re.search(r"\b(?:400|404)\b", err):
+        return False
+    return bool(_DEAD_RE.search(err))
+
+
+def _ledger_rows() -> list[dict[str, Any]]:
+    try:
+        lines = SWAP_LEDGER.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    out: list[dict[str, Any]] = []
+    for line in lines:
+        with contextlib.suppress(ValueError):
+            row = json.loads(line)
+            if isinstance(row, dict):
+                out.append(row)
+    return out
+
+
+def dead_models(base_url: str, now: datetime | None = None) -> set[str]:
+    """Ids this provider refused as unserved within the last `DEAD_TTL_H` hours."""
+    now = now or datetime.now(UTC)
+    out: set[str] = set()
+    for row in _ledger_rows():
+        if row.get("kind") != "dead" or row.get("base_url") != base_url:
+            continue
+        try:
+            ts = datetime.fromisoformat(str(row.get("ts")))
+        except ValueError:
+            continue
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=UTC)
+        if (now - ts).total_seconds() <= DEAD_TTL_H * 3600:
+            out.add(str(row.get("model") or ""))
+    out.discard("")
+    return out
+
+
+def _append(row: dict[str, Any]) -> None:
+    with contextlib.suppress(OSError):
+        SWAP_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with SWAP_LEDGER.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+
+
+def note_dead(seat: Seat, model: str, err: str, now: datetime | None = None) -> None:
+    """Record that `seat`'s provider no longer serves `model`. No key is written."""
+    _append({"kind": "dead", "ts": (now or datetime.now(UTC)).isoformat(),
+             "seat": seat.name, "base_url": seat.base_url, "model": model,
+             "err": str(err)[:240]})
+
+
+def _note_swap(seat: Seat, dead: str, chosen: str) -> None:
+    _append({"kind": "swap", "ts": datetime.now(UTC).isoformat(), "seat": seat.name,
+             "base_url": seat.base_url, "from": dead, "to": chosen})
+    print(f"[llm_seat] {seat.name}: {dead} is no longer served; using {chosen}",
+          file=sys.stderr)
+
+
+def _vendor(model_id: str) -> str:
+    """`deepseek/deepseek-r1:free` -> `deepseek`; `deepseek-chat` -> `deepseek`."""
+    low = model_id.lower()
+    if "/" in low:
+        return low.split("/", 1)[0]
+    m = re.match(r"[a-z]+", low)
+    return m.group(0) if m else ""
+
+
+def _same_vendor(pin: str, ids: list[str]) -> str:
+    """The best listed id from the pin's own vendor, inside the pin's tier, or "".
+
+    A FREE PIN STAYS FREE: a dead `:free` id is never replaced by a paid one, whatever the
+    guard would allow, because the person who pinned a free id chose the price as well as the
+    model. When the vendor has nothing left in that tier the caller falls through to ordinary
+    discovery, which ranks every family.
+    """
+    vendor = _vendor(pin)
+    if not vendor:
+        return ""
+    pool = [i for i in ids if _vendor(i) == vendor and i != pin]
+    if _is_free(pin) or free_tier_only():
+        pool = [i for i in pool if _is_free(i)]
+    if not pool:
+        return ""
+    base = {re.sub(r"[:\-]free$", "", i): i for i in pool}
+    ranked: list[tuple[tuple[int, ...], str]] = [
+        (r, orig) for stripped, orig in base.items() if (r := flagship_rank(stripped)) is not None]
+    if not ranked:
+        ranked = [(g, orig) for stripped, orig in base.items()
+                  if (g := _generic_rank(stripped)) is not None]
+    return max(ranked)[1] if ranked else sorted(pool)[0]
+
+
+def _post_live(s: Seat, model: str, req: dict[str, Any], *, timeout: float
+               ) -> tuple[dict[str, Any], str | None, str]:
+    """POST; if the provider says the model id is not served, learn it, swap once, retry once.
+
+    Returns (body, err, model actually used), so the spend ledger books the model that answered.
+    """
+    url = f"{s.base_url}/chat/completions"
+    body, err = _post_with_degrade(url, s.key, req, timeout=timeout)
+    if not is_dead_endpoint(err):
+        return body, err, model
+    note_dead(s, model, str(err))
+    alt, aerr = discover_model(s, timeout=timeout)
+    if aerr or not alt or alt == model:
+        return body, err, model
+    req = {**req, "model": alt}
+    body, err = _post_with_degrade(url, s.key, req, timeout=timeout)
+    return body, err, alt
 
 
 def _generic_rank(model_id: str) -> tuple[int, int, int] | None:
@@ -724,7 +870,7 @@ def chat(
         req["reasoning_effort"] = effort
     if response_format:
         req["response_format"] = dict(response_format)
-    body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
+    body, err, model = _post_live(s, model, req, timeout=timeout)
     if err:
         # A DAILY FREE-TIER REFUSAL IS EVIDENCE, NOT NOISE. Recording it teaches every later
         # caller today's real ceiling instead of letting each one rediscover it one wasted
@@ -785,7 +931,7 @@ def chat_messages(
         req["reasoning_effort"] = effort
     if response_format:
         req["response_format"] = dict(response_format)
-    body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
+    body, err, model = _post_live(s, model, req, timeout=timeout)
     if err:
         # Same refusal, same lesson: chat_messages is the push ladder's seam and
         # hits the identical daily ceiling.
