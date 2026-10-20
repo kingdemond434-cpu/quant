@@ -43,6 +43,15 @@ from archaeology import snapshots as snap  # noqa: E402
 
 from libs.moat import registry as R  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _robots_allow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The LIVE robots/holds check (`polite_fetch.admit`, LAWS 5e amended 2026-10-14) is stubbed
+    to allow, so no test here reaches a host; tests/data/test_robots_coverage.py proves the live
+    check refuses a Disallow, an unreadable robots.txt and a held site."""
+    monkeypatch.setattr(mc, "admit", lambda url, **kw: (True, ""))
+    monkeypatch.setattr(civ, "admit", lambda url, **kw: (True, ""))
+
 SIGNALS_PAGE = """<html><body>
 <a href="/en/signals/100001" class="signal-card">Gold Asia Scalper Growth: 120% Drawdown: 15%
  Win rate: 65% Profit factor: 1.4 Trades: 300</a>
