@@ -224,20 +224,41 @@ def test_a_held_position_still_over_the_bound_keeps_the_halt():
 
 
 # ------------------------------------------------------------------- the board and the bill
-def test_the_health_row_reads_unmeasured_then_p50_p95(tmp_path, monkeypatch):
+def _ph(monkeypatch, fills, intents):
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "process_health_ri", _DESK.parent.parent / "ops" / "process_health.py")
     assert spec and spec.loader
     ph = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ph)
-    fills = tmp_path / "fills.jsonl"
     monkeypatch.setattr(ph, "RISK_FILLS", fills)
-    assert ph._realised_risk_row()["verdict"] == "NO_FILLS"          # absent: named, not OK
+    monkeypatch.setattr(ph, "ORDER_INTENTS", intents)
+    return ph
+
+
+def _now_iso(seconds_ago: float = 60.0) -> str:
+    from datetime import UTC, datetime, timedelta
+    return (datetime.now(tz=UTC) - timedelta(seconds=seconds_ago)).isoformat()
+
+
+def _intent(sleeve="eurusd_fam", deal=77, lane="family_market", retcode=10009, ago=60.0):
+    return {"time": _now_iso(ago), "sleeve": sleeve, "lane": lane, "retcode": retcode,
+            "deal_ticket": deal, "fill_price": 1.1103}
+
+
+def _write(path, rows):
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+
+
+def test_the_health_row_reads_no_fills_then_p50_p95(tmp_path, monkeypatch):
+    fills, intents = tmp_path / "fills.jsonl", tmp_path / "intents.jsonl"
+    _write(intents, [_intent(lane=None), _intent(retcode=10019)])      # gold / rejected: not ours
+    ph = _ph(monkeypatch, fills, intents)
+    assert ph._realised_risk_row()["verdict"] == "NO_FILLS"          # both sources agree: none
     fills.write_text(json.dumps({"status": "UNMEASURED", "why": "no stop"}) + "\n", "utf-8")
     assert ph._realised_risk_row()["verdict"] == "UNMEASURED"        # filled, not priceable
-    fills.write_text("\n".join(json.dumps({"status": "MEASURED", "ratio": r})
-                               for r in (1.0, 1.0, 1.05, 0.9)) + "\n", "utf-8")
+    _write(fills, [{"status": "MEASURED", "ratio": r, "sl_source": "position via deal"}
+                   for r in (1.0, 1.0, 1.05, 0.9)])
     row = ph._realised_risk_row()
     assert row["verdict"] == "OK" and row["metric"]["p50"] == pytest.approx(1.0)
     with fills.open("a", encoding="utf-8") as fh:
@@ -245,6 +266,64 @@ def test_the_health_row_reads_unmeasured_then_p50_p95(tmp_path, monkeypatch):
             fh.write(json.dumps({"status": "MEASURED", "ratio": 2.5}) + "\n")
     row = ph._realised_risk_row()
     assert row["verdict"] == "RISK_BREACH" and row["metric"]["n_breaches"] == 4
+
+
+@pytest.mark.parametrize("ledger", ["absent", "empty", "other_fill"])
+def test_a_journalled_fill_missing_from_the_ledger_is_unmeasured_and_named(
+        tmp_path, monkeypatch, ledger):
+    fills, intents = tmp_path / "fills.jsonl", tmp_path / "intents.jsonl"
+    _write(intents, [_intent(sleeve="eurusd_fam", deal=77)])
+    if ledger == "empty":
+        fills.write_text("", "utf-8")
+    elif ledger == "other_fill":
+        _write(fills, [{"status": "MEASURED", "ratio": 1.0, "deal": 12, "sleeve": "x",
+                        "at": _now_iso()}])
+    ph = _ph(monkeypatch, fills, intents)
+    row = ph._realised_risk_row()
+    assert row["verdict"] == "UNMEASURED"
+    assert "eurusd_fam deal 77" in row["why"] and "no realised-risk row" in row["why"]
+    doc = ph.build()
+    assert doc["status"] == "ATTENTION", "a fill the ledger missed must page"
+
+
+@pytest.mark.parametrize("journal", ["absent", "corrupt"])
+def test_an_unreadable_witness_is_unmeasured_never_no_fills(tmp_path, monkeypatch, journal):
+    fills, intents = tmp_path / "fills.jsonl", tmp_path / "intents.jsonl"
+    if journal == "corrupt":
+        intents.write_text('{"time": "x", "lane": "family_market"\n', "utf-8")
+    row = _ph(monkeypatch, fills, intents)._realised_risk_row()
+    assert row["verdict"] == "UNMEASURED" and "cannot cross-check" in row["why"]
+
+
+def test_a_journalled_fill_with_its_row_is_measured_and_old_fills_fall_out_of_the_window(
+        tmp_path, monkeypatch):
+    fills, intents = tmp_path / "fills.jsonl", tmp_path / "intents.jsonl"
+    _write(intents, [_intent(deal=77), _intent(deal=None, sleeve="s2"),
+                     _intent(deal=5, ago=8 * 86400.0)])                 # 8 days old: outside
+    _write(fills, [{"status": "MEASURED", "ratio": 1.0, "deal": 77, "sleeve": "eurusd_fam",
+                    "at": _now_iso(), "sl_source": "position via deal"},
+                   {"status": "MEASURED", "ratio": 1.0, "deal": None, "sleeve": "s2",
+                    "at": _now_iso(30), "sl_source": "position via order"}])
+    row = _ph(monkeypatch, fills, intents)._realised_risk_row()
+    assert row["verdict"] == "OK", row["why"]
+    assert row["metric"]["cross_check"] == {"journal_fills": 2, "missing": 0}
+
+
+def test_a_high_share_of_requested_stop_fallbacks_is_a_finding(tmp_path, monkeypatch):
+    fills, intents = tmp_path / "fills.jsonl", tmp_path / "intents.jsonl"
+    _write(intents, [])
+    rows = [{"status": "MEASURED", "ratio": 1.0, "sl_source": "position via deal"}] * 3
+    rows += [{"status": "MEASURED", "ratio": 1.0,
+              "sl_source": "requested (position SL unreadable: LookupError)"}]
+    _write(fills, rows)
+    row = _ph(monkeypatch, fills, intents)._realised_risk_row()
+    assert row["verdict"] == "FINDING" and row["metric"]["sl_fallback_share"] == 0.25
+    assert ri.SL_FALLBACK_FINDING == 0.20 and "20%" in row["why"]
+
+
+def test_the_gateway_stamps_the_lane_on_both_measured_lanes():
+    src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    assert 'lane="family_market",' in src and 'lane="scalp_market",' in src
 
 
 def test_both_rails_have_a_missed_growth_line(tmp_path, monkeypatch):
@@ -411,16 +490,45 @@ def test_a_halted_scalp_sleeve_journals_only_when_an_entry_is_due(tmp_path, brea
     assert [b[4] for b in ns["_book"] if b[0] == "refusal"] == expect
 
 
-def _armed_family(tmp_path, monkeypatch, position_sl):
+def _armed_family(tmp_path, monkeypatch, position_sl, *, deal=None, order=9,
+                  position_id=None, via="deal"):
+    """One armed family pass whose send returns `deal`/`order`, on a venue where that deal (or
+    order) resolves to `position_id`, and `positions_get(ticket=position_id)` holds
+    `position_sl`. Nothing answers for `positions_get(ticket=order)` unless order is the
+    position: the code must not assume it is."""
     rows = adapter._rows()
     venue = adapter._fake_mt5(rows)
     venue.symbol_info = lambda symbol: SimpleNamespace(
         volume_min=0.01, volume_step=0.01, volume_max=100.0,
         trade_tick_size=0.00001, trade_tick_value=1.0)
 
+    def send(req):
+        venue.sent.append(req)
+        return SimpleNamespace(retcode=10009, order=order, deal=deal, comment="done",
+                               price=1.1103, volume=req["volume"])
+    venue.order_send = send
+
+    def history_deals_get(*a, ticket=None, **k):
+        if via == "deal" and ticket is not None and ticket == deal and position_id:
+            return [SimpleNamespace(ticket=deal, order=order, position_id=position_id)]
+        return []
+
+    def history_orders_get(*a, ticket=None, **k):
+        if via == "order" and ticket is not None and ticket == order and position_id:
+            return [SimpleNamespace(ticket=order, position_id=position_id)]
+        return []
+    venue.history_deals_get = history_deals_get
+    venue.history_orders_get = history_orders_get
+
     def positions_get(*a, **k):
-        if "ticket" in k and position_sl is not None:
-            return [SimpleNamespace(ticket=k["ticket"], sl=position_sl)]
+        if "ticket" not in k:
+            return []
+        if position_id is not None and k["ticket"] == position_id and position_sl is not None:
+            return [SimpleNamespace(ticket=position_id, sl=position_sl)]
+        if k["ticket"] == order and order != position_id:
+            # A DECOY: some other position that happens to carry the order's number. Reading
+            # it would be the ticket == order assumption the audit forbade.
+            return [SimpleNamespace(ticket=order, sl=1.1040)]
         return []
     venue.positions_get = positions_get
     ns = adapter._family_ns(tmp_path, venue, monkeypatch, armed_file=True,
@@ -435,13 +543,37 @@ def _armed_family(tmp_path, monkeypatch, position_sl):
 
 def test_post_fill_risk_reads_the_stop_back_from_the_opened_position(tmp_path, monkeypatch):
     # The venue holds the stop 3x further away than requested: that is the risk carried.
-    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950)
-    assert row["sl_source"] == "position" and row["sl"] == pytest.approx(1.0950)
+    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=77,
+                            position_id=9)
+    assert row["sl_source"] == "position via deal" and row["sl"] == pytest.approx(1.0950)
     assert row["breach"] is True and adapter._NAME in st["risk_halt"]
 
 
+def test_netting_the_position_is_found_through_the_deal_not_the_order(tmp_path, monkeypatch):
+    # Netting: the deal lands on the symbol's existing position 4242, not on order 9.
+    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=77, order=9,
+                            position_id=4242)
+    assert row["sl_source"] == "position via deal" and row["sl"] == pytest.approx(1.0950)
+
+
+def test_without_a_deal_the_position_is_found_through_the_order(tmp_path, monkeypatch):
+    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=None, order=9,
+                            position_id=4242, via="order")
+    assert row["sl_source"] == "position via order" and row["sl"] == pytest.approx(1.0950)
+
+
 def test_an_unreadable_position_falls_back_to_the_requested_stop_by_name(tmp_path, monkeypatch):
-    st, row = _armed_family(tmp_path, monkeypatch, position_sl=None)
+    st, row = _armed_family(tmp_path, monkeypatch, position_sl=None, deal=77,
+                            position_id=4242)
     assert row["sl_source"].startswith("requested (position SL unreadable")
     assert row["sl"] == pytest.approx(1.1050) and row["breach"] is False
     assert "risk_halt" not in st
+
+
+def test_an_unresolvable_position_falls_back_by_name_and_never_reads_the_order_ticket(
+        tmp_path, monkeypatch):
+    # position_id unknown: nothing in history. A position that happens to carry the ORDER's
+    # ticket must not be read as this fill's.
+    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=77, order=9,
+                            position_id=None)
+    assert row["sl_source"].startswith("requested (position SL unreadable: LookupError")
