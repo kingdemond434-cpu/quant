@@ -197,16 +197,26 @@ def test_a_main_lane_clock_whose_canon_certificate_replicated_goes_live(
     assert got["status"] == "LIVE" and got["canon_certificate"] == MAIN_CANON
 
 
-def test_a_promoted_main_row_carrying_its_canon_certificate_needs_no_lookup(
-        roster, tmp_path, monkeypatch) -> None:
+@pytest.mark.parametrize("key", [MAIN_KEY, MAIN_KEY.lower(), MAIN_KEY + " ", "USDJPY.asia.SHORT",
+                                 "USDJPY@M5.asia#rr=2.5", "USDJPYm.asia#rr=2.5", "GBPJPY.asia",
+                                 "qquant.USDJPY.macro_conditional.asia"])
+def test_a_stamp_on_a_key_the_enrolment_does_not_list_is_refused(
+        roster, tmp_path, monkeypatch, key) -> None:
+    """Door v6 audit: no legitimate row needs a stamp fallback (promote_main stamps from the
+    enrolment; rows LIVE on disk are grandfathered), so a respelt or borrowed key is refused
+    whether or not shadow_state is readable."""
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
-    # a key no forward clock holds, while the enrolment itself is measured (non-empty)
-    CLOCKS["EURUSD.asia#rr=2.5"] = {"certificate": OTHER_CANON}
-    row = _lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON)
-    got = roster([], [row])[MAIN_KEY]
-    assert got["status"] == "LIVE"
-    # the stamp is used only because no clock exists for the key, and the fallback is NAMED
-    assert got["canon_certificate_source"].startswith("stamp_unverified")
+    CLOCKS["EURUSD.asia#rr=2.5"] = {"certificate": OTHER_CANON}     # a measured, non-empty map
+    got = roster([], [_lane_row(key, key, canon_certificate=MAIN_CANON)])[key]
+    assert got["status"] == "STANDBY" and "never an authority" in got["demote_reason"]
+
+
+def test_a_rewritten_certificate_loses_the_grandfather(roster, tmp_path, monkeypatch) -> None:
+    """The grandfather covers the row AS IT WAS LIVE; a new certificate claim meets the door."""
+    prior = _principal_row()
+    assert roster([prior], [dict(prior)])[prior["name"]]["status"] == "LIVE"
+    moved = {**prior, "principal_certificate": "external.EURZAR@H1.carry.p=ffffffffffffffff"}
+    assert roster([prior], [moved])[prior["name"]]["status"] == "STANDBY"
 
 
 def test_an_empty_enrolment_is_unmeasured_and_refuses_every_stamp(roster, tmp_path,
@@ -226,7 +236,7 @@ def test_a_running_clock_missing_from_a_partial_map_cannot_use_its_stamp(
     for key in (other_key, "GBPJPY.asia"):               # partial map; borrowed onto another pair
         SHADOW[key] = {}
         got = roster([], [_lane_row(key, key, canon_certificate=MAIN_CANON)])[key]
-        assert got["status"] == "STANDBY" and "did not enrol" in got["demote_reason"]
+        assert got["status"] == "STANDBY" and "not enrolled" in got["demote_reason"]
 
 
 # --------------------------------------------- a stamp never outranks the enrolment (door v4)

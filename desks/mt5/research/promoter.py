@@ -388,22 +388,20 @@ def _row_check(gate: Any, why_gate: str, waived: dict[str, str] | set[str]
             # key the enrolment does not list this pass falls back to its stamp, and says so.
             if "clock" not in memo:
                 memo["clock"] = _clock_canon_map()
-                memo["known"] = set(load_shadow())
             mapped = memo["clock"].get(key.strip())
             stamped = str(row.get("canon_certificate") or "")
             if stamped and not mapped:
-                # A STAMP STANDS IN ONLY FOR A CLOCK THAT DOES NOT EXIST (audit of door v5). An
-                # empty map is an enrolment that failed this pass, never "no clock": UNMEASURED,
-                # refused. A key the forward engine holds a clock for but the map lacks is a
-                # partial enrolment: refused. Only a key with no clock anywhere uses its stamp.
-                if not memo["clock"]:
-                    return (f"REFUSED_UNREPLICATED: UNMEASURED clock enrolment (0 clocks this "
-                            f"pass); stamped canon_certificate {stamped} on {key.strip()} "
-                            f"cannot be verified")
-                if key.strip() in memo["known"]:
-                    return (f"REFUSED_UNREPLICATED: clock {key.strip()} runs in shadow_state but "
-                            f"did not enrol this pass; stamped canon_certificate {stamped} "
-                            f"cannot be verified")
+                # A STAMP IS NEVER AUTHORITY (audits of door v5 and v6). Only this pass's
+                # enrolment can say which certificate a clock key trades on; a stamped row whose
+                # key the enrolment does not list -- an empty map, a partial one, an unreadable
+                # shadow_state, a respelt key -- is refused. Every legitimate main-lane row is
+                # promoted from the enrolment (promote_main stamps it from clock_identities), and
+                # rows already LIVE on disk keep the Ruling C grandfather, so nothing that trades
+                # needs a fallback.
+                state = ("UNMEASURED clock enrolment (0 clocks this pass)" if not memo["clock"]
+                         else f"clock {key.strip()} is not enrolled this pass")
+                return (f"REFUSED_UNREPLICATED: {state}; stamped canon_certificate {stamped} "
+                        f"is a record, never an authority")
             if mapped:
                 if stamped and stamped != mapped:
                     return (f"REFUSED_UNREPLICATED: row stamped canon_certificate {stamped} but "
@@ -412,9 +410,6 @@ def _row_check(gate: Any, why_gate: str, waived: dict[str, str] | set[str]
                 row["canon_certificate"] = mapped
                 row["canon_certificate_source"] = "clock_enrolment"
                 cert = mapped
-            elif stamped:
-                row["canon_certificate_source"] = "stamp_unverified (no forward clock holds this key)"
-                cert = stamped
             else:
                 cert = key.strip()
         return str(gate.live_refusal(cert, waived=cert in waived) or "")
@@ -467,7 +462,7 @@ def replication_door(rows: list[dict], prior_live: set[str], *, gate: object | N
     refused: list[str] = []
     for row in rows:
         name = str(row.get("name") or "")
-        if str(row.get("status") or "").upper() != "LIVE" or name in prior_live:
+        if str(row.get("status") or "").upper() != "LIVE" or _grandfather_key(row) in prior_live:
             continue
         why = check(row)
         if not why:
@@ -484,12 +479,21 @@ def replication_door(rows: list[dict], prior_live: set[str], *, gate: object | N
     return refused
 
 
+def _grandfather_key(row: dict) -> str:
+    """The Ruling C grandfather covers a row AS IT WAS LIVE: its name AND every certificate field.
+    Rewriting a LIVE row's certificate is a new claim and meets the door (audit of door v6)."""
+    claim = {k: row.get(k) for k in ("certificate", "canon_certificate",
+                                      "principal_certificate")}
+    return f"{row.get('name')}\x1f{json.dumps(claim, sort_keys=True, default=str)}"
+
+
 def _live_on_disk() -> set[str]:
     try:
         doc = json.loads(SLEEVES_FILE.read_text(encoding="utf-8"))
+        rows = doc.get("sleeves") if isinstance(doc, dict) else None
     except (OSError, ValueError):
         return set()
-    return {str(r.get("name")) for r in (doc.get("sleeves") or [])
+    return {_grandfather_key(r) for r in (rows if isinstance(rows, list) else [])
             if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE"}
 
 
