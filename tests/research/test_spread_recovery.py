@@ -467,38 +467,90 @@ def test_a_successor_is_alive_only_on_its_own_stamped_cells(
     assert fence._successor_cells("alpha_evolution", 3.0) == 4
 
 
-def test_alpha_rl_is_set_aside_until_it_emits_a_cell(fence: Any, tmp_path: Path) -> None:
-    import sqlite3
+def _alpha_rl_census(tmp_path: Path) -> None:
     (tmp_path / "census.json").write_text(json.dumps({"producers": [
         {"producer": "alpha_rl_run", "key": "alpha_rl_run", "compute_hours": 0.5,
          "compute_hours_ledger": 0.5, "compute_hours_registry": 0.0}]}))
 
-    def registry(gen: str) -> None:
-        (tmp_path / "reg.sqlite").unlink(missing_ok=True)
-        con = sqlite3.connect(tmp_path / "reg.sqlite")
-        con.execute("create table research_candidates (created_at text, generator text, "
-                    "grid_cell text, content_hash text, family text, symbol text, horizon "
-                    "text, donated_cell text, status text, discovery_id text)")
-        con.execute("create table discoveries (discovery_id text, generator text)")
-        con.execute("insert into research_candidates values (?,?,?,?,?,?,?,?,?,?)",
-                    ("2999-01-01T00:00:00+00:00", gen, "g1", "h", "f", "EURUSD", "h1", None,
-                     "judged", None))
-        con.commit()
-        con.close()
-    registry("other")
-    doc = fence.yield_audit(window_hours=24.0)
+
+def _registry(tmp_path: Path, gen: str) -> None:
+    import sqlite3
+    (tmp_path / "reg.sqlite").unlink(missing_ok=True)
+    con = sqlite3.connect(tmp_path / "reg.sqlite")
+    con.execute("create table research_candidates (created_at text, generator text, "
+                "grid_cell text, content_hash text, family text, symbol text, horizon "
+                "text, donated_cell text, status text, discovery_id text)")
+    con.execute("create table discoveries (discovery_id text, generator text)")
+    con.execute("insert into research_candidates values (?,?,?,?,?,?,?,?,?,?)",
+                ("2999-01-01T00:00:00+00:00", gen, "g1", "h", "f", "EURUSD", "h1", None,
+                 "judged", None))
+    con.commit()
+    con.close()
+
+
+#: Inside alpha_rl_run's declared set-aside window, and past it.
+_INSIDE = datetime(2026, 10, 20, tzinfo=UTC)
+_PAST = datetime(2026, 10, 29, tzinfo=UTC)
+
+
+def test_alpha_rl_is_set_aside_until_it_emits_a_cell(fence: Any, tmp_path: Path) -> None:
+    _alpha_rl_census(tmp_path)
+    _registry(tmp_path, "other")
+    doc = fence.yield_audit(window_hours=24.0, now=_INSIDE)
     assert doc["n_owing"] == 0 and doc["declared"][0]["declared"]["kind"] == "SET_ASIDE"
-    assert doc["set_aside_lifted_now"] == []
-    registry("alpha_rl_run")
-    doc = fence.yield_audit(window_hours=24.0)
+    assert doc["set_aside_lifted_now"] == [] and not doc["failures"]
+    _registry(tmp_path, "alpha_rl_run")
+    doc = fence.yield_audit(window_hours=24.0, now=_INSIDE)
     assert doc["set_aside_lifted_now"] == ["alpha_rl_run"]
     rat = fence.tighten_ratchet(doc)
     assert rat is not None and "alpha_rl_run" in rat["set_aside_lifted"]
     (tmp_path / "ratchet.json").write_text(json.dumps(rat))
     # The lift is permanent: back to zero cells, it now OWES like any producer.
-    registry("other")
-    doc = fence.yield_audit(window_hours=24.0)
+    _registry(tmp_path, "other")
+    doc = fence.yield_audit(window_hours=24.0, now=_INSIDE)
     assert [r["producer"] for r in doc["owing"]] == ["alpha_rl_run"]
+
+
+def test_a_set_aside_publishes_what_it_leaves_untested(fence: Any, tmp_path: Path) -> None:
+    _alpha_rl_census(tmp_path)
+    _registry(tmp_path, "other")
+    doc = fence.yield_audit(window_hours=24.0, now=_INSIDE)
+    [line] = doc["missed_growth"]
+    assert line["gate"] == "set_aside:alpha_rl_run" and line["kind"] == "SET_ASIDE"
+    assert "never judged" in line["not_tested"] and line["verdict"] == "UNMEASURED"
+    assert line["value"] is None and line["days_left"] == pytest.approx(8.0)
+    assert line["expires_utc"].startswith("2026-10-28")
+
+
+def test_a_set_aside_expires_and_reads_owing_and_red(fence: Any, tmp_path: Path) -> None:
+    """A set-aside that never emits a cell is not excused forever: past its declared 14-day
+    window it OWES, and the audit fails on it by name, whatever the owing ratchet says."""
+    assert fence.SET_ASIDE_MAX_DAYS == 14.0
+    _alpha_rl_census(tmp_path)
+    _registry(tmp_path, "other")
+    (tmp_path / "ratchet.json").write_text(json.dumps({"owing_max": 99}))
+    doc = fence.yield_audit(window_hours=24.0, now=_PAST)
+    assert [r["producer"] for r in doc["owing"]] == ["alpha_rl_run"]
+    assert doc["set_aside_expired"] == ["alpha_rl_run"] and doc["missed_growth"] == []
+    assert any("alpha_rl_run" in f and "no longer excused" in f for f in doc["failures"])
+    # A cell lifts it whether or not the window has passed.
+    _registry(tmp_path, "alpha_rl_run")
+    doc = fence.yield_audit(window_hours=24.0, now=_PAST)
+    assert doc["set_aside_expired"] == [] and doc["set_aside_lifted_now"] == ["alpha_rl_run"]
+
+
+def test_missed_growth_carries_the_set_aside_lines(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    import missed_growth as mg
+    p = tmp_path / "PRODUCER_YIELD.json"
+    monkeypatch.setattr(mg, "PRODUCER_YIELD", p)
+    assert mg.set_aside_lines()["verdict"] == mg.UNMEASURED
+    line = {"gate": "set_aside:alpha_rl_run", "not_tested": "x", "verdict": "UNMEASURED"}
+    p.write_text(json.dumps({"cells_owed": {"missed_growth": [line], "set_aside_expired": []}}))
+    got = mg.set_aside_lines()
+    assert got["verdict"] == mg.UNMEASURED and got["lines"] == [line]
+    p.write_text(json.dumps({"cells_owed": {"missed_growth": [], "set_aside_expired": []}}))
+    assert mg.set_aside_lines()["verdict"] == mg.NOT_BINDING
 
 
 def test_learned_miners_contract_has_a_seven_day_max_age_in_producer_health() -> None:

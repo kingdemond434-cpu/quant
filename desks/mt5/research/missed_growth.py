@@ -691,6 +691,29 @@ def spread_recovery_wait_lines() -> dict[str, Any]:
                              "delayed": sum(int(x.get("n_delayed") or 0) for x in lines)}}
 
 
+PRODUCER_YIELD = BASE / "reports" / "PRODUCER_YIELD.json"
+
+
+def set_aside_lines() -> dict[str, Any]:
+    """Every live SET_ASIDE exemption's line (scripts/check_producer_yield.py): what the
+    exemption leaves untested. A set-aside organ emits no cell, so the growth it forgoes has no
+    forward evidence to price -- the line is UNMEASURED by construction, and it names the ground
+    and the expiry so the exemption is a visible cost, never a silent pass."""
+    doc = _json(PRODUCER_YIELD)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/PRODUCER_YIELD.json on this host"}
+    owed = doc.get("cells_owed") if isinstance(doc.get("cells_owed"), dict) else {}
+    lines = [x for x in (owed.get("missed_growth") or []) if isinstance(x, dict)]
+    expired = list(owed.get("set_aside_expired") or [])
+    if not lines and not expired:
+        return {"verdict": NOT_BINDING, "lines": [], "expired": [],
+                "why": "no live set-aside exemption"}
+    return {"verdict": UNMEASURED, "source": "reports/PRODUCER_YIELD.json", "lines": lines,
+            "expired": expired,
+            "why": "a set-aside emits no cell, so what it forgoes cannot be priced yet"}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -809,7 +832,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
-                                    "spread_recovery_wait": spread_recovery_wait_lines()},
+                                    "spread_recovery_wait": spread_recovery_wait_lines(),
+                                    "set_aside": set_aside_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

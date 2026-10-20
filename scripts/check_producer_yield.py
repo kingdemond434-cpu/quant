@@ -188,14 +188,44 @@ SUCCESSOR_ALIVE = frozenset({"PRODUCING", "STARVED"})
 #: window in which the registry attributes a cell to it lifts the set-aside, the lift is recorded
 #: in the ratchet (`set_aside_lifted`, which only ever gains entries), and from then on it is
 #: judged as an ordinary producer -- a lapse back to zero cells OWES.
+#:
+#: A SET-ASIDE EXPIRES (audit of broker-state-cells, 2026-10-14). The exemption runs for
+#: SET_ASIDE_MAX_DAYS from its `declared_utc`; past that, an organ that has still emitted no cell
+#: is no longer excused: it OWES like any producer and is a named failure on its own (RED,
+#: whatever the owing ratchet says). While it is set aside it publishes a missed-growth line
+#: naming what is not being tested because of it -- the exemption is a cost, never a free pass.
+SET_ASIDE_MAX_DAYS = 14.0
 SET_ASIDE_UNTIL_CELLS: dict[str, dict[str, Any]] = {
     "alpha_rl_run": {
         "aliases": ("alpha_rl_run", "alpha_rl", "leg:alpha_rl"),
         "produces": "reports/ALPHA_RL.json -- a ranked table of construction decisions",
         "consumer": "proposer budget_s in hourly_discovery._weight and daily_cycle.arm_weight",
         "lift": "the registry attributes >= 1 cell to it inside a yield window",
+        "declared_utc": "2026-10-14T00:00:00+00:00",
+        "not_tested": ("the construction decisions ALPHA_RL ranks are never emitted as cells, "
+                       "so the cells they would build are never judged: their E[log W] is "
+                       "unknown, and only their indirect effect on proposer budgets is felt"),
     },
 }
+
+
+def _set_aside_expiry(spec: dict[str, Any]) -> datetime:
+    at = datetime.fromisoformat(str(spec["declared_utc"]))
+    return at + timedelta(days=float(spec.get("max_days") or SET_ASIDE_MAX_DAYS))
+
+
+def _set_aside_line(name: str, spec: dict[str, Any], now: datetime,
+                    compute_h: Any) -> dict[str, Any]:
+    """The set-aside's missed-growth line: what the exemption leaves untested, unpriced."""
+    exp = _set_aside_expiry(spec)
+    return {"gate": f"set_aside:{name}", "kind": "SET_ASIDE", "producer": name,
+            "not_tested": spec["not_tested"], "compute_hours_window7d": compute_h,
+            "declared_utc": spec["declared_utc"], "expires_utc": exp.isoformat(),
+            "days_left": round((exp - now).total_seconds() / 86400.0, 2),
+            "value": None, "verdict": "UNMEASURED",
+            "why": ("no cell, so no forward evidence: the growth this exemption forgoes cannot "
+                    "be priced until the organ emits one; it expires and reads OWING at "
+                    f"{exp.date().isoformat()}")}
 
 
 def _set_aside_entry(key: str) -> tuple[str, dict[str, Any]] | None:
@@ -539,8 +569,12 @@ def _set_aside_summary() -> dict[str, Any]:
                       for k, v in worst[:10]]}
 
 
-def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
+def yield_audit(window_hours: float = YIELD_WINDOW_HOURS,
+                now: datetime | None = None) -> dict[str, Any]:
     """EVERY PRODUCER OWES CELLS: who is paying for its compute, and how orthogonally."""
+    now = now or datetime.now(UTC)
+    set_aside_lines: list[dict[str, Any]] = []
+    set_aside_expired: list[str] = []
     census = _read(CENSUS, default={})
     declared = _declarations()
     win = _window_cells(window_hours)
@@ -612,14 +646,24 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         if sa_entry is not None:
             sa_name, sa_spec = sa_entry
             lifted = (sa_name in (rat_lifted or {})) or m.get("cells_emitted", 0) > 0
+            expired = now >= _set_aside_expiry(sa_spec)
             row["set_aside"] = {"organ": sa_name, "lifted": bool(lifted),
-                                "lift": sa_spec["lift"]}
+                                "lift": sa_spec["lift"], "expired": bool(expired and not lifted),
+                                "expires_utc": _set_aside_expiry(sa_spec).isoformat()}
             if lifted:
                 if m.get("cells_emitted", 0) > 0 and sa_name not in lifted_now:
                     lifted_now.append(sa_name)
+            elif expired:
+                # Past its window with no cell: no longer excused -- it OWES, and is RED below.
+                if sa_name not in set_aside_expired:
+                    set_aside_expired.append(sa_name)
             elif not decl:
                 decl = {"kind": "SET_ASIDE", "produces": sa_spec["produces"],
-                        "consumer": sa_spec["consumer"], "lift": sa_spec["lift"]}
+                        "consumer": sa_spec["consumer"], "lift": sa_spec["lift"],
+                        "expires_utc": _set_aside_expiry(sa_spec).isoformat()}
+                if not any(x["producer"] == sa_name for x in set_aside_lines):
+                    set_aside_lines.append(_set_aside_line(
+                        sa_name, sa_spec, now, src.get("compute_hours")))
         if decl:
             row["declared"] = decl
         row_contract = row_by_producer.get(key)
@@ -690,6 +734,13 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
             "producers have collapsed onto each other's cells, which is the failure this column "
             "exists to catch")
 
+    if set_aside_expired:
+        failures.append(
+            f"{len(set_aside_expired)} set-aside organ(s) passed their "
+            f"{SET_ASIDE_MAX_DAYS:g}-day window without emitting a cell and are no longer "
+            "excused: make them emit a cell or retire them with a reason. Expired: "
+            + ", ".join(sorted(set_aside_expired)))
+
     rows.sort(key=lambda r: (-(r["cells_to_judge_per_hour"] or 0.0),
                              str(r["producer"])))
     return {
@@ -738,6 +789,9 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         "failures": failures,
         # Set-asides whose lift condition was MEASURED this window; the ratchet records them.
         "set_aside_lifted_now": sorted(lifted_now),
+        "set_aside_expired": sorted(set_aside_expired),
+        # What every live set-aside leaves untested; research/missed_growth carries these.
+        "missed_growth": set_aside_lines,
         "owing": owing,
         "declared": exempted,
         "producers": rows,
