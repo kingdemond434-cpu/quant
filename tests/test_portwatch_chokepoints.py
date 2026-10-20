@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import io
 import json
+import math
 import sys
 import urllib.error
 import urllib.parse
@@ -381,7 +382,27 @@ def test_the_tier_s_bar_reproduces_the_canonical_dsr_table(n: int, want: float) 
     # never below the canonical normal-shape bar, whatever the sample shape
     for sk, ku in ((0.8, 2.2), (0.0, 2.5), (-1.0, 6.0), (1.5, 9.0)):
         assert RG.tier_s_t_required(n, sk, ku) >= RG.tier_s_t_required(n) - 1e-12
-    assert RG.tier_s_t_required(4) == float("inf")
+    assert RG.tier_s_t_required(2) == float("inf")
+
+
+@pytest.mark.parametrize(("n", "want"), [(5, 4.561), (24, 3.055), (100, 2.886)])
+def test_the_bar_matches_the_judges_shared_helper(n: int, want: float) -> None:
+    """trial_count_guard.tier_s_t_required (claude/trial-count-guard 6de7b1a99) returns these
+    at 5/24/100 and +inf below 3; the swap to it must change no verdict."""
+    from libs.research import release_gain as RG
+    assert abs(RG.tier_s_t_required(n) - want) < 5e-4
+    for small in (0, 1, 2):
+        assert RG.tier_s_t_required(small) == float("inf")
+    for finite in (3, 4):
+        assert math.isfinite(RG.tier_s_t_required(finite))
+        assert RG.tier_s_t_required(finite) > RG.tier_s_t_required(5)
+
+
+@pytest.mark.parametrize("n", [4, 5, 10, 24, 100])
+def test_the_small_n_path_agrees_with_the_canonical_function(n: int) -> None:
+    from libs.research import release_gain as RG
+    small = RG._t_required_small(n, 0.0, 3.0, 1.0 / (n - 1))
+    assert abs(small - RG.tier_s_t_required(n)) < 1e-6
 
 
 @pytest.mark.parametrize("n_cells", [7, 10, 11, 12, 30])
