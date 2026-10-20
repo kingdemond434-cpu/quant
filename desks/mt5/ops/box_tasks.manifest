@@ -224,7 +224,9 @@ TASK name="MT5-PlumbingWatchdog" trigger="every 15 minutes" runs="desks/mt5/rese
 # THE PLUMBING PAGER (audit HOLD 2026-10-20). The VPS pager never receives the plumbing or
 # judge inputs (orphan desk-sync-clean), so the box pages them itself, three minutes after the
 # watchdog: CRITICAL plumbing rows, a judge with no new verdict in 6h, UNMEASURED inputs; re-paged
-# every 2h while failing. No ntfy secret = logged NOT ARMED, exit 2, no topic minted.
+# every 2h while failing. No ntfy secret = logged NOT ARMED, exit 2, no topic minted; an undelivered
+# due page = exit 3. MT5-PlumbingWatchdog raises either last result as a pager_task defect.
+# Installing user, Interactive, RunLevel Limited (as MT5-ShadowSync).
 TASK name="MT5-PlumbingPager" trigger="every 15 minutes" runs="scripts/run_alerts.py" installer="desks/mt5/scripts/install_plumbing_pager_task.ps1" lane="ops"
 # THE CLOCK FIXER (principal 2026-09-17, permanent): every fifteen minutes every certificate and
 # every stopped clock gets a live clock and every dead resident is restarted; verification by

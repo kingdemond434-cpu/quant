@@ -399,8 +399,114 @@ def test_the_box_pager_is_wired_to_a_clock() -> None:
     inst = (_ROOT / "desks/mt5/scripts/install_plumbing_pager_task.ps1").read_text("utf-8")
     assert "MT5-PlumbingPager" in inst and "run_alerts.py" in inst and "--box" in inst
     assert "-Daily" in inst and "-Minutes 15" in inst
+    # v3: the installing user at RunLevel Limited (MT5-ShadowSync's shape), never SYSTEM/Highest
+    assert "-UserId $env:USERNAME" in inst and "-RunLevel Limited" in inst
+    assert '"SYSTEM"' not in inst and "Highest" not in inst
+    # waits out 267009 instead of a fixed sleep; NOT ARMED fails the install
+    assert "267009" in inst and "exit 2" in inst and "Start-Sleep -Seconds 5" not in inst
+    # any secret it writes is UTF-8 without a BOM, never echoed
+    assert "UTF8Encoding($false)" in inst and "Write-Host $doc" not in inst
     manifest = (_ROOT / "desks/mt5/ops/box_tasks.manifest").read_text("utf-8")
     assert ('TASK name="MT5-PlumbingPager" trigger="every 15 minutes" '
             'runs="scripts/run_alerts.py"') in manifest
     cst = _load("check_scheduled_tasks_for_pager", _ROOT / "scripts" / "check_scheduled_tasks.py")
     assert "MT5-PlumbingPager" in cst.EXTRA_DECLARED
+
+
+# ------------------------------------------------------------------ v3 (audit HOLD on beb36218)
+def test_box_exits_nonzero_when_a_due_page_is_not_delivered(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _box(monkeypatch, tmp_path)
+
+    def fail(topic: str, title: str, body: str) -> None:
+        raise RuntimeError("ntfy down")
+    monkeypatch.setattr(_M, "_push", fail)
+    (tmp_path / "data" / "secrets").mkdir(parents=True)
+    (tmp_path / "data" / "secrets" / "ntfy.json").write_text(
+        json.dumps({"topic": "quant-desk-BOXSECRET"}), "utf-8")
+    assert _M.box_main() == 3
+    # next pass: the page is still owed and held by the 30-min backoff -- still a failure
+    assert _M.box_main() == 3
+
+
+def test_junk_paged_entries_send_no_bogus_resolved_page(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / ".last_alerts.json").write_text(
+        json.dumps({"_paged": [[1], {"a": 2}, "Bad Key", 7, "judge_stalled"]}), "utf-8")
+    pushes = _tick(monkeypatch, tmp_path, 1_800_000_000.0, [])
+    assert [p[0] for p in pushes] == ["RESOLVED Quant desk: judge_stalled"]
+
+
+def _jt(tmp: Path, facts: dict[str, Any] | None, *, ran: bool = True,
+        at: datetime = NOW, skipped: list[str] | None = None) -> Path:
+    p = tmp / "PLUMBING_WATCHDOG.json"
+    doc: dict[str, Any] = {"at": at.isoformat(), "defects": [],
+                           "checks_run": ["judge_throughput"] if ran else ["adoption_task"],
+                           "checks_skipped_for_budget": skipped or []}
+    if facts is not None:
+        doc["facts"] = facts
+    p.write_text(json.dumps(doc), "utf-8")
+    return p
+
+
+@pytest.mark.parametrize("facts", [{"judge_throughput": {"error": "RuntimeError: boom"}},
+                                   {"judge_throughput": {}},
+                                   {"judge_throughput": "garbage"},
+                                   {}])
+def test_judge_throughput_that_raised_or_has_no_status_pages(
+        tmp_path: Path, facts: dict[str, Any]) -> None:
+    out = _plumb(tmp_path, json_path=_jt(tmp_path, facts))
+    assert set(out) == {"judge_throughput_unmeasured"}
+
+
+def test_measured_or_never_run_judge_throughput_is_quiet(tmp_path: Path) -> None:
+    assert _plumb(tmp_path, json_path=_jt(
+        tmp_path, {"judge_throughput": {"status": "PASS"}})) == {}
+    # a pre-18ad03416 producer runs no judge_throughput check: nothing to read, judge_stalled
+    # (JUDGING_RATE.json) still covers a real stall
+    assert _plumb(tmp_path, json_path=_jt(tmp_path, {}, ran=False)) == {}
+
+
+def test_json_facts_and_skips_survive_when_the_md_is_newer(tmp_path: Path) -> None:
+    js = _jt(tmp_path, {"judge_throughput": {"status": "UNMEASURED", "why": "no block"}},
+             at=NOW - timedelta(minutes=30), skipped=["edge_paths"])
+    md = tmp_path / "PLUMBING_ALERTS.md"
+    md.write_text(_MD_NEW.format(at=NOW.isoformat()), "utf-8")
+    out = _plumb(tmp_path, json_path=js, md_path=md)
+    assert {"plumbing_critical", "judge_throughput_unmeasured", "plumbing_unmeasured"} == set(out)
+    assert "PLUMBING_ALERTS.md" in out["plumbing_critical"]
+    assert "edge_paths" in out["plumbing_unmeasured"]
+
+
+def test_the_watchdog_reads_the_pagers_last_result() -> None:
+    pw = _load("plumbing_watchdog_for_pager_task",
+               _ROOT / "desks" / "mt5" / "research" / "plumbing_watchdog.py")
+    facts = {"measured": True, "present": True, "state": "Ready",
+             "next": (NOW + timedelta(minutes=10)).isoformat(), "last": NOW.isoformat()}
+    for rc in ("2", "3"):
+        rows, _ = pw.check_task(pw.PAGER_TASK, max_next_run_s=1800, check="pager_task",
+                                now=NOW, facts={**facts, "result": rc})
+        assert [r["key"] for r in rows] == ["pager_task:MT5-PlumbingPager:last_result"]
+    rows, _ = pw.check_task(pw.PAGER_TASK, max_next_run_s=1800, check="pager_task",
+                            now=NOW, facts={**facts, "result": "0"})
+    assert rows == []
+    assert pw.ESCALATION_S["pager_task"] == 2 * 3600
+
+
+def test_the_watchdog_pass_checks_the_pager_task(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pw = _load("plumbing_watchdog_for_pager_run",
+               _ROOT / "desks" / "mt5" / "research" / "plumbing_watchdog.py")
+    asked: list[str] = []
+
+    def task(name: str, **_k: Any) -> tuple[list[Any], dict[str, Any]]:
+        asked.append(name)
+        return [], {"measured": True}
+    monkeypatch.setattr(pw, "check_task", task)
+    for fn in ("check_adoption_lag", "check_adoption_partial", "check_git_writer_lock",
+               "check_processes", "check_declared_tasks", "check_edge_paths",
+               "check_orphan_artifact_paths", "check_fences_ran"):
+        monkeypatch.setattr(pw, fn, lambda *a, **k: ([], {}))
+    doc = pw.run(budget_s=5.0, now=NOW, write=False, state_path=tmp_path / "s.json")
+    assert "MT5-PlumbingPager" in asked and "pager_task" in doc["checks_run"]

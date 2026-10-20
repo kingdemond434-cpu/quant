@@ -364,9 +364,12 @@ def _read_plumbing(json_path: Path, md_path: Path) -> dict[str, Any]:
         raw_facts = doc.get("facts")
         facts: dict[str, Any] = raw_facts if isinstance(raw_facts, dict) else {}
         skipped = doc.get("checks_skipped_for_budget")
+        ran = doc.get("checks_run")
         cands.append({"source": json_path.name, "at": _parse_at(doc.get("at")),
                       "rows": [r for r in doc["defects"] if isinstance(r, dict)],
+                      "has_facts": "judge_throughput" in facts,
                       "judge_facts": facts.get("judge_throughput"),
+                      "checks_run": [str(x) for x in ran] if isinstance(ran, list) else [],
                       "skipped": skipped if isinstance(skipped, list) else []})
     except (OSError, ValueError) as exc:
         whys.append(f"{json_path.name} {type(exc).__name__}")
@@ -378,7 +381,14 @@ def _read_plumbing(json_path: Path, md_path: Path) -> dict[str, Any]:
     if not cands:
         return {"source": None, "why": "; ".join(whys)}
     floor = datetime.min.replace(tzinfo=UTC)
-    return max(cands, key=lambda c: c["at"] or floor)
+    best = max(cands, key=lambda c: c["at"] or floor)
+    js = cands[0] if cands[0]["source"] == json_path.name else None
+    if js is not None and best is not js:
+        # the md carries rows only: the JSON's facts and budget skips must not vanish just
+        # because the published page is newer (they are the last measured ones)
+        best = {**best, **{k: js[k] for k in ("has_facts", "judge_facts", "checks_run",
+                                              "skipped")}}
+    return best
 
 
 def _row_line(r: dict[str, Any]) -> str:
@@ -432,10 +442,16 @@ def _plumbing_checks(now: datetime | None = None, *, json_path: Path = _PLUMBING
                     f"{len(skipped)} plumbing check(s) skipped for budget, so UNMEASURED this "
                     f"pass: {', '.join(skipped[:5])}"))
     jf = src.get("judge_facts")
-    if isinstance(jf, dict) and str(jf.get("status", "")).upper() == "UNMEASURED":
-        out.append(("judge_throughput_unmeasured",
-                    f"the watchdog's judge_throughput check is UNMEASURED: "
-                    f"{str(jf.get('why') or '')[:120]}{asof}"))
+    if src.get("has_facts") or "judge_throughput" in (src.get("checks_run") or []):
+        # the producer ran the check (18ad03416+): anything but a measured status is a page.
+        # A raising check leaves {"error": ...} with no status; a missing key is no reading.
+        status = str(jf.get("status") or "").upper() if isinstance(jf, dict) else ""
+        if status in ("", "UNMEASURED"):
+            why = (str(jf.get("why") or jf.get("error") or "") if isinstance(jf, dict)
+                   else "no facts.judge_throughput published")
+            out.append(("judge_throughput_unmeasured",
+                        f"the watchdog's judge_throughput check is UNMEASURED "
+                        f"({status or 'no status'}): {why[:120]}{asof}"))
     # one key may only page once per tick: merge duplicate keys' messages
     merged: dict[str, str] = {}
     for k, msg in out:
@@ -748,6 +764,9 @@ def _brain_watchdog(state: dict[str, Any], active: set[str]) -> str | None:
         return None
 
 
+_KEY_RE = re.compile(r"[a-z0-9_]{1,80}")
+
+
 def _load_state(path: Path) -> dict[str, Any]:
     """The dedupe state, sanitised. A corrupt file (not JSON, not an object, non-UTF8, a
     non-numeric stamp, `_paged` not a list) may neither crash the tick nor storm: bad entries
@@ -762,7 +781,9 @@ def _load_state(path: Path) -> dict[str, Any]:
                            if isinstance(v, int | float) and not isinstance(v, bool)
                            and k != "_paged"}
     paged = raw.get("_paged")
-    out["_paged"] = [str(x) for x in paged] if isinstance(paged, list) else []
+    # only well-formed key names: a junk entry ([1], {"a": 2}) would send a bogus RESOLVED page
+    out["_paged"] = ([x for x in paged if isinstance(x, str) and _KEY_RE.fullmatch(x)]
+                     if isinstance(paged, list) else [])
     return out
 
 
@@ -775,9 +796,12 @@ def _recent(now: float, stamp: object, window: float) -> bool:
 
 
 def _dispatch(topic: str, checks: list[tuple[str, str]], state: dict[str, Any],
-              now: float) -> tuple[int, set[str]]:
-    """Page each check (deduped, backed off) and RESOLVE what cleared. Mutates `state`."""
+              now: float) -> tuple[int, set[str], int]:
+    """Page each check (deduped, backed off) and RESOLVE what cleared. Mutates `state`.
+    Returns (sent, active keys, due): `due` counts WARNING pages owed this tick (outside their
+    dedupe window), whether or not the push went out or was held by the failure backoff."""
     sent = 0
+    due = 0
     active = {k for k, _ in checks}
     paged = set(state.get("_paged") or [])
     for key, msg in checks:
@@ -785,6 +809,7 @@ def _dispatch(topic: str, checks: list[tuple[str, str]], state: dict[str, Any],
         if _recent(now, state.get(key), _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S)):
             paged.add(key)                                 # still-alerting, still track for resolve
             continue
+        due += 1
         # FAILURE BACKOFF (2026-07-16): a failed push used to retry every 3-min tick forever --
         # the sustained hammering kept the free ntfy.sh quota exhausted from 07-11 on, so EVERY
         # page (including the 07-13 dead-man fire) was silently dropped. One attempt per key per
@@ -810,7 +835,7 @@ def _dispatch(topic: str, checks: list[tuple[str, str]], state: dict[str, Any],
             paged.discard(key)
             state.pop(key, None)
     state["_paged"] = sorted(paged)
-    return sent, active
+    return sent, active, due
 
 
 def _write_state(path: Path, state: dict[str, Any]) -> None:
@@ -835,7 +860,9 @@ def box_main() -> int:
 
     A missing ntfy secret is a LOGGED FAILURE (exit 2) with no page: the box never mints a
     topic (a minted topic has no subscriber, so a page to it reaches no one) and never prints
-    one. Exit 0 otherwise, including when a push failed -- that is recorded in the ledger."""
+    one. Exit 3 when a page was due and did not go out (push failed, or held by the failure
+    backoff): a pager that cannot deliver must fail its task, so MT5-PlumbingWatchdog's
+    last-result check sees it. Exit 0 otherwise."""
     os.chdir(_ROOT)
     topic = _read_topic(_BOX_SECRETS)
     if topic is None:
@@ -845,11 +872,14 @@ def box_main() -> int:
         return 2
     state = _load_state(_BOX_STATE)
     checks = _box_checks()
-    sent, active = _dispatch(topic, checks, state, time.time())
+    sent, active, due = _dispatch(topic, checks, state, time.time())
     _write_state(_BOX_STATE, state)
-    print(f"alerts --box: {sent} page(s) sent, {len(active)} active "
+    print(f"alerts --box: {sent}/{due} due page(s) sent, {len(active)} active "
           f"({', '.join(sorted(active)) or 'none'}) ({datetime.now(tz=UTC).isoformat()[:16]}Z)",
           flush=True)
+    if due > sent:
+        print(f"alerts --box: FAILED -- {due - sent} due page(s) NOT delivered", flush=True)
+        return 3
     return 0
 
 
@@ -881,7 +911,7 @@ def main() -> None:
         return
     _poll_replies(topic)          # read principal replies BEFORE computing pages: a fresh
     state = _load_state(_STATE)   # ACK/REARM must suppress this very tick's escalation
-    sent, active = _dispatch(topic, _checks(), state, time.time())
+    sent, active, _due = _dispatch(topic, _checks(), state, time.time())
     # SELF-HEAL: auto-retry a failed daily brain cycle + event-trigger the brain on a remediable
     # alert -- so the desk fixes itself without waiting for the operator (2026-07-18).
     trig = _brain_watchdog(state, active)

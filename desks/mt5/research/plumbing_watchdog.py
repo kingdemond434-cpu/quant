@@ -82,6 +82,10 @@ COMPONENT = "leg:plumbing_watchdog"
 #: The adoption clock and this organ's own clock, by the names the scheduler must return.
 ADOPT_TASK = "MT5-AdoptRelease"
 WATCHDOG_TASK = "MT5-PlumbingWatchdog"
+#: The box's pager for plumbing defects and a stalled judge (`scripts/run_alerts.py --box`). Its
+#: LAST RESULT is read here because a pager that is NOT ARMED (exit 2) or whose pushes all fail
+#: (exit 3) cannot page about itself: this organ is what makes that failure seen.
+PAGER_TASK = "MT5-PlumbingPager"
 
 #: The mutex the four git writers share. `GitWriterMutex.ps1` is the only place the names live;
 #: they are repeated here as the FALLBACK for a box where that helper has not landed, and the
@@ -101,6 +105,7 @@ ESCALATION_S: dict[str, int] = {
     "orphan_workers": 2 * 3600,
     "commit_headroom": 2 * 3600,
     "scheduled_task": 3 * 3600,
+    "pager_task": 2 * 3600,
     "path_pair": 24 * 3600,
     "orphan_artifact_path": 24 * 3600,
     "fence_ran": 24 * 3600,
@@ -1206,6 +1211,8 @@ def run(*, budget_s: float = 180.0, apply: bool = False, root: Path | None = Non
                                              check="adoption_task", now=t)),
         ("watchdog_task", lambda: check_task(WATCHDOG_TASK, max_next_run_s=1800,
                                              check="scheduled_task", now=t)),
+        ("pager_task", lambda: check_task(PAGER_TASK, max_next_run_s=1800,
+                                          check="pager_task", now=t)),
         ("adoption_lag", lambda: check_adoption_lag(base)),
         ("adoption_partial", lambda: check_adoption_partial(base, t)),
         ("git_writer_lock", lambda: check_git_writer_lock(base)),
