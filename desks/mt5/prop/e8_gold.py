@@ -30,7 +30,7 @@ placements down on any verdict but OK; management of what is already open never 
 ONE GOLD TRADE AT RISK AT A TIME: a window waits while an earlier XAU position still has its stop
 short of break-even or an earlier bracket still rests (`one_at_risk_blocker`), and as a fail-safe
 the gold risk committed plus its own must fit the guard's room to today's floor (SLIP_BUFFER).
-A window whose leg would need more than GOLD_MAX_LOT is skipped whole, never shrunk.
+A leg that would need more than GOLD_MAX_LOT is sent at the ceiling, smaller, never skipped.
 
     python prop/e8_gold.py            one pass, shadow unless armed
     python prop/e8_gold.py --armed    one pass, armed for this pass only
@@ -134,18 +134,34 @@ MAX_STOP_REFUSALS = 3
 # A LOT CEILING ON EVERY GOLD LEG (2026-10-20). `lot_for_risk` sizes a leg as the window's risk
 # over its stop distance and nothing bounded the quotient: a tight range at 1% of a 100k account
 # needs 0.75 lots at a 13.3-point stop and 2.0 at a 5-point one, and a stop that tight on gold is
-# inside the noise a stop order fills through. The principal's coordinator ruled the trade is
-# SKIPPED, not shrunk: a shrunk leg is a different trade at an uncertified risk. Any leg of a
-# window over the ceiling skips the whole window, so no lone leg of a bracket rests, and the
-# window's risk is billed as missed growth on the journal (LOT_CEILING_RAIL).
+# inside the noise a stop order fills through. What the ceiling really bounds is DOLLARS PER POINT
+# of fill-through: at 0.75 lots a 2,500 USD daily floor takes a 23-27 point slip to reach.
+#
+# v2 (audit HOLD on 6f94d45cc, 2026-10-20): SHRINK, NEVER SKIP. v1 skipped the whole window, which
+# fails growth-governance Rule 1: a tight stop is exactly where a capped leg is safe (its risk,
+# ceiling x stop x contract, is at most the certified risk, and the dollars-per-point bound is
+# kept), and skipping forwent 38-87 USD a window against <= 35 shrunk. So every leg over the
+# ceiling is sent AT the ceiling; the window's budget is re-checked on the shrunk risk plus a
+# points-slip allowance (CEILING_SLIP_POINTS); and the risk withheld is journalled (status
+# RAIL_SHRUNK, rail LOT_CEILING_RAIL, reason LOT_CEILING_REASON) and published two-sided by
+# `research/missed_growth.published_e8_gold_lines` -- the risk withheld, the saving UNMEASURED.
 GOLD_MAX_LOT = 0.75
+#: E8's own position cap on XAUUSD, in lots. An override above it is no ceiling at all.
+GOLD_MAX_LOT_CAP = 20.0
 #: The box may move the ceiling without a code change: {"max_lot": <lots>}. Absent means
-#: GOLD_MAX_LOT. Unreadable, non-numeric, non-finite or <= 0 also means GOLD_MAX_LOT, said in the
-#: pass report -- a bad file never switches the ceiling off.
+#: GOLD_MAX_LOT. Unreadable, non-numeric, non-finite, <= 0, above GOLD_MAX_LOT_CAP or below the
+#: venue's minimum lot (which would idle the lane) also means GOLD_MAX_LOT, said in the pass
+#: report -- a bad file never switches the ceiling off, and never sets one the venue cannot send.
 GOLD_MAX_LOT_FILE = DESK / "data" / "E8_GOLD_MAX_LOT.json"
-#: The name the skip is journalled under (status RAIL_BLOCKED, with missed_growth_risk_usd).
+#: Fill-through allowed for on a shrunk leg's budget, in price points: 2026-09-24 a buy stop on
+#: this venue filled 24.13 points through its level.
+CEILING_SLIP_POINTS = 24.0
+#: The name the withheld risk is journalled under (status RAIL_SHRUNK, missed_growth_risk_usd).
 #: Not yet in libs/portfolio/rails.py, which is a sealed file: registering it is the principal's.
 LOT_CEILING_RAIL = "e8_gold_lot_ceiling"
+#: The decision reason code a shrunk window carries (prop/e8_evidence: R_LOT_CEILING, NOT exempt
+#: in scripts/check_placement_interlock.py).
+LOT_CEILING_REASON = "lot_ceiling"
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -180,11 +196,13 @@ def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
     return RISK_FRAC, "policy RISK_FRAC"
 
 
-def gold_max_lot(path: Path | None = None) -> tuple[float, str]:
+def gold_max_lot(path: Path | None = None, *, min_lot: float | None = None
+                 ) -> tuple[float, str]:
     """(the lot ceiling for one gold leg, where it came from). Never raises.
 
     `path` (default GOLD_MAX_LOT_FILE) may hold {"max_lot": <lots>}. A missing file is the
     default; a file that cannot be read, or a value that is not a finite number above zero, is
+    above GOLD_MAX_LOT_CAP, or is below `min_lot` (the venue's minimum, when it is known), is
     also the default, with the reason in the source string -- never a ceiling of zero or none.
     """
     p = GOLD_MAX_LOT_FILE if path is None else path
@@ -197,22 +215,34 @@ def gold_max_lot(path: Path | None = None) -> tuple[float, str]:
                 or not math.isfinite(float(raw)) or not float(raw) > 0:
             return GOLD_MAX_LOT, (f"default GOLD_MAX_LOT ({p.name} max_lot={raw!r} is not a "
                                   f"positive number)")
+        if float(raw) > GOLD_MAX_LOT_CAP:
+            return GOLD_MAX_LOT, (f"default GOLD_MAX_LOT ({p.name} max_lot={raw!r} is above "
+                                  f"E8's {GOLD_MAX_LOT_CAP:g}-lot XAUUSD cap: no ceiling at all)")
+        if min_lot is not None and float(raw) < float(min_lot) - 1e-12:
+            return GOLD_MAX_LOT, (f"default GOLD_MAX_LOT ({p.name} max_lot={raw!r} is below the "
+                                  f"venue minimum {float(min_lot):g}: it would idle the lane)")
         return float(raw), p.name
     except Exception as exc:
         return GOLD_MAX_LOT, f"default GOLD_MAX_LOT ({p.name} unreadable: {type(exc).__name__})"
 
 
-def lot_ceiling_breach(lots: dict[str, float], max_lot: float) -> str | None:
-    """Why a window is skipped by the lot ceiling, or None when every leg fits. Pure.
+def cap_lot(lot: float, max_lot: float, quantise: Any = None) -> tuple[float, bool]:
+    """(the lot to send, whether the ceiling shrank it). Pure.
 
-    `lots` is every leg the window would send, by side. One leg over skips them all.
+    A lot at or under the ceiling is returned as it came. One over it is sent AT the ceiling
+    (passed through `quantise`, the venue's lot step, when given) -- shrunk, never skipped.
     """
-    over = {side: lot for side, lot in lots.items() if float(lot) > float(max_lot) + 1e-9}
-    if not over:
-        return None
-    legs = ", ".join(f"{side} {lot:g}" for side, lot in sorted(over.items()))
-    return (f"lot ceiling: {legs} lots exceeds the {max_lot:g}-lot ceiling for one gold leg; "
-            f"a stop that tight is skipped, not shrunk, and the whole bracket stands aside")
+    if not float(lot) > float(max_lot) + 1e-9:
+        return float(lot), False
+    capped = float(max_lot) if quantise is None else float(quantise(float(max_lot)))
+    return min(capped, float(max_lot)), True
+
+
+def shrunk_budget_risk(lot: float, stop_dist: float, contract_size: float) -> float:
+    """A shrunk leg's risk for the budget: its stop at the level PLUS CEILING_SLIP_POINTS of
+    fill-through, at the leg's own dollars per point. Pure."""
+    per_point = float(lot) * float(contract_size)
+    return per_point * (float(stop_dist) + CEILING_SLIP_POINTS)
 
 
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
@@ -892,6 +922,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             log(f"[{due['window']}] DEFERRED: {why}")
         due_now = []
     committed: float | None = None
+    contract = XAU_OZ_PER_LOT
     if due_now:
         # CONCURRENT OPEN RISK, measured once, before any window is placed (see SLIP_BUFFER).
         # Anything unreadable -- the order book, the journal, a position's stop -- refuses every
@@ -918,7 +949,12 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 log(f"[{due['window']}] DEFERRED: {why}")
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
-    max_lot, max_lot_src = gold_max_lot()
+    try:
+        _min = float(venue.min_lot(SYMBOL))
+        venue_min_lot: float | None = _min if math.isfinite(_min) and _min > 0 else None
+    except Exception:
+        venue_min_lot = None
+    max_lot, max_lot_src = gold_max_lot(min_lot=venue_min_lot)
     doc["lot_ceiling"] = {"max_lot": max_lot, "source": max_lot_src}
     placed_this_pass: list[str] = []
     for due in due_now:
@@ -938,46 +974,66 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if blocker is None and placed_this_pass:
             blocker = (f"one gold trade at risk at a time: {', '.join(placed_this_pass)} was "
                        f"placed earlier in this pass")
-        if blocker is None:
-            fits, budget_why = risk_budget_allows(committed or 0.0, risk_usd, room)
-            if not fits:
-                blocker = f"concurrent risk would reach today's floor: {budget_why}"
         if blocker is not None:
             doc["skipped"].append({"window": name, "why": blocker})
             log(f"[{name}] DEFERRED: {blocker}")
             continue
-        # THE LOT CEILING (GOLD_MAX_LOT): every leg this window would send is sized BEFORE any is
-        # sent, so a bracket with one leg over the ceiling sends neither. The window is written
-        # to the state with no orders, so later passes neither re-send it nor bill it twice.
+        # THE LOT CEILING (GOLD_MAX_LOT), v2: every leg this window would send is sized BEFORE
+        # any is sent, and a leg over the ceiling is sent AT it (`cap_lot`) -- smaller, never
+        # skipped. `sized[side]` is the lot the send loop below uses.
         sized: dict[str, tuple[float, str]] = {}
+        unshrunk: dict[str, float] = {}
+        leg_risk: dict[str, float] = {}
+        budget_risk = risk_usd
         for side in ("buy_stop", "sell_stop"):
             s = spec[side]
             if side == blocked or not leg_is_legal(side, float(s["price"]), float(bid),
                                                    float(ask))[0]:
                 continue
-            lot, basis = lot_for_risk(venue, SYMBOL, abs(float(s["price"]) - float(s["sl"])),
-                                      risk_usd)
-            sized[side] = (_quantise(lot, venue, SYMBOL), basis)
-        ceiling_why = lot_ceiling_breach({k: v[0] for k, v in sized.items()}, max_lot)
-        if ceiling_why is not None:
-            # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1): the window's whole risk goes undeployed.
-            lots = {k: v[0] for k, v in sized.items()}
-            skip = {"window": name, "why": ceiling_why, "rail": LOT_CEILING_RAIL,
-                    "lots": lots, "max_lot": max_lot, "max_lot_source": max_lot_src,
-                    "missed_growth_risk_usd": round(risk_usd, 2)}
-            doc["skipped"].append(skip)
-            _record({"at": now.isoformat(timespec="seconds"), **skip,
-                     "status": "RAIL_BLOCKED", "risk_frac": frac, "armed": bool(armed),
-                     "levels": {k: {f: float(spec[k][f]) for f in ("price", "sl", "tp")}
-                                for k in sized}})
-            state["windows"][name] = {"placed_at": now.isoformat(timespec="seconds"),
-                                      "placed_hour": hour, "hi": due["hi"], "lo": due["lo"],
-                                      "orders": {}, "position_id": None, "shadow": not armed,
-                                      "skipped": LOT_CEILING_RAIL, "why": ceiling_why}
-            log(f"[{name}] SKIPPED: {ceiling_why}; MISSED GROWTH ({LOT_CEILING_RAIL}): the "
-                f"window's {risk_usd:.0f} USD of certified risk is not deployed")
+            dist = abs(float(s["price"]) - float(s["sl"]))
+            lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
+            full = _quantise(lot, venue, SYMBOL)
+            sent_lot, shrunk = cap_lot(full, max_lot,
+                                       lambda x: _quantise(x, venue, SYMBOL))
+            sized[side] = (sent_lot, basis)
+            leg_risk[side] = risk_usd
+            if shrunk:
+                unshrunk[side] = full
+                leg_risk[side] = dist * sent_lot * contract
+        if unshrunk:
+            # The budget is re-checked on what is actually sent: the shrunk risk to the stop
+            # plus CEILING_SLIP_POINTS of fill-through at the leg's dollars per point.
+            budget_risk = max(
+                shrunk_budget_risk(sized[k][0], abs(float(spec[k]["price"])
+                                                    - float(spec[k]["sl"])), contract)
+                if k in unshrunk else risk_usd for k in sized)
+        fits, budget_why = risk_budget_allows(committed or 0.0, budget_risk, room)
+        if not fits:
+            blocker = f"concurrent risk would reach today's floor: {budget_why}"
+            doc["skipped"].append({"window": name, "why": blocker})
+            log(f"[{name}] DEFERRED: {blocker}")
             continue
-        committed = (committed or 0.0) + risk_usd
+        window_risk_usd = max(leg_risk.values()) if leg_risk else risk_usd
+        if unshrunk:
+            # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1), two-sided: the risk the ceiling withheld
+            # is journalled; what the smaller leg saved in a fill-through tail is UNMEASURED
+            # (research/missed_growth.published_e8_gold_lines).
+            withheld = max(0.0, risk_usd - window_risk_usd)
+            over = ", ".join(f"{k} {v:g}" for k, v in sorted(unshrunk.items()))
+            shrink = {"window": name, "rail": LOT_CEILING_RAIL, "reason": LOT_CEILING_REASON,
+                      "why": (f"lot ceiling: {over} lots shrunk to the {max_lot:g}-lot ceiling "
+                              f"for one gold leg; sent smaller, not skipped"),
+                      "lots": {k: v[0] for k, v in sized.items()}, "unshrunk_lots": unshrunk,
+                      "max_lot": max_lot, "max_lot_source": max_lot_src,
+                      "risk_usd": round(window_risk_usd, 2),
+                      "certified_risk_usd": round(risk_usd, 2),
+                      "missed_growth_risk_usd": round(withheld, 2)}
+            doc.setdefault("shrunk", []).append(shrink)
+            _record({"at": now.isoformat(timespec="seconds"), **shrink, "status": "RAIL_SHRUNK",
+                     "risk_frac": frac, "armed": bool(armed)})
+            log(f"[{name}] SHRUNK: {shrink['why']}; MISSED GROWTH ({LOT_CEILING_RAIL}): "
+                f"{withheld:.0f} of the window's {risk_usd:.0f} USD of certified risk withheld")
+        committed = (committed or 0.0) + window_risk_usd
         legs: dict[str, dict] = {}
         failed: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
@@ -998,9 +1054,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             lot, basis = sized[side]
             row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                    "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
-                   "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
+                   "lot": lot, "stop_dist": round(dist, 2),
+                   "risk_usd": round(leg_risk.get(side, risk_usd), 2),
                    "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
                    "armed": bool(armed)}
+            if side in unshrunk:
+                row["lot_ceiling"] = {"max_lot": max_lot, "unshrunk_lot": unshrunk[side],
+                                      "reason": LOT_CEILING_REASON}
             if not (lot > 0):
                 row["status"] = "UNSIZEABLE"
                 doc["skipped"].append(row)
@@ -1009,7 +1069,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             if not armed:
                 row["status"] = "WOULD_PLACE"
                 log(f"[{name}] SHADOW would place {side} {lot} {SYMBOL} @ {s['price']:.2f} "
-                    f"sl {s['sl']:.2f} tp {s['tp']:.2f} (risk {risk_usd:.0f} USD)")
+                    f"sl {s['sl']:.2f} tp {s['tp']:.2f} (risk {row['risk_usd']:.0f} USD)")
                 _record(row)
                 legs[side] = {"id": None, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
                 continue

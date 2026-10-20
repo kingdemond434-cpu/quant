@@ -1,10 +1,11 @@
-"""E8 gold skips a window whose leg would need more than GOLD_MAX_LOT (2026-10-20).
+"""E8 gold caps every leg at GOLD_MAX_LOT -- v2: shrunk, never skipped (audit HOLD, 2026-10-20).
 
 `lot_for_risk` sizes a leg as the window's risk over its stop distance, and nothing bounded the
-quotient. The principal's coordinator ruled that a stop tight enough to need more than 0.75 lots
-at the window's risk is SKIPPED, never shrunk: the whole bracket stands aside (no lone leg
-rests), the skip is journalled RAIL_BLOCKED with the window's risk as missed growth, and the box
-may move the ceiling through data/E8_GOLD_MAX_LOT.json without a code change.
+quotient. v1 skipped a window whose leg needed more than 0.75 lots; the audit rejected that under
+growth-governance Rule 1 (a tight stop is exactly where a capped leg is safe). v2 sends the leg AT
+the ceiling, re-checks the budget on the shrunk risk plus CEILING_SLIP_POINTS of fill-through,
+journals the withheld risk RAIL_SHRUNK (published two-sided by missed_growth), and refuses an
+override above E8's 20-lot cap or below the venue minimum.
 
 The fixture is test_e8_gold_guard_and_open_risk's: the afternoon window is due with a 33.5-point
 stop, 500 USD of risk -> 0.14 lots at the venue's 100 oz contract. A 10 oz contract makes the
@@ -63,54 +64,69 @@ def _journal(tmp_path: Path) -> list[dict[str, Any]]:
     return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
 
 
-def _ceiling_skips(doc: dict[str, Any]) -> list[dict[str, Any]]:
-    return [s for s in doc["skipped"] if s.get("rail") == g.LOT_CEILING_RAIL]
-
-
 def test_a_window_under_the_ceiling_is_sent_unchanged(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _sandbox(monkeypatch, tmp_path)
     venue = _Venue()
     doc = g.run(venue, h._MT5(), armed=True)
     assert doc["lot_ceiling"] == {"max_lot": g.GOLD_MAX_LOT, "source": "default GOLD_MAX_LOT"}
-    assert not _ceiling_skips(doc)
+    assert "shrunk" not in doc
     assert sorted(venue.sent) == [("buy", 0.14, 4310.0), ("sell", 0.14, 4290.0)]
     legs = doc["placed"][0]["legs"]
     assert {side: leg["lot"] for side, leg in legs.items()} == {"buy_stop": 0.14,
                                                                "sell_stop": 0.14}
+    rows = _journal(tmp_path)
+    assert [r["status"] for r in rows] == ["SENT", "SENT"]
+    assert all("lot_ceiling" not in r and r["risk_usd"] == 500.0 for r in rows)
 
 
-def test_a_window_over_the_ceiling_sends_neither_leg_and_bills_the_risk(
+def test_a_leg_over_the_ceiling_is_sent_at_the_ceiling_and_the_withheld_risk_billed(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _sandbox(monkeypatch, tmp_path)
     venue = _Venue(contract=10.0)                     # 500 USD / (33.5 x 10) = 1.49 lots
     doc = g.run(venue, h._MT5(), armed=True)
-    assert venue.sent == [], "no leg of an over-ceiling bracket reaches the venue"
-    assert doc["placed"] == []
-    (skip,) = _ceiling_skips(doc)
-    assert skip["window"] == "afternoon" and "lot ceiling" in skip["why"]
-    assert "skipped, not shrunk" in skip["why"]
-    assert skip["lots"] == {"buy_stop": 1.49, "sell_stop": 1.49}
-    assert skip["max_lot"] == g.GOLD_MAX_LOT
-    assert skip["missed_growth_risk_usd"] == pytest.approx(500.0)
-    (row,) = [r for r in _journal(tmp_path) if r.get("rail") == g.LOT_CEILING_RAIL]
-    assert row["status"] == "RAIL_BLOCKED" and row["missed_growth_risk_usd"] == 500.0
-    assert row.get("order_id") is None
-    assert "lot ceiling" in (tmp_path / "log.json").read_text(encoding="utf-8")
-    # The window is spent for the day: the next pass neither sends it nor bills it again.
-    saved = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
-    assert saved["windows"]["afternoon"]["orders"] == {}
-    assert saved["windows"]["afternoon"]["skipped"] == g.LOT_CEILING_RAIL
+    assert sorted(venue.sent) == [("buy", 0.75, 4310.0), ("sell", 0.75, 4290.0)]
+    assert [p["window"] for p in doc["placed"]] == ["afternoon"]
+    (shrink,) = doc["shrunk"]
+    assert shrink["rail"] == g.LOT_CEILING_RAIL and shrink["reason"] == g.LOT_CEILING_REASON
+    assert shrink["unshrunk_lots"] == {"buy_stop": 1.49, "sell_stop": 1.49}
+    assert shrink["lots"] == {"buy_stop": 0.75, "sell_stop": 0.75}
+    assert shrink["risk_usd"] == pytest.approx(33.5 * 0.75 * 10)          # 251.25
+    assert shrink["missed_growth_risk_usd"] == pytest.approx(500.0 - 251.25)
+    assert not [s for s in doc["skipped"] if s.get("rail") == g.LOT_CEILING_RAIL]
+    rows = _journal(tmp_path)
+    (billed,) = [r for r in rows if r.get("rail") == g.LOT_CEILING_RAIL]
+    assert billed["status"] == "RAIL_SHRUNK" and billed.get("order_id") is None
+    sent = [r for r in rows if r["status"] == "SENT"]
+    assert len(sent) == 2 and all(r["risk_usd"] == 251.25 and r["lot"] == 0.75 for r in sent)
+    assert all(r["lot_ceiling"] == {"max_lot": 0.75, "unshrunk_lot": 1.49,
+                                    "reason": g.LOT_CEILING_REASON} for r in sent)
+    assert "SHRUNK" in (tmp_path / "log.json").read_text(encoding="utf-8")
+    # The window is placed: the next pass neither re-sends nor bills it again.
     again = g.run(venue, h._MT5(), armed=True)
-    assert venue.sent == [] and not _ceiling_skips(again)
+    assert len(venue.sent) == 2 and "shrunk" not in again
     assert len([r for r in _journal(tmp_path) if r.get("rail") == g.LOT_CEILING_RAIL]) == 1
 
 
-def test_one_leg_over_the_ceiling_skips_its_twin_too() -> None:
-    why = g.lot_ceiling_breach({"buy_stop": 0.5, "sell_stop": 0.8}, 0.75)
-    assert why is not None and "sell_stop 0.8" in why and "buy_stop" not in why
-    assert g.lot_ceiling_breach({"buy_stop": 0.75, "sell_stop": 0.75}, 0.75) is None
-    assert g.lot_ceiling_breach({}, 0.75) is None
+def test_the_budget_is_rechecked_on_the_shrunk_risk_plus_a_points_slip_allowance(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    assert g.shrunk_budget_risk(0.75, 33.5, 10.0) == pytest.approx(0.75 * 10 * (33.5 + 24.0))
+    _sandbox(monkeypatch, tmp_path)
+    monkeypatch.setattr(g, "CEILING_SLIP_POINTS", 400.0)   # 0.75 x 10 x 433.5 x 1.25 > 2,400
+    venue = _Venue(contract=10.0)
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert venue.sent == [] and doc["placed"] == []
+    assert "concurrent risk would reach today's floor" in " ".join(
+        str(s.get("why")) for s in doc["skipped"])
+    saved = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert "afternoon" not in saved["windows"], "a deferral is not a spent window"
+
+
+def test_cap_lot_is_pure_and_only_ever_shrinks() -> None:
+    assert g.cap_lot(0.75, 0.75) == (0.75, False)
+    assert g.cap_lot(0.14, 0.75) == (0.14, False)
+    assert g.cap_lot(1.49, 0.75) == (0.75, True)
+    assert g.cap_lot(1.49, 0.755, lambda x: 0.75) == (0.75, True)
 
 
 def test_the_box_override_is_read(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -118,9 +134,9 @@ def test_the_box_override_is_read(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     assert g.gold_max_lot() == (0.10, "E8_GOLD_MAX_LOT.json")
     venue = _Venue()                                   # 0.14 lots, over a 0.10 ceiling
     doc = g.run(venue, h._MT5(), armed=True)
-    assert venue.sent == []
-    (skip,) = _ceiling_skips(doc)
-    assert skip["max_lot"] == 0.10 and skip["max_lot_source"] == "E8_GOLD_MAX_LOT.json"
+    assert sorted(venue.sent) == [("buy", 0.10, 4310.0), ("sell", 0.10, 4290.0)]
+    (shrink,) = doc["shrunk"]
+    assert shrink["max_lot"] == 0.10 and shrink["max_lot_source"] == "E8_GOLD_MAX_LOT.json"
 
 
 def test_a_raised_override_lets_a_larger_leg_through(
@@ -128,23 +144,33 @@ def test_a_raised_override_lets_a_larger_leg_through(
     _sandbox(monkeypatch, tmp_path, override={"max_lot": 2.0})
     venue = _Venue(contract=10.0)
     doc = g.run(venue, h._MT5(), armed=True)
-    assert not _ceiling_skips(doc)
+    assert "shrunk" not in doc
     assert sorted(venue.sent) == [("buy", 1.49, 4310.0), ("sell", 1.49, 4290.0)]
+
+
+def test_the_bounds_of_the_override_are_inclusive(tmp_path: Path) -> None:
+    p = tmp_path / "E8_GOLD_MAX_LOT.json"
+    p.write_text(json.dumps({"max_lot": g.GOLD_MAX_LOT_CAP}), encoding="utf-8")
+    assert g.gold_max_lot(p, min_lot=0.01)[0] == g.GOLD_MAX_LOT_CAP
+    p.write_text(json.dumps({"max_lot": 0.01}), encoding="utf-8")
+    assert g.gold_max_lot(p, min_lot=0.01)[0] == 0.01
 
 
 @pytest.mark.parametrize("override", [
     {"max_lot": 0}, {"max_lot": -1.0}, {"max_lot": "1.0"}, {"max_lot": True},
     {"max_lot": None}, {}, [0.5], "NaN", '{"max_lot": Infinity}', "{ not json",
+    {"max_lot": 1e9}, {"max_lot": 75}, {"max_lot": 20.5}, {"max_lot": 0.001},
 ])
 def test_an_invalid_override_falls_back_to_the_default(monkeypatch: pytest.MonkeyPatch,
                                                        tmp_path: Path, override: Any) -> None:
     _sandbox(monkeypatch, tmp_path, override=override)
-    lot, src = g.gold_max_lot()
+    lot, src = g.gold_max_lot(min_lot=0.01)
     assert lot == g.GOLD_MAX_LOT and src.startswith("default GOLD_MAX_LOT (")
     venue = _Venue(contract=10.0)
     doc = g.run(venue, h._MT5(), armed=True)
-    assert venue.sent == [], "a bad override never switches the ceiling off"
-    assert _ceiling_skips(doc)[0]["max_lot"] == g.GOLD_MAX_LOT
+    assert doc["lot_ceiling"]["max_lot"] == g.GOLD_MAX_LOT
+    assert sorted(venue.sent) == [("buy", 0.75, 4310.0), ("sell", 0.75, 4290.0)], \
+        "a bad override never switches the ceiling off, nor idles the lane"
 
 
 def test_an_unreadable_override_never_raises(
@@ -152,3 +178,22 @@ def test_an_unreadable_override_never_raises(
     p = _sandbox(monkeypatch, tmp_path)
     p.mkdir()                                          # exists, but is not a readable file
     assert g.gold_max_lot()[0] == g.GOLD_MAX_LOT
+
+
+def test_missed_growth_publishes_the_ceiling_two_sided(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    sys.path.insert(0, str(_DESK / "research"))
+    import missed_growth as mg
+
+    journal = tmp_path / "intents.json"
+    monkeypatch.setattr(mg, "E8_INTENTS", journal)
+    assert mg.published_e8_gold_lines()["verdict"] == mg.UNMEASURED      # absent: never a zero
+    journal.write_text(json.dumps({"status": "SENT", "order_id": 1}) + "\n", encoding="utf-8")
+    assert mg.published_e8_gold_lines()["verdict"] == mg.NOT_BINDING
+    _sandbox(monkeypatch, tmp_path)
+    g.run(_Venue(contract=10.0), h._MT5(), armed=True)
+    out = mg.published_e8_gold_lines()
+    (line,) = out["lines"]
+    assert line["rail"] == g.LOT_CEILING_RAIL and line["n_shrunk"] == 1
+    assert line["cost"]["risk_withheld_usd"] == pytest.approx(248.75)
+    assert line["saving"]["verdict"] == mg.UNMEASURED and out["verdict"] == mg.UNMEASURED
