@@ -466,6 +466,8 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
 !desks/mt5/reports/JUDGE_COVERAGE.json
 !desks/mt5/reports/JUDGE_RESIDENT.json
+!desks/mt5/reports/GAUNTLET_HEARTBEAT.json
+!desks/mt5/reports/GAUNTLET_STALL.json
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json

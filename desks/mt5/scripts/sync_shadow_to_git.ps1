@@ -675,6 +675,10 @@ $reportPaths = @(
     # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
     # the only off-box evidence of whether the judge is running between its verdicts
     "desks/mt5/reports/JUDGE_RESIDENT.json",
+    # the --once sweep's own watchdog (2026-10-20): its heartbeat (phase, shard counts, deadlines,
+    # tree CPU/RSS) and the named stall it acted on -- a hung sweep reads STALLED off the box
+    "desks/mt5/reports/GAUNTLET_HEARTBEAT.json",
+    "desks/mt5/reports/GAUNTLET_STALL.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",

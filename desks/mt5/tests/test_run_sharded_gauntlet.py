@@ -35,6 +35,11 @@ def _isolated_state(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "RESIDENT_STOP", tmp_path / "RESIDENT_STOP")
     monkeypatch.setattr(runner, "SWEEP_PHASE", tmp_path / "JUDGE_SWEEP_PHASE.json")
     monkeypatch.setattr(runner, "_PHASE_DOC", {})
+    monkeypatch.setattr(runner, "HEARTBEAT", tmp_path / "GAUNTLET_HEARTBEAT.json")
+    monkeypatch.setattr(runner, "STALL", tmp_path / "GAUNTLET_STALL.json")
+    monkeypatch.setattr(runner, "PHASE_TIMES", tmp_path / "judge_phase_times.json")
+    monkeypatch.setattr(runner, "_PROGRESS", {})
+    runner._ABORT.clear()
 
 
 def test_parallelism_is_bounded_and_configurable(monkeypatch) -> None:
@@ -356,8 +361,11 @@ def test_a_hung_sweep_is_killed_recorded_and_the_next_one_starts(monkeypatch, tm
     monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: _Child())
     monkeypatch.setattr(runner, "_kill_sweep_tree", lambda pid: seen.setdefault("killed", pid))
     monkeypatch.setattr(runner, "_sweep_env", lambda: {})
-    assert runner._one_sweep_child(5.0) == runner.RESIDENT_HANG_RC
+    ticks = iter([0.0, 0.0] + [10.0] * 10)
+    assert runner._one_sweep_child(5.0, clock=lambda: next(ticks)) == runner.RESIDENT_HANG_RC
     assert seen["timeouts"][0] == 5.0 and seen["killed"] == 4242
+    stall = json.loads(runner.STALL.read_text("utf-8"))
+    assert stall["status"] == "STALLED" and stall["reason"] == "resident_kill"
 
     clock, slept = _Clock(), []
     seq = iter([runner.RESIDENT_HANG_RC, runner.RESIDENT_HANG_RC])
