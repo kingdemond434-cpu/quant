@@ -95,11 +95,23 @@ def _topic() -> str:
     return topic
 
 
+def _decode_secret(raw: bytes) -> str:
+    """Sniff the encoding: a hand-copied file from PS 5.1 (`Out-File`) is UTF-16, with or
+    without a BOM, and must not read as NOT ARMED. UnicodeDecodeError is a ValueError."""
+    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return raw.decode("utf-16")
+    if raw[1:2] == b"\x00":
+        return raw.decode("utf-16-le")
+    if raw[:1] == b"\x00":
+        return raw.decode("utf-16-be")
+    return raw.decode("utf-8-sig")
+
+
 def _read_topic(paths: tuple[Path, ...]) -> str | None:
     """The EXISTING topic, or None. Never mints one and never prints one (box path)."""
     for p in paths:
         try:
-            topic = json.loads(p.read_text("utf-8-sig")).get("topic")
+            topic = json.loads(_decode_secret(p.read_bytes())).get("topic")
         except (OSError, ValueError, AttributeError):
             continue
         if isinstance(topic, str) and topic.strip():
@@ -796,10 +808,12 @@ def _recent(now: float, stamp: object, window: float) -> bool:
 
 
 def _dispatch(topic: str, checks: list[tuple[str, str]], state: dict[str, Any],
-              now: float) -> tuple[int, set[str], int]:
+              now: float, *, push: Callable[[str, str, str], None] | None = None,
+              ) -> tuple[int, set[str], int]:
     """Page each check (deduped, backed off) and RESOLVE what cleared. Mutates `state`.
     Returns (sent, active keys, due): `due` counts WARNING pages owed this tick (outside their
     dedupe window), whether or not the push went out or was held by the failure backoff."""
+    send = push or _push          # resolved at call time, so a patched _push is honoured
     sent = 0
     due = 0
     active = {k for k, _ in checks}
@@ -818,7 +832,7 @@ def _dispatch(topic: str, checks: list[tuple[str, str]], state: dict[str, Any],
             continue
         state[f"_try_{key}"] = now
         try:
-            _push(topic, f"WARNING Quant desk: {key}", msg)
+            send(topic, f"WARNING Quant desk: {key}", msg)
             state[key] = now
             paged.add(key)
             sent += 1
@@ -830,7 +844,7 @@ def _dispatch(topic: str, checks: list[tuple[str, str]], state: dict[str, Any],
     for key in list(paged):
         if key not in active:
             with contextlib.suppress(Exception):
-                _push(topic, f"RESOLVED Quant desk: {key}",
+                send(topic, f"RESOLVED Quant desk: {key}",
                       "auto-fixed / cleared -- no action needed")
             paged.discard(key)
             state.pop(key, None)
@@ -853,6 +867,35 @@ def _write_state(path: Path, state: dict[str, Any]) -> None:
 _ROOT = Path(__file__).resolve().parents[1]
 _BOX_SECRETS = (Path("data/secrets/ntfy.json"), Path("desks/mt5/data/secrets/ntfy.json"))
 _BOX_STATE = Path("desks/mt5/logs/plumbing_pager_state.json")
+#: The NOT ARMED fallback keeps its OWN dedupe state: a key delivered only by the fallback must
+#: not hold back the first ntfy page for REPAGE_H once the topic is armed.
+_BOX_FALLBACK_STATE = Path("desks/mt5/logs/plumbing_pager_fallback_state.json")
+#: Every box pass's own outcome, for desks/mt5/scripts/box_heartbeat.py's `pager` check (which
+#: lands after the pager is armed): a pager that is NOT ARMED, cannot deliver or stops firing then
+#: reaches healthchecks.io.
+_BOX_REPORT = Path("desks/mt5/reports/PLUMBING_PAGER.json")
+
+
+def _fallback_push(_topic: str, title: str, body: str) -> None:
+    """NOT ARMED: no ntfy topic, but the independent channels may still deliver. Raises when
+    none did, so the page stays owed (and the pass still fails)."""
+    _second_channel(f"{title}: {body}")
+    from libs.ops.alert_channels import send_all
+    res = send_all(title, body)
+    if not int(res.get("delivered") or 0):
+        raise RuntimeError("NOT ARMED and no registry channel delivered")
+
+
+def _write_box_report(rc: int, due: int, sent: int, active: set[str]) -> None:
+    doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "rc": rc, "due": due,
+           "sent": sent, "active": sorted(active)}
+    try:
+        _BOX_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _BOX_REPORT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc), "utf-8")
+        os.replace(tmp, _BOX_REPORT)
+    except OSError as exc:
+        print(f"alerts --box: pager report NOT written ({type(exc).__name__})", flush=True)
 
 
 def box_main() -> int:
@@ -860,27 +903,35 @@ def box_main() -> int:
 
     A missing ntfy secret is a LOGGED FAILURE (exit 2) with no page: the box never mints a
     topic (a minted topic has no subscriber, so a page to it reaches no one) and never prints
-    one. Exit 3 when a page was due and did not go out (push failed, or held by the failure
+    one; it still tries the independent channels first. Exit 3 when a page was due and did not go out (push failed, or held by the failure
     backoff): a pager that cannot deliver must fail its task, so MT5-PlumbingWatchdog's
     last-result check sees it. Exit 0 otherwise."""
     os.chdir(_ROOT)
     topic = _read_topic(_BOX_SECRETS)
+    checks = _box_checks()
     if topic is None:
+        # still try the independent channels (healthchecks /fail, alert_channels registry)
+        # before giving up: they need no topic. The pass fails (2) either way.
+        fb_state = _load_state(_BOX_FALLBACK_STATE)
+        sent, active, due = _dispatch("", checks, fb_state, time.time(), push=_fallback_push)
+        _write_state(_BOX_FALLBACK_STATE, fb_state)
+        _write_box_report(2, due, sent, active)
         print("alerts --box: NOT ARMED -- no readable ntfy topic in "
               + " or ".join(str(p) for p in _BOX_SECRETS)
-              + "; no page sent and no topic created", flush=True)
+              + f"; no topic created; fallback channels delivered {sent}/{due} due page(s)",
+              flush=True)
         return 2
     state = _load_state(_BOX_STATE)
-    checks = _box_checks()
     sent, active, due = _dispatch(topic, checks, state, time.time())
     _write_state(_BOX_STATE, state)
+    rc = 3 if due > sent else 0
+    _write_box_report(rc, due, sent, active)
     print(f"alerts --box: {sent}/{due} due page(s) sent, {len(active)} active "
           f"({', '.join(sorted(active)) or 'none'}) ({datetime.now(tz=UTC).isoformat()[:16]}Z)",
           flush=True)
-    if due > sent:
+    if rc:
         print(f"alerts --box: FAILED -- {due - sent} due page(s) NOT delivered", flush=True)
-        return 3
-    return 0
+    return rc
 
 
 def main() -> None:

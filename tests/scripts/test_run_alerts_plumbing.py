@@ -370,9 +370,14 @@ def test_box_without_a_secret_logs_and_never_mints_or_pages(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     pushes = _box(monkeypatch, tmp_path)
+    fallback: list[str] = []
     monkeypatch.setattr(_M, "_topic", lambda: pytest.fail("the box path minted a topic"))
+    monkeypatch.setattr(_M, "_fallback_push", lambda _t, title, body: fallback.append(title))
     assert _M.box_main() == 2
-    assert pushes == []
+    assert pushes == []                                         # nothing to ntfy without a topic
+    assert fallback == ["WARNING Quant desk: judge_stalled"]    # ...but the other channels tried
+    rep = json.loads((tmp_path / "desks/mt5/reports/PLUMBING_PAGER.json").read_text("utf-8"))
+    assert rep["rc"] == 2 and rep["due"] == 1 and rep["sent"] == 1
     assert not (tmp_path / "data" / "secrets" / "ntfy.json").exists()
     out = capsys.readouterr().out
     assert "NOT ARMED" in out and "ntfy.sh/" not in out
@@ -389,6 +394,8 @@ def test_box_with_a_secret_pages_through_the_existing_sender(
     assert [(p[0], p[1]) for p in pushes] == [
         ("quant-desk-BOXSECRET", "WARNING Quant desk: judge_stalled")]
     assert (tmp_path / "desks" / "mt5" / "logs" / "plumbing_pager_state.json").exists()
+    rep = json.loads((tmp_path / "desks/mt5/reports/PLUMBING_PAGER.json").read_text("utf-8"))
+    assert (rep["rc"], rep["due"], rep["sent"]) == (0, 1, 1) and _M._parse_at(rep["at"])
     assert _M.box_main() == 0 and len(pushes) == 1                # deduped on the next pass
     assert "BOXSECRET" not in capsys.readouterr().out
 
@@ -401,6 +408,15 @@ def test_the_box_pager_is_wired_to_a_clock() -> None:
     assert "-Daily" in inst and "-Minutes 15" in inst
     # v3: the installing user at RunLevel Limited (MT5-ShadowSync's shape), never SYSTEM/Highest
     assert "-UserId $env:USERNAME" in inst and "-RunLevel Limited" in inst
+    # v4: S4U first (fires with nobody logged on), Interactive only as a SAID fallback
+    assert inst.index("-LogonType S4U") < inst.index("-LogonType Interactive")
+    assert "falling back to Interactive/Limited" in inst
+    # v5: the principal printed is the one the scheduler READS BACK, not the branch taken
+    assert "$t.Principal.LogonType" in inst and "scheduler read-back" in inst
+    assert "-RepetitionDuration (New-TimeSpan -Hours 25)" in inst          # DST-day gap closed
+    assert "plumbing_pager_installed.json" in inst                          # registration stamp
+    assert "[int64]$i.LastTaskResult" in inst and "[int]$i.LastTaskResult" not in inst
+    assert "content not shown" in inst
     assert '"SYSTEM"' not in inst and "Highest" not in inst
     # waits out 267009 instead of a fixed sleep; NOT ARMED fails the install
     assert "267009" in inst and "exit 2" in inst and "Start-Sleep -Seconds 5" not in inst
@@ -425,6 +441,8 @@ def test_box_exits_nonzero_when_a_due_page_is_not_delivered(
     (tmp_path / "data" / "secrets" / "ntfy.json").write_text(
         json.dumps({"topic": "quant-desk-BOXSECRET"}), "utf-8")
     assert _M.box_main() == 3
+    rep = json.loads((tmp_path / "desks/mt5/reports/PLUMBING_PAGER.json").read_text("utf-8"))
+    assert (rep["rc"], rep["due"], rep["sent"]) == (3, 1, 0)
     # next pass: the page is still owed and held by the 30-min backoff -- still a failure
     assert _M.box_main() == 3
 
@@ -510,3 +528,114 @@ def test_the_watchdog_pass_checks_the_pager_task(
         monkeypatch.setattr(pw, fn, lambda *a, **k: ([], {}))
     doc = pw.run(budget_s=5.0, now=NOW, write=False, state_path=tmp_path / "s.json")
     assert "MT5-PlumbingPager" in asked and "pager_task" in doc["checks_run"]
+
+
+# ------------------------------------------------------------------ v4 (audit HOLD on 6331053b)
+@pytest.mark.parametrize("enc", ["utf-16", "utf-16-le", "utf-16-be", "utf-8-sig", "utf-8"])
+def test_a_hand_copied_secret_in_any_ps_encoding_is_read(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, enc: str) -> None:
+    pushes = _box(monkeypatch, tmp_path)
+    (tmp_path / "data" / "secrets").mkdir(parents=True)
+    (tmp_path / "data" / "secrets" / "ntfy.json").write_bytes(
+        json.dumps({"topic": "quant-desk-BOXSECRET"}).encode(enc))
+    assert _M.box_main() == 0
+    assert [p[0] for p in pushes] == ["quant-desk-BOXSECRET"]
+
+
+def test_not_armed_fallback_raises_unless_a_channel_delivered(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import libs.ops.alert_channels as ac
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_M, "_second_channel", lambda text: None)
+    monkeypatch.setattr(ac, "send_all", lambda t, b, **k: {"armed": 0, "delivered": 0})
+    with pytest.raises(RuntimeError):
+        _M._fallback_push("", "WARNING Quant desk: x", "body")
+    monkeypatch.setattr(ac, "send_all", lambda t, b, **k: {"armed": 1, "delivered": 1})
+    _M._fallback_push("", "WARNING Quant desk: x", "body")
+
+
+def _pager_facts(**kw: Any) -> dict[str, Any]:
+    return {"measured": True, "present": True, "state": "Ready",
+            "next": (NOW + timedelta(minutes=10)).isoformat(), **kw}
+
+
+@pytest.mark.parametrize(("facts", "flagged"), [
+    (_pager_facts(result="0", last=(NOW - timedelta(minutes=10)).isoformat()), False),
+    (_pager_facts(result="0", last=(NOW - timedelta(days=3)).isoformat()), True),
+    (_pager_facts(result="267009", last=(NOW - timedelta(days=3)).isoformat()), True),
+    (_pager_facts(result="", last="NONE"), True),
+    (_pager_facts(result="267011", last="NONE"), True),                     # no registration
+    (_pager_facts(result="267011", last="NONE",
+                  registered=(NOW - timedelta(minutes=5)).isoformat()), False),  # just installed
+    (_pager_facts(result="267011", last="NONE",
+                  registered=(NOW - timedelta(hours=2)).isoformat()), True),     # never fired
+])
+def test_the_watchdog_flags_a_pager_that_never_fires(
+        facts: dict[str, Any], flagged: bool) -> None:
+    pw = _load("plumbing_watchdog_for_pager_fired",
+               _ROOT / "desks" / "mt5" / "research" / "plumbing_watchdog.py")
+    rows, _ = pw.check_task(pw.PAGER_TASK, max_next_run_s=1800, check="pager_task", now=NOW,
+                            facts=facts, max_last_age_s=pw.PAGER_MAX_LAST_AGE_S,
+                            first_run_grace_s=pw.PAGER_FIRST_RUN_GRACE_S)
+    keys = [r["key"] for r in rows]
+    assert ("pager_task:MT5-PlumbingPager:last_run" in keys) is flagged
+
+
+def test_the_watchdog_pass_proves_the_pager_fired() -> None:
+    src = (_ROOT / "desks/mt5/research/plumbing_watchdog.py").read_text("utf-8")
+    assert "max_last_age_s=PAGER_MAX_LAST_AGE_S" in src and "'REGISTERED=' +" in src
+
+
+# ------------------------------------------------------------------ v5 (audit HOLD on 527c781c)
+@pytest.mark.parametrize(("facts", "key"), [
+    (_pager_facts(result="0", last=(NOW + timedelta(days=3)).isoformat()), "last_run"),
+    (_pager_facts(result="0", last=(NOW + timedelta(days=3650)).isoformat()), "last_run"),
+    (_pager_facts(result="", last=(NOW - timedelta(minutes=5)).isoformat()), "last_result"),
+])
+def test_future_last_run_and_unreadable_result_are_defects(
+        facts: dict[str, Any], key: str) -> None:
+    pw = _load("plumbing_watchdog_for_pager_v5",
+               _ROOT / "desks" / "mt5" / "research" / "plumbing_watchdog.py")
+    rows, _ = pw.check_task(pw.PAGER_TASK, max_next_run_s=1800, check="pager_task", now=NOW,
+                            facts=facts, max_last_age_s=pw.PAGER_MAX_LAST_AGE_S,
+                            first_run_grace_s=pw.PAGER_FIRST_RUN_GRACE_S)
+    assert f"pager_task:MT5-PlumbingPager:{key}" in [r["key"] for r in rows]
+
+
+def test_small_last_run_skew_is_tolerated() -> None:
+    pw = _load("plumbing_watchdog_for_pager_skew",
+               _ROOT / "desks" / "mt5" / "research" / "plumbing_watchdog.py")
+    rows, _ = pw.check_task(pw.PAGER_TASK, max_next_run_s=1800, check="pager_task", now=NOW,
+                            facts=_pager_facts(result="0",
+                                               last=(NOW + timedelta(minutes=5)).isoformat()),
+                            max_last_age_s=pw.PAGER_MAX_LAST_AGE_S)
+    assert rows == []
+
+
+def test_the_install_stamp_stands_in_for_an_empty_registration_date(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pw = _load("plumbing_watchdog_for_pager_stamp",
+               _ROOT / "desks" / "mt5" / "research" / "plumbing_watchdog.py")
+    monkeypatch.setattr(pw, "_task_facts", lambda name: _pager_facts(
+        result="267011", last="NONE", registered="NONE"))
+    stamp = tmp_path / "plumbing_pager_installed.json"
+    assert pw.pager_facts(stamp)["registered"] == "NONE"                # no stamp: nothing excused
+    stamp.write_text(json.dumps({"at": (NOW - timedelta(minutes=5)).isoformat()}), "utf-8")
+    f = pw.pager_facts(stamp)
+    assert f["registered_source"] == "install stamp"
+    rows, _ = pw.check_task(pw.PAGER_TASK, max_next_run_s=1800, check="pager_task", now=NOW,
+                            facts=f, max_last_age_s=pw.PAGER_MAX_LAST_AGE_S,
+                            first_run_grace_s=pw.PAGER_FIRST_RUN_GRACE_S)
+    assert rows == []
+
+
+def test_a_fallback_delivery_never_holds_back_the_first_ntfy_page(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    pushes = _box(monkeypatch, tmp_path)
+    monkeypatch.setattr(_M, "_fallback_push", lambda _t, title, body: None)   # delivered
+    assert _M.box_main() == 2                                                 # NOT ARMED
+    (tmp_path / "data" / "secrets").mkdir(parents=True)
+    (tmp_path / "data" / "secrets" / "ntfy.json").write_text(
+        json.dumps({"topic": "quant-desk-BOXSECRET"}), "utf-8")
+    assert _M.box_main() == 0
+    assert [p[1] for p in pushes] == ["WARNING Quant desk: judge_stalled"]    # paged at once
