@@ -178,7 +178,8 @@ def test_a_shard_output_is_reused_only_on_an_equal_basis(eg, shard) -> None:
     mine = [(0, _spec(0)), (2, _spec(2))]
     plan = {"token": "t", "n": 2, "code": "code-v1", "lockbox_frac": 0.2, "meta_digest": "m"}
     basis = eg._shard_basis(plan, mine)
-    rows = [{"kind": "deferred", "idx": 0, "obj": {}}, {"kind": "deferred", "idx": 2, "obj": {}}]
+    rows = [{"kind": "blocked", "idx": 0, "obj": {"downstream_status": "NOT_RUN_MODIFIER"}},
+            {"kind": "blocked", "idx": 2, "obj": {"downstream_status": "NOT_RUN_MODIFIER"}}]
     for other in ({**basis, "code": "code-v0"}, {**basis, "specs": "another docket"},
                   {**basis, "lockbox_frac": 0.3}):
         eg._pickle_atomic(d / "shard_0.pkl", {"protocol": eg.SHARD_PROTOCOL, "phase": "build",
@@ -188,3 +189,62 @@ def test_a_shard_output_is_reused_only_on_an_equal_basis(eg, shard) -> None:
                                           "basis": basis, "rows": rows})
     got = eg._resume_shard_build(d, plan, 0, mine, basis)
     assert got is not None and got["resumed"]
+
+
+@pytest.fixture
+def v2(eg):
+    if not hasattr(eg, "PLAN_RESUME_NAME"):
+        pytest.skip("the funnel v2 sealed patch (15_funnel_B2_v2_fixes) is not applied")
+    return eg
+
+
+def test_a_budget_deferred_shard_is_rebuilt_under_the_fresh_budget(v2, shard) -> None:
+    """audit of b94babf39: reusing it kept its deferred cells deferred despite the new budget."""
+    eg, d = v2, shard / "shards"
+    mine = [(0, _spec(0)), (2, _spec(2))]
+    plan = {"token": "t", "n": 2, "code": "code-v1", "lockbox_frac": 0.2, "meta_digest": "m"}
+    basis = eg._shard_basis(plan, mine)
+    rows = [{"kind": "blocked", "idx": 0, "obj": {"downstream_status": "NOT_RUN_MODIFIER"}},
+            {"kind": "deferred", "idx": 2, "obj": {}}]
+    assert eg._rows_current(rows, mine) is False
+    eg._pickle_atomic(d / "shard_0.pkl", {"protocol": eg.SHARD_PROTOCOL, "phase": "build",
+                                          "basis": basis, "rows": rows})
+    assert eg._resume_shard_build(d, plan, 0, mine, basis) is None
+
+
+def test_a_resume_reads_seen_and_cursor_from_disk(v2, shard, stand_ins, monkeypatch) -> None:
+    """audit of b94babf39: the pickled maps predate a kill between the ledger and the cleanup."""
+    eg = v2
+    cells = _cells()
+    surv = _docket(shard / "docket.json", cells)
+    st = {**_plan(eg, cells, META), "_seen": {"old": "2026-10-01"}, "_cursor": {"EURUSD": "x"}}
+    eg._persist_plan(st, surv)
+    on_disk_seen, on_disk_cursor = {"old": "2026-10-01", "c-new": "2026-10-20"}, {"EURUSD": "y"}
+    monkeypatch.setattr(eg, "_seen_cells", lambda: dict(on_disk_seen))
+    monkeypatch.setattr(eg, "_build_cursor", lambda: dict(on_disk_cursor))
+    got = eg._resume_plan(cells, META, surv)
+    assert got["_seen"] == on_disk_seen and got["_cursor"] == on_disk_cursor
+    assert got["eligible_specs"] == st["eligible_specs"], "the plan's order is unchanged"
+
+
+def test_a_resume_writes_its_record_for_the_missed_growth_line(v2, shard, stand_ins) -> None:
+    import json
+    import os
+
+    eg = v2
+    cells = _cells()
+    surv = _docket(shard / "docket.json", cells)
+    eg._persist_plan(_plan(eg, cells, META), surv, plan_s=9729.04)
+    new = {**cells, "c9": _spec(9, ok=True)}
+    got = eg._resume_plan(new, META, _docket(surv, new))
+    assert got is not None
+    rec = json.loads((shard / "shards" / eg.PLAN_RESUME_NAME).read_text("utf-8"))
+    assert rec["resumed"] is True and rec["pid"] == os.getpid() and rec["at"]
+    assert rec["cells_not_in_this_plan"] == 1 and rec["plan_seconds_saved"] == 9729.0
+    assert rec["max_age_s"] == eg.PLAN_RESUME_MAX_AGE_S and rec["planned_at"]
+    eg._note_plan_resume(shards_reused=[1], build_seconds_saved=12.5)
+    rec = json.loads((shard / "shards" / eg.PLAN_RESUME_NAME).read_text("utf-8"))
+    assert rec["shards_reused"] == [1] and rec["cells_not_in_this_plan"] == 1
+    # A plan that is made, not resumed, leaves no record of its own to bill.
+    (shard / "shards" / eg.SWEEP_PLAN_NAME).unlink()
+    assert eg._resume_plan(new, META, surv) is None and eg._PLAN_RESUME_DOC == {}
