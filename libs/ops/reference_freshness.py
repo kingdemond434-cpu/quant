@@ -987,7 +987,10 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
         path_id="external_gauntlet.certificate_purge",
         module="desks/mt5/scripts/external_gauntlet.py",
-        function="main",
+        # The sealed stack's funnel B2 (image f70c5147) split `main` into `_plan_phase` and
+        # `_judge_phase`; the purge block moved, unchanged, into `_judge_phase`. Ships with that
+        # re-sign: on the pre-stack image f56bc72f the act is still in `main`.
+        function="_judge_phase",
         removes="survivors moved out of UNIVERSAL_SURVIVORS.json into retired_certificates",
         reference="desks/mt5/data/universe/universe.json meta, judged by "
                   "certificate_retirement_reason",
