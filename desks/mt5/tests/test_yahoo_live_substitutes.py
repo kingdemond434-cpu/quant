@@ -176,7 +176,8 @@ def test_the_anchors_use_substitutes_drop_yahoo_history_and_leave_vix_absent(
     assert prov["columns"]["DXY"]["substitute"] == "mt5_own_bars:USDX"
     assert prov["columns"]["TNX"]["substitute"] == "fred_public_domain:DGS10"
     assert prov["unmeasured_no_licensed_source"] == ["VIX"]
-    assert len(prov["missed_growth"]) == len(macro_desk.YAHOO_ANCHORS)
+    yahoo_lines = [x for x in prov["missed_growth"] if x.get("policy_row") == "yahoo"]
+    assert len(yahoo_lines) == len(macro_desk.YAHOO_ANCHORS)
     assert prov["prior_columns"]["DXY"]["status"] == "SUBSTITUTED"
 
     # a second pass whose substitute is unreachable keeps the SUBSTITUTE's history (sticky)

@@ -212,16 +212,23 @@ def test_an_unlicensed_pair_is_unmeasured_with_a_missed_growth_line(monkeypatch,
 
 
 def test_an_unmeasured_pass_never_overwrites_the_bar_clock(monkeypatch, tmp_path):
+    """No reference feed and no tape: the offsets on disk are KEPT (the event lane would drop
+    every event without them) and only stamped with where they came from."""
+    import json as _json
     monkeypatch.setattr(fll, "ROOT", tmp_path)
     monkeypatch.setattr(fll, "desk_bars", lambda s: None)
     clock = tmp_path / "desks" / "mt5" / "reports" / "BAR_CLOCK.json"
     clock.parent.mkdir(parents=True)
-    clock.write_text('{"per_season": {"summer": {"offset_h": 3}}}', "utf-8")
+    clock.write_text('{"per_season": {"summer": {"offset_h": 3, "agrees_across_pairs": true}}}',
+                     "utf-8")
     assert fll.main(["--no-fetch"]) == 0
-    assert clock.read_text("utf-8") == '{"per_season": {"summer": {"offset_h": 3}}}'
-    import json as _json
+    got = _json.loads(clock.read_text("utf-8"))
+    assert got["per_season"]["summer"]["offset_h"] == 3
+    assert got["per_season"]["summer"]["provenance"] == fll.PROV_LEGACY
+    assert got["provenance"] == fll.PROV_LEGACY and got["remeasure_needed"]["status"] == "UNMEASURED"
     rep = _json.loads((tmp_path / "desks/mt5/reports/FUTURES_LEAD_LAG.json").read_text("utf-8"))
     assert rep["bar_clock_written"] is False and rep["missed_growth"]
+    assert rep["bar_clock_provenance"] == fll.PROV_LEGACY
 
 
 def test_the_clock_verdict_names_the_stored_scalar_it_contradicts():
