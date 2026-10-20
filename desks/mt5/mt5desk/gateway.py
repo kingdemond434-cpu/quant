@@ -5257,17 +5257,17 @@ def main() -> None:
                 # THE GOLD DIRECTION LOCK (mt5desk.gold_oco): read under the same lock, every
                 # gold leg, fail closed on an unreadable, stale or torn state or no identity.
                 _oblocked: dict[str, str] = {}
+                _self_blocked = OPPOSING_LEG.get(_direction)
                 if st.get("armed") and s["symbol"] == GOLD_SYMBOL:
                     for _leg in ("buy_stop", "sell_stop"):
-                        if _leg in _xblocked:
-                            continue                   # the two-account fence already refused
+                        if _leg in _xblocked or _leg == _self_blocked:
+                            continue                   # already refused, and billed, upstream
                         if not (_oco_lane and _oco_key):
                             _oblocked[_leg] = f"gold OCO: {_oco_why}; fail closed"
                             continue
                         _v = _oco.gate(_oco_lane, _leg, key=_oco_key, date=day_key)
                         if not _v.allowed:
                             _oblocked[_leg] = _v.why
-                _self_blocked = OPPOSING_LEG.get(_direction)
                 _all_blocked = (set(_xblocked) | set(_oblocked)
                                 | ({_self_blocked} if _self_blocked else set()))
                 _rails_seen = st.setdefault("rails_logged", {})

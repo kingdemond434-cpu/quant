@@ -894,7 +894,8 @@ def _oco_blocked(doc: dict, state: dict, *, name: str, side: str, why: str, risk
     """A leg the gold direction lock refused: logged, on the report, and billed ONCE per window,
     leg and day as a RAIL_BLOCKED row (rail gold_oco_direction_lock) with its missed growth."""
     from mt5desk import gold_oco as _oco
-    doc["skipped"].append({"window": name, "side": side, "why": why, "rail": _oco.RAIL})
+    doc.setdefault("skipped", []).append({"window": name, "side": side, "why": why,
+                                          "rail": _oco.RAIL})
     log(f"[{name}] {side} {'retry ' if retry else ''}refused by the gold OCO: {why}")
     seen = state.setdefault("xacct_logged", {})
     tag = f"{_oco.RAIL}/{name}/{side}" + ("/retry" if retry else "")
@@ -1699,6 +1700,16 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
     if direction is None:
         return
     blocked = OPPOSING_LEG.get(direction)
+    if "gold_oco" not in doc:
+        # A retry outside a full pass names its own gold OCO context (fail closed: no keyed
+        # identity -> every re-send is refused by `fenced_send`).
+        from mt5desk import gold_oco as _oco
+        _ctx: dict[str, Any] = {"date": str(state.get("date") or now.date()), "key": None}
+        try:
+            _ctx["key"] = _oco.tradelocker_oco_key(venue)
+        except _oco.IdentityUnavailable as exc:
+            _ctx["why"] = f"gold OCO identity: {exc}"
+        doc["gold_oco"] = _ctx
     known = {int(leg["id"]) for bucket in ("windows", "carried")
              for w in (state.get(bucket) or {}).values()
              for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
