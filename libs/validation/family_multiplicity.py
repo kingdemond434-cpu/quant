@@ -163,7 +163,7 @@ def bh_alpha(m: int, rank: int, *, alpha: float = 0.05) -> float:
     from libs.research.trial_count_guard import bar_n
     m = max(1, int(m))
     r = min(max(1, int(rank)), m)
-    return alpha * max(r / m, 1.0 / bar_n(m))
+    return max(alpha * r / m, alpha / bar_n(m))       # LIVE's arithmetic exactly where it binds
 
 
 def bh_bar(m: int, rank: int = 1, *, alpha: float = 0.05) -> float:
