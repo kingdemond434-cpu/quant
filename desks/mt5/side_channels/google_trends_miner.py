@@ -37,6 +37,7 @@ LAST_PASS: dict = {}
 
 if str(BASE.parents[1]) not in sys.path:
     sys.path.insert(0, str(BASE.parents[1]))
+from libs.data import polite_fetch as _pf  # noqa: E402
 from libs.data.polite_fetch import DESK_UA  # noqa: E402
 
 #: The desk's honest User-Agent (auditor ruling 2026-10-14), never a browser string. A refusal of
@@ -134,6 +135,14 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
             try:
                 # Use Google Trends explore page (HTML scraping)
                 url = f"https://trends.google.com/trends/explore?q={term.replace(' ', '+')}&date=today+12-m"
+                # THE PERSON-HELD HOLD (polite_fetch's shared access record): asked before
+                # every request; no clock releases it, only a person.
+                held = _pf.person_hold(url)
+                if held:
+                    LAST_PASS.update({"status": held, "skipped": True,
+                                      "block": {"status": held, "waits_for": "a person"}})
+                    blocked = True
+                    break
                 resp = requests.get(url, headers=HEADERS, timeout=15)
                 LAST_PASS["requests"] += 1
                 status = int(resp.status_code)
@@ -141,6 +150,7 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
                     marker = hard_stop.block_marker(status, "explore",
                                                     dict(getattr(resp, "headers", None) or {}),
                                                     now, prior)
+                    _pf.hold_site(url, status, f"HTTP {status} on Google Trends explore")
                     BLOCK_STATE.parent.mkdir(parents=True, exist_ok=True)
                     BLOCK_STATE.write_text(json.dumps(marker, indent=1), encoding="utf-8")
                     hard_stop.record_block(marker, BLOCKED_REGISTER, key=REGISTER_KEY,

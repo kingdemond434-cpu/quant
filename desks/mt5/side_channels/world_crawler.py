@@ -199,7 +199,6 @@ ACCESS_STATE = BASE / "data" / "world_crawler_access.json"
 #: The robots/refusal rules and their constants live in ONE place, `libs.data.polite_fetch`
 #: (`HostAccess`); every polite fetcher shares them and the crawler only names its own seam.
 ROBOTS_TTL_S = _pf.ROBOTS_TTL_S
-RECHECK_429_S = _pf.RECHECK_429_S
 MAX_REDIRECTS = _pf.MAX_REDIRECTS
 MAX_ROBOTS_BYTES = _pf.MAX_ROBOTS_BYTES
 BLOCK_STATUS = _pf.BLOCK_STATUS

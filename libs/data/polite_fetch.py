@@ -30,8 +30,10 @@ cache) against the `DESK_UA_PRODUCT` token: unreadable robots (network error, 5x
 fetch; a 4xx other than 401/403/429, or an HTML soft-404, means allow (RFC 9309). 401
 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), and a challenge recognised by markup, header or status
 (a Cloudflare 503 included), are a HARD STOP for the whole site: no retry, no sibling host, no
-other route, recorded in the shared access state. There is no IP, egress or User-Agent rotation
-anywhere in this module. `HostAccess` is the ONE implementation: the world crawler subclasses it.
+other route, recorded in the shared access state as a PERSON-HELD hold that no clock
+releases (`release`, `--release site:<site> --by <name>`). There is no IP, egress or User-Agent
+rotation anywhere in this module. `HostAccess` is the ONE implementation: the world crawler
+subclasses it.
 
 No secret is read or sent. Stdlib only (certifi is optional).
 """
@@ -202,9 +204,11 @@ ACCESS_STATE = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data"
                 / "world_crawler_access.json")
 #: robots.txt is re-read at most this often per scheme://host[:port].
 ROBOTS_TTL_S = 24 * 3600
-#: A 429 is a request to come back later: the site is rechecked after this. 401 and 403 wait for
-#: a person (a row in the access state that someone deletes), never for a clock.
-RECHECK_429_S = 24 * 3600
+#: EVERY HOLD WAITS FOR A PERSON (auditor ruling 2026-10-14, GD_LANDING_TRAIN_6eb7a91b4 MF1).
+#: A 401, 403, 429 or WAF/challenge page holds the site until a person releases it
+#: (`release(key, by)`, or `python -m libs.data.polite_fetch --release site:<site> --by <name>`).
+#: There is no recheck clock: a row is active while `released_by` is null, and a legacy row that
+#: still carries a `recheck_after_ts` is active too -- time never releases a hold.
 #: Redirect hops followed per fetch; every hop passes the hold and robots checks again.
 MAX_REDIRECTS = 5
 MAX_ROBOTS_BYTES = 512_000
@@ -386,6 +390,73 @@ def hold_missed_growth(site: str, verdict: str, status: int | str, cause: str) -
                       "UNMEASURED, never zero")}
 
 
+def _held_at(row: Mapping[str, Any]) -> float:
+    for k in ("held_at", "since_ts"):
+        try:
+            return float(row.get(k) or 0)
+        except (TypeError, ValueError):
+            continue
+    return 0.0
+
+
+def person_held(row: Any) -> bool:
+    """Is this hold row in force? Active while `released_by` is null -- whatever any timestamp
+    says. A legacy row with `recheck_after_ts` is still active: time never releases a hold."""
+    return isinstance(row, Mapping) and not row.get("released_by")
+
+
+def hold_record(site: str, url: str, verdict: str, status: int | str | None, now: float, *,
+                missed_growth: dict[str, Any] | None = None) -> dict[str, Any]:
+    """THE SHARED PERSON-HELD RECORD (agreed with `research/hard_stop.py` and
+    `research/source_fixer.py` so they cannot drift): key, verdict, status, host, url (300 chars),
+    held_at (unix), released_by / released_at null. No recheck_after_ts: no clock releases it."""
+    host = hostname_of(url) or site
+    return {"key": f"site:{site}", "verdict": verdict,
+            "status": status if isinstance(status, int) else (status or None),
+            "host": host, "url": url[:300], "held_at": now,
+            "released_by": None, "released_at": None,
+            "since_utc": datetime.fromtimestamp(now, tz=UTC).isoformat(timespec="seconds"),
+            "waits_for": "a person",
+            "missed_growth": missed_growth or hold_missed_growth(
+                site, verdict, status if status is not None else "", f"{verdict} from {host}")}
+
+
+def release(key: str, by: str, path: Path | None = None) -> dict[str, Any]:
+    """A PERSON releases one hold: the only way a hold ever ends. `key` is `site:<site>` (or the
+    bare site). Sets released_by / released_at on disk and in the process-wide record; the row
+    stays as the audit trail. KeyError when no such hold exists; ValueError without a name."""
+    who = str(by or "").strip()
+    if not who:
+        raise ValueError("a release names the person releasing the hold (--by <name>)")
+    site = key[5:] if key.startswith("site:") else key
+    target = path or ACCESS_STATE
+    acc = HostAccess.load(target)
+    with acc._lock:
+        row = acc.blocked.get(site)
+        if not isinstance(row, dict):
+            raise KeyError(key)
+        row = {**row, "key": f"site:{site}", "released_by": who, "released_at": time.time()}
+        acc.blocked[site] = row
+    acc.save()
+    live = _ACCESS
+    if live is not None and (live.path or ACCESS_STATE) == target:
+        with live._lock:
+            live.blocked[site] = dict(row)
+    return dict(row)
+
+
+def person_hold(url: str, access: HostAccess | None = None) -> str:
+    """The verdict of the person-held hold on `url`'s site, or ''. For callers that do not fetch
+    through `get` (Google Trends' readers, the fetch door): they ask before every request."""
+    return (access if access is not None else default_access()).hold(url)
+
+
+def hold_site(url: str, status: int | str, cause: str = "",
+              access: HostAccess | None = None) -> str:
+    """Record a person-held hold on `url`'s site (a 401/403/429 or "WAF") and save it at once."""
+    return (access if access is not None else default_access()).block(url, status, cause=cause)
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     """Redirects surface as HTTPError, so the fetcher checks each target BEFORE following it.
 
@@ -427,8 +498,8 @@ class HostAccess:
       * robots.txt unreadable (network error, 5xx) means NO fetch to that origin this run;
         a 404/410 (any other 4xx) on robots.txt means allow all, per the standard.
       * 401 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), on a page or on robots.txt, are a hard stop
-        for the whole site: nothing else is sent to it, by any route. A 429 is rechecked after
-        RECHECK_429_S; a 401/403 waits for a person to delete its row.
+        for the whole site: nothing else is sent to it, by any route. Every hold (429 and WAF
+        included) waits for a person's `release`; no clock ends it.
     Thread-safe: miners call `permits` from a pool.
     """
 
@@ -467,15 +538,15 @@ class HostAccess:
 
     def _merge(self, data: dict[str, Any]) -> None:
         """Union another writer's rows into this one: holds this process lacks are adopted, and
-        a robots row is kept if it is newer. Another process's holds are never dropped."""
-        now = self.now()
+        a robots row is kept if it is newer. Another process's holds are never dropped, and a
+        person's release on disk is adopted for the hold it released (never for a newer one)."""
         for k, v in (data.get("blocked") or {}).items():
             if not isinstance(v, dict):
                 continue
-            until = v.get("recheck_after_ts")
-            if until is not None and now >= float(until):
-                continue                                  # a lapsed 429 hold is not revived
-            self.blocked.setdefault(str(k), v)
+            mine = self.blocked.get(str(k))
+            if mine is None or (v.get("released_by") and not mine.get("released_by")
+                                and _held_at(v) >= _held_at(mine)):
+                self.blocked[str(k)] = v
         for k, v in (data.get("robots") or {}).items():
             if not isinstance(v, dict):
                 continue
@@ -496,8 +567,9 @@ class HostAccess:
                 "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                 "user_agent": self.user_agent,
                 "note": ("per-host robots.txt cache (24h) and refusal holds, shared by every "
-                         "polite fetcher. A METHOD_BLOCKED row from 429 lapses at "
-                         "recheck_after_ts; 401/403 rows are cleared by a person deleting them."),
+                         "polite fetcher. Every 401/403/429/WAF hold is active while "
+                         "released_by is null; no clock releases it. A person releases one with "
+                         "`python -m libs.data.polite_fetch --release site:<site> --by <name>`."),
                 "blocked": dict(self.blocked),
                 "robots": robots,
             }
@@ -521,37 +593,28 @@ class HostAccess:
 
     # ---- holds
     def hold(self, url: str) -> str:
-        """The verdict holding this URL's site, or ''. A lapsed 429 hold is released here."""
+        """The verdict holding this URL's site, or ''. Only a person's release ends a hold."""
         site = site_of(hostname_of(url))
         with self._lock:
             row = self.blocked.get(site)
-            if not row:
+            if not person_held(row):
                 return ""
-            until = row.get("recheck_after_ts")
-            if until is not None and self.now() >= float(until):
-                self.blocked.pop(site, None)
-                return ""
+            assert isinstance(row, dict)
             return str(row.get("verdict") or "METHOD_BLOCKED")
 
     def block(self, url: str, status: int | str, verdict: str = "", cause: str = "") -> str:
         """Record a hold for the URL's site and SAVE IT AT ONCE, so a run killed mid-loop keeps
-        it. `status` is the HTTP code, or "WAF" for a challenge page (rechecked after 24h like a
-        429: it is a throttle, not an explicit refusal)."""
+        it. `status` is the HTTP code, or "WAF" for a challenge page. Every hold, 429 and WAF
+        included, waits for a person: the row is the shared person-held record (`hold_record`)."""
         verdict = verdict or (BLOCK_STATUS.get(status, "METHOD_BLOCKED")
                               if isinstance(status, int) else "METHOD_BLOCKED")
         host = hostname_of(url)
         site = site_of(host)
-        clock = status in (429, "WAF")
         with self._lock:
-            self.blocked[site] = {
-                "verdict": verdict, "status": status, "host": host, "url": url[:300],
-                "since_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                "since_ts": self.now(),
-                "recheck_after_ts": self.now() + RECHECK_429_S if clock else None,
-                "waits_for": "clock (24h)" if clock else "a person",
-                "missed_growth": hold_missed_growth(
-                    site, verdict, status, cause or f"HTTP {status} from {host}"),
-            }
+            self.blocked[site] = hold_record(
+                site, url, verdict, status, self.now(),
+                missed_growth=hold_missed_growth(site, verdict, status,
+                                                 cause or f"HTTP {status} from {host}"))
         self.save()
         return verdict
 
@@ -684,9 +747,9 @@ class HostAccess:
             return {"user_agent": self.user_agent, "robots_fetches": self.robots_fetches,
                     "robots_disallowed": self.disallowed,
                     "robots_unreadable": dict(self._unreadable),
-                    "holds": {k: {kk: v.get(kk) for kk in ("verdict", "status", "host",
-                                                            "waits_for")}
-                              for k, v in self.blocked.items()}}
+                    "holds": {k: {kk: v.get(kk) for kk in ("key", "verdict", "status", "host",
+                                                            "waits_for", "released_by")}
+                              for k, v in self.blocked.items() if person_held(v)}}
 
 
 _ACCESS: HostAccess | None = None
@@ -766,12 +829,23 @@ MethodRefused = _tf.TermsFenced
 
 
 def fenced_urlopen(req: Any, timeout: float | None = None,
-                   context: ssl.SSLContext | None = None, *, live_input: bool = False) -> Any:
+                   context: ssl.SSLContext | None = None, *, live_input: bool = False,
+                   access: HostAccess | None = None) -> Any:
     """THE ONE FETCH DOOR for the desk's urllib call sites: `terms_fence.guarded_urlopen`. A held
     source, a first URL that is a login wall, or a redirect into either raises `MethodRefused`;
     the redirect chain is kept on the response as `.redirects` [(code, from, to)]. A live-input
-    organ passes `live_input=True`: an IDEAS_ONLY or held route is then refused on every hop."""
-    return _tf.guarded_urlopen(req, timeout=timeout, context=context, live_input=live_input)
+    organ passes `live_input=True`: an IDEAS_ONLY or held route is then refused on every hop.
+
+    The same robots + hold checks as `get`: before the first request and every redirect hop the
+    site's person-held hold and the hop's origin robots.txt are asked (`access`, default
+    `default_access()`); a refusal raises `AccessRefused` (a `MethodRefused`) with nothing sent,
+    and a 401/403/429 or challenge holds the refusing site until a person releases it."""
+    return _tf.guarded_urlopen(req, timeout=timeout, context=context, live_input=live_input,
+                               access=access)
+
+
+#: The door's polite refusal (a `MethodRefused`): a person-held hold or robots.txt.
+AccessRefused = _tf.AccessRefused
 
 
 # --------------------------------------------------------------------------- decoding
@@ -1151,3 +1225,30 @@ def run_concurrently(items: Iterable[T], fn: Callable[[T], R], *, workers: int =
     with ThreadPoolExecutor(max_workers=min(workers, len(items)),
                             thread_name_prefix="polite-fetch") as pool:
         return list(pool.map(_one, items))
+
+
+def main(argv: list[str] | None = None) -> int:
+    """`python -m libs.data.polite_fetch --release site:<site> --by <name>` (the same argument
+    shape as `research/hard_stop.py`); `--list` prints the holds in force."""
+    import argparse
+    ap = argparse.ArgumentParser(description="the polite fetchers' person-held access holds")
+    ap.add_argument("--release", metavar="KEY", help="site:<site> to release")
+    ap.add_argument("--by", metavar="NAME", help="the person releasing it")
+    ap.add_argument("--list", action="store_true", help="print the holds in force")
+    args = ap.parse_args(argv)
+    if args.release:
+        if not args.by:
+            ap.error("--release needs --by <name>")
+        row = release(args.release, args.by)
+        print(f"released {row['key']} by {row['released_by']}")
+        return 0
+    acc = HostAccess.load(ACCESS_STATE)
+    for site, row in sorted(acc.blocked.items()):
+        if person_held(row):
+            print(f"site:{site}\t{row.get('verdict')}\t{row.get('status')}\t{row.get('url')}")
+    return 0
+
+
+if __name__ == "__main__":
+    import sys as _sys
+    _sys.exit(main())

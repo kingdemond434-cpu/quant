@@ -653,27 +653,27 @@ def access_hold_lines(path: Path | None = None, now: float | None = None) -> dic
 
     A site held for 401/403/429 or a challenge is a source the desk is not reading; the gain
     forgone is UNMEASURED (no conversion of its pages is on record) and says why. Counted here so
-    the holds sit beside the rails' bill instead of only in the access file. A lapsed 429/WAF hold
-    is not counted (it is no longer holding anything). A missing file is UNMEASURED, never zero."""
-    import time as _time
+    the holds sit beside the rails' bill instead of only in the access file. A hold a person
+    released is not counted; a hold never lapses on a clock (a legacy recheck_after_ts is
+    ignored, and `now` is accepted only for the old signature). A missing file is UNMEASURED,
+    never zero."""
     src = path or ACCESS_STATE
     doc = _json(src)
     if not doc:
         return {"verdict": UNMEASURED, "lines": [], "n_held": None,
                 "why": f"no {src.name} on this host: no polite fetcher has run here"}
-    t = _time.time() if now is None else now
+    del now
     lines: list[dict[str, Any]] = []
     for site, row in sorted((doc.get("blocked") or {}).items()):
         if not isinstance(row, dict):
             continue
-        until = row.get("recheck_after_ts")
-        if until is not None and _num(until) is not None and t >= float(until):
-            continue
+        if row.get("released_by"):
+            continue          # released by a person; no clock ever releases a hold
         mg = row.get("missed_growth") if isinstance(row.get("missed_growth"), dict) else {}
         lines.append({"source": str(mg.get("source") or site), "kind": "access_hold",
                       "status": row.get("verdict") or mg.get("status") or "METHOD_BLOCKED",
                       "http_status": row.get("status"), "since_utc": row.get("since_utc"),
-                      "waits_for": row.get("waits_for"),
+                      "waits_for": "a person", "key": row.get("key") or f"site:{site}",
                       "delta_elogw": mg.get("delta_elogw") or UNMEASURED,
                       "verdict": UNMEASURED,
                       "cause": mg.get("cause") or (f"HTTP {row.get('status')} hold on {site}; "

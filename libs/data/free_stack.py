@@ -68,6 +68,7 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
+from libs.data import polite_fetch as _pf
 from libs.data.polite_fetch import DESK_UA
 
 UNMEASURED = "UNMEASURED"
@@ -1135,6 +1136,14 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
         nonlocal blocked, answered
         if blocked is not None:
             return None
+        # THE PERSON-HELD HOLD (polite_fetch's shared access record) is checked first and is the
+        # authority: hard_stop's marker backs off on a clock, this hold waits for a person.
+        held = _pf.person_hold(url)
+        if held:
+            blocked = {"status": held, "http_status": None, "url_class": url_class,
+                       "until": "a person releases it (python -m libs.data.polite_fetch "
+                                f"--release site:{_pf.site_of(GTRENDS_HOST)} --by <name>)"}
+            return None
         if hs.active(prior, now) or hs.active(_read_marker(state), now):
             blocked = _read_marker(state) or prior or {}
             return None
@@ -1148,6 +1157,7 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
                 h.notes.append(f"{classify(exc)}: {url[:120]}")
                 return None
             marker = hs.block_marker(ref[0], url_class, ref[1], now, prior)
+            _pf.hold_site(url, ref[0], f"HTTP {ref[0]} on Google Trends {url_class}")
             with contextlib.suppress(OSError):
                 state.parent.mkdir(parents=True, exist_ok=True)
                 state.write_text(json.dumps(marker, indent=1), encoding="utf-8")

@@ -390,8 +390,11 @@ def test_access_holds_are_counted_by_missed_growth(tmp_path: Path) -> None:
     assert out["n_held"] == 2 and out["verdict"] == mg.UNMEASURED
     assert {x["source"] for x in out["lines"]} == {"a.test", "b.test"}
     assert all(x["delta_elogw"] == "UNMEASURED" and x["cause"] for x in out["lines"])
-    lapsed = mg.access_hold_lines(state, now=acc.now() + pf.RECHECK_429_S + 1)
-    assert {x["source"] for x in lapsed["lines"]} == {"a.test"}
+    later = mg.access_hold_lines(state, now=acc.now() + 400 * 86400)
+    assert {x["source"] for x in later["lines"]} == {"a.test", "b.test"}, "a hold lapsed"
+    pf.release("site:b.test", "principal", path=state)
+    after = mg.access_hold_lines(state)
+    assert {x["source"] for x in after["lines"]} == {"a.test"}
     assert mg.access_hold_lines(tmp_path / "absent.json")["verdict"] == mg.UNMEASURED
 
 

@@ -207,10 +207,11 @@ def test_a_refusal_stops_the_site_and_nothing_else(monkeypatch: pytest.MonkeyPat
     assert wc.fetch("https://b.test/p", acc)[0] == _HTML
     row = acc.blocked["a.test"]
     assert row["verdict"] == verdict and row["status"] == status
-    assert (row["recheck_after_ts"] is not None) == (status == 429)
+    assert "recheck_after_ts" not in row and row["released_by"] is None
+    assert row["key"] == "site:a.test" and row["waits_for"] == "a person"
 
 
-def test_a_429_is_rechecked_after_24h_and_a_403_waits_for_a_person(
+def test_a_429_and_a_403_both_wait_for_a_person_never_a_clock(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _install(monkeypatch, {"https://a.test/robots.txt": _ALLOW, "https://a.test/p": (429, b"", ""),
                            "https://b.test/robots.txt": _ALLOW, "https://b.test/p": (403, b"", "")})
@@ -220,10 +221,11 @@ def test_a_429_is_rechecked_after_24h_and_a_403_waits_for_a_person(
     wc.fetch("https://b.test/p", acc)
     acc.save()
     later = wc.HostAccess.load(state)
-    later._now = 1_000_000.0 + wc.RECHECK_429_S + 1
-    assert later.hold("https://a.test/x") == "", "a 429 hold outlived its 24h"
+    later._now = 1_000_000.0 + 400 * 86400.0
+    assert later.hold("https://a.test/x") == "METHOD_BLOCKED", "a 429 hold lapsed on a clock"
     assert later.hold("https://b.test/x") == "METHOD_BLOCKED", "a 403 lapsed on a clock"
     saved = json.loads(state.read_text("utf-8"))
+    assert saved["blocked"]["a.test"]["waits_for"] == "a person"
     assert saved["blocked"]["b.test"]["waits_for"] == "a person"
 
 

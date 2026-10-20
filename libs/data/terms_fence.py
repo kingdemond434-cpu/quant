@@ -701,6 +701,14 @@ METHOD_ROWS: dict[str, dict[str, Any]] = {
                    "why": "a redirect into a login or CAPTCHA wall is never followed"},
     "discord_user": {"status": METHOD_BLOCKED, "reason": "login",
                      "why": "a user token driving Discord's API is a self-bot; bot token only"},
+    # THE POLITE CHECKS ON THE FETCH DOOR (audit GD_LANDING_TRAIN_6eb7a91b4 SHOULD-FIX): the
+    # site's person-held access hold and its robots.txt, the same two `polite_fetch.get` applies.
+    "access_hold": {"status": METHOD_BLOCKED, "reason": "access",
+                    "why": ("the site refused the desk (401/403/429 or a WAF/challenge page); "
+                            "held until a person releases it, never by a clock")},
+    "robots_txt": {"status": METHOD_BLOCKED, "reason": "robots",
+                   "why": ("robots.txt disallows this path to the desk's agent, or could not be "
+                           "read this run (unreadable robots means no fetch)")},
 }
 
 
@@ -1158,6 +1166,63 @@ class TermsGuardProcessor(urllib.request.BaseHandler):
     https_request = http_request
 
 
+class AccessRefused(TermsFenced):
+    """The fetch door refused a URL on the polite checks: a person-held access hold on its site
+    (`platform == "access_hold"`) or its origin's robots.txt (`"robots_txt"`). `verdict` is the
+    access record's own word (METHOD_BLOCKED, NEEDS_KEY, ROBOTS_DISALLOW, ROBOTS_UNREADABLE ...)."""
+
+    def __init__(self, verdict: str, url: str) -> None:
+        self.verdict = str(verdict or "")
+        word = self.verdict.split(" ")[0].split(":")[0].upper()
+        super().__init__("robots_txt" if word.startswith(("ROBOTS", "SCHEME")) else
+                         "access_hold", url)
+
+
+class AccessGuardProcessor(urllib.request.BaseHandler):
+    """THE POLITE CHECKS ON EVERY REQUEST THE DOOR SENDS, the first and each redirect hop: the
+    site's person-held hold and the hop's own origin robots.txt (`polite_fetch.HostAccess.permits`,
+    the same record `polite_fetch.get` uses) are asked BEFORE the request goes out; a refusal
+    raises `AccessRefused` and nothing is sent. A 401/403/429 -- or a challenge recognised by
+    header or status -- records a person-held hold on the site that REFUSED (the hop's own URL,
+    not the first one), so nothing else is sent to it by any route until a person releases it.
+
+    robots.txt itself is read through `polite_fetch.open_no_redirect` (the door's opener WITHOUT
+    this processor), so the check never recurses into itself."""
+
+    handler_order = 110
+
+    def __init__(self, access: Any = None) -> None:
+        self.access = access
+
+    def _acc(self) -> Any:
+        if self.access is None:
+            from libs.data import polite_fetch as _pf
+            self.access = _pf.default_access()
+        return self.access
+
+    def http_request(self, req: urllib.request.Request) -> urllib.request.Request:
+        ok, why = self._acc().permits(req.full_url)
+        if not ok:
+            raise AccessRefused(why, req.full_url)
+        return req
+
+    https_request = http_request
+
+    def http_response(self, req: urllib.request.Request, resp: Any) -> Any:
+        from libs.data import polite_fetch as _pf
+        code = int(getattr(resp, "code", None) or getattr(resp, "status", None) or 0)
+        if code in _pf.BLOCK_STATUS:
+            self._acc().block(req.full_url, code)
+        else:
+            marker = _pf.looks_challenged(b"", getattr(resp, "headers", None), code)
+            if marker:
+                self._acc().block(req.full_url, "WAF", "METHOD_BLOCKED",
+                                  f"challenge ({marker!r}) at the fetch door, HTTP {code}")
+        return resp
+
+    https_response = http_response
+
+
 def guarded_opener(context: Any = None, *handlers: Any,
                    live_input: bool = False) -> urllib.request.OpenerDirector:
     """An opener whose redirects and requests are terms-fenced. `context` is the SSL context the
@@ -1169,7 +1234,8 @@ def guarded_opener(context: Any = None, *handlers: Any,
 
 
 def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = None,
-                    live_input: bool = False, live_hops: bool = False) -> Any:
+                    live_input: bool = False, live_hops: bool = False,
+                    access: Any = None) -> Any:
     """THE ONE FETCH DOOR (`polite_fetch.fenced_urlopen` is this function): `urlopen` with the
     fence. The URL is checked BEFORE any request is built (a held source, or a first URL that is
     itself a login wall, raises `TermsFenced`); a redirect into a held source or a login wall
@@ -1179,7 +1245,13 @@ def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = No
     (`input_source`), not only the held ones. `live_hops=True` re-checks every redirect HOP that
     way but leaves the first URL to the held-only rule: a live fetcher whose first URL is itself
     an IDEAS_ONLY row it already reads (Yahoo) can never be redirected into another held route
-    (pass-6 audit cf305e3d2 SHOULD-FIX 1), while what it reads first is unchanged."""
+    (pass-6 audit cf305e3d2 SHOULD-FIX 1), while what it reads first is unchanged.
+
+    THE POLITE CHECKS (audit GD_LANDING_TRAIN_6eb7a91b4): every request -- the first URL and
+    each redirect hop -- also passes `AccessGuardProcessor`: the site's person-held hold and the
+    hop's origin robots.txt, from `access` (default `polite_fetch.default_access()`, the record
+    `pf.get` uses), refuse BEFORE anything is sent; a 401/403/429 or challenge holds the refusing
+    site until a person releases it."""
     url = req.full_url if isinstance(req, urllib.request.Request) else str(req)
     hdrs = _req_headers(req) if isinstance(req, urllib.request.Request) else None
     check_request(url, hdrs)
@@ -1189,7 +1261,10 @@ def guarded_urlopen(req: Any, *, timeout: float | None = 30.0, context: Any = No
         k = input_source(url)
         if k:
             raise TermsFenced(k, url)
-    opener = guarded_opener(context)
+    guard = AccessGuardProcessor(access)
+    guard.http_request(req if isinstance(req, urllib.request.Request)
+                       else urllib.request.Request(url))     # refuse before building anything
+    opener = guarded_opener(context, guard)
     for h in getattr(opener, "handlers", ()):
         if isinstance(h, FencedRedirectHandler):
             h.live_input = h.live_input or bool(live_input) or bool(live_hops)  # every hop
