@@ -1181,8 +1181,10 @@ def _record_intent(**row) -> str | None:
                 _ai = mt5.account_info()
                 if _ai is not None:
                     from mt5desk.provenance import account_key as _akey
+                    # keyed HMAC (libs/ops/provenance.py); None = no box key: fail closed
                     row.setdefault("account_key", _akey(int(getattr(_ai, "login", 0) or 0),
-                                                        str(getattr(_ai, "server", "") or "")))
+                                                        str(getattr(_ai, "server", "") or ""),
+                                                        create=True))
                     row.setdefault("server", str(getattr(_ai, "server", "") or ""))
                     from mt5desk.provenance import account_kind as _akind
                     row.setdefault(
