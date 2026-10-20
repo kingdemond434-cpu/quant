@@ -416,15 +416,21 @@ def _age_min(path: Path) -> float | None:
 
 
 def _artifact_age(artifact: str) -> float | None:
-    """A contract's age as organ_contract judges it -- the INTERNAL stamp for the artifacts it
-    names (a status rewritten every pass proves only that the process beats), mtime otherwise."""
+    """A contract's age as organ_contract judges it: the INTERNAL stamp for the artifacts its
+    INTERNAL_STAMPS names (a status rewritten every pass proves only that the process beats),
+    the file's mtime (`_age_min`) for every other one."""
     try:
         if str(ROOT / "ops") not in sys.path:
             sys.path.insert(0, str(ROOT / "ops"))
-        from organ_contract import artifact_age_min  # type: ignore[import-not-found]
+        from organ_contract import (  # type: ignore[import-not-found]
+            INTERNAL_STAMPS,
+            artifact_age_min,
+        )
     except Exception:
         return _age_min(ROOT / artifact)
-    return artifact_age_min(artifact, root=ROOT)  # type: ignore[no-any-return]
+    if artifact in INTERNAL_STAMPS:
+        return artifact_age_min(artifact, root=ROOT)  # type: ignore[no-any-return]
+    return _age_min(ROOT / artifact)
 
 
 def _contracts() -> dict[str, tuple[str, int, str]]:
