@@ -489,6 +489,8 @@ CC_TERMS = {"terms_url": "https://commoncrawl.org/terms-of-use",
             "checked_at": "2026-10-14"}
 #: An honest agent for the index and robots reads (never a browser string).
 INDEX_UA = FOREST_UA
+#: the product token the index route reads robots.txt groups for (RFC 9309 s2.2.1)
+INDEX_ROBOTS_TOKEN = pf.DESK_UA_PRODUCT
 INDEX_URLS_PER_GROUND = 80
 _STATIC_EXT = (".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".css", ".js", ".ico",
                ".woff", ".woff2", ".ttf", ".mp4", ".mp3", ".zip", ".gz", ".xml", ".json")
@@ -648,7 +650,7 @@ def robots_allows(url: str, *, get: Any = None,
         except Exception:
             cache[origin] = None
     rp = cache[origin]
-    return bool(rp is not None and rp.can_fetch(pf.DESK_UA_PRODUCT, url))
+    return bool(rp is not None and rp.can_fetch(INDEX_ROBOTS_TOKEN, url))
 
 
 class IndexRedirectHandler(_tf.FencedRedirectHandler):
@@ -776,7 +778,7 @@ def site_index_urls(site: str, *, get: Any = None, holds: Any = None) -> dict[st
         hrp = host_rp(robots_origin(u))
         if hrp is None:
             unread += 1
-        elif hrp.can_fetch(pf.DESK_UA_PRODUCT, u):
+        elif hrp.can_fetch(INDEX_ROBOTS_TOKEN, u):
             allowed.append(u)
         else:
             disallowed += 1

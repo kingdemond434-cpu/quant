@@ -26,18 +26,18 @@ import argparse
 import json
 import os
 import re
+import sys as _sys
 import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from pathlib import Path as _Path
 from typing import Any
-try:
-    from libs.data.polite_fetch import DESK_UA, polite_urlopen
-except ImportError:  # run as a script: the repo root is not on the path
-    import sys as _sys
-    from pathlib import Path as _Path
+
+# this checkout's libs first, so a script run never imports another checkout's polite_fetch
+if str(_Path(__file__).resolve().parents[3]) not in _sys.path:
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 BASE = Path(__file__).resolve().parents[1]
 OUT = BASE / "data" / "intelligence" / "fxblue"
