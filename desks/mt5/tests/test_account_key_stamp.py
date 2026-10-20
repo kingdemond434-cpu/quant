@@ -121,4 +121,9 @@ def test_the_gateway_writes_the_key_and_never_the_raw_login() -> None:
     body = _GW[_GW.index("def _record_intent"):]
     body = body[:body.index("\ndef ")]
     assert 'row.setdefault("account_key", _akey(' in body
-    assert "order_send" not in body and "order_check" not in body
+    code = "\n".join(ln.split("#", 1)[0] for ln in body.splitlines())
+    assert "order_send(" not in code and "order_check(" not in code
+    # its return value is the intent id, a hash of symbol|sleeve|side|minute: no account in it
+    iid = _GW[_GW.index("def _intent_id"):]
+    iid = iid[:iid.index("\ndef ")]
+    assert "account" not in "\n".join(ln.split("#", 1)[0] for ln in iid.splitlines())
