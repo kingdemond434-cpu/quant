@@ -486,3 +486,5 @@ desks/mt5/data/hypotheses/conversion_handoff.json
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
 desks/mt5/data/account_positions.json
 desks/mt5/data/account_positions.json.tmp
+# The box's account declarations ("<login>@<server>" keys): box-local, never published (audit v5).
+desks/mt5/data/ACCOUNT_PROFILES.json

@@ -36,7 +36,7 @@ import re
 import secrets
 from pathlib import Path
 
-__all__ = ["account_key", "is_key", "key_path", "KEY_ENV", "KEY_REL"]
+__all__ = ["KEY_ENV", "KEY_REL", "account_key", "is_key", "key_path"]
 
 KEY_ENV = "QUANT_ACCOUNT_KEY_FILE"
 KEY_REL = "data/secrets/account_key.hmac"

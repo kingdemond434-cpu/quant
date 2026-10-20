@@ -148,16 +148,51 @@ def test_binary_state_is_exempt_by_extension_only() -> None:
     assert lf.findings("desks/mt5/data/cross_asset_anchors.pkl", f'"login": {_N}'.encode()) == []
 
 
-def test_a_legacy_prefix_is_frozen_and_every_row_after_the_cutover_is_judged() -> None:
+def _pin(monkeypatch: pytest.MonkeyPatch, rel: str, prefix: bytes) -> None:
+    monkeypatch.setitem(lf.LEGACY_PIN, rel, {**lf.measure_prefix(prefix), "why": "test"})
+
+
+def test_a_legacy_prefix_is_pinned_and_every_row_after_it_is_judged(
+        monkeypatch: pytest.MonkeyPatch) -> None:
     rel = "desks/mt5/data/live_ledger.jsonl"
     old = f'{{"deal": 1, "account": {_N}, "server": "S"}}\n'
     new = '{"deal": 2, "account_key": "sha256:0123456789abcdef", "server": "S"}\n'
-    assert lf.findings(rel, (old * 3).encode()) == []               # no cutover yet
-    assert lf.findings(rel, (old * 3 + new * 2).encode()) == []     # clean after cutover
-    bad = lf.findings(rel, (old + new + old).encode())              # writer regressed
-    assert [h["line"] for h in bad] == [3]
+    _pin(monkeypatch, rel, (old * 3).encode())
+    assert lf.findings(rel, (old * 3).encode()) == []                # exactly the pin
+    assert lf.findings(rel, (old * 3 + new * 2).encode()) == []      # clean after it
+    assert lf.findings(rel, (old * 3).replace("\n", "\r\n").encode()) == [], "CRLF is the same"
+    bad = lf.findings(rel, (old * 3 + new + old).encode())           # writer regressed
+    assert [h["line"] for h in bad] == [5]
+    # v4's marker no longer exempts anything: a row past the pin is judged with or without one
+    assert lf.findings(rel, (old * 4).encode())
     # the same rows anywhere else are judged whole
     assert lf.findings("desks/mt5/data/other.jsonl", (old + new).encode())
+
+
+@pytest.mark.parametrize("change", ["edited", "truncated", "reordered"])
+def test_a_changed_legacy_prefix_fails_closed(monkeypatch: pytest.MonkeyPatch, change: str) -> None:
+    """order_intents.jsonl is not append-only: a rewritten or shortened prefix is refused."""
+    rel = "desks/mt5/data/order_intents.jsonl"
+    rows = [f'{{"intent": {i}, "account": {_N}}}\n' for i in range(4)]
+    _pin(monkeypatch, rel, "".join(rows).encode())
+    if change == "edited":
+        rows[1] = rows[1].replace('"intent": 1', '"intent": 9')
+    elif change == "truncated":
+        rows = rows[:3]
+    else:
+        rows[0], rows[1] = rows[1], rows[0]
+    got = lf.findings(rel, "".join(rows).encode())
+    assert {"key": lf.PREFIX_FINDING, "line": 0} in got
+    assert _N not in json.dumps(got)
+
+
+def test_the_shipped_pins_are_the_committed_prefixes() -> None:
+    for rel, pin in lf.LEGACY_PIN.items():
+        held = subprocess.run(["git", "-C", str(ROOT), "show", f"HEAD:{rel}"],
+                              capture_output=True, check=True).stdout
+        lines = lf._lines(held)
+        assert len(lines) >= pin["records"], rel
+        assert lf.prefix_digest(lines[:pin["records"]]) == pin["sha256"], rel
 
 
 def _git(repo: Path, *args: str, data: bytes | None = None) -> str:
@@ -181,6 +216,7 @@ def test_the_cli_judges_blobs_writes_the_artifact_and_opens_an_alert_without_the
         return "OPEN"
 
     monkeypatch.setattr(lf, "record_alert", _alert)
+    monkeypatch.setattr(lf, "page", lambda doc, root=None: seen.append(json.dumps(doc)) or {})
     monkeypatch.setattr("sys.stdin", io.StringIO(
         f"{bad}\tdesks/mt5/data/cost_truth_quotes.json\n{good}\tdesks/mt5/data/b.json\n"
         f"{'0' * 40}\tdesks/mt5/data/gone.json\n"))
@@ -266,12 +302,31 @@ def test_a_longer_number_that_only_contains_the_id_is_not_it(text: str) -> None:
 
 
 def test_the_declared_numbers_come_from_the_env_and_the_box_declarations(tmp_path: Path) -> None:
-    assert lf.declared_ids(tmp_path, {}) == frozenset()       # none declared is not an error
-    assert lf.declared_ids(tmp_path, {lf.ID_ENV: f"12, {_ID} x"}) == _IDS
+    assert lf.declared_ids(tmp_path, {}) == frozenset()       # none declared: UNMEASURED later
+    assert lf.declared_ids(tmp_path, {lf.ID_ENV: f" {_ID}, "}) == _IDS
     decl = tmp_path / lf.DECLARATIONS_REL
     decl.parent.mkdir(parents=True)
+    # account_profile.py's real shape (v4a read the top level only, so it declared nothing)
+    decl.write_text(json.dumps({"accounts": {f"{_ID}@FusionMarkets-Live": "LIVE"}}), "utf-8")
+    assert lf.declared_ids(tmp_path, {}) == _IDS
     decl.write_text(json.dumps({f"{_ID}@FusionMarkets-Live": "LIVE"}), "utf-8")
     assert lf.declared_ids(tmp_path, {}) == _IDS
+
+
+@pytest.mark.parametrize("env,doc", [
+    ("12", None), (f"{_ID} x", None), (f"{_ID},1.5e7", None),
+    ("", {"accounts": {"nope@S": "LIVE"}}), ("", {"accounts": ["x"]}),
+    ("", {"accounts": {f"{_ID}@S": "LIVE", "@S": "LIVE"}}),
+], ids=["short", "word", "float", "bad-key", "not-object", "one-bad-key"])
+def test_a_malformed_declaration_is_a_config_error_never_silence(
+        tmp_path: Path, env: str, doc: Any) -> None:
+    if doc is not None:
+        decl = tmp_path / lf.DECLARATIONS_REL
+        decl.parent.mkdir(parents=True)
+        decl.write_text(json.dumps(doc), "utf-8")
+    with pytest.raises(lf.FenceConfigError) as exc:
+        lf.declared_ids(tmp_path, {lf.ID_ENV: env})
+    assert _ID not in str(exc.value)
 
 
 def test_an_unreadable_declarations_file_fails_the_whole_publish_closed(
@@ -294,9 +349,144 @@ def test_the_cli_refuses_a_declared_number_and_never_writes_it(
     blob = _git(tmp_path, "hash-object", "-w", "--stdin", data=f"refused for {_ID}.".encode())
     monkeypatch.setenv(lf.ID_ENV, _ID)
     monkeypatch.setattr(lf, "record_alert", lambda doc, root=None: "OPEN")
+    monkeypatch.setattr(lf, "page", lambda doc, root=None: {})
     monkeypatch.setattr("sys.stdin", io.StringIO(f"{blob}\tdesks/mt5/reports/X.json\n"))
     art = tmp_path / "F.json"
     assert lf.main(["--repo", str(tmp_path), "--artifact", str(art)]) == 0
     out = capsys.readouterr().out
     assert out.split() == ["desks/mt5/reports/X.json"]
     assert _ID not in art.read_text("utf-8") and _ID not in out
+
+
+# AUDIT V5: ENCODINGS, KEYS AND KEY-LESS FORMS THE v4a FENCE MISSED. Every row is synthetic.
+def _b64(t: str) -> str:
+    import base64
+    return base64.b64encode(t.encode()).decode()
+
+
+_LOGIN_JSON = f'{{"login": {_N}}}'
+_FULLWIDTH = "".join(chr(0xFF10 + int(d)) for d in _N)
+
+
+@pytest.mark.parametrize("data", [
+    _LOGIN_JSON.encode("utf-16-le"),
+    _LOGIN_JSON.encode("utf-16"),
+    f'{{"x": "{_LOGIN_JSON.encode().hex()}"}}'.encode(),
+    f'{{"x": "{_b64(_LOGIN_JSON)}"}}'.encode(),
+    f'{{"login": {_FULLWIDTH}}}'.encode(),
+    ('{"a": "{\\\\\\"login\\\\\\": ' + _N + '}"}').encode(),       # triple-escaped JSON
+    f'{{"login": {_N}.0}}'.encode(),
+    f'{{"login": {_N[0]}.{_N[1:]}e{len(_N) - 1}}}'.encode(),
+    f'{{"mt5_account": {_N}}}'.encode(), f'{{"live_account": {_N}}}'.encode(),
+    f'{{"acct": {_N}}}'.encode(), f'{{"login2": {_N}}}'.encode(),
+    f"refused on account {_N} today".encode(), f"account #{_N}".encode(),
+    f"{_N}@FusionMarkets-Live".encode(),
+    f"2026.10.20 '{_N}': authorized on FusionMarkets-Live".encode(),
+    f"<cfg><login>{_N}</login></cfg>".encode(), f'<acc login="{_N}"/>'.encode(),
+], ids=["utf16le", "utf16-bom", "hex", "base64", "fullwidth", "triple-escaped", "float",
+        "exponent", "mt5_account", "live_account", "acct", "login2", "prose", "prose-hash",
+        "at-server", "journal", "xml-element", "xml-attribute"])
+def test_the_v5_fence_reads_every_encoding_and_form_the_audit_probed(data: bytes) -> None:
+    got = lf.findings("desks/mt5/data/x.json", data)
+    assert got, data[:40]
+    assert _N not in json.dumps(got)
+
+
+def test_a_csv_preamble_or_a_json_cell_does_not_hide_a_login() -> None:
+    assert lf.findings("desks/mt5/data/x.csv",
+                       f"report\ngenerated,today\ntime,Login\nt,{_N}\n".encode())
+    assert lf.findings("desks/mt5/data/x.csv", f'time,meta\nt,"{{""login"": {_N}}}"\n'.encode())
+
+
+@pytest.mark.parametrize("text", [
+    '{"max_account": 5000}', '{"count_login": 1234}', "account 2026-10-20",
+    '{"t": 1760983200.5}', "account balance 1000.50", '{"sha": "' + "ab" * 32 + '"}',
+    '{"blob": "' + _b64("nothing to see here at all") + '"}',
+])
+def test_the_v5_widening_keeps_passing_what_is_not_a_login(text: str) -> None:
+    assert lf.findings("desks/mt5/data/x.json", text.encode()) == [], text
+
+
+def _cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, payload: bytes) -> tuple[int, dict]:
+    import io
+    if not (tmp_path / ".git").exists():
+        subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    blob = _git(tmp_path, "hash-object", "-w", "--stdin", data=payload)
+    monkeypatch.setattr("sys.stdin", io.StringIO(f"{blob}\tdesks/mt5/data/a.json\n"))
+    art = tmp_path / "F.json"
+    rc = lf.main(["--repo", str(tmp_path), "--artifact", str(art)])
+    return rc, json.loads(art.read_text("utf-8"))
+
+
+def test_zero_declared_ids_is_unmeasured_keeps_the_alert_open_and_pages(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(lf.ID_ENV, raising=False)
+    alerts: list[str] = []
+    pages: list[tuple[str, str]] = []
+    monkeypatch.setattr(lf, "record_alert",
+                        lambda doc, root=None: alerts.append(doc["status"]) or "OPEN")
+    monkeypatch.setattr(lf, "_default_sender",
+                        lambda root: lambda t, b: pages.append((t, b)) or {"armed": 1})
+    rc, doc = _cli(tmp_path, monkeypatch, b'{"clean": true}')
+    assert rc == 0 and doc["status"] == "UNMEASURED" and doc["declared_ids"] == "UNMEASURED"
+    assert alerts == ["UNMEASURED"] and doc["alert"] == "OPEN"
+    assert len(pages) == 1 and "UNMEASURED" in pages[0][0]
+    monkeypatch.setenv(lf.ID_ENV, _ID)
+    rc, doc = _cli(tmp_path, monkeypatch, b'{"clean": true}')
+    assert rc == 0 and doc["status"] == "OK"
+    assert len(pages) == 2 and "OK again" in pages[1][0], "one page on recovery"
+
+
+def test_paging_is_deduplicated_repaged_and_never_carries_the_value(tmp_path: Path) -> None:
+    from datetime import UTC, datetime, timedelta
+    sent: list[tuple[str, str]] = []
+
+    def sender(t: str, b: str) -> dict[str, Any]:
+        sent.append((t, b))
+        return {"armed": 1, "delivered": 1}
+
+    doc = {"status": "REFUSED", "n_refused": 1,
+           "refused": {"desks/mt5/data/a.json": [{"key": "login", "line": 3}]}}
+    t0 = datetime(2026, 10, 20, tzinfo=UTC)
+    assert lf.page(doc, tmp_path, sender=sender, now=t0)["sent"]
+    assert not lf.page(doc, tmp_path, sender=sender, now=t0 + timedelta(hours=1))["sent"]
+    assert lf.page(doc, tmp_path, sender=sender, now=t0 + timedelta(hours=7))["sent"]
+    doc2 = {**doc, "refused": {**doc["refused"], "desks/mt5/data/b.json": []}}
+    assert lf.page(doc2, tmp_path, sender=sender, now=t0 + timedelta(hours=8))["sent"]
+    ok = {"status": "OK", "refused": {}}
+    assert lf.page(ok, tmp_path, sender=sender, now=t0 + timedelta(hours=9))["sent"]
+    assert not lf.page(ok, tmp_path, sender=sender, now=t0 + timedelta(hours=20))["sent"]
+    assert len(sent) == 4 and all(_N not in t + b for t, b in sent)
+    assert "a.json" in sent[0][1] and "login" in sent[0][1]
+
+
+def test_an_alert_or_page_failure_is_not_swallowed(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str]) -> None:
+    def boom(doc: dict[str, Any], root: Path | None = None) -> str:
+        raise OSError("ledger locked")
+
+    monkeypatch.setattr(lf, "record_alert", boom)
+    rc, doc = _cli(tmp_path, monkeypatch, f'{{"login": {_N}}}'.encode())
+    assert rc == 3, "a refusal that pages nobody must stop the publish"
+    assert doc["alert_error"] == "OSError" and doc["status"] == "REFUSED"
+    assert capsys.readouterr().out == "", "nothing may be listed as publishable"
+    # and record_alert itself raises instead of returning None
+    monkeypatch.undo()
+    import builtins
+    real = builtins.__import__
+
+    def no_ledger(name: str, *a: Any, **k: Any) -> Any:
+        if name == "libs.ops.alert_ledger":
+            raise ImportError(name)
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", no_ledger)
+    with pytest.raises(ImportError):
+        lf.record_alert({"status": "REFUSED", "refused": {}}, tmp_path)
+
+
+def test_the_box_declarations_are_gitignored() -> None:
+    rc = subprocess.run(["git", "-C", str(ROOT), "check-ignore", "-q", lf.DECLARATIONS_REL],
+                        check=False).returncode
+    assert rc == 0, "ACCOUNT_PROFILES.json would publish every declared account number"

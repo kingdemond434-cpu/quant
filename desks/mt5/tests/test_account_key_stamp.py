@@ -183,3 +183,18 @@ def test_the_gateway_writes_the_key_and_never_the_raw_login() -> None:
     iid = _GW[_GW.index("def _intent_id"):]
     iid = iid[:iid.index("\ndef ")]
     assert "account" not in "\n".join(ln.split("#", 1)[0] for ln in iid.splitlines())
+
+
+@pytest.mark.parametrize("writer,reader", [
+    ({"login": 5551234.0, "server": "S", "kind": LIVE}, {"login": 5551234, "server": "S", "kind": LIVE}),
+    ({"login": 5551234, "server": "S", "kind": LIVE}, {"login": 5551234.0, "server": "S", "kind": LIVE}),
+    ({"login": 5551234, "server": "", "kind": LIVE}, {"login": 5551234, "server": "", "kind": LIVE}),
+    ({"login": 5551234, "server": "", "kind": LIVE}, {"login": 5551234, "server": None, "kind": LIVE}),
+    ({"login": "5551234", "server": "S", "kind": LIVE}, {"login": 5551234, "server": "S", "kind": LIVE}),
+], ids=["N.0-writer", "N.0-reader", "empty-server", "empty-vs-none", "str-vs-int"])
+def test_the_n_point_0_and_empty_server_edges_decide_as_the_raw_comparison_did(
+        writer: dict, reader: dict) -> None:
+    old_row = {"account": writer["login"], "server": writer["server"],
+               "account_kind": writer["kind"]}
+    assert provenance.same_account(provenance.stamp(writer), reader) is \
+        _old_same_account(old_row, reader)

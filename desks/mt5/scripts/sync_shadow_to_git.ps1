@@ -424,9 +424,10 @@ function Push-Logged {
 # account-shaped value, and every account number the box declares (QUANT_FENCE_ACCOUNT_IDS,
 # ACCOUNT_PROFILES.json) wherever it stands between non-digits. It does NOT make every
 # published byte login-free: the sealed legacy
-# prefixes of live_ledger.jsonl and order_intents.jsonl still carry the raw login in `account`
-# (LEGACY_PREFIX there, and tests/ops/test_live_infrastructure_is_not_published.py), and only
-# rows written after their writers' account_key cutover are judged.
+# prefixes of live_ledger.jsonl and order_intents.jsonl still carry the raw login in `account`.
+# They are PINNED as {records, sha256} measured on LIVE (LEGACY_PIN there); every row after
+# the pin is judged and a changed prefix is refused. rc 2 (unreadable declarations) and rc 3 (a
+# refusal that could not be alerted or paged) both publish nothing below.
 # It runs on the BLOBS about to be committed (after hash-object and the sleeves sanitiser), so
 # the bytes it judged are the bytes published. A refusal drops that path from this pass, writes
 # desks/mt5/reports/LOGIN_FENCE.json and opens `state_login_fence_refusal` in the alert ledger;

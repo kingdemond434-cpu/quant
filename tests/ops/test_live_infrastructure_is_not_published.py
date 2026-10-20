@@ -88,26 +88,26 @@ ALLOWED: dict[str, str] = {
 #: allocator and k_eff, i.e. the money path -- and the gateway appends to both files while it runs.
 #: Rewriting them buys nothing either: the rows are already on origin and in history, and
 #: scrubbing history is `git filter-repo`, the principal's call alone.
+#: PINNED, NOT MARKED (audit v5): each exempt prefix is {records, sha256} measured on LIVE, and
+#: every row after it is judged; a prefix that changed is judged WHOLE (it fails closed here as it
+#: does in the publisher).
 #: REMOVAL TRIGGER: `test_the_legacy_prefixes_still_need_the_exemption` fails once a prefix no
 #: longer carries a forbidden identifier (history scrubbed and the file restarted). Delete the
-#: entry from `libs/ops/login_fence.LEGACY_PREFIX` then; this fence and the publisher's share it.
-from libs.ops.login_fence import CUTOVER_MARK, LEGACY_PREFIX  # noqa: E402
+#: entry from `libs/ops/login_fence.LEGACY_PIN` then; this fence and the publisher's share it.
+from libs.ops import login_fence as _lf  # noqa: E402
+from libs.ops.login_fence import LEGACY_PIN  # noqa: E402
 
 
 def _judged_text(path: str, text: str) -> str:
-    """What the fence judges: the whole file, or for a legacy-prefix ledger only the rows from
-    its first `account_key` row onward (nothing at all before the cutover is written)."""
-    if path not in LEGACY_PREFIX:
-        return text
-    lines = text.splitlines(keepends=True)
-    start = next((i for i, ln in enumerate(lines) if CUTOVER_MARK in ln), len(lines))
-    return "".join(lines[start:])
+    """What the fence judges: the whole file, or for a pinned ledger only the rows after its
+    pinned prefix -- and the whole file when that prefix no longer hashes to its pin."""
+    body, _offset, _changed = _lf._judged(path, text.encode("utf-8"))
+    return body.decode("utf-8", errors="replace")
 
 
 def _legacy_prefix(path: str, text: str) -> str:
     lines = text.splitlines(keepends=True)
-    start = next((i for i, ln in enumerate(lines) if CUTOVER_MARK in ln), len(lines))
-    return "".join(lines[:start])
+    return "".join(lines[:int(LEGACY_PIN[path]["records"])])
 
 
 def _tracked() -> list[str]:
@@ -197,17 +197,17 @@ def test_the_allowlist_entries_actually_still_need_the_exemption() -> None:
 
 
 def test_the_two_ledgers_are_fenced_and_not_whole_file_allowed() -> None:
-    for path in LEGACY_PREFIX:
+    for path in LEGACY_PIN:
         assert path not in ALLOWED, f"{path} is a whole-file debt again; it is fenced by rows"
-    assert set(LEGACY_PREFIX) == {"desks/mt5/data/live_ledger.jsonl",
+    assert set(LEGACY_PIN) == {"desks/mt5/data/live_ledger.jsonl",
                                   "desks/mt5/data/order_intents.jsonl"}
 
 
 def test_the_legacy_prefixes_still_need_the_exemption() -> None:
     """The removal trigger. A prefix that no longer carries a forbidden identifier is a paid
-    debt: delete its LEGACY_PREFIX entry so the whole file is fenced."""
+    debt: delete its LEGACY_PIN entry so the whole file is fenced."""
     unneeded = []
-    for path in LEGACY_PREFIX:
+    for path in LEGACY_PIN:
         full = ROOT / path
         if not full.exists():
             continue
@@ -216,15 +216,22 @@ def test_the_legacy_prefixes_still_need_the_exemption() -> None:
             unneeded.append(path)
     assert not unneeded, (
         f"these ledgers' legacy prefixes no longer carry a forbidden identifier: {unneeded}. "
-        f"Delete their libs/ops/login_fence.LEGACY_PREFIX entries.")
+        f"Delete their libs/ops/login_fence.LEGACY_PIN entries.")
 
 
-def test_a_row_after_the_cutover_is_judged() -> None:
+def test_a_row_after_the_pinned_prefix_is_judged_and_a_changed_prefix_is_judged_whole() -> None:
     needle = next(iter(LIVE))
     path = "desks/mt5/data/live_ledger.jsonl"
-    old = '{"deal": 1, "account": ' + needle + '}\n'
+    held = (ROOT / path).read_text(encoding="utf-8")
+    pin = LEGACY_PIN[path]
+    assert _lf.measure_prefix("".join(held.splitlines(keepends=True)[:pin["records"]]).encode()) \
+        == {"records": pin["records"], "sha256": pin["sha256"]}, "the pin is not this prefix"
     new = '{"deal": 2, "account_key": "sha256:0123456789abcdef"}\n'
-    assert not _contains_identifier(_judged_text(path, old * 3), needle)
-    assert not _contains_identifier(_judged_text(path, old + new), needle)
-    assert _contains_identifier(_judged_text(path, old + new + old), needle)
+    old = '{"deal": 1, "account": ' + needle + '}\n'
+    assert not _contains_identifier(_judged_text(path, held + new), needle)
+    assert _contains_identifier(_judged_text(path, held + new + old), needle)
+    # one byte changed inside the prefix: the whole file is judged (and the publisher refuses)
+    lines = held.splitlines(keepends=True)
+    lines[0] = lines[0].replace("{", "{ ", 1)
+    assert _contains_identifier(_judged_text(path, "".join(lines)), needle)
     assert _contains_identifier(_judged_text("desks/mt5/data/other.jsonl", old), needle)
