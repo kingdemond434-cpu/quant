@@ -9,13 +9,13 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-20T17:47:28.006494+00:00",
+   "finished_at": "2026-10-20T21:51:57.755958+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-10-20T17:50:55.305494+00:00",
+   "finished_at": "2026-10-20T21:56:04.229528+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -27,62 +27,59 @@
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/reconcile_external_queue.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-20T21:50:28.261039+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-20T21:51:29.342450+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-10-20T17:51:14.195266+00:00",
+   "finished_at": "2026-10-20T21:56:27.595557+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-20T17:49:09.885386+00:00",
+   "finished_at": "2026-10-20T21:54:05.958227+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-20T17:48:53.411627+00:00",
+   "finished_at": "2026-10-20T21:53:44.591322+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-20T17:49:30.944450+00:00",
+   "finished_at": "2026-10-20T21:54:23.319386+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-20T17:48:37.173490+00:00",
+   "finished_at": "2026-10-20T21:53:16.689477+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-20T17:50:16.678164+00:00",
+   "finished_at": "2026-10-20T21:55:13.131163+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-20T17:50:36.028182+00:00",
+   "finished_at": "2026-10-20T21:55:39.789350+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-20T17:49:52.316450+00:00",
+   "finished_at": "2026-10-20T21:54:46.016919+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-20T21:50:28.261039+00:00"
+ "updated_at": "2026-10-20T21:56:27.595557+00:00"
 }
