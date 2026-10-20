@@ -22,6 +22,13 @@ VERDICTS, per tape:
     MARKET_CLOSED  outside FX hours; the age is still published
     UNMEASURED     absent, unreadable, unstamped, or stamped in the future -- RED (L1.28a)
 
+WHY A RED TAPE IS RED. When a tape is not FRESH the report names the most likely CAUSE beside
+it, read from the box's own evidence: the terminal link first (`data/terminal_boot_ok.json`,
+which MT5-TerminalBoot writes only when its read-only IPC probe passes -- from 2026-10-18 the box
+returned "No IPC connection" and no recorder could pull anything), then the bronze recorder's
+own pause reason and source errors, then "the recorder is not running". The cause never changes
+the verdict: a stale tape is RED whatever explains it.
+
 The age during FX hours is measured from the LATER of the newest tick and the week's open, so
 Sunday's first two hours are not red for a Friday tick the market could not have improved on.
 
@@ -40,6 +47,9 @@ DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "TAPE_FRESHNESS.json"
 
 MAX_AGE_H = 2.0
+#: MT5-TerminalBoot's probe stamp and how old it may be (its organ contract: 180 min).
+TERMINAL_OK = "data/terminal_boot_ok.json"
+TERMINAL_MAX_AGE_H = 3.0
 #: A stamp more than this far past now is a clock defect, never a fresh tape.
 FUTURE_SLACK = timedelta(minutes=5)
 
@@ -130,12 +140,55 @@ def judge(path: Path, now: datetime) -> dict[str, Any]:
     return {**row, "status": "FRESH", "why": ""}
 
 
+def _read(path: Path) -> Any:
+    try:
+        # utf-8-sig: Windows PowerShell's `Set-Content -Encoding UTF8` writes a BOM.
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return None
+
+
+def terminal_link(desk: Path, now: datetime) -> dict[str, Any]:
+    """Is the MT5 terminal's Python link up? From MT5-TerminalBoot's passed-probe stamp."""
+    doc = _read(desk / TERMINAL_OK)
+    raw = doc.get("at") if isinstance(doc, dict) else None
+    try:
+        at = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return {"status": "UNMEASURED",
+                "why": f"desks/mt5/{TERMINAL_OK} absent or unstamped -- the IPC probe has not "
+                       f"passed on this box, or MT5-TerminalBoot has never run"}
+    at = at if at.tzinfo else at.replace(tzinfo=UTC)
+    age = round((now - at).total_seconds() / 3600, 2)
+    if age > TERMINAL_MAX_AGE_H:
+        return {"status": "DOWN", "last_ok": at.isoformat(), "age_h": age,
+                "why": f"the terminal's IPC probe last passed {age:g} h ago (MT5-TerminalBoot): "
+                       f"the MT5 Python link is down, so no recorder can pull ticks"}
+    return {"status": "UP", "last_ok": at.isoformat(), "age_h": age, "why": ""}
+
+
+def cause(desk: Path, link: dict[str, Any]) -> str:
+    """The most likely reason a tape is not fresh, in the order the evidence is decisive."""
+    if link["status"] != "UP":
+        return link["why"]
+    status = _read(desk / TAPES[0][1])
+    if isinstance(status, dict):
+        if status.get("paused_reason"):
+            return f"the bronze recorder is PAUSED: {status['paused_reason']}"
+        errs = status.get("errors") or {}
+        if isinstance(errs, dict) and errs.get("_alive"):
+            return f"the bronze recorder cannot reach the terminal: {errs['_alive']}"
+    return ("the terminal link is up and the recorder reports no pause: it is not running or "
+            "not advancing -- read desks/mt5/logs/MT5-TickRecorder.log")
+
+
 def build(desk: Path = DESK, now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     rows = [{"tape": name, "artifact": f"desks/mt5/{rel}", "producer": producer,
              **judge(desk / rel, now)} for name, rel, producer in TAPES]
     red = [r["tape"] for r in rows if r["status"] in ("STALE", "UNMEASURED")]
-    return {"schema": "tape_freshness/1", "generated_at": now.isoformat(timespec="seconds"),
+    link = terminal_link(desk, now)
+    return {"cause": cause(desk, link) if red else "", "terminal_link": link,"schema": "tape_freshness/1", "generated_at": now.isoformat(timespec="seconds"),
             "fx_open": fx_open(now), "max_age_h": MAX_AGE_H,
             "status": "RED" if red else "GREEN", "red": red, "n_red": len(red),
             "n_unmeasured": sum(1 for r in rows if r["status"] == "UNMEASURED"), "tapes": rows}
@@ -147,6 +200,8 @@ def main(argv: list[str] | None = None) -> int:
     OUT.write_text(json.dumps(rep, indent=1) + "\n", encoding="utf-8")
     for r in rep["tapes"]:
         print(f"  {r['status']:<14} {r['tape']:<7} {r.get('last_tick_utc', '-')}  {r['why']}")
+    if rep["cause"]:
+        print(f"  cause: {rep['cause']}")
     print(f"tape: {rep['status']} -> {OUT}")
     return 1 if rep["red"] else 0
 

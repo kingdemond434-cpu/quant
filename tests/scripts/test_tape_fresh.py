@@ -95,6 +95,23 @@ def test_a_future_stamp_is_unmeasured_never_fresh(tmp_path: Path) -> None:
     assert rep["status"] == "RED"
 
 
+def test_a_red_tape_names_the_terminal_link_as_its_cause(tmp_path: Path) -> None:
+    desk = _both(tmp_path, 30.0)
+    rep = fence.build(desk, WED)
+    assert rep["terminal_link"]["status"] == "UNMEASURED" and "IPC probe" in rep["cause"]
+    ok = desk / "data" / "terminal_boot_ok.json"
+    ok.write_text("\ufeff" + json.dumps({"at": (WED - timedelta(hours=50)).isoformat()}), "utf-8")
+    rep = fence.build(desk, WED)
+    assert rep["status"] == "RED" and rep["terminal_link"]["status"] == "DOWN"
+    assert "MT5 Python link is down" in rep["cause"]
+    ok.write_text(json.dumps({"at": (WED - timedelta(minutes=5)).isoformat()}), "utf-8")
+    (desk / "reports" / "TAPE_RECORDER.json").write_text(json.dumps(
+        {"last_tick_ms": _broker_ms(WED - timedelta(hours=30)),
+         "paused_reason": "source not connected"}), "utf-8")
+    assert "PAUSED: source not connected" in fence.build(desk, WED)["cause"]
+    assert fence.build(_both(tmp_path / "f", 0.1), WED)["cause"] == ""
+
+
 def test_the_weekend_is_market_closed_not_red(tmp_path: Path) -> None:
     sat = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
     rep = fence.build(_both(tmp_path, 15.0, sat), sat)
