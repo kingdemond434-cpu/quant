@@ -29,14 +29,13 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-import requests
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
@@ -129,7 +128,7 @@ def observe_due(reg: dict) -> int:
             verdict, code = "ALIVE", None
             try:
                 time.sleep(1.0)
-                resp = requests.get(url, headers=HEADERS, timeout=20,
+                resp = polite_requests_get(url, headers=HEADERS, timeout=20,
                                     allow_redirects=True)
                 code = resp.status_code
                 if code in (404, 410):

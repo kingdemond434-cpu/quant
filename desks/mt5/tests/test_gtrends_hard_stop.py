@@ -141,7 +141,7 @@ def test_the_side_channel_miner_is_honest_and_stops_on_429(
         calls.append(str((headers or {}).get("User-Agent")))
         return _R()
 
-    monkeypatch.setattr(gtm.requests, "get", _get)
+    monkeypatch.setattr(gtm, "polite_requests_get", _get)
     monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
     monkeypatch.setattr(gtm, "BLOCKED_REGISTER", tmp_path / "reg.json")
     assert gtm.mine_google_trends(now=NOW) == []

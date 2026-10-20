@@ -10,14 +10,13 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "fear_greed"
@@ -31,7 +30,7 @@ def mine_fear_greed() -> list[dict]:
     """Fetch CNN Fear & Greed Index."""
     discoveries = []
     try:
-        resp = requests.get(FNG_URL, headers=HEADERS, timeout=15)
+        resp = polite_requests_get(FNG_URL, headers=HEADERS, timeout=15)
         resp.raise_for_status()
         data = resp.json()
 

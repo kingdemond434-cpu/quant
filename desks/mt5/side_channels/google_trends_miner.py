@@ -13,7 +13,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
 
 BASE = Path(__file__).resolve().parent.parent
 for _p in (str(BASE), str(BASE / "research")):
@@ -37,7 +36,7 @@ LAST_PASS: dict = {}
 
 if str(BASE.parents[1]) not in sys.path:
     sys.path.insert(0, str(BASE.parents[1]))
-from libs.data.polite_fetch import DESK_UA  # noqa: E402
+from libs.data.polite_fetch import DESK_UA, polite_requests_get  # noqa: E402
 
 #: The desk's honest User-Agent (auditor ruling 2026-10-14), never a browser string. A refusal of
 #: it is the hard stop above, never a cue to retry in disguise.
@@ -134,7 +133,7 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
             try:
                 # Use Google Trends explore page (HTML scraping)
                 url = f"https://trends.google.com/trends/explore?q={term.replace(' ', '+')}&date=today+12-m"
-                resp = requests.get(url, headers=HEADERS, timeout=15)
+                resp = polite_requests_get(url, headers=HEADERS, timeout=15)
                 LAST_PASS["requests"] += 1
                 status = int(resp.status_code)
                 if status in hard_stop.HARD_STOP:

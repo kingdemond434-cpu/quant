@@ -7,14 +7,13 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "mql5"
@@ -32,7 +31,7 @@ def mine_forum(max_pages: int = 3) -> list[dict]:
     discoveries = []
     for page in range(1, max_pages + 1):
         try:
-            resp = requests.get(FORUM_URL, params={"page": page},
+            resp = polite_requests_get(FORUM_URL, params={"page": page},
                               headers={"User-Agent": DESK_UA}, timeout=15)
             resp.raise_for_status()
             text = resp.text

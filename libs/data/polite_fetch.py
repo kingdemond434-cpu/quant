@@ -1484,6 +1484,25 @@ def polite_requests_get(url: str, params: Mapping[str, Any] | None = None, *,
     return SeamRequestsResponse(r.url, r.status, raw, decode_body(raw, ctype), ctype)
 
 
+class PoliteSession:
+    """`requests.Session` for a desk fetcher: `headers` persist across calls and every `get` is
+    `polite_requests_get` (holds and robots.txt first, honest UA). Nothing else of a Session --
+    cookies, adapters, auth -- exists here, by design: a fetcher that needs a login is not one."""
+
+    def __init__(self, leg: str = "seam") -> None:
+        self.headers: dict[str, str] = {}
+        self.leg = leg
+
+    def get(self, url: str, params: Mapping[str, Any] | None = None, *,
+            headers: Mapping[str, str] | None = None, timeout: float = 30.0,
+            **kw: Any) -> SeamRequestsResponse:
+        return polite_requests_get(url, params, headers={**self.headers, **dict(headers or {})},
+                                   timeout=timeout, leg=self.leg, **kw)
+
+    def close(self) -> None:
+        return None
+
+
 T = TypeVar("T")
 R = TypeVar("R")
 

@@ -161,8 +161,10 @@ def test_a_compressed_body_is_inflated_only_up_to_the_cap() -> None:
 @pytest.mark.parametrize("path", CALL_SITES)
 def test_every_named_call_site_goes_through_the_fenced_door(path: str) -> None:
     src = (ROOT / path).read_text(encoding="utf-8")
-    assert "fenced_urlopen" in src, path
+    # the fenced door itself, or polite_fetch's urlopen seam (which opens through that door
+    # and checks holds + robots.txt first -- the robots law of 2026-10-14)
+    assert "fenced_urlopen" in src or "polite_urlopen" in src, path
     bare = [ln for ln in src.splitlines()
-            if ("urlopen(" in ln and "fenced_urlopen" not in ln)
+            if ("urlopen(" in ln and "fenced_urlopen" not in ln and "polite_urlopen" not in ln)
             or "requests.get(" in ln or "requests.Session(" in ln]
     assert bare == [], (path, bare)
