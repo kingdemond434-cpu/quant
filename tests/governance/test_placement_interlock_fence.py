@@ -480,3 +480,122 @@ def test_the_fence_runs_every_hour() -> None:
     assert '"placement_interlock"' in core[:core.index("})")]
     from libs.research import layers
     assert layers.LEG_LAYER.get("placement_interlock") == "meta"
+
+
+# ------------------------------------- 6. the E8 gold lane: its own ledger, judged per day
+E8_LEDGER = "desks/mt5/data/e8_decision_ledger.jsonl"
+E8_HEARTBEAT = "desks/mt5/data/e8_gold_heartbeat.json"
+
+
+def _e8_beat(root: Path, *, at: datetime = NOW) -> None:
+    _write(root, E8_HEARTBEAT, json.dumps({
+        "at": at.isoformat(), "lane": "e8_gold", "status": "OK", "account": "tradelocker:42",
+        "host": {"verdict": "TRADING", "hostname": "vmi3571445", "machine_id": BOX_ID}}))
+
+
+def _e8_rows(root: Path, days: list[tuple[int, str, str]], *, window: str = "afternoon",
+             lane: str = "e8_gold") -> None:
+    """One decision row per (days_ago, outcome, reason), the way prop/e8_evidence writes them:
+    at a decision point, never once a pass."""
+    rows = []
+    for ago, outcome, reason in days:
+        at = NOW - timedelta(days=ago)
+        rows.append(json.dumps({
+            "decided_at": at.isoformat(), "lane": lane, "account": "tradelocker:42",
+            "sleeve": f"e8_gold:{window}", "strategy_id": f"e8_gold:{window}",
+            "window": window, "server_date": at.date().isoformat(), "outcome": outcome,
+            "reason": reason, "taken": outcome == "PLACED", "host": "vmi3571445"}))
+    _write(root, E8_LEDGER, "\n".join(rows) + "\n")
+
+
+def test_e8_a_one_at_risk_deferral_on_consecutive_days_is_not_a_halt(tmp_path: Path) -> None:
+    """The legitimate deferral the lane is built around: reported, never breached on."""
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(3, "DEFERRED", "one_at_risk"), (2, "DEFERRED", "one_at_risk"),
+                        (1, "DEFERRED", "one_at_risk"), (0, "DEFERRED", "one_at_risk")])
+    doc = fence.scan(tmp_path, now=NOW)
+    lane = doc["lanes"]["e8_gold"]
+    assert lane["verdict"] == "OK" and doc["verdict"] == "NOT_APPLICABLE", lane
+    assert lane["runs"]["e8_gold:afternoon"]["days"] == 4
+    assert any("declared answer" in n for n in lane["notes"])
+
+
+def test_e8_a_repeated_row_within_one_day_never_breaches(tmp_path: Path) -> None:
+    """Even if the lane's dedupe mark were lost and it wrote a row every pass, one server day of
+    a breachable reason is one day, not a halt -- the gateway's count/span rules do not apply."""
+    _e8_beat(tmp_path)
+    rows = [json.dumps({"decided_at": (NOW - timedelta(minutes=5 * i)).isoformat(),
+                        "lane": "e8_gold", "sleeve": "e8_gold:asia", "server_date": "2026-09-24",
+                        "outcome": "DEFERRED", "reason": "positions_unreadable", "taken": False})
+            for i in range(60, 0, -1)]
+    _write(tmp_path, E8_LEDGER, "\n".join(rows) + "\n")
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "OK" and lane["runs"]["e8_gold:asia"]["count"] == 60
+
+
+def test_e8_a_guard_stand_down_two_days_running_is_a_halt(tmp_path: Path) -> None:
+    """The 2026-10-15 shape: the guard stood the book down a whole day. Two days is a halt."""
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(2, "PLACED", "placed"), (1, "DEFERRED", "guard_stood_down"),
+                        (0, "DEFERRED", "guard_stood_down")])
+    doc = fence.scan(tmp_path, now=NOW)
+    assert doc["ok"] is False and doc["verdict"] == "HALTED" and doc["applicable"] is True
+    assert any(p.startswith("[e8_gold] e8_gold:afternoon") and "tradelocker:42" in p
+               and "vmi3571445" in p for p in doc["problems"]), doc["problems"]
+    assert doc["lanes"]["e8_gold"]["runs"]["e8_gold:afternoon"]["breach"] is True
+
+
+def test_e8_an_unknown_reason_breaches_and_a_placement_clears(tmp_path: Path) -> None:
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(1, "DEFERRED", "a_code_nobody_classified"),
+                        (0, "DEFERRED", "a_code_nobody_classified")])
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "HALTED"
+    _e8_rows(tmp_path, [(1, "DEFERRED", "a_code_nobody_classified"), (0, "PLACED", "placed")])
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"
+
+
+def test_e8_rows_never_mix_with_the_gateways(box: Path) -> None:
+    """A gateway halt stays the gateway's; the E8 lane's rows are judged only under its lane, and
+    a row in the E8 file that does not say `lane: e8_gold` is not read as this lane at all."""
+    _write(box, LEDGER, "\n".join(_rows(
+        45, sleeve="gold_afternoon", reason="release_identity_refused",
+        start=NOW - timedelta(minutes=45))) + "\n")
+    _e8_beat(box)
+    _e8_rows(box, [(1, "DEFERRED", "guard_stood_down"), (0, "DEFERRED", "guard_stood_down")],
+             lane="something_else")
+    doc = fence.scan(box, now=NOW)
+    assert set(doc["runs"]) == {"gold_afternoon"}
+    lane = doc["lanes"]["e8_gold"]
+    assert lane["verdict"] == "NO_DECISIONS" and lane["runs"] == {}
+    assert not any(p.startswith("[e8_gold]") for p in doc["problems"])
+
+
+def test_e8_ok_never_masks_the_gateways_unmeasured(tmp_path: Path) -> None:
+    _stale_published_copy(tmp_path)
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(0, "PLACED", "placed")])
+    doc = fence.scan(tmp_path, now=NOW)
+    assert doc["ok"] is None and doc["verdict"] == "UNMEASURED"
+    assert doc["lanes"]["e8_gold"]["verdict"] == "OK"
+
+
+def test_e8_a_stale_heartbeat_is_unmeasured_and_never_fails(tmp_path: Path) -> None:
+    _e8_beat(tmp_path, at=NOW - timedelta(days=3))
+    _e8_rows(tmp_path, [(4, "DEFERRED", "guard_stood_down"), (3, "DEFERRED", "guard_stood_down")])
+    doc = fence.scan(tmp_path, now=NOW)
+    assert doc["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+    assert doc["ok"] is not False
+    assert fence.scan(tmp_path / "nowhere", now=NOW)["lanes"]["e8_gold"]["verdict"] == \
+        "NOT_APPLICABLE"
+
+
+def test_e8_a_halt_reaches_the_event_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import events
+    log = tmp_path / "events.jsonl"
+    monkeypatch.setattr(events, "PATH", log)
+    root = tmp_path / "root"
+    _e8_beat(root)
+    _e8_rows(root, [(1, "DEFERRED", "risk_unmeasurable"), (0, "DEFERRED", "risk_unmeasurable")])
+    assert fence.record_event(fence.scan(root, now=NOW), ROOT) == "PLACEMENT_HALTED"
+    row = json.loads(log.read_text("utf-8").splitlines()[-1])
+    assert row["sleeves"] == ["e8_gold:afternoon"]

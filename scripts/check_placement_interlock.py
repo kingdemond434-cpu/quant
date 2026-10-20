@@ -65,6 +65,22 @@ A RUN AGES OUT. A refusal run whose last row is older than `RUN_MAX_AGE_HOURS`, 
 the sleeve registry names with a status other than LIVE, is history -- reported as a note, never
 a current halt -- or a retired sleeve would hold the fence red forever.
 
+THE E8 GOLD LANE IS JUDGED IN DECISIONS, NOT MINUTES (2026-10-20). `prop/e8_gold.py` places the
+same three gold windows on the E8 prop account and never wrote the gateway's ledger, so its halts
+were invisible here. It now keeps its own `desks/mt5/data/e8_decision_ledger.jsonl` (every row
+`lane: e8_gold`, sleeve `e8_gold:<window>`, its account and host) and a heartbeat
+`e8_gold_heartbeat.json`, both read here and never mixed with the gateway's rows. That ledger
+holds one row per CHANGE of a due window's (outcome, reason) per server day, not a row a pass,
+so the gateway's count and span rules do not apply to it: a run of two rows is two days, and a
+window an earlier trade holds for hours (`one_at_risk`) is one row. A breach is a window refused
+for the same desk-side reason on `E8_TRAILING_DAYS_MAX` consecutive server days with no
+placement between; the lane's own policy answers (`E8_EXEMPT_REASONS`: one gold trade at a time,
+the risk budget, a zero-risk solve, shadow, the venue's refusal, the guard's profit cap and its
+terminal PASSED/BREACHED) are reported and never breached on. A reason code this file does not
+know breaches -- an unclassified refusal is not a permission. The lane is APPLICABLE only while
+its heartbeat is live; a stale or missing heartbeat is UNMEASURED here and never fails this
+fence (`ops/organ_contract.py` owns the lane's liveness through E8_GOLD.json).
+
 A STALE IDENTITY IS LOUD. On a host whose ledger is live, an identity verdict older than
 `IDENTITY_MAX_AGE_HOURS` (or missing, or unstamped) FAILS as IDENTITY_STALE: a gateway that has
 stopped writing its verdict is the dead-gateway case breach (b) exists for, so it may never
@@ -146,6 +162,27 @@ RUN_MAX_AGE_HOURS = 24.0
 #: The gateway rewrites its identity verdict every pass (a minute); three hours of silence is a
 #: gateway that has stopped, which is the case breach (b) exists for.
 IDENTITY_MAX_AGE_HOURS = TRAILING_HOURS_MAX * 3
+
+#: THE E8 GOLD LANE (prop/e8_evidence.py). Its own ledger and heartbeat; see the docstring.
+E8_LANE = "e8_gold"
+E8_LEDGER_REL = "desks/mt5/data/e8_decision_ledger.jsonl"
+E8_HEARTBEAT_REL = "desks/mt5/data/e8_gold_heartbeat.json"
+#: Consecutive server days one window is refused for one desk-side reason before it is a halt.
+#: Two: the 2026-10-15 latched guard stood the book down for a whole day, and the gateway's halt
+#: of 09-07..24 ran seventeen; one day is a day the guard may legitimately decline.
+E8_TRAILING_DAYS_MAX = 2
+#: A run whose last row is older than this is history. Longer than RUN_MAX_AGE_HOURS because a row
+#: is written only when a window is due, and Friday's last window to Monday's first is ~66h.
+E8_RUN_MAX_AGE_HOURS = 96.0
+#: The heartbeat is rewritten every five-minute pass; older than this, the lane is not running here.
+E8_HEARTBEAT_LIVE_HOURS = LEDGER_LIVE_HOURS
+#: The lane's own policy answers and the venue's -- declared, bounded and visible on E8_GOLD.json,
+#: so reported and never breached on. Everything else (an unreadable equity, guard, position book
+#: or journal, a window the sizer cannot size, the guard's STOOD_DOWN, an unknown code) breaches.
+E8_EXEMPT_REASONS: frozenset[str] = frozenset({
+    "one_at_risk", "risk_budget", "kelly_zero", "shadow_unarmed", "venue_rejected",
+    "legs_unavailable", "guard_capped", "guard_passed", "guard_breached",
+})
 
 #: Reasons that are the VENUE's answer rather than the desk's own refusal. A broker rejection or
 #: a freeze-band skip is the market saying no to one order; it is not the desk declining to
@@ -243,9 +280,14 @@ def trailing_runs(rows: list[dict[str, Any]], now: datetime) -> dict[str, dict[s
             continue
         stamps = [s for s in (_row_time(r) for r in run) if s is not None]
         first, last = (min(stamps), max(stamps)) if stamps else (None, None)
+        # Distinct days the run covers: a row's own `server_date` where it carries one (the E8
+        # lane), else the UTC date of its stamp.
+        days = {str(r.get("server_date") or "") or (t.date().isoformat() if t else "?")
+                for r, t in ((r, _row_time(r)) for r in run)}
         runs[sleeve] = {
             "reason": reason,
             "count": len(run),
+            "days": len(days),
             "first_at": first.isoformat(timespec="seconds") if first else UNMEASURED,
             "last_at": last.isoformat(timespec="seconds") if last else UNMEASURED,
             "span_h": round((last - first).total_seconds() / 3600.0, 3) if first and last
@@ -302,9 +344,97 @@ def _no_evidence(doc: dict[str, Any], problem: str, *, live: bool) -> dict[str, 
     return doc
 
 
+def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
+    """The E8 gold lane's verdict: NOT_APPLICABLE (no evidence here), UNMEASURED (its heartbeat is
+    stale or missing -- not a pass, not a failure), OK, or HALTED. Rows are filtered to
+    `lane: e8_gold`, so nothing else written into that file can be judged as this lane."""
+    ledger = base / Path(*E8_LEDGER_REL.split("/"))
+    beat = _read_json(base / Path(*E8_HEARTBEAT_REL.split("/")))
+    lane: dict[str, Any] = {"lane": E8_LANE, "verdict": "OK", "ok": True, "runs": {},
+                            "problems": [], "notes": [],
+                            "thresholds": {"trailing_days_max": E8_TRAILING_DAYS_MAX,
+                                           "run_max_age_hours": E8_RUN_MAX_AGE_HOURS,
+                                           "heartbeat_live_hours": E8_HEARTBEAT_LIVE_HOURS}}
+    if beat is None and not ledger.exists():
+        lane.update(verdict="NOT_APPLICABLE", ok=None)
+        lane["notes"].append("no E8 gold heartbeat or decision ledger here")
+        return lane
+    hb: dict[str, Any] = beat or {}
+    raw_host = hb.get("host")
+    host: dict[str, Any] = raw_host if isinstance(raw_host, dict) else {}
+    age = _age_h(_parse_iso(hb.get("at")), now)
+    lane["heartbeat"] = {
+        "at": hb.get("at") or UNMEASURED,
+        "age_h": round(age, 3) if age is not None else UNMEASURED,
+        "status": hb.get("status"), "account": hb.get("account"),
+        "hostname": host.get("hostname"), "machine_id": host.get("machine_id"),
+        "host_verdict": host.get("verdict"),
+    }
+    if age is None or age > E8_HEARTBEAT_LIVE_HOURS:
+        lane.update(verdict=UNMEASURED, ok=None)
+        lane["notes"].append(
+            f"{E8_HEARTBEAT_REL} is "
+            + (f"{age:.1f}h old" if age is not None else "missing or unstamped")
+            + f" (live window {E8_HEARTBEAT_LIVE_HOURS:.0f}h): the E8 gold lane is not running "
+              "here, so whether it is halted is UNMEASURED on this host")
+        return lane
+    rows: list[dict[str, Any]] = []
+    if ledger.exists():
+        read, problem = read_ledger(ledger)
+        if problem:
+            lane.update(verdict=UNMEASURED, ok=None)
+            lane["notes"].append(problem.replace(LEDGER_REL, E8_LEDGER_REL))
+            return lane
+        rows = [r for r in read if r.get("lane") == E8_LANE]
+    lane["rows_scanned"] = len(rows)
+    if not rows:
+        lane.update(verdict="NO_DECISIONS", ok=None)
+        lane["notes"].append("the E8 gold lane is running and no window has been due since its "
+                             "decision ledger began")
+        return lane
+    runs = trailing_runs(rows, now)
+    lane["runs"] = runs
+    for sleeve, run in sorted(runs.items()):
+        run["exempt"] = run["reason"] in E8_EXEMPT_REASONS
+        age_h = run.get("age_h")
+        run["current"] = age_h is not None and age_h <= E8_RUN_MAX_AGE_HOURS
+        run["breach"] = False
+        if run["days"] < E8_TRAILING_DAYS_MAX:
+            continue
+        if not run["current"]:
+            lane["notes"].append(f"{sleeve}: {run['days']} days of '{run['reason']}' is history "
+                                 f"(last row {run['last_at']})")
+            continue
+        if run["exempt"]:
+            lane["notes"].append(
+                f"{sleeve}: '{run['reason']}' on {run['days']} consecutive server days -- the "
+                "lane's own declared answer, reported, not breached")
+            continue
+        run["breach"] = True
+        lane.update(verdict="HALTED", ok=False)
+        lane["problems"].append(
+            f"{sleeve} has been refused on {run['days']} consecutive server days on "
+            f"'{run['reason']}' since {run['first_at']} with no placement in between "
+            f"(account {hb.get('account')}, host {host.get('hostname')})")
+    return lane
+
+
 def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
+    """The gateway's verdict (`_scan_gateway`) with the E8 gold lane's folded in. Only an E8 HALT
+    changes the top-level verdict: its OK must never mask the gateway's UNMEASURED."""
     base = Path(root or ROOT)
     t_now = now or _now()
+    doc = _scan_gateway(base, t_now)
+    e8 = scan_e8(base, t_now)
+    doc["lanes"] = {E8_LANE: e8}
+    if e8["verdict"] == "HALTED":
+        doc.update(ok=False, applicable=True, verdict="HALTED")
+        doc["problems"].extend(f"[{E8_LANE}] {p}" for p in e8["problems"])
+    return doc
+
+
+def _scan_gateway(base: Path, t_now: datetime) -> dict[str, Any]:
+    """The Fusion gateway's ledger, identity and state: the fence as it was before the E8 lane."""
     ledger = base / Path(*LEDGER_REL.split("/"))
     identity = base / Path(*IDENTITY_REL.split("/"))
     gateway_state = base / Path(*GATEWAY_STATE_REL.split("/"))
@@ -503,6 +633,8 @@ def record_event(doc: dict[str, Any], root: Path | None = None) -> str | None:
             return "PLACEMENT_CLEAR"
         halted = sorted(s for s, r in (doc.get("runs") or {}).items()
                         if not r.get("venue_reason"))
+        for lane in (doc.get("lanes") or {}).values():
+            halted += sorted(s for s, r in (lane.get("runs") or {}).items() if r.get("breach"))
         events.emit("PLACEMENT_HALTED", producer="check_placement_interlock",
                     priority=2, verdict=doc.get("verdict"), sleeves=halted,
                     problems=[str(p)[:300] for p in doc.get("problems", [])][:12])
@@ -565,6 +697,15 @@ def main(argv: list[str] | None = None) -> int:
           f"{len(doc.get('runs') or {})} sleeve(s) with a trailing refusal run")
     for sleeve, run in sorted((doc.get("runs") or {}).items()):
         print(f"  {sleeve}: {run['count']}x '{run['reason']}' since {run['first_at']}")
+    for name, lane in sorted((doc.get("lanes") or {}).items()):
+        beat = lane.get("heartbeat") or {}
+        print(f"  lane {name}: {lane.get('verdict')}; heartbeat {beat.get('at', UNMEASURED)} "
+              f"on {beat.get('hostname')} ({beat.get('host_verdict')})")
+        for sleeve, run in sorted((lane.get("runs") or {}).items()):
+            print(f"    {sleeve}: '{run['reason']}' on {run['days']} day(s) since "
+                  f"{run['first_at']}")
+        for note in lane.get("notes") or []:
+            print(f"    note: {note}")
     for note in doc["notes"]:
         print(f"  note: {note}")
     for problem in doc["problems"]:

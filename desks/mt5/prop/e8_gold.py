@@ -72,6 +72,8 @@ from mt5desk.kelly_sizing import (  # noqa: E402
     load_kelly_survival,
 )
 
+from prop import e8_evidence  # noqa: E402
+
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).
 RISK_FRAC = 0.005
@@ -737,11 +739,18 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     doc: dict[str, Any] = {"at": now.isoformat(timespec="seconds"), "armed": bool(armed),
                            "symbol": SYMBOL, "placed": [], "actions": [], "skipped": []}
+    # WHICH HOST RAN THIS PASS, AND ON WHICH ACCOUNT (prop/e8_evidence.py). Both reads never
+    # raise; they are recorded on the report, the heartbeat and every decision row.
+    host = e8_evidence.host_block()
+    account = e8_evidence.account_label(venue)
+    doc.update({"host": host, "account": account})
     tick = mt5.symbol_info_tick(SYMBOL)
     rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_H1, 0, 400)
     if tick is None or rates is None or len(rates) < 60:
         doc["status"] = "NO_BARS"
         log("no XAUUSD tick or bars from the terminal; nothing decided")
+        doc["heartbeat"] = e8_evidence.write_heartbeat(
+            "NO_BARS", at=now, armed=armed, account=account, host=host, log=log)
         return doc
     import pandas as pd
     df = h1_frame(rates)
@@ -805,7 +814,21 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
         log("position book unreadable; no new E8 gold placement this pass")
     # -------------------------------------------------------------- placements
+    # EVERY DUE WINDOW'S DECISION IS EVIDENCE (prop/e8_evidence.py): collected here, written once
+    # after the placement block, only when a window's outcome or reason changes for the day.
+    decided = e8_evidence.Decisions(
+        risk_of=lambda n: equity * window_risk(n, kelly)[0] if equity > 0 else None)
     due_now = [] if stood_down else plan(df, hour, state)
+    if stood_down:
+        # Evidence only: the windows that WOULD be due, so a stand-down that lasts all day leaves
+        # a row the placement interlock can read. Nothing below reads this list.
+        try:
+            code = e8_evidence.stand_down_reason(equity, guard_decision, doc)
+            why = str(doc.get("guard") or doc.get("positions_unreadable") or code)
+            for due in plan(df, hour, state):
+                decided.note(due["window"], e8_evidence.DEFERRED, code, why)
+        except Exception as exc:
+            log(f"stand-down evidence not derived ({type(exc).__name__}: {exc})")
     # THE SELF-HEDGE RULE IS PER LEG, NOT PER BRACKET (principal, 2026-09-24).
     #
     # TradeLocker can hold opposite XAU positions, so a second two-sided bracket placed while one
@@ -837,6 +860,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                    f"{', '.join(str(p.get('id')) for p in xau_positions)}; deferred to prevent "
                    f"self-hedging")
             doc["skipped"].append({"window": due["window"], "why": why})
+            decided.note(due["window"], e8_evidence.DEFERRED, e8_evidence.R_SIDE_UNREADABLE, why)
             log(f"[{due['window']}] DEFERRED: {why}")
         due_now = []
     committed: float | None = None
@@ -863,6 +887,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                    + "); no window placed this pass")
             for due in due_now:
                 doc["skipped"].append({"window": due["window"], "why": why})
+                decided.note(due["window"], e8_evidence.DEFERRED,
+                             e8_evidence.R_RISK_UNMEASURABLE, why)
                 log(f"[{due['window']}] DEFERRED: {why}")
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
@@ -874,6 +900,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": name, "why": (
                 "stands aside: the survival-constrained growth solve "
                 "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
+            decided.note(name, e8_evidence.SKIPPED, e8_evidence.R_KELLY_ZERO,
+                         doc["skipped"][-1]["why"], risk_usd=0.0)
             continue
         risk_usd = equity * frac
         # FIRST: one gold trade at risk at a time (`one_at_risk_blocker`). SECOND, a fail-safe
@@ -884,12 +912,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if blocker is None and placed_this_pass:
             blocker = (f"one gold trade at risk at a time: {', '.join(placed_this_pass)} was "
                        f"placed earlier in this pass")
+        blocker_code = e8_evidence.R_ONE_AT_RISK
         if blocker is None:
             fits, budget_why = risk_budget_allows(committed or 0.0, risk_usd, room)
             if not fits:
                 blocker = f"concurrent risk would reach today's floor: {budget_why}"
+                blocker_code = e8_evidence.R_RISK_BUDGET
         if blocker is not None:
             doc["skipped"].append({"window": name, "why": blocker})
+            decided.note(name, e8_evidence.DEFERRED, blocker_code, blocker, risk_usd=risk_usd)
             log(f"[{name}] DEFERRED: {blocker}")
             continue
         committed = (committed or 0.0) + risk_usd
@@ -954,6 +985,18 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if legs or failed:
             placed_this_pass.append(name)
         doc["placed"].append({"window": name, "legs": legs})
+        outcome, reason, why, sent_lot = e8_evidence.window_outcome(
+            legs, failed, armed=armed, unsizeable=any(
+                r.get("window") == name and r.get("status") == "UNSIZEABLE"
+                for r in doc["skipped"]))
+        decided.note(name, outcome, reason, why, lot=sent_lot, risk_usd=risk_usd)
+
+    # The decisions are written AFTER every order of this pass has been sent, so a write that
+    # fails or hangs on the disk has nothing left to delay; it never raises (e8_evidence).
+    doc["decisions"] = decided.rows
+    doc["decisions_recorded"] = len(e8_evidence.record_decisions(
+        decided, state, now=now, server_date=today, account=account, armed=armed, host=host,
+        symbol=SYMBOL, log=log))
 
     # -------------------------------------------------------------- management
     try:
@@ -1161,6 +1204,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     state["windows"] = {n: w for n, w in state["windows"].items() if not n.startswith("carried:")}
 
     doc.setdefault("status", "OK")
+    doc["heartbeat"] = e8_evidence.write_heartbeat(
+        str(doc["status"]), at=now, armed=armed, account=account, host=host, log=log, extra={
+            "server_time": doc.get("server_time"), "hour": doc.get("hour"),
+            "guard": (doc.get("guard_decision") or {}).get("verdict") or doc.get("guard"),
+            "open_xau_positions": len(xau_positions), "decisions": len(decided.rows)})
     try:
         STATE.parent.mkdir(parents=True, exist_ok=True)
         STATE.write_text(json.dumps(state, indent=1, default=str), encoding="utf-8")
@@ -1394,11 +1442,14 @@ def main(argv: list[str] | None = None) -> int:
 
 def _failed_pass(status: str, *, armed: bool) -> None:
     """Publish connection failure without altering durable window/order state."""
+    at = datetime.now(UTC)
+    beat = e8_evidence.write_heartbeat(status, at=at, armed=armed, log=log)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     temporary = OUT.with_suffix(".tmp")
-    temporary.write_text(json.dumps({"at": datetime.now(UTC).isoformat(),
+    temporary.write_text(json.dumps({"at": at.isoformat(),
                                      "status": status, "armed": armed,
                                      "placed": [], "actions": [], "skipped": [],
+                                     "host": (beat or {}).get("host"),
                                      "why": "connection failed; no placement evaluated"}), "utf-8")
     temporary.replace(OUT)
 
