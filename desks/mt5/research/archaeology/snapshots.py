@@ -582,9 +582,15 @@ def may_fetch(p: Platform, *, probe: bool = False) -> tuple[bool, str]:
         return False, (f"REFUSED on the hard boundary ({hit}): reading this would mean defeating "
                        f"an access control -- {why}")
     label = f"{verdict}: {why}" if verdict != ALLOWED else why
+    # ROBOTS DECIDES (LAWS 5e as amended by the principal 2026-10-14): the root's own origin
+    # robots.txt and the site's holds, read live by `polite_fetch.HostAccess` (via
+    # `moat_collectors.robots_barred`), refuse the platform -- no request, no label-and-fetch.
+    barred = mc.robots_barred(p.root)
+    if barred:
+        return False, f"ROBOTS: {barred} -- robots.txt is respected desk-wide; not fetched"
     if probe and mc.robots_still_disallows(p.host):
-        label = (f"{label}; live robots probe: {p.host}/robots.txt names this agent -- RECORDED "
-                 f"AS A LABEL and fetched anyway (LAWS 5e)")
+        return False, (f"ROBOTS: live probe -- {p.host}/robots.txt refuses this agent at its root; "
+                       f"not fetched (LAWS 5e amended 2026-10-14)")
     return True, label
 
 
