@@ -337,7 +337,7 @@ def cutsrv(monkeypatch: pytest.MonkeyPatch) -> Iterator[int]:
                    "/alias": "http://2130706434/t",
                    "/upper": f"HTTP://LOCALHOST:{port}/t",
                    "/fenced": "https://nitter.net/x",
-                   "/login": "/login",
+                   "/wall": "/login",
                    "/xpriv": f"http://localhost:{port}/private",
                    "/spriv": "/private",
                    "/unread": "http://127.0.0.1:1/x",
@@ -359,7 +359,7 @@ def cutsrv(monkeypatch: pytest.MonkeyPatch) -> Iterator[int]:
 
 
 CUT_KINDS = [("/held", "site_held"), ("/mirror", "site_held"), ("/alias", "site_held"),
-             ("/upper", "site_held"), ("/fenced", "nitter"), ("/login", "login_wall"),
+             ("/upper", "site_held"), ("/fenced", "nitter"), ("/wall", "login_wall"),
              ("/xpriv", "robots"), ("/spriv", "robots"), ("/unread", "robots"),
              ("/loop", "too_many_redirects"), ("/ftp", "non_http_redirect")]
 
