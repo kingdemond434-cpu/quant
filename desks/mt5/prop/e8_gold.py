@@ -162,6 +162,30 @@ LOT_CEILING_RAIL = "e8_gold_lot_ceiling"
 #: The decision reason code a shrunk window carries (prop/e8_evidence: R_LOT_CEILING, NOT exempt
 #: in scripts/check_placement_interlock.py).
 LOT_CEILING_REASON = "lot_ceiling"
+# A STAND-DOWN CANCELS THIS LANE'S RESTING LEGS (2026-10-20). A guard verdict other than OK
+# (STOOD_DOWN, CAPPED, BREACHED, PASSED) used to stop new placements only, so the twin of a
+# bracket placed before the verdict still rested at the venue and could fill into a day the guard
+# had closed. Every pass on which `assess().may_open` is False now cancels this lane's own
+# journalled entry orders still resting (`stand_down_cancels`); filled positions and their stops
+# are never touched, and a cancel the venue refuses is logged and tried again next pass.
+STAND_DOWN_CANCEL = "stand_down_cancel"
+# A TWO-LEGGED BRACKET IS BUDGETED AGAINST TODAY'S FLOOR AS BOTH LEGS (2026-10-20). One fill
+# cancels the other, but the OCO is this lane's 5-minute pass, not the venue's: in a fast spike
+# both legs can fill and both stop out before the pass sees the first. So, as the E8 executor
+# checks its whole book against `room_to_daily_floor` before it sends anything, each leg's risk
+# grossed up for slippage is summed and must fit the guard's room to today's floor.
+#: Slippage on a stop that fills at market, as a fraction of the leg's risk, when the lane has no
+#: measurement of its own (BRACKET_SLIP_FILE).
+DEFAULT_BRACKET_SLIP = 0.3
+#: The lane's measured slip, if one is written: {"slip": <fraction of leg risk>}. Absent,
+#: unreadable, non-numeric, non-finite or negative means DEFAULT_BRACKET_SLIP, said in the report.
+BRACKET_SLIP_FILE = DESK / "data" / "E8_GOLD_SLIP.json"
+#: The rails these skips are journalled under (status RAIL_BLOCKED, with missed_growth_risk_usd).
+DAILY_FLOOR_RAIL = "e8_gold_bracket_daily_floor"
+PROFIT_CAP_RAIL = "e8_gold_daily_profit_cap"
+#: Their decision reason codes (prop/e8_evidence; see the README's merge note for the fence).
+DAILY_FLOOR_REASON = "bracket_daily_floor"
+PROFIT_CAP_REASON = "daily_profit_cap"
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -243,6 +267,75 @@ def shrunk_budget_risk(lot: float, stop_dist: float, contract_size: float) -> fl
     fill-through, at the leg's own dollars per point. Pure."""
     per_point = float(lot) * float(contract_size)
     return per_point * (float(stop_dist) + CEILING_SLIP_POINTS)
+
+
+def bracket_slip(path: Path | None = None) -> tuple[float, str]:
+    """(slippage as a fraction of a leg's risk, where it came from). Never raises.
+
+    `path` (default BRACKET_SLIP_FILE) may hold the lane's measured {"slip": <fraction>}. A
+    missing file is DEFAULT_BRACKET_SLIP; so is an unreadable file or a value that is not a finite
+    number at or above zero, with the reason in the source string.
+    """
+    p = BRACKET_SLIP_FILE if path is None else path
+    try:
+        if not p.exists():
+            return DEFAULT_BRACKET_SLIP, "default DEFAULT_BRACKET_SLIP (no measured slip)"
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+        raw = doc.get("slip") if isinstance(doc, dict) else None
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)) \
+                or not math.isfinite(float(raw)) or float(raw) < 0:
+            return DEFAULT_BRACKET_SLIP, (f"default DEFAULT_BRACKET_SLIP ({p.name} slip={raw!r} "
+                                          f"is not a number >= 0)")
+        return float(raw), p.name
+    except Exception as exc:
+        return DEFAULT_BRACKET_SLIP, (f"default DEFAULT_BRACKET_SLIP ({p.name} unreadable: "
+                                      f"{type(exc).__name__})")
+
+
+def bracket_floor_breach(n_legs: int, leg_risk: float, slip: float, room: float) -> str | None:
+    """Why a bracket is skipped by today's floor, or None when it fits. Pure.
+
+    `n_legs` x `leg_risk` x (1 + `slip`) must be at most `room` (the guard's
+    `room_to_daily_floor`): every leg the window would send, as if each stopped out with slip.
+    """
+    need = int(n_legs) * float(leg_risk) * (1.0 + float(slip))
+    if need <= float(room):
+        return None
+    return (f"bracket would breach today's floor: {int(n_legs)} legs x {float(leg_risk):,.0f} USD "
+            f"x (1 + {float(slip):g} slip) = {need:,.0f} exceeds the {float(room):,.0f} left to "
+            f"today's floor")
+
+
+def leg_target_profit(spec_leg: dict[str, Any], lot: float, contract_size: float) -> float:
+    """Dollars a leg makes if its take-profit fills at the level. Pure."""
+    return (abs(float(spec_leg["tp"]) - float(spec_leg["price"])) * float(lot)
+            * float(contract_size))
+
+
+def profit_cap_breach(profits: dict[str, float], headroom: float) -> str | None:
+    """Why a window is skipped by the daily profit cap, or None when every target fits. Pure.
+
+    `profits` is each leg's take-profit in USD (`leg_target_profit`); `headroom` the guard's
+    `profit_cap_headroom` (the cap less today's profit). A target past the headroom is profit E8
+    strips at rollover while the stop's loss is kept, so the leg is refused and the bracket with it.
+    """
+    over = {side: usd for side, usd in profits.items() if float(usd) > float(headroom) + 1e-9}
+    if not over:
+        return None
+    legs = ", ".join(f"{side} {usd:,.0f} USD" for side, usd in sorted(over.items()))
+    return (f"daily profit cap: take-profit {legs} exceeds the {float(headroom):,.0f} USD of "
+            f"counted profit left today; the excess would be stripped at rollover")
+
+
+def stand_down_cancels(open_ids: set[int], filled: dict[int, int],
+                       own: dict[int, dict[str, Any]]) -> list[int]:
+    """This lane's own entry orders still RESTING at the venue: what a stand-down cancels. Pure.
+
+    Only ids the lane journalled as its own sends (`own_entry_orders`) qualify, so a position's
+    protective stop or target, and anything a human placed, are never in the list; an id the venue
+    reports as filled is a position now and is left alone too.
+    """
+    return sorted(int(oid) for oid in open_ids if int(oid) in own and int(oid) not in filled)
 
 
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
@@ -753,6 +846,78 @@ def risk_budget_allows(committed: float, new_risk: float, room: float) -> tuple[
 
 # ------------------------------------------------------------------ the pass
 
+def _bracket_rails(spec: dict[str, Any], lots: dict[str, float], *, risk_usd: float,
+                   slip: float, slip_src: str, guard_decision: Any,
+                   contract: float) -> dict[str, Any] | None:
+    """The skip (rail, why and its figures) for a sized window, or None when no rail binds.
+
+    `lots` holds every leg the window would send. Raises when the guard's figures are missing;
+    the caller turns that into a deferral.
+    """
+    if guard_decision is None:
+        raise ValueError("no guard decision to budget against")
+    if not lots:
+        return None
+    room = float(guard_decision.room_to_daily_floor)
+    floor_why = bracket_floor_breach(len(lots), risk_usd, slip, room)
+    if floor_why is not None:
+        return {"rail": DAILY_FLOOR_RAIL, "reason": DAILY_FLOOR_REASON, "why": floor_why,
+                "legs": len(lots),
+                "leg_risk_usd": round(risk_usd, 2), "slip": slip, "slip_source": slip_src,
+                "room_to_daily_floor": round(room, 2)}
+    headroom = float(guard_decision.profit_cap_headroom)
+    profits = {side: round(leg_target_profit(spec[side], lot, contract), 2)
+               for side, lot in lots.items()}
+    cap_why = profit_cap_breach(profits, headroom)
+    if cap_why is not None:
+        return {"rail": PROFIT_CAP_RAIL, "reason": PROFIT_CAP_REASON, "why": cap_why,
+                "target_profit_usd": profits,
+                "profit_cap_headroom_usd": round(headroom, 2)}
+    return None
+
+
+def _cancel_on_stand_down(venue: Any, state: dict[str, Any], doc: dict[str, Any], *,
+                          open_ids: set[int], filled: dict[int, int], armed: bool,
+                          verdict: str) -> set[int]:
+    """Cancel this lane's resting entry legs because the guard refuses new risk. Never raises.
+
+    Returns the ids the venue acknowledged as cancelled. A refused or failed cancel is logged and
+    left in place; the next pass, still refused by the guard, tries it again.
+    """
+    try:
+        own = own_entry_orders(_journal_rows(), state)
+        targets = stand_down_cancels(open_ids, filled, own)
+    except Exception as exc:
+        doc["stand_down_cancel_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+        log(f"stand-down cancel could not list our resting legs ({type(exc).__name__}: {exc}); "
+            f"tried again next pass")
+        return set()
+    done: set[int] = set()
+    for oid in targets:
+        win = str(own[oid].get("window"))
+        row = (state.get("windows") or {}).get(win) or (state.get("carried") or {}).get(win) or {}
+        act: dict[str, Any] = {"act": STAND_DOWN_CANCEL, "window": win, "order_id": oid,
+                               "verdict": verdict, "ok": False}
+        try:
+            if armed or not row.get("shadow", False):
+                if venue.cancel(int(oid)):
+                    act["ok"] = True
+                    done.add(oid)
+                    log(f"[{win}] {STAND_DOWN_CANCEL}: guard {verdict}; our resting entry order "
+                        f"{oid} cancelled")
+                else:
+                    act["why"] = "venue did not acknowledge the cancel; tried again next pass"
+            else:
+                act.update({"ok": True, "shadow": True})
+                log(f"[{win}] SHADOW would cancel resting entry order {oid} (guard {verdict})")
+        except Exception as exc:
+            act["why"] = f"{type(exc).__name__}: {exc}"[:160] + "; tried again next pass"
+        if not act["ok"]:
+            log(f"[{win}] {STAND_DOWN_CANCEL} FAILED for order {oid}: {act['why']}")
+        doc["actions"].append(act)
+    return done
+
+
 def _read_json(p: Path, default: Any) -> Any:
     try:
         return json.loads(p.read_text(encoding="utf-8-sig"))
@@ -956,6 +1121,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         venue_min_lot = None
     max_lot, max_lot_src = gold_max_lot(min_lot=venue_min_lot)
     doc["lot_ceiling"] = {"max_lot": max_lot, "source": max_lot_src}
+    slip, slip_src = bracket_slip()
+    doc["bracket_slip"] = {"slip": slip, "source": slip_src}
     placed_this_pass: list[str] = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
@@ -1014,6 +1181,34 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             log(f"[{name}] DEFERRED: {blocker}")
             continue
         window_risk_usd = max(leg_risk.values()) if leg_risk else risk_usd
+        # TODAY'S FLOOR FOR BOTH LEGS, AND THE DAILY PROFIT CAP (see DAILY_FLOOR_RAIL), on the
+        # risk and lots actually sent -- a leg the ceiling shrank is budgeted at its shrunk risk.
+        # A check that cannot be computed defers the window unmarked; it never raises.
+        try:
+            rail_skip = _bracket_rails(spec, {k: v[0] for k, v in sized.items()},
+                                       risk_usd=window_risk_usd, slip=slip, slip_src=slip_src,
+                                       guard_decision=guard_decision, contract=contract)
+        except Exception as exc:
+            why = (f"bracket rails unmeasurable ({type(exc).__name__}: {exc}"[:200]
+                   + "); deferred")
+            doc["skipped"].append({"window": name, "why": why})
+            log(f"[{name}] DEFERRED: {why}")
+            continue
+        if rail_skip is not None:
+            rail = str(rail_skip["rail"])
+            skip = {"window": name, **rail_skip, "missed_growth_risk_usd": round(risk_usd, 2)}
+            doc["skipped"].append(skip)
+            _record({"at": now.isoformat(timespec="seconds"), **skip,
+                     "status": "RAIL_BLOCKED", "risk_frac": frac, "armed": bool(armed),
+                     "levels": {k: {f: float(spec[k][f]) for f in ("price", "sl", "tp")}
+                                for k in sized}})
+            state["windows"][name] = {"placed_at": now.isoformat(timespec="seconds"),
+                                      "placed_hour": hour, "hi": due["hi"], "lo": due["lo"],
+                                      "orders": {}, "position_id": None, "shadow": not armed,
+                                      "skipped": rail, "why": skip["why"]}
+            log(f"[{name}] SKIPPED: {skip['why']}; MISSED GROWTH ({rail}): the window's "
+                f"{risk_usd:.0f} USD of certified risk is not deployed")
+            continue
         if unshrunk:
             # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1), two-sided: the risk the ceiling withheld
             # is journalled; what the smaller leg saved in a fill-through tail is UNMEASURED
@@ -1127,6 +1322,19 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         xau_positions = []
         position_ids = set()
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+
+    # -------------------------------------------------------------- stand-down cancels
+    # THE GUARD'S REFUSAL REACHES WHAT ALREADY RESTS (see STAND_DOWN_CANCEL): a twin placed
+    # before the verdict must not fill after it. Only on the guard's own verdict -- an unreadable
+    # equity or guard is not a verdict -- and only when the order book was read this pass.
+    if guard_decision is not None and not guard_decision.may_open \
+            and "orders_unreadable" not in doc:
+        gone = _cancel_on_stand_down(venue, state, doc, open_ids=open_ids, filled=filled,
+                                     armed=armed, verdict=str(guard_decision.verdict.value))
+        if gone:
+            open_orders = [o for o in open_orders if o.get("id") is None
+                           or int(o["id"]) not in gone]
+            open_ids -= gone
 
     # -------------------------------------------------------------- dropped legs
     if any(w.get("failed") for w in (state.get("windows") or {}).values()):
