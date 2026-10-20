@@ -220,7 +220,7 @@ def test_the_collector_and_the_outcome_never_raise() -> None:
 _EXPECTED_EXEMPT = {
     ev.R_SHADOW, ev.R_LEGS_UNAVAILABLE, ev.R_KELLY_ZERO, ev.R_ONE_AT_RISK,
     ev.R_RISK_BUDGET, "guard_capped", "guard_passed", "guard_breached",
-    ev.R_LEG_ABANDONED, ev.R_UNOWNED_POSITION,
+    ev.R_LEG_ABANDONED, ev.R_UNOWNED_POSITION, ev.R_CROSS_ACCOUNT_OPPOSITE,
 }
 #: v2: venue_rejected BREACHES (audit of 75004b6a) now that a re-send writes a PLACED row.
 _EXPECTED_BREACH = {
@@ -633,3 +633,21 @@ def test_without_a_key_the_account_is_unkeyed_never_raw(monkeypatch, tmp_path) -
     monkeypatch.setenv(ev.KEY_ENV, "k" * 40)
     assert ev.account_ref("tradelocker:7654321") not in (f"tradelocker:{ev.UNKEYED}",
                                                         "tradelocker:7654321")
+
+
+def test_a_cross_account_fenced_window_on_consecutive_days_is_not_a_halt(tmp_path) -> None:
+    """Ready for the Fusion r4 merge: a fenced send is DEFERRED cross_account_opposite, exempt."""
+    root = tmp_path / "fence_root"
+    data = root / "desks" / "mt5" / "data"
+    data.mkdir(parents=True)
+    now = datetime.now(UTC)
+    rows = [{"decided_at": (now - timedelta(days=d)).isoformat(), "lane": "e8_gold",
+             "account_ref": "tradelocker:x", "sleeve": "e8_gold:asia",
+             "server_date": (now - timedelta(days=d)).date().isoformat(),
+             "outcome": ev.DEFERRED, "reason": ev.R_CROSS_ACCOUNT_OPPOSITE, "taken": False}
+            for d in (2, 1, 0)]
+    (data / ev.DECISIONS_NAME).write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+    (data / ev.HEARTBEAT_NAME).write_text(json.dumps(
+        {"at": now.isoformat(), "lane": "e8_gold", "status": "OK"}), "utf-8")
+    lane = fence.scan(root, now=now)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "OK" and any("declared answer" in n for n in lane["notes"])

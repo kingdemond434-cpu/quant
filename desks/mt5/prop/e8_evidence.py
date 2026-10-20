@@ -117,6 +117,11 @@ R_LEG_ABANDONED = "leg_abandoned"
 #: A dropped leg given up because a position on its side opened after the failed send and no
 #: window owns it -- it may BE that send (UNOWNED_BLOCK_RAIL, billed as missed growth).
 R_UNOWNED_POSITION = "unowned_position"
+#: A send (first or re-send) the cross-account fence refused because the other account holds the
+#: opposite gold position (`e8_gold.fenced_send`, Fusion r4; RAIL_BLOCKED / cross_account_opposite
+#: in the intents journal). Declared here ahead of that merge so the fence already classifies it:
+#: a policy answer like one_at_risk, exempt. The window is retried on a later pass.
+R_CROSS_ACCOUNT_OPPOSITE = "cross_account_opposite"
 #: The guard's own verdicts, as `guard_<verdict>` (e8_guard.Verdict, lower-cased).
 GUARD_PREFIX = "guard_"
 

@@ -209,6 +209,9 @@ E8_EXEMPT_REASONS: frozenset[str] = frozenset({
     # A dropped leg given up after its window traded (the twin rests or filled), and one given
     # up because an unowned position on its side may BE the lost send (billed as missed growth).
     "leg_abandoned", "unowned_position",
+    # A send the cross-account fence refused (the other account holds the opposite gold
+    # position): a policy answer of the same kind as one_at_risk, retried on a later pass.
+    "cross_account_opposite",
 })
 
 #: Reasons that are the VENUE's answer rather than the desk's own refusal. A broker rejection or
