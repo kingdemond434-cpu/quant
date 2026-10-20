@@ -191,7 +191,7 @@ def append_jsonl(path: Path, row: dict[str, Any]) -> bool:
 
 
 # ------------------------------------------------------------------------------- the halt
-def halt(st: dict, row: dict[str, Any]) -> None:
+def halt(st: dict[str, Any], row: dict[str, Any]) -> None:
     """Halt the breaching sleeve's NEW entries. Its open position is left exactly as it is."""
     st.setdefault("risk_halt", {})[str(row["sleeve"])] = {
         "breach_id": row.get("breach_id"), "at": row.get("at"), "symbol": row.get("symbol"),
@@ -199,7 +199,7 @@ def halt(st: dict, row: dict[str, Any]) -> None:
         "ratio": row.get("ratio")}
 
 
-def halted(st: dict, name: str) -> dict[str, Any] | None:
+def halted(st: dict[str, Any], name: str) -> dict[str, Any] | None:
     h = (st.get("risk_halt") or {}).get(name)
     return h if isinstance(h, dict) else None
 
@@ -221,7 +221,7 @@ def read_acks(path: Path) -> set[str]:
     return {str(x) for x in vals} if isinstance(vals, list) else set()
 
 
-def review_halts(st: dict, acks: set[str],
+def review_halts(st: dict[str, Any], acks: set[str],
                  positions_for: Callable[[str, str], Iterable[Any]],
                  unit_for: Callable[[str], float]) -> list[str]:
     """Lift halts that are acknowledged or re-measured clean. Returns one note per halt read.
