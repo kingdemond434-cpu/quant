@@ -30,6 +30,7 @@ placements down on any verdict but OK; management of what is already open never 
 ONE GOLD TRADE AT RISK AT A TIME: a window waits while an earlier XAU position still has its stop
 short of break-even or an earlier bracket still rests (`one_at_risk_blocker`), and as a fail-safe
 the gold risk committed plus its own must fit the guard's room to today's floor (SLIP_BUFFER).
+A window whose leg would need more than GOLD_MAX_LOT is skipped whole, never shrunk.
 
     python prop/e8_gold.py            one pass, shadow unless armed
     python prop/e8_gold.py --armed    one pass, armed for this pass only
@@ -39,6 +40,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import math
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -129,6 +131,21 @@ ROOM_MARGIN_USD = 100.0
 # beyond the break-even trigger is closed at market (the protection the stop could not give),
 # otherwise its existing stop is held and the refusal raised as an alert.
 MAX_STOP_REFUSALS = 3
+# A LOT CEILING ON EVERY GOLD LEG (2026-10-20). `lot_for_risk` sizes a leg as the window's risk
+# over its stop distance and nothing bounded the quotient: a tight range at 1% of a 100k account
+# needs 0.75 lots at a 13.3-point stop and 2.0 at a 5-point one, and a stop that tight on gold is
+# inside the noise a stop order fills through. The principal's coordinator ruled the trade is
+# SKIPPED, not shrunk: a shrunk leg is a different trade at an uncertified risk. Any leg of a
+# window over the ceiling skips the whole window, so no lone leg of a bracket rests, and the
+# window's risk is billed as missed growth on the journal (LOT_CEILING_RAIL).
+GOLD_MAX_LOT = 0.75
+#: The box may move the ceiling without a code change: {"max_lot": <lots>}. Absent means
+#: GOLD_MAX_LOT. Unreadable, non-numeric, non-finite or <= 0 also means GOLD_MAX_LOT, said in the
+#: pass report -- a bad file never switches the ceiling off.
+GOLD_MAX_LOT_FILE = DESK / "data" / "E8_GOLD_MAX_LOT.json"
+#: The name the skip is journalled under (status RAIL_BLOCKED, with missed_growth_risk_usd).
+#: Not yet in libs/portfolio/rails.py, which is a sealed file: registering it is the principal's.
+LOT_CEILING_RAIL = "e8_gold_lot_ceiling"
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -161,6 +178,41 @@ def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
     if kelly is not None and name in kelly:
         return float(kelly[name]), "kelly_survival"
     return RISK_FRAC, "policy RISK_FRAC"
+
+
+def gold_max_lot(path: Path | None = None) -> tuple[float, str]:
+    """(the lot ceiling for one gold leg, where it came from). Never raises.
+
+    `path` (default GOLD_MAX_LOT_FILE) may hold {"max_lot": <lots>}. A missing file is the
+    default; a file that cannot be read, or a value that is not a finite number above zero, is
+    also the default, with the reason in the source string -- never a ceiling of zero or none.
+    """
+    p = GOLD_MAX_LOT_FILE if path is None else path
+    try:
+        if not p.exists():
+            return GOLD_MAX_LOT, "default GOLD_MAX_LOT"
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+        raw = doc.get("max_lot") if isinstance(doc, dict) else None
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)) \
+                or not math.isfinite(float(raw)) or not float(raw) > 0:
+            return GOLD_MAX_LOT, (f"default GOLD_MAX_LOT ({p.name} max_lot={raw!r} is not a "
+                                  f"positive number)")
+        return float(raw), p.name
+    except Exception as exc:
+        return GOLD_MAX_LOT, f"default GOLD_MAX_LOT ({p.name} unreadable: {type(exc).__name__})"
+
+
+def lot_ceiling_breach(lots: dict[str, float], max_lot: float) -> str | None:
+    """Why a window is skipped by the lot ceiling, or None when every leg fits. Pure.
+
+    `lots` is every leg the window would send, by side. One leg over skips them all.
+    """
+    over = {side: lot for side, lot in lots.items() if float(lot) > float(max_lot) + 1e-9}
+    if not over:
+        return None
+    legs = ", ".join(f"{side} {lot:g}" for side, lot in sorted(over.items()))
+    return (f"lot ceiling: {legs} lots exceeds the {max_lot:g}-lot ceiling for one gold leg; "
+            f"a stop that tight is skipped, not shrunk, and the whole bracket stands aside")
 
 
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
@@ -866,6 +918,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 log(f"[{due['window']}] DEFERRED: {why}")
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
+    max_lot, max_lot_src = gold_max_lot()
+    doc["lot_ceiling"] = {"max_lot": max_lot, "source": max_lot_src}
     placed_this_pass: list[str] = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
@@ -892,6 +946,37 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": name, "why": blocker})
             log(f"[{name}] DEFERRED: {blocker}")
             continue
+        # THE LOT CEILING (GOLD_MAX_LOT): every leg this window would send is sized BEFORE any is
+        # sent, so a bracket with one leg over the ceiling sends neither. The window is written
+        # to the state with no orders, so later passes neither re-send it nor bill it twice.
+        sized: dict[str, tuple[float, str]] = {}
+        for side in ("buy_stop", "sell_stop"):
+            s = spec[side]
+            if side == blocked or not leg_is_legal(side, float(s["price"]), float(bid),
+                                                   float(ask))[0]:
+                continue
+            lot, basis = lot_for_risk(venue, SYMBOL, abs(float(s["price"]) - float(s["sl"])),
+                                      risk_usd)
+            sized[side] = (_quantise(lot, venue, SYMBOL), basis)
+        ceiling_why = lot_ceiling_breach({k: v[0] for k, v in sized.items()}, max_lot)
+        if ceiling_why is not None:
+            # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1): the window's whole risk goes undeployed.
+            lots = {k: v[0] for k, v in sized.items()}
+            skip = {"window": name, "why": ceiling_why, "rail": LOT_CEILING_RAIL,
+                    "lots": lots, "max_lot": max_lot, "max_lot_source": max_lot_src,
+                    "missed_growth_risk_usd": round(risk_usd, 2)}
+            doc["skipped"].append(skip)
+            _record({"at": now.isoformat(timespec="seconds"), **skip,
+                     "status": "RAIL_BLOCKED", "risk_frac": frac, "armed": bool(armed),
+                     "levels": {k: {f: float(spec[k][f]) for f in ("price", "sl", "tp")}
+                                for k in sized}})
+            state["windows"][name] = {"placed_at": now.isoformat(timespec="seconds"),
+                                      "placed_hour": hour, "hi": due["hi"], "lo": due["lo"],
+                                      "orders": {}, "position_id": None, "shadow": not armed,
+                                      "skipped": LOT_CEILING_RAIL, "why": ceiling_why}
+            log(f"[{name}] SKIPPED: {ceiling_why}; MISSED GROWTH ({LOT_CEILING_RAIL}): the "
+                f"window's {risk_usd:.0f} USD of certified risk is not deployed")
+            continue
         committed = (committed or 0.0) + risk_usd
         legs: dict[str, dict] = {}
         failed: dict[str, dict] = {}
@@ -910,8 +995,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 doc["skipped"].append({"window": name, "side": side, "why": why})
                 log(f"[{name}] {side} not available: {why}")
                 continue
-            lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
-            lot = _quantise(lot, venue, SYMBOL)
+            lot, basis = sized[side]
             row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                    "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
                    "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
