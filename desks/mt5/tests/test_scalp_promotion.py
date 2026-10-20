@@ -460,7 +460,7 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
                   # ...and reads `last_error` through `_send_error` when a send comes back empty.
                   "_send_error",
                   # ...and holds each slice to the sleeve's intended EUR risk (2026-10-20).
-                  "scalp_risk_intent"), ns)
+                  "scalp_risk_intent", "scalp_risk_halt"), ns)
 
 
 def _run_scalp(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:

@@ -690,13 +690,15 @@ def measure_risk_intent_floor(r: Any, _alloc: dict[str, Any],
     modifiers are inside the intent and are never cut. Its cost is the trimmed lots on the
     floored fills plus the orders refused because the venue minimum sits above the intent.
     Neither is priced in log-wealth yet -- that needs each refused order's forward outcome --
-    so the verdict is UNMEASURED with the counts published, or NOT_BINDING when it never fired."""
+    so the verdict is UNMEASURED with the counts published, or NOT_BINDING when it never fired.
+
+    NOT_BINDING NEEDS BOTH LEDGERS (L1.28a). Floors are visible only in the fill ledger and
+    refusals only in the journal; with either absent, "it never fired" is an absence, not a
+    measurement, and reads UNMEASURED."""
     fills = _jsonl_rows(RISK_FILLS)
     refused = _jsonl_rows(REFUSED_ORDERS)
-    if fills is None and refused is None:
-        return {"verdict": UNMEASURED, "rail": r.name,
-                "why": "neither the realised-risk fill ledger nor the refusal journal exists "
-                       "on this host"}
+    missing = [p.name for p, rows in ((RISK_FILLS, fills), (REFUSED_ORDERS, refused))
+               if rows is None]
     floored = [x for x in fills or [] if x.get("floored")]
     trimmed = 0.0
     for x in floored:
@@ -705,6 +707,10 @@ def measure_risk_intent_floor(r: Any, _alloc: dict[str, Any],
         except (KeyError, TypeError, ValueError):
             continue
     n_ref = sum(1 for x in refused or [] if x.get("stage") == "risk_intent")
+    if missing and not floored and not n_ref:
+        return {"verdict": UNMEASURED, "rail": r.name, "missing": missing,
+                "why": f"{', '.join(missing)} absent on this host: whether the floor fired "
+                       f"cannot be read, so it is not reported as not binding"}
     if not floored and not n_ref:
         return {"verdict": NOT_BINDING, "rail": r.name, "n_floored": 0, "n_refused": 0,
                 "value_logw_per_day": 0.0,
@@ -723,10 +729,18 @@ def measure_realised_risk_halt(r: Any, _alloc: dict[str, Any],
     A breach (risk at the fill price and real stop above POST_TOL x intent) halts that sleeve's
     NEW entries until acknowledged or re-measured clean. Each refused family entry is journalled
     `risk_halt`; scalp refusals are not journalled per bar, so the breach count is the floor on
-    the halts this rail imposed. UNMEASURED with counts until refused entries carry outcomes."""
+    the halts this rail imposed. UNMEASURED with counts until refused entries carry outcomes.
+
+    AN ABSENT BREACH LEDGER IS NOT "NO BREACH" (L1.28a, audit 2026-10-20). The breach file is
+    only created by a breach, so its absence is clean ONLY when the fill ledger exists -- fills
+    were measured and none breached. With no fill ledger either, nothing was measured."""
     breaches = _jsonl_rows(RISK_BREACHES)
     refused = _jsonl_rows(REFUSED_ORDERS)
-    if breaches is None or not breaches:
+    if not breaches and _jsonl_rows(RISK_FILLS) is None:
+        return {"verdict": UNMEASURED, "rail": r.name,
+                "why": (f"no {RISK_FILLS.name} on this host: no fill has been measured, so "
+                        f"the absence of a breach is not evidence of none")}
+    if not breaches:
         return {"verdict": NOT_BINDING, "rail": r.name, "n_breaches": 0,
                 "value_logw_per_day": 0.0,
                 "why": "no realised-risk breach has halted a sleeve on this host"}

@@ -2139,8 +2139,8 @@ REFUSALS = BASE / "data" / "refused_orders.jsonl"
 #: THE REALISED-RISK INVARIANT'S ARTIFACTS (`mt5desk.risk_intent`, 2026-10-20). Every market fill
 #: on the family and scalp lanes is priced at its own fill price and stop against the EUR the
 #: allocator intended (one row in RISK_FILLS); a fill over POST_TOL x intent also lands in
-#: RISK_BREACHES and halts that sleeve's new entries until RISK_ACK names the breach (or the
-#: sleeve) or a pass re-measures its held risk within the bound.
+#: RISK_BREACHES and halts that sleeve's new entries until RISK_ACK names the breach id (or the
+#: sleeve with an ack time after the halt) or a pass re-measures its held risk within the bound.
 RISK_FILLS = BASE / "data" / "realised_risk_fills.jsonl"
 RISK_BREACHES = BASE / "data" / "realised_risk_breaches.jsonl"
 RISK_ACK = BASE / "data" / "realised_risk_ack.json"
@@ -3753,16 +3753,6 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         return {"ok": False, "stage": "desk_stale", "considered": True, "sep": " ",
                 "why": f"desk stale ({_DESK_STALE['verdict']}): no new risk", "mark": False,
                 "last_bar": last_bar}
-    # A REALISED-RISK HALT REFUSES NEW ENTRIES FOR THIS SLEEVE ALONE (`risk_intent`). Its open
-    # position, and every other sleeve, are untouched; the bar is marked so the refusal is
-    # journalled once per signal, not once per pass.
-    _rhalt = (st.get("risk_halt") or {}).get(name)
-    if isinstance(_rhalt, dict):
-        from mt5desk import risk_intent as _ri
-        _hwhy = _ri.halt_why(_rhalt)
-        journal_refusal(name, s["symbol"], side, "risk_halt", _hwhy)
-        return {"ok": False, "stage": "risk_halt", "considered": True, "sep": " ",
-                "why": _hwhy, "mark": True, "last_bar": last_bar}
     _open_now = _sleeve_positions(s["symbol"], name)
     if _open_now:
         _lots = sum(float(getattr(p, "volume", 0.0) or 0.0) for p in _open_now)
@@ -3782,6 +3772,18 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                 "mark": bool(step.mark), "last_bar": last_bar, "note": step.note,
                 "considered": True}
     g = step.signal
+    # A REALISED-RISK HALT REFUSES NEW ENTRIES FOR THIS SLEEVE ALONE (`risk_intent`), checked
+    # only once there IS an entry to refuse -- a signal on this bar -- so each refused signal is
+    # journalled once (the bar is marked) and a quiet bar costs one dict lookup. Its open
+    # position, and every other sleeve, are untouched.
+    _rhalt = (st.get("risk_halt") or {}).get(name)
+    if isinstance(_rhalt, dict):
+        from mt5desk import risk_intent as _ri
+        _hwhy = _ri.halt_why(_rhalt)
+        journal_refusal(name, s["symbol"], int(getattr(g, "side", side) or side), "risk_halt",
+                        _hwhy)
+        return {"ok": False, "stage": "risk_halt", "considered": True, "sep": " ",
+                "why": _hwhy, "mark": True, "last_bar": last_bar}
     # THE SIGNAL'S OWN SIDE OWNS THE BRACKET IT CARRIES (measured 2026-09-15).
     #
     # `side` above comes from the SLEEVE: `1 if str(s.get("side", "LONG")).upper() == "LONG"`.
@@ -4052,11 +4054,14 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             _intent = _ri.enforce_on_venue(
                 float(lot), _frac, float(equity), float(dist), sym,
                 lambda: float(_core._eur_per_price_unit(s["symbol"], sym)),
-                sovereign=bool(_core.allocator_sovereign()))
+                sovereign=bool(_core.allocator_sovereign()),
+                revert_min_fn=lambda: float(_core.venue_min_lot(s["symbol"], sym)))
         except Exception as exc:
+            _uwhy = f"realised-risk intent unmeasured ({type(exc).__name__}: {exc})"
+            journal_refusal(name, s["symbol"], side, "risk_intent", _uwhy, lot=float(lot),
+                            price=float(entry_ref))
             return {"ok": False, "stage": "risk_intent", "considered": True,
-                    "mark": False, "last_bar": last_bar,
-                    "why": f"realised-risk intent unmeasured ({type(exc).__name__}: {exc})"}
+                    "mark": False, "last_bar": last_bar, "why": _uwhy}
         if not _intent.get("ok"):
             journal_refusal(name, s["symbol"], side, "risk_intent", str(_intent.get("why")),
                             lot=_intent.get("pre_lot"), price=float(entry_ref))
@@ -4310,10 +4315,12 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                 _unit = None
                 with contextlib.suppress(Exception):
                     _unit = float(_core._eur_per_price_unit(s["symbol"], sym))
+                _sl, _sl_src = _ri.position_sl(mt5, getattr(res, "order", None), float(g.stop))
                 _rrow = _ri.measure_fill(
                     sleeve=name, symbol=s["symbol"], side=side,
                     volume=float(getattr(res, "volume", 0.0) or lot), fill_price=fill_px,
-                    sl=float(g.stop), unit=_unit, intended_eur=plan.get("intended_eur"),
+                    sl=_sl, sl_source=_sl_src, unit=_unit,
+                    intended_eur=plan.get("intended_eur"),
                     lane="family_market", deal=getattr(res, "deal", None),
                     pre_lot=plan.get("pre_intent_lot"),
                     floored=plan.get("risk_intent_floored"))
@@ -4564,6 +4571,21 @@ def scalp_open_basket_q(st: dict, s: dict, equity: float, sym: object) -> tuple[
         return 0.0, f"open basket unpriceable ({type(exc).__name__}: {exc})"
 
 
+def scalp_risk_halt(st: dict, s: dict, side: int, forming: object) -> dict | None:
+    """The refusal for a scalp sleeve under a realised-risk halt, or None when it is not halted.
+
+    Called only once an entry or add-on is actually due, so each refused signal is journalled
+    once (the bar is marked) and a quiet bar pays one dict lookup. No entry and no add-on for
+    THIS sleeve; its basket keeps its exits (`manage_scalp_baskets` already ran)."""
+    h = (st.get("risk_halt") or {}).get(s["name"])
+    if not isinstance(h, dict):
+        return None
+    from mt5desk import risk_intent as _ri
+    why = _ri.halt_why(h)
+    journal_refusal(s["name"], s["symbol"], int(side), "risk_halt", why)
+    return {"ok": False, "stage": "risk_halt", "forming": forming, "mark": True, "why": why}
+
+
 def scalp_risk_intent(s: dict, equity: float, n_live: int, per: float, dist: float,
                       sym: object) -> dict:
     """The realised-risk invariant for one scalp slice (`mt5desk.risk_intent.enforce`).
@@ -4580,7 +4602,8 @@ def scalp_risk_intent(s: dict, equity: float, n_live: int, per: float, dist: flo
         return _ri.enforce_on_venue(
             float(per), frac, float(equity), float(dist), sym,
             lambda: float(_core._eur_per_price_unit(s["symbol"], sym)),
-            sovereign=bool(_core.allocator_sovereign()))
+            sovereign=bool(_core.allocator_sovereign()),
+            revert_min_fn=lambda: float(_core.venue_min_lot(s["symbol"], sym)))
     except Exception as exc:
         return {"ok": False, "mark": False,
                 "why": f"realised-risk intent unmeasured ({type(exc).__name__}: {exc})"}
@@ -4635,13 +4658,6 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     if srec.get("last_signal_bar") == str(forming):
         return {"ok": False, "stage": "already_considered", "forming": forming,
                 "why": "this bar's open was already considered"}
-    _rhalt = (st.get("risk_halt") or {}).get(name)
-    if isinstance(_rhalt, dict):
-        # A REALISED-RISK HALT: no entry and no add-on for THIS sleeve (`risk_intent`). Its
-        # basket keeps its exits; `manage_scalp_baskets` already ran.
-        from mt5desk import risk_intent as _ri
-        return {"ok": False, "stage": "risk_halt", "forming": forming, "mark": True,
-                "why": _ri.halt_why(_rhalt)}
     tick = mt5.symbol_info_tick(s["symbol"])
     sym = mt5.symbol_info(s["symbol"])
     if tick is None or sym is None:
@@ -4665,6 +4681,9 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
         if not ok or basket.get("mode") != "bounded_structural":
             return {"ok": False, "stage": "no_addon", "forming": forming, "mark": True,
                     "why": "no add-on due on this bar"}
+        _halted = scalp_risk_halt(st, s, side, forming)
+        if _halted is not None:
+            return _halted
         dist = abs(price - float(basket["stop"]))
         try:
             lot = promoted_lot(equity, n_live, dist, s["symbol"], sym, s.get("risk_frac"),
@@ -4680,6 +4699,8 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
                     "why": f"add-on slice {per} is not a bounded_structural lot"}
         _intent = scalp_risk_intent(s, equity, n_live, per, dist, sym)
         if not _intent.get("ok"):
+            journal_refusal(name, s["symbol"], side, "risk_intent", str(_intent.get("why")),
+                            lot=float(per), price=price)
             return {"ok": False, "stage": "risk_intent", "forming": forming,
                     "mark": bool(_intent.get("mark", True)), "why": f"refused: {_intent['why']}"}
         per = float(_intent["lot"])
@@ -4719,6 +4740,9 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     if plan is None:
         return {"ok": False, "stage": "no_signal", "forming": forming, "mark": True,
                 "why": "no signal on this bar"}
+    _halted = scalp_risk_halt(st, s, int(plan.side), forming)
+    if _halted is not None:
+        return _halted
     # THE STOP MUST SIT OUTSIDE THE SPREAD'S REACH (2026-09-16). An M5 ATR on EURGBP is a pip
     # or two, so the plan's stop landed 1.8 pips from entry and the lot sizer -- correctly --
     # inverted that into 0.27 lots on a 560 EUR account. A stop inside two spreads is hit by the
@@ -4753,6 +4777,8 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
                 "why": f"lot {lot} below the symbol's minimum; skipped"}
     _intent = scalp_risk_intent(s, equity, n_live, per, float(plan.stop_dist), sym)
     if not _intent.get("ok"):
+        journal_refusal(name, s["symbol"], int(plan.side), "risk_intent",
+                        str(_intent.get("why")), lot=float(per), price=float(plan.entry_ref))
         return {"ok": False, "stage": "risk_intent", "forming": forming,
                 "mark": bool(_intent.get("mark", True)), "why": f"refused: {_intent['why']}"}
     per = float(_intent["lot"])
@@ -4892,9 +4918,11 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             _unit = None
             with contextlib.suppress(Exception):
                 _unit = float(_core._eur_per_price_unit(s["symbol"], sym))
+            _sl, _sl_src = _ri.position_sl(mt5, getattr(res, "order", None), stop)
             _rrow = _ri.measure_fill(
                 sleeve=name, symbol=s["symbol"], side=side,
-                volume=float(getattr(res, "volume", 0.0) or per), fill_price=fill_px, sl=stop,
+                volume=float(getattr(res, "volume", 0.0) or per), fill_price=fill_px, sl=_sl,
+                sl_source=_sl_src,
                 unit=_unit, intended_eur=plan.get("intended_eur"), lane="scalp_market",
                 deal=getattr(res, "deal", None), pre_lot=plan.get("pre_intent_lot"),
                 floored=plan.get("risk_intent_floored"))
