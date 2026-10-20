@@ -50362,9 +50362,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.1,
-      "status": "LIVE",
-      "risk_frac_source": "principal_cert_book",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
+      "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
@@ -50399,7 +50399,7 @@
         "why": "no allocator row answers to any of ['audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007', 'audchf|overnight_gap_decay|asia', 'audchf|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T23:56:31.247847+00:00",
+      "admit_scan": "2026-10-20T15:15:44.072316+00:00",
       "restored_at": "2026-10-14T01:48:12+00:00",
       "restore_reason": "already funded by the allocator at 5.50% heat; the allocator's current solve gives this sleeve 5.50% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'audchf|overnight_gap_decay|asia' (funded book))",
       "artifact": {
@@ -50421,7 +50421,9 @@
       "cost_hash": "f2bb65952c424536",
       "cost_basis_source": "row",
       "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
-      "standby_at": "2026-10-13T21:30:32.440131Z"
+      "standby_at": "2026-10-13T21:30:32.440131Z",
+      "demoted_at": "2026-10-20T17:04:54+00:00",
+      "demote_reason": "principal book disabled or row absent"
     },
     {
       "name": "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -50431,9 +50433,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.098,
-      "status": "LIVE",
-      "risk_frac_source": "principal_cert_book",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
+      "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
@@ -50468,7 +50470,7 @@
         "why": "no allocator row answers to any of ['eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007', 'eurzar|overnight_gap_decay|asia', 'eurzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 2,
-      "admit_scan": "2026-10-13T20:33:31.057971+00:00",
+      "admit_scan": "2026-10-20T15:15:44.072316+00:00",
       "restored_at": "2026-10-13T21:48:02+00:00",
       "restore_reason": "already funded by the allocator at 3.16% heat; the allocator's current solve gives this sleeve 3.16% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurzar|overnight_gap_decay|asia' (funded book))",
       "artifact": {
@@ -50490,7 +50492,9 @@
       "cost_hash": "5029427a021b7824",
       "cost_basis_source": "row",
       "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
-      "standby_at": "2026-10-13T21:30:32.440178Z"
+      "standby_at": "2026-10-13T21:30:32.440178Z",
+      "demoted_at": "2026-10-20T17:04:54+00:00",
+      "demote_reason": "principal book disabled or row absent"
     },
     {
       "name": "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -50500,9 +50504,9 @@
       "state": null,
       "exec": "family_market",
       "lot": "auto_ramp",
-      "risk_frac": 0.1,
-      "status": "LIVE",
-      "risk_frac_source": "principal_cert_book",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
+      "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
@@ -50528,16 +50532,16 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "UNMEASURED",
+        "status": "STANDBY",
         "risk_frac": 0.0,
         "streak": 0,
-        "delta_elogw_per_day": null,
-        "heat_earned": null,
-        "joined": "no allocator row answers to any of ['usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007', 'usdzar|overnight_gap_decay|asia', 'usdzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
-        "why": "no allocator row answers to any of ['usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007', 'usdzar|overnight_gap_decay|asia', 'usdzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+        "delta_elogw_per_day": 9.316e-07,
+        "heat_earned": 0.0,
+        "joined": "joined on 'usdzar|overnight_gap_decay|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 2.95 at correlation +0.09 to the held book"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-13T22:19:46.553019+00:00",
+      "admit_scan": "2026-10-20T15:15:44.072316+00:00",
       "restored_at": "2026-10-13T23:48:59+00:00",
       "restore_reason": "already funded by the allocator at 0.62% heat; the allocator's current solve gives this sleeve 0.62% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'usdzar|overnight_gap_decay|asia' (funded book))",
       "artifact": {
@@ -50559,7 +50563,9 @@
       "cost_hash": "f52589ec78a1b603",
       "cost_basis_source": "row",
       "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
-      "standby_at": "2026-10-13T21:30:32.440190Z"
+      "standby_at": "2026-10-13T21:30:32.440190Z",
+      "demoted_at": "2026-10-20T17:04:54+00:00",
+      "demote_reason": "principal book disabled or row absent"
     },
     {
       "name": "AUDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
@@ -51192,6 +51198,80 @@
       "retired_by": "live_policy",
       "canonical_identity": "gbpzar|overnight_gap_decay|asia",
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "CHFNOK.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.clock_transition.asia@m30#label=tokyo_open_side=1_stamp_hour=0', 'chfnok|clock_transition|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.clock_transition.asia@m30#label=tokyo_open_side=1_stamp_hour=0', 'chfnok|clock_transition|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-20T17:04:36+00:00",
+      "shadow_exp": 0.6008478991278474,
+      "family": "clock_transition",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+      "sleeve_id": "ff98a5d934f9d0e293f2",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "label": "tokyo_open",
+        "side": 1,
+        "stamp_hour": 0,
+        "timeframe": "M30"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-20T17:04:54+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['AUDCHF', 'EURZAR', 'USDJPY', 'USDZAR', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": 9.316e-07,
+        "heat_earned": 0.0,
+        "joined": "joined on 'chfnok|macro_conditional|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 1.53 at correlation +0.11 to the held book"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-20T17:04:42+00:00",
+      "shadow_exp": 0.06776205544239254,
+      "family": "macro_conditional",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.macro_conditional.asia@M30#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192",
+      "sleeve_id": "30fa4c28e873b624f7d7",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "regime_high": 0.7,
+        "rr": 2.0,
+        "side_in_high": 1,
+        "timeframe": "M30",
+        "ttl_bars": 192
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-20T17:04:54+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['AUDCHF', 'EURZAR', 'USDJPY', 'USDZAR', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }

@@ -1,31 +1,29 @@
 {
-  "updated_at": "2026-10-20T15:56:33+00:00",
-  "configured_sleeves": 718,
-  "represented_sleeves": 718,
+  "updated_at": "2026-10-20T17:05:06+00:00",
+  "configured_sleeves": 712,
+  "represented_sleeves": 712,
   "certified_sleeves_total": 1048,
-  "forward_clocks_total": 718,
+  "forward_clocks_total": 712,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
-  "n_distinct_param_hashes": 218,
-  "n_mechanisms": 13,
-  "retired_shadow_sleeves": 153,
+  "n_distinct_param_hashes": 216,
+  "n_mechanisms": 11,
+  "retired_shadow_sleeves": 159,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 647,
+  "sleeves_with_forward_trades": 669,
   "zero_trade_clocks": {
-    "count": 71,
+    "count": 43,
     "by_status": {
-      "BLOCKED_NO_BARS": 62,
+      "ACTIVE": 6,
+      "BLOCKED_NO_BARS": 28,
       "IDENTITY_BROKEN": 9
     },
-    "age_measured": 71,
-    "median_age_days": 13.154,
+    "age_measured": 43,
+    "median_age_days": 14.878,
     "mature_14d_without_trade": 26,
-    "fresh_attempts": 71,
-    "naturally_inactive": 0,
-    "suppressed_or_unproven": 71,
+    "fresh_attempts": 43,
+    "naturally_inactive": 6,
+    "suppressed_or_unproven": 37,
     "suppressed_examples": [
-      "UNKNOWN",
-      "UNKNOWN",
-      "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
@@ -66,25 +64,15 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 691,
+  "evidence_blocked_sleeves": 140,
   "missing_sleeves": [
     "177 certified sleeve(s)"
   ],
-  "errors": {
-    "scalp_bar_refresh": "RuntimeError: no MT5 history source: C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe: initialize failed: (-10004, 'No IPC connection') | C:\\Program Files\\Fusion Markets MetaTrader 5\\terminal64.exe: initialize failed: (-10004, 'No IPC connection')"
-  },
-  "seconds": 86.579,
+  "errors": {},
+  "seconds": 2686.305,
   "gateway_armed": true,
-  "promoted_live_sleeves": [
-    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
-  ],
-  "promoted_live_certificate_rows": [
-    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
-  ],
+  "promoted_live_sleeves": [],
+  "promoted_live_certificate_rows": [],
   "live_exposure_aliases": {},
-  "status": "FAILED"
+  "status": "ENROLMENT_GAP"
 }
