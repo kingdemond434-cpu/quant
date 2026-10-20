@@ -26,7 +26,8 @@ def _ledger(seed: int, start: datetime, n_days: int = 30, pre: int = 0) -> list[
     for h in range(0, n_days * 24, 6):
         rows.append({"entry_time": (start + timedelta(hours=h)).isoformat(),
                      "exit_time": (start + timedelta(hours=h + 2)).isoformat(),
-                     "r_multiple": rng.gauss(0.05, 2.0)})
+                     "r_multiple": (r := rng.gauss(0.05, 2.0)),
+                     "entry": 100.0, "exit": 100.0 + 2.0 * r})      # stop = 2.0 price
     return rows
 
 
@@ -52,7 +53,8 @@ def _world(tmp: Path, *, markout_syms=("XAUUSD", "EURUSD"), surface_syms=("XAUUS
         {"at": stamp, "slip": {"by_symbol": dict.fromkeys(markout_syms, blk)}}))
     (tmp / "surface.json").write_text(json.dumps(
         {"built_at": stamp,
-         "symbols": {s: {"pooled_median_spread_pts": 10.0} for s in surface_syms}}))
+         "symbols": {s: {"pooled_median_spread_pts": 10.0, "tick_size": 0.01}
+                     for s in surface_syms}}))
     return {"shadow_dir": sd, "sleeves_path": tmp / "sleeves.json",
             "markout_path": tmp / "markout.json", "surface_path": tmp / "surface.json"}
 
@@ -67,7 +69,7 @@ def test_measured_book_chooses_highest_net_gain(tmp_path: Path) -> None:
     best = max(doc["candidates"], key=lambda c: c["net_gain_elogw_per_day"])
     if best["net_gain_elogw_per_day"] <= 0:
         assert doc["chosen"] == RI.HOLD and "hold stands" in doc["why"]
-    elif doc["p_beats_runner_up"] >= RI.WIN_PROB:
+    elif doc["p_beats_hold"] >= RI.WIN_PROB:
         assert doc["chosen"] == best["interval"]
     else:
         assert doc["chosen"] is None and doc["verdict"] == "no_clear_winner"
@@ -76,12 +78,13 @@ def test_measured_book_chooses_highest_net_gain(tmp_path: Path) -> None:
                    - c["net_gain_elogw_per_day"]) < 1e-12
         assert c["cost_elogw_per_day"] >= 0.0
     # spread in R = 10 pts * |0.05/2| / 2 ; slip 0.05
-    assert abs(doc["symbols"]["XAUUSD"]["cost_r"] - (0.05 + 0.125)) < 1e-9
+    # R/pt = 0.01 / 2.0; half spread = 5 pts * 0.005 = 0.025 R; slip 0.05 > floor 0.0025
+    assert abs(doc["symbols"]["XAUUSD"]["gold_a"]["cost_r"] - (0.05 + 0.025)) < 1e-6
 
 
 def test_cost_unmeasured_symbol_is_unmeasured(tmp_path: Path) -> None:
     doc = RI.build(NOW, **_world(tmp_path, surface_syms=("XAUUSD",)))
-    assert doc["symbols"]["EURUSD"]["status"] == RI.UNMEASURED
+    assert doc["symbols"]["EURUSD"]["fx_b"]["status"] == RI.UNMEASURED
     fx = next(s for s in doc["sleeves"] if s["symbol"] == "EURUSD")
     assert fx["status"] == RI.UNMEASURED and "cost UNMEASURED" in fx["why"]
     assert doc["status"] == RI.UNMEASURED and doc["chosen"] is None
@@ -89,7 +92,8 @@ def test_cost_unmeasured_symbol_is_unmeasured(tmp_path: Path) -> None:
 
 def test_missing_markout_is_unmeasured_not_zero(tmp_path: Path) -> None:
     doc = RI.build(NOW, **_world(tmp_path, markout_syms=()))
-    assert all(v["status"] == RI.UNMEASURED for v in doc["symbols"].values())
+    assert all(c["status"] == RI.UNMEASURED for v in doc["symbols"].values()
+               for c in v.values())
     assert doc["status"] == RI.UNMEASURED
 
 
@@ -141,7 +145,8 @@ def test_wired_hourly_layer_graph_and_dashboard() -> None:
     dash = (DESK / "research" / "desk_dashboard_state.py").read_text("utf-8")
     assert 'Src("desks/mt5/reports/REBALANCE_INTERVAL.json"' in dash
     # report-only: nothing that sizes reads it
-    for organ in ("desks/mt5/research/pf_allocator.py", "desks/mt5/mt5desk/decision_core.py",
+    for organ in ("desks/mt5/research/pf_allocator.py", "desks/mt5/mt5desk/gateway.py",
+                  "desks/mt5/mt5desk/decision_core.py",
                   "desks/mt5/research/promoter.py"):
         p = root / organ
         assert p.exists(), f"{organ} moved: the report-only fence must follow it"
@@ -156,14 +161,16 @@ def test_stale_cost_is_unmeasured(tmp_path: Path) -> None:
 
 
 def test_nonpositive_or_nonfinite_cost_is_unmeasured() -> None:
-    sur = {"symbols": {"X": {"pooled_median_spread_pts": 10.0}}}
-    for r in (0.0, float("nan"), float("inf")):
+    sur = {"symbols": {"X": {"pooled_median_spread_pts": 10.0, "tick_size": 0.01}}}
+    for r in (float("nan"), float("inf")):
         m = {"slip": {"by_symbol": {"X": {"clean": {"r": {"mean": r}, "pts": {"mean": 2.0}}}}}}
-        assert RI.symbol_cost("X", m, sur)["status"] == RI.UNMEASURED
+        assert RI.symbol_cost("X", m, sur, 2.0)["status"] == RI.UNMEASURED
     m = {"slip": {"by_symbol": {"X": {"clean": {"r": {"mean": -0.05}, "pts": {"mean": 2.0}}}}}}
     for sp in (0.0, -3.0, float("nan")):
-        bad = {"symbols": {"X": {"pooled_median_spread_pts": sp}}}
-        assert RI.symbol_cost("X", m, bad)["status"] == RI.UNMEASURED
+        bad = {"symbols": {"X": {"pooled_median_spread_pts": sp, "tick_size": 0.01}}}
+        assert RI.symbol_cost("X", m, bad, 2.0)["status"] == RI.UNMEASURED
+    for stop in (None, 0.0, -1.0, float("nan")):
+        assert RI.symbol_cost("X", m, sur, stop)["status"] == RI.UNMEASURED
 
 
 def test_silent_ledger_is_unmeasured_and_book_partial(tmp_path: Path) -> None:
@@ -192,7 +199,7 @@ def test_trade_is_booked_at_exit_not_entry() -> None:
     rows = [{"entry_time": (start + timedelta(hours=1)).isoformat(),
              "exit_time": (start + timedelta(hours=30)).isoformat(), "r_multiple": 1.0},
             {"entry_time": (start + timedelta(hours=2)).isoformat(), "r_multiple": 9.0}]
-    tr, no_exit = RI.forward_trades(rows, start)
+    tr, no_exit, _stops, _ = RI.forward_trades(rows, start)
     assert no_exit == 1 and tr == [(start + timedelta(hours=30), 1.0)]
     grid = RI.hourly_returns({"a": tr}, start, NOW)
     assert grid[30] == {"a": RI.RISK_UNIT} and grid[1] == {}
@@ -204,3 +211,56 @@ def test_hold_chosen_when_nothing_beats_it() -> None:
     res = RI.evaluate({"a": a, "b": list(a)}, {"a": 1.0, "b": 1.0}, {"a": 5.0, "b": 5.0},
                       start, NOW)
     assert res["chosen"] == RI.HOLD and "hold stands" in res["why"]
+
+
+def test_tiny_slip_does_not_read_measured_with_zero_cost() -> None:
+    # 1e-7 R of slip over 3 pts with a 20-pt spread: the v2 ratio-of-means made this 0.0 R.
+    m = {"slip": {"by_symbol": {"X": {"clean": {"r": {"mean": 1e-7}, "pts": {"mean": 3.0}}}}}}
+    sur = {"symbols": {"X": {"pooled_median_spread_pts": 20.0, "tick_size": 0.01}}}
+    c = RI.symbol_cost("X", m, sur, 2.0)
+    assert c["status"] == RI.MEASURED and c["cost_r"] > 0.0
+    assert c["slip_r_charged"] == c["slip_floor_r"] > 0.0
+    assert abs(c["half_spread_r"] - 10 * 0.01 / 2.0) < 1e-12
+    assert RI.symbol_cost("X", m, sur, None)["status"] == RI.UNMEASURED
+
+
+def test_future_cost_stamp_is_unmeasured(tmp_path: Path) -> None:
+    doc = RI.build(NOW, **_world(tmp_path, cost_age_h=-24.0))
+    assert doc["cost_freshness"]["status"] == RI.UNMEASURED
+    assert "FUTURE" in doc["cost_freshness"]["why"]
+    ok = RI.cost_freshness({"at": (NOW + timedelta(seconds=30)).isoformat()},
+                           {"built_at": NOW.isoformat()}, NOW)
+    assert ok["status"] == RI.MEASURED
+
+
+def test_scalp_schema_on_broker_clock() -> None:
+    start = NOW - timedelta(days=10)
+    rows = [  # broker = UTC + 3h; the first was entered 2h BEFORE forward_start in UTC
+        {"opened_at": (start + timedelta(hours=1)).isoformat(),
+         "closed_at": (start + timedelta(hours=4)).isoformat(), "r": 1.0},
+        {"opened_at": (start + timedelta(hours=5)).isoformat(),
+         "closed_at": (start + timedelta(hours=7)).isoformat(), "r": -1.0}]
+    tr, no_exit, _s, needs = RI.forward_trades(rows, start, 3.0)
+    assert not needs and no_exit == 0
+    assert tr == [(start + timedelta(hours=4), -1.0)]
+    assert RI.forward_trades(rows, start, None)[3] is True
+    assert RI.broker_offset("sc", [{"sleeves": {"sc": {"broker_offset_h": 3.0}}}]) == 3.0
+
+
+def test_trailing_silence_is_unmeasured(tmp_path: Path) -> None:
+    doc = RI.build(NOW, **_world(tmp_path, fx_days=16))   # 16 of 30 days, then silent
+    fx = next(s for s in doc["sleeves"] if s["sleeve"] == "fx_b")
+    assert fx["status"] == RI.UNMEASURED and fx["recent_day_coverage"] < RI.MIN_DAY_COVERAGE
+
+
+def test_bootstrap_is_against_hold_with_seed_spread() -> None:
+    start = NOW - timedelta(days=20)
+    a, b = [], []
+    for h in range(20 * 24):
+        x = 30.0 if h % 2 == 0 else -27.0
+        a.append((start + timedelta(hours=h), x))
+        b.append((start + timedelta(hours=h), -x))
+    res = RI.evaluate({"a": a, "b": b}, {"a": 1.0, "b": 1.0}, {"a": 0.0, "b": 0.0}, start, NOW)
+    assert max(c[1] or 0 for c in RI.CANDIDATES) <= RI.BLOCK_H
+    assert res["point_best"] != RI.HOLD
+    assert len(res["p_beats_hold_by_seed"]) == len(RI.SEEDS) and res["p_spread"] is not None
