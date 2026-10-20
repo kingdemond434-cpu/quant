@@ -393,7 +393,7 @@ def test_indirect_child_with_a_planted_regime_edge_passes_and_its_mirror_does_no
     assert owed >= 0 and len(gates) == 2                       # both halves were tested
     verdicts = {g["cell"].rsplit(":", 2)[1]: g["verdict"] for g in gates}
     assert verdicts["gt"] == "PASS" and verdicts["lt"] in ("FAIL", "UNDERPOWERED"), gates
-    assert all(g["n_trials"] == 2 for g in gates)               # both recorded
+    assert all(g["n_recorded"] == 2 for g in gates)               # both recorded
     assert len(cells) == 1
     c = cells[0]
     assert c["family"] == "session_range_breakout" and c["params"]["rr"] == 2.0
@@ -437,13 +437,13 @@ def test_regime_placebo_passes_a_planted_regime_and_fails_a_null() -> None:
     mask = np.repeat(rng.random(T // 300) < 0.4, 300)[:T]      # slow regime, duty ~0.4
     pos = np.sort(rng.choice(T, 1500, replace=False))
     noise = rng.normal(0, 0.004, pos.size)
-    planted = regime_placebo(pos, noise + np.where(mask[pos], 0.0015, 0.0), mask, n_trials=24)
+    planted = regime_placebo(pos, noise + np.where(mask[pos], 0.0015, 0.0), mask, n_recorded=24)
     assert planted["verdict"] == "PASS", planted
-    assert planted["p_placebo"] <= planted["p_bar"] and planted["n_trials"] == 24
+    assert planted["p_placebo"] <= planted["p_bar"] and planted["n_recorded"] == 24
     fails = 0
     for seed in range(8):
         r = np.random.default_rng(100 + seed).normal(0, 0.004, pos.size)
-        fails += regime_placebo(pos, r, mask, n_trials=24, seed=seed)["verdict"] != "PASS"
+        fails += regime_placebo(pos, r, mask, n_recorded=24, seed=seed)["verdict"] != "PASS"
     assert fails == 8
     # a regime that is never on, or holds too few signals, is UNMEASURED -- never a verdict
     assert regime_placebo(pos, noise, np.zeros(T, bool))["verdict"] == "UNMEASURED"
