@@ -678,6 +678,193 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
                        f"{book:.2f} (h_i={frac:.4f})")
 
 
+#: THE PRINCIPAL'S MINIMUM-LOT BOOK ON FUSION (zuck, "BOOKS_PATCH v5", approved 2026-10-13;
+#: /mnt/project-files/sizing/seven_sleeve_2026-10-13/BOOKS_PATCH.md items 1 and 6, auto-survival
+#: heat v12 §v12-Book). At ~EUR 485 every one of these sizes BELOW the venue minimum, so under
+#: ALLOCATOR SOVEREIGNTY (`implementable_lot`) none of them would ever send an order. The
+#: principal accepted the disclosed one-year ruin of the four at 0.01 (54.5% measured / 42.2%
+#: pooled / 3.5% certificate, equity < EUR 300) and ordered exactly these four at EXACTLY the
+#: venue minimum:
+#:
+#:     gold_asia                               gateway window gold_asia, clock XAUUSD.asia
+#:     usdnok_carry_asia_p_ff35bb7c8427d66f    external.USDNOK@M5.carry.p=ff35bb7c8427d66f
+#:     eurils_formula_asia_p_673857a649d3c271  external.EURILS.formula.p=673857a649d3c271
+#:     eurzar_carry_asia_p_8339edce23032d21    external.EURZAR@M15.carry.p=8339edce23032d21
+#:
+#: SCOPE IS THE CODE CONSTANT AND NOTHING ELSE. `MINLOT_OVERRIDE.json` can only NARROW it (a name
+#: not here is ignored); its absence, an unreadable file, `enabled` other than literal true, a
+#: `lot` other than 0.01 or an `account` other than the terminal's login turns the override OFF,
+#: and every sleeve -- these four included -- is then sized exactly as sovereignty sizes it. The
+#: lot is never more than 0.01 and never applied to any other name. The twins
+#: (`usdnok_carry_asia_p_d5391837ec28998b`, `eurzar_carry_asia_p_55e2dabcb8c43d1f`) are NOT here.
+MINLOT_OVERRIDE_SLEEVES: frozenset[str] = frozenset({
+    "gold_asia",
+    "usdnok_carry_asia_p_ff35bb7c8427d66f",
+    "eurils_formula_asia_p_673857a649d3c271",
+    "eurzar_carry_asia_p_8339edce23032d21",
+})
+#: Each pinned row's certificate cell. A sleeves.json row of that name carrying any other cell is
+#: not the sleeve the principal funded and gets no override. gold_asia is the gateway's own window.
+MINLOT_OVERRIDE_PINS: dict[str, str | None] = {
+    "gold_asia": None,
+    "usdnok_carry_asia_p_ff35bb7c8427d66f": "external.USDNOK@M5.carry.p=ff35bb7c8427d66f",
+    "eurils_formula_asia_p_673857a649d3c271": "external.EURILS.formula.p=673857a649d3c271",
+    "eurzar_carry_asia_p_8339edce23032d21": "external.EURZAR@M15.carry.p=8339edce23032d21",
+}
+#: The ONE lot the override sends. Not configurable upward: a file `lot` other than this is off.
+MINLOT_OVERRIDE_LOT = 0.01
+#: The box's switch (a state path; written by a person on the box, read by the gateway alone).
+MINLOT_OVERRIDE_FILE = _DESK / "data" / "MINLOT_OVERRIDE.json"
+
+
+def minlot_override_active(account: object = None,
+                           path: Path | None = None) -> tuple[frozenset[str], str]:
+    """(the names the override applies to this pass, why). FAILS CLOSED to the empty set.
+
+    `account` is the terminal's login; when the file names an `account`, it must equal it (an
+    unreadable login is a mismatch). The file may only narrow `MINLOT_OVERRIDE_SLEEVES`.
+    """
+    p = path or MINLOT_OVERRIDE_FILE
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        return frozenset(), (f"MINLOT_OVERRIDE off: {p.name} absent or unreadable "
+                             f"({type(exc).__name__})")
+    if not isinstance(doc, dict) or doc.get("enabled") is not True:
+        return frozenset(), (f"MINLOT_OVERRIDE off: {p.name} is not enabled "
+                             f"(needs \"enabled\": true)")
+    lot = doc.get("lot", MINLOT_OVERRIDE_LOT)
+    if isinstance(lot, bool) or not isinstance(lot, (int, float)) \
+            or abs(float(lot) - MINLOT_OVERRIDE_LOT) > 1e-12:
+        return frozenset(), (f"MINLOT_OVERRIDE off: lot {lot!r} is not {MINLOT_OVERRIDE_LOT}; the "
+                             f"file cannot change the principal's lot")
+    if "account" in doc:
+        want = doc.get("account")
+        if isinstance(want, bool) or not isinstance(want, int) or isinstance(account, bool) \
+                or not isinstance(account, int) or want != account:
+            return frozenset(), ("MINLOT_OVERRIDE_ACCOUNT_MISMATCH: the file is bound to another "
+                                 "login, or this terminal's login is unreadable")
+    names = doc.get("sleeves")
+    if not isinstance(names, list):
+        return frozenset(), "MINLOT_OVERRIDE off: \"sleeves\" is not a list"
+    keep = frozenset(n for n in names if isinstance(n, str) and n in MINLOT_OVERRIDE_SLEEVES)
+    ignored = sorted(str(n) for n in names
+                     if not (isinstance(n, str) and n in MINLOT_OVERRIDE_SLEEVES))
+    why = f"MINLOT_OVERRIDE on for {sorted(keep)} at {MINLOT_OVERRIDE_LOT} lot"
+    if ignored:
+        why += f"; ignored (not in the code's set): {ignored}"
+    return keep, why
+
+
+def stamp_minlot_override(sleeves: list[dict[str, Any]], active: frozenset[str],
+                          equity: float) -> list[str]:
+    """Mark, in place, the roster entries the override sizes this pass; clear every other mark.
+
+    The mark is set HERE and nowhere else: a `minlot_override` field arriving on a sleeves.json
+    row is popped, so no writer can opt a row in. Below `PROMOTED_MIN_EQUITY` (the ruin line the
+    principal's waiver was priced at) nothing is marked and sizing reverts to sovereignty.
+    """
+    notes: list[str] = []
+    ok_equity = isinstance(equity, (int, float)) and math.isfinite(float(equity)) \
+        and float(equity) >= PROMOTED_MIN_EQUITY
+    for s in sleeves:
+        s.pop("minlot_override", None)
+        name = str(s.get("name") or "")
+        if name in active and name in MINLOT_OVERRIDE_SLEEVES:
+            if ok_equity:
+                s["minlot_override"] = True
+            else:
+                notes.append(f"MINLOT_OVERRIDE {name}: equity {equity} below "
+                             f"{PROMOTED_MIN_EQUITY:.0f}; sized by sovereignty this pass")
+    return notes
+
+
+def minlot_override_lot(s: dict[str, Any], symbol: str, info: object | None = None) -> float | None:
+    """The override's lot for roster entry `s`: None when it does not apply (size as before),
+    `MINLOT_OVERRIDE_LOT` when it does, 0.0 when the venue cannot take exactly that lot."""
+    if s.get("minlot_override") is not True or str(s.get("name") or "") \
+            not in MINLOT_OVERRIDE_SLEEVES:
+        return None
+    vmin = venue_min_lot(symbol, info)
+    step = float(getattr(info, "volume_step", 0.01) or 0.01) if info is not None else 0.01
+    n = MINLOT_OVERRIDE_LOT / step if step > 0 else float("nan")
+    if not (vmin <= MINLOT_OVERRIDE_LOT + 1e-9) or not (abs(n - round(n)) < 1e-6):
+        return 0.0
+    return float(MINLOT_OVERRIDE_LOT)
+
+
+def minlot_override_rows(path: Path, active: frozenset[str],
+                         admitted: set[str] | None = None,
+                         pol: Any = None) -> tuple[list[dict[str, Any]], list[str]]:
+    """The pinned FX rows the gateway's LIVE-only roster does not carry, read BY EXACT NAME.
+
+    The three FX rows sit RETIRED in sleeves.json, retired by `live_policy` itself on 2026-09-25
+    when their symbols were outside the live universe -- an admission verdict, not an evidence
+    one. No promoter path re-promotes an existing name, so the override reads them here:
+      * exactly one row of that exact name (never a sibling or a prefix), whose certificate cell
+        equals the pin;
+      * status STANDBY, or RETIRED by `live_policy` (any other retirement, KILL or QUARANTINE is
+        a verdict on the edge and is never traded);
+      * no `standby_reason` (an ordered hold, e.g. the principal's stop, always binds);
+      * exec `family_market`, and `live_policy.refuse` admits it under TODAY's policy.
+    LIVE rows are skipped: `load_sleeves_verbose` already admitted (or refused) them. Returns the
+    rows as LIVE copies for `roster`, plus one note per refusal for the gateway's log.
+    """
+    rows: list[dict[str, Any]] = []
+    notes: list[str] = []
+    wanted = sorted(n for n in active
+                    if n in MINLOT_OVERRIDE_SLEEVES and MINLOT_OVERRIDE_PINS.get(n))
+    if not wanted:
+        return rows, notes
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        all_rows = [r for r in data.get("sleeves", []) if isinstance(r, dict)]
+    except Exception as exc:
+        return [], [f"OVERRIDE_ROW_MISSING: sleeves file unreadable ({type(exc).__name__})"]
+    try:
+        from mt5desk.live_policy import policy, refuse
+    except ImportError:                                    # pragma: no cover - box path only
+        return [], ["OVERRIDE_POLICY_REFUSED: live policy unimportable"]
+    p = pol if pol is not None else policy()
+    for name in wanted:
+        if admitted and name in admitted:
+            continue
+        hits = [r for r in all_rows if r.get("name") == name]
+        if len(hits) != 1:
+            notes.append(f"OVERRIDE_ROW_MISSING {name}: {len(hits)} rows of that exact name")
+            continue
+        row = hits[0]
+        status = str(row.get("status") or "").upper()
+        if status == "LIVE":
+            continue
+        cert = row.get("certificate")
+        cell = cert.get("cell") if isinstance(cert, dict) else cert
+        if cell != MINLOT_OVERRIDE_PINS[name]:
+            notes.append(f"OVERRIDE_PIN_MISMATCH {name}: certificate {cell!r}")
+            continue
+        if not (status == "STANDBY" or (status == "RETIRED"
+                                        and row.get("retired_by") == "live_policy")):
+            notes.append(f"OVERRIDE_STATUS_REFUSED {name}: {status} "
+                         f"(retired_by {row.get('retired_by')!r}) is a verdict, not an admission")
+            continue
+        if str(row.get("standby_reason") or "").strip():
+            notes.append(f"OVERRIDE_HOLD {name}: standby_reason {row.get('standby_reason')!r}")
+            continue
+        if row.get("exec") != "family_market":
+            notes.append(f"OVERRIDE_EXEC_REFUSED {name}: exec {row.get('exec')!r}")
+            continue
+        why = refuse(row, p)
+        if why:
+            notes.append(f"OVERRIDE_POLICY_REFUSED {name}: {why}")
+            continue
+        live = {k: v for k, v in row.items()
+                if k not in ("retired_at", "retire_reason", "retired_by", "demoted_at",
+                             "demote_reason", "minlot_override")}
+        live.update(status="LIVE", risk_frac=0.0, risk_frac_source="minlot_override")
+        rows.append(live)
+    return rows, notes
+
+
 def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) -> float:
     """The effective risk fraction of a NON-BOOK promoted sleeve: base clamp x authority x fade.
 

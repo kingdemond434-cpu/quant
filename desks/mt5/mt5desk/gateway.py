@@ -285,6 +285,21 @@ from mt5desk.decision_core import (
     min_lot_risk_eur as min_lot_risk_eur,
 )
 from mt5desk.decision_core import (
+    MINLOT_OVERRIDE_SLEEVES as MINLOT_OVERRIDE_SLEEVES,
+)
+from mt5desk.decision_core import (
+    minlot_override_active as minlot_override_active,
+)
+from mt5desk.decision_core import (
+    minlot_override_lot as minlot_override_lot,
+)
+from mt5desk.decision_core import (
+    minlot_override_rows as minlot_override_rows,
+)
+from mt5desk.decision_core import (
+    stamp_minlot_override as stamp_minlot_override,
+)
+from mt5desk.decision_core import (
     stamp_feed_health as stamp_feed_health,
 )
 from mt5desk.decision_core import (
@@ -2271,6 +2286,44 @@ def _load_retired_gold() -> dict:
     return _core.load_retired_gold(GOLD_RETIRED_FILE)
 
 
+def minlot_override_roster(sleeves: list[dict[str, object]],
+                           equity: float) -> list[dict[str, object]]:
+    """The roster with the principal's minimum-lot book applied (decision_core.MINLOT_OVERRIDE_*).
+
+    Reads data/MINLOT_OVERRIDE.json against this terminal's login, appends each pinned FX row the
+    LIVE-only roster does not carry (by exact name, pin, status and TODAY's live policy -- see
+    `decision_core.minlot_override_rows`), and marks the entries the sizers then send at exactly
+    the override's lot. Absent or unreadable file: nothing appended, nothing marked.
+    """
+    try:
+        login = _prov.current_account(mt5.account_info()).get("login")
+    except Exception:
+        login = None
+    active, why = minlot_override_active(login)
+    log(why)
+    out = list(sleeves)
+    if active:
+        have = {str(s.get("name") or "") for s in out}
+        extra, notes = minlot_override_rows(SLEEVES_FILE, active, admitted=have)
+        for note in notes:
+            log(note)
+        if extra:
+            # Through `roster` itself, so a pinned row reaches the lanes in exactly the shape a
+            # LIVE row of the same spec would; every gold window is passed as retired so none is
+            # emitted twice.
+            retired_all = {f"gold_{w[0]}": {"reason": "minlot_override: rows only"}
+                           for w in GOLD_WINDOWS}
+            built, _ = roster(retired_all, extra)
+            for s in built:
+                if str(s.get("name") or "") not in have:
+                    out.append(s)
+                    have.add(str(s.get("name") or ""))
+                    log(f"MINLOT_OVERRIDE admits pinned row {s.get('name')} ({s.get('symbol')})")
+    for note in stamp_minlot_override(out, active, equity):
+        log(note)
+    return out
+
+
 def sleeve_set() -> list[dict]:
     """All active sleeves: gold book + promoted, with window metadata.
 
@@ -3228,6 +3281,15 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         return {"ok": False, "stage": "unpriceable", "considered": True,
                 "why": f"cannot price risk ({exc}); skipped",
                 "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
+    # THE PRINCIPAL'S MINIMUM-LOT BOOK: a named sleeve sends exactly the override's lot, and the
+    # modifiers below may refuse it (duplicate at the floor, risk envelope) but never enlarge it.
+    _ov = minlot_override_lot(s, s["symbol"], sym)
+    if _ov is not None:
+        if not (_ov > 0.0):
+            return {"ok": False, "stage": "minlot_override_unimplementable", "considered": True,
+                    "why": "the venue cannot take exactly the override's lot; no order",
+                    "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
+        lot = float(_ov)
     # CURRENCY-LEG BALANCE, TWO-SIDED (2026-09-15). Measured that day: eight forex positions
     # closed, all eight on their stop, -34.05 EUR -- and six of them were ONE bet, because
     # EURCHF short x4 and USDCHF short x2 are both long CHF. The desk could already SEE this
@@ -3349,6 +3411,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             return {"ok": False, "stage": "risk_envelope", "considered": True,
                     "mark": False, "last_bar": last_bar,
                     "why": f"final risk envelope unmeasured ({type(exc).__name__}: {exc})"}
+    if _ov is not None and float(lot) > 0.0:
+        lot = float(_ov)                       # exactly the override's lot, never a boost above it
     return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
             "lot": float(lot), "dist": float(dist),
             "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
@@ -3358,7 +3422,9 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             "leg_mult": float(leg_mult), "leg_why": leg_why,
             "macro_mult": float(macro_mult), "macro_why": macro_why,
             "risk_envelope_capped": risk_envelope_capped,
-            "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
+            "basis": ((f"minlot_override: exactly {_ov:.2f} lot (principal BOOKS_PATCH v5); "
+                       if _ov is not None else "")
+                      + f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
                       f"{' from the allocator book' if from_book else ''} at the signal's own "
                       f"{dist:.5g} stop; {leg_why}; {macro_why}")}
 
@@ -4120,6 +4186,12 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     GOLD_WINDOWS rows alone. The principal removed the special 0.02 floor; the
     allocator's target and the symbol's own venue minimum govern implementability.
     """
+    _ov = minlot_override_lot(s, s["symbol"], sym)
+    if _ov is not None:
+        # THE PRINCIPAL'S MINIMUM-LOT BOOK (decision_core.MINLOT_OVERRIDE_SLEEVES): exactly the
+        # venue minimum for the four named sleeves, never more, whatever the allocator says.
+        return float(_ov), (f"minlot_override: exactly {_ov:.2f} lot (principal BOOKS_PATCH v5, "
+                            f"data/MINLOT_OVERRIDE.json)")
     mode = s.get("lot")
     if mode == "auto":
         return gold_book_lot(
@@ -4207,6 +4279,14 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+    try:
+        sleeves = minlot_override_roster(sleeves, equity)
+    except Exception as exc:
+        # FAIL CLOSED: an override that cannot be read is off, and every mark it may have left
+        # is cleared, so the pass sizes exactly as sovereignty sizes it.
+        for _s in sleeves:
+            _s.pop("minlot_override", None)
+        log(f"MINLOT_OVERRIDE off this pass ({type(exc).__name__}: {exc})")
 
     # RESTART HOLDING A POSITION (2026-09-30). Every pass is a fresh process, so every pass is a
     # restart: before management and before anything new is placed, the venue's own book under
