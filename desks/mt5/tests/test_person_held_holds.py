@@ -154,6 +154,8 @@ class _Trends:
 
     def __call__(self, url: str, headers: Any = None, body: Any = None) -> bytes:
         self.calls.append(url)
+        if url.endswith("/robots.txt"):
+            return b"User-agent: *\nAllow: /\n"
         if self.refuse:
             err = urllib.error.HTTPError(url, self.refuse, "x", Message(), io.BytesIO(b""))
             raise fs.FetchError(f"http_{self.refuse}", url) from err
@@ -163,45 +165,54 @@ class _Trends:
 
 
 @pytest.mark.parametrize("code", [401, 403, 429])
-def test_gtrends_refusal_is_a_person_hold_no_backoff_expiry_releases(
-        tmp_path: Path, code: int) -> None:
-    state, reg = tmp_path / "b.json", tmp_path / "r.json"
-    h = fs.fetch_gtrends(_Trends(refuse=code), ROW, {}, NOW, block_state=state, register=reg)
+def test_gtrends_refusal_is_held_in_the_access_record_too_and_one_release_frees_both(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, code: int) -> None:
+    from desks.mt5.research import hard_stop as hs
+    reg = tmp_path / "blocked_sources.json"
+    monkeypatch.setattr(fs, "GTRENDS_REGISTER", reg)
+    h = fs.fetch_gtrends(_Trends(refuse=code), ROW, {}, NOW)
     assert h.status in ("METHOD_BLOCKED", "NEEDS_KEY")
     assert pf.person_hold("https://trends.google.com/trends/api/explore") != ""
-    # hard_stop's marker expires (here: deleted, as an answered pass would) -- still nothing.
-    state.unlink()
+    # The hard_stop register vanishes (a reset box, a lost file -- not a person): the access
+    # record still holds, 400 days on, and nothing is sent.
+    reg.unlink()
     web = _Trends()
-    h2 = fs.fetch_gtrends(web, ROW, {}, NOW + timedelta(days=400), block_state=state,
-                          register=reg)
-    assert web.calls == [] and h2.status in ("METHOD_BLOCKED", "NEEDS_KEY") and not h2.obs
-    pf.release("site:google.com", "principal", path=pf.ACCESS_STATE)
-    assert fs.fetch_gtrends(_Trends(), ROW, {}, NOW, block_state=state,
-                            register=reg).status == "OK"
+    h2 = fs.fetch_gtrends(web, ROW, {}, NOW + timedelta(days=400))
+    assert web.calls == [] and not h2.obs
+    # A person's named release of the mirrored hard_stop hold releases the access hold it covers.
+    fs.fetch_gtrends(_Trends(refuse=code), ROW, {}, NOW)          # placed again in both
+    hs.release(reg, "site:trends.google.com", "principal", now=NOW + timedelta(days=1))
+    ok = fs.fetch_gtrends(_Trends(), ROW, {}, NOW + timedelta(days=2))
+    assert ok.status == "OK" and pf.person_hold("https://trends.google.com/x") == ""
 
 
-def test_the_side_channel_miner_consults_the_person_hold(
+def test_the_side_channel_miner_consults_the_access_record(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import google_trends_miner as gtm
     calls: list[str] = []
 
     class _R:
-        status_code = 429
-        headers: ClassVar[dict[str, str]] = {}
-        text = ""
+        def __init__(self, code: int) -> None:
+            self.status_code = code
+            self.headers: dict[str, str] = {}
+            self.text = ""
 
     def _get(url: str, headers: Any = None, timeout: float = 0) -> _R:
         calls.append(url)
-        return _R()
+        return _R(404 if url.endswith("/robots.txt") else 429)
 
     monkeypatch.setattr(gtm.requests, "get", _get)
     monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
+    monkeypatch.setattr(gtm, "ROBOTS_STATE", tmp_path / "robots.json")
     monkeypatch.setattr(gtm, "BLOCKED_REGISTER", tmp_path / "reg.json")
     gtm.mine_google_trends(now=NOW)
-    assert len(calls) == 1 and pf.person_hold("https://trends.google.com/x") == "METHOD_BLOCKED"
-    (tmp_path / "block.json").unlink()               # hard_stop's backoff gone: still held
+    pages = [u for u in calls if not u.endswith("/robots.txt")]
+    assert len(pages) == 1 and pf.person_hold("https://trends.google.com/x") == "METHOD_BLOCKED"
+    (tmp_path / "block.json").unlink()                 # its own copy and the register gone:
+    (tmp_path / "reg.json").unlink()                   # the access record still holds
+    n = len(calls)
     assert gtm.mine_google_trends(now=NOW + timedelta(days=400)) == []
-    assert len(calls) == 1 and gtm.LAST_PASS["status"] == "METHOD_BLOCKED"
+    assert len(calls) == n and gtm.LAST_PASS.get("skipped")
 
 
 # ------------------------------------------------------------------------------ the fetch door

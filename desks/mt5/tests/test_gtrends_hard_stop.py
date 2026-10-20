@@ -1,8 +1,8 @@
 """free_stack's Google Trends fetcher honours the hard stop and the PIT law (2026-10-14).
 
-* The shared marker (`research/hard_stop.py`, the file `google_trends_miner` also writes) is
-  checked before every request; a 401/403/429 writes it, records `google_trends` in the blocked
-  register, sets the status and ends the pass with nothing from the refused term kept.
+* The hard stop itself (person-held, `research/hard_stop.py`) is Breadth's and is pinned by
+  `test_free_stack_gtrends_stop.py` / `test_google_trends_reading.py`; the backoff-marker tests
+  that lived here were retired with the 1h..7d ladder (audit GD_LANDING_TRAIN_6eb7a91b4).
 * The request carries the desk's honest User-Agent.
 * Every Trends point is stamped no earlier than the fetch that returned it -- never back-dated to
   its own period on the first fetch -- and the trailing isPartial point is never counted.
@@ -33,6 +33,12 @@ from libs.data import polite_fetch as pf  # noqa: E402
 FIX = _DESK / "tests" / "fixtures" / "free_stack"
 NOW = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
 ROW = {"id": "gtrends", "terms": [["gold price", ["XAUUSD"]], ["recession", ["US500"]]]}
+
+
+@pytest.fixture(autouse=True)
+def _register_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The hard stop's register is the box's file: a test never writes it."""
+    monkeypatch.setattr(fs, "GTRENDS_REGISTER", tmp_path / "blocked_sources.json")
 
 
 def _fx(name: str) -> bytes:
@@ -66,35 +72,8 @@ def test_gtrends_sends_the_desk_ua(tmp_path: Path) -> None:
     assert fs.UA == pf.DESK_UA and not pf.looks_like_browser(fs.UA)
 
 
-def test_a_429_writes_the_marker_records_the_block_and_stops(tmp_path: Path) -> None:
-    state, reg = tmp_path / "google_trends_block.json", tmp_path / "blocked_sources.json"
-    web = _Trends(refuse=(4, 429))          # term 1 answered; term 2's multiline refused
-    h = fs.fetch_gtrends(web, ROW, {}, NOW, block_state=state, register=reg)
-    assert len(web.calls) == 4, "a request was sent after the refusal"
-    assert h.status == "METHOD_BLOCKED"
-    assert {o["key"] for o in h.obs} == {"gt_gold_price"}, "the refused term leaked data"
-    marker = json.loads(state.read_text("utf-8"))
-    assert marker["http_status"] == 429 and marker["url_class"] == "widgetdata"
-    assert marker["backoff_source"] == "retry_after"
-    entry = json.loads(reg.read_text("utf-8"))["sources"]["google_trends"]
-    assert entry["diagnosis"] == "METHOD_BLOCKED"
-    # The next pass, inside the backoff, sends nothing at all.
-    again = _Trends()
-    h2 = fs.fetch_gtrends(again, ROW, {}, NOW + timedelta(seconds=60), block_state=state,
-                          register=reg)
-    assert again.calls == [] and h2.status == "METHOD_BLOCKED" and not h2.obs
 
 
-def test_a_401_is_needs_key_and_an_active_marker_from_the_miner_is_honoured(
-        tmp_path: Path) -> None:
-    state, reg = tmp_path / "b.json", tmp_path / "r.json"
-    h = fs.fetch_gtrends(_Trends(refuse=(1, 401)), ROW, {}, NOW, block_state=state, register=reg)
-    assert h.status == "NEEDS_KEY" and not h.obs
-    hs = fs._hard_stop()
-    state.write_text(json.dumps(hs.block_marker(403, "explore", {}, NOW, None)), "utf-8")
-    web = _Trends()
-    fs.fetch_gtrends(web, ROW, {}, NOW + timedelta(minutes=5), block_state=state, register=reg)
-    assert web.calls == []
 
 
 def test_gtrends_history_is_stamped_at_fetch_time_never_backfilled(tmp_path: Path) -> None:
@@ -121,32 +100,3 @@ def test_the_trailing_partial_point_is_never_counted_as_final(tmp_path: Path) ->
     assert partial_day not in {r["day"] for r in h.raw}
 
 
-def test_the_side_channel_miner_is_honest_and_stops_on_429(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """side_channels/google_trends_miner: the desk's UA, and a 429 ends the pass with the shared
-    marker written -- it is not swallowed while the loop carries on."""
-    side = str(_DESK / "side_channels")
-    if side not in sys.path:
-        sys.path.insert(0, side)
-    import google_trends_miner as gtm
-    assert gtm.HEADERS["User-Agent"] == pf.DESK_UA
-    calls: list[str] = []
-
-    class _R:
-        status_code = 429
-        headers: ClassVar[dict[str, str]] = {"Retry-After": "600"}
-        text = ""
-
-    def _get(url: str, headers: dict[str, str] | None = None, timeout: float = 0) -> _R:
-        calls.append(str((headers or {}).get("User-Agent")))
-        return _R()
-
-    monkeypatch.setattr(gtm.requests, "get", _get)
-    monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
-    monkeypatch.setattr(gtm, "BLOCKED_REGISTER", tmp_path / "reg.json")
-    assert gtm.mine_google_trends(now=NOW) == []
-    assert calls == [pf.DESK_UA]                          # one request, then the stop
-    assert gtm.LAST_PASS["status"] == "METHOD_BLOCKED"
-    assert json.loads((tmp_path / "block.json").read_text("utf-8"))["http_status"] == 429
-    assert gtm.mine_google_trends(now=NOW + timedelta(seconds=60)) == []
-    assert calls == [pf.DESK_UA]                          # the next pass sends nothing
