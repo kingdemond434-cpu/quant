@@ -1775,6 +1775,153 @@ def main() -> int:
                     "cells": dict(sorted(contested.items())[:40])}
 
 
+    # DOOR (a) OF THE NET-EDGE SPINE: THE INTAKE RANKS ON NET, NOT ON GROSS (2026-09-23).
+    # `net_edge_spine` publishes net = gross - spread/slippage - impact - financing - commission
+    # - the multiplicity charge already owed, per (symbol, family), in data/net_edge_ranks.json.
+    # A candidate whose SIGN flips after costs is stamped COST_DEAD WITH ITS DECOMPOSITION and
+    # kept -- the spine donates its lower-turnover descendant back through the `net_edge` seat,
+    # which is the `cost_dead -> lower_turnover_descendant` route the coevolution lab declares.
+    # Nothing is dropped, nothing is vetoed, and the order is the only thing that changes.
+    net_note: dict = {"ranked": False}
+    try:
+        _ranks = json.loads((OUT.parent.parent / "net_edge_ranks.json").read_text("utf-8"))
+        _by_cell = _ranks.get("by_cell") or {}
+        _n_dead = 0
+        for c in candidates.values():
+            hit = _by_cell.get(f"{c.get('symbol')}|{c.get('family')}")
+            if not isinstance(hit, dict):
+                continue
+            c["net_edge"] = hit.get("net")
+            c["gross_edge"] = hit.get("gross")
+            c["net_verdict"] = hit.get("verdict")
+            c["net_is_bound"] = hit.get("net_is_bound")
+            c["net_decomposition"] = hit.get("terms")
+            if str(hit.get("verdict") or "").startswith("COST_DEAD"):
+                c["cost_dead"] = True
+                c["cost_dead_route"] = "net_edge seat -> lower_turnover_descendant"
+                _n_dead += 1
+        net_note = {"ranked": True, "n_priced": sum(1 for c in candidates.values()
+                                                    if c.get("net_edge") is not None),
+                    "n_cost_dead": _n_dead, "source": "data/net_edge_ranks.json",
+                    "rule": "ranked by NET; a COST_DEAD cell is marked and kept, never dropped"}
+    except (OSError, ValueError) as exc:
+        net_note = {"ranked": False, "why": f"{type(exc).__name__}: net_edge_ranks.json is "
+                                            "unreadable; the order falls back to insertion and "
+                                            "no candidate is priced (UNMEASURED, not free)"}
+    ordered = sorted(candidates.values(),
+                     key=lambda c: (c.get("net_edge") is None,
+                                    -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
+
+    # PUBLISH FIRST, ANNOTATE SECOND (2026-10-20). The artifact below was stamped
+    # 2026-10-03 on the trading box while every scheduled task reported rc 0. The compile loop
+    # is bounded by `--budget-s` (intake at 35%, compiling at 85%), but EVERYTHING after it was
+    # not: the hypothesis-graph pass parses the judge's whole ledger (gigabytes on the box --
+    # see `_graph_snapshot`), fits the graveyard model over every row and appends one BORN row
+    # per candidate, all before the first byte of `miner_candidates.json` was written and
+    # before the cursor was saved. A pass killed there by the leg's cap published nothing,
+    # saved no cursor, and the next pass re-read the same rows and died at the same place --
+    # the 2026-09-30 "timed out every hour and moved 0 artifacts" shape, moved downstream of
+    # the bound that cured it.
+    #
+    # So the canonical artifacts, the deepening queue, the factory receipts and the cursor are
+    # now durable BEFORE the annotation pass starts. The graph pass then annotates the same
+    # candidates and republishes; if it is killed, the fresh unannotated publication stands
+    # and `graph.pending` says so on its face. Annotation is stamped-never-filtered, so a
+    # candidate without it is exactly as admissible to the judge as one with it.
+    from libs.data.pit import stamp_or_refuse
+
+    # These rules were compiled in this pass; source event dates cannot backdate a rule.
+    candidate_time = datetime.now(UTC).isoformat()
+
+    def _publish(graph_note: dict) -> None:
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        convertible_total = sum(int(v["convertible_rows"]) for v in per_source.values())
+        converted_total = sum(int(v["converted_rows"]) for v in per_source.values())
+        invalid_total = sum(int(v["invalid_cells"]) for v in per_source.values())
+        recovered_total = sum(int(v["deepening_recovered"]) for v in per_source.values())
+        terminal_refusal_total = sum(
+            int(v["deepening_terminal_refusals"]) for v in per_source.values())
+        unresolved_total = sum(int(v["unresolved_rows"]) for v in per_source.values())
+        rows_total = sum(int(v["rows"]) for v in per_source.values())
+        refusal_total = sum(int(v["valid_refusals"]) for v in per_source.values())
+        disposition_total = converted_total + refusal_total
+        producer_debt = [s for s, v in sorted(per_source.items())
+                         if int(v["owes_convertible_rows"]) > 0]
+        emitted, provenance_refused = stamp_or_refuse(
+            [{**candidate, "available_time": candidate_time, "ingested_time": candidate_time}
+             for candidate in ordered], "miner_candidate_compiler")
+        if provenance_refused:
+            raise ValueError(f"Compiler refused {len(provenance_refused)} unstamped rules")
+        emitted_tasks, refused_tasks = stamp_or_refuse(
+            [{**task, "available_time": candidate_time, "ingested_time": candidate_time}
+             for task in deepening.values()], "miner_deepening_queue")
+        if refused_tasks:
+            raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
+        _atomic_json(OUT, {
+            "compiled_at": now.isoformat(timespec="seconds"),
+            "hypotheses": emitted,
+            "net_ranking": net_note,
+            "per_source": per_source,
+            "seats": seats,
+            "seats_dark": seats_dark,
+            "agreement": {"candidates_with_2plus_sources": agreement},
+            "disagreement": disagreement,
+            "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
+            "blinding": {k: v for k, v in blinding_note.items() if k != "seats"}
+            | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
+                                       if d.get("rows_with_outcomes")}},
+            "graph": graph_note,
+            "impossible_metrics": fence_tally.to_dict(),
+            "rows_accounted": rows_total,
+            "executable_candidates": len(candidates),
+            "deepening_tasks": len(deepening),
+            "conversion_contract": {
+                "convertible_rows": convertible_total,
+                "converted_rows": converted_total,
+                "convertible_conversion_rate": round(
+                    converted_total / convertible_total, 6) if convertible_total else 1.0,
+                "silent_loss": convertible_total - converted_total,
+                "conversion_debt": convertible_total - converted_total,
+                "invalid_cells": invalid_total,
+                "deepening_recovered_rows": recovered_total,
+                "deepening_terminal_refusals": terminal_refusal_total,
+                "unresolved_rows": unresolved_total,
+                "disposition_debt": unresolved_total,
+                "terminally_disposed_rows": disposition_total,
+                "disposition_coverage": round(disposition_total / rows_total, 6)
+                if rows_total else 1.0,
+                "producers_with_debt": producer_debt,
+                "complete": (converted_total == convertible_total and invalid_total == 0
+                             and unresolved_total == 0 and not _LAST_INTAKE.get("bound_hit")),
+                "rule": ("100% of genuinely convertible rows emit a valid executable AlphaCell; "
+                         "100% of all rows must ultimately become a cell or named refusal; pending "
+                         "deepening stays UNRESOLVED and is never forged into strategy yield"),
+            },
+            "rule": "exact recipe or structured causal data only; no prose-to-family guessing",
+        })
+        _lineage(OUT)
+        _atomic_json(DEEPEN, {
+            "built_at": now.isoformat(timespec="seconds"),
+            "tasks": emitted_tasks,
+            "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
+        })
+
+    _publish({"updated": False, "premortem": False,
+              "pending": ("published before the hypothesis-graph pass; a republish with "
+                          "prior failures, failure prior and premortem follows when that "
+                          "pass completes")})
+    # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
+    # The factory producer reconciles these on its next pass; it may never assert its own ACK.
+    if factory_receipts:
+        FACTORY_RECEIPTS.mkdir(parents=True, exist_ok=True)
+        for receipt in factory_receipts:
+            target = FACTORY_RECEIPTS / f"{receipt['input_version_id']}.json"
+            tmp = target.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
+            os.replace(tmp, target)
+    _save_cursor()
+    if bank is not None:
+        bank.flush()
     # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
     # its miner row as parent, and every one that lands in a parameter region the gauntlet has
     # already failed carries that count on its face. It is not rejected -- the gauntlet decides
@@ -1785,7 +1932,7 @@ def main() -> int:
     # 632 compiled candidates carried no premortem and no prior-failure count, and the graph
     # held no compiler row at all -- this block was failing every hour and `except: pass` made
     # it look like a graph with nothing to say.
-    graph_note: dict = {"updated": False, "premortem": False}
+    graph_note = {"updated": False, "premortem": False}
     try:
         from libs.research.hypothesis_graph import record_candidates
         g = _graph_snapshot()
@@ -1844,131 +1991,8 @@ def main() -> int:
     except Exception as exc:
         graph_note["why"] = f"{type(exc).__name__}: {exc}"[:300]
         print(f"hypothesis graph not updated (non-fatal): {graph_note['why']}")
-
-    # DOOR (a) OF THE NET-EDGE SPINE: THE INTAKE RANKS ON NET, NOT ON GROSS (2026-09-23).
-    # `net_edge_spine` publishes net = gross - spread/slippage - impact - financing - commission
-    # - the multiplicity charge already owed, per (symbol, family), in data/net_edge_ranks.json.
-    # A candidate whose SIGN flips after costs is stamped COST_DEAD WITH ITS DECOMPOSITION and
-    # kept -- the spine donates its lower-turnover descendant back through the `net_edge` seat,
-    # which is the `cost_dead -> lower_turnover_descendant` route the coevolution lab declares.
-    # Nothing is dropped, nothing is vetoed, and the order is the only thing that changes.
-    net_note: dict = {"ranked": False}
-    try:
-        _ranks = json.loads((OUT.parent.parent / "net_edge_ranks.json").read_text("utf-8"))
-        _by_cell = _ranks.get("by_cell") or {}
-        _n_dead = 0
-        for c in candidates.values():
-            hit = _by_cell.get(f"{c.get('symbol')}|{c.get('family')}")
-            if not isinstance(hit, dict):
-                continue
-            c["net_edge"] = hit.get("net")
-            c["gross_edge"] = hit.get("gross")
-            c["net_verdict"] = hit.get("verdict")
-            c["net_is_bound"] = hit.get("net_is_bound")
-            c["net_decomposition"] = hit.get("terms")
-            if str(hit.get("verdict") or "").startswith("COST_DEAD"):
-                c["cost_dead"] = True
-                c["cost_dead_route"] = "net_edge seat -> lower_turnover_descendant"
-                _n_dead += 1
-        net_note = {"ranked": True, "n_priced": sum(1 for c in candidates.values()
-                                                    if c.get("net_edge") is not None),
-                    "n_cost_dead": _n_dead, "source": "data/net_edge_ranks.json",
-                    "rule": "ranked by NET; a COST_DEAD cell is marked and kept, never dropped"}
-    except (OSError, ValueError) as exc:
-        net_note = {"ranked": False, "why": f"{type(exc).__name__}: net_edge_ranks.json is "
-                                            "unreadable; the order falls back to insertion and "
-                                            "no candidate is priced (UNMEASURED, not free)"}
-    ordered = sorted(candidates.values(),
-                     key=lambda c: (c.get("net_edge") is None,
-                                    -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
-
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    convertible_total = sum(int(v["convertible_rows"]) for v in per_source.values())
-    converted_total = sum(int(v["converted_rows"]) for v in per_source.values())
-    invalid_total = sum(int(v["invalid_cells"]) for v in per_source.values())
-    recovered_total = sum(int(v["deepening_recovered"]) for v in per_source.values())
-    terminal_refusal_total = sum(
-        int(v["deepening_terminal_refusals"]) for v in per_source.values())
-    unresolved_total = sum(int(v["unresolved_rows"]) for v in per_source.values())
-    rows_total = sum(int(v["rows"]) for v in per_source.values())
-    refusal_total = sum(int(v["valid_refusals"]) for v in per_source.values())
-    disposition_total = converted_total + refusal_total
-    producer_debt = [s for s, v in sorted(per_source.items())
-                     if int(v["owes_convertible_rows"]) > 0]
-    from libs.data.pit import stamp_or_refuse
-
-    # These rules were compiled in this pass; source event dates cannot backdate a rule.
-    candidate_time = datetime.now(UTC).isoformat()
-    emitted, provenance_refused = stamp_or_refuse(
-        [{**candidate, "available_time": candidate_time, "ingested_time": candidate_time}
-         for candidate in ordered], "miner_candidate_compiler")
-    if provenance_refused:
-        raise ValueError(f"Compiler refused {len(provenance_refused)} unstamped rules")
-    emitted_tasks, refused_tasks = stamp_or_refuse(
-        [{**task, "available_time": candidate_time, "ingested_time": candidate_time}
-         for task in deepening.values()], "miner_deepening_queue")
-    if refused_tasks:
-        raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
-    _atomic_json(OUT, {
-        "compiled_at": now.isoformat(timespec="seconds"),
-        "hypotheses": emitted,
-        "net_ranking": net_note,
-        "per_source": per_source,
-        "seats": seats,
-        "seats_dark": seats_dark,
-        "agreement": {"candidates_with_2plus_sources": agreement},
-        "disagreement": disagreement,
-        "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
-        "blinding": {k: v for k, v in blinding_note.items() if k != "seats"}
-        | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
-                                   if d.get("rows_with_outcomes")}},
-        "graph": graph_note,
-        "impossible_metrics": fence_tally.to_dict(),
-        "rows_accounted": rows_total,
-        "executable_candidates": len(candidates),
-        "deepening_tasks": len(deepening),
-        "conversion_contract": {
-            "convertible_rows": convertible_total,
-            "converted_rows": converted_total,
-            "convertible_conversion_rate": round(
-                converted_total / convertible_total, 6) if convertible_total else 1.0,
-            "silent_loss": convertible_total - converted_total,
-            "conversion_debt": convertible_total - converted_total,
-            "invalid_cells": invalid_total,
-            "deepening_recovered_rows": recovered_total,
-            "deepening_terminal_refusals": terminal_refusal_total,
-            "unresolved_rows": unresolved_total,
-            "disposition_debt": unresolved_total,
-            "terminally_disposed_rows": disposition_total,
-            "disposition_coverage": round(disposition_total / rows_total, 6)
-            if rows_total else 1.0,
-            "producers_with_debt": producer_debt,
-            "complete": (converted_total == convertible_total and invalid_total == 0
-                         and unresolved_total == 0 and not _LAST_INTAKE.get("bound_hit")),
-            "rule": ("100% of genuinely convertible rows emit a valid executable AlphaCell; "
-                     "100% of all rows must ultimately become a cell or named refusal; pending "
-                     "deepening stays UNRESOLVED and is never forged into strategy yield"),
-        },
-        "rule": "exact recipe or structured causal data only; no prose-to-family guessing",
-    })
-    _lineage(OUT)
-    _atomic_json(DEEPEN, {
-        "built_at": now.isoformat(timespec="seconds"),
-        "tasks": emitted_tasks,
-        "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
-    })
-    # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
-    # The factory producer reconciles these on its next pass; it may never assert its own ACK.
-    if factory_receipts:
-        FACTORY_RECEIPTS.mkdir(parents=True, exist_ok=True)
-        for receipt in factory_receipts:
-            target = FACTORY_RECEIPTS / f"{receipt['input_version_id']}.json"
-            tmp = target.with_suffix(".json.tmp")
-            tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
-            os.replace(tmp, target)
-    _save_cursor()
-    if bank is not None:
-        bank.flush()
+    # The annotated republication. Same candidates, same order, same rule time.
+    _publish(graph_note)
     print(f"miner compiler: {sum(int(v['rows']) for v in per_source.values())} row(s) accounted; "
           f"{len(candidates)} executable candidate(s); {len(deepening)} exact-rule task(s)")
     return 0
