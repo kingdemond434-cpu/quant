@@ -1307,7 +1307,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         row["order_id"] = _xa.bounded(
                             lambda: venue.place(sym, side, lot, stop=float(g.stop),
                                                 take_profit=float(g.target)),
-                            what=f"e8_executor:{sym} send")
+                            what=f"e8_executor:{sym} send", account="e8", symbol=sym)
                         row["status"] = "SENT"
                         row["sent_at"] = _sent_at.isoformat()
                         row["acked_at"] = datetime.now(tz=UTC).isoformat()

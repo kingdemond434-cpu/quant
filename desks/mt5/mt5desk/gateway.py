@@ -305,6 +305,20 @@ from mt5desk.decision_core import (
     cert_book_zero as cert_book_zero,
 )
 from mt5desk.decision_core import (
+    FUSION_DEADMAN_MAX_AGE_S as FUSION_DEADMAN_MAX_AGE_S,
+    FUSION_DEADMAN_STAMP as FUSION_DEADMAN_STAMP,
+    fusion_deadman_armed as fusion_deadman_armed,
+)
+from mt5desk.decision_core import (  # the principal's zeros, in code (audit r5 must-fix 1, 2)
+    GAP_DECAY_ZERO as GAP_DECAY_ZERO,
+    GOLD_ASIA_ONLY_ZERO as GOLD_ASIA_ONLY_ZERO,
+    PRINCIPAL_ZERO as PRINCIPAL_ZERO,
+    SCALP_LANE_ZERO as SCALP_LANE_ZERO,
+    book_name as book_name,
+    cert_zero_row as cert_zero_row,
+    principal_zero as principal_zero,
+)
+from mt5desk.decision_core import (
     MINLOT_OVERRIDE_TARGET_FRAC as MINLOT_OVERRIDE_TARGET_FRAC,
     FUSION_LIVE_SERVER as FUSION_LIVE_SERVER,
     FUSION_ACCOUNT_FILE as FUSION_ACCOUNT_FILE,
@@ -352,7 +366,8 @@ from mt5desk.gateway_config_fallback import (
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
                  symbol: str = GOLD_SYMBOL, info: object | None = None,
                  risk_frac: float | None = None,
-                 decay_faded: object = None, from_book: bool = False) -> float:
+                 decay_faded: object = None, from_book: bool = False, *,
+                 cert_zero: bool = False) -> float:
     """Dynamic lot for a promoted sleeve -- `decision_core.promoted_lot`, bound here by name.
 
     A `def` AND NOT A BARE RE-EXPORT, for one reason: scripts/check_risk_units.py (L1.67)
@@ -363,7 +378,7 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     live authority otherwise, the L1.59 fade is reduce-only, and no heat is no lot.
     """
     return _core.promoted_lot(equity, live_n, dist_usd, symbol, info, risk_frac, decay_faded,
-                              from_book=from_book)
+                              from_book=from_book, cert_zero=cert_zero)
 
 
 def auto_lot(equity: float, dist_usd: float | None = None,
@@ -560,7 +575,7 @@ def _book_key(s: dict, book: dict[str, float] | None) -> str | None:
     # window, so the version is not part of its identity to the book, and the join emptied on a
     # suffix. Only `_v<digits>` is stripped and only when the full name missed, so a book key that
     # carries its own version still matches exactly first and a genuine miss stays a miss.
-    base = re.sub(r"_v\d+$", "", name)
+    base = book_name(name)        # ONE RULE with the cert-book zero (decision_core.book_name)
     if base != name:
         if base in book:
             return base
@@ -673,14 +688,21 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
     fraction downstream, and the heat cap still runs after this.
     """
     book, why = _allocator_book()
+    # THE PRINCIPAL'S ZEROS ARE LAID LAST AND NEED NO FILE (decision_core.PRINCIPAL_ZERO, audit
+    # r5 must-fix 1): pf.book funded the retired xau_m5_anti_breakout_overlap at 0.042909 on
+    # 2026-10-20, and a void cert book used to hand every pinned key back to the allocator.
+    pins = {k: 0.0 for k in PRINCIPAL_ZERO["fusion"]}
     try:
         from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
         cert = load_cert_book(CERT_BOOK_FILE, "fusion")
     except Exception as exc:
-        return book, f"{why}; cert book unreadable ({type(exc).__name__}: {exc})"
+        return ({**(book or {}), **pins},
+                f"{why}; cert book unreadable ({type(exc).__name__}: {exc}); "
+                f"{len(pins)} principal zeros")
     if not cert:
-        return book, why
-    return {**(book or {}), **cert}, f"{why}; cert book sets {len(cert)}"
+        return {**(book or {}), **pins}, f"{why}; {len(pins)} principal zeros (no cert book)"
+    return ({**(book or {}), **cert, **pins},
+            f"{why}; cert book sets {len(cert)}; {len(pins)} principal zeros")
 
 
 def cap_by_heat(sleeves: list[dict], equity: float,
@@ -3345,7 +3367,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         # `from_book=` spelled literally: see `bracket_lane_lot` for why the fence greps it.
         lot = promoted_lot(equity, n_live, dist, s["symbol"], sym, s.get("risk_frac"),
                            s.get("decay_faded"),
-                           from_book=(s.get("sized_by") == "allocator_book"))
+                           from_book=(s.get("sized_by") == "allocator_book"),
+                           cert_zero=cert_zero_row(s))
     except Exception as exc:
         return {"ok": False, "stage": "unpriceable", "considered": True,
                 "why": f"cannot price risk ({exc}); skipped",
@@ -4037,7 +4060,8 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
         try:
             lot = promoted_lot(equity, n_live, dist, s["symbol"], sym, s.get("risk_frac"),
                                s.get("decay_faded"),
-                               from_book=(s.get("sized_by") == "allocator_book"))
+                               from_book=(s.get("sized_by") == "allocator_book"),
+                               cert_zero=cert_zero_row(s))
         except Exception as exc:
             return {"ok": False, "stage": "unpriceable", "forming": forming, "mark": True,
                     "why": f"cannot price add-on risk ({exc}); skipped"}
@@ -4097,7 +4121,8 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     try:
         lot = promoted_lot(equity, n_live, plan.stop_dist, s["symbol"], sym, s.get("risk_frac"),
                            s.get("decay_faded"),
-                           from_book=(s.get("sized_by") == "allocator_book"))
+                           from_book=(s.get("sized_by") == "allocator_book"),
+                           cert_zero=cert_zero_row(s))
     except Exception as exc:
         return {"ok": False, "stage": "unpriceable", "forming": forming, "mark": True,
                 "why": f"cannot price risk ({exc}); skipped"}
@@ -4373,7 +4398,8 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
         # fraction reaching the venue UN-RE-SHRUNK -- is one a rename could silently drop.
         lot = promoted_lot(equity, n_live, dist, s["symbol"], sym,
                            s.get("risk_frac"), s.get("decay_faded"),
-                           from_book=(s.get("sized_by") == "allocator_book"))
+                           from_book=(s.get("sized_by") == "allocator_book"),
+                           cert_zero=cert_zero_row(s))
         return float(lot), (
             f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
             f"{' from the allocator book' if from_book else ''}"
@@ -4506,6 +4532,13 @@ def main() -> None:
     NEW_RISK_OK, _ident_why = release_gate()
     if not NEW_RISK_OK:
         log(f"RELEASE IDENTITY refuses NEW risk: {_ident_why} -- managing open positions only")
+    # THE ARMED DEADMAN (audit r5 must-fix 4): no new Fusion risk unless the ruin rail's stamp
+    # reads LIVE and is fresh. A hung pass is bounded by run_gateway_loop's watchdog; what is
+    # already open is bounded by the rail, which flattens from its own process.
+    _dm_ok, _dm_why = fusion_deadman_armed()
+    if not _dm_ok:
+        NEW_RISK_OK = False
+        log(f"{_dm_why} -- managing open positions only")
     # THE FUSION DAILY-LOSS RAIL (decision_core.fusion_daily_loss, FUSION_DAILY_LOSS_FRAC): at
     # -10% of the server day's starting equity the account takes no new risk for the rest of the
     # day, through the same NEW_RISK_OK gate every lane already obeys (so no bar is burned), and
@@ -4643,6 +4676,18 @@ def main() -> None:
         if from_book:
             _s["risk_frac"] = float(_book[_key])
             _s["sized_by"] = "allocator_book"
+            _s["book_key"] = _key
+        if cert_zero_row(_s):
+            # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the
+            # forgone sleeve is a missed-growth line once per sleeve per day.
+            _s["risk_frac"], _s["sized_by"] = 0.0, "allocator_book"
+            from mt5desk import fusion_rails as _rails
+            _rails.line_once("principal_zero_pin",
+                             f"{_s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
+                             sleeve=_s["name"], symbol=_s.get("symbol"), book_key=_key,
+                             code_pin=principal_zero(_s["name"]) or principal_zero(_key),
+                             why="principal zero (decision_core.PRINCIPAL_ZERO / CERT_BOOK_LIVE "
+                                 "0.0); no order")
         if _s.get("exec") not in ("family_market", "scalp_market"):
             # EVERY BRACKET-LANE SLEEVE IS BILLED AT THE ORDER IT WILL ACTUALLY SEND -- gold,
             # promoted and fixed-lot alike. Three external audit rounds found the same defect

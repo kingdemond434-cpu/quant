@@ -779,7 +779,7 @@ def fenced_send(mt5: Any, venue: Any, doc: dict[str, Any], *, holder: str, side:
         if xwhy:
             return None, xwhy
         try:
-            return _xa.bounded(send, what=f"{holder} send"), None
+            return _xa.bounded(send, what=f"{holder} send", account="e8", symbol=SYMBOL), None
         finally:
             with contextlib.suppress(Exception):
                 _xa.bounded(lambda: _xa.publish_tradelocker(venue, source="e8_gold"),
@@ -818,12 +818,31 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     kelly = load_kelly_survival(KELLY_FILE, "e8")
     # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
     # 2026-10-07). Its gold keys are the gateway's (`gold_asia`); this lane names windows bare.
-    cert = cert_gold_windows(load_cert_book(CERT_BOOK_FILE, "e8"))
+    _cert_raw = load_cert_book(CERT_BOOK_FILE, "e8")
+    cert = cert_gold_windows(_cert_raw)
     if cert:
         kelly = {**(kelly or {}), **cert}
+    # AN ENABLED BOOK IS A WHITELIST FOR THE GOLD WINDOWS (audit hourly pass 15): a window the
+    # loaded book does not name stands aside at 0.0, never RISK_FRAC -- a book writer that drops a
+    # key must not reopen a window. This holds for gold_asia too: asia must be named to trade.
+    # A VOID book (None) is covered by the code pins below and, for asia, by the solve/RISK_FRAC.
+    absent: dict[str, str] = {}
+    if _cert_raw is not None:
+        for _w, _h, _r in GOLD_WINDOWS:
+            if _w not in cert:
+                absent[_w] = (f"absent from the enabled cert book (CERT_BOOK_LIVE.json e8 has no "
+                              f"gold_{_w}); stands aside")
+        kelly = {**(kelly or {}), **dict.fromkeys(absent, 0.0)}
+    # THE PRINCIPAL'S ZEROS NEED NO FILE (decision_core.PRINCIPAL_ZERO["e8"], audit r5 must-fix
+    # 1; zuck 2026-10-20 21:52Z, gold asia only): a void cert book used to send london_am and
+    # afternoon back to RISK_FRAC or the KELLY_SURVIVAL value.
+    from mt5desk.decision_core import PRINCIPAL_ZERO
+    _solved = kelly is not None
+    pinned = cert_gold_windows({k: 0.0 for k in PRINCIPAL_ZERO["e8"]})
+    kelly = {**(kelly or {}), **pinned}
     doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
                 "cert_book_windows": cert or None,
-                "sizing_source": "kelly_survival" if kelly is not None else "policy RISK_FRAC",
+                "sizing_source": "kelly_survival" if _solved else "policy RISK_FRAC",
                 "kelly_risk": kelly})
     # THE ONE GUARD DECIDES (2026-10-20). This read the raw `stood_down` flag out of the guard's
     # state file, which only the executor's `assess` call ever rolled to a new server day: on
@@ -933,6 +952,22 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     for due in due_now:
         name, spec = due["window"], due["spec"]
         frac, frac_src = window_risk(name, kelly)
+        if name in pinned or name in absent:
+            why = (absent[name] if name not in pinned else
+                   "principal zero (zuck 2026-10-20 21:52Z: gold asia only; "
+                   "decision_core.GOLD_ASIA_ONLY_ZERO); no order")
+            doc["skipped"].append({"window": name, "why": why})
+            # One missed-growth line per window per day (research/missed_growth reads it).
+            _seen = state.setdefault("pin_logged", {})
+            if _seen.get(name) != today:
+                _seen[name] = today
+                _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                         "status": "RAIL_BLOCKED",
+                         "rail": ("principal_zero_pin" if name in pinned
+                                  else "cert_book_absent_window"), "why": why,
+                         "missed_growth_risk_usd": round(equity * RISK_FRAC, 2),
+                         "armed": bool(armed)})
+            continue
         if not frac > 0:
             doc["skipped"].append({"window": name, "why": (
                 "stands aside: the survival-constrained growth solve "
@@ -1036,7 +1071,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                         SYMBOL, "buy" if side == "buy_stop" else "sell", lot,
                         price=float(s["price"]), stop=float(s["sl"]),
                         take_profit=float(s["tp"])))
-                    oid = _xa.bounded(_send, what=f"e8_gold:{name}:{side} send")
+                    oid = _xa.bounded(_send, what=f"e8_gold:{name}:{side} send",
+                                      account="e8", symbol=SYMBOL)
                     row.update({"status": "SENT", "order_id": oid})
                     legs[side] = {"id": oid, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
                     log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} "

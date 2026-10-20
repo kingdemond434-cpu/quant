@@ -311,7 +311,11 @@ def publish(account: str, exposure: Exposure, *, source: str, key: str,
     """Write `account`'s book atomically. Raises on failure (the caller logs it).
 
     Call it UNDER `placement_lock`, from a reading taken under it (`publish_under_lock` does
-    both): a book written from an older snapshot can erase another lane's fresh send."""
+    both): a book written from an older snapshot can erase another lane's fresh send. A thread
+    whose bounded call timed out (`_ABANDONED`) is refused: its lock is gone."""
+    if threading.get_ident() in _ABANDONED:
+        raise RuntimeError("this publish's bounded call timed out; its lock is released, so it "
+                           "may not write")
     if not valid_key(key):
         raise ValueError("a book must carry a valid account key")
     want = expected_key(account)
@@ -323,8 +327,12 @@ def publish(account: str, exposure: Exposure, *, source: str, key: str,
     doc = {"account": account, "account_key": key,
            "at": (now or datetime.now(tz=UTC)).isoformat(),
            "source": source, "covers": "all", "symbols": exposure}
-    tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")
+    tmp = p.with_name(f"{p.name}.{os.getpid()}.{threading.get_ident()}.tmp")
     tmp.write_text(json.dumps(doc, indent=1, sort_keys=True), encoding="utf-8")
+    if threading.get_ident() in _ABANDONED:            # timed out while it was reading
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        raise RuntimeError("this publish's bounded call timed out; not written")
     for attempt in range(10):
         try:
             os.replace(tmp, p)
@@ -412,7 +420,15 @@ def read_book(account: str, *, now: datetime | None = None, max_age_s: float = M
     if want is not None and key != want:
         return None, (f"the {account} book is of another account than the one this box "
                       f"declares; its positions are not this account's")
-    return book, f"{account} book {age:.0f}s old"
+    try:
+        held = inflight(account, now=now)
+    except (OSError, ValueError, TypeError) as exc:
+        return None, (f"the {account} in-flight file is unreadable ({type(exc).__name__}); its "
+                      f"pending sends are unknown")
+    for sym in held:
+        book[sym] = {"long": True, "short": True}
+    tail = f"; {len(held)} symbol(s) held by an in-flight send" if held else ""
+    return book, f"{account} book {age:.0f}s old{tail}"
 
 
 def opposite_block(book: Exposure | None, symbol: object, side: object, *,
@@ -588,14 +604,67 @@ class LockedCallTimeout(TimeoutError):
     """A call made under the placement lock did not return in time. It MAY STILL LAND."""
 
 
-def bounded(fn: Any, *, timeout_s: float | None = None, what: str = "send") -> Any:
+#: Thread idents whose bounded call timed out: a publish they reach later must not write (it would
+#: land outside the lock, from a read older than whatever the lock's next holder published).
+_ABANDONED: set[int] = set()
+
+
+def inflight_path(account: str) -> Path:
+    if account not in ACCOUNTS:
+        raise ValueError(f"unknown account {account!r}")
+    return XACCT_DIR / f"{account}_inflight.json"
+
+
+def mark_inflight(account: str, symbol: object, *, now: datetime | None = None,
+                  hold_s: float = MAX_AGE_S) -> None:
+    """Record that a send on `account`/`symbol` timed out and MAY STILL LAND: until `hold_s` has
+    passed, `read_book(account)` reports BOTH sides of that symbol as held, so the other account
+    cannot take the opposite side of an order its book does not show yet (audit r5 should-fix).
+    Never raises (a failure to mark is logged by the caller's own timeout path)."""
+    sym = norm(symbol)
+    if not sym:
+        return
+    with contextlib.suppress(Exception):
+        p = inflight_path(account)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            doc = json.loads(p.read_text(encoding="utf-8"))
+            doc = doc if isinstance(doc, dict) else {}
+        except (OSError, ValueError):
+            doc = {}
+        until = (now or datetime.now(tz=UTC)).timestamp() + float(hold_s)
+        doc[sym] = max(float(doc.get(sym) or 0.0), until)
+        tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, p)
+
+
+def inflight(account: str, *, now: datetime | None = None) -> set[str]:
+    """Symbols on `account` with a timed-out send that may still land (see `mark_inflight`).
+    An unreadable file blocks NOTHING here but is reported by `read_book` as no book."""
+    p = inflight_path(account)
+    if not p.exists():
+        return set()
+    doc = json.loads(p.read_text(encoding="utf-8"))
+    if not isinstance(doc, dict):
+        raise ValueError("the in-flight file is not an object")
+    t = (now or datetime.now(tz=UTC)).timestamp()
+    return {str(k) for k, v in doc.items() if float(v) > t}
+
+
+def bounded(fn: Any, *, timeout_s: float | None = None, what: str = "send",
+            account: str | None = None, symbol: object = None) -> Any:
     """`fn()`, or `LockedCallTimeout` when it has not returned within `timeout_s` (default
     `LOCKED_SEND_TIMEOUT_S`, read at call time).
 
     Run in a daemon thread so the caller -- and the lock it holds -- is released on time. The
     thread is NOT killed (Python cannot), so a timed-out send may still reach the venue: the
     caller treats it as a failed send whose outcome is unknown, never as "not sent". An exception
-    `fn` raises is re-raised here unchanged."""
+    `fn` raises is re-raised here unchanged.
+
+    `account` and `symbol` (a send): on a timeout the symbol is marked IN FLIGHT on that account
+    (`mark_inflight`) BEFORE this returns, so the caller's lock is released only once the other
+    account's readers see both sides held. A timed-out thread can never publish (`_ABANDONED`)."""
     box: dict[str, Any] = {}
 
     def run() -> None:
@@ -603,12 +672,18 @@ def bounded(fn: Any, *, timeout_s: float | None = None, what: str = "send") -> A
             box["v"] = fn()
         except BaseException as exc:                 # re-raised in the caller's thread
             box["e"] = exc
+        finally:
+            _ABANDONED.discard(threading.get_ident())
 
     t = threading.Thread(target=run, name=f"xacct-bounded:{what}"[:60], daemon=True)
     t.start()
     limit = float(LOCKED_SEND_TIMEOUT_S if timeout_s is None else timeout_s)
     t.join(max(0.0, limit))
     if t.is_alive():
+        if t.ident is not None:
+            _ABANDONED.add(t.ident)
+        if account is not None and symbol is not None:
+            mark_inflight(account, symbol)
         raise LockedCallTimeout(f"{what} did not return within {limit:g}s under the placement "
                                 f"lock; it may still land")
     if "e" in box:

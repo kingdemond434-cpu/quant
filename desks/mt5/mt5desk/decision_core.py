@@ -617,23 +617,80 @@ def gold_lot(equity: float, dist_usd: float | None = None,
     return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
 
 
-def cert_book_zero(name: object, venue: str = "fusion") -> bool:
-    """True when the principal's certified book (data/CERT_BOOK_LIVE.json, `venue` block) names
-    `name` at exactly 0.0 -- a principal-set "this window sends nothing" (zuck 2026-10-20 21:52Z:
-    gold_asia only, gold_london_am and gold_afternoon at 0.0).
+def book_name(name: object) -> str:
+    """The name a sleeve has TO THE BOOK: its own name with a trailing `_v<digits>` removed.
 
-    False on every doubt (no name, file absent/disabled/invalid, key absent, value above 0): a
-    reader that cannot see the pin sizes exactly as before. Read at call time, so the path a test
-    or the box points `kelly_sizing.CERT_BOOK_FILE` at is the one honoured.
+    `gold_london_am_v3` is the same sleeve on the same window as `gold_london_am` (the rule
+    gateway._book_key has used since 2026-09-23 to join versioned rows to the allocator's book).
+    ONE RULE, BOTH PLACES (audit r5 must-fix 2): the cert-book zero matched the exact name, so
+    `gold_london_am_v2..v4` and `gold_afternoon_v2..v4` -- STANDBY rows the promoter can lift --
+    joined the allocator's fraction through the suffix and missed the principal's 0.0."""
+    return re.sub(r"_v\d+$", "", str(name or "").strip())
+
+
+#: THE PRINCIPAL'S ZEROS, IN CODE (audit r5 must-fix 1). The cert book carries these at 0.0, but
+#: a torn file, `enabled: false` or ONE out-of-range value voids the whole block
+#: (`kelly_sizing.load_cert_book`), and a void block used to unpin every one of them: E8 went back
+#: to RISK_FRAC 0.005 (or the KELLY_SURVIVAL value) on london_am and afternoon, and Fusion's revert
+#: path to 0.01. A name here sends NOTHING on its venue whatever any file says. Removing one is a
+#: principal act. Each is a missed-growth line (rail "principal_zero_pin"; journal D-20261020-001).
+#:
+#: zuck 2026-10-20 21:52Z: "trade only gold asia for fusion and mt5" -- both books.
+GOLD_ASIA_ONLY_ZERO: frozenset[str] = frozenset({"gold_london_am", "gold_afternoon"})
+#: The scalp lane's stand-down (zuck 2026-09-29; the XAU scalp sleeves retired 2026-09-30). The
+#: allocator's pf.book still funded xau_m5_anti_breakout_overlap at 0.042909 on 2026-10-20 23:15Z
+#: (coordinator, read-only on the box); only its RETIRED status kept it off Fusion.
+SCALP_LANE_ZERO: frozenset[str] = frozenset({
+    "xau_m5_anti_breakout_overlap", "xau_m15_anti_breakout", "xau_m5_anti_momentum_ny"})
+#: BOOKS_PATCH v5 (zuck, approved 2026-10-13): the three overnight_gap_decay rows send nothing.
+GAP_DECAY_ZERO: frozenset[str] = frozenset({
+    "EURZAR_overnight_gap_decay_asia", "USDZAR_overnight_gap_decay_asia",
+    "AUDCHF_overnight_gap_decay_asia"})
+PRINCIPAL_ZERO: dict[str, frozenset[str]] = {
+    "fusion": GOLD_ASIA_ONLY_ZERO | SCALP_LANE_ZERO | GAP_DECAY_ZERO,
+    "e8": GOLD_ASIA_ONLY_ZERO,
+}
+
+
+def principal_zero(name: object, venue: str = "fusion") -> bool:
+    """True when `name` (any `_v<n>` version, any case) is one of `PRINCIPAL_ZERO[venue]`.
+    Reads no file, so it cannot fail open."""
+    base = book_name(name).lower()
+    return bool(base) and base in {k.lower() for k in PRINCIPAL_ZERO.get(venue, frozenset())}
+
+
+def cert_book_zero(name: object, venue: str = "fusion") -> bool:
+    """True when `name` must send NOTHING on `venue`: a principal zero in code
+    (`principal_zero`, which fails closed), or the certified book (data/CERT_BOOK_LIVE.json,
+    `venue` block) naming it -- or its unversioned `book_name` -- at exactly 0.0.
+
+    The file half is False on a void or absent book, which is why every zero the principal has
+    ordered is ALSO in `PRINCIPAL_ZERO`. Read at call time, so the path a test or the box points
+    `kelly_sizing.CERT_BOOK_FILE` at is the one honoured.
     """
     if not name:
         return False
+    if principal_zero(name, venue):
+        return True
     try:
         from mt5desk import kelly_sizing as _ks
         cert = _ks.load_cert_book(_ks.CERT_BOOK_FILE, venue)
     except Exception:
         return False
-    return bool(cert) and str(name) in cert and cert[str(name)] == 0.0
+    if not cert:
+        return False
+    folded = {str(k).lower(): v for k, v in cert.items()}
+    for key in (str(name), book_name(name)):
+        v = cert.get(key, folded.get(key.lower()))
+        if v is not None:
+            return v == 0.0
+    return False
+
+
+def cert_zero_row(s: dict[str, Any], venue: str = "fusion") -> bool:
+    """`cert_book_zero` for a roster row: by its name, or by the allocator book key the gateway
+    joined it to (`book_key`, e.g. `EURZAR_overnight_gap_decay_asia`)."""
+    return cert_book_zero(s.get("name"), venue) or cert_book_zero(s.get("book_key"), venue)
 
 
 def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
@@ -751,10 +808,18 @@ MINLOT_OVERRIDE_PINS: dict[str, str | None] = {
     "eurzar_carry_asia_p_8339edce23032d21": "external.EURZAR@M15.carry.p=8339edce23032d21",
 }
 #: The FLOOR lot: no book sleeve sends less (a venue minimum above it sends nothing). The file's
-#: `lot` must equal it; the file cannot move it.
+#: `lot` must equal it; the file cannot move it. DERIVATION: 0.01 is the Fusion venue minimum
+#: (`volume_min` 0.01, step 0.01, on XAUUSD, USDNOK, EURILS and EURZAR in data/universe/
+#: universe.json), the smallest order the
+#: venue accepts -- a hard external limit, not a chosen size. Measured risk per 0.01 lot on EUR
+#: 484.83 (coordinator 2026-10-20): USDNOK EUR 2.02 (0.42%), EURILS EUR 6.65 (1.37%), EURZAR
+#: EUR 2.66 (0.55%), gold 3.2-19.7% at the measured 18-111 USD stops.
 MINLOT_OVERRIDE_LOT = 0.01
 #: The risk fraction each book sleeve TARGETS at its own stop. Above the floor the lot is this
 #: fraction of equity, snapped down to the venue step, so the book scales up with equity.
+#: DERIVATION: 0.0075 is the per-trade size of zuck's 2026-10-20 16:55Z E8 max-pass solve
+#: (kelly_survival, re-confirmed 17:16Z), applied per Fusion sleeve by the coordinator after the
+#: audit HOLD on 50ef074f9 ("0.0075 risk with a 0.01-lot floor").
 MINLOT_OVERRIDE_TARGET_FRAC = 0.0075
 #: The one account the book may trade: Fusion Markets LIVE (a real-money account on this server).
 #: THE LOGIN IS NEVER COMMITTED (tests/ops/test_live_infrastructure_is_not_published.py: a live
@@ -889,7 +954,7 @@ def minlot_override_size(s: dict[str, Any], symbol: str, info: object | None,
         return None
     if not allocator_sovereign():
         return None
-    if cert_book_zero(s.get("name")):
+    if cert_zero_row(s):
         # The principal's 0.0 in CERT_BOOK_LIVE.json binds even a marked row whose allocator
         # fraction did not come through the overlay (zuck 2026-10-20 21:52Z: gold_asia only).
         return 0.0, 0.0, (f"fusion book: the cert book pins {s.get('name')} at 0.0; no order")
@@ -1127,10 +1192,51 @@ def gold_at_risk_block(positions: object, orders: object, *, own_tag: str = "",
 FUSION_DAILY_LOSS_FRAC = 0.05
 #: THE PER-TRADE REFUSAL (coordinator, audit round 2): no Fusion book entry whose stop risk
 #: exceeds this fraction of equity -- the 0.01 floor at a wide gold stop is REFUSED, never sent,
-#: and every refusal is a missed-growth line (rail "fusion_trade_risk_cap").
+#: and every refusal is a missed-growth line (rail "fusion_trade_risk_cap"). DERIVATION: aligned
+#: with sizing.MAX_RISK_FRAC = 0.10, the desk's per-order hard limit (law: raising it is a
+#: principal act), so its cost against r3 is 0 (audit round 4). Measured against no cap at
+#: EUR 484.83: it refuses asia 11/42, london_am 2/26 and afternoon 6/15 gold legs.
 FUSION_MAX_TRADE_RISK_FRAC = 0.10
 #: The basis prefix of that refusal, so the gateway can bill it without re-deriving it.
 FUSION_TRADE_RISK_REFUSAL = "fusion book: per-trade risk cap"
+
+
+#: THE ARMED DEADMAN IS A PRECONDITION OF NEW FUSION RISK (audit r5 must-fix 4). The ruin rail
+#: (proposals/fusion_deadman.py) writes this stamp every pass; the gateway opens nothing new unless
+#: it reads mode "LIVE" (the principal armed it: data/FUSION_DEADMAN_ARMED.json) and is fresh.
+FUSION_DEADMAN_STAMP = _DESK / "data" / "fusion_deadman_state.json"
+#: Freshness of that stamp. DERIVATION: the rail's task cadence is 5 minutes (box_tasks.manifest
+#: MT5-FusionDeadmanLive "every 5 minutes"), so 900 s is 3 consecutive missed passes -- the rail
+#: has STOPPED, not hiccuped (the same rule as CHART_STALE_H in check_sizing_derivation).
+FUSION_DEADMAN_MAX_AGE_S = 900.0
+
+
+def fusion_deadman_armed(path: Path | None = None, *,
+                         now: datetime | None = None) -> tuple[bool, str]:
+    """(may the gateway open NEW Fusion risk, why). FAILS CLOSED: the stamp must exist, parse,
+    read `mode == "LIVE"` and carry a `checked_at` within `FUSION_DEADMAN_MAX_AGE_S`. Open
+    positions are managed either way; only new entries wait."""
+    p = path or FUSION_DEADMAN_STAMP
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return False, (f"fusion deadman: stamp {p.name} absent or unreadable "
+                       f"({type(exc).__name__}); no new Fusion risk until the rail runs armed")
+    if not isinstance(doc, dict) or doc.get("mode") != "LIVE":
+        mode = doc.get("mode") if isinstance(doc, dict) else None
+        return False, (f"fusion deadman: mode {mode!r}, not LIVE -- the rail is not armed "
+                       f"(principal marker data/FUSION_DEADMAN_ARMED.json); no new Fusion risk")
+    try:
+        at = datetime.fromisoformat(str(doc.get("checked_at")))
+        if at.tzinfo is None:
+            raise ValueError("naive")
+    except ValueError:
+        return False, "fusion deadman: checked_at unreadable; no new Fusion risk"
+    age = ((now or datetime.now(tz=UTC)) - at).total_seconds()
+    if not (-60.0 <= age <= FUSION_DEADMAN_MAX_AGE_S):
+        return False, (f"fusion deadman: LIVE stamp is {age:.0f}s old (limit "
+                       f"{FUSION_DEADMAN_MAX_AGE_S:.0f}s); the rail has stopped; no new Fusion risk")
+    return True, f"fusion deadman LIVE, {age:.0f}s old"
 
 
 def fusion_daily_loss(st: dict[str, Any], equity: object, day_key: str) -> tuple[bool, str]:
@@ -1183,8 +1289,13 @@ def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) 
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
                  symbol: str = GOLD_SYMBOL, info: object | None = None,
                  risk_frac: float | None = None,
-                 decay_faded: object = None, from_book: bool = False) -> float:
+                 decay_faded: object = None, from_book: bool = False, *,
+                 cert_zero: bool = False) -> float:
     """Dynamic lot for promoted sleeves: risk-fraction sizing x authority ramp.
+
+    `cert_zero` (the caller's `cert_zero_row(s)`): the principal pinned this sleeve at 0 -- no
+    order, on the sovereign AND the revert path, whatever the allocator's book says. Without it
+    the revert path lifts an allocator zero to the venue minimum (the 2026-09-12 order).
 
     RISK BASE (principal order 2026-08-25): promoted sleeves target
     `clamp_risk_frac(risk_frac)` of equity per trade -- 3% base, dynamic-up to 10% only when
@@ -1205,6 +1316,8 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     field to "auto_ramp", so the literal 0.01 the promoter writes never reaches the venue and
     this path is always taken.
     """
+    if cert_zero:
+        return 0.0
     # L1.59 FADE, OUTSIDE the clamp (gap-fixer 2026-08-29). `clamp_risk_frac` floors at 3%, so
     # the halved fraction `decay_monitor` wrote into data/sleeves.json was read straight back up
     # and a FADED sleeve sized identically to a healthy one -- measured, 3.0 lots vs 3.0 lots.

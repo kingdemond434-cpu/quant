@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import sys
+import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -51,6 +52,54 @@ LOCK.parent.mkdir(parents=True, exist_ok=True)
 #: A lock older than this whose OWNER IS GONE is stale. Only used when the pid is unreadable or
 #: the platform cannot be asked -- the pid check is the real test.
 LOCK_MAX_MIN = 45
+#: THE OVERLONG-PASS WATCHDOG (audit r5 must-fix 5). An MT5 call that hangs (order_send included)
+#: used to hold this lock, the cross-account placement lock and every rail with it for as long as
+#: it hung. Past this many minutes the pass's own process ends itself (`os._exit`): the dead pid
+#: frees this lock (`_holder_alive` is False) and the placement lock (`cross_account._holder_gone`),
+#: and the next invocation starts clean. 30 minutes sits below the armed deadman's 45-minute STALE
+#: rail, so a hang is ended by the process before the rail has to flatten for it. Normal pass
+#: length is UNMEASURED here; a false kill costs one pass.
+PASS_WATCHDOG_S = 30 * 60
+#: What the watchdog leaves behind, so a kill is never silent.
+WATCHDOG_STAMP = LOCK.parent / "GATEWAY_WATCHDOG.json"
+
+
+def _watchdog_fire(started: float) -> None:
+    """Called on the watchdog thread when the pass has overrun. Never returns."""
+    import json
+    import os
+    import time
+    msg = (f"WATCHDOG: gateway pass pid {os.getpid()} overran {PASS_WATCHDOG_S}s "
+           f"({time.time() - started:.0f}s); the process ends itself so the locks free")
+    with contextlib.suppress(Exception):
+        gateway.log(msg)
+    with contextlib.suppress(Exception):
+        WATCHDOG_STAMP.write_text(json.dumps({"pid": os.getpid(), "at": time.time(),
+                                              "overran_s": PASS_WATCHDOG_S, "why": msg}),
+                                  encoding="utf-8")
+    with contextlib.suppress(Exception):
+        LOCK.unlink(missing_ok=True)
+    # A resident loop gets a successor at once (the keep-alive trigger is the backstop).
+    res = sys.modules.get("__main__")
+    spawn = getattr(res, "_spawn_successor", None)
+    if callable(spawn):
+        with contextlib.suppress(Exception):
+            spawn()
+    os._exit(70)
+
+
+def start_watchdog(timeout_s: float | None = None) -> threading.Timer:
+    """A daemon timer that ends this process if the pass outlives `timeout_s`. Cancel it with
+    `.cancel()` when the pass returns. A thread, not a subprocess: the MetaTrader5 module binds
+    one terminal per process and is not safe to call from a second thread, so the watchdog never
+    touches it -- it only ends the process, which Windows and POSIX both do cleanly."""
+    import time
+    started = time.time()
+    t = threading.Timer(float(PASS_WATCHDOG_S if timeout_s is None else timeout_s),
+                        _watchdog_fire, args=(started,))
+    t.daemon = True
+    t.start()
+    return t
 
 
 def _holder_alive(pid: int) -> bool:
@@ -97,6 +146,7 @@ def main() -> None:
             return                                    # legacy lock with no pid: fall back to age
         LOCK.unlink(missing_ok=True)                  # owner gone, or unreadable and ancient
     LOCK.write_text(str(__import__("os").getpid()), encoding="utf-8")
+    dog = start_watchdog()
     try:
         gateway.main()
         # Research and promotion run on their own canonical hourly/daily lanes. Holding the
@@ -106,6 +156,7 @@ def main() -> None:
     except Exception as e:  # watchdog must never die
         gateway.log(f"LOOP ERROR: {e!r}")
     finally:
+        dog.cancel()
         LOCK.unlink(missing_ok=True)
 
 

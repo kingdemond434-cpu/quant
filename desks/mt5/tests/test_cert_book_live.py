@@ -25,11 +25,17 @@ from mt5desk.sizing import MAX_RISK_FRAC  # noqa: E402
 #: at 0.0 here, which sends nothing on the sovereign AND the revert path.
 FUSION = {"EURZAR_overnight_gap_decay_asia": 0.0, "USDZAR_overnight_gap_decay_asia": 0.0,
           "AUDCHF_overnight_gap_decay_asia": 0.0,
-          "gold_london_am": 0.0, "gold_afternoon": 0.0}
-#: The E8 book (zuck 2026-10-20 21:52Z: gold asia only, risk "to maximum for max pass probability
-#: while max speed"; the coordinator set 0.0095 on the box): gold_asia 0.0095, the other two gold
-#: windows and USDJPY, NZDJPY and AUDCHF at 0.0.
-E8 = {"gold_asia": 0.0095, "gold_london_am": 0.0, "gold_afternoon": 0.0,
+          "gold_london_am": 0.0, "gold_afternoon": 0.0,
+          # The scalp lane's stand-down (zuck 2026-09-29; retired 09-30): pf.book still funded
+          # xau_m5_anti_breakout_overlap at 0.042909 on 2026-10-20 23:15Z.
+          "xau_m5_anti_breakout_overlap": 0.0, "xau_m15_anti_breakout": 0.0,
+          "xau_m5_anti_momentum_ny": 0.0}
+#: The E8 book (zuck 2026-10-20 21:52Z: gold asia only; Max-growth: 0.006 stands while both legs
+#: trade, 0.007 only with the cross-account OCO -- the box's value): gold_asia 0.006, the other two
+#: gold windows and USDJPY, NZDJPY and AUDCHF at 0.0.
+#: THE BOX'S VALUE. The committed e8 gold_asia may never exceed it (landing must not widen E8).
+BOX_E8_GOLD_ASIA = 0.006
+E8 = {"gold_asia": BOX_E8_GOLD_ASIA, "gold_london_am": 0.0, "gold_afternoon": 0.0,
       "USDJPY_session_range_breakout_asia": 0.0, "NZDJPY_clock_transition_asia": 0.0,
       "AUDCHF_overnight_gap_decay_asia": 0.0}
 
@@ -59,12 +65,12 @@ def test_the_committed_e8_block_is_safe_to_adopt_over_the_box() -> None:
     the merge base, and MT5-ShadowSync never commits into HEAD -- so a hand edit of the box's
     data/CERT_BOOK_LIVE.json is not "the box's", and step 2 (line 1085) writes the target's bytes
     over it whenever the adopted range touches this file. The committed e8 block must therefore
-    be the principal's live one -- gold_asia at the box's 0.0095 and nothing else above 0 (zuck
+    be the principal's live one -- gold_asia at the box's 0.006 and nothing else above 0 (zuck
     2026-10-20 21:52Z) -- so landing can never WIDEN E8: not the old 1.0% gold_asia, and not the
     three-window 0.0075 book the box no longer runs."""
     e8 = load_cert_book(CERT_BOOK_FILE, "e8")
     assert e8 is not None
-    assert max(e8.values()) <= 0.0095, e8
+    assert max(e8.values()) <= BOX_E8_GOLD_ASIA, e8
     assert {k for k, v in e8.items() if v > 0} == {"gold_asia"}
     assert e8["gold_london_am"] == 0.0 and e8["gold_afternoon"] == 0.0
 
@@ -91,8 +97,8 @@ def test_e8_gold_maps_book_keys_to_window_names() -> None:
     pytest.importorskip("MetaTrader5")
     from prop import e8_gold
     windows = e8_gold.cert_gold_windows(E8)
-    assert windows == {"asia": 0.0095, "london_am": 0.0, "afternoon": 0.0}
-    assert e8_gold.window_risk("asia", windows) == (0.0095, "kelly_survival")
+    assert windows == {"asia": 0.006, "london_am": 0.0, "afternoon": 0.0}
+    assert e8_gold.window_risk("asia", windows) == (0.006, "kelly_survival")
     for name in ("london_am", "afternoon"):
         assert e8_gold.window_risk(name, windows) == (0.0, "kelly_survival")
     # An explicit 0.0 key stands a window aside (the placement loop skips frac 0).
@@ -108,15 +114,21 @@ def test_gateway_overlays_only_the_named_keys(monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE",
                         _write(tmp_path, {"enabled": True, "fusion": FUSION}))
     book, why = gateway.allocator_book()
-    assert book == {**alloc, **FUSION}
+    from mt5desk.decision_core import PRINCIPAL_ZERO
+    assert book == {**alloc, **FUSION, **{k: 0.0 for k in PRINCIPAL_ZERO["fusion"]}}
     # A key the cert book names wins (the allocator's 0.04 afternoon is pinned to 0.0); one it
     # does not name keeps the allocator's fraction.
     assert book["gold_afternoon"] == 0.0 and book["gold_asia"] == 0.03
     assert book["EURCHF_carry_asia"] == 0.0
-    assert why.endswith("cert book sets 5")
+    assert "cert book sets 8" in why and why.endswith("principal zeros")
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE",
                         _write(tmp_path, {"enabled": False, "fusion": FUSION}))
-    assert gateway.allocator_book() == (alloc, "proof ok")
+    # A VOID cert book no longer hands the pinned keys back to the allocator (audit r5 must-fix
+    # 1): the principal's zeros are laid in code.
+    book, why = gateway.allocator_book()
+    assert book == {**alloc, **{k: 0.0 for k in PRINCIPAL_ZERO["fusion"]}}
+    assert book["gold_afternoon"] == 0.0 and book["gold_asia"] == 0.03
+    assert why.endswith("principal zeros (no cert book)")
 
 
 def test_gateway_key_join_reaches_the_cert_rows() -> None:

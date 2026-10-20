@@ -652,7 +652,11 @@ def published_gate_lines() -> dict[str, Any]:
 FUSION_RAILS = BASE / "data" / "fusion_book_rails.jsonl"
 E8_EXEC_INTENTS = BASE / "data" / "e8_intents.jsonl"
 FUSION_RAIL_NAMES = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily_loss",
-                     "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap")
+                     "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap",
+                     "principal_zero_pin", "cert_book_absent_window")
+
+#: The rails the E8 lanes bill in their intents journals (RAIL_BLOCKED rows).
+_E8_BILLED_RAILS = ("cross_account_opposite", "principal_zero_pin", "cert_book_absent_window")
 
 
 def _jsonl(p: Path) -> list[dict[str, Any]] | None:
@@ -693,13 +697,14 @@ def published_fusion_book_lines() -> dict[str, Any]:
             unreadable.append(jp.name)
             continue
         e8_rows += [r for r in got if r.get("status") == "RAIL_BLOCKED"
-                    and r.get("rail") == "cross_account_opposite"]
+                    and r.get("rail") in _E8_BILLED_RAILS]
     lines: dict[str, Any] = {}
     for rail in FUSION_RAIL_NAMES:
         mine = [r for r in rows if r.get("rail") == rail]
-        e8 = e8_rows if rail == "cross_account_opposite" else []
+        e8 = [r for r in e8_rows if r.get("rail") == rail]
         blind = FUSION_RAILS.name in unreadable or (
-            rail == "cross_account_opposite" and any(n != FUSION_RAILS.name for n in unreadable))
+            rail in _E8_BILLED_RAILS
+            and any(n != FUSION_RAILS.name for n in unreadable))
         if not mine and not e8:
             lines[rail] = {"verdict": UNMEASURED if blind else NOT_BINDING, "n": 0}
             continue

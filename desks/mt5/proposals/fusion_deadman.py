@@ -37,6 +37,11 @@ INTENTS = BASE / "data" / "order_intents.jsonl"
 PAUSED = BASE / "data" / "GATEWAY_PAUSED"              # the gateway ALREADY honours this file
 BREACH_LOG = BASE / "logs" / "fusion_deadman.log"
 STAMP = BASE / "data" / "fusion_deadman_state.json"
+#: THE PRINCIPAL'S ARMING MARKER (audit r5 must-fix 4). `--live` acts ONLY while this file exists
+#: and reads {"armed_by": "zuck", ...}; it is gitignored, so no adoption, restore or session can
+#: create it -- the principal writes it on the box. Without it a `--live` pass runs as DRY-RUN and
+#: says so on the stamp; with it the dry-run task steps aside, so one stamp has one writer.
+ARMED_MARKER = BASE / "data" / "FUSION_DEADMAN_ARMED.json"
 
 # ---------------------------------------------------------------- RAILS
 #: PRINCIPAL-SET. ~8 full-risk losers at the account's realised q -- a legitimately bad day stays
@@ -273,13 +278,22 @@ def evaluate(account: dict, positions: list[dict], rows: list[dict],
                          f"MARGIN: free {free_margin:.2f} < {MIN_FREE_MARGIN_FRAC:.0%} of equity"))
 
     last = account.get("last_reconcile")
-    if positions and last:
+    # RESTING PENDINGS ARE RISK TOO (audit r5 should-fix): a stop entry that fills while the
+    # gateway is not reconciling is unmanaged exactly like an open position.
+    pendings = list(account.get("pending") or [])
+    exposed = len(positions) + len(pendings)
+    if exposed and not last:
+        breaches.append(("STALE_GATEWAY",
+                         f"STALE GATEWAY: no last_reconcile with {len(positions)} position(s) "
+                         f"and {len(pendings)} pending order(s) -- treated as stale"))
+    if exposed and last:
         try:
             age_min = (now - datetime.fromisoformat(str(last))).total_seconds() / 60
             if age_min > STALE_HEARTBEAT_MIN:
                 breaches.append(("STALE_GATEWAY",
                                  f"STALE GATEWAY: {age_min:.0f}min since reconcile with "
-                                 f"{len(positions)} position(s) open -- unmanaged risk"))
+                                 f"{len(positions)} position(s) open and {len(pendings)} "
+                                 f"pending order(s) -- unmanaged risk"))
         except ValueError:
             breaches.append(("STALE_GATEWAY",
                              "STALE GATEWAY: last_reconcile unparseable -- treated as stale"))
@@ -414,6 +428,19 @@ def rails() -> dict:
             "STALE_HEARTBEAT_MIN": STALE_HEARTBEAT_MIN, "CONFIRM_READS": CONFIRM_READS}
 
 
+def principal_armed(path: Path | None = None) -> tuple[bool, str]:
+    """Whether the principal has armed the rail: `ARMED_MARKER` exists and reads
+    {"armed_by": "zuck", ...}. Anything else is NOT armed (fail closed to dry-run)."""
+    p = path or ARMED_MARKER
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return False, f"{p.name} absent or unreadable"
+    if not isinstance(doc, dict) or doc.get("armed_by") != "zuck":
+        return False, f"{p.name} does not carry armed_by \"zuck\""
+    return True, f"armed by the principal ({p.name})"
+
+
 def main(dry_run: bool = True) -> int:
     """Default DRY-RUN. A rail that arms itself on first execution is not reviewable.
 
@@ -422,9 +449,18 @@ def main(dry_run: bool = True) -> int:
     it judged and the rails it judged them by. In dry-run `would.executed` is false and no file
     but the stamp and the log is touched; arming (`--live`) is the principal's decision.
     """
+    armed, armed_why = principal_armed()
+    if dry_run and armed:
+        # The LIVE task owns the stamp once the principal has armed the rail.
+        log(f"dry-run pass stands aside: {armed_why}; MT5-FusionDeadmanLive owns the stamp")
+        return 0
+    demoted = (not dry_run) and not armed
+    if demoted:
+        dry_run = True
+        log(f"--live requested but NOT armed ({armed_why}); this pass runs as DRY-RUN")
     st = _read(STATE, {})
     account = {"equity": st.get("equity", 0.0), "margin_free": st.get("margin_free", 0.0),
-               "last_reconcile": st.get("last_reconcile")}
+               "last_reconcile": st.get("last_reconcile"), "pending": st.get("pending") or []}
     positions = st.get("position") or []
     stamp = _read(STAMP, {"peak_equity": 0.0, "consecutive": 0, "halt_codes": [],
                           "rearm_history": {}, "escalated": [], "cleared_at": None})
@@ -460,6 +496,8 @@ def main(dry_run: bool = True) -> int:
             action = "NOTHING"
 
     stamp["mode"] = "DRY-RUN" if dry_run else "LIVE"
+    stamp["armed"] = {"principal": armed, "why": armed_why,
+                      "live_requested_but_unarmed": demoted}
     stamp["checked_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     stamp["readings"] = {"equity": account["equity"], "margin_free": account["margin_free"],
                          "last_reconcile": account["last_reconcile"],

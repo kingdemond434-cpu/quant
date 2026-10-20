@@ -503,3 +503,6 @@ desks/mt5/data/*.tmp_fusionbook
 desks/mt5/data/FUSION_LIVE_ACCOUNT.json*
 # The E8 account key this box trades (cross_account.E8_ACCOUNT_FILE): box-local, like the books.
 desks/mt5/data/E8_ACCOUNT.json*
+# The principal's arming marker for the Fusion ruin rail (proposals/fusion_deadman.py ARMED_MARKER):
+# only zuck creates it, on the box; no adoption, restore or session may carry it in.
+desks/mt5/data/FUSION_DEADMAN_ARMED.json*
