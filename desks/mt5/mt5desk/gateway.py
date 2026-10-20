@@ -1612,18 +1612,45 @@ def same_side_count(symbol: str, side: int, positions: object,
     return n
 
 
+#: (sleeve, stage, bar) already journalled by this process: a gate that refuses the same bar on
+#: every pass writes ONE line for it, not one per pass.
+_REFUSED_BARS: set[tuple[str, str, str]] = set()
+
+
 def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
-                    lot: float | None = None, price: float | None = None) -> None:
+                    lot: float | None = None, price: float | None = None, *,
+                    bar: object = None, signal_due: bool | None = None) -> None:
     """Every order the desk declines to send is written down, so `missed_growth` can price the
-    refusal instead of the refusal disappearing into a log line. Never raises."""
+    refusal instead of the refusal disappearing into a log line. Never raises.
+
+    `bar` is the decision bar the refusal is for; a refusal repeated on the same bar is written
+    once. `signal_due` says whether a signal was actually due on it: True where the refusal
+    stopped a signal, None where the gate refused before the family ran (no signal is known,
+    so `missed_growth` counts the bar and prices nothing for it)."""
+    key = (sleeve, stage, str(bar)) if bar is not None else None
+    if key is not None and key in _REFUSED_BARS:
+        return
     try:
         REFUSALS.parent.mkdir(parents=True, exist_ok=True)
         with REFUSALS.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps({"time": now(), "sleeve": sleeve, "symbol": symbol,
                                  "side": "buy" if side > 0 else "sell", "stage": stage,
-                                 "why": why, "lot": lot, "price": price}) + "\n")
+                                 "why": why, "lot": lot, "price": price,
+                                 "bar": None if bar is None else str(bar),
+                                 "signal_due": signal_due}) + "\n")
+        if key is not None:
+            _REFUSED_BARS.add(key)
     except Exception:
         pass
+
+
+def _decision_bar(rates: object) -> object:
+    """The closed bar a pass decides on (the second-to-last bar of `rates`), as the frame stamps
+    it, or None when there is none. Used to key refusals made before the frame is built."""
+    try:
+        return h1_frame(rates).index[-2]
+    except Exception:
+        return None
 
 
 #: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
@@ -3161,14 +3188,15 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     is_gate, gate_need, gate_why = _state_gate_bars(s)
     if is_gate and gate_need is None:
         _why = f"refused: {gate_why or 'state gate read unavailable'}"
-        journal_refusal(name, s["symbol"], side, "not_live_reproducible", _why)
+        journal_refusal(name, s["symbol"], side, "not_live_reproducible", _why,
+                        bar=_decision_bar(h1))
         return {"ok": False, "stage": "not_live_reproducible", "sep": " ", "why": _why}
     if is_gate and gate_need is not None and len(h1) < gate_need:
         # REFUSED BY NAME, never computed on a shorter history: the gate ranks against the
         # trailing rank span, and fewer bars rank against a different history than certified.
         _why = (f"refused: state gate needs {gate_need} {tf} bars, the terminal returned "
                 f"{len(h1)} (raise Max bars in chart)")
-        journal_refusal(name, s["symbol"], side, "short_history", _why)
+        journal_refusal(name, s["symbol"], side, "short_history", _why, bar=_decision_bar(h1))
         return {"ok": False, "stage": "short_history", "sep": " ", "why": _why}
 
     # `frame` KEEPS THE FORMING BAR; `closed` drops it. Both are needed and they are not
@@ -3214,7 +3242,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         if lag:
             # PRICED, NEVER SILENT: the panel store refreshes hourly, so a new panel-gate bar can
             # wait on it, and `missed_growth` reads this journal to put a number on the wait.
-            journal_refusal(name, s["symbol"], side, "panel_store_lag", f"refused: {lag}")
+            journal_refusal(name, s["symbol"], side, "panel_store_lag", f"refused: {lag}",
+                            bar=last_bar)
             return {"ok": False, "stage": "panel_store_lag", "sep": " ", "why": f"refused: {lag}"}
     # SINGLE-POSITION DISCIPLINE, BECAUSE THAT IS WHAT THE CERTIFICATE WAS EARNED UNDER.
     #
@@ -3322,7 +3351,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                     "why": "spread crosses the certified target; awaiting an eligible quote"}
         # The replay's trade already ended at its stop or its target; opening one now is a
         # trade the certificate never made. Journaled so `missed_growth` prices the refusal.
-        journal_refusal(name, s["symbol"], side, "stale_signal", _drift_note)
+        journal_refusal(name, s["symbol"], side, "stale_signal", _drift_note,
+                        bar=last_bar, signal_due=True)
         return {"ok": False, "stage": "stale_signal", "considered": True, "sep": " ",
                 "mark": True, "last_bar": last_bar, "why": f"refused: {_drift_note}"}
     if _verdict == "re_anchored":
@@ -3357,7 +3387,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     if _same >= MAX_SAME_SIDE_PER_SYMBOL:
         _why = (f"{_same} {'long' if side > 0 else 'short'} position(s) already on {s['symbol']} "
                 f"across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL}): one bet is not taken again")
-        journal_refusal(name, s["symbol"], side, "symbol_side_cap", _why)
+        journal_refusal(name, s["symbol"], side, "symbol_side_cap", _why, signal_due=True)
         # The bar is MARKED: the copy is refused for this bar, not retried every minute (which
         # would journal one refusal per sleeve per pass); a slot that frees is taken next bar.
         return {"ok": False, "stage": "symbol_side_cap", "considered": True, "sep": " ",
@@ -4011,7 +4041,8 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     if _same >= MAX_SAME_SIDE_PER_SYMBOL:
         _why = (f"{_same} {'long' if int(plan.side) > 0 else 'short'} position(s) already on "
                 f"{s['symbol']} across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL})")
-        journal_refusal(s["name"], s["symbol"], int(plan.side), "symbol_side_cap", _why)
+        journal_refusal(s["name"], s["symbol"], int(plan.side), "symbol_side_cap", _why,
+                        signal_due=True)
         return {"ok": False, "stage": "symbol_side_cap", "forming": forming, "mark": True,
                 "why": _why}
     try:

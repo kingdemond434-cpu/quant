@@ -676,10 +676,13 @@ def gateway_refusal_lines(now: datetime | None = None) -> dict[str, Any]:
     The gateway journals every order it declines (`journal_refusal`): the state-gate refusals
     (`not_live_reproducible`, `short_history`, `panel_store_lag`), the symbol-side cap, stale
     signals. Each is a gate with no rail of its own, so its bill is carried here beside the
-    rails'. A refusal is priced at the refused sleeve's forward expectancy x its risk fraction
-    (log-wealth per trade forgone); a sleeve without enough forward trades leaves the refusal
-    counted but unpriced. A stage with no priced refusal is UNMEASURED, said with its count --
-    never a clean zero. No journal on this host is UNMEASURED too."""
+    rails'. A refusal is counted once per (sleeve, stage, decision bar) however many passes
+    journalled it, and priced only where a signal was actually due (`signal_due`), at the
+    refused sleeve's forward expectancy x its risk fraction (log-wealth per trade forgone). A
+    gate that refused before its family ran knows of no signal, so its bars are counted and
+    never priced; so is a sleeve without enough forward trades. A stage with no priced
+    refusal is UNMEASURED, said with its count -- never a clean zero. No journal on this host
+    is UNMEASURED too."""
     t_now = now or datetime.now(tz=UTC)
     try:
         text = REFUSALS.read_text("utf-8")
@@ -689,6 +692,7 @@ def gateway_refusal_lines(now: datetime | None = None) -> dict[str, Any]:
                        "no refusal here"}
     prices = _sleeve_prices()
     lines: dict[str, dict[str, Any]] = {}
+    seen: set[tuple[str, str, str]] = set()
     for ln in text.splitlines():
         try:
             x = json.loads(ln)
@@ -700,13 +704,18 @@ def gateway_refusal_lines(now: datetime | None = None) -> dict[str, Any]:
         if (t_now - at).total_seconds() > REFUSAL_WINDOW_DAYS * 86400:
             continue
         stage = str(x.get("stage") or "unattributed")
-        row = lines.setdefault(stage, {"stage": stage, "n": 0, "n_priced": 0,
-                                       "logw_forgone": 0.0, "sleeves": []})
-        row["n"] += 1
         name = str(x.get("sleeve") or "")
+        row = lines.setdefault(stage, {"stage": stage, "n": 0, "n_lines": 0, "n_priced": 0,
+                                       "logw_forgone": 0.0, "sleeves": []})
+        row["n_lines"] += 1
+        key = (name, stage, str(x.get("bar") if x.get("bar") is not None else x.get("time")))
+        if key in seen:
+            continue
+        seen.add(key)
+        row["n"] += 1
         if name and name not in row["sleeves"] and len(row["sleeves"]) < 50:
             row["sleeves"].append(name)
-        if name in prices:
+        if x.get("signal_due") is True and name in prices:
             row["n_priced"] += 1
             row["logw_forgone"] += prices[name]
     for row in lines.values():
