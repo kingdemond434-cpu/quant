@@ -88,8 +88,14 @@ REDACTED = "<account>"
 #: TradeLocker's own trade URLs and error texts carry the id: `/trade/accounts/<id>/orders`,
 #: `accNum: 3`, `account 1234567`. Digits after an "account"-ish word are an id until proven
 #: otherwise; prices, lots and order ids never follow that word in this lane's prose.
+#: v5: the word may be followed by `_` or `-` (`acc_<id>`, `account-<id>`), which `\b` refused
+#: because `_` is a word character -- the leak when the pass does not know its own id.
 _ACCOUNT_IN_TEXT = re.compile(
-    r"(?i)(\bacc(?:ount)?(?:s|_?id|_?num|num)?\b[\s\\/:=#\"']*)(\d{2,})")
+    r"(?i)((?<![a-z])acc(?:ount)?(?:s|_?id|_?num|num)?(?![a-z])[\s\\/:=#\"'_\-]*)(\d{2,})")
+#: The account this pass trades, bound by `e8_gold.run` (`bind_account`) so that text clipped
+#: deep in the pass -- a retry's refusal, a position-book error -- is scrubbed of the id BEFORE it
+#: is cut (v5: a bare id at the cut left a 2-6 digit prefix the later scrub could not match).
+_PASS_ACCOUNT: list[str] = [UNMEASURED]
 #: Rows a failed write keeps for the next pass. A day writes a handful; this is weeks of them.
 PENDING_MAX = 500
 #: The ledger is bounded: past LEDGER_MAX_BYTES it is rewritten to its newest LEDGER_KEEP_LINES.
@@ -274,18 +280,37 @@ def _raw_id(label: str) -> str | None:
         return None
 
 
-def scrub(value: Any, account: str = UNMEASURED) -> Any:
-    """`value` with every account id taken out of its strings (recursively through dicts and
-    lists): the raw id of `account` wherever it stands as a whole token, and any digits that
-    follow an account-ish word (a TradeLocker URL or error). Non-string leaves are returned as
-    they are. Never raises: on an internal error a string is replaced whole, never kept raw."""
+def bind_account(label: str) -> None:
+    """Bind the pass's raw account label for `clip` and an account-less `scrub`. Never raises."""
+    with contextlib.suppress(Exception):
+        _PASS_ACCOUNT[0] = str(label or UNMEASURED)
+
+
+def clip(text: Any, limit: int, account: str | None = None) -> str:
+    """`str(text)` scrubbed of the account id and THEN cut to `limit` (v5). Never raises."""
     try:
+        return str(scrub(str(text), account or UNMEASURED))[:limit]
+    except Exception:
+        return "<unscrubbed text withheld>"[:limit]
+
+
+def scrub(value: Any, account: str = UNMEASURED) -> Any:
+    """`value` with every account id taken out (recursively through dicts, lists and tuples, dict
+    KEYS included): the raw id of `account` -- or, when none is given, of the account the pass
+    bound (`bind_account`) -- wherever it stands between non-digits, and any digits that follow an
+    account-ish word (a TradeLocker URL or error). A non-string leaf (an int or float id) whose
+    text carries the id is replaced by the marker (v5). Never raises: on an internal error a
+    string is replaced whole, never kept raw."""
+    try:
+        if (not account or account == UNMEASURED) and _PASS_ACCOUNT[0] != UNMEASURED:
+            account = _PASS_ACCOUNT[0]
         if isinstance(value, dict):
-            return {k: scrub(v, account) for k, v in value.items()}
-        if isinstance(value, list):
+            return {scrub(k, account) if isinstance(k, str) else _scrub_leaf(k, account):
+                    scrub(v, account) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
             return [scrub(v, account) for v in value]
         if not isinstance(value, str):
-            return value
+            return _scrub_leaf(value, account)
         out = _ACCOUNT_IN_TEXT.sub(lambda m: m.group(1) + REDACTED, value)
         raw = _raw_id(account)
         if raw:
@@ -296,6 +321,17 @@ def scrub(value: Any, account: str = UNMEASURED) -> Any:
         return out
     except Exception:
         return "<unscrubbed text withheld>" if isinstance(value, str) else value
+
+
+def _scrub_leaf(value: Any, account: str) -> Any:
+    """A non-string leaf: kept as it is unless its text carries the account id."""
+    if value is None or isinstance(value, bool):
+        return value
+    raw = _raw_id(account)
+    if not raw:
+        return value
+    text = str(value)
+    return REDACTED if scrub(text, account) != text else value
 
 
 def publishable(value: Any, account: str = UNMEASURED) -> Any:

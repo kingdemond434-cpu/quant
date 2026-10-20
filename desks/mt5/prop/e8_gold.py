@@ -743,6 +743,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # raise; they are recorded on the report, the heartbeat and every decision row.
     host = e8_evidence.host_block()
     account = e8_evidence.account_label(venue)
+    # Text clipped below is scrubbed of this account's id BEFORE it is cut (e8_evidence.clip).
+    e8_evidence.bind_account(account)
     doc.update({"host": host, "account": account})
     tick = mt5.symbol_info_tick(SYMBOL)
     rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_H1, 0, 400)
@@ -801,7 +803,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                     f"exposure only")
         except Exception as exc:
             stood_down = True
-            doc["guard"] = f"guard unreadable ({type(exc).__name__}: {exc}"[:200] + ")"
+            doc["guard"] = e8_evidence.clip(
+                f"guard unreadable ({type(exc).__name__}: {exc}", 200) + ")"
             log(f"guard raised {type(exc).__name__}: {exc}; no new placements this pass")
 
     bid, ask = venue.quote(SYMBOL)
@@ -815,7 +818,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         # is unhealthy.
         iid, venue_positions, xau_positions = 0, [], []
         stood_down = True
-        doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+        doc["positions_unreadable"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 160)
         log("position book unreadable; no new E8 gold placement this pass")
     # -------------------------------------------------------------- placements
     # EVERY DUE WINDOW'S DECISION IS EVIDENCE (prop/e8_evidence.py): collected here, written once
@@ -889,7 +892,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 contract_size=contract)
             doc["committed_risk"]["total_usd"] = round(committed, 2)
         except Exception as exc:
-            why = (f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}"[:200]
+            why = (e8_evidence.clip(
+                f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}", 200)
                    + "); no window placed this pass")
             for due in due_now:
                 doc["skipped"].append({"window": due["window"], "why": why})
@@ -978,7 +982,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} sl {s['sl']:.2f} "
                     f"tp {s['tp']:.2f} -> order {oid}")
             except Exception as exc:
-                row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
+                row.update({"status": "REJECTED",
+                            "why": e8_evidence.clip(f"{type(exc).__name__}: {exc}", 200)})
                 log(f"[{name}] REJECTED {side}: {row['why']} (will retry while the window holds)")
                 failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
                                 "attempts": 1, "why": row["why"],
@@ -1030,7 +1035,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         positions_ok = False
         xau_positions = []
         position_ids = set()
-        doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+        doc["positions_unreadable"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 160)
 
     # -------------------------------------------------------------- dropped legs
     if any(w.get("failed") for w in (state.get("windows") or {}).values()):
@@ -1384,7 +1389,7 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                     f"-> order {oid} (attempt {int(leg.get('attempts') or 0) + 1})")
             except Exception as exc:
                 leg["attempts"] = int(leg.get("attempts") or 0) + 1
-                leg["why"] = f"{type(exc).__name__}: {exc}"[:200]
+                leg["why"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 200)
                 row.update({"status": "REJECTED", "why": leg["why"]})
                 act.update({"ok": False, "why": leg["why"]})
                 log(f"[{name}] {side} retry REJECTED: {leg['why']}")
@@ -1489,6 +1494,7 @@ def main(argv: list[str] | None = None) -> int:
 def _failed_pass(status: str, *, armed: bool) -> None:
     """Publish connection failure without altering durable window/order state."""
     at = datetime.now(UTC)
+    e8_evidence.bind_account(e8_evidence.UNMEASURED)
     beat = e8_evidence.write_heartbeat(status, at=at, armed=armed, log=log)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     temporary = OUT.with_suffix(".tmp")

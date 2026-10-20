@@ -923,7 +923,69 @@ def test_e8_a_new_key_does_not_split_a_run(tmp_path: Path) -> None:
     _keyed_rows(tmp_path, [(1, "tradelocker:aaaa", "k1", BOX_ID),
                            (0, "tradelocker:bbbb", "k1", BOX_ID)])
     assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"
-    # ...nor across machines.
+    # ...nor across machines (v5: an unjoinable key change cannot be judged -- UNMEASURED).
     _keyed_rows(tmp_path, [(1, "tradelocker:aaaa", "k1", BOX_ID),
                            (0, "tradelocker:bbbb", "k2", OFF_BOX_ID)])
-    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+
+
+
+# ------------------------------------- 10. v5 (audit of e9f2a830): ambiguity and wrong clocks
+
+def test_e8_a_key_change_with_two_accounts_under_the_old_key_is_unmeasured(
+        tmp_path: Path) -> None:
+    """A@k1, B@k1, A@k2 aliased A to B in v4: a false HALT, or a hidden refusal."""
+    _e8_beat(tmp_path)
+    _keyed_rows(tmp_path, [(2, "tradelocker:aaaa", "k1", BOX_ID),
+                           (1, "tradelocker:bbbb", "k1", BOX_ID),
+                           (0, "tradelocker:cccc", "k2", BOX_ID)])
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "UNMEASURED", lane
+    assert lane["ambiguous_key_change"] == ["e8_gold:afternoon"]
+    assert not any(r.get("breach") for r in lane["runs"].values())
+
+
+@pytest.mark.parametrize("machine", ["UNMEASURED", ""])
+def test_e8_a_key_change_on_an_unmeasured_machine_is_unmeasured(tmp_path: Path,
+                                                               machine: str) -> None:
+    _e8_beat(tmp_path)
+    _keyed_rows(tmp_path, [(1, "tradelocker:aaaa", "k1", machine),
+                           (0, "tradelocker:bbbb", "k2", machine)])
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+
+
+class _BoxIdent:
+    trading_hostname, verdict, why = "vmi3571445", "TRADING", "test"
+
+
+@pytest.mark.parametrize("field,value", [
+    ("failing_since", (NOW + timedelta(days=2)).isoformat()),
+    ("last_ok_at", (NOW + timedelta(hours=3)).isoformat()),
+    ("failing_since", (NOW - timedelta(days=2)).replace(tzinfo=None).isoformat()),
+    ("last_ok_at", "not a time"),
+])
+def test_e8_a_wrong_failure_clock_is_unmeasured_and_escalated_on_the_box(
+        box: Path, field: str, value: str) -> None:
+    _gateway_ok(box)
+    _e8_status(box, "VENUE_UNAVAILABLE")
+    beat = json.loads((box / E8_HEARTBEAT).read_text("utf-8"))
+    beat[field] = value
+    _write(box, E8_HEARTBEAT, json.dumps(beat))
+    _e8_rows(box, [(0, "PLACED", "placed")])
+    doc = fence.scan(box, now=NOW)
+    lane = doc["lanes"]["e8_gold"]
+    assert lane["verdict"] == "UNMEASURED" and lane["future_clock"] is True
+    assert doc["ok"] is None
+    fence.escalate_unmeasured(doc, _BoxIdent())                     # type: ignore[arg-type]
+    assert doc["ok"] is False and any("FUTURE, naive or unparseable" in p
+                                      for p in doc["problems"])
+
+
+def test_e8_a_future_heartbeat_is_escalated_on_the_box(box: Path) -> None:
+    _gateway_ok(box)
+    _e8_beat(box, at=NOW + timedelta(days=3))
+    _e8_rows(box, [(0, "PLACED", "placed")])
+    doc = fence.scan(box, now=NOW)
+    fence.escalate_unmeasured(doc, _BoxIdent())                     # type: ignore[arg-type]
+    assert doc["ok"] is False and doc.get("escalated_on_trading_host") is True
+    assert fence.record_alert(doc, box) == "OPEN"

@@ -459,6 +459,7 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
     # is NOT running here -- on the trading host that is escalated (escalate_unmeasured).
     lane["stale_heartbeat"] = not future and (age is None or age > E8_HEARTBEAT_LIVE_HOURS)
     if future:
+        lane["future_clock"] = True
         lane.update(verdict=UNMEASURED, ok=None)
         lane["notes"].append(
             f"{E8_HEARTBEAT_REL} is stamped {-(age or 0.0):.1f}h in the FUTURE (tolerance "
@@ -476,9 +477,27 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         return lane
     # THE PASS'S OWN RESULT. A heartbeat is rewritten by a pass that failed, so its age alone
     # says the scheduler fired, not that the lane can place.
+    # THE HEARTBEAT'S OWN CLOCKS (v5). A `failing_since` or `last_ok_at` that is naive,
+    # unparseable or stamped ahead of this host is a wrong clock, and a wrong clock can hold a
+    # failing lane short of HALTED forever: UNMEASURED, and escalated on the trading host.
+    bad_clocks = []
+    for field in ("failing_since", "last_ok_at"):
+        if not hb.get(field):
+            continue
+        stamp = _parse_iso_aware(hb.get(field))
+        if stamp is None or (stamp - now).total_seconds() / 3600.0 > E8_FUTURE_TOLERANCE_HOURS:
+            bad_clocks.append(f"{field}={hb.get(field)!r}")
+    if bad_clocks:
+        lane["future_clock"] = True
+        lane.update(verdict=UNMEASURED, ok=None)
+        lane["notes"].append(f"{E8_HEARTBEAT_REL} carries {', '.join(bad_clocks)}: naive, "
+                             "unparseable or in the FUTURE, so the lane's failure clock cannot "
+                             "be read -- UNMEASURED")
+        return lane
     failing = status != "OK"
     if failing:
-        since = _parse_iso(hb.get("failing_since")) or _parse_iso(hb.get("last_ok_at"))
+        since = (_parse_iso_aware(hb.get("failing_since"))
+                 or _parse_iso_aware(hb.get("last_ok_at")))
         down_h = _age_h(since, now)
         lane["heartbeat"]["failing_h"] = round(down_h, 3) if down_h is not None else UNMEASURED
         if down_h is not None and down_h > E8_FAILING_MAX_HOURS:
@@ -556,8 +575,20 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
     # new key and is aliased to it. Two accounts under one key share a key_id and never alias.
     keyed: list[dict[str, Any]] = []
     newest_unkeyed: dict[str, str] = {}
+    #
+    # v5: the alias is taken only when it is UNAMBIGUOUS -- exactly one account was ever seen
+    # under the old key_id and exactly one under the new, and the machine id is MEASURED. Rows
+    # A@k1, B@k1, A@k2 would otherwise alias A to B (a false HALT, or a hidden refusal), and an
+    # UNMEASURED machine id matches every other UNMEASURED one. An ambiguous key change cannot be
+    # judged at all: the lane reads UNMEASURED.
     alias: dict[str, str] = {}
     last_seen: dict[str, tuple[str, str, str]] = {}      # sleeve -> (ref, key_id, machine)
+    by_key: dict[str, set[str]] = {}
+    for r in rows:
+        ref, k = _e8_account(r), str(r.get("key_id") or "")
+        if k and not ref.endswith(":" + E8_UNKEYED):
+            by_key.setdefault(k, set()).add(ref)
+    ambiguous_key_change: list[str] = []
     for i, r in enumerate(rows):
         sleeve = str(r.get("sleeve") or r.get("strategy_id") or "?")
         acct = _e8_account(r)
@@ -565,9 +596,13 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         kid, machine = str(r.get("key_id") or ""), str(r.get("machine_id") or "")
         prev = last_seen.get(sleeve)
         if (not unkeyed and prev and kid and prev[1] and kid != prev[1]
-                and machine and machine == prev[2] and acct != prev[0]
-                and acct not in alias):
-            alias[acct] = alias.get(prev[0], prev[0])
+                and acct != prev[0] and acct not in alias):
+            measured = machine not in ("", UNMEASURED) and machine == prev[2]
+            if (measured and len(by_key.get(prev[1], set())) == 1
+                    and len(by_key.get(kid, set())) == 1):
+                alias[acct] = alias.get(prev[0], prev[0])
+            else:
+                ambiguous_key_change.append(sleeve)
         if not unkeyed:
             last_seen[sleeve] = (acct, kid, machine)
         acct = alias.get(acct, acct)
@@ -608,7 +643,14 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
     if unjudged_after_placement:
         lane["notes"].append("a set-aside row is newer than the newest placement: the lane's "
                              "current state is UNMEASURED")
-    if (failing or newest_unkeyed or unjudged_after_placement) and lane["verdict"] != "HALTED":
+    if ambiguous_key_change:
+        lane["ambiguous_key_change"] = sorted(set(ambiguous_key_change))
+        lane["notes"].append(
+            f"{', '.join(sorted(set(ambiguous_key_change)))}: the account pseudonym changed with "
+            "the key, but more than one account shared a key or the machine id is unmeasured, "
+            "so the old and new rows cannot be joined -- UNMEASURED")
+    if ((failing or newest_unkeyed or unjudged_after_placement or ambiguous_key_change)
+            and lane["verdict"] != "HALTED"):
         lane.update(verdict=UNMEASURED, ok=None)
     return lane
 
@@ -879,7 +921,7 @@ def escalate_unmeasured(doc: dict[str, Any], ident: host_identity.HostIdentity) 
         # but a lane whose heartbeat is DAYS stale (or gone) on the trading host is a dead lane,
         # and silence there is not a pass (v4).
         dead = [(name, lane) for name, lane in (doc.get("lanes") or {}).items()
-                if lane.get("stale_heartbeat")]
+                if lane.get("stale_heartbeat") or lane.get("future_clock")]
         if not dead:
             return doc
         doc["ok"] = False
@@ -887,11 +929,17 @@ def escalate_unmeasured(doc: dict[str, Any], ident: host_identity.HostIdentity) 
         doc["escalated_on_trading_host"] = True
         for name, lane in dead:
             beat = lane.get("heartbeat") or {}
+            why = (f"its heartbeat carries a FUTURE, naive or unparseable clock (heartbeat age "
+                   f"{beat.get('age_h', UNMEASURED)}h; failing_since "
+                   f"{beat.get('failing_since')!r}; last_ok_at {beat.get('last_ok_at')!r}) -- "
+                   "the box's clock or the lane's evidence is wrong"
+                   if lane.get("future_clock") else
+                   f"its heartbeat is {beat.get('age_h', UNMEASURED)}h old (live window "
+                   f"{E8_HEARTBEAT_LIVE_HOURS:.0f}h) -- the lane has stopped running on the box "
+                   "that places its orders")
             doc["problems"].append(
-                f"[{name}] UNMEASURED on the trading host ({ident.trading_hostname}): its "
-                f"heartbeat is {beat.get('age_h', UNMEASURED)}h old (live window "
-                f"{E8_HEARTBEAT_LIVE_HOURS:.0f}h) -- the lane has stopped running on the box "
-                "that places its orders, and silence there is not a pass (L1.28a)")
+                f"[{name}] UNMEASURED on the trading host ({ident.trading_hostname}): {why}, "
+                "and silence there is not a pass (L1.28a)")
         return doc
     doc["ok"] = False
     doc["applicable"] = True

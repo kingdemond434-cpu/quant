@@ -839,3 +839,82 @@ def test_rows_and_heartbeat_carry_the_key_fingerprint_never_the_key(monkeypatch)
     assert ev.key_id() != kid
     monkeypatch.setenv(ev.KEY_ENV, "short")
     assert ev.key_id() is None
+
+
+
+# ================================================== v5 (audit of e9f2a830)
+
+def test_clip_scrubs_before_it_cuts() -> None:
+    """A bare id straddling the cut left a 2-6 digit prefix the later scrub could not match."""
+    acct = "tradelocker:7654321"
+    import re
+    for cut in range(1, 8):                      # the id's first `cut` digits fall inside
+        out = ev.clip("x" * (160 - cut) + "7654321 and more", 160, acct)
+        assert len(out) <= 160 and not re.search(r"\d", out), (cut, out)
+    ev.bind_account(acct)
+    try:
+        assert "765" not in ev.clip("y" * 157 + " 7654321", 160)        # the bound account
+    finally:
+        ev.bind_account(ev.UNMEASURED)
+
+
+class _CutVenue(_IdVenue):
+    """Errors whose id straddles the lane's [:160] / [:200] cuts."""
+    pad160 = "p" * (160 - len("ConnectionError: ") - 3)
+    pad200 = "q" * (200 - len("RuntimeError: ") - 3)
+
+    def positions(self) -> list[dict]:
+        raise ConnectionError(self.pad160 + "7654321")
+
+    def place_stop(self, symbol: str, side: str, lot: float, **kw: Any) -> int:
+        raise RuntimeError(self.pad200 + "7654321")
+
+
+def test_an_id_at_the_cut_never_publishes_a_prefix(monkeypatch, tmp_path) -> None:
+    _sandbox(monkeypatch, tmp_path)
+    venue = _CutVenue()
+    venue.positions = lambda: []                                    # type: ignore[method-assign]
+    g.run(venue, _FlatMT5(), armed=True)                            # leg loop: the 200 cut
+    g.run(venue, _FlatMT5(), armed=True)                            # retry: the 200 cut
+    texts = [ev.decisions_path().read_text("utf-8"), ev.heartbeat_path().read_text("utf-8")]
+    _sandbox(monkeypatch, tmp_path)
+    monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "stand_down"))
+    g.run(_CutVenue(), _FlatMT5(), armed=True)                      # positions: the 160 cut
+    texts += [ev.decisions_path().read_text("utf-8"), ev.heartbeat_path().read_text("utf-8")]
+    assert any(ev.REDACTED in t for t in texts)
+    for t in texts:
+        assert "765" not in t, t
+
+
+def test_non_string_leaves_tuples_and_keys_are_scrubbed() -> None:
+    acct = "tradelocker:7654321"
+    out = ev.scrub({7654321: (7654321, 7654321.0, "acc 7654321", 5), "lot": 0.5,
+                    "ok": False, "n": 17}, acct)
+    assert "7654321" not in json.dumps(out, default=str)
+    assert out[ev.REDACTED] == [ev.REDACTED, ev.REDACTED, f"acc {ev.REDACTED}", 5]
+    assert out["lot"] == 0.5 and out["ok"] is False and out["n"] == 17
+    assert ev.scrub({"key 7654321": 1}, acct) == {f"key {ev.REDACTED}": 1}
+
+
+@pytest.mark.parametrize("text", ["account-7654321 closed", "acc_7654321", "ACCOUNT_7654321",
+                                  "accounts/7654321/positions", "accNum=7654321"])
+def test_an_unknown_account_is_still_scrubbed_after_a_separator(text: str) -> None:
+    ev.bind_account(ev.UNMEASURED)
+    assert "7654321" not in ev.scrub(text), text
+
+
+def test_words_that_merely_start_with_acc_are_left_alone() -> None:
+    ev.bind_account(ev.UNMEASURED)
+    for text in ("accuracy 95", "accepted 4300.25", "account at 2026-10-20"):
+        assert ev.scrub(text) == text, text
+
+
+def test_nothing_here_hashes_a_login_at_server() -> None:
+    """The desk's account key is libs/ops/provenance.account_key (an HMAC). This lane must never
+    re-derive a plain sha256 of login@server."""
+    import re
+    for path in (Path(ev.__file__), Path(g.__file__),
+                 _ROOT / "scripts" / "check_placement_interlock.py"):
+        src = path.read_text("utf-8")
+        assert not re.search(r"sha256\([^)]*(login|server)", src), path
+        assert "@{server" not in src and "}@{" not in src, path
