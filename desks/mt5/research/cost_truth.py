@@ -169,6 +169,13 @@ OVERCHARGE_TOL = 1.5
 CADENCE_S = 3600
 #: How stale the published surface may be before the fence calls it a defect: four missed hours.
 STALE_AFTER_S = 4 * CADENCE_S
+#: HOW OLD A CACHED TERMINAL READING MAY BE BEFORE IT IS NOT A QUOTE (2026-10-20). The report is
+#: re-stamped every hour, but on a pass where the terminal does not answer it is rebuilt from
+#: `cost_truth_quotes.json` -- and that cache was measured 27 days old (stamped 2026-09-23) while
+#: `COST_TRUTH.json` read fresh and its fence read OK. 48 cadences: a weekend plus a day of
+#: outage, after which a reading is history, not the venue. Older readings are UNMEASURED for
+#: quoting (they still describe the contract for the realised join) and the fence alarms.
+QUOTES_STALE_AFTER_S = 48 * CADENCE_S
 #: Session buckets in UTC, mirroring `cost_surface._PHASES` exactly so the two agree.
 PHASES = ((0, 7, "asia"), (7, 12, "london"), (12, 17, "ny"), (17, 24, "late"))
 #: Bytes one M1 bar costs in the terminal's numpy record, measured: 8+5*8+8+8 -> 64, +50% slack.
@@ -215,6 +222,61 @@ def _f(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return out if math.isfinite(out) else None
+
+
+def _age_s(stamp: Any, now: datetime | None = None) -> float | None:
+    """Seconds since an ISO stamp, or None when the stamp is absent or unparseable."""
+    if not isinstance(stamp, str) or not stamp:
+        return None
+    try:
+        when = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    when = when if when.tzinfo else when.replace(tzinfo=UTC)
+    return ((now or datetime.now(tz=UTC)) - when).total_seconds()
+
+
+def quote_is_fresh(info: Any, now: datetime | None = None,
+                   max_age_s: float = QUOTES_STALE_AFTER_S) -> bool:
+    """A terminal reading is a quote only while its own `at` is inside QUOTES_STALE_AFTER_S.
+
+    An unstamped reading is not fresh: absence never resolves to a clean verdict (L1.28a).
+    """
+    if not isinstance(info, dict):
+        return False
+    age = _age_s(info.get("at"), now)
+    return age is not None and age <= max_age_s
+
+
+def quotes_freshness(snapshot: dict[str, Any], measured_now: bool,
+                     now: datetime | None = None) -> dict[str, Any]:
+    """The age of the terminal readings this pass priced from, with a verdict and the reason."""
+    syms = snapshot.get("symbols") if isinstance(snapshot.get("symbols"), dict) else {}
+    readings = [v for v in syms.values() if isinstance(v, dict) and v.get("status") != UNMEASURED]
+    fresh = sum(1 for v in readings if quote_is_fresh(v, now))
+    stamp = _now() if measured_now else (snapshot.get("cached_at") or snapshot.get("at"))
+    age = _age_s(stamp, now)
+    zero = sorted(str(k) for k, v in syms.items() if isinstance(v, dict)
+                  and v.get("status") != UNMEASURED and not ((_f(v.get("spread")) or 0.0) > 0))
+    out: dict[str, Any] = {"at": stamp, "age_s": None if age is None else round(age, 1),
+                           "stale_after_s": QUOTES_STALE_AFTER_S,
+                           "measured_this_pass": measured_now,
+                           "n_readings": len(readings), "n_fresh": fresh,
+                           "n_stale": len(readings) - fresh,
+                           "n_zero_or_absent_spread": len(zero),
+                           "zero_or_absent_spread_symbols": zero[:200],
+                           "source": "desks/mt5/data/cost_truth_quotes.json"}
+    if not readings:
+        out.update(verdict=UNMEASURED, why="no terminal reading on this box, cached or live")
+    elif age is None or age > QUOTES_STALE_AFTER_S:
+        out.update(verdict="STALE",
+                   why=(f"the terminal readings are "
+                        f"{'unstamped' if age is None else f'{round(age / 3600, 1)}h old'} "
+                        f"against a {QUOTES_STALE_AFTER_S // 3600}h limit: every quote read from "
+                        "them is UNMEASURED this pass and no spread repair is verified on them"))
+    else:
+        out.update(verdict="FRESH", why=f"{fresh} of {len(readings)} readings inside the limit")
+    return out
 
 
 def _now() -> str:
@@ -366,7 +428,15 @@ def quoted_reading(info: dict[str, Any] | None, spreads: list[tuple[int, float]]
     if not isinstance(info, dict):
         return {"status": UNMEASURED,
                 "why": "no terminal reading for this symbol on this box"}
-    out: dict[str, Any] = {"status": MEASURED, "live_spread_pts": _f(info.get("spread")),
+    raw_spread = _f(info.get("spread"))
+    out: dict[str, Any] = {"status": MEASURED,
+                           # A ZERO OR ABSENT SNAPSHOT SPREAD IS NOT A PRICE (2026-10-20): 10 of
+                           # the 157 cached readings carry spread 0. The raw value is kept; the
+                           # priced field is None, so nothing downstream can read it as free.
+                           "live_spread_pts": raw_spread if (raw_spread or 0.0) > 0 else None,
+                           "live_spread_raw": raw_spread,
+                           "live_spread_status": (MEASURED if (raw_spread or 0.0) > 0
+                                                  else UNMEASURED),
                            "point": _f(info.get("point")), "digits": info.get("digits"),
                            "contract_size": _f(info.get("trade_contract_size")),
                            "swap_long": _f(info.get("swap_long")),
@@ -763,6 +833,18 @@ def execution_surface(symbols: list[dict[str, Any]]) -> dict[str, Any]:
             stop_pts = _f(own.get("p50")) if own.get("status") == MEASURED else None
             stop_basis = "median stop distance of this symbol's own live trades"
         ref = _f(cmp_.get("median_reference_pts"))
+        if ref is not None and ref <= 0:
+            # A ZERO SPREAD NEVER PRICES AS ZERO: fall to the widest positive reading of the same
+            # tape, and defer the cell (modelled fallback stands) when there is none.
+            ref = next((v for v in (_f(cmp_.get("quoted_p90_pts")),
+                                    _f(cmp_.get("quoted_live_pts"))) if v is not None and v > 0),
+                       None)
+            if ref is None:
+                deferred.append({"asset": sym["symbol"], "status": UNMEASURED,
+                                 "why": ("the quoted spread reads 0 at the median, the p90 and "
+                                         "live: a zero is not a price, so the cell is deferred "
+                                         "and the modelled fallback stands")})
+                continue
         if stop_pts is None or stop_pts <= 0 or ref is None:
             continue
         slip = (realised.get("entry_slip_r") or {})
@@ -826,8 +908,24 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         import MetaTrader5 as mt5
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"MetaTrader5 is not importable here: {exc}"}
-    if not mt5.initialize():
-        return {"status": UNMEASURED, "why": f"terminal did not initialise: {mt5.last_error()}"}
+    # ATTACH, NEVER SPAWN (2026-10-20). A bare `mt5.initialize()` from a Session-0 worker
+    # launches an unauthenticated terminal (research/mt5_session.py); the shared helper refuses
+    # that and the reason -- with the Windows session id -- is published, so a box whose hourly
+    # leg cannot reach the terminal says so instead of re-serving a month-old cache.
+    if str(DESK) not in sys.path:
+        sys.path.insert(0, str(DESK))
+    try:
+        from mt5desk.config import terminal_path
+
+        from research.mt5_session import attach_or_initialize, windows_session_id
+        attached = attach_or_initialize(mt5, path=terminal_path(), timeout=60_000)
+        session_id = windows_session_id()
+    except ImportError:
+        attached, session_id = bool(mt5.initialize()), None
+    if not attached:
+        return {"status": UNMEASURED,
+                "why": (f"terminal not attached from Windows session {session_id}: "
+                        f"{mt5.last_error()} (a Session-0 worker is refused, never spawned)")}
     started = time.monotonic()
     out: dict[str, Any] = {"status": MEASURED, "symbols": {}, "bars": {}, "deals": []}
     try:
@@ -927,8 +1025,12 @@ def build(universe: dict[str, Any], fusion: Any, cost_to_edge: Any, snapshot: di
         spreads = [(datetime.fromtimestamp(int(t), tz=UTC).hour, float(s)) for t, s in bars]
         bar_by_minute = {int(t): float(s) for t, s in bars}
         charged = charged_reading(symbol, meta, fusion_rows.get(symbol), cost_rows.get(symbol))
-        quoted = quoted_reading(info if isinstance(info, dict) and info.get("status") != UNMEASURED
-                                else None, spreads, rollover)
+        fresh_info = (info if isinstance(info, dict) and info.get("status") != UNMEASURED
+                      and quote_is_fresh(info) else None)
+        quoted = quoted_reading(fresh_info, spreads, rollover)
+        if fresh_info is None and isinstance(info, dict) and info.get("status") != UNMEASURED:
+            quoted["why"] = (f"the cached terminal reading is stamped {info.get('at')!r}, older "
+                             f"than {QUOTES_STALE_AFTER_S // 3600}h or unstamped: not a quote")
         realised = realised_reading(symbol, deals, ledger, intents_by_ticket, meta,
                                     info if isinstance(info, dict) else None)
         at_fill = realised_spread_at_fills(symbol, deals, bar_by_minute)
@@ -1020,8 +1122,12 @@ def repair_verification(prov: Any, rows: list[dict[str, Any]]) -> dict[str, Any]
         cmp_ = row.get("compare") or {}
         ref = _f(cmp_.get("median_reference_pts"))
         if ref is None or ref <= 0:
-            ref = _f(cmp_.get("quoted_p90_pts")) or _f(cmp_.get("quoted_live_pts"))
-        if ref is not None:
+            # the first POSITIVE reading; `a or b` handed back a 0.0 live snapshot as the quote,
+            # which verified every correction toward zero as TOWARD the venue
+            ref = next((v for v in (_f(cmp_.get("quoted_p90_pts")),
+                                    _f(cmp_.get("quoted_live_pts"))) if v is not None and v > 0),
+                       None)
+        if ref is not None and ref > 0:
             quotes[str(row["symbol"])] = {
                 "ref": float(ref), "p50": _f(cmp_.get("quoted_p50_pts")),
                 "p90": _f(cmp_.get("quoted_p90_pts")),
@@ -1344,8 +1450,18 @@ def main(argv: list[str] | None = None) -> int:
                     "why": snapshot.get("why"), "bars": {},
                     "cached_at": cached.get("at")}
 
+    measured_now = snapshot.get("status") == MEASURED
     rep = build(universe, fusion, cost_to_edge, snapshot, ledger, intents,
                 net_edge_doc, ranks_doc, symbols, venue, prov)
+    rep["quotes"] = quotes_freshness(snapshot, measured_now)
+    if rep["quotes"]["verdict"] != "FRESH":
+        try:
+            from libs.ops.events import emit
+            emit("COST_TRUTH_QUOTES_STALE", leg=SEAT, verdict=rep["quotes"]["verdict"],
+                 quotes_at=rep["quotes"].get("at"), age_s=rep["quotes"].get("age_s"),
+                 terminal_why=snapshot.get("why"))
+        except Exception:
+            pass
     rep["bars_cap"] = cap
     rep["bars_cap_why"] = cap_why
     rep["elapsed_s"] = round(time.monotonic() - started, 2)

@@ -494,3 +494,65 @@ def test_the_cost_wire_is_a_declared_edge_the_watchdog_checks() -> None:
     spine = (ROOT / "desks" / "mt5" / "research" / "net_edge_spine.py").read_text("utf-8")
     assert "EXECUTION_COST_SURFACE.json" in organ and "EXECUTION_COST_SURFACE.json" in spine
     assert "COST_SURFACE.json" in organ
+
+
+# ------------------------------------------- stale cached quotes and zero spreads (2026-10-20)
+
+
+def _info(at: str, spread: float | None = 3.0) -> dict[str, object]:
+    return {"at": at, "spread": spread, "point": 1e-5, "digits": 5}
+
+
+def test_a_cached_reading_older_than_the_limit_is_not_a_quote() -> None:
+    old = (datetime.now(UTC) - timedelta(seconds=CT.QUOTES_STALE_AFTER_S + 60)).isoformat()
+    new = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    assert CT.quote_is_fresh(_info(new)) and not CT.quote_is_fresh(_info(old))
+    assert not CT.quote_is_fresh({"spread": 3.0}), "an unstamped reading is never fresh"
+    rep = CT.build({}, None, None, {"status": CT.MODELLED, "symbols": {"EURCHF": _info(old)}},
+                   [], [], None, None, ["EURCHF"])
+    assert rep["symbols"][0]["quoted"]["status"] == CT.UNMEASURED
+    assert "not a quote" in rep["symbols"][0]["quoted"]["why"]
+
+
+def test_the_freshness_block_names_a_stale_cache_and_its_zero_spreads() -> None:
+    old = "2026-09-23T05:13:05+00:00"
+    snap = {"at": old, "cached_at": old,
+            "symbols": {"A": _info(old, 0.0), "B": _info(old, None), "C": _info(old, 4.0)}}
+    got = CT.quotes_freshness(snap, measured_now=False)
+    assert got["verdict"] == "STALE" and got["n_stale"] == 3
+    assert got["zero_or_absent_spread_symbols"] == ["A", "B"]
+    assert CT.quotes_freshness({"symbols": {}}, measured_now=False)["verdict"] == CT.UNMEASURED
+
+
+def test_a_zero_or_absent_live_spread_is_never_a_price() -> None:
+    now = datetime.now(UTC).isoformat()
+    for raw in (0.0, None):
+        got = CT.quoted_reading(_info(now, raw), [], None)
+        assert got["live_spread_pts"] is None
+        assert got["live_spread_status"] == CT.UNMEASURED and got["live_spread_raw"] == raw
+    assert CT.quoted_reading(_info(now, 7.0), [], None)["live_spread_pts"] == 7.0
+
+
+def test_a_zero_quote_never_verifies_a_correction_toward_zero() -> None:
+    """`p90 or live` handed back a 0.0 live snapshot as the quote: 165 -> 3 read TOWARD 0."""
+    got = CT.repair_verification(_prov(165.0, 3.0), [_quoted_row("GBPCHF", 0.0, 0.0, 0.0)])
+    assert got["verified_symbols"] == [] and got["rows"][0]["verdict"] == "UNVERIFIED"
+
+
+def test_the_surface_never_prices_a_zero_spread_as_zero() -> None:
+    got = CT.execution_surface([_symbol_row("EURUSD", slip_n=9, slip_p50=0.01, ref=0.0,
+                                            stop=150.0)])
+    assert got["n_cells"] == 0 and got["deferred"][0]["status"] == CT.UNMEASURED
+    row = _symbol_row("EURUSD", slip_n=9, slip_p50=0.01, ref=0.0, stop=150.0)
+    row["compare"]["quoted_p90_pts"] = 3.0
+    got = CT.execution_surface([row])
+    assert got["net_alpha"][0]["spread_r_at_fills"] == pytest.approx(3.0 / 150.0)
+
+
+def test_fence_fails_a_fresh_report_priced_from_stale_quotes() -> None:
+    rep = _report(datetime.now(UTC).isoformat(), symbols=[_sym("A", 1.0, 1.0, "OK", 1.0)])
+    rep["quotes"] = {"verdict": "STALE", "at": "2026-09-23T05:13:05+00:00", "why": "old"}
+    got = FENCE.judge(rep, {"commission_total_overcharge": 9.0}, None)
+    assert got["verdict"] == FENCE.QUOTES_STALE and got["exit"] == 2
+    rep["quotes"]["verdict"] = "FRESH"
+    assert FENCE.judge(rep, {"commission_total_overcharge": 9.0}, None)["exit"] == 0

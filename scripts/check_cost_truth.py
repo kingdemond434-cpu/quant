@@ -29,6 +29,11 @@ declaration so it can never drift back up.
                            or the desk paid, and it is not in the declaration.
   RATCHET-UP   (exit 2) -- the declared debt grew.
   STALE        (exit 2) -- the artifact is older than its own declared cadence allows.
+  QUOTES-STALE (exit 2) -- the artifact is fresh but the TERMINAL READINGS it priced from are
+                           not (`quotes.verdict` STALE, older than `quotes.stale_after_s`). The
+                           report is rebuilt hourly from a cache when the terminal does not
+                           answer, so its own stamp says nothing about the quotes' age:
+                           measured 2026-10-20, a 27-day-old cache behind an OK verdict.
 
 Run: python scripts/check_cost_truth.py [--json] [--ratchet PATH] [--report PATH]
 """
@@ -47,8 +52,8 @@ REPORT = ROOT / "desks" / "mt5" / "reports" / "COST_TRUTH.json"
 SURFACE = ROOT / "desks" / "mt5" / "reports" / "EXECUTION_COST_SURFACE.json"
 RATCHET = ROOT / "desks" / "mt5" / "data" / "cost_truth_ratchet.json"
 
-OK, UNMEASURED, OVERCHARGED, RATCHET_UP, STALE = (
-    "OK", "UNMEASURED", "OVERCHARGED", "RATCHET-UP", "STALE")
+OK, UNMEASURED, OVERCHARGED, RATCHET_UP, STALE, QUOTES_STALE = (
+    "OK", "UNMEASURED", "OVERCHARGED", "RATCHET-UP", "STALE", "QUOTES-STALE")
 #: Mirrors `cost_truth.OVERCHARGE_TOL`. The artifact publishes its own tolerance and that one
 #: wins when present, so the two can never drift apart silently.
 DEFAULT_TOL = 1.5
@@ -143,6 +148,16 @@ def judge(rep: Any, ratchet: Any, surface: Any) -> dict[str, Any]:
         out["why"] = (f"COST_TRUTH.json is {round(age / 3600, 1)}h old against a declared "
                       f"cadence of {round(stale_s / 3600, 1)}h: the desk is refusing candidates "
                       "on a cost reading older than its own clock")
+        return out
+    quotes = rep.get("quotes") if isinstance(rep.get("quotes"), dict) else {}
+    out["quotes"] = {k: quotes.get(k) for k in ("verdict", "at", "age_s", "stale_after_s",
+                                                "n_readings", "n_stale",
+                                                "n_zero_or_absent_spread")} if quotes else None
+    if quotes.get("verdict") == "STALE":
+        out["verdict"], out["exit"] = QUOTES_STALE, 2
+        out["why"] = (f"COST_TRUTH.json is fresh but priced from terminal readings stamped "
+                      f"{quotes.get('at')} ({quotes.get('why')}); terminal: "
+                      f"{rep.get('terminal_why')}")
         return out
     if new:
         out["verdict"], out["exit"] = OVERCHARGED, 2

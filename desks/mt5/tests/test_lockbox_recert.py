@@ -30,8 +30,14 @@ NEW = "v3-reserved-lockbox"
 NOW = datetime(2026, 10, 1, 12, tzinfo=UTC)
 
 
-def _row(lb: float, wf: float, at: str, **extra: Any) -> dict[str, Any]:
-    return {"gated_at": at, "gates": {"lockbox": {"passed": lb > 0, "lockbox_sharpe": lb},
+BASIS = "reserved_final_calendar_fraction (test)"
+
+
+def _row(lb: float, wf: float, at: str, *, carved: bool = True, **extra: Any) -> dict[str, Any]:
+    lock: dict[str, Any] = {"passed": lb > 0, "lockbox_sharpe": lb}
+    if carved:                                     # what a v4 judge stamps after lockbox_stage
+        lock.update(cut="2024-12-19", basis=BASIS)
+    return {"gated_at": at, "gates": {"lockbox": lock,
                                       "walk_forward": {"passed": True, "oos_sharpe": wf}},
             **extra}
 
@@ -77,7 +83,8 @@ def test_every_after_state_is_read(tmp_path: Path) -> None:
              "pending_rejudge": {"d": {}}}
     doc = _build(tmp_path, canon)
     st = {k: v["after"]["state"] for k, v in doc["certificates"].items()}
-    assert st == {"a": "REMINTED", "b": "REMINTED", "c": "RETIRED", "d": "PENDING",
+    # b2 is re-gated but its lockbox equals its WF Sharpe: not a held-out reading
+    assert st == {"a": "REMINTED", "b": lr.NOT_INDEPENDENT, "c": "RETIRED", "d": "PENDING",
                   "e": "RESTAMPED", "f": "ABSENT"}
     a = doc["certificates"]["a"]
     assert a["before"]["lockbox_equals_wf"] and not a["after"]["lockbox_equals_wf"]
@@ -85,6 +92,7 @@ def test_every_after_state_is_read(tmp_path: Path) -> None:
     assert doc["certificates"]["c"]["after"]["rejudged_under_v4"] is True
     assert doc["before_lockbox_equals_wf"] == 6
     assert doc["after_lockbox_equals_wf"] == 1          # b2 still equal
+    assert doc["rejudge_required"] == ["b", "d", "e"]
     assert doc["restamped"] == 1 and not doc["done"]
     assert doc["status"].startswith("BREACH")
 
@@ -154,3 +162,50 @@ def test_the_leg_is_wired_after_the_seal() -> None:
     cycle = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '_producer(\n        "lockbox_recert", "research/lockbox_recert.py")' in cycle
     assert cycle.index('_costed("canon_publication"') < cycle.index('_costed("lockbox_recert"')
+
+
+# ------------------------------------------- the lockbox must be held out (2026-10-20)
+
+
+def test_independence_needs_a_carve_a_basis_and_a_number_unlike_wf() -> None:
+    at = "2026-10-01T01:00:00+00:00"
+    assert lr.lockbox_independence(_row(0.11, 0.19, at)["gates"], BASIS)["verdict"] \
+        == lr.INDEPENDENT
+    for gates, needle in (
+            (_row(0.19, 0.19, at)["gates"], "restates gate 7"),
+            (_row(0.11, 0.19, at, carved=False)["gates"], "never reserved"),
+            ({"lockbox": {"passed": False, "lockbox_sharpe": None, "cut": "x", "basis": BASIS},
+              "walk_forward": {"oos_sharpe": 0.2}}, "no numeric lockbox"),
+            (_row(0.11, 0.19, at)["gates"], "differs")):
+        got = lr.lockbox_independence(gates, BASIS if needle != "differs" else "other basis")
+        assert got["verdict"] == lr.NOT_INDEPENDENT
+        assert any(needle in w for w in got["why"]), (needle, got["why"])
+    assert lr.lockbox_independence({}, None)["verdict"] == lr.NOT_INDEPENDENT
+
+
+def test_a_regated_row_whose_lockbox_was_never_carved_is_not_reminted(tmp_path: Path) -> None:
+    """The 7 of 2026-10-20: gated after the baseline, before v3 landed, lockbox == WF."""
+    _baseline(tmp_path, ["a", "b"])
+    canon = {"gate_policy": {"version": NEW},
+             "survivors": {"a": _row(0.6088, 0.6088, "2026-09-29T20:48:07+00:00",
+                                     carved=False),
+                           "b": _row(0.30, 0.41, "2026-09-27T02:15:47+00:00", carved=False)}}
+    doc = _build(tmp_path, canon)
+    st = {k: v["after"]["state"] for k, v in doc["certificates"].items()}
+    assert st == {"a": lr.NOT_INDEPENDENT, "b": lr.NOT_INDEPENDENT}
+    assert doc["certificates"]["a"]["after"]["lockbox"] == lr.UNMEASURED
+    assert doc["after_lockbox_equals_wf"] == 1 and not doc["done"]
+    assert doc["status"] == f"BREACH: {lr.NOT_INDEPENDENT}" and doc["breach"] == 2
+
+
+def test_the_sleeves_holding_an_affected_certificate_are_named(tmp_path: Path) -> None:
+    reg = _write(tmp_path / "sleeves.json", {"sleeves": [
+        {"name": "s1", "status": "STANDBY", "risk_frac": 0.0,
+         "certificate": {"cell": "e", "source": "UNIVERSAL_SURVIVORS"}},
+        {"name": "s2", "status": "LIVE", "certificate": "e"},
+        {"name": "s3", "status": "RETIRED", "certificate": {"cell": "e"}},
+        {"name": "s4", "status": "LIVE", "certificate": {"cell": "zz"}}]})
+    got = lr.sleeve_holders({"e"}, reg)
+    assert [h["sleeve"] for h in got["sleeves"]] == ["s1", "s2"]
+    assert got["n_live"] == 1 and got["n_standby"] == 1
+    assert lr.sleeve_holders({"e"}, tmp_path / "absent.json")["status"] == lr.UNMEASURED

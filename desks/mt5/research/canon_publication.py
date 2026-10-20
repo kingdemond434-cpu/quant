@@ -686,6 +686,71 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
     return out
 
 
+def restamp_reason(row: dict[str, Any], attestation: Any, judge_holds: bool,
+                   republished: bool) -> str | None:
+    """Why `row` may not sit under `attestation`'s header, or None when it may.
+
+    Two refusals, both on positive evidence (a row whose gates carry no lockbox reading at all is
+    not refused here; `lockbox_recert` reports it UNMEASURED):
+      * the judge's own report holds the key outside its survivor set (pending re-judge, or
+        retired under the attestation in force) and the judge did not republish it this pass;
+      * the attestation carries a reserved-lockbox basis and the row's lockbox is a number that
+        is not an independent held-out reading (`lockbox_recert.lockbox_independence`).
+    """
+    if judge_holds and not republished:
+        return ("the judge holds this key outside its survivor set (pending_rejudge or "
+                "retired_certificates) under the attestation in force")
+    basis = attestation.get("lockbox_basis") if isinstance(attestation, dict) else None
+    gates = row.get("gates") if isinstance(row.get("gates"), dict) else {}
+    lb = gates.get("lockbox") if isinstance(gates.get("lockbox"), dict) else {}
+    if basis and lb.get("lockbox_sharpe") is not None:
+        try:
+            from lockbox_recert import INDEPENDENT, lockbox_independence
+        except ImportError:                              # pragma: no cover - import-context dep
+            from research.lockbox_recert import (  # type: ignore[no-redef]
+                INDEPENDENT,
+                lockbox_independence,
+            )
+        ind = lockbox_independence(gates, str(basis))
+        if ind["verdict"] != INDEPENDENT:
+            return "LOCKBOX_NOT_INDEPENDENT: " + "; ".join(ind["why"])
+    return None
+
+
+def restamp_holdback(merged: dict[str, Any], doc_seal: dict[str, Any], doc_report: dict[str, Any],
+                     republished: set[str], attestation: Any,
+                     now_iso: str) -> tuple[dict[str, Any], list[str]]:
+    """Move every row of `merged` that would be re-stamped into the seal's `pending_rejudge`.
+
+    Mutates `merged`. Returns (the seal's pending block after this pass, the keys moved now). A
+    pending row the judge republishes this pass leaves the block -- the fresh row is in `merged`.
+    """
+    old = doc_seal.get("pending_rejudge")
+    pending: dict[str, Any] = dict(old) if isinstance(old, dict) else {}
+    for key in republished:
+        if key in merged:
+            pending.pop(key, None)
+    holds: set[str] = set()
+    for block in ("pending_rejudge", "retired_certificates"):
+        b = doc_report.get(block) if isinstance(doc_report, dict) else None
+        if isinstance(b, dict):
+            holds |= set(b)
+    moved: list[str] = []
+    for key in sorted(merged):
+        row = merged[key]
+        if not isinstance(row, dict):
+            continue
+        why = restamp_reason(row, attestation, key in holds, key in republished)
+        if why is None:
+            continue
+        back = dict(merged.pop(key))
+        back.setdefault("pending_since", now_iso)
+        back["pending_reason"] = why
+        pending[key] = back
+        moved.append(key)
+    return pending, moved
+
+
 def publish(report: Path = REPORT, seal: Path = SEAL,
             recovered: dict[str, Any] | None = None) -> dict[str, Any]:
     """Seal the judge's latest completed sweep into the canonical store, atomically.
@@ -796,6 +861,22 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
                 admitted_recovered.append(key)
         merged[key] = row
 
+    # NO RE-STAMP (2026-10-20). The seal below writes ONE attestation header over every row it
+    # holds, and `merged` starts as a copy of the old seal -- so a row judged under the previous
+    # attestation, which the judge itself had taken out of its survivor set into
+    # `pending_rejudge` (external_gauntlet.remint_partition), stayed here and was re-stamped with
+    # the new header. Measured on the box's LOCKBOX_RECERT.json 2026-10-20 11:44Z: 12 of 52
+    # canon certificates under `...-v3-reserved-lockbox` with their pre-v3 `gated_at`, and 7 more
+    # re-gated 09-24..29 (before v3 landed) with lockbox Sharpe == WF Sharpe. Such a row now
+    # waits in the seal's own `pending_rejudge`, outside the survivor set, exactly as the judge
+    # holds it in the report; a fresh verdict republished by the judge brings it straight back.
+    att_stamped = doc_report.get("gate_policy") if attested_report else ATTESTATION
+    pending, held_back = restamp_holdback(merged, doc_seal, doc_report if attested_report else {},
+                                          set(survivors) | set(recovered), att_stamped,
+                                          now.isoformat())
+    record["held_for_rejudge"] = len(held_back)
+    record["held_for_rejudge_keys"] = held_back[:60]
+
     # ONE EXECUTABLE IDENTITY, ONE CERTIFICATE ROW.  Keeping aliases in the survivor mapping does
     # not create more evidence; it makes one clock oscillate between two equivalent certificate
     # names and the frozen-identity guard correctly reads that as mutation.  Collapse only by the
@@ -811,14 +892,14 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     # that refused every row and says only "REFUSED_EMPTY" is the shape that hides a judge quietly
     # emitting rows the seal cannot take -- the count, by named reason, is the thing that says so.
     record["refused_rows"] = dict(refused_rows)
-    accounted_keys = set(merged) | set(certificate_aliases)
+    accounted_keys = set(merged) | set(certificate_aliases) | set(pending)
     if not set(seal_before).issubset(accounted_keys):
         # Unreachable by construction (merged starts as a copy of the seal) and asserted anyway:
         # the never-shrink law is the one this desk has actually lost certificates to.
         record.update(status="REFUSED_SHRINK", sealed=False, admitted=0,
                       why=f"merge would shrink the seal {len(seal_before)} -> {len(merged)}")
         return record
-    if not merged:
+    if not merged and not pending:
         record.update(status="REFUSED_EMPTY", sealed=False, admitted=0,
                       why="an empty canon is never published; an empty docket does not revoke "
                           "past verdicts")
@@ -837,6 +918,16 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     for key in CARRIED:
         if key in doc_seal:
             doc_new[key] = doc_seal[key]
+    doc_new.pop("pending_rejudge", None)
+    if pending:
+        doc_new["pending_rejudge"] = pending
+    if held_back:
+        # the explicit revocation record the authority ratchet accepts for a falling count
+        doc_new["revocation"] = {"kind": "reattestation", "at": now.isoformat(),
+                                 "left_survivor_set": len(held_back),
+                                 "by": "research/canon_publication.py",
+                                 "why": "rows not judged under the attestation stamped on this "
+                                        "seal wait for a fresh verdict; never re-stamped"}
     doc_new.update({
         "n": len(merged),
         "survivors": merged,

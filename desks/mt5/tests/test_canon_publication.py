@@ -304,3 +304,61 @@ def test_the_leg_is_on_a_clock_and_belongs_to_a_layer() -> None:
     cycle = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"canon_publication", "research/canon_publication.py"' in cycle
     assert '"canon_publication": cpub' in cycle
+
+
+# ------------------------------------------------------------ no re-stamp (2026-10-20)
+
+
+def _v2_row(sym: str, sr: float = 0.5) -> dict:
+    """A row judged before the reserved lockbox: gate 9 is gate 7's number, never carved."""
+    row = _row(sym)
+    row["gates"]["lockbox"] = {"passed": True, "lockbox_sharpe": sr}
+    row["gates"]["walk_forward"] = {"passed": True, "oos_sharpe": sr}
+    return row
+
+
+def _v4_row(sym: str) -> dict:
+    row = _row(sym)
+    row["gates"]["lockbox"] = {"passed": True, "lockbox_sharpe": 0.31, "cut": "2024-12-19",
+                               "basis": ATTESTATION["lockbox_basis"]}
+    row["gates"]["walk_forward"] = {"passed": True, "oos_sharpe": 0.52}
+    return row
+
+
+def test_a_row_judged_before_the_reserved_lockbox_is_never_restamped(desk: Path) -> None:
+    """Measured 2026-10-20: 12 + 7 canon rows under the v3 header with v2 gates."""
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    seal.write_text(json.dumps({"n": 3, "survivors": {
+        "external.OLD": _v2_row("EURNOK"), "external.HELD": _row("GBPSEK"),
+        "external.NEW": _v4_row("AUDCHF")}}), "utf-8")
+    rep = _report({"external.NEW": _v4_row("AUDCHF")}, "2026-10-20T11:00:00+00:00")
+    rep["pending_rejudge"] = {"external.HELD": {}}
+    report.write_text(json.dumps(rep), "utf-8")
+
+    rec = cp.publish(report, seal)
+
+    assert rec["status"] == "SEALED"
+    doc = json.loads(seal.read_text("utf-8"))
+    assert set(doc["survivors"]) == {"external.NEW"}
+    assert set(doc["pending_rejudge"]) == {"external.OLD", "external.HELD"}
+    assert doc["pending_rejudge"]["external.OLD"]["pending_reason"].startswith(
+        "LOCKBOX_NOT_INDEPENDENT")
+    assert "outside its survivor set" in doc["pending_rejudge"]["external.HELD"]["pending_reason"]
+    assert doc["revocation"]["left_survivor_set"] == 2
+    assert rec["held_for_rejudge"] == 2
+
+
+def test_a_fresh_verdict_brings_a_pending_row_back(desk: Path) -> None:
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    seal.write_text(json.dumps({"n": 0, "survivors": {},
+                                "pending_rejudge": {"external.OLD": _v2_row("EURNOK")}}),
+                    "utf-8")
+    report.write_text(json.dumps(_report({"external.OLD": _v4_row("EURNOK")},
+                                         "2026-10-21T00:00:00+00:00")), "utf-8")
+
+    rec = cp.publish(report, seal)
+
+    doc = json.loads(seal.read_text("utf-8"))
+    assert set(doc["survivors"]) == {"external.OLD"} and "pending_rejudge" not in doc
+    assert doc["survivors"]["external.OLD"]["gates"]["lockbox"]["cut"] == "2024-12-19"
+    assert rec["held_for_rejudge"] == 0
