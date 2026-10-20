@@ -13,6 +13,7 @@ t is reported as the per-period Sharpe times sqrt(T): the t-statistic of the mea
 """
 from __future__ import annotations
 
+import itertools
 import math
 from collections.abc import Sequence
 
@@ -39,35 +40,89 @@ def tier_s_sr0(n_obs: int) -> float:
     return expected_max_sharpe(bar_n(), tier_s_variance(n_obs))
 
 
-def tier_s_t_required(n_obs: int, skew: float = 0.0, kurtosis: float = 3.0) -> float:
-    """The t (per-period Sharpe x sqrt(T)) at which the canonical DSR reaches 0.95 at the Tier S
-    bar, for a series of `n_obs` periods with the given skew and NON-excess kurtosis.
+def _real_roots(a: float, b: float, c: float) -> list[float]:
+    """Real roots of a*x^2 + b*x + c (linear or constant when a, b vanish)."""
+    if abs(a) < 1e-300:
+        return [] if abs(b) < 1e-300 else [-c / b]
+    disc = b * b - 4.0 * a * c
+    if disc < 0:
+        return []
+    s = math.sqrt(disc)
+    q = -0.5 * (b + math.copysign(s, b))           # the stable form of the quadratic formula
+    out = [q / a] if q != 0 else []
+    if q != 0:
+        out.append(c / q)
+    elif abs(a) >= 1e-300:
+        out.append(0.0)
+    return out
 
-    Inverted numerically from `psr_from_moments`, the very arithmetic `deflated_sharpe_ratio`
-    runs on a sample. Returns inf when no Sharpe can pass (T < 3, or a skew/kurtosis that makes
-    the PSR variance non-positive over the whole bracket)."""
+
+def tier_s_t_required(n_obs: int, skew: float = 0.0, kurtosis: float = 3.0) -> float:
+    """The SMALLEST t (per-period Sharpe x sqrt(T)) at which the canonical DSR reaches 0.95 at
+    the Tier S bar, for a series of `n_obs` periods with the given skew and NON-excess kurtosis.
+
+    Inverted from `psr_from_moments`, the very arithmetic `deflated_sharpe_ratio` runs on a
+    sample -- WITHOUT assuming it is monotone in the Sharpe. It is not, in general: with skew 2
+    and kurtosis 3 the PSR variance term 1 - g3*SR + (g4-1)/4*SR^2 is negative on (0.59, 3.41),
+    the PSR is 0 there, and it passes again on both sides. A bracket grown until the PSR passes
+    and then bisected (the previous form, audit 2026-10-20) returned 16.7 at T=24 where the true
+    smallest passing t is 2.07.
+
+    So the pass set is solved, not searched: PSR >= 0.95 with SR > sr0 and a positive variance
+    term is (T-1)(SR - sr0)^2 >= z95^2 * (1 - g3 SR + (g4-1)/4 SR^2), a quadratic. Its roots, the
+    variance term's roots and sr0 cut (sr0, inf) into intervals on which pass/fail is constant;
+    each is judged by the canonical PSR at its midpoint, and the answer is the left end of the
+    first passing interval, VERIFIED to pass on the canonical function (nudged up by ulps when a
+    root lands a hair short). Returns inf -- an explicit refusal, never a number -- when no Sharpe
+    can pass (T < 3, or moments under which no interval passes) or when the verification cannot
+    be made."""
+    from scipy.stats import norm
+
     n = int(n_obs)
     if n < 3:
         return math.inf
     sr0 = tier_s_sr0(n)
+    g3, g4 = float(skew), float(kurtosis)
+    if not (math.isfinite(g3) and math.isfinite(g4)):
+        return math.inf
 
     def psr(sr: float) -> float:
-        return psr_from_moments(sr, n, float(skew), float(kurtosis), sr_benchmark=sr0)
+        return psr_from_moments(sr, n, g3, g4, sr_benchmark=sr0)
 
-    lo, hi = sr0, max(sr0, 1e-6) * 2.0 + 1.0
-    while psr(hi) < TIER_S_DSR_THRESHOLD:
-        hi *= 2.0
-        if hi > 1e6:
-            return math.inf
-    for _ in range(200):                       # bisection: psr is monotone on [sr0, hi] here
-        mid = 0.5 * (lo + hi)
-        if psr(mid) >= TIER_S_DSR_THRESHOLD:
-            hi = mid
-        else:
-            lo = mid
-        if hi - lo < 1e-12:
-            break
-    return float(hi * math.sqrt(n))
+    def passes(sr: float) -> bool:
+        return psr(sr) >= TIER_S_DSR_THRESHOLD
+
+    z2 = float(norm.ppf(TIER_S_DSR_THRESHOLD)) ** 2
+    k = (g4 - 1.0) / 4.0
+    cuts = {sr0}
+    # (n-1)(sr - sr0)^2 - z2 * (1 - g3 sr + k sr^2) = 0
+    cuts.update(_real_roots((n - 1) - z2 * k, -2.0 * (n - 1) * sr0 + z2 * g3,
+                            (n - 1) * sr0 * sr0 - z2))
+    cuts.update(_real_roots(k, -g3, 1.0))           # the PSR variance term's zeros
+    pts = sorted(x for x in cuts if math.isfinite(x) and x >= sr0)
+    edges = [*pts, max(pts[-1], 1.0) * 4.0 + 1.0]
+    for left, right in itertools.pairwise(edges):
+        if not right > left or not passes(0.5 * (left + right)):
+            continue
+        sr = left
+        for _ in range(8):                          # a root a few ulps short: step to the pass
+            if passes(sr):
+                return float(sr * math.sqrt(n))
+            sr = math.nextafter(sr, math.inf)
+        # the interval passes but its left edge did not verify (sr0 itself, or a variance-term
+        # zero where the PSR is 0 but every Sharpe just above passes): bisect INSIDE it, never
+        # outside -- its midpoint passes, so [left, mid] holds the smallest passing Sharpe
+        lo, hi = left, 0.5 * (left + right)
+        for _ in range(200):
+            mid = 0.5 * (lo + hi)
+            if passes(mid):
+                hi = mid
+            else:
+                lo = mid
+            if hi - lo < 1e-15 * max(1.0, hi):
+                break
+        return float(hi * math.sqrt(n)) if passes(hi) else math.inf
+    return math.inf
 
 
 def tier_s_passes(returns: Sequence[float] | np.ndarray) -> tuple[bool, float]:
