@@ -76,6 +76,7 @@ History:  `desks/mt5/data/certificate_clock_history.json`
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import statistics
 import sys
@@ -408,7 +409,9 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
 
     # ---- 4. a clock the engine refuses to advance is a breach whatever its row count says
     if status not in WORKING_STATUSES:
-        entry.update(verdict="BLOCKED", breach=True,
+        # THE STATUS IS THE NAMED CAUSE (NEEDS_PROXY_FACTOR, FACTOR_FRAME_STARVED,
+        # BLOCKED_NO_BARS ...), counted per cause in `blocked_by_cause` below.
+        entry.update(verdict="BLOCKED", breach=True, blocked_cause=status,
                      blocker=str(row.get("last_error") or "")[:400] or status,
                      why=f"BREACH: the engine will not advance this clock (`{status}`), so the "
                          f"certificate can never mature. Fix the blocker, never the certificate")
@@ -459,6 +462,9 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
                          f"{threshold_h:.1f}h gap: still accruing")
         return _seal(entry)
 
+    if row.get("zero_signal_cause"):
+        # The engine's own reading of why the replay has never fired (mt5desk.replay_diagnosis).
+        entry["zero_signal_cause"] = str(row["zero_signal_cause"])[:400]
     entry.update(verdict="FROZEN_ROWS", breach=True, prior_n=prior_n,
                  prior_at=prior_at.isoformat() if prior_at else UNMEASURED,
                  why=f"BREACH: the row count has not moved off {n} since "
@@ -582,6 +588,12 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
         "n_clock_keys": len(set(keys.values())),
         "n_clock_rows": len(rows),
         "counts": counts,
+        "blocked_by_cause": dict(sorted(collections.Counter(
+            str(e.get("blocked_cause") or "UNNAMED") for e in judged
+            if e.get("verdict") == "BLOCKED").items())),
+        "frozen_zero_signal_by_cause": dict(sorted(collections.Counter(
+            str(e["zero_signal_cause"]).split(":", 1)[0] for e in judged
+            if e.get("verdict") == "FROZEN_ROWS" and e.get("zero_signal_cause")).items())),
         "n_late": len(late),
         "latency_breach_h": LATENCY_BREACH_H,
         "family_gap_hours": {k: round(v, 3) for k, v in sorted(gaps.items())},

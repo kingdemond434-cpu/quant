@@ -474,7 +474,8 @@ def run() -> tuple[dict, int]:
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
                                          "BLOCKED_UNIVERSAL_GATES", "BLOCKED_SLEEVE_ERROR",
                                          "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE",
-                                         "REFUSED_BY_UNIVERSE_POLICY"}
+                                         "REFUSED_BY_UNIVERSE_POLICY",
+                                         "NEEDS_PROXY_FACTOR", "FACTOR_FRAME_STARVED"}
                   for row in active_rows)
     # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
     # box-local and gitignored -- no other brain (Hetzner, a future session, anyone without

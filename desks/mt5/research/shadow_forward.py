@@ -98,6 +98,9 @@ def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
 #: Verdicts that END a row. A blocked evaluation must never overwrite one of these: a KILL that
 #: turns back into an unevaluated row would re-enter the book, and a PROMOTION CANDIDATE that
 #: loses its verdict to a transient cost-map miss loses a decision the desk already made.
+#: Input blocks that carry their own cause name (`mt5desk.factor_inputs`).
+_NAMED_INPUT_BLOCKS = ("NEEDS_PROXY_FACTOR", "FACTOR_FRAME_STARVED")
+
 _TERMINAL_STATUSES = ("KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED",
                       "REFUSED_BY_UNIVERSE_POLICY",
                       "PROMOTION CANDIDATE", "IDENTITY_BROKEN")
@@ -1048,13 +1051,25 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 continue
             # Rebuild whatever this family needs beyond bars, from its own stored params. A
             # family that needs nothing gets an empty dict and is unaffected.
-            from mt5desk.family_inputs import resolve, runtime_call_params
+            from mt5desk.family_inputs import resolve_with_provenance, runtime_call_params
 
             call_params = runtime_call_params(fam, params)
             # family_call.signals, not the family constructor, owns the session filter. The
             # gauntlet already applies it; dropping this key here made all forward session
             # variants replay the same unrestricted trades.
-            extra, why = resolve(sym, fam, params, h1)
+            extra, why, inputs_prov = resolve_with_provenance(sym, fam, params, h1)
+            # WHERE THE FACTORS CAME FROM, ON THE ROW (2026-10-20). A clock fed a DECLARED proxy
+            # (synthetic USDX, a neighbouring rates instrument) or an as-of aligned basket is not
+            # the same evidence as one replayed on the certified inputs' own exact stamps, and the
+            # promoter and the judge must be able to tell them apart without re-deriving it.
+            if inputs_prov:
+                st["factor_inputs"] = inputs_prov
+                st["proxy_fed"] = bool(inputs_prov.get("proxy_fed"))
+            else:
+                st.pop("factor_inputs", None)
+                st.pop("proxy_fed", None)
+            if extra is not None:
+                st.pop("needs_proxy_factor", None)
             if extra is None:
                 # SKIP LOUDLY, NEVER RUN SHORT. `family_carry` returns [] without its swap terms,
                 # which reads as "this mechanism never fires" rather than "nobody gave it what it
@@ -1114,7 +1129,15 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                         st.pop("identity_drift", None)
                         st.pop("identity_reason", None)
                 if st.get("status") not in _TERMINAL_STATUSES:
-                    st["status"] = "BLOCKED_INPUTS_UNAVAILABLE"
+                    # A NAMED CAUSE WHERE ONE EXISTS. A factor basket missing a leg (with no
+                    # proxy the certificate permits) or starved by its own join is its own
+                    # status, so the clock fence counts it under that cause rather than as a
+                    # generic input gap -- and never as a silent n = 0.
+                    _named = str(why).split(":", 1)[0].strip()
+                    st["status"] = (_named if _named in _NAMED_INPUT_BLOCKS
+                                    else "BLOCKED_INPUTS_UNAVAILABLE")
+                    if _named == "NEEDS_PROXY_FACTOR":
+                        st["needs_proxy_factor"] = list((inputs_prov or {}).get("needs") or [])
                 _unmeasured(st, f"inputs unavailable: {why}")
                 state[key] = st
                 continue
@@ -1201,6 +1224,19 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             trades = ([t for t in all_trades if t.entry_time >= _boundary]
                       if _boundary is not None else [])
             st["n_historical"] = len(all_trades) - len(trades)
+            # A REPLAY THAT NEVER FIRES SAYS WHY (2026-10-20). n = 0 AND n_historical = 0 is not
+            # a quiet market until the family's own preconditions are shown to hold; the judge
+            # found 26 clocks in that state with nothing on the row to separate a starved input
+            # from a rule that genuinely never triggers. Diagnostic only: no count changes.
+            if not all_trades:
+                try:
+                    from mt5desk.replay_diagnosis import zero_signal_cause
+                    st["zero_signal_cause"] = zero_signal_cause(fam, h1, call_params,
+                                                                n_signals=len(sigs))
+                except Exception as exc:
+                    st["zero_signal_cause"] = f"UNMEASURED: {type(exc).__name__}: {exc}"[:300]
+            else:
+                st.pop("zero_signal_cause", None)
             st["evidence_note"] = (
                 f"{len(trades)} forward observation(s) since the clock froze; "
                 f"{len(all_trades) - len(trades)} earlier observation(s) retained as "
@@ -1380,7 +1416,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # mid-rewrite, and kept reading it while every later pass fetched 41,811 bars and
             # evaluated them, because only the one status name was in this clause.
             if str(st.get("status") or "").upper() in (
-                    "BLOCKED_SLEEVE_ERROR", "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE"):
+                    "BLOCKED_SLEEVE_ERROR", "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE",
+                    *_NAMED_INPUT_BLOCKS):
                 st["status"] = "ACTIVE"
                 st["last_error_seen_at"] = st.pop("last_error_at", None)
                 st["last_error_cleared"] = st.pop("last_error", None)

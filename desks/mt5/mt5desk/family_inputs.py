@@ -150,6 +150,31 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             h1: Any) -> tuple[dict[str, Any] | None, str]:
     """Return (extra kwargs, reason). `None` kwargs means this cell cannot be run here.
 
+    See `resolve_with_provenance` for the same answer plus WHERE each input came from.
+    """
+    extra, why, _prov = resolve_with_provenance(sym, family, params, h1)
+    return extra, why
+
+
+def resolve_with_provenance(sym: str, family: str, params: dict[str, Any],
+                            h1: Any) -> tuple[dict[str, Any] | None, str, dict[str, Any]]:
+    """`resolve`, plus a provenance record the forward clock writes onto its row.
+
+    The record is empty for every family except the factor-basket ones, where it names, per
+    factor, OWN bars or the DECLARED proxy that replaced them, and whether the basket reached the
+    family on its exact stamps or aligned as-of (`mt5desk.factor_inputs`). It is never passed to
+    the family: a proxy-fed clock must be told apart by the promoter and the judge, not by the
+    strategy.
+    """
+    prov: dict[str, Any] = {}
+    extra, why = _resolve(sym, family, params, h1, prov)
+    return extra, why, prov
+
+
+def _resolve(sym: str, family: str, params: dict[str, Any], h1: Any,
+             prov: dict[str, Any]) -> tuple[dict[str, Any] | None, str]:
+    """The reconstruction behind `resolve`; `prov` is filled in place.
+
     Mirrors `external_gauntlet.build_cell`'s reconstruction exactly, including its rule that a
     params key naming a peer or factor is REPLACED by the loaded frame rather than passed through.
 
@@ -277,13 +302,22 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             names = call.get("factor_symbols") or []
             if not names:
                 return None, "no factor symbols named on the candidate"
-            loaded = [(str(s), _runtime_bars(inputs, str(s), tf, h1)) for s in names]
-            missing = [s for s, d in loaded if d is None]
-            if missing:
-                return None, (f"factor bars unavailable for {missing}; all {len(names)} named "
-                              "factors are required to preserve the certified model")
-            factors = [d for _s, d in loaded]
-            extra["factors"] = factors
+            # EVERY NAMED FACTOR, OWN BARS FIRST, A DECLARED PROXY ONLY WHEN THE SPEC SAYS SO,
+            # AND A NAMED REFUSAL OTHERWISE (2026-10-20). All of them are still required -- a
+            # partial basket is a different model (ef11ff615) -- but a missing or stale leg now
+            # reads NEEDS_PROXY_FACTOR, and a basket whose exact-stamp join cannot reach the
+            # family's floor is aligned as-of onto the primary's index (point in time) or reads
+            # FACTOR_FRAME_STARVED. Before this, a close-only bond leg starved the join and the
+            # family returned [] with no reason: 24 USDX+UST10Y clocks at n = 0 for weeks.
+            from mt5desk.factor_inputs import build_basket
+
+            frames, fwhy, fprov = build_basket(
+                [str(s) for s in names], call, h1,
+                lambda s: _runtime_bars(inputs, str(s), tf, h1))
+            prov.update(fprov)
+            if frames is None:
+                return None, fwhy
+            extra["factors"] = frames
             return extra, "ok"
 
         if family == "execution_state":
@@ -406,4 +440,8 @@ IDENTITY_KEYS = frozenset({"peer_symbol", "factor_symbols", "input_symbol",
                            # valid E8 cells fail with `unexpected keyword argument 'session'`.
                            # The fill surface's vintage: it identifies WHICH map selected the
                            # cell's windows and is not an argument any family accepts.
-                           "surface_generated_at", "fx_symbol"})
+                           "surface_generated_at", "fx_symbol",
+                           # `factor_proxy` is the certificate spec's PERMISSION for a declared
+                           # factor proxy (`mt5desk.factor_inputs`); it selects inputs, and no
+                           # family takes it.
+                           "factor_proxy"})
