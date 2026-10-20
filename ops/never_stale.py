@@ -76,6 +76,9 @@ DIAGNOSIS = {
         "in the organ's own health artifact and enrol them -- this never means restart."),
 }
 
+#: The exit of a pass that ran to the end and left something needing a human.
+ESCALATED = 3
+
 #: REMEDIES THAT ONLY MAKE SENSE FOR ONE ORGAN, keyed (task, code).
 #:
 #: `DIAGNOSIS` above is keyed by exit code ALONE, which works for the Windows scheduler codes --
@@ -91,9 +94,6 @@ DIAGNOSIS = {
 #:
 #: THE RULE THIS ENCODES: a remedy discovered once is written down here, not re-derived. The
 #: escalation message already says so; it had nowhere to say it TO.
-#: The exit of a pass that ran to the end and left something needing a human.
-ESCALATED = 3
-
 TASK_DIAGNOSIS = {
     ("MT5-NeverStale", ESCALATED): (
         "the watchdog RAN and escalated: read desks/mt5/reports/NEVER_STALE.json `escalated` for "

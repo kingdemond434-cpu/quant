@@ -61,12 +61,16 @@ def judge(path: Path, key: str, max_h: float, now: datetime) -> dict[str, Any]:
     at = _stamp(doc.get(key)) if isinstance(doc, dict) else None
     if at is None:
         return {"status": "UNMEASURED", "why": f"no `{key}` stamp"}
-    age = round((now - at).total_seconds() / 3600, 2)
-    if age < -FUTURE_SKEW_H:
+    # Compare RAW seconds; round only for display (audit of 0004: rounding first let a stamp
+    # ~5m15s in the future, or 2h17s past a 2h window, read FRESH).
+    secs = (now - at).total_seconds()
+    age = round(secs / 3600, 2)
+    if secs < -FUTURE_SKEW_H * 3600:
         return {"status": "UNMEASURED", "stamp": at.isoformat(), "age_h": age,
                 "why": f"`{key}` is {-age:g} h in the FUTURE; a future stamp measures nothing"}
-    return {"status": "FRESH" if age <= max_h else "STALE", "stamp": at.isoformat(),
-            "age_h": age, "why": "" if age <= max_h else f"{age:g} h old against a {max_h:g} h cycle"}
+    fresh = secs <= max_h * 3600
+    return {"status": "FRESH" if fresh else "STALE", "stamp": at.isoformat(),
+            "age_h": age, "why": "" if fresh else f"{age:g} h old against a {max_h:g} h cycle"}
 
 
 def last_runs(log: Path, limit: int = 6) -> list[str]:

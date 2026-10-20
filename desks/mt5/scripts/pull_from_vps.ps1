@@ -24,7 +24,10 @@ New-Item -ItemType Directory -Force -Path $destData | Out-Null
 if ($LASTEXITCODE -ne 0) { $bad++ }
 
 # Pull all universal_gates_*.json
-& ssh -o ConnectTimeout=15 $vps "ls ${vpsBase}/reports/universal_gates_*.json 2>/dev/null" | ForEach-Object {
+# The LISTING is a step too: an unreachable VPS or an empty glob is a failed pull, not zero files.
+$listing = @(& ssh -o ConnectTimeout=15 $vps "ls ${vpsBase}/reports/universal_gates_*.json 2>/dev/null")
+if ($LASTEXITCODE -ne 0) { $bad++ }
+$listing | Where-Object { $_ } | ForEach-Object {
     $fname = [System.IO.Path]::GetFileName($_.Trim())
     & scp -o ConnectTimeout=15 ${vps}:${vpsBase}/reports/$fname "$dest/" 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { $bad++ }

@@ -59,6 +59,15 @@ def test_a_future_stamp_is_unmeasured_not_fresh(tmp_path: Path) -> None:
     assert fence.build(_desk(tmp_path, -0.02, 1, 1), NOW)["status"] == "GREEN"   # clock skew
 
 
+def test_freshness_compares_raw_seconds_not_rounded_hours(tmp_path: Path) -> None:
+    """Rounding to 0.01 h first let +5m15s future and 2h00m17s stale read FRESH (re-audit)."""
+    s = 1 / 3600
+    assert fence.build(_desk(tmp_path, 1, 1, -(5 / 60 + 15 * s)), NOW)["status"] == "RED"
+    assert fence.build(_desk(tmp_path, 1, 1, -(5 / 60)), NOW)["status"] == "GREEN"
+    assert fence.build(_desk(tmp_path, 1, 1, 2 + 17 * s), NOW)["status"] == "RED"
+    assert fence.build(_desk(tmp_path, 1, 1, 2.0), NOW)["status"] == "GREEN"
+
+
 def test_the_triangle_is_red_after_one_missed_hourly_cycle(tmp_path: Path) -> None:
     assert fence.build(_desk(tmp_path, 1, 1, 1.9), NOW)["status"] == "GREEN"
     assert fence.build(_desk(tmp_path, 1, 1, 2.5), NOW)["status"] == "RED"
@@ -115,10 +124,18 @@ def test_the_leg_is_wired_contracted_and_published() -> None:
     assert '"desks/mt5/reports/COST_STATE_FRESHNESS.json"' in sync
 
 
-_RUN = r"python|%PY%|\bscp\b|powershell|\bcall\s+\S+\.(cmd|bat)\b|\.exe\b"
-_SUCCESS = (r"^exit(\s*/b)?\s+0\s*$", r"^cmd\s*/c\s*exit\s*(/b\s*)?0\s*$",
-            r"^\(call\s*\)\s*$")
-_CHECKED = r"errorlevel|\|\||&&"
+_RUN = (r"python|%PY%|\bpy(\s+-3)?\s|\bscp\b|\bssh\b|\bgit\b|\brobocopy\b|powershell|"
+        r"\bcall\s+\S+\.(cmd|bat)\b|\.exe\b")
+#: A literal success, however spelled: `exit /b 0`, `exit /b 00`, `exit 0 & rem ...`, `exit 0;`.
+_SUCCESS = (r"^exit(\s*/b)?\s+0+\s*(;|&\s*rem\b.*)?$",
+            r"^cmd\s*/c\s*exit\s*(/b\s*)?0+\s*$", r"^\(call\s*\)\s*$")
+#: A step ending the line with `& exit /b 0` loses its own code on the same line.
+_INLINE_SUCCESS = r"(?<!&)&\s*exit(\s*/b)?\s+0+\s*$"
+#: A CHECK acts on the code: `|| exit|goto`, `if errorlevel N exit|goto|set`, or reads
+#: %ERRORLEVEL% / !ERRORLEVEL! (capture, `exit /b %ERRORLEVEL%`, `if %ERRORLEVEL% neq 0 ...`).
+#: `|| echo`, `if errorlevel 1 echo` and a bare `&&` chain are not checks: the code is still lost.
+_CHECKED = (r"\|\|\s*\(?\s*(exit|goto)\b|if\s+(not\s+)?errorlevel\s+\d+\s+\(?\s*(exit|goto|set)\b"
+            r"|%errorlevel%|!errorlevel!")
 
 
 def masked_steps(text: str) -> list[str]:
@@ -130,7 +147,12 @@ def masked_steps(text: str) -> list[str]:
     import re
     code = [ln.strip() for ln in text.splitlines()
             if ln.strip() and not re.match(r"^(rem\b|::|@echo\b|echo\b)", ln.strip(), re.I)]
-    if not code or not any(re.search(p, code[-1], re.I) for p in _SUCCESS):
+    if not code:
+        return []
+    last = code[-1]
+    if re.search(_RUN, last, re.I) and re.search(_INLINE_SUCCESS, last, re.I):
+        return [last]
+    if not any(re.search(p, last, re.I) for p in _SUCCESS):
         return []
     bad: list[str] = []
     for i, ln in enumerate(code[:-1]):
@@ -145,6 +167,39 @@ def masked_steps(text: str) -> list[str]:
     return bad
 
 
+#: A native step in PowerShell: an executable, interpreter or `&`-call at the start of a line, never
+#: an assignment that merely names one (`$python = ...`, `@{ python = $py }`).
+_PS_NATIVE = (r"^\s*(&\s*|\.\s+)?(\S*python\S*|py|scp|ssh|git|robocopy|\$\w*(py|python|exe)\w*"
+              r"|\S+\.exe|powershell\S*)\b(?!\s*=)")
+
+
+def ps1_masked(text: str) -> list[str]:
+    """A PowerShell runner ending in a literal success (`exit 0`, `exit 0;`, `exit(0)`, `exit 00`)
+    must read `$LASTEXITCODE` / `$?` AFTER its last native step: one mention anywhere in the file
+    no longer exempts it (re-audit of 0004). Returns that unchecked last step, or []."""
+    import re
+    text = re.sub(r"<#.*?#>", "", text, flags=re.S)
+    code = [ln.strip() for ln in text.splitlines()
+            if ln.strip() and not ln.strip().startswith("#")]
+    if not code or not re.fullmatch(r"exit\s*\(?\s*0+\s*\)?\s*;?", code[-1], re.I):
+        return []
+    runs = [i for i, ln in enumerate(code) if re.search(_PS_NATIVE, ln, re.I)]
+    if not runs:
+        return []
+    tail = code[runs[-1]:]
+    return [] if any(re.search(r"\$LASTEXITCODE|\$\?", x) for x in tail) else [code[runs[-1]]]
+
+
+def test_the_ps1_reader_checks_the_last_step_not_the_file() -> None:
+    assert ps1_masked("& scp a b\nif ($LASTEXITCODE -ne 0) { exit 1 }\n& git pull\nexit 0") \
+        == ["& git pull"]
+    for tail in ("exit 0", "exit 0;", "exit(0)", "exit 00"):
+        assert ps1_masked(f"& scp a b\n{tail}") == ["& scp a b"], tail
+    assert ps1_masked("& scp a b\nexit $LASTEXITCODE") == []
+    assert ps1_masked("& scp a b\nif (-not $?) { exit 1 }\nexit 0") == []
+    assert ps1_masked("$python = 'C:/py.exe'\nexit 0") == []
+
+
 def test_the_masked_step_reader_catches_the_audited_shapes() -> None:
     assert masked_steps('"%PY%" a.py\nexit /b 0') == ['"%PY%" a.py']
     assert masked_steps('"%PY%" a.py\nif errorlevel 1 exit /b 2\n"%PY%" b.py\nexit /b 0') \
@@ -156,14 +211,22 @@ def test_the_masked_step_reader_catches_the_audited_shapes() -> None:
     assert masked_steps('"%PY%" a.py\nset "RC=%ERRORLEVEL%"\nexit /b 0') == []
     assert masked_steps('"%PY%" a.py || exit /b 1\nexit /b 0') == []
     assert masked_steps('set "PY=C:\\python.exe"\nexit /b 0') == []
+    # the audited evasions (re-audit of 0004)
+    for step in ('"%PY%" a.py || echo failed', '"%PY%" a.py && echo ok',
+                 'py -3 a.py', 'git pull origin x', 'robocopy a b /MIR', 'ssh box ls'):
+        assert masked_steps(f"{step}\nexit /b 0") == [step], step
+    assert masked_steps('"%PY%" a.py\nif errorlevel 1 echo failed\nexit /b 0') == ['"%PY%" a.py']
+    for tail in ("exit /b 00", "exit /b 0 & rem done", "exit 0;"):
+        assert masked_steps(f'"%PY%" a.py\n{tail}'), tail
+    assert masked_steps('"%PY%" a.py & exit /b 0') == ['"%PY%" a.py & exit /b 0']
+    assert masked_steps('"%PY%" a.py\nif %ERRORLEVEL% neq 0 exit /b 1\nexit /b 0') == []
 
 
 def test_no_scheduled_runner_hard_codes_success() -> None:
     """A runner that ends in a literal success while a step's failure goes unchecked reports
     success whatever it ran (2026-10-14: twelve did, MT5-CostState among them). Batch files (.cmd
     and .bat) are read step by step; a PowerShell runner may not END in a bare `exit 0` without
-    ever reading `$LASTEXITCODE`."""
-    import re
+    reading `$LASTEXITCODE` after its last native step."""
     roots = ("ops", "desks/mt5/ops", "desks/mt5/scripts")
     masked: dict[str, list[str]] = {}
     for root in roots:
@@ -172,12 +235,7 @@ def test_no_scheduled_runner_hard_codes_success() -> None:
             if p.suffix.lower() in (".cmd", ".bat"):
                 bad = masked_steps(text)
             elif p.suffix.lower() == ".ps1":
-                code = [ln.strip() for ln in text.splitlines()
-                        if ln.strip() and not ln.strip().startswith("#")]
-                bad = (["exit 0 without $LASTEXITCODE"]
-                       if code and re.fullmatch(r"exit\s+0", code[-1], re.I)
-                       and re.search(_RUN, text, re.I)
-                       and not re.search(r"\$LASTEXITCODE|\$\?", text) else [])
+                bad = ps1_masked(text)
             else:
                 continue
             if bad:
