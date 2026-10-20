@@ -45,9 +45,8 @@ def input_preflight(family, params):
     # Only what the builder already refuses is refused: an empty driver (`build_cell`'s own test)
     # and an ABSENT calendar key (the TypeError). A present but out-of-range value still goes to
     # the family, which answers it as it always has.
-    if family == "lead_lag":
-        if not params.get("driver_symbol"):
-            return "BLOCKED_RULES: lead_lag: no driver_symbol on the cell"
+    if family == "lead_lag" and not params.get("driver_symbol"):
+        return "BLOCKED_RULES: lead_lag: no driver_symbol on the cell"
     if family == "calendar_month":
         missing = [k for k in ("active_month", "side_bias") if k not in params]
         if missing:
