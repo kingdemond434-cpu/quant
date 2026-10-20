@@ -32,14 +32,16 @@ def _control(pvalues: np.ndarray, alpha: float, *, dependent: bool) -> tuple[np.
     if m == 0:
         return np.zeros(0, dtype=bool), 0.0
     order = np.argsort(p)
-    # THE FAMILY SIZE IS THE FIXED BAR'S AT MOST (principal 2026-10-13: no bar rises with a trial
-    # count). Rank i's critical value is alpha * min(i, m_bar) / (m_bar * c_mbar): never below
-    # alpha * i / (m * c_m), because m_bar <= m and BY's harmonic c_mbar <= c_m.
+    # EACH RANK IS CHARGED min(ITS OWN CHARGE, BAR_N) (principal 2026-10-13: trials never inflate
+    # a bar, and never deflate it below N=5 either). BH/BY charge rank i a divisor of m*c_m/i, so
+    # the critical value is alpha * max(i / (m * c_m), 1 / BAR_N): never stricter than LIVE's
+    # alpha * i / (m * c_m), and never looser than Bonferroni at the fixed N for any rank. (Pinning
+    # the family size to min(m, BAR_N) instead let every rank past the fifth reach raw alpha:
+    # 2,505 of 50k pure-noise p-values passed, against 509 for Bonferroni at 5.)
     from libs.research.trial_count_guard import bar_n
-    m_bar = min(m, bar_n(m))
-    rank_bar = np.minimum(np.arange(1, m + 1), m_bar)
-    c_m = float(np.sum(1.0 / np.arange(1, m_bar + 1))) if dependent else 1.0
-    crit = (rank_bar / (m_bar * c_m)) * alpha
+    ranks = np.arange(1, m + 1)
+    c_m = float(np.sum(1.0 / ranks)) if dependent else 1.0
+    crit = alpha * np.maximum(ranks / (m * c_m), 1.0 / bar_n(m))
     sorted_p = p[order]
     below = sorted_p <= crit
     if not below.any():
@@ -114,13 +116,13 @@ def e_benjamini_hochberg(evalues: np.ndarray | list[float], *,
     e = np.maximum(e, 0.0)
     order = np.argsort(-e)                      # descending, stable -> deterministic on ties
     sorted_e = e[order]
-    # Fixed bar N (principal 2026-10-13): crit_k = m_bar / (alpha * min(k, m_bar)), never above
-    # e-BH's m / (alpha * k) for any k.
+    # Each rank charged min(its own charge, BAR_N) (principal 2026-10-13): e-BH charges rank k
+    # m/k, so crit_k = min(m / (alpha * k), BAR_N / alpha) -- never above e-BH's m / (alpha * k),
+    # and never below the fixed bar's BAR_N / alpha for any k.
     from libs.research.trial_count_guard import bar_n
-    m_bar = min(m, bar_n(m))
-    rank_bar = np.minimum(np.arange(1, m + 1), m_bar)
+    ranks = np.arange(1, m + 1)
     with np.errstate(divide="ignore", invalid="ignore"):
-        crit = m_bar / (alpha * rank_bar)
+        crit = np.minimum(m / ranks, bar_n(m)) / alpha
     meets = sorted_e >= crit
     if not meets.any():
         return FDRResult(rejected=[False] * m, threshold=0.0, n_rejected=0,
