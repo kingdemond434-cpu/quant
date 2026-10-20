@@ -17,7 +17,7 @@
  "uptime_s": 65799.8,
  "last_sweep_ended_utc": "2026-10-20T15:57:45+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-20T17:20:10+00:00",
+ "heartbeat_utc": "2026-10-20T17:34:43+00:00",
  "sweep_phase": {
   "pid": 23324,
   "sweep_started_utc": "2026-10-20T15:57:46+00:00",
