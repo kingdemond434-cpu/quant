@@ -283,6 +283,9 @@ from mt5desk.decision_core import (
     implementable_lot as implementable_lot,
 )
 from mt5desk.decision_core import (
+    promoted_fraction as promoted_fraction,
+)
+from mt5desk.decision_core import (
     heat_budget as heat_budget,
 )
 from mt5desk.decision_core import (
