@@ -316,5 +316,5 @@ def test_a_far_future_stamp_reads_unmeasured_in_the_organ_contract(tmp_path: Pat
     p = tmp_path / "a.json"
     for ahead, measured in ((timedelta(hours=3), False), (timedelta(minutes=2), True)):
         p.write_text(json.dumps({"generated_at": (NOW + ahead).isoformat()}), "utf-8")
-        got = oc.read_artifact_age("a.json", root=tmp_path, now=NOW, spec="generated_at")
+        got = oc.read_artifact_age("a.json", root=tmp_path, now=NOW, spec="key:generated_at")
         assert (got.get("age_min") is not None) is measured, (ahead, got)
