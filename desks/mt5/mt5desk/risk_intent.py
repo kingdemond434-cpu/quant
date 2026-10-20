@@ -151,23 +151,51 @@ def enforce_on_venue(lot: float, intended_frac: float, equity: float, dist: floa
                                else float(revert_min_fn())))
 
 
-def position_sl(mt5mod: Any, ticket: object, requested: float) -> tuple[float, str]:
+def _position_id(mt5mod: Any, deal: object, order: object) -> tuple[int, str]:
+    """The POSITION a market fill opened, resolved through the venue's own records.
+
+    THE POSITION TICKET IS NOT ASSUMED TO BE THE ORDER TICKET (audit 2026-10-20). On a netting
+    account the deal lands on the symbol's existing position, whose ticket is not this order's;
+    even on hedging accounts the API only promises the link through the deal. So: the deal
+    (`history_deals_get(ticket=res.deal)`) first, its `position_id`; else the order
+    (`history_orders_get(ticket=res.order)`), its `position_id`. Raises when neither resolves."""
+    errors: list[str] = []
+    for via, fn_name, ticket in (("deal", "history_deals_get", deal),
+                                 ("order", "history_orders_get", order)):
+        try:
+            t = int(ticket)  # type: ignore[call-overload]
+            if t <= 0:
+                raise ValueError(f"{via} ticket {ticket!r}")
+            got = list(getattr(mt5mod, fn_name)(ticket=t) or [])
+            if not got:
+                raise LookupError(f"no {via} {t} in history")
+            pid = int(getattr(got[0], "position_id", 0) or 0)
+            if pid <= 0:
+                raise ValueError(f"{via} {t} names no position_id")
+            return pid, via
+        except Exception as exc:
+            errors.append(f"{via}: {type(exc).__name__}: {exc}")
+    raise LookupError("; ".join(errors))
+
+
+def position_sl(mt5mod: Any, deal: object, order: object,
+                requested: float) -> tuple[float, str]:
     """The stop the venue actually holds on the position this fill opened.
 
-    Read back by ticket (`positions_get(ticket=...)`), because the post-fill check is about what
-    the account carries, not what was asked for. Unreadable, absent or stop-less falls back to
-    the REQUESTED stop and the returned source says so -- named, never silent."""
+    The position is resolved through the deal (else the order) -- see `_position_id` -- and its
+    SL read with `positions_get(ticket=position_id)`, because the post-fill check is about what
+    the account carries, not what was asked for. Anything unreadable, absent or stop-less falls
+    back to the REQUESTED stop and the returned source says so -- named, never silent; the
+    health row counts how often that happens (`SL_FALLBACK_FINDING`)."""
     try:
-        t = int(ticket)  # type: ignore[call-overload]
-        if t <= 0:
-            raise ValueError(f"ticket {ticket!r}")
-        got = list(mt5mod.positions_get(ticket=t) or [])
+        pid, via = _position_id(mt5mod, deal, order)
+        got = list(mt5mod.positions_get(ticket=pid) or [])
         if not got:
-            raise LookupError(f"no open position with ticket {t}")
+            raise LookupError(f"no open position {pid} (resolved via {via})")
         sl = float(getattr(got[0], "sl", 0.0) or 0.0)
         if not (math.isfinite(sl) and sl > 0.0):
-            raise ValueError(f"position {t} carries no stop")
-        return sl, "position"
+            raise ValueError(f"position {pid} carries no stop")
+        return sl, f"position via {via}"
     except Exception as exc:
         return float(requested), f"requested (position SL unreadable: {type(exc).__name__}: {exc})"
 
@@ -350,10 +378,127 @@ def ratio_summary(path: Path, n: int = FILL_WINDOW) -> dict[str, Any]:
     ratios = [float(r["ratio"]) for r in rows
               if r.get("status") == "MEASURED" and isinstance(r.get("ratio"), (int, float))
               and math.isfinite(float(r["ratio"]))][-n:]
+    measured = [r for r in rows if r.get("status") == "MEASURED"][-n:]
+    sourced = [r for r in measured if r.get("sl_source")]
+    fallback = [r for r in sourced if str(r["sl_source"]).startswith("requested")]
     if not ratios:
         return {"status": "UNMEASURED", "n": 0, "n_rows": len(rows),
                 "why": f"no measured fill in {path.name}"}
     return {"status": "MEASURED", "n": len(ratios), "n_rows": len(rows),
             "p50": round(_quantile(ratios, 0.50), 4), "p95": round(_quantile(ratios, 0.95), 4),
             "max": round(max(ratios), 4),
-            "n_breaches": sum(1 for x in ratios if x > POST_TOL)}
+            "n_breaches": sum(1 for x in ratios if x > POST_TOL),
+            "n_sl_sourced": len(sourced), "n_sl_fallback": len(fallback),
+            "sl_fallback_share": (round(len(fallback) / len(sourced), 4) if sourced else None)}
+
+
+# --------------------------------------------------------------- the independent cross-check
+#: The lanes whose fills this invariant measures; the gateway stamps `lane` on their intents.
+MEASURED_LANES = ("family_market", "scalp_market")
+#: The window the cross-check reads the gateway's own order journal over.
+CROSS_CHECK_DAYS = 7.0
+#: Two clocks for one fill: an intent row and a risk row are the same fill when their deal
+#: tickets agree, or (no deal on either) the sleeve agrees within this many seconds.
+MATCH_SECONDS = 300.0
+#: Share of measured fills priced from the REQUESTED stop because the position's own stop could
+#: not be read back. Above this the post-fill check is mostly measuring the request, not the
+#: account -- a FINDING on the health row. One in five: a few unreadable rows are venue noise
+#: (a position closed before the read); a fifth is a resolution path that is not working.
+SL_FALLBACK_FINDING = 0.20
+
+
+def _read_rows(path: Path) -> list[dict[str, Any]] | None:
+    try:
+        text = path.read_text("utf-8")
+    except FileNotFoundError:
+        return None
+    rows: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        if line.strip():
+            r = json.loads(line)          # a corrupt line is UNREADABLE, never skipped quietly
+            if isinstance(r, dict):
+                rows.append(r)
+    return rows
+
+
+def journal_fills(intents_path: Path, now: datetime | None = None,
+                  days: float = CROSS_CHECK_DAYS) -> list[dict[str, Any]]:
+    """Accepted family/scalp market sends in the gateway's order journal over the window.
+
+    The INDEPENDENT witness: `_record_intent` writes it on every send whatever the invariant
+    did. Raises when the journal is absent or unreadable -- the caller reads that as UNMEASURED,
+    never as zero fills."""
+    rows = _read_rows(intents_path)
+    if rows is None:
+        raise FileNotFoundError(f"{intents_path.name} absent")
+    now = now or datetime.now(tz=UTC)
+    out = []
+    for r in rows:
+        if r.get("lane") not in MEASURED_LANES or r.get("retcode") not in (10008, 10009):
+            continue
+        at = _when(r.get("time"))
+        if at is None or (now - at).total_seconds() > days * 86400.0:
+            continue
+        out.append(r)
+    return out
+
+
+def _matches(intent: dict[str, Any], row: dict[str, Any]) -> bool:
+    d_i, d_r = intent.get("deal_ticket"), row.get("deal")
+    if d_i not in (None, 0, "") and d_r not in (None, 0, ""):
+        return str(d_i) == str(d_r)
+    a, b = _when(intent.get("time")), _when(row.get("at"))
+    return (str(intent.get("sleeve")) == str(row.get("sleeve")) and a is not None
+            and b is not None and abs((a - b).total_seconds()) <= MATCH_SECONDS)
+
+
+def health(fills_path: Path, intents_path: Path,
+           now: datetime | None = None) -> tuple[str, str, dict[str, Any]]:
+    """(verdict, why, metric) for the health row, cross-checked against the order journal.
+
+      UNMEASURED   the journal cannot be read; or it shows a family/scalp fill in the window
+                   with no row in the fill ledger (named); or no recorded fill could be priced
+      NO_FILLS     the journal is readable AND shows no family/scalp fill in the window, and
+                   the ledger is empty -- an absence two sources agree on, still never OK
+      RISK_BREACH  p95 realised/intended above POST_TOL
+      FINDING      more than SL_FALLBACK_FINDING of fills priced from the requested stop
+      OK           otherwise
+    """
+    try:
+        summary = ratio_summary(fills_path)
+        ledger = _read_rows(fills_path) or []
+    except Exception as exc:
+        return "UNMEASURED", f"fill ledger unreadable ({type(exc).__name__}: {exc})", {}
+    try:
+        witnessed = journal_fills(intents_path, now)
+    except Exception as exc:
+        return ("UNMEASURED", f"cannot cross-check: the order journal is unreadable "
+                              f"({type(exc).__name__}: {exc}); zero fills is not assumed",
+                {**summary, "cross_check": "UNREADABLE"})
+    missing = [i for i in witnessed if not any(_matches(i, r) for r in ledger)]
+    metric = {**summary, "cross_check": {"journal_fills": len(witnessed),
+                                         "missing": len(missing)}}
+    if missing:
+        named = ", ".join(f"{m.get('sleeve')} deal {m.get('deal_ticket')} at {m.get('time')}"
+                          for m in missing[:3])
+        return ("UNMEASURED", f"{len(missing)} family/scalp fill(s) in the order journal have "
+                              f"no realised-risk row: {named}"
+                              f"{' ...' if len(missing) > 3 else ''}", metric)
+    if summary.get("status") != "MEASURED":
+        if not witnessed and summary.get("n_rows") == 0:
+            return ("NO_FILLS", f"no family/scalp fill in the order journal over "
+                                f"{CROSS_CHECK_DAYS:g} days and none in the ledger: nothing "
+                                f"to measure, which is not the same as clean", metric)
+        return "UNMEASURED", str(summary.get("why") or "no measured fill"), metric
+    why = (f"realised/intended over the last {summary['n']} fill(s): p50 {summary['p50']}, "
+           f"p95 {summary['p95']}, max {summary['max']}, {summary['n_breaches']} above "
+           f"{POST_TOL:g}x; SL read back on {summary['n_sl_sourced'] - summary['n_sl_fallback']}"
+           f"/{summary['n_sl_sourced']}")
+    if float(summary["p95"]) > POST_TOL:
+        return "RISK_BREACH", why, metric
+    share = summary.get("sl_fallback_share")
+    if share is not None and share > SL_FALLBACK_FINDING:
+        return ("FINDING", f"{why}: {share:.0%} priced from the REQUESTED stop, above the "
+                           f"{SL_FALLBACK_FINDING:.0%} finding threshold -- the position's own "
+                           f"stop is not being read back", metric)
+    return "OK", why, metric

@@ -4296,6 +4296,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
                        fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
                        deal_ticket=(getattr(res, "deal", None) if res else None),
+                       # The lane, so the realised-risk health row can cross-check its fill
+                       # ledger against this journal (`risk_intent.journal_fills`).
+                       lane="family_market",
                        **_sleeve_identity(s))
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
@@ -4315,7 +4318,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                 _unit = None
                 with contextlib.suppress(Exception):
                     _unit = float(_core._eur_per_price_unit(s["symbol"], sym))
-                _sl, _sl_src = _ri.position_sl(mt5, getattr(res, "order", None), float(g.stop))
+                _sl, _sl_src = _ri.position_sl(mt5, getattr(res, "deal", None),
+                                               getattr(res, "order", None), float(g.stop))
                 _rrow = _ri.measure_fill(
                     sleeve=name, symbol=s["symbol"], side=side,
                     volume=float(getattr(res, "volume", 0.0) or lot), fill_price=fill_px,
@@ -4905,6 +4909,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
                        fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
                        deal_ticket=(getattr(res, "deal", None) if res else None),
+                       lane="scalp_market",
                        **_sleeve_identity(s))
         log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
@@ -4918,7 +4923,8 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             _unit = None
             with contextlib.suppress(Exception):
                 _unit = float(_core._eur_per_price_unit(s["symbol"], sym))
-            _sl, _sl_src = _ri.position_sl(mt5, getattr(res, "order", None), stop)
+            _sl, _sl_src = _ri.position_sl(mt5, getattr(res, "deal", None),
+                                           getattr(res, "order", None), stop)
             _rrow = _ri.measure_fill(
                 sleeve=name, symbol=s["symbol"], side=side,
                 volume=float(getattr(res, "volume", 0.0) or per), fill_price=fill_px, sl=_sl,

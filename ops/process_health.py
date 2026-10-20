@@ -48,6 +48,8 @@ OUT = ROOT / "desks" / "mt5" / "reports" / "process_health.json"
 #: EUR risk (`mt5desk.risk_intent`, written by the gateway). Summarised as one board row.
 RISK_FILLS = ROOT / "desks" / "mt5" / "data" / "realised_risk_fills.jsonl"
 RISK_ROW = "MT5 realised-risk invariant (fills)"
+#: The gateway's own order journal: the independent witness the risk row cross-checks against.
+ORDER_INTENTS = ROOT / "desks" / "mt5" / "data" / "order_intents.jsonl"
 
 #: Windows scheduled-task result codes this desk has actually seen, in plain words. Anything not
 #: here is reported as its raw code rather than guessed at.
@@ -493,6 +495,8 @@ def account_key_backup() -> dict[str, Any]:
         return state
     except Exception as exc:
         return {"state": "UNMEASURED", "why": type(exc).__name__}
+
+
 def _reading(organ: str, artifact: str) -> dict[str, Any]:
     """How old the organ's artifact is BY THE STAMP INSIDE IT (organ_contract.read_artifact_age).
 
@@ -655,9 +659,14 @@ def deadman_invariant(*, state_path: Path | None = None, sleeves_path: Path | No
                     f"{'...' if len(live) > 3 else ''}) and the Fusion ruin rail is not "
                     f"protecting them: " + "; ".join(faults) + ". " + DEADMAN_ARM_STEP))
     return row
-#: Rows read OFF the scheduler (the pager, the disk, the deadman): a definite fault whatever the
-#: scheduler read managed, so they headline ATTENTION even over a brief-only or unread scheduler.
-OFF_SCHEDULER_FAULTS = frozenset({"DEADMAN_UNARMED", "ALERTS_UNARMED", "DISK_LOW"})
+
+
+#: Rows read OFF the scheduler (the pager, the disk, the deadman, the realised-risk breach): a
+#: definite fault whatever the scheduler read managed, so they headline ATTENTION even over a
+#: brief-only or unread scheduler. The realised-risk row's own UNMEASURED/FINDING is one too
+#: (`_off_scheduler_fault`): a fill the ledger missed is not a scheduler question.
+OFF_SCHEDULER_FAULTS = frozenset({"DEADMAN_UNARMED", "ALERTS_UNARMED", "DISK_LOW",
+                                  "RISK_BREACH"})
 
 
 def needs_attention(row: dict[str, Any]) -> bool:
@@ -667,35 +676,22 @@ def needs_attention(row: dict[str, Any]) -> bool:
 
 
 def _realised_risk_row() -> dict[str, Any]:
-    """realised/intended EUR risk over the last fills: p50, p95, max and breaches.
+    """realised/intended EUR risk over the last fills, cross-checked against the order journal.
 
-    NOT A SCHEDULED TASK: the gateway writes the ledger as it fills. Three non-OK readings, never
-    folded into OK:
-      NO_FILLS     the ledger is absent or empty: no family/scalp fill has happened on this box
-                   (the lanes are unarmed or idle). Named as an absence, not counted as clean.
-      UNMEASURED   fills were recorded but none could be priced, or the ledger is unreadable.
-      RISK_BREACH  p95 above the post-fill tolerance: fills risk materially more than intended.
-    """
+    NOT A SCHEDULED TASK: the gateway writes the ledger as it fills. The verdict is
+    `risk_intent.health`: NO_FILLS only when the gateway's own order journal ALSO shows no
+    family/scalp fill (an unreadable journal, or a journalled fill missing from the ledger, is
+    UNMEASURED and names it); RISK_BREACH on p95 above tolerance; FINDING when too many fills
+    were priced from the requested stop because the position's own could not be read back."""
     try:
         desk = str(ROOT / "desks" / "mt5")
         if desk not in sys.path:
             sys.path.insert(0, desk)
         from mt5desk import risk_intent as _ri
-        summary = _ri.ratio_summary(RISK_FILLS)
-        tol = float(_ri.POST_TOL)
+        verdict, why, metric = _ri.health(RISK_FILLS, ORDER_INTENTS)
     except Exception as exc:
-        summary, tol = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}, 1.5
+        verdict, why, metric = "UNMEASURED", f"{type(exc).__name__}: {exc}", {}
     age = _age_min(RISK_FILLS)
-    if summary.get("status") != "MEASURED" and summary.get("n_rows") == 0:
-        verdict, why = "NO_FILLS", ("no family/scalp fill recorded on this box yet: nothing to "
-                                    "measure, which is not the same as clean")
-    elif summary.get("status") != "MEASURED":
-        verdict, why = "UNMEASURED", str(summary.get("why") or "no measured fill")
-    else:
-        why = (f"realised/intended over the last {summary['n']} fill(s): p50 {summary['p50']}, "
-               f"p95 {summary['p95']}, max {summary['max']}, {summary['n_breaches']} above "
-               f"{tol:g}x")
-        verdict = "RISK_BREACH" if float(summary["p95"]) > tol else "OK"
     try:
         artifact = str(RISK_FILLS.relative_to(ROOT))
     except ValueError:
@@ -708,7 +704,7 @@ def _realised_risk_row() -> dict[str, Any]:
             "artifact_mtime_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": None,
             "purpose": "final order risk in EUR held to the allocator's intent",
-            "metric": summary}
+            "metric": metric}
 
 
 def build() -> dict[str, Any]:
@@ -927,7 +923,8 @@ def build() -> dict[str, Any]:
     backup = account_key_backup()
     key_fault = key.get("state") in KEY_FAULT_STATES
     backup_fault = backup.get("state") in BACKUP_FAULT_STATES
-    off_scheduler_faults = [r for r in rows if r["verdict"] in OFF_SCHEDULER_FAULTS]
+    off_scheduler_faults = [r for r in rows if r["verdict"] in OFF_SCHEDULER_FAULTS
+                            or (r["name"] == RISK_ROW and needs_attention(r))]
     status = ("UNMEASURED" if not n_scheduler_rows or not scheduler_status.startswith("OK ")
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
