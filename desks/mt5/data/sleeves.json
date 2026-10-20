@@ -50463,13 +50463,13 @@
       "admission": {
         "status": "UNMEASURED",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
         "heat_earned": null,
         "joined": "no allocator row answers to any of ['eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007', 'eurzar|overnight_gap_decay|asia', 'eurzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
         "why": "no allocator row answers to any of ['eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007', 'eurzar|overnight_gap_decay|asia', 'eurzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-10-20T15:15:44.072316+00:00",
       "restored_at": "2026-10-13T21:48:02+00:00",
       "restore_reason": "already funded by the allocator at 3.16% heat; the allocator's current solve gives this sleeve 3.16% heat, written at the 3% promoter ceiling; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'eurzar|overnight_gap_decay|asia' (funded book))",
