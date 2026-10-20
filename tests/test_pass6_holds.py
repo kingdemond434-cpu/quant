@@ -467,8 +467,14 @@ class _FakeWeb(urllib.request.BaseHandler):
         import email.message
         import io
         import urllib.response
-        self.served.append(req.full_url)
         hdrs = email.message.Message()
+        if req.full_url.endswith("/robots.txt"):
+            # The fetch door now reads robots.txt first (audit GD_LANDING_TRAIN_6eb7a91b4 SF):
+            # a 404 means allow all, and a robots read is not a page served.
+            r = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, 404)
+            r.msg = "Not Found"
+            return r
+        self.served.append(req.full_url)
         if req.full_url == _START:
             hdrs["Location"] = self.target
             r = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, 302)
@@ -576,8 +582,14 @@ class _RedirectEverything(urllib.request.BaseHandler):
         import email.message
         import io
         import urllib.response
-        self.served.append(req.full_url)
         hdrs = email.message.Message()
+        if req.full_url.endswith("/robots.txt"):
+            # The fetch door now reads robots.txt first (audit GD_LANDING_TRAIN_6eb7a91b4 SF):
+            # a 404 means allow all, and a robots read is not a page served.
+            r = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, 404)
+            r.msg = "Not Found"
+            return r
+        self.served.append(req.full_url)
         if req.full_url != self.target:
             hdrs["Location"] = self.target
             r = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, 302)

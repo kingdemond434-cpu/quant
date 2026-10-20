@@ -268,7 +268,7 @@ def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
     cycle, never a cell's live input data. [] on any failure."""
     url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
     try:
-        data = json.loads(_get(url, headers={"User-Agent": "research-crowding/1.0"},
+        data = json.loads(_get(url, headers={"User-Agent": DESK_UA},
                                live_input=False))     # IDEAS_ONLY (see above): hops re-checked
         posts = []
         for c in data.get("data", {}).get("children", []):

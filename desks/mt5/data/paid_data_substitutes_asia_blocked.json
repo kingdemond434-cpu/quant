@@ -122,7 +122,7 @@
    "frequency": "monthly",
    "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=kr_mof_container_teu,imf_portwatch_ports",
    "terms": "to_confirm",
-   "blocked_because": "BPA copyright policy / KOGL mark not found; robots.txt only names Yeti and Googlebot",
+   "blocked_because": "BPA copyright policy / KOGL mark not found; robots.txt only names Naver's and Google's crawlers",
    "unsubstituted_because": "candidate(s) kr_mof_container_teu, imf_portwatch_ports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
    "substitute_check": "kr_mof_container_teu: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED); imf_portwatch_ports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do; imf_portwatch_ports: https://www.imf.org/external/terms.htm"

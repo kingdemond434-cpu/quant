@@ -51,6 +51,7 @@ from __future__ import annotations
 import contextlib
 import os
 from typing import Any
+from urllib.parse import urljoin
 
 __all__ = ["RENDER_BUDGET_PER_RUN", "budget_left", "judge_navigation", "render",
            "render_available", "reset_budget"]
@@ -148,10 +149,10 @@ def looks_challenged(html: str, headers: Any = None, status: int | None = None) 
 def _chain(response: Any) -> list[str]:
     """Every URL the navigation passed through, first request first, final response last.
 
-    `page.route` is NOT called for redirect hops (Playwright routes the first request only), so a
-    redirect to a disallowed path or a held site is fetched by the browser without passing the
-    gate. The chain is read back from `request.redirected_from` and judged after the fact: a
-    navigation that crossed a refused hop returns no content."""
+    `page.route` is NOT called for redirect hops the BROWSER follows (Playwright routes the first
+    request only). `_gate` therefore never lets the browser follow one: it fetches each request
+    itself with redirects off and checks every hop BEFORE requesting it. This chain is kept as a
+    second check after the fact: a navigation that crossed a refused hop returns no content."""
     urls: list[str] = []
     req = getattr(response, "request", None)
     seen = 0
@@ -215,21 +216,78 @@ def _drive(page: Any, url: str, access: Any, *, wait_selector: str, timeout_s: f
 
     from libs.data import terms_fence as _tf
 
+    refusals: list[str] = []
+
+    def _refuse(route: Any, why: str, *, navigation: bool) -> None:
+        if navigation:
+            refusals.append(why)
+        route.abort("blockedbyclient")
+
     def _gate(route: Any) -> None:
-        # THE METHOD FENCE first (libs/data/terms_fence.py): every request the page makes --
-        # each redirect hop and subresource -- on a held source is aborted as blocked-by-client;
-        # then the site's holds and robots.txt.
-        if _tf.platform_of_url(str(route.request.url)):
-            route.abort("blockedbyclient")
+        """REQUEST-LEVEL INTERCEPTION, every request the page makes and EVERY REDIRECT HOP
+        (audit GD_LANDING_TRAIN_6eb7a91b4: a hop judged after Chromium requested it has already
+        gone out). Each URL passes THE METHOD FENCE, then the site's person-held hold and its
+        origin's robots.txt, BEFORE it is requested. The request is then sent by Playwright with
+        redirects OFF (`route.fetch(max_redirects=0)`); a 30x is not handed to the browser to
+        follow unrouted -- its target is checked the same way and fetched here, hop by hop, up
+        to `polite_fetch.MAX_REDIRECTS`. A 401/403/429 holds the site that refused (that hop's
+        own URL) and nothing is returned. Only a final, permitted answer reaches the page."""
+        from libs.data import polite_fetch as _pf
+        req = route.request
+        try:
+            nav = bool(req.is_navigation_request())
+        except Exception:
+            nav = False
+        cur = str(req.url)
+        for hop in range(_pf.MAX_REDIRECTS + 1):
+            held = _tf.platform_of_url(cur)
+            if held:
+                _refuse(route, f"TERMS-FENCED: {_tf.PLATFORMS[held]['status']}:{held} on "
+                               f"{'redirect hop ' if hop else ''}{cur[:160]}", navigation=nav)
+                return
+            ok, why = access.permits(cur)
+            if not ok:
+                _refuse(route, f"RENDER-REFUSED: {why} on {'redirect hop ' if hop else ''}"
+                               f"{cur[:160]} -- refused before it was requested", navigation=nav)
+                return
+            try:
+                resp = route.fetch(url=cur if hop else None, max_redirects=0)
+            except Exception as exc:
+                _refuse(route, f"RENDER-FAILED: {type(exc).__name__} on {cur[:160]}",
+                        navigation=nav)
+                return
+            status = int(getattr(resp, "status", 0) or 0)
+            if status in _pf.REDIRECT_STATUS:
+                loc = str((_headers_of(resp)).get("location") or "")
+                with contextlib.suppress(Exception):
+                    resp.dispose()
+                if not loc:
+                    _refuse(route, f"RENDER-FAILED: HTTP {status} without Location",
+                            navigation=nav)
+                    return
+                cur = urljoin(cur, loc)
+                continue
+            if status in _pf.BLOCK_STATUS:
+                verdict = access.block(cur, status)
+                with contextlib.suppress(Exception):
+                    resp.dispose()
+                _refuse(route, f"RENDER-REFUSED: {verdict}: HTTP {status} at {cur[:160]} -- "
+                               "held for the site that refused, nothing returned", navigation=nav)
+                return
+            route.fulfill(response=resp)
             return
-        ok, _why = access.permits(str(route.request.url))
-        if ok:
-            route.continue_()
-        else:
-            route.abort()
+        _refuse(route, "RENDER-FAILED: too many redirects", navigation=nav)
+
     page.route("**/*", _gate)
     page.set_default_timeout(timeout_s * 1000)
-    response = page.goto(url, wait_until="domcontentloaded", timeout=timeout_s * 1000)
+    try:
+        response = page.goto(url, wait_until="domcontentloaded", timeout=timeout_s * 1000)
+    except Exception:
+        if refusals:                 # the gate aborted the navigation: say why, not "failed"
+            return "", refusals[0]
+        raise
+    if refusals:
+        return "", refusals[0]
     refused = judge_navigation(response, url, access)
     if refused:
         return "", refused

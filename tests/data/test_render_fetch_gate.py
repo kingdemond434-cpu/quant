@@ -147,3 +147,142 @@ def test_a_script_navigation_to_a_disallowed_page_is_refused() -> None:
 
 def test_judge_navigation_with_no_response_is_permitted() -> None:
     assert rf.judge_navigation(None, "https://a.test/#frag", _Access()) == ""
+
+
+# ------------------------------------------- request-level interception (audit 6eb7a91b4 SF)
+class _Fetched:
+    def __init__(self, status: int, location: str = "") -> None:
+        self.status = status
+        self.headers = {"location": location} if location else {}
+        self.disposed = False
+
+    def dispose(self) -> None:
+        self.disposed = True
+
+
+class _Net:
+    """What actually went out: url -> (status, Location). Every fetch is recorded."""
+
+    def __init__(self, routes: dict[str, tuple[int, str]]) -> None:
+        self.routes = routes
+        self.sent: list[str] = []
+
+    def fetch(self, url: str) -> _Fetched:
+        self.sent.append(url)
+        status, loc = self.routes.get(url, (200, ""))
+        return _Fetched(status, loc)
+
+
+class _RouteReq:
+    def __init__(self, url: str, nav: bool) -> None:
+        self.url = url
+        self._nav = nav
+
+    def is_navigation_request(self) -> bool:
+        return self._nav
+
+
+class _Route:
+    """Playwright's Route as `_gate` uses it: fetch (redirects off), fulfill, abort."""
+
+    def __init__(self, url: str, net: _Net, nav: bool = True) -> None:
+        self.request = _RouteReq(url, nav)
+        self.net = net
+        self.fulfilled: _Fetched | None = None
+        self.aborted = ""
+
+    def fetch(self, url: str | None = None, max_redirects: int | None = None) -> _Fetched:
+        assert max_redirects == 0, "the gate must never let a fetch follow a redirect itself"
+        return self.net.fetch(url or self.request.url)
+
+    def fulfill(self, response: _Fetched) -> None:
+        self.fulfilled = response
+
+    def abort(self, reason: str = "") -> None:
+        self.aborted = reason or "aborted"
+
+
+class _RoutedPage(_Page):
+    """A page whose goto runs the installed route handler, as Chromium would."""
+
+    def __init__(self, net: _Net) -> None:
+        super().__init__(None)
+        self.net = net
+        self.handler: Any = None
+        self.subresources: list[_Route] = []
+
+    def route(self, pattern: str, handler: Any) -> None:
+        self.routed = True
+        self.handler = handler
+
+    def goto(self, url: str, **kw: Any) -> _Response | None:
+        r = _Route(url, self.net)
+        self.handler(r)
+        if r.aborted:
+            raise RuntimeError("net::ERR_BLOCKED_BY_CLIENT")
+        assert r.fulfilled is not None
+        self.url = url
+        return _Response([url], status=r.fulfilled.status)
+
+    def load_subresource(self, url: str) -> _Route:
+        r = _Route(url, self.net, nav=False)
+        self.handler(r)
+        self.subresources.append(r)
+        return r
+
+
+def test_a_redirect_hop_robots_disallows_is_never_requested() -> None:
+    acc = _Access({"https://b.test": "User-agent: *\nDisallow: /secret\n"})
+    net = _Net({"https://a.test/p": (302, "https://b.test/secret")})
+    html, err = _drive(_RoutedPage(net), acc)
+    assert html == "" and "ROBOTS_DISALLOW" in err and "redirect hop" in err
+    assert net.sent == ["https://a.test/p"], "the disallowed hop went out"
+
+
+def test_a_redirect_hop_into_a_held_site_is_never_requested() -> None:
+    acc = _Access()
+    acc.block("https://held.test/x", 403)
+    net = _Net({"https://a.test/p": (301, "https://www.held.test/q")})
+    html, err = _drive(_RoutedPage(net), acc)
+    assert html == "" and "METHOD_BLOCKED" in err
+    assert net.sent == ["https://a.test/p"]
+
+
+def test_a_redirect_into_a_terms_held_source_is_never_requested() -> None:
+    net = _Net({"https://a.test/p": (302, "https://nitter.net/x/rss")})
+    html, err = _drive(_RoutedPage(net), _Access())
+    assert html == "" and "TERMS-FENCED" in err and net.sent == ["https://a.test/p"]
+
+
+def test_permitted_hops_are_each_checked_then_fetched_and_only_the_end_is_returned() -> None:
+    net = _Net({"https://a.test/p": (302, "/q"), "https://a.test/q": (307, "https://c.test/r")})
+    page = _RoutedPage(net)
+    html, err = _drive(page, _Access())
+    assert err == "" and "ok" in html
+    assert net.sent == ["https://a.test/p", "https://a.test/q", "https://c.test/r"]
+
+
+def test_a_429_at_a_hop_holds_the_site_that_refused_not_the_first_one() -> None:
+    acc = _Access()
+    net = _Net({"https://a.test/p": (302, "https://c.test/r"), "https://c.test/r": (429, "")})
+    html, err = _drive(_RoutedPage(net), acc)
+    assert html == "" and "HTTP 429" in err
+    assert acc.hold("https://c.test/other") == "METHOD_BLOCKED"
+    assert acc.hold("https://a.test/other") == ""
+
+
+def test_the_first_request_is_refused_before_it_goes_out() -> None:
+    acc = _Access({"https://a.test": "User-agent: *\nDisallow: /p\n"})
+    net = _Net({})
+    html, err = _drive(_RoutedPage(net), acc)
+    assert html == "" and "ROBOTS_DISALLOW" in err and net.sent == []
+
+
+def test_a_refused_subresource_is_aborted_without_failing_the_page() -> None:
+    acc = _Access({"https://cdn.test": "User-agent: *\nDisallow: /\n"})
+    net = _Net({})
+    page = _RoutedPage(net)
+    _html, err = _drive(page, acc)
+    assert err == ""
+    r = page.load_subresource("https://cdn.test/x.js")
+    assert r.aborted and "https://cdn.test/x.js" not in net.sent

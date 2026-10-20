@@ -256,7 +256,10 @@ def test_every_fetch_helper_refuses_a_redirect_into_a_held_host(
         fd._get("http://data.example.test/moved.csv")
     raw, why = wc.fetch("http://data.example.test/moved.csv")
     assert raw is None and why.startswith(tf.METHOD_BLOCKED)
-    assert sf._probe("http://data.example.test/moved.csv")[1] == "terms_fenced:nitter"
+    # source_fixer probes through the polite no-redirect opener (audit 31618ff54): the 30x is
+    # reported with its target and never followed, so the held host is never asked at all.
+    assert sf._probe("http://data.example.test/moved.csv")[1] == \
+        "redirect:https://nitter.net/x/rss"
     with pytest.raises(wdh.FetchError):
         wdh.urllib_fetch("http://data.example.test/moved.csv", 5)
     # A clean redirect still works through the same helpers.

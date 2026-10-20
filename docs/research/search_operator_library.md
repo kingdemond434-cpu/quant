@@ -433,7 +433,9 @@ technique: OP-003/OP-022's two-step shape, now runnable for RU. The library prev
   "habr comments endpoint" as an OP-003 adaptation and never gave a URL, so it was unexecutable.
   (1) DISCOVER: normal web/Yandex search for habr.com/ru/articles/<id>/
   (2) MINE DEPTH — ONE keyless GET, no auth, no JS wall:
-      curl -H "User-Agent: Mozilla/5.0" https://habr.com/kek/v2/articles/<id>/comments/
+      GET https://habr.com/kek/v2/articles/<id>/comments/ through libs.data.polite_fetch.get
+      (User-Agent = polite_fetch.DESK_UA, never a browser string; robots.txt decides; a
+      401/403/429 is a hard stop held for a person)
       -> {"comments": {"<id>": {"parentId":..., "level":<depth>, "score":..., "message":"<html>"}}}
       `level` IS the depth, precomputed — no tree walk needed to satisfy the >=2 depth mandate.
       Strip HTML, then rank by MECHANISM-KEYWORD DENSITY, never by `score`: on 911056 the single
