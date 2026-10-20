@@ -241,11 +241,11 @@ def v2(eg):
     return eg
 
 
-def test_a_reused_shard_keeps_its_deferrals_and_they_are_counted(v2, shard) -> None:
+def test_a_reused_shard_keeps_its_deferrals_and_they_are_counted(v2) -> None:
     """audit of b94babf39 asked that deferred rows not be reused. Rebuilding every shard that
     holds one ended reuse outright (fs_resume: no shard reused in 16 of 16 resume scenarios), so
     the shard is reused and its kept deferrals are billed on the resume's missed-growth line."""
-    eg, d = v2, shard / "shards"
+    eg = v2
     mine = [(0, _spec(0)), (2, _spec(2))]
     rows = [
         {"kind": "blocked", "idx": 0, "obj": {"downstream_status": "NOT_RUN_MODIFIER"}},
