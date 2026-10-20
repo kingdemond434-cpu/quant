@@ -2220,7 +2220,12 @@ def _sweep_logged() -> int:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a", encoding="utf-8", buffering=1) as log:
         old_out, old_err = sys.stdout, sys.stderr
-        sys.stdout = sys.stderr = log
+        # WHERE THE PLAN IS (judge_plan_progress): the judge's own log lines name its step, and
+        # the sealed image's progress hook, where it has one, its counts. Reports only.
+        from scripts.judge_plan_progress import PlanTracker
+        plan = PlanTracker(_PHASE_DOC, SWEEP_PHASE)
+        plan.step("lane_and_docket")
+        sys.stdout = sys.stderr = plan.tee(log)
         try:
             # THE PRIOR SWEEP FIRST: a dead one is recorded, a stuck one is killed, and a lock
             # held by a reused pid is cleared -- so this run can never wait behind a corpse.
@@ -2238,6 +2243,7 @@ def _sweep_logged() -> int:
                 flush=True,
             )
             from scripts import external_gauntlet as judge
+            plan.attach(judge)
 
             if getattr(judge, "SHARD_PROTOCOL", None) != 2:
                 raise RuntimeError(
