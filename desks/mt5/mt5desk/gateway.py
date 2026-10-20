@@ -302,6 +302,9 @@ from mt5desk.decision_core import (
     minlot_floor_risk_frac as minlot_floor_risk_frac,
 )
 from mt5desk.decision_core import (
+    cert_book_zero as cert_book_zero,
+)
+from mt5desk.decision_core import (
     MINLOT_OVERRIDE_TARGET_FRAC as MINLOT_OVERRIDE_TARGET_FRAC,
     FUSION_LIVE_SERVER as FUSION_LIVE_SERVER,
     FUSION_ACCOUNT_FILE as FUSION_ACCOUNT_FILE,
