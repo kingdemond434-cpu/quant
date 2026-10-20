@@ -115,3 +115,21 @@ def test_the_cycle_producer_actually_writes_the_artifact(tmp_path: Path) -> None
     assert res.get("exit_code") == 0, res
     assert load_kelly_survival(out, "e8") is not None or \
         json.loads(out.read_text(encoding="utf-8"))["e8"]["status"] != "OK"
+
+
+# ------------------------------------------------------------------ composition in prop/e8_gold
+def test_the_cert_book_wins_over_kelly_per_window_in_e8_gold() -> None:
+    """prop/e8_gold.run merges `kelly = {**(kelly or {}), **cert}`: a window the cert book names
+    takes the book's value, whatever kelly says (up or down); kelly only fills unnamed windows."""
+    e8_gold = pytest.importorskip("prop.e8_gold", reason="ships with the desk")
+    src = (_DESK / "prop" / "e8_gold.py").read_text(encoding="utf-8")
+    assert "kelly = {**(kelly or {}), **cert}" in src, "composition changed: cert must win"
+    kelly = {"asia": 0.005, "london_am": 0.0, "afternoon": 0.0}
+    cert = e8_gold.cert_gold_windows({"gold_asia": 0.006, "gold_london_am": 0.0,
+                                      "gold_afternoon": 0.0, "AUDCHF_x_asia": 0.0})
+    merged = {**(kelly or {}), **cert}
+    assert e8_gold.window_risk("asia", merged) == (0.006, "kelly_survival")
+    assert e8_gold.window_risk("london_am", merged)[0] == 0.0
+    assert e8_gold.window_risk("afternoon", merged)[0] == 0.0
+    up = {**{"asia": 0.015}, **cert}       # kelly cannot override the book upward either
+    assert e8_gold.window_risk("asia", up)[0] == 0.006
