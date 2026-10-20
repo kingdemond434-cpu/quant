@@ -75,6 +75,12 @@ annualisation sqrt(365/h) matches the actual period and n_eff is if anything und
 (non-overlapping blocks need no overlap correction at all). Blocks are non-overlapping, so
 signal[k] is observed strictly inside period k and predicts period k+1.
 
+THIRD-PARTY SERIES (terms_fence `fred_copyrighted`, 2026-10-20). Cboe owns VIXCLS: it is
+refused before any request through `free_data.fred_refusal`, published here as
+UNMEASURED_NO_LICENSED_SOURCE with its missed_growth line, charged as NO trial (it was never
+tested) and never written to the deep archive. Licensed series are fetched through
+`free_data.fred_series` (method fence, desk UA, keyless CSV), never a bare urlopen.
+
     .venv/bin/python scripts/screen_fred_macro_axis.py
 """
 from __future__ import annotations
@@ -82,8 +88,6 @@ from __future__ import annotations
 import json
 import re
 import sys
-import urllib.parse
-import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -97,9 +101,12 @@ from libs.alpha_factory.hypothesis_novelty import PriorIdea, hypothesis_novelty 
 from libs.research.alpha_economics import Idea, ev_score  # noqa: E402
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
 
+if str(ROOT / "desks" / "mt5" / "research") not in sys.path:
+    sys.path.insert(0, str(ROOT / "desks" / "mt5" / "research"))
+import free_data as fd  # noqa: E402
+
 OUT = ROOT / "data/fred_macro_screen.json"
 DEEP = ROOT / "data/fred_macro_deep.json"
-FRED = "https://api.stlouisfed.org/fred/series/observations"
 ZWIN = {1: 20, 5: 12, 20: 6}
 TRIALS: list[dict] = []
 
@@ -258,15 +265,20 @@ def novelty(name: str, statement: str, features: tuple[str, ...]) -> dict:
 
 
 # --------------------------------------------------------------------------------------- data ---
-def fred_deep(sid: str, key: str) -> pd.Series:
-    q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
-                                "observation_start": "1900-01-01"})
-    req = urllib.request.Request(f"{FRED}?{q}", headers={"User-Agent": "quant-fred-screen/1.0"})
-    with urllib.request.urlopen(req, timeout=45) as r:
-        obs = json.loads(r.read()).get("observations", [])
-    d = {pd.Timestamp(o["date"], tz="UTC"): float(o["value"])
-         for o in obs if o.get("value") not in (".", "", None)}
-    return pd.Series(d).sort_index()
+#: Third-party series refused this run: sid -> provenance row (status, substitute, missed_growth).
+UNMEASURED: dict[str, dict] = {}
+
+
+def fred_deep(sid: str) -> pd.Series | None:
+    """Deep FRED history through free_data: None (and an UNMEASURED row) for a third-party
+    series, refused before any URL is built; an empty Series when a licensed fetch failed."""
+    row = fd.fred_refusal(sid, "screen_fred_macro_axis")
+    if row is not None:
+        UNMEASURED[sid] = row
+        return None
+    obs = fd.fred_series(sid, start="1900-01-01", alternate=False, use_cache=False) or {}
+    d = {pd.Timestamp(k, tz="UTC"): float(v) for k, v in obs.items()}
+    return pd.Series(d, dtype=float).sort_index()
 
 
 #: The MT5 desk's own H1 bar store. Read-only from here.
@@ -334,7 +346,6 @@ def transform(sid: str, s: pd.Series) -> pd.Series:
 
 
 def main() -> None:
-    key = json.loads((ROOT / "data/secrets/fred.json").read_text("utf-8"))["key"]
     btc = target_close()
     print(f"{_TARGET} leg (MT5 H1 -> daily close): n={len(btc)} "
           f"{btc.index.min().date()} -> {btc.index.max().date()}\n")
@@ -358,7 +369,16 @@ def main() -> None:
     print("STAGE-A SCREENS (audited harness, artifact gate baked in, NO clock passed on any cell)")
     print("=" * 100)
     for sid, name, mech, _constr, horizons, _feat, _idea in CANDIDATES:
-        raw = fred_deep(sid, key)
+        raw = fred_deep(sid)
+        if raw is None:
+            print(f"  {name}: {sid} {UNMEASURED[sid]['status']} (terms_fence fred_copyrighted) -- "
+                  "refused before request, no trial charged")
+            continue
+        if raw.empty:
+            TRIALS.append({"axis": "fred_macro", "series": sid, "construction": name,
+                           "verdict": "INSUFFICIENT-DATA", "n": 0,
+                           "note": "FRED fetch returned no rows (UNMEASURED, not barren)"})
+            continue
         deep[sid] = [[d.strftime("%Y-%m-%d"), v] for d, v in raw.items()]
         s = transform(sid, raw)
         common = s.index.intersection(btc.index)
@@ -405,6 +425,10 @@ def main() -> None:
         "timestamp_alignment": __doc__.split("TIMESTAMP ALIGNMENT")[1].split("SAMPLING")[0].strip(),
         "sampling": __doc__.split("\nSAMPLING:")[1].split("\n\n")[0].strip(),
         "not_screened": NOT_SCREENED,
+        "unmeasured_no_licensed_source": {
+            sid: {k: v for k, v in r.items() if k != "missed_growth"}
+            for sid, r in UNMEASURED.items()},
+        "missed_growth": [r["missed_growth"] for r in UNMEASURED.values()],
         "novelty_gate": list(nov.values()),
         "ev_gate": list(ev.values()),
         "trials": TRIALS,

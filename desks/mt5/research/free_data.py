@@ -104,11 +104,13 @@ FRED_FIELDS = {"DGS2", "DGS10", "T10Y2Y", "DFEDTARU", "DFF", "SOFR", "RRPONTSYD"
 
 
 def fred_series(series_id: str, start: str = "2010-01-01",
-                vintage: str | None = None, *, alternate: bool = True) -> dict[str, float] | None:
+                vintage: str | None = None, *, alternate: bool = True,
+                use_cache: bool = True) -> dict[str, float] | None:
     """Fetch a FRED series as {iso_date: value}. Keyless via fredgraph.csv.
     vintage_date => ALFRED point-in-time view of that series. `alternate=False` refuses the
     DBnomics mirror: a licensed substitute is read from the row whose terms were read, never a
-    mirror whose own terms were not.
+    mirror whose own terms were not. `use_cache=False` neither reads nor writes the 6h cache: its
+    key carries no `start`, so a deep-history caller (start 1900) must not be handed a 2010 cut.
 
     A series owned by a third party (terms_fence `fred_copyrighted`: its FRED notes carry a
     copyright notice) is REFUSED AS LIVE INPUT before any URL is built: no request, no cache
@@ -122,7 +124,7 @@ def fred_series(series_id: str, start: str = "2010-01-01",
         q["vintage_date"] = vintage
     url = base + "?" + urllib.parse.urlencode(q)
     key = f"fred_{series_id}_{vintage or 'cur'}"
-    hit = _cache_get(key)
+    hit = _cache_get(key) if use_cache else None
     if hit:
         return hit
     try:
@@ -139,7 +141,8 @@ def fred_series(series_id: str, start: str = "2010-01-01",
                 except ValueError:
                     pass
         if len(out) > 30:
-            _cache_put(key, out)
+            if use_cache:
+                _cache_put(key, out)
             return out
         return _fred_alternate(series_id, vintage, key) if alternate else None
     except Exception:

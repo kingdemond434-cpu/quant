@@ -705,6 +705,9 @@ FRED_COPYRIGHTED_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
     ("run_hunt23", BASE / "reports" / "hunt23.json"),
     ("axis_ingest.fred", BASE / "data" / "axes" / "fred.json"),
     ("collect_fred_macro", BASE.parent.parent / "data" / "fred_macro.json"),
+    ("screen_fred_macro_axis", BASE.parent.parent / "data" / "fred_macro_screen.json"),
+    ("run_cot_screen", BASE.parent.parent / "data" / "cot_screen_summary.json"),
+    ("fetch_sge_premium", BASE / "reports" / "sge_premium.json"),
 )
 
 
