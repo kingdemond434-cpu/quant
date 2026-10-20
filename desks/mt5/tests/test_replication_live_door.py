@@ -512,3 +512,30 @@ def test_an_unimportable_metric_version_refuses_replicated(tmp_path, monkeypatch
     ai._current_metric_version.cache_clear()
     monkeypatch.setattr(ai, "_current_metric_version", lambda: "")
     assert "UNMEASURED" in str(_gate(tmp_path, {CERT: dict(REP)}).live_refusal(CERT))
+
+
+def test_a_borrowed_replicated_stamp_never_carries_a_voided_waiver(roster, tmp_path,
+                                                                   monkeypatch) -> None:
+    """Door v7 audit: a waived key is judged on its own waiver. A REPLICATED stamp borrowed from
+    another cell does not carry a row whose waiver a SIGN mismatch has voided."""
+    (tmp_path / "waiver.json").write_text(
+        json.dumps({"certificates": {CERT: "zuck 2026-10-13 22:21Z book"}}), "utf-8")
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {
+        CERT: {"verdict": "MISMATCH", "why": ["summed P&L disagrees in SIGN"]},
+        OTHER_CANON: dict(REP)}))
+    got = roster([], [_lane_row(CERT, "waived_row", canon_certificate=OTHER_CANON)])
+    assert got["waived_row"]["status"] == "STANDBY"
+    assert "voids the waiver" in got["waived_row"]["demote_reason"]
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {OTHER_CANON: dict(REP)}))
+    assert roster([], [_lane_row(CERT, "waived_row")])["waived_row"]["status"] == "LIVE"
+
+
+def test_stamping_a_legacy_live_row_is_a_new_claim(roster, tmp_path, monkeypatch) -> None:
+    """Door v7 audit: no writer adds canon_certificate to a row already LIVE on disk today
+    (promote_main/generic/scalp skip existing names; reconcile asks STANDBY rows only; the
+    principal path changes risk_frac only). A future writer that does is rewriting the claim,
+    and the row meets the door like any new claim -- pinned here so that change is deliberate."""
+    prior = _lane_row(MAIN_KEY, MAIN_KEY)
+    assert roster([prior], [dict(prior)])[MAIN_KEY]["status"] == "LIVE"       # grandfathered
+    stamped = {**prior, "canon_certificate": MAIN_CANON}
+    assert roster([prior], [stamped])[MAIN_KEY]["status"] == "STANDBY"

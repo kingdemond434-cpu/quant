@@ -381,7 +381,13 @@ def _row_check(gate: Any, why_gate: str, waived: dict[str, str] | set[str]
             return f"REFUSED_UNREPLICATED: {why_gate}"
         key = row.get("certificate")
         if (not row.get("principal_certificate") and isinstance(key, str) and key.strip()
-                and key.strip() not in waived):
+                and key.strip() in waived):
+            # A WAIVED KEY IS JUDGED ON ITS OWN WAIVER (audit of door v7, 2026-10-14). The
+            # waiver names this key, so its validity is asked of this key and nothing else: a
+            # stamped canon_certificate (a REPLICATED one borrowed from another cell included)
+            # never carries a row whose own waiver a SIGN mismatch has voided.
+            return str(gate.live_refusal(key.strip(), waived=True) or "")
+        if (not row.get("principal_certificate") and isinstance(key, str) and key.strip()):
             # A LANE KEY IS RE-RESOLVED EVERY PASS (audit of door v4, 2026-10-14). A stamp is a
             # record, never an authority: when the enrolment knows this clock key, its
             # certificate is the one asked, and a row stamped with any other is refused. Only a
@@ -481,7 +487,11 @@ def replication_door(rows: list[dict], prior_live: set[str], *, gate: object | N
 
 def _grandfather_key(row: dict) -> str:
     """The Ruling C grandfather covers a row AS IT WAS LIVE: its name AND every certificate field.
-    Rewriting a LIVE row's certificate is a new claim and meets the door (audit of door v6)."""
+    Rewriting a LIVE row's certificate is a new claim and meets the door (audit of door v6).
+    That includes STAMPING canon_certificate onto a legacy LIVE row: no writer does today
+    (promote_* skip existing names, reconcile asks STANDBY rows, the principal path changes
+    risk_frac only), and a future one that does must expect the row to be re-judged
+    (test_stamping_a_legacy_live_row_is_a_new_claim, door v7 audit)."""
     claim = {k: row.get(k) for k in ("certificate", "canon_certificate",
                                       "principal_certificate")}
     return f"{row.get('name')}\x1f{json.dumps(claim, sort_keys=True, default=str)}"
