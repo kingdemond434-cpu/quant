@@ -2122,6 +2122,58 @@ def _after(a: str, b: str) -> bool:
 ORDERED_HOLD_FIELDS: tuple[str, ...] = ("standby_reason",)
 
 
+def restore_door_refusal(row: dict, fails: dict[str, dict] | None = None) -> str:
+    """Why a STANDBY row may NOT be restored to LIVE, or "" when every promotion door passes.
+
+    A RESTORE IS A PROMOTION (Judge, 2026-10-20). reconcile_capital used to lift a STANDBY row on
+    an admitting allocator reading alone, so a row the cost re-grade, the blind reviewer, the Tier S
+    door or a principal stop would refuse at promotion came back LIVE through the side door -- the
+    failure class of the 2026-10-13 gap-decay re-promotion. The restore now asks the same
+    predicates the promotion doors ask (`regrade_block`, `blind_review_veto`, `tier_s_block`),
+    under every name the row is known by (its name, its certificate key, its canon certificate),
+    plus the principal-stop fence (`mt5desk.principal_stops`), which the gateway also enforces.
+    Replication is asked separately (`replication_check`); a banned family never reaches here
+    (`retire_banned` runs first in the pass). Fails closed: a stop record that cannot be read
+    refuses, as `tier_s_block` does with DOOR_ERROR; the built-in stops hold even with no file
+    (`principal_stops.load`)."""
+    fails = regrade_failures() if fails is None else fails
+    names: list[str] = []
+    try:
+        canon = live_certificate(row)
+    except Exception:                                   # unreadable shape: the other names stand
+        canon = ""
+    for n in (str(row.get("name") or ""), _certificate_key(row), canon):
+        if n and n not in names:
+            names.append(n)
+    for n in names:
+        bad = regrade_block(n, fails)
+        if bad:
+            return ("BLOCKED_COST_REGRADE: fails its own ten gates at the current cost model: "
+                    + ", ".join(bad.get("gates_failing_now") or ["unspecified"]))
+        veto = blind_review_veto(n)
+        if veto:
+            return f"BLOCKED_BLIND_REVIEW: the blind reviewer could not reproduce {veto} (VETO)"
+        ts = tier_s_block(n)
+        if ts:
+            return f"BLOCKED_TIER_S: {ts}"
+    try:
+        from mt5desk.principal_stops import load, match, why
+    except ImportError:
+        # The fence's module is absent from this tree (it lands before this re-sign); with no
+        # fence there is no stop record to ask, and refusing every restore on that would be an
+        # outage wearing a risk decision. Any other failure below refuses.
+        return ""
+    try:
+        stops, _problem = load(SLEEVES_FILE.with_name("PRINCIPAL_STOPS.json"))
+        hit = match(row, stops)
+    except Exception as exc:
+        return (f"PRINCIPAL_STOP_UNMEASURED: the stop fence did not load "
+                f"({type(exc).__name__}: {exc}); withheld until it does")
+    if hit:
+        return f"PRINCIPAL_STOP: {why(hit)}"
+    return ""
+
+
 def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None = None,
                       only: set[str] | None = None) -> bool:
     """Move every standing row toward what the CURRENT solve says, in both directions.
@@ -2155,6 +2207,7 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
         return False
     changed = False
     repl: Callable[[dict], str] | None = None   # the replication door's check, loaded on first use
+    fails: dict[str, dict] | None = None        # the cost re-grade audit, read on first restore
     at = str(view.get("at") or "")
     stamp = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
     for s in sleeves:
@@ -2229,6 +2282,8 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
         if cap["status"] == "LIVE" and status == "STANDBY":
             if repl is None:
                 repl = replication_check()
+            if fails is None:
+                fails = regrade_failures()
             refusal = repl(s)
             if refusal:
                 # The replication door would put this row straight back (save_sleeves), so the
@@ -2240,6 +2295,17 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
                 plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- {refusal}")
                 continue
             s.pop("replication_refusal", None)
+            # A RESTORE IS A PROMOTION: the doors a new LIVE row must pass, asked again here
+            # (`restore_door_refusal`). The reading stands; the refusal is recorded on the row
+            # and leaves it the pass the door opens.
+            refusal = restore_door_refusal(s, fails)
+            if refusal:
+                if s.get("restore_refusal") != refusal:
+                    s["restore_refusal"] = refusal
+                    changed = True
+                plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- {refusal}")
+                continue
+            s.pop("restore_refusal", None)
             s.update({"status": "LIVE", "risk_frac": cap["risk_frac"],
                       "risk_frac_source": "allocator_marginal",
                       "restored_at": stamp, "restore_reason": cap["why"]})
