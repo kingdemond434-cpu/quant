@@ -64,29 +64,68 @@ RESULT_MEANING: dict[int, str] = {
 }
 
 
-def _tasks() -> list[dict[str, str]]:
-    """Every scheduled task the box knows about, from schtasks' own CSV.
+def _tasks() -> tuple[list[dict[str, str]], str]:
+    """Read the scheduler, distinguishing a failed inventory from an empty one.
 
-    `schtasks /query /v /fo CSV` is used rather than the PowerShell cmdlets because it needs no
-    module import, returns one flat table, and is the same source the operator sees in the GUI.
-    A machine with no scheduler (a Linux box running this for a merged view) yields an empty list
-    rather than an error: absence of a scheduler is not a failed desk.
+    On the trading box a full verbose ``schtasks`` query can hang for two minutes while
+    ``Get-ScheduledTask`` and its pipelined info query finish in about 13 seconds. An unreadable
+    inventory must never turn every contracted organ into the false claim NOT_SCHEDULED.
     """
+    script = r"""
+$ErrorActionPreference = 'Stop'
+$rows = @(Get-ScheduledTask | Where-Object { $_.TaskPath -notlike '\Microsoft\*' } |
+    ForEach-Object {
+        $task = $_
+        try {
+            $info = $task | Get-ScheduledTaskInfo -ErrorAction Stop
+            $result = [string]$info.LastTaskResult
+            $last = [string]$info.LastRunTime
+            $next = [string]$info.NextRunTime
+            $infoError = ''
+        } catch {
+            $result = ''
+            $last = ''
+            $next = ''
+            $infoError = [string]$_.Exception.Message
+        }
+        [pscustomobject]@{
+            TaskName = ($task.TaskPath + $task.TaskName)
+            'Scheduled Task State' = [string]$task.State
+            'Last Result' = $result
+            'Last Run Time' = $last
+            'Next Run Time' = $next
+            TaskInfoError = $infoError
+        }
+    })
+ConvertTo-Json -InputObject $rows -Depth 3 -Compress
+"""
+    errors: list[str] = []
+    if sys.platform == "win32":
+        try:
+            proc = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive",
+                                   "-Command", script], capture_output=True, text=True,
+                                  timeout=45)
+            if proc.returncode == 0 and proc.stdout.strip():
+                parsed = json.loads(proc.stdout)
+                if isinstance(parsed, list) and all(isinstance(r, dict) for r in parsed):
+                    return [{str(k): str(v) for k, v in r.items()} for r in parsed], "OK powershell"
+            errors.append(f"powershell exit {proc.returncode}: {proc.stderr.strip()[:160]}")
+        except (OSError, subprocess.SubprocessError, ValueError) as exc:
+            errors.append(f"powershell {type(exc).__name__}: {exc}")
     try:
         proc = subprocess.run(["schtasks", "/query", "/v", "/fo", "CSV"],
-                              capture_output=True, text=True, timeout=120)
-    except (OSError, subprocess.SubprocessError):
-        return []
-    if proc.returncode != 0 or not proc.stdout.strip():
-        return []
-    rows: list[dict[str, str]] = []
-    for row in csv.DictReader(io.StringIO(proc.stdout)):
-        name = (row.get("TaskName") or "").strip()
-        # schtasks repeats the header row per folder; skip those and the Microsoft tree.
-        if not name or name == "TaskName" or name.startswith("\\Microsoft"):
-            continue
-        rows.append(row)
-    return rows
+                              capture_output=True, text=True, timeout=20)
+        if proc.returncode == 0 and proc.stdout.strip():
+            rows = []
+            for row in csv.DictReader(io.StringIO(proc.stdout)):
+                name = (row.get("TaskName") or "").strip()
+                if name and name != "TaskName" and not name.startswith("\\Microsoft"):
+                    rows.append(row)
+            return rows, "OK schtasks"
+        errors.append(f"schtasks exit {proc.returncode}: {proc.stderr.strip()[:160]}")
+    except (OSError, subprocess.SubprocessError) as exc:
+        errors.append(f"schtasks {type(exc).__name__}: {exc}")
+    return [], "UNMEASURED: " + "; ".join(errors)
 
 
 def _normalise_code(raw: Any) -> int:
@@ -131,8 +170,9 @@ def build() -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
+    tasks, scheduler_status = _tasks()
 
-    for t in _tasks():
+    for t in tasks:
         name = (t.get("TaskName") or "").strip().lstrip("\\")
         seen.add(name)
         code = _normalise_code(t.get("Last Result"))
@@ -143,13 +183,15 @@ def build() -> dict[str, Any]:
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
         # returned 0 is not healthy if nothing appeared. Averaging is how a board reassures.
         _state = str(t.get("Scheduled Task State") or t.get("Status") or "").strip().lower()
-        if _state == "disabled":
+        if t.get("TaskInfoError"):
+            verdict, why = "SCHEDULER_UNMEASURED", str(t["TaskInfoError"])
+        elif _state == "disabled":
             verdict, why = "DISABLED", "the scheduler will never start this"
         elif artifact and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif artifact and max_age and age is not None and age > max_age:
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
-        elif code not in (0, 267009, 267011):
+        elif code not in (0, 267009, 267011) and _state != "running":
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
@@ -181,29 +223,50 @@ def build() -> dict[str, Any]:
         if organ in seen:
             continue
         age = _age_min(ROOT / artifact)
+        inventory_ok = scheduler_status.startswith("OK ")
+        # Parenthesised contracts describe an artifact of an existing scheduled task, not a
+        # second Windows task. Treating the name as a task manufactured 31 NOT_SCHEDULED alarms
+        # on this box and buried real gateway/allocator failures beneath them.
+        parent = organ.split(" (", 1)[0] if " (" in organ else ""
+        is_component = bool(parent and parent in seen)
+        if not inventory_ok:
+            verdict, why = "SCHEDULER_UNMEASURED", scheduler_status
+        elif is_component and age is None:
+            verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
+        elif is_component and age is not None and max_age and age > max_age:
+            verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+        elif is_component:
+            verdict, why = "OK", f"artifact of scheduled task {parent}"
+        else:
+            verdict, why = ("NOT_SCHEDULED", "this organ has a contract but no scheduled task "
+                            "on this box -- it cannot run at all")
         rows.append({
             "name": organ,
-            "verdict": "NOT_SCHEDULED",
-            "why": ("this organ has a contract but no scheduled task on this box -- it cannot "
-                    "run at all"),
-            "state": "ABSENT", "last_run": "", "next_run": "",
+            "verdict": verdict,
+            "why": why,
+            "state": ("COMPONENT" if is_component else
+                      ("ABSENT" if inventory_ok else "UNMEASURED")),
+            "last_run": "", "next_run": "",
             "last_result_code": None, "last_result": "never run on this box",
             "artifact": artifact,
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age, "purpose": purpose,
         })
 
-    order = {"NOT_SCHEDULED": 0, "FAILING": 1, "NO_ARTIFACT": 2, "STALE": 3,
+    order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
+             "NO_ARTIFACT": 2, "STALE": 3,
              "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     for r in rows:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
 
-    bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "FAILING", "NO_ARTIFACT", "STALE")]
+    bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
+                                             "FAILING", "NO_ARTIFACT", "STALE")]
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
+        "scheduler_status": scheduler_status,
         "n_processes": len(rows),
         "counts": counts,
         # The headline is the WORST row, never the proportion that are fine. "38 of 41 healthy"

@@ -31,7 +31,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 BASE = Path(__file__).resolve().parent.parent
-LIVE_LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 SHADOW_DIR = BASE / "reports" / "shadow"
 STATE = BASE / "data" / "regime_state.json"
 WINDOW = 90

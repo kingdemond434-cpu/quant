@@ -368,9 +368,9 @@ def daily_step_of(rel: str) -> str | None:
     dotted = dotted.replace("/", ".")
     best: tuple[int, str] | None = None
     for name, step in daily_step_imports().items():
-        if dotted == name or dotted.endswith("." + name):
-            if best is None or len(name) > best[0]:
-                best = (len(name), step)
+        if (dotted == name or dotted.endswith("." + name)) and (
+                best is None or len(name) > best[0]):
+            best = (len(name), step)
     return best[1] if best else None
 
 
@@ -801,6 +801,21 @@ def explicit_specs() -> list[ComponentSpec]:
     """The components that exist because the CONTROL PLANE exists, declared by hand because
     nothing else declares them."""
     return [
+        ComponentSpec(
+            component_id="executable:scripts/migrate_live_ledger_view.py",
+            kind="executable", host="box",
+            code_paths=("scripts/migrate_live_ledger_view.py", "libs/ops/live_ledger_migration.py"),
+            inputs=("desks/mt5/data/live_ledger.jsonl",
+                    "desks/mt5/data/live_ledger_corrections.jsonl",
+                    "desks/mt5/data/IMMUTABLE_MANIFEST.json"),
+            outputs=("desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",),
+            consumers=("desks/mt5/scripts/Adopt-And-Seal.ps1", "mt5desk.decision_core"),
+            cadence_s=3600, timeout_s=360, progress_metric="rows",
+            expected_artifact_schema="ledger_view_adoption/1",
+            owner="lane:ops", restart_action="restart:task:MT5-AdoptRelease",
+            criticality="required", resource_budget={"budget_s": 360},
+            schedule="invoked:desks/mt5/scripts/Adopt-And-Seal.ps1", artifact_class="hourly",
+            notes="Verified production handoff via existing task; no broker call or order"),
         ComponentSpec(
             component_id="component:control_plane",
             kind="task", host="box",
@@ -1444,7 +1459,8 @@ def reach_specs(reg: Registry, root: Path | None = None,
                 owner="daily_cycle", restart_action="restart:task:MT5-Daily",
                 criticality="optional", resource_budget={"budget_s": 3600},
                 schedule=f"daily_cycle:{step}", artifact_class="daily",
-                notes=f"REACHED: imported by daily step `{step}` in {daily_rel}, runs when it runs"))
+                notes=(f"REACHED: imported by daily step `{step}` in {daily_rel}, "
+                       "runs when it runs")))
             continue
         out.append(ComponentSpec(
             component_id=f"{kind}:{rel}",
@@ -1547,7 +1563,7 @@ def own_artifact(rel: str, root: Path | None = None) -> tuple[str, ...]:
         if got is None:
             continue
         try:
-            return (got.resolve().relative_to(base).as_posix(),)
+            return (got.relative_to(base).as_posix(),)
         except ValueError:
             continue
     return ()

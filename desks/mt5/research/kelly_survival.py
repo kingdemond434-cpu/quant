@@ -58,7 +58,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 WORLDS = BASE / "data" / "pf_allocator_cache" / "worlds.npz"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 GATEWAY_STATE = BASE / "data" / "gateway_state.json"
 ACCOUNT = BASE / "data" / "account_state.json"
 E8_REPORT = BASE / "reports" / "E8_GOLD.json"

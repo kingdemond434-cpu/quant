@@ -163,6 +163,15 @@ MODULES = [
     "desks/mt5/research/research_gap_map.py",
     "desks/mt5/research/simplifier.py",
     "desks/mt5/research/wiring_ceo.py",
+    # The weekly sweep moved out of the order-gateway lock and into daily_cycle. Its six
+    # executors now belong to this watched import closure; otherwise the release could
+    # silently restore stale hunt code on the trading box while the drift fence said OK.
+    "desks/mt5/research/fetch_universe.py",
+    "desks/mt5/research/free_shadows.py",
+    "desks/mt5/research/run_hunt7.py",
+    "desks/mt5/research/run_hunt8.py",
+    "desks/mt5/research/run_hunt9.py",
+    "desks/mt5/research/run_hunt10.py",
     # THE BAR SOURCE `shadow_forward` REPLAYS ON, unwatched until now. It gained a `timeframe`
     # argument on 2026-09-05 and the forward loop passes it for every clock, so a stale copy
     # raises TypeError on the FIRST sleeve of every pass -- the whole forward book reads

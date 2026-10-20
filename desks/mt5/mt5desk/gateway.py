@@ -102,7 +102,8 @@ SLEEVES_FILE = BASE / "data" / "sleeves.json"
 #: Sleeves the decay monitor retired whose open positions must still be closed
 #: (`close_retired_positions` reads and drains it).
 RETIRED_CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LOG = BASE / "logs" / "gateway.log"
 #: The pause flag `gateway_paused()` reads. Named here so the desk can set the
 #: SAME file it already honours -- a second, private pause mechanism would be a
@@ -1804,11 +1805,28 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     unchanged level. Nothing is cached that could disagree with the account, which is what makes
     this idempotent and acknowledgement-driven rather than merely hopeful.
     """
-    symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"})
     _fixed_tags = {order_comment(str(s.get("name") or "")): str(s.get("name") or "")
                    for s in sleeves if s.get("exec") == "family_market" and s.get("name")}
+    # A REFUSED SLEEVE KEEPS ITS CERTIFIED EXITS (2026-10-13). The live policy drops a
+    # quarantined row from the roster (no new entries), but its open position was opened under
+    # the family lane's fixed bracket. Keyed by the roster alone, it lost both: on a symbol
+    # outside the roster nothing managed it, and on one inside it read as an untagged position
+    # and was TRAILED, the lookalike strategy the 2026-09-16 finding below forbids. Every name
+    # the family lane has state for is a family_market sleeve by construction, so it keeps its
+    # fixed-bracket treatment, and the symbols its open positions sit on are managed.
+    for _gname in st.get("generic") or {}:
+        _fixed_tags.setdefault(order_comment(str(_gname)), str(_gname))
+    _exit_only_syms = {str(p.symbol) for p in (mt5.positions_get() or [])
+                       if str(getattr(p, "comment", "") or "") in _fixed_tags}
+    _roster_syms = {s["symbol"] for s in sleeves} | {"XAUUSD"}
+    symbols = list(_roster_syms | _exit_only_syms)
     for symbol in symbols:
         positions = mt5.positions_get(symbol=symbol) or []
+        if symbol not in _roster_syms:
+            # A symbol managed only for a refused sleeve's exits: its tagged positions, never an
+            # untagged or manual position that happens to sit on it.
+            positions = [p for p in positions
+                         if str(getattr(p, "comment", "") or "") in _fixed_tags]
         if not positions:
             continue
         info = mt5.symbol_info(symbol)
@@ -2024,7 +2042,9 @@ def _position_entry(pid) -> dict:
     """
     out = {"entry_price": 0.0, "sl": 0.0, "tp": 0.0, "comment": "",
            "entry_order": None, "entry_deal": None, "position_id": pid,
-           "entry_time": None, "entry_side": None}
+           "entry_time": None, "entry_side": None,
+           "entry_volume": 0.0, "entry_cost": 0.0,
+           "entry_cost_measured": False}
     if not pid:
         return out
     try:
@@ -2036,6 +2056,11 @@ def _position_entry(pid) -> dict:
                 out["tp"] = float(getattr(o, "tp", 0.0) or 0.0)
         for x in (mt5.history_deals_get(position=pid) or ()):
             if getattr(x, "entry", None) == mt5.DEAL_ENTRY_IN:
+                out["entry_volume"] += float(getattr(x, "volume", 0.0) or 0.0)
+                out["entry_cost"] += sum(float(getattr(x, k, 0.0) or 0.0)
+                                         for k in ("commission", "fee", "swap"))
+                if out["entry_deal"] is not None:
+                    continue
                 out["entry_price"] = float(getattr(x, "price", 0.0) or 0.0)
                 out["entry_order"] = getattr(x, "order", None)
                 out["entry_deal"] = getattr(x, "ticket", None)
@@ -2045,7 +2070,7 @@ def _position_entry(pid) -> dict:
                     stamp = float(getattr(x, "time", 0) or 0)
                 if stamp > 0:
                     out["entry_time"] = datetime.fromtimestamp(stamp, tz=UTC).isoformat()
-                break
+        out["entry_cost_measured"] = out["entry_volume"] > 0.0
     except Exception as exc:
         log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
     return out
@@ -2087,15 +2112,29 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # is not among them; a keyword the binding refuses lands in the `except` below and the
         # ledger is silently never written, which is indistinguishable from a quiet day.
         # Filtering the returned deals costs a list scan and cannot fail.
-        deals = [d for d in (mt5.history_deals_get(since, datetime.now(tz=UTC)) or [])
+        # Fusion stamps deal epochs in broker wall time (currently UTC+3). A UTC-now
+        # upper bound hid an already closed AUDCHF position for three hours. As in
+        # order_door's history reconciliation, include the next broker day: this only
+        # retrieves deals the broker already exposes, and ticket dedupe remains intact.
+        until = datetime.now(tz=UTC) + timedelta(days=1)
+        deals = [d for d in (mt5.history_deals_get(since, until) or [])
                  if int(getattr(d, "magic", 0) or 0) == MAGIC]
     except Exception as exc:
         log(f"ledger: history unreadable ({type(exc).__name__}: {exc}); nothing recorded")
         return
     written = 0
+    market_symbols = {s["symbol"] for s in sleeves
+                      if s.get("exec") in ("family_market", "scalp_market")}
     for d in deals:
         if d.entry not in (mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)):
             continue
+        ctx = None
+        if d.symbol in market_symbols:
+            ctx = _position_entry(getattr(d, "position_id", None))
+            try:
+                _record_closed_market_book(d, ctx, sleeves)
+            except Exception as exc:
+                log(f"market book exit unmeasured ({type(exc).__name__}: {exc})")
         if getattr(d, "ticket", None) in seen_deals:
             continue
         # A DEAL CARRIES NO STOP, NO TAKE-PROFIT AND NO ENTRY PRICE, and this function read all
@@ -2109,7 +2148,8 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # swap, volume}; TradeOrder has {price_open, sl, tp}. So the risk this trade actually
         # took is reconstructed from the position's OPENING deal (entry price) and its ORDER
         # (stop), joined on position_id -- the only join MT5 offers between the two.
-        ctx = _position_entry(getattr(d, "position_id", None))
+        if ctx is None:
+            ctx = _position_entry(getattr(d, "position_id", None))
         entry_price, sl_price, tp_price = ctx["entry_price"], ctx["sl"], ctx["tp"]
         # THE ENTRY'S TAG IS THE SLEEVE; THE EXIT'S TAG IS THE BROKER'S, AND IT IS NOT A NAME.
         #
@@ -2145,7 +2185,14 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         if sym_info is None:
             continue
         # risk per lot at entry: SL distance x contract (quote units)
-        pl_quote = float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
+        entry_volume = float(ctx.get("entry_volume") or 0.0)
+        closed_volume = float(getattr(d, "volume", 0.0) or 0.0)
+        entry_cost_measured = (bool(ctx.get("entry_cost_measured"))
+                               and entry_volume > 0 and 0 < closed_volume <= entry_volume)
+        entry_cost = (float(ctx.get("entry_cost") or 0.0) * closed_volume / entry_volume
+                      if entry_cost_measured else 0.0)
+        pl_quote = (float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
+                    + float(getattr(d, "fee", 0.0) or 0.0) + entry_cost)
         # UNRECONSTRUCTIBLE IS RECORDED, NEVER GUESSED -- `decision_core.closed_trade_r` returns
         # zeros without both the entry and the stop, and the row below says so.
         # THE POSITION'S OWN VOLUME AND THE VENUE'S TICK VALUE (2026-09-16): see
@@ -2167,6 +2214,9 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,
                "commission": d.commission, "swap": d.swap, "deal": d.ticket,
+               "entry_cost_allocated": entry_cost if entry_cost_measured else None,
+               "net_cost_status": "MEASURED" if entry_cost_measured else "UNMEASURED_ENTRY_COST",
+               "exit_fee": float(getattr(d, "fee", 0.0) or 0.0),
                # THE FILL, so it can be compared with the intent. price_open was already read
                # here to size `risk_quote` and then thrown away, which is why no markout was
                # possible: the one number that reveals execution quality was computed and
@@ -2174,7 +2224,10 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                # be converted to account currency without a second lookup at analysis time.
                "fill_price": float(d.price), "entry_price": float(entry_price),
                "sl": float(sl_price), "tp": float(tp_price),
-               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0),
+               # Existing R consumers honor this flag. An exit-only return with
+               # unknown opening costs is not reconstructed net evidence either.
+               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0
+                                           or not entry_cost_measured),
                "order": getattr(d, "order", None),
                # THE KEY CHAIN (2026-09-08): intent.ticket == entry_order == position_id for a
                # pending stop; entry_deal and this closing deal hang off position_id. With these
@@ -2425,6 +2478,52 @@ def _closing_fill(ticket: int) -> tuple[float, float] | None:
             lots += v
             notional += v * float(getattr(x, "price", 0.0) or 0.0)
     return (lots, notional / lots) if lots > 0 else None
+
+
+def _record_closed_market_book(deal, ctx: dict, sleeves: list[dict]) -> None:
+    """Book a proven complete market-position exit, without sending an order.
+
+    Never infer an exit from an empty terminal alone. Require its own opening
+    volume, all closing deals, an unambiguous roster tag and the matching booked
+    volume. Unknown/partial histories leave the ledger untouched. A persistent
+    position receipt prevents duplicate fills across passes and restarts.
+    """
+    book = _netting_book()
+    if book is None or int(getattr(deal, "magic", 0) or 0) != MAGIC:
+        return
+    symbol, pid = deal.symbol, getattr(deal, "position_id", None)
+    positions = mt5.positions_get(symbol=symbol)
+    # The legacy book has no entry-position IDs. Another open position on this
+    # symbol makes an equal-volume historical match ambiguous; never erase it.
+    if positions is None or positions:
+        return
+    candidates = [s for s in sleeves if s.get("exec") in ("family_market", "scalp_market")
+                  and s.get("symbol") == symbol
+                  and order_comment(s["name"]) == str(ctx.get("comment") or "")]
+    if len(candidates) != 1 or not ctx.get("entry_cost_measured"):
+        return
+    volume = float(ctx.get("entry_volume") or 0.0)
+    closed = _closing_fill(pid)
+    if not closed or volume <= 0 or abs(closed[0] - volume) > 1e-8:
+        return
+    name = candidates[0]["name"]
+    sign = 1.0 if ctx.get("entry_side") == mt5.POSITION_TYPE_BUY else -1.0
+    if ctx.get("entry_side") not in (0, 1):
+        return
+    held = book.filled(symbol).get(name, 0.0)
+    if abs(held - sign * volume) > 1e-8:
+        return
+    account = mt5.account_info()
+    login = int(getattr(account, "login", 0) or 0)
+    server = str(getattr(account, "server", "") or "")
+    if login <= 0 or not server:
+        return
+    receipt = f"broker-position-close/{server}/{login}/{pid}"
+    reset = abs(book.theoretical(symbol).get(name, 0.0) - sign * volume) <= 1e-8
+    if book.fill(name, symbol, -sign * volume, closed[1], at=datetime.now(tz=UTC),
+                 event_id=receipt, target_after=0.0 if reset else None,
+                 target_reason="broker_market_exit") is not None:
+        log(f"[netting] {name} position {pid}: confirmed complete broker exit booked")
 
 
 def _book_bracket_lane(st: dict, sleeves: list[dict]) -> None:
@@ -3094,14 +3193,18 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                         f"and never re-enters a bar after its stop")}
     # THE BRACKET IS LAID FROM THE ENTRY THE VENUE GIVES, NOT FROM A CLOSE IT HAS LEFT: see
     # `family_bracket` for the 0.27-lot, 1.3-pip EURGBP stop this replaces.
-    try:
-        _sig_close = (float(closed["close"].loc[last_bar]) if last_bar in closed.index
-                      else float(closed["close"].iloc[-1]))
-    except Exception:
-        _sig_close = None
+    from mt5desk.family_call import signal_reference_price, spread_blocks_entry
+    _sig_close = signal_reference_price(str(family or ""), frame, g)
     entry_ref, _stop, _target, dist, _drift_note, _drift, _verdict = family_bracket(
         g, side, tick.bid, tick.ask, _sig_close)
     if _verdict == "stale":
+        if spread_blocks_entry(g, side, tick.bid, tick.ask):
+            # Rollover spreads can cross a target while the underlying quote has
+            # not. No order is sent. Retain this current bar for a later eligible
+            # quote; order/deal deduplication and the stale guard still run then.
+            return {"ok": False, "stage": "quote_spread", "considered": True, "sep": " ",
+                    "mark": False, "last_bar": last_bar,
+                    "why": "spread crosses the certified target; awaiting an eligible quote"}
         # The replay's trade already ended at its stop or its target; opening one now is a
         # trade the certificate never made. Journaled so `missed_growth` prices the refusal.
         journal_refusal(name, s["symbol"], side, "stale_signal", _drift_note)
@@ -3215,6 +3318,37 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         # UNMEASURED IS 1.0, NEVER A SILENT SHRINK: a decomposition that cannot be trusted must
         # not quietly become a reason to trade smaller.
         leg_mult, leg_why = 1.0, f"leg balance UNMEASURED ({type(exc).__name__}: {exc})"
+    # The nominal fraction was capped before currency-leg and macro modifiers. Enforce that
+    # same existing per-order envelope on the final venue volume: boosts and nearest-step
+    # rounding otherwise turn a 10% allocation into a 14% stop. Price in account currency,
+    # floor to the venue step, and refuse an unimplementable minimum rather than lift it.
+    risk_envelope_capped = False
+    if float(lot) > 0.0:
+        try:
+            import math
+
+            unit = float(_core._eur_per_price_unit(s["symbol"], sym))
+            step_volume = float(getattr(sym, "volume_step", 0.01))
+            minimum_volume = float(getattr(sym, "volume_min", 0.01))
+            venue_maximum = float(getattr(sym, "volume_max", 5.0))
+            values = (float(equity), float(dist), unit, step_volume,
+                      minimum_volume, venue_maximum, float(lot))
+            if not all(math.isfinite(v) and v > 0.0 for v in values):
+                raise ValueError("nonpositive or nonfinite final risk input")
+            raw_limit = float(_core.MAX_RISK_FRAC) * float(equity) / (float(dist) * unit)
+            ceiling = min(raw_limit, venue_maximum, 5.0)
+            maximum_volume = math.floor(ceiling / step_volume + 1e-12) * step_volume
+            capped_lot = min(float(lot), maximum_volume)
+            if capped_lot + 1e-12 < minimum_volume or not capped_lot > 0.0:
+                return {"ok": False, "stage": "risk_envelope", "considered": True,
+                        "mark": False, "last_bar": last_bar,
+                        "why": "venue minimum exceeds the existing per-order risk envelope"}
+            risk_envelope_capped = capped_lot < float(lot) - 1e-12
+            lot = capped_lot
+        except Exception as exc:
+            return {"ok": False, "stage": "risk_envelope", "considered": True,
+                    "mark": False, "last_bar": last_bar,
+                    "why": f"final risk envelope unmeasured ({type(exc).__name__}: {exc})"}
     return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
             "lot": float(lot), "dist": float(dist),
             "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
@@ -3223,6 +3357,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             "ttl_until": family_ttl_until(last_bar, g.ttl_bars, _BAR_MINUTES.get(tf, 60)),
             "leg_mult": float(leg_mult), "leg_why": leg_why,
             "macro_mult": float(macro_mult), "macro_why": macro_why,
+            "risk_envelope_capped": risk_envelope_capped,
             "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
                       f"{' from the allocator book' if from_book else ''} at the signal's own "
                       f"{dist:.5g} stop; {leg_why}; {macro_why}")}
@@ -3479,6 +3614,46 @@ def close_retired_positions(st: dict) -> None:
             {"names": remaining,
              "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}, indent=1),
             encoding="utf-8")
+
+
+def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
+    """A SLEEVE THE ROSTER NO LONGER ADMITS STILL GETS ITS TIME EXIT (2026-10-13).
+
+    The family lane's TTL housekeeping walks the ROSTER, so a row the live policy refuses (a
+    lineage or lookahead quarantine: no new entries) kept its open position past its certified
+    time exit with nobody to close it -- the same orphaning `close_retired_positions` fixed for
+    retired names, but for a refusal, which queues nothing. This walks the family lane's own
+    state instead: a name off the roster whose deadline has passed is closed by its order
+    comment, one sleeve at a time, on whatever symbol it is held. SHADOW unless armed, like
+    every other close here; the roster's own sleeves are left to their own loop.
+    """
+    on_roster = {str(s.get("name") or "") for s in sleeves}
+    # order_comment cuts a tag to COMMENT_MAX, so an off-roster name can share its tag with a
+    # LIVE row (the *_principal_20261007 gap-decay rows did). Closing by that tag would take the
+    # live sleeve's position on the retired name's deadline: a shared tag is never closed here.
+    roster_tags = {order_comment(n) for n in on_roster if n}
+    gstate = st.get("generic") or {}
+    now_iso = datetime.now(tz=UTC).isoformat()
+    for name, srec in list(gstate.items()):
+        if name in on_roster or not isinstance(srec, dict):
+            continue
+        if not ttl_expired(srec.get("open_ttl_until"), now_iso):
+            continue
+        tag = order_comment(str(name))
+        if tag in roster_tags:
+            log(f"[{name}] OFF-ROSTER TTL skipped: its tag {tag!r} is shared with a roster sleeve")
+            srec.pop("open_ttl_until", None)
+            continue
+        held = [p for p in (mt5.positions_get() or [])
+                if str(getattr(p, "comment", "") or "") == tag]
+        for symbol in sorted({str(p.symbol) for p in held}):
+            _book_target(str(name), symbol, 0.0, "ttl")
+            if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
+                log(f"[{name}] OFF-ROSTER TTL: closing its {symbol} position(s)")
+                close_sleeve_positions(st, symbol, str(name))
+            else:
+                log(f"[{name}] SHADOW would TTL-close off-roster position(s) on {symbol}")
+        srec.pop("open_ttl_until", None)
 
 
 def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
@@ -4072,6 +4247,10 @@ def main() -> None:
         close_retired_positions(st)
     except Exception as exc:
         log(f"RETIRED CLOSE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    try:
+        close_refused_sleeve_ttls(st, sleeves)
+    except Exception as exc:
+        log(f"OFF-ROSTER TTL FAILED (positions left untouched): {type(exc).__name__}: {exc}")
     save_state(st)
 
     # RELEASE IDENTITY: measured after management and before anything that could open a

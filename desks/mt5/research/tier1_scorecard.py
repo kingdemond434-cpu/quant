@@ -48,7 +48,8 @@ TIMEFRAME_COVERAGE = REPORTS / "TIMEFRAME_COVERAGE.json"
 SESSION_CHART_EXPANSION = REPORTS / "SESSION_CHART_EXPANSION.json"
 UNIVERSAL_SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
 PIT_CENSUS, LAKE_PROMOTION = REPORTS / "PIT_CENSUS.json", REPORTS / "LAKE_PROMOTION.json"
-LIVE_LEDGER, SLEEVES = DATA / "live_ledger.jsonl", DATA / "sleeves.json"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER, SLEEVES = _audited_ledger_path(DATA / "live_ledger.jsonl"), DATA / "sleeves.json"
 PROCESS_HEALTH, SYNC_MARKER = REPORTS / "process_health.json", DATA / "sync_marker.json"
 #: THE RECONCILED ATTRIBUTION (Tier-1 W0). The exact-name join below reads 4.6% on this box's
 #: own ledger because MetaTrader truncates the sleeve into the position comment;
@@ -423,9 +424,26 @@ def _r10_cross_asset() -> dict[str, Any]:
     }
     n_present = sum(present.values())
     level = 0.0 if not edges else (1.0 if n_present <= 2 else (2.0 if n_present <= 4 else 3.0))
+    # FIELDS ARE MACHINERY, ADMITTED EDGES ARE INTELLIGENCE. A graph whose every measured edge
+    # failed its deflated test carries the right columns and knows nothing tradable; grading it 3
+    # read as "above target" while zero cross-asset links had passed. Without an admitted edge the
+    # level stops at 1 (measured, nothing learned), and an absent count is read as zero.
+    if "edges_admitted" not in world and "admitted_edges" not in world:
+        # An ABSENT count is not a zero (L1.28a): the graph did not say whether anything passed.
+        return _mk(dim, None, f"UNMEASURED: {_rel(WORLD_CAUSAL_GRAPH)} edges={len(edges)} but "
+                   "carries neither edges_admitted nor admitted_edges, so whether any cross-asset "
+                   "edge passed is unknown", _stamp(world))
+    admitted = _num(world.get("edges_admitted"))
+    if not admitted:
+        admitted = len([e for e in world.get("admitted_edges") or [] if isinstance(e, dict)])
+    capped = bool(edges) and admitted <= 0 and level > 1.0
+    if capped:
+        level = 1.0
     return _mk(dim, level, f"{_rel(WORLD_CAUSAL_GRAPH)} edges={len(edges)} carrying "
                f"{sorted(k for k, v in present.items() if v) or 'NO EDGE FIELDS'}; "
-               f"edges_admitted={world.get('edges_admitted')}", _stamp(world))
+               f"edges_admitted={world.get('edges_admitted')}"
+               + ("; capped at 1: no edge admitted, fields without an admitted edge are machinery"
+                  if capped else ""), _stamp(world))
 
 
 def _r11_macro() -> dict[str, Any]:

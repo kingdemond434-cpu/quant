@@ -519,6 +519,15 @@ NOT_SOURCED_HERE = {
                        "per panel and charges configurations x symbols x thresholds as trials; "
                        "enumerating it here would refit the same panel model per symbol and "
                        "charge the same search twice",
+    "rocket_ts": "the peer panel and the (kernels, lookback) configuration are named by "
+                 "research/learned_miners, which fits each configuration once per panel and "
+                 "charges its whole grid; a per-symbol sweep here would be an uncharged search",
+    "sig_path": "the peer panel and the (depth, lookback) configuration are named by "
+                "research/learned_miners, which fits each configuration once per panel and "
+                "charges its whole grid; a per-symbol sweep here would be an uncharged search",
+    "ae_latent": "the peer panel and the (latent, hidden) configuration are named by "
+                 "research/learned_miners, which trains each autoencoder once per panel and "
+                 "charges its whole grid; a per-symbol sweep here would be an uncharged search",
     "attention_ts": "the peer panel and the (heads, lookback) configuration are named by "
                     "research/learned_miners, which trains each configuration once per panel "
                     "and charges its whole grid; a per-symbol sweep here would be an uncharged "

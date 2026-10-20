@@ -64,7 +64,8 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 OUT = DESK / "reports" / "BOOK_FORENSICS.json"
 GENOME = DESK / "data" / "trader_genome.parquet"
 GENOME_REPORT = DESK / "reports" / "TRADER_GENOME.json"

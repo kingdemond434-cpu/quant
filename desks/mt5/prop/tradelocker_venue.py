@@ -60,6 +60,19 @@ class VenueError(RuntimeError):
     """A venue refusal, with the secret-bearing detail already stripped by the raiser."""
 
 
+def _bounded_request(method: Any, *args: Any, **kwargs: Any) -> Any:
+    """Keep a failed venue read inside one scheduler interval, with one transient retry."""
+    from requests.exceptions import RequestException
+
+    for attempt in range(2):
+        try:
+            return method(*args, **kwargs)
+        except RequestException:
+            if attempt:
+                raise
+    raise AssertionError("unreachable")
+
+
 @dataclass(frozen=True)
 class Credentials:
     """Loaded, never logged. `__repr__` is overridden because a dataclass would print them."""
@@ -168,7 +181,13 @@ class TradeLockerVenue:
             except ImportError as exc:                              # pragma: no cover - env
                 raise VenueError(f"the tradelocker SDK is not installed ({exc})") from None
             try:
-                self._raw_api = TLAPI(environment=creds.environment, username=creds.username,
+                class BoundedTLAPI(TLAPI):
+                    _TIMEOUT = (5, 12)
+
+                    def _retry_request(self, method: Any, *args: Any, **kwargs: Any) -> Any:
+                        return _bounded_request(method, *args, **kwargs)
+
+                self._raw_api = BoundedTLAPI(environment=creds.environment, username=creds.username,
                                       password=creds.password, server=creds.server,
                                       log_level="warning")
             except Exception as exc:

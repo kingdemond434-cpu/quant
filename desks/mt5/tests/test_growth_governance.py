@@ -140,10 +140,14 @@ def test_gateway_sizes_the_floor_with_the_best_baseline_when_the_proof_fails(tmp
            "book": {"a": 0.12, "b": 0.08},
            "book_fallback": {"name": "inverse_vol", "book": {"a": 0.09, "b": 0.11}}}
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
-    # The gateway's `allocator_book` reads the artifact and the certificate, then hands the
-    # parsed pieces to `decision_core.book_from_allocation`, which decides.
-    ns = _exec(("allocator_book",), {"BASE": tmp_path,
-                                     "allocator_heat": lambda: (0.2, "allocator book (ok)")})
+    # The gateway's `_allocator_book` reads the artifact and the certificate, then hands the
+    # parsed pieces to `decision_core.book_from_allocation`, which decides. `allocator_book` is
+    # the sizing path's entry point and lays the certified sleeve book over it; exec both so the
+    # floor proof is checked through the real path, with no cert book file in force here.
+    from mt5desk import kelly_sizing
+    monkeypatch.setattr(kelly_sizing, "load_cert_book", lambda path, venue: None)
+    ns = _exec(("_allocator_book", "allocator_book"),
+               {"BASE": tmp_path, "allocator_heat": lambda: (0.2, "allocator book (ok)")})
     monkeypatch.setattr(ap, "read_certificate", lambda root: (None, "proof failed"))
     book, why = ns["allocator_book"]()
     assert book == {"a": 0.09, "b": 0.11} and "inverse_vol" in why and "withheld" in why
@@ -155,6 +159,12 @@ def test_gateway_sizes_the_floor_with_the_best_baseline_when_the_proof_fails(tmp
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
     monkeypatch.setattr(ap, "read_certificate", lambda root: (None, "proof failed"))
     assert ns["allocator_book"]()[0] is None
+    # The certified book overlays named keys only; the allocator's other keys stand.
+    art["book_fallback"] = {"name": "inverse_vol", "book": {"a": 0.09, "b": 0.11}}
+    (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
+    monkeypatch.setattr(kelly_sizing, "load_cert_book", lambda path, venue: {"a": 0.05})
+    book, why = ns["allocator_book"]()
+    assert book == {"a": 0.05, "b": 0.11} and "cert book sets 1" in why
 
 
 def _evidence(n: int = 4, seed: int = 0) -> list[SleeveEvidence]:
