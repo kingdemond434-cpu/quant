@@ -62,6 +62,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -77,8 +78,18 @@ DIR_ENV = "E8_EVIDENCE_DIR"
 KEY_ENV = "E8_EVIDENCE_KEY"
 KEY_FILE_ENV = "E8_EVIDENCE_KEY_FILE"
 KEY_FILE = DESK.parent.parent / "data" / "secrets" / "e8_evidence.key"
+#: An explicit $E8_EVIDENCE_KEY shorter than this is no key (UNKEYED), never a weak one: the
+#: file key is 64 hex characters, and a short secret is guessable alongside a 7-digit id.
+KEY_MIN_CHARS = 32
 UNMEASURED = "UNMEASURED"
 UNKEYED = "UNKEYED"
+#: What the scrub writes in place of an account id found in prose.
+REDACTED = "<account>"
+#: TradeLocker's own trade URLs and error texts carry the id: `/trade/accounts/<id>/orders`,
+#: `accNum: 3`, `account 1234567`. Digits after an "account"-ish word are an id until proven
+#: otherwise; prices, lots and order ids never follow that word in this lane's prose.
+_ACCOUNT_IN_TEXT = re.compile(
+    r"(?i)(\bacc(?:ount)?(?:s|_?id|_?num|num)?\b[\s\\/:=#\"']*)(\d{2,})")
 #: Rows a failed write keeps for the next pass. A day writes a handful; this is weeks of them.
 PENDING_MAX = 500
 #: The ledger is bounded: past LEDGER_MAX_BYTES it is rewritten to its newest LEDGER_KEEP_LINES.
@@ -185,8 +196,9 @@ def _key() -> bytes | None:
     """The box-local pseudonym key: $E8_EVIDENCE_KEY, else the key file, created on first use.
     None when neither can be had -- the caller then writes UNKEYED, never the raw id."""
     explicit = os.environ.get(KEY_ENV)
-    if explicit:
-        return explicit.encode("utf-8")
+    if explicit is not None and explicit != "":
+        # Set but short is treated as NO key (UNKEYED), never silently swapped for the file key.
+        return explicit.encode("utf-8") if len(explicit) >= KEY_MIN_CHARS else None
     path = Path(os.environ.get(KEY_FILE_ENV) or KEY_FILE)
     cached = _KEY_CACHE.get(str(path))
     if cached:
@@ -199,7 +211,7 @@ def _key() -> bytes | None:
         key = path.read_text("ascii").strip().encode("ascii")
     except Exception:
         return None
-    if len(key) < 32:
+    if len(key) < KEY_MIN_CHARS:
         return None
     _KEY_CACHE[str(path)] = key
     return key
@@ -240,7 +252,7 @@ class Decisions:
                 risk = self._risk_of(window)
             self.rows.append({
                 "window": str(window), "outcome": str(outcome), "reason": str(reason),
-                "taken": outcome == PLACED, "why": str(why or "")[:300],
+                "taken": outcome == PLACED, "why": scrub(str(why or ""))[:300],
                 "lot": float(lot) if lot is not None else None,
                 "risk_usd": round(float(risk), 2) if risk is not None else None,
             })
@@ -249,6 +261,38 @@ class Decisions:
 
     def windows(self) -> set[str]:
         return {r["window"] for r in self.rows}
+
+
+def _raw_id(label: str) -> str | None:
+    try:
+        text = str(label or "")
+        if ":" not in text or text == UNMEASURED:
+            return None
+        raw = text.split(":", 1)[1].strip()
+        return raw if raw and raw not in (UNMEASURED, UNKEYED) else None
+    except Exception:
+        return None
+
+
+def scrub(value: Any, account: str = UNMEASURED) -> Any:
+    """`value` with every account id taken out of its strings (recursively through dicts and
+    lists): the raw id of `account` wherever it stands as a whole token, and any digits that
+    follow an account-ish word (a TradeLocker URL or error). Non-string leaves are returned as
+    they are. Never raises: on an internal error a string is replaced whole, never kept raw."""
+    try:
+        if isinstance(value, dict):
+            return {k: scrub(v, account) for k, v in value.items()}
+        if isinstance(value, list):
+            return [scrub(v, account) for v in value]
+        if not isinstance(value, str):
+            return value
+        out = _ACCOUNT_IN_TEXT.sub(lambda m: m.group(1) + REDACTED, value)
+        raw = _raw_id(account)
+        if raw:
+            out = re.sub(r"(?<![\w.])" + re.escape(raw) + r"(?![\w.])", REDACTED, out)
+        return out
+    except Exception:
+        return "<unscrubbed text withheld>" if isinstance(value, str) else value
 
 
 def stand_down_reason(equity: float, guard_decision: Any, doc: dict[str, Any]) -> str:
@@ -389,13 +433,13 @@ def record_decisions(decided: Decisions | list[dict[str, Any]], state: dict[str,
         ref = account_ref(account)
         for row in new:
             sleeve = f"{LANE}:{row['window']}"
-            lines.append({
+            lines.append(scrub({
                 "decided_at": stamp, "lane": LANE, "account_ref": ref,
                 "sleeve": sleeve, "strategy_id": sleeve, "symbol": symbol,
                 "server_date": server_date, "armed": bool(armed),
                 "host": host.get("hostname"), "machine_id": host.get("machine_id"),
                 "host_verdict": host.get("verdict"), **row,
-            })
+            }, account))
         out = [*pending, *lines]
     except Exception as exc:
         _say(log, f"E8 decision evidence not built ({type(exc).__name__}: {exc}); "
@@ -497,6 +541,7 @@ def write_heartbeat(status: str, *, at: datetime, armed: bool, account: str = UN
             for k, v in extra.items():
                 if k not in doc:
                     doc[str(k)] = v
+        doc = scrub(doc, account)
         text = json.dumps(doc, indent=1, default=str) + "\n"
     except Exception as exc:
         _say(log, f"E8 heartbeat not built ({type(exc).__name__}: {exc}); pass unaffected")

@@ -713,3 +713,80 @@ def test_e8_torn_ledger_lines_are_counted(tmp_path: Path) -> None:
     lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
     assert lane["torn_lines"] == 2 and any("torn" in n for n in lane["notes"])
     assert lane["verdict"] == "OK"
+
+
+# ------------------------------------- 8. v3 (audit of 6547633a): UNMEASURED is never a pass
+
+def _gateway_ok(box: Path) -> None:
+    _write(box, LEDGER, "\n".join(_rows(1, sleeve="gold_asia", reason="placed",
+                                        start=NOW - timedelta(minutes=3), taken=True)) + "\n")
+
+
+def test_e8_unmeasured_folds_into_the_top_level(box: Path, tmp_path: Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    """Must-fix 2: gateway OK + an E8 lane failing for 3h published ok=True / PLACEMENT_CLEAR."""
+    _gateway_ok(box)
+    assert fence.scan(box, now=NOW)["ok"] is True                    # the gateway alone is OK
+    _e8_status(box, "VENUE_UNAVAILABLE", failing_since=NOW - timedelta(hours=3))
+    doc = fence.scan(box, now=NOW)
+    assert doc["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+    assert doc["ok"] is None and doc["verdict"] == "UNMEASURED" and doc["applicable"] is True
+    assert doc["gateway_verdict"] == "OK"
+    assert any(n.startswith("[e8_gold] lane UNMEASURED") for n in doc["notes"])
+    from libs.ops import events
+    monkeypatch.setattr(events, "PATH", tmp_path / "events.jsonl")
+    assert fence.record_event(doc, ROOT) is None                     # never PLACEMENT_CLEAR
+
+
+def test_e8_unmeasured_is_not_escalated_as_a_dead_gateway(box: Path) -> None:
+    """Only the GATEWAY's own UNMEASURED is a failure on the trading host; the lane's short
+    failures are UNMEASURED by design and its long ones HALTED."""
+    _gateway_ok(box)
+    _e8_status(box, "NO_BARS", failing_since=NOW - timedelta(hours=1))
+    doc = fence.scan(box, now=NOW)
+
+    class _Ident:
+        trading_hostname, verdict, why = "vmi3571445", "TRADING", "test"
+
+    assert fence.escalate_unmeasured(doc, _Ident())["ok"] is None   # type: ignore[arg-type]
+    assert "escalated_on_trading_host" not in doc
+
+
+def test_a_halted_e8_lane_whose_heartbeat_goes_stale_keeps_its_alert(box: Path) -> None:
+    """Must-fix 2b: the alert opened on a HALT is not closed as FIXED by a stale heartbeat."""
+    from libs.ops.alert_ledger import AlertLedger
+    _gateway_ok(box)
+    _e8_beat(box)
+    _e8_rows(box, [(1, "DEFERRED", "guard_stood_down"), (0, "DEFERRED", "guard_stood_down")])
+    assert fence.record_alert(fence.scan(box, now=NOW), box) == "OPEN"
+    _e8_beat(box, at=NOW - timedelta(days=3))                       # the lane goes quiet
+    doc = fence.scan(box, now=NOW)
+    assert doc["lanes"]["e8_gold"]["verdict"] == "UNMEASURED" and doc["ok"] is None
+    assert fence.record_alert(doc, box) is None
+    assert AlertLedger(box / "data" / "alert_ledger.json").alerts[fence.ALERT_ID].open
+    # ...and even a doc some other path marked ok is not evidence while a lane is unreadable.
+    assert fence.record_alert({**doc, "ok": True}, box) is None
+
+
+def test_e8_unkeyed_rows_never_join_a_run_and_read_unmeasured(tmp_path: Path) -> None:
+    """Should-fix: every UNKEYED row is its own run key (two accounts cannot be told apart), and
+    a window whose newest row is UNKEYED is UNMEASURED, never OK."""
+    _e8_beat(tmp_path)
+    rows = []
+    for ago in (2, 1, 0):
+        at = NOW - timedelta(days=ago)
+        rows.append(json.dumps({
+            "decided_at": at.isoformat(), "lane": "e8_gold", "account_ref": "tradelocker:UNKEYED",
+            "sleeve": "e8_gold:afternoon", "server_date": at.date().isoformat(),
+            "outcome": "DEFERRED", "reason": "guard_stood_down", "taken": False}))
+    _write(tmp_path, E8_LEDGER, "\n".join(rows) + "\n")
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert len(lane["runs"]) == 3 and all(r["days"] == 1 for r in lane["runs"].values())
+    assert lane["verdict"] == "UNMEASURED" and lane["unkeyed_windows"] == ["e8_gold:afternoon"]
+    # A keyed row after them is judged normally again.
+    rows.append(json.dumps({
+        "decided_at": NOW.isoformat(), "lane": "e8_gold", "account_ref": "tradelocker:42",
+        "sleeve": "e8_gold:afternoon", "server_date": NOW.date().isoformat(),
+        "outcome": "PLACED", "reason": "placed", "taken": True}))
+    _write(tmp_path, E8_LEDGER, "\n".join(rows) + "\n")
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"

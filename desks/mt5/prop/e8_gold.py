@@ -864,7 +864,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                    f"{', '.join(str(p.get('id')) for p in xau_positions)}; deferred to prevent "
                    f"self-hedging")
             doc["skipped"].append({"window": due["window"], "why": why})
-            decided.note(due["window"], e8_evidence.DEFERRED, e8_evidence.R_SIDE_UNREADABLE, why)
+            with contextlib.suppress(Exception):
+                decided.note(due["window"], e8_evidence.DEFERRED,
+                             e8_evidence.R_SIDE_UNREADABLE, why)
             log(f"[{due['window']}] DEFERRED: {why}")
         due_now = []
     committed: float | None = None
@@ -891,8 +893,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                    + "); no window placed this pass")
             for due in due_now:
                 doc["skipped"].append({"window": due["window"], "why": why})
-                decided.note(due["window"], e8_evidence.DEFERRED,
-                             e8_evidence.R_RISK_UNMEASURABLE, why)
+                with contextlib.suppress(Exception):
+                    decided.note(due["window"], e8_evidence.DEFERRED,
+                                 e8_evidence.R_RISK_UNMEASURABLE, why)
                 log(f"[{due['window']}] DEFERRED: {why}")
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
@@ -904,8 +907,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": name, "why": (
                 "stands aside: the survival-constrained growth solve "
                 "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
-            decided.note(name, e8_evidence.SKIPPED, e8_evidence.R_KELLY_ZERO,
-                         doc["skipped"][-1]["why"], risk_usd=0.0)
+            with contextlib.suppress(Exception):
+                decided.note(name, e8_evidence.SKIPPED, e8_evidence.R_KELLY_ZERO,
+                             doc["skipped"][-1]["why"], risk_usd=0.0)
             continue
         risk_usd = equity * frac
         # FIRST: one gold trade at risk at a time (`one_at_risk_blocker`). SECOND, a fail-safe
@@ -924,7 +928,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 blocker_code = e8_evidence.R_RISK_BUDGET
         if blocker is not None:
             doc["skipped"].append({"window": name, "why": blocker})
-            decided.note(name, e8_evidence.DEFERRED, blocker_code, blocker, risk_usd=risk_usd)
+            with contextlib.suppress(Exception):
+                decided.note(name, e8_evidence.DEFERRED, blocker_code, blocker, risk_usd=risk_usd)
             log(f"[{name}] DEFERRED: {blocker}")
             continue
         committed = (committed or 0.0) + risk_usd
@@ -1309,11 +1314,12 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             act["why"] = dec["why"]
             log(f"[{name}] {side} dropped leg abandoned: {dec['why']}")
             doc["actions"].append(act)
-            if decided is not None:
-                decided.note(name, e8_evidence.SKIPPED,
-                             e8_evidence.abandon_reason(dec["why"], w),
-                             f"{side} abandoned: {dec['why']}", lot=leg.get("lot"),
-                             risk_usd=leg.get("risk_usd"))
+            with contextlib.suppress(Exception):
+                if decided is not None:
+                    decided.note(name, e8_evidence.SKIPPED,
+                                 e8_evidence.abandon_reason(dec["why"], w),
+                                 f"{side} abandoned: {dec['why']}", lot=leg.get("lot"),
+                                 risk_usd=leg.get("risk_usd"))
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
@@ -1358,9 +1364,10 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             log(f"[{name}] {side} dropped leg abandoned: {why}; MISSED GROWTH "
                 f"({UNOWNED_BLOCK_RAIL}): the leg's {float(missed):.0f} USD of certified risk "
                 "is not deployed")
-            if decided is not None:
-                decided.note(name, e8_evidence.SKIPPED, e8_evidence.R_UNOWNED_POSITION,
-                             f"{side} abandoned: {why}", lot=leg.get("lot"), risk_usd=missed)
+            with contextlib.suppress(Exception):
+                if decided is not None:
+                    decided.note(name, e8_evidence.SKIPPED, e8_evidence.R_UNOWNED_POSITION,
+                                 f"{side} abandoned: {why}", lot=leg.get("lot"), risk_usd=missed)
             continue
         row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                **levels, "armed": True, "retry_of": leg.get("first_at")}
@@ -1383,10 +1390,11 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                 log(f"[{name}] {side} retry REJECTED: {leg['why']}")
                 _record(row)
                 doc["actions"].append(act)
-                if decided is not None:
-                    decided.note(name, e8_evidence.DEFERRED, e8_evidence.R_VENUE_REJECTED,
-                                 f"{side} re-send refused: {leg['why']}", lot=leg.get("lot"),
-                                 risk_usd=leg.get("risk_usd"))
+                with contextlib.suppress(Exception):
+                    if decided is not None:
+                        decided.note(name, e8_evidence.DEFERRED, e8_evidence.R_VENUE_REJECTED,
+                                     f"{side} re-send refused: {leg['why']}", lot=leg.get("lot"),
+                                     risk_usd=leg.get("risk_usd"))
                 continue
         _record(row)
         w.setdefault("orders", {})[side] = {"id": int(oid), **levels}
@@ -1396,11 +1404,12 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                             "stopPrice": float(leg["price"])})
         act.update({"ok": True, "order_id": int(oid), "adopted": bool(row.get("adopted"))})
         doc["actions"].append(act)
-        if decided is not None:
-            decided.note(name, e8_evidence.PLACED, e8_evidence.R_PLACED,
-                         (f"{side}: the failed send had landed, adopted order {oid}"
-                          if row.get("adopted") else f"{side} re-sent -> order {oid}"),
-                         lot=leg.get("lot"), risk_usd=leg.get("risk_usd"))
+        with contextlib.suppress(Exception):
+            if decided is not None:
+                decided.note(name, e8_evidence.PLACED, e8_evidence.R_PLACED,
+                             (f"{side}: the failed send had landed, adopted order {oid}"
+                              if row.get("adopted") else f"{side} re-sent -> order {oid}"),
+                             lot=leg.get("lot"), risk_usd=leg.get("risk_usd"))
     for w in (state.get("windows") or {}).values():
         if "failed" in w and not w["failed"]:
             del w["failed"]

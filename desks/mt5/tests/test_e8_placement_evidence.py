@@ -47,6 +47,33 @@ fence = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(fence)
 
 
+class _FlatMT5(_MT5):
+    """The test terminal, also answering as a FLAT Fusion account. On this base nothing reads
+    these; after the Fusion r4 merge every send is cross-account fenced (`e8_gold.fenced_send`)
+    and fails closed without them, exactly as c07dd71d's `_flat_fusion_terminal` in
+    test_e8_reconnect. The fence itself is pinned in test_fusion_minlot_book."""
+
+    @staticmethod
+    def account_info() -> Any:
+        from types import SimpleNamespace
+        return SimpleNamespace(login=1, server="FusionMarkets-Live", trade_mode=2)
+
+    @staticmethod
+    def positions_get(*_a: Any, **_k: Any) -> tuple:
+        return ()
+
+    @staticmethod
+    def orders_get(*_a: Any, **_k: Any) -> tuple:
+        return ()
+
+
+def _fusion_kw() -> dict[str, Any]:
+    """`mt5=` for `_retry_failed_legs` where it takes one (after the r4 merge), else nothing."""
+    import inspect
+    params = inspect.signature(g._retry_failed_legs).parameters
+    return {"mt5": _FlatMT5()} if "mt5" in params else {}
+
+
 def _rows() -> list[dict[str, Any]]:
     path = ev.decisions_path()
     if not path.exists():
@@ -71,7 +98,7 @@ class _ArmedVenue(_Venue):
 def test_a_flat_pass_with_a_window_due_writes_heartbeat_and_one_decision(
         monkeypatch, tmp_path) -> None:
     _sandbox(monkeypatch, tmp_path)
-    doc = g.run(_Venue(), _MT5(), armed=False)
+    doc = g.run(_Venue(), _FlatMT5(), armed=False)
     beat = _beat()
     assert beat["lane"] == "e8_gold" and beat["status"] == "OK" and beat["armed"] is False
     for key in ("verdict", "hostname", "machine_id"):
@@ -90,7 +117,7 @@ def test_a_flat_pass_with_a_window_due_writes_heartbeat_and_one_decision(
 def test_a_pass_with_nothing_due_writes_a_heartbeat_and_no_decision(
         monkeypatch, tmp_path) -> None:
     _sandbox(monkeypatch, tmp_path, placed=("asia", "london_am", "afternoon"))
-    doc = g.run(_Venue(), _MT5(), armed=False)
+    doc = g.run(_Venue(), _FlatMT5(), armed=False)
     assert doc["placed"] == [] and _rows() == []
     assert _beat()["status"] == "OK" and _beat()["decisions"] == 0
 
@@ -127,14 +154,14 @@ def test_a_one_at_risk_deferral_held_for_many_passes_is_one_row(monkeypatch, tmp
     _sandbox(monkeypatch, tmp_path, placed=("asia", "london_am"))
     at_risk = _Venue([_short(100, 9100), _short(101, 9101)], {9100: _STOP, 9101: _STOP})
     for _ in range(12):                                   # an hour of five-minute passes
-        doc = g.run(at_risk, _MT5(), armed=False)
+        doc = g.run(at_risk, _FlatMT5(), armed=False)
         assert doc["placed"] == []
     [row] = _rows()
     assert (row["outcome"], row["reason"]) == ("DEFERRED", "one_at_risk")
     assert "one gold trade at risk" in row["why"] and row["risk_usd"] > 0
     # The earlier trades ratchet to break-even: the window places, and that is a new row.
     freed = _Venue([_short(100, 9100), _short(101, 9101)], {9100: _ENTRY, 9101: _ENTRY})
-    g.run(freed, _MT5(), armed=False)
+    g.run(freed, _FlatMT5(), armed=False)
     assert [(r["outcome"], r["reason"]) for r in _rows()] == [
         ("DEFERRED", "one_at_risk"), ("WOULD_PLACE", "shadow_unarmed")]
 
@@ -142,7 +169,7 @@ def test_a_one_at_risk_deferral_held_for_many_passes_is_one_row(monkeypatch, tmp
 def test_an_armed_placement_is_taken_and_names_its_lot(monkeypatch, tmp_path) -> None:
     _sandbox(monkeypatch, tmp_path)
     venue = _ArmedVenue()
-    doc = g.run(venue, _MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert [p["window"] for p in doc["placed"]] == ["afternoon"] and venue.sent
     [row] = _rows()
     assert (row["outcome"], row["reason"], row["taken"]) == ("PLACED", "placed", True)
@@ -155,7 +182,7 @@ def test_a_guard_stand_down_is_recorded_as_a_deferral_once(monkeypatch, tmp_path
         "day": e8_guard.server_day(), "day_start": 100_000.0, "peak_equity": 100_000.0,
         "stood_down": True})
     for _ in range(3):
-        assert g.run(_Venue(), _MT5(), armed=False)["placed"] == []
+        assert g.run(_Venue(), _FlatMT5(), armed=False)["placed"] == []
     [row] = _rows()
     assert (row["outcome"], row["reason"]) == ("DEFERRED", "guard_stood_down")
     assert row["window"] == "afternoon"
@@ -175,12 +202,12 @@ def test_a_new_server_day_records_the_same_decision_again() -> None:
 def test_an_unwritable_evidence_dir_changes_nothing_that_was_placed(
         monkeypatch, tmp_path) -> None:
     _sandbox(monkeypatch, tmp_path)
-    baseline = g.run(_Venue(), _MT5(), armed=False)
+    baseline = g.run(_Venue(), _FlatMT5(), armed=False)
     _sandbox(monkeypatch, tmp_path)                       # the same fresh day again
     blocker = tmp_path / "not_a_dir"
     blocker.write_text("x", "utf-8")
     monkeypatch.setenv(ev.DIR_ENV, str(blocker))          # every write under it now fails
-    doc = g.run(_Venue(), _MT5(), armed=False)
+    doc = g.run(_Venue(), _FlatMT5(), armed=False)
     assert doc["placed"] == baseline["placed"] and doc["skipped"] == baseline["skipped"]
     assert doc["decisions_recorded"] == 0 and doc["heartbeat"] is None
     # v2: the row the write could not land is KEPT in the state (and marked, so it is not
@@ -199,7 +226,7 @@ def test_an_identity_helper_that_raises_is_recorded_unmeasured(monkeypatch, tmp_
 
     monkeypatch.setattr(host_identity, "identify", boom)
     _sandbox(monkeypatch, tmp_path)
-    doc = g.run(_Venue(), _MT5(), armed=False)
+    doc = g.run(_Venue(), _FlatMT5(), armed=False)
     assert [p["window"] for p in doc["placed"]] == ["afternoon"]
     assert doc["host"]["verdict"] == ev.UNMEASURED and _beat()["host"]["verdict"] == ev.UNMEASURED
 
@@ -243,7 +270,7 @@ def test_rows_this_lane_writes_read_clean_through_the_fence(monkeypatch, tmp_pat
     _sandbox(monkeypatch, tmp_path, placed=("asia", "london_am"))
     at_risk = _Venue([_short(100, 9100), _short(101, 9101)], {9100: _STOP, 9101: _STOP})
     for _ in range(40):
-        g.run(at_risk, _MT5(), armed=False)
+        g.run(at_risk, _FlatMT5(), armed=False)
     root = tmp_path / "fence_root"
     data = root / "desks" / "mt5" / "data"
     data.mkdir(parents=True)
@@ -297,7 +324,7 @@ def _retry(monkeypatch, tmp_path, venue: _RetryVenue, st: dict, *, hour: float =
     decided = ev.Decisions()
     args = {"open_orders": [], "orders_ok": True, "filled": {}, "xau_positions": [],
             "positions_ok": True, "stood_down": False, "armed": True, "hist_rows": [],
-            "history_ok": True, "instrument_id": 316, **kw}
+            "history_ok": True, "instrument_id": 316, **_fusion_kw(), **kw}
     g._retry_failed_legs(venue, st, {"actions": []}, hour=hour, now=datetime.now(UTC),
                          decided=decided, **args)
     return decided
@@ -362,7 +389,7 @@ def test_a_retry_without_a_collector_sends_exactly_the_same(monkeypatch, tmp_pat
     g._retry_failed_legs(v2, st2, {"actions": []}, hour=8.0, now=datetime.now(UTC),
                          open_orders=[], orders_ok=True, filled={}, xau_positions=[],
                          positions_ok=True, stood_down=False, armed=True, hist_rows=[],
-                         history_ok=True, instrument_id=316)
+                         history_ok=True, instrument_id=316, **_fusion_kw())
     assert v1.sent == v2.sent and st1 == st2
 
 
@@ -380,11 +407,11 @@ def test_a_full_pass_refusal_then_re_send_reads_ok_through_the_fence(
         monkeypatch, tmp_path) -> None:
     _sandbox(monkeypatch, tmp_path)
     venue = _RejectingVenue()
-    first = g.run(venue, _MT5(), armed=True)
+    first = g.run(venue, _FlatMT5(), armed=True)
     assert (first["decisions"][0]["outcome"], first["decisions"][0]["reason"]) == \
         (ev.DEFERRED, ev.R_VENUE_REJECTED)
     venue.refuse = False
-    g.run(venue, _MT5(), armed=True)
+    g.run(venue, _FlatMT5(), armed=True)
     rows = _rows()
     assert rows[0]["reason"] == ev.R_VENUE_REJECTED
     assert rows[-1]["outcome"] == ev.PLACED and rows[-1]["taken"] is True, rows
@@ -526,7 +553,7 @@ def test_a_read_only_heartbeat_returns_none_never_raises(monkeypatch) -> None:
 def test_a_refused_replace_changes_nothing_a_pass_places(monkeypatch, tmp_path) -> None:
     _sandbox(monkeypatch, tmp_path)
     venue = _ArmedVenue()
-    base = g.run(venue, _MT5(), armed=True)
+    base = g.run(venue, _FlatMT5(), armed=True)
     sent = list(venue.sent)
 
     def refuse(*_a: Any, **_k: Any) -> None:
@@ -536,7 +563,7 @@ def test_a_refused_replace_changes_nothing_a_pass_places(monkeypatch, tmp_path) 
     monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "other_evidence"))
     monkeypatch.setattr(ev.os, "replace", refuse)
     venue2 = _ArmedVenue()
-    doc = g.run(venue2, _MT5(), armed=True)
+    doc = g.run(venue2, _FlatMT5(), armed=True)
     assert venue2.sent == sent and doc["placed"] == base["placed"]
     assert doc["skipped"] == base["skipped"] and doc["actions"] == base["actions"]
 
@@ -609,7 +636,7 @@ class _IdVenue(_ArmedVenue):
 def test_no_account_id_reaches_either_published_file(monkeypatch, tmp_path) -> None:
     """The repository is public: only the keyed pseudonym is written, never the id."""
     _sandbox(monkeypatch, tmp_path)
-    doc = g.run(_IdVenue(), _MT5(), armed=True)
+    doc = g.run(_IdVenue(), _FlatMT5(), armed=True)
     assert doc["account"] == "tradelocker:7654321"          # the unpublished pass report only
     for path in (ev.heartbeat_path(), ev.decisions_path()):
         text = path.read_text("utf-8")
@@ -651,3 +678,76 @@ def test_a_cross_account_fenced_window_on_consecutive_days_is_not_a_halt(tmp_pat
         {"at": now.isoformat(), "lane": "e8_gold", "status": "OK"}), "utf-8")
     lane = fence.scan(root, now=now)["lanes"]["e8_gold"]
     assert lane["verdict"] == "OK" and any("declared answer" in n for n in lane["notes"])
+
+
+
+# ================================================== v3 (audit of 6547633a)
+
+class _RefusingIdVenue(_IdVenue):
+    """TradeLocker's errors embed its trade URL, and with it the account id."""
+
+    def place_stop(self, symbol: str, side: str, lot: float, **kw: Any) -> int:
+        raise RuntimeError("HTTP 502 for url: https://live.tradelocker.com/backend-api/trade/"
+                           "accounts/7654321/orders (account 7654321)")
+
+
+class _PositionsLeakVenue(_IdVenue):
+    def positions(self) -> list[dict]:
+        raise ConnectionError("GET /trade/accounts/7654321/positions returned HTML")
+
+
+def test_a_refusal_never_publishes_the_account_id(monkeypatch, tmp_path) -> None:
+    """Must-fix 1 (v3): the id reached the ledger through `why` on every refusal path -- the
+    leg-loop send, the retry, and the stand-down via positions_unreadable."""
+    _sandbox(monkeypatch, tmp_path)
+    venue = _RefusingIdVenue()
+    g.run(venue, _FlatMT5(), armed=True)          # leg loop refuses; the retry refuses again
+    g.run(venue, _FlatMT5(), armed=True)          # a later pass re-sends and is refused
+    rows = _rows()
+    assert any(r["reason"] == ev.R_VENUE_REJECTED for r in rows), rows
+    assert any(ev.REDACTED in r["why"] for r in rows), rows
+    leaked = [p for p in (ev.heartbeat_path(), ev.decisions_path())
+              if "7654321" in p.read_text("utf-8")]
+    _sandbox(monkeypatch, tmp_path)
+    monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "stand_down"))
+    g.run(_PositionsLeakVenue(), _FlatMT5(), armed=True)
+    assert any(r["reason"] == ev.R_POSITIONS_UNREADABLE for r in _rows()), _rows()
+    leaked += [p for p in (ev.heartbeat_path(), ev.decisions_path())
+               if "7654321" in p.read_text("utf-8")]
+    assert leaked == []
+
+
+def test_scrub_takes_the_id_out_of_prose_and_nothing_else() -> None:
+    acct = "tradelocker:7654321"
+    assert ev.scrub("/trade/accounts/7654321/orders") == f"/trade/accounts/{ev.REDACTED}/orders"
+    assert "7654321" not in ev.scrub("refused (7654321)", acct)
+    kept = "sell stop 4300.00 is at or above the bid 4300.40; order 7000123"
+    assert ev.scrub(kept, acct) == kept
+    assert ev.scrub({"why": ["account 7654321"], "lot": 7654321}, acct) == \
+        {"why": [f"account {ev.REDACTED}"], "lot": 7654321}
+
+
+def test_a_short_explicit_key_is_no_key(monkeypatch) -> None:
+    monkeypatch.setenv(ev.KEY_ENV, "short")
+    assert ev.account_ref("tradelocker:7654321") == f"tradelocker:{ev.UNKEYED}"
+    monkeypatch.setenv(ev.KEY_ENV, "k" * (ev.KEY_MIN_CHARS - 1))
+    assert ev.account_ref("tradelocker:7654321") == f"tradelocker:{ev.UNKEYED}"
+    monkeypatch.setenv(ev.KEY_ENV, "k" * ev.KEY_MIN_CHARS)
+    assert ev.account_ref("tradelocker:7654321").split(":")[1] != ev.UNKEYED
+
+
+def test_a_note_that_raises_never_stops_the_pass(monkeypatch, tmp_path) -> None:
+    """Should-fix (v3): every note in the leg loop and the retry sits in a suppress, so even a
+    collector that raised could not abort the later legs or management."""
+    _sandbox(monkeypatch, tmp_path)
+    base = g.run(_ArmedVenue(), _FlatMT5(), armed=True)
+
+    def boom(self: Any, *a: Any, **k: Any) -> None:
+        raise RuntimeError("note broke")
+
+    _sandbox(monkeypatch, tmp_path)
+    monkeypatch.setattr(ev.Decisions, "note", boom)
+    doc = g.run(_ArmedVenue(), _FlatMT5(), armed=True)
+    assert doc["placed"] == base["placed"] and doc["actions"] == base["actions"]
+    d = _retry(monkeypatch, tmp_path, _RetryVenue(), _retry_state())
+    assert d.rows == []

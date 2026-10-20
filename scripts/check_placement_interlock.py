@@ -200,6 +200,8 @@ E8_HEARTBEAT_LIVE_HOURS = LEDGER_LIVE_HOURS
 #: trading day (asia 04:00Z -> london_am 10:00Z), so a failure this long has cost a window or is
 #: about to. Shorter is a page per maintenance blip; a day would let a whole day's book go.
 E8_FAILING_MAX_HOURS = 6.0
+#: The account pseudonym a box with no key writes (prop/e8_evidence.UNKEYED).
+E8_UNKEYED = "UNKEYED"
 #: The lane's own policy answers and the venue's -- declared, bounded and visible on E8_GOLD.json,
 #: so reported and never breached on. Everything else (an unreadable equity, guard, position book
 #: or journal, a window the sizer cannot size, the guard's STOOD_DOWN, an unknown code) breaches.
@@ -422,6 +424,7 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         "hostname": host.get("hostname"), "machine_id": host.get("machine_id"),
         "host_verdict": host.get("verdict"),
     }
+    lane["live_here"] = age is not None and age <= E8_HEARTBEAT_LIVE_HOURS
     if age is None or age > E8_HEARTBEAT_LIVE_HOURS:
         lane.update(verdict=UNMEASURED, ok=None)
         lane["notes"].append(
@@ -470,9 +473,21 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
             lane.update(verdict=UNMEASURED if failing else "NO_DECISIONS", ok=None)
         lane["notes"].append("no window has been due since the E8 gold decision ledger began")
         return lane
-    # KEYED BY (window, account): a run never spans two accounts' rows.
-    keyed = [{**r, "sleeve": f"{r.get('sleeve') or r.get('strategy_id') or '?'}"
-                             f"@{_e8_account(r)}"} for r in rows]
+    # KEYED BY (window, account): a run never spans two accounts' rows. An UNKEYED row (the box
+    # had no pseudonym key) cannot be told apart from another account's, so each is its own run
+    # key (v3) and never joins a run -- and a window whose NEWEST row is UNKEYED cannot be judged
+    # at all, so the lane reads UNMEASURED rather than OK.
+    keyed: list[dict[str, Any]] = []
+    newest_unkeyed: dict[str, str] = {}
+    for i, r in enumerate(rows):
+        sleeve = str(r.get("sleeve") or r.get("strategy_id") or "?")
+        acct = _e8_account(r)
+        unkeyed = acct.endswith(":" + E8_UNKEYED)
+        keyed.append({**r, "sleeve": f"{sleeve}@{acct}" + (f"#{i}" if unkeyed else "")})
+        if unkeyed:
+            newest_unkeyed[sleeve] = str(r.get("decided_at") or UNMEASURED)
+        else:
+            newest_unkeyed.pop(sleeve, None)
     runs = trailing_runs(keyed, now)
     lane["runs"] = runs
     for sleeve, run in sorted(runs.items()):
@@ -497,22 +512,44 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
             f"{sleeve} has been refused on {run['days']} consecutive server days on "
             f"'{run['reason']}' since {run['first_at']} with no placement in between "
             f"(host {host.get('hostname')})")
-    if failing and lane["verdict"] != "HALTED":
+    if newest_unkeyed:
+        lane["unkeyed_windows"] = sorted(newest_unkeyed)
+        lane["notes"].append(
+            f"{', '.join(sorted(newest_unkeyed))}: the newest row carries no account pseudonym "
+            f"({E8_UNKEYED}), so it cannot be joined into a run; UNMEASURED until a keyed row")
+    if (failing or newest_unkeyed) and lane["verdict"] != "HALTED":
         lane.update(verdict=UNMEASURED, ok=None)
     return lane
 
 
 def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
-    """The gateway's verdict (`_scan_gateway`) with the E8 gold lane's folded in. Only an E8 HALT
-    changes the top-level verdict: its OK must never mask the gateway's UNMEASURED."""
+    """The gateway's verdict (`_scan_gateway`) with the E8 gold lane's folded in. An E8 HALT makes
+    the top level HALTED; an E8 UNMEASURED makes a top level that would otherwise be OK (or
+    NOT_APPLICABLE) UNMEASURED (v3, L1.28a: a lane nobody can read is never published as a pass,
+    never a PLACEMENT_CLEAR, and never closes an open halt alert). An E8 OK masks nothing.
+
+    The gateway's own verdict is kept as `gateway_verdict`: only THAT being UNMEASURED is
+    escalated to a failure on the trading host (`escalate_unmeasured`). The E8 lane's short
+    failures are UNMEASURED by design (E8_FAILING_MAX_HOURS) and its long ones are HALTED, so
+    escalating its UNMEASURED would page every terminal blip."""
     base = Path(root or ROOT)
     t_now = now or _now()
     doc = _scan_gateway(base, t_now)
+    doc["gateway_verdict"] = doc.get("verdict")
     e8 = scan_e8(base, t_now)
     doc["lanes"] = {E8_LANE: e8}
     if e8["verdict"] == "HALTED":
         doc.update(ok=False, applicable=True, verdict="HALTED")
         doc["problems"].extend(f"[{E8_LANE}] {p}" for p in e8["problems"])
+    elif e8["verdict"] == UNMEASURED and doc.get("ok") is not False:
+        doc.update(ok=None, verdict=UNMEASURED)
+        if e8.get("live_here"):
+            # The lane runs on this host (its heartbeat is fresh; its passes are failing), so
+            # the verdict about it is this host's to publish.
+            doc["applicable"] = True
+        doc["notes"].append(
+            f"[{E8_LANE}] lane UNMEASURED ({'; '.join(e8.get('notes') or [])[:300]}): the "
+            "top level is not a pass while it is")
     return doc
 
 
@@ -670,6 +707,10 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
         if doc.get("ok") is None:
             # UNMEASURED here: neither evidence that a halt ended nor that one is live.
             return None
+        if any(lane.get("verdict") == UNMEASURED for lane in (doc.get("lanes") or {}).values()):
+            # A lane that cannot be read is no evidence that its halt ended (v3): a HALTED E8
+            # lane whose heartbeat then went stale must not close the alert as FIXED.
+            return None
         if doc.get("ok") or doc.get("verdict") == "NOT_APPLICABLE":
             alert = ledger.alerts.get(ALERT_ID)
             if alert is not None and alert.open:
@@ -737,6 +778,9 @@ def escalate_unmeasured(doc: dict[str, Any], ident: host_identity.HostIdentity) 
     is written) and a PLACEMENT_UNMEASURED event. The verdict stays UNMEASURED -- the fence does
     not know it is a halt, only that it can no longer tell (L1.28a)."""
     if doc.get("ok") is not None or doc.get("verdict") != UNMEASURED:
+        return doc
+    if doc.get("gateway_verdict", UNMEASURED) != UNMEASURED:
+        # UNMEASURED only because a lane is (scan): not the gateway's silence (see scan).
         return doc
     doc["ok"] = False
     doc["applicable"] = True
