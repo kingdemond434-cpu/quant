@@ -405,6 +405,9 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 #:   "mtime"               the artifact is DECLARED stampless; mtime is the honest best
 #:
 #: Each spec below was read off the artifact itself before it was written here.
+#: Ordinary two-host clock skew; a stamp further in the future reads UNMEASURED.
+FUTURE_SKEW_S = 300.0
+
 STAMP_SPEC: dict[str, str] = {
     # gateway_state.json carries no top-level stamp; `last_reconcile` is written every pass
     # (check_desk_health prints it as the gateway's own last word).
@@ -537,11 +540,18 @@ def read_artifact_age(rel: str, organ: str | None = None, *, root: Path | None =
                       f"Name the stamp in ops/organ_contract.STAMP_SPEC")
         return out
     key, t = got
-    # A stamp in the future (a broker-time field mislabelled UTC) is not "younger than now";
-    # it is clamped to zero and named, so it can neither go negative nor hide.
-    age = max(0.0, (now - t).total_seconds() / 60.0)
+    # A stamp in the future (a broker-time field mislabelled UTC) is not "younger than now".
+    # Within ordinary skew it is clamped to zero; beyond it the stamp measures nothing, so the
+    # freshness is UNMEASURED (audit 4854d7289: +3h and +30d both read OK when clamped).
+    secs = (now - t).total_seconds()
+    if secs < -FUTURE_SKEW_S:
+        out.update(stamp=t.isoformat(timespec="seconds"),
+                   why=(f"{rel} stamp {key}={t.isoformat(timespec='seconds')} is "
+                        f"{-secs / 60:.0f} min in the FUTURE -- freshness UNMEASURED"))
+        return out
+    age = max(0.0, secs / 60.0)
     out.update(age_min=age, age_basis=f"stamp:{key}", stamp=t.isoformat(timespec="seconds"),
-               why=("stamp is in the future" if t > now else ""))
+               why=("stamp is in the future (within clock skew)" if t > now else ""))
     return out
 
 

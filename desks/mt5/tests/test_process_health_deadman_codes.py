@@ -257,3 +257,64 @@ def test_the_e8_sampler_pass_fits_its_task_limit() -> None:
     inst = (ROOT / "desks" / "mt5" / "scripts" / "install_e8_tasks.ps1").read_text("utf-8")
     assert "[int] $LimitMinutes = 50" in inst
     assert "RUN_BUDGET_S = 45 * 60" in src and "HOURS*3600" not in src
+    # re-audit: bounded raw, atomic write, a slow venue cannot overrun, and the installer's
+    # trigger is the manifest's hourly one, not at-startup
+    assert "MAX_RAW_PER_SYMBOL" in src and "_write_atomic(OUT" in src and "last_pass_s" in src
+    i = inst.index('Set-E8Task -Name "E8-Spreads"')
+    assert "-RepetitionInterval (New-TimeSpan -Hours 1)" in inst[i:i + 400]
+    assert "-AtStartup" not in inst[i:i + 400]
+
+
+# ------------------------------------------------------------------ 3. re-audit of 4854d7289
+
+@pytest.mark.parametrize("minutes_ahead", [180, 30 * 24 * 60])
+def test_a_future_checked_at_is_never_armed(tmp_path: Path, minutes_ahead: float) -> None:
+    row = _dm(tmp_path, state=_state(-minutes_ahead, "LIVE"))
+    assert row["verdict"] == "DEADMAN_UNARMED" and "FUTURE" in row["why"]
+
+
+def test_ordinary_clock_skew_still_reads_armed(tmp_path: Path) -> None:
+    assert _dm(tmp_path, state=_state(-2, "LIVE"))["verdict"] == "OK"
+
+
+@pytest.mark.parametrize("sleeves", [json.dumps({"sleeves": {"a": {"status": "LIVE"}}}),
+                                     json.dumps({"rows": [{"name": "a", "status": "LIVE"}]}),
+                                     json.dumps({"sleeves": None}), "7"])
+def test_a_sleeves_file_of_another_shape_is_unmeasured_not_no_risk(
+        tmp_path: Path, sleeves: str) -> None:
+    assert _dm(tmp_path, sleeves=sleeves, state=_state(1))["verdict"] == "UNMEASURED"
+
+
+def test_a_page_that_reached_no_one_is_not_deduplicated(tmp_path: Path) -> None:
+    doc = {"at": NOW.isoformat(), "processes": [
+        {"name": "FUSION DEADMAN ARMED", "verdict": "DEADMAN_UNARMED", "why": "x"}]}
+    pg = tmp_path / "pg.json"
+
+    def boom(t: str, b: str) -> dict[str, Any]:
+        raise OSError("network")
+    for sender in (boom, lambda t, b: {"armed": 1, "delivered": 0}):
+        out = ph.page_attention(doc, state_path=pg, sender=sender, now=NOW)
+        assert out["sent"] and "state_kept" in out and not pg.exists()
+    out = ph.page_attention(doc, state_path=pg, sender=lambda t, b: {"armed": 1, "delivered": 1},
+                            now=NOW)
+    assert pg.exists() and "state_kept" not in out
+    again = ph.page_attention(doc, state_path=pg, sender=lambda t, b: {"delivered": 1}, now=NOW)
+    assert again == {"sent": False, "reason": "deduplicated"}
+
+
+def test_an_unmeasured_deadman_row_is_escalated_with_the_deadman_remedy(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = [{"name": "FUSION DEADMAN ARMED", "verdict": "UNMEASURED", "why": "sleeves unreadable"}]
+    assert _never_stale(tmp_path, monkeypatch, rows) == []
+    esc = ns.run(apply=True)["escalated"]
+    assert esc[0]["diagnosis"] == ns.VERDICT_DIAGNOSIS["DEADMAN_UNARMED"]
+    assert esc[0]["needs_human"] is True
+
+
+def test_a_far_future_stamp_reads_unmeasured_in_the_organ_contract(tmp_path: Path) -> None:
+    oc = _load("_ph_deadman_organ_contract", "ops/organ_contract.py")
+    p = tmp_path / "a.json"
+    for ahead, measured in ((timedelta(hours=3), False), (timedelta(minutes=2), True)):
+        p.write_text(json.dumps({"generated_at": (NOW + ahead).isoformat()}), "utf-8")
+        got = oc.read_artifact_age("a.json", root=tmp_path, now=NOW, spec="generated_at")
+        assert (got.get("age_min") is not None) is measured, (ahead, got)

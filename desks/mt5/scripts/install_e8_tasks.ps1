@@ -8,7 +8,7 @@
         E8-Executor   every 5 min     evaluate certified non-gold entries, guard and manage.
         E8-Book       every hour     refresh certificates against the measured venue catalogue.
         E8-Gold       every 5 min     the same three gold windows as the Fusion book.
-        E8-Spreads    at boot         the cost sampler. It is the only measurement of what this
+        E8-Spreads    hourly at :02   the cost sampler. It is the only measurement of what this
                                       venue actually charges during the hours the book trades,
                                       and every pass-probability number depends on it.
 
@@ -96,8 +96,8 @@ Enable-ScheduledTask -TaskName "E8-Book" | Out-Null
 
 Set-E8Task -Name "E8-Spreads" -Script (Join-Path $prop "e8_spread_sampler.py") `
     -RequiresDesktop `
-    -ScheduleArgs "New-ScheduledTaskTrigger -AtStartup" `
-    -Why "measure what this venue actually charges in the hours the book trades"
+    -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(2) -RepetitionInterval (New-TimeSpan -Hours 1)" `
+    -Why "measure what this venue actually charges in the hours the book trades (hourly at :02, a 45-min pass; the manifest's trigger)"
 
 $armed = Join-Path $desk "data\E8_ARMED"
 $goldArmed = Join-Path $desk "data\E8_GOLD_ARMED"

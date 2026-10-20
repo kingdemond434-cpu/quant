@@ -563,6 +563,8 @@ def disk_state(root: Path | None = None, *, floor_gb: float = DISK_FLOOR_GB,
 DEADMAN_STATE = ROOT / "desks" / "mt5" / "data" / "fusion_deadman_state.json"
 SLEEVES = ROOT / "desks" / "mt5" / "data" / "sleeves.json"
 DEADMAN_MAX_AGE_MIN = 15.0
+#: Ordinary two-host clock skew; a stamp further ahead than this measures nothing.
+FUTURE_SKEW_MIN = 5.0
 DEADMAN_ARMED_MODE = "LIVE"
 DEADMAN_ARM_STEP = (
     "ARMING IS THE PRINCIPAL'S ACT (LAWS §4): on the trading box, re-register "
@@ -589,7 +591,10 @@ def deadman_invariant(*, state_path: Path | None = None, sleeves_path: Path | No
     }
     try:
         doc = json.loads(lp.read_text(encoding="utf-8-sig"))
-        sl = doc if isinstance(doc, list) else (doc.get("sleeves") or [])
+        sl = doc if isinstance(doc, list) else doc.get("sleeves")
+        if not isinstance(sl, list):
+            # A dict, a renamed key or a null is not "no sleeves": LIVE risk is UNMEASURED.
+            raise ValueError(f"no sleeves list (got {type(sl).__name__})")
         live = sorted(str(r.get("name") or "?") for r in sl
                       if isinstance(r, dict) and str(r.get("status", "")).upper() == "LIVE")
     except (OSError, ValueError, AttributeError) as exc:
@@ -618,10 +623,15 @@ def deadman_invariant(*, state_path: Path | None = None, sleeves_path: Path | No
             t = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
             if t.tzinfo is None:
                 t = t.replace(tzinfo=UTC)
-            age = max(0.0, (now - t).total_seconds() / 60.0)
+            age = (now - t).total_seconds() / 60.0
             row.update(artifact_age_min=round(age, 1), age_basis="stamp:checked_at",
                        artifact_stamp=t.isoformat(timespec="seconds"))
-            if age > DEADMAN_MAX_AGE_MIN:
+            if age < -FUTURE_SKEW_MIN:
+                # A stamp from the future is no evidence the rail ran (audit 4854d7289): a
+                # broker-time field or a wrong clock must never read as freshly armed.
+                faults.append(f"checked_at {t.isoformat(timespec='seconds')} is {-age:.0f} min "
+                              f"in the FUTURE -- the rail's last pass is UNMEASURED")
+            elif age > DEADMAN_MAX_AGE_MIN:
                 faults.append(f"checked_at {t.isoformat(timespec='seconds')} is {age:.0f} min "
                               f"old against a {DEADMAN_MAX_AGE_MIN:g} min bar")
         except ValueError:
@@ -1015,6 +1025,11 @@ def page_attention(doc: dict[str, Any], *, state_path: Path | None = None,
            "armed": res.get("armed"), "delivered": res.get("delivered")}
     if res.get("error"):
         out["error"] = res["error"]
+    if not (isinstance(out["delivered"], int) and out["delivered"] > 0):
+        # NOTHING ARRIVED, SO NOTHING IS "ALREADY PAGED" (audit 4854d7289): keep the previous
+        # signature so the next pass pages again instead of reporting a lost page deduplicated.
+        out["state_kept"] = "not delivered: the dedup state is left as it was"
+        return out
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({"signature": current,

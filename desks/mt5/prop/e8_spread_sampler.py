@@ -43,6 +43,16 @@ INTERVAL_S = 300
 #: Samples persist across passes through `raw`, so a 45-minute pass loses nothing and exits 0
 #: before the limit and before the next hourly trigger.
 RUN_BUDGET_S = 45 * 60
+#: `raw` persists across passes; bound it so the file (rewritten every 5 min) cannot grow without
+#: limit. 2,016 samples per symbol is a week at one sample per 5 minutes.
+MAX_RAW_PER_SYMBOL = 2016
+
+
+def _write_atomic(path: pathlib.Path, text: str) -> None:
+    """A reader (the cost model, the publisher) never sees a half-written file."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
 
 v = TradeLockerVenue().connect()
 samples: dict[str, list[tuple[int, float]]] = collections.defaultdict(list)
@@ -54,12 +64,17 @@ if OUT.exists():
         pass
 
 deadline = time.time() + RUN_BUDGET_S
-while time.time() < deadline:
+last_pass_s = 0.0
+# A slow venue cannot carry a pass past the task's limit: a new pass starts only when the last
+# one's duration still fits before the deadline (quote() exposes no timeout of its own).
+while time.time() + last_pass_s < deadline:
+    t0 = time.time()
     hour = datetime.now(UTC).hour
     for s in SYMS:
         try:
             bid, ask = v.quote(s)
             samples[s].append((hour, round(1e4*(ask-bid)/bid, 3)))
+            del samples[s][:-MAX_RAW_PER_SYMBOL]
         except Exception:
             pass
     by_hour: dict[str, dict[str, dict[str, float]]] = {}
@@ -106,6 +121,7 @@ while time.time() < deadline:
             "verdict": "FROZEN_QUOTE_MARKET_LIKELY_CLOSED" if _frozen else "LIVE",
             "usable_as_cost": not _frozen,
         }
-    OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
-    time.sleep(max(0.0, min(INTERVAL_S, deadline - time.time())))
+    _write_atomic(OUT, json.dumps(doc, indent=1))
+    last_pass_s = time.time() - t0
+    time.sleep(max(0.0, min(INTERVAL_S, deadline - time.time() - last_pass_s)))
 print("done", OUT)

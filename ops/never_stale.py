@@ -391,7 +391,14 @@ def run(apply: bool) -> dict:
         if verdict in VERDICT_DIAGNOSIS:
             # REPORT-ONLY SHAPES. UNMEASURED is listed apart so it never reads as healthy and
             # never escalates beside a dead gateway; ALERTS_UNARMED is the owner's step.
-            if verdict == "UNMEASURED":
+            if verdict == "UNMEASURED" and name == "FUSION DEADMAN ARMED":
+                # The ruin rail's state UNMEASURED while risk may be LIVE is the deadman's
+                # human step, not a missing STAMP_SPEC entry (audit 4854d7289).
+                escalated.append({"task": name, "verdict": verdict, "code": None,
+                                  "why": row.get("why"),
+                                  "diagnosis": VERDICT_DIAGNOSIS["DEADMAN_UNARMED"],
+                                  "needs_human": True})
+            elif verdict == "UNMEASURED":
                 unmeasured.append({"task": name, "why": row.get("why"),
                                    "diagnosis": VERDICT_DIAGNOSIS[verdict]})
             else:
