@@ -557,11 +557,13 @@ if ($free -lt $DiskFloorGB) {
   # cheapest first. `age` prunes files older than N days; `all` takes the whole pool.
   $tiers = @(
     @{ name = 'logs>14d';        path = "$base\logs";                    age = 14 },
-    # YESTERDAY'S CACHE FIRST, TODAY'S LAST (2026-10-20). A cache key carries its data-day, so an
-    # entry older than a day is a key no sweep will ask for again; today's entries are the running
-    # sweep's own pre-warm output, and taking them at age 0 throws away hours of building that the
-    # sweep then defers (sweep 23324 warmed 14,235 and loaded 6,057). Today's go only at the end.
-    @{ name = 'gauntlet_cache';  path = "$base\reports\gauntlet_cache";  age = 1  },
+    # THE JUDGE'S OWN DEAD-KEY RULE FIRST, EVERYTHING ELSE LAST (2026-10-20, audit should-fix).
+    # A key carries its data-day, but "older than a day" is NOT dead: a weekend or a frozen
+    # symbol keeps one data-day for days, and a cache hit never touches mtime. The judge prunes
+    # its own cache at > 3 days by mtime at the start of every sweep (external_gauntlet main), so
+    # this tier deletes only what the next sweep would delete itself. Younger entries -- today's
+    # pre-warm output among them -- go only as the very last tier.
+    @{ name = 'gauntlet_cache';  path = "$base\reports\gauntlet_cache";  age = 3  },
     @{ name = 'pycache';         path = $q;                              age = -1 },
     @{ name = 'logs>3d';         path = "$base\logs";                    age = 3  },
     @{ name = 'free_data_cache'; path = "$base\data\free_data_cache";    age = 0  },

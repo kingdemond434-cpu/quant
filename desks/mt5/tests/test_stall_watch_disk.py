@@ -50,13 +50,16 @@ def test_there_is_a_real_ladder_not_one_pool() -> None:
 
 
 def test_todays_gauntlet_cache_goes_last_and_the_shard_plan_never() -> None:
-    """2026-10-20, sweep 23324: the pre-warm put 14,235 cells in the cache and the shards loaded
-    6,057. A cache key carries its data-day, so yesterday's entries are dead keys and go first;
-    today's are the running sweep's own work and go only after every other pool. The in-flight
-    shard plan is never pruned: deleting it fails every shard closed and discards the sweep."""
+    """The early tier deletes only what the judge's own > 3-day prune would delete next sweep (a
+    weekend or a frozen symbol keeps one data-day for days, and a hit never touches mtime); the
+    rest goes only as the last tier. The in-flight shard plan is never pruned: deleting it fails
+    every shard closed and discards the sweep."""
     tiers = re.findall(r"name\s*=\s*'([^']+)';\s*path\s*=\s*\"[^\"]*\";\s*age\s*=\s*(-?\d+)", BLOCK)
     by = dict(tiers)
-    assert by["gauntlet_cache"] == "1"
+    assert by["gauntlet_cache"] == "3"
+    judge = (Path(__file__).resolve().parents[1] / "scripts" / "external_gauntlet.py").read_text(
+        "utf-8")
+    assert "_t.time() - _f.stat().st_mtime > 3 * 86400" in judge   # the rule this tier mirrors
     assert tiers[-1] == ("gauntlet_cache_today", "0")
     assert "\\gauntlet_cache\\shards" in BLOCK
 
