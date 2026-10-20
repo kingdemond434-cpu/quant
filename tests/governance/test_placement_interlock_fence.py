@@ -566,7 +566,7 @@ def test_e8_rows_never_mix_with_the_gateways(box: Path) -> None:
     doc = fence.scan(box, now=NOW)
     assert set(doc["runs"]) == {"gold_afternoon"}
     lane = doc["lanes"]["e8_gold"]
-    assert lane["verdict"] == "NO_DECISIONS" and lane["runs"] == {}
+    assert lane["verdict"] == "UNMEASURED" and lane["runs"] == {}       # v4: never a pass
     assert not any(p.startswith("[e8_gold]") for p in doc["problems"])
 
 
@@ -789,4 +789,141 @@ def test_e8_unkeyed_rows_never_join_a_run_and_read_unmeasured(tmp_path: Path) ->
         "sleeve": "e8_gold:afternoon", "server_date": NOW.date().isoformat(),
         "outcome": "PLACED", "reason": "placed", "taken": True}))
     _write(tmp_path, E8_LEDGER, "\n".join(rows) + "\n")
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"
+
+
+
+# ------------------------------------- 9. v4 (audit of 89730852): shapeless evidence is not OK
+
+def _top_not_ok(doc: dict) -> None:
+    assert doc["ok"] is not True and doc["verdict"] != "OK", doc
+    assert fence.record_event(doc, ROOT) in (None, "PLACEMENT_HALTED", "PLACEMENT_UNMEASURED")
+
+
+@pytest.mark.parametrize("ahead", [timedelta(hours=2), timedelta(days=3)])
+def test_e8_a_future_stamped_heartbeat_is_unmeasured(box: Path, ahead: timedelta,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import events
+    monkeypatch.setattr(events, "PATH", box / "events.jsonl")
+    _gateway_ok(box)
+    _e8_beat(box, at=NOW + ahead)
+    _e8_rows(box, [(0, "PLACED", "placed")])
+    doc = fence.scan(box, now=NOW)
+    assert doc["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+    assert any("FUTURE" in n for n in doc["lanes"]["e8_gold"]["notes"])
+    _top_not_ok(doc)
+
+
+@pytest.mark.parametrize("stamp", [(NOW + timedelta(days=30)).replace(tzinfo=None),
+                                   NOW.replace(tzinfo=None)])
+def test_e8_a_naive_heartbeat_stamp_is_unmeasured(box: Path, stamp: datetime,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import events
+    monkeypatch.setattr(events, "PATH", box / "events.jsonl")
+    _gateway_ok(box)
+    _write(box, E8_HEARTBEAT, json.dumps({"at": stamp.isoformat(), "lane": "e8_gold",
+                                          "status": "OK"}))
+    _e8_rows(box, [(0, "PLACED", "placed")])
+    doc = fence.scan(box, now=NOW)
+    assert doc["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+    _top_not_ok(doc)
+
+
+@pytest.mark.parametrize("ledger", [None, "", "{torn\n[1]\n{\"lane\": \"e8_g\n"])
+def test_e8_no_readable_decision_is_unmeasured(box: Path, ledger: str | None,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """An OK heartbeat with no ledger, an empty one, or an all-torn one (v3: NO_DECISIONS,
+    published top-level OK)."""
+    from libs.ops import events
+    monkeypatch.setattr(events, "PATH", box / "events.jsonl")
+    _gateway_ok(box)
+    _e8_beat(box)
+    if ledger is not None:
+        _write(box, E8_LEDGER, ledger)
+    doc = fence.scan(box, now=NOW)
+    assert doc["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+    _top_not_ok(doc)
+
+
+@pytest.mark.parametrize("drop", ["decided_at", "reason"])
+def test_e8_a_row_with_no_timestamp_or_no_reason_is_unmeasured(tmp_path: Path, drop: str) -> None:
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(1, "PLACED", "placed")])
+    bad = {"lane": "e8_gold", "sleeve": "e8_gold:afternoon", "decided_at": NOW.isoformat(),
+           "outcome": "DEFERRED", "reason": "guard_stood_down", "taken": False}
+    bad.pop(drop)
+    with (tmp_path / E8_LEDGER).open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(bad) + "\n")
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "UNMEASURED" and lane["rows_set_aside"]["shapeless"] == 1
+    # A placement AFTER the shapeless row restores judging.
+    with (tmp_path / E8_LEDGER).open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({**bad, "decided_at": NOW.isoformat(), "outcome": "PLACED",
+                             "reason": "placed", "taken": True}) + "\n")
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"
+
+
+def test_e8_future_stamped_rows_are_unmeasured_not_halted(tmp_path: Path) -> None:
+    _e8_beat(tmp_path)
+    _e8_rows(tmp_path, [(-3, "DEFERRED", "guard_stood_down"), (-2, "DEFERRED", "guard_stood_down")])
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "UNMEASURED" and lane["rows_set_aside"]["future"] == 2
+
+
+def test_e8_a_heartbeat_naming_another_lane_is_not_this_lanes(box: Path) -> None:
+    _gateway_ok(box)
+    _write(box, E8_HEARTBEAT, json.dumps({"at": NOW.isoformat(), "lane": "fusion_gold",
+                                          "status": "OK"}))
+    _e8_rows(box, [(0, "PLACED", "placed")])
+    doc = fence.scan(box, now=NOW)
+    lane = doc["lanes"]["e8_gold"]
+    assert lane["verdict"] == "UNMEASURED" and any("names lane" in n for n in lane["notes"])
+    assert doc["ok"] is None
+
+
+def test_e8_a_days_stale_heartbeat_is_escalated_on_the_trading_host(box: Path) -> None:
+    from libs.ops.alert_ledger import AlertLedger
+    _gateway_ok(box)
+    _e8_beat(box, at=NOW - timedelta(days=3))
+    _e8_rows(box, [(3, "PLACED", "placed")])
+    doc = fence.scan(box, now=NOW)
+
+    class _Ident:
+        trading_hostname, verdict, why = "vmi3571445", "TRADING", "test"
+
+    fence.escalate_unmeasured(doc, _Ident())                        # type: ignore[arg-type]
+    assert doc["ok"] is False and doc.get("escalated_on_trading_host") is True
+    assert any(p.startswith("[e8_gold] UNMEASURED on the trading host") for p in doc["problems"])
+    assert fence.record_alert(doc, box) == "OPEN"
+    assert AlertLedger(box / "data" / "alert_ledger.json").alerts[fence.ALERT_ID].open
+
+
+def _keyed_rows(root: Path, rows: list[tuple[int, str, str, str]]) -> None:
+    out = []
+    for ago, ref, kid, machine in rows:
+        at = NOW - timedelta(days=ago)
+        out.append(json.dumps({
+            "decided_at": at.isoformat(), "lane": "e8_gold", "account_ref": ref, "key_id": kid,
+            "machine_id": machine, "sleeve": "e8_gold:afternoon",
+            "server_date": at.date().isoformat(), "outcome": "DEFERRED",
+            "reason": "guard_stood_down", "taken": False}))
+    _write(root, E8_LEDGER, "\n".join(out) + "\n")
+
+
+def test_e8_a_new_key_does_not_split_a_run(tmp_path: Path) -> None:
+    """Should-fix (v4): a regenerated key changes the pseudonym; on the same machine, with the
+    key fingerprint changing too, it is the same account and the run continues."""
+    _e8_beat(tmp_path)
+    _keyed_rows(tmp_path, [(1, "tradelocker:aaaa", "k1", BOX_ID),
+                           (0, "tradelocker:bbbb", "k2", BOX_ID)])
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "HALTED", lane
+    assert set(lane["runs"]) == {"e8_gold:afternoon@tradelocker:aaaa"}
+    # Two accounts under ONE key (same fingerprint) are never joined...
+    _keyed_rows(tmp_path, [(1, "tradelocker:aaaa", "k1", BOX_ID),
+                           (0, "tradelocker:bbbb", "k1", BOX_ID)])
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"
+    # ...nor across machines.
+    _keyed_rows(tmp_path, [(1, "tradelocker:aaaa", "k1", BOX_ID),
+                           (0, "tradelocker:bbbb", "k2", OFF_BOX_ID)])
     assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "OK"

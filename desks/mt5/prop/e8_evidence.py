@@ -289,10 +289,36 @@ def scrub(value: Any, account: str = UNMEASURED) -> Any:
         out = _ACCOUNT_IN_TEXT.sub(lambda m: m.group(1) + REDACTED, value)
         raw = _raw_id(account)
         if raw:
-            out = re.sub(r"(?<![\w.])" + re.escape(raw) + r"(?![\w.])", REDACTED, out)
+            # DIGIT boundaries, not word boundaries (v4): `acc_<id>`, `x<id>` and a sentence-final
+            # `<id>.` all carry the id touching a letter, `_` or `.`, and `\w`/`.` lookarounds let
+            # every one of them through. Only an adjacent DIGIT means it is part of another number.
+            out = re.sub(r"(?<!\d)" + re.escape(raw) + r"(?!\d)", REDACTED, out)
         return out
     except Exception:
         return "<unscrubbed text withheld>" if isinstance(value, str) else value
+
+
+def publishable(value: Any, account: str = UNMEASURED) -> Any:
+    """`value` exactly as it will be written -- through `json.dumps(default=str)` and back, so a
+    non-str leaf (an exception, a Path, a custom object) is the text it will become -- and then
+    scrubbed (v4: a non-str `extra` value used to reach the file raw). Never raises."""
+    try:
+        return scrub(json.loads(json.dumps(value, default=str)), account)
+    except Exception:
+        return scrub(value, account)
+
+
+def key_id() -> str | None:
+    """A short public fingerprint of the pseudonym key (a hash of it, never the key), written
+    beside every `account_ref` so the fence can tell a NEW KEY for the same account from a
+    different account (v4). None when there is no key."""
+    try:
+        key = _key()
+        if key is None:
+            return None
+        return hashlib.sha256(b"e8-evidence-key-id:" + key).hexdigest()[:12]
+    except Exception:
+        return None
 
 
 def stand_down_reason(equity: float, guard_decision: Any, doc: dict[str, Any]) -> str:
@@ -431,16 +457,19 @@ def record_decisions(decided: Decisions | list[dict[str, Any]], state: dict[str,
             return []
         stamp = now.isoformat(timespec="seconds")
         ref = account_ref(account)
+        kid = key_id() if not ref.endswith(":" + UNKEYED) else None
         for row in new:
             sleeve = f"{LANE}:{row['window']}"
-            lines.append(scrub({
-                "decided_at": stamp, "lane": LANE, "account_ref": ref,
+            lines.append(publishable({
+                "decided_at": stamp, "lane": LANE, "account_ref": ref, "key_id": kid,
                 "sleeve": sleeve, "strategy_id": sleeve, "symbol": symbol,
                 "server_date": server_date, "armed": bool(armed),
                 "host": host.get("hostname"), "machine_id": host.get("machine_id"),
                 "host_verdict": host.get("verdict"), **row,
             }, account))
-        out = [*pending, *lines]
+        # Rows kept by a failed write are scrubbed again on the way out: an OLDER build kept them
+        # (v4), and this build's scrub is the one that publishes them.
+        out = [*(publishable(r, account) for r in pending), *lines]
     except Exception as exc:
         _say(log, f"E8 decision evidence not built ({type(exc).__name__}: {exc}); "
                   "placement unaffected")
@@ -541,7 +570,9 @@ def write_heartbeat(status: str, *, at: datetime, armed: bool, account: str = UN
             for k, v in extra.items():
                 if k not in doc:
                     doc[str(k)] = v
-        doc = scrub(doc, account)
+        if not str(doc["account_ref"]).endswith(":" + UNKEYED):
+            doc["key_id"] = key_id()
+        doc = publishable(doc, account)
         text = json.dumps(doc, indent=1, default=str) + "\n"
     except Exception as exc:
         _say(log, f"E8 heartbeat not built ({type(exc).__name__}: {exc}); pass unaffected")

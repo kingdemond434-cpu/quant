@@ -202,6 +202,10 @@ E8_HEARTBEAT_LIVE_HOURS = LEDGER_LIVE_HOURS
 E8_FAILING_MAX_HOURS = 6.0
 #: The account pseudonym a box with no key writes (prop/e8_evidence.UNKEYED).
 E8_UNKEYED = "UNKEYED"
+#: Clock skew a heartbeat or row may carry ahead of this host's clock before it is FUTURE-STAMPED
+#: and so not evidence (v4): the lane's passes are five minutes apart, so a quarter hour is skew
+#: and anything more is a wrong clock or a forged stamp.
+E8_FUTURE_TOLERANCE_HOURS = 0.25
 #: The lane's own policy answers and the venue's -- declared, bounded and visible on E8_GOLD.json,
 #: so reported and never breached on. Everything else (an unreadable equity, guard, position book
 #: or journal, a window the sizer cannot size, the guard's STOOD_DOWN, an unknown code) breaches.
@@ -387,6 +391,25 @@ def _no_evidence(doc: dict[str, Any], problem: str, *, live: bool) -> dict[str, 
     return doc
 
 
+def _parse_iso_aware(text: Any) -> datetime | None:
+    """`_parse_iso` that refuses a stamp with no timezone (v4). The lane writes every stamp with
+    an offset; a naive one was not written by it, and reading it as UTC let a naive stamp 30
+    days ahead pass as live."""
+    raw = str(text or "").strip()
+    if not raw:
+        return None
+    stamp = _parse_iso(raw)
+    if stamp is None:
+        return None
+    probe = raw[:-1] + "+00:00" if raw.endswith("Z") else raw
+    try:
+        if datetime.fromisoformat(probe).tzinfo is None:
+            return None
+    except ValueError:
+        return None
+    return stamp
+
+
 def _e8_account(row: dict[str, Any]) -> str:
     """The row's account pseudonym (`account_ref`), else a v1 row's `account`, else UNMEASURED."""
     return str(row.get("account_ref") or row.get("account") or UNMEASURED)
@@ -395,7 +418,7 @@ def _e8_account(row: dict[str, Any]) -> str:
 def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
     """The E8 gold lane's verdict: NOT_APPLICABLE (no evidence here), UNMEASURED (its heartbeat is
     stale, missing or from a pass that failed only recently -- not a pass, not a failure), OK,
-    NO_DECISIONS, or HALTED (a window refused on consecutive days, or every pass failing for
+    or HALTED (a window refused on consecutive days, or every pass failing for
     longer than `E8_FAILING_MAX_HOURS`). Rows are filtered to `lane: e8_gold`, so nothing else
     written into that file can be judged as this lane."""
     ledger = base / Path(*E8_LEDGER_REL.split("/"))
@@ -411,9 +434,16 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         lane["notes"].append("no E8 gold heartbeat or decision ledger here")
         return lane
     hb: dict[str, Any] = beat or {}
+    foreign = beat is not None and hb.get("lane") != E8_LANE
+    if foreign:
+        # A heartbeat naming another lane (or none) is not this lane's evidence (v4).
+        lane["notes"].append(f"{E8_HEARTBEAT_REL} names lane {hb.get('lane')!r}, not "
+                             f"{E8_LANE!r}: not read as this lane's heartbeat")
+        hb = {}
     raw_host = hb.get("host")
     host: dict[str, Any] = raw_host if isinstance(raw_host, dict) else {}
-    age = _age_h(_parse_iso(hb.get("at")), now)
+    age = _age_h(_parse_iso_aware(hb.get("at")), now)
+    future = age is not None and age < -E8_FUTURE_TOLERANCE_HOURS
     status = str(hb.get("status") or UNMEASURED)
     account = _e8_account(hb)
     lane["heartbeat"] = {
@@ -424,12 +454,23 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         "hostname": host.get("hostname"), "machine_id": host.get("machine_id"),
         "host_verdict": host.get("verdict"),
     }
-    lane["live_here"] = age is not None and age <= E8_HEARTBEAT_LIVE_HOURS
+    lane["live_here"] = age is not None and not future and age <= E8_HEARTBEAT_LIVE_HOURS
+    # A heartbeat absent, torn, unstamped, naive or stale while the ledger exists is a lane that
+    # is NOT running here -- on the trading host that is escalated (escalate_unmeasured).
+    lane["stale_heartbeat"] = not future and (age is None or age > E8_HEARTBEAT_LIVE_HOURS)
+    if future:
+        lane.update(verdict=UNMEASURED, ok=None)
+        lane["notes"].append(
+            f"{E8_HEARTBEAT_REL} is stamped {-(age or 0.0):.1f}h in the FUTURE (tolerance "
+            f"{E8_FUTURE_TOLERANCE_HOURS}h): a wrong clock or a stamp this lane did not write, "
+            "so the lane is UNMEASURED")
+        return lane
     if age is None or age > E8_HEARTBEAT_LIVE_HOURS:
         lane.update(verdict=UNMEASURED, ok=None)
         lane["notes"].append(
             f"{E8_HEARTBEAT_REL} is "
-            + (f"{age:.1f}h old" if age is not None else "missing, torn or unstamped")
+            + (f"{age:.1f}h old" if age is not None
+               else "missing, torn, unstamped, naive or another lane's")
             + f" (live window {E8_HEARTBEAT_LIVE_HOURS:.0f}h): the E8 gold lane is not running "
               "here, so whether it is halted is UNMEASURED on this host")
         return lane
@@ -467,22 +508,69 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
             lane["notes"].append(problem)
             return lane
         rows = [r for r in read if r.get("lane") == E8_LANE]
+    else:
+        lane["notes"].append(f"no {E8_LEDGER_REL} here while the heartbeat is live")
+    # SHAPELESS AND FUTURE ROWS ARE NOT EVIDENCE (v4). A row with no parseable, zoned timestamp
+    # or no reason cannot be placed in a run; a row stamped ahead of this clock would make a run
+    # that has not happened. Both are set aside -- never judged OK, never a HALT -- and when one
+    # sits after the newest placement the lane cannot say it is placing: UNMEASURED.
+    judged: list[dict[str, Any]] = []
+    set_aside = {"shapeless": 0, "future": 0}
+    unjudged_after_placement = False
+    for r in rows:
+        stamp = next((t for t in (_parse_iso_aware(r.get(f)) for f in _TS_FIELDS if r.get(f))
+                      if t is not None), None)
+        kind = ("shapeless" if stamp is None or not str(r.get("reason") or "").strip()
+                else "future" if (stamp - now).total_seconds() / 3600.0
+                > E8_FUTURE_TOLERANCE_HOURS else None)
+        if kind:
+            set_aside[kind] += 1
+            unjudged_after_placement = True
+            continue
+        if _was_taken(r):
+            unjudged_after_placement = False
+        judged.append(r)
+    lane["rows_set_aside"] = set_aside
+    if any(set_aside.values()):
+        lane["notes"].append(
+            f"{set_aside['shapeless']} row(s) with no zoned timestamp or no reason and "
+            f"{set_aside['future']} future-stamped row(s) were set aside, not judged")
+    rows = judged
     lane["rows_scanned"] = len(rows)
     if not rows:
+        # No ledger, an empty one, or one that is all torn / set aside: the lane is running and
+        # no decision can be read, which is UNMEASURED, never a pass (v4, L1.28a).
         if lane["verdict"] != "HALTED":
-            lane.update(verdict=UNMEASURED if failing else "NO_DECISIONS", ok=None)
-        lane["notes"].append("no window has been due since the E8 gold decision ledger began")
+            lane.update(verdict=UNMEASURED, ok=None)
+        lane["notes"].append("no readable E8 gold decision row: whether its windows are placing "
+                             "is UNMEASURED")
         return lane
     # KEYED BY (window, account): a run never spans two accounts' rows. An UNKEYED row (the box
     # had no pseudonym key) cannot be told apart from another account's, so each is its own run
     # key (v3) and never joins a run -- and a window whose NEWEST row is UNKEYED cannot be judged
     # at all, so the lane reads UNMEASURED rather than OK.
+    #
+    # A NEW KEY DOES NOT SPLIT A RUN (v4). A regenerated key file changes every pseudonym; rows
+    # carry `key_id` (a hash of the key, never the key), so when a window's pseudonym changes on
+    # the SAME machine together with the key_id, the new pseudonym is the old account under a
+    # new key and is aliased to it. Two accounts under one key share a key_id and never alias.
     keyed: list[dict[str, Any]] = []
     newest_unkeyed: dict[str, str] = {}
+    alias: dict[str, str] = {}
+    last_seen: dict[str, tuple[str, str, str]] = {}      # sleeve -> (ref, key_id, machine)
     for i, r in enumerate(rows):
         sleeve = str(r.get("sleeve") or r.get("strategy_id") or "?")
         acct = _e8_account(r)
         unkeyed = acct.endswith(":" + E8_UNKEYED)
+        kid, machine = str(r.get("key_id") or ""), str(r.get("machine_id") or "")
+        prev = last_seen.get(sleeve)
+        if (not unkeyed and prev and kid and prev[1] and kid != prev[1]
+                and machine and machine == prev[2] and acct != prev[0]
+                and acct not in alias):
+            alias[acct] = alias.get(prev[0], prev[0])
+        if not unkeyed:
+            last_seen[sleeve] = (acct, kid, machine)
+        acct = alias.get(acct, acct)
         keyed.append({**r, "sleeve": f"{sleeve}@{acct}" + (f"#{i}" if unkeyed else "")})
         if unkeyed:
             newest_unkeyed[sleeve] = str(r.get("decided_at") or UNMEASURED)
@@ -517,7 +605,10 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         lane["notes"].append(
             f"{', '.join(sorted(newest_unkeyed))}: the newest row carries no account pseudonym "
             f"({E8_UNKEYED}), so it cannot be joined into a run; UNMEASURED until a keyed row")
-    if (failing or newest_unkeyed) and lane["verdict"] != "HALTED":
+    if unjudged_after_placement:
+        lane["notes"].append("a set-aside row is newer than the newest placement: the lane's "
+                             "current state is UNMEASURED")
+    if (failing or newest_unkeyed or unjudged_after_placement) and lane["verdict"] != "HALTED":
         lane.update(verdict=UNMEASURED, ok=None)
     return lane
 
@@ -541,7 +632,9 @@ def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, 
     if e8["verdict"] == "HALTED":
         doc.update(ok=False, applicable=True, verdict="HALTED")
         doc["problems"].extend(f"[{E8_LANE}] {p}" for p in e8["problems"])
-    elif e8["verdict"] == UNMEASURED and doc.get("ok") is not False:
+    elif e8["verdict"] not in ("OK", "NOT_APPLICABLE") and doc.get("ok") is not False:
+        # Anything the lane cannot call OK (v4: including a lane with no readable decision) is
+        # UNMEASURED at the top level, never a pass.
         doc.update(ok=None, verdict=UNMEASURED)
         if e8.get("live_here"):
             # The lane runs on this host (its heartbeat is fresh; its passes are failing), so
@@ -707,11 +800,13 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
         if doc.get("ok") is None:
             # UNMEASURED here: neither evidence that a halt ended nor that one is live.
             return None
-        if any(lane.get("verdict") == UNMEASURED for lane in (doc.get("lanes") or {}).values()):
-            # A lane that cannot be read is no evidence that its halt ended (v3): a HALTED E8
-            # lane whose heartbeat then went stale must not close the alert as FIXED.
-            return None
         if doc.get("ok") or doc.get("verdict") == "NOT_APPLICABLE":
+            if any(lane.get("verdict") not in ("OK", "NOT_APPLICABLE")
+                   for lane in (doc.get("lanes") or {}).values()):
+                # A lane that cannot be read is no evidence that its halt ended (v3): a HALTED
+                # E8 lane whose heartbeat then went stale must not close the alert as FIXED.
+                # (Only the CLOSE is withheld: an escalated failure still opens it, v4.)
+                return None
             alert = ledger.alerts.get(ALERT_ID)
             if alert is not None and alert.open:
                 # `verify` and not an absence: this scan IS the re-run of the check, which is the
@@ -780,7 +875,23 @@ def escalate_unmeasured(doc: dict[str, Any], ident: host_identity.HostIdentity) 
     if doc.get("ok") is not None or doc.get("verdict") != UNMEASURED:
         return doc
     if doc.get("gateway_verdict", UNMEASURED) != UNMEASURED:
-        # UNMEASURED only because a lane is (scan): not the gateway's silence (see scan).
+        # UNMEASURED only because a lane is (scan). A lane's short failures are not escalated,
+        # but a lane whose heartbeat is DAYS stale (or gone) on the trading host is a dead lane,
+        # and silence there is not a pass (v4).
+        dead = [(name, lane) for name, lane in (doc.get("lanes") or {}).items()
+                if lane.get("stale_heartbeat")]
+        if not dead:
+            return doc
+        doc["ok"] = False
+        doc["applicable"] = True
+        doc["escalated_on_trading_host"] = True
+        for name, lane in dead:
+            beat = lane.get("heartbeat") or {}
+            doc["problems"].append(
+                f"[{name}] UNMEASURED on the trading host ({ident.trading_hostname}): its "
+                f"heartbeat is {beat.get('age_h', UNMEASURED)}h old (live window "
+                f"{E8_HEARTBEAT_LIVE_HOURS:.0f}h) -- the lane has stopped running on the box "
+                "that places its orders, and silence there is not a pass (L1.28a)")
         return doc
     doc["ok"] = False
     doc["applicable"] = True
@@ -841,7 +952,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  FAIL: {problem}")
     if doc.get("escalated_on_trading_host"):
         print("check_placement_interlock: FAILED -- UNMEASURED on the trading host "
-              f"({trading_host()}): the gateway has stopped writing placement evidence here, "
+              f"({trading_host()}): placement evidence has stopped being written here, "
               "and silence on the box that places orders is not a pass (L1.28a)")
         return 2
     if doc["ok"] is None:

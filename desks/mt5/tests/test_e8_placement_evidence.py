@@ -502,7 +502,7 @@ def test_a_lost_placed_row_is_kept_and_written_next_pass_across_the_rollover(
     data = root / "desks" / "mt5" / "data"
     data.mkdir(parents=True)
     (data / ev.DECISIONS_NAME).write_text(real.read_text("utf-8"), "utf-8")
-    ev.write_heartbeat("OK", at=datetime.now(UTC), armed=True)
+    ev.write_heartbeat("OK", at=d2 + timedelta(minutes=55), armed=True)
     (data / ev.HEARTBEAT_NAME).write_text(ev.heartbeat_path().read_text("utf-8"), "utf-8")
     lane = fence.scan(root, now=d2 + timedelta(hours=1))["lanes"]["e8_gold"]
     assert lane["verdict"] == "OK", lane                 # v1 read this HALTED
@@ -751,3 +751,91 @@ def test_a_note_that_raises_never_stops_the_pass(monkeypatch, tmp_path) -> None:
     assert doc["placed"] == base["placed"] and doc["actions"] == base["actions"]
     d = _retry(monkeypatch, tmp_path, _RetryVenue(), _retry_state())
     assert d.rows == []
+
+
+
+# ================================================== v4 (audit of 89730852)
+
+def _leaky_venues(msg: str) -> tuple[Any, Any]:
+    class Refusing(_IdVenue):
+        def place_stop(self, symbol: str, side: str, lot: float, **kw: Any) -> int:
+            raise RuntimeError(msg)
+
+    class PositionsLeak(_IdVenue):
+        def positions(self) -> list[dict]:
+            raise ConnectionError(msg)
+
+    return Refusing(), PositionsLeak()
+
+
+@pytest.mark.parametrize("msg", ["order refused for 7654321.", "rejected: acc_7654321 closed",
+                                 "venue said x7654321 is locked"])
+def test_the_id_touching_a_letter_underscore_or_dot_never_publishes(
+        monkeypatch, tmp_path, msg: str) -> None:
+    """Must-fix 1 (v4): word-boundary lookarounds let `<id>.`, `acc_<id>` and `x<id>` through.
+    Driven through the leg loop and the retry (two armed passes) and the stand-down."""
+    refusing, positions_leak = _leaky_venues(msg)
+    _sandbox(monkeypatch, tmp_path)
+    g.run(refusing, _FlatMT5(), armed=True)
+    g.run(refusing, _FlatMT5(), armed=True)
+    rows = _rows()
+    assert any(r["reason"] == ev.R_VENUE_REJECTED and ev.REDACTED in r["why"] for r in rows)
+    leaked = [p for p in (ev.heartbeat_path(), ev.decisions_path())
+              if "7654321" in p.read_text("utf-8")]
+    _sandbox(monkeypatch, tmp_path)
+    monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "stand_down"))
+    g.run(positions_leak, _FlatMT5(), armed=True)
+    assert any(r["reason"] == ev.R_POSITIONS_UNREADABLE and ev.REDACTED in r["why"]
+               for r in _rows()), _rows()
+    leaked += [p for p in (ev.heartbeat_path(), ev.decisions_path())
+               if "7654321" in p.read_text("utf-8")]
+    assert leaked == []
+
+
+def test_scrub_uses_digit_boundaries() -> None:
+    acct = "tradelocker:7654321"
+    for text in ("refused for 7654321.", "acc_7654321", "x7654321", "7654321abc"):
+        assert "7654321" not in ev.scrub(text, acct), text
+    # ...and a longer number that merely CONTAINS the id is another number, kept.
+    assert ev.scrub("order 176543219", acct) == "order 176543219"
+    assert ev.scrub("4300.7654321", acct) == f"4300.{ev.REDACTED}"   # a dot is not a digit
+
+
+def test_rows_kept_by_an_older_build_are_scrubbed_on_the_way_out() -> None:
+    st: dict[str, Any] = {"evidence_pending": [
+        {"decided_at": "2026-10-19T14:00:00+00:00", "lane": "e8_gold",
+         "sleeve": "e8_gold:afternoon", "outcome": "DEFERRED", "reason": "venue_rejected",
+         "why": "HTTP 502 /trade/accounts/7654321/orders (acc_7654321)",
+         "account": "tradelocker:7654321"}]}
+    written = ev.record_decisions([], st, now=datetime.now(UTC), server_date="2026-10-20",
+                                  account="tradelocker:7654321", armed=True, host={})
+    assert len(written) == 1
+    assert "7654321" not in ev.decisions_path().read_text("utf-8")
+
+
+def test_a_non_str_extra_value_is_scrubbed_as_the_text_it_becomes() -> None:
+    class Leaky:
+        def __str__(self) -> str:
+            return "session for acc_7654321"
+
+    ev.write_heartbeat("OK", at=datetime.now(UTC), armed=True, account="tradelocker:7654321",
+                       extra={"err": RuntimeError("x7654321"), "obj": Leaky()})
+    text = ev.heartbeat_path().read_text("utf-8")
+    assert "7654321" not in text and ev.REDACTED in text
+
+
+def test_rows_and_heartbeat_carry_the_key_fingerprint_never_the_key(monkeypatch) -> None:
+    monkeypatch.setenv(ev.KEY_ENV, "s" * 40)
+    kid = ev.key_id()
+    assert kid and len(kid) == 12 and "s" * 8 not in kid
+    beat = ev.write_heartbeat("OK", at=datetime.now(UTC), armed=True,
+                              account="tradelocker:7654321")
+    assert beat and beat["key_id"] == kid
+    [row] = ev.record_decisions([{"window": "asia", "outcome": ev.PLACED, "reason": "placed"}],
+                                {}, now=datetime.now(UTC), server_date="2026-10-20",
+                                account="tradelocker:7654321", armed=True, host={})
+    assert row["key_id"] == kid
+    monkeypatch.setenv(ev.KEY_ENV, "t" * 40)
+    assert ev.key_id() != kid
+    monkeypatch.setenv(ev.KEY_ENV, "short")
+    assert ev.key_id() is None
