@@ -84,6 +84,7 @@ LEG_LAYER: dict[str, str] = {
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
+    "style_novelty": "prediction",
     "opportunity_forecast": "prediction", "edge_reliability": "prediction",
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",

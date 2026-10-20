@@ -177,10 +177,11 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional_class_low_vol",
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
-                                            " gnn_propagation mass_screen_lead",
+                                            " gnn_propagation mass_screen_lead"
+                                            " ae_latent",
     # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
     # concession that reverts or information that continues, read off the recent path.
-    "inventory_shock price_only market": "attention_ts",
+    "inventory_shock price_only market": "attention_ts rocket_ts sig_path",
     # The Alpha Capture substitute (2026-09-30): a dated public view ABOUT the instrument drifts
     # because holders under-react (trend_persistence's payer); another market's view leads the
     # instrument because the slow venue reprices late (cross_market_lead's payer).
@@ -257,7 +258,7 @@ for _key, _fams in _FAMILY_GROUPS.items():
 #: configuration) that only research/learned_miners names and charges; proposed bare they would
 #: carry no panel and fire nothing.
 NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional", "joint_genome",
-                          "gnn_propagation", "attention_ts"})
+                          "gnn_propagation", "attention_ts", "rocket_ts", "ae_latent", "sig_path"})
 
 RULE = ("a cell is UNMEASURED until a source says otherwise, the strongest source wins "
         "(LIVE>FORWARD>CERTIFIED>MEASURED_FAIL>UNMEASURED), an unmapped family is UNKNOWN and "

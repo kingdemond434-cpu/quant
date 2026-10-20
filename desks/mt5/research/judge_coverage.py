@@ -1252,7 +1252,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
 
         ev_per_cell = p_optimistic * net_value_if_it_passes * (1 + marginal_breadth)
                                    * orthogonality_factor * certificate_factor
-                                   * certified_breadth_factor
+                                   * certified_breadth_factor * novelty_factor
         ev_per_s    = ev_per_cell / (seconds_per_cell * this family's bar cost)
 
     Every term is something the desk already measures -- the learned prior, the net-of-cost slot
@@ -1280,6 +1280,32 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     # rows `build` stamped. One-sided like the two factors above, and exactly 1.0 for rows that
     # carry no stamp, so a caller that never scored is ranked as it always was.
     keff_f = _keff_family_factor(rows)
+    # THE NOVELTY FACTOR (principal 2026-10-13: "hunt tons of unknown styles"). 1 + the family's
+    # style novelty from research/style_novelty.py: the measured share of its certificates' P&L no
+    # known style reproduces, else its declared genealogy (0 textbook, 0.5 adjacent, 1.0
+    # discovered/generic/learned; an unclassified family is a neutral 0). One-sided like the
+    # factors above (>= 1.0), so the floor is untouched and no family's ev is reduced; an import
+    # failure is 1.0 for every family.
+    try:
+        from research import style_novelty as _sn
+        _nov_measured = _sn.family_values()
+
+        def novelty_factor(fam: str) -> float:
+            return 1.0 + max(0.0, min(1.0, _sn.family_novelty(fam, _nov_measured)))
+
+        def _nov_source(fam: str) -> str:
+            if fam in _nov_measured:
+                return "MEASURED"
+            cls = _sn.genealogy(fam)[1]
+            return "UNMEASURED" if cls.startswith("UNMEASURED") else "GENEALOGY"
+    except Exception:
+        _nov_measured = {}
+
+        def novelty_factor(fam: str) -> float:
+            return 1.0
+
+        def _nov_source(fam: str) -> str:
+            return "UNMEASURED"
     per_cell_s = judge_seconds_per_cell(capacity)
     cost_units: dict[str, list[float]] = {}
     for row in rows:
@@ -1304,8 +1330,9 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         # so neither the family floor nor any cell's eligibility is reduced. The candidate-level
         # scorer separately recognises a new session/chart/regime inside an incumbent family.
         cert_breadth = 2.0 - cert_share if cert_share is not None else 1.0
+        nov_f = novelty_factor(fam)
         ev_cell = (float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f
-                   * kf * cert_breadth)
+                   * kf * cert_breadth * nov_f)
         rl = realised.get(fam) or {}
         out.append({
             "family": fam, "unjudged": backlog[fam],
@@ -1334,6 +1361,8 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
             # 25% floor below is untouched: this re-orders the remainder, it never starves.
             "orthogonality_factor": round(ortho_f, 4), "certificate_factor": round(cert_f, 4),
             "keff_factor": round(kf, 4),
+            "novelty_factor": round(nov_f, 4),
+            "novelty_source": _nov_source(fam),
             "marginal_rank": sig.get("marginal_rank"),
             "certs_per_judge_hour": sig.get("certs_per_judge_hour"),
             # BANNED / UNMEASURED / UNDER_JUDGED / MEASURED_ZERO / CERTIFYING -- a zero pass rate

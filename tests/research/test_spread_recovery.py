@@ -16,8 +16,8 @@ Item B -- the producer registry:
   (fatal) when it does not;
 * `alpha_rl_run` is SET_ASIDE while it emits no cell and the set-aside lifts, permanently, on the
   first measured cell;
-* the learned miners' weekly leg refits only when an artifact is 7 days old, always writes, and
-  charges one trial per model in the set.
+* the learned miners' weekly leg (tested in test_learned_trials_once.py) drives the one
+  contract clock; its contract is held to seven days in producer health.
 """
 from __future__ import annotations
 
@@ -303,28 +303,6 @@ def test_alpha_rl_is_set_aside_until_it_emits_a_cell(fence: Any, tmp_path: Path)
     registry("other")
     doc = fence.yield_audit(window_hours=24.0)
     assert [r["producer"] for r in doc["owing"]] == ["alpha_rl_run"]
-
-
-def test_the_weekly_leg_refits_only_when_due_and_charges_the_set(tmp_path: Path) -> None:
-    import learned_miners as lm
-    now = datetime(2026, 10, 14, tzinfo=UTC)
-    rep, con, out = tmp_path / "r.json", tmp_path / "c.json", tmp_path / "w.json"
-    calls: list[float] = []
-    kw: dict[str, Any] = {"now": now, "out_path": out, "report": rep, "contract": con,
-                          "refit": lambda b: calls.append(b) or {"ok": True}}
-    assert lm.weekly(100.0, **kw)["state"] == "REFIT" and calls == [100.0]
-    for p, age in ((rep, 1), (con, 2)):
-        p.write_text(json.dumps({"generated_at": (now - timedelta(days=age)).isoformat()}))
-    doc = lm.weekly(100.0, **kw)
-    assert doc["state"] == "FRESH" and len(calls) == 1
-    assert doc["next_due_in_days"] == pytest.approx(5.0)
-    assert json.loads(out.read_text())["state"] == "FRESH", "the leg always leaves an artifact"
-    con.write_text(json.dumps({"generated_at": (now - timedelta(days=7)).isoformat()}))
-    assert lm.weekly(100.0, **kw)["state"] == "REFIT" and len(calls) == 2
-    rows = lm.set_charge_rows(("gnn", "attention"), "2026-10-14T00:00:00+00:00")
-    assert len(rows) == 2 and all(r["family"] == lm.SET_FAMILY and r["donated"] is False
-                                  for r in rows)
-    assert len({r["trial_id"] for r in rows}) == 2
 
 
 def test_learned_miners_contract_has_a_seven_day_max_age_in_producer_health() -> None:
