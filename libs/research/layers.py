@@ -102,6 +102,8 @@ LEG_LAYER: dict[str, str] = {
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
+    # HOW OFTEN to pull the book back to target is a timing question; it sizes nothing.
+    "rebalance_interval": "timing",
     # WHICH HOURS the desk has an edge in is a TIMING question, not a sizing one -- this leg
     # measures and allocates nothing, and stacking it on pf_allocator would shrink twice.
     "session_allocation": "timing",

@@ -947,6 +947,28 @@ def _news_stream_organ() -> dict[str, Any]:
 
 
 # -------------------------------------------------------------------------------- MACRO NEWS
+def _rebalance(deadline: float) -> dict[str, Any]:
+    """The rebalance-interval chooser's verdict (report-only; nothing that sizes reads it)."""
+    ri = Src("desks/mt5/reports/REBALANCE_INTERVAL.json", 7200,
+             "desks/mt5/research/rebalance_interval.py")
+    d = ri.d
+    rows = [{"interval": r.get("interval"),
+             "net_gain_elogw_per_day": r.get("net_gain_elogw_per_day"),
+             "cost_elogw_per_day": r.get("cost_elogw_per_day"),
+             "n_rebalances": r.get("n_rebalances")}
+            for r in (d.get("candidates") or []) if isinstance(r, dict)]
+    measured = d.get("status") == MEASURED
+    return {
+        "status": ri.status if ri.status != MEASURED else (MEASURED if measured else UNMEASURED),
+        "source": ri.rel, "age": _human_age(ri.age_s),
+        "chosen": ri.field(d.get("chosen"), str(d.get("why") or "")),
+        "beats_hold": d.get("beats_hold"),
+        "measured_sleeves": d.get("n_measured_sleeves"), "live_sleeves": d.get("n_live_sleeves"),
+        "why": ri.why or str(d.get("why") or ""),
+        "rows": rows,
+    }
+
+
 def _macro(deadline: float) -> dict[str, Any]:
     mv = Src("desks/mt5/reports/MACRO_VIEW.json", 21600, "desks/mt5/research/macro_desk.py")
     mse = Src("desks/mt5/reports/MACRO_STATE_ENGINE.json", 21600,
@@ -1208,6 +1230,7 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
     sections["funnel"] = _funnel(deadline)
     sections["bottlenecks"] = _bottlenecks()
     sections["macro"] = _macro(deadline)
+    sections["rebalance"] = _rebalance(deadline)
 
     unmeasured: list[dict[str, Any]] = []
     measured_empty: list[dict[str, Any]] = []

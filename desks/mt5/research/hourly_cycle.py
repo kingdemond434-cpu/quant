@@ -1002,7 +1002,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
-    "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
+    "allocator_join", "rebalance_trigger", "rebalance_interval", "edge_reliability",
+    "edge_confidence", "capacity",
     "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
     "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
     "research_exchange_score", "model_skill", "research_org", "experiment_design",
@@ -3632,6 +3633,13 @@ def rebalance_trigger() -> dict:
     return _producer("rebalance_trigger", "research/rebalance_trigger.py")
 
 
+def rebalance_interval() -> dict:
+    """Report-only: which rebalance interval (every pass, daily, 2-day, weekly, 10%/20% drift)
+    has the highest volatility-pumping gain net of measured markout+spread cost, read from the
+    live sleeves' own per-key forward ledgers. Changes no sizing."""
+    return _producer("rebalance_interval", "research/rebalance_interval.py")
+
+
 def edge_confidence() -> dict:
     """Size on the edge's LOWER BOUND, and stress k_eff toward crisis correlation.
 
@@ -5381,6 +5389,7 @@ def main() -> None:
     ib = _costed("issue_board", issue_board)
     qc = _costed("queue_compact", queue_compact)
     rt = _costed("rebalance_trigger", rebalance_trigger)
+    rbi = _costed("rebalance_interval", rebalance_interval)
     ec = _costed("edge_confidence", edge_confidence)
     ro = _costed("research_org", research_org)
     xd = _costed("experiment_design", experiment_design)
@@ -5905,6 +5914,7 @@ def main() -> None:
                     "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
                     "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
                     "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,
+                    "rebalance_interval": rbi,
                     "queue_compact": qc, "issue_board": ib,
                     "execution_resolver": xr, "counterfactual_world": cw,
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,

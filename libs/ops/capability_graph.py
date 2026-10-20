@@ -790,6 +790,10 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/OPPORTUNITY_GAP.json",)),
     Node("rebalance_trigger", "desks/mt5/research/rebalance_trigger.py",
          writes=("desks/mt5/reports/REBALANCE_TRIGGER.json",)),
+    Node("rebalance_interval", "desks/mt5/research/rebalance_interval.py",
+         reads=("desks/mt5/reports/shadow/", "desks/mt5/data/sleeves.json",
+                "desks/mt5/reports/markout.json", "desks/mt5/data/cost_surface.json"),
+         writes=("desks/mt5/reports/REBALANCE_INTERVAL.json",)),
     Node("reclaim_disk", "desks/mt5/scripts/reclaim_disk.py",
          writes=("desks/mt5/reports/DISK_RECLAIM.json",)),
     Node("requeue_unrunnable", "desks/mt5/research/requeue_unrunnable.py",
@@ -990,6 +994,9 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/REBALANCE_TRIGGER.json", "desks/mt5/reports/RESEARCH_ORG.json",
     "desks/mt5/reports/ASIA_PLANE.json", "desks/mt5/reports/scaling_laws.json",
     "desks/mt5/reports/world_crawl.json",
+    # Report-only by design: desk_dashboard_state renders it (section `rebalance`); no organ
+    # that sizes reads it, and listing it here is the claim that none does.
+    "desks/mt5/reports/REBALANCE_INTERVAL.json",
     # NO CODE READER AT ALL (grepped by filename and by constant, 2026-09-29). A person is the
     # only consumer, which makes each producer ADVISORY BY CONSTRUCTION and its rent line
     # NOT_BINDING -- the retire signal, stated rather than hidden. Listed here so the graph says
