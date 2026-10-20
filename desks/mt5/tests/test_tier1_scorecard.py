@@ -196,7 +196,17 @@ def test_row07_sums_failing_organs_and_failed_or_timed_out_legs(sandbox: Path) -
     {"scheduler_status": "OK schtasks", "counts": {"SCHEDULER_UNMEASURED": 2, "OK": 40}},
     # a reading with no scheduler status at all
     {"counts": {"OK": 40}},
-], ids=["all-unread", "some-unread", "no-scheduler-status"])
+    # audit v3: the verbose query failed and the brief one answered -- "OK " prefix, no codes
+    {"scheduler_status": "OK schtasks (brief: last run and last result UNMEASURED -- "
+                         "schtasks /v TimeoutExpired: 45)",
+     "counts": {"OK": 40}},
+    # audit v3: the status reads fully OK but a task row's code is null
+    {"scheduler_status": "OK schtasks", "counts": {"OK": 2},
+     "processes": [{"name": "MT5-Hourly", "verdict": "OK", "state": "Ready",
+                    "last_result_code": None},
+                   {"name": "MT5-Gateway", "verdict": "OK", "state": "Running",
+                    "last_result_code": 267009}]},
+], ids=["all-unread", "some-unread", "no-scheduler-status", "brief-only", "ok-row-null-code"])
 def test_row07_an_unread_scheduler_is_UNMEASURED_never_zero_failures(
         sandbox: Path, health: dict) -> None:
     _write(sandbox, "PROCESS_HEALTH", {"at": "2026-10-20T18:15:00+00:00", **health})
@@ -204,6 +214,27 @@ def test_row07_an_unread_scheduler_is_UNMEASURED_never_zero_failures(
     row = sc._r07_silent_failures()
     assert row["current"] is None and row["verdict"] == sc.UNMEASURED
     assert row["basis"].startswith("UNMEASURED:")
+
+
+def test_row07_no_process_health_reading_is_UNMEASURED_even_with_the_legs(sandbox: Path) -> None:
+    # audit v3: the legs alone used to score 0.0 AT with process_health.json absent
+    _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and row["verdict"] == sc.UNMEASURED
+    assert "process_health.json ABSENT/UNREADABLE" in row["basis"]
+
+
+def test_row07_a_component_row_without_a_code_is_not_an_unread_result(sandbox: Path) -> None:
+    _write(sandbox, "PROCESS_HEALTH", {
+        "at": "2026-10-20T18:15:00+00:00", "scheduler_status": "OK schtasks",
+        "counts": {"OK": 2},
+        "processes": [{"name": "MT5-Gauntlet", "verdict": "OK", "state": "Running",
+                       "last_result_code": 267009},
+                      {"name": "MT5-Gauntlet (rotation)", "verdict": "OK",
+                       "state": "COMPONENT", "last_result_code": None}]})
+    _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
+    row = sc._r07_silent_failures()
+    assert row["current"] == 0.0 and row["verdict"] == sc.AT
 
 
 def test_row08_joins_certificates_to_forward_clocks_on_symbol_and_selector(sandbox: Path) -> None:
