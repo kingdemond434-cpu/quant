@@ -113,7 +113,8 @@ def test_the_docket_normalisation_is_the_sealed_judge_s_normalisation() -> None:
         # external_gauntlet_speed.patch: the one-pass docket read normalises each row through
         # `_docket_key` / `_docket_spec`, the former loop body verbatim.
         blk = GAUNTLET[GAUNTLET.index("def _docket_key("):GAUNTLET.index("\ndef main(")]
-        assert "_docket_key(h)" in GAUNTLET and "_docket_spec(h, *_kc[1:])" in GAUNTLET
+        assert "_docket_key(h)" in GAUNTLET and ("_docket_spec(h, *_kc[1:])" in GAUNTLET
+                                                 or "_docket_spec(h, *kc[1:])" in GAUNTLET)
     else:
         blk = GAUNTLET[GAUNTLET.index("    cells = {}\n    for h in iter_json_array(surv_file):"):]
         blk = blk[:blk.index("    # REPRODUCTION RESTRICTS THE DOCKET")]
