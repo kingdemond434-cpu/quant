@@ -281,7 +281,7 @@ def _resources(base: Path) -> dict[str, Any]:
         "disk_free_gb": round(disk.free / (1024.0 ** 3), 1),
     }
     try:
-        import psutil
+        import psutil  # type: ignore[import-untyped,unused-ignore]
 
         vm = psutil.virtual_memory()
         out["ram_total_gb"] = round(vm.total / (1024.0 ** 3), 1)
