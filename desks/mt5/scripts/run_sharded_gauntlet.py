@@ -233,9 +233,12 @@ class ShardStalled(RuntimeError):
 
     def __init__(self, phase: str, k: int, idle_s: float, kill: dict[str, Any] | None = None,
                  why: str = "no_progress") -> None:
-        super().__init__(f"{phase} shard {k} made no measured progress for {idle_s:.0f}s "
-                         f"({why}); killed with its process tree")
+        super().__init__(phase, k, idle_s, why)
         self.phase, self.k, self.idle_s, self.kill, self.why = phase, k, idle_s, kill or {}, why
+
+    def __str__(self) -> str:                 # read at use: `dispatch` names the shard after
+        return (f"{self.phase} shard {self.k} made no measured progress for {self.idle_s:.0f}s "
+                f"({self.why}); killed with its process tree")
 
 
 class _TreeProgress:
@@ -1113,9 +1116,19 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
     budget = KILL_WALL_S if wall_s is None else max(0.0, float(wall_s))
     seen: dict[int, Any] = {}
     killed = 0
+    def live_kids() -> list[Any]:
+        # A killed child of a suspended (or not-yet-reaping) parent is a ZOMBIE: dead, holding
+        # nothing, and still listed. It is never "the tree is not empty yet".
+        out_kids = []
+        for k in root.children(recursive=True):
+            with contextlib.suppress(psutil.Error):
+                if k.status() != psutil.STATUS_ZOMBIE:
+                    out_kids.append(k)
+        return out_kids
+
     while True:
         try:
-            kids = root.children(recursive=True)
+            kids = live_kids()
         except psutil.Error:
             break
         if not kids or time.monotonic() - t0 > budget:
@@ -1133,7 +1146,7 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
                     k.suspend()
                 frozen[k.pid] = k
             try:
-                kids = root.children(recursive=True)
+                kids = live_kids()
             except psutil.Error:
                 break
         kids = list(frozen.values())
@@ -1154,7 +1167,7 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
             if p.is_running() and p.status() != psutil.STATUS_ZOMBIE:
                 orphans.add(p.pid)
     with contextlib.suppress(psutil.Error):
-        orphans.update(k.pid for k in root.children(recursive=True))
+        orphans.update(k.pid for k in live_kids())
     out.update(killed=killed, orphans=sorted(orphans), wall_s=round(time.monotonic() - t0, 2))
     return out
 
