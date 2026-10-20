@@ -189,6 +189,7 @@ def test_a_clean_fill_halts_nothing(tmp_path, monkeypatch):
 
 def _halted_state() -> dict:
     return {"risk_halt": {"a": {"breach_id": "a:1:t", "symbol": "EURUSD",
+                                "at": "2026-10-20T12:00:00+00:00",
                                 "intended_eur": 50.0, "ratio": 2.4}}}
 
 
@@ -203,7 +204,7 @@ def test_an_acknowledged_breach_lifts_the_halt(tmp_path):
 def test_a_held_position_re_measured_within_bound_lifts_the_halt():
     st = _halted_state()
     pos = SimpleNamespace(volume=0.1, price_open=1.1100, sl=1.1050, type=0)   # 50 EUR = 1.0x
-    ri.review_halts(st, set(), lambda *a: [pos], lambda s: _UNIT)
+    ri.review_halts(st, {}, lambda *a: [pos], lambda s: _UNIT)
     assert "risk_halt" not in st
 
 
@@ -211,14 +212,14 @@ def test_a_held_position_re_measured_within_bound_lifts_the_halt():
                                                             type=0)]])
 def test_nothing_to_re_measure_is_unmeasured_and_the_halt_stands(positions):
     st = _halted_state()
-    notes = ri.review_halts(st, set(), lambda *a: positions, lambda s: _UNIT)
+    notes = ri.review_halts(st, {}, lambda *a: positions, lambda s: _UNIT)
     assert "a" in st["risk_halt"] and "UNMEASURED" in notes[0]
 
 
 def test_a_held_position_still_over_the_bound_keeps_the_halt():
     st = _halted_state()
     pos = SimpleNamespace(volume=0.1, price_open=1.1250, sl=1.1050, type=0)   # 200 EUR = 4x
-    ri.review_halts(st, set(), lambda *a: [pos], lambda s: _UNIT)
+    ri.review_halts(st, {}, lambda *a: [pos], lambda s: _UNIT)
     assert "a" in st["risk_halt"]
 
 
@@ -252,7 +253,8 @@ def test_both_rails_have_a_missed_growth_line(tmp_path, monkeypatch):
     monkeypatch.setattr(mg, "RISK_BREACHES", tmp_path / "b.jsonl")
     monkeypatch.setattr(mg, "REFUSED_ORDERS", tmp_path / "r.jsonl")
     r = SimpleNamespace(name="realised_risk_halt")
-    assert mg.measure_realised_risk_halt(r, {}, {})["verdict"] == mg.NOT_BINDING
+    # No ledger at all is an absence, never a clean verdict (L1.28a).
+    assert mg.measure_realised_risk_halt(r, {}, {})["verdict"] == mg.UNMEASURED
     assert mg.measure_risk_intent_floor(r, {}, {})["verdict"] == mg.UNMEASURED
     (tmp_path / "b.jsonl").write_text(json.dumps({"sleeve": "a", "at": "t"}) + "\n", "utf-8")
     (tmp_path / "r.jsonl").write_text(json.dumps({"stage": "risk_halt"}) + "\n"
@@ -261,3 +263,183 @@ def test_both_rails_have_a_missed_growth_line(tmp_path, monkeypatch):
     assert halt["verdict"] == mg.UNMEASURED and halt["n_refused_entries"] == 1
     floor = mg.measure_risk_intent_floor(r, {}, {})
     assert floor["verdict"] == mg.UNMEASURED and floor["n_refused"] == 1
+
+
+# ------------------------------------------------------------- audit 2026-10-20 (HOLD fixes)
+def _ack(tmp_path, *entries) -> dict:
+    path = tmp_path / "ack.json"
+    path.write_text(json.dumps({"acknowledged": list(entries)}), "utf-8")
+    return ri.read_acks(path)
+
+
+def test_a_bare_sleeve_name_is_not_an_acknowledgement(tmp_path):
+    st = _halted_state()
+    acks = _ack(tmp_path, "a")
+    notes = ri.review_halts(st, acks, lambda *a: [], lambda s: _UNIT)
+    assert "a" in st["risk_halt"], "a never-expiring sleeve ack would lift every later breach"
+    assert acks["ignored"] == ["a"] and "UNMEASURED" in notes[0]
+
+
+def test_a_sleeve_ack_dated_after_the_halt_lifts_it_and_a_stale_one_does_not(tmp_path):
+    st = _halted_state()
+    stale = _ack(tmp_path, {"sleeve": "a", "at": "2026-10-20T11:59:00+00:00"})
+    ri.review_halts(st, stale, lambda *a: [], lambda s: _UNIT)
+    assert "a" in st["risk_halt"], "an ack older than the breach must not lift it"
+    fresh = _ack(tmp_path, {"sleeve": "a", "at": "2026-10-20T12:30:00+00:00"})
+    notes = ri.review_halts(st, fresh, lambda *a: [], lambda s: _UNIT)
+    assert "risk_halt" not in st and "acknowledged" in notes[0]
+
+
+def test_the_same_dated_ack_does_not_lift_a_later_breach(tmp_path):
+    st = _halted_state()
+    st["risk_halt"]["a"]["at"] = "2026-10-21T09:00:00+00:00"
+    acks = _ack(tmp_path, {"sleeve": "a", "at": "2026-10-20T12:30:00+00:00"}, "a:1:t-old")
+    ri.review_halts(st, acks, lambda *a: [], lambda s: _UNIT)
+    assert "a" in st["risk_halt"]
+
+
+def test_the_halt_rail_is_not_binding_only_when_fills_were_measured(tmp_path, monkeypatch):
+    from research import missed_growth as mg
+    monkeypatch.setattr(mg, "RISK_FILLS", tmp_path / "f.jsonl")
+    monkeypatch.setattr(mg, "RISK_BREACHES", tmp_path / "b.jsonl")
+    monkeypatch.setattr(mg, "REFUSED_ORDERS", tmp_path / "r.jsonl")
+    r = SimpleNamespace(name="x")
+    assert mg.measure_realised_risk_halt(r, {}, {})["verdict"] == mg.UNMEASURED
+    (tmp_path / "f.jsonl").write_text(json.dumps({"status": "MEASURED", "ratio": 1.0}) + "\n")
+    assert mg.measure_realised_risk_halt(r, {}, {})["verdict"] == mg.NOT_BINDING
+    # The floor needs BOTH ledgers: fills alone cannot show a refusal.
+    floor = mg.measure_risk_intent_floor(r, {}, {})
+    assert floor["verdict"] == mg.UNMEASURED and floor["missing"] == ["r.jsonl"]
+    (tmp_path / "r.jsonl").write_text(json.dumps({"stage": "symbol_side_cap"}) + "\n")
+    assert mg.measure_risk_intent_floor(r, {}, {})["verdict"] == mg.NOT_BINDING
+
+
+def test_the_revert_lifts_to_the_desk_venue_minimum_helper():
+    out = ri.enforce(0.01, 0.0005, 1000.0, 0.001, 100_000.0, 0.01, 0.01, sovereign=False,
+                     revert_min=0.02)
+    assert out["ok"] and out["lot"] == pytest.approx(0.02)
+    out = ri.enforce_on_venue(0.01, 0.0005, 1000.0, 0.001,
+                              SimpleNamespace(volume_step=0.01, volume_min=0.01),
+                              lambda: 100_000.0, sovereign=False, revert_min_fn=lambda: 0.02)
+    assert out["lot"] == pytest.approx(0.02)
+    # Sovereign: the helper is never consulted and the refusal stands.
+    out = ri.enforce_on_venue(0.01, 0.0005, 1000.0, 0.001,
+                              SimpleNamespace(volume_step=0.01, volume_min=0.01),
+                              lambda: 100_000.0, revert_min_fn=lambda: 1 / 0)
+    assert not out["ok"]
+
+
+def test_the_gateway_passes_venue_min_lot_on_both_lanes():
+    src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    assert src.count("revert_min_fn=lambda: float(_core.venue_min_lot(s[\"symbol\"], sym))") == 2
+
+
+def _family_quiet(tmp_path, monkeypatch, signals):
+    rows = adapter._rows()
+    venue = adapter._fake_mt5(rows)
+    ns = adapter._family_ns(tmp_path, venue, monkeypatch, armed_file=False,
+                            sig_hour=adapter._sig_hour(rows), signals=signals)
+    ns["REFUSALS"] = tmp_path / "refused.jsonl"
+    ns["now"] = lambda: "2026-10-20T12:00:00+00:00"     # journal_refusal stamps with it
+    st = {"armed": False, "risk_halt": {adapter._NAME: {"breach_id": "x:1:t", "at": "t",
+                                                        "symbol": "EURUSD"}}}
+    return ns, st
+
+
+def _refusals(tmp_path) -> list[dict]:
+    path = tmp_path / "refused.jsonl"
+    return [json.loads(x) for x in path.read_text().splitlines()] if path.exists() else []
+
+
+def test_a_halted_family_sleeve_without_a_signal_journals_nothing(tmp_path, monkeypatch):
+    ns, st = _family_quiet(tmp_path, monkeypatch, signals=lambda closed, side: [])
+    out = ns["resolve_family_order"](st, adapter._sleeve(), 10_000.0)
+    assert out["stage"] == "no_signal"
+    assert _refusals(tmp_path) == []
+
+
+def test_a_halted_family_sleeve_with_a_signal_journals_the_halt_once(tmp_path, monkeypatch):
+    ns, st = _family_quiet(tmp_path, monkeypatch, signals=None)
+    out = ns["resolve_family_order"](st, adapter._sleeve(), 10_000.0)
+    assert out["stage"] == "risk_halt" and out["mark"] is True
+    assert [r["stage"] for r in _refusals(tmp_path)] == ["risk_halt"]
+
+
+def test_an_unmeasured_family_intent_is_journalled(tmp_path, monkeypatch):
+    rows = adapter._rows()
+    venue = adapter._fake_mt5(rows)
+    venue.symbol_info = lambda symbol: SimpleNamespace(
+        volume_min=0.01, volume_max=100.0, trade_tick_size=0.00001, trade_tick_value=1.0)
+    ns = adapter._family_ns(tmp_path, venue, monkeypatch, armed_file=False,
+                            sig_hour=adapter._sig_hour(rows))
+    ns["REFUSALS"] = tmp_path / "refused.jsonl"
+    ns["now"] = lambda: "2026-10-20T12:00:00+00:00"     # journal_refusal stamps with it
+    out = ns["resolve_family_order"]({"armed": False}, adapter._sleeve(), 10_000.0)
+    assert out["stage"] == "risk_intent" and out["mark"] is False
+    (row,) = _refusals(tmp_path)
+    assert row["stage"] == "risk_intent" and "unmeasured" in row["why"]
+
+
+def _scalp():
+    import test_scalp_promotion as sp
+    return sp
+
+
+def test_scalp_intent_refusals_are_journalled(tmp_path):
+    sp = _scalp()
+    bars = sp._with_forming(sp._bars(recent=True))
+    venue = sp._fake_mt5(bars)
+    venue.symbol_info = lambda symbol: SimpleNamespace(volume_min=0.01)     # no volume_step
+    ns = sp._ns(tmp_path, venue, armed_file=True)
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert venue.sent == []
+    refused = [b for b in ns["_book"] if b[0] == "refusal"]
+    assert [b[4] for b in refused] == ["risk_intent"]
+
+
+@pytest.mark.parametrize("breakout,expect", [(False, []), (True, ["risk_halt"])])
+def test_a_halted_scalp_sleeve_journals_only_when_an_entry_is_due(tmp_path, breakout, expect):
+    sp = _scalp()
+    bars = sp._with_forming(sp._bars(breakout=breakout, recent=True))
+    venue = sp._fake_mt5(bars)
+    ns = sp._ns(tmp_path, venue, armed_file=True)
+    st = {"armed": True, "risk_halt": {sp._NAME: {"breach_id": "x:1:t", "at": "t"}}}
+    sp._run_scalp(ns, st, [sp._sleeve()], 10_000.0)
+    assert venue.sent == []
+    assert [b[4] for b in ns["_book"] if b[0] == "refusal"] == expect
+
+
+def _armed_family(tmp_path, monkeypatch, position_sl):
+    rows = adapter._rows()
+    venue = adapter._fake_mt5(rows)
+    venue.symbol_info = lambda symbol: SimpleNamespace(
+        volume_min=0.01, volume_step=0.01, volume_max=100.0,
+        trade_tick_size=0.00001, trade_tick_value=1.0)
+
+    def positions_get(*a, **k):
+        if "ticket" in k and position_sl is not None:
+            return [SimpleNamespace(ticket=k["ticket"], sl=position_sl)]
+        return []
+    venue.positions_get = positions_get
+    ns = adapter._family_ns(tmp_path, venue, monkeypatch, armed_file=True,
+                            sig_hour=adapter._sig_hour(rows))
+    ns["RISK_FILLS"] = tmp_path / "fills.jsonl"
+    ns["RISK_BREACHES"] = tmp_path / "breaches.jsonl"
+    st: dict = {"armed": True}
+    adapter._run_family(ns, st, [adapter._sleeve()], 10_000.0)
+    (row,) = [json.loads(x) for x in (tmp_path / "fills.jsonl").read_text().splitlines()]
+    return st, row
+
+
+def test_post_fill_risk_reads_the_stop_back_from_the_opened_position(tmp_path, monkeypatch):
+    # The venue holds the stop 3x further away than requested: that is the risk carried.
+    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950)
+    assert row["sl_source"] == "position" and row["sl"] == pytest.approx(1.0950)
+    assert row["breach"] is True and adapter._NAME in st["risk_halt"]
+
+
+def test_an_unreadable_position_falls_back_to_the_requested_stop_by_name(tmp_path, monkeypatch):
+    st, row = _armed_family(tmp_path, monkeypatch, position_sl=None)
+    assert row["sl_source"].startswith("requested (position SL unreadable")
+    assert row["sl"] == pytest.approx(1.1050) and row["breach"] is False
+    assert "risk_halt" not in st
