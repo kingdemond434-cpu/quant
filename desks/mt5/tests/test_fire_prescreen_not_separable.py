@@ -156,3 +156,29 @@ def test_the_empty_series_is_known_only_from_the_series(eg, _no_terminal,
     # read these from, so a prescreen that skipped the build could not write this row.
     assert nf["days_before_lockbox"] == 0
     assert "n_signals" not in nf or nf["n_signals"] is None
+
+
+def test_an_empty_series_cell_is_judged_the_same_in_any_sweep(eg, _no_terminal,
+                                                             measured_dsr_inputs) -> None:
+    """WHY ORDERING A NEEDS_DATA CELL LAST IS TRIAL-HONEST (fire_inputs / judge_coverage).
+
+    A cell whose family returns [] has an empty series. Judged beside one panel or another --
+    two different campaign cuts -- it gets the same verdict, and the panel's own verdicts and
+    program statistics are the same with or without it. Moving it to a later sweep therefore
+    changes no verdict of any cell; the sweep it lands in counts it exactly as this one would.
+    """
+    def _strip(v: dict) -> dict:
+        return {k: v[k] for k in sorted(v) if k not in ("swept_at",)}
+
+    short = [_cell(c["sym"], c["family"], c["_cached_ds"].iloc[:400], 20 + i)
+             for i, c in enumerate(_named())]
+    in_a = _judge(eg, [*_named(), _never_fires()])
+    in_b = _judge(eg, [*short, _never_fires()])
+    va = next(v for v in in_a["verdicts"] if v["family"] == "event_reaction")
+    vb = next(v for v in in_b["verdicts"] if v["family"] == "event_reaction")
+    assert _named_rows(in_a) != _named_rows(in_b), "the two panels must differ"
+    assert _strip(va) == _strip(vb)
+    alone_b = _judge(eg, short)
+    assert _named_rows(alone_b) == _named_rows(in_b)
+    assert alone_b["n_trials"] == in_b["n_trials"]
+    assert alone_b["program_level"] == in_b["program_level"]
