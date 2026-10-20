@@ -1159,8 +1159,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
-    "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
-    "fill_recorder", "cost_surfaces",
+    "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
+    "timeframe_fanout", "fill_recorder", "cost_surfaces",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1260,7 +1260,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
-                     "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
+                     "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
@@ -5849,6 +5850,12 @@ def main() -> None:
     # run AFTER source_drain, whose chain state it reads and never edits.
     pkc = _costed("pack_cells", lambda: _producer(
         "pack_cells", "research/pack_cells.py", "--once", "--budget-s", "240"))
+    # FUTURES STATE (principal 2026-10-19): CFTC positioning incl. the options-on-futures book,
+    # EIA and FRED curves, Deribit crypto derivatives and cross-market transmissions become
+    # stamped series and exogenous_conditioner cells through the same registry door, each cell
+    # minted once in its life, headline state first. 401/403/429/451 is a hard stop per source.
+    fst = _costed("futures_state", lambda: _producer(
+        "futures_state", "research/futures_state.py", "--once"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6238,7 +6245,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
-                    "ground_depth": gdp,
+                    "futures_state": fst, "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
