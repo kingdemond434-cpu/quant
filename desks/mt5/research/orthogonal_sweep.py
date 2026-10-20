@@ -494,6 +494,11 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 #: this organ's to resolve -- not that the family is dead. Anything NOT listed and not wired is a
 #: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
 NOT_SOURCED_HERE = {
+    "idio_volume_reversal": "F1 charges its own preregistered grid (docs/research/F1_IDIO_"
+                            "VOLUME_PREREGISTRATION.md: 7 symbols x 3 holds at z=3, 21 cells, "
+                            "donated by market_ecology.donate_f1); a sweep over every H1 symbol "
+                            "would charge the same hypothesis a second time under other "
+                            "identities, share CFDs included",
     "regime_split": "the base family and the regime are named by regime_split_miner, which "
                     "deflates over every family x regime cell it tried and kills with purged "
                     "walk-forward; a sweep that enumerated the split here would be a second "

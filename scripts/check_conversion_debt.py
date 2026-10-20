@@ -56,6 +56,16 @@ for _p in (str(DESK / "research"), str(DESK), str(ROOT)):
 
 RATCHET = ROOT / "data" / "conversion_debt_ratchet.json"
 
+#: THE ALT SEATS' CONVERSION (research/alt_seat_cells.py, hourly leg `alt_seat_cells`). The debt
+#: above is counted in the registry, and a seat row that never reached the registry is invisible
+#: to it -- which is exactly how six seats wrote 18,535 rows in three days at zero cells per hour
+#: while this ratchet read green. The organ publishes, per seat, the rows whose series is ready
+#: and whose instrument is admissible but whose cell is not in the compiler's output; one of
+#: those older than a cycle is a seat holding unconverted rows, and that is RED.
+ALT_SEAT_REPORT = DESK / "reports" / "ALT_SEAT_CELLS.json"
+#: A report older than this on the desk's own host is the organ not running.
+ALT_SEAT_STALE_H = 3.0
+
 #: How many passes of history the ratchet file keeps. Enough to see a drain from a plateau.
 HISTORY = 60
 
@@ -99,8 +109,53 @@ def effective_ceiling(floor_doc: dict[str, Any]) -> int | None:
     return min(vals) if vals else None
 
 
+def alt_seat_hold(path: Path | None = None, *, desk_host: bool = False,
+                  now: datetime | None = None) -> dict[str, Any]:
+    """BREACH when an alt seat holds convertible rows uncompiled for more than one cycle.
+
+    Absent report: UNMEASURED (a real answer, never a pass, and never a breach on a checkout
+    that holds no desk state). On the desk's own host a report older than `ALT_SEAT_STALE_H` is
+    the organ not running, which holds every seat's rows by construction: BREACH.
+    """
+    import alt_seat_cells as A  # type: ignore[import-not-found]
+
+    p = path or ALT_SEAT_REPORT
+    doc = _read(p)
+    if not doc:
+        return {"status": UNMEASURED, "path": str(p),
+                "why": f"no {p.name}: the alt_seat_cells leg has not published here"}
+    at = A._parse_time(doc.get("generated_utc"))
+    clock = now or datetime.now(tz=UTC)
+    age_h = (clock - at).total_seconds() / 3600.0 if at else None
+    held = A.held_seats(doc)
+    out: dict[str, Any] = {"path": str(p), "generated_utc": doc.get("generated_utc"),
+                           "age_h": round(age_h, 2) if age_h is not None else None,
+                           "totals": doc.get("totals"), "held": held,
+                           "per_seat": {k: {f: (v or {}).get(f) for f in
+                                            ("rows", "convertible", "converted",
+                                             "series_accruing", "unconvertible_by_reason")}
+                                        for k, v in (doc.get("seats") or {}).items()}}
+    if held:
+        out.update({"status": "BREACH",
+                    "why": "; ".join(f"{h['seat']} holds {h['unconverted']} convertible row(s) "
+                                     f"uncompiled since {h['oldest_unconverted_first_seen']}"
+                                     for h in held)})
+    elif desk_host and (age_h is None or age_h > ALT_SEAT_STALE_H):
+        out.update({"status": "BREACH",
+                    "why": f"{p.name} is {age_h if age_h is None else round(age_h, 1)}h old: "
+                           f"the alt_seat_cells leg is not running, so every seat's rows wait"})
+    elif doc.get("status") != "OK":
+        out.update({"status": UNMEASURED,
+                    "why": f"the organ itself reported {doc.get('status')}: "
+                           f"{(doc.get('compiler') or {}).get('why') or doc.get('why')}"})
+    else:
+        out.update({"status": "OK", "why": "no seat holds a convertible row past one cycle"})
+    return out
+
+
 def measure(registry_path: Path | None = None,
-            ratchet_path: Path | None = None) -> dict[str, Any]:
+            ratchet_path: Path | None = None,
+            seat_report: Path | None = None) -> dict[str, Any]:
     """Measure the debt, compare it to the ratchet, and lower the ratchet when it has fallen."""
     import conversion_maximiser as CM  # type: ignore[import-not-found]
 
@@ -113,6 +168,18 @@ def measure(registry_path: Path | None = None,
     out: dict[str, Any] = {"measured_at": _now(), "registry": str(db),
                            "ratchet_path": str(floor_path), "ceiling_before": ceiling,
                            "rule": CM.RULE}
+    # THE SEATS FIRST: a held seat row is debt the registry cannot see, so it is judged whether
+    # or not this host holds a registry. Staleness is judged only on the desk's own host.
+    seats = alt_seat_hold(seat_report,
+                          desk_host=(registry_path is None and seat_report is None
+                                     and db.exists()))
+    out["alt_seats"] = seats
+    if seats.get("status") == "BREACH":
+        out.update({"status": "BREACH", "rc": 2, "ceiling_after": ceiling,
+                    "why": f"alt seats: {seats.get('why')}. The organ is "
+                           f"desks/mt5/research/alt_seat_cells.py (hourly leg `alt_seat_cells`) "
+                           f"-> miner_candidate_compiler STRUCTURED_ALT_STATE"})
+        return out
     if not db.exists():
         out.update({"status": UNMEASURED, "rc": 1,
                     "why": f"no registry at {db} -- this checkout holds nothing to measure, "
@@ -196,6 +263,8 @@ def _persist(verdict: dict[str, Any], ratchet_path: Path | None = None) -> None:
     doc["last_status"] = verdict.get("status")
     doc["last_total_debt"] = verdict.get("total_debt")
     doc["components"] = (verdict.get("debt") or {}).get("components")
+    doc["alt_seats"] = {k: (verdict.get("alt_seats") or {}).get(k)
+                        for k in ("status", "totals", "held")}
     doc["effective_breadth"] = (verdict.get("breadth") or {}).get("effective_breadth")
     doc["rule"] = verdict.get("rule")
     doc["law"] = ("docs/LAWS.md 5b -- every mined row ends as a testable cell or a recorded, "
@@ -212,11 +281,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--registry", type=Path, default=None)
     ap.add_argument("--ratchet", type=Path, default=None)
+    ap.add_argument("--seat-report", type=Path, default=None,
+                    help="an alt-seat report other than desks/mt5/reports/ALT_SEAT_CELLS.json")
     ap.add_argument("--no-write", action="store_true",
                     help="measure without touching the ratchet file")
     a = ap.parse_args(argv)
     try:
-        verdict = measure(a.registry, a.ratchet)
+        verdict = measure(a.registry, a.ratchet, a.seat_report)
     except Exception as exc:                                             # pragma: no cover
         print(f"conversion debt: UNMEASURED -- {type(exc).__name__}: {exc}")
         return 1

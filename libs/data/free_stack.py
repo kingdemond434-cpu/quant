@@ -47,7 +47,6 @@ point-in-time archive, and cursor updates. A fetcher that cannot run says WHY in
 """
 from __future__ import annotations
 
-import contextlib
 import csv
 import hashlib
 import html
@@ -67,6 +66,9 @@ from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise
 from pathlib import Path
 from typing import Any
+
+#: The hard stop, robots and the desk's declared identity: one implementation for every lane.
+from desks.mt5.research import hard_stop as _hs
 
 from libs.data import polite_fetch as _pf
 from libs.data.polite_fetch import DESK_UA
@@ -1057,57 +1059,24 @@ def parse_trends_multiline(raw: bytes | None) -> list[tuple[str, float]]:
     return out
 
 
-#: THE HARD STOP for Google Trends (`desks/mt5/research/hard_stop.py`, shared with
-#: `side_channels/google_trends_miner.py`): one persisted backoff marker and one register entry,
-#: whichever of the two Trends readers was refused. While the marker is active nothing is sent.
-_DESK_ROOT = Path(__file__).resolve().parents[2] / "desks" / "mt5"
-GTRENDS_BLOCK_STATE = _DESK_ROOT / "data" / "google_trends_block.json"
-GTRENDS_REGISTER_KEY = "google_trends"
+#: THE GTRENDS ROUTE SENDS THE DESK'S ONE DECLARED IDENTITY (audit 0b66b08de MF2):
+#: `polite_fetch.DESK_UA` (byte-identical to `research/hard_stop.DESK_UA`), with its contact
+#: path -- the same string the module-wide `UA` above now carries for every source.
+GTRENDS_UA: str = DESK_UA
+GTRENDS_HEADERS: dict[str, str] = {"User-Agent": GTRENDS_UA}
 GTRENDS_HOST = "trends.google.com"
+#: Where a gtrends hold is registered; None = `research/hard_stop.BLOCKED_REGISTER`.
+GTRENDS_REGISTER: Any = None
+
+
+def _http_code(exc: BaseException) -> int:
+    """The HTTP status a failed fetch carried, 0 when it carried none (transport failure)."""
+    m = re.fullmatch(r"http_(\d{3})", classify(exc))
+    return int(m.group(1)) if m else 0
 #: Set on every Trends observation: the merge stamps it no earlier than the fetch that returned
 #: it, never at its own period (`free_stack_hunter.merge_obs`). Each response rescales its whole
 #: window, so a point older than the first fetch was never knowable in this form at its date.
 STAMP_AT_FETCH = "stamp_at_fetch"
-
-
-def _hard_stop() -> Any:
-    """`desks/mt5/research/hard_stop.py`, loaded by path (libs does not import the desk tree)."""
-    import importlib.util
-    import sys
-    mod = sys.modules.get("research.hard_stop") or sys.modules.get("hard_stop")
-    if mod is not None:
-        return mod
-    spec = importlib.util.spec_from_file_location(
-        "hard_stop", _DESK_ROOT / "research" / "hard_stop.py")
-    assert spec is not None and spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    sys.modules["hard_stop"] = mod
-    return mod
-
-
-def _refusal(exc: BaseException) -> tuple[int, dict[str, str]] | None:
-    """(status, response headers) when `exc` is a 401/403/429, else None."""
-    code: int | None = None
-    hdrs: Any = None
-    for e in (exc, exc.__cause__):
-        if isinstance(e, urllib.error.HTTPError):
-            code, hdrs = int(e.code), e.headers
-            break
-    if code is None and isinstance(exc, FetchError) and exc.reason.startswith("http_"):
-        with_code = exc.reason[5:]
-        code = int(with_code) if with_code.isdigit() else None
-    if code not in (401, 403, 429):
-        return None
-    return code, {str(k): str(v) for k, v in (hdrs.items() if hdrs is not None else [])}
-
-
-def _read_marker(path: Path) -> dict[str, Any] | None:
-    try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    return doc if isinstance(doc, dict) else None
 
 
 def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
@@ -1117,74 +1086,111 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
     one response: Trends rescales every response to its own window maximum, so a LEVEL carries the
     future through its normaliser, while a within-response ratio does not.
 
-    UNDER THE HARD STOP: the shared marker is checked before EVERY request; a 401/403/429 writes
-    the marker, records the block in the register, sets BLOCKED and ends the pass -- nothing
-    from the refused term is kept, nothing more is sent. Every observation is stamped at fetch
-    time (`STAMP_AT_FETCH`), never back-dated to its own period; the trailing isPartial point is
-    dropped by the parser, never counted as final."""
-    hs = _hard_stop()
-    state = block_state or GTRENDS_BLOCK_STATE
-    reg = register or hs.BLOCKED_REGISTER
-    prior = _read_marker(state)
+    UNDER THE HARD STOP AND ROBOTS (audit 0b66b08de MF2/MF5; principal's scope rule 2026-10-13).
+    The first 401/403/429 or WAF challenge ends the pass on the spot -- no further request -- and
+    places a hold on trends.google.com (`research/hard_stop.py`) that only a PERSON releases; until
+    then a pass sends 0 requests, whatever time has passed. robots.txt is read at the host at most
+    once a day under GTRENDS_UA and every URL is judged by its exact path: a Disallow skips that
+    URL, an unavailable robots.txt stops this pass, a refusal on robots.txt itself is a hold."""
+    hs = _hs
     h = Harvest(str(row["id"]))
-    hdr = {"User-Agent": UA, "Accept": "application/json"}
-    base = "https://trends.google.com/trends/api"
-    answered = 0
-    blocked: dict[str, Any] | None = None
+    register = GTRENDS_REGISTER or hs.BLOCKED_REGISTER
+    prior = cursor.get("hold") if isinstance(cursor.get("hold"), dict) else None
+    held = hs.active_hold(register, [hs.host_key(GTRENDS_HOST)], prior)
+    # THE SHARED PERSON-HELD ACCESS RECORD (polite_fetch; audit GD_LANDING_TRAIN_6eb7a91b4): a
+    # site any polite fetcher was refused by is held for this route too, until a person releases
+    # it (`python -m libs.data.polite_fetch --release site:<site> --by <name>`).
+    pf_held = _pf.person_hold(f"https://{GTRENDS_HOST}/")
+    if held is None and pf_held:
+        held = {"key": f"site:{_pf.site_of(GTRENDS_HOST)}", "verdict": pf_held, "status": None,
+                "host": GTRENDS_HOST, "released_by": None}
+    if held is not None:
+        h.status = hs.pass_status(held)
+        h.detail = (f"{held.get('verdict')} HTTP {held.get('status')} on {held.get('host')}: "
+                    f"held until a person releases {held.get('key')}; nothing requested")
+        return h
+    if prior is not None:
+        h.cursor["hold"] = None               # a person released it: this copy is spent
 
-    def _ask(url: str, url_class: str) -> bytes | None:
-        nonlocal blocked, answered
-        if blocked is not None:
-            return None
-        # THE PERSON-HELD HOLD (polite_fetch's shared access record) is checked first and is the
-        # authority: hard_stop's marker backs off on a clock, this hold waits for a person.
-        held = _pf.person_hold(url)
-        if held:
-            blocked = {"status": held, "http_status": None, "url_class": url_class,
-                       "until": "a person releases it (python -m libs.data.polite_fetch "
-                                f"--release site:{_pf.site_of(GTRENDS_HOST)} --by <name>)"}
-            return None
-        if hs.active(prior, now) or hs.active(_read_marker(state), now):
-            blocked = _read_marker(state) or prior or {}
-            return None
+    def hold(verdict: str, status: int | None, url: str) -> None:
+        record = hs.hold_record(verdict, status, url, now)
+        h.cursor["hold"] = record
+        h.status = hs.pass_status(record)
+        h.detail = f"{verdict} HTTP {status} on {record['host']}: held for a person"
+        try:
+            hs.place_hold(record, register, source_key="free_stack_gtrends")
+        except Exception as exc:              # the record can fail; the stop already happened
+            h.notes.append(f"hold not registered: {type(exc).__name__}")
+        try:                                  # ... and in the shared polite_fetch access record
+            _pf.hold_site(url, status if status in hs.HARD_STOP else "WAF",
+                          f"{verdict} on Google Trends (free_stack gtrends)")
+        except Exception as exc:
+            h.notes.append(f"access hold not recorded: {type(exc).__name__}")
+
+    base = "https://trends.google.com/trends/api"
+    cache = dict(cursor.get("robots") or {})
+    robots = hs.robots_cached(cache, base, now)
+    if robots is None:
         h.requests += 1
         try:
-            raw = fetch(url, hdr, None)
+            robots = (200, fetch(hs.robots_url(base), GTRENDS_HEADERS, None).decode(
+                "utf-8", "replace"))
         except Exception as exc:
-            ref = _refusal(exc)
-            if ref is None:
-                h.failures[classify(exc)] += 1
-                h.notes.append(f"{classify(exc)}: {url[:120]}")
-                return None
-            marker = hs.block_marker(ref[0], url_class, ref[1], now, prior)
-            _pf.hold_site(url, ref[0], f"HTTP {ref[0]} on Google Trends {url_class}")
-            with contextlib.suppress(OSError):
-                state.parent.mkdir(parents=True, exist_ok=True)
-                state.write_text(json.dumps(marker, indent=1), encoding="utf-8")
-            with contextlib.suppress(OSError):
-                hs.record_block(marker, reg, key=GTRENDS_REGISTER_KEY, host=GTRENDS_HOST)
-            h.failures[marker["status"]] += 1
-            blocked = marker
-            return None
-        answered += 1
-        return raw
+            robots = (_http_code(exc), "")
+        if robots[0] in hs.HARD_STOP or hs.is_challenge(robots[0], {}, robots[1]):
+            hold(hs.VERDICT_ROBOTS_HOLD if robots[0] in hs.HARD_STOP else hs.VERDICT_WAF,
+                 robots[0], hs.robots_url(base))
+            return h
+        hs.robots_remember(cache, base, robots[0], robots[1], now)
+        h.cursor["robots"] = cache
+    disallowed = 0
 
-    for term, targets in row.get("terms") or TRENDS_TERMS:
+    def get(url: str) -> tuple[bytes | None, bool]:
+        """(body, stop). robots first; a refusal places the hold and stops the pass."""
+        nonlocal disallowed
+        verdict = hs.robots_verdict(url, robots[0], robots[1])
+        if verdict["state"] == "UNAVAILABLE":
+            h.status, h.detail = "ROBOTS_UNAVAILABLE", str(verdict["detail"])
+            return None, True
+        if not verdict["allowed"]:
+            disallowed += 1
+            h.notes.append(f"robots disallows {verdict['path'][:80]}: not fetched")
+            return None, False
+        h.requests += 1
+        try:
+            body = fetch(url, GTRENDS_HEADERS, None)
+        except Exception as exc:
+            h.failures[classify(exc)] += 1
+            h.notes.append(f"{classify(exc)}: {url[:120]}")
+            code = _http_code(exc)
+            if code in hs.HARD_STOP:
+                hold(hs.VERDICT_HARD_STOP, code, url)
+                return None, True
+            return None, False
+        if hs.is_challenge(200, {}, body):
+            hold(hs.VERDICT_WAF, 200, url)
+            return None, True
+        return body, False
+
+    terms = list(row.get("terms") or TRENDS_TERMS)
+    for term, targets in terms:
         req = {"comparisonItem": [{"keyword": term, "geo": "", "time": "today 3-m"}],
                "category": 0, "property": ""}
         url = (f"{base}/explore?hl=en-US&tz=0&req="
                f"{urllib.parse.quote(json.dumps(req, separators=(',', ':')))}")
-        widget = parse_trends_explore(_ask(url, "explore"))
-        if blocked is not None:
-            break
+        raw, stop = get(url)
+        if stop:
+            return h
+        widget = parse_trends_explore(raw)
         if not widget or not widget.get("token"):
             continue
         url2 = (f"{base}/widgetdata/multiline?hl=en-US&tz=0&req="
                 f"{urllib.parse.quote(json.dumps(widget['req'], separators=(',', ':')))}"
                 f"&token={urllib.parse.quote(str(widget['token']))}")
-        pts = parse_trends_multiline(_ask(url2, "widgetdata"))
-        if blocked is not None:
-            break                                   # nothing from the refused term is kept
+        raw2, stop = get(url2)
+        if stop:
+            return h
+        pts = parse_trends_multiline(raw2)
         col = trends_col(term)
         h.columns[col] = {"hypothesis": list(targets), "event": [],
                           "why": f"search attention log-change, '{term}'"}
@@ -1192,18 +1198,12 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
             h.obs.append({"key": col, "period_end": d1, STAMP_AT_FETCH: True,
                           "value": round(math.log((1.0 + v1) / (1.0 + v0)), 5)})
         h.raw += [{"term": term, "day": d, "value": v} for d, v in pts[-7:]]
-    if blocked is not None:
-        h.status = str(blocked.get("status") or "METHOD_BLOCKED")
-        h.detail = (f"HARD STOP: HTTP {blocked.get('http_status')} on "
-                    f"{blocked.get('url_class')}, backed off until {blocked.get('until')}; "
-                    "no retry, no other route")
-        return h
-    if answered and prior is not None:
-        with contextlib.suppress(OSError):
-            state.unlink(missing_ok=True)   # an answered, unrefused pass ends the backoff ladder
     if not h.obs:
-        h.status = "BLOCKED" if h.failures else "EMPTY"
-        h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "no points"
+        h.status = ("ROBOTS_DISALLOWED" if terms and disallowed >= len(terms) else
+                    "BLOCKED" if h.failures else "EMPTY")
+        h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or (
+            "robots.txt disallows every gtrends URL" if h.status == "ROBOTS_DISALLOWED"
+            else "no points")
     return h
 
 

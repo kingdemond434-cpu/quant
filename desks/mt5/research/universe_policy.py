@@ -213,7 +213,10 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
 #: instant, so they are the event lane's executor, not a statistical hunt over the price path. They
 #: are admitted for share CFDs exactly as the class books are; every other statistical family stays
 #: out. `event_reaction` is NOT here: its events are the macro calendar, not news about the name.
-NEWS_LANE_FAMILIES = frozenset({"analyst_revision_drift", "analyst_cross_market_lead"})
+NEWS_LANE_FAMILIES = frozenset({"analyst_revision_drift", "analyst_cross_market_lead",
+                                # Form 4 insider purchase clusters on the name (form4_lane.py):
+                                # a dated SEC filing about the issuer, first public at acceptance.
+                                "insider_cluster_drift"})
 
 
 def is_equity(symbol: str) -> bool:
