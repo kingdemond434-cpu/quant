@@ -54,9 +54,9 @@ ALPHA_FAMILY = 0.05
 TARGET_IC = 0.05
 #: Power at which the minimum detectable IC is quoted.
 POWER = 0.80
-#: TIER S, PER n (audit PORTWATCH_LIVE_84602112c T8 check, 2026-10-14). A fixed |t| 2.84 is the
-#: Tier S bar only as n -> infinity; at the n these cells live at (24-100 non-overlapping
-#: windows) the canonical bar is higher (3.06 at 24, 2.94 at 50, 2.89 at 100). The bar is the t
+#: TIER S, PER n (audit PORTWATCH_LIVE_84602112c T8 check, 2026-10-14). A single fixed |t| is
+#: the Tier S bar only as n -> infinity; at the n these cells live at (24-100 non-overlapping
+#: windows) the canonical bar is higher and falls with n (see `tier_s_t_required`). The bar is the t
 #: at which the canonical `libs.validation.dsr.deflated_sharpe_ratio` with N pinned at
 #: TIER_S_N_PINNED trials and variance_of_sharpes 1/(T-1) clears 0.95 -- never charged by the
 #: family size, so it neither falls for a small family nor rises for a large one.
@@ -98,10 +98,12 @@ def _moment_series(n: int, skew: float, kurtosis: float) -> np.ndarray | None:
 @lru_cache(maxsize=4096)
 def _t_required(n_obs: int, skew: float, kurtosis: float) -> float:
     from libs.validation.dsr import deflated_sharpe_ratio
-    base = _moment_series(n_obs, skew, kurtosis)
-    if base is None:
-        return math.inf                                    # unreachable shape: fail closed
+    base = _moment_series(n_obs, skew, kurtosis) if n_obs >= 4 else None
     var = 1.0 / (n_obs - 1)
+    if base is None:
+        if n_obs >= 4:
+            return math.inf                                # unreachable shape: fail closed
+        return _t_required_small(n_obs, skew, kurtosis, var)
 
     def dsr_at(sr: float) -> float:
         return float(deflated_sharpe_ratio(base + sr, n_trials=TIER_S_N_PINNED,
@@ -120,15 +122,47 @@ def _t_required(n_obs: int, skew: float, kurtosis: float) -> float:
     return hi * math.sqrt(n_obs)                           # per-observation Sharpe -> t
 
 
+def _t_required_small(n_obs: int, skew: float, kurtosis: float, var: float) -> float:
+    """n = 3: no sample of 3 values carries a sample kurtosis of 3 (scipy's bias-corrected
+    kurtosis of any 3 points is degenerate), so the canonical function cannot be posed on a
+    series. Its own pieces are used instead: the deflated benchmark from the canonical
+    `expected_max_sharpe(5, var)` and the PSR's moment form at the requested skew/kurtosis.
+    `test_the_small_n_path_agrees_with_the_canonical_function` pins this form to
+    `deflated_sharpe_ratio` at every n where both can be posed."""
+    from scipy.optimize import brentq
+
+    from libs.validation.dsr import expected_max_sharpe
+    sr0 = float(expected_max_sharpe(TIER_S_N_PINNED, var))
+    zq = NormalDist().inv_cdf(TIER_S_CONFIDENCE)
+
+    def margin(sr: float) -> float:
+        denom = 1.0 - skew * sr + ((kurtosis - 1.0) / 4.0) * sr * sr
+        if denom <= 0:
+            return -1.0
+        return (sr - sr0) * math.sqrt(n_obs - 1) / math.sqrt(denom) - zq
+
+    hi = max(sr0, 1e-6) * 2.0
+    while margin(hi) < 0:
+        hi *= 2.0
+        if hi > 1e3:
+            return math.inf
+    sr = float(brentq(margin, sr0, hi, xtol=1e-12))
+    while margin(sr) < 0:
+        sr = math.nextafter(sr, math.inf) + 1e-12
+    return sr * math.sqrt(n_obs)
+
+
 def tier_s_t_required(n_obs: int, skew: float = 0.0, kurtosis: float = 3.0) -> float:
     """THE canonical Tier S |t| at `n_obs` observations of the given sample skew and (non-excess)
     kurtosis: the t = SR*sqrt(n) at which `deflated_sharpe_ratio(n_trials=5,
-    variance_of_sharpes=1/(n-1))` reaches 0.95. Normal shape: 3.06 at 24, 2.94 at 50, 2.89 at 100,
-    2.85 at 500. NEVER below the normal-shape bar at the same n (a thin-tailed sample cannot
-    lower it); a shape the canonical function cannot be posed at, or n < 5, is +inf (nothing
-    passes). Replaced by trial_count_guard.tier_s_t_required when that branch lands."""
+    variance_of_sharpes=1/(n-1))` reaches 0.95. Normal shape: 4.561 at 5, 3.055 at 24, 2.886 at
+    100, falling toward its n -> infinity limit. NEVER below the normal-shape bar at the same n
+    (a thin-tailed sample cannot lower it); n < 3 is +inf (nothing passes), as in
+    trial_count_guard.tier_s_t_required (claude/trial-count-guard, libs/research/
+    tier_s_threshold.py), whose values at 5/24/100 and below 3 this reproduces and which
+    replaces it, an import change only, when that branch lands."""
     n = int(n_obs)
-    if n < 5:
+    if n < 3:
         return math.inf
     # Rounded to 0.01 for the cache, always TOWARD a higher bar: skew down, kurtosis up.
     sk = math.floor(float(skew) * 100) / 100 if math.isfinite(float(skew)) else 0.0
