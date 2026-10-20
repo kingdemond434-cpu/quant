@@ -1,0 +1,67 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Open-Form Geometric Style Transfer",
+    "summary": "A geometric style learned from one family of shapes is typically applied to new shapes from the same family. We consider a more challenging setting: learning the geometric design language of a stylize",
+    "url": "https://arxiv.org/abs/2610.26820v1",
+    "published": "2026-10-19T17:52:37Z",
+    "trading_terms": [
+      "alpha"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "On Higher-Form Fracton Hydrodynamics with Momentum Conservation",
+    "summary": "Momentum conservation is common in fluids, yet it may be incompatible with the hydrodynamics of theories with exotic conservation laws (such as fracton hydrodynamics) unless symmetries are spontaneous",
+    "url": "https://arxiv.org/abs/2610.26862v1",
+    "published": "2026-10-19T17:59:59Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Mechanical angular momentum loss at $\\mathcal{O}(G^4)$ from static and radiative gravitons",
+    "summary": "We determine the loss of mechanical angular momentum $L^\u03bc_{\\rm loss}$ of two gravitationally scattering bodies at $\\mathcal{O}(G^4)$ using worldline quantum field theory (WQFT). The gravitational memo",
+    "url": "https://arxiv.org/abs/2610.26822v1",
+    "published": "2026-10-19T17:54:15Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Open-Form Geometric Style Transfer",
+    "summary": "A geometric style learned from one family of shapes is typically applied to new shapes from the same family. We consider a more challenging setting: learning the geometric design language of a stylize",
+    "url": "https://arxiv.org/abs/2610.26820v1",
+    "published": "2026-10-19T17:52:37Z",
+    "trading_terms": [
+      "alpha"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Teacher Supervision, Fixed Representations and Calibration: Exact Risk Calculations for Candidate-Scoring Decision Models",
+    "summary": "Candidate-scoring decision models return a probability distribution over a presented set of answers. Public documentation of one such system, Jev, and of an open counterpart, JevAny, describes three t",
+    "url": "https://arxiv.org/abs/2610.26797v1",
+    "published": "2026-10-19T17:42:24Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
