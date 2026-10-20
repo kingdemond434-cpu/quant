@@ -25,12 +25,14 @@ def _ledger(seed: int, start: datetime, n_days: int = 30, pre: int = 0) -> list[
             for d in range(pre)]                     # pre-forward rows: must never be read
     for h in range(0, n_days * 24, 6):
         rows.append({"entry_time": (start + timedelta(hours=h)).isoformat(),
+                     "exit_time": (start + timedelta(hours=h + 2)).isoformat(),
                      "r_multiple": rng.gauss(0.05, 2.0)})
     return rows
 
 
 def _world(tmp: Path, *, markout_syms=("XAUUSD", "EURUSD"), surface_syms=("XAUUSD", "EURUSD"),
-           shared: bool = False, forward_start: bool = True, pre: int = 0) -> dict[str, Path]:
+           shared: bool = False, forward_start: bool = True, pre: int = 0,
+           cost_age_h: float = 1.0, slip_r: float = -0.05, fx_days: int = 30) -> dict[str, Path]:
     sd = tmp / "shadow"
     sd.mkdir()
     sleeves = [{"name": "gold_a", "symbol": "XAUUSD", "status": "LIVE", "risk_frac": 0.01},
@@ -43,12 +45,14 @@ def _world(tmp: Path, *, markout_syms=("XAUUSD", "EURUSD"), surface_syms=("XAUUS
         sleeves.append({"name": "gold_a#rr=2", "symbol": "XAUUSD", "status": "STANDBY"})
     (tmp / "sleeves.json").write_text(json.dumps({"sleeves": sleeves}))
     (sd / "ledger_gold_a.json").write_text(json.dumps(_ledger(1, FS, pre=pre)))
-    (sd / "ledger_fx_b.json").write_text(json.dumps(_ledger(2, FS, pre=pre)))
-    blk = {"clean": {"r": {"mean": -0.05}, "pts": {"mean": 2.0}}, "n_clean": 40}
+    (sd / "ledger_fx_b.json").write_text(json.dumps(_ledger(2, FS, n_days=fx_days, pre=pre)))
+    stamp = (NOW - timedelta(hours=cost_age_h)).isoformat()
+    blk = {"clean": {"r": {"mean": slip_r}, "pts": {"mean": 2.0}}, "n_clean": 40}
     (tmp / "markout.json").write_text(json.dumps(
-        {"slip": {"by_symbol": dict.fromkeys(markout_syms, blk)}}))
+        {"at": stamp, "slip": {"by_symbol": dict.fromkeys(markout_syms, blk)}}))
     (tmp / "surface.json").write_text(json.dumps(
-        {"symbols": {s: {"pooled_median_spread_pts": 10.0} for s in surface_syms}}))
+        {"built_at": stamp,
+         "symbols": {s: {"pooled_median_spread_pts": 10.0} for s in surface_syms}}))
     return {"shadow_dir": sd, "sleeves_path": tmp / "sleeves.json",
             "markout_path": tmp / "markout.json", "surface_path": tmp / "surface.json"}
 
@@ -56,11 +60,17 @@ def _world(tmp: Path, *, markout_syms=("XAUUSD", "EURUSD"), surface_syms=("XAUUS
 def test_measured_book_chooses_highest_net_gain(tmp_path: Path) -> None:
     doc = RI.build(NOW, **_world(tmp_path))
     assert doc["status"] == RI.MEASURED and doc["report_only"] is True
+    assert "ASSUMPTION" in doc["assumptions"]["risk_unit_is"]
     names = [c["interval"] for c in doc["candidates"]]
     assert names == ["every_pass", "daily", "every_2_days", "weekly", "drift_10pct",
                      "drift_20pct"]
     best = max(doc["candidates"], key=lambda c: c["net_gain_elogw_per_day"])
-    assert doc["chosen"] == best["interval"]
+    if best["net_gain_elogw_per_day"] <= 0:
+        assert doc["chosen"] == RI.HOLD and "hold stands" in doc["why"]
+    elif doc["p_beats_runner_up"] >= RI.WIN_PROB:
+        assert doc["chosen"] == best["interval"]
+    else:
+        assert doc["chosen"] is None and doc["verdict"] == "no_clear_winner"
     for c in doc["candidates"]:
         assert abs(c["gross_gain_elogw_per_day"] - c["cost_elogw_per_day"]
                    - c["net_gain_elogw_per_day"]) < 1e-12
@@ -131,8 +141,66 @@ def test_wired_hourly_layer_graph_and_dashboard() -> None:
     dash = (DESK / "research" / "desk_dashboard_state.py").read_text("utf-8")
     assert 'Src("desks/mt5/reports/REBALANCE_INTERVAL.json"' in dash
     # report-only: nothing that sizes reads it
-    for organ in ("libs/portfolio/pf_allocator.py", "desks/mt5/mt5desk/gateway.py",
+    for organ in ("desks/mt5/research/pf_allocator.py", "desks/mt5/mt5desk/decision_core.py",
                   "desks/mt5/research/promoter.py"):
         p = root / organ
-        if p.exists():
-            assert "REBALANCE_INTERVAL" not in p.read_text("utf-8", errors="replace")
+        assert p.exists(), f"{organ} moved: the report-only fence must follow it"
+        text = p.read_text("utf-8", errors="replace")
+        assert "REBALANCE_INTERVAL" not in text and "rebalance_interval" not in text
+
+
+def test_stale_cost_is_unmeasured(tmp_path: Path) -> None:
+    doc = RI.build(NOW, **_world(tmp_path, cost_age_h=100.0))
+    assert doc["cost_freshness"]["status"] == RI.UNMEASURED
+    assert doc["status"] == RI.UNMEASURED
+
+
+def test_nonpositive_or_nonfinite_cost_is_unmeasured() -> None:
+    sur = {"symbols": {"X": {"pooled_median_spread_pts": 10.0}}}
+    for r in (0.0, float("nan"), float("inf")):
+        m = {"slip": {"by_symbol": {"X": {"clean": {"r": {"mean": r}, "pts": {"mean": 2.0}}}}}}
+        assert RI.symbol_cost("X", m, sur)["status"] == RI.UNMEASURED
+    m = {"slip": {"by_symbol": {"X": {"clean": {"r": {"mean": -0.05}, "pts": {"mean": 2.0}}}}}}
+    for sp in (0.0, -3.0, float("nan")):
+        bad = {"symbols": {"X": {"pooled_median_spread_pts": sp}}}
+        assert RI.symbol_cost("X", m, bad)["status"] == RI.UNMEASURED
+
+
+def test_silent_ledger_is_unmeasured_and_book_partial(tmp_path: Path) -> None:
+    w = _world(tmp_path, fx_days=5)
+    doc = RI.build(NOW, **w)
+    fx = next(s for s in doc["sleeves"] if s["sleeve"] == "fx_b")
+    assert fx["status"] == RI.UNMEASURED and "silent" in fx["why"]
+    assert doc["status"] == RI.UNMEASURED      # one measured sleeve left
+
+
+def test_partial_when_some_sleeves_unmeasured(tmp_path: Path) -> None:
+    w = _world(tmp_path)
+    doc_s = json.loads(w["sleeves_path"].read_text())
+    doc_s["sleeves"].append({"name": "c_nofs", "symbol": "XAUUSD", "status": "LIVE",
+                             "risk_frac": 0.01})
+    doc_s["sleeves"].append({"name": "d", "symbol": "EURUSD", "status": "LIVE",
+                             "risk_frac": 0.01, "forward_start": FS.isoformat()})
+    w["sleeves_path"].write_text(json.dumps(doc_s))
+    (w["shadow_dir"] / "ledger_d.json").write_text(json.dumps(_ledger(3, FS)))
+    doc = RI.build(NOW, **w)
+    assert doc["status"] == RI.PARTIAL and "3 of 4" in doc["why"]
+
+
+def test_trade_is_booked_at_exit_not_entry() -> None:
+    start = NOW - timedelta(days=10)
+    rows = [{"entry_time": (start + timedelta(hours=1)).isoformat(),
+             "exit_time": (start + timedelta(hours=30)).isoformat(), "r_multiple": 1.0},
+            {"entry_time": (start + timedelta(hours=2)).isoformat(), "r_multiple": 9.0}]
+    tr, no_exit = RI.forward_trades(rows, start)
+    assert no_exit == 1 and tr == [(start + timedelta(hours=30), 1.0)]
+    grid = RI.hourly_returns({"a": tr}, start, NOW)
+    assert grid[30] == {"a": RI.RISK_UNIT} and grid[1] == {}
+
+
+def test_hold_chosen_when_nothing_beats_it() -> None:
+    start = NOW - timedelta(days=10)
+    a = [(start + timedelta(hours=h), 0.1) for h in range(0, 240, 3)]
+    res = RI.evaluate({"a": a, "b": list(a)}, {"a": 1.0, "b": 1.0}, {"a": 5.0, "b": 5.0},
+                      start, NOW)
+    assert res["chosen"] == RI.HOLD and "hold stands" in res["why"]

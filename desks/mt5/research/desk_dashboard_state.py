@@ -957,9 +957,10 @@ def _rebalance(deadline: float) -> dict[str, Any]:
              "cost_elogw_per_day": r.get("cost_elogw_per_day"),
              "n_rebalances": r.get("n_rebalances")}
             for r in (d.get("candidates") or []) if isinstance(r, dict)]
-    measured = d.get("status") == MEASURED
+    inner = str(d.get("status") or UNMEASURED)
     return {
-        "status": ri.status if ri.status != MEASURED else (MEASURED if measured else UNMEASURED),
+        "status": ri.status if ri.status != MEASURED else inner,
+        "verdict": d.get("verdict"),
         "source": ri.rel, "age": _human_age(ri.age_s),
         "chosen": ri.field(d.get("chosen"), str(d.get("why") or "")),
         "beats_hold": d.get("beats_hold"),

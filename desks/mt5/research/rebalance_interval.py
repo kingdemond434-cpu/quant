@@ -1,43 +1,40 @@
 #!/usr/bin/env python3
 """REBALANCE INTERVAL -- how often the live book should be pulled back to its target weights.
 
-REPORT-ONLY. Nothing here changes a fraction, a lot or a gate; `pf_allocator` and the gateway
-never read this file. It answers one question with the desk's own forward evidence:
+REPORT-ONLY. Nothing here changes a fraction, a lot or a gate; `pf_allocator`, `decision_core`
+and the gateway never read this file. It answers one question with the desk's forward evidence:
 
-    which rebalance policy has the highest NET E[log W] gain over never rebalancing?
+    which rebalance policy (or none) has the highest NET E[log W] over buy-and-hold?
 
-THE GAIN. Holding fixed target weights in several imperfectly correlated sleeves and pulling
-them back as they drift earns the "volatility pumping" (rebalancing / diversification) return:
-a constant-mix book's log growth exceeds the weighted log growth of its parts by roughly half
-the weighted variance minus the book's variance. A buy-and-hold book lets the weights drift
-toward whatever won, and gives that premium back. Rebalancing more often harvests more of it
-and pays the spread and slippage every time it does -- so the interval is a cost trade-off, and
-this organ measures both sides rather than assuming either.
-
-CANDIDATES: every pass (hourly), daily, every 2 days, weekly, and drift thresholds of 10% and
-20% (rebalance when any sleeve's weight has drifted that far, relative, from its target).
+THE GAIN is the volatility-pumping premium a constant-mix book earns over a drifting one; the
+COST is the spread and slippage paid to resize. Candidates: every pass (hourly), daily, every 2
+days, weekly, and 10% / 20% relative drift thresholds -- and HOLD (never rebalance), which wins
+whenever no candidate beats it with margin.
 
 EVIDENCE, AND WHAT MAKES A ROW UNMEASURED.
-  * Forward returns only: each live sleeve's OWN per-key forward ledger
-    (`reports/shadow/ledger_<key>.json`), filtered to trades at or after the clock's
-    `forward_start`. A sleeve with no `forward_start` cannot prove its rows are forward, and is
-    UNMEASURED -- no look-ahead, ever.
-  * A ledger that more than one key resolves to (a `#param` sibling, a shadow key and a sleeve
-    naming one file) is SHARED: its rows cannot be attributed to this sleeve, so UNMEASURED.
-  * Cost per symbol = the clean markout slip (in R, `reports/markout.json` -> `slip.by_symbol`,
-    the #391 clean column) PLUS half the median spread from the spread surface
-    (`data/cost_surface.json`, converted to R through the same symbol's measured R-per-point).
-    If EITHER is absent for a symbol, that symbol's result is UNMEASURED; it is never priced at
-    zero and never at a pooled default.
+  * Forward rows only: each live sleeve's own per-key ledger (`forward_exploitation.ledger_path`),
+    rows whose ENTRY is at or after the clock's `forward_start`. No `forward_start` -> UNMEASURED.
+  * Each trade's R is booked at its EXIT time (never the entry hour: that would credit the book
+    with a result before it was known). A row with no exit time is dropped and counted.
+  * A ledger more than one key resolves to is SHARED -> UNMEASURED.
+  * Coverage: a sleeve with rows on fewer than MIN_DAY_COVERAGE of the window's days is silent
+    for most of it -> UNMEASURED.
+  * Cost per symbol = |clean markout slip R| (`reports/markout.json` slip.by_symbol, #391) plus
+    half the spread surface's median spread in R. Either source older than MAX_COST_AGE_H (72h,
+    as run_desk_integrity), or any input non-positive / non-finite -> UNMEASURED. Never zero.
 
-THE CHARGE. A rebalance that moves |dw| of the book into or out of a sleeve resizes that
-sleeve's next 1R exposure by that share; it is charged |dw| * RISK_UNIT * cost_R of wealth. This
-is the conservative reading (a sleeve whose position is flat could resize for free).
+THE CHOICE needs margin: the hourly book returns are block-bootstrapped and a non-hold interval
+is chosen only when it beats the runner-up (hold included) in >= WIN_PROB of resamples;
+otherwise "no clear winner" and the report says hold stands.
+
+THE CHARGE (ASSUMPTION, stated in the artifact): a rebalance moving |dw| of the book is charged
+|dw| * RISK_UNIT * cost_R of wealth, RISK_UNIT being the wealth at risk per 1R at full weight.
 """
 from __future__ import annotations
 
 import json
 import math
+import random
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -45,6 +42,12 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parent.parent
 ROOT = DESK.parent.parent
+for _p in (str(DESK), str(DESK / "research")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from research.forward_exploitation import ledger_path as _fe_ledger_path  # noqa: E402
+
 SHADOW_DIR = DESK / "reports" / "shadow"
 SHADOW_STATES = ("shadow_state.json", "scalp_shadow_state.json", "qquant_shadow_state.json",
                  "external_shadow_state.json")
@@ -53,17 +56,23 @@ MARKOUT = DESK / "reports" / "markout.json"
 SPREAD_SURFACE = DESK / "data" / "cost_surface.json"
 OUT = DESK / "reports" / "REBALANCE_INTERVAL.json"
 
-MEASURED = "MEASURED"
-UNMEASURED = "UNMEASURED"
-#: Wealth at risk per 1R of a sleeve at its full target weight (the R -> return conversion).
+MEASURED, UNMEASURED, PARTIAL = "MEASURED", "UNMEASURED", "PARTIAL"
+#: ASSUMPTION: wealth at risk per 1R of a sleeve at its full target weight.
 RISK_UNIT = 0.01
-#: Forward hours a book needs before an interval verdict is a verdict.
 MIN_HOURS = 24 * 5
-#: Candidates: (name, fixed period in hours or None, drift threshold or None).
+#: A sleeve needs rows on at least this share of the window's days.
+MIN_DAY_COVERAGE = 0.5
+#: Cost inputs older than this are stale (run_desk_integrity's cost_surface horizon).
+MAX_COST_AGE_H = 72.0
+#: Bootstrap: a non-hold interval must beat the runner-up in this share of resamples.
+WIN_PROB = 0.80
+N_BOOT = 200
+BLOCK_H = 24
 CANDIDATES: tuple[tuple[str, int | None, float | None], ...] = (
     ("every_pass", 1, None), ("daily", 24, None), ("every_2_days", 48, None),
     ("weekly", 168, None), ("drift_10pct", None, 0.10), ("drift_20pct", None, 0.20),
 )
+HOLD = "hold"
 
 
 def _read(path: Path) -> Any:
@@ -81,6 +90,11 @@ def _num(v: Any) -> float | None:
     return f if math.isfinite(f) else None
 
 
+def _pos(v: Any) -> float | None:
+    f = _num(v)
+    return f if f is not None and f > 0 else None
+
+
 def _ts(v: Any) -> datetime | None:
     if not v:
         return None
@@ -92,22 +106,18 @@ def _ts(v: Any) -> datetime | None:
 
 
 def ledger_name(key: str) -> str:
-    """Same resolution as forward_exploitation.ledger_path: the `#` suffix is a parameterisation."""
-    return f"ledger_{str(key).split('#')[0].replace('.', '_')}.json"
+    return _fe_ledger_path(key).name
 
 
 # ------------------------------------------------------------------------------------- inputs
 def live_book(sleeves_doc: Any) -> list[dict[str, Any]]:
     rows = sleeves_doc.get("sleeves") if isinstance(sleeves_doc, dict) else sleeves_doc
-    out = []
-    for r in rows if isinstance(rows, list) else []:
-        if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE" and r.get("name"):
-            out.append(r)
-    return out
+    return [r for r in (rows if isinstance(rows, list) else [])
+            if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE"
+            and r.get("name")]
 
 
 def key_counts(sleeves_doc: Any, states: list[Any]) -> dict[str, int]:
-    """How many distinct keys resolve to each ledger file -- >1 means SHARED."""
     keys: set[str] = set()
     rows = sleeves_doc.get("sleeves") if isinstance(sleeves_doc, dict) else sleeves_doc
     for r in rows if isinstance(rows, list) else []:
@@ -134,56 +144,79 @@ def forward_start(sleeve: dict[str, Any], states: list[Any]) -> datetime | None:
     return None
 
 
-def forward_trades(rows: Any, start: datetime) -> list[tuple[datetime, float]]:
-    """(when, R) at or after `start`. Both ledger schemas (entry_time/r_multiple, opened_at/r)."""
-    out = []
+def forward_trades(rows: Any, start: datetime) -> tuple[list[tuple[datetime, float]], int]:
+    """((exit_time, R) for trades ENTERED at or after `start`, n dropped for no exit time)."""
+    out, no_exit = [], 0
     for row in rows if isinstance(rows, list) else []:
         if not isinstance(row, dict):
             continue
-        when = _ts(row.get("entry_time") or row.get("opened_at"))
+        entry = _ts(row.get("entry_time") or row.get("opened_at"))
         r = _num(row.get("r_multiple"))
         if r is None:
             r = _num(row.get("r"))
-        if when is None or r is None or when < start:
+        if entry is None or r is None or entry < start:
             continue
-        out.append((when, r))
+        ex = _ts(row.get("exit_time") or row.get("closed_at") or row.get("close_time"))
+        if ex is None or ex < entry:
+            no_exit += 1
+            continue
+        out.append((ex, r))
     out.sort()
-    return out
+    return out, no_exit
+
+
+def _age_h(stamp: Any, now: datetime) -> float | None:
+    t = _ts(stamp)
+    return None if t is None else (now - t).total_seconds() / 3600.0
+
+
+def cost_freshness(markout: Any, surface: Any, now: datetime) -> dict[str, Any]:
+    ages = {"markout_at_age_h": _age_h((markout or {}).get("at") if isinstance(markout, dict)
+                                       else None, now),
+            "cost_surface_built_at_age_h": _age_h((surface or {}).get("built_at")
+                                                  if isinstance(surface, dict) else None, now)}
+    bad = [f"{k[:-6]} {'absent' if v is None else f'{v:.0f}h old'} (> {MAX_COST_AGE_H:.0f}h)"
+           for k, v in ages.items() if v is None or v > MAX_COST_AGE_H]
+    return {"status": UNMEASURED if bad else MEASURED, "max_age_h": MAX_COST_AGE_H, **ages,
+            "why": "; ".join(bad)}
 
 
 def symbol_cost(symbol: str, markout: Any, surface: Any) -> dict[str, Any]:
-    """Round-trip-free (one-way) cost of resizing 1R on `symbol`, in R. UNMEASURED if either
-    source is missing for it."""
+    """One-way cost of resizing 1R on `symbol`, in R. UNMEASURED unless every input is a
+    finite positive measurement."""
     slip = (((markout or {}).get("slip") or {}).get("by_symbol") or {}).get(symbol) \
         if isinstance(markout, dict) else None
     clean = (slip or {}).get("clean") or {}
     slip_r = _num((clean.get("r") or {}).get("mean"))
     slip_pts = _num((clean.get("pts") or {}).get("mean"))
-    srow = (((surface or {}).get("symbols") or {}).get(symbol)) if isinstance(surface, dict) \
+    srow = ((surface or {}).get("symbols") or {}).get(symbol) if isinstance(surface, dict) \
         else None
-    spread_pts = _num((srow or {}).get("pooled_median_spread_pts"))
+    spread_pts = _pos((srow or {}).get("pooled_median_spread_pts"))
     missing = []
-    if slip_r is None:
-        missing.append("no clean markout slip in R for this symbol (reports/markout.json "
-                       "slip.by_symbol.<sym>.clean.r)")
+    if slip_r is None or slip_r == 0.0:
+        missing.append("no finite non-zero clean markout slip in R")
+    if slip_pts is None or slip_pts == 0.0:
+        missing.append("no finite non-zero clean markout slip in points")
     if spread_pts is None:
-        missing.append("no measured spread on the spread surface (data/cost_surface.json)")
-    if slip_r is not None and (slip_pts is None or slip_pts == 0.0):
-        missing.append("markout carries no point slip, so the spread cannot be put in R")
+        missing.append("no finite positive median spread on the spread surface")
+    r_per_pt = (abs(slip_r / slip_pts) if not missing and slip_r and slip_pts else None)
+    if not missing and _pos(r_per_pt) is None:
+        missing.append("R-per-point ratio is not finite and positive")
     if missing:
         return {"status": UNMEASURED, "why": "; ".join(missing)}
-    assert slip_r is not None and slip_pts is not None and spread_pts is not None
-    r_per_pt = abs(slip_r / slip_pts)
-    cost_r = abs(slip_r) + 0.5 * spread_pts * r_per_pt
+    assert slip_r is not None and spread_pts is not None and r_per_pt is not None
+    half = 0.5 * spread_pts * r_per_pt
+    cost_r = abs(slip_r) + half
+    if _pos(cost_r) is None:
+        return {"status": UNMEASURED, "why": "cost is not finite and positive"}
     return {"status": MEASURED, "cost_r": round(cost_r, 6), "slip_r": round(slip_r, 6),
-            "half_spread_r": round(0.5 * spread_pts * r_per_pt, 6),
-            "spread_pts": spread_pts, "n_clean": (slip or {}).get("n_clean")}
+            "half_spread_r": round(half, 6), "spread_pts": spread_pts,
+            "n_clean": (slip or {}).get("n_clean")}
 
 
 # ------------------------------------------------------------------------------------- engine
 def hourly_returns(trades: dict[str, list[tuple[datetime, float]]],
                    start: datetime, end: datetime) -> list[dict[str, float]]:
-    """One dict per hour from `start` to `end`: sleeve -> simple return of that sleeve's capital."""
     t0 = start.replace(minute=0, second=0, microsecond=0)
     n = max(1, int((end - t0).total_seconds() // 3600) + 1)
     grid: list[dict[str, float]] = [{} for _ in range(n)]
@@ -197,12 +230,9 @@ def hourly_returns(trades: dict[str, list[tuple[datetime, float]]],
 
 def simulate(grid: list[dict[str, float]], target: dict[str, float], cost_r: dict[str, float],
              period: int | None, drift: float | None) -> dict[str, Any]:
-    """Log wealth of a book that starts at `target` and rebalances by the policy. period=None and
-    drift=None is buy-and-hold."""
     names = list(target)
-    hold = dict(target)                       # wealth share held in each sleeve (sums to wealth)
-    logw = 0.0
-    paid = 0.0
+    hold = dict(target)
+    logw = paid = 0.0
     n_reb = 0
     for i, row in enumerate(grid):
         w = sum(hold.values())
@@ -210,26 +240,40 @@ def simulate(grid: list[dict[str, float]], target: dict[str, float], cost_r: dic
             hold[k] *= max(1e-12, 1.0 + row.get(k, 0.0))
         w_new = sum(hold.values())
         logw += math.log(w_new / w)
-        due = False
-        if period is not None and (i + 1) % period == 0:
-            due = True
-        elif drift is not None:
-            due = any(abs(hold[k] / w_new - target[k]) / target[k] > drift for k in names
-                      if target[k] > 0)
+        due = (period is not None and (i + 1) % period == 0) or (
+            drift is not None and any(abs(hold[k] / w_new - target[k]) / target[k] > drift
+                                      for k in names if target[k] > 0))
         if due:
-            turnover = {k: abs(hold[k] / w_new - target[k]) for k in names}
-            cost = sum(turnover[k] * RISK_UNIT * cost_r[k] for k in names)
-            cost = min(cost, 0.5)
+            cost = min(0.5, sum(abs(hold[k] / w_new - target[k]) * RISK_UNIT * cost_r[k]
+                                for k in names))
             paid += cost
-            w_after = w_new * (1.0 - cost)
             logw += math.log(1.0 - cost)
-            hold = {k: target[k] * w_after for k in names}
+            hold = {k: target[k] * w_new * (1.0 - cost) for k in names}
             n_reb += 1
     return {"log_w": logw, "cost_paid": paid, "n_rebalances": n_reb}
 
 
+def _nets(grid: list[dict[str, float]], target: dict[str, float],
+          cost_r: dict[str, float]) -> dict[str, float]:
+    base = simulate(grid, target, cost_r, None, None)["log_w"]
+    out = {HOLD: 0.0}
+    for name, period, drift in CANDIDATES:
+        out[name] = simulate(grid, target, cost_r, period, drift)["log_w"] - base
+    return out
+
+
+def _resample(grid: list[dict[str, float]], rng: random.Random) -> list[dict[str, float]]:
+    n = len(grid)
+    out: list[dict[str, float]] = []
+    while len(out) < n:
+        s = rng.randrange(n)
+        out.extend(grid[(s + j) % n] for j in range(min(BLOCK_H, n - len(out))))
+    return out
+
+
 def evaluate(trades: dict[str, list[tuple[datetime, float]]], target: dict[str, float],
-             cost_r: dict[str, float], start: datetime, end: datetime) -> dict[str, Any]:
+             cost_r: dict[str, float], start: datetime, end: datetime,
+             seed: int = 7) -> dict[str, Any]:
     tot = sum(target.values())
     target = {k: v / tot for k, v in target.items()}
     grid = hourly_returns(trades, start, end)
@@ -238,31 +282,53 @@ def evaluate(trades: dict[str, list[tuple[datetime, float]]], target: dict[str, 
     rows = []
     for name, period, drift in CANDIDATES:
         res = simulate(grid, target, cost_r, period, drift)
-        gross = simulate(grid, target, dict.fromkeys(cost_r, 0.0), period, drift)
+        gross = simulate(grid, target, {k: 0.0 for k in cost_r}, period, drift)
         rows.append({
             "interval": name, "period_h": period, "drift_threshold": drift,
             "n_rebalances": res["n_rebalances"],
             "gross_gain_elogw_per_day": (gross["log_w"] - base["log_w"]) / days,
             "cost_elogw_per_day": (gross["log_w"] - res["log_w"]) / days,
             "net_gain_elogw_per_day": (res["log_w"] - base["log_w"]) / days})
-    best = max(rows, key=lambda r: r["net_gain_elogw_per_day"])
+    point = {HOLD: 0.0, **{r["interval"]: r["net_gain_elogw_per_day"] for r in rows}}
+    ranked = sorted(point, key=lambda k: -point[k])
+    best, runner = ranked[0], ranked[1]
+    rng = random.Random(seed)
+    wins = 0
+    for _ in range(N_BOOT):
+        nets = _nets(_resample(grid, rng), target, cost_r)
+        wins += nets[best] > nets[runner]
+    p_win = wins / N_BOOT
+    if best == HOLD:
+        chosen, why = HOLD, ("no candidate beats buy-and-hold net of cost; hold stands "
+                             f"(best candidate {runner} {point[runner]:+.3e}/day)")
+    elif p_win >= WIN_PROB:
+        chosen, why = best, (f"{best} beats {runner} in {p_win:.0%} of {N_BOOT} block "
+                             f"resamples (net {point[best]:+.3e}/day over hold)")
+    else:
+        chosen, why = None, (f"no clear winner: {best} beats {runner} in only {p_win:.0%} of "
+                             f"resamples (< {WIN_PROB:.0%}); hold stands")
     return {"hours": len(grid), "days": round(days, 3),
             "hold_elogw_per_day": base["log_w"] / days, "candidates": rows,
-            "chosen": best["interval"],
-            "chosen_net_gain_elogw_per_day": best["net_gain_elogw_per_day"],
-            "beats_hold": best["net_gain_elogw_per_day"] > 0.0}
+            "point_best": best, "runner_up": runner, "p_beats_runner_up": p_win,
+            "chosen": chosen, "verdict": chosen or "no_clear_winner",
+            "chosen_net_gain_elogw_per_day": point[chosen] if chosen else None,
+            "beats_hold": bool(chosen and chosen != HOLD), "why": why}
 
 
 # ------------------------------------------------------------------------------------- build
+def _rel(p: Path) -> str:
+    return str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p)
+
+
 def build(now: datetime | None = None, shadow_dir: Path = SHADOW_DIR, sleeves_path: Path = SLEEVES,
           markout_path: Path = MARKOUT, surface_path: Path = SPREAD_SURFACE) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     sleeves_doc = _read(sleeves_path)
     states = [_read(shadow_dir / n) for n in SHADOW_STATES]
-    markout = _read(markout_path)
-    surface = _read(surface_path)
+    markout, surface = _read(markout_path), _read(surface_path)
     counts = key_counts(sleeves_doc, states)
     book = live_book(sleeves_doc)
+    fresh = cost_freshness(markout, surface, now)
 
     per_sleeve: list[dict[str, Any]] = []
     per_symbol: dict[str, dict[str, Any]] = {}
@@ -272,14 +338,13 @@ def build(now: datetime | None = None, shadow_dir: Path = SHADOW_DIR, sleeves_pa
     starts: list[datetime] = []
     for s in book:
         name, sym = str(s["name"]), str(s.get("symbol") or "").upper()
-        row: dict[str, Any] = {"sleeve": name, "symbol": sym,
-                               "risk_frac": _num(s.get("risk_frac"))}
+        row: dict[str, Any] = {"sleeve": name, "symbol": sym, "risk_frac": _num(s.get("risk_frac"))}
         per_sleeve.append(row)
         if sym not in per_symbol:
-            per_symbol[sym] = symbol_cost(sym, markout, surface)
+            per_symbol[sym] = (symbol_cost(sym, markout, surface) if fresh["status"] == MEASURED
+                               else {"status": UNMEASURED, "why": f"stale cost: {fresh['why']}"})
         cost = per_symbol[sym]
-        lname = ledger_name(name)
-        fs = forward_start(s, states)
+        lname, fs = ledger_name(name), forward_start(s, states)
         why = None
         if counts.get(lname, 0) > 1:
             why = f"{lname} is SHARED by {counts[lname]} keys; its rows are not this sleeve's"
@@ -289,49 +354,69 @@ def build(now: datetime | None = None, shadow_dir: Path = SHADOW_DIR, sleeves_pa
             why = f"{lname} is absent on this host"
         elif cost["status"] != MEASURED:
             why = f"{sym} cost UNMEASURED: {cost['why']}"
+        elif _pos(row["risk_frac"]) is None:
+            why = "no finite positive allocator fraction to hold as target"
         if why is not None:
             row.update(status=UNMEASURED, why=why)
             continue
         assert fs is not None
-        tr = forward_trades(_read(shadow_dir / lname), fs)
-        w = row["risk_frac"]
-        if not w or w <= 0:
-            row.update(status=UNMEASURED, why="no positive allocator fraction to hold as target")
-            continue
-        row.update(status=MEASURED, forward_start=fs.isoformat(), n_forward=len(tr))
-        trades[name], target[name], costs[name] = tr, float(w), float(cost["cost_r"])
+        tr, no_exit = forward_trades(_read(shadow_dir / lname), fs)
+        row.update(forward_start=fs.isoformat(), n_forward=len(tr), n_no_exit_time=no_exit)
+        trades[name], target[name], costs[name] = tr, float(row["risk_frac"]), cost["cost_r"]
         starts.append(fs)
 
     doc: dict[str, Any] = {
         "source": "rebalance_interval", "generated_at": now.isoformat(timespec="seconds"),
         "report_only": True,
-        "sizing_effect": "none -- no allocator, gateway or promoter reads this file",
-        "risk_unit": RISK_UNIT, "candidates": [c[0] for c in CANDIDATES],
-        "n_live_sleeves": len(book), "n_measured_sleeves": len(trades),
+        "sizing_effect": "none -- no allocator, decision_core, gateway or promoter reads this",
+        "assumptions": {"risk_unit": RISK_UNIT,
+                        "risk_unit_is": "ASSUMPTION: wealth at risk per 1R at full target weight; "
+                                        "a rebalance moving |dw| pays |dw|*risk_unit*cost_R",
+                        "booking": "each trade's R at its exit time"},
+        "rules": {"min_day_coverage": MIN_DAY_COVERAGE, "max_cost_age_h": MAX_COST_AGE_H,
+                  "min_hours": MIN_HOURS, "win_prob": WIN_PROB, "n_boot": N_BOOT,
+                  "block_h": BLOCK_H},
+        "candidates_considered": [HOLD] + [c[0] for c in CANDIDATES],
+        "cost_freshness": fresh, "n_live_sleeves": len(book),
         "sleeves": per_sleeve, "symbols": per_symbol,
-        "cost_sources": {"markout": str(markout_path.relative_to(ROOT))
-                         if markout_path.is_relative_to(ROOT) else str(markout_path),
-                         "spread_surface": str(surface_path.relative_to(ROOT))
-                         if surface_path.is_relative_to(ROOT) else str(surface_path)},
+        "cost_sources": {"markout": _rel(markout_path), "spread_surface": _rel(surface_path)},
     }
-    if len(trades) < 2:
-        doc.update(status=UNMEASURED, chosen=None,
-                   why=(f"{len(trades)} of {len(book)} live sleeve(s) measured; volatility "
-                        f"pumping needs at least two sleeves with forward rows and a measured "
-                        f"cost"))
+    if starts:
+        start = max(starts)
+        days = max(1, math.ceil((now - start).total_seconds() / 86400))
+        for row in per_sleeve:
+            if row["sleeve"] not in trades:
+                continue
+            tr = [t for t in trades[row["sleeve"]] if t[0] >= start]
+            cov = len({(t[0] - start).days for t in tr}) / days
+            row["day_coverage"] = round(cov, 4)
+            if cov < MIN_DAY_COVERAGE:
+                row.update(status=UNMEASURED,
+                           why=f"ledger silent: rows on {cov:.0%} of {days} days "
+                               f"(< {MIN_DAY_COVERAGE:.0%})")
+                for d in (trades, target, costs):
+                    d.pop(row["sleeve"])
+            else:
+                row["status"] = MEASURED
+                trades[row["sleeve"]] = tr
+        doc["common_forward_start"] = start.isoformat()
+    n_meas = len(trades)
+    doc["n_measured_sleeves"] = n_meas
+    counts_txt = f"{n_meas} of {len(book)} live sleeve(s) measured"
+    if n_meas < 2:
+        doc.update(status=UNMEASURED, chosen=None, verdict=None,
+                   why=f"{counts_txt}; volatility pumping needs at least two")
         return doc
-    # Common forward window: every sleeve must be forward over the whole simulated span.
-    start = max(starts)
-    trades = {k: [t for t in v if t[0] >= start] for k, v in trades.items()}
+    start = max(_ts(r["forward_start"]) or now for r in per_sleeve if r["sleeve"] in trades)
     if (now - start) < timedelta(hours=MIN_HOURS):
-        doc.update(status=UNMEASURED, chosen=None, common_forward_start=start.isoformat(),
+        doc.update(status=UNMEASURED, chosen=None, verdict=None,
                    why=f"the common forward window is under {MIN_HOURS // 24} days")
         return doc
     res = evaluate(trades, target, costs, start, now)
-    doc.update(status=MEASURED, common_forward_start=start.isoformat(), **res,
-               why=(f"{res['chosen']} has the highest net E[log W] gain over buy-and-hold "
-                    f"({res['chosen_net_gain_elogw_per_day']:+.3e}/day across "
-                    f"{len(trades)} sleeves)"))
+    status = MEASURED if n_meas == len(book) else PARTIAL
+    why = res.pop("why")
+    doc.update(status=status, **res,
+               why=(why if status == MEASURED else f"PARTIAL ({counts_txt}): {why}"))
     return doc
 
 
@@ -341,7 +426,7 @@ def main(argv: list[str] | None = None) -> int:
     tmp = OUT.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
     tmp.replace(OUT)
-    print(f"rebalance_interval: {doc['status']} chosen={doc.get('chosen')} "
+    print(f"rebalance_interval: {doc['status']} verdict={doc.get('verdict')} "
           f"({doc['n_measured_sleeves']}/{doc['n_live_sleeves']} sleeves) -> {OUT.name}")
     return 0
 
