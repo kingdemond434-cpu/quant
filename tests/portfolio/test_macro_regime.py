@@ -213,7 +213,7 @@ def test_fit_loadings_recovers_the_leg_and_restricts_to_own_factors() -> None:
     rng = np.random.default_rng(9)
     r = 200.0 * (frame["EUR"].to_numpy() - frame["CHF"].to_numpy()) + rng.normal(0, 0.3, 500)
     fl = leg_factors.fit_loadings(r, frame.index, fs, "EURCHF")
-    assert fl.n == 500 and set(fl.used) == {"EUR", "CHF", "d_vix", "d_r10"}
+    assert fl.n == 500 and set(fl.used) == {"EUR", "CHF", "d_r10"}
     assert fl.betas["EUR"] > 0 and fl.betas["CHF"] < 0
     assert "USD" not in fl.betas
     assert fl.explained > 0.7
