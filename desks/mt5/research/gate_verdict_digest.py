@@ -31,6 +31,7 @@ Bounded by construction (top-K everywhere, messages truncated), regenerated ever
 in `$relPaths`. An absent input is UNMEASURED in the digest, never an empty count (L1.28a).
 It reads; it judges nothing and moves no gate.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -78,20 +79,36 @@ def terminal_of(r: dict[str, Any]) -> tuple[str, str, str]:
     if passed is None and status.startswith("NOT_RUN"):
         return "NOT_RUN", status, str(r.get("why") or status)[:REASON_CHARS]
     if r.get("unmeasured") or r.get("unknown_reason"):
-        return ("UNMEASURED", "observations",
-                str(r.get("unknown_reason") or "observations_under_60_days")[:REASON_CHARS])
+        return (
+            "UNMEASURED",
+            "observations",
+            str(r.get("unknown_reason") or "observations_under_60_days")[:REASON_CHARS],
+        )
     if gate and gate.upper() not in ("UNKNOWN", "PASSED", "NONE"):
-        return "RULED", gate, (_reason((r.get("stages") or {}).get(gate)
-                                       if isinstance(r.get("stages"), dict) else None)
-                               or gate)
+        return (
+            "RULED",
+            gate,
+            (
+                _reason(
+                    (r.get("stages") or {}).get(gate) if isinstance(r.get("stages"), dict) else None
+                )
+                or gate
+            ),
+        )
     raw = r.get("stages")
     stages: dict[str, Any] = raw if isinstance(raw, dict) else {}
     failed = [k for k, s in stages.items() if isinstance(s, dict) and s.get("passed") is False]
     if passed is False and failed:
         return "RULED", str(failed[0]), _reason(stages[failed[0]]) or str(failed[0])
-    return "DEFECT", TERMINAL_DEFECT, (f"{TERMINAL_DEFECT}: passed={passed!r}, "
-                                       f"terminal_gate={gate or None!r}, "
-                                       f"downstream_status={status or None!r}")
+    return (
+        "DEFECT",
+        TERMINAL_DEFECT,
+        (
+            f"{TERMINAL_DEFECT}: passed={passed!r}, "
+            f"terminal_gate={gate or None!r}, "
+            f"downstream_status={status or None!r}"
+        ),
+    )
 
 
 class _Terminal:
@@ -122,9 +139,19 @@ class _Terminal:
             self.defects += 1
             self.defects_stamped += stamped
             if len(self.defect_sample) < DEFECT_SAMPLE:
-                self.defect_sample.append({k: r.get(k) for k in ("at", "cell", "family",
-                                                                  "terminal_gate", "passed",
-                                                                  "downstream_status")})
+                self.defect_sample.append(
+                    {
+                        k: r.get(k)
+                        for k in (
+                            "at",
+                            "cell",
+                            "family",
+                            "terminal_gate",
+                            "passed",
+                            "downstream_status",
+                        )
+                    }
+                )
 
     def doc(self) -> dict[str, Any]:
         return {
@@ -133,11 +160,13 @@ class _Terminal:
             "rejections_by_terminal_gate_id": dict(self.ruled.most_common()),
             "unmeasured_by_reason": dict(self.unmeasured.most_common()),
             "not_run_by_status": dict(self.not_run.most_common()),
-            "terminal_defects": {"n": self.defects,
-                                 "stamped_by_the_judge": self.defects_stamped,
-                                 "derived_from_unstamped_rows": self.defects - self.defects_stamped,
-                                 "sample": self.defect_sample,
-                                 "rule": "a row no rule can name; a DEFECT, never UNKNOWN"},
+            "terminal_defects": {
+                "n": self.defects,
+                "stamped_by_the_judge": self.defects_stamped,
+                "derived_from_unstamped_rows": self.defects - self.defects_stamped,
+                "sample": self.defect_sample,
+                "rule": "a row no rule can name; a DEFECT, never UNKNOWN",
+            },
         }
 
 
@@ -145,13 +174,21 @@ def _source(path: Path) -> dict[str, Any]:
     try:
         st = path.stat()
     except OSError:
-        return {"path": path.relative_to(BASE.parent.parent).as_posix()
-                if path.is_relative_to(BASE.parent.parent) else str(path),
-                "status": "UNMEASURED", "why": "absent on this host"}
-    return {"path": path.relative_to(BASE.parent.parent).as_posix()
-            if path.is_relative_to(BASE.parent.parent) else str(path),
-            "status": "READ", "bytes": st.st_size,
-            "modified_at": datetime.fromtimestamp(st.st_mtime, UTC).isoformat(timespec="seconds")}
+        return {
+            "path": path.relative_to(BASE.parent.parent).as_posix()
+            if path.is_relative_to(BASE.parent.parent)
+            else str(path),
+            "status": "UNMEASURED",
+            "why": "absent on this host",
+        }
+    return {
+        "path": path.relative_to(BASE.parent.parent).as_posix()
+        if path.is_relative_to(BASE.parent.parent)
+        else str(path),
+        "status": "READ",
+        "bytes": st.st_size,
+        "modified_at": datetime.fromtimestamp(st.st_mtime, UTC).isoformat(timespec="seconds"),
+    }
 
 
 def digest_ledger(path: Path = LEDGER, latest_n: int = LATEST_N) -> dict[str, Any]:
@@ -184,10 +221,22 @@ def digest_ledger(path: Path = LEDGER, latest_n: int = LATEST_N) -> dict[str, An
                 if at:
                     first_at = first_at or at
                     last_at = at
-                latest.append({k: r.get(k) for k in ("at", "cell", "family", "sym",
-                                                      "terminal_gate", "passed",
-                                                      "downstream_status", "terminal_kind",
-                                                      "terminal_gate_id")})
+                latest.append(
+                    {
+                        k: r.get(k)
+                        for k in (
+                            "at",
+                            "cell",
+                            "family",
+                            "sym",
+                            "terminal_gate",
+                            "passed",
+                            "downstream_status",
+                            "terminal_kind",
+                            "terminal_gate_id",
+                        )
+                    }
+                )
                 term.add(r)
                 if r.get("passed"):
                     passed += 1
@@ -201,10 +250,16 @@ def digest_ledger(path: Path = LEDGER, latest_n: int = LATEST_N) -> dict[str, An
     fams = sorted(per_family.items(), key=lambda kv: -sum(kv[1].values()))
     return {
         "source": src,
-        "rows": rows, "malformed_rows": bad, "passed_rows": passed,
-        "rejected_rows": rows - passed, "first_at": first_at, "last_at": last_at,
-        "note": ("the ledger appends a row only when a cell's verdict CHANGES, so these count "
-                 "changes of mind, not judgements"),
+        "rows": rows,
+        "malformed_rows": bad,
+        "passed_rows": passed,
+        "rejected_rows": rows - passed,
+        "first_at": first_at,
+        "last_at": last_at,
+        "note": (
+            "the ledger appends a row only when a cell's verdict CHANGES, so these count "
+            "changes of mind, not judgements"
+        ),
         "rejections_by_terminal_gate": dict(per_gate.most_common()),
         "rejections_by_family": {f: dict(c.most_common()) for f, c in fams[:TOP_FAMILIES]},
         "families_omitted": max(0, len(fams) - TOP_FAMILIES),
@@ -236,8 +291,11 @@ def digest_sweep(path: Path = SWEEP) -> dict[str, Any]:
         doc = json.loads(path.read_text("utf-8", errors="replace"))
     except (OSError, ValueError) as exc:
         return {"source": {**src, "status": "UNREADABLE", "why": str(exc)[:160]}}
-    verdicts = [v for v in (doc.get("verdicts") or []) if isinstance(v, dict)] \
-        if isinstance(doc, dict) else []
+    verdicts = (
+        [v for v in (doc.get("verdicts") or []) if isinstance(v, dict)]
+        if isinstance(doc, dict)
+        else []
+    )
     terminal: Counter[str] = Counter()
     any_fail: Counter[str] = Counter()
     fam_terminal: dict[str, Counter[str]] = defaultdict(Counter)
@@ -253,8 +311,9 @@ def digest_sweep(path: Path = SWEEP) -> dict[str, Any]:
         terminal[gate] += 1
         fam_terminal[str(v.get("family") or "UNKNOWN")][gate] += 1
         stages = v.get("stages") if isinstance(v.get("stages"), dict) else {}
-        failed = v.get("failed_gates") or [k for k, s in stages.items()
-                                            if isinstance(s, dict) and not s.get("passed")]
+        failed = v.get("failed_gates") or [
+            k for k, s in stages.items() if isinstance(s, dict) and not s.get("passed")
+        ]
         for g in failed:
             any_fail[str(g)] += 1
             why = _reason(stages.get(g))
@@ -266,7 +325,10 @@ def digest_sweep(path: Path = SWEEP) -> dict[str, Any]:
     if isinstance(doc, dict):
         stamp = doc.get("swept_at") or doc.get("generated_at") or doc.get("timestamp")
     return {
-        "source": src, "swept_at": stamp, "verdicts": len(verdicts), "passed": n_pass,
+        "source": src,
+        "swept_at": stamp,
+        "verdicts": len(verdicts),
+        "passed": n_pass,
         "rejected": len(verdicts) - n_pass,
         "terminal_gates": dict(terminal.most_common()),
         "any_fail_by_gate": dict(any_fail.most_common()),
@@ -282,8 +344,10 @@ def _in_flight(root: Path | None) -> dict[str, Any]:
     """The sweep under way: what its finished shards already published (`shard_verdicts`)."""
     try:
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
-            "_gvd_shard_verdicts", Path(__file__).with_name("shard_verdicts.py"))
+            "_gvd_shard_verdicts", Path(__file__).with_name("shard_verdicts.py")
+        )
         if spec is None or spec.loader is None:
             return {"status": "UNREADABLE", "why": "shard_verdicts.py is not loadable"}
         sv = importlib.util.module_from_spec(spec)
@@ -294,17 +358,25 @@ def _in_flight(root: Path | None) -> dict[str, Any]:
         return {"status": "UNREADABLE", "why": f"{type(exc).__name__}: {exc}"[:160]}
 
 
-def build(ledger: Path = LEDGER, sweep: Path = SWEEP, *, latest_n: int = LATEST_N,
-          now: datetime | None = None, shard_root: Path | None = None) -> dict[str, Any]:
+def build(
+    ledger: Path = LEDGER,
+    sweep: Path = SWEEP,
+    *,
+    latest_n: int = LATEST_N,
+    now: datetime | None = None,
+    shard_root: Path | None = None,
+) -> dict[str, Any]:
     led = digest_ledger(ledger, latest_n)
     swp = digest_sweep(sweep)
-    measured = [k for k, d in (("ledger", led), ("latest_sweep", swp))
-                if (d.get("source") or {}).get("status") == "READ"]
+    measured = [
+        k
+        for k, d in (("ledger", led), ("latest_sweep", swp))
+        if (d.get("source") or {}).get("status") == "READ"
+    ]
     return {
         "schema": "gate_verdict_digest/1",
         "generated_at": (now or datetime.now(UTC)).isoformat(timespec="seconds"),
-        "status": "MEASURED" if len(measured) == 2 else ("PARTIAL" if measured
-                                                         else "UNMEASURED"),
+        "status": "MEASURED" if len(measured) == 2 else ("PARTIAL" if measured else "UNMEASURED"),
         "producer": "desks/mt5/research/gate_verdict_digest.py (hourly, publish_state leg)",
         "ledger": led,
         "latest_sweep": swp,
@@ -331,11 +403,17 @@ def _defects_headline(led: dict[str, Any], swp: dict[str, Any]) -> dict[str, Any
             out["ledger_legacy"] = td.get("derived_from_unstamped_rows")
     v = swp.get("verdicts")
     out["latest_sweep_stamped"] = (
-        "UNMEASURED" if not isinstance(v, int) else
-        bool(v) and swp.get("rows_carrying_the_stamp") == v)
-    out["status"] = ("UNMEASURED" if "UNMEASURED" in (out["ledger"], out["latest_sweep"])
-                     else "DEFECT" if (out.get("ledger_stamped") or out["latest_sweep"])
-                     else "CLEAN")
+        "UNMEASURED"
+        if not isinstance(v, int)
+        else bool(v) and swp.get("rows_carrying_the_stamp") == v
+    )
+    out["status"] = (
+        "UNMEASURED"
+        if "UNMEASURED" in (out["ledger"], out["latest_sweep"])
+        else "DEFECT"
+        if (out.get("ledger_stamped") or out["latest_sweep"])
+        else "CLEAN"
+    )
     return out
 
 
@@ -345,6 +423,7 @@ def write(doc: dict[str, Any], out: Path = OUT) -> Path:
     tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     try:
         from libs.ops.win_write import replace_resilient
+
         replace_resilient(tmp, out)
     except ImportError:
         tmp.replace(out)
@@ -359,12 +438,15 @@ def main(argv: list[str] | None = None) -> int:
     doc = build(latest_n=args.latest)
     path = write(doc, args.out)
     led, swp = doc["ledger"], doc["latest_sweep"]
-    print(f"gate verdict digest: {doc['status']} -> {path.name}; ledger rows "
-          f"{led.get('rows', 'UNMEASURED')}, sweep verdicts {swp.get('verdicts', 'UNMEASURED')}")
+    print(
+        f"gate verdict digest: {doc['status']} -> {path.name}; ledger rows "
+        f"{led.get('rows', 'UNMEASURED')}, sweep verdicts {swp.get('verdicts', 'UNMEASURED')}"
+    )
     return 0
 
 
 if __name__ == "__main__":
     import sys
+
     sys.path.insert(0, str(BASE.parent.parent))
     raise SystemExit(main())

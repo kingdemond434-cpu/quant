@@ -9,6 +9,7 @@ only when the gates RULED. `patches/judge_funnel_shards/A_terminal_stamp.patch` 
 on every row, beside a `terminal_gate` whose meaning (UNKNOWN = unmeasured, never a rejection)
 does not change. These tests SKIP until that sealed patch is applied.
 """
+
 from __future__ import annotations
 
 import json
@@ -26,37 +27,76 @@ for p in (DESK, DESK / "research", DESK / "scripts", DESK.parent.parent):
 @pytest.fixture(scope="module")
 def eg():
     import external_gauntlet
+
     if not hasattr(external_gauntlet, "terminal_stamp"):
         pytest.skip("A_terminal_stamp.patch is not applied to the sealed judge")
     return external_gauntlet
 
 
 ROWS = {
-    "passed": ({"cell": "p", "passed": True, "terminal_gate": "PASSED", "stages": {}},
-               ("PASSED", "PASSED")),
-    "deferred": ({"cell": "d", "passed": None, "stages": {},
-                  "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED", "why": "budget out"},
-                 ("NOT_RUN", "NOT_RUN_BUILD_BUDGET_DEFERRED")),
-    "unmeasured": ({"cell": "u", "passed": False, "unmeasured": True,
-                    "unknown_reason": "lockbox_consumed_history",
-                    "failed_gates": ["observations"],
-                    "stages": {"observations": {"passed": False, "days": 12}}},
-                   ("UNMEASURED", "observations")),
-    "unmeasured_unnamed": ({"cell": "u2", "passed": False, "unmeasured": True, "stages": {}},
-                           ("UNMEASURED", "observations")),
-    "gate0": ({"cell": "g", "passed": False, "terminal_gate": "symbol_eligibility",
-               "downstream_status": "NOT_RUN_UNTRADEABLE_SYMBOL",
-               "stages": {"symbol_eligibility": {"passed": False, "message": "no parquet"}}},
-              ("RULED", "symbol_eligibility")),
-    "ruled": ({"cell": "r", "passed": False, "terminal_gate": "deflated_sharpe",
-               "stages": {"economic_prior": {"passed": True},
-                          "deflated_sharpe": {"passed": False, "dsr": 0.41, "sr0": 0.2},
-                          "cpcv": {"passed": False}}},
-              ("RULED", "deflated_sharpe")),
-    "failed_stage_no_gate": ({"cell": "f", "passed": False,
-                              "stages": {"cpcv": {"passed": True},
-                                         "walk_forward": {"passed": False, "why": "unstable"}}},
-                             ("RULED", "walk_forward")),
+    "passed": (
+        {"cell": "p", "passed": True, "terminal_gate": "PASSED", "stages": {}},
+        ("PASSED", "PASSED"),
+    ),
+    "deferred": (
+        {
+            "cell": "d",
+            "passed": None,
+            "stages": {},
+            "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED",
+            "why": "budget out",
+        },
+        ("NOT_RUN", "NOT_RUN_BUILD_BUDGET_DEFERRED"),
+    ),
+    "unmeasured": (
+        {
+            "cell": "u",
+            "passed": False,
+            "unmeasured": True,
+            "unknown_reason": "lockbox_consumed_history",
+            "failed_gates": ["observations"],
+            "stages": {"observations": {"passed": False, "days": 12}},
+        },
+        ("UNMEASURED", "observations"),
+    ),
+    "unmeasured_unnamed": (
+        {"cell": "u2", "passed": False, "unmeasured": True, "stages": {}},
+        ("UNMEASURED", "observations"),
+    ),
+    "gate0": (
+        {
+            "cell": "g",
+            "passed": False,
+            "terminal_gate": "symbol_eligibility",
+            "downstream_status": "NOT_RUN_UNTRADEABLE_SYMBOL",
+            "stages": {"symbol_eligibility": {"passed": False, "message": "no parquet"}},
+        },
+        ("RULED", "symbol_eligibility"),
+    ),
+    "ruled": (
+        {
+            "cell": "r",
+            "passed": False,
+            "terminal_gate": "deflated_sharpe",
+            "stages": {
+                "economic_prior": {"passed": True},
+                "deflated_sharpe": {"passed": False, "dsr": 0.41, "sr0": 0.2},
+                "cpcv": {"passed": False},
+            },
+        },
+        ("RULED", "deflated_sharpe"),
+    ),
+    "failed_stage_no_gate": (
+        {
+            "cell": "f",
+            "passed": False,
+            "stages": {
+                "cpcv": {"passed": True},
+                "walk_forward": {"passed": False, "why": "unstable"},
+            },
+        },
+        ("RULED", "walk_forward"),
+    ),
     "nothing": ({"cell": "x", "passed": False, "stages": {}}, ("DEFECT", None)),
     "null_without_status": ({"cell": "y", "passed": None, "stages": {}}, ("DEFECT", None)),
 }
@@ -73,11 +113,12 @@ def test_every_shape_is_named_and_never_empty(eg, name: str) -> None:
 
 
 def test_the_reason_is_the_gates_own_words(eg) -> None:
-    assert eg.terminal_stamp(ROWS["unmeasured"][0])["terminal_reason"] == \
-        "lockbox_consumed_history"
+    assert eg.terminal_stamp(ROWS["unmeasured"][0])["terminal_reason"] == "lockbox_consumed_history"
     assert eg.terminal_stamp(ROWS["gate0"][0])["terminal_reason"] == "no parquet"
-    assert eg.terminal_stamp(ROWS["ruled"][0])["terminal_reason"] == \
-        "deflated_sharpe: dsr=0.41, sr0=0.2"
+    assert (
+        eg.terminal_stamp(ROWS["ruled"][0])["terminal_reason"]
+        == "deflated_sharpe: dsr=0.41, sr0=0.2"
+    )
     assert eg.terminal_stamp(ROWS["failed_stage_no_gate"][0])["terminal_reason"] == "unstable"
     assert eg.terminal_stamp(ROWS["deferred"][0])["terminal_reason"] == "budget out"
 

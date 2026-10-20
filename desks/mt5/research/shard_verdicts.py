@@ -21,6 +21,7 @@ and enforces the three rules a reader of a provisional copy must keep:
 
 It reads; it judges nothing, charges no trial and moves no gate.
 """
+
 from __future__ import annotations
 
 import json
@@ -62,8 +63,15 @@ def plans(root: Path = ROOT) -> list[dict[str, Any]]:
         merged = _read(d / "MERGED.json")
         merged_mtime = _mtime(d / "MERGED.json") if merged is not None else None
         newest = max((m for _f, m in stamped), default=dir_mtime)
-        out.append({"token": d.name, "dir": d, "files": [f for f, _m in stamped],
-                    "merged": merged, "mtime": max(newest, merged_mtime or 0.0)})
+        out.append(
+            {
+                "token": d.name,
+                "dir": d,
+                "files": [f for f, _m in stamped],
+                "merged": merged,
+                "mtime": max(newest, merged_mtime or 0.0),
+            }
+        )
     return sorted(out, key=lambda p: p["mtime"], reverse=True)
 
 
@@ -101,11 +109,21 @@ def in_flight(root: Path = ROOT) -> dict[str, Any]:
     last_merged = next((p for p in ps if p["merged"] is not None), None)
     head: dict[str, Any] = {
         "abandoned_plans": abandoned,
-        "last_merged": None if last_merged is None else {
+        "last_merged": None
+        if last_merged is None
+        else {
             "token": last_merged["token"],
-            **{k: last_merged["merged"].get(k) for k in (
-                "merged_at", "published_rows", "final_rows_agree", "final_rows_disagree",
-                "absent_from_merge")}},
+            **{
+                k: last_merged["merged"].get(k)
+                for k in (
+                    "merged_at",
+                    "published_rows",
+                    "final_rows_agree",
+                    "final_rows_disagree",
+                    "absent_from_merge",
+                )
+            },
+        },
     }
     if live is None:
         return {"status": "MERGED", "why": "the newest plan is merged: read the record", **head}
@@ -126,10 +144,18 @@ def in_flight(root: Path = ROOT) -> dict[str, Any]:
             else:
                 final_gates[str(r.get("terminal_gate_id") or "")] += 1
     shards = sorted(f.stem.removeprefix("shard_") for f in live["files"])
-    return {"status": "IN_FLIGHT", "token": live["token"], "shards_published": shards,
-            "rows": sum(by_status.values()), "by_status": dict(by_status),
-            "final_by_terminal_gate_id": dict(final_gates.most_common(TOP)),
-            "final_unmeasured_by_reason": dict(unmeasured.most_common(TOP)),
-            "refused_rows": {"n": len(defects), "sample": defects[:20],
-                             "rule": "a published row may never pass a cell"},
-            **head}
+    return {
+        "status": "IN_FLIGHT",
+        "token": live["token"],
+        "shards_published": shards,
+        "rows": sum(by_status.values()),
+        "by_status": dict(by_status),
+        "final_by_terminal_gate_id": dict(final_gates.most_common(TOP)),
+        "final_unmeasured_by_reason": dict(unmeasured.most_common(TOP)),
+        "refused_rows": {
+            "n": len(defects),
+            "sample": defects[:20],
+            "rule": "a published row may never pass a cell",
+        },
+        **head,
+    }
