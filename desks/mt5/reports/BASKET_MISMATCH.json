@@ -1,0 +1,1472 @@
+{
+ "at": "2026-10-20T15:38:10+00:00",
+ "ruling": "judge 2026-10-20: identity names a factor the certifier never had -> BASKET_MISMATCH, never promotes, clock runs as UNMEASURED_BASKET_MISMATCH; the true basket is re-judged (linked or minted once at the fixed N bar)",
+ "rule": {
+  "families": [
+   "cross_asset_residual",
+   "pca_residual"
+  ],
+  "certified_before": "2026-09-28T06:00:59+00:00",
+  "fix_commit": "ef11ff615",
+  "no_bars_evidence": [
+   "registry intraday_coverage",
+   "registry trade_mode",
+   "registry tradeable",
+   "close_only_symbols.json"
+  ]
+ },
+ "n_hits": 25,
+ "n_linked": 2,
+ "n_minted": 23,
+ "bar_n": 5,
+ "keys": [
+  "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=144",
+  "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=36",
+  "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "NAS100.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAGEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAGUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+  "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAUAUD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAUAUD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=london_side_mode=revert_ttl_bars=72",
+  "XAUAUD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+  "XAUAUD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAUEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAUEUR.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAUEUR.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=asia_side_mode=revert_ttl_bars=72",
+  "XAUEUR.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=london_side_mode=revert_ttl_bars=72",
+  "XAUEUR.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+  "XAUEUR.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XAUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+  "XCUUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XCUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=london_side_mode=revert_ttl_bars=72",
+  "XCUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+  "XCUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+  "XNGUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72"
+ ],
+ "certificates": [
+  "external.BTCUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
+  "external.BTCUSD@M15.cross_asset_residual.p=f131da16051f34c7",
+  "external.BTCUSD@M15.cross_asset_residual.p=fbbf6d4002013e49",
+  "external.NAS100@M15.cross_asset_residual.p=79b3c4425ab84031",
+  "external.NAS100@M30.cross_asset_residual.p=59bd06c708b2dfe4",
+  "external.XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
+  "external.XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
+  "external.XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031",
+  "external.XAUAUD@M15.cross_asset_residual.p=f5f48dafd0c3c0c0",
+  "external.XAUAUD@M30.cross_asset_residual.p=59bd06c708b2dfe4",
+  "external.XAUAUD@M5.cross_asset_residual.p=29786a0ba00587d4",
+  "external.XAUAUD@M5.cross_asset_residual.p=4208366f9c040c61",
+  "external.XAUAUD@M5.cross_asset_residual.p=cec9a82bd34685dc",
+  "external.XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
+  "external.XAUEUR@M30.cross_asset_residual.p=59bd06c708b2dfe4",
+  "external.XAUEUR@M5.cross_asset_residual.p=1d7341dd7c11b9dd",
+  "external.XAUEUR@M5.cross_asset_residual.p=29786a0ba00587d4",
+  "external.XAUEUR@M5.cross_asset_residual.p=4208366f9c040c61",
+  "external.XAUEUR@M5.cross_asset_residual.p=cec9a82bd34685dc",
+  "external.XAUUSD@M5.cross_asset_residual.p=cec9a82bd34685dc",
+  "external.XCUUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
+  "external.XCUUSD@M5.cross_asset_residual.p=29786a0ba00587d4",
+  "external.XCUUSD@M5.cross_asset_residual.p=4208366f9c040c61",
+  "external.XCUUSD@M5.cross_asset_residual.p=cec9a82bd34685dc",
+  "external.XNGUSD@M5.cross_asset_residual.p=cec9a82bd34685dc"
+ ],
+ "hits": [
+  {
+   "certificate": "external.BTCUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "key": "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "BTCUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-24T18:32:23.164103+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "BTCUSD@M15.cross_asset_residual.p=6403309d7977b134",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M15"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.BTCUSD@M15.cross_asset_residual.p=f131da16051f34c7",
+   "key": "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=36",
+   "symbol": "BTCUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-27T10:47:21.494074+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 36,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "BTCUSD@M15.cross_asset_residual.p=f1f04ff5dabb96e6",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 36,
+     "timeframe": "M15"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.BTCUSD@M15.cross_asset_residual.p=fbbf6d4002013e49",
+   "key": "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=144",
+   "symbol": "BTCUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-27T10:47:26.702244+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 144,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "BTCUSD@M15.cross_asset_residual.p=b1937c8afcdab7e8",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 144,
+     "timeframe": "M15"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.NAS100@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-24T18:32:37.580285+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "LINKED",
+    "cell": "NAS100@M15.cross_asset_residual.p=6403309d7977b134",
+    "verdict": {
+     "verdict": "CERTIFIED",
+     "certificate": "external.NAS100@M15.cross_asset_residual.p=6403309d7977b134"
+    },
+    "charged": 0
+   }
+  },
+  {
+   "certificate": "external.NAS100@M30.cross_asset_residual.p=59bd06c708b2dfe4",
+   "key": "NAS100.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "timeframe": "M30",
+   "certified_at": "2026-09-25T00:04:28.659178+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M30 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M30"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "NAS100@M30.cross_asset_residual.p=a79b8c37bb2ff6e4",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M30"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "key": "XAGEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XAGEUR",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-24T18:33:01.887645+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "LINKED",
+    "cell": "XAGEUR@M15.cross_asset_residual.p=6403309d7977b134",
+    "verdict": {
+     "verdict": "CERTIFIED",
+     "certificate": "external.XAGEUR@M15.cross_asset_residual.p=6403309d7977b134"
+    },
+    "charged": 0
+   }
+  },
+  {
+   "certificate": "external.XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "key": "XAGUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XAGUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-24T18:33:03.624171+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAGUSD@M15.cross_asset_residual.p=6403309d7977b134",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M15"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "key": "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-24T18:33:13.077298+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUAUD@M15.cross_asset_residual.p=6403309d7977b134",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M15"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUAUD@M15.cross_asset_residual.p=f5f48dafd0c3c0c0",
+   "key": "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-25T16:48:13.121278+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "ny",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUAUD@M15.cross_asset_residual.p=649f0f76958e9daa",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "ny",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M15"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUAUD@M30.cross_asset_residual.p=59bd06c708b2dfe4",
+   "key": "XAUAUD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "timeframe": "M30",
+   "certified_at": "2026-09-25T00:04:29.513197+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M30 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M30"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUAUD@M30.cross_asset_residual.p=a79b8c37bb2ff6e4",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M30"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUAUD@M5.cross_asset_residual.p=29786a0ba00587d4",
+   "key": "XAUAUD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-25T00:04:34.031782+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUAUD@M5.cross_asset_residual.p=d05f9c02d4f27093",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUAUD@M5.cross_asset_residual.p=4208366f9c040c61",
+   "key": "XAUAUD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=london_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-25T16:48:10.275495+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "london",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUAUD@M5.cross_asset_residual.p=13564f5fb14882e5",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "london",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUAUD@M5.cross_asset_residual.p=cec9a82bd34685dc",
+   "key": "XAUAUD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-26T17:30:27.393990+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "ny",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUAUD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "ny",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "key": "XAUEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-24T18:33:18.570011+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUEUR@M15.cross_asset_residual.p=6403309d7977b134",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M15"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUEUR@M30.cross_asset_residual.p=59bd06c708b2dfe4",
+   "key": "XAUEUR.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "timeframe": "M30",
+   "certified_at": "2026-09-25T00:04:29.658853+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M30 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M30"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUEUR@M30.cross_asset_residual.p=a79b8c37bb2ff6e4",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M30"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUEUR@M5.cross_asset_residual.p=1d7341dd7c11b9dd",
+   "key": "XAUEUR.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=asia_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-25T16:48:14.026076+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "asia",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUEUR@M5.cross_asset_residual.p=77a8cb89acb75677",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "asia",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUEUR@M5.cross_asset_residual.p=29786a0ba00587d4",
+   "key": "XAUEUR.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-25T00:04:34.141661+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUEUR@M5.cross_asset_residual.p=d05f9c02d4f27093",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUEUR@M5.cross_asset_residual.p=4208366f9c040c61",
+   "key": "XAUEUR.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=london_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-25T16:48:10.519735+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "london",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUEUR@M5.cross_asset_residual.p=13564f5fb14882e5",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "london",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUEUR@M5.cross_asset_residual.p=cec9a82bd34685dc",
+   "key": "XAUEUR.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-26T17:30:27.884786+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "ny",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUEUR@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "ny",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XAUUSD@M5.cross_asset_residual.p=cec9a82bd34685dc",
+   "key": "XAUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+   "symbol": "XAUUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-26T17:30:27.988206+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "ny",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XAUUSD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "ny",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XCUUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "key": "XCUUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XCUUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M15",
+   "certified_at": "2026-09-24T18:33:24.234448+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M15 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M15"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XCUUSD@M15.cross_asset_residual.p=6403309d7977b134",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M15"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XCUUSD@M5.cross_asset_residual.p=29786a0ba00587d4",
+   "key": "XCUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "XCUUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-25T00:04:34.168618+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XCUUSD@M5.cross_asset_residual.p=d05f9c02d4f27093",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XCUUSD@M5.cross_asset_residual.p=4208366f9c040c61",
+   "key": "XCUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=london_side_mode=revert_ttl_bars=72",
+   "symbol": "XCUUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-25T16:48:10.645445+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "london",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XCUUSD@M5.cross_asset_residual.p=13564f5fb14882e5",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "london",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XCUUSD@M5.cross_asset_residual.p=cec9a82bd34685dc",
+   "key": "XCUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+   "symbol": "XCUUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-26T17:30:28.592856+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "ny",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XCUUSD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "ny",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  },
+  {
+   "certificate": "external.XNGUSD@M5.cross_asset_residual.p=cec9a82bd34685dc",
+   "key": "XNGUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+   "symbol": "XNGUSD",
+   "family": "cross_asset_residual",
+   "timeframe": "M5",
+   "certified_at": "2026-09-26T17:30:28.801132+00:00",
+   "named_basket": [
+    "USDX",
+    "UST10Y"
+   ],
+   "missing_factors": [
+    {
+     "factor": "UST10Y",
+     "evidence": "close-only at Fusion (close_only_symbols.json): fetch_universe._fetch_intraday wrote no M5 parquet (NOT_TRADEABLE) and refresh_tail never creates one"
+    }
+   ],
+   "true_basket": [
+    "USDX"
+   ],
+   "status": "BASKET_MISMATCH",
+   "clock_status": "UNMEASURED_BASKET_MISMATCH",
+   "may_promote": false,
+   "params": {
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "session": "ny",
+    "side_mode": "revert",
+    "ttl_bars": 72,
+    "timeframe": "M5"
+   },
+   "rejudge": {
+    "status": "MINTED",
+    "cell": "XNGUSD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+    "params": {
+     "beta_win": 240,
+     "entry_z": 2.0,
+     "factor_symbols": [
+      "USDX"
+     ],
+     "lookback": 240,
+     "session": "ny",
+     "side_mode": "revert",
+     "ttl_bars": 72,
+     "timeframe": "M5"
+    },
+    "charged_trials": 1,
+    "bar_n": 5
+   }
+  }
+ ],
+ "notes": [
+  "external.AUDSGD@M30.cross_asset_residual.p=b4d69dbb6bb197cc: key round-trip gave external.AUDSGD@M30.cross_asset_residual.p=022f835fb3910f54; re-judge refused rather than guessed",
+  "external.AUDSGD@M30.cross_asset_residual.p=98a23cd44362723a: key round-trip gave external.AUDSGD@M30.cross_asset_residual.p=748fb6cf239b5773; re-judge refused rather than guessed",
+  "external.AUDSGD@M30.cross_asset_residual.p=ff435325db5915c7: key round-trip gave external.AUDSGD@M30.cross_asset_residual.p=1c766e3e33e473b0; re-judge refused rather than guessed",
+  "external.AUDSGD@M30.cross_asset_residual.p=dc52f14e9ead769e: key round-trip gave external.AUDSGD@M30.cross_asset_residual.p=2db0dcd7ffb825a1; re-judge refused rather than guessed",
+  "external.AUDSGD@M30.cross_asset_residual.p=bf7cdbd920e6991b: key round-trip gave external.AUDSGD@M30.cross_asset_residual.p=399c52d2578b96a1; re-judge refused rather than guessed",
+  "external.AUDCAD@M30.cross_asset_residual.p=f46cdd1059f02b6a: key round-trip gave external.AUDCAD@M30.cross_asset_residual.p=7d05965d1fbc85fa; re-judge refused rather than guessed",
+  "external.AUDSGD@M30.cross_asset_residual.p=e6d2c030bad87503: key round-trip gave external.AUDSGD@M30.cross_asset_residual.p=4e4deca003a712d8; re-judge refused rather than guessed",
+  "external.AUDCAD@M15.cross_asset_residual.p=d06b8e94b2a75d3a: key round-trip gave external.AUDCAD@M15.cross_asset_residual.p=1066eb82cf28ec27; re-judge refused rather than guessed",
+  "external.AUDSGD@M5.cross_asset_residual.p=5c5cddca506b0c86: key round-trip gave external.AUDSGD@M5.cross_asset_residual.p=36a39877bf5e5622; re-judge refused rather than guessed",
+  "external.AUDSGD@M5.cross_asset_residual.p=5372afc3c6234f7d: key round-trip gave external.AUDSGD@M5.cross_asset_residual.p=200fed06b16ff852; re-judge refused rather than guessed",
+  "external.AUDSGD@M5.cross_asset_residual.p=d3e06bdd25f2b470: key round-trip gave external.AUDSGD@M5.cross_asset_residual.p=05e44584865e82f9; re-judge refused rather than guessed",
+  "external.AUDSGD@M5.cross_asset_residual.p=02b8d0246ed390fe: key round-trip gave external.AUDSGD@M5.cross_asset_residual.p=61ce4dd7304929c5; re-judge refused rather than guessed",
+  "external.CHFDKK@M30.cross_asset_residual.p=f166d10e252f8592: key round-trip gave external.CHFDKK@M30.cross_asset_residual.p=df79ac76c7b28530; re-judge refused rather than guessed",
+  "external.CHFSGD@M30.cross_asset_residual.p=6bd670662b2d38ea: key round-trip gave external.CHFSGD@M30.cross_asset_residual.p=e7ac2ef5fabaeeb0; re-judge refused rather than guessed",
+  "external.XAUEUR@M5.cross_asset_residual.p=84debe31cb894d28: key round-trip gave external.XAUEUR@M5.cross_asset_residual.p=bf32ece9fcdf8c1e; re-judge refused rather than guessed",
+  "external.CHFDKK.cross_asset_residual.p=d20df676bed7ac26: key round-trip gave external.CHFDKK.cross_asset_residual.p=d63ef8bc9be80e35; re-judge refused rather than guessed",
+  "external.CHFDKK.cross_asset_residual.p=60503c86dea06871: key round-trip gave external.CHFDKK.cross_asset_residual.p=9c464affc58afc5c; re-judge refused rather than guessed",
+  "external.CHFDKK.cross_asset_residual.p=9c23ea49b9aafab7: key round-trip gave external.CHFDKK.cross_asset_residual.p=d891cf7b51f5005d; re-judge refused rather than guessed",
+  "external.CHFDKK.cross_asset_residual.p=f2d93fbd09400c3b: key round-trip gave external.CHFDKK.cross_asset_residual.p=6c46e327e3903d0f; re-judge refused rather than guessed",
+  "external.CHFDKK.cross_asset_residual.p=52f25ebee9f146dc: key round-trip gave external.CHFDKK.cross_asset_residual.p=44394adb98c2d3ec; re-judge refused rather than guessed",
+  "external.CHFDKK.cross_asset_residual.p=75f68ee549941036: key round-trip gave external.CHFDKK.cross_asset_residual.p=b05d06115ccccf37; re-judge refused rather than guessed",
+  "external.USDSGD@M15.cross_asset_residual.p=8db27d2e3371328b: key round-trip gave external.USDSGD@M15.cross_asset_residual.p=7326f1eb1e2da354; re-judge refused rather than guessed"
+ ],
+ "pit_remint": {
+  "status": "PENDING_SERIES:fred_ust",
+  "why": "PENDING_SERIES:fred_ust: no fred_ust series under series/",
+  "minted": 0,
+  "candidates": 25,
+  "follow_up": "when fred_ust lands (futures_state), this leg mints 25 new cell(s) with the rates leg on it"
+ },
+ "minted_cells": [
+  "BTCUSD@M15.cross_asset_residual.p=6403309d7977b134",
+  "BTCUSD@M15.cross_asset_residual.p=b1937c8afcdab7e8",
+  "BTCUSD@M15.cross_asset_residual.p=f1f04ff5dabb96e6",
+  "NAS100@M30.cross_asset_residual.p=a79b8c37bb2ff6e4",
+  "XAGUSD@M15.cross_asset_residual.p=6403309d7977b134",
+  "XAUAUD@M15.cross_asset_residual.p=6403309d7977b134",
+  "XAUAUD@M15.cross_asset_residual.p=649f0f76958e9daa",
+  "XAUAUD@M30.cross_asset_residual.p=a79b8c37bb2ff6e4",
+  "XAUAUD@M5.cross_asset_residual.p=13564f5fb14882e5",
+  "XAUAUD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+  "XAUAUD@M5.cross_asset_residual.p=d05f9c02d4f27093",
+  "XAUEUR@M15.cross_asset_residual.p=6403309d7977b134",
+  "XAUEUR@M30.cross_asset_residual.p=a79b8c37bb2ff6e4",
+  "XAUEUR@M5.cross_asset_residual.p=13564f5fb14882e5",
+  "XAUEUR@M5.cross_asset_residual.p=77a8cb89acb75677",
+  "XAUEUR@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+  "XAUEUR@M5.cross_asset_residual.p=d05f9c02d4f27093",
+  "XAUUSD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+  "XCUUSD@M15.cross_asset_residual.p=6403309d7977b134",
+  "XCUUSD@M5.cross_asset_residual.p=13564f5fb14882e5",
+  "XCUUSD@M5.cross_asset_residual.p=aa8934bebbf9ed69",
+  "XCUUSD@M5.cross_asset_residual.p=d05f9c02d4f27093",
+  "XNGUSD@M5.cross_asset_residual.p=aa8934bebbf9ed69"
+ ],
+ "emitted_this_run": 23,
+ "sleeves_live_or_standby": [
+  {
+   "name": "xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc",
+   "status": "STANDBY",
+   "certificate": "external.XAUUSD@M5.cross_asset_residual.p=cec9a82bd34685dc"
+  }
+ ],
+ "sleeves_retired": false
+}

@@ -346,6 +346,11 @@ SOURCES = (
     # whether a recovered mechanism has ever earned a certificate -- a question that could not
     # previously be ASKED, because no certificate could descend from a row that never arrived.
     ("deepened_candidates.json", "candidates"),
+    # THE JUDGE'S BASKET_MISMATCH RE-JUDGE (2026-10-20, research/basket_mismatch.py): a
+    # certificate whose identity names a factor the certifier never had is re-judged under its
+    # TRUE basket. Rows here are emitted once per cell (basket_rejudge_minted.json), so the
+    # docket charges each true-identity cell once at the fixed N bar.
+    ("basket_rejudge.json", "hypotheses"),
 )
 
 

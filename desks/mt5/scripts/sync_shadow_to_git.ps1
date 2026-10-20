@@ -683,6 +683,7 @@ $reportPaths = @(
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
+    "desks/mt5/reports/BASKET_MISMATCH.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it

@@ -60,6 +60,27 @@ PROXY_KEY = "factor_proxy"
 NEEDS_PROXY_FACTOR = "NEEDS_PROXY_FACTOR"
 FACTOR_FRAME_STARVED = "FACTOR_FRAME_STARVED"
 
+#: ONE CONDITION, ONE CLASS NAME. The judge's unknown-converter (d695a2f76) calls a factor input
+#: the model cannot be fed `NEEDS_PROXY_FACTOR`. This engine distinguishes a missing/stale leg
+#: (NEEDS_PROXY_FACTOR) from a join starved below the family's floor (FACTOR_FRAME_STARVED), and
+#: the replay diagnosis has its own residual names; all of them are the same class to the judge.
+#: d695a2f76 is not on origin, so the alias lives here; `scripts/check_certificate_clock_law.py`
+#: carries the same table (a test pins the two equal).
+UNKNOWN_CLASS_ALIASES: dict[str, str] = {
+    NEEDS_PROXY_FACTOR: NEEDS_PROXY_FACTOR,
+    FACTOR_FRAME_STARVED: NEEDS_PROXY_FACTOR,
+    "RESIDUAL_FRAME_BELOW_FLOOR": NEEDS_PROXY_FACTOR,
+    "RESIDUAL_NO_FACTORS": NEEDS_PROXY_FACTOR,
+    "UNMEASURED_BASKET_MISMATCH": "BASKET_MISMATCH",
+    "BASKET_MISMATCH": "BASKET_MISMATCH",
+}
+
+
+def unknown_class(cause: object) -> str:
+    """The judge's class name for a cause (`NAME: detail` accepted), else the cause itself."""
+    text = str(cause or "").split(":", 1)[0].strip().upper()
+    return UNKNOWN_CLASS_ALIASES.get(text, text or "UNNAMED")
+
 #: Same trading-hours staleness rule `h1_source.STALE_AFTER_H` applies to a primary feed.
 STALE_AFTER_TRADING_H = 6.0
 #: As-of tolerance: a factor value may stand in for at most this many primary bars, and never
@@ -205,6 +226,66 @@ def tolerance_for(primary: pd.DataFrame) -> pd.Timedelta:
     return pd.Timedelta(minutes=max(ASOF_TOLERANCE_MIN_MINUTES, ASOF_TOLERANCE_BARS * m))
 
 
+# ----------------------------------------------------------------------- point-in-time series
+#
+# A factor named `<series>:<column>` is not a chart: it is a column of a lake series
+# (`data/lake/series/<series>.parquet`) on its OWN point-in-time clock, the `available_time` stamp
+# its producer wrote (`futures_state` stamps a daily FRED close available the next day 23:00
+# UTC). It is joined onto the primary's bars AS OF that stamp -- never by calendar day -- after
+# the same publication-day hold `family_exogenous_conditioner` applies, because the bar index is
+# broker time under a UTC tzinfo and an unlagged UTC stamp would land hours early.
+PIT_SEP = ":"
+#: How long one published value may condition bars before it reads as stale (a long weekend
+#: plus a holiday). Past it the leg is NaN, the basket is short and the clock says so by name.
+PIT_MAX_HOLD = pd.Timedelta(days=5)
+
+
+def is_pit_factor(name: object) -> bool:
+    return PIT_SEP in str(name or "")
+
+
+def pit_series(name: str, root: Any = None) -> pd.Series | None:
+    """The named column on its PIT clock (stamp + publication-day hold), or None."""
+    from mt5desk.family_exogenous_conditioner import (
+        DEFAULT_LAG_HOURS,
+        STAMP_COLUMNS,
+        _load,
+        series_path,
+    )
+    series, _, column = str(name).partition(PIT_SEP)
+    if not series or not column or column in STAMP_COLUMNS:
+        return None
+    path = series_path(series, root)
+    df = _load(path) if path is not None else None
+    if df is None or df.empty or column not in df.columns or "available_time" not in df.columns:
+        return None
+    stamp = pd.to_datetime(df["available_time"], errors="coerce", utc=True)
+    s = pd.Series(pd.to_numeric(df[column], errors="coerce").to_numpy(), index=stamp).dropna()
+    s = s[s.index.notna()].sort_index()
+    s = s[~s.index.duplicated(keep="last")]
+    if s.empty:
+        return None
+    return s.shift(freq=pd.Timedelta(hours=DEFAULT_LAG_HOURS))
+
+
+def pit_aligned(name: str, primary: Any, root: Any = None) -> pd.DataFrame | None:
+    """The PIT column as a bar-shaped frame on the primary's own index (as-of its stamp)."""
+    s = pit_series(name, root)
+    p = _frame(primary)
+    if s is None or p is None:
+        return None
+    idx = pd.DatetimeIndex(p.index)
+    if idx.tz is None:
+        s.index = s.index.tz_convert(None)
+    left = pd.DataFrame({"t": idx}).sort_values("t")
+    right = pd.DataFrame({"t": s.index, "v": s.to_numpy()})
+    joined = pd.merge_asof(left, right, on="t", direction="backward", tolerance=PIT_MAX_HOLD)
+    v = pd.Series(joined["v"].to_numpy(), index=pd.DatetimeIndex(joined["t"])).dropna()
+    if v.empty:
+        return None
+    return pd.DataFrame({"open": v, "high": v, "low": v, "close": v})
+
+
 def build_basket(names: list[str], params: dict[str, Any], primary: Any,
                  load: Loader) -> tuple[list[pd.DataFrame] | None, str, dict[str, Any]]:
     """(factor frames | None, why, provenance) for a residual cell's named basket."""
@@ -214,6 +295,20 @@ def build_basket(names: list[str], params: dict[str, Any], primary: Any,
     chosen: list[tuple[str, pd.DataFrame]] = []
     needs: list[str] = []
     for name in names:
+        if is_pit_factor(name):
+            # A point-in-time series: aligned onto the primary as of its own stamp, or missing
+            # by name. Never proxied -- the series IS the declared input.
+            pit = pit_aligned(str(name), p) if p is not None else None
+            cause = ("no primary bars to align a point-in-time series onto" if p is None
+                     else "series, column or available_time stamp absent" if pit is None
+                     else staleness(pit, p))
+            if pit is not None and cause is None:
+                chosen.append((str(name), pit))
+                prov["factors"].append({"factor": str(name), "source": "PIT_SERIES"})
+                continue
+            needs.append(f"{name} ({cause})")
+            prov["factors"].append({"factor": str(name), "source": "MISSING", "own_bars": cause})
+            continue
         own = _frame(load(str(name)))
         cause = ("no bars on this chart from any source" if own is None
                  else (staleness(own, p) if p is not None else None))

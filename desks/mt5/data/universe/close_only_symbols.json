@@ -1,0 +1,8 @@
+{
+ "what": "Fusion symbols whose trade_mode is not SYMBOL_TRADE_MODE_FULL (4): no new position can be opened, and research/fetch_universe._fetch_intraday therefore writes NO intraday (M1/M5/M15/M30) parquet for them (reason NOT_TRADEABLE); scripts/refresh_tail.refresh_symbol only extends a file that already exists. A factor named here had no intraday bars in the lake.",
+ "measured_at": "2026-09-03",
+ "measured_by": "research/fetch_universe.py (the comment at the trade_mode field records the 13 names from that pass: 250 symbols offered, 237 trade_mode FULL)",
+ "authority": "evidence of last resort: research/basket_mismatch.py reads the registry's own trade_mode / tradeable / intraday_coverage first, and only falls back to this list when the registry row carries none of them (the origin stump of universe.json does not)",
+ "symbols": ["DocuSign", "EOSUSD", "EURRUB", "EURTRY", "GBPTRY", "OJ", "SUGAR", "UKCOCOA",
+             "UKGILT", "USDRUB", "USDTRY", "UST05Y", "UST10Y"]
+}

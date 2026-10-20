@@ -126,6 +126,37 @@ LANES = ("shadow_state.json", "qquant_shadow_state.json", "scalp_shadow_state.js
 
 UNMEASURED = "UNMEASURED"
 
+#: The judge's BASKET_MISMATCH ruling (2026-10-20), written by `research/basket_mismatch.py`.
+BASKET_MISMATCH_OUT = Path("reports") / "BASKET_MISMATCH.json"
+
+#: ONE NAME PER CONDITION. The judge's unknown-converter (d695a2f76) names a factor input the
+#: model cannot be fed `NEEDS_PROXY_FACTOR`; the forward engine names the same condition two ways
+#: (`mt5desk.factor_inputs`) and the replay diagnosis a third. d695a2f76 is not on this branch's
+#: origin, so the table lives here and in `factor_inputs.UNKNOWN_CLASS_ALIASES` (pinned equal by
+#: test) rather than imported from it.
+UNKNOWN_CLASS_ALIASES: dict[str, str] = {
+    "NEEDS_PROXY_FACTOR": "NEEDS_PROXY_FACTOR",
+    "FACTOR_FRAME_STARVED": "NEEDS_PROXY_FACTOR",
+    "RESIDUAL_FRAME_BELOW_FLOOR": "NEEDS_PROXY_FACTOR",
+    "RESIDUAL_NO_FACTORS": "NEEDS_PROXY_FACTOR",
+    "UNMEASURED_BASKET_MISMATCH": "BASKET_MISMATCH",
+    "BASKET_MISMATCH": "BASKET_MISMATCH",
+}
+
+
+def unknown_class(cause: object) -> str:
+    """The shared class name for a cause, or the cause itself when no alias names it."""
+    text = str(cause or "").split(":", 1)[0].strip().upper()
+    return UNKNOWN_CLASS_ALIASES.get(text, text or "UNNAMED")
+
+
+def basket_mismatch_overlay(desk: Path | None = None) -> dict[str, dict[str, Any]]:
+    """certificate -> the ruling's hit row; empty when the artifact is absent (never a verdict)."""
+    doc = _read_json((desk or DESK) / BASKET_MISMATCH_OUT)
+    hits = doc.get("hits") if isinstance(doc, dict) else None
+    return {str(h["certificate"]): h for h in hits or []
+            if isinstance(h, dict) and h.get("certificate")}
+
 
 def _now(now: datetime | None = None) -> datetime:
     return now or datetime.now(tz=UTC)
@@ -334,7 +365,7 @@ def _seal(entry: dict[str, Any]) -> dict[str, Any]:
 
 def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
           samples: list[dict[str, Any]], threshold_h: float | None, why_thr: str,
-          now: datetime) -> dict[str, Any]:
+          now: datetime, mismatch: dict[str, Any] | None = None) -> dict[str, Any]:
     """One certificate's verdict. The ONLY place a breach is decided."""
     entry: dict[str, Any] = {
         "certificate": cert["name"], "symbol": cert["symbol"], "family": cert["family"],
@@ -399,6 +430,25 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
 
     status = str(row.get("status") or "").strip().upper()
 
+    # ---- 2b. BASKET_MISMATCH (judge 2026-10-20): the identity names a factor the certifier
+    # never had. The clock keeps running but is never evidence for this identity and the
+    # certificate can never promote; the true basket is re-judged under its own cell.
+    if mismatch:
+        rj = mismatch.get("rejudge") or {}
+        entry.update(
+            verdict="BASKET_MISMATCH", breach=False, may_promote=False,
+            clock_status="UNMEASURED_BASKET_MISMATCH", underlying_status=status or "ACTIVE",
+            unknown_class=unknown_class("BASKET_MISMATCH"),
+            missing_factors=[m.get("factor") for m in mismatch.get("missing_factors") or []],
+            true_basket=mismatch.get("true_basket"),
+            rejudge={k: rj.get(k) for k in ("status", "cell", "charged", "charged_trials",
+                                            "bar_n", "verdict") if k in rj},
+            why=("BASKET_MISMATCH: certified before ef11ff615 on a basket missing "
+                 f"{[m.get('factor') for m in mismatch.get('missing_factors') or []]}; never "
+                 "promotes, its clock is UNMEASURED for this identity, and its true basket is "
+                 f"re-judged ({rj.get('status')} {rj.get('cell')})"))
+        return _seal(entry)
+
     # ---- 3. a decided clock did its job; it is not a stall
     if (status in DECIDED_STATUSES
             or status.startswith("QUARANTINED")
@@ -412,6 +462,7 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
         # THE STATUS IS THE NAMED CAUSE (NEEDS_PROXY_FACTOR, FACTOR_FRAME_STARVED,
         # BLOCKED_NO_BARS ...), counted per cause in `blocked_by_cause` below.
         entry.update(verdict="BLOCKED", breach=True, blocked_cause=status,
+                     unknown_class=unknown_class(status),
                      blocker=str(row.get("last_error") or "")[:400] or status,
                      why=f"BREACH: the engine will not advance this clock (`{status}`), so the "
                          f"certificate can never mature. Fix the blocker, never the certificate")
@@ -527,12 +578,13 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
     gaps = family_gap_hours(rows, key_family)
     samples = load_history(desk / "data" / "certificate_clock_history.json")
 
+    mismatch = basket_mismatch_overlay(desk)
     judged: list[dict[str, Any]] = []
     for c in certs:
         key = keys.get(c["name"])
         thr, why_thr = _threshold_h(c["family"], gaps)
         judged.append(judge(c, key, rows.get(key) if key else None,
-                            samples, thr, why_thr, t))
+                            samples, thr, why_thr, t, mismatch.get(c["name"])))
 
     counts: dict[str, int] = {}
     for e in judged:
@@ -552,7 +604,8 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
     # or punctual AND frozen; collapsing them would hide whichever came second.
     for e in judged:
         if e.get("verdict") not in ("ACCUMULATING", "WARMING", "DECIDED", "UNMEASURED_KEY",
-                                    "UNMEASURED_THRESHOLD", "UNMEASURED_HISTORY"):
+                                    "UNMEASURED_THRESHOLD", "UNMEASURED_HISTORY",
+                                    "BASKET_MISMATCH"):
             problems.append(f"{e['verdict']} {e['certificate']} ({e['family']}): {e['why']}")
     late = [e for e in judged if e.get("late")]
     for e in late:
@@ -591,6 +644,12 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
         "blocked_by_cause": dict(sorted(collections.Counter(
             str(e.get("blocked_cause") or "UNNAMED") for e in judged
             if e.get("verdict") == "BLOCKED").items())),
+        "blocked_by_class": dict(sorted(collections.Counter(
+            str(e.get("unknown_class") or "UNNAMED") for e in judged
+            if e.get("verdict") == "BLOCKED").items())),
+        "n_basket_mismatch": sum(1 for e in judged if e.get("verdict") == "BASKET_MISMATCH"),
+        "basket_mismatch": sorted(str(e["certificate"]) for e in judged
+                                  if e.get("verdict") == "BASKET_MISMATCH"),
         "frozen_zero_signal_by_cause": dict(sorted(collections.Counter(
             str(e["zero_signal_cause"]).split(":", 1)[0] for e in judged
             if e.get("verdict") == "FROZEN_ROWS" and e.get("zero_signal_cause")).items())),

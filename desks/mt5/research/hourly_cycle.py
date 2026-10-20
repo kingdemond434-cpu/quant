@@ -1004,8 +1004,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
     "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
-    "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
-    "research_exchange_score", "model_skill", "research_org", "experiment_design",
+    "requeue_unrunnable", "basket_mismatch", "merge_docket", "miner_conversion",
+    "graveyard_model", "research_exchange_score", "model_skill", "research_org",
+    "experiment_design",
     "experiment_cache", "opportunity_gap", "opportunity_forecast", "forecast_contract",
     "alpha_breadth", "alpha_periodic_table", "regime_coverage", "timeframe_coverage",
     "frontier_unknowns", "frontier_report", "frontier_ontology", "counterfactual_world",
@@ -1113,7 +1114,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
-                     "intake_catchup", "compile_candidates", "merge_docket",
+                     "intake_catchup", "compile_candidates", "basket_mismatch", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
@@ -4950,6 +4951,12 @@ def main() -> None:
     # on the VPS, and the box is Windows with no systemd. So every candidate this machine mined,
     # compiled, deepened or swept reached a merge only if the other machine happened to run one.
     # Third instance of this exact shape today, after enrolment and miner_conversion.
+    # THE JUDGE'S BASKET_MISMATCH RULING (2026-10-20), right before the merge it feeds: names
+    # the certificates whose identity carries a factor the certifier never had (by rule, never a
+    # list), retires any LIVE/STANDBY sleeve on one, and hands the docket each true-basket cell
+    # ONCE. Seconds; reads artifacts only.
+    bmm = _costed("basket_mismatch", lambda: _producer(
+        "basket_mismatch", "research/basket_mismatch.py", "--apply"))
     mh = _costed("merge_docket", lambda: _producer(
         "merge_hypotheses", "research/merge_hypotheses.py"))
     # THE BACKTEST. Also on no clock, anywhere -- not this roster, not the daily cycle, not the
@@ -5950,7 +5957,8 @@ def main() -> None:
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
                     "rejection_throughput": rjt,
-                    "falsifier_run": fz, "style_novelty": snv, "merge_docket": mh,
+                    "falsifier_run": fz, "style_novelty": snv, "basket_mismatch": bmm,
+                    "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
                     "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,

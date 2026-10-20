@@ -101,9 +101,15 @@ def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
 #: Input blocks that carry their own cause name (`mt5desk.factor_inputs`).
 _NAMED_INPUT_BLOCKS = ("NEEDS_PROXY_FACTOR", "FACTOR_FRAME_STARVED")
 
+#: The judge's BASKET_MISMATCH ruling (2026-10-20, `research/basket_mismatch.py`): the clock of a
+#: certificate whose identity names a factor the certifier never had keeps RUNNING, under this
+#: status, and is never evidence for the named identity. Terminal, so no block overwrites it and
+#: the verdict branch (which fires on ACTIVE only) can never write PROMOTION CANDIDATE on it.
+BASKET_MISMATCH_STATUS = "UNMEASURED_BASKET_MISMATCH"
+
 _TERMINAL_STATUSES = ("KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED",
                       "REFUSED_BY_UNIVERSE_POLICY",
-                      "PROMOTION CANDIDATE", "IDENTITY_BROKEN")
+                      "PROMOTION CANDIDATE", "IDENTITY_BROKEN", BASKET_MISMATCH_STATUS)
 
 
 def _is_terminal(status: object) -> bool:
@@ -116,6 +122,36 @@ def _unmeasured(st: dict, why: str) -> None:
     row kept the MEASURED stamp of the last pass that evaluated it, so a stale clock read fresh."""
     st["forward_evidence"] = {"status": "UNMEASURED", "why": why,
                               "at": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
+def basket_mismatch_overlay() -> dict:
+    """clock key -> the ruling's hit row; empty when the artifact is absent or unreadable."""
+    try:
+        from basket_mismatch import clock_overlay
+        return clock_overlay()
+    except Exception:
+        return {}
+
+
+def apply_basket_mismatch(st: dict, info: dict | None) -> bool:
+    """Pin a mismatch row to its named status and strip its promotion authority. A row that
+    already holds a DECIDED status other than a live candidacy keeps it (a KILL stays a KILL);
+    a PROMOTION CANDIDATE is withdrawn, because it was earned under an identity never certified."""
+    if not info:
+        return False
+    status = str(st.get("status") or "").upper()
+    if not _is_terminal(status) or status in ("PROMOTION CANDIDATE", BASKET_MISMATCH_STATUS):
+        st["status"] = BASKET_MISMATCH_STATUS
+    st["promotion_authority"] = False
+    st["basket_mismatch"] = {
+        "verdict": "BASKET_MISMATCH",
+        "certificate": info.get("certificate"),
+        "missing_factors": [m.get("factor") for m in info.get("missing_factors") or []],
+        "true_basket": info.get("true_basket"),
+        "rejudge": (info.get("rejudge") or {}).get("status"),
+        "rejudge_cell": (info.get("rejudge") or {}).get("cell"),
+    }
+    return True
 
 WINDOWS = {
     "asia": {"range_start": 7, "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
@@ -845,6 +881,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # replaying any bars so a timeout cannot repeatedly strand the same tail of certificates.
     checkpoint_enrolments(enrolled, state, state_path)
     seen: set[str] = set()
+    mismatch = basket_mismatch_overlay()
     for i_row, row in enumerate(enrolled):
         if time.monotonic() - last_save >= CHECKPOINT_S and state.touched:
             state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
@@ -910,6 +947,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                       datetime.now(UTC).isoformat(timespec="seconds"))
         if key in breached and not st.get("quarantine_reason"):
             st["quarantine_reason"] = breached[key]
+        _mismatch = mismatch.get(key)
+        apply_basket_mismatch(st, _mismatch)
 
         # A RATCHET BREACH IS TERMINAL, NOT ADVISORY, and it must be applied BEFORE the sleeve is
         # evaluated -- evaluating it first would add another day of evidence to a window whose
@@ -1070,6 +1109,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 st.pop("proxy_fed", None)
             if extra is not None:
                 st.pop("needs_proxy_factor", None)
+                st.pop("unknown_class", None)
             if extra is None:
                 # SKIP LOUDLY, NEVER RUN SHORT. `family_carry` returns [] without its swap terms,
                 # which reads as "this mechanism never fires" rather than "nobody gave it what it
@@ -1138,6 +1178,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                                     else "BLOCKED_INPUTS_UNAVAILABLE")
                     if _named == "NEEDS_PROXY_FACTOR":
                         st["needs_proxy_factor"] = list((inputs_prov or {}).get("needs") or [])
+                    if _named in _NAMED_INPUT_BLOCKS:
+                        from mt5desk.factor_inputs import unknown_class
+                        st["unknown_class"] = unknown_class(_named)
                 _unmeasured(st, f"inputs unavailable: {why}")
                 state[key] = st
                 continue
@@ -1530,6 +1573,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # `EURJPY.asia.NORMAL_DAY` (n=1) and three MACRO_FAV rows (n=1) were on course to do
             # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
             # a certificate.
+            # Re-pinned here: an identity-restore above may have written ACTIVE over it.
+            apply_basket_mismatch(st, _mismatch)
             if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
                 if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
                     st["status"] = "PROMOTION CANDIDATE"
@@ -1541,6 +1586,10 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                          f"maxDD={st['max_dd_r']:.1f}R")
             st["forward_evidence"] = {"status": "MEASURED",
                                       "at": datetime.now(UTC).isoformat(timespec="seconds")}
+            if _mismatch:
+                _unmeasured(st, f"BASKET_MISMATCH: the clock ran, but its identity names "
+                                f"{st['basket_mismatch']['missing_factors']} which the "
+                                f"certifier never had; never evidence for that identity")
             state[key] = st
             slog(f"{key}: shadow n={st['n']} cumR={st['cum_r']:+.2f} "
                  f"exp={st['exp_r']:+.3f}R maxDD={st['max_dd_r']:.1f}R "
