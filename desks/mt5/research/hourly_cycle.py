@@ -147,14 +147,22 @@ def health() -> dict:
     for name, (_, script) in EXPECTED.items():
         alive = script in blob
         res[name] = {"alive": alive}
+        if alive and name == "hunt12":
+            # Command-line presence also includes suspended interpreters. Inspect
+            # the existing writer; never launch a second writer on uncertainty.
+            res[name].update(_hunt12_resident_health())
         if not alive:
+            if (BASE / "data" / f"HOLD_{name}").exists():
+                res[name]["note"] = f"HOLD_{name} pauses the canonical target; no launch attempted"
+                continue
             launch_ok = start(script)
             if launch_ok:
                 # Give the OS a moment to actually create the process before checking for it --
                 # process creation itself is near-instant even for a script whose real work is
                 # slow.
                 time.sleep(5)
-            res[name]["restarted"] = bool(launch_ok and script in procs())
+            after = procs() if launch_ok else None
+            res[name]["restarted"] = bool(after is not None and script in after)
             if not res[name]["restarted"]:
                 res[name]["restart_failed"] = True
     # `str.find` RETURNS -1 WHEN NOT FOUND, AND bool(-1) IS TRUE -- so this read "alive" exactly
@@ -169,6 +177,54 @@ def health() -> dict:
     else:
         res["gateway_cmd"] = {"alive": "MT5Gateway" in cmds}
     return res
+
+
+def _hunt12_resident_health() -> dict:
+    """Recover only a suspended, unused canonical interpreter; honor HOLD.
+
+    A measured box incident left a zero-CPU interpreter stopped for 18 hours.
+    Never resume a stopped active computation or a process owning files/children.
+    Those cases remain visible for an owned operational review.
+    """
+    try:
+        import psutil
+    except ImportError:
+        return {"alive": None, "note": "resident status UNMEASURED: psutil unavailable"}
+    try:
+        target = (BASE / "research" / "run_hunt12.py").resolve()
+        candidates = []
+        for proc in psutil.process_iter(["cmdline"]):
+            argv = proc.info.get("cmdline") or []
+            scripts = [arg for arg in argv[1:] if Path(arg).name == target.name]
+            if not scripts:
+                continue
+            cwd = Path(proc.cwd()).resolve()
+            if cwd != BASE.resolve():
+                continue
+            if any((cwd / arg).resolve() == target for arg in scripts):
+                candidates.append(proc)
+        if len(candidates) != 1:
+            return {"alive": None, "note": "canonical resident count unproven",
+                    "resident_count": len(candidates)}
+        proc = candidates[0]
+        status = proc.status()
+        result = {"alive": status != psutil.STATUS_STOPPED,
+                  "pid": proc.pid, "process_status": status}
+        if status != psutil.STATUS_STOPPED:
+            return result
+        if (BASE / "data" / "HOLD_hunt12").exists():
+            return {**result, "note": "stopped resident preserved by HOLD_hunt12"}
+        cpu = proc.cpu_times()
+        if (time.time() - proc.create_time() < 300 or cpu.user + cpu.system > 0
+                or proc.children() or proc.open_files()):
+            return {**result, "note": "stopped resident requires review; active ownership preserved"}
+        proc.resume()
+        after = proc.status()
+        return {**result, "alive": after != psutil.STATUS_STOPPED,
+                "process_status": after, "resumed": after != psutil.STATUS_STOPPED,
+                "note": "resumed existing unused resident; no new writer launched"}
+    except (OSError, RuntimeError, psutil.Error) as exc:
+        return {"alive": None, "note": f"resident status UNMEASURED: {type(exc).__name__}"}
 
 
 def mine() -> dict:
@@ -678,6 +734,9 @@ ADMISSION_SCAN_MAX_AGE_S = 2 * 3600.0
 #: bars is ~120 rows against the ~54,000 each symbol carries, so this clock exists to stop the
 #: artifact ageing forever, not because the answer moves inside a day.
 HUNT12_MAX_AGE_S = 7 * 24 * 3600.0
+# Start two days before the existing seven-day evidence expiry, leaving the
+# complete snapshot available while the fair compute lane advances a refresh.
+HUNT12_REFRESH_AGE_S = 5 * 24 * 3600.0
 
 def _hunt12_state(art: Path | None = None,
                   now: datetime | None = None) -> tuple[bool, str]:
@@ -703,7 +762,7 @@ def _hunt12_state(art: Path | None = None,
 
         absent        never swept on this box: the condition that has held since 2026-09-04
         incomplete    a resumable sweep part-way through; the next pass advances it
-        stale         past HUNT12_MAX_AGE_S, so it is re-swept from scratch
+        refresh_due   past HUNT12_REFRESH_AGE_S, before the evidence expires
         fresh         complete and inside the age bound -- skipped, and the leg says so
 
     A leg that reports SKIPPED with a reason is not an idle leg (III.16): the artifact it exists
@@ -727,9 +786,12 @@ def _hunt12_state(art: Path | None = None,
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=UTC)
     age = ((now or datetime.now(UTC)) - ts).total_seconds()
-    if age > HUNT12_MAX_AGE_S:
+    if age < 0:
+        return True, "the carried sweep has a future timestamp"
+    if age >= HUNT12_REFRESH_AGE_S:
         return True, (f"the carried sweep is {age / 3600:.0f}h old "
-                      f"(max {HUNT12_MAX_AGE_S / 3600:.0f}h)")
+                      f"(refresh {HUNT12_REFRESH_AGE_S / 3600:.0f}h; "
+                      f"evidence expiry {HUNT12_MAX_AGE_S / 3600:.0f}h)")
     return False, f"complete and {age / 3600:.0f}h old"
 
 
@@ -747,11 +809,15 @@ def hunt12() -> dict:
     refuses an unfinished one, so a part-swept universe can never be loaded as the whole book.
     """
     run, why = _hunt12_state()
+    if (BASE / "data" / "HOLD_hunt12").exists():
+        return {"status": "SKIPPED", "why": "HOLD_hunt12 pauses the canonical target",
+                "at": datetime.now(UTC).isoformat()}
     if not run:
         return {"status": "SKIPPED", "why": why, "at": datetime.now(UTC).isoformat()}
     print(f"  hunt12: sweeping -- {why}", flush=True)
     return {**_producer("hunt12", "research/run_hunt12.py",
-                        "--deadline-s", str(HUNT12_DEADLINE_S)), "why": why}
+                        "--deadline-s", str(HUNT12_DEADLINE_S),
+                        "--max-age-h", str(HUNT12_REFRESH_AGE_S / 3600)), "why": why}
 
 
 def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None) -> float | None:
@@ -921,7 +987,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
     # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
     "research_live_identity",
-    "tier_s",
+    "tier_s", "tier_s_door", "replication_civilization",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
@@ -966,6 +1032,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
+    # citations point at, re-derived hourly so a stale number is visible as stale.
+    "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout", "drift_monitor", "forecast_scoring",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
@@ -1059,7 +1128,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cross_sectional_breadth"),
                     "discovery"),
     # validate: the adversarial evidence lab
-    **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
+    **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
+                     "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
                      "adversary_evolution", "frontier_map", "market_ecology",
                      "research_diversity_archive", "execution_science",
@@ -1149,7 +1219,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control", "tier_s",
+                     "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
@@ -1739,6 +1809,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # twin 64 s, world_science 58 s); the cap leaves room for the box's larger ledgers (the
     # gate verdict ledger and hypothesis graph are read in full).
     "tier_s": 1_500,
+    # Review + promotion-door verdicts take seconds on the live box. The full Tier S run can
+    # time out before its final door organ, leaving E8's fail-closed input stale for >6h.
+    "tier_s_door": 180,
     # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
     # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
     # the cap sits above both and the document is checkpointed, so a kill still publishes.
@@ -1756,6 +1829,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The six committees stop themselves at --budget-s 300 (traps and writes included).
     "committee_ensembles": 420,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
+    # THE KIMI HUNT is three waves, each one ask of up to 240 s that may walk the free chain; on
+    # the default 720 s a slow Wave 3 was cut and (before it donated per wave) lost every finding.
+    # PRODUCER_YIELD read the seat DEAD for 3 days on 2026-10-13. Three full waves fit here.
+    "kimi_hunt": 1_020,
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
@@ -1854,7 +1931,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # their artifact; the cycle's cap sits above that for the reason `enrol_clocks` was raised.
     "event_graph_lab": 1_000,
     "attribution_reconcile": 400,
-    "macro_state_engine": 700,
+    "macro_state_engine": 850,
     "research_artifacts": 400,
     "engine_registry": 400,
     "counterfactual_attribution": 700,
@@ -2359,6 +2436,11 @@ def tier_s() -> dict:
     is read by sizing, certificates or order flow.
     """
     return _producer("tier_s", "research/tier_s.py")
+
+
+def tier_s_door() -> dict:
+    """Refresh the candidate review and promotion door before long hourly research legs."""
+    return _producer("tier_s_door", "research/tier_s.py", "--only", "review,door")
 
 
 def adversary_evolution() -> dict:
@@ -2870,11 +2952,9 @@ def catch_up_intake() -> dict:
     if compiled.get("exit_code") != 0:
         return {"status": "FAILED", "compile": compiled,
                 "why": "fresh compilation failed; catch-up merge withheld"}
-    with exclusive_job("merge_hypotheses", need_mb=14000) as acquired:
-        if not acquired:
-            return {"status": "SKIPPED", "compile": compiled,
-                    "why": "canonical merge lane already owned"}
-        merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
+    # The child now owns the same writer lock for EVERY entry point, including Scheduler.
+    # Holding it in this parent would make that child correctly defer against its own caller.
+    merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
     return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
             "compile": compiled, "merge": merged}
 
@@ -3648,6 +3728,16 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # Replication is a required live-door input with a six-hour expiry. Keeping its
+    # writer late in the validation department let E8's entry door go stale even
+    # while core passes ran. Refresh it on the existing core clock, before the door
+    # and long research work; the same bounded rotation and independent replay apply.
+    rpc = _costed("replication_civilization", lambda: _producer(
+        "replication_civilization", "research/replication_civilization.py",
+        "--once", "--budget-s", "900"))
+    # E8 reads this fail-closed input every five minutes. The full Tier S research pass
+    # runs much later and can hit its budget before reaching the review/door organs.
+    tdoor = _costed("tier_s_door", tier_s_door)
     # Drain existing intake before the long research legs. The later pipeline still
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
@@ -3888,7 +3978,8 @@ def main() -> None:
     # hunter could reach. A link that turned on, flipped sign or died is now a dated ROW
     # with a change-point p-value, and the top ones are donated as hypotheses.
     mse = _costed("macro_state_engine", lambda: _producer(
-        "macro_state_engine", "research/macro_state_engine.py", "--once", "--budget-s", "600"))
+        "macro_state_engine", "research/macro_state_engine.py", "--once", "--budget-s", "600",
+        "--latent-budget-s", "150"))
     # THE HASH-LINKED RESEARCH CHAIN, POPULATED (W9): the chain library and its verifier
     # landed and the chain was EMPTY, which verifies clean at n=0. The gauntlet and the
     # promoter are sealed, so the writer is a HARVESTER: it appends the SOURCE -> CLAIM ->
@@ -4409,13 +4500,7 @@ def main() -> None:
                                                          "research/lead_replication.py",
                                                          "--max-leads", "10",
                                                          "--budget-s", "240"))
-    # THE INDEPENDENT REPLICATION CIVILIZATION (LAWS 5m): every certificate and every
-    # forward-enrolled row rebuilt in rotation from its WRITTEN specification and the raw bars
-    # only -- no import of the original implementation -- and quarantined by name when fills,
-    # P&L, position state or costs disagree materially. Validate.
-    rpc = _costed("replication_civilization", lambda: _producer(
-        "replication_civilization", "research/replication_civilization.py",
-        "--once", "--budget-s", "900"))
+    # Independent replication already ran before the live door on the core clock.
     # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m, Tier-1 U19): stamps the research genome
     # and family id on every registry candidate, prices the trial stream at N_effective (the
     # count follows the FAMILY), keeps online-FDR wealth per lineage and records BLOCKED for the
@@ -4975,6 +5060,12 @@ def main() -> None:
     # producer budgets itself (600 s default) under this leg's timeout and writes
     # reports/FALSIFIER_VERDICTS.json; a kill there is evidence for the promoter, never a gate here.
     fz = _costed("falsifier_run", lambda: _producer("falsifier_run", "research/falsifier_run.py"))
+    # STYLE NOVELTY (principal 2026-10-13: "hunt tons of unknown styles"). Each certificate's
+    # signals projected onto the known-style library; writes reports/STYLE_NOVELTY.json (and
+    # NOVELTY_WEEKLY.json once a week), which judge_coverage's ranking reads as a one-sided
+    # novelty factor. Self-throttled to one re-measure per 20h, so most hours it stands down.
+    snv = _costed("style_novelty", lambda: _producer(
+        "style_novelty", "research/style_novelty.py", "--once", "--budget-s", "300"))
     # THE CANON SEAL, hourly rather than daily. A certificate the gauntlet minted at 02:00 sat
     # unsealed until the next midnight run, so `shadow_admission._canon` -- which enrolment,
     # promotion and the dashboard all read -- was up to 24 hours behind the gates.
@@ -5589,6 +5680,13 @@ def main() -> None:
     # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
         "kelly_survival", "research/kelly_survival.py", "--book"))
+    # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
+    # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
+    # A report only -- the money path carries the cited values. Each value passes a two-sided
+    # robustness gate (adopt/adopted_value); missed_growth (daily cycle) reads the report and
+    # carries every held move's published missed-growth line into MISSED_GROWTH.json.
+    sgd = _costed("stop_geometry_derivation", lambda: _producer(
+        "stop_geometry_derivation", "research/stop_geometry_derivation.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -5785,7 +5883,7 @@ def main() -> None:
                     "orthogonality": orth,
                     "null_lab": nlab, "research_live_identity": rlid,
                     "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
-                    "tier_s": tiers, "adversary_evolution": advx,
+                    "tier_s_door": tdoor, "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
                     "market_ecology": meco, "research_diversity_archive": rdar,
                     "session_allocation": sess,
@@ -5844,6 +5942,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
+                    "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "drift_monitor": drm,
                     "forecast_scoring": fsc,
                     "experimental_budget": xbg, "ops_redundancy": opr,
@@ -5864,7 +5963,7 @@ def main() -> None:
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
                     "rejection_throughput": rjt,
-                    "falsifier_run": fz, "merge_docket": mh,
+                    "falsifier_run": fz, "style_novelty": snv, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
                     "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,

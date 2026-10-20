@@ -338,6 +338,22 @@ class Graph:
         self._stamp = None
         return row
 
+    def append_rows(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """`append` for a batch of `Node.to_row()` rows: same order, ONE open of the ledger.
+
+        A sweep that records ~1M first fates paid a mkdir, an open and a close per row -- about
+        60 s of the judge's single merging core measured 2026-10-07 on a 1.44M-row docket.
+        """
+        if self._snapshot:
+            raise RuntimeError("a hypothesis graph snapshot is read-only")
+        if not rows:
+            return rows
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8") as fh:
+            fh.write("".join(json.dumps(r, default=str) + "\n" for r in rows))
+        self._stamp = None
+        return rows
+
     def rows(self) -> list[dict[str, Any]]:
         if self._snapshot:
             return self._rows
@@ -734,6 +750,7 @@ def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
     out: dict[str, Any] = {"verdicts": 0, "stamped": 0, "recorded": 0, "unchanged": 0,
                            "not_a_verdict": 0, "no_spec": 0,
                            pr.PREREGISTERED: 0, pr.POST_HOC: 0}
+    pending: list[dict[str, Any]] = []
     for v in verdicts:
         if not isinstance(v, dict):
             continue
@@ -781,8 +798,11 @@ def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
                 and str(prev.get("terminal_gate") or "") == node.terminal_gate):
             out["unchanged"] += 1
             continue
-        cur[node.id] = g.append(node)
+        row = node.to_row()
+        cur[node.id] = row
+        pending.append(row)
         out["recorded"] += 1
+    g.append_rows(pending)
     judged = out[pr.PREREGISTERED] + out[pr.POST_HOC]
     out["join_rate"] = (out[pr.PREREGISTERED] / judged) if judged else None
     return out

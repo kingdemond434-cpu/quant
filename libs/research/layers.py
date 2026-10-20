@@ -84,6 +84,7 @@ LEG_LAYER: dict[str, str] = {
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
+    "style_novelty": "prediction",
     "opportunity_forecast": "prediction", "edge_reliability": "prediction",
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
@@ -231,7 +232,7 @@ LEG_LAYER: dict[str, str] = {
     # experimental budget accounts for principal-override heat inside the book: portfolio. The
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
-    "kelly_survival": "sizing",
+    "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution", "drift_monitor": "portfolio",
     "forecast_scoring": "meta",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
@@ -602,7 +603,8 @@ LEG_LAYER: dict[str, str] = {
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
     # Tier S institution: the machine judging and improving its own research machinery
-    "tier_s": "meta", "adversary_evolution": "prediction", "frontier_map": "information",
+    "tier_s": "meta", "tier_s_door": "meta",
+    "adversary_evolution": "prediction", "frontier_map": "information",
     "market_ecology": "information", "research_diversity_archive": "information",
     "execution_science": "execution",
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by

@@ -1,0 +1,60 @@
+{
+ "at": "2026-10-20T14:48:08+00:00",
+ "verdicts": {
+  "status": "MEASURED",
+  "rows_total": 940793,
+  "rows_unstamped": 0,
+  "last_verdict_at": "2026-10-17T20:34:08+00:00",
+  "counts": {
+   "1h": 0,
+   "24h": 0,
+   "7d": 77178
+  },
+  "count_basis": "changed verdict events; unchanged retests do not append",
+  "first_terminal_counts": {
+   "1h": 0,
+   "24h": 0,
+   "7d": 48517
+  },
+  "first_terminal_cells": 340936,
+  "first_terminal_per_hour": {
+   "1h": 0.0,
+   "24h": 0.0,
+   "7d": 288.792
+  },
+  "per_hour": {
+   "1h": 0.0,
+   "24h": 0.0,
+   "7d": 459.393
+  }
+ },
+ "created": {
+  "status": "MEASURED",
+  "counts": {
+   "24h": 93794,
+   "7d": 286113
+  },
+  "per_hour": {
+   "24h": 3908.083,
+   "7d": 1703.054
+  }
+ },
+ "verdicts_per_hour": 0.0,
+ "verdicts_per_day": 0.0,
+ "verdict_rate_basis": "changed verdict events, not total completed tests",
+ "first_judged_per_day": 0.0,
+ "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
+ "coverage_backlog_fresh": true,
+ "created_per_day": 93794.0,
+ "backlog": 1206689,
+ "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
+ "eta_to_drain": {
+  "status": "GROWING",
+  "hours": null,
+  "net_per_day": -93794.0,
+  "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
+ },
+ "workers_planned": 15,
+ "workers_last_sweep": "UNMEASURED",
+ "cores_basis": "fixed_reservation"
+}

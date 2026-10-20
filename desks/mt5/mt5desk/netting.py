@@ -236,6 +236,7 @@ class TheoreticalBook:
         self._flow: dict[str, list[tuple[datetime, float]]] = {}
         self.routes: list[dict[str, Any]] = []
         self.rows = 0
+        self._fill_ids: set[str] = set()
         if self.path is not None:
             self.replay()
 
@@ -246,6 +247,7 @@ class TheoreticalBook:
         self._sleeves.clear()
         self._flow.clear()
         self.rows = 0
+        self._fill_ids.clear()
         self.unreadable = 0
         if self.path is None or not self.path.exists():
             return 0
@@ -276,8 +278,16 @@ class TheoreticalBook:
         s = self._state(str(row["symbol"]), str(row["sleeve"]))
         lots = float(row["lots"])
         if kind == "fill":
+            receipt = str(row.get("event_id") or "")
+            if receipt and receipt in self._fill_ids:
+                return
             s["filled"] = round(s["filled"] + lots, 8)
             s["fill_notional"] += lots * float(row["price"])
+            if receipt:
+                self._fill_ids.add(receipt)
+            if row.get("target_after") is not None:
+                self._apply({**row, "kind": "target", "lots": row["target_after"],
+                             "reason": row.get("target_reason", "")})
             return
         if kind != "target":
             raise ValueError(f"unknown ledger row kind {kind!r}")
@@ -328,21 +338,31 @@ class TheoreticalBook:
                                "reason": str(reason or ""), "at": _iso(at)}
         if price is not None:
             row["price"] = float(price)
-        self._apply(row)
         self._append(row)
+        self._apply(row)
         return {**row, "appended": True}
 
     def fill(self, sleeve: str, symbol: str, lots_signed: float, price: float,
-             at: datetime | str | None = None) -> dict[str, Any] | None:
+             at: datetime | str | None = None, *, event_id: str | None = None,
+             target_after: float | None = None, target_reason: str = ""
+             ) -> dict[str, Any] | None:
         """Record what the venue gave (signed lots at `price`), tagged with the sleeve whose
         order it answered -- or `UNATTRIBUTED` for a net order. A zero fill is not a row."""
         lots = round(float(lots_signed), 8)
-        if lots == 0.0:
+        if lots == 0.0 or (event_id and event_id in self._fill_ids):
             return None
         row = {"kind": "fill", "sleeve": sleeve, "symbol": symbol, "lots": lots,
                "price": float(price), "at": _iso(at)}
-        self._apply(row)
+        if event_id:
+            row["event_id"] = event_id
+        if target_after is not None:
+            # An exit and its target reset must replay as one durable event.
+            row["target_after"] = round(float(target_after), 8)
+            row["target_reason"] = target_reason
+        # A failed append must not change memory and cause the next pass to omit
+        # a receipt that never reached disk.
         self._append(row)
+        self._apply(row)
         return row
 
     def allocate_fill(self, symbol: str, lots_signed: float, price: float,

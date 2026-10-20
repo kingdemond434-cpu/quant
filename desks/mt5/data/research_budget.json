@@ -1,19 +1,28 @@
 {
- "generated_utc": "2026-09-23T10:41:50.360520+00:00",
+ "generated_utc": "2026-10-20T00:09:08.696922+00:00",
  "controller_variant": "A",
  "shares": {
-  "new_mechanism": 0.0805,
-  "mutate_survivor": 0.0813,
-  "combine_survivors": 0.0827,
-  "conditional_state_edge": 0.0888,
-  "execution_improvement": 0.085,
-  "exit_improvement": 0.097,
-  "cross_asset_signal": 0.1703,
-  "alt_data_hypothesis": 0.1215,
-  "failure_derived": 0.092,
-  "model_architecture": 0.0827,
+  "new_mechanism": 0.0818,
+  "mutate_survivor": 0.1033,
+  "combine_survivors": 0.0976,
+  "conditional_state_edge": 0.1048,
+  "execution_improvement": 0.0943,
+  "exit_improvement": 0.1101,
+  "cross_asset_signal": 0.1593,
+  "alt_data_hypothesis": 0.0182,
+  "failure_derived": 0.1139,
+  "model_architecture": 0.0983,
   "external_screen": 0.0182
  },
- "authoritative": false,
- "authority_evidence": "no RESEARCH_BUDGET.json: no leg has asked the bandit for its budget; cycle_pricing: every leg ran on its base budget (no price moved a leg's seconds)"
+ "authoritative": true,
+ "authority_evidence": "1 leg(s) spent by the controller's prices this hour (edges_macro_fusion_sweep); the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=10.356)",
+ "research_budget_authoritative": true,
+ "research_budget_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=10.356)",
+ "research_budget_contract": {
+  "gain": "INFO_PER_COMPUTE",
+  "metric": "control_arm.admitted",
+  "better": "up",
+  "bar": 1.0,
+  "organ": "report:RESEARCH_BUDGET.json"
+ }
 }

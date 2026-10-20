@@ -283,9 +283,10 @@ def _frame(api: Any, instrument_id: int, timeframe: str = "H1") -> Any:
 
     THE COLUMN NAMES AND THE CLOCK ARE THE WHOLE JOB. The venue returns `t,o,h,l,c,v` with `t` in
     epoch MILLISECONDS; every family reads `open/high/low/close` off a tz-aware UTC DatetimeIndex
-    and several of them branch on `index.hour`. A silent mismatch here would not raise -- it
-    would compute a real-looking signal on the wrong hour, which on an all-asia book is the one
-    error that would look like a strategy.
+    and several of them branch on `index.hour`. The certificates use broker wall time (Fusion's
+    H1 epochs carry that clock), not UTC calendar days. E8 history is physical UTC, so translate
+    each bar to the E8 server clock used by the guard before invoking a certified family.
+    The offset is evaluated per bar, including historical DST; prices and bar order are unchanged.
     """
     try:
         import pandas as pd
@@ -312,8 +313,15 @@ def _frame(api: Any, instrument_id: int, timeframe: str = "H1") -> Any:
     if "t" not in df.columns:
         return None
     idx = pd.to_datetime(df["t"], unit="ms", utc=True)
+    from prop.e8_guard import server_offset_hours
+
+    offsets = pd.to_timedelta(
+        [server_offset_hours(t.to_pydatetime()) for t in idx], unit="h")
+    idx = idx + offsets
     out = df.drop(columns=[c for c in ("t",) if c in df.columns]).set_index(idx)
     out.index.name = "time"
+    out.attrs["source_clock"] = "UTC"
+    out.attrs["strategy_clock"] = "broker_wall_time/E8_server_day"
     for col in ("open", "high", "low", "close"):
         if col not in out.columns:
             return None
@@ -333,7 +341,8 @@ def _last_closed(frame: Any) -> Any:
 #: the `discovered` EURCHF/AUDCAD/AUDNZD sleeves, 22% wins on MT5, were E8's entire order flow).
 MT5_SLEEVES = DESK / "data" / "sleeves.json"
 
-MT5_LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+MT5_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 TWIN_TRAIL_DAYS = 45
 TWIN_FADE_N = 5
 TWIN_FADE_R = 0.25
@@ -358,7 +367,8 @@ def twin_fade(symbol: str, family: str, *, now: datetime | None = None) -> tuple
         rows = doc.get("sleeves") if isinstance(doc, dict) else doc
         rows = list(rows.values()) if isinstance(rows, dict) else (rows or [])
         for r in rows:
-            if isinstance(r, dict) and str(r.get("name", "")).lower().startswith(stem)                     and r.get("decay_faded"):
+            if (isinstance(r, dict) and str(r.get("name", "")).lower().startswith(stem)
+                    and r.get("decay_faded")):
                 faded.append(str(r.get("name"))[:30])
     except (OSError, ValueError):
         pass
@@ -386,11 +396,13 @@ def twin_fade(symbol: str, family: str, *, now: datetime | None = None) -> tuple
     n, wins = len(rs), sum(1 for x in rs if x > 0)
     exp = (sum(rs) / n) if n else 0.0
     if faded:
-        return TWIN_FADE_FACTOR, (f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twin(s) faded by the decay "
-                                  f"monitor ({', '.join(faded[:3])}); pooled live n={n} exp={exp:+.2f}R")
+        return TWIN_FADE_FACTOR, (
+            f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twin(s) faded by the decay "
+            f"monitor ({', '.join(faded[:3])}); pooled live n={n} exp={exp:+.2f}R")
     if n >= TWIN_FADE_N and (wins == 0 or exp <= -TWIN_FADE_R):
-        return TWIN_FADE_FACTOR, (f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twins {wins}-for-{n} live, "
-                                  f"exp={exp:+.2f}R (bar n>={TWIN_FADE_N}, no wins or exp<=-{TWIN_FADE_R}R)")
+        return TWIN_FADE_FACTOR, (
+            f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twins {wins}-for-{n} live, "
+            f"exp={exp:+.2f}R (bar n>={TWIN_FADE_N}, no wins or exp<=-{TWIN_FADE_R}R)")
     return 1.0, f"twin fade 1.00: MT5 twins n={n} wins={wins} exp={exp:+.2f}R"
 
 
@@ -528,8 +540,76 @@ def _pos_field(p: dict[str, Any], *names: str) -> float | None:
     return None
 
 
+def outstanding_stop_risk(venue: Any, positions: list[dict[str, Any]],
+                          orders: list[dict[str, Any]]) -> tuple[float | None, str]:
+    """Reserve the broker's current downside, including unfilled bracket entries.
+
+    Equity already includes open P&L, so an open position is measured from the current
+    executable quote to its protective stop.  A missing stop, contract, conversion, or
+    instrument mapping makes new exposure unsafe; it does not make existing risk zero.
+    Both sides of a resting gold bracket count until the venue cancels one.
+    """
+    iid_to_sym = {int(v): k for k, v in getattr(venue, "_by_key", {}).items()}
+    by_id = {int(o["id"]): o for o in orders if o.get("id") is not None}
+
+    def dollars(symbol: str, distance: float, qty: float) -> float | None:
+        if not (distance >= 0 and qty > 0):
+            return None
+        detail = venue.details(symbol)
+        contract = next((float(detail[k]) for k in
+                         ("contractSize", "contract_size", "lotSize", "units")
+                         if isinstance(detail.get(k), (int, float)) and detail[k] > 0), None)
+        if contract is None:
+            return None
+        quote_ccy = str(detail.get("currency") or detail.get("quoteCurrency")
+                        or detail.get("quotingCurrency") or _quote_ccy_from_symbol(symbol)).upper()
+        conversion = 1.0 if quote_ccy == "USD" else _usd_per_unit(venue, quote_ccy)
+        return (distance * qty * contract * conversion
+                if conversion is not None and conversion > 0 else None)
+
+    total = 0.0
+    for p in positions:
+        iid = p.get("tradableInstrumentId") or p.get("instrumentId")
+        symbol = iid_to_sym.get(int(iid)) if iid is not None else None
+        qty = _pos_field(p, "qty", "quantity")
+        stop = _pos_field(p, "stopLoss", "stopLossPrice", "sl")
+        if stop is None or stop <= 0:
+            stop_id = p.get("stopLossId") or p.get("stopOrderId")
+            order = by_id.get(int(stop_id)) if stop_id is not None else None
+            stop = _pos_field(order or {}, "stopPrice", "stopLoss")
+        side = str(p.get("side") or "").lower()
+        if (symbol is None or qty is None or stop is None or stop <= 0
+                or side not in ("buy", "sell")):
+            return None, "an open position has no measurable protective stop or instrument"
+        bid, ask = venue.quote(symbol)
+        distance = ((bid - stop) if side == "buy" else (stop - ask))
+        risk = dollars(symbol, distance, abs(qty))
+        if risk is None:
+            return None, f"{symbol} open stop downside cannot be priced"
+        total += risk
+
+    for o in orders:
+        # Protective stops and take-profits carry no attached stopLoss.  A pending
+        # entry does, and can fill while the FX lane is evaluating its next order.
+        trigger = _pos_field(o, "stopPrice", "limitPrice", "price")
+        stop = _pos_field(o, "stopLoss", "stopLossPrice", "sl")
+        if stop is None or stop <= 0:
+            continue
+        iid = o.get("tradableInstrumentId") or o.get("instrumentId")
+        symbol = iid_to_sym.get(int(iid)) if iid is not None else None
+        qty = _pos_field(o, "qty", "quantity")
+        if symbol is None or trigger is None or trigger <= 0 or qty is None:
+            return None, "a resting entry has no measurable instrument, trigger, or size"
+        risk = dollars(symbol, abs(trigger - stop), abs(qty))
+        if risk is None:
+            return None, f"{symbol} resting-entry stop downside cannot be priced"
+        total += risk
+    return total, "broker stops and pending entries priced"
+
+
 def manage_breakeven(venue: Any, *, armed: bool = False,
-                     exclude_symbols: set[str] | None = None) -> list[dict[str, Any]]:
+                     exclude_symbols: set[str] | None = None,
+                     positions: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Move every E8 stop to costed break-even once it has earned it. SHADOW unless armed.
 
     THE GAP THIS CLOSES. The principal's order of 2026-09-24 is that the gold sleeves "must carry
@@ -576,13 +656,17 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
     rows: list[dict[str, Any]] = []
     live_ids: set[str] = set()
 
-    positions = venue.positions()
+    if positions is None:
+        positions = venue.positions()
     # Live TradeLocker positions commonly carry only stopLossId. Resolve those ids against the
     # protective-order book once per pass, and only when a live row needs it: an unnecessary
     # order-book request consumes the same rate budget that already returned HTTP 429 in live.
     order_by_id: dict[int, dict[str, Any]] = {}
     order_read_error: str | None = None
     needs_order_join = any(
+        _iid_to_sym.get(int(p.get("tradableInstrumentId") or p.get("instrumentId") or 0),
+                        "").upper() not in excluded
+        and
         _pos_field(p, "stopLoss", "stopLossPrice", "sl") is None
         and (p.get("stopLossId") or p.get("stopOrderId")) is not None
         for p in positions)
@@ -728,6 +812,7 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         entry_enabled: bool = False) -> dict[str, Any]:
     from mt5desk import order_door
+
     from prop import e8_guard
 
     # ONE DOOR FOR MONEY: every place / modify_stop / close / close_all this pass sends is
@@ -748,14 +833,20 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # and a stop that should be at break-even, and a stood-down account is exactly when that
     # matters most. The MT5 gateway runs `manage_open_positions` first for the same reason. The
     # one case where it is skipped is a flatten, where the positions are about to cease existing.
+    open_positions: list[dict[str, Any]] | None = None
+    position_read_error = ""
     if not decision.flatten:
         try:
+            open_positions = venue.positions()
             doc["breakeven"] = manage_breakeven(
-                venue, armed=armed, exclude_symbols={"XAUUSD"})
+                venue, armed=armed, exclude_symbols={"XAUUSD"},
+                positions=open_positions)
         except Exception as exc:                    # broad on purpose: never take the pass down
             # Management must never take the lane down: a pass that cannot ratchet a stop still
             # has to reach the guard and the ledger. Mirrors gateway.py's own management guard.
             doc["breakeven_error"] = f"{type(exc).__name__}: {exc}"
+            if open_positions is None:
+                position_read_error = doc["breakeven_error"]
 
     if not decision.may_open:
         doc["status"] = decision.verdict.value
@@ -774,12 +865,44 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         doc["n_sent" if armed else "n_would_send"] = 0
         return doc
 
+    if open_positions is None:
+        doc["status"] = "NO_BROKER_SNAPSHOT"
+        doc["why"] = ("position read failed; new entries require a current broker snapshot "
+                      f"({position_read_error})")
+        doc["n_considered"] = 0
+        doc["n_sent" if armed else "n_would_send"] = 0
+        return doc
+
     try:
         book = json.loads(BOOK.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         doc["status"] = "NO_BOOK"
         doc["why"] = f"{BOOK.name} unreadable ({type(exc).__name__}) -- nothing to trade"
         return doc
+
+    book_fresh_error = ""
+    try:
+        book_at = datetime.fromisoformat(str(book["generated_utc"]).replace("Z", "+00:00"))
+        age_s = (now - book_at).total_seconds()
+        if book_at.tzinfo is None or not (0 <= age_s <= 7200):
+            raise ValueError(f"book age {age_s:.0f}s exceeds 2h or is in the future")
+    except (KeyError, TypeError, ValueError) as exc:
+        book_fresh_error = f"E8 book has no fresh generation proof ({exc}); no new entries"
+
+    entry_authority_error = ""
+    try:
+        from admission_integrity import REPLICATED, IntegrityGate
+        from mt5desk.kelly_sizing import CERT_BOOK_FILE
+
+        from libs.tiers import promotion_authority
+        exclusions = json.loads(CERT_BOOK_FILE.read_text(encoding="utf-8"))["excluded"]
+        if not isinstance(exclusions, dict):
+            raise ValueError("principal exclusion map is not an object")
+        integrity = IntegrityGate.load()
+    except (OSError, ValueError, KeyError, ImportError) as exc:
+        entry_authority_error = (f"E8 certificate authority unavailable "
+                                 f"({type(exc).__name__}: {exc})")
+        exclusions, integrity = {}, None
 
     risk_usd = float(book["risk_frac"]) * e8_guard.START_BALANCE
     # THE PRINCIPAL'S CERTIFIED BOOK SIZES THE KEYS IT NAMES (data/CERT_BOOK_LIVE.json,
@@ -789,6 +912,16 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     cert = load_cert_book(CERT_BOOK_FILE, "e8") or {}
     doc["cert_book"] = cert or None
     committed_usd = 0.0
+    try:
+        resting_orders = venue.orders()
+        outstanding_usd, outstanding_why = outstanding_stop_risk(
+            venue, open_positions, resting_orders)
+    except Exception as exc:
+        outstanding_usd = None
+        outstanding_why = f"broker exposure read failed ({type(exc).__name__}: {exc})"
+    doc["outstanding_stop_risk_usd"] = (round(outstanding_usd, 2)
+                                         if outstanding_usd is not None else None)
+    doc["outstanding_stop_risk_why"] = outstanding_why
     # THE DEDUPE KEY IS THE INSTRUMENT AND SIDE, BECAUSE THIS VENUE HAS NO COMMENTS.
     #
     # MEASURED 2026-09-15, and it cost the account 0.85% in half an hour. This read
@@ -804,7 +937,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # fails OPEN -- the one direction a position guard must never fail. Matching on what the
     # venue DOES return cannot silently become a no-op the same way.
     open_keys: set[tuple[int, str]] = set()
-    for p in venue.positions():
+    for p in open_positions:
         iid = p.get("tradableInstrumentId") or p.get("instrumentId") or p.get("id")
         sd = str(p.get("side") or p.get("Side") or "").lower()
         if iid is not None and sd:
@@ -823,7 +956,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             self.symbol, self.volume, self.type = symbol, volume, typ
 
     _leg_positions = []
-    for p in venue.positions():
+    for p in open_positions:
         iid = p.get("tradableInstrumentId") or p.get("instrumentId") or p.get("id")
         nm = _iid_to_sym.get(int(iid)) if iid is not None else None
         if not nm:
@@ -857,7 +990,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             row["status"] = "BANNED_FAMILY"
             row["why"] = _ban_reason(fam)
             closed: list[int] = []
-            for p in venue.positions():
+            for p in open_positions:
                 _iid = p.get("tradableInstrumentId") or p.get("instrumentId")
                 if _iid is None or _iid_to_sym.get(int(_iid)) != sym:
                     continue
@@ -882,6 +1015,46 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             row["closed_positions"] = closed
             doc["sleeves"].append(row)
             _record(row, now, armed)
+            continue
+        if book_fresh_error:
+            row.update(status="STALE_BOOK", why=book_fresh_error)
+            doc["sleeves"].append(row)
+            continue
+        if entry_authority_error:
+            row.update(status="NO_ENTRY_AUTHORITY", why=entry_authority_error)
+            doc["sleeves"].append(row)
+            continue
+        if outstanding_usd is None:
+            row.update(status="NO_RISK_PROOF", why=outstanding_why)
+            doc["sleeves"].append(row)
+            continue
+        cert_id = str(s.get("key") or "")
+        book_key = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
+        if not (cert.get(book_key, 0) > 0):
+            row.update(status="NOT_IN_PRINCIPAL_BOOK",
+                       why="no positive risk for this sleeve in the E8 certified book")
+            doc["sleeves"].append(row)
+            continue
+        if book_key in exclusions:
+            row.update(status="PRINCIPAL_EXCLUDED", why=str(exclusions[book_key]))
+            doc["sleeves"].append(row)
+            continue
+        if integrity.alarm.get("blocks"):
+            row.update(status="CERTIFIER_ALARM", why=str(integrity.alarm.get("why")))
+            doc["sleeves"].append(row)
+            continue
+        verdict, why = integrity.replication(cert_id, str(s.get("fingerprint") or ""))
+        if verdict != REPLICATED:
+            row.update(status="UNREPLICATED", why=f"{verdict}: {why}")
+            doc["sleeves"].append(row)
+            continue
+        try:
+            tier_reason = promotion_authority.block(cert_id)
+        except Exception as exc:
+            tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
+        if tier_reason:
+            row.update(status="TIER_S_BLOCKED", why=str(tier_reason))
+            doc["sleeves"].append(row)
             continue
         func = get_family_func(fam)
         if func is None:
@@ -919,6 +1092,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             doc["sleeves"].append(row)
             continue
         closed = _last_closed(frame)
+        row["bar_clock"] = frame.attrs.get("strategy_clock", "UNMEASURED")
         params = _call_params(s, s.get("symbol") or "", closed)
         if params is None:
             row["status"] = "NO_INPUTS"
@@ -945,6 +1119,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             # lose it: E8 must apply the same post-constructor window as the gauntlet and
             # Fusion. Both flat and {condition, params} certificate envelopes occur here.
             from mt5desk.family_call import certified_session_filter
+            row["n_raw_signals"] = len(signals or [])
             signals = certified_session_filter(list(signals or []), s)
         except Exception as exc:
             row["status"] = "SIGNAL_ERROR"
@@ -998,13 +1173,15 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # is stale and not opened. Unmeasurable keeps the levels as they are.
         try:
             from mt5desk.decision_core import family_bracket, signal_with_levels
-            _close = float(closed["close"].iloc[-1])
+            from mt5desk.family_call import signal_reference_price, spread_blocks_entry
+            _close = signal_reference_price(fam, frame, g)
             _sgn = 1 if side == "buy" else -1
             _e, _stop, _target, _d, _note, _drift, _verdict = family_bracket(
                 g, _sgn, float(bid), float(ask), _close)
             row["entry_drift"], row["entry_drift_note"] = _drift, _note
             if _verdict == "stale":
-                row["status"] = "STALE_SIGNAL"
+                row["status"] = ("QUOTE_SPREAD" if spread_blocks_entry(g, _sgn, bid, ask)
+                                 else "STALE_SIGNAL")
                 row["why"] = _note
                 doc["sleeves"].append(row)
                 _record(row, now, armed)
@@ -1085,10 +1262,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # THE DAILY FLOOR IS CHECKED AGAINST THE WHOLE BOOK, not one order at a time. Twenty
         # sleeves firing together is twenty simultaneous risks, and a per-order check would wave
         # each one through on its own merits into a floor none of them breaches alone.
-        if committed_usd + row_risk_usd > decision.room_to_daily_floor:
+        if outstanding_usd + committed_usd + row_risk_usd > decision.room_to_daily_floor:
             row["status"] = "WOULD_BREACH_DAILY"
-            row["why"] = (f"{sent + 1} open risks totalling "
-                          f"${committed_usd + row_risk_usd:.0f} exceed the "
+            row["why"] = (f"broker stops and new risks totalling "
+                          f"${outstanding_usd + committed_usd + row_risk_usd:.0f} exceed the "
                           f"${decision.room_to_daily_floor:.0f} left to today's floor")
             doc["sleeves"].append(row)
             continue
@@ -1118,7 +1295,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         doc["sleeves"].append(row)
         _record(row, now, armed)
 
-    doc["status"] = "OK"
+    doc["status"] = ("STALE_BOOK" if book_fresh_error else
+                     "NO_ENTRY_AUTHORITY" if entry_authority_error else "OK")
+    if book_fresh_error or entry_authority_error:
+        doc["why"] = book_fresh_error or entry_authority_error
     doc["n_considered"] = considered
     doc["n_sent" if armed else "n_would_send"] = sent
     doc["risk_usd_per_trade"] = round(risk_usd, 2)

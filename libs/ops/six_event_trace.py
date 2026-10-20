@@ -63,8 +63,12 @@ def load(root: str, rel: str) -> Any:
 
 
 def jsonl(root: str, rel: str) -> Iterator[Any]:
+    from pathlib import Path
+
+    from libs.ops.live_ledger_view import ledger_path
+
     try:
-        with open(os.path.join(root, rel), encoding="utf-8") as fh:
+        with ledger_path(Path(root) / rel).open(encoding="utf-8") as fh:
             for ln in fh:
                 try:
                     yield json.loads(ln)

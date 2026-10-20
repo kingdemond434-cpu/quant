@@ -67,7 +67,8 @@ from libs.execution import fill_corpus as fc  # noqa: E402
 
 INTENTS = DESK / "data" / "order_intents.jsonl"
 E8_INTENTS = DESK / "data" / "e8_intents.jsonl"
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 DECISIONS = DESK / "data" / "decision_ledger.jsonl"
 CORPUS = DESK / "data" / "fill_corpus.jsonl"
 OUT = DESK / "reports" / "FILL_RECORDER.json"

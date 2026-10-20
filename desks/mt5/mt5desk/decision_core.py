@@ -1730,10 +1730,12 @@ def load_retired_gold(path: Path) -> dict:
 
 def ledger_rows(path: Path) -> list[dict]:
     """Closed trades recorded by the desk at `path`. Torn final lines are skipped, never fatal."""
+
+    from libs.ops.live_ledger_view import ledger_path
     if not path.exists():
         return []
     out = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in ledger_path(path).read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue

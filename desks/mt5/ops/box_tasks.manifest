@@ -86,7 +86,7 @@ TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal
 # protocol. The sealed file is never edited; the cadence below
 # is raised to :05 by `judging_throughput.apply_cadence` while the queue is deep and headroom
 # exists, and the manifest records the base trigger.
-TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01 (raised to every 5 by judging_throughput while the queue is deep)" runs="desks/mt5/scripts/run_sharded_gauntlet.py" organ="desks/mt5/scripts/external_gauntlet.py" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
+TASK name="MT5-Gauntlet"           trigger="resident (sweeps back to back); every 1 minute respawns it if it died, IgnoreNew, no time limit" runs="desks/mt5/scripts/run_sharded_gauntlet.py" organ="desks/mt5/scripts/external_gauntlet.py" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
 TASK name="MT5-Shadow"             trigger="every 1 hour, at :55" runs="desks/mt5/research/shadow_cycle.py"          installer="NONE" lane="research"
 TASK name="MT5-UniversalGate"      trigger="every 1 hour, at :07" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
 TASK name="MT5-QQuantShadow"       trigger="every 30 minutes, at :25" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"
@@ -136,6 +136,13 @@ TASK name="MT5-Forest-Latam" trigger="at startup + every 10 minutes (keep-alive 
 TASK name="MT5-Forest-Mena" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Forest-Africa" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
+# THE DEEPSEEK THIRD BRAIN ON THIS BOX (2026-10-20). The cycle formerly ran only as a systemd
+# unit on the Linux box, and only while that machine was awake; this box -- the one that holds the
+# live account, the cells and the judge -- had no DeepSeek clock at all. The addendum requires the
+# laboratory to run here, 24/7, with no session and no laptop. One hourly call, offset to :24 so it
+# does not coincide with the merge docket (:14/:44) or the gauntlet's :00/:05 slots. Research
+# generation only: it proposes, the canonical compiler and gauntlet decide.
+TASK name="MT5-DeepSeek"           trigger="every 1 hour, at :24"  runs="ops/run_deepseek_windows.ps1"  installer="desks/mt5/scripts/install_deepseek_brain_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat
 TASK name="MT5-TickRecorder"       trigger="every 1 hour"          runs="desks/mt5/recorders/tick_recorder.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
@@ -284,3 +291,5 @@ TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of 
 # with each fence's own `ran_at`, and a fence whose verdict ages past the stated 48 h window is
 # dropped from the record and reported as never run. No fence is disabled to make this pass.
 TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --rotate --budget-s 1800" installer="desks/mt5/scripts/install_law_gate_task.ps1" lane="ops"
+
+# Ledger adoption child: scripts/migrate_live_ledger_view.py runs only from MT5-AdoptRelease; emits reports/LEDGER_VIEW_ADOPTION.json, consumed by the adopter and runtime attestation. No independent scheduler.

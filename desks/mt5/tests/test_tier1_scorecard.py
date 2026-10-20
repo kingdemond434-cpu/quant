@@ -216,10 +216,22 @@ def test_row10_counts_the_edge_fields_the_causal_graph_actually_carries(sandbox:
         "recorded_not_admitted": [{"src": "US500", "dst": "USDKRW", "lag": 5, "stability": 1.0,
                                    "state_dependence": 0.046, "conditional": None}]})
     row = sc._r10_cross_asset()
-    assert row["current"] == 3.0 and row["verdict"] == sc.ABOVE
+    assert row["current"] == 1.0 and row["verdict"] != sc.ABOVE, "no admitted edge, no intelligence"
     assert "edges_admitted=0" in row["basis"], "the reader must see that nothing was admitted"
-    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"recorded_not_admitted": [{"src": "a", "dst": "b"}]})
+    assert "capped at 1" in row["basis"]
+    _write(sandbox, "WORLD_CAUSAL_GRAPH", {
+        "edges_admitted": 1, "chains_seeded": 14, "conditioning": {"US500": ["VIX"]},
+        "admitted_edges": [{"src": "US500", "dst": "USDKRW", "lag": 5, "stability": 1.0,
+                            "state_dependence": 0.046, "conditional": None}]})
+    row = sc._r10_cross_asset()
+    assert row["current"] == 3.0 and row["verdict"] == sc.ABOVE
+    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"edges_admitted": 0,
+                                           "recorded_not_admitted": [{"src": "a", "dst": "b"}]})
     assert sc._r10_cross_asset()["current"] == 1.0
+    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"recorded_not_admitted": [{"src": "a", "dst": "b"}]})
+    row = sc._r10_cross_asset()
+    assert row["current"] is None, "an absent admitted count is UNMEASURED, not a measured zero"
+    assert row["basis"].startswith("UNMEASURED")
 
 
 def test_row10_falls_back_to_the_counts_only_cross_asset_graph(sandbox: Path) -> None:

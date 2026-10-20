@@ -20,7 +20,9 @@ from mt5desk.sizing import MAX_RISK_FRAC  # noqa: E402
 
 FUSION = {"EURZAR_overnight_gap_decay_asia": 0.098, "USDZAR_overnight_gap_decay_asia": 0.100,
           "AUDCHF_overnight_gap_decay_asia": 0.100, "gold_asia": 0.082}
-E8 = {"gold_asia": 0.010, "AUDCHF_overnight_gap_decay_asia": 0.010}
+#: AUDCHF stands aside on E8 only (principal 2026-10-13 20:40Z): forward clock -0.68R/trade over 10
+#: trades (t=-2.28), and E8 pays out on payouts, not on Fusion's E[log W]. Fusion keeps its 10%.
+E8 = {"gold_asia": 0.010, "AUDCHF_overnight_gap_decay_asia": 0.0}
 
 
 def _write(tmp_path: Path, doc: dict) -> Path:

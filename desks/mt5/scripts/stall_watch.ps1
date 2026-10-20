@@ -81,15 +81,65 @@ function Get-ResearchTreeCpuSeconds {
   return $totalCpu
 }
 
+function Get-GauntletLauncherAncestor {
+  param([object]$Candidate, [object[]]$Snapshot)
+  $byId = @{}
+  foreach ($item in $Snapshot) { $byId[[int]$item.ProcessId] = $item }
+  $visited = @{}
+  $cursor = $Candidate
+  while ($null -ne $cursor) {
+    $cursorId = [int]$cursor.ProcessId
+    if ($visited.ContainsKey($cursorId)) { return $null }
+    $visited[$cursorId] = $true
+    if ([string]$cursor.CommandLine -match '[\\/]run_sharded_gauntlet\.py(?:["\s]|$)') {
+      return $cursorId
+    }
+    $parentId = [int]$cursor.ParentProcessId
+    if (-not $byId.ContainsKey($parentId)) { return $null }
+    $parent = $byId[$parentId]
+    if ($parent.CreationDate -and $cursor.CreationDate -and
+        $parent.CreationDate -gt $cursor.CreationDate) { return $null }
+    $cursor = $parent
+  }
+  return $null
+}
+
+function Get-ResearchStackedDisposition {
+  param([string]$Pattern, [object]$Keeper, [object]$Candidate, [object[]]$Snapshot)
+  if ($Candidate.ParentProcessId -eq $Keeper.ProcessId -or
+      $Candidate.ParentProcessId -eq $Keeper.ParentProcessId) { return 'KEEP_RELATED' }
+  if ($Pattern -eq 'external_gauntlet' -and
+      [string]$Keeper.CommandLine -match 'shard_worker\(' -and
+      [string]$Candidate.CommandLine -match 'shard_worker\(') {
+    $keeperRoot = Get-GauntletLauncherAncestor -Candidate $Keeper -Snapshot $Snapshot
+    $candidateRoot = Get-GauntletLauncherAncestor -Candidate $Candidate -Snapshot $Snapshot
+    if ($null -eq $keeperRoot -or $null -eq $candidateRoot) { return 'UNMEASURED_ANCESTRY' }
+    if ($keeperRoot -eq $candidateRoot) { return 'KEEP_SHARD_TREE' }
+  }
+  return 'KILL_DUPLICATE'
+}
+
 foreach ($pat in $patterns) {
   $procs = Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
            Where-Object { $_.CommandLine -match $pat } | Sort-Object CreationDate
   if (-not $procs) { continue }
 
-  # STACKED: keep the oldest parent; kill the rest UNLESS they are its own children
+  # STACKED: keep the oldest parent; kill the rest UNLESS they are its own children OR its
+  # SIBLINGS (2026-10-13). The sharded judge launches its shard children side by side from one
+  # launcher, and each child's command line names external_gauntlet, so every shard after the
+  # oldest read as a duplicate and was killed -- a parallel wave collapsed to one shard plus
+  # serial retries. A true duplicate is a second sweep from a different launcher.
+  # NOTE: two runs launched DIRECTLY by Task Scheduler share its svchost as parent and both
+  # survive this rule; MultipleInstances IgnoreNew and the judge's certification_lane lock
+  # (rc 75) are what serialise those, not STACKED.
   $keeper = $procs[0]
   foreach ($p in ($procs | Select-Object -Skip 1)) {
-    if ($p.ParentProcessId -ne $keeper.ProcessId) {
+    $disposition = Get-ResearchStackedDisposition -Pattern $pat -Keeper $keeper -Candidate $p -Snapshot $allProcs
+    if ($disposition -eq 'UNMEASURED_ANCESTRY') {
+      $actions += "ANCESTRY UNMEASURED ${pat}: pid $($p.ProcessId) left alone; shard launcher identity unavailable"
+      continue
+    }
+    if ($disposition -eq 'KILL_DUPLICATE') {
       Stop-Process -Id $p.ProcessId -Force
       $actions += "STACKED ${pat}: killed duplicate pid $($p.ProcessId) (kept oldest $($keeper.ProcessId))"
     }
@@ -318,10 +368,42 @@ try {
 $requiredTasks = @('MT5-Gauntlet','MT5-Shadow','MT5-Hourly','MT5-DeskState','MT5-MoatRecorder',
                    'MT5-MoatSilver','MT5-StallWatch','MT5-Universe','MT5-ShadowSync',
                    'MT5-TerminalBoot')
-$present = (schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | ForEach-Object { $_.TaskName -replace '^\\','' })
-foreach ($rt in $requiredTasks) {
-  if ($present -notcontains $rt) {
+# A whole-machine schtasks /Query can block this watchdog for hours. Query only the
+# same required root tasks, with a per-operation bound. An unreadable inventory is
+# UNMEASURED, never proof that a task was deleted. This census changes no task.
+function Get-RequiredTaskPresence {
+  param([string[]]$TaskNames, [scriptblock]$Query = {
+    param([string]$TaskName)
+    $escapedName = $TaskName.Replace("'", "''")
+    Get-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' `
+      -ClassName MSFT_ScheduledTask -Filter "TaskName='$escapedName' AND TaskPath='\\'" `
+      -OperationTimeoutSec 5 -ErrorAction Stop
+  })
+  foreach ($taskName in $TaskNames) {
+    $state = 'UNMEASURED'
+    $reason = ''
+    try {
+      $rows = @(& $Query $taskName)
+      if ($rows.Count -eq 0) {
+        $state = 'MISSING'
+      } elseif (@($rows | Where-Object { $_.TaskName -eq $taskName -and $_.TaskPath -eq '\' }).Count -gt 0) {
+        $state = 'PRESENT'
+      } else {
+        $reason = 'query returned no matching root task'
+      }
+    } catch {
+      $reason = $_.Exception.GetType().Name
+    }
+    [pscustomobject]@{ TaskName = $taskName; State = $state; Reason = $reason }
+  }
+}
+
+foreach ($taskPresence in @(Get-RequiredTaskPresence -TaskNames $requiredTasks)) {
+  $rt = $taskPresence.TaskName
+  if ($taskPresence.State -eq 'MISSING') {
     $actions += "TASK MISSING: $rt is not registered at all -- re-register from ops/ (deletion, not failure)"
+  } elseif ($taskPresence.State -eq 'UNMEASURED') {
+    $actions += "TASK CENSUS UNMEASURED: $rt could not be verified ($($taskPresence.Reason)); no deletion inferred"
   }
 }
 

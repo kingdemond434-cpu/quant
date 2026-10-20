@@ -42,7 +42,8 @@ for _p in (str(REPO), str(BASE / "research")):
 
 OUT = BASE / "reports" / "TRADE_AUTOPSY.json"
 AUTOPSIES = BASE / "data" / "autopsies.jsonl"
-LIVE = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
 SLEEVES = BASE / "data" / "sleeves.json"
 SCRATCH_R = 0.1

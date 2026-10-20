@@ -591,6 +591,59 @@ def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
                     "published rather than priced as zero")}
 
 
+#: The hourly stop-geometry re-solve's report. Its robustness gate registers no rail (the rail
+#: register is a sealed immutable-evaluator file), so its missed-growth lines are PUBLISHED on
+#: that artifact in `forward_slot_ranker`'s shape and carried here, never appended to LEDGER.
+STOP_GEOMETRY = BASE / "reports" / "STOP_GEOMETRY_DERIVATION.json"
+#: A report older than this is not today's gate: the leg is hourly, so six hours is six misses.
+STOP_GEOMETRY_MAX_AGE_H = 6.0
+
+
+def published_gate_lines() -> dict[str, Any]:
+    """The stop-geometry robustness gate's missed-growth lines, read from its own report.
+
+    `stop_geometry_derivation.robustness_gate` holds a re-solved MIN_STOP_SPREAD_MULT or
+    ENTRY_DRIFT_TOL_FRAC the live evidence cannot carry (under 30 trades, or inside two SEs of
+    the prior), in either direction, and keeps today's value; each hold is billed at the solve's
+    own claimed gain. This carries those lines into MISSED_GROWTH.json with their sum, so a gate
+    that keeps holding claimed gains is visible next to the registered rails. A missing or stale
+    report is UNMEASURED, said with its age -- never a clean zero."""
+    doc = _json(STOP_GEOMETRY)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/STOP_GEOMETRY_DERIVATION.json on this host: the hourly "
+                       "stop_geometry_derivation leg has not written one"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_at")))
+        age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    if not age_h <= STOP_GEOMETRY_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": [],
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the stop-geometry report is older than {STOP_GEOMETRY_MAX_AGE_H:g}h or "
+                       f"unstamped: the gate's state today is unknown"}
+    if str(doc.get("status") or "").startswith("UNMEASURED"):
+        return {"verdict": UNMEASURED, "lines": doc.get("missed_growth") or [],
+                "age_h": round(age_h, 2),
+                "why": "the stop-geometry solve measured neither constant (report status "
+                       "UNMEASURED): no cost is known, so none is claimed"}
+    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
+    if not lines:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "the report carries no missed_growth lines (a pre-gate build)"}
+    priced = [float(x["value"]) for x in lines if isinstance(x.get("value"), (int, float))]
+    held = [x for x in lines if x.get("verdict") in (COSTS, UNMEASURED)]
+    verdict = (UNMEASURED if any(x.get("verdict") == UNMEASURED for x in lines)
+               else COSTS if any(x.get("verdict") == COSTS for x in lines) else NOT_BINDING)
+    return {"verdict": verdict, "source": "reports/STOP_GEOMETRY_DERIVATION.json",
+            "age_h": round(age_h, 2), "lines": lines, "n_held": len(held),
+            "value_logw_per_day": round(sum(priced), 12),
+            "by_direction": {d: sum(1 for x in held if x.get("direction") == d)
+                             for d in ("up", "down")},
+            "adopted": doc.get("adopted")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -706,6 +759,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "earns": sorted(k for k, v in verdicts.items() if v.get("verdict") == EARNS),
            "unmeasured": sorted(k for k, v in verdicts.items() if v.get("verdict") == UNMEASURED),
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
+           # Gates that register no rail publish their lines on their own artifact; carried
+           # here so the bill sits beside the rails' (never appended to the ledger).
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

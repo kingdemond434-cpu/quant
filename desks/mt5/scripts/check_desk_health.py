@@ -60,7 +60,11 @@ TASKS: tuple[tuple[str, str], ...] = (
 #: process -> why it matters. Matched on the command line, never killed.
 PROCS: tuple[tuple[str, str], ...] = (
     ("terminal64", "the MT5 terminal itself"),
-    ("run_gateway_loop", "the gateway pass"),
+    # Either process IS the gateway pass: MT5-Gateway starts run_gateway_loop once a minute and
+    # MT5-GatewayResident keeps gateway_resident running when the Interactive task cannot start
+    # (Install-QuantWindows.ps1). Reading only the first called a healthy resident loop "NOT
+    # running" (DESK_HEALTH 2026-10-12).
+    ("run_gateway_loop|gateway_resident", "the gateway pass"),
     ("run_deadman_switch", "the Tier-3 protective rail"),
 )
 
@@ -122,6 +126,23 @@ def check_python() -> None:
     print()
 
 
+#: 0 = success, 267009 = currently running, 267011 = has not run yet (ops/process_health.py).
+_HEALTHY_CODES = frozenset({0, 267009, 267011})
+#: 0x800710E0: the scheduler refused to start this trigger. schtasks prints it SIGNED
+#: (-2147020576) and the cmdlets UNSIGNED (2147946720); both are this one code.
+_REFUSED = 0x800710E0
+
+
+def _result_code(raw: str) -> int | None:
+    """One task result as ONE unsigned number, whichever tool printed it; None if unreadable."""
+    text = str(raw or "").strip()
+    try:
+        code = int(text, 16) if text.lower().startswith("0x") else int(text)
+    except ValueError:
+        return None
+    return code + 0x1_0000_0000 if code < 0 else code
+
+
 def check_tasks() -> None:
     _section("SCHEDULED TASKS  (what drives the desk)")
     for name, what in TASKS:
@@ -136,16 +157,22 @@ def check_tasks() -> None:
                 k, _, v = line.partition(":")
                 fields[k.strip().lower()] = v.strip()
         status = fields.get("scheduled task state", fields.get("status", "?"))
+        state = fields.get("status", status)
         last_run = fields.get("last run time", "?")
         last_res = fields.get("last result", "?")
+        code = _result_code(last_res)
         if status.lower() in {"disabled"}:
             _bad(f"{name} is INSTALLED BUT DISABLED -- {what}. Enable it in Task Scheduler.")
-        elif last_res not in {"0", "267009", "?"}:
-            # 267009 is "task is currently running", which is healthy.
+        elif state.lower() == "running" or code in _HEALTHY_CODES:
+            _ok(f"{name}: {state}, last run {last_run}, result {last_res} -- {what}")
+        elif code == _REFUSED:
+            _bad(f"{name}: the trigger at {last_run} was REFUSED and nothing ran (0x800710E0) and "
+                 f"no instance is running now -- either the task's Interactive principal had no "
+                 f"desktop session, or the previous run was still going when the trigger fired "
+                 f"(IgnoreNew) -- {what}")
+        else:
             _bad(f"{name} last run {last_run} and returned {last_res} (non-zero = it failed) "
                  f"-- {what}")
-        else:
-            _ok(f"{name}: {status}, last run {last_run}, result {last_res} -- {what}")
     print()
 
 
@@ -176,7 +203,7 @@ def check_processes() -> None:
         return
     blob = out.lower()
     for needle, what in PROCS:
-        if needle.lower() in blob:
+        if any(n.lower() in blob for n in needle.split("|")):
             _ok(f"{what} is running ({needle})")
         else:
             _bad(f"{what} is NOT running ({needle} is absent from the process list)")

@@ -24,6 +24,7 @@ operation (`git filter-repo`) that only the principal may authorise.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -52,7 +53,7 @@ RETIRED: dict[str, str] = {
 FORBIDDEN: dict[str, str] = {**LIVE, **RETIRED}
 
 #: Tracked files carrying a retired identifier, measured 2026-09-11. MAY ONLY GO DOWN.
-MAX_RETIRED_SITES = 46
+MAX_RETIRED_SITES = 44
 
 #: Files that legitimately carry a live identifier and cannot simply drop it, each with the reason
 #: and the plan. AN ENTRY HERE IS A DEBT, NOT A PARDON: it is the list a reader checks first.
@@ -64,6 +65,10 @@ MAX_RETIRED_SITES = 46
 #: provenance check, which is a real safety property. The right fix is that these paths stop being
 #: tracked at all, which is a state-path change and is queued rather than done here.
 ALLOWED: dict[str, str] = {
+    "desks/mt5/data/order_intents.jsonl":
+        "per-intent account/server provenance joins decisions to broker acknowledgements; "
+        "removing it breaks account reconciliation. Migrate to a private raw ledger "
+        "and public projection.",
     "desks/mt5/data/live_ledger.jsonl":
         "per-fill account stamp; removing it breaks ledger provenance. Untrack this path.",
     "desks/mt5/data/universe/broker_info.json":
@@ -72,9 +77,6 @@ ALLOWED: dict[str, str] = {
     # (libs/ops/release.py STATE_PREFIXES), so the WRITER was fixed instead and the stale copy
     # clears itself. Delete each entry once the box has rewritten the file -- the
     # stale-exemption test below fails until you do.
-    "desks/mt5/data/account_state.json":
-        "box-written state; writer fixed in ops/publish_account_state.py, clears on the box's "
-        "next write",
     "desks/mt5/data/cost_truth_quotes.json":
         "box-written state; writer fixed in desks/mt5/research/cost_truth.py, clears on the "
         "box's next write",
@@ -84,6 +86,21 @@ ALLOWED: dict[str, str] = {
 def _tracked() -> list[str]:
     out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True)
     return [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
+
+
+def _contains_identifier(text: str, needle: str) -> bool:
+    # A measured decimal such as 7.495044 is not an account identifier.
+    # Keep integer tokens, quoted identifiers and prose identifiers detectable.
+    return re.search(r"(?<![\d.])" + re.escape(needle) + r"(?![\d.])", text) is not None
+
+
+def test_identifier_matching_preserves_real_identifiers():
+    needle = next(iter(LIVE))
+    assert _contains_identifier('account ' + needle, needle)
+    assert _contains_identifier('"account": ' + needle + ',', needle)
+    assert _contains_identifier('"account": "' + needle + '"', needle)
+    assert not _contains_identifier('"q99": 7.' + needle, needle)
+    assert not _contains_identifier('"sample": 1' + needle + '2', needle)
 
 
 def _hits(needle: str) -> list[str]:
@@ -97,7 +114,8 @@ def _hits(needle: str) -> list[str]:
     # is committed, and the obvious "fix" is to delete the gate. Nothing else is excluded.
     me = Path(__file__).resolve().relative_to(ROOT).as_posix()
     return [q for q in (ln.strip().replace("\\", "/") for ln in out.stdout.splitlines())
-            if q and q != me]
+            if q and q != me and _contains_identifier(
+                (ROOT / q).read_text(encoding="utf-8", errors="replace"), needle)]
 
 
 def _offenders(table: dict[str, str]) -> list[str]:
@@ -143,7 +161,7 @@ def test_the_allowlist_entries_actually_still_need_the_exemption() -> None:
     unneeded = []
     for path in ALLOWED:
         text = (ROOT / path).read_text(encoding="utf-8", errors="replace")
-        if not any(n in text for n in FORBIDDEN):
+        if not any(_contains_identifier(text, n) for n in FORBIDDEN):
             unneeded.append(path)
     assert not unneeded, (
         f"these files no longer contain a forbidden identifier and their exemption is stale: "

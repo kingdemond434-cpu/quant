@@ -313,3 +313,36 @@ def test_a_synthetic_archive_is_never_overlaid_with_the_desks_own_lake(tmp_path:
     p = _archive(tmp_path)
     assert macro_state.alfred_dir_for(p) == tmp_path / "alfred"
     assert macro_state.alfred_dir_for(macro_state.ARCHIVE) == macro_state.ALFRED_DIR
+
+
+# ------------------------------------------------- audit #211 (2026-10-13): absent macro is named
+def test_an_empty_macro_archive_reads_unmeasured_with_a_reason() -> None:
+    """A held or empty FRED archive used to drop d_vix / d_r10 with no status, so two VIX-driven
+    sleeves read as independent. The factor set and every loading now say UNMEASURED and why."""
+    frame = _factor_frame().drop(columns=["d_vix", "d_r10"])
+    fs = leg_factors.factor_set(frame)
+    assert fs is not None and fs.names == ("EUR", "CHF", "USD")
+    assert set(fs.unmeasured) == {"d_vix", "d_r10"}
+    assert "VIXCLS" in fs.unmeasured["d_vix"] and "DGS10" in fs.unmeasured["d_r10"]
+    assert "macro UNMEASURED: d_r10, d_vix" in fs.note
+    r = 200.0 * frame["EUR"].to_numpy()
+    fl = leg_factors.fit_loadings(r, frame.index, fs, "EURUSD")
+    assert fl.unmeasured == ("d_vix", "d_r10") and "UNMEASURED d_vix, d_r10" in fl.why
+    assert fl.n == 500 and set(fl.used) == {"EUR", "USD"}       # the legs still load
+
+
+def test_an_all_nan_macro_column_is_unmeasured_and_does_not_void_the_legs() -> None:
+    frame = _factor_frame()
+    frame["d_vix"] = np.nan
+    fs = leg_factors.factor_set(frame)
+    assert fs is not None and "d_vix" not in fs.names and "d_vix" in fs.unmeasured
+    assert "d_r10" in fs.names and "d_r10" not in fs.unmeasured
+    fl = leg_factors.fit_loadings(200.0 * frame["EUR"].to_numpy(), frame.index, fs, "EURUSD")
+    assert fl.n == 500 and fl.unmeasured == ("d_vix",)
+
+
+def test_a_full_macro_frame_claims_nothing_unmeasured() -> None:
+    fs = leg_factors.factor_set(_factor_frame())
+    assert fs is not None and fs.unmeasured == {} and "UNMEASURED" not in fs.note
+    fl = leg_factors.fit_loadings(np.zeros(500), _factor_frame().index, fs, "EURCHF")
+    assert fl.unmeasured == () and "UNMEASURED" not in fl.why

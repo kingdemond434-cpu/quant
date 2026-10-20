@@ -519,6 +519,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # law half above runs in a detached worktree where every detector artifact is gitignored, so
     # it can only judge the structural half (a detector, a repair, a fence in the tree).
     ("check_self_repair.py", ("--require-state",)),
+    ("check_birth_obligations.py", ("--require-state",)),
     # the live half of REGIONAL PARITY (LAWS 5n): on the box the registry IS open and the forest
     # reports DO exist, so "no resident", "no discovery in the trailing window" and "no candidate
     # in the lattice" are measured absences and the law calls each one a defect. It still caps no
@@ -805,7 +806,9 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     otherwise be wrong: CI and a fresh clone are untouched and cost nothing extra.
     """
     dirt = _dirty(root)
-    if not dirt:
+    sparse = subprocess.run(["git", "config", "--bool", "core.sparseCheckout"],
+                            cwd=root, capture_output=True, text=True, timeout=10)
+    if not dirt and sparse.stdout.strip() != "true":
         return root, "cwd==HEAD (tree clean)", []
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
@@ -816,6 +819,24 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         # On timeout, stop git's reset child before removing its private tree.
         r = _checkout_run(["git", "-c", "checkout.workers=8", "worktree", "add",
                            "--detach", str(wt), "HEAD"],
+                          cwd=root, capture_output=True, text=True, timeout=300)
+        if r.returncode != 0:
+            raise OSError((r.stderr or r.stdout).strip()[:200])
+        # Git copies the caller's sparse-checkout settings into a new worktree.
+        # A law verdict must cover all committed policy/evidence files, including
+        # paths intentionally absent from an operator's source-only checkout.
+        # Disable sparsity only in this private HEAD checkout; never in the caller.
+        r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
+                           "sparse-checkout", "disable"],
+                          cwd=root, capture_output=True, text=True, timeout=300)
+        if r.returncode != 0:
+            raise OSError((r.stderr or r.stdout).strip()[:200])
+        # Individually skipped files (for example a seal added with --sparse)
+        # can retain that index bit after sparsity is disabled. Restore every
+        # committed path explicitly; this checkout has no operator changes.
+        r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
+                           "restore", "--source=HEAD", "--worktree",
+                           "--ignore-skip-worktree-bits", "--", "."],
                           cwd=root, capture_output=True, text=True, timeout=300)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
@@ -852,7 +873,8 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
                 # unknown --in-place makes an older copy die in argparse with empty stdout (this
                 # bug, hit on the first run); an unknown env var is ignored, and an older copy
                 # then does exactly what it always did -- judge in place, no recursion possible.
-                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1"}
+                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1",
+                       "QUANT_LAWGATE_SOURCE_VIEW": "1"}
                 r = subprocess.run([sys.executable, str(where / "scripts/run_law_gate.py"),
                                     "--laws-only", "--json"], cwd=where, env=env,
                                    capture_output=True, text=True, timeout=1800)
@@ -873,6 +895,15 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
         head_note, head_why = ("cwd (in-place: the working tree as it sits)"
                                if laws_only else "cwd (full gate judges LIVE state)"), []
     battery = _LAW_FENCES if laws_only else _LAW_FENCES + _STATE_FENCES
+    # A LAWS-ONLY RUN IS A SOURCE VIEW WHETHER OR NOT THE TREE WAS CLEAN (2026-10-13). The HEAD
+    # re-exec above already sets QUANT_LAWGATE_SOURCE_VIEW; a clean tree skipped that branch and
+    # judged in place WITHOUT it, so one commit read two ways. Since the box publishes
+    # gateway_state.json and JUDGE_COVERAGE.json to origin every 15 minutes, a clean CI or cloud
+    # checkout read those copies as its own runtime: check_self_repair took the copied gateway
+    # stamps for a live trading host (manual 0 -> 11) and check_birth_obligations judged a
+    # six-day-old judge report as fresh (60 families "arrived"). Host state is judged by the
+    # state battery (`--require-state`, full mode) on the host that writes it, never here.
+    fence_env = {**os.environ, "QUANT_LAWGATE_SOURCE_VIEW": "1"} if laws_only else None
     results, failures = [], []
     for script, extra in battery:
         p = root / "scripts" / script
@@ -882,7 +913,7 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
             continue
         try:
             r = subprocess.run([sys.executable, str(p), *extra], capture_output=True,
-                               text=True, timeout=600, cwd=root)
+                               text=True, timeout=600, cwd=root, env=fence_env)
             ok = r.returncode == 0
             tail = (r.stdout or r.stderr or "").strip().splitlines()
             results.append({"fence": script, "ok": ok, "rc": r.returncode,

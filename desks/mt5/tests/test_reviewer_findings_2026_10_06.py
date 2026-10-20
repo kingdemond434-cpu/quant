@@ -165,23 +165,17 @@ def test_acceptance_trigger_state_separates_observed_pending_consumed(
 PF = DESK / "research" / "pf_allocator.py"
 
 
-def test_reproduction_fast_cache_keyed_on_names_and_age_only() -> None:
+def test_fast_cache_requires_matching_evidence_fingerprint() -> None:
     src = PF.read_text(encoding="utf-8")
     assert ('if mode == "fast" and cachef.exists() and time.time() - cachef.stat().st_mtime '
             '< 3600:') in src
-    assert 'if tuple(z["names"]) == tuple(e.name for e in ev):' in src
-    assert ("np.savez_compressed(cachef, r=worlds.r, names=np.array(worlds.names),\n"
-            "                                crisis=worlds.crisis, mu=worlds.mu_draws)") in src
+    assert 'tuple(z["names"]) == tuple(e.name for e in ev)' in src
+    assert '"fingerprint" in z and str(z["fingerprint"].item()) == fingerprint' in src
+    assert 'fingerprint=np.array(fingerprint)' in src
     assert ('labels, probs, regime_diag = (regime_state(daily) if mode in ("heavy", "normal")\n'
             '                                  else ((), (), {"skipped": f"{mode} clock"}))') in src
-    assert "fingerprint" not in src[src.index('cachef = CACHE / "worlds.npz"'):
-                                    src.index("# 1. WHAT GROWTH ACTUALLY WANTS")]
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: fast-path world cache reused on age<3600s + same names only "
-    "(desks/mt5/research/pf_allocator.py:3514-3533); needs a decision-state fingerprint. "
-    + ALLOC))
 def test_acceptance_fast_cache_invalidated_by_decision_relevant_evidence() -> None:
     """Contract (rename freely, keep the substance): `pf_allocator.decision_state_fingerprint(ev,
     cfg)` is stable on identical inputs and changes when ANY decision-relevant input changes with

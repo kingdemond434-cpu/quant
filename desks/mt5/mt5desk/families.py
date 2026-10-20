@@ -1027,7 +1027,9 @@ def _cot_entries(
     rr: float = 1.6,
 ) -> list[Signal]:
     atr = _atr(h1, atr_n)
-    idx_ns = h1.index.to_numpy().astype("datetime64[ns]").astype("int64")
+    # Keep UTC epoch values and explicit nanosecond units. Casting timezone-aware
+    # Timestamp objects through NumPy datetime64 raises under warnings-as-errors.
+    idx_ns = h1.index.as_unit("ns").asi8
     sigs: list[Signal] = []
     for rd, s in zip(cot["report_date"], side):
         if s == 0 or pd.isna(rd):

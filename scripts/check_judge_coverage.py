@@ -121,6 +121,10 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     if age is not None and age > STALE_H:
         out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
                               "why": f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"})
+        if not require_state:
+            out["verdict"] = "UNMEASURED"
+            out["why"] = "stale exported coverage cannot establish current desk state"
+            return out
 
     fams: dict[str, Any] = {f: r for f, r in (doc.get("families") or {}).items()
                             if isinstance(r, dict)}
@@ -156,8 +160,14 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                               "why": ("the judge recorded no verdict in this window -- nothing "
                                       "drained because nothing ran (the gauntlet's clock)")})
     else:
+        # Against the COHORT BASE when the report carries it: the prior backlog plus cells the
+        # bank re-admitted, minus cells parked as not testable since (neither is judging).
+        def _base(r: dict) -> int:
+            b = r.get("cohort_base")
+            return int(r.get("prior_unjudged") or 0) if b is None else int(b or 0)
+
         stalled = sorted((f for f, r in rows_with_baseline
-                          if int(r.get("carried") or 0) >= int(r.get("prior_unjudged") or 0)
+                          if _base(r) > 0 and int(r.get("carried") or 0) >= _base(r)
                           and int(r.get("quota") or 0) > 0
                           and str(r.get("judging_status") or "") != "STUDY_ONLY"),
                          key=lambda f: -int(fams[f].get("carried") or 0))

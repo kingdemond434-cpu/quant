@@ -120,7 +120,8 @@ VERIFIED = DATA / "spread_repair_verified.json"
 #: the quote published here, so a sleeve whose symbol this organ never measured would be
 #: UNRESOLVED in that fence forever -- the audit must cover what it audits.
 SLEEVE_REGISTRY = DATA / "sleeve_registry.json"
-LIVE_LEDGER = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 INTENTS = DATA / "order_intents.jsonl"
 #: The fill recorder's measurement of the desk's own executions. Impact was published here as
 #: UNMEASURED "because matched_fills is 0" -- a sentence, not a reading, and it stayed after the

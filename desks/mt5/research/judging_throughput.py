@@ -63,6 +63,7 @@ import contextlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
@@ -108,9 +109,15 @@ HEADROOM_SHARE = 0.5
 #: The scheduled task the launcher drives, and the cadence band. The gauntlet's cache is
 #: content-addressed and cumulative, so a shorter period is strictly more judging: a pass that
 #: overlaps costs a kill (MT5-StallWatch keeps the oldest parent), never a corrupt cache.
+#:
+#: THE TRIGGER IS NOW A RESPAWNER (principal, 2026-10-10: "0 cadences, no 5 min cadences").
+#: `run_sharded_gauntlet.py` is resident by default: it runs sweeps back to back and never exits
+#: while it can judge, so with `MultipleInstances IgnoreNew` a repetition does nothing while it
+#: lives. The interval is therefore only how fast a DEAD judge comes back, and one minute is the
+#: shortest repetition the scheduler accepts. Both bands are one minute: there is no slow clock.
 GAUNTLET_TASK = "MT5-Gauntlet"
-CADENCE_FAST_MIN = 5
-CADENCE_BASE_MIN = 10
+CADENCE_FAST_MIN = 1
+CADENCE_BASE_MIN = 1
 
 #: A box is the JUDGING box when it measures at least this much. Derived, never a hostname: the
 #: build box has 8 GB and its tasks are disabled, and nothing here may be sized from it.
@@ -220,10 +227,10 @@ def measure_terminal() -> dict[str, Any]:
         term = gate = pyn = 0
         for pr in psutil.process_iter(["name", "cmdline"]):
             name = str(pr.info.get("name") or "").lower()
-            cmd = " ".join(pr.info.get("cmdline") or []).lower()
+            cmd = pr.info.get("cmdline") or []
             if "terminal64" in name:
                 term += 1
-            if "gateway.py" in cmd:
+            if _runs_script(cmd, {"gateway.py", "gateway_resident.py", "run_gateway_loop.py"}):
                 gate += 1
             if name.startswith("python"):
                 pyn += 1
@@ -243,8 +250,26 @@ CPU_RESERVE_MULTIPLE = 1.5
 CPU_RESERVE_MIN_CORES = 1
 
 
-def _is_judge(cmd: str) -> bool:
-    return "external_gauntlet" in cmd or "rungauntlet" in cmd
+def _runs_script(cmd: list[str] | str, names: set[str]) -> bool:
+    args = shlex.split(cmd, posix=False) if isinstance(cmd, str) else cmd
+    # Inspect command arguments, not source text inside a diagnostic `python -c`.
+    for arg in args[:args.index("-c") if "-c" in args else len(args)]:
+        name = str(arg).strip('"').replace("\\", "/").rsplit("/", 1)[-1].lower()
+        if name in names:
+            return True
+    return False
+
+
+def _is_judge(cmd: list[str] | str) -> bool:
+    args = shlex.split(cmd, posix=False) if isinstance(cmd, str) else cmd
+    if _runs_script(args, {"external_gauntlet.py", "run_sharded_gauntlet.py",
+                          "rungauntlet.cmd", "scripts.external_gauntlet"}):
+        return True
+    if "-c" in args:
+        code = args[args.index("-c") + 1:args.index("-c") + 2]
+        return any("from scripts.external_gauntlet import shard_worker;" in str(arg)
+                   for arg in code)
+    return False
 
 
 def measure_cpu(sample_s: float = CPU_SAMPLE_S) -> dict[str, Any]:
@@ -285,7 +310,7 @@ def measure_cpu(sample_s: float = CPU_SAMPLE_S) -> dict[str, Any]:
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
             ppid[pr.pid] = int(pr.info.get("ppid") or 0)
-            if _is_judge(" ".join(pr.info.get("cmdline") or []).lower()):
+            if _is_judge(pr.info.get("cmdline") or []):
                 judge_roots.add(pr.pid)
 
         def _in_judge(pid: int) -> bool:
@@ -359,7 +384,10 @@ def declared_costs() -> dict[str, float]:
 BREACH_DOCKET = BASE / "reports" / "CLOCK_CERTIFICATE_BREACH.json"
 
 
-def measure_queue() -> dict[str, Any]:
+BACKPRESSURE_MAX_AGE_HOURS = 6
+
+
+def measure_queue(now: datetime | None = None) -> dict[str, Any]:
     """How deep the judging queue is and how many gates an hour the judge actually achieves.
 
     Both come from the gauntlet's own backpressure artifact, which is the only thing on this desk
@@ -375,6 +403,19 @@ def measure_queue() -> dict[str, Any]:
         out["why"] = f"{BACKPRESSURE.name} absent or unreadable: queue depth is UNMEASURED"
         return out
     meas = (doc.get("capacity") or {}).get("measured") or {}
+    source_at = meas.get("swept_at") or doc.get("at")
+    try:
+        stamp = datetime.fromisoformat(str(source_at).replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            raise ValueError("timestamp has no timezone")
+        age = (_now(now) - stamp).total_seconds()
+    except (TypeError, ValueError):
+        age = None
+    out.update(source_at=source_at, source_age_seconds=age)
+    if age is None or age < -60 or age > BACKPRESSURE_MAX_AGE_HOURS * 3600:
+        out["why"] = ("backpressure timestamp missing, invalid, future or stale; "
+                      "historical sweep is not current queue capacity")
+        return out
     disc, judged = meas.get("n_cells_discovered"), meas.get("n_judged")
     win = (doc.get("windows") or {}).get("24h") or {}
     per_hour = (win.get("testing") or {}).get("per_hour")
@@ -438,8 +479,12 @@ def _burndown() -> dict[str, Any]:
                 "burndown_why": f"{BURNDOWN.name} absent: the burn-down is UNMEASURED"}
     return {"burndown_status": bd.get("status", UNMEASURED),
             "burndown_net_per_day": bd.get("net_per_day", UNMEASURED),
-            "burndown_needed_first_rulings_per_hour":
-                bd.get("needed_first_rulings_per_hour", UNMEASURED),
+            # The burn-down names its outflow unit (settled = rulings + parkings since PR #290);
+            # the needed rate is read in whichever unit it published.
+            "burndown_needed_per_hour":
+                bd.get("needed_settled_per_hour",
+                       bd.get("needed_first_rulings_per_hour", UNMEASURED)),
+            "burndown_outflow_unit": bd.get("outflow_unit", UNMEASURED),
             "burndown_source": BURNDOWN.name}
 
 

@@ -1458,16 +1458,13 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
 
 
 def structurally_untestable_families() -> dict[str, str]:
-    """Families the gauntlet has MEASURED as producing zero judgeable cells, from its own report.
+    """Historical all-unmeasured family batches, retained as diagnostic warnings.
 
-    Data-driven, never a hardcoded list (LAWS anti-hardcode): a family joins this set only when
-    the last sweep built >=5 of its cells and judged NONE (all under the 60 trading days the
-    gates need) -- measured 2026-08-27: carry 193/193, event_reaction 113/113, calendar_month
-    2/2, lvc_asia_london 3/3 re-shipped every hour, ~310 guaranteed-unjudgeable builds per
-    sweep. Routing them to the DEEPENING queue is not a rejection: it is the statement that
-    these parameterizations need widening (pooled events, longer windows) before any gate can
-    rule, which is exactly what the deepening queue exists to ask the research brains for.
-    A family leaves the set the moment one of its cells becomes judgeable.
+    A past sweep with at least five cells and no measured verdict does not prove
+    that another symbol, parameterization, chart or later data version is also
+    untestable. Complete recipes still enter the canonical evaluator, which owns
+    their actual sample and validation requirements. Incomplete prose still needs
+    deepening. These family warnings are never queue-disposition receipts.
     """
     report = BASE / "reports" / "universal_gates_external.json"
     try:
@@ -1561,7 +1558,7 @@ def main() -> int:
         bank = None
     untestable = structurally_untestable_families()
     if untestable:
-        print("families routed to DEEPENING (measured untestable at current parameters): "
+        print("families with prior sample gaps (advisory; exact recipes still enter the judge): "
               + ", ".join(sorted(untestable)))
 
     # CROSS-ENGINE AGREEMENT (2026-09-08). Two engines proposing the SAME cell already collide
@@ -1649,11 +1646,10 @@ def main() -> int:
                                   sort_keys=True, default=str)
             fam = str(candidate.get("family") or "")
             if fam in untestable:
-                if identity not in deepening:
-                    deepening[identity] = {**candidate,
-                                           "deepening_reason": untestable[fam]}
-                    stats["deepening"] = int(stats["deepening"]) + 1
-                continue
+                # A past batch's sample gap cannot veto every symbol, parameter,
+                # chart or later data version in a family. Preserve the warning;
+                # the canonical evaluator owns sample eligibility for THIS cell.
+                candidate["prior_family_build_gap"] = untestable[fam]
             row_reached_docket = True
             sources_by_identity.setdefault(identity, set()).add(source)
             if identity not in candidates:
