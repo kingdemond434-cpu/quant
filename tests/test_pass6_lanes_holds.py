@@ -310,3 +310,100 @@ def test_mf3_under_pytest_no_override_writes_no_desk_ledger(
         monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("QUANT_REDIRECT_CUTS", raising=False)
     assert tf._redirect_cuts_path() is None
+
+
+# --------------------------------------- delta audit e8bd75903: every cut writes ONE line
+@pytest.fixture
+def cutsrv(monkeypatch: pytest.MonkeyPatch) -> Iterator[int]:
+    """127.0.0.1 redirects by path to every kind of hop fetch_hops must cut."""
+    for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("no_proxy", "*")
+    monkeypatch.setattr(D.time, "sleep", lambda *_: None)
+
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, *a: Any) -> None:
+            pass
+
+        def do_GET(self) -> None:
+            port = self.server.server_address[1]
+            if self.path == "/robots.txt":
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"User-agent: *\nDisallow: /private\n")
+                return
+            loc = {"/held": f"http://localhost:{port}/t",
+                   "/mirror": f"https://web.archive.org/web/2019/http://localhost:{port}/t",
+                   "/alias": "http://2130706434/t",
+                   "/upper": f"HTTP://LOCALHOST:{port}/t",
+                   "/fenced": "https://nitter.net/x",
+                   "/login": "/login",
+                   "/xpriv": f"http://localhost:{port}/private",
+                   "/spriv": "/private",
+                   "/unread": "http://127.0.0.1:1/x",
+                   "/loop": "/loop",
+                   "/ftp": "ftp://files.example.org/x"}.get(self.path)
+            if loc is not None:
+                self.send_response(302)
+                self.send_header("Location", loc)
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(BODY)
+    s = HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=s.serve_forever, daemon=True).start()
+    yield s.server_address[1]
+    s.shutdown()
+    s.server_close()
+
+
+CUT_KINDS = [("/held", "site_held"), ("/mirror", "site_held"), ("/alias", "site_held"),
+             ("/upper", "site_held"), ("/fenced", "nitter"), ("/login", "login_wall"),
+             ("/xpriv", "robots"), ("/spriv", "robots"), ("/unread", "robots"),
+             ("/loop", "too_many_redirects"), ("/ftp", "non_http_redirect")]
+
+
+@pytest.mark.parametrize(("path", "kind"), CUT_KINDS)
+@pytest.mark.parametrize("route", ["page", "index_page"])
+def test_delta_every_cut_hop_writes_exactly_one_missed_growth_line(
+        cutsrv: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, path: str, kind: str,
+        route: str) -> None:
+    ledger = tmp_path / "cuts.jsonl"
+    monkeypatch.setenv("QUANT_REDIRECT_CUTS", str(ledger))
+    r = _run()
+    r.holds.hold(f"http://localhost:{cutsrv}/", 403)
+    r.holds.hold("http://127.0.0.2/", 403)
+    assert getattr(r, route)(f"http://127.0.0.1:{cutsrv}{path}") == ""
+    rows = tf.redirect_cut_lines(str(ledger))
+    assert len(rows) == 1, rows
+    assert rows[0]["source"] == kind and rows[0]["delta_elogw"] == "UNMEASURED"
+    (st,) = [x for x in r.status if x.get("redirect_stopped")]
+    assert st["missed_growth"]["kind"] == "redirect_cut" and st["missed_growth"]["source"] == kind
+
+
+def test_delta_a_same_origin_hop_into_a_disallowed_path_is_not_requested(cutsrv: int) -> None:
+    r = _run()
+    assert r.page(f"http://127.0.0.1:{cutsrv}/spriv") == ""
+    assert [x for x in r.status if x.get("redirect_stopped", "").endswith("/private")]
+
+
+def test_delta_an_ipv4_mapped_address_shares_the_ipv4_hold() -> None:
+    assert D.canonical_host("::ffff:192.168.1.1") == "192.168.1.1"
+    s = D.SiteHolds()
+    s.hold("http://192.168.1.1/", 403)
+    assert s.held("http://[::ffff:192.168.1.1]/x") and s.held("http://[::FFFF:c0a8:101]/")
+    s2 = D.SiteHolds()
+    s2.hold("http://[::ffff:10.0.0.1]/", 403)
+    assert s2.held("http://10.0.0.1/")
+
+
+def test_delta_a_non_utf8_frontier_is_damaged_and_kept(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fp = tmp_path / "f.json"
+    raw = b'{"vectors": {"site:h.example": {"outcome": "BLOCKED", "blocker": "\xff\xfe"}}}'
+    fp.write_bytes(raw)
+    monkeypatch.setattr(D, "_frontier_path", lambda: fp)
+    assert D.frontier_damaged(fp)
+    assert D._record_frontier([], [{"name": "g", "site": "u.org"}])["status"] == "UNMEASURED"
+    assert fp.read_bytes() == raw
