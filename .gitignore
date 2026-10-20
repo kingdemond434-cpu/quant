@@ -484,6 +484,8 @@ desks/mt5/data/import_stems_cache.json
 # Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
 desks/mt5/data/hypotheses/unrunnable_specs.json
 desks/mt5/data/hypotheses/conversion_handoff.json
+# per-shard verdict publications (sealed judge, IDEA_QUEUE 159): a provisional copy, never state
+desks/mt5/data/hypotheses/shard_verdicts/
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.

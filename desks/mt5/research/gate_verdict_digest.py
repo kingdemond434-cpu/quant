@@ -278,8 +278,24 @@ def digest_sweep(path: Path = SWEEP) -> dict[str, Any]:
     }
 
 
+def _in_flight(root: Path | None) -> dict[str, Any]:
+    """The sweep under way: what its finished shards already published (`shard_verdicts`)."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "_gvd_shard_verdicts", Path(__file__).with_name("shard_verdicts.py"))
+        if spec is None or spec.loader is None:
+            return {"status": "UNREADABLE", "why": "shard_verdicts.py is not loadable"}
+        sv = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sv)
+        got = sv.in_flight(sv.ROOT if root is None else root)
+        return dict(got) if isinstance(got, dict) else {"status": "UNREADABLE"}
+    except Exception as exc:  # a report never fails the digest
+        return {"status": "UNREADABLE", "why": f"{type(exc).__name__}: {exc}"[:160]}
+
+
 def build(ledger: Path = LEDGER, sweep: Path = SWEEP, *, latest_n: int = LATEST_N,
-          now: datetime | None = None) -> dict[str, Any]:
+          now: datetime | None = None, shard_root: Path | None = None) -> dict[str, Any]:
     led = digest_ledger(ledger, latest_n)
     swp = digest_sweep(sweep)
     measured = [k for k, d in (("ledger", led), ("latest_sweep", swp))
@@ -295,6 +311,8 @@ def build(ledger: Path = LEDGER, sweep: Path = SWEEP, *, latest_n: int = LATEST_
         # AN UNNAMED TERMINAL GATE IS A NAMED DEFECT: the newest sweep's count, the ledger's, and
         # whether the newest sweep already carries the judge's stamp (UNMEASURED when unread).
         "terminal_defects": _defects_headline(led, swp),
+        # VISIBLE BEFORE THE MERGE: the running sweep's finished shards, provisional by status.
+        "in_flight": _in_flight(shard_root),
     }
 
 
