@@ -366,7 +366,7 @@ def licensed_daily(ticker: str, consumer: str = "free_data", *,
 #: THE FRED SERIES THIRD PARTIES OWN (terms_fence `fred_copyrighted`) and what stands in for each
 #: as live input. `route` None: no licensed source exists -> UNMEASURED_NO_LICENSED_SOURCE. The
 #: gold fix's stand-in is the desk's own XAUUSD, carried under its OWN name (the anchors' `GC`
-#: column, `GOLD_USD_MT5` in macro_state) -- never stored under the fix's id.
+#: column, `GOLD_USD` + `GOLD_USD_SOURCE` in macro_state) -- never stored under the fix's id.
 FRED_COPYRIGHTED_SUBSTITUTES: dict[str, dict[str, Any]] = {
     "VIXCLS": {"route": None, "series": None,
                "why": ("Cboe owns VIX (FRED notes: 'Copyright, 2016, Chicago Board Options "
@@ -383,7 +383,18 @@ FRED_COPYRIGHTED_SUBSTITUTES: dict[str, dict[str, Any]] = {
                         "2016, Surveys of Consumers'); no licensed substitute is registered")},
     "GOLDAMGBD228NLBM": {"route": "mt5_own_bars", "series": "XAUUSD",
                          "note": ("spot XAUUSD daily close from the desk's own bars, not the LBMA "
-                                  "AM fix: carried as anchors `GC` / macro_state `GOLD_USD_MT5`")},
+                                  "AM fix: carried as anchors `GC` / macro_state `GOLD_USD`")},
+    "GOLDPMGBD228NLBM": {"route": "mt5_own_bars", "series": "XAUUSD",
+                         "note": "spot XAUUSD from own bars, not the LBMA PM fix"},
+    "SP500": {"route": "mt5_own_bars", "series": "US500",
+              "note": "the Fusion US500 CFD level from own bars, not the S&P index"},
+    "NASDAQCOM": {"route": "mt5_own_bars", "series": "NAS100",
+                  "note": ("the Fusion NAS100 CFD (Nasdaq-100) from own bars -- a different "
+                           "index from the Composite, never stored under its id")},
+    "NIKKEI225": {"route": "mt5_own_bars", "series": "JPN225",
+                  "note": "the Fusion JPN225 CFD level from own bars, not the Nikkei index"},
+    "PCOPPUSDM": {"route": "mt5_own_bars", "series": "XCUUSD",
+                  "note": "the Fusion XCUUSD copper CFD from own bars, not the IMF monthly price"},
 }
 
 

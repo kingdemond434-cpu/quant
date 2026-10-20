@@ -156,7 +156,9 @@ def daily_factor_returns(universe: Path = UNIVERSE, archive: Path | None = None,
 
     if cache is not None and cache.exists() and time.time() - cache.stat().st_mtime < max_age_s:
         try:
-            return pd.read_parquet(cache)
+            # a factor built from a third-party FRED series (d_vix <- VIXCLS) is never served
+            # from a cache a pre-ruling pass wrote: dropped, so it reads UNMEASURED, never stale
+            return pd.read_parquet(cache).drop(columns=_refused_factors(), errors="ignore")
         except (OSError, ValueError):
             pass
     try:
@@ -206,12 +208,23 @@ def daily_factor_returns(universe: Path = UNIVERSE, archive: Path | None = None,
     return frame
 
 
+def _refused_factors() -> list[str]:
+    """Macro factors whose FRED series a third party owns (terms_fence fred_copyrighted)."""
+    from libs.data.terms_fence import fred_series_source
+    return [n for n, (sid, _how) in MACRO_FACTORS.items() if fred_series_source(sid)]
+
+
 def macro_unmeasured(columns: Iterable[Any], frame: Any = None) -> dict[str, str]:
     """Every macro factor missing from (or empty in) a factor frame, with the reason."""
     have = {str(c) for c in columns}
     out: dict[str, str] = {}
+    refused = set(_refused_factors())
     for name, (sid, _how) in MACRO_FACTORS.items():
-        if name not in have:
+        if name in refused:
+            out[name] = (f"UNMEASURED_NO_LICENSED_SOURCE: {sid} is a third-party FRED series "
+                         "(terms_fence fred_copyrighted), never live input; sleeves that carry "
+                         "this factor have no loading on it")
+        elif name not in have:
             out[name] = (f"UNMEASURED: no {sid} rows in the macro archive (empty, held or "
                          "absent); sleeves that carry this factor have no loading on it")
         elif frame is not None and not bool(np.isfinite(

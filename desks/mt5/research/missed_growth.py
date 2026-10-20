@@ -703,6 +703,8 @@ FRED_COPYRIGHTED_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
     ("macro_desk.anchors", BASE / "data" / "cross_asset_anchors.provenance.json"),
     ("macro_desk.state", BASE / "data" / "macro_state.json"),
     ("run_hunt23", BASE / "reports" / "hunt23.json"),
+    ("axis_ingest.fred", BASE / "data" / "axes" / "fred.json"),
+    ("collect_fred_macro", BASE.parent.parent / "data" / "fred_macro.json"),
 )
 
 

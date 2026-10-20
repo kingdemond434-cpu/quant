@@ -351,6 +351,19 @@ FRED_COPYRIGHTED_NOTES: dict[str, str] = {
     # CLOSED, treated as copyrighted (LBMA Gold Price, IBA-administered).
     "GOLDAMGBD228NLBM": ("UNREADABLE: series deleted from FRED 2022-01-31 (IBA data, LBMA Gold "
                          "Price); treated as copyrighted, fail closed"),
+    "GOLDPMGBD228NLBM": ("UNREADABLE: series deleted from FRED 2022-01-31 (IBA data, LBMA Gold "
+                         "Price PM); treated as copyrighted, fail closed"),
+    # research/fetch_fred.py's lake (second pass, 2026-10-20: each page read for its notes)
+    "SP500": ("Copyright \u00a9 2016, S&P Dow Jones Indices LLC. All rights reserved. "
+              "Reproduction of S&P 500 in any form is prohibited except with the prior written "
+              "permission of S&P Dow Jones Indices LLC"),
+    "NASDAQCOM": "Copyright \u00a9 2016, NASDAQ OMX Group, Inc.",
+    "NIKKEI225": "Copyright, 2016, Nikkei Inc. Reprinted with permission.",
+    # the IMF's own terms grant commercial reuse of 'Data' only where it "is not owned by a
+    # third-party", and a primary commodity price is a third-party benchmark: fail closed
+    "PCOPPUSDM": ("Copyright \u00a9 2016, International Monetary Fund. Reprinted with "
+                  "permission. [IMF terms: \u201cData\u201d refers to any published statistical "
+                  "data produced by the IMF that is not owned by a third-party.]"),
 }
 SOURCE_POLICY.update({
     "fred_copyrighted": {
@@ -398,6 +411,14 @@ SOURCE_POLICY.update({
                       "RRPONTSYD": "tag 'Copyrighted: Citation Required'; no notice in the notes",
                       "JPNCPIALLMINMEI": ("tag 'Copyrighted: Citation Required'; notes carry an "
                                           "OECD citation instruction, no notice"),
+                      "IR3TIB01JPM156N": ("tag 'Copyrighted: Citation Required'; no notice in "
+                                          "the notes"),
+                      "ECBDFR": (
+                          "notes: 'Copyright, 2021, European Central Bank (ECB). Reprinted with "
+                          "permission.'; the ECB's own terms (ecb.europa.eu/services/disclaimer, "
+                          "read 2026-10-20): 'users of this website may make free use of the "
+                          "information obtained directly from it subject to the following "
+                          "conditions:' (accurate, ECB cited as the source)"),
                       "CP0000EZ19M086NEST": (
                           "notes: 'Copyright, European Union: https://commission.europa.eu/"
                           "legal-notice_en#copyright-notice'; that page (read 2026-10-14): "
@@ -411,6 +432,26 @@ def fred_series_source(series_id: str) -> str | None:
     copyright notice, or it could not be read), else None. Case-insensitive: FRED ids are."""
     sid = str(series_id or "").strip().upper()
     return "fred_copyrighted" if sid in SOURCE_POLICY["fred_copyrighted"]["series"] else None
+
+
+#: FRED's hosts whose QUERY names the series (fredgraph.csv?id=, the API's series_id=).
+_FRED_HOSTS = ("fred.stlouisfed.org", "alfred.stlouisfed.org", "api.stlouisfed.org")
+
+
+def _fred_query_source(url: str) -> str | None:
+    """'fred_copyrighted' when a FRED URL's query names a third-party series (any of `id`,
+    `series_id`; comma lists included), else None. A route pattern reads host + path only, so
+    without this a fredgraph.csv?id=VIXCLS request would read as a public-domain page."""
+    parts = _parse(url)
+    if parts is None or not _on(_host(url), _FRED_HOSTS):
+        return None
+    from urllib.parse import parse_qs
+    q = parse_qs(parts.query or "", keep_blank_values=False)
+    for k in ("id", "series_id"):
+        for v in q.get(k) or ():
+            if any(fred_series_source(x) for x in str(v).split(",")):
+                return "fred_copyrighted"
+    return None
 
 
 #: JPX's site terms (Japanese and English pages), read 2026-10-14 for the pass-6 F4 holds. One
@@ -1164,7 +1205,7 @@ def source_of_url(url: str, _depth: int = 0) -> str | None:
     k = _host_source(h)
     if k and status(k) in HOLDING:
         return k
-    kp = _pattern_source(url)
+    kp = _pattern_source(url) or _fred_query_source(url)
     if kp:
         # a route row (`url_patterns`: host + path) names this exact route; a HOLDING host row
         # above still wins, being the stricter answer

@@ -100,8 +100,8 @@ def _load() -> tuple[dict[str, list[float]], str | None, float | None]:
     out: dict[str, list[float]] = {}
     newest = None
     for k, pts in (doc.get("series") or {}).items():
-        if not isinstance(pts, list):
-            continue
+        if not isinstance(pts, list) or _third_party(str(k)):
+            continue                    # a third-party series is absent, even in a stale file
         vals = []
         for p in pts:
             try:
@@ -122,6 +122,19 @@ def _load() -> tuple[dict[str, list[float]], str | None, float | None]:
     return out, newest, age
 
 
+def _third_party(series_id: str) -> bool:
+    """True for a FRED series a third party owns (terms_fence fred_copyrighted: VIXCLS). Fails
+    CLOSED: if the register cannot be imported, VIXCLS is still refused."""
+    try:
+        import sys
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.data.terms_fence import fred_series_source
+        return bool(fred_series_source(series_id))
+    except Exception:
+        return series_id.upper() in ("VIXCLS", "BAMLH0A0HYM2")
+
+
 def view() -> dict[str, Any]:
     """The lean per currency, the confidence, and why."""
     series, newest, age = _load()
@@ -137,17 +150,26 @@ def view() -> dict[str, Any]:
     vix = 2.0 * (ranks.get("VIXCLS", 0.5) - 0.5)
     r10 = 2.0 * (ranks.get("DGS10", 0.5) - 0.5)
 
+    has_risk = "VIXCLS" in ranks
+    unmeasured: dict[str, str] = {}
+    if not has_risk:
+        # THE RISK LEG IS ABSENT, NOT NEUTRAL. With no licensed VIX (VIXCLS is Cboe's, refused as
+        # live input) the risk-on and haven currencies get NO lean -- never a lean of 0 that reads
+        # as "risk is at the middle of its year" -- and gold is read off the dollar alone.
+        unmeasured["risk"] = ("UNMEASURED_NO_LICENSED_SOURCE: VIXCLS is a third-party FRED "
+                              "series (terms_fence fred_copyrighted); no risk lean is published")
     lean: dict[str, float] = {}
     # USD: the dollar index is the direct read; the 10-year reinforces it at half weight.
     lean["USD"] = max(-1.0, min(1.0, 0.7 * dxy + 0.3 * r10))
     for c in DOLLAR_INVERSE:
         lean[c] = -0.6 * lean["USD"]
-    for c in RISK_ON:
-        lean[c] = -0.8 * vix
-    for c in HAVENS:
-        lean[c] = 0.8 * vix
-    # Gold: risk-off AND a weak dollar both lift it.
-    lean["XAU"] = max(-1.0, min(1.0, 0.6 * vix - 0.6 * dxy))
+    if has_risk:
+        for c in RISK_ON:
+            lean[c] = -0.8 * vix
+        for c in HAVENS:
+            lean[c] = 0.8 * vix
+    # Gold: risk-off AND a weak dollar both lift it (the dollar alone when risk is absent).
+    lean["XAU"] = max(-1.0, min(1.0, (0.6 * vix if has_risk else 0.0) - 0.6 * dxy))
     lean["XAG"] = 0.7 * lean["XAU"]
 
     # Confidence: how far the drivers sit from the middle, then decayed by staleness.
@@ -162,7 +184,7 @@ def view() -> dict[str, Any]:
             "why": why, "lean": {k: round(v, 3) for k, v in lean.items()},
             "confidence": conf, "freshness": round(fresh, 3), "strength": round(strength, 3),
             "ranks": {k: round(v, 3) for k, v in ranks.items()},
-            "newest_print": newest, "age_days": age}
+            "newest_print": newest, "age_days": age, "unmeasured": unmeasured}
 
 
 def _legs(symbol: str) -> tuple[str, str] | None:
@@ -184,8 +206,13 @@ def score(symbol: str, v: dict[str, Any] | None = None) -> tuple[float | None, s
     lean = v["lean"]
     if base not in lean and quote not in lean:
         return None, f"no lean for either leg of {symbol}"
+    # an ABSENT leg (no lean published, e.g. the risk leg with no licensed VIX) contributes
+    # nothing and is named as absent -- the pair is read off the leg that IS measured
     s = lean.get(base, 0.0) - lean.get(quote, 0.0)
-    return max(-1.0, min(1.0, s)), f"{base} {lean.get(base, 0.0):+.2f} vs {quote} {lean.get(quote, 0.0):+.2f}"
+
+    def _leg(c: str) -> str:
+        return f"{lean[c]:+.2f}" if c in lean else "absent"
+    return max(-1.0, min(1.0, s)), f"{base} {_leg(base)} vs {quote} {_leg(quote)}"
 
 
 #: The families a macro REGIME can legitimately condition. These hold across sessions -- carry

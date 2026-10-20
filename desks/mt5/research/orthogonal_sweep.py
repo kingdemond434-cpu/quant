@@ -272,6 +272,18 @@ MACRO_PUBLICATION_LAG_D = 1
 MACRO_RANK_MIN_OBS = 250
 
 
+def _third_party_fred(series_id: str) -> bool:
+    """True for a FRED series a third party owns (libs/data/terms_fence `fred_copyrighted`:
+    VIXCLS, BAMLH0A0HYM2, ...). Such a series is never live input -- read from no file, however
+    fresh or stale -- so the reader sees it ABSENT and its dependent output is UNMEASURED."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(str(series_id)))
+
+
 def _macro_series(index, name: str | None = None):
     """A POINT-IN-TIME macro regime series on the bar clock, or None. Never a broadcast scalar.
 
@@ -298,6 +310,8 @@ def _macro_series(index, name: str | None = None):
     if not isinstance(series_map, dict):
         return None
     for key in ((name,) if name else DAILY_MACRO_SERIES):
+        if _third_party_fred(key):
+            continue                    # third-party series: absent, never a conditioning input
         rows = series_map.get(key)
         if not isinstance(rows, list) or len(rows) < MACRO_RANK_MIN_OBS:
             continue
@@ -327,7 +341,7 @@ def _macro_series_name() -> str | None:
     if not isinstance(series_map, dict):
         return None
     return next((k for k in DAILY_MACRO_SERIES
-                 if isinstance(series_map.get(k), list)
+                 if not _third_party_fred(k) and isinstance(series_map.get(k), list)
                  and len(series_map[k]) >= MACRO_RANK_MIN_OBS), None)
 
 
