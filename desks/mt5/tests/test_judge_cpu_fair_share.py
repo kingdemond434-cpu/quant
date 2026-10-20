@@ -35,12 +35,13 @@ BN, N, IDLE, AN, HIGH = jp.BELOW_NORMAL, jp.NORMAL, jp.IDLE, jp.ABOVE_NORMAL, jp
 R = jp.CLASS_RANK
 
 
-def _p(pid, ppid, name, cmd, nice):
+def _p(pid, ppid, name, cmd, nice, created=None):
+    # start time follows pid in the fixtures: a parent (lower pid) always predates its child
     return {"pid": pid, "ppid": ppid, "name": name, "cmdline": cmd, "nice": nice,
-            "cpu_cores": 0.5}
+            "cpu_cores": 0.5, "create_time": float(pid if created is None else created)}
 
 
-def _box(miner_nice=BN, judge_nice=BN, e8_nice=N, extra=()):
+def _box(miner_nice=BN, judge_nice=BN, e8_nice=N, term_nice=BN, gw_nice=N, extra=()):
     py = r"C:\Program Files\Python314\python.exe"
     return [
         _p(10, 1, "python.exe", [py, "-u", r"scripts\run_sharded_gauntlet.py"], judge_nice),
@@ -55,7 +56,8 @@ def _box(miner_nice=BN, judge_nice=BN, e8_nice=N, extra=()):
         _p(30, 1, "cmd.exe", ["cmd.exe", "/c", r"C:\opt\quant\ops\run_frontier_audit.cmd"], BN),
         _p(31, 30, "python.exe", [py, "-u", r"desks\mt5\research\world_model.py", "--apply"], BN),
         _p(40, 1, "python.exe", [py, r"desks\mt5\prop\e8_executor.py"], e8_nice),
-        _p(41, 1, "terminal64.exe", [r"C:\MT5\terminal64.exe"], BN),
+        _p(41, 1, "terminal64.exe", [r"C:\MT5\terminal64.exe"], term_nice),
+        _p(42, 1, "python.exe", [py, r"research\gateway_resident.py"], gw_nice),
         _p(50, 1, "python.exe", [py, r"scripts\warm_gauntlet_cache.py"], IDLE),
         *extra,
     ]
@@ -67,29 +69,80 @@ def test_classification_follows_command_line_then_ancestry() -> None:
     assert cls[10] == cls[11] == cls[12] == "judge"       # pool child inherits the judge
     assert cls[20] == cls[21] == "miner"
     assert cls[30] == cls[31] == "audit"                  # organ under the audit cmd
-    assert cls[40] == cls[41] == "live"
+    assert cls[40] == cls[41] == cls[42] == "live"        # E8, terminal64, the gateway
     assert cls[50] == "judge_warm"
+
+
+def test_only_an_interpreter_is_the_judge_and_a_reused_parent_is_no_parent() -> None:
+    py = "python.exe"
+    extra = [
+        # probe G: git and an editor with the judge's file in argv are not the judge
+        _p(60, 1, "git.exe", ["git", "diff", r"desks\mt5\scripts\external_gauntlet.py"], N),
+        _p(61, 1, "code.exe", ["code", r"scripts\run_sharded_gauntlet.py"], N),
+        # probe H: an orphan miner whose dead parent's pid (11) was reused by the judge's sweep
+        # child AFTER the orphan started: born at t=5, the "parent" at t=11
+        _p(62, 11, py, [py, r"research\scout_swarm.py"], N, created=5.0),
+    ]
+    cls = {r["pid"]: r["cls"] for r in jp.classify(_box(extra=extra))}
+    assert cls[60] == cls[61] == "other"
+    assert cls[62] == "miner"
 
 
 @pytest.mark.parametrize("miners", [[R[BN]], [R[N]], [R[BN], R[N]], [R[N], R[AN]],
                                     [R[HIGH]], [R[AN], R[HIGH]]])
 @pytest.mark.parametrize("lives", [[], [R[N]], [R[BN]], [R[AN]]])
-def test_the_judge_is_never_above_any_miner(miners, lives) -> None:
-    t = jp.judge_target(miners, lives)
+@pytest.mark.parametrize("registered", [None, R[N], R[AN], R[HIGH]])
+@pytest.mark.parametrize("unreadable", [0, 1])
+def test_the_judge_is_never_above_any_miner(miners, lives, registered, unreadable) -> None:
+    t = jp.judge_target(miners, lives, registered_live=registered, unreadable=unreadable)
     assert t["status"] == "MEASURED"
     assert t["rank"] <= min(miners), "the judge may never sit above any miner"
     assert t["rank"] <= jp.JUDGE_CEILING_RANK
     assert t["rank"] >= R[BN], "the rule never pushes the judge below where it already is"
     assert t["above_any_miner"] is False
-    if lives and min(lives) > R[BN]:
-        assert t["rank"] < min(lives), "a live clock always preempts the judge"
+    for live in [*lives, *([registered] if registered is not None else [])]:
+        if live > R[BN]:
+            assert t["rank"] < live, "every live class, registered or observed, preempts it"
+    if unreadable or registered is None:
+        assert t["rank"] == R[BN], "an unreadable row or registration refuses any raise"
 
 
-def test_equal_priority_is_the_answer_when_nothing_caps_it() -> None:
-    assert jp.judge_target([R[BN], R[BN]])["rank"] == R[BN]
-    assert jp.judge_target([R[N], R[N]])["rank"] == R[N]          # raised to EQUAL
-    assert jp.judge_target([R[N], R[N]], [R[N]])["rank"] == R[BN]  # E8 at NORMAL keeps its edge
-    assert jp.judge_target([R[BN], R[N]])["rank"] == R[BN]        # the LOWEST miner binds
+def test_the_live_cap_fails_closed_on_every_audit_probe() -> None:
+    reg = jp.registered_live_rank()
+    assert reg == R[N], "install_e8_tasks.ps1 registers E8 at Priority 4 = NORMAL"
+    # A: E8 not running at the census -- the registered class still caps the judge
+    box = [r for r in _box(miner_nice=N, term_nice=AN, gw_nice=AN) if r["pid"] != 40]
+    assert jp.census(box)["target"]["rank"] == R[BN]
+    # C: E8's command line unreadable -> not "a miner at NORMAL" but an unreadable row
+    box = _box(miner_nice=N, term_nice=AN, gw_nice=AN, e8_nice=AN)
+    box[7]["cmdline"] = None
+    t = jp.census(box, registered_live=R[HIGH])["target"]
+    assert t["rank"] == R[BN] and t["unreadable_rows"] == 1
+    # D: E8's priority unreadable -> no raise
+    box = _box(miner_nice=N, term_nice=AN, gw_nice=AN, e8_nice=None)
+    assert jp.census(box, registered_live=R[HIGH])["target"]["rank"] == R[BN]
+    # terminal64 at BELOW_NORMAL is a live class too: a NORMAL judge would sit above it
+    box = _box(miner_nice=N, term_nice=BN, gw_nice=AN, e8_nice=AN)
+    assert jp.census(box, registered_live=R[HIGH])["target"]["rank"] == R[BN]
+    # ...and the gateway likewise
+    box = _box(miner_nice=N, term_nice=AN, gw_nice=N, e8_nice=AN)
+    assert jp.census(box, registered_live=R[HIGH])["target"]["rank"] == R[BN]
+    # the registration unreadable -> no raise
+    box = _box(miner_nice=N, term_nice=AN, gw_nice=AN, e8_nice=AN)
+    assert jp.census(box, registered_live=None)["target"]["rank"] == R[BN]
+    # only when EVERY live class is provably above NORMAL may the judge rise to EQUAL
+    assert jp.census(box, registered_live=R[AN])["target"]["rank"] == R[N]
+
+
+def test_the_registered_class_is_read_from_the_installer(tmp_path) -> None:
+    f = tmp_path / "i.ps1"
+    f.write_text("Set-E8Task -Priority 4\nSet-E8Task -Priority 6\n", "utf-8")
+    assert jp.registered_live_rank(f) == R[N]
+    f.write_text("Set-E8Task -Priority 2\n", "utf-8")
+    assert jp.registered_live_rank(f) == R[AN]
+    f.write_text("nothing here\n", "utf-8")
+    assert jp.registered_live_rank(f) is None
+    assert jp.registered_live_rank(tmp_path / "absent.ps1") is None
 
 
 def test_no_miner_or_only_idle_miners_is_unmeasured_and_keeps_the_default() -> None:
@@ -100,19 +153,48 @@ def test_no_miner_or_only_idle_miners_is_unmeasured_and_keeps_the_default() -> N
     assert flags == BN and reading["target"]["status"] == jp.UNMEASURED
 
 
+def _raisable_box(**kw):
+    return _box(miner_nice=N, term_nice=AN, gw_nice=AN, e8_nice=AN, **kw)
+
+
 def test_census_verdict_and_equalise_touch_only_the_judge() -> None:
-    c = jp.census(_box(miner_nice=N, judge_nice=BN, e8_nice=AN))
+    c = jp.census(_raisable_box(judge_nice=BN), registered_live=R[AN])
     assert c["target"]["rank"] == R[N] and c["verdict"] == "JUDGE_BELOW_MINERS"
     calls: list[tuple[int, int]] = []
     ch = jp.equalise(c["rows"], c["target"]["rank"], apply=True,
-                     setter=lambda pid, k: calls.append((pid, k)))
+                     setter=lambda pid, k, row: calls.append((pid, k)))
     assert sorted(p for p, _ in calls) == [10, 11, 12]
     assert all(k == N for _, k in calls)
     assert all(x["applied"] for x in ch)
-    # dry run: nothing is set
     calls.clear()
     jp.equalise(c["rows"], c["target"]["rank"], apply=False, setter=lambda *a: calls.append(a))
     assert calls == []
+
+
+def test_apply_refuses_a_pid_that_is_no_longer_the_censused_process(monkeypatch) -> None:
+    class Proc:
+        def __init__(self, pid):
+            self.pid = pid
+            self.set_to = None
+
+        def create_time(self):
+            return 999.0                       # a different process now holds the pid
+
+        def cmdline(self):
+            return ["python", "something_else.py"]
+
+        def nice(self, v=None):
+            self.set_to = v
+
+    import types
+    made: list[Proc] = []
+    fake = types.SimpleNamespace(Process=lambda pid: made.append(Proc(pid)) or made[-1])
+    monkeypatch.setitem(sys.modules, "psutil", fake)
+    c = jp.census(_raisable_box(), registered_live=R[AN])
+    ch = jp.equalise(c["rows"], c["target"]["rank"], apply=True)
+    assert ch and not any(x["applied"] for x in ch)
+    assert all("pid reused" in x["error"] for x in ch)
+    assert all(p.set_to is None for p in made)
 
 
 def test_a_judge_above_the_miners_is_brought_down_to_equal() -> None:
@@ -120,7 +202,7 @@ def test_a_judge_above_the_miners_is_brought_down_to_equal() -> None:
     assert c["verdict"] == "JUDGE_ABOVE_MINERS" and c["target"]["rank"] == R[BN]
     calls: list[tuple[int, int]] = []
     jp.equalise(c["rows"], c["target"]["rank"], apply=True,
-                setter=lambda pid, k: calls.append((pid, k)))
+                setter=lambda pid, k, row: calls.append((pid, k)))
     assert {k for _, k in calls} == {BN}
 
 
@@ -143,10 +225,14 @@ def test_duplicates_count_distinct_parents_not_pool_workers() -> None:
 
 def test_the_launcher_takes_its_class_from_the_rule_and_falls_back(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", tmp_path / "jp.json")
-    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: _box(miner_nice=N, e8_nice=AN))
+    monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
+    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: _raisable_box())
     assert rsg._judge_flags() == N
     doc = json.loads((tmp_path / "jp.json").read_text("utf-8"))
-    assert doc["target"]["class"] == "NORMAL"
+    assert doc["launcher"]["value"]["target"]["class"] == "NORMAL"
+    # with the repository's real registration (E8 at NORMAL) the same box is NOT raised
+    monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[N])
+    assert rsg._judge_flags() == BN
 
     def boom(*a, **k):
         raise RuntimeError("psutil refused")
@@ -154,8 +240,48 @@ def test_the_launcher_takes_its_class_from_the_rule_and_falls_back(monkeypatch, 
     assert rsg._judge_flags() == BN
     src = (DESK / "scripts" / "run_sharded_gauntlet.py").read_text("utf-8")
     body = src[src.index("def _one_sweep_child"):src.index("def _judge_flags")]
-    assert "flags = _judge_flags()" in body
+    assert "flags = _judge_flags()" in body and "_record_launch_raise(flags, child.pid)" in body
     assert "ABOVE_NORMAL" not in body and "HIGH_PRIORITY" not in body
+
+
+def test_a_raise_publishes_a_missed_growth_line_from_launcher_and_child(monkeypatch,
+                                                                         tmp_path) -> None:
+    import missed_growth as mg
+    raises = tmp_path / "JUDGE_PRIORITY_RAISES.json"
+    monkeypatch.setattr(jp, "RAISES", raises)
+    # the launcher started the child at NORMAL: its line is written even though the child,
+    # born at target, will find nothing to change
+    assert rsg._record_launch_raise(N, 4321) == 1
+    assert rsg._record_launch_raise(BN, 4322) == 0          # no raise, no line
+    assert rsg._record_launch_raise(N, 4321) == 0           # once per (day, pid, by)
+    # the child raising itself writes its own line
+    import os
+    me = os.getpid()
+    rows = _raisable_box(extra=[_p(me, 1, "python.exe", ["python", "x.py"], BN)])
+    monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
+    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
+    monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: None)
+    out = rsg._equalise_self()
+    assert out["changed"] and out["missed_growth_lines"] == 1
+    doc = json.loads(raises.read_text("utf-8"))
+    assert [x["by"] for x in doc["missed_growth"]] == ["launcher", "sweep_child"]
+    assert all(x["rail"] == "judge_priority_raise" and x["verdict"] == "UNMEASURED"
+               for x in doc["missed_growth"])
+    # carried by the missed-growth organ exactly like the watchdog's lines
+    carried = mg.organ_published_lines(raises)
+    assert carried["n_lines"] == 2 and carried["verdict"] == mg.UNMEASURED
+    src = (DESK / "research" / "missed_growth.py").read_text("utf-8")
+    assert '"judge_priority_raise": organ_published_lines(' in src
+
+
+def test_the_child_never_erases_the_launchers_record(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", tmp_path / "jp.json")
+    rsg._publish_priority("launcher", {"creationflags": N})
+    rsg._publish_priority("child", {"changed": False})
+    rsg._publish_priority("backpressure_core", "STARTED")
+    doc = json.loads((tmp_path / "jp.json").read_text("utf-8"))
+    assert set(doc) == {"launcher", "child", "backpressure_core"}
+    assert doc["launcher"]["value"] == {"creationflags": N}
 
 
 def test_no_miner_spawn_site_or_installer_is_lowered_or_capped() -> None:
@@ -267,8 +393,9 @@ def test_the_backpressure_core_republishes_without_the_graph(tmp_path, monkeypat
     doc = json.loads(out.read_text("utf-8"))
     assert doc["mode"] == "core" and doc["at"] == NOW.isoformat(timespec="seconds")
     assert doc["full_at"] == "2026-10-03T12:44:22+00:00"       # carried blocks say how old
-    assert doc["windows"]["24h"]["testing"]["cells_judged"] == 2  # the 30h-old row is outside
-    assert doc["windows"]["7d"] == {"keep": 1} and doc["messages"] == ["kept"]
+    assert doc["core"]["testing_24h"]["cells_judged"] == 2   # the 30h-old row is outside
+    # ONE VINTAGE PER BLOCK: the full build's windows are carried untouched
+    assert doc["windows"] == old_full["windows"] and doc["messages"] == ["kept"]
     assert doc["capacity"]["measured"]["n_judged"] == 2
     # ... and the consumer now reads it as MEASURED
     monkeypatch.setattr(jt, "BACKPRESSURE", out)
@@ -276,6 +403,48 @@ def test_the_backpressure_core_republishes_without_the_graph(tmp_path, monkeypat
     monkeypatch.setattr(jt, "BREACH_DOCKET", tmp_path / "none_breach.json")
     q = jt.measure_queue(NOW)
     assert q["status"] == "MEASURED" and "alarm" not in q
+    assert q["gates_per_hour"] == round(2 / 24.0, 3) and q["gates_per_hour_window"] == "core_24h"
+    # no temporary file is left behind, and each writer used its own name
+    assert not list(tmp_path.glob("GAUNTLET_BACKPRESSURE.json*.tmp"))
+
+
+def test_an_absent_ledger_publishes_unmeasured_never_zero(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(gb, "GATE_LEDGER", tmp_path / "absent.jsonl")
+    monkeypatch.setattr(gb, "GAUNTLET_REPORT", tmp_path / "absent.json")
+    monkeypatch.setattr(gb, "GAUNTLET_SOURCE", tmp_path / "absent.py")
+    out = tmp_path / "bp.json"
+    monkeypatch.setattr(gb, "OUT", out)
+    gb.write_core(now=NOW)
+    t = json.loads(out.read_text("utf-8"))["core"]["testing_24h"]
+    assert t["per_hour"] == "UNMEASURED" and t["ledger"] == "ABSENT"
+    monkeypatch.setattr(jt, "BACKPRESSURE", out)
+    monkeypatch.setattr(jt, "BURNDOWN", tmp_path / "none_bd.json")
+    monkeypatch.setattr(jt, "BREACH_DOCKET", tmp_path / "none_breach.json")
+    assert jt.measure_queue(NOW)["gates_per_hour"] == jt.UNMEASURED
+
+
+def test_a_core_never_replaces_a_full_build_that_landed_after_its_read(tmp_path,
+                                                                       monkeypatch) -> None:
+    """The core measures outside the lock, then re-reads the CURRENT file inside it: a full
+    build written in between is the base it merges onto, never what it overwrites."""
+    out = tmp_path / "bp.json"
+    out.write_text(json.dumps({"at": "2026-10-01T00:00:00+00:00", "messages": ["old"]}), "utf-8")
+    monkeypatch.setattr(gb, "OUT", out)
+    monkeypatch.setattr(gb, "GATE_LEDGER", tmp_path / "absent.jsonl")
+    monkeypatch.setattr(gb, "GAUNTLET_REPORT", tmp_path / "absent.json")
+    monkeypatch.setattr(gb, "GAUNTLET_SOURCE", tmp_path / "absent.py")
+    real = gb._core_testing
+
+    def measured_then_full_lands(at):
+        res = real(at)
+        gb.write({"at": NOW.isoformat(), "mode": "full", "full_at": NOW.isoformat(),
+                  "messages": ["fresh full"]}, out)
+        return res
+    monkeypatch.setattr(gb, "_core_testing", measured_then_full_lands)
+    gb.write_core(now=NOW)
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["messages"] == ["fresh full"] and doc["full_at"] == NOW.isoformat()
+    assert doc["mode"] == "core"
 
 
 def test_the_launcher_republishes_one_core_at_a_time(monkeypatch, tmp_path) -> None:
@@ -377,7 +546,8 @@ def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(t
     # DEFAULT: absent file -> the env is byte-identical to today
     assert rsg._blas_env(dict(base), sw) == base
     for body in ('{"enabled": false}', '{"enabled": "true"}', '{"enabled": true, "x": 1}',
-                 "true", "not json", ""):
+                 '{"enabled": 1}', '{"enabled": 1.0}', '{"enabled": false, "enabled": true}',
+                 '{"enabled": true, "enabled": true}', "[true]", "true", "not json", ""):
         sw.write_text(body, "utf-8")
         assert rsg._blas_env(dict(base), sw) == base, body
     sw.write_text('{"enabled": true}', "utf-8")
@@ -389,12 +559,55 @@ def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(t
     assert not rsg.BLAS_SWITCH.exists()
 
 
-def test_a_raise_names_its_possible_cost_to_miners(monkeypatch, tmp_path) -> None:
-    import os
-    me = os.getpid()
-    rows = _box(miner_nice=N, e8_nice=AN, extra=[_p(me, 1, "python.exe", ["python", "x.py"], BN)])
-    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
-    monkeypatch.setattr(jp, "equalise", lambda r, t, apply: [
-        {"pid": me, "from": "BELOW_NORMAL", "to": "NORMAL", "applied": True}])
-    out = rsg._equalise_self()
-    assert out["changed"] and out["missed_growth"]["workload"].startswith("miners")
+# ------------------------------------------------- 3c. a malformed cadence state never sticks
+@pytest.mark.parametrize("minutes", [True, "1", 1.0, None, [1]])
+def test_a_malformed_minutes_is_not_fresh(minutes) -> None:
+    st = {"status": "APPLIED", "minutes": minutes, "duration": jt.CADENCE_DURATION,
+          "applied_at": datetime.now(UTC).isoformat()}
+    assert jt._cadence_fresh(st, 1) is False
+    assert jt._cadence_fresh({**st, "minutes": 1}, 1) is True
+
+
+# ------------------------------------- 5. the watchdog and the fair share, in ONE sweep_once
+def test_sweep_once_keeps_the_watchdog_and_the_fair_share_together(monkeypatch) -> None:
+    import research.judging_throughput as rjt
+    events: list[str] = []
+
+    class Dog:
+        def start(self):
+            events.append("dog.start")
+            return self
+
+        def finish(self, rc):
+            events.append(f"dog.finish({rc})")
+            if fail_finish:
+                raise RuntimeError("finish failed")
+
+    monkeypatch.setattr(rsg, "SweepWatchdog", Dog)
+    monkeypatch.setattr(rjt, "apply_env", lambda *a, **k: events.append("apply_env"))
+    monkeypatch.setattr(rsg, "_equalise_self", lambda: events.append("equalise") or {})
+    monkeypatch.setattr(rsg, "_phase", lambda name: events.append(f"phase:{name}"))
+    monkeypatch.setattr(rsg, "_publish_priority", lambda k, v: events.append(f"publish:{k}"))
+    monkeypatch.setattr(rsg, "_republish_backpressure",
+                        lambda: events.append("republish") or "STARTED")
+    fail_finish = False
+    monkeypatch.setattr(rsg, "_sweep_logged", lambda: events.append("sweep") or 0)
+    assert rsg._sweep_once() == 0
+    assert events == ["dog.start", "apply_env", "equalise", "publish:child", "phase:plan",
+                      "sweep", "dog.finish(0)", "republish", "publish:backpressure_core"]
+    # a sweep that raises: the watchdog still records rc=1, the core is still republished
+    events.clear()
+
+    def boom():
+        raise RuntimeError("judge crashed")
+    monkeypatch.setattr(rsg, "_sweep_logged", boom)
+    with pytest.raises(RuntimeError, match="judge crashed"):
+        rsg._sweep_once()
+    assert events[-3:] == ["dog.finish(1)", "republish", "publish:backpressure_core"]
+    # a watchdog finish that raises cannot stop the republish
+    events.clear()
+    fail_finish = True
+    monkeypatch.setattr(rsg, "_sweep_logged", lambda: 0)
+    with pytest.raises(RuntimeError, match="finish failed"):
+        rsg._sweep_once()
+    assert events[-2:] == ["republish", "publish:backpressure_core"]

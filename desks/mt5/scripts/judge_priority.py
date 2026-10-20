@@ -47,6 +47,7 @@ nothing is changed -- the launcher then keeps today's BELOW_NORMAL.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import sys
@@ -71,6 +72,40 @@ RANK_NAME = {0: "IDLE", 1: "BELOW_NORMAL", 2: "NORMAL", 3: "ABOVE_NORMAL", 4: "H
 JUDGE_CEILING_RANK = CLASS_RANK[NORMAL]
 #: What the launcher used before this module and keeps whenever the target is UNMEASURED.
 DEFAULT_RANK = CLASS_RANK[BELOW_NORMAL]
+
+#: THE REGISTERED LIVE CLASS IS A FIXED CEILING (audit HOLD of be6a305b7). E8-Executor and E8-Gold
+#: run every 5 minutes for at most 4, so a census taken between their runs sees no live clock at
+#: all -- and the class it sets lasts a sweep of hours. The ceiling is therefore read from what
+#: the repository REGISTERS (`install_e8_tasks.ps1 -Priority N`), whether or not E8 is running at
+#: the census, and the judge stays strictly below it. Task Scheduler levels map to classes as
+#: 0 realtime, 1 high, 2-3 above normal, 4-6 normal, 7-8 below normal, 9-10 idle.
+E8_INSTALLER = DESK / "scripts" / "install_e8_tasks.ps1"
+
+
+def _task_level_rank(level: int) -> int:
+    if level <= 0:
+        return CLASS_RANK[REALTIME]
+    if level == 1:
+        return CLASS_RANK[HIGH]
+    if level <= 3:
+        return CLASS_RANK[ABOVE_NORMAL]
+    if level <= 6:
+        return CLASS_RANK[NORMAL]
+    if level <= 8:
+        return CLASS_RANK[BELOW_NORMAL]
+    return CLASS_RANK[IDLE]
+
+
+def registered_live_rank(path: Path | None = None) -> int | None:
+    """The LOWEST class the live E8 tasks are registered at; None when it cannot be read."""
+    import re
+    try:
+        text = Path(path or E8_INSTALLER).read_text("utf-8", errors="replace")
+    except OSError:
+        return None
+    levels = [int(m) for m in re.findall(r"-Priority\s+(\d+)\b", text)]
+    return min(_task_level_rank(v) for v in levels) if levels else None
+
 
 _JUDGE_SCRIPTS = frozenset({"external_gauntlet.py", "run_sharded_gauntlet.py", "rungauntlet.cmd"})
 _WARM_SCRIPTS = frozenset({"warm_gauntlet_cache.py"})
@@ -107,18 +142,32 @@ def _script_names(cmdline: Iterable[Any]) -> set[str]:
 
 
 def own_class(name: str, cmdline: Iterable[Any]) -> str | None:
-    """The class a process belongs to by ITS OWN command line; None when only its parents say."""
+    """The class a process belongs to by ITS OWN command line; None when only its parents say.
+
+    Only an INTERPRETER running a script is that script: git, an editor or a grep with
+    `external_gauntlet.py` in its argv is not the judge (audit probe G). The judge's .cmd
+    launcher and the frontier lane are recognised under cmd.exe only.
+    """
     args = [str(a) for a in (cmdline or [])]
     joined = " ".join(args).replace("\\", "/").lower()
     scripts = _script_names(args)
-    if scripts & _WARM_SCRIPTS:
-        return "judge_warm"
-    if scripts & _JUDGE_SCRIPTS or "from scripts.external_gauntlet import shard_worker" in joined:
-        return "judge"
-    if _AUDIT_MARK in joined:
-        return "audit"
-    if str(name or "").lower() in _LIVE_NAMES or scripts & _LIVE_SCRIPTS:
+    n = str(name or "").lower()
+    if n in _LIVE_NAMES:
         return "live"
+    if _is_python(n):
+        if scripts & _WARM_SCRIPTS:
+            return "judge_warm"
+        if (scripts & _JUDGE_SCRIPTS
+                or "from scripts.external_gauntlet import shard_worker" in joined):
+            return "judge"
+        if scripts & _LIVE_SCRIPTS:
+            return "live"
+        return None
+    if n == "cmd.exe":
+        if _AUDIT_MARK in joined:
+            return "audit"
+        if "rungauntlet.cmd" in scripts:
+            return "judge"
     return None
 
 
@@ -140,35 +189,58 @@ def classify(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for pid, r in by_pid.items():
         cls, cur, seen = own[pid], pid, 0
         while cls is None and seen < 16:
-            cur = int(by_pid.get(cur, {}).get("ppid") or 0)
-            if not cur or cur not in by_pid:
-                break
+            parent = int(by_pid.get(cur, {}).get("ppid") or 0)
+            if not parent or parent not in by_pid or not _born_before(by_pid[parent],
+                                                                      by_pid[cur]):
+                break          # a reused parent pid is not a parent (audit probe H)
+            cur = parent
             cls, seen = own.get(cur), seen + 1
         if cls is None:
             cls = "miner" if _is_python(r.get("name", "")) else "other"
-        out.append({**r, "cls": cls, "rank": rank_of(r.get("nice"))})
+        out.append({**r, "cls": cls, "rank": rank_of(r.get("nice")),
+                    "unreadable": _unreadable(r)})
     return out
 
 
+def _born_before(parent: dict[str, Any], child: dict[str, Any]) -> bool:
+    """A parent must have existed before its child; an unknown start time proves nothing."""
+    p, c = parent.get("create_time"), child.get("create_time")
+    return isinstance(p, (int, float)) and isinstance(c, (int, float)) and p <= c
+
+
+def _unreadable(r: dict[str, Any]) -> bool:
+    """A python or live row whose command line or priority could not be read."""
+    n = str(r.get("name") or "").lower()
+    if not (_is_python(n) or n in _LIVE_NAMES):
+        return False
+    return r.get("cmdline") is None or rank_of(r.get("nice")) is None
+
+
 def judge_target(miner_ranks: Iterable[int | None],
-                 live_ranks: Iterable[int | None] = ()) -> dict[str, Any]:
-    """THE RULE, in one place.
+                 live_ranks: Iterable[int | None] = (), *,
+                 registered_live: int | str | None = "READ",
+                 unreadable: int = 0) -> dict[str, Any]:
+    """THE RULE, in one place, and it FAILS CLOSED (audit HOLD of be6a305b7).
 
-    target = the LOWEST priority held by any miner        -- so never above ANY miner
-             capped at NORMAL                             -- never AboveNormal/High/Realtime
-             strictly below the lowest live CLOCK         -- E8 at 4 must preempt the judge
-                                                             (2026-10-08: it starved when level)
-    and it is always BELOW_NORMAL or NORMAL: the live cap can only stop a RAISE, it never pushes
-    the judge below the BELOW_NORMAL it already holds.
+    target = the LOWEST priority held by any miner         -- never above ANY miner
+             capped at NORMAL                              -- never AboveNormal/High/Realtime
+             strictly below every live class: the REGISTERED E8 class (a fixed ceiling, read
+             from install_e8_tasks.ps1, whether or not E8 runs at the census) AND every live
+             process observed (terminal64, the gateway, E8)
+             no raise at all while any python or live row is unreadable, or the registered
+             class cannot be read
+    and never below BELOW_NORMAL, where the judge already sits: the caps only ever stop a RAISE.
 
-    IDLE-CLASS MINERS ARE REPORTED, NOT COUNTED. A process at IDLE has declared that it takes only
-    CPU nothing else wants (the warm cache's own rule); a judge level with every other miner
-    preempts it exactly as every other miner already does. Counting it would let one self-yielding
-    process drag the judge to IDLE, below every working miner -- a cut of the judge, not equality.
-    With no miner at BELOW_NORMAL or above the target is UNMEASURED and nothing changes.
+    In practice, with E8 registered at Priority 4 (NORMAL), the judge never goes above
+    BELOW_NORMAL: a raise needs every live process provably above the new class.
+
+    IDLE-CLASS MINERS ARE REPORTED, NOT COUNTED: a process at IDLE has declared it takes only CPU
+    nothing else wants, and counting it would drag the judge below every working miner.
     """
+    floor = CLASS_RANK[BELOW_NORMAL]
+    reg = registered_live_rank() if registered_live == "READ" else registered_live
     all_m = sorted(r for r in miner_ranks if isinstance(r, int))
-    miners = [r for r in all_m if r >= CLASS_RANK[BELOW_NORMAL]]
+    miners = [r for r in all_m if r >= floor]
     lives = sorted(r for r in live_ranks if isinstance(r, int))
     idle_miners = len(all_m) - len(miners)
     if not miners:
@@ -178,13 +250,19 @@ def judge_target(miner_ranks: Iterable[int | None],
     rank, bound = miners[0], "equal to the lowest-priority miner"
     if rank > JUDGE_CEILING_RANK:
         rank, bound = JUDGE_CEILING_RANK, "capped at NORMAL"
-    if lives and rank >= lives[0]:
-        capped = max(lives[0] - 1, CLASS_RANK[BELOW_NORMAL])
+    ceilings = [*lives, *([reg] if isinstance(reg, int) else [])]
+    if ceilings and rank >= min(ceilings):
+        capped = max(min(ceilings) - 1, floor)
         if capped < rank:
-            rank, bound = capped, "strictly below the lowest live clock (2026-10-08)"
+            rank, bound = capped, "strictly below the lowest live class (registered or observed)"
+    if rank > floor and (unreadable or not isinstance(reg, int)):
+        rank = floor
+        bound = ("no raise: " + (f"{unreadable} python/live row(s) unreadable" if unreadable
+                                 else "the registered live class is unreadable"))
     return {"status": "MEASURED", "rank": rank, "class": RANK_NAME[rank],
             "lowest_miner": RANK_NAME[miners[0]], "highest_miner": RANK_NAME[miners[-1]],
-            "idle_miners": idle_miners,
+            "idle_miners": idle_miners, "unreadable_rows": int(unreadable),
+            "registered_live": RANK_NAME.get(reg) if isinstance(reg, int) else UNMEASURED,
             "lowest_live": RANK_NAME[lives[0]] if lives else None, "bound": bound,
             "above_any_miner": rank > miners[0]}
 
@@ -222,8 +300,10 @@ def snapshot(sample_s: float = 0.0) -> list[dict[str, Any]]:
             created = p.create_time()
         except (psutil.NoSuchProcess, psutil.AccessDenied, OSError):
             created = None
+        # None (never []) when the command line was refused: an unreadable row is evidence of
+        # nothing and blocks any raise (see `judge_target`).
         rows.append({"pid": p.info.get("pid"), "ppid": p.info.get("ppid"),
-                     "name": p.info.get("name") or "", "cmdline": p.info.get("cmdline") or [],
+                     "name": p.info.get("name") or "", "cmdline": p.info.get("cmdline"),
                      "nice": nice, "cpu_cores": cpu, "create_time": created})
     return rows
 
@@ -239,7 +319,8 @@ def _short(cmdline: list[Any]) -> str:
     return " ".join(args[:4])
 
 
-def census(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def census(rows: list[dict[str, Any]],
+           registered_live: int | str | None = "READ") -> dict[str, Any]:
     """Per class: process count, priorities held, CPU, and DUPLICATED command lines."""
     rows = classify(rows)
     classes: dict[str, dict[str, Any]] = {}
@@ -262,8 +343,9 @@ def census(rows: list[dict[str, Any]]) -> dict[str, Any]:
                       reverse=True)
     dups = [{"class": c, "command": cmd, "distinct_parents": n} for n, c, cmd in dup_rows]
     target = judge_target((r["rank"] for r in rows if r["cls"] == "miner"),
-                          (r["rank"] for r in rows if r["cls"] == "live"
-                           and _is_python(r.get("name", ""))))
+                          (r["rank"] for r in rows if r["cls"] == "live"),
+                          registered_live=registered_live,
+                          unreadable=sum(1 for r in rows if r["unreadable"]))
     judge_ranks = sorted({r["rank"] for r in rows if r["cls"] == "judge"
                           and isinstance(r["rank"], int)})
     verdict = UNMEASURED
@@ -276,16 +358,33 @@ def census(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "rows": rows}
 
 
+def _default_setter(pid: int, cls_const: int, expect: dict[str, Any]) -> None:
+    """Set one pid's class -- only if it is STILL the process the census saw (audit: pid reuse).
+
+    The start time and command line are re-read and must match the snapshot; otherwise the pid
+    now belongs to someone else and nothing is changed.
+    """
+    import psutil  # type: ignore[import-untyped,unused-ignore]
+    p = psutil.Process(pid)
+    if expect.get("create_time") is None or p.create_time() != expect.get("create_time"):
+        raise LookupError("pid reused: start time differs from the census")
+    if (expect.get("cmdline") or None) != (p.cmdline() or None):
+        raise LookupError("pid reused: command line differs from the census")
+    if sys.platform == "win32":
+        p.nice(cls_const)
+    else:
+        p.nice({IDLE: 19, BELOW_NORMAL: 10, NORMAL: 0}.get(cls_const, 0))
+
+
 def equalise(rows: list[dict[str, Any]], target_rank: int | None, *, apply: bool,
              setter: Any = None) -> list[dict[str, Any]]:
-    """Set every JUDGE process (never judge_warm, miner, audit, live or other) to the target."""
+    """Set every JUDGE process (never judge_warm, miner, audit, live or other) to the target.
+
+    `setter(pid, class_constant, row)` must refuse a pid that is no longer the row's process.
+    """
     if target_rank is None:
         return []
-    if setter is None:
-        def setter(pid: int, cls_const: int) -> None:
-            import psutil  # type: ignore[import-untyped,unused-ignore]
-            psutil.Process(pid).nice(cls_const if sys.platform == "win32"
-                                     else {0: 19, 1: 10, 2: 0}.get(target_rank, 0))
+    setter = setter or _default_setter
     changes = []
     for r in rows:
         if r.get("cls") != "judge" or r.get("rank") == target_rank or r.get("rank") is None:
@@ -294,12 +393,74 @@ def equalise(rows: list[dict[str, Any]], target_rank: int | None, *, apply: bool
                "command": _short(r.get("cmdline") or []), "applied": False}
         if apply:
             try:
-                setter(int(r["pid"]), RANK_CLASS[target_rank])
+                setter(int(r["pid"]), RANK_CLASS[target_rank], r)
                 rec["applied"] = True
             except Exception as exc:
                 rec["error"] = f"{type(exc).__name__}: {exc}"
         changes.append(rec)
     return changes
+
+
+#: THE MISSED-GROWTH LINE (GROWTH GOVERNANCE; audit HOLD of be6a305b7). A raise to EQUAL can cost
+#: a miner at that class its share of the CPU the judge now competes for. The rail register is
+#: sealed (`libs/portfolio/rails.py`), so -- exactly as the judge's watchdog does with
+#: GAUNTLET_STALL.json -- every APPLIED raise is PUBLISHED as one line on this organ's own
+#: artifact, and `research/missed_growth.py` carries it into MISSED_GROWTH.json
+#: (`organ_published_lines`). Appended under an exclusive lock file (several processes write:
+#: the launcher, each sweep child, a manual --apply), deduplicated per (day, pid, by).
+RAISES = DESK / "reports" / "JUDGE_PRIORITY_RAISES.json"
+MISSED_GROWTH_RAIL = "judge_priority_raise"
+RAISES_HISTORY = 200
+
+
+def _raise_line(c: dict[str, Any], by: str, now: datetime) -> dict[str, Any]:
+    return {"day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
+            "rail": MISSED_GROWTH_RAIL, "kind": "opportunity_cost", "value": None,
+            "verdict": UNMEASURED, "units": "miner CPU shared with the judge at its new class",
+            "lost_s": None, "pid": c.get("pid"), "from": c.get("from"), "to": c.get("to"),
+            "by": by, "command": c.get("command"),
+            "why": ("the judge was raised to EQUAL the miners: it now shares their class "
+                    "round-robin (it can never preempt one), bounded by its own busy cores; "
+                    "measure with reports/JUDGING_THROUGHPUT.json busy_other_cores before/after. "
+                    "The E[log W] price is not measured")}
+
+
+def record_raises(changes: list[dict[str, Any]], by: str, path: Path | None = None) -> int:
+    """Publish a missed-growth line for every APPLIED raise; return how many were added."""
+    rank_of_name = {v: k for k, v in RANK_NAME.items()}
+    raised = [c for c in changes if c.get("applied")
+              and rank_of_name.get(str(c.get("to")), -1)
+              > rank_of_name.get(str(c.get("from")), 99)]
+    if not raised:
+        return 0
+    target = Path(path or RAISES)
+    now = datetime.now(UTC)
+    try:
+        from libs.research.artifact_chain import _locked
+    except Exception:  # pragma: no cover - libs always present on the box
+        _locked = None
+    ctx = _locked(target, 30.0) if _locked else contextlib.nullcontext(True)
+    with ctx:
+        try:
+            doc = json.loads(target.read_text("utf-8"))
+            doc = doc if isinstance(doc, dict) else {}
+        except (OSError, ValueError):
+            doc = {}
+        lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
+        seen = {(x.get("day"), str(x.get("pid")), x.get("by")) for x in lines}
+        fresh = [_raise_line(c, by, now) for c in raised
+                 if (now.date().isoformat(), str(c.get("pid")), by) not in seen]
+        if not fresh:
+            return 0
+        doc.update({"at": now.isoformat(timespec="seconds"),
+                    "missed_growth": [*lines, *fresh][-RAISES_HISTORY:],
+                    "rule": "one line per applied judge priority raise; carried by "
+                            "research/missed_growth.py"})
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_name(f"{target.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        os.replace(tmp, target)
+    return len(fresh)
 
 
 def sweep_creationflags(rows: list[dict[str, Any]] | None = None) -> tuple[int, dict[str, Any]]:
@@ -337,6 +498,8 @@ def main(argv: list[str] | None = None) -> int:
     rows = snapshot(a.sample_s)
     c = census(rows)
     changes = equalise(c["rows"], c["target"].get("rank"), apply=a.apply)
+    if a.apply:
+        record_raises(changes, "judge_priority --apply")
     host = os.environ.get("COMPUTERNAME") or (os.uname().nodename if hasattr(os, "uname")
                                               else "")
     doc = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "host": host,
@@ -352,7 +515,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  DUPLICATE x{d['distinct_parents']:<3} {d['class']:<6} {d['command']}")
     if not a.no_write:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
-        tmp = REPORT.with_suffix(".json.tmp")
+        tmp = REPORT.with_name(f"{REPORT.name}.{os.getpid()}.tmp")
         tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
         os.replace(tmp, REPORT)
     return 0

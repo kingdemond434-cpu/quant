@@ -648,6 +648,8 @@ def published_gate_lines() -> dict[str, Any]:
 #: own artifact: a sweep the watchdog killed (or found dead) discards its whole wall, and a
 #: deepening pass the memory guard stopped defers tasks to the next hour.
 GAUNTLET_STALL = BASE / "reports" / "GAUNTLET_STALL.json"
+#: The judge's priority rule (judge_cpu_fair_share): one line per applied raise to EQUAL.
+JUDGE_PRIORITY_RAISES = BASE / "reports" / "JUDGE_PRIORITY_RAISES.json"
 DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 
 
@@ -789,6 +791,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
+                                    "judge_priority_raise": organ_published_lines(
+                                        JUDGE_PRIORITY_RAISES),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD)},
            "aggression_verdict": aggression.get("verdict"),

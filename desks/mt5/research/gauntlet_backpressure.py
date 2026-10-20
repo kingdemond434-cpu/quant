@@ -872,54 +872,111 @@ def build(now: datetime | None = None) -> dict[str, Any]:
 CORE_WINDOW_H = 24.0
 
 
-def build_core(now: datetime | None = None, prev: dict[str, Any] | None = None) -> dict[str, Any]:
-    """The cheap, every-sweep half of the report, merged onto the previous full report."""
-    at = now or _now()
+def _core_testing(at: datetime) -> dict[str, Any]:
+    """The 24h testing rate, from the verdict ledger alone. An absent or unreadable ledger is
+    UNMEASURED -- never 0.0, which would read as a judge that judged nothing."""
     note: dict[str, str] = {}
     since = at - timedelta(hours=CORE_WINDOW_H)
     vers = verdicts(_read_jsonl(GATE_LEDGER, note, since=since))
+    state = note.get(GATE_LEDGER.name, "READ")
+    if state not in ("READ",) and not str(state).startswith("TRUNCATED_KEPT_NEWEST"):
+        return {"status": UNMEASURED_CORE, "verdicts": UNMEASURED_CORE,
+                "cells_judged": UNMEASURED_CORE, "per_hour": UNMEASURED_CORE,
+                "passed": UNMEASURED_CORE, "ledger": state,
+                "measured_at": at.isoformat(timespec="seconds"), "source": "build_core"}
     v = [r for r in vers if r.get("_t") is not None and r["_t"] >= since]
     judged = {str(r.get("cell") or "") for r in v if r.get("passed") is not None}
-    testing = {"verdicts": len(v), "cells_judged": len(judged),
-               "per_hour": round(len(judged) / CORE_WINDOW_H, 3),
-               "passed": sum(1 for r in v if r.get("passed") is True),
-               "measured_at": at.isoformat(timespec="seconds"), "source": "build_core"}
+    return {"status": "MEASURED", "verdicts": len(v), "cells_judged": len(judged),
+            "per_hour": round(len(judged) / CORE_WINDOW_H, 3),
+            "passed": sum(1 for r in v if r.get("passed") is True), "ledger": state,
+            "measured_at": at.isoformat(timespec="seconds"), "source": "build_core"}
+
+
+UNMEASURED_CORE = "UNMEASURED"
+
+
+def build_core(now: datetime | None = None, prev: dict[str, Any] | None = None,
+               testing: dict[str, Any] | None = None,
+               cap: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The cheap, every-sweep half of the report, merged onto the previous full report.
+
+    ONE VINTAGE PER BLOCK (audit of be6a305b7): the core never edits `windows` -- a fresh
+    testing rate divided into a backlog carried from an old full build is a number of no
+    vintage. The fresh rate goes to `core.testing_24h`; `capacity` is the sweep's own reading.
+    """
+    at = now or _now()
+    note: dict[str, str] = {}
+    testing = testing if testing is not None else _core_testing(at)
+    cap = cap if cap is not None else capacity(note, at)
     doc: dict[str, Any] = dict(prev) if isinstance(prev, dict) else {}
     full_at = doc.get("full_at") or (doc.get("at") if doc.get("mode") != "core" else None)
-    windows = dict(doc.get("windows") or {})
-    w24 = dict(windows.get("24h") or {"hours": CORE_WINDOW_H})
-    w24["testing"] = testing
-    windows["24h"] = w24
     doc.update({
         "at": at.isoformat(timespec="seconds"), "mode": "core", "full_at": full_at,
-        "windows": windows, "capacity": capacity(note, at),
+        "capacity": cap,
         "core": {"at": at.isoformat(timespec="seconds"), "inputs": dict(note),
-                 "re_measured": ["capacity", "windows.24h.testing"],
+                 "testing_24h": testing,
+                 "re_measured": ["capacity", "core.testing_24h"],
                  "carried_from_full_at": full_at,
-                 "why": ("every block other than `capacity` and `windows.24h.testing` is the "
-                         "last FULL build's, stamped `full_at`; a reader that needs a fresh "
-                         "window must check `full_at`, never `at`")},
+                 "why": ("every block other than `capacity` and `core.testing_24h` is the last "
+                         "FULL build's, stamped `full_at`, and unchanged; a reader that needs "
+                         "a fresh window must check `full_at`, never `at`")},
     })
     return doc
 
 
-def write_core(now: datetime | None = None, path: Path | None = None) -> Path:
-    """Measure the core and publish it atomically over the previous report."""
+#: Both writers of OUT -- the detached core after every sweep and the hourly full build -- hold
+#: this lock for their read-merge-write, so a core can never replace a full build that finished
+#: between its read and its write (audit of be6a305b7).
+WRITE_LOCK_WAIT_S = 30.0
+
+
+def _write_lock(path: Path, wait_s: float = WRITE_LOCK_WAIT_S) -> Any:
+    try:
+        from libs.research.artifact_chain import _locked
+        return _locked(path, wait_s)
+    except Exception:  # pragma: no cover - libs always present on the box
+        import contextlib
+        return contextlib.nullcontext(False)
+
+
+def write_core(now: datetime | None = None, path: Path | None = None) -> Path | None:
+    """Measure the core, then merge it onto the CURRENT report under the write lock.
+
+    The measurement happens outside the lock (it reads the ledger); only read-merge-write is
+    serialised. No lock inside the wait -> nothing is written (the full build is writing a
+    fresher file), and None says so.
+    """
     target = path or OUT
-    prev = _read_json(target, {})
-    return write(build_core(now, prev if isinstance(prev, dict) else None), target)
+    at = now or _now()
+    testing, cap = _core_testing(at), capacity({}, at)
+    with _write_lock(target) as held:
+        if not held:
+            return None
+        prev = _read_json(target, {})
+        return _write_unlocked(build_core(at, prev if isinstance(prev, dict) else None,
+                                          testing=testing, cap=cap), target)
 
 
 def _atomic_write(path: Path, text: str) -> Path:
+    """Atomic replace through a temporary name UNIQUE to this writer (two writers sharing one
+    `.tmp` could each rename the other's half-written bytes into place)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
     return path
 
 
+def _write_unlocked(doc: dict[str, Any], path: Path) -> Path:
+    return _atomic_write(path, json.dumps(doc, indent=1, default=str))
+
+
 def write(doc: dict[str, Any], path: Path | None = None) -> Path:
-    return _atomic_write(path or OUT, json.dumps(doc, indent=1, default=str))
+    """The full build's write, under the same lock as the core's (tolerant: a lock that cannot
+    be had in the wait still writes -- the full build is the fresher of the two)."""
+    target = path or OUT
+    with _write_lock(target):
+        return _write_unlocked(doc, target)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -934,9 +991,10 @@ def main(argv: list[str] | None = None) -> int:
         if a.dry_run:
             core = build_core(prev=_read_json(OUT, {}) or None)
             print(f"gauntlet backpressure core {core['at']} (dry run): "
-                  f"testing={core['windows']['24h']['testing']}")
+                  f"testing={core['core']['testing_24h']}")
             return 0
-        print(f"-> {write_core()}  (core: capacity + 24h testing re-measured)")
+        print(f"-> {write_core() or 'NOT WRITTEN (write lock held by the full build)'}  "
+              "(core: capacity + 24h testing re-measured)")
         return 0
     if not a.dry_run:
         # THE CORE GOES FIRST, so a full build killed by its leg budget still republishes the two

@@ -1277,11 +1277,23 @@ BLAS_SWITCH = DESK / "data" / "JUDGE_BLAS_SINGLE_THREAD.json"
 BLAS_THREAD_VARS = ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")
 
 
+def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        raise ValueError("duplicate key in the BLAS switch file")
+    return dict(pairs)
+
+
 def _blas_single_thread_armed(path: Path | None = None) -> bool:
+    """Armed ONLY by exactly {"enabled": true}: one key, the JSON literal true (`is True`, so 1,
+    1.0 and "true" do not arm it), and no duplicate keys (so a later `true` cannot hide behind an
+    earlier `false`). Anything else, or no file, is OFF."""
     try:
-        return json.loads(Path(path or BLAS_SWITCH).read_text("utf-8")) == {"enabled": True}
+        doc = json.loads(Path(path or BLAS_SWITCH).read_text("utf-8"),
+                         object_pairs_hook=_no_duplicate_keys)
     except (OSError, ValueError):
         return False
+    return isinstance(doc, dict) and set(doc) == {"enabled"} and doc["enabled"] is True
 
 
 def _blas_env(env: dict[str, str], path: Path | None = None) -> dict[str, str]:
@@ -1471,6 +1483,8 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
         flags = _judge_flags()
     child = subprocess.Popen([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
                              cwd=DESK, env=_sweep_env(), creationflags=flags)
+    if sys.platform == "win32":
+        _record_launch_raise(flags, child.pid)
     sample = sampler or _sample_tree
     t0 = clock()
     tracker = _TreeProgress(t0, max_gap_s=(3.0 * poll_s) if poll_s > 0 else None)
@@ -1527,6 +1541,21 @@ def _judge_flags() -> int:
                                                "why": f"{type(exc).__name__}: {exc}"}}
     _publish_priority("launcher", {"creationflags": int(flags), **reading})
     return int(flags)
+
+
+def _record_launch_raise(flags: int, pid: int) -> int:
+    """A child STARTED above BELOW_NORMAL is a raise the child itself will never see (it is born
+    at its target), so the launcher publishes its missed-growth line. Never raises."""
+    try:
+        from scripts import judge_priority as jp
+        rank = jp.CLASS_RANK.get(int(flags))
+        if rank is None or rank <= jp.CLASS_RANK[jp.BELOW_NORMAL]:
+            return 0
+        return jp.record_raises([{"pid": int(pid), "from": "BELOW_NORMAL",
+                                  "to": jp.RANK_NAME[rank], "applied": True,
+                                  "command": "run_sharded_gauntlet.py --once"}], "launcher")
+    except Exception:
+        return 0
 
 
 #: THE BACKPRESSURE CORE, REPUBLISHED AFTER EVERY SWEEP (2026-10-20). Measured on the box:
@@ -1605,19 +1634,9 @@ def _equalise_self() -> dict[str, Any]:
         for r in rows:
             r["cls"] = "judge"            # this process IS the judge whatever its argv says
         out["changes"] = jp.equalise(rows, t["rank"], apply=True)
-        rank_of_name = {v: k for k, v in jp.RANK_NAME.items()}
-        raised = [ch for ch in out["changes"] if ch.get("applied")
-                  and rank_of_name[ch["to"]] > rank_of_name[ch["from"]]]
-        if raised:
-            # GROWTH GOVERNANCE: a raise to EQUAL can cost a miner at that class its share of
-            # the CPU the judge now competes for. Named here, never silent: the bound is the
-            # judge's own busy cores (it can never preempt a miner, only share with it).
-            out["missed_growth"] = {
-                "workload": "miners at the judge's new class",
-                "bound": "at most the judge's busy cores, shared round-robin; never preemption",
-                "judge_cores_before": (c.get("classes") or {}).get("judge", {}).get(
-                    "cpu_cores", "UNMEASURED"),
-                "measure": "reports/JUDGING_THROUGHPUT.json busy_other_cores before/after"}
+        # GROWTH GOVERNANCE: an applied raise publishes its missed-growth line, carried into
+        # MISSED_GROWTH.json by research/missed_growth.py.
+        out["missed_growth_lines"] = jp.record_raises(out["changes"], "sweep_child")
         return {**out, "changed": bool(out["changes"])}
     except Exception as exc:
         return {"target": {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"},

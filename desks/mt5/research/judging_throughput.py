@@ -456,7 +456,12 @@ def measure_queue(now: datetime | None = None) -> dict[str, Any]:
         return out
     disc, judged = meas.get("n_cells_discovered"), meas.get("n_judged")
     win = (doc.get("windows") or {}).get("24h") or {}
-    per_hour = (win.get("testing") or {}).get("per_hour")
+    # THE CORE'S RATE FIRST (judge_cpu_fair_share): `gauntlet_backpressure --core` republishes the
+    # 24h testing rate every sweep under `core.testing_24h` and leaves the full build's windows
+    # as they were (one vintage, stamped `full_at`). UNMEASURED there stays UNMEASURED.
+    core_t = (doc.get("core") or {}).get("testing_24h")
+    per_hour = (core_t.get("per_hour") if isinstance(core_t, dict)
+                else (win.get("testing") or {}).get("per_hour"))
     if isinstance(disc, int) and isinstance(judged, int):
         out.update(status="MEASURED", depth=max(0, disc - judged), discovered=disc,
                    depth_scope="sweep", judged_last_sweep=judged)
@@ -469,7 +474,7 @@ def measure_queue(now: datetime | None = None) -> dict[str, Any]:
         memory_budget_mb_last_sweep=meas.get("memory_budget_mb", UNMEASURED),
         swept_at=meas.get("swept_at", UNMEASURED),
         gates_per_hour=float(per_hour) if isinstance(per_hour, (int, float)) else UNMEASURED,
-        gates_per_hour_window="24h")
+        gates_per_hour_window=("core_24h" if isinstance(core_t, dict) else "24h"))
     out.update(_value_at_risk())
     return out
 
@@ -968,8 +973,9 @@ CADENCE_DURATION = "9999:59"
 #: been 1 minute -- both bands -- since 2026-10-10. This file records the last outcome; a pass
 #: that finds the same interval APPLIED inside CADENCE_REAPPLY_S issues NO schtasks call at all.
 #: It is also the fallback: a failed apply still writes the wanted interval here, with the
-#: failure, so `judge_priority.py --census`, stall_watch and the next pass read what was wanted
-#: and why it is not in force -- never a silent hang and never a stale claim.
+#: failure, so `judge_priority.py` (its default, read-only census), stall_watch and the next
+#: pass read what was wanted and why it is not in force -- never a silent hang, never a
+#: stale claim.
 CADENCE_STATE = BASE / "data" / "gauntlet_cadence_state.json"
 CADENCE_REAPPLY_S = 6 * 3600.0
 #: Per-attempt ceilings for `/Change`: a short first try, one longer retry. Every attempt is still
@@ -988,7 +994,15 @@ def _write_cadence_state(doc: dict[str, Any], path: Path | None = None) -> None:
 
 
 def _cadence_fresh(state: dict[str, Any], minutes: int, now: datetime | None = None) -> bool:
-    if state.get("status") != "APPLIED" or int(state.get("minutes") or -1) != int(minutes):
+    """True only for a well-formed APPLIED record of this exact interval, recent enough.
+
+    Any malformed field -- a non-int or boolean `minutes` included (`true` must never read as 1)
+    -- is NOT fresh, so the call is re-issued and the record rewritten: a bad state file can
+    never stick (audit of be6a305b7).
+    """
+    got = state.get("minutes")
+    if (state.get("status") != "APPLIED" or not isinstance(got, int) or isinstance(got, bool)
+            or got != int(minutes)):
         return False
     if state.get("duration") != CADENCE_DURATION:
         return False
