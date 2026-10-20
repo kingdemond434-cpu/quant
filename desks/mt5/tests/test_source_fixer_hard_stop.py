@@ -47,24 +47,35 @@ def env(tmp_path, monkeypatch):
     (tmp_path / "asia_sources.json").write_text(json.dumps(
         {"sources": [{"id": "s1", "url": URL, "expect": "json"}]}))
     calls: list[str] = []
+    robots: list[str] = []
     answers: dict[str, Any] = {}
 
     def fake_urlopen(req, timeout=None, **_k):
         url = req if isinstance(req, str) else req.full_url
+        if url.endswith("/robots.txt"):       # robots.txt: 404 = allow all (RFC 9309)
+            robots.append(url)
+            raise urllib.error.HTTPError(url, 404, "x", {}, io.BytesIO(b""))  # type: ignore[arg-type]
         calls.append(url)
         if url.startswith(source_fixer.WAYBACK):
             return _Resp(200, b'{"archived_snapshots": {}}', "application/json")
         ans = answers.get(url, 404)
         if isinstance(ans, _Resp):
             return ans
-        raise urllib.error.HTTPError(url, ans, "x", {}, io.BytesIO(b""))  # type: ignore[arg-type]
+        hdrs: dict[str, str] = {}
+        if isinstance(ans, tuple):            # (30x, Location)
+            ans, hdrs = ans[0], {"Location": ans[1]}
+        raise urllib.error.HTTPError(url, ans, "x", hdrs, io.BytesIO(b""))  # type: ignore[arg-type]
 
-    monkeypatch.setattr(source_fixer.urllib.request, "urlopen", fake_urlopen)
+    # The polite no-redirect opener (variants, robots.txt) and the fetch door (Wayback): every
+    # request the module can make lands here.
+    monkeypatch.setattr(source_fixer._pf, "open_no_redirect", fake_urlopen)
+    monkeypatch.setattr(source_fixer, "fenced_urlopen", fake_urlopen)
 
     def verdict(**row: Any) -> None:
         (tmp_path / "AC.json").write_text(json.dumps({"rows": [{"id": "s1", **row}]}))
 
-    return {"calls": calls, "answers": answers, "verdict": verdict, "tmp": tmp_path}
+    return {"calls": calls, "answers": answers, "verdict": verdict, "tmp": tmp_path,
+            "robots": robots}
 
 
 def _state(env) -> dict[str, Any]:
@@ -167,3 +178,64 @@ def test_a_held_twin_host_blocks_the_www_variant(env) -> None:
     env["verdict"](status="ROUTE_CHANGED", http=200)
     doc = source_fixer.run()
     assert env["calls"] == [] and doc["results"][0]["outcome"] == "HELD"
+
+
+# ---------------------------------------------------------------- audit 31618ff54 should-fixes
+def test_a_redirecting_variant_is_never_followed_to_its_target(env) -> None:
+    """(1) The no-redirect opener: a variant answering 30x to another host is recorded, and the
+    target is never requested by the fixer."""
+    env["verdict"](status="ROUTE_CHANGED", http=200)
+    cands = source_fixer.candidate_urls(URL)
+    env["answers"][cands[0]] = (302, "https://elsewhere.example.net/landing")
+    doc = source_fixer.run()
+    assert "https://elsewhere.example.net/landing" not in env["calls"]
+    assert not any("elsewhere.example.net" in r for r in env["robots"])
+    (row,) = doc["results"]
+    assert row["tried"][0]["why"] == "redirect:https://elsewhere.example.net/landing"
+    assert row["outcome"] == "STILL_DEAD"
+
+
+def test_a_refusal_holds_the_host_that_refused_in_both_records(env) -> None:
+    """(1) The refusing variant's own host is held here AND in the shared access record."""
+    from libs.data import polite_fetch as pf
+    env["verdict"](status="ROUTE_CHANGED", http=200)
+    cands = source_fixer.candidate_urls(URL)
+    env["answers"][cands[0]] = 429
+    source_fixer.run()
+    host = source_fixer._host(cands[0])
+    assert _state(env)["_holds"][f"site:{host}"]["status"] == 429
+    assert pf.person_hold(cands[0]) == "METHOD_BLOCKED"
+
+
+def test_a_site_held_in_the_shared_record_is_never_probed(env) -> None:
+    from libs.data import polite_fetch as pf
+    pf.hold_site("https://example.org/x", 403)
+    env["verdict"](status="ROUTE_CHANGED", http=200)
+    doc = source_fixer.run()
+    assert env["calls"] == [] and env["robots"] == []
+    assert doc["results"][0]["outcome"] == "HELD"
+
+
+def test_releasing_one_key_releases_its_www_twin(env) -> None:
+    """(2) site:x and site:www.x are one site: a release of either releases both stored keys."""
+    (env["tmp"] / "sfs.json").write_text(json.dumps({"_holds": {
+        "site:data.example.org": {"key": "site:data.example.org", "released_by": None},
+        "site:www.data.example.org": {"key": "site:www.data.example.org", "released_by": None},
+    }}))
+    source_fixer.release("site:data.example.org", "principal")
+    holds = _state(env)["_holds"]
+    assert all(h["released_by"] == "principal" and h["released_at"] for h in holds.values())
+    env["verdict"](status="ROUTE_CHANGED", http=200)
+    assert source_fixer.run()["n_held"] == 0
+
+
+def test_holds_listed_by_a_dry_run_are_labelled_dry_run(env) -> None:
+    """(3) A dry run persists nothing, so the holds it lists say so."""
+    env["verdict"](status="HTTP_ERROR", http=429)
+    doc = source_fixer.run(dry_run=True)
+    assert doc["holds_persisted"] is False
+    assert doc["holds"] and all(h["dry_run"] is True for h in doc["holds"])
+    assert doc["results"][0]["hold"]["dry_run"] is True
+    assert not (env["tmp"] / "sfs.json").exists()
+    real = source_fixer.run()
+    assert real["holds_persisted"] is True and "dry_run" not in real["holds"][0]
