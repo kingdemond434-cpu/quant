@@ -8,7 +8,6 @@ uninterrupted one's. They skip until the patch is applied to the sealed file.
 """
 from __future__ import annotations
 
-import pickle
 import sys
 import time
 from pathlib import Path
@@ -110,14 +109,12 @@ def test_a_plan_from_other_code_law_universe_or_time_is_re_made(eg, shard, stand
     elif change == "meta":
         meta = {**META, "GBPUSD": {"tick_size": 1e-5}}
     else:
-        with open(path, "rb") as fh:
-            doc = pickle.load(fh)
+        doc = eg._unpickle(path)                            # the judge's own reader
         if change == "age":
             doc["created_at"] = time.time() - eg.PLAN_RESUME_MAX_AGE_S - 60
         else:
             doc["protocol"] = -1
-        with open(path, "wb") as fh:
-            pickle.dump(doc, fh)
+        eg._pickle_atomic(path, doc)
     assert eg._resume_plan(cells, meta, surv) is None
     assert not path.exists(), "a plan that may not resume is removed, never retried"
 
