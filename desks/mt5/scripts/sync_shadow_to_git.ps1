@@ -418,17 +418,27 @@ function Push-Logged {
     return $rc
 }
 
-# A BROKERAGE LOGIN NEVER CROSSES THIS WIRE (audit v2, 2026-10-14). The live-identifier fence
-# (tests/ops/test_live_infrastructure_is_not_published.py) is a pytest: it can only notice a
-# login AFTER origin holds it, and its ALLOWED entry for cost_truth_quotes.json blinds it to that
-# one path entirely. So the publisher refuses, at publish time, any text state file carrying a
-# login-shaped key ("login", "account_login", "mt5_login", ...) with a value. `login_withheld`
-# (the bool research/cost_truth.py writes) does not match, and neither does a null/true/false.
-# A refused file is dropped from THIS pass by name only -- the value is never read into the log.
-# tests/scripts/test_box_sync_publishes_cost_state.py runs this exact pattern against the files.
-# The whitespace sits INSIDE the lookahead: outside it, `\s*` backtracks to zero and
-# `"login": null` reads as a login value and is refused (pinned in the test named above).
-$LoginKeyPattern = '"(?:[A-Za-z0-9]*_)?login"\s*:(?!\s*(?:null|false|true)\b)'
+# THE LOGIN FENCE ON THIS WIRE (audit v2 + v3, 2026-10-14). It covers the login-shaped keys
+# libs/ops/login_fence.py names -- login, login_id, account, account_number, accountLogin,
+# mt5_login and their kin, plain, escaped or \u-encoded, and CSV columns -- with an
+# account-shaped value. It does NOT make every published byte login-free: the sealed legacy
+# prefixes of live_ledger.jsonl and order_intents.jsonl still carry the raw login in `account`
+# (LEGACY_PREFIX there, and tests/ops/test_live_infrastructure_is_not_published.py), and only
+# rows written after their writers' account_key cutover are judged.
+# It runs on the BLOBS about to be committed (after hash-object and the sleeves sanitiser), so
+# the bytes it judged are the bytes published. A refusal drops that path from this pass, writes
+# desks/mt5/reports/LOGIN_FENCE.json and opens `state_login_fence_refusal` in the alert ledger;
+# the value never reaches this log, the artifact or the alert. If the fence cannot run (no
+# interpreter, a crash) NOTHING is published: it fails closed, and BOX_STATE_FLOW shows STALLED.
+# The interpreter is resolved as Adopt-And-Seal.ps1 resolves it: the venv, `py -3`, `python`.
+function Resolve-FencePython {
+    param([string]$RepoRoot)
+    $venv = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    if (Test-Path $venv) { return @($venv) }
+    if (Get-Command py -ErrorAction SilentlyContinue) { return @("py", "-3") }
+    if (Get-Command python -ErrorAction SilentlyContinue) { return @("python") }
+    return @()
+}
 
 function Publish-StateOnto {
     param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
@@ -440,25 +450,6 @@ function Publish-StateOnto {
         Write-SyncLog "publish: allowlist refusal ($($ignored.Count) ignored path(s)); nothing published"
         return $false
     }
-    # The login fence, per file, before anything is hashed. Binary state (the .pkl) is skipped:
-    # it holds market frames, and a regex over pickled bytes would only ever false-alarm.
-    $kept = @()
-    foreach ($rel in $Paths) {
-        if ($rel -notmatch '\.(json|jsonl|csv|txt|md)$') { $kept += $rel; continue }
-        try {
-            $text = [System.IO.File]::ReadAllText((Join-Path $RepoRoot $rel))
-        } catch {
-            Write-SyncLog "publish: REFUSED $rel -- unreadable for the login fence"
-            continue
-        }
-        if ([regex]::IsMatch($text, $LoginKeyPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
-            Write-SyncLog "publish: REFUSED $rel -- it carries an account login key (value withheld from this log); fix its writer"
-            continue
-        }
-        $kept += $rel
-    }
-    $Paths = [string[]]$kept
-    if ($Paths.Count -eq 0) { Write-SyncLog "publish: every state path refused; nothing published"; return $false }
     # One git process hashes the allowlisted snapshot. Starting a separate git process for every
     # state file exhausted the ten-minute task window on the trading box before any push began.
     # --stdin-paths emits one hash per input path, in order; reject partial or malformed output.
@@ -498,6 +489,40 @@ function Publish-StateOnto {
             return $false
         }
         $blobs[$i] = $pubBlob[0]
+    }
+    # THE LOGIN FENCE, ON THE FINAL BLOBS (see Resolve-FencePython above for the contract).
+    $pyCmd = @(Resolve-FencePython -RepoRoot $RepoRoot)
+    if ($pyCmd.Count -eq 0) {
+        Write-SyncLog "publish: login fence has no python interpreter (.venv, py, python); nothing published"
+        return $false
+    }
+    $fenceIn = for ($i = 0; $i -lt $Paths.Count; $i++) { "$($blobs[$i])`t$($Paths[$i])" }
+    $fenceScript = Join-Path $RepoRoot "libs\ops\login_fence.py"
+    $pyArgs = @($pyCmd | Select-Object -Skip 1)
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $refused = @($fenceIn | & $pyCmd[0] @pyArgs $fenceScript --repo $RepoRoot 2>$null |
+                     Where-Object { $_ -match '\S' } | ForEach-Object { "$_".Trim() })
+        $fenceRc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    if ($fenceRc -ne 0) {
+        Write-SyncLog "publish: login fence failed rc=$fenceRc; nothing published (it fails closed)"
+        return $false
+    }
+    if ($refused.Count -gt 0) {
+        foreach ($rel in $refused) {
+            Write-SyncLog "publish: REFUSED $rel -- login-shaped key with an account-shaped value (value withheld; see desks/mt5/reports/LOGIN_FENCE.json); fix its writer"
+        }
+        $keepPaths = @(); $keepBlobs = @()
+        for ($i = 0; $i -lt $Paths.Count; $i++) {
+            if ($refused -contains $Paths[$i]) { continue }
+            $keepPaths += $Paths[$i]; $keepBlobs += $blobs[$i]
+        }
+        $Paths = [string[]]$keepPaths; $blobs = $keepBlobs
+        if ($Paths.Count -eq 0) { Write-SyncLog "publish: every state path refused; nothing published"; return $false }
     }
     $entries = for ($i = 0; $i -lt $Paths.Count; $i++) {
         "100644 blob $($blobs[$i])`t$($Paths[$i])"
@@ -729,6 +754,9 @@ $reportPaths = @(
     # None holds a credential; tests/scripts/test_box_sync_publishes_cost_state.py pins that.
     "desks/mt5/data/cost_surface.json",
     "desks/mt5/data/cost_truth_quotes.json",
+    # the login fence's own verdict (2026-10-20): which state paths it refused, by key name
+    # only, so a false positive that stops a file publishing is visible off the box
+    "desks/mt5/reports/LOGIN_FENCE.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
