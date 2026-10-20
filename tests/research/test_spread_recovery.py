@@ -341,14 +341,22 @@ def test_a_second_concurrent_pass_stands_down(universe: Path, tmp_path: Path,
     assert not state.exists()
 
 
-def test_an_unpriceable_symbol_is_named_never_billed_at_zero_cost(universe: Path) -> None:
+def test_an_unpriceable_symbol_is_named_never_billed_at_zero_cost(
+        universe: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from mt5desk import families_orthogonal as fo
+
     from research import spread_recovery as sr
     d = pd.read_parquet(universe / "EURUSD_H1.parquet")
+    # A gap fade that fires at every rollover, so there are entries to price.
+    monkeypatch.setattr(fo, "family_overnight_gap_decay", lambda df, **_k: [
+        _sig(df.index[p], side=1 if i % 2 else -1)
+        for i, p in enumerate(np.flatnonzero(df.index.hour == 0)[10:-10])])
     assert sr.gate_deltas(d, "k:1.5", None) == {
         "n": 0, "why": "no tick_size: the spread cost cannot be priced", "cost_priced": False}
     priced = sr.gate_deltas(d, "k:1.5", 1e-5)
     lines = sr.gate_lines({"EURUSD": dict.fromkeys(sr.GATE_VALUES, priced),
                            "XAUUSD": {g: sr.gate_deltas(d, g, None) for g in sr.GATE_VALUES}})
+    assert priced["n"] > 0 and priced["cost_priced"] is True
     assert all(ln["symbols_unpriced"] == ["XAUUSD"] and ln["n"] == priced["n"] for ln in lines)
     # The price is real: the same deltas without the spread charge differ.
     free = sr.gate_deltas(d, "k:1.5", 1e-12)

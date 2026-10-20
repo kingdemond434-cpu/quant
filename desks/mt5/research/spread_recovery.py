@@ -221,7 +221,8 @@ def gate_deltas(d: pd.DataFrame, gate: str, tick_size: float | None) -> dict[str
                 "cost_priced": False}
     sigs = family_overnight_gap_decay(d)
     if not sigs:
-        return {"n": 0, "why": "the gap fade fired nothing on these bars"}
+        # Nothing to price is not unpriceable: the symbol joins the line with no deltas.
+        return {"n": 0, "why": "the gap fade fired nothing on these bars", "cost_priced": True}
     idx = pd.DatetimeIndex(d.index)
     pos = {t: i for i, t in enumerate(idx)}
     ps = [pos[s.time] for s in sigs if s.time in pos]
