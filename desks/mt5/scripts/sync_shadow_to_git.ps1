@@ -426,7 +426,9 @@ function Push-Logged {
 # (the bool research/cost_truth.py writes) does not match, and neither does a null/true/false.
 # A refused file is dropped from THIS pass by name only -- the value is never read into the log.
 # tests/scripts/test_box_sync_publishes_cost_state.py runs this exact pattern against the files.
-$LoginKeyPattern = '"(?:[A-Za-z0-9]*_)?login"\s*:\s*(?!null\b|false\b|true\b)'
+# The whitespace sits INSIDE the lookahead: outside it, `\s*` backtracks to zero and
+# `"login": null` reads as a login value and is refused (pinned in the test named above).
+$LoginKeyPattern = '"(?:[A-Za-z0-9]*_)?login"\s*:(?!\s*(?:null|false|true)\b)'
 
 function Publish-StateOnto {
     param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
