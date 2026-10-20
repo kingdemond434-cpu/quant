@@ -70,13 +70,13 @@ def test_the_newest_unmerged_plan_is_in_flight_and_counted_once(tmp_path: Path) 
                                        terminal_reason="no_signals")])
     _write(live, "shard_plan.json", [_row("c5", terminal_gate_id="economic_prior")])
     got = sv.in_flight(tmp_path)
-    assert got["status"] == "IN_FLIGHT" and got["token"] == "bbbb"
+    assert got["status"] == "IN_FLIGHT" and got["token"] == live.name
     assert got["rows"] == 5, "a cell met twice was counted twice"
     assert got["by_status"] == {"FINAL": 3, "PROVISIONAL": 1, "REJECTED_TERMINAL_PENDING": 1}
     assert got["final_by_terminal_gate_id"] == {"in_sample_screen": 1, "economic_prior": 1}
     assert got["final_unmeasured_by_reason"] == {"no_signals": 1}
     assert got["shards_published"] == ["0", "1", "plan"]
-    assert got["last_merged"]["token"] == "aaaa"
+    assert got["last_merged"]["token"] == old.name
 
 
 def test_a_republished_shard_replaces_its_file_and_changes_no_count(tmp_path: Path) -> None:
@@ -238,7 +238,8 @@ def test_the_merge_checks_the_copy_and_counts_each_cell_once(eg, tmp_path: Path,
     assert doc["published_rows"] == 4
     assert (doc["final_rows_agree"], doc["final_rows_disagree"]) == (2, 0)
     assert doc["provisional_rows"] == 1 and doc["absent_from_merge"] == 1
-    assert json.loads((tmp_path / "t1" / "MERGED.json").read_text("utf-8"))["token"] == "t1"
+    merged = json.loads((tmp_path / "t1" / "MERGED.json").read_text("utf-8"))
+    assert merged["token"] == plan["token"]
     final[0]["terminal_gate"] = "walk_forward"                     # the record moved
     assert eg._seal_shard_publication(final)["final_rows_disagree"] == 1
 
@@ -248,8 +249,8 @@ def test_the_merge_keeps_a_bounded_number_of_plans(eg, tmp_path: Path, monkeypat
         d = tmp_path / f"p{i}"
         _write(d, "shard_0.json", [])
         _age(d, 1000 - i)
-    monkeypatch.setattr(eg, "_SHARD", {"publication": {"dir": str(tmp_path),
-                                                       "token": f"p{eg.SHARD_PUBLISH_KEEP + 2}"}})
+    newest = (tmp_path / f"p{eg.SHARD_PUBLISH_KEEP + 2}").name
+    monkeypatch.setattr(eg, "_SHARD", {"publication": {"dir": str(tmp_path), "token": newest}})
     eg._seal_shard_publication([])
     assert len([d for d in tmp_path.iterdir() if d.is_dir()]) == eg.SHARD_PUBLISH_KEEP
 
