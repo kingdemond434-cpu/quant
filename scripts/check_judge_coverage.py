@@ -66,6 +66,23 @@ AUDIT = DESK / "reports" / "judge_coverage_fence.json"
 #: The hourly `judge_alive` leg's own verdict (`--liveness`), so it never overwrites the
 #: coverage fence's audit.
 LIVENESS_AUDIT = DESK / "reports" / "judge_alive_fence.json"
+#: A FAIL PAGES (audit of 7cf2ece90): `research/issue_board.py` collects alarm files from the
+#: repo's `data/`; this one exists exactly while the hourly judge_alive verdict is FAIL.
+LIVENESS_ALARM = ROOT / "data" / "JUDGE_ALIVE_ALARM.txt"
+
+
+def sync_alarm(doc: Mapping[str, Any], path: Path | None = None) -> None:
+    """Raise the alarm file on a FAIL; clear it on PASS (amber included). UNMEASURED leaves it
+    as it was: absence of evidence neither raises nor clears a page."""
+    target = path or LIVENESS_ALARM
+    verdict = str(doc.get("verdict") or "")
+    with suppress(OSError):
+        if verdict == "FAIL":
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(f"judge_alive FAIL at {doc.get('generated_utc')}: "
+                              f"{doc.get('why')}\n", encoding="utf-8")
+        elif verdict == "PASS" and target.exists():
+            target.unlink()
 #: THE JUDGE'S OWN PULSE (2026-10-20), written by `desks/mt5/scripts/run_sharded_gauntlet.py`.
 #: Coverage alone could not see a sweep that never ends: pid 7324 sat 14 h in its merge while
 #: every report here still read a healthy, merely slow judge. The heartbeat carries the sweep's
@@ -536,6 +553,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if args.liveness:
         doc = liveness_fence(require_state=bool(args.require_state))
+        if args.require_state:          # only the box's own verdict pages
+            sync_alarm(doc)
         if args.audit == str(AUDIT):
             args.audit = str(LIVENESS_AUDIT)
     else:

@@ -1457,7 +1457,9 @@ def _work(argv: list[str] | None = None) -> int:
         # AT LEAST ONE TASK EVERY PASS (audit of 2832cebd1). Checked before the first task, the
         # guard could stop a pass at zero tasks and exit 0 every hour -- a silent mining cut. The
         # worker's own working set is the thing measured, so it is only judged once work is done.
-        if not sum(counts.values()):
+        # An OUTAGE row (a seat unavailable) is not work done (audit of 7cf2ece90): only a real
+        # decision counts, so a pass of outages can never satisfy the one-task guarantee.
+        if not decided_ids:
             return False
         over, why = memory_guard()
         if over:
@@ -1604,7 +1606,7 @@ def _work(argv: list[str] | None = None) -> int:
         "dispositions": counts,
         **({"memory_guard": mem_stop} if mem_stop else {}),
     }, indent=1), encoding="utf-8")
-    publish_memory_guard(mem_stop, worked=sum(counts.values()), pending=backlog_before)
+    publish_memory_guard(mem_stop, worked=len(decided_ids), pending=backlog_before)
 
     elapsed = max(1e-6, time.monotonic() - pass_started)
     # THE CENSUS COUNTS EVERY ROW WITHOUT A TERMINAL DECISION, including the rows this pass never

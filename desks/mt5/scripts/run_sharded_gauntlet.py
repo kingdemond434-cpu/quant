@@ -188,6 +188,9 @@ RUN_DEADLINE_FLOOR_S = 4 * 3600.0
 #: The tree burned under this many cores in every heartbeat interval for this long: stalled.
 NO_PROGRESS_S = 1800.0
 NO_PROGRESS_CORES = 0.02
+#: ...AND moved under this many bytes of real I/O per second (psutil io_counters, read + write,
+#: where the platform exposes them). Heartbeat-sized writes are a few KB a beat, far under it.
+NO_PROGRESS_IO_BPS = 65536.0
 NO_PROGRESS_CAP_S = 4 * 3600.0
 #: A RUNNING heartbeat older than this is a wedged watchdog: the resident and the next run act.
 HEARTBEAT_STALE_S = 600.0
@@ -249,25 +252,45 @@ class _TreeProgress:
     until one sample has arrived: unmeasured progress is never a reason to kill.
     """
 
-    def __init__(self, now: float, cores: float | None = None) -> None:
+    def __init__(self, now: float, cores: float | None = None,
+                 max_gap_s: float | None = None) -> None:
         self.started = now
         self.last_progress = now
         self.cores = NO_PROGRESS_CORES if cores is None else cores
+        #: An interval longer than this (a VM pause, a suspended host, a starved sampler) is
+        #: never judged: it becomes a fresh baseline, so one long gap cannot read as idleness.
+        self.max_gap_s = max_gap_s
         self.measured = False
+        self.gaps = 0
         self._cpu: dict[int, float] = {}
+        self._io: dict[int, float] = {}
         self._last_t: float | None = None
 
     def update(self, sample: dict[str, Any] | None, now: float) -> bool | None:
+        """True / False = progressing or not over the interval; None = not judged (no sample,
+        or a gap longer than `max_gap_s`, which restarts the idle clock from `now`)."""
         if sample is None:
             return None
-        self.measured = True
         cpu = sample.get("cpu") or {}
-        delta = sum(max(0.0, v - self._cpu.get(p, 0.0)) for p, v in cpu.items())
+        io = sample.get("io") or {}
         dt = now - (self._last_t if self._last_t is not None else self.started)
-        progressing = dt <= 0 or delta / dt >= self.cores
+        if self.max_gap_s is not None and dt > self.max_gap_s:
+            self.gaps += 1
+            self.measured = True
+            self.last_progress = now
+            self._cpu, self._io, self._last_t = dict(cpu), dict(io), now
+            return None
+        self.measured = True
+        delta = sum(max(0.0, v - self._cpu.get(p, 0.0)) for p, v in cpu.items())
+        io_delta = sum(max(0.0, v - self._io.get(p, 0.0)) for p, v in io.items())
+        # PROGRESS IS CPU OR I/O (audit of 7cf2ece90): a process blocked on a disk it is
+        # streaming through burns little CPU and is still working. Heartbeat-sized writes stay
+        # under NO_PROGRESS_IO_BPS, so the watchdog's own beat never reads as work.
+        progressing = (dt <= 0 or delta / dt >= self.cores
+                       or (bool(io) and io_delta / dt >= NO_PROGRESS_IO_BPS))
         if progressing:
             self.last_progress = now
-        self._cpu, self._last_t = dict(cpu), now
+        self._cpu, self._io, self._last_t = dict(cpu), dict(io), now
         return progressing
 
     def idle_s(self, now: float) -> float:
@@ -467,6 +490,67 @@ def _missed_growth_line(reason: str, lost_s: float | None, why: str) -> dict[str
                     "wall bought no verdict; its E[log W] price is not measured")}
 
 
+#: THE STALL FILE IS ONE RECORD WITH SEVERAL WRITERS (audit of 7cf2ece90): the shard threads and
+#: the watchdog thread in a sweep, and the resident -- a different process. Each write is atomic,
+#: but read-modify-write was not: a SLOW that read before a STALL landed wrote back over it, and
+#: lost the red, the widening count and the missed-growth line (4 threads, 100 stalls: 36 kept).
+#: So every writer holds this lock (threads) AND an exclusive lock file (processes).
+_STALL_LOCK = threading.RLock()
+#: A lock file older than this was left by a writer that died holding it (a write takes ms).
+STALL_LOCK_STALE_S = 30.0
+STALL_LOCK_WAIT_S = 60.0
+
+
+@contextlib.contextmanager
+def _stall_guard() -> Any:
+    """Thread lock + cross-process O_EXCL lock file around one stall-file read-modify-write."""
+    with _STALL_LOCK:
+        lock = STALL.with_name(f"{STALL.name}.lock")
+        held = False
+        end = time.monotonic() + STALL_LOCK_WAIT_S
+        with contextlib.suppress(OSError):
+            lock.parent.mkdir(parents=True, exist_ok=True)
+        while True:
+            try:
+                fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with contextlib.suppress(OSError):
+                    os.write(fd, f"{os.getpid()}\n".encode())
+                os.close(fd)
+                held = True
+                break
+            except FileExistsError:
+                try:
+                    age = time.time() - lock.stat().st_mtime
+                except OSError:
+                    continue                  # it vanished between the two calls: try again
+                if age > STALL_LOCK_STALE_S:
+                    with contextlib.suppress(OSError):
+                        lock.unlink()         # a dead writer's lock
+                    continue
+                if time.monotonic() > end:
+                    break                     # never hang a sweep on a report: write unlocked
+                time.sleep(0.005)
+            except OSError:
+                break                         # unwritable directory: the thread lock still holds
+        try:
+            yield
+        finally:
+            if held:
+                with contextlib.suppress(OSError):
+                    lock.unlink()
+
+
+def _stall_locked(fn: Callable[..., Any]) -> Callable[..., Any]:
+    import functools
+
+    @functools.wraps(fn)
+    def inner(*a: Any, **kw: Any) -> Any:
+        with _stall_guard():
+            return fn(*a, **kw)
+    return inner
+
+
+@_stall_locked
 def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None = None,
                  pid: int | None = None, counts: bool = True,
                  last_heartbeat: dict[str, Any] | None = None,
@@ -512,6 +596,7 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
     return doc
 
 
+@_stall_locked
 def record_slow(reason: str, *, detail: str = "", shard: dict[str, Any] | None = None,
                 pid: int | None = None,
                 last_heartbeat: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -540,6 +625,7 @@ def record_slow(reason: str, *, detail: str = "", shard: dict[str, Any] | None =
     return doc
 
 
+@_stall_locked
 def _record_clear() -> None:
     """A sweep finished: the stall run is over (history kept), so the fence reads green again."""
     prev = _read_json(STALL)
@@ -551,13 +637,69 @@ def _record_clear() -> None:
                                    timespec="seconds")})
 
 
-def _parses(path: Path) -> bool:
+#: Files up to this size are checked with a full `json.load`; a larger one (the merge's ~625 MB
+#: verdict report) by a structural check of its two ends, so a restore never parses 625 MB twice.
+PARSE_FULL_MAX_BYTES = 32 * 1024 * 1024
+_PARSE_CACHE: dict[tuple[str, int, int], bool] = {}
+
+
+def _ends_close(path: Path, size: int) -> bool:
+    """Does the file open with `{`/`[` and end with the matching bracket on a line of its own?
+    `json.dumps(indent=...)` puts the outermost closer at column 0 and every inner one indented,
+    so a file torn mid-write ends anywhere but there."""
     try:
         with path.open("rb") as fh:
-            json.load(fh)
-        return True
-    except (OSError, ValueError):
+            head = fh.read(64).lstrip()
+            fh.seek(max(0, size - 64))
+            tail = fh.read().rstrip()
+    except OSError:
         return False
+    if not head or head[:1] not in (b"{", b"["):
+        return False
+    closer = b"}" if head[:1] == b"{" else b"]"
+    if head[1:2] not in (b"\n", b"\r"):
+        return tail.endswith(closer)   # compact JSON: no column-0 closer to look for
+    return tail.endswith(b"\n" + closer)
+
+
+def _parses(path: Path) -> bool:
+    """Is `path` whole JSON? Cached by (size, mtime): the same bytes are never judged twice."""
+    try:
+        st = path.stat()
+    except OSError:
+        return False
+    key = (str(path), int(st.st_size), int(st.st_mtime_ns))
+    hit = _PARSE_CACHE.get(key)
+    if hit is not None:
+        return hit
+    if st.st_size > PARSE_FULL_MAX_BYTES:
+        ok = _ends_close(path, int(st.st_size))
+    else:
+        try:
+            with path.open("rb") as fh:
+                json.load(fh)
+            ok = True
+        except (OSError, ValueError):
+            ok = False
+    if len(_PARSE_CACHE) > 64:
+        _PARSE_CACHE.clear()
+    _PARSE_CACHE[key] = ok
+    return ok
+
+
+def _clean_merge_tmp() -> list[str]:
+    """Remove the partial copies a kill can leave (a snapshot or a restore cut mid-copy): up to
+    ~625 MB each, never read by a restore, and otherwise kept until the next finished sweep."""
+    gone: list[str] = []
+    pats = [(MERGE_SNAPSHOT, "*.tmp"),
+            *((dst.parent, f"{dst.name}.restore.*.tmp") for dst in MERGE_OUTPUTS)]
+    for folder, pat in pats:
+        with contextlib.suppress(OSError):
+            for f in folder.glob(pat):
+                with contextlib.suppress(OSError):
+                    f.unlink()
+                    gone.append(f.name)
+    return gone
 
 
 def snapshot_merge_outputs() -> dict[str, Any]:
@@ -572,6 +714,7 @@ def snapshot_merge_outputs() -> dict[str, Any]:
         timespec="seconds"), "files": {}}
     with contextlib.suppress(OSError):
         MERGE_SNAPSHOT.mkdir(parents=True, exist_ok=True)
+    _clean_merge_tmp()
     for src in MERGE_OUTPUTS:
         if not src.exists() or not _parses(src):
             out["files"][src.name] = "absent or unparseable at merge start: nothing to keep"
@@ -592,8 +735,10 @@ def snapshot_merge_outputs() -> dict[str, Any]:
 
 
 def restore_merge_outputs() -> list[str]:
-    """After a kill: put back every merge output that no longer parses, from the snapshot."""
+    """After a kill: put back every merge output that no longer parses, from the snapshot, and
+    remove any partial copy the kill left behind."""
     restored: list[str] = []
+    _clean_merge_tmp()
     for dst in MERGE_OUTPUTS:
         copy = MERGE_SNAPSHOT / dst.name
         if not copy.exists() or (dst.exists() and _parses(dst)) or not _parses(copy):
@@ -613,6 +758,7 @@ def restore_merge_outputs() -> list[str]:
             restored.append(dst.name)
         except OSError:
             continue
+    _clean_merge_tmp()
     return restored
 
 
@@ -646,7 +792,7 @@ def _watched_run(argv: list[str], *, cwd: Path | str | None = None,
     every = SHARD_POLL_S if poll_s is None else max(0.01, float(poll_s))
     proc = subprocess.Popen(list(argv), cwd=cwd, env=env, stdout=stdout, stderr=stderr)
     t0 = clock()
-    tracker = _TreeProgress(t0)
+    tracker = _TreeProgress(t0, max_gap_s=3.0 * every)
     slow_sent = False
     try:
         while True:
@@ -1211,7 +1357,7 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
                              cwd=DESK, env=_sweep_env(), creationflags=flags)
     sample = sampler or _sample_tree
     t0 = clock()
-    tracker = _TreeProgress(t0)
+    tracker = _TreeProgress(t0, max_gap_s=(3.0 * poll_s) if poll_s > 0 else None)
     idle_kill_s = no_progress_s() + HEARTBEAT_STALE_S
     noted: set[str] = set()
     while True:
@@ -1395,15 +1541,29 @@ def _sample_tree(pid: int) -> dict[str, Any] | None:
     except Exception:
         return None
     cpu: dict[int, float] = {}
+    io: dict[int, float] = {}
     rss = 0.0
     for p in procs:
         try:
             t = p.cpu_times()
             cpu[p.pid] = float(t.user) + float(t.system)
-            rss += float(p.memory_info().rss)
         except Exception:
             continue
-    return {"cpu": cpu, "rss_mb": round(rss / (1024.0 * 1024.0), 1), "procs": len(cpu)}
+        with contextlib.suppress(Exception):
+            rss += float(p.memory_info().rss)
+        with contextlib.suppress(Exception):
+            c = p.io_counters()
+            io[p.pid] = float(getattr(c, "read_bytes", 0)) + float(getattr(c, "write_bytes", 0))
+    if not cpu:
+        # NOTHING COULD BE READ (AccessDenied on every process, audit of 7cf2ece90): that is
+        # UNMEASURED, never "measured idle" -- an empty CPU map once killed a child busy at one
+        # full core.
+        return None
+    out: dict[str, Any] = {"cpu": cpu, "rss_mb": round(rss / (1024.0 * 1024.0), 1),
+                           "procs": len(cpu)}
+    if io and len(io) == len(cpu):     # I/O only when every CPU-read process gave it
+        out["io"] = io
+    return out
 
 
 def _lock_root() -> Path | None:
@@ -1634,7 +1794,8 @@ class SweepWatchdog:
     def __init__(self, *, beat_s: float | None = None, clock: Callable[[], float] = time.time,
                  sampler: Callable[[int], dict[str, Any] | None] | None = None,
                  lane: Callable[[], bool] | None = None,
-                 exit_fn: Callable[[int], Any] = os._exit) -> None:
+                 exit_fn: Callable[[int], Any] = os._exit,
+                 mono: Callable[[], float] | None = None) -> None:
         raw = beat_s if beat_s is not None else (_env_seconds("GAUNTLET_HEARTBEAT_S")
                                                  or WATCHDOG_BEAT_S)
         self.beat_s = max(0.01, min(60.0, float(raw)))      # at least once a minute, always
@@ -1648,7 +1809,12 @@ class SweepWatchdog:
         self.run_s = run_deadline_s(self.consecutive, self.times)
         self.idle_s = no_progress_s(self.consecutive)
         self.create_time = _create_time(os.getpid())
-        self.progress = _TreeProgress(self.started)
+        # PROGRESS INTERVALS ARE MONOTONIC (audit of 7cf2ece90): a wall-clock step forward of half
+        # an hour (NTP, a VM resume) was one interval and read a busy tree as idle. `clock` stays
+        # the wall time the published stamps need; a test that injects one clock gets it for both.
+        self.mono = mono or (time.monotonic if clock is time.time else clock)
+        self.progress = _TreeProgress(self.mono(), max_gap_s=3.0 * self.beat_s)
+        self._idle = 0.0
         self.slow: list[str] = []
         self.beats = 0
         self.wrote = False
@@ -1700,15 +1866,18 @@ class SweepWatchdog:
             "tree": (None if sample is None else {k: sample[k] for k in ("procs", "rss_mb")}
                      | {"cpu_s": round(sum(sample["cpu"].values()), 1)}),
             "progress": "MEASURED" if self.progress.measured else "UNMEASURED (no psutil)",
-            "last_progress_utc": _iso(self.progress.last_progress),
-            "idle_s": round(self.progress.idle_s(now), 1),
+            "last_progress_utc": _iso(now - self._idle),
+            "idle_s": round(self._idle, 1),
+            "progress_gaps": self.progress.gaps,
         }
 
     def tick(self) -> dict[str, Any]:
         now = self.clock()
         self.beats += 1
         sample = self.sampler(os.getpid())
-        self.progress.update(sample, now)
+        m = self.mono()
+        self.progress.update(sample, m)
+        self._idle = self.progress.idle_s(m)
         phase = _PHASE_DOC.get("phase")
         since = _PHASE_DOC.get("_t")
         phase_el = now - since if isinstance(since, float) else None
@@ -1723,9 +1892,9 @@ class SweepWatchdog:
             slow.append((key, f"phase {phase} ran {phase_el:.0f}s, past its {phase_dl:.0f}s "
                               "SLOW threshold (3x the longest measured wall)"))
         reason: tuple[str, str] | None = None
-        if self.progress.measured and self.progress.idle_s(now) > self.idle_s:
+        if self.progress.measured and self._idle > self.idle_s:
             reason = ("no_progress", f"the whole process tree burned < {NO_PROGRESS_CORES} core "
-                                     f"for {self.progress.idle_s(now):.0f}s in phase {phase} "
+                                     f"for {self._idle:.0f}s in phase {phase} "
                                      "(deadlocked, or paging instead of computing)")
         self.slow.extend(k for k, _ in slow)
         doc = self._doc(now, "RUNNING", sample, phase, phase_el, phase_dl)
@@ -1735,7 +1904,7 @@ class SweepWatchdog:
             for k, detail in slow:
                 # PROGRESSING PAST A THRESHOLD IS AMBER, NOT RED, and the sweep keeps going.
                 record_slow(k, detail=f"{detail}; the tree is "
-                            + (f"progressing (last {self.progress.idle_s(now):.0f}s ago)"
+                            + (f"progressing (last {self._idle:.0f}s ago)"
                                if self.progress.measured else "UNMEASURED")
                             + ": left running", last_heartbeat=doc)
         if reason is not None:

@@ -327,3 +327,25 @@ def test_the_guard_lines_reach_missed_growth(tmp_path, monkeypatch) -> None:
     got = mg.organ_published_lines(path)
     assert got["verdict"] == "UNMEASURED" and got["lines"][0]["deferred"] == 8
     assert got["consecutive"] == 1
+
+
+def test_outage_rows_never_satisfy_the_one_task_guarantee(tmp_path, monkeypatch) -> None:
+    """Audit of 7cf2ece90: an outage row (a seat unavailable) is not work. A pass whose only
+    commits are outages has decided nothing, so the guard is never allowed to stop it there."""
+    seat = [t for t in _tasks(3) if t["disposition"] == "NEEDS_SYMBOL_EXTRACTION"]
+    _isolate(tmp_path, monkeypatch, seat)
+    monkeypatch.setenv("DEEPEN_SEAT_WORKERS", "1")
+    monkeypatch.setattr(dw, "work_task", lambda task, universe: ([], "REJECTED: seat error: down"))
+    asked = {"n": 0}
+
+    def guard():
+        asked["n"] += 1
+        return True, "rss 9000MB vs 0.5 x 1000MB"
+
+    monkeypatch.setattr(dw, "memory_guard", guard)
+    assert dw.main([]) == 0
+    rows = [json.loads(ln) for ln in dw.WORKED.read_text("utf-8").splitlines() if ln]
+    assert len(rows) == 3 and all(dw.is_outage(r["disposition"]) for r in rows)
+    assert asked["n"] == 0, "no real decision yet, so the guard was never consulted"
+    rep = json.loads(dw.MEMORY_GUARD_REPORT.read_text("utf-8"))
+    assert rep["worked_this_pass"] == 0 and rep["tripped"] is False

@@ -752,3 +752,150 @@ def test_a_handed_in_report_is_never_coloured_by_box_liveness(tmp_path):
     fence = _fence()
     out = fence.judge(report=tmp_path / "missing.json", require_state=False)
     assert all(c.get("metric") != "judge_alive" for c in out.get("checks") or [])
+
+
+# ------------------------------------------------- v3: the audit of 7cf2ece90
+def test_stall_writers_lose_nothing_across_threads():
+    """4 threads x 25 stalls, interleaved with SLOW writes: every stall is counted, no red is
+    washed amber (before the lock: 36 of 100 survived)."""
+    import threading
+
+    def worker(i: int) -> None:
+        for j in range(25):
+            runner.record_stall("no_progress", detail=f"t{i}-{j}", lost_s=1.0)
+            runner.record_slow("run_deadline", detail=f"t{i}-{j}")
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    st = _stall()
+    assert st["consecutive"] == 100 and st["status"] == "STALLED"
+    assert len(st["missed_growth"]) == runner.MISSED_GROWTH_HISTORY
+    assert not list(runner.STALL.parent.glob("*.lock")), "the lock file is released"
+
+
+_RACER = textwrap.dedent("""
+    import sys
+    from pathlib import Path
+    sys.path[:0] = [{root!r}, {desk!r}]
+    from scripts import run_sharded_gauntlet as r
+    tmp = Path({tmp!r})
+    r.HEARTBEAT, r.STALL = tmp / "GAUNTLET_HEARTBEAT.json", tmp / "GAUNTLET_STALL.json"
+    for j in range(25):
+        r.record_stall("no_progress", detail=f"p{{j}}", lost_s=1.0)
+        r.record_slow("run_deadline", detail=f"p{{j}}")
+""")
+
+
+def test_stall_writers_lose_nothing_across_processes(tmp_path):
+    """The resident and the sweep are different processes: the lock file serialises them."""
+    script = _RACER.format(root=str(ROOT), desk=str(DESK), tmp=str(tmp_path))
+    procs = [subprocess.Popen([sys.executable, "-c", script]) for _ in range(4)]
+    assert [p.wait(timeout=120) for p in procs] == [0, 0, 0, 0]
+    st = json.loads((tmp_path / "GAUNTLET_STALL.json").read_text("utf-8"))
+    assert st["consecutive"] == 100 and st["status"] == "STALLED"
+
+
+def test_a_stale_lock_file_from_a_dead_writer_is_broken():
+    lock = runner.STALL.with_name(f"{runner.STALL.name}.lock")
+    lock.write_text("999999\n")
+    old = time.time() - runner.STALL_LOCK_STALE_S - 5
+    os.utime(lock, (old, old))
+    runner.record_stall("no_progress", detail="x")
+    assert _stall()["consecutive"] == 1 and not lock.exists()
+
+
+def test_cpu_that_cannot_be_read_is_unmeasured_and_never_kills(monkeypatch, tmp_path):
+    """The probe: AccessDenied on every cpu_times() read a busy child as measured idle."""
+
+    def denied(self, *a, **k):
+        raise psutil.AccessDenied(self.pid)
+
+    monkeypatch.setattr(psutil.Process, "cpu_times", denied)
+    busy = _spawn("while True: pass")
+    try:
+        assert runner._sample_tree(busy.pid) is None
+    finally:
+        busy.kill()
+        busy.wait()
+    # ...and the shard runner, sampling such a child, lets it finish
+    t0 = time.monotonic()
+    done = runner._watched_run([sys.executable, "-c", _BUSY], idle_s=0.5, poll_s=0.1)
+    assert done.returncode == 0 and time.monotonic() - t0 >= 2.0
+
+
+def test_a_wall_clock_jump_never_reads_a_busy_tree_as_idle(monkeypatch):
+    monkeypatch.setattr(runner, "_kill_descendants", lambda pid: pytest.fail("killed a sweep"))
+    wall, mono = [0.0], [0.0]
+    tree = _FakeTree()
+    exits: list[int] = []
+    dog = runner.SweepWatchdog(
+        beat_s=30,
+        clock=lambda: wall[0],
+        mono=lambda: mono[0],
+        sampler=tree,
+        lane=lambda: True,
+        exit_fn=exits.append,
+    )
+    for _ in range(5):
+        wall[0] += 60
+        mono[0] += 60
+        tree.cpu += 60
+        dog.tick()
+    wall[0] += 1900  # NTP / VM resume: wall time leaps, 60 s really passed
+    mono[0] += 60
+    tree.cpu += 60
+    dog.tick()
+    # and a real gap (a frozen sampler) longer than 3 beats is a fresh baseline, not idleness
+    mono[0] += 1900
+    wall[0] += 1900
+    tree.cpu += 1.0
+    dog.tick()
+    assert exits == [] and dog.progress.gaps == 1
+
+
+def test_io_advancing_is_progress_and_a_heartbeat_trickle_is_not():
+    tr = runner._TreeProgress(0.0)
+    assert tr.update({"cpu": {1: 0.0}, "io": {1: 0.0}}, 1.0) is False
+    assert tr.update({"cpu": {1: 0.0}, "io": {1: 8e6}}, 61.0) is True  # ~133 KB/s
+    assert tr.update({"cpu": {1: 0.0}, "io": {1: 8e6 + 4096}}, 121.0) is False
+    assert tr.update({"cpu": {1: 0.0}}, 181.0) is False  # no io: CPU only
+
+
+def test_a_restore_removes_partial_copies_and_never_full_parses_a_big_file(monkeypatch):
+    a, b = runner.MERGE_OUTPUTS
+    a.write_text(json.dumps({"v": list(range(50))}, indent=2))
+    b.write_text(json.dumps({"s": 1}, indent=2))
+    runner.snapshot_merge_outputs()
+    (runner.MERGE_SNAPSHOT / "universal_gates_external.json.4242.tmp").write_text("partial")
+    (a.parent / f"{a.name}.restore.4242.tmp").write_text("partial")
+    monkeypatch.setattr(runner, "PARSE_FULL_MAX_BYTES", 16)
+
+    def no_full_load(*args, **kw):
+        raise AssertionError("a large file was fully parsed")
+
+    monkeypatch.setattr(runner.json, "load", no_full_load)
+    a.write_text(a.read_text()[:-40])  # torn mid-write
+    assert runner._parses(a) is False
+    assert runner.restore_merge_outputs() == [a.name]
+    assert runner._parses(a) is True and runner._parses(b) is True
+    assert not list(runner.MERGE_SNAPSHOT.glob("*.tmp"))
+    assert not list(a.parent.glob("*.restore.*.tmp"))
+
+
+def test_a_fail_pages_through_the_issue_board_and_a_pass_clears_it(tmp_path):
+    fence = _fence()
+    alarm = tmp_path / "JUDGE_ALIVE_ALARM.txt"
+    fence.sync_alarm({"verdict": "FAIL", "why": "no_progress"}, alarm)
+    assert "no_progress" in alarm.read_text()
+    fence.sync_alarm({"verdict": "UNMEASURED"}, alarm)
+    assert alarm.exists(), "absence of evidence never clears a page"
+    fence.sync_alarm({"verdict": "PASS"}, alarm)
+    assert not alarm.exists()
+    import research.issue_board as board
+
+    assert any(a[0] == "JUDGE_ALIVE_ALARM.txt" for a in board.ALARMS)
+    assert any(c[1].endswith("judge_alive_fence.json") for c in board.CADENCE)
+    assert fence.LIVENESS_ALARM.parent.name == "data"
