@@ -179,7 +179,7 @@ def place_hold(record: dict[str, Any], register: Path, *, source_key: str | None
     reg = _register(register)
     holds = reg.setdefault("holds", {})
     cur = holds.get(record["key"])
-    if isinstance(cur, dict) and cur.get("released_by") is None:
+    if isinstance(cur, dict) and not _named(cur.get("released_by")):
         pass                                   # already held: the standing record is kept
     else:
         if isinstance(cur, dict):
@@ -217,6 +217,11 @@ def note_robots(verdict: Mapping[str, Any], register: Path, *, source_key: str,
     _write_json(register, reg)
 
 
+def _named(released_by: Any) -> bool:
+    """A release names a person: an empty or whitespace `released_by` releases nothing."""
+    return released_by is not None and bool(str(released_by).strip())
+
+
 def _released(reg: Mapping[str, Any], key: str, held_at: Any) -> bool:
     """Has a person released `key` at or after `held_at`?"""
     rows = [(reg.get("holds") or {}).get(key), *(reg.get("hold_history") or [])]
@@ -225,7 +230,7 @@ def _released(reg: Mapping[str, Any], key: str, held_at: Any) -> bool:
     except (TypeError, ValueError):
         at = float("-inf")
     for r in rows:
-        if isinstance(r, dict) and r.get("key") == key and r.get("released_by"):
+        if isinstance(r, dict) and r.get("key") == key and _named(r.get("released_by")):
             try:
                 if float(r.get("released_at") or 0) >= at:
                     return True
@@ -243,9 +248,9 @@ def active_hold(register: Path, keys: Iterable[str],
     holds = reg.get("holds") or {}
     for k in keys:
         row = holds.get(k)
-        if isinstance(row, dict) and row.get("released_by") is None:
+        if isinstance(row, dict) and not _named(row.get("released_by")):
             return dict(row)
-    if isinstance(mirror, dict) and mirror.get("key") and mirror.get("released_by") is None \
+    if isinstance(mirror, dict) and mirror.get("key") and not _named(mirror.get("released_by")) \
             and not _released(reg, str(mirror["key"]), mirror.get("held_at")):
         return dict(mirror)
     return None

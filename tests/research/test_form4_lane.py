@@ -697,3 +697,28 @@ def test_a_waf_challenge_page_is_a_hold(tmp_path: Path,
                  dry_run=True, register=tmp_path / "r.json")
     assert rep["fetch"]["block"]["verdict"] == "WAF_CHALLENGE"
     assert rep["fetch"]["status"] == "CHALLENGED"
+
+
+def test_the_real_getter_returns_every_header_and_the_error_body(monkeypatch) -> None:
+    """Retry-After and a WAF challenge travel with a refusal (audit b323f23a9 SF): the getter
+    hands back the response's headers and error body, not a filtered subset."""
+    import email.message
+    import io
+    import urllib.error
+
+    msg = email.message.Message()
+    msg["Retry-After"] = "120"
+    msg["cf-mitigated"] = "challenge"
+
+    def boom(req, timeout=None):
+        raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", msg,
+                                     io.BytesIO(b"<title>Just a moment...</title>"))
+
+    monkeypatch.setattr(fl.urllib.request, "urlopen", boom)
+    monkeypatch.setattr(fl, "SPACING_S", 0.0)
+    status, body, headers = fl._call(fl.urllib_getter("desk research contact@example.com"),
+                                     "https://www.sec.gov/x")
+    assert status == 403
+    assert headers.get("retry-after") == "120"
+    assert headers.get("cf-mitigated") == "challenge"
+    assert b"Just a moment" in body

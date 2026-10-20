@@ -153,3 +153,22 @@ def test_the_release_cli_names_the_person_and_keeps_the_record(tmp_path: Path) -
     assert row["released_by"] == "desk-operator" and row["released_at"] is not None
     assert row["held_at"] == rec["held_at"] and row["status"] == 429      # the record is kept
     assert _hs.active_hold(reg, [rec["key"]]) is None
+
+
+@pytest.mark.parametrize("blank", ["", "   ", "\t"])
+def test_a_blank_released_by_releases_nothing(tmp_path: Path, blank: str) -> None:
+    """A hold is released only by a NAMED person (audit b323f23a9 MF1): an empty or whitespace
+    `released_by`, on the register row or in its history, leaves the hold in force."""
+    reg = tmp_path / "blocked_sources.json"
+    rec = _hs.hold_record(_hs.VERDICT_HARD_STOP, 429, "https://trends.google.com/x", NOW)
+    _hs.place_hold(rec, reg)
+    data = json.loads(reg.read_text("utf-8"))
+    data["holds"][rec["key"]].update(released_by=blank, released_at=NOW.timestamp() + 60)
+    data["hold_history"] = [{**rec, "released_by": blank, "released_at": NOW.timestamp() + 60}]
+    reg.write_text(json.dumps(data), "utf-8")
+    assert _hs.active_hold(reg, [rec["key"]]) is not None
+    assert _hs.active_hold(reg, [], mirror=rec) is not None
+    with pytest.raises(ValueError):
+        _hs.release(reg, rec["key"], blank)
+    _hs.release(reg, rec["key"], "zuck", now=NOW + timedelta(minutes=2))
+    assert _hs.active_hold(reg, [rec["key"]]) is None

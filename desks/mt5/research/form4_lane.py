@@ -36,10 +36,11 @@ WHAT THIS DOES, EVERY HOUR, BOUNDED:
           One cell is one trial, charged at the docket; nothing is donated twice.
 
 A 401, 403 OR 429 IS A HARD STOP. The first one ends the pass's SEC fetching; the lane records
-METHOD_BLOCKED (403/429) or NEEDS_KEY (401) with the status, URL class and time, persists a
-backoff marker (Retry-After when the response names one, else 1h doubling per consecutive block)
-that makes later passes request nothing until it expires, and appends the block to the desk's
-register `data/intelligence/blocked_sources.json`. Scoring what is already held still runs, and
+METHOD_BLOCKED (403/429) or NEEDS_KEY (401) with the status, URL class and time, and places a
+person-released hold (`hard_stop.hold_record`, `released_by` null) in the desk's register
+`data/intelligence/blocked_sources.json`: later passes request nothing until a named person
+releases it (`python -m desks.mt5.research.hard_stop --release <key> --by <name>`). Retry-After is
+recorded and never releases a hold; no timer does. Scoring what is already held still runs, and
 the report reads UNMEASURED for new data. No retry around the block, no identity rotation, no
 other route to the same content.
 
@@ -186,10 +187,17 @@ def urllib_getter(ua: str) -> Getter:
                                                    "Accept-Encoding": "identity", **headers})
         try:
             with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
-                return int(resp.status), resp.read(8 * 1024 * 1024), {}
+                return (int(resp.status), resp.read(8 * 1024 * 1024),
+                        {str(k): str(v) for k, v in resp.headers.items()})
         except urllib.error.HTTPError as exc:
-            ra = exc.headers.get("Retry-After") if exc.headers is not None else None
-            return int(exc.code), b"", ({"Retry-After": str(ra)} if ra else {})
+            # Every response header and the error body go back, so the hard stop sees
+            # Retry-After and a WAF challenge (cf-mitigated / challenge page) on a refusal.
+            hdrs = {str(k): str(v) for k, v in exc.headers.items()} if exc.headers is not None else {}
+            try:
+                err_body = exc.read(64 * 1024)
+            except OSError:
+                err_body = b""
+            return int(exc.code), err_body, hdrs
         except (urllib.error.URLError, TimeoutError, OSError):
             return 0, b"", {}
     return get
