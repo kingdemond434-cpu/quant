@@ -23,12 +23,25 @@ WHAT IT CHECKS, on hour scales (the disarm rule works in days; this is its early
     silent     `reports/SILENT_ORGANS.json` fence RED (a NEW silent organ or an escalation) or
                UNMEASURED (an input unreadable, stale or existence-only), or the census older
                than SILENT_MAX_MIN -- audit R2, 2026-09-30: the fence paged nobody before this
+    deadman    `data/fusion_deadman_state.json` (the MT5 ruin rail's 5-minute stamp) older than
+               DEADMAN_MAX_MIN, 24/7 -- a rail that stopped evaluating protects nothing
+    mt5_link   `gateway_state.json` `last_reconcile` older than MT5_LINK_MAX_MIN while the FX
+               market is open -- the terminal can run with Python's IPC link to it dead
+    forward    `reports/shadow/shadow_health.json` older than FORWARD_MAX_H, or carrying an MT5
+               `initialize failed` error -- the forward clocks cannot enter trades without bars
+    alerts     no channel armed in `data/secrets/alert_channels.json` -- a page to no one
+
+DESK HEALTH 2026-10-20: all four of the new checks were red at once and none of them paged. The
+rail had not stamped since 09-12, the IPC link had been dead since 10-18 17:05, no forward clock
+had entered since 10-16 and no channel was armed, while the old four stayed green.
 
 All healthy: GET the ping URL. Anything failing: POST `<url>/fail` with the failing checks, and
-whenever a check JOINS the failing set (or the silent fence names a new organ), one page through `libs.ops.alert_channels.send_all` (whatever is
-armed there; unarmed is recorded, never silent). A failing check does not stop the ping: `/fail`
-is itself a ping, so "the box is alive and something on it is wrong" and "the box is gone" stay
-two different pages.
+whenever a check JOINS the failing set (or the silent fence names a new organ), one page
+through `libs.ops.alert_channels.send_all` (whatever is armed there; unarmed is recorded,
+never silent), and again every REPAGE_H while anything is still failing, so a page that was
+missed or swiped away cannot become a week of silence. A failing check does not stop the
+ping: `/fail` is itself a ping, so "the box is alive and something on it is wrong"
+and "the box is gone" stay two different pages.
 
 CREDENTIAL. The check's ping URL, in `data/secrets/box_heartbeat_url.json` (`{"url":
 "https://hc-ping.com/<uuid>"}`), a SEPARATE check from the VPS's `heartbeat_url.json` so the two
@@ -65,6 +78,15 @@ WATCHDOG_BEAT = BASE / "data" / "stall_watch.json"
 SILENT_ORGANS = BASE / "reports" / "SILENT_ORGANS.json"
 #: The census is an hourly leg plus an issue-board clock; three hours is two missed passes.
 SILENT_MAX_MIN = 180.0
+DEADMAN_STAMP = BASE / "data" / "fusion_deadman_state.json"
+GATEWAY_STATE = BASE / "data" / "gateway_state.json"
+SHADOW_HEALTH = BASE / "reports" / "shadow" / "shadow_health.json"
+ALERT_CONFIGS = (ROOT / "data" / "secrets" / "alert_channels.json",
+                 BASE / "data" / "secrets" / "alert_channels.json")
+DEADMAN_MAX_MIN = 20.0
+MT5_LINK_MAX_MIN = 30.0
+FORWARD_MAX_H = 3.0
+REPAGE_H = 2.0
 RESEARCH_MAX_H = 6.0
 GATEWAY_MAX_MIN = 30.0
 WATCHDOG_MAX_MIN = 30.0
@@ -92,8 +114,69 @@ def _age_min(p: Path, now: float) -> float | None:
         return None
 
 
+def _stamp_age_min(raw: object, now: float) -> float | None:
+    """Minutes since an ISO stamp; None when absent or unparseable (which every caller fails)."""
+    try:
+        dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return (now - dt.timestamp()) / 60.0
+
+
+def _read_json(p: Path) -> dict[str, Any] | None:
+    try:
+        doc = json.loads(p.read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def armed_alert_kinds(configs: tuple[Path, ...] | None = None) -> list[str]:
+    """Kinds armed in whichever alert_channels.json exists; [] when none does."""
+    from libs.ops.alert_channels import load_channels
+    for p in configs if configs is not None else ALERT_CONFIGS:
+        if p.exists():
+            return [str(c.get("kind")) for c in load_channels(p)]
+    return []
+
+
+def rail_checks(t: float, is_open: bool, *,
+                alert_kinds: list[str] | None = None) -> dict[str, dict[str, Any]]:
+    """The four checks DESK_HEALTH 2026-10-20 found red with nothing paging. Shared with
+    check_desk_health.py so the hourly report and the 5-minute alarm cannot disagree."""
+    checks: dict[str, dict[str, Any]] = {}
+    stamp = _read_json(DEADMAN_STAMP) or {}
+    d = _stamp_age_min(stamp.get("checked_at"), t)
+    checks["deadman"] = {"age_min": None if d is None else round(d, 1),
+                         "max_min": DEADMAN_MAX_MIN, "mode": stamp.get("mode"),
+                         "fail": d is None or d > DEADMAN_MAX_MIN}
+    gw = _read_json(GATEWAY_STATE) or {}
+    r = _stamp_age_min(gw.get("last_reconcile"), t)
+    checks["mt5_link"] = {"reconcile_age_min": None if r is None else round(r, 1),
+                          "max_min": MT5_LINK_MAX_MIN, "market_open": is_open,
+                          "fail": is_open and (r is None or r > MT5_LINK_MAX_MIN)}
+    sh = _read_json(SHADOW_HEALTH) or {}
+    f = _stamp_age_min(sh.get("updated_at"), t)
+    raw_errs = sh.get("errors")
+    errs: dict[str, Any] = raw_errs if isinstance(raw_errs, dict) else {}
+    ipc = sorted(k for k, v in errs.items() if "initialize failed" in str(v))
+    checks["forward"] = {"age_h": None if f is None else round(f / 60.0, 2),
+                         "max_h": FORWARD_MAX_H, "mt5_errors": ipc,
+                         "fail": f is None or f / 60.0 > FORWARD_MAX_H or bool(ipc)}
+    if alert_kinds is None:
+        try:
+            alert_kinds = armed_alert_kinds()
+        except Exception:               # an unreadable registry is a failing check, never a pass
+            alert_kinds = []
+    checks["alerts"] = {"armed": alert_kinds, "fail": not alert_kinds}
+    return checks
+
+
 def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
-            disk_free_gb: float | None = None) -> dict[str, Any]:
+            disk_free_gb: float | None = None,
+            alert_kinds: list[str] | None = None) -> dict[str, Any]:
     """Every check's reading and whether it fails. A beat that does not exist FAILS: absence is
     not health (L1.28a)."""
     t = now if now is not None else time.time()
@@ -126,6 +209,7 @@ def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
                       "min_gb": DISK_MIN_GB,
                       "fail": disk_free_gb is None or disk_free_gb < DISK_MIN_GB}
     checks["silent"] = silent_check(t)
+    checks.update(rail_checks(t, is_open, alert_kinds=alert_kinds))
     failing = sorted(k for k, v in checks.items() if v["fail"])
     return {"at": dt.isoformat(timespec="seconds"), "checks": checks, "failing": failing,
             "verdict": "FAIL" if failing else "OK"}
@@ -202,8 +286,13 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     newly = doc["verdict"] == "FAIL" and (bool(set(doc["failing"]) - prev_failing)
                                           or ("silent" in doc["failing"]
                                               and bool(now_new - prev_new)))
+    last_page = prev.get("last_paged_at") if doc["verdict"] == "FAIL" else None
+    overdue = (doc["verdict"] == "FAIL" and not newly and (
+        last_page is None or (_stamp_age_min(last_page, time.time()) or 0.0) > REPAGE_H * 60))
     doc["paged"] = None
-    if newly and not dry_run:
+    doc["last_paged_at"] = last_page
+    if (newly or overdue) and not dry_run:
+        doc["last_paged_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         try:
             from libs.ops.alert_channels import send_all
             res = send_all("MT5 box unhealthy", body)

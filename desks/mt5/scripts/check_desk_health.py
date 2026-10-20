@@ -75,7 +75,11 @@ PROCS: tuple[tuple[str, str], ...] = (
     # (Install-QuantWindows.ps1). Reading only the first called a healthy resident loop "NOT
     # running" (DESK_HEALTH 2026-10-12).
     ("run_gateway_loop|gateway_resident", "the gateway pass"),
-    ("run_deadman_switch", "the Tier-3 protective rail"),
+    # `run_deadman_switch` is NOT listed (2026-10-20): it is the Tier-3 CRYPTO-TESTNET rail, pinned
+    # to Binance testnet, and protects no MT5 risk (CLAUDE.md standing defect). Asking for it
+    # reported a false PROBLEM while the rail that does watch the live account -- fusion_deadman,
+    # a 5-minute task, never a resident process -- had not stamped for five weeks unseen.
+    # check_rails() judges that rail by its stamp.
 )
 
 #: artifact -> (what produced it, hours after which it is a finding)
@@ -474,6 +478,52 @@ def check_gateway_state() -> None:
     print()
 
 
+def check_rails() -> None:
+    """The MT5 ruin rail, the MT5 link, the forward clocks and alert arming -- the same readings
+    box_heartbeat.py pages on every five minutes, so the two can never disagree."""
+    _section("DOES ANYTHING PROTECT THE LIVE ACCOUNT  (rail, MT5 link, forward clocks, alerts)")
+    try:
+        sys.path.insert(0, str(DESK / "scripts"))
+        import box_heartbeat as hb
+        t = time.time()
+        checks = hb.rail_checks(t, hb.fx_open(datetime.fromtimestamp(t, tz=UTC)))
+    except Exception as exc:
+        _unknown(f"rail readings unavailable ({type(exc).__name__}: {exc}) -- UNMEASURED, not fine")
+        print()
+        return
+    d = checks["deadman"]
+    if d["fail"]:
+        _bad(f"the MT5 ruin rail (fusion_deadman, MT5-FusionDeadmanDryRun) has not stamped for "
+             f"{d['age_min']} min (expected under {d['max_min']:.0f}) -- nothing is evaluating "
+             f"the live account's rails")
+    elif d.get("mode") != "LIVE":
+        _bad(f"the MT5 ruin rail runs in {d.get('mode')} mode: it evaluates every 5 min but can "
+             f"flatten nothing on the live account (stamp {d['age_min']} min old)")
+    else:
+        _ok(f"the MT5 ruin rail is LIVE and stamped {d['age_min']} min ago")
+    m = checks["mt5_link"]
+    if m["fail"]:
+        _bad(f"the gateway last reconciled with the broker {m['reconcile_age_min']} min ago with "
+             f"the market open -- the Python link to the terminal is down (expected under "
+             f"{m['max_min']:.0f} min)")
+    else:
+        _ok(f"MT5 link: last reconcile {m['reconcile_age_min']} min ago "
+            f"(market open: {m['market_open']})")
+    f = checks["forward"]
+    if f["fail"]:
+        _bad(f"the forward clocks cannot advance: shadow_health {f['age_h']}h old, MT5 errors "
+             f"{f['mt5_errors'] or 'none'}")
+    else:
+        _ok(f"forward clocks: shadow_health {f['age_h']}h old, no MT5 errors")
+    a = checks["alerts"]
+    if a["fail"]:
+        _bad("no alert channel is armed in data/secrets/alert_channels.json -- every page above "
+             "reaches no one")
+    else:
+        _ok(f"alert channels armed: {', '.join(a['armed'])}")
+    print()
+
+
 def report(checked_at: str) -> dict[str, Any]:
     """The run's findings as a document; PROBLEM and UNKNOWN counted, never folded into OK."""
     counts = {lvl: sum(1 for f in _FINDINGS if f["level"] == lvl)
@@ -504,6 +554,7 @@ def main(argv: list[str] | None = None) -> int:
     check_state_flow()
     check_stall_watch_alerts()
     check_gateway_state()
+    check_rails()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")
     if args.out:
