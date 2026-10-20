@@ -352,6 +352,9 @@ def test_the_resident_kills_a_child_whose_watchdog_went_quiet(monkeypatch):
     assert killed == [_Child.pid]
     st = json.loads(runner.STALL.read_text("utf-8"))
     assert st["reason"] == "resident_kill" and "watchdog is wedged" in st["detail"]
+    # recorded once: the next sweep's takeover does not report it again as unrecorded
+    assert json.loads(runner.HEARTBEAT.read_text("utf-8"))["status"] == "KILLED_BY_RESIDENT"
+    assert runner.take_over_stale() is None
 
 
 def test_the_write_survives_a_read_only_destination(tmp_path):

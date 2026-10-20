@@ -890,6 +890,9 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
             child.wait(timeout=30)
         record_stall("resident_kill", detail=f"sweep pid {child.pid}: {why}", pid=child.pid,
                      last_heartbeat=hb if hb.get("pid") == child.pid else {})
+        if hb.get("pid") == child.pid and hb.get("status") == "RUNNING":
+            # Recorded here, so the next sweep's takeover does not re-report it as unrecorded.
+            _write_json_atomic(HEARTBEAT, {**hb, "status": "KILLED_BY_RESIDENT", "why": why})
         return RESIDENT_HANG_RC
 
 
