@@ -282,7 +282,7 @@ def evaluate(trades: dict[str, list[tuple[datetime, float]]], target: dict[str, 
     rows = []
     for name, period, drift in CANDIDATES:
         res = simulate(grid, target, cost_r, period, drift)
-        gross = simulate(grid, target, {k: 0.0 for k in cost_r}, period, drift)
+        gross = simulate(grid, target, dict.fromkeys(cost_r, 0.0), period, drift)
         rows.append({
             "interval": name, "period_h": period, "drift_threshold": drift,
             "n_rebalances": res["n_rebalances"],
@@ -292,7 +292,7 @@ def evaluate(trades: dict[str, list[tuple[datetime, float]]], target: dict[str, 
     point = {HOLD: 0.0, **{r["interval"]: r["net_gain_elogw_per_day"] for r in rows}}
     ranked = sorted(point, key=lambda k: -point[k])
     best, runner = ranked[0], ranked[1]
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # noqa: S311 - resampling, not crypto
     wins = 0
     for _ in range(N_BOOT):
         nets = _nets(_resample(grid, rng), target, cost_r)
