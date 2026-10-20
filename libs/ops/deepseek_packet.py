@@ -20,9 +20,10 @@ import json
 import os
 import shutil
 from collections import Counter, deque
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 PACKET_VERSION = 1
 MAX_ITEMS = 8
@@ -254,7 +255,9 @@ def _portfolio(base: Path) -> dict[str, Any]:
     status = Counter(str(r.get("status") or "?") for r in rows)
     acct = _json(base / "desks/mt5/data/account_state.json") or {}
     pf = _json(base / "desks/mt5/reports/pf_allocation.json") or {}
-    book = pf.get("book") if isinstance(pf.get("book"), dict) else {}
+    book = pf.get("book")
+    if not isinstance(book, dict):
+        book = {}
     if not rows and not acct:
         return {"status": "UNMEASURED", "why": "sleeves.json and account_state.json absent"}
     return {
