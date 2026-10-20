@@ -387,3 +387,14 @@ def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(t
     assert rsg._blas_env({"OPENBLAS_NUM_THREADS": "6"}, sw)["OPENBLAS_NUM_THREADS"] == "6"
     # the switch file is not shipped: the live default stays off
     assert not rsg.BLAS_SWITCH.exists()
+
+
+def test_a_raise_names_its_possible_cost_to_miners(monkeypatch, tmp_path) -> None:
+    import os
+    me = os.getpid()
+    rows = _box(miner_nice=N, e8_nice=AN, extra=[_p(me, 1, "python.exe", ["python", "x.py"], BN)])
+    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
+    monkeypatch.setattr(jp, "equalise", lambda r, t, apply: [
+        {"pid": me, "from": "BELOW_NORMAL", "to": "NORMAL", "applied": True}])
+    out = rsg._equalise_self()
+    assert out["changed"] and out["missed_growth"]["workload"].startswith("miners")

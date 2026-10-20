@@ -1605,6 +1605,19 @@ def _equalise_self() -> dict[str, Any]:
         for r in rows:
             r["cls"] = "judge"            # this process IS the judge whatever its argv says
         out["changes"] = jp.equalise(rows, t["rank"], apply=True)
+        rank_of_name = {v: k for k, v in jp.RANK_NAME.items()}
+        raised = [ch for ch in out["changes"] if ch.get("applied")
+                  and rank_of_name[ch["to"]] > rank_of_name[ch["from"]]]
+        if raised:
+            # GROWTH GOVERNANCE: a raise to EQUAL can cost a miner at that class its share of
+            # the CPU the judge now competes for. Named here, never silent: the bound is the
+            # judge's own busy cores (it can never preempt a miner, only share with it).
+            out["missed_growth"] = {
+                "workload": "miners at the judge's new class",
+                "bound": "at most the judge's busy cores, shared round-robin; never preemption",
+                "judge_cores_before": (c.get("classes") or {}).get("judge", {}).get(
+                    "cpu_cores", "UNMEASURED"),
+                "measure": "reports/JUDGING_THROUGHPUT.json busy_other_cores before/after"}
         return {**out, "changed": bool(out["changes"])}
     except Exception as exc:
         return {"target": {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"},
