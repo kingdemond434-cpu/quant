@@ -30,8 +30,10 @@ CERT = "external.EURZAR.carry.p=8339edce23032d21"
 SPEC_BOOK = ["overnight_gap_decay", "session_range_breakout"]
 #: The main lane's enrolment, as `promoter.clock_identities` returns it (set per test).
 CLOCKS: dict[str, dict] = {}
+SHADOW: dict[str, dict] = {}       # shadow_state.json: the clocks the forward engine runs
 MAIN_KEY = "USDJPY.asia#rr=2.5"
 MAIN_CANON = "external.USDJPY@H1.session_range_breakout.p=0123456789abcdef"
+OTHER_CANON = "external.USDJPY@H1.session_range_breakout.p=fedcba9876543210"
 REP = {"verdict": "REPLICATED", "sharpe_metric_version": rc.SHARPE_METRIC_VERSION}
 
 
@@ -110,7 +112,9 @@ def roster(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {}))
     # The main lane's clock key -> canon map is the enrolment's; tests that need one set it.
     monkeypatch.setattr(promoter, "clock_identities", lambda: dict(CLOCKS))
+    monkeypatch.setattr(promoter, "load_shadow", lambda: dict(SHADOW))
     CLOCKS.clear()
+    SHADOW.clear()
     EVENTS.clear()
     monkeypatch.setattr(promoter, "note_door", lambda name, **k: EVENTS.append((name, k)))
 
@@ -196,17 +200,36 @@ def test_a_main_lane_clock_whose_canon_certificate_replicated_goes_live(
 def test_a_promoted_main_row_carrying_its_canon_certificate_needs_no_lookup(
         roster, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
+    # a key no forward clock holds, while the enrolment itself is measured (non-empty)
+    CLOCKS["EURUSD.asia#rr=2.5"] = {"certificate": OTHER_CANON}
     row = _lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON)
     got = roster([], [row])[MAIN_KEY]
     assert got["status"] == "LIVE"
-    # the clock is not enrolled this pass: the stamp is used, and the fallback is NAMED
+    # the stamp is used only because no clock exists for the key, and the fallback is NAMED
     assert got["canon_certificate_source"].startswith("stamp_unverified")
 
 
+def test_an_empty_enrolment_is_unmeasured_and_refuses_every_stamp(roster, tmp_path,
+                                                                  monkeypatch) -> None:
+    """Attestation failed / shadow_forward unimportable: clock_identities() returns {}."""
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
+    got = roster([], [_lane_row(MAIN_KEY, MAIN_KEY, canon_certificate=MAIN_CANON)])[MAIN_KEY]
+    assert got["status"] == "STANDBY" and "UNMEASURED clock enrolment" in got["demote_reason"]
+
+
+def test_a_running_clock_missing_from_a_partial_map_cannot_use_its_stamp(
+        roster, tmp_path, monkeypatch) -> None:
+    other_key = "USDJPY.asia#rr=2.6"
+    CLOCKS[MAIN_KEY] = {"certificate": MAIN_CANON}       # the map knows only rr=2.5
+    SHADOW[other_key] = {}                               # but rr=2.6 runs a forward clock
+    monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, {MAIN_CANON: dict(REP)}))
+    for key in (other_key, "GBPJPY.asia"):               # partial map; borrowed onto another pair
+        SHADOW[key] = {}
+        got = roster([], [_lane_row(key, key, canon_certificate=MAIN_CANON)])[key]
+        assert got["status"] == "STANDBY" and "did not enrol" in got["demote_reason"]
+
+
 # --------------------------------------------- a stamp never outranks the enrolment (door v4)
-OTHER_CANON = "external.USDJPY@H1.session_range_breakout.p=fedcba9876543210"
-
-
 def test_a_stamp_that_disagrees_with_the_enrolment_is_refused(roster, tmp_path,
                                                               monkeypatch) -> None:
     CLOCKS[MAIN_KEY] = {"certificate": OTHER_CANON}

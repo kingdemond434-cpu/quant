@@ -388,8 +388,22 @@ def _row_check(gate: Any, why_gate: str, waived: dict[str, str] | set[str]
             # key the enrolment does not list this pass falls back to its stamp, and says so.
             if "clock" not in memo:
                 memo["clock"] = _clock_canon_map()
+                memo["known"] = set(load_shadow())
             mapped = memo["clock"].get(key.strip())
             stamped = str(row.get("canon_certificate") or "")
+            if stamped and not mapped:
+                # A STAMP STANDS IN ONLY FOR A CLOCK THAT DOES NOT EXIST (audit of door v5). An
+                # empty map is an enrolment that failed this pass, never "no clock": UNMEASURED,
+                # refused. A key the forward engine holds a clock for but the map lacks is a
+                # partial enrolment: refused. Only a key with no clock anywhere uses its stamp.
+                if not memo["clock"]:
+                    return (f"REFUSED_UNREPLICATED: UNMEASURED clock enrolment (0 clocks this "
+                            f"pass); stamped canon_certificate {stamped} on {key.strip()} "
+                            f"cannot be verified")
+                if key.strip() in memo["known"]:
+                    return (f"REFUSED_UNREPLICATED: clock {key.strip()} runs in shadow_state but "
+                            f"did not enrol this pass; stamped canon_certificate {stamped} "
+                            f"cannot be verified")
             if mapped:
                 if stamped and stamped != mapped:
                     return (f"REFUSED_UNREPLICATED: row stamped canon_certificate {stamped} but "
@@ -399,7 +413,7 @@ def _row_check(gate: Any, why_gate: str, waived: dict[str, str] | set[str]
                 row["canon_certificate_source"] = "clock_enrolment"
                 cert = mapped
             elif stamped:
-                row["canon_certificate_source"] = "stamp_unverified (clock not enrolled this pass)"
+                row["canon_certificate_source"] = "stamp_unverified (no forward clock holds this key)"
                 cert = stamped
             else:
                 cert = key.strip()
