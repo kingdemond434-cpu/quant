@@ -27,11 +27,11 @@ rebuilds them from (symbol, family, params) with no new wiring -- the family res
 peer panel.
 
 EVERY CONFIGURATION IS A TRIAL. The model grids are declared in `libs/models/learned_propagation`
-(four configurations each, fixed before any result). Each (configuration x symbol x entry
-threshold) the miner evaluates is charged, whether or not the screen could score it, and the
-deflation uses that attempted count -- never the count of rows that happened to screen. The same
-trials are priced by `libs/research/trial_ledger` (effective count beside raw) and appended to
-`data/learned_miners_trials.jsonl`.
+(four configurations each, plus the primary refitted on regime breaks; fixed before any result).
+Each (configuration x symbol x entry threshold) the miner evaluates is charged, whether or not
+the screen could score it, and the deflation uses that attempted count -- never the count of
+rows that happened to screen. The same trials are priced by `libs/research/trial_ledger`
+(effective count beside raw) and appended to `data/learned_miners_trials.jsonl`.
 
 THE MEASURABLE CONTRACT (`--contract`). On the bars in git (`desks/mt5/universe/*_H1.parquet`),
 walk-forward, it reports OOS IC / rank-IC / hit rate / a cost-charged long-short Sharpe for every
