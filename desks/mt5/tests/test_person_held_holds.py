@@ -289,6 +289,7 @@ def test_a_429_at_the_door_holds_the_refusing_site_and_nothing_more_is_sent(site
     with pytest.raises(urllib.error.HTTPError) as exc:
         pf.fenced_urlopen(f"http://127.0.0.1:{site}/slow", timeout=5)
     assert exc.value.code == 429
+    exc.value.close()
     assert pf.person_hold(f"http://127.0.0.1:{site}/ok") == "METHOD_BLOCKED"
     n = len(_Site.seen)
     with pytest.raises(pf.AccessRefused):
