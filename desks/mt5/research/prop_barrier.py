@@ -1,4 +1,4 @@
-"""E8 PRO, $100K, ACCOUNT 2478877 -- the barrier problem this account actually poses.
+"""E8 PRO, $100K, THE EVALUATION ACCOUNT -- the barrier problem this account actually poses.
 
 Bought 2026-09-12 (order 20260977504, $485). The invoice's own numbers:
 
