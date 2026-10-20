@@ -202,7 +202,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -242,7 +242,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -282,7 +282,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -12732,7 +12732,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -25951,7 +25951,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -26018,7 +26018,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -26085,7 +26085,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -26152,7 +26152,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -31577,7 +31577,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -31644,7 +31644,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -31711,7 +31711,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -31778,7 +31778,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.006242,
         "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
+        "why": "same admission scan (2026-10-20T19:48:05.683976+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.62% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-20T19:48:05.683976+00:00",
@@ -51365,6 +51365,5 @@
       "canonical_identity": "chfsgd|cross_asset_residual|asia",
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     }
-  ],
-  "identity_stamped_at": "2026-10-20T21:20:42+00:00"
+  ]
 }
