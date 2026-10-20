@@ -157,13 +157,13 @@ def bh_alpha(m: int, rank: int, *, alpha: float = 0.05) -> float:
     that are certainly real. That is a stated risk preference and it belongs beside the number,
     which is why both bars are reported and neither silently replaces the other.
     """
-    # FIXED BAR N (principal 2026-10-13): the family size is min(m, BAR_N); rank r's level is
-    # alpha * min(r, m_bar) / m_bar, never below alpha * r / m.
+    # EACH RANK IS CHARGED min(ITS OWN CHARGE, BAR_N) (principal 2026-10-13): BH charges rank r a
+    # divisor of m/r, so the level is alpha * max(r/m, 1/BAR_N) -- never below LIVE's alpha*r/m,
+    # never above Bonferroni at the fixed N. Pinning m itself let ranks past BAR_N reach raw alpha.
     from libs.research.trial_count_guard import bar_n
     m = max(1, int(m))
-    m = min(m, bar_n(m))
     r = min(max(1, int(rank)), m)
-    return alpha * r / m
+    return alpha * max(r / m, 1.0 / bar_n(m))
 
 
 def bh_bar(m: int, rank: int = 1, *, alpha: float = 0.05) -> float:

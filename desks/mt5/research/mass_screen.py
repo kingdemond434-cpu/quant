@@ -494,6 +494,46 @@ def bh_threshold(pvals: np.ndarray, m: int, q: float) -> float:
     return float(p[int(np.max(np.flatnonzero(below)))])
 
 
+#: THE NAMED EXCEPTION (auditor re-audit of 6de7b1a99, 2026-10-20; coordinator's ruling the same
+#: day). `bh_threshold` keeps BH over the COUNTED m, unchanged from LIVE, so no bar rises. But a
+#: charge that grows with m is a penalty due to trials, against the principal's "never penalty due
+#: to trials", so it is not silent: every run publishes this missed-growth line, and adopting the
+#: N=5-consistent form (each rank charged min(m/i, BAR_N)) is the PRINCIPAL'S call, not a
+#: session's. On 50,000 pure-noise cells at q=0.001 that form passes ~10 (Bonferroni at 5) where a
+#: family pinned to min(m, 5) passes ~52 and the counted m passes ~0.
+COUNTED_M_EXCEPTION = "mass_screen_counted_m"
+
+
+def _bar_n_form_cut_count(pvals: np.ndarray, m: int, q: float) -> int:
+    """How many of `pvals` the N=5-consistent BH would reject: rank i at q * max(i/m, 1/BAR_N).
+    REPORTED ONLY, for the exception's line; it decides nothing."""
+    from libs.research.trial_count_guard import bar_n
+    p = np.sort(np.asarray(pvals, dtype="float64"))
+    if p.size == 0 or m <= 0:
+        return 0
+    below = p <= q * np.maximum(np.arange(1, p.size + 1) / float(m), 1.0 / bar_n(m))
+    return int(np.max(np.flatnonzero(below))) + 1 if below.any() else 0
+
+
+def counted_m_missed_growth(pvals: np.ndarray, m: int, q: float, n_rejected: int
+                            ) -> dict[str, Any]:
+    """The exception's missed-growth line: the cells the counted m held back that the fixed-N
+    form would have passed. Their forward E[log W] is not measured here (they were never
+    forwarded), so the value is UNMEASURED and said so -- never priced as zero."""
+    alt = _bar_n_form_cut_count(pvals, m, q)
+    return {"name": COUNTED_M_EXCEPTION, "kind": "multiplicity_exception",
+            "status": "NAMED_EXCEPTION_PRINCIPAL_CALL", "owner": "principal (zuck)",
+            "verdict": UNMEASURED if alt > n_rejected else "NOT_BINDING",
+            "m_counted": int(m), "q": q, "rejected_counted_m": int(n_rejected),
+            "rejected_at_bar_n_form": alt, "held_back": max(0, alt - int(n_rejected)),
+            "value": None,
+            "why": ("BH over the counted m (unchanged from LIVE: no bar rises); a charge that "
+                    "grows with m is a penalty due to trials, kept by ruling as a named exception. "
+                    "held_back = cells the N=5-consistent form (rank i charged min(m/i, 5)) would "
+                    "pass; their forward E[log W] is UNMEASURED because they were never forwarded. "
+                    "Adopting that form is the principal's call.")}
+
+
 def params_of(c: dict[str, Any]) -> dict[str, Any]:
     """The executable identity the gauntlet rebuilds -- every argument, defaults spelled out."""
     cd = c["cond"]
@@ -878,7 +918,10 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
                 "cursor": new_cursor},
         "per_day": day,
         "fdr": {"method": "benjamini_hochberg", "q": q, "m": m, "p_cut": cut,
-                "rejected": len(rejected), "candidates_p_le_q": len(cands)},
+                "rejected": len(rejected), "candidates_p_le_q": len(cands),
+                "named_exception": COUNTED_M_EXCEPTION},
+        "missed_growth": [counted_m_missed_growth(np.array([c["p"] for c in cands]), m, q,
+                                                  len(rejected))],
         "forward": {**fwd, "survivors_after_dedup": len(kept),
                     "skipped_already_forwarded": len(kept) - len(fresh),
                     "door": "libs.moat.registry.enqueue_candidate -> libs.moat.docket_feed -> "

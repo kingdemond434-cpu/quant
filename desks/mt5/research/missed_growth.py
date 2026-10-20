@@ -643,6 +643,44 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: mass_screen's run report. Its BH stays on the COUNTED m by ruling (a named exception to "no
+#: penalty due to trials", owed to the principal), and every run publishes the exception's line.
+MASS_SCREEN = BASE / "reports" / "MASS_SCREEN.json"
+MASS_SCREEN_MAX_AGE_H = 48.0
+
+
+def mass_screen_counted_m_lines() -> dict[str, Any]:
+    """The `mass_screen_counted_m` exception's line, read from MASS_SCREEN.json. A missing,
+    stale or pre-exception report is UNMEASURED with its reason -- never a clean zero."""
+    doc = _json(MASS_SCREEN)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/MASS_SCREEN.json on this host: the screen has not run here"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_utc")))
+        age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)
+             and x.get("name") == "mass_screen_counted_m"]
+    if not lines:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "MASS_SCREEN.json carries no mass_screen_counted_m line (a pre-exception "
+                       "build, or a run that screened nothing)"}
+    if not age_h <= MASS_SCREEN_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": lines,
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the mass_screen report is older than {MASS_SCREEN_MAX_AGE_H:g}h or "
+                       "unstamped: today's held-back count is unknown"}
+    held = sum(int(x.get("held_back") or 0) for x in lines)
+    return {"verdict": UNMEASURED if held else NOT_BINDING, "source": "reports/MASS_SCREEN.json",
+            "status": "NAMED_EXCEPTION_PRINCIPAL_CALL", "age_h": round(age_h, 2),
+            "lines": lines, "held_back": held,
+            "why": ("BH on the counted m is kept by ruling; adopting the N=5-consistent form is "
+                    "the principal's call. Held-back cells were never forwarded, so their "
+                    "forward E[log W] is UNMEASURED, not zero")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +798,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "mass_screen_counted_m": mass_screen_counted_m_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
