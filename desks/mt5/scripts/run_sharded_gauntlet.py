@@ -1617,10 +1617,10 @@ def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None 
     and 1235ab79c10: the line write may wait on its lock while the child, born raised, already
     starts shards that inherit its class). The child must still be the process just started (its
     start time); each descendant must have started after its own parent. The child goes first,
-    and the tree is re-walked until two walks in a row find nothing above BELOW_NORMAL. Only ever LOWERS,
-    and only the judge's own tree. Raises LookupError, after trying every process, if any could
-    not be put back or the tree never settled -- the caller then reports the raise as standing
-    (UNMEASURED line), never `changed: False`."""
+    and the tree is re-walked until two walks in a row find nothing above BELOW_NORMAL. Only
+    ever LOWERS, and only the judge's own tree. Raises LookupError, after trying every process,
+    if any could not be put back or the tree never settled -- the caller then reports the raise
+    as standing (UNMEASURED line), never `changed: False`."""
     import psutil  # type: ignore[import-untyped,unused-ignore]
 
     from scripts import judge_priority as jp
