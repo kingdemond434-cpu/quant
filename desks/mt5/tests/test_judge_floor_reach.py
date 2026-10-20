@@ -849,3 +849,52 @@ def test_steered_interleave_keeps_tiers_and_saturated_slots(
     assert "u2" in {s["family"] for s in out[:10]}, "the light UNKNOWN family is no longer last"
     for fam in tiers:
         assert [s for s in out if s["family"] == fam] == [s for s in head if s["family"] == fam]
+
+
+def _tranche_report(at: datetime, **line: Any) -> str:
+    base = {"rail": "judge_tape_tranche", "kind": "opportunity_cost", "cells_displaced": 200,
+            "value": -400.0, "verdict": "COSTS_GROWTH", "units": "ev x cells"}
+    base.update(line)
+    return json.dumps({"at": at.isoformat(), "missed_growth_lines": [base]})
+
+
+@pytest.mark.parametrize("case", ["absent", "stale", "future_1h", "future_30d", "list",
+                                  "null", "nan_cells", "str_cells", "inf_value", "nan_value",
+                                  "lines_not_list"])
+def test_a_bad_tranche_report_is_unmeasured_and_never_costs_the_rails_their_lines(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str) -> None:
+    """Audit of bd241ee4a, must-fixes: a future stamp is never fresh, and malformed input reads
+    UNMEASURED for this line through run() while every other rail and gate still publishes."""
+    from research import missed_growth as mg
+    path = tmp_path / "JUDGE_COVERAGE.json"
+    monkeypatch.setattr(mg, "JUDGE_COVERAGE", path)
+    monkeypatch.setattr(mg, "STOP_GEOMETRY", tmp_path / "absent_sg.json")
+    now = datetime.now(tz=UTC)
+    text = {
+        "stale": _tranche_report(now - timedelta(hours=7)),
+        "future_1h": _tranche_report(now + timedelta(hours=1)),
+        "future_30d": _tranche_report(now + timedelta(days=30)),
+        "list": json.dumps([{"at": now.isoformat()}]),
+        "null": "null",
+        "nan_cells": _tranche_report(now, cells_displaced=float("nan")),
+        "str_cells": _tranche_report(now, cells_displaced="200"),
+        "inf_value": _tranche_report(now, value=float("inf")),
+        "nan_value": _tranche_report(now, value=float("nan")),
+        "lines_not_list": json.dumps({"at": now.isoformat(), "missed_growth_lines": {"x": 1}}),
+    }.get(case)
+    if text is not None:
+        path.write_text(text, "utf-8")
+    doc = mg.run(write=False)
+    got = doc["published_gate_lines"]["judge_tape_tranche"]
+    assert got["verdict"] == mg.UNMEASURED, got
+    if case.startswith("future"):
+        assert got["reason"] == "FUTURE_DATED"
+    assert doc["rails"] and len(doc["rails"]) == len(mg.RAILS)
+    assert "stop_geometry_robustness_gate" in doc["published_gate_lines"]
+    # the positive control: the same report, fresh and well formed, is billed
+    path.write_text(_tranche_report(now), "utf-8")
+    ok = mg.run(write=False)["published_gate_lines"]["judge_tape_tranche"]
+    assert ok["verdict"] == mg.COSTS and ok["value"] == -400.0 and ok["cells_displaced"] == 200
+    # inside the clock-skew allowance a slightly-future stamp is still this hour's reading
+    path.write_text(_tranche_report(now + timedelta(minutes=5)), "utf-8")
+    assert mg.judge_tape_tranche_lines()["verdict"] == mg.COSTS
