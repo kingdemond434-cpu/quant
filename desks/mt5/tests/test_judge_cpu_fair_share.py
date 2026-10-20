@@ -257,7 +257,8 @@ def test_a_raise_publishes_a_missed_growth_line_from_launcher_and_child(monkeypa
     # the child raising itself writes its own line
     import os
     me = os.getpid()
-    rows = _raisable_box(extra=[_p(me, 1, "python.exe", ["python", "x.py"], BN)])
+    rows = _raisable_box(extra=[_p(me, 1, "python.exe",
+                                   ["python", "run_sharded_gauntlet.py", "--once"], BN)])
     monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
     monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
     monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: None)
