@@ -16,13 +16,13 @@ def _try_xcom_ssr(account: str, limit: int = 20) -> list[dict[str, Any]]:
     import html as _html
     import re as _re
     import urllib.request
-    from libs.data.polite_fetch import DESK_UA as ua  # honest UA, never a browser string
+    from libs.data.polite_fetch import DESK_UA as ua, polite_urlopen  # honest UA, never a browser string
     try:
         req = urllib.request.Request(
             f"https://x.com/{account}",
             headers={"User-Agent": ua, "Accept": "text/html"},
         )
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with polite_urlopen(req, timeout=15) as resp:
             html = resp.read().decode("utf-8", errors="replace")
     except Exception:
         return []
