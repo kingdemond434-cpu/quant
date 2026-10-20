@@ -1543,19 +1543,46 @@ def _judge_flags() -> int:
     return int(flags)
 
 
-def _record_launch_raise(flags: int, pid: int) -> int:
+def _record_launch_raise(flags: int, pid: int,
+                         revert: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
     """A child STARTED above BELOW_NORMAL is a raise the child itself will never see (it is born
-    at its target), so the launcher publishes its missed-growth line. Never raises."""
+    at its target), so the launcher publishes its missed-growth line. If that line cannot be
+    written, the raise is UNDONE (the child is set back to BELOW_NORMAL, identity-checked by its
+    start time) and the outcome is published under `launcher_line` -- a raise is never left
+    standing silently (audit HOLD of d465792f118). Never raises."""
+    out: dict[str, Any]
     try:
         from scripts import judge_priority as jp
         rank = jp.CLASS_RANK.get(int(flags))
         if rank is None or rank <= jp.CLASS_RANK[jp.BELOW_NORMAL]:
-            return 0
-        return jp.record_raises([{"pid": int(pid), "from": "BELOW_NORMAL",
-                                  "to": jp.RANK_NAME[rank], "applied": True,
-                                  "command": "run_sharded_gauntlet.py --once"}], "launcher")
+            return {"missed_growth_lines": 0, "changed": False}
+        change = {"pid": int(pid), "from": "BELOW_NORMAL", "to": jp.RANK_NAME[rank],
+                  "applied": True, "command": "run_sharded_gauntlet.py --once",
+                  "create_time": _create_time(pid)}
+        out = jp.account([change], "launcher", revert or _launch_revert)
+        out["change"] = change
+    except Exception as exc:
+        out = {"line": "UNMEASURED", "line_error": f"{type(exc).__name__}: {exc}",
+               "changed": "UNMEASURED", "pid": pid, "flags": flags}
+    _publish_priority("launcher_line", out)
+    return out
+
+
+def _create_time(pid: int) -> float | None:
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        return float(psutil.Process(int(pid)).create_time())
     except Exception:
-        return 0
+        return None
+
+
+def _launch_revert(change: dict[str, Any]) -> None:
+    """Set the sweep child back to BELOW_NORMAL -- only if it is still the process just started."""
+    import psutil  # type: ignore[import-untyped,unused-ignore]
+    p = psutil.Process(int(change["pid"]))
+    if change.get("create_time") is None or p.create_time() != change["create_time"]:
+        raise LookupError("pid reused or start time unreadable: not reverted")
+    p.nice(int(getattr(psutil, "BELOW_NORMAL_PRIORITY_CLASS", 10)))
 
 
 #: THE BACKPRESSURE CORE, REPUBLISHED AFTER EVERY SWEEP (2026-10-20). Measured on the box:
@@ -1579,16 +1606,44 @@ def _core_alive(pid: int) -> bool:
     return "gauntlet_backpressure.py" in cmd and "--core" in cmd
 
 
-def _republish_backpressure(popen: Callable[..., Any] | None = None,
-                            alive: Callable[[int], bool] = _core_alive) -> str:
-    """Start `gauntlet_backpressure.py --core` unless the previous one is still running."""
-    import subprocess
+def _core_pid_file() -> tuple[int, float] | None:
+    """The previous core's (pid, started), or None when the file is absent OR MALFORMED.
+
+    A malformed file (valid JSON, wrong shape: {"pid": "abc"}, {"pid": [1]}, "started": "x")
+    is treated as absent, so the next start simply overwrites it -- it can never wedge every
+    later sweep (audit HOLD of d465792f118)."""
     try:
         prev = json.loads(BACKPRESSURE_CORE_LOCK.read_text("utf-8"))
     except (OSError, ValueError):
-        prev = {}
-    if isinstance(prev, dict) and prev.get("pid") and alive(int(prev["pid"])):
-        age = time.time() - float(prev.get("started") or 0.0)
+        return None
+    if not isinstance(prev, dict):
+        return None
+    pid, started = prev.get("pid"), prev.get("started", 0.0)
+    if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
+        return None
+    if isinstance(started, bool) or not isinstance(started, (int, float)):
+        return None
+    return pid, float(started)
+
+
+def _republish_backpressure(popen: Callable[..., Any] | None = None,
+                            alive: Callable[[int], bool] = _core_alive) -> str:
+    """Start `gauntlet_backpressure.py --core` unless the previous one is still running.
+
+    Never raises: every failure is returned as "FAILED: ..." so it can never replace the sweep's
+    return code."""
+    try:
+        return _republish_backpressure_body(popen, alive)
+    except Exception as exc:
+        return f"FAILED: {type(exc).__name__}: {exc}"
+
+
+def _republish_backpressure_body(popen: Callable[..., Any] | None,
+                                 alive: Callable[[int], bool]) -> str:
+    import subprocess
+    prev = _core_pid_file()
+    if prev is not None and alive(prev[0]):
+        age = time.time() - prev[1]
         return ("PREVIOUS_OVERDUE" if age > BACKPRESSURE_CORE_TIMEOUT_S
                 else "SKIPPED_PREVIOUS_RUNNING")
     script = DESK / "research" / "gauntlet_backpressure.py"
@@ -1598,20 +1653,17 @@ def _republish_backpressure(popen: Callable[..., Any] | None = None,
     if sys.platform == "win32":
         flags = int(getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000)) | int(
             getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
-    try:
-        log = DESK / "logs" / "gauntlet_backpressure_core.log"
-        log.parent.mkdir(parents=True, exist_ok=True)
-        with log.open("ab") as fh:
-            child = (popen or subprocess.Popen)(
-                [sys.executable, "-u", str(script), "--core"], cwd=str(DESK),
-                stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                creationflags=flags)
-        BACKPRESSURE_CORE_LOCK.parent.mkdir(parents=True, exist_ok=True)
-        BACKPRESSURE_CORE_LOCK.write_text(json.dumps({"pid": int(child.pid),
-                                                      "started": time.time()}), "utf-8")
-        return "STARTED"
-    except Exception as exc:
-        return f"FAILED: {type(exc).__name__}: {exc}"
+    log = DESK / "logs" / "gauntlet_backpressure_core.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with log.open("ab") as fh:
+        child = (popen or subprocess.Popen)(
+            [sys.executable, "-u", str(script), "--core"], cwd=str(DESK),
+            stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+            creationflags=flags)
+    BACKPRESSURE_CORE_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    BACKPRESSURE_CORE_LOCK.write_text(json.dumps({"pid": int(child.pid),
+                                                  "started": time.time()}), "utf-8")
+    return "STARTED"
 
 
 def _equalise_self() -> dict[str, Any]:
@@ -1622,11 +1674,12 @@ def _equalise_self() -> dict[str, Any]:
     started above the miners, lowers -- its own class to the target. The shards it starts
     afterwards inherit it. Never raises; an unmeasured target changes nothing.
     """
+    out: dict[str, Any] = {}
     try:
         from scripts import judge_priority as jp
         c = jp.census(jp.snapshot())
         t = c["target"]
-        out: dict[str, Any] = {"target": t, "verdict_before": c["verdict"]}
+        out.update({"target": t, "verdict_before": c["verdict"]})
         if t.get("status") != "MEASURED":
             return {**out, "changed": False}
         me = os.getpid()
@@ -1634,13 +1687,17 @@ def _equalise_self() -> dict[str, Any]:
         for r in rows:
             r["cls"] = "judge"            # this process IS the judge whatever its argv says
         out["changes"] = jp.equalise(rows, t["rank"], apply=True)
-        # GROWTH GOVERNANCE: an applied raise publishes its missed-growth line, carried into
-        # MISSED_GROWTH.json by research/missed_growth.py.
-        out["missed_growth_lines"] = jp.record_raises(out["changes"], "sweep_child")
-        return {**out, "changed": bool(out["changes"])}
+        # GROWTH GOVERNANCE: an applied change (raise or lower) publishes its missed-growth
+        # line, carried into MISSED_GROWTH.json by research/missed_growth.py. If the line cannot
+        # be written the change is REVERTED (identity-checked) and the outcome is said here --
+        # never "changed: False" for a process that moved (audit HOLD of d465792f118).
+        out.update(jp.account(out["changes"], "sweep_child", jp.revert_with(rows)))
+        return out
     except Exception as exc:
-        return {"target": {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"},
-                "changed": False}
+        why = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        moved = [c for c in out.get("changes") or [] if c.get("applied")]
+        return {**out, "error": why, "target": out.get("target", why),
+                "changed": "UNMEASURED" if moved else False}
 
 
 def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> None:
@@ -2243,7 +2300,9 @@ def _sweep_once() -> int:
         try:
             dog.finish(rc)
         finally:
-            _publish_priority("backpressure_core", _republish_backpressure())
+            # GUARDED (audit HOLD of d465792f118): nothing the republish does can replace rc.
+            with contextlib.suppress(Exception):
+                _publish_priority("backpressure_core", _republish_backpressure())
 
 
 def _publish_priority(key: str, value: Any) -> None:

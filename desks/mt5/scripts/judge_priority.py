@@ -47,7 +47,6 @@ nothing is changed -- the launcher then keeps today's BELOW_NORMAL.
 from __future__ import annotations
 
 import argparse
-import contextlib
 import json
 import os
 import sys
@@ -210,7 +209,9 @@ def _born_before(parent: dict[str, Any], child: dict[str, Any]) -> bool:
 
 def _unreadable(r: dict[str, Any]) -> bool:
     """A python or live row whose command line or priority could not be read."""
-    n = str(r.get("name") or "").lower()
+    n = str(r.get("name") or "").strip().lower()
+    if not n:
+        return True                    # an unnamed row could be anything, a live clock included
     if not (_is_python(n) or n in _LIVE_NAMES):
         return False
     return r.get("cmdline") is None or rank_of(r.get("nice")) is None
@@ -390,7 +391,8 @@ def equalise(rows: list[dict[str, Any]], target_rank: int | None, *, apply: bool
         if r.get("cls") != "judge" or r.get("rank") == target_rank or r.get("rank") is None:
             continue
         rec = {"pid": r["pid"], "from": RANK_NAME[r["rank"]], "to": RANK_NAME[target_rank],
-               "command": _short(r.get("cmdline") or []), "applied": False}
+               "command": _short(r.get("cmdline") or []), "applied": False,
+               "create_time": r.get("create_time")}
         if apply:
             try:
                 setter(int(r["pid"]), RANK_CLASS[target_rank], r)
@@ -401,66 +403,148 @@ def equalise(rows: list[dict[str, Any]], target_rank: int | None, *, apply: bool
     return changes
 
 
-#: THE MISSED-GROWTH LINE (GROWTH GOVERNANCE; audit HOLD of be6a305b7). A raise to EQUAL can cost
-#: a miner at that class its share of the CPU the judge now competes for. The rail register is
+#: THE MISSED-GROWTH LINE (GROWTH GOVERNANCE; audit HOLD of be6a305b7 and of d465792f118). A
+#: raise to EQUAL can cost a miner at that class its share of the CPU the judge now competes for;
+#: a LOWERING (a judge found above the miners) costs the judge its share. The rail register is
 #: sealed (`libs/portfolio/rails.py`), so -- exactly as the judge's watchdog does with
-#: GAUNTLET_STALL.json -- every APPLIED raise is PUBLISHED as one line on this organ's own
+#: GAUNTLET_STALL.json -- every APPLIED change is PUBLISHED as one line on this organ's own
 #: artifact, and `research/missed_growth.py` carries it into MISSED_GROWTH.json
 #: (`organ_published_lines`). Appended under an exclusive lock file (several processes write:
-#: the launcher, each sweep child, a manual --apply), deduplicated per (day, pid, by).
+#: the launcher, each sweep child, a manual --apply), deduplicated per (day, pid, create_time,
+#: by) so a pid Windows reuses the same day is a second line, never a hidden one. A write that
+#: cannot take the lock is NOT made unlocked: it raises `LineUnrecorded`, and the caller reverts
+#: the change it could not account for (or says so, UNMEASURED).
 RAISES = DESK / "reports" / "JUDGE_PRIORITY_RAISES.json"
 MISSED_GROWTH_RAIL = "judge_priority_raise"
 RAISES_HISTORY = 200
+RAISES_LOCK_S = 30.0
 
 
-def _raise_line(c: dict[str, Any], by: str, now: datetime) -> dict[str, Any]:
+class LineUnrecorded(RuntimeError):
+    """The missed-growth line for an applied change could not be written (lock not held)."""
+
+
+def _rank_by_name(name: Any) -> int | None:
+    return {v: k for k, v in RANK_NAME.items()}.get(str(name))
+
+
+def _change_line(c: dict[str, Any], by: str, now: datetime) -> dict[str, Any]:
+    up = (_rank_by_name(c.get("to")) or 0) > (_rank_by_name(c.get("from")) or 0)
     return {"day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
             "rail": MISSED_GROWTH_RAIL, "kind": "opportunity_cost", "value": None,
-            "verdict": UNMEASURED, "units": "miner CPU shared with the judge at its new class",
-            "lost_s": None, "pid": c.get("pid"), "from": c.get("from"), "to": c.get("to"),
-            "by": by, "command": c.get("command"),
-            "why": ("the judge was raised to EQUAL the miners: it now shares their class "
-                    "round-robin (it can never preempt one), bounded by its own busy cores; "
-                    "measure with reports/JUDGING_THROUGHPUT.json busy_other_cores before/after. "
-                    "The E[log W] price is not measured")}
+            "verdict": UNMEASURED, "direction": "raise" if up else "lower",
+            "units": ("miner CPU shared with the judge at its new class" if up
+                      else "judge CPU given back to the miners at its new class"),
+            "lost_s": None, "pid": c.get("pid"), "create_time": c.get("create_time"),
+            "from": c.get("from"), "to": c.get("to"), "by": by, "command": c.get("command"),
+            "why": (("the judge was raised to EQUAL the miners: it now shares their class "
+                     "round-robin (it can never preempt one), bounded by its own busy cores")
+                    if up else
+                    ("the judge was found ABOVE the miners and lowered to EQUAL them: it now "
+                     "gets their round-robin share, not more; the judging it loses is bounded "
+                     "by its own busy cores")) +
+                   "; measure with reports/JUDGING_THROUGHPUT.json busy_other_cores "
+                   "before/after. The E[log W] price is not measured"}
 
 
-def record_raises(changes: list[dict[str, Any]], by: str, path: Path | None = None) -> int:
-    """Publish a missed-growth line for every APPLIED raise; return how many were added."""
-    rank_of_name = {v: k for k, v in RANK_NAME.items()}
-    raised = [c for c in changes if c.get("applied")
-              and rank_of_name.get(str(c.get("to")), -1)
-              > rank_of_name.get(str(c.get("from")), 99)]
-    if not raised:
+def _changed(changes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out = []
+    for c in changes:
+        a, b = _rank_by_name(c.get("from")), _rank_by_name(c.get("to"))
+        if c.get("applied") and a is not None and b is not None and a != b:
+            out.append(c)
+    return out
+
+
+def _dedup_key(day: Any, x: dict[str, Any]) -> tuple[Any, str, str, Any]:
+    return day, str(x.get("pid")), str(x.get("create_time")), x.get("by")
+
+
+def record_raises(changes: list[dict[str, Any]], by: str, path: Path | None = None,
+                  *, lock_s: float | None = None) -> int:
+    """Publish a missed-growth line for every APPLIED change of class (raise OR lower).
+
+    Returns how many lines were added. Raises `LineUnrecorded` when the lock cannot be held --
+    the write is skipped, never made unlocked -- and lets any write error propagate, so a caller
+    that applied a change always learns its line is missing.
+    """
+    moved = _changed(changes)
+    if not moved:
         return 0
     target = Path(path or RAISES)
     now = datetime.now(UTC)
-    try:
-        from libs.research.artifact_chain import _locked
-    except Exception:  # pragma: no cover - libs always present on the box
-        _locked = None
-    ctx = _locked(target, 30.0) if _locked else contextlib.nullcontext(True)
-    with ctx:
+    from libs.research.artifact_chain import _locked
+    with _locked(target, RAISES_LOCK_S if lock_s is None else lock_s) as held:
+        if not held:
+            raise LineUnrecorded(f"lock on {target.name} not held: line skipped, not written "
+                                 "unlocked")
         try:
             doc = json.loads(target.read_text("utf-8"))
             doc = doc if isinstance(doc, dict) else {}
         except (OSError, ValueError):
             doc = {}
         lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
-        seen = {(x.get("day"), str(x.get("pid")), x.get("by")) for x in lines}
-        fresh = [_raise_line(c, by, now) for c in raised
-                 if (now.date().isoformat(), str(c.get("pid")), by) not in seen]
+        seen = {_dedup_key(x.get("day"), x) for x in lines}
+        day = now.date().isoformat()
+        fresh = [_change_line(c, by, now) for c in moved
+                 if _dedup_key(day, {**c, "by": by}) not in seen]
         if not fresh:
             return 0
         doc.update({"at": now.isoformat(timespec="seconds"),
                     "missed_growth": [*lines, *fresh][-RAISES_HISTORY:],
-                    "rule": "one line per applied judge priority raise; carried by "
-                            "research/missed_growth.py"})
+                    "rule": "one line per applied judge priority change (raise or lower); "
+                            "carried by research/missed_growth.py"})
         target.parent.mkdir(parents=True, exist_ok=True)
         tmp = target.with_name(f"{target.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
         tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
         os.replace(tmp, target)
     return len(fresh)
+
+
+def account(changes: list[dict[str, Any]], by: str, revert: Any,
+            path: Path | None = None) -> dict[str, Any]:
+    """Record the applied changes' lines; if that fails, UNDO each change and say so.
+
+    `revert(change)` puts one process back to its `from` class (it must refuse a pid that is no
+    longer the change's process). A change that could be neither recorded nor reverted is
+    reported `changed: True` with an UNMEASURED line -- never a silent "nothing changed".
+    """
+    try:
+        return {"missed_growth_lines": record_raises(changes, by, path),
+                "changed": bool(_changed(changes)), "line": "WRITTEN"}
+    except Exception as exc:
+        why = f"{type(exc).__name__}: {exc}"
+    reverted, stuck = [], []
+    for c in _changed(changes):
+        try:
+            revert(c)
+            c["reverted"] = True
+            reverted.append(c.get("pid"))
+        except Exception as exc:
+            c["revert_error"] = f"{type(exc).__name__}: {exc}"
+            stuck.append(c.get("pid"))
+    return {"missed_growth_lines": 0, "line": UNMEASURED, "line_error": why,
+            "reverted": reverted, "unreverted": stuck, "changed": bool(stuck),
+            "missed_growth": [{**_change_line(c, by, datetime.now(UTC)),
+                               "why": f"line NOT written ({why}) and the change could not be "
+                                      "reverted: it stands unaccounted"}
+                              for c in _changed(changes) if c.get("pid") in stuck]}
+
+
+def revert_with(rows: list[dict[str, Any]], setter: Any = None) -> Any:
+    """A `revert(change)` that sets the change's pid back to its `from` class, through the same
+    identity-checked setter as the change itself: the census row it acted on (matched by pid AND
+    create_time) is the expectation, so a pid reused since is refused, never touched."""
+    setter = setter or _default_setter
+    by_id = {(r.get("pid"), r.get("create_time")): r for r in rows}
+
+    def _revert(c: dict[str, Any]) -> None:
+        rank = _rank_by_name(c.get("from"))
+        row = by_id.get((c.get("pid"), c.get("create_time")))
+        if rank is None or row is None:
+            raise LookupError(f"no census row for pid {c.get('pid')} / class {c.get('from')!r}")
+        setter(int(c["pid"]), RANK_CLASS[rank], row)
+    return _revert
 
 
 def sweep_creationflags(rows: list[dict[str, Any]] | None = None) -> tuple[int, dict[str, Any]]:
@@ -498,15 +582,17 @@ def main(argv: list[str] | None = None) -> int:
     rows = snapshot(a.sample_s)
     c = census(rows)
     changes = equalise(c["rows"], c["target"].get("rank"), apply=a.apply)
+    accounted = None
     if a.apply:
-        record_raises(changes, "judge_priority --apply")
+        accounted = account(changes, "judge_priority --apply", revert_with(c["rows"]))
     host = os.environ.get("COMPUTERNAME") or (os.uname().nodename if hasattr(os, "uname")
                                               else "")
     doc = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "host": host,
            "cores": os.cpu_count(), "mode": "apply" if a.apply else "census",
            "classes": c["classes"], "target": c["target"],
            "judge_priorities_now": c["judge_priorities_now"], "verdict": c["verdict"],
-           "changes": changes, "duplicates": c["duplicates"], "cadence": _cadence_state(),
+           "changes": changes, "accounted": accounted, "duplicates": c["duplicates"],
+           "cadence": _cadence_state(),
            "rule": ("judge priority == the lowest miner priority, never above any miner, "
                     "strictly below live clocks, never above NORMAL; only judge processes are "
                     "ever changed; miners, audit and live are read, never touched")}

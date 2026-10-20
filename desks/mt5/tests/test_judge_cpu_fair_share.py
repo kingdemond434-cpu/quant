@@ -249,11 +249,13 @@ def test_a_raise_publishes_a_missed_growth_line_from_launcher_and_child(monkeypa
     import missed_growth as mg
     raises = tmp_path / "JUDGE_PRIORITY_RAISES.json"
     monkeypatch.setattr(jp, "RAISES", raises)
+    monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", tmp_path / "JUDGE_PRIORITY_SWEEP.json")
     # the launcher started the child at NORMAL: its line is written even though the child,
     # born at target, will find nothing to change
-    assert rsg._record_launch_raise(N, 4321) == 1
-    assert rsg._record_launch_raise(BN, 4322) == 0          # no raise, no line
-    assert rsg._record_launch_raise(N, 4321) == 0           # once per (day, pid, by)
+    assert rsg._record_launch_raise(N, 4321)["missed_growth_lines"] == 1
+    assert rsg._record_launch_raise(BN, 4322)["missed_growth_lines"] == 0   # no raise, no line
+    # once per (day, pid, create_time, by)
+    assert rsg._record_launch_raise(N, 4321)["missed_growth_lines"] == 0
     # the child raising itself writes its own line
     import os
     me = os.getpid()
@@ -612,3 +614,176 @@ def test_sweep_once_keeps_the_watchdog_and_the_fair_share_together(monkeypatch) 
     with pytest.raises(RuntimeError, match="finish failed"):
         rsg._sweep_once()
     assert events[-2:] == ["republish", "publish:backpressure_core"]
+
+
+# ------------------------------------------- 6. v3 (audit HOLD of d465792f118): nothing silent
+@pytest.mark.parametrize("bad", [{"pid": "abc"}, {"pid": [1]}, {"pid": 7, "started": "x"},
+                                 {"pid": True}, {"pid": 1.5}, [1, 2], "x", None])
+def test_a_malformed_core_pid_file_never_raises_and_is_overwritten(monkeypatch, tmp_path,
+                                                                   bad) -> None:
+    lock = tmp_path / "core.json"
+    lock.write_text(json.dumps(bad), "utf-8")
+    monkeypatch.setattr(rsg, "BACKPRESSURE_CORE_LOCK", lock)
+
+    class Child:
+        pid = 4242
+
+        def __init__(self, argv, **kw):
+            pass
+    # alive(7) would say "running": a malformed file must not reach it at all
+    assert rsg._republish_backpressure(popen=Child, alive=lambda pid: True) == "STARTED"
+    assert json.loads(lock.read_text("utf-8"))["pid"] == 4242      # rewritten, not wedged
+
+
+def test_the_republish_returns_failed_instead_of_raising(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(rsg, "BACKPRESSURE_CORE_LOCK", tmp_path / "core.json")
+    (tmp_path / "core.json").write_text(json.dumps({"pid": 5, "started": 0}), "utf-8")
+
+    def alive(pid):
+        raise TypeError("alive blew up")
+    got = rsg._republish_backpressure(popen=None, alive=alive)
+    assert got.startswith("FAILED: TypeError")
+
+
+def test_a_raising_republish_never_replaces_the_sweep_rc(monkeypatch) -> None:
+    import research.judging_throughput as rjt
+
+    class Dog:
+        def start(self):
+            return self
+
+        def finish(self, rc):
+            pass
+    monkeypatch.setattr(rsg, "SweepWatchdog", Dog)
+    monkeypatch.setattr(rjt, "apply_env", lambda *a, **k: None)
+    monkeypatch.setattr(rsg, "_equalise_self", lambda: {})
+    monkeypatch.setattr(rsg, "_phase", lambda name: None)
+
+    def publish(k, v):
+        if k == "backpressure_core":
+            raise KeyError("publish blew up")
+    monkeypatch.setattr(rsg, "_publish_priority", publish)
+
+    def republish():
+        raise ValueError("republish blew up")
+    for rc in (0, 3):
+        monkeypatch.setattr(rsg, "_sweep_logged", lambda rc=rc: rc)
+        monkeypatch.setattr(rsg, "_republish_backpressure", republish)
+        assert rsg._sweep_once() == rc
+        monkeypatch.setattr(rsg, "_republish_backpressure", lambda: "STARTED")
+        assert rsg._sweep_once() == rc                    # the publish itself raising too
+
+
+def _failing_record(*a, **k):
+    raise OSError("disk full")
+
+
+def test_launcher_reverts_a_raise_whose_line_cannot_be_written(monkeypatch, tmp_path) -> None:
+    decision = tmp_path / "JUDGE_PRIORITY_SWEEP.json"
+    monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", decision)
+    monkeypatch.setattr(jp, "record_raises", _failing_record)
+    undone: list[dict] = []
+    out = rsg._record_launch_raise(N, 4321, revert=undone.append)
+    assert out["line"] == "UNMEASURED" and "disk full" in out["line_error"]
+    assert out["reverted"] == [4321] and out["changed"] is False
+    assert undone and undone[0]["from"] == "BELOW_NORMAL" and undone[0]["to"] == "NORMAL"
+    pub = json.loads(decision.read_text("utf-8"))["launcher_line"]["value"]
+    assert pub["line"] == "UNMEASURED" and pub["reverted"] == [4321]
+
+    # neither recorded nor reverted: said, truthfully, as a standing UNMEASURED change
+    def cannot(c):
+        raise LookupError("pid reused")
+    out = rsg._record_launch_raise(N, 4321, revert=cannot)
+    assert out["changed"] is True and out["unreverted"] == [4321]
+    assert out["missed_growth"][0]["verdict"] == "UNMEASURED"
+    assert "could not be reverted" in out["missed_growth"][0]["why"]
+
+
+def test_child_reverts_its_own_raise_when_the_line_fails(monkeypatch, tmp_path) -> None:
+    import os
+    me = os.getpid()
+    rows = _raisable_box(extra=[_p(me, 1, "python.exe",
+                                   ["python", "run_sharded_gauntlet.py", "--once"], BN)])
+    monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
+    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
+    calls: list[tuple[int, int]] = []
+    monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: calls.append((pid, k)))
+    monkeypatch.setattr(jp, "record_raises", _failing_record)
+    out = rsg._equalise_self()
+    assert calls == [(me, N), (me, BN)]                   # raised, then put back
+    assert out["line"] == "UNMEASURED" and out["reverted"] == [me]
+    assert out["changed"] is False and out["changes"][0]["reverted"] is True
+    # a revert refused (pid reused): changed True, never a silent False
+    calls.clear()
+
+    def setter(pid, k, row):
+        if k == BN:
+            raise LookupError("pid reused")
+        calls.append((pid, k))
+    monkeypatch.setattr(jp, "_default_setter", setter)
+    out = rsg._equalise_self()
+    assert calls == [(me, N)] and out["changed"] is True and out["unreverted"] == [me]
+
+
+def test_record_raises_skips_rather_than_writes_unlocked(monkeypatch, tmp_path) -> None:
+    import contextlib
+
+    import libs.research.artifact_chain as ac
+    target = tmp_path / "raises.json"
+
+    @contextlib.contextmanager
+    def never(path, timeout_s=10.0):
+        yield False
+    monkeypatch.setattr(ac, "_locked", never)
+    ch = [{"pid": 9, "from": "BELOW_NORMAL", "to": "NORMAL", "applied": True,
+           "create_time": 1.0}]
+    with pytest.raises(jp.LineUnrecorded):
+        jp.record_raises(ch, "t", target)
+    assert not target.exists()
+    got = jp.account(ch, "t", lambda c: None, target)
+    assert got["line"] == "UNMEASURED" and got["reverted"] == [9] and not target.exists()
+
+
+def test_dedup_key_carries_create_time_and_lowerings_write_lines(tmp_path) -> None:
+    target = tmp_path / "raises.json"
+    up = {"pid": 9, "from": "BELOW_NORMAL", "to": "NORMAL", "applied": True}
+    assert jp.record_raises([{**up, "create_time": 1.0}], "t", target) == 1
+    assert jp.record_raises([{**up, "create_time": 1.0}], "t", target) == 0
+    # the same pid reused by Windows the same day is a SECOND raise, not a hidden one
+    assert jp.record_raises([{**up, "create_time": 2.0}], "t", target) == 1
+    down = {"pid": 9, "from": "HIGH", "to": "NORMAL", "applied": True, "create_time": 3.0}
+    assert jp.record_raises([down], "t", target) == 1
+    lines = json.loads(target.read_text("utf-8"))["missed_growth"]
+    assert [x["direction"] for x in lines] == ["raise", "raise", "lower"]
+    assert lines[-1]["units"].startswith("judge CPU") and lines[-1]["verdict"] == "UNMEASURED"
+    # unapplied or unchanged: no line
+    assert jp.record_raises([{**down, "applied": False, "create_time": 4.0}], "t", target) == 0
+    assert jp.record_raises([{**up, "to": "BELOW_NORMAL", "create_time": 5.0}], "t",
+                            target) == 0
+
+
+@pytest.mark.parametrize("name", [None, "", "  "])
+def test_an_unnamed_row_is_unreadable_and_blocks_a_raise(name) -> None:
+    rows = _raisable_box(extra=[_p(60, 1, name, None, None)])
+    c = jp.census(rows, registered_live=R[HIGH])
+    assert c["target"]["unreadable_rows"] >= 1
+    assert c["target"]["rank"] == R[BN]
+
+
+def test_a_full_build_never_overwrites_a_fresher_core(tmp_path, monkeypatch) -> None:
+    out = tmp_path / "bp.json"
+    full_at = NOW - timedelta(minutes=40)            # the full build measured 40 min ago ...
+    core = {"at": NOW.isoformat(), "testing_24h": {"per_hour": 12.0}}
+    out.write_text(json.dumps({"at": NOW.isoformat(), "mode": "core",          # ... a core
+                               "capacity": {"sweep": 3}, "core": core}), "utf-8")  # since
+    gb.write({"at": full_at.isoformat(), "mode": "full", "full_at": full_at.isoformat(),
+              "capacity": {"sweep": 2}, "messages": ["full"]}, out)
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["messages"] == ["full"] and doc["mode"] == "full"
+    assert doc["capacity"] == {"sweep": 3}
+    assert doc["core"]["testing_24h"] == {"per_hour": 12.0}
+    # a full build newer than the core replaces both
+    gb.write({"at": (NOW + timedelta(minutes=1)).isoformat(), "mode": "full",
+              "capacity": {"sweep": 4}}, out)
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["capacity"] == {"sweep": 4} and "core" not in doc

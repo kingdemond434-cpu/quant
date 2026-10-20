@@ -976,7 +976,36 @@ def write(doc: dict[str, Any], path: Path | None = None) -> Path:
     be had in the wait still writes -- the full build is the fresher of the two)."""
     target = path or OUT
     with _write_lock(target):
-        return _write_unlocked(doc, target)
+        prev = _read_json(target, {})
+        return _write_unlocked(_keep_fresher_core(doc, prev if isinstance(prev, dict) else {}),
+                               target)
+
+
+def _stamp(value: Any) -> datetime | None:
+    try:
+        got = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    return got if got.tzinfo else got.replace(tzinfo=UTC)
+
+
+def _keep_fresher_core(doc: dict[str, Any], prev: dict[str, Any]) -> dict[str, Any]:
+    """A full build measured at `doc.at` must not replace a core measured AFTER it (audit HOLD
+    of d465792f118: capacity went sweep#3 -> sweep#2 and the core block vanished). The core's
+    two blocks -- `capacity` and `core` -- are carried over when they are the fresher reading;
+    every other block is the full build's."""
+    core = prev.get("core")
+    if not isinstance(core, dict):
+        return doc
+    core_at, full_at = _stamp(core.get("at")), _stamp(doc.get("at"))
+    if core_at is None or full_at is None or core_at <= full_at:
+        return doc
+    out = dict(doc)
+    out["core"] = {**core, "carried_from_full_at": doc.get("full_at") or doc.get("at"),
+                   "kept_over_full_build_at": doc.get("at")}
+    if "capacity" in prev:
+        out["capacity"] = prev["capacity"]
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
