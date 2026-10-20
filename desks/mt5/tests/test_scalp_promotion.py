@@ -21,6 +21,7 @@ What is pinned:
 from __future__ import annotations
 
 import ast
+import contextlib
 import json
 import os
 import sys
@@ -353,6 +354,9 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     # which the gateway imports as `_pm` at module scope (2026-09-29).
     seed["_pm"] = _pm
     seed["os"] = os                  # MIN_STOP_SPREAD_MULT reads its env override
+    # The post-fill realised-risk measurement is wrapped in `contextlib.suppress`, the gateway's
+    # idiom for telemetry that must never take the send path down (2026-10-20).
+    seed["contextlib"] = contextlib
     seed.update(ns)
     keep = [n for n in _GW_TREE.body
             if (isinstance(n, ast.FunctionDef) and n.name in names)
@@ -454,7 +458,9 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
                   "gold_oco_send_refusal", "gold_oco_after_send", "bill_gold_oco_send",
                   "_order_risk_usd",
                   # ...and reads `last_error` through `_send_error` when a send comes back empty.
-                  "_send_error"), ns)
+                  "_send_error",
+                  # ...and holds each slice to the sleeve's intended EUR risk (2026-10-20).
+                  "scalp_risk_intent"), ns)
 
 
 def _run_scalp(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
