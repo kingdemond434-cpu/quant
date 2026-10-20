@@ -111,3 +111,23 @@ def test_parenthesised_component_uses_owner_and_its_own_artifact_clock(monkeypat
     monkeypatch.setattr(ph, "_reading",
                         _aged(lambda path: 45.0 if path.name == "cursor.json" else 5.0))
     assert _row(ph.build(), "MT5-Gauntlet (rotation)")["verdict"] == "STALE"
+
+
+def test_the_realised_risk_row_sits_beside_the_board_rows_and_a_breach_needs_attention(
+        monkeypatch, tmp_path):
+    """Both lines of work keep their rows (2026-10-20 merge of process-health-stamps and the
+    realised-risk invariant): the board's own rows and the fill-ratio row, with a p95 above the
+    post-fill tolerance counted as needing attention."""
+    import json
+    monkeypatch.setattr(ph, "_tasks", lambda: ([], "UNMEASURED: scheduler timed out"))
+    monkeypatch.setattr(ph, "_contracts", lambda: {})
+    fills = tmp_path / "fills.jsonl"
+    fills.write_text("".join(json.dumps({"status": "MEASURED", "ratio": 2.5}) + "\n"
+                             for _ in range(5)), "utf-8")
+    monkeypatch.setattr(ph, "RISK_FILLS", fills)
+    doc = ph.build()
+    risk = _row(doc, ph.RISK_ROW)
+    assert risk["verdict"] == "RISK_BREACH" and risk["metric"]["n_breaches"] == 5
+    assert "RISK_BREACH" in ph.ATTENTION and doc["status"] == "ATTENTION"
+    # The board's own extra fields survive the merge alongside the risk row.
+    assert "disk" in doc and "alerts" in doc and "age_basis_counts" in doc
