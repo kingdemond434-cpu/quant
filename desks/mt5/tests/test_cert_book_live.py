@@ -20,12 +20,16 @@ from mt5desk.sizing import MAX_RISK_FRAC  # noqa: E402
 
 #: BOOKS_PATCH v5 (principal zuck, 2026-10-13): the three gap_decay keys held at 0.0 -- never an
 #: empty block, since load_cert_book returns None on {} -- and gold_asia's 0.082 removed. gold_asia
-#: and the three FX book sleeves trade at 0.01 through decision_core.MINLOT_OVERRIDE_SLEEVES.
+#: and the three FX book sleeves trade through decision_core.MINLOT_OVERRIDE_SLEEVES; zuck
+#: 2026-10-20 21:52Z ("trade only gold asia for fusion and mt5") pins the other two gold windows
+#: at 0.0 here, which sends nothing on the sovereign AND the revert path.
 FUSION = {"EURZAR_overnight_gap_decay_asia": 0.0, "USDZAR_overnight_gap_decay_asia": 0.0,
-          "AUDCHF_overnight_gap_decay_asia": 0.0}
-#: The E8 book (zuck 2026-10-20 16:55Z max-pass solve, re-confirmed 17:16Z): the three gold windows
-#: at 0.0075 each; USDJPY, NZDJPY and AUDCHF at 0.0.
-E8 = {"gold_asia": 0.0075, "gold_london_am": 0.0075, "gold_afternoon": 0.0075,
+          "AUDCHF_overnight_gap_decay_asia": 0.0,
+          "gold_london_am": 0.0, "gold_afternoon": 0.0}
+#: The E8 book (zuck 2026-10-20 21:52Z: gold asia only, risk "to maximum for max pass probability
+#: while max speed"; the coordinator set 0.0095 on the box): gold_asia 0.0095, the other two gold
+#: windows and USDJPY, NZDJPY and AUDCHF at 0.0.
+E8 = {"gold_asia": 0.0095, "gold_london_am": 0.0, "gold_afternoon": 0.0,
       "USDJPY_session_range_breakout_asia": 0.0, "NZDJPY_clock_transition_asia": 0.0,
       "AUDCHF_overnight_gap_decay_asia": 0.0}
 
@@ -39,7 +43,8 @@ def _write(tmp_path: Path, doc: dict) -> Path:
 def test_committed_book_carries_the_principals_sizes() -> None:
     assert load_cert_book(CERT_BOOK_FILE, "fusion") == FUSION
     assert load_cert_book(CERT_BOOK_FILE, "e8") == E8
-    assert not any(k.startswith(("USDJPY", "CHFNOK", "gold_")) for k in FUSION)
+    assert not any(k.startswith(("USDJPY", "CHFNOK")) for k in FUSION)
+    assert all(v == 0.0 for v in FUSION.values()) and "gold_asia" not in FUSION
     assert all(v == 0.0 for k, v in E8.items() if not k.startswith("gold_"))
     doc = json.loads(CERT_BOOK_FILE.read_text(encoding="utf-8"))
     assert doc["e8_pending"] == {"USDJPY_session_range_breakout_asia": 0.004}
@@ -54,12 +59,14 @@ def test_the_committed_e8_block_is_safe_to_adopt_over_the_box() -> None:
     the merge base, and MT5-ShadowSync never commits into HEAD -- so a hand edit of the box's
     data/CERT_BOOK_LIVE.json is not "the box's", and step 2 (line 1085) writes the target's bytes
     over it whenever the adopted range touches this file. The committed e8 block must therefore
-    be the principal's live one (three gold windows at 0.0075), never the old 1.0% gold_asia."""
+    be the principal's live one -- gold_asia at the box's 0.0095 and nothing else above 0 (zuck
+    2026-10-20 21:52Z) -- so landing can never WIDEN E8: not the old 1.0% gold_asia, and not the
+    three-window 0.0075 book the box no longer runs."""
     e8 = load_cert_book(CERT_BOOK_FILE, "e8")
     assert e8 is not None
-    assert max(e8.values()) <= 0.0075, e8
-    assert {k for k, v in e8.items() if v > 0} == {"gold_asia", "gold_london_am",
-                                                   "gold_afternoon"}
+    assert max(e8.values()) <= 0.0095, e8
+    assert {k for k, v in e8.items() if v > 0} == {"gold_asia"}
+    assert e8["gold_london_am"] == 0.0 and e8["gold_afternoon"] == 0.0
 
 
 @pytest.mark.parametrize("doc", [
@@ -84,9 +91,10 @@ def test_e8_gold_maps_book_keys_to_window_names() -> None:
     pytest.importorskip("MetaTrader5")
     from prop import e8_gold
     windows = e8_gold.cert_gold_windows(E8)
-    assert windows == {"asia": 0.0075, "london_am": 0.0075, "afternoon": 0.0075}
-    for name in ("asia", "london_am", "afternoon"):
-        assert e8_gold.window_risk(name, windows) == (0.0075, "kelly_survival")
+    assert windows == {"asia": 0.0095, "london_am": 0.0, "afternoon": 0.0}
+    assert e8_gold.window_risk("asia", windows) == (0.0095, "kelly_survival")
+    for name in ("london_am", "afternoon"):
+        assert e8_gold.window_risk(name, windows) == (0.0, "kelly_survival")
     # An explicit 0.0 key stands a window aside (the placement loop skips frac 0).
     assert e8_gold.window_risk("london_am", {"london_am": 0.0}) == (0.0, "kelly_survival")
 
@@ -101,8 +109,11 @@ def test_gateway_overlays_only_the_named_keys(monkeypatch: pytest.MonkeyPatch,
                         _write(tmp_path, {"enabled": True, "fusion": FUSION}))
     book, why = gateway.allocator_book()
     assert book == {**alloc, **FUSION}
-    assert book["gold_afternoon"] == 0.04 and book["EURCHF_carry_asia"] == 0.0
-    assert why.endswith("cert book sets 3")
+    # A key the cert book names wins (the allocator's 0.04 afternoon is pinned to 0.0); one it
+    # does not name keeps the allocator's fraction.
+    assert book["gold_afternoon"] == 0.0 and book["gold_asia"] == 0.03
+    assert book["EURCHF_carry_asia"] == 0.0
+    assert why.endswith("cert book sets 5")
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE",
                         _write(tmp_path, {"enabled": False, "fusion": FUSION}))
     assert gateway.allocator_book() == (alloc, "proof ok")

@@ -4352,7 +4352,7 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
         return gold_book_lot(
             equity, dist, sym,
             s.get("risk_frac") if s.get("sized_by") == "allocator_book" else None,
-            s.get("decay_faded"))
+            s.get("decay_faded"), name=s.get("name"))
     if mode == "auto_ramp":
         n_live = sleeve_live_n(s["name"])
         from_book = s.get("sized_by") == "allocator_book"

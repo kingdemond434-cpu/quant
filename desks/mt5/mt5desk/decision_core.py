@@ -617,8 +617,28 @@ def gold_lot(equity: float, dist_usd: float | None = None,
     return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
 
 
+def cert_book_zero(name: object, venue: str = "fusion") -> bool:
+    """True when the principal's certified book (data/CERT_BOOK_LIVE.json, `venue` block) names
+    `name` at exactly 0.0 -- a principal-set "this window sends nothing" (zuck 2026-10-20 21:52Z:
+    gold_asia only, gold_london_am and gold_afternoon at 0.0).
+
+    False on every doubt (no name, file absent/disabled/invalid, key absent, value above 0): a
+    reader that cannot see the pin sizes exactly as before. Read at call time, so the path a test
+    or the box points `kelly_sizing.CERT_BOOK_FILE` at is the one honoured.
+    """
+    if not name:
+        return False
+    try:
+        from mt5desk import kelly_sizing as _ks
+        cert = _ks.load_cert_book(_ks.CERT_BOOK_FILE, venue)
+    except Exception:
+        return False
+    return bool(cert) and str(name) in cert and cert[str(name)] == 0.0
+
+
 def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
-                  h_i: object, decay_faded: object = None) -> tuple[float, str]:
+                  h_i: object, decay_faded: object = None, *,
+                  name: str | None = None) -> tuple[float, str]:
     """The gold book's lot when the ALLOCATOR has a fraction for it: `max(h_i lot, gold_lot)`.
 
     THE SEMANTIC BREAK THIS CLOSES (Tier-1 P1, external audit 2026-09-09). The gold windows are
@@ -644,6 +664,13 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
     whether the allocator or the floor set the size -- a lot with no stated basis is the thing
     this desk keeps having to re-measure.
     """
+    if cert_book_zero(name):
+        # A CERT-BOOK ZERO IS THE PRINCIPAL'S, NOT THE ALLOCATOR'S (audit round 4 on c07dd71d).
+        # The revert path below lifts an ALLOCATOR zero to the policy lot on purpose; a window the
+        # principal pinned at 0.0 in CERT_BOOK_LIVE.json sends nothing on either path, so turning
+        # sovereignty off (ALLOCATOR_SOVEREIGN.json {"enabled": false}) can never re-open it.
+        return 0.0, (f"cert book pins {name} at 0.0 (zuck 2026-10-20 21:52Z: gold_asia only); "
+                     f"no order")
     floor_lot = gold_lot(equity, dist_usd, info)
     try:
         frac = float(h_i)  # type: ignore[arg-type]
