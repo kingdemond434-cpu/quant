@@ -2,26 +2,26 @@
  "schema": "dsr_inputs/v1",
  "status": "MEASURED",
  "unmeasured_reason": null,
- "measured_at": "2026-10-13T20:53:13+00:00",
+ "measured_at": "2026-10-17T01:02:55+00:00",
  "max_age_s": 14400,
  "variance": {
   "units": "per-period (daily) Sharpe, not annualised: the units of libs.validation.dsr.expected_max_sharpe",
   "method": "sample variance (ddof=1) of the latest per-period Sharpe (libs.validation.dsr.sharpe_ratio on the development-window daily series, the units expected_max_sharpe takes; not annualised) of every distinct cell judged in the window; no winsorising, floor or shrinkage",
   "window": {
    "days": 30,
-   "start": "2026-09-13T20:53:13+00:00",
-   "end": "2026-10-13T20:53:13+00:00"
+   "start": "2026-09-17T01:02:55+00:00",
+   "end": "2026-10-17T01:02:55+00:00"
   },
   "min_family_n": 30,
   "min_pooled_n": 100,
   "pooled": {
-   "n": 80813,
-   "variance": 0.2354568023,
+   "n": 82619,
+   "variance": 0.2329992329,
    "status": "MEASURED"
   },
   "lifetime_pooled": {
-   "n": 80813,
-   "variance": 0.2354568023
+   "n": 82619,
+   "variance": 0.2329992329
   },
   "by_family": {
    "adx_channel_hybrid": {
@@ -40,8 +40,8 @@
     "status": "MEASURED"
    },
    "clock_transition": {
-    "n": 4210,
-    "variance": 0.2964467155,
+    "n": 4222,
+    "variance": 0.2958297114,
     "status": "MEASURED"
    },
    "comex_settlement": {
@@ -60,8 +60,8 @@
     "status": "MEASURED"
    },
    "cross_asset_residual": {
-    "n": 9845,
-    "variance": 0.0357693035,
+    "n": 9865,
+    "variance": 0.0371029314,
     "status": "MEASURED"
    },
    "dow_effect": {
@@ -136,8 +136,8 @@
     "status": "MEASURED"
    },
    "lead_lag": {
-    "n": 8293,
-    "variance": 0.3964309006,
+    "n": 8546,
+    "variance": 0.3967936517,
     "status": "MEASURED"
    },
    "level_breakout": {
@@ -209,8 +209,8 @@
     "why": "1 distinct cells in the window, 30 required"
    },
    "relative_value": {
-    "n": 2218,
-    "variance": 0.1851010123,
+    "n": 3739,
+    "variance": 0.1419993752,
     "status": "MEASURED"
    },
    "retail_overlap_reversal": {
@@ -262,15 +262,15 @@
   },
   "by_campaign": {
    "external_discoveries": {
-    "n": 80813,
-    "variance": 0.2354568023,
+    "n": 82619,
+    "variance": 0.2329992329,
     "status": "MEASURED"
    }
   }
  },
  "effective_trials": {
-  "nominal": 80813,
-  "effective": 79684,
+  "nominal": 82619,
+  "effective": 81481,
   "by_family": {
    "adx_channel_hybrid": {
     "nominal": 1198,
@@ -291,10 +291,10 @@
     "rho_sum": 9784.5199
    },
    "clock_transition": {
-    "nominal": 4210,
-    "effective": 4163,
+    "nominal": 4222,
+    "effective": 4175,
     "distinct_symbols": 128,
-    "rho_sum": 4162.2324
+    "rho_sum": 4174.1748
    },
    "comex_settlement": {
     "nominal": 410,
@@ -315,10 +315,10 @@
     "rho_sum": 99.9554
    },
    "cross_asset_residual": {
-    "nominal": 9845,
-    "effective": 9725,
+    "nominal": 9865,
+    "effective": 9745,
     "distinct_symbols": 125,
-    "rho_sum": 9724.3527
+    "rho_sum": 9744.2567
    },
    "dow_effect": {
     "nominal": 1272,
@@ -405,10 +405,10 @@
     "rho_sum": 2463.6069
    },
    "lead_lag": {
-    "nominal": 8293,
-    "effective": 8194,
+    "nominal": 8546,
+    "effective": 8446,
     "distinct_symbols": 133,
-    "rho_sum": 8193.485
+    "rho_sum": 8445.2704
    },
    "level_breakout": {
     "nominal": 1539,
@@ -489,10 +489,10 @@
     "rho_sum": 0.98
    },
    "relative_value": {
-    "nominal": 2218,
-    "effective": 2177,
+    "nominal": 3739,
+    "effective": 3690,
     "distinct_symbols": 99,
-    "rho_sum": 2176.0682
+    "rho_sum": 3689.7755
    },
    "retail_overlap_reversal": {
     "nominal": 1615,
@@ -551,45 +551,45 @@
   },
   "method": "lifetime per family: sum over distinct judged cells of rho = n_effective / n_raw of the judge's own correlation census (null-calibrated participation ratio of the eigenvalues of the sweep's daily-return correlation matrix) for the sweep that first judged the cell, 1.0 when that census was unmeasurable; ceil, floored at the family's distinct symbols, capped at its distinct cells"
  },
- "sr0_pooled_at_lifetime_effective": 2.106505,
+ "sr0_pooled_at_lifetime_effective": 2.097848,
  "provenance": {
   "sources": [
    {
     "path": "desks/mt5/data/dsr_trial_sharpes.jsonl",
     "role": "append-only ledger of judged trial Sharpes",
-    "sha256": "e69df63ce0f2c6b31c7206711967d5cb2a7ef02c035fbb86f4b64c8d6a544090",
-    "rows": 101700,
-    "distinct_cells": 80813
+    "sha256": "3fa7daff505a9c945479783f8c190cf857e4b8195546c63cc7d07bd3a2a86858",
+    "rows": 110107,
+    "distinct_cells": 82619
    },
    {
     "path": "desks/mt5/reports/universal_gates_external.json",
     "role": "latest sweep report harvested into the ledger",
-    "sha256": "f2dc6c5c7b2976d55189057453553a0b1ae361f3bdf68847215847892e2272ab"
+    "sha256": "8521016bfba12af156a0abb99a68e6d3fc866ee61522b991d7d3cd49fee4fe0d"
    }
   ],
   "harvest": {
    "status": "MEASURED",
-   "appended": 27795,
-   "sweep_id": "f2dc6c5c7b2976d5",
-   "sha256": "f2dc6c5c7b2976d55189057453553a0b1ae361f3bdf68847215847892e2272ab",
-   "swept_at": "2026-10-12T05:31:38+00:00",
+   "appended": 8405,
+   "sweep_id": "8521016bfba12af1",
+   "sha256": "8521016bfba12af156a0abb99a68e6d3fc866ee61522b991d7d3cd49fee4fe0d",
+   "swept_at": "2026-10-16T15:12:22+00:00",
    "campaign": "external_discoveries"
   },
   "code": {
    "path": "libs/research/dsr_inputs.py",
    "sha256": "ebb86b51c49c09c7c626bdefe735b5abee51fd077300c81c4faf19a6b66ea6f1"
   },
-  "n": 80813,
+  "n": 82619,
   "window": {
    "days": 30,
-   "start": "2026-09-13T20:53:13+00:00",
-   "end": "2026-10-13T20:53:13+00:00"
+   "start": "2026-09-17T01:02:55+00:00",
+   "end": "2026-10-17T01:02:55+00:00"
   },
   "method": {
    "variance": "sample variance (ddof=1) of the latest per-period Sharpe (libs.validation.dsr.sharpe_ratio on the development-window daily series, the units expected_max_sharpe takes; not annualised) of every distinct cell judged in the window; no winsorising, floor or shrinkage",
    "effective_trials": "lifetime per family: sum over distinct judged cells of rho = n_effective / n_raw of the judge's own correlation census (null-calibrated participation ratio of the eigenvalues of the sweep's daily-return correlation matrix) for the sweep that first judged the cell, 1.0 when that census was unmeasurable; ceil, floored at the family's distinct symbols, capped at its distinct cells"
   },
-  "timestamp": "2026-10-13T20:53:13+00:00"
+  "timestamp": "2026-10-17T01:02:55+00:00"
  },
- "content_sha256": "04c7645f90cbd4bfe7d1d4afeda503f6ee267c0bfe1771c7eb439df41e01789d"
+ "content_sha256": "6b7eccac7855fe4a0c627459ce424132a2961bd9d10b0a3e74ec2c0f4bbd2972"
 }

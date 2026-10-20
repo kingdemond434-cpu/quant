@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-14T04:50:36+00:00",
+  "generated": "2026-10-20T14:58:56+00:00",
   "root": "C:\\opt\\quant",
   "thresholds": {
     "trailing_refusals_max": 30,
@@ -9,116 +9,18 @@
     "identity_max_age_hours": 3.0
   },
   "problems": [
-    "gold_asia has been refused 58 times in a row on 'release_identity_refused' since 2026-10-14T04:00:17+00:00 (0.8h) with no placement in between -- a halt this long has to be visible somewhere, and until this fence existed it was not",
-    "the release identity currently refuses new risk (REFUSED): running d15cc56a4b19 carries 84 path(s) the sealed release ca669d8c2755 never named: ['.gitignore', 'REPO_MAP.md', 'desks/mt5/docs/MT5_DESK.md', 'desks/mt5/docs/MT5_DESK_STATE.json', 'desks/mt5/mt5desk/engine.py', 'desks"
+    "UNMEASURED on the trading host (vmi3571445; identity UNMEASURED: no trading-box id is recorded in config/trading_host.json -- hostname fallback: vmi3571445 matches vmi3571445, reported, never taken as the identity): the gateway has stopped writing placement evidence here, and silence on the box that places orders is not a pass (L1.28a)"
   ],
   "notes": [
-    "gold_afternoon: 4x 'margin_guard' is history, not a current halt (last row 2026-09-29T14:57:32+00:00 is older than 24h)",
-    "gold_asia_v4: 307x 'release_identity_refused' is history, not a current halt (last row 2026-09-25T09:59:17+00:00 is older than 24h)",
-    "gold_london_am_v3: 37x 'release_identity_refused' is history, not a current halt (last row 2026-09-23T10:32:03+00:00 is older than 24h)"
+    "desks/mt5/data/decision_ledger.jsonl's newest row is 2026-10-16T09:59:26+00:00 (101.0h old), past the 24h live window: this is a published copy, not a live ledger, so whether a sleeve is halted NOW is UNMEASURED on this host"
   ],
-  "runs": {
-    "gold_asia": {
-      "reason": "release_identity_refused",
-      "count": 58,
-      "first_at": "2026-10-14T04:00:17+00:00",
-      "last_at": "2026-10-14T04:50:22+00:00",
-      "span_h": 0.835,
-      "age_h": 0.004,
-      "venue_reason": false,
-      "current": true
-    },
-    "gold_afternoon": {
-      "reason": "margin_guard",
-      "count": 4,
-      "first_at": "2026-09-28T14:49:57+00:00",
-      "last_at": "2026-09-29T14:57:32+00:00",
-      "span_h": 24.126,
-      "age_h": 349.885,
-      "venue_reason": true,
-      "current": false,
-      "not_current_because": "last row 2026-09-29T14:57:32+00:00 is older than 24h"
-    },
-    "gold_london_am_v2": {
-      "reason": "margin_guard",
-      "count": 2,
-      "first_at": "2026-09-28T11:17:44+00:00",
-      "last_at": "2026-09-28T11:17:44+00:00",
-      "span_h": 0.0,
-      "age_h": 377.548,
-      "venue_reason": true,
-      "current": false,
-      "not_current_because": "last row 2026-09-28T11:17:44+00:00 is older than 24h"
-    },
-    "gold_london_am_v3": {
-      "reason": "release_identity_refused",
-      "count": 37,
-      "first_at": "2026-09-11T10:26:59+00:00",
-      "last_at": "2026-09-23T10:32:03+00:00",
-      "span_h": 288.084,
-      "age_h": 498.309,
-      "venue_reason": false,
-      "current": false,
-      "not_current_because": "last row 2026-09-23T10:32:03+00:00 is older than 24h"
-    },
-    "gold_london_am_v4": {
-      "reason": "release_identity_refused",
-      "count": 4,
-      "first_at": "2026-09-11T10:26:59+00:00",
-      "last_at": "2026-09-11T10:38:46+00:00",
-      "span_h": 0.196,
-      "age_h": 786.197,
-      "venue_reason": false,
-      "current": false,
-      "not_current_because": "last row 2026-09-11T10:38:46+00:00 is older than 24h"
-    },
-    "gold_asia_v2": {
-      "reason": "margin_guard",
-      "count": 2,
-      "first_at": "2026-09-28T06:41:57+00:00",
-      "last_at": "2026-09-28T06:41:57+00:00",
-      "span_h": 0.0,
-      "age_h": 382.144,
-      "venue_reason": true,
-      "current": false,
-      "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
-    },
-    "gold_asia_v3": {
-      "reason": "margin_guard",
-      "count": 2,
-      "first_at": "2026-09-28T06:41:57+00:00",
-      "last_at": "2026-09-28T06:41:57+00:00",
-      "span_h": 0.0,
-      "age_h": 382.144,
-      "venue_reason": true,
-      "current": false,
-      "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
-    },
-    "gold_asia_v4": {
-      "reason": "release_identity_refused",
-      "count": 307,
-      "first_at": "2026-09-23T04:00:04+00:00",
-      "last_at": "2026-09-25T09:59:17+00:00",
-      "span_h": 53.987,
-      "age_h": 450.855,
-      "venue_reason": false,
-      "current": false,
-      "not_current_because": "last row 2026-09-25T09:59:17+00:00 is older than 24h"
-    }
-  },
+  "runs": {},
   "ok": false,
-  "verdict": "HALTED",
+  "verdict": "UNMEASURED",
   "applicable": true,
-  "ledger_newest_at": "2026-10-14T04:50:22+00:00",
-  "ledger_age_h": 0.004,
-  "rows_scanned": 3264,
-  "identity": {
-    "verdict": "REFUSED",
-    "allows_new_risk": false,
-    "at": "2026-10-14T04:50:03+00:00",
-    "reason": "running d15cc56a4b19 carries 84 path(s) the sealed release ca669d8c2755 never named: ['.gitignore', 'REPO_MAP.md', 'desks/mt5/docs/MT5_DESK.md', 'desks/mt5/docs/MT5_DESK_STATE.json', 'desks/mt5/mt5desk/engine.py', 'desks/mt5/mt5desk/gateway.py']; money path drifted on disk: ['desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/engine.py', 'desks/mt5/research/pf_allocator.py']",
-    "age_h": 0.009
-  },
+  "ledger_newest_at": "2026-10-16T09:59:26+00:00",
+  "ledger_age_h": 100.992,
+  "rows_scanned": 3952,
   "host": {
     "verdict": "UNMEASURED",
     "hostname": "vmi3571445",
@@ -129,5 +31,6 @@
     "why": "no trading-box id is recorded in config/trading_host.json -- hostname fallback: vmi3571445 matches vmi3571445, reported, never taken as the identity",
     "confirmed_trading": false,
     "may_be_trading": true
-  }
+  },
+  "escalated_on_trading_host": true
 }
