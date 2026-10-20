@@ -339,8 +339,8 @@ def test_thresholds_are_the_max_of_history_and_the_measured_seed(monkeypatch):
     assert runner.run_deadline_s(0, times) == 2 * 64711.4
     assert runner.shard_timeout_s("rule", 0, times) == 3 * 700.0
     # ...and a longer history raises it
-    longer = {"phases": {"merge_and_publish": [60000.0]}, "sweeps": [80000.0]}
-    assert runner.phase_deadline_s("merge_and_publish", 0, longer) == 3 * 60000.0
+    longer = {"phases": {"merge_and_publish": [55000.0]}, "sweeps": [80000.0]}
+    assert runner.phase_deadline_s("merge_and_publish", 0, longer) == 3 * 55000.0
     assert runner.run_deadline_s(0, longer) == 2 * 80000.0
     # a shard's threshold is never under its whole measured wave
     assert runner.shard_timeout_s("build", 0, {}) == seed["build_shards"]
@@ -446,10 +446,11 @@ def test_an_unparseable_create_time_is_treated_as_dead_and_nothing_is_killed(mon
         assert live.poll() is None, "identity unproven: recorded, never killed"
     finally:
         live.kill()
+        live.wait()
 
 
 def test_a_live_prior_sweep_is_killed_only_on_measured_idleness_and_proven_identity(monkeypatch):
-    monkeypatch.setenv("GAUNTLET_NO_PROGRESS_S", "60")
+    monkeypatch.setenv("GAUNTLET_NO_PROGRESS_S", "600")
     idle = _spawn("import time; time.sleep(60)", "run_sharded_gauntlet.py", "--once")
     busy = _spawn("while True: pass", "run_sharded_gauntlet.py", "--once")
     plain = _spawn("import time; time.sleep(60)")
@@ -460,7 +461,7 @@ def test_a_live_prior_sweep_is_killed_only_on_measured_idleness_and_proven_ident
         assert runner.take_over_stale(sample_s=0.5) is None
         # A QUIET HEARTBEAT BUT A BURNING TREE: SLOW, left running
         bborn = psutil.Process(busy.pid).create_time()
-        _write_hb(busy.pid, beat_age_s=120, create_time=bborn, cpu_s=0.0)
+        _write_hb(busy.pid, beat_age_s=700, create_time=bborn, cpu_s=0.0)
         took = runner.take_over_stale(sample_s=0.5)
         assert took["action"] == "left_running" and busy.poll() is None
         assert _stall()["status"] == "SLOW"
@@ -469,12 +470,12 @@ def test_a_live_prior_sweep_is_killed_only_on_measured_idleness_and_proven_ident
         assert runner.take_over_stale(sample_s=0.5) is None
         # IDLE, BUT NOT PROVABLY A --once SWEEP: never killed
         pborn = psutil.Process(plain.pid).create_time()
-        _write_hb(plain.pid, beat_age_s=120, create_time=pborn, cpu_s=_cpu(plain.pid))
+        _write_hb(plain.pid, beat_age_s=700, create_time=pborn, cpu_s=_cpu(plain.pid))
         took = runner.take_over_stale(sample_s=0.5)
         assert took["action"] == "left_running" and plain.poll() is None
         assert any("identity not proven" in w for w in took["why"])
         # IDLE SINCE ITS BEAT, IDLE LIVE, AND PROVABLY THE SWEEP: killed, recorded, billed
-        _write_hb(idle.pid, beat_age_s=120, create_time=born, cpu_s=_cpu(idle.pid))
+        _write_hb(idle.pid, beat_age_s=700, create_time=born, cpu_s=_cpu(idle.pid))
         took = runner.take_over_stale(sample_s=0.5)
         assert took["action"] == "killed" and took["pid"] == idle.pid
         idle.wait(timeout=15)
@@ -485,6 +486,7 @@ def test_a_live_prior_sweep_is_killed_only_on_measured_idleness_and_proven_ident
         for p in (idle, busy, plain):
             if p.poll() is None:
                 p.kill()
+            p.wait()
 
 
 def _lock(name: str, pid: int, started: float) -> Path:
@@ -525,8 +527,9 @@ def test_a_reused_pid_is_reclaimed_but_never_from_a_possible_writer():
         assert runner._is_certifier("python run_sharded_gauntlet.py") is False  # the resident
         assert runner._is_certifier("python run_sharded_gauntlet.py --once") is True
     finally:
-        plain.kill()
-        certifier.kill()
+        for p in (plain, certifier):
+            p.kill()
+            p.wait()
 
 
 class _Child:
