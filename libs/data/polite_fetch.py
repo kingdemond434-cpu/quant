@@ -932,6 +932,9 @@ class Response:
     body: bytes = b""
     #: Every redirect hop the fetch followed, [(code, from, to)] -- redirects are VISIBLE.
     redirects: list[tuple[int, str, str]] = field(default_factory=list)
+    #: (platform, url) when THE METHOD FENCE refused the fetch (first URL or a hop); a seam
+    #: re-raises it as `terms_fence.TermsFenced` so a urlopen-shaped caller keeps its fence path.
+    fenced: tuple[str, str] | None = None
 
     @property
     def ok(self) -> bool:
@@ -969,6 +972,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     _why = _tf.platform_of_url(url)
     if _why:
         resp.error = f"{_tf.PLATFORMS[_why]['status']}:{_why}: {_tf.PLATFORMS[_why]['reason']}"
+        resp.fenced = (_why, url)
         _stat(leg, error=f"terms_fenced:{_why}")
         return resp
     hdr = honest_headers(headers)
@@ -999,6 +1003,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         if fenced:
             refusal = _tf.TermsFenced(fenced, cur)
             resp.status, resp.error = None, str(refusal.reason)[:240]
+            resp.fenced = (fenced, cur)
             _stat(leg, error=(refusal.status if fenced == "login_wall"
                               else f"terms_fenced:{fenced}"))
             break
@@ -1066,6 +1071,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             # A held source or a 30x into one or into a login wall: refused, never followed,
             # and never retried -- the next attempt would be redirected to the same place.
             resp.error = str(exc.reason)[:240]
+            resp.fenced = (exc.platform, exc.url)
             _stat(leg, error=(exc.status if exc.platform == "login_wall"
                               else f"terms_fenced:{exc.platform}"))
             break
@@ -1341,8 +1347,10 @@ def _keyed_open(url: str, hdr: dict[str, str], data: bytes | None, method: str |
     if live_input:
         src = _tf.input_source(url)
         if src:
-            raise PoliteRefused(url, "terms_fenced", f"terms_fenced:{src}")
+            raise _tf.TermsFenced(src, redact_url(url))
     ok, why = admit(url, access=acc, opener=opener)
+    if not ok and why.startswith("terms_fenced:"):
+        raise _tf.TermsFenced(why.split(":", 1)[1], redact_url(url))
     if not ok:
         raise PoliteRefused(url, why.split(" ")[0].split(":")[0], why)
     open_ = opener or open_no_redirect
@@ -1402,7 +1410,7 @@ def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
         return _keyed_open(url, hdr, body, method, timeout, max_bytes, acc, opener, live_input)
     if body is not None:
         if live_input and _tf.input_source(url):
-            raise PoliteRefused(url, "terms_fenced", f"terms_fenced:{_tf.input_source(url)}")
+            raise _tf.TermsFenced(str(_tf.input_source(url)), redact_url(url))
         try:
             text = post(url, body, headers=hdr, timeout=timeout, leg=leg, access=acc,
                         opener=opener)
@@ -1420,6 +1428,10 @@ def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
     if r.status is not None and (r.status >= 400 or r.status == 304):
         # urlopen raises for a 304 too; a conditional-GET caller reads it from the HTTPError
         raise _seam_http_error(url, int(r.status), r.error)
+    if r.fenced is not None:
+        # the method fence's own refusal type, so a caller's `except TermsFenced` path still
+        # names the held platform (it is a URLError too)
+        raise _tf.TermsFenced(r.fenced[0], redact_url(r.fenced[1]))
     raise PoliteRefused(url, r.verdict, r.error or "fetch failed")
 
 
@@ -1474,6 +1486,8 @@ def polite_requests_get(url: str, params: Mapping[str, Any] | None = None, *,
         return SeamRequestsResponse(url, int(exc.code), b"", "", "", "", str(exc.reason))
     except PoliteRefused as exc:
         return SeamRequestsResponse(url, 0, b"", "", "", exc.verdict, exc.error)
+    except _tf.TermsFenced as exc:
+        return SeamRequestsResponse(url, 0, b"", "", "", "terms_fenced", str(exc.reason))
     raw = r.read()
     ctype = str(r.headers.get("Content-Type") or "")
     return SeamRequestsResponse(r.url, r.status, raw, decode_body(raw, ctype), ctype)
