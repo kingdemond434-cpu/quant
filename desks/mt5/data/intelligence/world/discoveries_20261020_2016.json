@@ -1,0 +1,2791 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs New Zealand Dollar (EURNZD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURNZD.p/",
+  "published": "2026-10-20T20:14:00+00:00",
+  "symbols": [
+   "EURNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "74b9d1ff515cbb3d650c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs US Dollar (EURUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURUSD.p/",
+  "published": "2026-10-20T20:14:02+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "588678a5241782258c2b",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPAUD.p/",
+  "published": "2026-10-20T20:14:04+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "353e16bbb5772b295403",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPCAD.p/",
+  "published": "2026-10-20T20:14:06+00:00",
+  "symbols": [
+   "GBPCAD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a8f6ed4d29228511f87b",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPCHF.p/",
+  "published": "2026-10-20T20:14:08+00:00",
+  "symbols": [
+   "GBPCHF",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cdf17601f6fff199da3a",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Japanese Yen (GBPJPY.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPJPY.p/",
+  "published": "2026-10-20T20:14:10+00:00",
+  "symbols": [
+   "GBPJPY",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b63c8cf82ddf6c00b9f4",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "USDJPY",
+      "GBPJPY"
+     ],
+     "mentioned": [
+      "pound",
+      "yen",
+      "gbpjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs New Zealand Dollar (GBPNZD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPNZD.p/",
+  "published": "2026-10-20T20:14:12+00:00",
+  "symbols": [
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b031459a63ff416a2bd4",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/about/company/contacts/",
+  "published": "2026-10-20T20:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "30e06e756547f0525821",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: \u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e15\u0e25\u0e32\u0e14\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19\u0e41\u0e25\u0e30\u0e40\u0e23\u0e34\u0e48\u0e21\u0e40\u0e17\u0e23\u0e14\u0e17\u0e31\u0e19\u0e17\u0e35 - RoboForex",
+  "url": "https://th.roboforex.com/",
+  "published": "2026-10-20T20:14:15+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://th.roboforex.com/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b74bfe17d0656bf28764",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14 RoboForex - Pro, Prime, ECN, ProCent, RST \u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e17\u0e35\u0e48\u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/trading-accounts/",
+  "published": "2026-10-20T20:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "bb376f33d69bdb04925d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e2a\u0e34\u0e19\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e4c, \u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e21\u0e37\u0e2d\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/other-assets/",
+  "published": "2026-10-20T20:14:19+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ded6305ebfee0d13c86c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 MetaTrader 4 (MT4) - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a PC, \u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e30\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/platforms/metatrader4-mt4/",
+  "published": "2026-10-20T20:14:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3c4bc2a1fc3bd1edd08d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 MetaTrader 5 (MT5) - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a PC, \u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e30\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/platforms/metatrader5-mt5/",
+  "published": "2026-10-20T20:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4b5e77566c79bee28b53",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.sk.html",
+  "published": "2026-10-20T20:14:24+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a5c333920658206ec9ef",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.sl.html",
+  "published": "2026-10-20T20:14:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "68c32d0f214c620423d3",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.sv.html",
+  "published": "2026-10-20T20:14:28+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4baba6e40fd04e4cd854",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.bg.html",
+  "published": "2026-10-20T20:14:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f7b30427b73016753d87",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "\u0435\u0446\u0431: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.cs.html",
+  "published": "2026-10-20T20:14:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "cs",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.cs.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "026fd62e37d4b3cc425e",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.da.html",
+  "published": "2026-10-20T20:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4356ab351f247ab21d10",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.de.html",
+  "published": "2026-10-20T20:14:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9347ed9f62e2ac5567a5",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ezb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Seguimiento de estrategia + alertas Trading View - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/7141152-seguimiento-estrategia-alertas-trading-view",
+  "published": "2026-10-20T20:14:37+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "UK100",
+   "E35",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d42a4ccc59e99e1cce2f",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "El sistema de compone de 2 piezas fundamentales: - La estrategia: he desarrollado una estrategia en Trading View, a medio/largo plazo, sobre los activos mayor capitalizaci\u00f3n del NASDAQ y SP500.",
+    "lang": "es",
+    "quantities": [
+     "sp500"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "sp500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c00f6958c9be"
+   },
+   {
+    "claim": "Un ejemplo, por ejemplo Chipotle, abrimos operaci\u00f3n a principios de noviembre, sobre los 30$ y el sistema ha dado 2 posibles salidas por sobrecompra, pero la operaci\u00f3n sigue abierta, la sobrecompra no es tan fuerte como est\u00e1 parametrizada en la estrategia, llevamos sobre 27% de rentabilidad: aqu\u00ed la alerta que me lleg\u00f3 hace d\u00edas: Un saludo.",
+    "lang": "es",
+    "quantities": [
+     "sobrecompra"
+    ],
+    "direction": [
+     "salida"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "sp500",
+      "ftse",
+      "ibex",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDTHB",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "581040c70d02"
+   },
+   {
+    "claim": "Esta es la leyenda con la descripci\u00f3n de cada uno de los colores por cada tipo de se\u00f1al: Por ejemplo, para ADI, se han ido dando varias se\u00f1ales de sobreventa y sobre compra, pero hasta hace unos d\u00edas no ha salido por sobrecompra muy fuerte.",
+    "lang": "es",
+    "quantities": [
+     "sobreventa",
+     "sobrecompra"
+    ],
+    "direction": [
+     "compra"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "sp500",
+      "ftse",
+      "ibex",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDTHB",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8d9f62c09cbc"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Cuentas de fondeo - Trading (1/1) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/7332796-cuentas-fondeo-trading?page=1",
+  "published": "2026-10-20T20:14:39+00:00",
+  "symbols": [
+   "NAS100",
+   "UK100",
+   "E35",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7bcc72f23920d5154c2f",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "M\u00e1s recomendado M\u00e1s le\u00eddo Berkeley, los ni\u00f1os deben abandonar la sala\u2026 La lecci\u00f3n de General Electric: el d\u00eda que el hilo eligi\u00f3 a la mejor empresa Sectores en tormenta y la met\u00e1fora del Barco de Neurath La lecci\u00f3n fundamental y t\u00e9cnica de SAP y Nemetsche Pensar en d\u00f3lares: la divisa como decisi\u00f3n patrimonial (no como apuesta) \u00bfPor qu\u00e9 sube la inflaci\u00f3n y cae la rentabilidad de la deuda?",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "sube",
+     "cae"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a60c9eb31127"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Cuentas de fondeo - Trading - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/7332796-cuentas-fondeo-trading",
+  "published": "2026-10-20T20:14:41+00:00",
+  "symbols": [
+   "NAS100",
+   "UK100",
+   "E35",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2dc2838c845b670ed2af",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "M\u00e1s recomendado M\u00e1s le\u00eddo Berkeley, los ni\u00f1os deben abandonar la sala\u2026 La lecci\u00f3n de General Electric: el d\u00eda que el hilo eligi\u00f3 a la mejor empresa Sectores en tormenta y la met\u00e1fora del Barco de Neurath La lecci\u00f3n fundamental y t\u00e9cnica de SAP y Nemetsche Pensar en d\u00f3lares: la divisa como decisi\u00f3n patrimonial (no como apuesta) \u00bfPor qu\u00e9 sube la inflaci\u00f3n y cae la rentabilidad de la deuda?",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "sube",
+     "cae"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a60c9eb31127"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Plan amigo Trading 212 \u2014 hasta 100 \u20ac en acciones + 1,5% de cashback (1/1) - Rankia",
+  "url": "https://www.rankia.com/foros/planes-amigo/temas/7261092-plan-amigo-trading-212-100-acciones-1-5-cashback?page=1",
+  "published": "2026-10-20T20:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1f09143a9875db76cafc",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Plan amigo Trading 212 \u2014 hasta 100 \u20ac en acciones + 1,5% de cashback - Rankia",
+  "url": "https://www.rankia.com/foros/planes-amigo/temas/7261092-plan-amigo-trading-212-100-acciones-1-5-cashback",
+  "published": "2026-10-20T20:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d5f56e1f2ae6adda49b",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u00bfCompatibilidad de Prestaci\u00f3n Contributiva con Trading recurrente de capital propio? Dudas sobre &quot;habitualidad&quot; (1/1) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/7300210-compatibilidad-prestacion-contributiva-trading-recurrente-capital-propio-dudas-habitualidad?page=1",
+  "published": "2026-10-20T20:14:49+00:00",
+  "symbols": [
+   "NAS100",
+   "UK100",
+   "E35",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.95,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "57f70d313020f1cef51b",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Mis dudas surgen por lo siguiente: Volumen de operaciones: Hago una media de 40-50 operaciones de compra/venta al mes .",
+    "lang": "es",
+    "quantities": [
+     "volumen"
+    ],
+    "direction": [
+     "compra",
+     "venta"
+    ],
+    "horizon": [
+     "mes"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "478b8fb6d37f"
+   },
+   {
+    "claim": "M\u00e1s recomendado M\u00e1s le\u00eddo Berkeley, los ni\u00f1os deben abandonar la sala\u2026 La lecci\u00f3n de General Electric: el d\u00eda que el hilo eligi\u00f3 a la mejor empresa Sectores en tormenta y la met\u00e1fora del Barco de Neurath La lecci\u00f3n fundamental y t\u00e9cnica de SAP y Nemetsche Pensar en d\u00f3lares: la divisa como decisi\u00f3n patrimonial (no como apuesta) \u00bfPor qu\u00e9 sube la inflaci\u00f3n y cae la rentabilidad de la deuda?",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "sube",
+     "cae"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a60c9eb31127"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u00bfCompatibilidad de Prestaci\u00f3n Contributiva con Trading recurrente de capital propio? Dudas sobre &quot;habitualidad&quot; - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/7300210-compatibilidad-prestacion-contributiva-trading-recurrente-capital-propio-dudas-habitualidad",
+  "published": "2026-10-20T20:14:51+00:00",
+  "symbols": [
+   "NAS100",
+   "UK100",
+   "E35",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.95,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "984bbd3c9fd59e74a9de",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Mis dudas surgen por lo siguiente: Volumen de operaciones: Hago una media de 40-50 operaciones de compra/venta al mes .",
+    "lang": "es",
+    "quantities": [
+     "volumen"
+    ],
+    "direction": [
+     "compra",
+     "venta"
+    ],
+    "horizon": [
+     "mes"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "478b8fb6d37f"
+   },
+   {
+    "claim": "M\u00e1s recomendado M\u00e1s le\u00eddo Berkeley, los ni\u00f1os deben abandonar la sala\u2026 La lecci\u00f3n de General Electric: el d\u00eda que el hilo eligi\u00f3 a la mejor empresa Sectores en tormenta y la met\u00e1fora del Barco de Neurath La lecci\u00f3n fundamental y t\u00e9cnica de SAP y Nemetsche Pensar en d\u00f3lares: la divisa como decisi\u00f3n patrimonial (no como apuesta) \u00bfPor qu\u00e9 sube la inflaci\u00f3n y cae la rentabilidad de la deuda?",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "sube",
+     "cae"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a60c9eb31127"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Pip Value Calculator | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/pip/",
+  "published": "2026-10-20T20:14:52+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "0c2882d453c5991a01fc",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Forex calculators Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "copper",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e82023c56894"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Currency Converter - Live Foreign Exchange Rates | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-currency-converter/",
+  "published": "2026-10-20T20:14:54+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "9cf7a75272ac45bab168",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Forex calculators Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e82023c56894"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "EUR to USD - Convert Euro to US Dollar | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-currency-converter/eur/",
+  "published": "2026-10-20T20:14:56+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "33658caa7af465b664c9",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Currency Converter Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "84ed93a31bd0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JPY to USD - Convert Japanese Yen to US Dollar | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-currency-converter/jpy/",
+  "published": "2026-10-20T20:14:58+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "EURJPY",
+   "GBPJPY",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "d09d125e5602ee6e9c87",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Currency Converter Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "yen",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "84ed93a31bd0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "GBP to USD - Convert British Pounds to US Dollar | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-currency-converter/gbp/",
+  "published": "2026-10-20T20:15:00+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "88a073130fb819c22fb0",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Currency Converter Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "84ed93a31bd0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "CHF to USD - Convert Swiss Franc to US Dollar | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-currency-converter/chf/",
+  "published": "2026-10-20T20:15:03+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "89e9c7987e2621084406",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Currency Converter Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "84ed93a31bd0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "CAD to USD - Convert Canadian Dollar to US Dollar | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-currency-converter/cad/",
+  "published": "2026-10-20T20:15:05+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "cd55b0cd1503613793b0",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Currency Converter Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "copper",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "84ed93a31bd0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "We Know How to Become An Expert Trader",
+  "url": "https://desktop.forextester.com/aboutus",
+  "published": "2026-10-20T20:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "abeacfcb3239dedb4962",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Confused with Forex historical data? A simple way to manage it [Video]",
+  "url": "https://desktop.forextester.com/datacenter",
+  "published": "2026-10-20T20:15:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M30"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5d8e6d0a257231f13ecc",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Read Statistics From Backtesting and Learn Forex Better",
+  "url": "https://desktop.forextester.com/statistics",
+  "published": "2026-10-20T20:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "72799a815caddbe45cb1",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop: Buy Historical Tick Data for Backtesting",
+  "url": "https://desktop.forextester.com/HistoryServiceDescription",
+  "published": "2026-10-20T20:15:14+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "61479ddc02519185aa68",
+  "host": "desktop.forextester.com",
+  "claims": [
+   {
+    "claim": "the Coin Accurate Trading Strategy The Hedging Strategy The Tsunami Method 10 simple manual strategies to start Martingale Grid & Hedging Martingale hedging with exponential lot increase Simple short-term strategy Engulfing bars GBP/USD simple breakout system Simple \u201cMake Pips\u201d Strategy The Trader vs.",
+    "lang": "en",
+    "quantities": [
+     "breakout"
+    ],
+    "direction": [
+     "increase",
+     "short"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gbp/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1531455c870"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to import data into trading simulator [Quick and Easy Video Guide]",
+  "url": "https://desktop.forextester.com/import",
+  "published": "2026-10-20T20:15:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M30"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "103dcb4a10205879c293",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to make the most of being a Forex Partner [special page offered]",
+  "url": "https://desktop.forextester.com/special",
+  "published": "2026-10-20T20:15:18+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "XAUUSD",
+   "XAGUSD",
+   "US500",
+   "US30",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "H1",
+   "INTRADAY",
+   "M1",
+   "W1"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6db034a853c18be6403e",
+  "host": "desktop.forextester.com",
+  "claims": [
+   {
+    "claim": "Forex Tester uses project files in the following way: You can save your current session, load another one and then continue the first session later.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "s&p 500",
+      "dow jones",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "98b28af9b571"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "An Easy Way to Open Projects in Forex Trading Simulator [Video]",
+  "url": "https://desktop.forextester.com/newproject",
+  "published": "2026-10-20T20:15:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "INTRADAY",
+   "M1",
+   "M15",
+   "M30",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "763539358beb9daf46a7",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quotes | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/quotes/quotes",
+  "published": "2026-10-20T20:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f26ddb2806c805bbddd8",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Last Quote | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/quotes/last-quote",
+  "published": "2026-10-20T20:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ec4812e631c94c113d6",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Simple Moving Average (SMA) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/simple-moving-average",
+  "published": "2026-10-20T20:15:25+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "85728d9adc96c46ef710",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exponential Moving Average (EMA) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/exponential-moving-average",
+  "published": "2026-10-20T20:15:28+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ada0068a3f492430fb39",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Moving Average Convergence/Divergence (MACD) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/moving-average-convergence-divergence",
+  "published": "2026-10-20T20:15:37+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb0f7e03155a9138d85b",
+  "host": "polygon.io",
+  "claims": [
+   {
+    "claim": "timespan=day&adjusted=true&short_window=12&long_window=26&signal_window=9&series_type=close&order=desc&limit=10&apiKey=YOUR_API_KEY\" from massive import RESTClient",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "25238b22e1dc"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Relative Strength Index (RSI) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/relative-strength-index",
+  "published": "2026-10-20T20:15:38+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a98bb3b60a16db327338",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Holidays | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/market-operations/market-holidays",
+  "published": "2026-10-20T20:15:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d03442b5e4760e1cde07",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 5\" (MT5) terminal web de RoboForex Ltd",
+  "url": "https://mt5.roboforex.com/?lang=es",
+  "published": "2026-10-20T20:15:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "292577dd96e18c8ff604",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 5\" (MT5) web terminal from RoboForex Ltd",
+  "url": "https://mt5.roboforex.com/",
+  "published": "2026-10-20T20:15:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "411419e5d124fd00b43b",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0412\u0435\u0431-\u0442\u0435\u0440\u043c\u0438\u043d\u0430\u043b \"MetaTrader 5\" (MT5) \u043e\u0442 RoboForex Ltd",
+  "url": "https://mt5.roboforex.com/?lang=ru",
+  "published": "2026-10-20T20:15:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c84d73affd3f4a14e6a8",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a Forex Account - OANDA",
+  "url": "https://www.oanda.com/apply/",
+  "published": "2026-10-20T20:15:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.oanda.com/apply/static/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6b55c9aa8f335ff18151",
+  "host": "www.oanda.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mobile Trading App for Forex &amp; Crypto | OANDA | US",
+  "url": "https://www.oanda.com/us-en/trading/platforms/oanda-trade-mobile/",
+  "published": "2026-10-20T20:15:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7789a7823a02d45e52f8",
+  "host": "www.oanda.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Online Forex Broker &amp; Crypto Trading | OANDA | US",
+  "url": "https://www.oanda.com/us-en/",
+  "published": "2026-10-20T20:15:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8969d7e7b9aa0821959f",
+  "host": "www.oanda.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Funding and Withdrawals | Fund Your Trading Account | OANDA | US",
+  "url": "https://www.oanda.com/us-en/trading/funding-and-withdrawals/",
+  "published": "2026-10-20T20:15:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2d7787d5fd9092e3c9f",
+  "host": "www.oanda.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FX Trading Pricing | Our Pricing | OANDA | US",
+  "url": "https://www.oanda.com/us-en/trading/our-pricing/",
+  "published": "2026-10-20T20:15:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "028fc8adb1a9918f64f9",
+  "host": "www.oanda.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5957\u5229\u80a1 \u8981\u7ea6\u6536\u8d2d \u73b0\u91d1\u9009\u62e9 \u6362\u80a1\u4ef7 \u5438\u6536\u5408\u5e76 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/data/taoligu/",
+  "published": "2026-10-20T20:15:55+00:00",
+  "symbols": [
+   "HK50"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d398c6373cdb8083a432",
+  "host": "www.jisilu.cn",
+  "claims": [
+   {
+    "claim": "Edge Chrome Firefox \u9996\u9875 \u6295\u8d44\u65e5\u5386 \u5b9e\u65f6\u6570\u636e \u793e\u533a-\u77e5\u8bc6\u5e93 \u767b\u5f55 \u6ce8\u518c \u6301\u4ed3 \u65b0\u80a1 \u80a1\u606f\u7387 \u5957\u5229\u80a1 \u503a\u5238 \u53ef\u8f6c\u503a \u5c01\u95ed\u57fa\u91d1 ETF \u73b0\u91d1\u7ba1\u7406 A/H\u6bd4\u4ef7 T+0 QDII REITs \u6307\u6570\u6da8\u5e45 LOF \u4e2d\u6982\u80a1\u79c1\u6709\u5316\u5957\u5229 \u6e2f\u80a1\u79c1\u6709\u5316\u5957\u5229 \u6e2f\u80a1\u4f9b\u80a1\u6743\u5957\u5229 A\u80a1\u5957\u5229 A\u80a1\u5957\u5229( \u5237\u65b0 ) \u7f51\u683c\u8ba1\u7b97\u5668 \u6ce8\uff1a\u5df2\u6309\u5f53\u65e5\u6c47\u7387\u8ba1\u7b97B\u80a1\u6298\u6ea2\u4ef7\uff08\uff09 \u4e2d\u6982\u80a1\u79c1\u6709\u5316\u5957\u5229( \u5237\u65b0 ) \u4e2d\u6982\u80a1\u79c1\u6709\u5316FAQ \u6d4b\u8bd5\u7248\uff0c\u8bf7\u8c28\u614e\u53c2\u8003\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5957\u5229",
+     "\u6301\u4ed3",
+     "\u6c47\u7387",
+     "\u6ea2\u4ef7"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5f53\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "a\u80a1",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ad099491ec2e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u30d0\u30c3\u30af\u30c6\u30b9\u30c6\u30a3\u30f3\u30b0\u306e\u6539\u5584\u306b\u5f79\u7acb\u3064Forex\u30d2\u30b9\u30c8\u30ea\u30ab\u30eb\u30c7\u30fc\u30bf\u306e\u691c\u7d22\u65b9\u6cd5",
+  "url": "http://www.forextester.jp/data/datasources",
+  "published": "2026-10-20T20:15:58+00:00",
+  "symbols": [
+   "AUDJPY",
+   "AUDUSD",
+   "CHFJPY",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDJPY",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "ja-JP",
+  "endpoints": [
+   "http://www.forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "23e7c8b2977003395d52",
+  "host": "www.forextester.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "[\u516c\u5f0f] Forex Tester\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9\u30da\u30fc\u30b8",
+  "url": "http://www.forextester.jp/download",
+  "published": "2026-10-20T20:16:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download",
+   "https://desktop.forextester.com/download",
+   "http://www.forextester.jp/templates/css/min/download.css",
+   "http://www.forextester.jp/download"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "0217938ea91567f35268",
+  "host": "www.forextester.jp",
+  "claims": [],
+  "n_claims": 0
+ }
+]
