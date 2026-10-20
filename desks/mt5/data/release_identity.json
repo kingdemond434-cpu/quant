@@ -3,7 +3,7 @@
  "running_sha": "42e1b226ae89e14680cdc94be633cbcaf95e3b19",
  "release_sha": "a39f8ea8d878209140d5fedbf0593e5277f7ac0e",
  "reason": "running 42e1b226ae89 carries 7 path(s) the sealed release a39f8ea8d878 never named: ['desks/mt5/ops/box_tasks.manifest', 'desks/mt5/scripts/install_deepseek_brain_task.ps1', 'libs/ops/deepseek_cycle.py', 'libs/ops/deepseek_packet.py', 'ops/run_deepseek_windows.ps1', 'scripts/run_deepseek_cycle.py']",
- "age_h": 63.741,
+ "age_h": 64.221,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -22,10 +22,10 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-10-20T15:36:19+00:00",
+ "at": "2026-10-20T16:05:05+00:00",
  "tested_sha": "UNMEASURED",
  "tested_gates": "UNMEASURED",
- "allocator_certificate": "9794f6c4f07aedd4@2026-10-20T14:54:34.796712+00:00 proof=FAILED book=multiperiod",
+ "allocator_certificate": "73ceeff084ad2b92@2026-10-20T15:53:03.099688+00:00 proof=PASSED book=dynamic",
  "ci_run_id": "UNMEASURED",
  "allows_new_risk": false,
  "verdict": "REFUSED"
