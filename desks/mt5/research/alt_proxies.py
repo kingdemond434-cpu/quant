@@ -4257,9 +4257,9 @@ def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str
         pts = points_by_source[sid][series]
         ev = [(p["available_time"], float(p["surprise_z"])) for p in pts
               if p.get("surprise_z") is not None]
-        # THE FIXED TIER S BAR (|t| >= release_gain.TIER_S_T_BAR = 2.84) judges every cell,
-        # whatever the family size: no charge over the count of cells. Replaced by
-        # libs.research.trial_count_guard's T8 bar when claude/trial-count-guard lands.
+        # THE TIER S BAR AT THE CELL'S OWN n (release_gain.tier_s_t_required: canonical DSR,
+        # N=5, 1/(T-1)) judges every cell, whatever the family size: no charge over the count
+        # of cells. Replaced by trial_count_guard.tier_s_t_required (T8) when it lands.
         res = release_gain(ev, close, horizon_bars=HORIZON_BARS).as_dict()
         res["cells_in_family"] = len(cells)                       # recorded, never charged
         res["backfill_share"] = (round(sum(1 for p in pts if p["pit_quality"] == "backfill")
@@ -4382,10 +4382,10 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
 
     THE PLACEBO-CONDITIONED GATE. A child is donated only when the parent's signals inside its
     regime beat the same signals inside random regimes of the same duty cycle
-    (`release_gain.regime_placebo`, circular shifts of the regime mask), judged against the fixed
-    Tier S bar whatever the number of children tested this pass (that count is recorded). A
-    child whose parent cannot be replayed here, or whose regime holds too few signals,
-    is UNMEASURED and not donated.
+    (`release_gain.regime_placebo`, circular shifts of the regime mask), judged against the Tier S
+    bar at the child's in-regime n whatever the number of children tested this pass (that count
+    is recorded). A child whose parent cannot be replayed here, or whose regime holds too few
+    signals, is UNMEASURED and not donated.
 
     Returns (passing candidates, pairs owed to later passes, one gate row per minted child)."""
     parents = _parents(paths)
@@ -4455,7 +4455,7 @@ def _gate_children(paths: Paths,
         mask = _regime_mask(paths, src, series, op, idx)
         inputs.append((cand, "no conditioning series in the lake on this box" if mask is None
                        else (pos, ret, mask)))
-    n_trials = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
+    n_recorded = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
     passed: list[dict[str, Any]] = []
     gates: list[dict[str, Any]] = []
     for cand, x in inputs:
@@ -4463,13 +4463,13 @@ def _gate_children(paths: Paths,
             res: dict[str, Any] = {"verdict": UNMEASURED, "why": x}
         else:
             seed = int(hashlib.sha256(cand["cell"].encode()).hexdigest()[:8], 16)
-            res = regime_placebo(x[0], x[1], x[2], n_trials=n_trials, seed=seed)
+            res = regime_placebo(x[0], x[1], x[2], n_recorded=n_recorded, seed=seed)
         gates.append({"cell": cand["cell"], "parent": cand["parent"], "family": cand["family"],
                       **res})
         if res.get("verdict") == "PASS":
             cand["evidence"] = {k: res.get(k) for k in (
                 "n_in", "n_signals", "duty_cycle", "mean_in", "placebo_mean", "placebo_p95",
-                "p_placebo", "p_bar", "n_trials", "n_masks", "why")}
+                "p_placebo", "p_bar", "t_bar", "n_recorded", "n_masks", "why")}
             passed.append(cand)
     return passed, gates
 
@@ -5403,9 +5403,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "power": {"target_ic": TARGET_IC,
                   "n_underpowered": sum(1 for g in gains.values()
                                         if g.get("verdict") == "UNDERPOWERED"),
-                  "rule": ("each gain row carries min_detectable_ic (80% power at its n and "
-                           "fixed Tier S bar |t| >= 2.84); a miss above target_ic is "
-                           "UNDERPOWERED, not FAIL")},
+                  "rule": ("each gain row carries min_detectable_ic (80% power at its n against "
+                           "the Tier S bar at that n, tier_s_t_required); a miss above target_ic "
+                           "is UNDERPOWERED, not FAIL")},
         "equity_handoff": {"path": str(paths.equity_handoff), "n_rows": len(handoff["rows"]),
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
@@ -5426,7 +5426,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                                     "params.conditioner, applied by mt5desk.cell_modifiers; a "
                                     "child is donated only when its in-regime parent return "
                                     "beats circularly shifted regimes of the same duty cycle, "
-                                    "fixed Tier S bar over every child tested")},
+                                    "Tier S bar at each child's own n; children recorded")},
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),

@@ -527,8 +527,16 @@ def test_power_is_reported_and_a_low_power_miss_is_underpowered_not_fail() -> No
     assert by[("release_gain", 0.05)]["underpowered_rate"] > 0
     m250, m1000 = min_detectable_ic(250), min_detectable_ic(1000)
     assert m250 is not None and m1000 is not None and m1000 < m250
-    from libs.research.release_gain import TIER_S_T_BAR
-    assert min_detectable_ic(1000, t_bar=TIER_S_T_BAR) == m1000     # the bar is fixed
+    # THE FAMILY SIZE NEVER MOVES A VERDICT: the same draw judged as 1 child or as 40 children
+    # gets the same verdict, the same p bar and the same t bar (no charge over the count).
+    import numpy as np
+
+    from libs.research.release_gain import _sim_regime, regime_placebo
+    pos, ret, mask = _sim_regime(0.2, 400, np.random.default_rng(11))
+    one = regime_placebo(pos, ret, mask, n_recorded=1, seed=3)
+    forty = regime_placebo(pos, ret, mask, n_recorded=40, seed=3)
+    assert one["verdict"] == forty["verdict"] and one["p_bar"] == forty["p_bar"] > 0
+    assert one["t_bar"] == forty["t_bar"] and (one["n_recorded"], forty["n_recorded"]) == (1, 40)
 
 
 # ============================================================================ roster
