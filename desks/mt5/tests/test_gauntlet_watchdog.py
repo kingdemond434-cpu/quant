@@ -755,6 +755,7 @@ def test_a_handed_in_report_is_never_coloured_by_box_liveness(tmp_path):
 
 
 # ------------------------------------------------- v3: the audit of 7cf2ece90
+@pytest.mark.skipif(sys.platform == "win32", reason="the probe holds the lock with fcntl")
 def test_stall_writers_lose_nothing_across_threads():
     """4 threads x 25 stalls, interleaved with SLOW writes: every stall is counted, no red is
     washed amber (before the lock: 36 of 100 survived)."""
@@ -773,7 +774,8 @@ def test_stall_writers_lose_nothing_across_threads():
     st = _stall()
     assert st["consecutive"] == 100 and st["status"] == "STALLED"
     assert len(st["missed_growth"]) == runner.MISSED_GROWTH_HISTORY
-    assert not list(runner.STALL.parent.glob("*.lock")), "the lock file is released"
+    assert st["lock"] == "LOCKED" and st.get("unlocked_writes", 0) == 0
+    assert _lock_free(), "the OS lock is released after the last write"
 
 
 _RACER = textwrap.dedent("""
@@ -798,13 +800,152 @@ def test_stall_writers_lose_nothing_across_processes(tmp_path):
     assert st["consecutive"] == 100 and st["status"] == "STALLED"
 
 
-def test_a_stale_lock_file_from_a_dead_writer_is_broken():
+def _lock_free() -> bool:
+    """Can a fresh descriptor take the stall lock right now (POSIX flock)?"""
+    import fcntl
+
+    fd = os.open(str(runner.STALL.with_name(f"{runner.STALL.name}.lock")), os.O_RDWR | os.O_CREAT)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return True
+    except BlockingIOError:
+        return False
+    finally:
+        os.close(fd)
+
+
+_HOLDER = textwrap.dedent("""
+    import fcntl, os, sys, time
+    fd = os.open(sys.argv[1], os.O_RDWR | os.O_CREAT)
+    fcntl.flock(fd, fcntl.LOCK_EX)
+    open(sys.argv[2], "w").write("held")
+    time.sleep(120)
+""")
+
+
+def _hold_lock(tmp_path: Path) -> subprocess.Popen:
+    flag = tmp_path / "held.flag"
+    lock = runner.STALL.with_name(f"{runner.STALL.name}.lock")
+    p = subprocess.Popen([sys.executable, "-c", _HOLDER, str(lock), str(flag)])
+    end = time.monotonic() + 10
+    while not flag.exists() and time.monotonic() < end:
+        time.sleep(0.05)
+    assert flag.exists()
+    return p
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the probe holds the lock with fcntl")
+def test_a_dead_holder_never_blocks_the_next_writer(tmp_path):
+    """The OS drops the lock with its holder: no stale-break, so nothing can spin or race."""
+    holder = _hold_lock(tmp_path)
+    holder.kill()
+    holder.wait()
+    t0 = time.monotonic()
+    runner.record_stall("no_progress", detail="x")
+    assert time.monotonic() - t0 < 2.0
+    st = _stall()
+    assert st["consecutive"] == 1 and st["lock"] == "LOCKED"
+
+
+def test_a_lock_file_with_a_future_mtime_changes_nothing():
     lock = runner.STALL.with_name(f"{runner.STALL.name}.lock")
     lock.write_text("999999\n")
-    old = time.time() - runner.STALL_LOCK_STALE_S - 5
-    os.utime(lock, (old, old))
+    future = time.time() + 86400
+    os.utime(lock, (future, future))
+    t0 = time.monotonic()
     runner.record_stall("no_progress", detail="x")
-    assert _stall()["consecutive"] == 1 and not lock.exists()
+    assert time.monotonic() - t0 < 2.0 and _stall()["lock"] == "LOCKED"
+
+
+def test_a_lock_that_cannot_be_opened_returns_by_the_deadline_without_spinning(monkeypatch):
+    """The v3 must-fix: a failure that skipped the deadline check spun a core forever holding
+    the thread lock. Every failure now sleeps and the deadline is always checked."""
+    monkeypatch.setattr(runner, "STALL_LOCK_WAIT_S", 0.5)
+    real_open = os.open
+
+    def deny(path, *a, **k):
+        if str(path).endswith(".lock"):
+            raise PermissionError(13, "Access is denied", str(path))
+        return real_open(path, *a, **k)
+
+    monkeypatch.setattr(runner.os, "open", deny)
+    cpu0, t0 = time.process_time(), time.monotonic()
+    runner.record_stall("no_progress", detail="x")
+    wall, cpu = time.monotonic() - t0, time.process_time() - cpu0
+    assert 0.5 <= wall < 3.0, wall
+    assert cpu < 0.5 * wall, f"spun: {cpu:.2f} cpu-s in {wall:.2f}s"
+    st = _stall()
+    assert st["lock"].startswith("UNLOCKED") and "PermissionError" in st["lock"]
+    assert st["unlocked_writes"] == 1 and st["consecutive"] == 1
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the probe holds the lock with fcntl")
+def test_a_lock_held_past_the_deadline_writes_unlocked_and_says_so(monkeypatch, tmp_path):
+    monkeypatch.setattr(runner, "STALL_LOCK_WAIT_S", 0.5)
+    holder = _hold_lock(tmp_path)
+    try:
+        t0 = time.monotonic()
+        runner.record_slow("run_deadline", detail="x")
+        assert time.monotonic() - t0 < 3.0
+        st = _stall()
+        assert st["lock"].startswith("UNLOCKED") and "held by another writer" in st["lock"]
+        assert st["unlocked_writes"] == 1
+    finally:
+        holder.kill()
+        holder.wait()
+    runner.record_slow("run_deadline", detail="y")
+    st = _stall()
+    assert st["lock"] == "LOCKED" and st["unlocked_writes"] == 1, "the count is kept"
+
+
+def test_one_denied_process_makes_the_whole_tree_unmeasured(monkeypatch):
+    """The probe: a readable idle parent over a denied busy grandchild read as measured idle."""
+    parent = _spawn(
+        "import subprocess, sys, time\n"
+        "subprocess.Popen([sys.executable, '-c', 'while True: pass'])\n"
+        "time.sleep(60)"
+    )
+    try:
+        time.sleep(0.5)
+        kids = {c.pid for c in psutil.Process(parent.pid).children(recursive=True)}
+        assert kids
+        real = psutil.Process.cpu_times
+
+        def some_denied(self, *a, **k):
+            if self.pid in kids:
+                raise psutil.AccessDenied(self.pid)
+            return real(self, *a, **k)
+
+        monkeypatch.setattr(psutil.Process, "cpu_times", some_denied)
+        assert runner._sample_tree(parent.pid) is None
+        monkeypatch.setattr(psutil.Process, "cpu_times", real)
+        real_io = psutil.Process.io_counters
+
+        def io_denied(self, *a, **k):
+            if self.pid in kids:
+                raise psutil.AccessDenied(self.pid)
+            return real_io(self, *a, **k)
+
+        monkeypatch.setattr(psutil.Process, "io_counters", io_denied)
+        assert runner._sample_tree(parent.pid) is None
+    finally:
+        for c in psutil.Process(parent.pid).children(recursive=True):
+            with __import__("contextlib").suppress(psutil.Error):
+                c.kill()
+        parent.kill()
+        parent.wait()
+
+
+def test_a_forced_utime_cannot_fool_the_parse_cache():
+    a = runner.MERGE_OUTPUTS[0]
+    a.write_text(json.dumps({"v": 1}))
+    st = a.stat()
+    assert runner._parses(a) is True
+    a.write_text('{"v": 2 ')  # same size, torn
+    os.utime(a, ns=(st.st_atime_ns, st.st_mtime_ns))  # mtime forced back
+    assert a.stat().st_size == st.st_size and a.stat().st_mtime_ns == st.st_mtime_ns
+    assert runner._parses(a) is False
 
 
 def test_cpu_that_cannot_be_read_is_unmeasured_and_never_kills(monkeypatch, tmp_path):

@@ -496,48 +496,109 @@ def _missed_growth_line(reason: str, lost_s: float | None, why: str) -> dict[str
 #: lost the red, the widening count and the missed-growth line (4 threads, 100 stalls: 36 kept).
 #: So every writer holds this lock (threads) AND an exclusive lock file (processes).
 _STALL_LOCK = threading.RLock()
-#: A lock file older than this was left by a writer that died holding it (a write takes ms).
-STALL_LOCK_STALE_S = 30.0
 STALL_LOCK_WAIT_S = 60.0
+
+
+_LOCK_LOCAL = threading.local()
+
+
+def _os_trylock(fd: int) -> bool:
+    """One non-blocking attempt at an exclusive OS lock on `fd`. The OS drops it when the holder
+    dies, so a dead writer can never leave the file locked and nothing has to break it."""
+    if sys.platform == "win32":
+        import msvcrt
+
+        try:
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # type: ignore[attr-defined,unused-ignore]
+            return True
+        except OSError:
+            return False
+    import fcntl
+
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except (BlockingIOError, PermissionError):
+        return False
+
+
+def _os_unlock(fd: int) -> None:
+    with contextlib.suppress(OSError):
+        if sys.platform == "win32":
+            import msvcrt
+
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)  # type: ignore[attr-defined,unused-ignore]
+        else:
+            import fcntl
+
+            fcntl.flock(fd, fcntl.LOCK_UN)
 
 
 @contextlib.contextmanager
 def _stall_guard() -> Any:
-    """Thread lock + cross-process O_EXCL lock file around one stall-file read-modify-write."""
+    """Thread lock + an OS file lock (flock / msvcrt.locking) around one stall-file
+    read-modify-write.
+
+    v3 used an O_EXCL file and broke it when it looked stale; the audit of be522dd44 showed a
+    failed unlink spun forever holding the thread lock, and two waiters could both break one
+    stale lock. An OS lock needs no breaking: the kernel releases it when its holder dies. Every
+    failure -- the file cannot be opened (Windows delete-pending, an ACL), the lock stays held --
+    is retried with a sleep until STALL_LOCK_WAIT_S, then the write goes ahead UNLOCKED and says
+    so in the record (`lock`), because a report must never hang the sweep.
+    """
     with _STALL_LOCK:
+        if getattr(_LOCK_LOCAL, "depth", 0):          # re-entered on this thread: already held
+            _LOCK_LOCAL.depth += 1
+            try:
+                yield
+            finally:
+                _LOCK_LOCAL.depth -= 1
+            return
         lock = STALL.with_name(f"{STALL.name}.lock")
-        held = False
         end = time.monotonic() + STALL_LOCK_WAIT_S
-        with contextlib.suppress(OSError):
-            lock.parent.mkdir(parents=True, exist_ok=True)
+        fd: int | None = None
+        held = False
+        why = ""
         while True:
             try:
-                fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                with contextlib.suppress(OSError):
-                    os.write(fd, f"{os.getpid()}\n".encode())
-                os.close(fd)
-                held = True
-                break
-            except FileExistsError:
-                try:
-                    age = time.time() - lock.stat().st_mtime
-                except OSError:
-                    continue                  # it vanished between the two calls: try again
-                if age > STALL_LOCK_STALE_S:
+                if fd is None:
                     with contextlib.suppress(OSError):
-                        lock.unlink()         # a dead writer's lock
-                    continue
-                if time.monotonic() > end:
-                    break                     # never hang a sweep on a report: write unlocked
-                time.sleep(0.005)
-            except OSError:
-                break                         # unwritable directory: the thread lock still holds
+                        lock.parent.mkdir(parents=True, exist_ok=True)
+                    fd = os.open(str(lock), os.O_RDWR | os.O_CREAT, 0o666)
+                if _os_trylock(fd):
+                    held = True
+                    break
+                why = "held by another writer"
+            except OSError as exc:            # PermissionError, delete-pending, ...: retry
+                why = f"{type(exc).__name__}: {exc}"[:160]
+                if fd is not None:
+                    with contextlib.suppress(OSError):
+                        os.close(fd)
+                    fd = None
+            if time.monotonic() >= end:       # ALWAYS checked, whatever failed above
+                break
+            time.sleep(0.01)                  # ...and never a spin
+        _LOCK_LOCAL.note = ("LOCKED" if held else
+                            f"UNLOCKED after {STALL_LOCK_WAIT_S:.0f}s: {why or 'unknown'}")
+        _LOCK_LOCAL.depth = 1
         try:
             yield
         finally:
-            if held:
+            _LOCK_LOCAL.depth = 0
+            if fd is not None:
+                if held:
+                    _os_unlock(fd)
                 with contextlib.suppress(OSError):
-                    lock.unlink()
+                    os.close(fd)
+
+
+def _lock_stamp(prev: dict[str, Any]) -> dict[str, Any]:
+    """The lock outcome of THIS write, and the running count of writes that went unlocked."""
+    note = str(getattr(_LOCK_LOCAL, "note", "LOCKED"))
+    n = int(prev.get("unlocked_writes") or 0) + (0 if note == "LOCKED" else 1)
+    return {"lock": note, "unlocked_writes": n}
 
 
 def _stall_locked(fn: Callable[..., Any]) -> Callable[..., Any]:
@@ -586,7 +647,8 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
     mg = [*(prev.get("missed_growth") or []),
           _missed_growth_line(reason, lost_s, f"sweep pid {row['pid']} {reason}: {detail[:200]}")
           ][-MISSED_GROWTH_HISTORY:]
-    doc = {**row, "consecutive": consecutive, "history": history, "missed_growth": mg,
+    doc = {**row, **_lock_stamp(prev), "consecutive": consecutive, "history": history,
+           "missed_growth": mg,
            "last_clear_utc": prev.get("last_clear_utc"),
            "next_run": ("starts fresh: the sealed protocol re-plans every unfinished shard's "
                         "cells; nothing from the stalled run was marked judged")}
@@ -615,7 +677,7 @@ def record_slow(reason: str, *, detail: str = "", shard: dict[str, Any] | None =
            "progress": {k: hb.get(k) for k in ("beat_utc", "tree", "last_progress_utc", "idle_s")
                         if k in hb}}
     status = "STALLED" if prev.get("status") == "STALLED" else "SLOW"
-    doc = {**prev, "status": status, "slow": row,
+    doc = {**prev, **_lock_stamp(prev), "status": status, "slow": row,
            "history": [*(prev.get("history") or []), row][-STALL_HISTORY:],
            "consecutive": int(prev.get("consecutive") or 0)}
     _write_json_atomic(STALL, doc)
@@ -632,7 +694,7 @@ def _record_clear() -> None:
     if not prev:
         return
     _write_json_atomic(STALL, {**{k: v for k, v in prev.items() if k not in ("status", "slow")},
-                               "status": "CLEAR", "consecutive": 0,
+                               **_lock_stamp(prev), "status": "CLEAR", "consecutive": 0,
                                "last_clear_utc": datetime.now(UTC).isoformat(
                                    timespec="seconds")})
 
@@ -640,7 +702,7 @@ def _record_clear() -> None:
 #: Files up to this size are checked with a full `json.load`; a larger one (the merge's ~625 MB
 #: verdict report) by a structural check of its two ends, so a restore never parses 625 MB twice.
 PARSE_FULL_MAX_BYTES = 32 * 1024 * 1024
-_PARSE_CACHE: dict[tuple[str, int, int], bool] = {}
+_PARSE_CACHE: dict[tuple[str, int, int, int, int], bool] = {}
 
 
 def _ends_close(path: Path, size: int) -> bool:
@@ -658,7 +720,11 @@ def _ends_close(path: Path, size: int) -> bool:
         return False
     closer = b"}" if head[:1] == b"{" else b"]"
     if head[1:2] not in (b"\n", b"\r"):
-        return tail.endswith(closer)   # compact JSON: no column-0 closer to look for
+        # COMPACT JSON IS A WEAK CHECK, KEPT ON PURPOSE (audit of be522dd44): with no column-0
+        # closer, 432 of 10,755 torn compact prefixes still end in the closer. No merge output is
+        # compact today (external_gauntlet.py writes indent=2); a compact one would need a
+        # full parse or a writer-side checksum to be judged properly.
+        return tail.endswith(closer)
     return tail.endswith(b"\n" + closer)
 
 
@@ -668,7 +734,9 @@ def _parses(path: Path) -> bool:
         st = path.stat()
     except OSError:
         return False
-    key = (str(path), int(st.st_size), int(st.st_mtime_ns))
+    # inode and ctime too (audit of be522dd44): a rewrite with a forced `os.utime` keeps size and
+    # mtime, but a replace changes the inode and any write moves ctime, which utime cannot set.
+    key = (str(path), int(st.st_size), int(st.st_mtime_ns), int(st.st_ino), int(st.st_ctime_ns))
     hit = _PARSE_CACHE.get(key)
     if hit is not None:
         return hit
@@ -1543,17 +1611,29 @@ def _sample_tree(pid: int) -> dict[str, Any] | None:
     cpu: dict[int, float] = {}
     io: dict[int, float] = {}
     rss = 0.0
+    io_ok = True
     for p in procs:
         try:
             t = p.cpu_times()
             cpu[p.pid] = float(t.user) + float(t.system)
+        except psutil.AccessDenied:
+            # ONE UNREADABLE PROCESS MAKES THE WHOLE TREE UNMEASURED (audit of be522dd44): an
+            # idle readable parent over a denied busy grandchild read as measured idle and was
+            # killed. A tree is idle only when every process in it was seen to be idle.
+            return None
+        except psutil.Error:
+            continue                    # exited between enumeration and the read: not in it
         except Exception:
-            continue
+            return None
         with contextlib.suppress(Exception):
             rss += float(p.memory_info().rss)
-        with contextlib.suppress(Exception):
+        try:
             c = p.io_counters()
             io[p.pid] = float(getattr(c, "read_bytes", 0)) + float(getattr(c, "write_bytes", 0))
+        except psutil.AccessDenied:
+            return None                 # denied I/O is as unmeasured as denied CPU
+        except Exception:
+            io_ok = False               # not exposed here (or it exited): CPU only
     if not cpu:
         # NOTHING COULD BE READ (AccessDenied on every process, audit of 7cf2ece90): that is
         # UNMEASURED, never "measured idle" -- an empty CPU map once killed a child busy at one
@@ -1561,7 +1641,7 @@ def _sample_tree(pid: int) -> dict[str, Any] | None:
         return None
     out: dict[str, Any] = {"cpu": cpu, "rss_mb": round(rss / (1024.0 * 1024.0), 1),
                            "procs": len(cpu)}
-    if io and len(io) == len(cpu):     # I/O only when every CPU-read process gave it
+    if io_ok and io and len(io) == len(cpu):   # I/O only when every process gave it
         out["io"] = io
     return out
 
