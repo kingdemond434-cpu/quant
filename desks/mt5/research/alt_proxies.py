@@ -5360,6 +5360,25 @@ def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, A
     return out
 
 
+def _entsoe_pass(paths: Paths, state: dict[str, Any], now: datetime, *, fetch: bool,
+                 fixtures: Path | None, deadline: float, dry_run: bool,
+                 donate: bool) -> dict[str, Any]:
+    """REGISTERED PRODUCER: ENTSO-E load and generation per type (`research/entsoe_power.py`),
+    run on this leg's clock with its own share of the budget (at most BUDGET_S, never past
+    `deadline`). One producer's exception is recorded (scrubbed by the producer's own errors;
+    an unexpected one carries only its type) and never costs this leg its other sources."""
+    from research import entsoe_power
+    own = min(deadline, time.monotonic() + entsoe_power.BUDGET_S)
+    try:
+        return entsoe_power.run_pass(sys.modules[__name__], paths, state, now, fetch=fetch,
+                                     fixtures=fixtures, deadline=own, dry_run=dry_run,
+                                     donate=donate)
+    except Exception as exc:
+        return {"id": entsoe_power.SOURCE_ID, "outcome": "FAILED:EXCEPTION",
+                "why": f"{type(exc).__name__} in entsoe_power.run_pass (message withheld: it "
+                       "may carry request state)"}
+
+
 def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = True,
         fixtures: Path | None = None, dry_run: bool = False, donate: bool = True,
         now: datetime | None = None) -> dict[str, Any]:
@@ -5443,6 +5462,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }
+    report["entsoe_power"] = _entsoe_pass(paths, state, now, fetch=fetch, fixtures=fixtures,
+                                          deadline=deadline + budget_s * 0.2,
+                                          dry_run=dry_run, donate=donate)
     state["last_run"] = report["at"]
     if not dry_run:
         _atomic(paths.state, state)
