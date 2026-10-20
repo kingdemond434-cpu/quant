@@ -448,3 +448,43 @@ def test_the_authority_heal_never_undoes_the_holdback(desk: Path,
     assert "external.OLD" in doc["pending_rejudge"]
     assert "external.GONE" in doc["retired_certificates"]
     assert doc["revocation"], "the revocation history survives the heal"
+
+
+# ------------------------------------- LAWS 7 declarations of the lockbox acts (lockbox v3.1)
+# libs/ops/reference_freshness.DESTRUCTIVE_PATHS declares these three acts `positive`; the tests
+# pin the claim each note makes, so a change that starts removing on an absence fails here.
+
+def test_restamp_holdback_moves_nothing_on_an_absent_report_or_basis() -> None:
+    merged = {"a": {"gates": {}}, "b": {"gates": {}}}
+    pending, moved = cp.restamp_holdback(dict(merged), {}, {}, set(), {"no": "basis"}, "t")
+    assert (pending, moved) == ({}, [])
+    pending, moved = cp.restamp_holdback(dict(merged), {}, {}, set(), None, "t")
+    assert (pending, moved) == ({}, [])
+
+
+def test_restamp_holdback_moves_never_drops_and_keeps_the_wait() -> None:
+    merged = {"a": {"gates": {}}, "b": {"gates": {}}}
+    seal = {"pending_rejudge": {"a": {"pending_since": "2026-10-01"}, "c": {"x": 1}}}
+    report = {"pending_rejudge": {"a": {}}}
+    pending, moved = cp.restamp_holdback(merged, seal, report, set(), None, "now")
+    assert moved == ["a"] and set(merged) == {"b"}
+    assert pending["a"]["pending_since"] == "2026-10-01" and "c" in pending
+    # a key the judge republished leaves pending only because it is back in `merged`
+    merged2 = {"c": {"gates": {}}}
+    pending2, _ = cp.restamp_holdback(merged2, seal, {}, {"c"}, None, "now")
+    assert "c" not in pending2 and "c" in merged2
+
+
+def test_merge_heal_removes_no_record() -> None:
+    import importlib.util
+    root = Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location(
+        "check_authority_ratchet", root / "scripts" / "check_authority_ratchet.py")
+    assert spec and spec.loader
+    ar = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ar)
+    canon = {"survivors": {"a": {}}, "pending_rejudge": {"p": {"r": 1}}, "extra": 1}
+    auth = {"survivors": {"a": {}, "p": {}, "s": {}}, "retired_certificates": {}}
+    out = ar.merge_heal(auth, canon)
+    assert set(out["survivors"]) == {"a", "s"} and out["pending_rejudge"] == {"p": {"r": 1}}
+    assert out["extra"] == 1 and "retired_certificates" not in out   # empty block: no row in it
