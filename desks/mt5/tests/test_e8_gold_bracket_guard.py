@@ -567,7 +567,8 @@ def test_a_target_past_the_profit_cap_headroom_is_shrunk_to_fit(
     cap = e8_guard.START_BALANCE * e8_guard.DAILY_PROFIT_CAP
     assert cut["profit_cap_headroom_usd"] == pytest.approx(cap - 1500.0)
     assert cut["reason"] == g.PROFIT_CAP_REASON and "daily profit cap" in cut["why"]
-    assert cut["missed_growth_risk_usd"] == pytest.approx(33.5 * 100 * (0.15 - 0.07))
+    # Withheld against the window's certified risk (0.5% of 101,500), not the quantised lot's.
+    assert cut["missed_growth_risk_usd"] == pytest.approx(101_500 * g.RISK_FRAC - 33.5 * 100 * 0.07)
     assert g.leg_target_profit(h._MT5 and {"price": 4310.0, "tp": 4377.0}, 0.07, 100.0) <= 500.0
     (row,) = [r for r in _journal(tmp_path) if r.get("rail") == g.PROFIT_CAP_RAIL]
     assert row["status"] == "RAIL_SHRUNK"
