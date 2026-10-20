@@ -192,7 +192,8 @@ def urllib_getter(ua: str) -> Getter:
         except urllib.error.HTTPError as exc:
             # Every response header and the error body go back, so the hard stop sees
             # Retry-After and a WAF challenge (cf-mitigated / challenge page) on a refusal.
-            hdrs = {str(k): str(v) for k, v in exc.headers.items()} if exc.headers is not None else {}
+            hdrs = ({str(k): str(v) for k, v in exc.headers.items()}
+                    if exc.headers is not None else {})
             try:
                 err_body = exc.read(64 * 1024)
             except OSError:
