@@ -204,12 +204,22 @@ class _Venue:
         return 901
 
 
+def _flat_fusion_terminal() -> Any:
+    from types import SimpleNamespace
+    return SimpleNamespace(
+        account_info=lambda: SimpleNamespace(login=1, server="FusionMarkets-Live", trade_mode=2),
+        positions_get=lambda *a, **k: (), orders_get=lambda *a, **k: ())
+
+
 def _retry(venue: _Venue, st: dict, *, hour: float = 8.0, **kw: Any) -> dict:
     from datetime import UTC, datetime
     doc: dict = {"actions": []}
     args = {"open_orders": list(venue.book), "orders_ok": True, "filled": {},
             "xau_positions": [], "positions_ok": True, "stood_down": False, "armed": True,
-            "hist_rows": [], "history_ok": True, "instrument_id": IID, **kw}
+            "hist_rows": [], "history_ok": True, "instrument_id": IID,
+            # A FLAT Fusion terminal: the retry is cross-account fenced (audit round 2) and
+            # fails closed without one; the fence itself is pinned in test_fusion_minlot_book.
+            "mt5": _flat_fusion_terminal(), **kw}
     g._retry_failed_legs(venue, st, doc, hour=hour, now=datetime.now(UTC), **args)
     return doc
 
