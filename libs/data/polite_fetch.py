@@ -457,6 +457,33 @@ def hold_site(url: str, status: int | str, cause: str = "",
     return (access if access is not None else default_access()).block(url, status, cause=cause)
 
 
+def adopt_release(url: str, by: Any, released_at: Any,
+                  access: HostAccess | None = None) -> bool:
+    """A PERSON'S release recorded in another person-held register (research/hard_stop's, for
+    the same site) releases this record's hold on `url`'s site too -- but only a hold placed AT
+    OR BEFORE that release: a refusal after it is a new hold the release never covered. Nothing
+    is released without a named person; no timestamp alone releases anything. True if released."""
+    who = str(by or "").strip()
+    try:
+        at = float(released_at)
+    except (TypeError, ValueError):
+        return False
+    if not who:
+        return False
+    acc = access if access is not None else default_access()
+    site = site_of(hostname_of(url))
+    with acc._lock:
+        row = acc.blocked.get(site)
+        if not person_held(row) or _held_at(row) > at:
+            return False
+    release(f"site:{site}", who, path=acc.path or ACCESS_STATE)
+    with acc._lock:
+        cur = acc.blocked.get(site)
+        if isinstance(cur, dict) and not cur.get("released_by"):
+            acc.blocked[site] = {**cur, "released_by": who, "released_at": time.time()}
+    return True
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     """Redirects surface as HTTPError, so the fetcher checks each target BEFORE following it.
 

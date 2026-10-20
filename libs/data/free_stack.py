@@ -1060,9 +1060,9 @@ def parse_trends_multiline(raw: bytes | None) -> list[tuple[str, float]]:
 
 
 #: THE GTRENDS ROUTE SENDS THE DESK'S ONE DECLARED IDENTITY (audit 0b66b08de MF2):
-#: `polite_fetch.DESK_UA` (byte-identical to `research/hard_stop.DESK_UA`), with its contact
+#: `research/hard_stop.DESK_UA` (byte-identical to `polite_fetch.DESK_UA`), with its contact
 #: path -- the same string the module-wide `UA` above now carries for every source.
-GTRENDS_UA: str = DESK_UA
+GTRENDS_UA: str = _hs.DESK_UA
 GTRENDS_HEADERS: dict[str, str] = {"User-Agent": GTRENDS_UA}
 GTRENDS_HOST = "trends.google.com"
 #: Where a gtrends hold is registered; None = `research/hard_stop.BLOCKED_REGISTER`.
@@ -1100,6 +1100,12 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
     # THE SHARED PERSON-HELD ACCESS RECORD (polite_fetch; audit GD_LANDING_TRAIN_6eb7a91b4): a
     # site any polite fetcher was refused by is held for this route too, until a person releases
     # it (`python -m libs.data.polite_fetch --release site:<site> --by <name>`).
+    # One person's release reaches both records: a hard_stop release of this host (named, at
+    # or after the access hold was placed) releases the polite_fetch hold it covers too.
+    rel = (hs._register(register).get("holds") or {}).get(hs.host_key(GTRENDS_HOST)) or {}
+    if hs._named(rel.get("released_by")):
+        _pf.adopt_release(f"https://{GTRENDS_HOST}/", rel.get("released_by"),
+                          rel.get("released_at"))
     pf_held = _pf.person_hold(f"https://{GTRENDS_HOST}/")
     if held is None and pf_held:
         held = {"key": f"site:{_pf.site_of(GTRENDS_HOST)}", "verdict": pf_held, "status": None,

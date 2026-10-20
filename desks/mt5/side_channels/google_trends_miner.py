@@ -205,6 +205,11 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
     LAST_PASS.clear()
     LAST_PASS.update({"requests": 0, "ok_responses": 0, "block": None, "robots_disallowed": 0})
     held = hard_stop.active_hold(BLOCKED_REGISTER, [hard_stop.host_key(HOST)], prior)
+    # One person's release reaches both records (see free_stack.fetch_gtrends).
+    rel = (hard_stop._register(BLOCKED_REGISTER).get("holds") or {}).get(
+        hard_stop.host_key(HOST)) or {}
+    if hard_stop._named(rel.get("released_by")):
+        _pf.adopt_release(f"https://{HOST}/", rel.get("released_by"), rel.get("released_at"))
     pf_held = _pf.person_hold(f"https://{HOST}/")
     if held is None and pf_held:
         held = {"key": f"site:{_pf.site_of(HOST)}", "verdict": pf_held, "status": None,
