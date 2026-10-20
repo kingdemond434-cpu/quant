@@ -397,7 +397,9 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
                   # allocator book key and the shared order-comment helper.
                   "_sleeve_positions", "_book_key", "order_comment", "_exec_route", "_send_error",
                   # 2026-09-16: the per-symbol same-side cap and its refusal journal
-                  "same_side_count", "journal_refusal"), ns)
+                  "same_side_count", "journal_refusal",
+                  # 2026-10-14: the state-gate read (live parity of the rank span)
+                  "_state_gate_bars"), ns)
 
 
 def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:

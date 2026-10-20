@@ -251,6 +251,47 @@ def derive_all(symbols: list[str] | None = None) -> dict:
     return doc
 
 
+#: Instruments the broker quotes around the clock. The newest bar of one of them is the bar that
+#: is forming NOW, so its stamp is the terminal's own clock at bar resolution.
+FRONTIER_SYMBOLS: tuple[str, ...] = ("BTCUSD", "ETHUSD")
+_FRONTIERS: dict[int, int | None] = {}
+
+
+def _frontier(period: int) -> int | None:
+    """Epoch seconds of the bar forming now at `period`, read from the first FRONTIER_SYMBOLS
+    the terminal answers for (once per run per timeframe), or None when none answers."""
+    if period in _FRONTIERS:
+        return _FRONTIERS[period]
+    stamp: int | None = None
+    for ref in FRONTIER_SYMBOLS:
+        try:
+            mt5.symbol_select(ref, True)
+            rates = mt5.copy_rates_from_pos(ref, period, 0, 1)
+        except Exception:
+            rates = None
+        if rates is not None and len(rates):
+            stamp = int(rates[-1]["time"])
+            break
+    _FRONTIERS[period] = stamp
+    return stamp
+
+
+def drop_forming(new: pd.DataFrame, frontier: int | None) -> pd.DataFrame:
+    """Drop the bars that are still forming, and only those.
+
+    THE NEWEST ROW IS NOT ALWAYS FORMING. This always dropped it, so a market that had closed
+    (a weekend, a session break) lost its final, already-closed bar from the store until it
+    reopened -- and every panel read across that close saw a different panel from the replay
+    (audit of #403: a panel state gate read the wrong panel on 746 of 763 weekend hours).
+    A bar stamped before the bar forming NOW on a round-the-clock instrument has closed, so
+    those are kept. With no frontier (no round-the-clock quote answered) the newest row is
+    dropped as before: unable to tell, the store waits a bar rather than holding a forming one.
+    """
+    if frontier is None:
+        return new.iloc[:-1]
+    return new[new.index < pd.Timestamp(int(frontier), unit="s", tz="UTC")]
+
+
 def refresh_symbol(sym: str, tf: str = "H1") -> str:
     """Refresh one (symbol, timeframe) parquet.
 
@@ -309,8 +350,7 @@ def refresh_symbol(sym: str, tf: str = "H1") -> str:
     new = pd.DataFrame(rates)
     new["time"] = pd.to_datetime(new["time"], unit="s", utc=True)
     new = new.set_index("time").sort_index()
-    # drop the still-forming bar
-    new = new.iloc[:-1]
+    new = drop_forming(new, _frontier(period))
     new = new[["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]]
     # A TZ-NAIVE CACHE FILE WOULD BE CORRUPTED BY THIS CONCAT, NOT MERELY REFUSED. Joining a
     # naive DatetimeIndex to an aware one yields an object-dtype index, and `to_parquet` would
@@ -385,6 +425,7 @@ def main() -> int:
     # The timeframe now comes from the FILENAME rather than a constant, so adding a symbol at a
     # new timeframe makes it eligible immediately, with nothing here to edit. A file whose suffix
     # this desk does not recognise is REPORTED, never skipped in silence.
+    _FRONTIERS.clear()
     results = []
     broker_info: dict[str, dict] = {}
     priority = _forward_priority()

@@ -1612,18 +1612,45 @@ def same_side_count(symbol: str, side: int, positions: object,
     return n
 
 
+#: (sleeve, stage, bar) already journalled by this process: a gate that refuses the same bar on
+#: every pass writes ONE line for it, not one per pass.
+_REFUSED_BARS: set[tuple[str, str, str]] = set()
+
+
 def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
-                    lot: float | None = None, price: float | None = None) -> None:
+                    lot: float | None = None, price: float | None = None, *,
+                    bar: object = None, signal_due: bool | None = None) -> None:
     """Every order the desk declines to send is written down, so `missed_growth` can price the
-    refusal instead of the refusal disappearing into a log line. Never raises."""
+    refusal instead of the refusal disappearing into a log line. Never raises.
+
+    `bar` is the decision bar the refusal is for; a refusal repeated on the same bar is written
+    once. `signal_due` says whether a signal was actually due on it: True where the refusal
+    stopped a signal, None where the gate refused before the family ran (no signal is known,
+    so `missed_growth` counts the bar and prices nothing for it)."""
+    key = (sleeve, stage, str(bar)) if bar is not None else None
+    if key is not None and key in _REFUSED_BARS:
+        return
     try:
         REFUSALS.parent.mkdir(parents=True, exist_ok=True)
         with REFUSALS.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps({"time": now(), "sleeve": sleeve, "symbol": symbol,
                                  "side": "buy" if side > 0 else "sell", "stage": stage,
-                                 "why": why, "lot": lot, "price": price}) + "\n")
+                                 "why": why, "lot": lot, "price": price,
+                                 "bar": None if bar is None else str(bar),
+                                 "signal_due": signal_due}) + "\n")
+        if key is not None:
+            _REFUSED_BARS.add(key)
     except Exception:
         pass
+
+
+def _decision_bar(rates: object) -> object:
+    """The closed bar a pass decides on (the second-to-last bar of `rates`), as the frame stamps
+    it, or None when there is none. Used to key refusals made before the frame is built."""
+    try:
+        return h1_frame(rates).index[-2]
+    except Exception:
+        return None
 
 
 #: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
@@ -2665,9 +2692,93 @@ def _family_chart(s: dict) -> tuple[str, object, int]:
     attr = _FAMILY_TF_ATTR.get(tf)
     if attr is None or not hasattr(mt5, attr):
         return tf, None, 0                       # caller refuses the row by name; never guesses
+    is_gate, need, _why = _state_gate_bars(s)
+    if is_gate and need is not None and tf == "H1":
+        return tf, getattr(mt5, attr), need
     minutes = _FAMILY_H1_BARS * 60                    # the market time an H1 read has always seen
     bars = int(min(_FAMILY_MAX_BARS, round(minutes / _BAR_MINUTES.get(tf, 60))))
     return tf, getattr(mt5, attr), max(bars, 60)
+
+
+def _state_gate_bars(s: dict) -> tuple[bool, int | None, str]:
+    """(is a state gate, the H1 read its certificate needs, why it cannot be traded).
+
+    A state gate ranks its state against the states at the base's earlier signals over the
+    trailing `family_state_gates.RANK_SPAN_DAYS`, and each of those states needs its own
+    lookback; 400 bars holds neither, so the gate computed on it would not be the gate that was
+    certified. `live_h1_bars` derives the read from the SAME params the family is called with
+    (`_resolved_family_params`: a lossy row is read off its certificate, audit of #403
+    must-fix 3), and `live_refusal` names a base whose live read is not measured. The caller
+    refuses by name on a refusal or when the terminal returns fewer bars than the read.
+    """
+    try:
+        from mt5desk.family_state_gates import STATE_GATE_FAMILIES, live_h1_bars, live_refusal
+    except Exception as exc:
+        fam = str(s.get("family") or "")
+        if fam.endswith("_gated"):
+            return True, None, f"state gate registry unavailable ({type(exc).__name__}: {exc})"
+        return False, None, ""
+    fam = str(s.get("family") or "")
+    if fam not in STATE_GATE_FAMILIES:
+        return False, None, ""
+    params, why = _resolved_family_params(s, fam)
+    if params is None:
+        return True, None, why
+    refusal = live_refusal(fam, params)
+    if refusal:
+        return True, None, refusal
+    return True, live_h1_bars(fam, params), ""
+
+
+#: Terminal bars read per panel member to find its last bar at or before the decision bar: ten
+#: days of H1, so a member closed over a weekend or a long holiday is still found.
+PANEL_LAG_LOOKBACK = 240
+
+
+def _panel_store_lag(s: dict, decision_ns: int) -> str | None:
+    """For a PANEL state gate deciding on the bar stamped `decision_ns`: why the bar store the
+    panel is read from does not hold, for some member, the bar the replay would read at that
+    instant -- or None when every member's last stored bar at or before the decision bar is the
+    terminal's own.
+
+    The replay reads every member's bar at t; live, a store that has not ingested it hands the
+    gate an older panel under the certified name. The reference is the bar the LIVE READ uses,
+    the member's latest bar at or before the decision bar, never the member's own second-to-last
+    bar: `refresh_tail` drops each file's newest row, so a member whose market has closed (a
+    weekend, a session break) lacks its final, already-closed bar, and comparing with the
+    member's [-2] passed that read on 746 of 763 weekend readings (audit of #403 at 5341bfe53,
+    must-fix 1). Every bar stamped at or before the decision bar is closed, because the
+    decision bar is itself closed. Both stamps are the terminal's epoch. A member the terminal
+    cannot read, and an empty panel, are named, never assumed current."""
+    try:
+        from mt5desk import family_state_gates as fsg
+    except Exception as exc:
+        return f"state gate registry unavailable ({type(exc).__name__}: {exc})"
+    fam = str(s.get("family") or "")
+    if fam not in fsg.PANEL_WRAPPERS:
+        return None
+    panel = fsg.load_panel() if fam == "sync_gated" else fsg.load_absorption_panel()
+    if not panel:
+        return "panel bar store UNMEASURED: the panel holds no members"
+    behind: list[str] = []
+    for sym, (stamps, _closes) in sorted(panel.items()):
+        rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, PANEL_LAG_LOOKBACK)
+        if rates is None or len(rates) == 0:
+            behind.append(f"{sym}(terminal unreadable)")
+            continue
+        term = [int(t) * 10**9 for t in rates["time"] if int(t) * 10**9 <= decision_ns]
+        if not term:
+            behind.append(f"{sym}(no terminal bar at or before the decision bar)")
+            continue
+        want = max(term)
+        held = [int(x) for x in stamps if int(x) <= decision_ns]
+        last = max(held) if held else 0
+        if last < want:
+            behind.append(f"{sym}({(want - last) // (3600 * 10**9)}h)")
+    if behind:
+        return (f"panel bar store behind the terminal on {len(behind)} of {len(panel)} members: "
+                + ", ".join(behind[:8]))
+    return None
 
 
 def _family_constructor(family: str) -> tuple[object | None, str | None]:
@@ -2976,6 +3087,31 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     caller refuses the row by name. An empty dict is a valid answer -- a price-only family needs
     nothing beyond bars -- and is not a gap.
     """
+    params, why = _resolved_family_params(s, family)
+    if params is None:
+        return None, why
+    try:
+        from mt5desk.family_inputs import resolve, runtime_call_params
+    except Exception as exc:
+        return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
+    try:
+        call_params = runtime_call_params(family, params)
+        # `session` is not a family keyword, but family_call.signals consumes it to apply the
+        # exact session filter used by the gauntlet. Stripping it here made Asia/London/NY
+        # certificates execute the unrestricted signal stream on Fusion.
+        extra, why = resolve(str(s["symbol"]), family, params, bars)
+    except Exception as exc:
+        return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
+    if extra is None:
+        return None, why
+    call_params.update(extra)
+    return call_params, ""
+
+
+def _resolved_family_params(s: dict, family: str) -> tuple[dict | None, str]:
+    """The params a family sleeve's certificate is executed at, or (None, reason): the row's own
+    when they are the certified ones, else the certificate's recovered ones. One resolution for
+    the call and for the read a state gate is sized from, so the two can never disagree."""
     # An explicit empty mapping is the COMPLETE default parameterisation for a price-only
     # family.  Absence/None means the registry lost the parameters and must reconstruct them;
     # treating both shapes as falsy made valid `{}` rows enter certificate recovery and refuse.
@@ -3000,22 +3136,7 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
         recovered, _why = _params_from_certificate(s)
         if recovered is not None:
             params = dict(recovered)
-    try:
-        from mt5desk.family_inputs import resolve, runtime_call_params
-    except Exception as exc:
-        return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
-    try:
-        call_params = runtime_call_params(family, params)
-        # `session` is not a family keyword, but family_call.signals consumes it to apply the
-        # exact session filter used by the gauntlet. Stripping it here made Asia/London/NY
-        # certificates execute the unrestricted signal stream on Fusion.
-        extra, why = resolve(str(s["symbol"]), family, params, bars)
-    except Exception as exc:
-        return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
-    if extra is None:
-        return None, why
-    call_params.update(extra)
-    return call_params, ""
+    return params, ""
 
 
 def resolve_family_order(st: dict, s: dict, equity: float,
@@ -3064,6 +3185,20 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     h1 = mt5.copy_rates_from_pos(s["symbol"], tf_const, 0, n_bars)
     if h1 is None or len(h1) < 60:
         return {"ok": False, "stage": "no_bars", "why": f"{tf} bars unavailable; skipped"}
+    is_gate, gate_need, gate_why = _state_gate_bars(s)
+    if is_gate and gate_need is None:
+        _why = f"refused: {gate_why or 'state gate read unavailable'}"
+        journal_refusal(name, s["symbol"], side, "not_live_reproducible", _why,
+                        bar=_decision_bar(h1))
+        return {"ok": False, "stage": "not_live_reproducible", "sep": " ", "why": _why}
+    if is_gate and gate_need is not None and len(h1) < gate_need:
+        # REFUSED BY NAME, never computed on a shorter history: the gate ranks against the
+        # trailing rank span, and fewer bars rank against a different history than certified.
+        _why = (f"refused: state gate needs {gate_need} {tf} bars, the terminal returned "
+                f"{len(h1)} (raise Max bars in chart)")
+        journal_refusal(name, s["symbol"], side, "short_history", _why, bar=_decision_bar(h1))
+        return {"ok": False, "stage": "short_history", "sep": " ", "why": _why}
+
     # `frame` KEEPS THE FORMING BAR; `closed` drops it. Both are needed and they are not
     # interchangeable: every decision below is made on CLOSED data only, but the family's own
     # loop bound is `len(d) - 1`, so it can only emit on `last_bar` if one more bar exists after
@@ -3101,6 +3236,15 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                            f"`side` -- refusing to trade it LONG"}
     if last_bar is None:
         return {"ok": False, "stage": "no_signal_bar", "why": "no signal bar due on these bars"}
+    if is_gate:
+        # Checked only for a bar not yet considered, so a quiet pass costs no terminal reads.
+        lag = _panel_store_lag(s, int(pd.Timestamp(last_bar).value))
+        if lag:
+            # PRICED, NEVER SILENT: the panel store refreshes hourly, so a new panel-gate bar can
+            # wait on it, and `missed_growth` reads this journal to put a number on the wait.
+            journal_refusal(name, s["symbol"], side, "panel_store_lag", f"refused: {lag}",
+                            bar=last_bar)
+            return {"ok": False, "stage": "panel_store_lag", "sep": " ", "why": f"refused: {lag}"}
     # SINGLE-POSITION DISCIPLINE, BECAUSE THAT IS WHAT THE CERTIFICATE WAS EARNED UNDER.
     #
     # `engine.py` replays every cell with an explicit rule -- `last_exit_idx = -1  # single-
@@ -3207,7 +3351,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                     "why": "spread crosses the certified target; awaiting an eligible quote"}
         # The replay's trade already ended at its stop or its target; opening one now is a
         # trade the certificate never made. Journaled so `missed_growth` prices the refusal.
-        journal_refusal(name, s["symbol"], side, "stale_signal", _drift_note)
+        journal_refusal(name, s["symbol"], side, "stale_signal", _drift_note,
+                        bar=last_bar, signal_due=True)
         return {"ok": False, "stage": "stale_signal", "considered": True, "sep": " ",
                 "mark": True, "last_bar": last_bar, "why": f"refused: {_drift_note}"}
     if _verdict == "re_anchored":
@@ -3242,7 +3387,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     if _same >= MAX_SAME_SIDE_PER_SYMBOL:
         _why = (f"{_same} {'long' if side > 0 else 'short'} position(s) already on {s['symbol']} "
                 f"across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL}): one bet is not taken again")
-        journal_refusal(name, s["symbol"], side, "symbol_side_cap", _why)
+        journal_refusal(name, s["symbol"], side, "symbol_side_cap", _why, signal_due=True)
         # The bar is MARKED: the copy is refused for this bar, not retried every minute (which
         # would journal one refusal per sleeve per pass); a slot that frees is taken next bar.
         return {"ok": False, "stage": "symbol_side_cap", "considered": True, "sep": " ",
@@ -3896,7 +4041,8 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     if _same >= MAX_SAME_SIDE_PER_SYMBOL:
         _why = (f"{_same} {'long' if int(plan.side) > 0 else 'short'} position(s) already on "
                 f"{s['symbol']} across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL})")
-        journal_refusal(s["name"], s["symbol"], int(plan.side), "symbol_side_cap", _why)
+        journal_refusal(s["name"], s["symbol"], int(plan.side), "symbol_side_cap", _why,
+                        signal_due=True)
         return {"ok": False, "stage": "symbol_side_cap", "forming": forming, "mark": True,
                 "why": _why}
     try:
