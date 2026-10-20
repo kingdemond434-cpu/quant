@@ -4815,8 +4815,16 @@ def collect_power(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
                 cursors[zone] = since.isoformat()
     out["caught_up"] = done
     if not out["parsed"]:
-        return fail("EMPTY: the API answered with no complete delivery day" if out["fetched"]
-                    else "BUDGET: no request completed inside the budget")
+        n404 = len(out.get("unmeasured_windows", []))
+        if out["fetched"]:
+            return fail("EMPTY: the API answered with no complete delivery day")
+        if n404 and n404 == out["requests"]:
+            # Every request the pass made was answered 404: the source was reached and had
+            # no data for any window asked. That is not a budget cut (the old label), and it is
+            # not a zero: each window is recorded UNMEASURED above.
+            cut = "" if all(done.values()) else "; budget cut before every zone caught up"
+            return fail(f"ALL_WINDOWS_404: {n404} window(s), every one HTTP 404{cut}")
+        return fail("BUDGET: no request completed inside the budget")
     if not all(done.values()):
         # NEVER OK ON A PARTIAL READ: the rows read stand (each stamped at its own fetch), the
         # cursors resume next pass, and the pass says it was cut.

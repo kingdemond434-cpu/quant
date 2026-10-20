@@ -348,3 +348,23 @@ def test_a_404_window_is_unmeasured_and_the_cursor_moves_past_it(tmp_path: Path)
     assert win["zone"] == "DE-LU" and win["status"] == "UNMEASURED"
     assert win["from"] == since.isoformat() and sst["power_unmeasured"] == [win]
     assert rec["caught_up"] == {"DE-LU": True, "FR": True} and rec["outcome"] == "OK"
+
+
+def test_a_pass_where_every_window_is_404_says_so_never_budget(tmp_path: Path) -> None:
+    g = Getter(_http(404), [_http(404), _http(404)])
+    rec, store, sst = _run(g, tmp_path, _caught_up_sst())
+    assert rec["status"].startswith("FAILED:ALL_WINDOWS_404")
+    assert "BUDGET" not in rec["status"]
+    assert len(rec["unmeasured_windows"]) == 2 == len(g.data_urls)
+    assert all(w["status"] == "UNMEASURED" for w in sst["power_unmeasured"])
+    assert not store.get("points")                          # nothing invented for a 404
+
+
+def test_a_404_then_a_budget_cut_names_both(tmp_path: Path) -> None:
+    g = Getter(_http(404), [_http(404)])
+    rec = A.collect_power(A.Paths(tmp_path / "desk"), POWER, _caught_up_sst(), {}, NOW,
+                          fetch=True, fixtures=None, deadline=float("-inf"), getter=g,
+                          sleep=lambda _s: None, clock=lambda: NOW)
+    assert len(g.data_urls) == 1                            # the second zone was cut
+    assert rec["status"].startswith("FAILED:ALL_WINDOWS_404")
+    assert rec["status"].endswith("budget cut before every zone caught up")
