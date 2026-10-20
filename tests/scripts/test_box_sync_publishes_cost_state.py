@@ -242,3 +242,61 @@ def test_nothing_listed_on_the_wire_trips_the_fence_except_the_known_stale_copy(
     hits = sorted(rel for rel in listed if (ROOT / rel).is_file()
                   and lf.findings(rel, (ROOT / rel).read_bytes()))
     assert set(hits) <= {"desks/mt5/data/cost_truth_quotes.json"}, hits
+
+
+# DECLARED ACCOUNT NUMBERS, DIGIT-BOUNDED (audit addendum to v4, 2026-10-20). `\b` treats `_` and
+# letters as word characters, so `acc_<ID>` and `x<ID>` slipped past a word-boundary match.
+_ID = "55512340"   # synthetic declared number
+_IDS = frozenset({_ID})
+
+
+@pytest.mark.parametrize("text", [f"refused for {_ID}.", f"acc_{_ID}", f"x{_ID}",
+                                  f'{{"note": "acct {_ID}"}}', f"{_ID}"],
+                         ids=["prose-period", "underscore", "letter-prefix", "in-a-string", "bare"])
+def test_a_declared_number_is_refused_between_any_non_digits(text: str) -> None:
+    got = lf.findings("desks/mt5/data/x.json", text.encode(), _IDS)
+    assert [h["key"] for h in got] == [lf.ID_FINDING]
+    assert _ID not in json.dumps(got), "a finding must never carry the number"
+
+
+@pytest.mark.parametrize("text", [f"9{_ID}7", f"{_ID}1", f"1{_ID}"],
+                         ids=["inside", "suffix-digit", "prefix-digit"])
+def test_a_longer_number_that_only_contains_the_id_is_not_it(text: str) -> None:
+    assert lf.findings("desks/mt5/data/x.json", text.encode(), _IDS) == []
+
+
+def test_the_declared_numbers_come_from_the_env_and_the_box_declarations(tmp_path: Path) -> None:
+    assert lf.declared_ids(tmp_path, {}) == frozenset()       # none declared is not an error
+    assert lf.declared_ids(tmp_path, {lf.ID_ENV: f"12, {_ID} x"}) == _IDS
+    decl = tmp_path / lf.DECLARATIONS_REL
+    decl.parent.mkdir(parents=True)
+    decl.write_text(json.dumps({f"{_ID}@FusionMarkets-Live": "LIVE"}), "utf-8")
+    assert lf.declared_ids(tmp_path, {}) == _IDS
+
+
+def test_an_unreadable_declarations_file_fails_the_whole_publish_closed(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import io
+    decl = tmp_path / lf.DECLARATIONS_REL
+    decl.parent.mkdir(parents=True)
+    decl.write_text("{torn", "utf-8")
+    monkeypatch.setattr("sys.stdin", io.StringIO(f"{'0' * 40}\tdesks/mt5/data/a.json\n"))
+    assert lf.main(["--repo", str(tmp_path), "--artifact", str(tmp_path / "F.json")]) == 2
+    assert capsys.readouterr().out == "", "nothing may be listed as publishable"
+
+
+def test_the_cli_refuses_a_declared_number_and_never_writes_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import io
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    blob = _git(tmp_path, "hash-object", "-w", "--stdin", data=f"refused for {_ID}.".encode())
+    monkeypatch.setenv(lf.ID_ENV, _ID)
+    monkeypatch.setattr(lf, "record_alert", lambda doc, root=None: "OPEN")
+    monkeypatch.setattr("sys.stdin", io.StringIO(f"{blob}\tdesks/mt5/reports/X.json\n"))
+    art = tmp_path / "F.json"
+    assert lf.main(["--repo", str(tmp_path), "--artifact", str(art)]) == 0
+    out = capsys.readouterr().out
+    assert out.split() == ["desks/mt5/reports/X.json"]
+    assert _ID not in art.read_text("utf-8") and _ID not in out

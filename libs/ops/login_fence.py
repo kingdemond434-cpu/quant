@@ -80,6 +80,52 @@ _PAIR = re.compile(
     r"""(?P<val>"[^"\n]{0,40}"|'[^'\n]{0,40}'|-?\d[\d.]*)""")
 _UESC = re.compile(r"\\u([0-9a-fA-F]{4})")
 
+#: THE DECLARED ACCOUNT NUMBERS, matched ANYWHERE (audit addendum to v4, 2026-10-20). The key/value
+#: rules above only see a login sitting under a login-shaped key; "refused for <ID>.", "acc_<ID>"
+#: and "x<ID>" name the account with no key at all. So each number the box declares is also
+#: matched on its own, with DIGIT boundaries `(?<!\d)ID(?!\d)` -- never `\b`, which treats `_` and
+#: letters as word characters and so misses `acc_<ID>` and `x<ID>`. A longer number that merely
+#: contains the ID (`1<ID>2`) is a different number and does not match.
+#: Sources, all box-local and never committed: the env var below (comma/space separated) and the
+#: login half of every "<login>@<server>" key in desks/mt5/data/ACCOUNT_PROFILES.json (the
+#: declarations account_profile.py reads). No declared number is not an error; a declarations
+#: file that exists and cannot be read IS one, and the CLI then exits 2 so the publisher
+#: publishes nothing (it fails closed).
+ID_ENV = "QUANT_FENCE_ACCOUNT_IDS"
+DECLARATIONS_REL = "desks/mt5/data/ACCOUNT_PROFILES.json"
+ID_FINDING = "<declared account number>"
+
+
+class FenceConfigError(RuntimeError):
+    """The box declares account numbers the fence could not read: refuse, never guess."""
+
+
+def declared_ids(root: Path, env: dict[str, str] | None = None) -> frozenset[str]:
+    """Every account number the box declares, as digit strings (4-12 digits)."""
+    import os
+    env = dict(os.environ) if env is None else env
+    raw = re.split(r"[,\s]+", env.get(ID_ENV, "").strip())
+    path = Path(root) / DECLARATIONS_REL
+    if path.exists():
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8-sig"))
+            if not isinstance(doc, dict):
+                raise ValueError("not an object")
+            raw += [str(k).split("@", 1)[0] for k in doc]
+        except (OSError, ValueError) as exc:
+            raise FenceConfigError(f"{DECLARATIONS_REL} unreadable ({type(exc).__name__})") from exc
+    return frozenset(x.strip() for x in raw if _ACCOUNT_SHAPED.fullmatch(x.strip()))
+
+
+def _id_hits(text: str, ids: frozenset[str]) -> list[int]:
+    """Line numbers where a declared number stands alone between non-digits (raw or decoded)."""
+    lines: set[int] = set()
+    for body in (text, _decoded(text)):
+        for n in ids:
+            for m in re.finditer(r"(?<!\d)" + re.escape(n) + r"(?!\d)", body):
+                lines.add(body.count("\n", 0, m.start()) + 1)
+    return sorted(lines)
+
 
 def _norm(key: str) -> str:
     return re.sub(r"[^a-z0-9]", "", key.lower())
@@ -127,20 +173,23 @@ def _csv_hits(text: str, sep: str) -> list[str]:
                    if i < len(r) and _account_shaped(r[i])})
 
 
-def findings(rel: str, data: bytes) -> list[dict[str, Any]]:
-    """Why `rel` must not publish, as {key, line} rows -- never the value. [] = publishable."""
+def findings(rel: str, data: bytes, ids: frozenset[str] = frozenset()) -> list[dict[str, Any]]:
+    """Why `rel` must not publish, as {key, line} rows -- never the value. [] = publishable.
+    `ids` are the declared account numbers (see `declared_ids`), matched with digit boundaries."""
     suffix = Path(rel).suffix.lower()
     if suffix in BINARY_EXEMPT:
         return []
-    text = data.decode("utf-8", errors="replace").lstrip("﻿")
-    if suffix in (".csv", ".tsv"):
-        return [{"key": k, "line": 1} for k in _csv_hits(text, "\t" if suffix == ".tsv" else ",")]
+    text = data.decode("utf-8", errors="replace").lstrip("\ufeff")
     offset = 0
     if rel in LEGACY_PREFIX:
         lines = text.splitlines(keepends=True)
         start = next((i for i, ln in enumerate(lines) if CUTOVER_MARK in ln), len(lines))
         text, offset = "".join(lines[start:]), start
-    return [{"key": k, "line": line + offset} for k, line in _pairs(text)]
+    if suffix in (".csv", ".tsv"):
+        out = [{"key": k, "line": 1} for k in _csv_hits(text, "\t" if suffix == ".tsv" else ",")]
+    else:
+        out = [{"key": k, "line": line + offset} for k, line in _pairs(text)]
+    return out + [{"key": ID_FINDING, "line": line + offset} for line in _id_hits(text, ids)]
 
 
 def _blobs(repo: Path, ids: list[str]) -> list[bytes | None]:
@@ -163,7 +212,8 @@ def _blobs(repo: Path, ids: list[str]) -> list[bytes | None]:
     return out
 
 
-def judge(repo: Path, entries: list[tuple[str, str]]) -> dict[str, Any]:
+def judge(repo: Path, entries: list[tuple[str, str]],
+          ids: frozenset[str] = frozenset()) -> dict[str, Any]:
     """Judge (blob, rel) pairs. An unreadable blob is refused: this fence fails closed."""
     data = _blobs(repo, [b for b, _ in entries])
     refused: dict[str, list[dict[str, Any]]] = {}
@@ -174,7 +224,7 @@ def judge(repo: Path, entries: list[tuple[str, str]]) -> dict[str, Any]:
             continue
         if rel in LEGACY_PREFIX and CUTOVER_MARK not in raw.decode("utf-8", "replace"):
             legacy.append(rel)
-        got = findings(rel, raw)
+        got = findings(rel, raw, ids)
         if got:
             refused[rel] = got[:20]
     return {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -222,7 +272,14 @@ def main(argv: list[str] | None = None) -> int:
         blob, sep, rel = ln.partition("\t")
         if sep:
             entries.append((blob.strip(), rel.strip().replace("\\", "/")))
-    doc = judge(args.repo, entries)
+    try:
+        ids = declared_ids(args.repo)
+    except FenceConfigError as exc:
+        # FAIL CLOSED: the publisher reads any non-zero exit as "publish nothing this pass".
+        print(f"login fence: {exc}", file=sys.stderr)
+        return 2
+    doc = judge(args.repo, entries, ids)
+    doc["n_declared_ids"] = len(ids)
     doc["alert"] = record_alert(doc, args.repo)
     out = args.artifact or (args.repo / "desks" / "mt5" / "reports" / "LOGIN_FENCE.json")
     out.parent.mkdir(parents=True, exist_ok=True)
