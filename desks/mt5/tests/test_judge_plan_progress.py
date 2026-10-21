@@ -425,3 +425,39 @@ def test_the_pool_gives_an_unreadable_chart_the_loops_own_verdict(uni, monkeypat
     assert kept == [] and blocked[0]["why"] == got["why"]
     monkeypatch.setattr(eg, "build_cell", lambda *a: (_ for _ in ()).throw(KeyError("bug")))
     assert eg._warm_one(_specs()[0], {})["status"] == "ERROR"   # unchanged for a defect
+
+
+# ------------------------------- next seal rotation v2.2: transient faults and an absent chart
+#: v2.2 (audit of 25d1fd22): a timeout or a dropped connection is a passing fault, never data,
+#: and a chart gone since the plan read it is INPUT_MISSING, never re-read into UNREADABLE_CHART.
+unreadable_v22 = pytest.mark.skipif(
+    not hasattr(eg, "_unreadable_why")
+    or "pq.exists()" not in __import__("inspect").getsource(eg._unreadable_why),
+    reason="judge_plan_phase next-rotation v2.2 patch not applied")
+
+
+@unreadable_v22
+@pytest.mark.parametrize("fault", [TimeoutError("share timed out"),
+                                   ConnectionError("mount dropped"),
+                                   ConnectionResetError(104, "reset")])
+def test_a_transient_fault_is_never_filed_as_data(uni, monkeypatch, fault) -> None:
+    assert not eg._unreadable_chart(fault)
+
+    def build(sym, family, params, meta):
+        raise fault
+
+    monkeypatch.setattr(eg, "build_cell", build)
+    with pytest.raises(type(fault)):
+        _build(_specs())
+    assert eg._warm_one(_specs()[0], {})["status"] == "ERROR", "transient: not terminal"
+
+
+@unreadable_v22
+def test_a_chart_gone_since_the_plan_is_input_missing_not_unreadable(uni, monkeypatch) -> None:
+    (uni / "OK_M5.parquet").unlink()
+    why = eg._unreadable_why("OK", "M5", OSError("torn read"))
+    assert why.startswith("INPUT_MISSING: the M5 chart OK_M5.parquet is absent"), why
+    monkeypatch.setattr(eg, "build_cell",
+                        lambda *a: (_ for _ in ()).throw(OSError("torn read")))
+    _out, blocked = _build(_specs()[1:])
+    assert blocked[0]["why"].startswith("INPUT_MISSING: the M5 chart")

@@ -1375,3 +1375,21 @@ def test_the_billed_keys_outlive_the_missed_growth_window():
         runner.record_stall(f"filler_{i}", detail="x")
     assert not _resume_lines()
     assert runner.record_resume_delay(runner.STALL_RC, ended="late") is None
+
+
+# ------------------------------------- a malformed keys field (v2.2 should-fix)
+@pytest.mark.parametrize("bad", ["123@x", {"123@x": 1}, 7, None])
+def test_a_non_list_keys_field_is_read_as_none_and_never_carried(bad):
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 100.0)
+    _resume_record()
+    doc = {"billed_resume_keys": bad, "plan_resume": "not a map"}
+    runner.STALL.write_text(json.dumps(doc), encoding="utf-8")
+    assert runner._billed_keys(doc) == []
+    runner.record_stall("filler", detail="x")
+    after = _stall()
+    assert "billed_resume_keys" not in after, "a malformed value is not written forward"
+    assert "plan_resume" not in after
+    line = runner.record_resume_delay(runner.STALL_RC)
+    assert line is not None
+    keys = _stall()["billed_resume_keys"]
+    assert isinstance(keys, list) and keys == [line["resume_key"]]

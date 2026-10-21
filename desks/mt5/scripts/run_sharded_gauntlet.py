@@ -659,7 +659,14 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
     # WHAT A STALL RECORD MUST NOT DROP (audit HOLD of 9c0976b76): this doc is rebuilt from `row`,
     # and it used to drop the last resume line and so the only record that a resume had been
     # billed. The next end path then billed the same resume again.
-    carried = {k: prev[k] for k in ("plan_resume", "billed_resume_keys") if k in prev}
+    # A MALFORMED VALUE IS NOT CARRIED (v2.2 should-fix): a non-list keys field, or a non-map
+    # resume line, would otherwise be written forward on every stall record for ever.
+    carried: dict[str, Any] = {}
+    if isinstance(prev.get("plan_resume"), dict):
+        carried["plan_resume"] = prev["plan_resume"]
+    keys = _billed_keys(prev)
+    if keys:
+        carried["billed_resume_keys"] = keys
     doc = {**row, **carried, **_lock_stamp(prev), "consecutive": consecutive, "history": history,
            "missed_growth": mg,
            "last_clear_utc": prev.get("last_clear_utc"),
@@ -669,6 +676,13 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
     with contextlib.suppress(Exception):
         print(f"{datetime.now(UTC).isoformat()} GAUNTLET STALL: {reason} -- {detail}", flush=True)
     return doc
+
+
+def _billed_keys(prev: dict[str, Any]) -> list[str]:
+    """The durable billed-resume keys, or [] when the field is absent or not a list (a string
+    would otherwise be iterated character by character, a map by its keys)."""
+    raw = prev.get("billed_resume_keys")
+    return [str(k) for k in raw] if isinstance(raw, list) else []
 
 
 def _resume_delay_line(doc: dict[str, Any], sweep_s: float | None, *,
@@ -758,7 +772,7 @@ def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
     # BILLED ONCE, BY THE DURABLE RECORD (audit HOLD of 9c0976b76): the keys list, every line in
     # the missed-growth history, and the last resume line. Reading only the last one double-billed
     # whenever a stall record was written between two end paths.
-    billed = {str(k) for k in (prev.get("billed_resume_keys") or [])}
+    billed = set(_billed_keys(prev))
     billed |= {str(m.get("resume_key")) for m in (prev.get("missed_growth") or [])
                if isinstance(m, dict) and m.get("resume_key")}
     last = prev.get("plan_resume")
@@ -771,7 +785,7 @@ def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
     line = {**_resume_delay_line(doc, sweep_s, plan_kept=rc != 0),
             "resume_key": key, "ended": ended, "rc": rc}
     mg = [*(prev.get("missed_growth") or []), line][-MISSED_GROWTH_HISTORY:]
-    keys = [*(prev.get("billed_resume_keys") or []), key][-BILLED_RESUME_HISTORY:]
+    keys = [*_billed_keys(prev), key][-BILLED_RESUME_HISTORY:]
     _write_json_atomic(STALL, {**prev, **_lock_stamp(prev), "missed_growth": mg,
                                "plan_resume": line, "billed_resume_keys": keys})
     with contextlib.suppress(Exception):
