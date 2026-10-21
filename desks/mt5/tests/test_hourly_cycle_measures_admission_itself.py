@@ -135,6 +135,8 @@ def test_a_stale_scan_is_heavy_before_the_roster_is_even_read(tmp_path: Path) ->
 
 def test_the_roster_leg_uses_the_chooser() -> None:
     src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
-    assert '"research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour()' in src
+    # decided before the leg so the heavy pass-start stamp knows the mode (2026-10-21)
+    assert "_pa_mode = _allocator_mode_for_the_hour()" in src
+    assert '"research/pf_allocator.py", "--mode", _pa_mode' in src
     # the executable call that pinned the mode is gone; the docstring that quotes it may stay
     assert '"research/pf_allocator.py", "--mode", "normal"))' not in src
