@@ -117,14 +117,9 @@ def test_the_supervisor_shares_the_cadence_and_defers_to_a_fresh_scan(tmp_path: 
     assert not rs._scan_is_fresh(NOW.timestamp(), tmp_path / "missing.json")
 
 
-def test_the_cadence_is_billed_on_the_missed_growth_ledger(tmp_path: Path, monkeypatch) -> None:
-    sys.path.insert(0, str(HERE.parents[2]))
+def test_the_cadence_is_billed_as_a_published_line(tmp_path: Path, monkeypatch) -> None:
     from research import missed_growth as mg
 
-    from libs.portfolio.rails import rail
-
-    r = rail("admission_scan_cadence")
-    assert r.measure in mg.MEASURES
     sleeves = tmp_path / "sleeves.json"
     sleeves.write_text(json.dumps({"sleeves": [{"name": "a", "status": "LIVE"},
                                                {"name": "b", "status": "STANDBY"}]}), "utf-8")
@@ -132,7 +127,48 @@ def test_the_cadence_is_billed_on_the_missed_growth_ledger(tmp_path: Path, monke
     alloc = {"admission": {"status": "MEASURED", "admitted": ["a", "b"],
                            "candidates": {"a": {"delta_elogw_per_day": 0.002},
                                           "b": {"delta_elogw_per_day": 0.0024}}}}
-    m = mg.measure_admission_cadence(r, alloc, {})
-    assert m["sample"] and m["waiting"] == ["b"]
-    assert m["value_logw_per_day"] == round(-0.0024 * mg.ADMISSION_CADENCE_EXTRA_DELAY_H / 24, 10)
-    assert mg.measure_admission_cadence(r, {}, {})["verdict"] == mg.UNMEASURED
+    m = mg.admission_cadence_line(alloc)
+    assert m["verdict"] == mg.COSTS and m["waiting"] == ["b"]
+    # billed at 2.1/6.1 of the waiting candidates' growth for as long as they wait, which
+    # integrates to sum(delta) x 2.1 h per promotion
+    assert m["value_logw_per_day"] == round(-0.0024 * 2.1 / 6.1, 12)
+    assert mg.admission_cadence_line({})["verdict"] == mg.UNMEASURED
+    sleeves.write_text("{torn", "utf-8")
+    assert mg.admission_cadence_line(alloc)["verdict"] == mg.UNMEASURED
+
+
+def test_the_line_rides_missed_growth_and_the_sealed_register_is_untouched() -> None:
+    from libs.portfolio.rails import RAILS
+
+    src = (HERE.parent / "research" / "missed_growth.py").read_text("utf-8")
+    assert '"admission_scan_cadence": admission_cadence_line(alloc)' in src
+    assert "admission_scan_cadence" not in {r.name for r in RAILS}
+
+
+def test_a_future_or_post_scan_start_stamp_is_ignored(tmp_path: Path) -> None:
+    art = _art(tmp_path, timedelta(hours=5))
+    scan = json.loads(art.read_text("utf-8"))["admission"]["measured_utc"]
+    hp = tmp_path / "admission_heavy_pass.json"
+    for start in (NOW + timedelta(days=365), NOW - timedelta(hours=1)):
+        hp.write_text(json.dumps({"pass_started_utc": start.isoformat(),
+                                  "measured_utc": scan}), "utf-8")
+        assert hourly_cycle._allocator_mode_for_the_hour(art, NOW, heavy_pass=hp) == "heavy"
+
+
+def test_a_fresh_scan_does_not_make_the_supervisor_spin_normal(tmp_path: Path,
+                                                                monkeypatch) -> None:
+    import research_supervisor as rs
+
+    monkeypatch.setattr(rs, "BASE", tmp_path)
+    monkeypatch.setattr(rs, "is_running", lambda match: False)
+    monkeypatch.setattr(rs, "_scan_is_fresh", lambda now, art=None: True)
+    (tmp_path / "data").mkdir()
+    cad = next(p for p in rs.PERIODIC if p["name"] == "pf_allocator")["cadence_s"]
+    state: dict = {}
+    launched: list[str] = []
+    t0 = 1_000_000.0
+    for i in range(3 * 3600 // 5):                       # 3 h of 5 s ticks, heavy overdue
+        launched += rs.tick_periodic(state, t0 + 5.0 * i, lambda name, args: 1)
+    normals = sum(x.endswith(":normal") for x in launched)
+    assert "pf_allocator:heavy" not in launched
+    assert normals <= 3 * 3600 // cad["normal"] + 1

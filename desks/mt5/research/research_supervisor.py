@@ -145,7 +145,8 @@ PERIODIC = [
      # staleness, not a promise about runtime.
      #
      # Only the FAST leg moves. Normal still rebuilds evidence every 15 min and heavy still
-     # resamples the world population and re-measures the growth curve (every 4 h), because those are
+     # resamples the world population and re-measures the growth curve (every 4 h), because
+     # those are
      # the expensive passes and running them every minute would starve the gauntlet and the
      # brain seats that share this box. Fast re-solves on the CACHED worlds, which is what makes
      # a one-minute cadence affordable at all.
@@ -183,6 +184,8 @@ def _scan_is_fresh(now: float, art: Path | None = None) -> bool:
 def _allocator_mode(state: dict, now: float, cadence: dict[str, int]) -> str | None:
     """The most overdue mode, heaviest first; None when nothing is due yet."""
     for mode in ("heavy", "normal", "fast"):
+        if mode not in cadence:                 # a mode left out is not due (see tick_periodic)
+            continue
         last = float((state.get(f"pf_allocator_{mode}") or {}).get("last_spawn", 0) or 0)
         if now - last >= cadence[mode]:
             return mode
@@ -200,7 +203,11 @@ def tick_periodic(state: dict, now: float, spawn) -> list[str]:
             continue
         mode = _allocator_mode(state, now, p["cadence_s"])
         if mode == "heavy" and p["name"] == "pf_allocator" and _scan_is_fresh(now):
-            mode = "normal"                   # another scheduler measured inside the window
+            # Another scheduler measured inside the window: heavy is not due, and the lighter
+            # modes keep their OWN cadences (a bare downgrade to normal relaunched normal on
+            # every tick while heavy stayed overdue -- 360 spawns in 3 h, audit v2).
+            mode = _allocator_mode(state, now, {k: v for k, v in p["cadence_s"].items()
+                                                if k != "heavy"})
         # ONLY WHERE THE CLOCK SAID NO. An interrupt can make the allocator run sooner; it can
         # never make it run less, never reach the expensive normal or heavy legs, and never get
         # past the `is_running` guard above. One request serves exactly once.

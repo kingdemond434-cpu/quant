@@ -745,11 +745,15 @@ def heal_clocks() -> dict:
 #: THE TRUE BOUND, stated rather than claimed away: heavy runs on the FIRST pass that starts at
 #: least ADMISSION_SCAN_MAX_AGE_S after the last successful heavy pass started. The gap between
 #: heavy scans is therefore in [3.5 h, 3.5 h + one pass interval): 4 h on the hourly clock, up to
-#: ~6.5 h when a resident loop runs 3 h passes. A failed or killed heavy leg writes no stamp, so
+#: ~6.5 h when a resident loop runs 3 h passes. AND ROTATION STRETCHES IT FURTHER: a pass that
+#: rotates the pf_allocator leg out runs no heavy, so the next chance is a pass later -- audit v2
+#: simulated 8-12.5 h with the leg rotated out 30% of the time. Each rotated-out pass adds one
+#: pass interval to that gap. A failed or killed heavy leg writes no stamp, so
 #: the next pass is heavy again. A scan with no matching stamp (written by another scheduler, or
 #: before this change) falls back to its own `measured_utc`. A missing/unmeasured scan or an
 #: unpriced rostered sleeve still forces heavy at once. The promotion delay this adds is billed
-#: as rail `admission_scan_cadence` (libs/portfolio/rails.py, research/missed_growth.py).
+#: as the published line `admission_scan_cadence` in research/missed_growth.py (the rail
+#: register libs/portfolio/rails.py is sealed).
 ADMISSION_SCAN_HEAVY_CADENCE_S = 4 * 3600.0
 ADMISSION_SCAN_MAX_AGE_S = ADMISSION_SCAN_HEAVY_CADENCE_S - 1800.0
 ADMISSION_HEAVY_PASS = BASE / "reports" / "admission_heavy_pass.json"
@@ -918,7 +922,12 @@ def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None,
         hp = json.loads((heavy_pass or ADMISSION_HEAVY_PASS).read_text("utf-8"))
         if isinstance(hp, dict) and str(hp.get("measured_utc") or "") == _scan_stamp(adm):
             st = datetime.fromisoformat(str(hp.get("pass_started_utc")).replace("Z", "+00:00"))
-            ts = st if st.tzinfo else st.replace(tzinfo=UTC)
+            st = st if st.tzinfo else st.replace(tzinfo=UTC)
+            # A pass cannot start after the scan it produced, nor in the future: such a stamp
+            # (a clock stepped back, a hand edit) would suppress heavy, so it is ignored and the
+            # scan's own stamp decides.
+            if st <= ts and st <= (now or _pass_started()):
+                ts = st
     except (OSError, ValueError, TypeError, AttributeError):
         pass
     return ((now or _pass_started()) - ts).total_seconds()
