@@ -47,8 +47,10 @@ snapshots, 2026-10-14..10-21), and the evidence is beside each constant below:
   inputs_unmeasured  ANY incident above has read UNMEASURED (`open: None`) for at least
                      UNMEASURED_SHARE of its readings over a full window of UNMEASURED_PAGE_MIN
                      (UNMEASURED_BOUND_MIN overrides it per incident). A window share, not a
-                     streak, so an input torn on five reads of six still pages. UNMEASURED is a
-                     verdict here, and a verdict that persists pages.
+                     streak, so an input torn on five reads of six still pages. When runs are
+                     spaced so the window holds one reading, that reading and the one before it
+                     must both be UNMEASURED: two in a row page whatever the spacing. UNMEASURED
+                     is a verdict here, and a verdict that persists pages.
   host_unreadable    libs.ops.host_identity raised. The pager fails TOWARD paging: it treats the
                      host as the box, writes its artifact and pages this incident with the rest.
 
