@@ -225,7 +225,7 @@ def _install_provenance(d: Path, monkeypatch: Any) -> None:
 
 
 @pytest.fixture(autouse=True)
-def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch, _account_key_in_tmp):
+def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
     """THE CROSS-ACCOUNT FENCE'S (AND THE RAILS LEDGER'S) FILES NEVER LAND IN THE REPO FROM A
     TEST, AND EVERY TEST STARTS IN A READABLE WORLD. `mt5desk.cross_account` keeps both
     accounts' books and the placement lock under `data/xacct/`; here that directory is a fresh
