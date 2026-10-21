@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
@@ -103,13 +104,42 @@ def _age_h(stamp: object, now: datetime) -> float | None:
     return max(0.0, (now.timestamp() - at.timestamp()) / 3600.0)
 
 
+#: THE PORTABLE HALF NEVER JUDGES BOX STATE (2026-10-20, auditor ruling 2026-10-14 route 2,
+#: ordered by the principal). `run_law_gate.py --laws-only` -- the pre-push hook and CI -- sets
+#: QUANT_LAWGATE_SOURCE_VIEW=1 on every fence it runs. JUDGE_COVERAGE.json is PUBLISHED TO ORIGIN
+#: by the box (sync_shadow_to_git.ps1), so every checkout carries a copy, and this fence judged
+#: that copy whenever it was under STALE_H old: a coverage red on the box wedged every push from
+#: every laptop, including the push that would heal it -- against the gate's own rule that host
+#: state is "STATE, never --laws-only". In a source view the report is therefore NOT READ and the
+#: verdict is UNMEASURED with that reason printed. Nothing about the judgement itself changes:
+#: `--require-state` (the box's _STATE_FENCES entry) and every run without the source-view flag
+#: (the box rotation `run_law_gate.py --rotate`, the full gate, a direct call) judge exactly as
+#: before, with the same thresholds, ratchets, tolerance and STALE_H.
+SOURCE_VIEW_ENV = "QUANT_LAWGATE_SOURCE_VIEW"
+BOX_STATE_ELSEWHERE = ("box state: judged by the box-side state fence (run_law_gate.py "
+                       "_STATE_FENCES, check_judge_coverage.py --require-state), not here -- an "
+                       "isolated source checkout does not run the producer of JUDGE_COVERAGE.json, "
+                       "and a copy published to origin is not a local runtime receipt")
+
+
+def _source_view(require_state: bool) -> bool:
+    """True only for the portable law battery; --require-state always binds."""
+    return os.environ.get(SOURCE_VIEW_ENV) == "1" and not require_state
+
+
 def judge(report: Path | None = None, *, require_state: bool = False,
           now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     path = report or REPORT
-    doc = _read(path)
     out: dict[str, Any] = {"at": at.isoformat(timespec="seconds"), "rule": RULE,
                            "report": str(path), "checks": []}
+    if _source_view(require_state):
+        out["verdict"] = "UNMEASURED"
+        out["why"] = BOX_STATE_ELSEWHERE
+        out["checks"].append({"metric": "box_state", "state": "UNMEASURED",
+                              "why": f"{SOURCE_VIEW_ENV}=1: {path.name} not read"})
+        return out
+    doc = _read(path)
     if not isinstance(doc, dict) or not doc.get("families"):
         out["verdict"] = "FAIL" if require_state else "UNMEASURED"
         out["why"] = (f"{path.name} is absent or carries no family table"
@@ -436,13 +466,15 @@ def main(argv: list[str] | None = None) -> int:
     else:
         for line in render(doc):
             print(line)
-    if args.audit:
+    # The audit is the box's record of its own verdict; a source view writes none over it.
+    if args.audit and not _source_view(bool(args.require_state)):
         with suppress(OSError):
             _write(Path(args.audit), doc)
     return _exit(doc["verdict"])
 
 
-__all__ = ["RATCHET", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
+__all__ = ["BOX_STATE_ELSEWHERE", "RATCHET", "REPORT", "RULE", "SOURCE_VIEW_ENV", "STALE_H",
+           "WINDOW_SLACK", "judge", "main", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
