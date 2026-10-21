@@ -627,6 +627,10 @@ $relPaths = @(
     # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it
     # counted stayed on the box, so no reader on this branch could say WHICH eleven.
     "desks/mt5/reports/process_health.json",
+    # IS THE BOX BACKED UP, AND WAS A RESTORE EVER REHEARSED (v5f). ops/backup_state.py, on
+    # MT5-ProcessHealth's hourly clock: last backup, last restore drill, the restic job state and
+    # the key backup's present/size/match. Scheme only: no path, repository, password or hash.
+    "desks/mt5/reports/BACKUP_STATE.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two

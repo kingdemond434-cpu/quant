@@ -796,6 +796,25 @@ def retry_scheduler(for_at: str = "") -> dict[str, Any]:
     return outcome
 
 
+def _backup_state() -> str:
+    """Publish BACKUP_STATE.json (ops/backup_state.py) on this hourly task's clock (v5f).
+
+    Only against the real tree: a caller that moved ROOT (a test's temp box) gets nothing, so a
+    test can never write the real report or reach the real alert channels. NEVER RAISES."""
+    if Path(__file__).resolve().parent.parent != ROOT:
+        return "SKIPPED (ROOT is not this checkout)"
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "backup_state", Path(__file__).resolve().parent / "backup_state.py")
+        assert spec is not None and spec.loader is not None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return str(mod.write()["status"])
+    except Exception as exc:
+        return f"FAILED ({type(exc).__name__})"
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if "--retry-scheduler" in args:
@@ -831,6 +850,7 @@ def main(argv: list[str] | None = None) -> int:
             age = "" if r["artifact_age_min"] is None else f"{r['artifact_age_min']:.0f}m"
             print(f"  {r['verdict']:<14} {r['name']:<32} {age:>7}  {r['why'][:70]}")
     print(f"-> {OUT}")
+    print(f"backup state: {_backup_state()}")
     return 0
 
 
