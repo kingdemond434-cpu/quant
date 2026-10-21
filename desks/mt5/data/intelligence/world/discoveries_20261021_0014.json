@@ -1,0 +1,1852 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Science Archives - AlgoTrading101 Wiki",
+  "url": "https://algotrading101.com/wiki/data-science-resources/",
+  "published": "2026-10-21T00:12:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f0ba9b865cf7ad9e1768",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs US Dollar (AUDUSD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/AUDUSD/",
+  "published": "2026-10-21T00:12:19+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2d1ff703f91077f30a8d",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "10 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "540871e6143f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Swiss Franc (CADCHF) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/CADCHF/",
+  "published": "2026-10-21T00:12:20+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "eabee5933a405a6b3f4d",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Japanese Yen (CADJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/CADJPY/",
+  "published": "2026-10-21T00:12:22+00:00",
+  "symbols": [
+   "CADJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5287c562b8e6f65ce103",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "10 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "540871e6143f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swiss Franc vs Japanese Yen (CHFJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/CHFJPY/",
+  "published": "2026-10-21T00:12:24+00:00",
+  "symbols": [
+   "CHFJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c205b5a67ef137cb1e52",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "10 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "540871e6143f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPAUD/",
+  "published": "2026-10-21T00:12:26+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "52795e6876cb7b7630ef",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPCAD/",
+  "published": "2026-10-21T00:12:28+00:00",
+  "symbols": [
+   "GBPCAD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e3c95923f2f69d70bcb7",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "20 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7ffead9246f1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPCHF/",
+  "published": "2026-10-21T00:12:30+00:00",
+  "symbols": [
+   "GBPCHF",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "eb321314fca3f83fe9aa",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "70 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cf1d7fb95463"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e27\u0e25\u0e32\u0e17\u0e33\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e02\u0e2d\u0e07\u0e15\u0e25\u0e32\u0e14 2026 - \u0e40\u0e27\u0e25\u0e32\u0e40\u0e1b\u0e34\u0e14\u0e1b\u0e34\u0e14\u0e15\u0e32\u0e21\u0e20\u0e39\u0e21\u0e34\u0e20\u0e32\u0e04 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/info/forex-trading-hours/",
+  "published": "2026-10-21T00:12:31+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURJPY",
+   "EURUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "850e3ef625a391cb2589",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1b\u0e0f\u0e34\u0e17\u0e34\u0e19\u0e40\u0e28\u0e23\u0e29\u0e10\u0e01\u0e34\u0e08 2026: \u0e02\u0e48\u0e32\u0e27\u0e41\u0e25\u0e30\u0e40\u0e2b\u0e15\u0e38\u0e01\u0e32\u0e23\u0e13\u0e4c\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/analytics/economic-calendar/",
+  "published": "2026-10-21T00:12:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "700ac97199b3aefaac7d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e04\u0e33\u0e16\u0e32\u0e21\u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22 | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/",
+  "published": "2026-10-21T00:12:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c2c62d590d2c065f23f0",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21\u0e1e\u0e31\u0e19\u0e18\u0e21\u0e34\u0e15\u0e23\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 Infinity - RoboForex",
+  "url": "https://th.roboforex.com/partner-program/",
+  "published": "2026-10-21T00:12:37+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "US500",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c4a0ce27b8c55a5ec07e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1e\u0e32\u0e23\u0e4c\u0e17\u0e40\u0e19\u0e2d\u0e23\u0e4c\u0e23\u0e2d\u0e22\u0e31\u0e25\u0e15\u0e35\u0e49 - RoboForex",
+  "url": "https://th.roboforex.com/promo/loyalty-program/",
+  "published": "2026-10-21T00:12:39+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4e05495690079f6e983a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21\u0e1e\u0e32\u0e23\u0e4c\u0e17\u0e40\u0e19\u0e2d\u0e23\u0e4c CopyFX - \u0e23\u0e31\u0e1a\u0e04\u0e48\u0e32\u0e15\u0e2d\u0e1a\u0e41\u0e17\u0e19\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e19\u0e31\u0e01\u0e25\u0e07\u0e17\u0e38\u0e19\u0e17\u0e35\u0e48\u0e04\u0e38\u0e13\u0e0a\u0e27\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/partner-program/copy-trading-partner-program/",
+  "published": "2026-10-21T00:12:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ee9ee4c3ba3421494a69",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1c\u0e39\u0e49\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e17\u0e35\u0e48\u0e40\u0e15\u0e34\u0e1a\u0e42\u0e15\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e23\u0e27\u0e14\u0e40\u0e23\u0e47\u0e27 - RoboForex",
+  "url": "https://th.roboforex.com/about/company/about/",
+  "published": "2026-10-21T00:12:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "dfba273f350b18f40048",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.da.html",
+  "published": "2026-10-21T00:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "62fc9ee7f10b5e3a0d85",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.de.html",
+  "published": "2026-10-21T00:12:46+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "20b11ac399039aa0d241",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.el.html",
+  "published": "2026-10-21T00:12:48+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cc7b98172ef2d5d1dcab",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.es.html",
+  "published": "2026-10-21T00:12:50+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9bc790938c7975fd8dd1",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.et.html",
+  "published": "2026-10-21T00:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a78172c4b3a931cd98a6",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.fi.html",
+  "published": "2026-10-21T00:12:54+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0102c99b78f320813bdc",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.fr.html",
+  "published": "2026-10-21T00:12:56+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "383bad0542f12349b5f8",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ubleu: nueva plataforma de trading fraudulenta (8/9) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6922273-ubleu-nueva-plataforma-trading-fraudulenta?page=8",
+  "published": "2026-10-21T00:12:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "722590c51538681ff5ae",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ubleu: nueva plataforma de trading fraudulenta (9/9) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6922273-ubleu-nueva-plataforma-trading-fraudulenta?page=9",
+  "published": "2026-10-21T00:12:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d0350f586ef245ff0b12",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ubleu: nueva plataforma de trading fraudulenta - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6922273-ubleu-nueva-plataforma-trading-fraudulenta",
+  "published": "2026-10-21T00:13:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2b37b68a1464a2e41dab",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estrategia de carry trading con fondos indexados (1/1) - Rankia",
+  "url": "https://www.rankia.com/foros/fondos-inversion/temas/7087948-estrategia-carry-trading-fondos-indexados?page=1",
+  "published": "2026-10-21T00:13:03+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "carry",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f4c4ba8f83f82d6fd64",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Responder #5 Re: Estrategia de carry trading con fondos indexados Ver mensaje de Segafredo Artsano Seguir 15/12/25 23:11 Tras varias pruebas de momento la estrategia que voy a seguir es la de estar invertido e intentar aportar m\u00e1s en las bajadas en lugar de hacer una transferencia mensual a ciegas.",
+    "lang": "es",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "mensual"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a94537c7a8a8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estrategia de carry trading con fondos indexados - Rankia",
+  "url": "https://www.rankia.com/foros/fondos-inversion/temas/7087948-estrategia-carry-trading-fondos-indexados",
+  "published": "2026-10-21T00:13:05+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "carry",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4776a885ab845311c962",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Responder #5 Re: Estrategia de carry trading con fondos indexados Ver mensaje de Segafredo Artsano Seguir 15/12/25 23:11 Tras varias pruebas de momento la estrategia que voy a seguir es la de estar invertido e intentar aportar m\u00e1s en las bajadas en lugar de hacer una transferencia mensual a ciegas.",
+    "lang": "es",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "mensual"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a94537c7a8a8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Esto funciona? Estrategia Trading view + alertas (1/1) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/7106103-esto-funciona-estrategia-trading-view-alertas?page=1",
+  "published": "2026-10-21T00:13:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42bae77ded204fbf8ca1",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Esto funciona? Estrategia Trading view + alertas - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/7106103-esto-funciona-estrategia-trading-view-alertas",
+  "published": "2026-10-21T00:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "740beb692a1973299345",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u57fa\u91d1\u6570\u636e-\u57fa\u91d1\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u57fa\u91d1\u6570\u636e-\u57fa\u91d1\u884c\u60c5",
+  "published": "2026-10-21T00:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e8fd7dde9171564d0528",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "659837+08:00 \u4f5c\u8005\uff1abigquantdatabuilder1 \u57fa\u91d11\u5206\u949f\u884c\u60c5\uff08\u622a\u9762\uff09(cn_fund_bar1m_c) \u6570\u636e\u63cf\u8ff0\uff1a\u8be5\u8868\u63d0\u4f9b\u4e86\u57fa\u91d1\u5728\u4ea4\u6613\u65e5\u5185\u6bcf\u5206\u949f\u7684\u4ea4\u6613\u6570\u636e\uff0c\u5305\u62ec\u57fa\u91d1\u7684\u4ea4\u6613\u4ee3\u7801\u3001\u7d2f\u79ef\u540e\u590d\u6743\u56e0\u5b50\u3001\u524d\u6536\u76d8\u4ef7\u3001\u5f00\u9ad8\u4f4e\u6536\u3001\u6da8\u505c\u4ef7\u3001\u8dcc\u505c\u4ef7\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u989d\u4ee5\u53ca\u5177\u4f53\u65e5\u671f\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u6536\u76d8",
+     "\u65e5\u5185"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5206\u949f",
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u6da8\u505c"
+     ],
+     "transfer_only": [
+      "\u6da8\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7bc7637697e3"
+   },
+   {
+    "claim": "456999+08:00 \u4f5c\u8005\uff1abigquantdatabuilder1 \u57fa\u91d1\u540e\u590d\u6743\u65e5\u884c\u60c5(cn_fund_bar1d) \u6570\u636e\u63cf\u8ff0\uff1a\u8be5\u8868\u8be6\u7ec6\u8bb0\u5f55\u4e86\u57fa\u91d1\u7684\u540e\u590d\u6743\u65e5\u884c\u60c5\u4fe1\u606f\uff0c\u5305\u62ec\u57fa\u91d1\u7684\u4ea4\u6613\u4ee3\u7801\u3001\u540d\u79f0\u3001\u4ea4\u6613\u65e5\u671f\u3001\u4ef7\u683c\u6ce2\u52a8\uff08\u5f00\u9ad8\u4f4e\u6536\u3001\u524d\u6536\u76d8\u4ef7\u3001\u6da8\u8dcc\u5e45\uff09\u3001\u4ea4\u6613\u91cf\uff08\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u989d\u3001\u6362\u624b\u7387\uff09\u3001\u4ea4\u6613\u7b14\u6570\u4ee5\u53ca\u5e02\u573a\u6781\u7aef\u60c5\u51b5\u4e0b\u7684\u4ef7\u683c\uff08\u8dcc\u505c\u4ef7\u3001\u6da8\u505c\u4ef7\uff09\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7b3ced5f36b3"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u57fa\u91d1\u6570\u636e-\u57fa\u91d1\u4fe1\u606f-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u57fa\u91d1\u6570\u636e-\u57fa\u91d1\u4fe1\u606f",
+  "published": "2026-10-21T00:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d6e5de3af50311e46cc",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53ef\u8f6c\u503a\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53ef\u8f6c\u503a\u6570\u636e",
+  "published": "2026-10-21T00:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc8d6c9dc53f8c66b718",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53ef\u8f6c\u503a\u6570\u636e-\u53ef\u8f6c\u503a\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53ef\u8f6c\u503a\u6570\u636e-\u53ef\u8f6c\u503a\u884c\u60c5",
+  "published": "2026-10-21T00:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "54dbe2d9c5d47af6afe1",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53ef\u8f6c\u503a\u6570\u636e-\u53ef\u8f6c\u503a\u4fe1\u606f-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53ef\u8f6c\u503a\u6570\u636e-\u53ef\u8f6c\u503a\u4fe1\u606f",
+  "published": "2026-10-21T00:13:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f24c2284b1a9bcdfa10a",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a",
+  "published": "2026-10-21T00:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://bigquant.com/data/datasources/cn_macro_export_value_sitc_yearly"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "783588bbe8523eb76ae0",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u751f\u732a-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a-\u751f\u732a",
+  "published": "2026-10-21T00:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ca12ee3b6f1085b5618",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Science Simplified - AlgoTrading101 Wiki",
+  "url": "https://algotrading101.com/wiki/data-science/",
+  "published": "2026-10-21T00:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bea38831b00cfeeb9ae8",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex-Handelskonditionen: Spreads, Swaps und Provisionen | Swissquote",
+  "url": "https://en.swissquote.com/de-ch/private/trade/pricing/forex-cfds/trading-conditions",
+  "published": "2026-10-21T00:13:26+00:00",
+  "symbols": [
+   "AUDUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "EURCHF",
+   "EURGBP",
+   "EURUSD",
+   "GBPUSD",
+   "NAS100",
+   "NZDUSD",
+   "US30",
+   "US500",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "T\u00c4GLICH"
+  ],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.95,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b57593cbebdc68b66c7e",
+  "host": "en.swissquote.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "EODHD Financial Data API",
+  "url": "https://eodhistoricaldata.github.io/EODHD-openapi/redoc.html",
+  "published": "2026-10-21T00:13:35+00:00",
+  "symbols": [
+   "COTTON",
+   "NVIDIA",
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "US30",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COFARA",
+   "WHEAT",
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "15M",
+   "1H",
+   "1M",
+   "30M",
+   "5M",
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "night_session",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://eodhd.com/api/calendar/dividends?filter%5Bsymbol%5D=AAPL.US",
+   "https://eodhd.com/api/mp/unicornbay/options/contracts?sort=-exp_date&filter%5Bunderlying_symbol%5D=AAPL&page%5Boffset%5D=5&page%5Blimit%5D=5",
+   "https://eodhd.com/api/mp/unicornbay/options/eod?sort=-exp_date&filter%5Bcontract%5D=AAPL270115P00450000&page%5Boffset%5D=5&page%5Blimit%5D=5"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d3358412612c8bb71335",
+  "host": "eodhistoricaldata.github.io",
+  "claims": [
+   {
+    "claim": "com/api /eod/{ticker} Response samples 200 Content type application/json Example Full historical data array example Filtered last close price example Full historical data array example Copy Expand all Collapse all [ { \"date\" : \"2022-01-03\" , \"open\" : 177.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "open"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "php",
+      "soybeans",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "nvda"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "30b22fa3dd67"
+   },
+   {
+    "claim": "com/api /eod-bulk-last-day/{exchange} Response samples 200 Content type application/json Example Bulk EOD data example Extended EOD data example Bulk splits data example Bulk dividends data example Bulk EOD data example Copy Expand all Collapse all [ { \"code\" : \"ABIN\" , \"exchange_short_name\" : \"VI\" , \"date\" : \"2024-11-05\" , \"open\" : 54.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "expand",
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "php",
+      "soybeans",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "nvda"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "27f9cb37337f"
+   },
+   {
+    "claim": "com/api /mp/unicornbay/tickdata/ticks Response samples 200 Content type application/json Copy Expand all Collapse all [ { \"timestamp\" : 0 , \"price\" : 0 , \"volume\" : 0 , \"exchange\" : \"string\" , \"conditions\" : \"string\" } ] Retrieve historical tick data Get historical stock tick data for US equities using UNIX time for filtering.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "php",
+      "soybeans",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "nvda"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b2c43587f893"
+   },
+   {
+    "claim": "com/api /commodities/historical/{code} Response samples 200 Content type application/json Copy Expand all Collapse all [ { \"date\" : \"2019-08-24\" , \"open\" : 0 , \"high\" : 0 , \"low\" : 0 , \"close\" : 0 , \"adjusted_close\" : 0 , \"volume\" : 0 } ] Retrieve economic events data Fetches economic events by date range, country, comparison type, and other optional parameters.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "close",
+     "volume",
+     "range"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "php",
+      "soybeans",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "nvda"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "09a3eac47776"
+   },
+   {
+    "claim": "sort=-exp_date&filter[underlying_symbol]=AAPL&page[offset]=5&page[limit]=5 \" } } Get end-of-day options data Returns EOD trades/bid data for options, with the same filter set as contracts.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "php",
+      "soybeans",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "nvda"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7350cead96e6"
+   },
+   {
+    "claim": "com/api /ust/long-term-rates Response samples 200 Content type application/json Copy Expand all Collapse all [ { \"date\" : \"2019-08-24\" , \"lt_composite_gt_10\" : 0 , \"treasury_20_year_cmt\" : 0 , \"extrapolation_factor\" : 0 } ] Get US Treasury real yield curve rates Returns daily US Treasury real yield curve rates (TIPS-derived real yields for 5-year, 7-year, 10-year, 20-year, and 30-year maturities).",
+    "lang": "en",
+    "quantities": [
+     "factor",
+     "yield",
+     "curve"
+    ],
+    "direction": [
+     "long",
+     "expand"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "php",
+      "soybeans",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "nvda"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8923b40de479"
+   },
+   {
+    "claim": "com/api /ust/real-yield-rates Response samples 200 Content type application/json Copy Expand all Collapse all [ { \"date\" : \"2019-08-24\" , \"5_years\" : 0 , \"7_years\" : 0 , \"10_years\" : 0 , \"20_years\" : 0 , \"30_years\" : 0 } ] Get US Treasury yield curve rates Returns daily US Treasury yield curve rates (constant maturity rates for 1-month through 30-year maturities).",
+    "lang": "en",
+    "quantities": [
+     "yield",
+     "curve"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "daily",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "palladium",
+      "copper",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "php",
+      "soybeans",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "nvda"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "abe7743fc2e7"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Documentation | Portfolio Optimizer",
+  "url": "https://docs.portfoliooptimizer.io/",
+  "published": "2026-10-21T00:13:53+00:00",
+  "symbols": [
+   "XTIUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "175a18696f2c4ea9a510",
+  "host": "docs.portfoliooptimizer.io",
+  "claims": [
+   {
+    "claim": "94 for daily observations or a daily forecast horizon and a decay factor $\\lambda$ equals to 0.",
+    "lang": "en",
+    "quantities": [
+     "factor"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "crude",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "78192232d858"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u91cf\u5316\u6392\u884c\u699c",
+  "url": "https://cx.7hcn.com",
+  "published": "2026-10-21T00:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b2e1447b81723f8f3e4",
+  "host": "cx.7hcn.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "brokerize | Die Multi-Brokerage-API",
+  "url": "https://brokerize.com/",
+  "published": "2026-10-21T00:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c5ce67de13353809bb8a",
+  "host": "brokerize.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

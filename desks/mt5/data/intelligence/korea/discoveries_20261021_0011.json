@@ -1,0 +1,9 @@
+[
+  {
+    "source": "korea",
+    "kind": "stub",
+    "needs_selector_work": true,
+    "host": "finance.naver.com/search/search.naver",
+    "why": "fetched OK, content is client-side rendered"
+  }
+]
