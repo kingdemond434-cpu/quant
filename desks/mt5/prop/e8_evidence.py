@@ -139,6 +139,16 @@ R_UNOWNED_POSITION = "unowned_position"
 #: in the intents journal). Declared here ahead of that merge so the fence already classifies it:
 #: a policy answer like one_at_risk, exempt. The window is retried on a later pass.
 R_CROSS_ACCOUNT_OPPOSITE = "cross_account_opposite"
+#: The bracket lane's three sizing rails (`e8_gold`, bracket guard v4: LOT_CEILING_REASON,
+#: DAILY_FLOOR_REASON, PROFIT_CAP_REASON). Each rail SHRINKS the lot to fit; a window it shrank is
+#: PLACED (reason `placed`, the rail named in `why`). Only a lot that would fall under the venue
+#: minimum is refused -- SKIPPED with one of these codes. They are NOT exempt: unlike
+#: R_RISK_BUDGET (the lane's concurrent-risk policy answer) a run of them means the rail is taking
+#: the book to zero day after day, which is exactly what the fence exists to see. Declared ahead
+#: of that merge so the fence already classifies them.
+R_LOT_CEILING = "lot_ceiling"
+R_BRACKET_DAILY_FLOOR = "bracket_daily_floor"
+R_DAILY_PROFIT_CAP = "daily_profit_cap"
 #: The guard's own verdicts, as `guard_<verdict>` (e8_guard.Verdict, lower-cased).
 GUARD_PREFIX = "guard_"
 
