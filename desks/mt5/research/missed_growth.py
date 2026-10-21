@@ -504,6 +504,69 @@ def measure_tier_s_block(r: Any, alloc: dict[str, Any],
             "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
 
 
+def measure_late_release_excluded(r: Any, _alloc: dict[str, Any],
+                                  _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the release-spike clock's PER-RELEASE EXCLUSION costs and buys (dead families v4.4).
+
+    THE RAIL, PRECISELY. `libs/research/bar_clock_release._instrument` excludes a release whose
+    own range peak sits LATER than the winning offset: converted there it would be entered before
+    its news. The excluded instant is named in the season window and `bar_clock.to_bar_time`
+    never converts it, so event_reaction loses that one observation. It replaces the v4.3 rule
+    that refused the WHOLE instrument for one late release.
+
+    BOTH SIDES ARE COUNTED, because the rail is a refusal AND a release from a stricter one:
+
+      * COST (`n_excluded`): release instants never converted -- each named, with the
+        instruments that read it late and the hour it peaked.
+      * GROWTH (`n_admitted`, `instruments_kept`): releases that convert because an instrument
+        carrying an excluded release still resolved, where v4.3 would have refused it outright.
+
+    PRICED ONLY WHEN IT CAN BE. The log-wealth value is (event_reaction's per-event dE[log W] on
+    the excluded instants) minus (the same on the admitted ones), and needs the per-event
+    outcomes of a judged event_reaction cell tagged with the clock status that placed each event
+    (`EXCLUDED_LATE_RELEASE` vs `CONVERTED_RELEASE_SPIKE`). Until that exists the verdict is
+    UNMEASURED with both counts -- an invented number would make a refusal look free. No release
+    excluded is NOT_BINDING: a real zero.
+    """
+    try:
+        from libs.research import bar_clock_release
+        doc = bar_clock_release.reading(ROOT)
+    except Exception as exc:                                            # fail closed, said
+        return {"verdict": UNMEASURED,
+                "why": f"release-spike reading unavailable: {type(exc).__name__}"}
+    seasons = doc.get("per_season") or {}
+    if not seasons:
+        return {"verdict": UNMEASURED,
+                "why": "no release-spike reading on this host (no calendar or no bars)"}
+    named: list[dict[str, Any]] = []
+    admitted: set[str] = set()
+    kept: list[str] = []
+    for season, block in sorted(seasons.items()):
+        if not isinstance(block, dict):
+            continue
+        for sym, rd in sorted((block.get("readings") or {}).items()):
+            if not isinstance(rd, dict):
+                continue
+            for x in rd.get("late_release_excluded") or []:
+                named.append({"season": season, "instrument": sym, **x})
+            if rd.get("late_release_excluded") and rd.get("offset_h") is not None:
+                kept.append(f"{season}:{sym}")
+                admitted.update(rd.get("releases") or [])
+    instants = sorted({x["release"] for x in named})
+    if not named:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "n_excluded": 0, "n_admitted": 0,
+                "why": "no release peaked later than its instrument's winning offset"}
+    return {"verdict": UNMEASURED, "n_excluded": len(instants), "excluded": named,
+            "n_admitted": len(admitted - set(instants)), "instruments_kept": kept,
+            "why": (f"{len(instants)} release instant(s) excluded and never converted; "
+                    f"{len(kept)} instrument(s) still resolved on "
+                    f"{len(admitted - set(instants))} release(s) the v4.3 rule would have "
+                    "refused with them. Pricing needs event_reaction per-event outcomes tagged "
+                    "with the clock status that placed each event, which no judged cell "
+                    "carries yet.")}
+
+
 def _bill_door_error(rows: list[dict[str, Any]], heat_per_sleeve: float) -> dict[str, Any]:
     """THE COST OF FAILING CLOSED, BILLED PER INPUT (gap E, 2026-09-30).
 

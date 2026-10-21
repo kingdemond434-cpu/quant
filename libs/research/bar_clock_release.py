@@ -72,9 +72,29 @@ MIN_INSTRUMENTS = 3
 #: Distinct release instants behind the agreed offset, counted once however many instruments
 #: read them (audit of b9d37faaa: seven USD voters read the same 18 instants).
 MIN_INDEPENDENT_RELEASES = 10
-#: Per-release agreement: the winner's share of releases. Any release whose own peak is LATER
-#: than the winner refuses outright (a look-ahead at any share); an earlier one is placed late.
+#: Per-release agreement: the winner's share of releases. An earlier peak is placed late, which
+#: is safe; a LATER one is excluded (below).
 MIN_RELEASE_SHARE = 0.6
+#: PER-RELEASE EXCLUSION (auditor's ruling on 970d1622c). A release whose own peak is later than
+#: the winning offset is EXCLUDED -- named, billed, and never converted -- and the instrument
+#: still resolves on the rest, unless the late releases are not isolated:
+#:
+#:   * MAX_EXCLUDED_SHARE. At most one late release in five. The floor this module already
+#:     admits a reading on is MIN_EVENTS = 5 releases, and 1 in 5 is the most that floor can lose
+#:     to an isolated late peak while still being a sample at all: a second late release in five
+#:     is 40%, the entire non-winning budget MIN_RELEASE_SHARE = 0.6 tolerates, spent on the one
+#:     direction that is a look-ahead. Above 20% the late peaks are a population, not noise, and
+#:     the offset itself is suspect. (Measured on this tree for what it decides, never fitted to
+#:     it: GBPUSD 1 of 8 and AUDCAD 1 of 6 late, both under it.)
+#:   * A CLUSTER. MIN_CLUSTER or more late releases within BOUNDARY_DAYS of the same daylight-
+#:     saving changeover or season-window edge, or forming an unbroken run at the start or end of
+#:     the instrument's own sample. That is the signature of an offset that changed part-way --
+#:     wrong for a span, not an isolated release -- so the instrument refuses.
+MAX_EXCLUDED_SHARE = 0.2
+MIN_CLUSTER = 2
+#: One calendar week: the weekly release cycle (claims, CPI, payrolls weeks), so consecutive
+#: releases after a changeover land inside it together.
+BOUNDARY_DAYS = 7
 MIN_SPIKE = 2.0
 MIN_MARGIN = 1.5
 
@@ -160,6 +180,52 @@ def _bars(root: Path, symbol: str) -> tuple[str, Any] | None:
     return None
 
 
+def _sunday(year: int, month: int, nth: int) -> Any:
+    """The nth Sunday of a month (nth = -1 for the last)."""
+    from datetime import date, timedelta
+    if nth > 0:
+        first = date(year, month, 1)
+        return first + timedelta(days=(6 - first.weekday()) % 7 + 7 * (nth - 1))
+    nxt = date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)
+    return nxt - timedelta(days=(nxt.weekday() + 1) % 7)
+
+
+def boundaries(year: int) -> list[tuple[Any, str]]:
+    """Every clock boundary of a year: the EU and US daylight-saving changeovers, and the edges
+    of the measured season windows."""
+    from datetime import date
+
+    from libs.research.bar_clock import SEASON_WINDOWS
+    out = [(_sunday(year, 3, -1), "EU spring changeover"), (_sunday(year, 10, -1),
+                                                            "EU autumn changeover"),
+           (_sunday(year, 3, 2), "US spring changeover"), (_sunday(year, 11, 1),
+                                                           "US autumn changeover")]
+    for name, (lo, hi) in SEASON_WINDOWS.items():
+        out += [(date(year, lo // 100, lo % 100), f"{name} window start"),
+                (date(year, hi // 100, hi % 100), f"{name} window end")]
+    return out
+
+
+def _cluster(late: list[Any], every: list[Any]) -> str:
+    """Why the late releases are NOT isolated, or '' when they are."""
+    if len(late) < MIN_CLUSTER:
+        return ""
+    for year in sorted({t.year for t in late} | {t.year + 1 for t in late}
+                       | {t.year - 1 for t in late}):
+        for day, name in boundaries(year):
+            near = [t for t in late if abs((t.date() - day).days) <= BOUNDARY_DAYS]
+            if len(near) >= MIN_CLUSTER:
+                return (f"{len(near)} late releases within {BOUNDARY_DAYS} days of the {name} "
+                        f"({day}): the offset is wrong for that span, not for one release")
+    ordered = sorted(every)
+    lateset, n = set(late), len(late)
+    for edge, run in (("start", ordered[:n]), ("end", ordered[-n:])):
+        if n < len(ordered) and all(t in lateset for t in run):
+            return (f"the {n} late releases are an unbroken run at the {edge} of the sample "
+                    f"({run[0].date()}..{run[-1].date()}): the offset changed part-way")
+    return ""
+
+
 def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any]:
     """The offset at which this instrument's release spike sits, or None when unclear.
 
@@ -169,10 +235,14 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
         the winning offset AND at the runner-up. The largest sample over all candidates let +3
         resolve from 2 releases when 6 of 8 had no bar there.
       * A MIXED HISTORY IS REFUSED, NEVER VOTED. Each release's own peak offset is read; the
-        winner must hold at least MIN_RELEASE_SHARE of the releases, and NO release may peak
-        later than the winner, at any distance: converting it at the winner would enter before
-        its news. Ties read as the later hour. An earlier minority is placed late, which is
-        safe, and is counted as `early_minority`.
+        winner must hold at least MIN_RELEASE_SHARE of the releases. A release that peaks LATER
+        than the winner, at any distance, would be entered before its news if converted at the
+        winner, so it is EXCLUDED: named in `late_release_excluded`, billed on the missed-growth
+        ledger, and never converted (`measure` carries it into the season window, where
+        `bar_clock.to_bar_time` refuses it). The rest convert unchanged. The instrument refuses
+        only when the late releases are not isolated (MAX_EXCLUDED_SHARE, `_cluster`). Ties read
+        as the later hour. An earlier minority is placed late, which is safe, and is counted as
+        `early_minority`.
       * `releases` names the instants that support the answer, so the season can count
         independent release instants rather than instruments that read the same ones.
     """
@@ -220,6 +290,7 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
         got = {k: per_k[k][t] for k in CANDIDATES if t in per_k[k]}
         if got:
             peaks[t] = max(got, key=lambda k: (got[k], k))     # a tie is read as the later hour
+    out["peaks"] = {t.isoformat(): int(k) for t, k in sorted(peaks.items())}
     n_best = sum(1 for k in peaks.values() if k == best_k)
     share = n_best / len(peaks) if peaks else 0.0
     out["release_share_at_offset"] = round(share, 3)
@@ -227,22 +298,31 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
         return {**out, "offset_h": None,
                 "why": (f"mixed history: only {n_best} of {len(peaks)} releases peak at "
                         f"{best_k:+d}h (under {MIN_RELEASE_SHARE:.0%})")}
-    # DIRECTION-AWARE, AND ANY LATE RELEASE REFUSES (audits of 90a7ae175 and 3febc81f6).
-    # Converting with `best_k` places a release whose own peak is LATER -- one hour or several --
-    # on a bar before its spike: an entry before the news, a look-ahead whatever its share (2 of
-    # 11 is still two trades that saw the future). So one late release refuses. A minority whose
-    # peak is EARLIER is placed late, never early: it costs signal, not honesty, and is reported
-    # as `early_minority`.
-    late = {k: sum(1 for p in peaks.values() if p == k) for k in set(peaks.values()) if k > best_k}
+    # DIRECTION-AWARE, PER RELEASE (audits of 90a7ae175, 3febc81f6 and 970d1622c). Converting
+    # with `best_k` places a release whose own peak is LATER -- one hour or several -- on a bar
+    # before its spike: an entry before the news. So that RELEASE is excluded, at any share and
+    # any distance, and never converted; the instrument's other releases are placed exactly as
+    # before. A minority whose peak is EARLIER is placed late, never early: it costs signal, not
+    # honesty, and is reported as `early_minority`.
+    late = sorted((t, k) for t, k in peaks.items() if k > best_k)
     n_early = sum(1 for k in peaks.values() if k < best_k)
     out["early_minority"] = n_early
-    out["late_minority"] = sum(late.values())
+    out["late_minority"] = len(late)
+    out["late_release_excluded"] = [{"release": t.isoformat(), "peak_h": int(k),
+                                     "winning_h": int(best_k)} for t, k in late]
+    excluded_share = len(late) / len(peaks) if peaks else 0.0
+    out["excluded_share"] = round(excluded_share, 3)
     if late:
-        shown = ", ".join(f"{n} at {k:+d}h" for k, n in sorted(late.items()))
-        return {**out, "offset_h": None,
-                "why": (f"mixed history: {shown} peak LATER than the {n_best} at {best_k:+d}h; "
-                        f"converting at {best_k:+d}h would enter them before their news, so "
-                        "any late release refuses, never voted")}
+        shown = ", ".join(f"{t.date()} at {k:+d}h" for t, k in late)
+        if excluded_share > MAX_EXCLUDED_SHARE:
+            return {**out, "offset_h": None,
+                    "why": (f"mixed history: {len(late)} of {len(peaks)} releases peak LATER "
+                            f"than {best_k:+d}h ({shown}), {excluded_share:.0%} over the "
+                            f"{MAX_EXCLUDED_SHARE:.0%} an isolated exclusion may take")}
+        clustered = _cluster([t for t, _k in late], list(peaks))
+        if clustered:
+            return {**out, "offset_h": None,
+                    "why": f"mixed history: late releases cluster ({shown}); {clustered}"}
     support = sorted(t for t, k in peaks.items() if k == best_k)
     return {**out, "offset_h": int(best_k), "releases": [t.isoformat() for t in support]}
 
@@ -266,7 +346,10 @@ def measure(root: Path) -> dict[str, Any]:
             readings[sym] = _instrument(fb, times)
         resolved = {s: r for s, r in readings.items() if r.get("offset_h") is not None}
         offs = {r["offset_h"] for r in resolved.values()}
-        support = sorted({t for r in resolved.values() for t in r.get("releases", [])})
+        excluded = _excluded(readings, next(iter(offs)) if len(offs) == 1 else None)
+        # An excluded instant supports nothing: it is never converted, so it cannot vouch.
+        support = sorted({t for r in resolved.values() for t in r.get("releases", [])}
+                         - {x["release"] for x in excluded})
         non_usd = sorted(s for s in resolved if not _usd_quoted(s))
         why = ""
         if len(offs) > 1:
@@ -285,7 +368,9 @@ def measure(root: Path) -> dict[str, Any]:
             instances = sorted({season_instance(pd_ts(t)) for t in support})
             window = {"instances": instances, "first": support[0], "last": support[-1],
                       "n_releases": len(support), "instruments": sorted(resolved),
-                      "non_usd_instruments": non_usd}
+                      "non_usd_instruments": non_usd,
+                      # NEVER CONVERTED: `bar_clock.to_bar_time` refuses these instants.
+                      "excluded_releases": excluded}
         per_season[season] = {"offset_h": next(iter(offs)) if agrees else None,
                               "agrees_across_pairs": agrees, "instruments_resolved":
                               len(resolved), "independent_releases": len(support),
@@ -295,6 +380,21 @@ def measure(root: Path) -> dict[str, Any]:
                             "the day's range spike only at the broker's true offset; releases are "
                             "UTC-stamped by the calendar with their own offset"),
             "n_releases": len(releases), "per_season": per_season}
+
+
+def _excluded(readings: dict[str, Any], offset: int | None) -> list[dict[str, Any]]:
+    """Every release instant any instrument read as peaking LATER than the season's offset --
+    resolved instrument or not, because the instant is converted for every symbol alike."""
+    if offset is None:
+        return []
+    by: dict[str, dict[str, Any]] = {}
+    for sym, r in sorted(readings.items()):
+        for t, k in (r.get("peaks") or {}).items():
+            if int(k) > offset:
+                row = by.setdefault(t, {"release": t, "peak_h": int(k), "instruments": []})
+                row["peak_h"] = max(row["peak_h"], int(k))
+                row["instruments"].append(sym)
+    return [by[t] for t in sorted(by)]
 
 
 def pd_ts(raw: str) -> Any:

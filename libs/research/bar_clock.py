@@ -64,6 +64,12 @@ SHOULDER = "SHOULDER_MONTH"
 OK = "CONVERTED"
 #: Converted by the release-spike reading, for a caller that opted in. Never returned otherwise.
 OK_RELEASE = "CONVERTED_RELEASE_SPIKE"
+#: A release the release-spike reading EXCLUDED (its own peak is later than the measured offset,
+#: so converting it there would enter before its news). Never converted by that clock.
+EXCLUDED_LATE = "EXCLUDED_LATE_RELEASE"
+#: How close an instant must be to an excluded release to BE it (calendar stamps are to the
+#: minute; one minute either side absorbs a seconds field without reaching the next release).
+EXCLUDE_TOL_S = 60.0
 
 
 def _read(root: Path) -> dict[str, Any]:
@@ -274,6 +280,23 @@ def to_bar_time(when: datetime, root: Path | None = None, *, fallback: bool = Fa
                 f"the release-spike clock was measured on {span} (+/-{RELEASE_MARGIN_DAYS} "
                 f"days); {when.date()} ({inst}) is outside that window, so no offset is "
                 "knowable for it")
+        excluded = win.get("excluded_releases", [])
+        if not isinstance(excluded, list):
+            return None, UNMEASURED, (
+                "the release-spike window's excluded_releases is unreadable, so whether this "
+                "instant is a release it excluded is not knowable")
+        for x in excluded:
+            t = _parse(x.get("release")) if isinstance(x, dict) else None
+            if t is None:
+                return None, UNMEASURED, (
+                    "an excluded release in the release-spike window has no readable instant, "
+                    "so whether this instant is it is not knowable")
+            if abs((t - _aware(when)).total_seconds()) <= EXCLUDE_TOL_S:
+                return None, EXCLUDED_LATE, (
+                    f"release {x.get('release')} peaked at offset {x.get('peak_h')}h on "
+                    f"{', '.join(x.get('instruments') or [])}, later than the "
+                    f"{rel_off[season]:+d}h release-spike offset: converting it there would "
+                    "enter before its news, so it is excluded and never converted by this clock")
         off = rel_off[season]
         return when + timedelta(hours=off), OK_RELEASE, (
             f"release_spike ({span}): shifted {off:+d}h into the bars' own frame ({season})")

@@ -134,12 +134,13 @@ def test_the_fallback_answers_only_near_the_releases_it_was_measured_on(tmp_path
             assert "outside that window" in why and "+/-14 days" in why
 
 
-def test_any_late_release_refuses_at_any_share_and_any_distance(tmp_path):
-    """A release whose own peak is LATER than the winner is entered before its news when
-    converted at the winner -- one of ten, or one three hours out, is still a look-ahead. An
-    EARLIER minority is placed late, never early, and resolves."""
+def test_a_late_release_is_excluded_at_any_distance_and_the_rest_resolve(tmp_path):
+    """A release whose own peak is LATER than the winner would be entered before its news if
+    converted at the winner -- one hour out or three. That RELEASE is excluded and named; the
+    instrument resolves on the rest. Over MAX_EXCLUDED_SHARE (3 of 10) it refuses. An EARLIER
+    minority is placed late, never early, and resolves with nothing excluded."""
     times = _RELEASES[:10]
-    cases = ((1, 4, False), (2, 4, False), (1, 5, False), (1, 6, False),
+    cases = ((1, 4, True), (2, 4, True), (1, 5, True), (1, 6, True), (3, 4, False),
              (2, 2, True), (3, 2, True), (1, 1, True))
     for n_off, minority, resolves in cases:
         root = tmp_path / f"{n_off}_{minority}"
@@ -147,17 +148,25 @@ def test_any_late_release_refuses_at_any_share_and_any_distance(tmp_path):
         _bars(root, "EURUSD", lambda t, o=odd, m=minority: m if t in o else 3, seed=3)
         got = rel._instrument(rel._bars(root, "EURUSD"), list(times))
         assert (got["offset_h"] == 3) is resolves, (n_off, minority, got.get("why"))
+        late = minority > 3
+        named = got["late_release_excluded"]
+        assert [x["release"] for x in named] == ([t.isoformat() for t in sorted(odd)]
+                                                 if late else [])
+        assert all(x["peak_h"] == minority and x["winning_h"] == 3 for x in named)
+        assert got["late_minority"] == (n_off if late else 0)
+        assert got["early_minority"] == (0 if late else n_off)
         if resolves:
-            assert got["early_minority"] == n_off and got["late_minority"] == 0
+            supported = set(got["releases"])
+            assert not supported & {x["release"] for x in named}   # an excluded one never votes
         else:
-            assert "LATER" in got["why"] and got["late_minority"] == n_off
+            assert "over the 20%" in got["why"]
 
 
-def test_a_tie_reads_as_the_later_hour(tmp_path):
-    """An exact tie between the winner and a later hour is read as the later hour, so it
-    refuses; the same history without the tie resolves."""
+def test_a_tie_with_a_later_hour_is_excluded_as_late(tmp_path):
+    """An exact tie between the winner and a later hour is read as the later hour, so that
+    release is EXCLUDED (named, never converted) and the instrument still resolves."""
     times = _RELEASES[:10]
-    for tie, resolves in ((False, True), (True, False)):
+    for tie in (False, True):
         root = tmp_path / str(tie)
         _bars(root, "EURUSD", lambda t: 3, seed=3)
         path = root / Path(*rel.UNIVERSE_REL.split("/")) / "EURUSD_H1.parquet"
@@ -168,7 +177,136 @@ def test_a_tie_reads_as_the_later_hour(tmp_path):
             frame.loc[at3 + pd.Timedelta(hours=1)] = frame.loc[at3].to_numpy()
             frame.to_parquet(path)
         got = rel._instrument(rel._bars(root, "EURUSD"), list(times))
-        assert (got["offset_h"] == 3) is resolves, got.get("why")
+        assert got["offset_h"] == 3, got.get("why")
+        assert got["late_release_excluded"] == ([{"release": times[0].isoformat(), "peak_h": 4,
+                                                  "winning_h": 3}] if tie else [])
+
+
+def _bars_at(root: Path, symbol: str, times, offset_of, seed: int = 0) -> None:
+    """H1 bars spanning `times`, each release's spike on the bar `offset_of(t)` hours ahead."""
+    rng = np.random.default_rng(seed)
+    lo = min(times).tz_convert("UTC").tz_localize(None).floor("D") - pd.Timedelta(days=5)
+    hi = max(times).tz_convert("UTC").tz_localize(None).floor("D") + pd.Timedelta(days=5)
+    idx = pd.date_range(lo, hi, freq="1h")
+    close = 1.0 + np.cumsum(rng.normal(0, 1e-4, len(idx)))
+    width = np.abs(rng.normal(1e-3, 2e-4, len(idx)))
+    frame = pd.DataFrame({"open": close, "high": close + width, "low": close - width,
+                          "close": close}, index=idx)
+    for t in times:
+        label = (t.tz_convert("UTC").tz_localize(None)
+                 + pd.Timedelta(hours=offset_of(t))).floor("1h")
+        frame.loc[label, "high"] = frame.loc[label, "close"] + 0.02
+    base = root / Path(*rel.UNIVERSE_REL.split("/"))
+    base.mkdir(parents=True, exist_ok=True)
+    frame.to_parquet(base / f"{symbol}_H1.parquet")
+
+
+def _late_season(days: tuple[int, ...], month: int = 8) -> list[pd.Timestamp]:
+    return [pd.Timestamp(f"2026-{month:02d}-{d:02d}T08:30:00-04:00") for d in days]
+
+
+def test_late_releases_clustered_on_a_season_boundary_refuse(tmp_path):
+    """Two late releases within a week of the summer window's end (2026-09-15), with an on-time
+    release after them so it is not an edge run: the offset is wrong for that span, and the
+    instrument refuses. The same two late releases mid-season are isolated and excluded."""
+    times = _late_season((17, 19, 21, 24, 26, 28)) + _late_season((2, 9, 11, 15), month=9)
+    for late_days, refuses in ((((9, 9), (9, 11)), True), (((8, 19), (8, 24)), False)):
+        late = {pd.Timestamp(f"2026-{m:02d}-{d:02d}T08:30:00-04:00") for m, d in late_days}
+        root = tmp_path / str(refuses)
+        _bars_at(root, "EURUSD", times, lambda t, o=late: 5 if t in o else 3)
+        got = rel._instrument(rel._bars(root, "EURUSD"), list(times))
+        assert len(got["late_release_excluded"]) == 2
+        if refuses:
+            assert got["offset_h"] is None
+            assert "within 7 days of the summer window end (2026-09-15)" in got["why"]
+        else:
+            assert got["offset_h"] == 3, got.get("why")
+
+
+def test_a_run_of_late_releases_at_the_edge_of_the_sample_refuses(tmp_path):
+    """The last two releases both late: the offset changed part-way (a changeover the window
+    did not catch), so the instrument refuses rather than excluding them one by one."""
+    times = _late_season((3, 5, 7, 10, 12, 14, 17, 19, 21, 24))
+    root = tmp_path
+    _bars_at(root, "EURUSD", times, lambda t: 4 if t in set(times[-2:]) else 3)
+    got = rel._instrument(rel._bars(root, "EURUSD"), list(times))
+    assert got["offset_h"] is None and "unbroken run at the end" in got["why"]
+
+
+def test_the_changeover_dates_are_the_real_ones():
+    """EU last Sunday of October 2026 is 10-25 and US first Sunday of November is 11-01 -- the
+    gap week the probe must read."""
+    got = {name: day.isoformat() for day, name in rel.boundaries(2026)}
+    assert got["EU autumn changeover"] == "2026-10-25"
+    assert got["US autumn changeover"] == "2026-11-01"
+    assert got["EU spring changeover"] == "2026-03-29"
+    assert got["US spring changeover"] == "2026-03-08"
+    near = [pd.Timestamp("2026-10-22T12:30:00Z"), pd.Timestamp("2026-10-28T12:30:00Z")]
+    every = [pd.Timestamp("2026-10-01T12:30:00Z"), *near, pd.Timestamp("2026-11-20T12:30:00Z")]
+    assert "EU autumn changeover" in rel._cluster(near, every)
+    assert rel._cluster(near[:1], every) == ""                 # one late release is isolated
+
+
+def test_an_excluded_release_is_never_converted_and_the_rest_convert_unchanged(tmp_path):
+    """EURUSD reads one USD release at +5 against +3: that release is excluded, the season still
+    resolves, and `to_bar_time` refuses THAT instant while converting its neighbours at +3 exactly
+    as before. The excluded instant supports nothing in the season window."""
+    rel._CACHE.clear()
+    _calendar(tmp_path, _rows())
+    odd = _USD[2]
+    for i, sym in enumerate(_VOTERS):
+        _bars(tmp_path, sym, (lambda t: 5 if t == odd else 3) if sym == "EURUSD" else
+              (lambda t: 3), seed=i)
+    assert rel.offsets(tmp_path) == {"summer": 3}
+    win = rel.windows(tmp_path)["summer"]
+    assert win["excluded_releases"] == [{"release": odd.tz_convert("UTC").isoformat(),
+                                         "peak_h": 5, "instruments": ["EURUSD"]}]
+    assert win["n_releases"] == 11                             # 12 minus the excluded one
+    got, status, why = bc.to_bar_time(odd.tz_convert("UTC").to_pydatetime(), tmp_path,
+                                      fallback=True)
+    assert got is None and status == bc.EXCLUDED_LATE and "never converted" in why
+    for t in (_USD[1], _USD[3], _CAD[0]):
+        u = t.tz_convert("UTC").to_pydatetime()
+        moved, status, _ = bc.to_bar_time(u, tmp_path, fallback=True)
+        assert status == bc.OK_RELEASE and moved == u + pd.Timedelta(hours=3)
+    batch = bc.convert_many([t.tz_convert("UTC").to_pydatetime() for t in _RELEASES],
+                            tmp_path, fallback=True)
+    assert batch["n_kept"] == 11 and batch["dropped"][bc.EXCLUDED_LATE] == 1
+
+
+def test_an_unreadable_exclusion_list_converts_nothing(tmp_path, monkeypatch):
+    """Fail closed: a window whose excluded_releases is not a list, or names an unparseable
+    instant, cannot say which instants are excluded, so the release clock converts none."""
+    root = _tree(tmp_path, dict.fromkeys(_VOTERS, 3))
+    win = dict(rel.windows(root)["summer"])
+    for bad in ("x", [{"release": "not a time"}]):
+        monkeypatch.setattr(bc, "_release", lambda _r, b=bad: (
+            {"summer": 3}, {"summer": {**win, "excluded_releases": b}}))
+        got, status, _ = bc.to_bar_time(_july(), root, fallback=True)
+        assert got is None and status == bc.UNMEASURED, bad
+
+
+def test_the_exclusion_is_billed_two_sided_on_the_missed_growth_ledger(tmp_path, monkeypatch):
+    """The cost side names each excluded release; the growth side counts the releases that
+    convert because the instrument resolved instead of refusing whole (the v4.3 rule)."""
+    from research import missed_growth as mg
+    rel._CACHE.clear()
+    _calendar(tmp_path, _rows())
+    odd = _USD[2]
+    for i, sym in enumerate(_VOTERS):
+        _bars(tmp_path, sym, (lambda t: 5 if t == odd else 3) if sym == "EURUSD" else
+              (lambda t: 3), seed=i)
+    monkeypatch.setattr(mg, "ROOT", tmp_path)
+    assert "measure_late_release_excluded" in mg.MEASURES
+    got = mg.measure_late_release_excluded(None, {}, {})
+    assert got["verdict"] == mg.UNMEASURED and got["n_excluded"] == 1
+    assert got["excluded"][0]["instrument"] == "EURUSD" and got["excluded"][0]["peak_h"] == 5
+    assert got["instruments_kept"] == ["summer:EURUSD"] and got["n_admitted"] == 6
+    clean = tmp_path / "clean"
+    _tree(clean, dict.fromkeys(_VOTERS, 3))
+    monkeypatch.setattr(mg, "ROOT", clean)
+    got = mg.measure_late_release_excluded(None, {}, {})
+    assert got["verdict"] == mg.NOT_BINDING and got["n_excluded"] == 0
 
 
 def test_the_floor_is_counted_at_the_winning_offset_not_the_largest_sample(tmp_path):
@@ -190,10 +328,10 @@ def test_the_floor_is_counted_at_the_winning_offset_not_the_largest_sample(tmp_p
 
 
 def test_a_mixed_history_is_refused_never_voted(tmp_path):
-    """Under the winner's share, any split refuses; above it, ANY later release (whose event the
-    winner would enter before its news) refuses -- one of seven included -- and an EARLIER
-    minority resolves."""
-    for n_usd, n_cad, minority, refused in ((5, 5, 2, True), (2, 1, 4, True), (1, 0, 4, True),
+    """Under the winner's share, any split refuses; above it, later releases over the excluded
+    share (2 of 7) refuse, one late release of seven is EXCLUDED and the season resolves, and an
+    EARLIER minority resolves."""
+    for n_usd, n_cad, minority, refused in ((5, 5, 2, True), (2, 1, 4, True), (1, 0, 4, False),
                                             (1, 1, 2, False)):
         root = tmp_path / f"{n_usd}_{n_cad}_{minority}"
         rel._CACHE.clear()
