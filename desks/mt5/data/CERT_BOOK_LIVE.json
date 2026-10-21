@@ -5,17 +5,23 @@
  "source": "context/CERT_BOOK_PROMOTION_DESKTOP_SPEC.md (final sizes table); solver research/kelly_survival.py --book, PR #216",
  "rule": "gateway.allocator_book() lays the fusion block over the allocator's book; prop/e8_gold.window_risk and prop/e8_executor size the e8 keys from the e8 block. A key not named here keeps the allocator's fraction (or the venue's RISK_FRAC). enabled=false, a missing file or any invalid value leaves today's sizing untouched. Every value must lie in [0, sizing.MAX_RISK_FRAC].",
  "fusion": {
-  "EURZAR_overnight_gap_decay_asia": 0.098,
-  "USDZAR_overnight_gap_decay_asia": 0.1,
-  "AUDCHF_overnight_gap_decay_asia": 0.1,
-  "gold_asia": 0.082
+  "EURZAR_overnight_gap_decay_asia": 0.0,
+  "USDZAR_overnight_gap_decay_asia": 0.0,
+  "AUDCHF_overnight_gap_decay_asia": 0.0,
+  "gold_asia": 0.0
  },
  "e8": {
-  "gold_asia": 0.01,
+  "gold_asia": 0.006,
+  "gold_london_am": 0.0,
+  "gold_afternoon": 0.0,
+  "USDJPY_session_range_breakout_asia": 0.0,
+  "NZDJPY_clock_transition_asia": 0.0,
   "AUDCHF_overnight_gap_decay_asia": 0.0
  },
  "excluded": {
   "USDJPY_session_range_breakout_asia": "Reddit-only lineage (PR #162); quarantined in live_sleeve_policy.json until re-certified from a clean lineage",
   "CHFNOK_carry_asia": "carry lookahead, pending re-judge (PR #269); quarantined in live_sleeve_policy.json"
- }
+ },
+ "e8_by": "Box parity (2026-10-21): the box's live e8 block as read 2026-10-20 23:20Z. zuck 2026-10-20 21:52Z: gold_asia only; gold_asia 0.006 after the measured-slip rerun (coordinator 23:03Z); gold_london_am and gold_afternoon pinned at 0.0 explicitly, because an absent key falls back to RISK_FRAC.",
+ "fusion_by": "Box parity (2026-10-21): the box's live fusion block as read 2026-10-20 23:20Z (all 0.0; the Fusion gateway is off). Fusion go-live replaces this block via apply_fusion_state.py."
 }
