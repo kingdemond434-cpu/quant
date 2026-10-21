@@ -54,7 +54,7 @@ def _decisions(doc: dict[str, Any], window: str = "afternoon") -> list[dict[str,
 
 def _bracket_need(lots: dict[str, float], stop: float = 33.5, contract: float = 100.0) -> float:
     """Both legs to their stops plus both legs' default slip, in USD."""
-    return sum(lot * contract * (stop + g.DEFAULT_SLIP_POINTS) for lot in lots.values())
+    return float(sum(lot * contract * (stop + g.DEFAULT_SLIP_POINTS) for lot in lots.values()))
 
 
 # ------------------------------------------------------------- 1. committed risk
@@ -216,7 +216,7 @@ class _TenthLotVenue(bg._Venue):
     def min_lot(self, symbol: str) -> float:
         return 0.1
 
-    def details(self, symbol: str) -> dict:
+    def details(self, symbol: str) -> dict[str, Any]:
         return {"contractSize": 100.0, "currency": "USD", "lotStep": 0.1}
 
 
