@@ -657,10 +657,14 @@ def _bound_min(k: str) -> float:
     return float(UNMEASURED_BOUND_MIN.get(k, UNMEASURED_PAGE_MIN))
 
 
+#: How far back the readings are kept: two of the longest window.
+_KEEP = timedelta(minutes=2 * max([UNMEASURED_PAGE_MIN, *UNMEASURED_BOUND_MIN.values()]))
+
+
 def _unmeasured_history(raw: object, inc: dict[str, dict[str, Any]],
                         now: datetime) -> dict[str, list[list[Any]]]:
     """Append this run's reading (1 = UNMEASURED) per tracked incident; keep two windows."""
-    keep = timedelta(minutes=2 * max([UNMEASURED_PAGE_MIN, *UNMEASURED_BOUND_MIN.values()]))
+    keep = _KEEP
     out: dict[str, list[list[Any]]] = {}
     for k in _TRACKED:
         rows = raw.get(k) if isinstance(raw, dict) else None
@@ -671,10 +675,11 @@ def _unmeasured_history(raw: object, inc: dict[str, dict[str, Any]],
                 if t <= now:
                     valid.append([t, 1 if row[1] else 0])
         valid.sort(key=lambda r: r[0])
-        # The newest earlier reading is always kept, however old: it is the one two consecutive
-        # UNMEASURED readings are counted against when the runs are spaced past the window.
-        # ...and kept beside the recent ones, so a gap longer than `keep` never empties the
-        # window's predecessor and delays a page by a bound (audit of 98bb7726c).
+        # The newest reading older than `keep` is kept too, however old, beside the recent ones:
+        # it is the PREDECESSOR two consecutive UNMEASURED readings are counted against when the
+        # runs are spaced past the window (audit of 98bb7726c). It is a predecessor ONLY: the
+        # verdict never lets it make a window full or count in a flap share (audit of
+        # 1927577c1).
         recent = [r for r in valid if r[0] >= now - keep]
         older = [r for r in valid if r[0] < now - keep][-1:]
         recent = older + recent
@@ -691,12 +696,16 @@ def _unmeasured_verdict(hist: dict[str, list[list[Any]]], inc: dict[str, dict[st
     offenders: list[str] = []
     for k, rows in hist.items():
         bound = timedelta(minutes=_bound_min(k))
-        stamps = [(datetime.fromisoformat(str(t)), int(u)) for t, u in rows]
-        if not stamps or min(t for t, _ in stamps) > now - bound:
-            continue                         # the window is not yet full: no verdict
+        stamps = sorted((datetime.fromisoformat(str(t)), int(u)) for t, u in rows)
         window = [u for t, u in stamps if t > now - bound]
-        before = [u for t, u in sorted(stamps) if t <= now - bound][-1:]
+        # The reading directly before the window (the latest at or before its start), which may
+        # be the old predecessor kept across a gap...
+        before = [u for t, u in stamps if t <= now - bound][-1:]
+        # ...but only a RECENT reading (inside `keep`) makes the window full for the flap rule.
+        full = any(now - _KEEP <= t <= now - bound for t, _ in stamps)
         if len(window) >= UNMEASURED_MIN_READS:
+            if not full:
+                continue                     # the window is not yet full: no verdict
             # THE FLAP RULE: a share of a window that holds enough readings.
             hit = sum(window) / len(window) >= UNMEASURED_SHARE
             reads = window

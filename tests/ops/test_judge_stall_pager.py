@@ -834,15 +834,45 @@ def test_the_head_drops_its_cut_last_line(jsp, tmp_path):
     assert z["open"] is None and z["read"].startswith("streamed")      # 10.5, not 1
 
 
-def test_a_gap_past_keep_does_not_delay_the_page(jsp, tmp_path):
-    """clean, a 250-min gap, then UNMEASURED every 10 min: pages on the second U."""
+def test_a_gap_past_keep_keeps_the_predecessor_but_the_flap_rule_waits_a_full_bound(
+        jsp, tmp_path):
+    """clean, a 250-min gap, then UNMEASURED every 10 min (v6.1, audit of 1927577c1).
+
+    The pre-gap reading is kept as a predecessor only. It is clean, so the consecutive rule
+    does not fire, and it never makes the window full for the flap rule: that takes a recent
+    reading a full bound back, so the page comes once the streak spans the 30-min bound."""
     ch = Channel()
 
     def torn_after(t: datetime, p: dict) -> None:
         if t > NOW:
             p["resident"].write_text("{torn", "utf-8")
 
-    docs = _series(jsp, tmp_path, ch, [0, 250, 260, 270], torn_after)
-    assert docs[1]["page"]["opened"] == [] and docs[2]["page"]["opened"] == ["inputs_unmeasured"]
+    docs = _series(jsp, tmp_path, ch, [0, 250, 260, 270, 280], torn_after)
+    assert [d["page"]["opened"] for d in docs[:4]] == [[], [], [], []]
+    assert docs[4]["page"]["opened"] == ["inputs_unmeasured"]          # 250 -> 280: one bound
     hist = _state(jsp, tmp_path)["unmeasured_hist"]["resident_dead"]
     assert hist[0][0] == _iso(NOW)                       # the reading before the gap is kept
+
+
+def test_an_old_unmeasured_predecessor_never_enters_the_flap_window(jsp, tmp_path):
+    """The auditor's probe: UNMEASURED at t0, clean at +3d, UNMEASURED at +3d5m: no page."""
+    ch = Channel()
+    t3d = 3 * 24 * 60
+
+    def probe(t: datetime, p: dict) -> None:
+        if t in (NOW, NOW + timedelta(minutes=t3d + 5)):
+            p["resident"].write_text("{torn", "utf-8")
+
+    docs = _series(jsp, tmp_path, ch, [0, t3d, t3d + 5], probe)
+    assert all(d["incidents"]["inputs_unmeasured"]["open"] is False for d in docs)
+    assert ch.sent == []
+    # and an old UNMEASURED predecessor still pairs with a lone spaced UNMEASURED reading
+    ch2 = Channel()
+    other = tmp_path / "o"
+    other.mkdir()
+
+    def both(t: datetime, p: dict) -> None:
+        p["resident"].write_text("{torn", "utf-8")
+
+    d = _series(jsp, other, ch2, [0, t3d], both)[-1]
+    assert d["page"]["opened"] == ["inputs_unmeasured"]
