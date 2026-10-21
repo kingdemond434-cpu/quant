@@ -42,7 +42,9 @@ ga = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ga)
 
 #: Fake logins (never a real account). Distinctive, so a leak is findable by substring.
-E8_LOGIN, E8_SERVER = 81234567, "E8-Live-Test"
+#: E8 is the conftest's DECLARED E8 identity (conftest.CONFTEST_LOGINS/SERVERS["e8"]): r7.1
+#: declares E8_ACCOUNT.json under it, and the OCO's key join refuses any other E8 key (v2s).
+E8_LOGIN, E8_SERVER = 31337, "E8-Test"
 FU_LOGIN, FU_SERVER = 72345678, "FusionMarkets-Test"
 FT_LOGIN, FT_SERVER = 63456789, "FTMO-Test"
 DAY = "2026-10-21"
@@ -77,6 +79,17 @@ def _world(mode_fusion: str = "fallback") -> None:
 
 
 # ======================================================================== identity
+
+def test_the_suite_e8_identity_is_the_declared_one_and_a_foreign_key_still_refuses() -> None:
+    """v2s: the fixtures name E8 by the key E8_ACCOUNT.json declares (r7.1's conftest, as on the
+    box), so the key join holds -- and is never loosened: an E8 state under ANY other key is
+    still refused, fail closed."""
+    assert xa.expected_key("e8") == e8_key()
+    assert oco._key_join_refusal("e8", e8_key()) is None
+    foreign = oco.oco_account_key(81234567, "E8-Live-Test")
+    assert foreign != e8_key()
+    assert "does not join" in (oco._key_join_refusal("e8", foreign) or "")
+
 
 def test_the_identity_is_keyed_never_the_plain_sha256_of_login_at_server() -> None:
     key = oco.oco_account_key(FU_LOGIN, FU_SERVER)

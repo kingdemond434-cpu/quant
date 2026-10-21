@@ -359,11 +359,16 @@ def _gold_oco_world(_cross_account_books_in_tmp: Path, _account_key_in_tmp: None
     monkeypatch.setattr(gold_oco, "PAGES", paged, raising=False)
     real_tl, real_mt5 = gold_oco.tradelocker_oco_key, gold_oco.mt5_oco_key
 
+    # E8 is named by the DECLARED identity (r7.1 declares E8_ACCOUNT.json from the venue's own
+    # key, `tradelocker_account_key`, as production does): a fallback or flat state under any
+    # other key is "another account" and the OCO's key join refuses it -- correctly (v2s).
+    e8_declared = gold_oco.oco_account_key(CONFTEST_LOGINS["e8"], CONFTEST_SERVERS["e8"])
+
     def tl_key(venue: object) -> str:
         try:
             return real_tl(venue)
         except gold_oco.IdentityUnavailable:
-            return gold_oco.oco_account_key(990001, "conftest-e8")
+            return e8_declared
 
     def mt5_key(mt5: object) -> str:
         try:
@@ -374,6 +379,7 @@ def _gold_oco_world(_cross_account_books_in_tmp: Path, _account_key_in_tmp: None
     monkeypatch.setattr(gold_oco, "tradelocker_oco_key", tl_key)
     monkeypatch.setattr(gold_oco, "mt5_oco_key", mt5_key)
     for i, lane in enumerate(gold_oco.DEFAULT_LANES):
-        gold_oco.publish_lane(lane, gold_oco.oco_account_key(990001 + i, f"conftest-{lane}"),
-                              positions=[], orders=[], date="2026-01-01")
+        key = e8_declared if lane == "e8" else gold_oco.oco_account_key(990001 + i,
+                                                                         f"conftest-{lane}")
+        gold_oco.publish_lane(lane, key, positions=[], orders=[], date="2026-01-01")
     return _cross_account_books_in_tmp

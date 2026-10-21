@@ -24,7 +24,9 @@ from mt5desk import gold_oco as oco  # noqa: E402
 from prop import ftmo_follower as ff  # noqa: E402
 
 FT_LOGIN, FT_SERVER = 63456789, "FTMO-Server2"          # fake
-E8_LOGIN = 81234567                                      # fake
+#: Fake: the conftest's DECLARED E8 identity (CONFTEST_LOGINS/SERVERS["e8"]); r7.1 declares
+#: E8_ACCOUNT.json under it and the OCO's key join refuses any other E8 key (v2s).
+E8_LOGIN, E8_SERVER = 31337, "E8-Test"
 NOW = datetime(2026, 10, 21, 5, 30, tzinfo=UTC)          # 07:30 CET, 01:30 New York
 TICK = int((NOW + timedelta(hours=3)).timestamp())       # 08:30 on the UTC+3 server clock
 DAY = "2026-10-21"
@@ -122,7 +124,7 @@ def world(monkeypatch, tmp_path) -> SimpleNamespace:
     monkeypatch.setattr(ff, "E8_REPORT", report)
     oco.MODE_FILE.write_text(json.dumps({"lanes": ["e8", "fusion", "ftmo"],
                                          "modes": {"fusion": "fallback", "ftmo": "fallback"}}))
-    e8k = oco.oco_account_key(E8_LOGIN, "tradelocker")
+    e8k = oco.oco_account_key(E8_LOGIN, E8_SERVER)
     oco.publish_lane("e8", e8k, positions=[{"id": E8_POS, "side": "long", "opened_date": DAY}],
                      orders=[], date=DAY)
     oco.publish_lane("fusion", oco.oco_account_key(72345678, "FusionMarkets-Test"),
