@@ -1080,6 +1080,7 @@ def test_default_family_xau_waits_for_e8_then_follows_it(tmp_path, monkeypatch) 
     assert "no E8 fill yet" in row["why"] and row["missed_growth_risk_usd"] > 0
     # E8 fills SHORT: the long family send stays refused (billed once that day and side).
     _e8_fills(day, "short")
+    (tmp_path / "b").mkdir()
     mt5b, nsb, _ = _family_xau(tmp_path / "b", monkeypatch)
     ga._run_family(nsb, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
     assert mt5b.sent == [] and any("direction is short" in x for x in nsb["_logs"])
