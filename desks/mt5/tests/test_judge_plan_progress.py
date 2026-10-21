@@ -276,3 +276,93 @@ def test_a_run_starts_no_cell_after_the_deadline(monkeypatch) -> None:
     assert calls == [] and [r["status"] for r in rows] == ["UNREACHED"] * 3
     rows = eg._warm_run(_docket()[:3], {}, deadline=__import__("time").time() + 600)
     assert len(calls) == 3 and [r["status"] for r in rows] == ["HIT"] * 3
+
+
+# ------------------------------------------- next seal rotation: an unreadable chart (sealed)
+unreadable = pytest.mark.skipif(not hasattr(eg, "_unreadable_chart"),
+                                reason="judge_plan_phase next-rotation patch not applied")
+
+
+def _body_corrupt_parquet(path: Path) -> Path:
+    """A chart whose INDEX column reads and whose body does not: the case `_chart_present` and
+    `_cell_last_day` (index-only) call present and `pd.read_parquet` refuses."""
+    import numpy as np
+    import pandas as pd
+    import pyarrow.parquet as pq
+
+    idx = pd.date_range("2026-01-01", periods=5000, freq="5min", tz="UTC")
+    pd.DataFrame({"open": np.linspace(1, 2, 5000), "close": np.linspace(2, 3, 5000)},
+                 index=idx).to_parquet(path)
+    rg = pq.ParquetFile(path).metadata.row_group(0)
+    col = next(rg.column(i) for i in range(rg.num_columns)
+               if rg.column(i).path_in_schema == "close")
+    start = col.dictionary_page_offset or col.data_page_offset
+    raw = bytearray(path.read_bytes())
+    raw[start:start + col.total_compressed_size] = b"\xff" * col.total_compressed_size
+    path.write_bytes(bytes(raw))
+    return path
+
+
+def _specs():
+    return [{"sym": "BAD", "family": "fam", "params": {"timeframe": "M5", "k": 1}},
+            {"sym": "OK", "family": "fam", "params": {"timeframe": "M5", "k": 2}}]
+
+
+@unreadable
+def test_a_body_corrupt_chart_reads_present_and_its_read_is_named_unreadable(
+        tmp_path, monkeypatch) -> None:
+    _body_corrupt_parquet(tmp_path / "BAD_M5.parquet")
+    monkeypatch.setattr(eg, "UNI", tmp_path)
+    monkeypatch.setattr(eg, "_LAST_DAY", {})
+    monkeypatch.setattr(eg, "_FRAME_CACHE", eg.OrderedDict())
+    assert eg._chart_present("BAD", "M5") and eg._cell_last_day("BAD", "M5") is not None
+    with pytest.raises(Exception) as caught:
+        eg._bars_for("BAD", "M5")
+    assert eg._unreadable_chart(caught.value)
+    assert not eg._unreadable_chart(KeyError("a code defect"))
+
+
+@unreadable
+def test_one_unreadable_chart_blocks_its_own_cell_and_the_build_goes_on(monkeypatch) -> None:
+    import pandas as pd
+
+    def build(sym, family, params, meta):
+        if sym == "BAD":
+            raise OSError("Couldn't deserialize thrift: Deserializing page header failed.")
+        return None                                   # an ordinary build failure, named after
+
+    monkeypatch.setattr(eg, "build_cell", build)
+    monkeypatch.setattr(eg, "_cell_last_day", lambda s, tf="H1": pd.Timestamp("2026-10-20"))
+    monkeypatch.setattr(eg, "cache_load", lambda key: None)
+    monkeypatch.setattr(eg, "_rss_mb", lambda: 0.0)
+    blocked: list = []
+    out = eg._build_specs(_specs(), {}, __import__("time").time(), {}, {}, set(), blocked)
+    assert [b["sym"] for b in blocked] == ["BAD", "OK"], "the shard went on past the bad file"
+    assert blocked[0]["downstream_status"] == "NOT_RUN_BUILD_FAILED"
+    assert blocked[0]["why"].startswith("UNREADABLE_CHART: the M5 parquet")
+    assert not blocked[1]["why"].startswith("UNREADABLE_CHART")
+    assert out["cell_objs"] == [] and out["built_fresh"] == 0
+
+    def defect(sym, family, params, meta):
+        raise KeyError("a code defect is never filed as data")
+
+    monkeypatch.setattr(eg, "build_cell", defect)
+    with pytest.raises(KeyError):
+        eg._build_specs(_specs(), {}, __import__("time").time(), {}, {}, set(), [])
+
+
+@unreadable
+def test_the_pool_gives_an_unreadable_chart_the_loops_own_verdict(monkeypatch) -> None:
+    import pandas as pd
+
+    monkeypatch.setattr(eg, "_cell_last_day", lambda s, tf="H1": pd.Timestamp("2026-10-20"))
+    monkeypatch.setattr(eg, "cache_load", lambda key: None)
+    monkeypatch.setattr(eg, "build_cell", lambda *a: (_ for _ in ()).throw(OSError("torn")))
+    got = eg._warm_one(_specs()[0], {})
+    assert got["status"] == "NOT_RUN_BUILD_FAILED"
+    assert got["why"].startswith("UNREADABLE_CHART")
+    blocked: list = []
+    kept = eg._apply_prewarm_failures(_specs()[:1], {eg._spec_key(_specs()[0]): got}, blocked)
+    assert kept == [] and blocked[0]["why"] == got["why"]
+    monkeypatch.setattr(eg, "build_cell", lambda *a: (_ for _ in ()).throw(KeyError("bug")))
+    assert eg._warm_one(_specs()[0], {})["status"] == "ERROR"   # unchanged for a defect
