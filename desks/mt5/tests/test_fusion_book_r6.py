@@ -1032,8 +1032,13 @@ def test_e8_gold_writes_a_reasoned_row_when_the_fusion_key_is_unresolvable(monke
     monkeypatch.delattr(ops, "provenance", raising=False)
     doc, venue, intents = mb._e8_harness(monkeypatch, tmp_path)
     assert venue.placed == [] and doc["placed"] == []
-    rows = [r for r in intents if r.get("rail") == "cross_account_opposite"]
-    assert rows and all("fail closed" in r["why"] for r in rows)
+    # r7.2: with no key function the venue's own E8 key is unresolvable too, so the account rail
+    # refuses first; either way the row is RAIL_BLOCKED and says why.
+    rows = [r for r in intents if r.get("rail") in ("cross_account_opposite",
+                                                    "e8_account_undeclared")]
+    assert rows and all(r["status"] == "RAIL_BLOCKED" and ("fail closed" in r["why"] or
+                                                           "no new E8 gold risk" in r["why"])
+                        for r in rows)
 
 
 def test_the_same_fake_tlapi_keys_identically_through_both_rules(monkeypatch) -> None:
