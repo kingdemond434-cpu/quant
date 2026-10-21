@@ -361,8 +361,9 @@ def _iso(ms: int) -> str:
 def runs_of(points: list[dict[str, Any]], seeds: list[dict[str, Any]] | None = None
             ) -> list[dict[str, Any]]:
     """Runs of instants: a run breaks on a new offset or a gap over MAX_PROBE_GAP_H. `seeds` are
-    compacted runs from the summary (all older than the raw points); a raw point continues the
-    last seed exactly as it would have continued the rows the seed replaced."""
+    compacted runs from the summary. Seeds and raw points are merged IN TIME ORDER (audit of
+    3febc81f6): processing every seed first let a raw point older than a seed's end extend the
+    wrong run, and a disagreeing point inside a seed's span could not split it."""
     runs: list[dict[str, Any]] = []
 
     def add(first: int, last: int, off: int, n: int, sources: set[str], syms: set[str]) -> None:
@@ -376,11 +377,13 @@ def runs_of(points: list[dict[str, Any]], seeds: list[dict[str, Any]] | None = N
             runs.append({"first_ms": first, "last_ms": last, "offset_h": off, "n": n,
                          "sources": set(sources), "symbols": set(syms)})
 
-    for sd in sorted(seeds or [], key=lambda x: int(x["first_ms"])):
-        add(int(sd["first_ms"]), int(sd["last_ms"]), int(sd["offset_h"]), int(sd["n"]),
-            set(sd.get("sources") or []), set(sd.get("symbols") or []))
-    for p in points:
-        add(p["ms"], p["ms"], p["offset_h"], 1, {p["source"]}, set(p["symbols"]))
+    items: list[tuple[int, int, int, int, set[str], set[str]]] = [
+        (int(sd["first_ms"]), int(sd["last_ms"]), int(sd["offset_h"]), int(sd["n"]),
+         set(sd.get("sources") or []), set(sd.get("symbols") or [])) for sd in seeds or []]
+    items += [(p["ms"], p["ms"], p["offset_h"], 1, {p["source"]}, set(p["symbols"]))
+              for p in points]
+    for item in sorted(items, key=lambda x: (x[0], x[1])):
+        add(*item)
     return runs
 
 
@@ -413,9 +416,39 @@ def read_summary(root: Path) -> tuple[dict[str, Any] | None, str | None]:
         doc = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         return None, f"{SUMMARY_REL}: {type(exc).__name__}"
-    if not isinstance(doc, dict) or not isinstance(doc.get("runs", []), list):
-        return None, f"{SUMMARY_REL}: not a summary document"
+    why = _summary_problem(doc)
+    if why:
+        return None, f"{SUMMARY_REL}: {why}"
     return doc, None
+
+
+def _is_int(v: Any) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
+def _summary_problem(doc: Any) -> str | None:
+    """Why a summary that PARSES is still not one, or None (audit of 3febc81f6: a well-formed
+    JSON with a bad run raised inside `build` instead of reading as unreadable)."""
+    if not isinstance(doc, dict):
+        return "not a summary document"
+    runs = doc.get("runs", [])
+    if not isinstance(runs, list):
+        return "runs is not a list"
+    for i, r in enumerate(runs):
+        if not isinstance(r, dict) or not all(_is_int(r.get(k)) for k in
+                                              ("first_ms", "last_ms", "offset_h", "n")):
+            return f"run {i} lacks integer first_ms/last_ms/offset_h/n"
+        if r["last_ms"] < r["first_ms"] or r["n"] < 1 \
+                or not all(isinstance(r.get(k, []), list) for k in ("sources", "symbols")):
+            return f"run {i} is malformed"
+    verdicts = doc.get("verdicts", {})
+    if not isinstance(verdicts, dict) or not all(_is_int(v) for v in verdicts.values()):
+        return "verdicts is not a map of counts"
+    for k in ("rows_compacted", "instants_compacted", "compacted_through_ms",
+              "unparseable_lines_dropped"):
+        if k in doc and not _is_int(doc[k]):
+            return f"{k} is not an integer"
+    return None
 
 
 def _atomic(path: Path, text: str) -> None:
@@ -425,12 +458,30 @@ def _atomic(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
-def compact(root: Path, *, now_ms: int | None = None, max_rows: int = MAX_LEDGER_ROWS,
-            keep_days: int = KEEP_RAW_DAYS) -> dict[str, Any]:
-    """Cap the tracked ledger: rows older than `keep_days` fold into the summary's runs and
-    counts once the ledger holds more than `max_rows`. The summary is written FIRST; the ledger
-    is rewritten only after it lands, and `build` ignores raw rows at or before the summary's
-    `compacted_through_ms`, so a crash between the two double-counts nothing."""
+def row_key(r: dict[str, Any]) -> int:
+    """The instant a row belongs to, for cutting and dropping: its capture pass's `pass_id`
+    when it has one, so one pass always falls wholly on one side of a cut; else `local_ms`."""
+    pid = r.get("pass_id")
+    if isinstance(pid, int) and not isinstance(pid, bool):
+        return pid
+    try:
+        return int(r.get("local_ms") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def compact(root: Path, *, tape_clock: Path | None = None, now_ms: int | None = None,
+            max_rows: int = MAX_LEDGER_ROWS, keep_days: int = KEEP_RAW_DAYS) -> dict[str, Any]:
+    """Cap the tracked ledger once it holds more than `max_rows`.
+
+    EVERY SOURCE AT OR BEFORE THE CUT IS FOLDED (audit of 3febc81f6), the tick recorder's rows
+    included, so the summary's runs are the runs ALL the evidence made -- a tape instant that
+    disagreed still splits the compacted span. The cut is minute-aligned and rows are cut by
+    `row_key`, so neither a capture pass nor a minute group ever straddles it.
+    `compacted_through_ms` becomes `cut - 1`, and `build` drops every source's rows at or
+    before it. The summary is written FIRST and the ledger rewritten after it lands, so a crash
+    between the two double-counts nothing. Tape files are never touched: they are the recorder's.
+    """
     ledger = root / Path(*LEDGER_REL.split("/"))
     if not ledger.exists():
         return {"compacted": 0, "why": "no ledger"}
@@ -443,14 +494,15 @@ def compact(root: Path, *, now_ms: int | None = None, max_rows: int = MAX_LEDGER
         return {"compacted": 0, "why": f"ledger unreadable: {type(exc).__name__}"}
     if len(rows) <= max_rows:
         return {"compacted": 0, "why": f"{len(rows)} rows, cap {max_rows}"}
-    cut = (now_ms if now_ms is not None else _now_ms()) - keep_days * 24 * HOUR_MS
-    old = [r for r in rows if int(r.get("local_ms") or 0) < cut]
-    keep = [r for r in rows if int(r.get("local_ms") or 0) >= cut]
-    if not old:
-        return {"compacted": 0, "why": f"every row is inside the last {keep_days} days"}
+    cut = ((now_ms if now_ms is not None else _now_ms()) - keep_days * 24 * HOUR_MS) \
+        // 60_000 * 60_000
     through = int(summary.get("compacted_through_ms") or 0)
-    old = [r for r in old if int(r.get("local_ms") or 0) > through]
-    points, verdicts = instants([{**r, "source": r.get("source") or "terminal"} for r in old])
+    if cut - 1 <= through:
+        return {"compacted": 0, "why": "nothing new before the cut"}
+    every, _acct = load_probes(root, tape_clock)       # liveness is derived over ALL tape rows
+    old = [r for r in every if through < row_key(r) < cut]
+    keep = [r for r in rows if row_key(r) >= cut]
+    points, verdicts = instants(old)
     runs = runs_of(points, list(summary.get("runs") or []))
     totals = dict(summary.get("verdicts") or {})
     for k, v in verdicts.items():
@@ -460,14 +512,15 @@ def compact(root: Path, *, now_ms: int | None = None, max_rows: int = MAX_LEDGER
            "instants_compacted": int(summary.get("instants_compacted") or 0) + len(points),
            "unparseable_lines_dropped": int(summary.get("unparseable_lines_dropped") or 0)
            + unparsed,
-           "compacted_through_ms": max([through, *(int(r.get("local_ms") or 0) for r in old)]),
+           "compacted_through_ms": cut - 1,
            "compacted_at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
     try:
         _atomic(root / Path(*SUMMARY_REL.split("/")), json.dumps(new, indent=1) + "\n")
         _atomic(ledger, "".join(json.dumps(r, separators=(",", ":")) + "\n" for r in keep))
     except OSError as exc:
         return {"compacted": 0, "why": f"write failed: {type(exc).__name__}: {exc}"}
-    return {"compacted": len(old), "kept": len(keep), "instants": len(points)}
+    return {"compacted": len(old), "kept": len(keep), "instants": len(points),
+            "tape_rows_folded": sum(1 for r in old if r.get("source") == "tape_clock_probe")}
 
 
 def _last_sunday(year: int, month: int) -> datetime:
@@ -628,8 +681,7 @@ def build(root: Path, *, tape_clock: Path | None = None, now: datetime | None = 
     if bad:
         acct["unreadable"].append(bad)
     through = int(summary.get("compacted_through_ms") or 0)
-    rows = [r for r in rows if r.get("source") != "terminal"
-            or int(r.get("local_ms") or 0) > through]
+    rows = [r for r in rows if row_key(r) > through]  # every source: the summary holds the rest
     points, verdicts = instants(rows)
     kept, short = spans(points, list(summary.get("runs") or []))
     for k, v in (summary.get("verdicts") or {}).items():
@@ -712,7 +764,7 @@ def main(argv: list[str] | None = None) -> int:
         failed = append_ledger(args.root, got)
         if failed:
             note += f"; LEDGER WRITE FAILED: {failed}"
-    note += f"; compaction: {compact(args.root)}"
+    note += f"; compaction: {compact(args.root, tape_clock=tape_clock_dir())}"
     doc = build(args.root, tape_clock=tape_clock_dir(), capture_note=note)
     write(args.root, doc)
     ev = doc["evidence"]

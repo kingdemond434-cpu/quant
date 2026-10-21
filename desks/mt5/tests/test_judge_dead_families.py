@@ -134,20 +134,41 @@ def test_the_fallback_answers_only_near_the_releases_it_was_measured_on(tmp_path
             assert "outside that window" in why and "+/-14 days" in why
 
 
-def test_the_adjacent_hour_test_is_direction_aware_and_exclusive(tmp_path):
-    """A LATER minority enters before its news when converted at the winner: 2 of 10 refuses,
-    1 of 10 does not. An EARLIER minority is placed an hour late, never early: it resolves."""
+def test_any_late_release_refuses_at_any_share_and_any_distance(tmp_path):
+    """A release whose own peak is LATER than the winner is entered before its news when
+    converted at the winner -- one of ten, or one three hours out, is still a look-ahead. An
+    EARLIER minority is placed late, never early, and resolves."""
     times = _RELEASES[:10]
-    for n_off, minority, resolves in ((2, 4, False), (1, 4, True), (2, 2, True), (3, 2, True)):
+    cases = ((1, 4, False), (2, 4, False), (1, 5, False), (1, 6, False),
+             (2, 2, True), (3, 2, True), (1, 1, True))
+    for n_off, minority, resolves in cases:
         root = tmp_path / f"{n_off}_{minority}"
         odd = set(times[:n_off])
         _bars(root, "EURUSD", lambda t, o=odd, m=minority: m if t in o else 3, seed=3)
         got = rel._instrument(rel._bars(root, "EURUSD"), list(times))
         assert (got["offset_h"] == 3) is resolves, (n_off, minority, got.get("why"))
-        if minority == 2 and resolves:
-            assert got["early_minority"] == n_off
-        if not resolves:
-            assert "LATER" in got["why"]
+        if resolves:
+            assert got["early_minority"] == n_off and got["late_minority"] == 0
+        else:
+            assert "LATER" in got["why"] and got["late_minority"] == n_off
+
+
+def test_a_tie_reads_as_the_later_hour(tmp_path):
+    """An exact tie between the winner and a later hour is read as the later hour, so it
+    refuses; the same history without the tie resolves."""
+    times = _RELEASES[:10]
+    for tie, resolves in ((False, True), (True, False)):
+        root = tmp_path / str(tie)
+        _bars(root, "EURUSD", lambda t: 3, seed=3)
+        path = root / Path(*rel.UNIVERSE_REL.split("/")) / "EURUSD_H1.parquet"
+        frame = pd.read_parquet(path)
+        if tie:
+            at3 = (times[0].tz_convert("UTC").tz_localize(None)
+                   + pd.Timedelta(hours=3)).floor("1h")
+            frame.loc[at3 + pd.Timedelta(hours=1)] = frame.loc[at3].to_numpy()
+            frame.to_parquet(path)
+        got = rel._instrument(rel._bars(root, "EURUSD"), list(times))
+        assert (got["offset_h"] == 3) is resolves, got.get("why")
 
 
 def test_the_floor_is_counted_at_the_winning_offset_not_the_largest_sample(tmp_path):
@@ -169,9 +190,11 @@ def test_the_floor_is_counted_at_the_winning_offset_not_the_largest_sample(tmp_p
 
 
 def test_a_mixed_history_is_refused_never_voted(tmp_path):
-    """Under the winner's share, any split refuses; above it, a LATER minority (whose events the
-    winner would enter before their news) refuses and an EARLIER one resolves."""
-    for n_usd, n_cad, minority, refused in ((5, 5, 2, True), (2, 1, 4, True), (1, 1, 2, False)):
+    """Under the winner's share, any split refuses; above it, ANY later release (whose event the
+    winner would enter before its news) refuses -- one of seven included -- and an EARLIER
+    minority resolves."""
+    for n_usd, n_cad, minority, refused in ((5, 5, 2, True), (2, 1, 4, True), (1, 0, 4, True),
+                                            (1, 1, 2, False)):
         root = tmp_path / f"{n_usd}_{n_cad}_{minority}"
         rel._CACHE.clear()
         _calendar(root, _rows())

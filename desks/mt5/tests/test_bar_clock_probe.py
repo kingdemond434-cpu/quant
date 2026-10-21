@@ -432,3 +432,97 @@ def test_an_unreadable_summary_is_never_compacted_over(tmp_path, monkeypatch):
     assert summ.read_text("utf-8") == "{torn"
     doc = _build(tmp_path, monkeypatch)
     assert any(bp.SUMMARY_REL in u for u in doc["evidence"]["unreadable"])
+
+
+# ------------------------------------------- every source folds; nothing splits (3febc81f6) --
+def _tape_burst(clock: Path, start: datetime, offset_h: int, n: int = 5) -> int:
+    """`n` tick-recorder rows one minute apart (so each after the first is provably live)."""
+    clock.mkdir(parents=True, exist_ok=True)
+    lines = []
+    for i in range(n):
+        r = _row(start + timedelta(minutes=i), offset_h, "XAUUSD", bar=False)
+        lines.append(json.dumps({"at": "x", "symbol": "XAUUSD", "local_ms": r["local_ms"],
+                                 "server_ms": r["server_ms"]}))
+    with (clock / f"{start.date()}.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    return n
+
+
+def test_sixty_days_of_ledger_and_tape_compact_to_identical_spans(tmp_path, monkeypatch):
+    """The auditor's probe: 60 days of terminal passes plus recorder tape, one tape episode
+    disagreeing on day 22. Spans and every evidence count are identical after compaction, and
+    the disagreeing tape still splits the compacted span."""
+    monkeypatch.setattr(bp, "release_opinion", lambda _r: {"per_season": {}})
+    t0 = datetime(2026, 6, 1, tzinfo=UTC)
+    rows = _hourly(t0, t0 + timedelta(days=60), lambda _t: 3)
+    for r in rows:
+        r["pass_id"] = r["local_ms"]
+    _ledger(tmp_path, rows)
+    clock = tmp_path / "tape" / "clock"
+    for d in range(60):
+        day = t0 + timedelta(days=d, hours=10, minutes=30)
+        if day.weekday() < 5:
+            _tape_burst(clock, day, 2 if d == 22 else 3)  # day 22 is a Tuesday
+    before = bp.build(tmp_path, tape_clock=clock)
+    split = [s for s in before["spans"] + before["short_runs"] if s["offset_h"] == 2]
+    assert split, "the disagreeing tape must split the raw span"
+    now = _ms(t0 + timedelta(days=60))
+    got = bp.compact(tmp_path, tape_clock=clock, now_ms=now, max_rows=500, keep_days=14)
+    assert got["compacted"] > 0 and got["tape_rows_folded"] > 0
+    after = bp.build(tmp_path, tape_clock=clock)
+    assert _spans_of(after) == _spans_of(before)
+    assert [(s["first"], s["n"]) for s in after["short_runs"]] == \
+        [(s["first"], s["n"]) for s in before["short_runs"]]
+    for k in ("n_probe_rows", "n_instants", "verdicts"):
+        assert after["evidence"][k] == before["evidence"][k], k
+    assert [s for s in after["spans"] + after["short_runs"] if s["offset_h"] == 2]
+
+
+def test_a_capture_pass_is_never_split_by_the_cut(tmp_path, monkeypatch):
+    monkeypatch.setattr(bp, "release_opinion", lambda _r: {"per_season": {}})
+    t0 = datetime(2026, 6, 1, tzinfo=UTC)
+    rows = _hourly(t0, t0 + timedelta(days=30), lambda _t: 3)
+    for r in rows:
+        r["pass_id"] = r["local_ms"]
+    now = _ms(t0 + timedelta(days=30))
+    cut = (now - 14 * 24 * H) // 60_000 * 60_000
+    straddle = datetime.fromtimestamp((cut - 100) / 1000, tz=UTC)
+    for i, sym in enumerate(("EURUSD", "USDJPY")):
+        r = _row(straddle + timedelta(milliseconds=200 * i), 3, sym)
+        r["pass_id"] = cut - 100                          # one pass, rows either side of cut
+        rows.append(r)
+    _ledger(tmp_path, rows)
+    before = bp.build(tmp_path, tape_clock=tmp_path / "no_tape")
+    bp.compact(tmp_path, now_ms=now, max_rows=100, keep_days=14)
+    left = [json.loads(x) for x in
+            (tmp_path / Path(*bp.LEDGER_REL.split("/"))).read_text("utf-8").splitlines()]
+    assert not [r for r in left if r.get("pass_id") == cut - 100]
+    after = bp.build(tmp_path, tape_clock=tmp_path / "no_tape")
+    assert after["evidence"]["n_instants"] == before["evidence"]["n_instants"]
+    assert _spans_of(after) == _spans_of(before)
+
+
+@pytest.mark.parametrize("bad", [
+    {"runs": [{"first_ms": "x", "last_ms": 1, "offset_h": 3, "n": 1}]},
+    {"runs": [{"first_ms": 5, "last_ms": 1, "offset_h": 3, "n": 1}]},
+    {"runs": [], "verdicts": {"FRESH_TICK": "many"}},
+    {"runs": [], "compacted_through_ms": "soon"},
+    {"runs": "none"},
+    [],
+])
+def test_a_summary_that_parses_but_is_wrong_reads_unreadable(tmp_path, monkeypatch, bad):
+    _ledger(tmp_path, _hourly(datetime(2026, 7, 1, tzinfo=UTC),
+                              datetime(2026, 7, 10, tzinfo=UTC), lambda _t: 3))
+    summ = tmp_path / Path(*bp.SUMMARY_REL.split("/"))
+    summ.write_text(json.dumps(bad), encoding="utf-8")
+    doc = _build(tmp_path, monkeypatch)                    # never raises
+    assert any(bp.SUMMARY_REL in u for u in doc["evidence"]["unreadable"])
+    got = bp.compact(tmp_path, now_ms=_ms(datetime(2026, 8, 10, tzinfo=UTC)), max_rows=10)
+    assert got["compacted"] == 0 and "unreadable" in got["why"]
+
+
+def test_the_ledger_and_summary_temp_files_are_gitignored():
+    import subprocess
+    for rel in (bp.LEDGER_REL + ".tmp", bp.SUMMARY_REL + ".tmp"):
+        out = subprocess.run(["git", "check-ignore", "-q", rel], cwd=_ROOT, check=False)
+        assert out.returncode == 0, rel

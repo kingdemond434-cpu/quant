@@ -72,11 +72,9 @@ MIN_INSTRUMENTS = 3
 #: Distinct release instants behind the agreed offset, counted once however many instruments
 #: read them (audit of b9d37faaa: seven USD voters read the same 18 instants).
 MIN_INDEPENDENT_RELEASES = 10
-#: Per-release agreement: the winner's share of releases, and the share the hour LATER than the
-#: winner must stay UNDER (exclusive: 2 of 10 refuses). Only the later hour: a release placed at
-#: the winner when its own peak is an hour later enters before the news; an earlier one is late.
+#: Per-release agreement: the winner's share of releases. Any release whose own peak is LATER
+#: than the winner refuses outright (a look-ahead at any share); an earlier one is placed late.
 MIN_RELEASE_SHARE = 0.6
-MAX_ADJACENT_SHARE = 0.2
 MIN_SPIKE = 2.0
 MIN_MARGIN = 1.5
 
@@ -171,11 +169,10 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
         the winning offset AND at the runner-up. The largest sample over all candidates let +3
         resolve from 2 releases when 6 of 8 had no bar there.
       * A MIXED HISTORY IS REFUSED, NEVER VOTED. Each release's own peak offset is read; the
-        winner must hold at least MIN_RELEASE_SHARE of the releases, and the hour LATER than the
-        winner may hold LESS than MAX_ADJACENT_SHARE of the pair (exclusive: 2 of 10 refuses). A
-        split resolved to its majority places the minority an hour off -- an hour EARLY, a
-        look-ahead, exactly when the minority's own hour is the later one. An earlier minority
-        is placed an hour late, which is safe, and is counted as `early_minority`.
+        winner must hold at least MIN_RELEASE_SHARE of the releases, and NO release may peak
+        later than the winner, at any distance: converting it at the winner would enter before
+        its news. Ties read as the later hour. An earlier minority is placed late, which is
+        safe, and is counted as `early_minority`.
       * `releases` names the instants that support the answer, so the season can count
         independent release instants rather than instruments that read the same ones.
     """
@@ -205,7 +202,10 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
                            "spike_by_offset": {str(k): round(v, 3) for k, v in spikes.items()}}
     if len(spikes) < 2:
         return {**out, "offset_h": None, "why": "fewer than two candidate offsets on bars"}
-    ranked = sorted(spikes.items(), key=lambda kv: kv[1], reverse=True)
+    # TIES BREAK TOWARD THE LATER HOUR (audit of 3febc81f6): the later offset is the one that
+    # can never place an event before its news, so an exact tie must not hand the win to the
+    # earlier one.
+    ranked = sorted(spikes.items(), key=lambda kv: (kv[1], kv[0]), reverse=True)
     (best_k, best), (k2, second) = ranked[0], ranked[1]
     if n_at[best_k] < MIN_EVENTS or n_at[k2] < MIN_EVENTS:
         return {**out, "offset_h": None,
@@ -219,7 +219,7 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
     for t in times:
         got = {k: per_k[k][t] for k in CANDIDATES if t in per_k[k]}
         if got:
-            peaks[t] = max(got, key=lambda k: got[k])
+            peaks[t] = max(got, key=lambda k: (got[k], k))     # a tie is read as the later hour
     n_best = sum(1 for k in peaks.values() if k == best_k)
     share = n_best / len(peaks) if peaks else 0.0
     out["release_share_at_offset"] = round(share, 3)
@@ -227,20 +227,22 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
         return {**out, "offset_h": None,
                 "why": (f"mixed history: only {n_best} of {len(peaks)} releases peak at "
                         f"{best_k:+d}h (under {MIN_RELEASE_SHARE:.0%})")}
-    # DIRECTION-AWARE (2026-10-21, auditor's revision of the exclusive rule). Converting with
-    # `best_k` places a release whose own peak is an hour LATER (`best_k + 1`) on the bar an hour
-    # BEFORE its spike: an entry before the news, which is a look-ahead, so that split refuses.
-    # A minority an hour EARLIER (`best_k - 1`) is placed an hour after its spike: late, never
-    # early, so it costs signal and not honesty, and it is reported rather than refused.
-    late = best_k + 1
-    n_late = sum(1 for k in peaks.values() if k == late)
-    n_early = sum(1 for k in peaks.values() if k == best_k - 1)
+    # DIRECTION-AWARE, AND ANY LATE RELEASE REFUSES (audits of 90a7ae175 and 3febc81f6).
+    # Converting with `best_k` places a release whose own peak is LATER -- one hour or several --
+    # on a bar before its spike: an entry before the news, a look-ahead whatever its share (2 of
+    # 11 is still two trades that saw the future). So one late release refuses. A minority whose
+    # peak is EARLIER is placed late, never early: it costs signal, not honesty, and is reported
+    # as `early_minority`.
+    late = {k: sum(1 for p in peaks.values() if p == k) for k in set(peaks.values()) if k > best_k}
+    n_early = sum(1 for k in peaks.values() if k < best_k)
     out["early_minority"] = n_early
-    if n_late and n_late / (n_best + n_late) >= MAX_ADJACENT_SHARE:
+    out["late_minority"] = sum(late.values())
+    if late:
+        shown = ", ".join(f"{n} at {k:+d}h" for k, n in sorted(late.items()))
         return {**out, "offset_h": None,
-                "why": (f"mixed history: {n_late} releases peak an hour LATER at {late:+d}h "
-                        f"beside {n_best} at {best_k:+d}h; converting at {best_k:+d}h would "
-                        "enter them before their news, so the split is refused, never voted")}
+                "why": (f"mixed history: {shown} peak LATER than the {n_best} at {best_k:+d}h; "
+                        f"converting at {best_k:+d}h would enter them before their news, so "
+                        "any late release refuses, never voted")}
     support = sorted(t for t, k in peaks.items() if k == best_k)
     return {**out, "offset_h": int(best_k), "releases": [t.isoformat() for t in support]}
 
