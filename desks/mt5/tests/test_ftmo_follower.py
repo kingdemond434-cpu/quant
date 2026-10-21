@@ -44,6 +44,8 @@ class _MT5:
         self.acc = SimpleNamespace(login=login, server=server, trade_mode=trade_mode,
                                    equity=equity, balance=balance)
         self.deals = deals
+        #: Orders that left the book (removed or filled), as MT5's history_orders_get has them.
+        self.hist_orders: list[SimpleNamespace] = []
         self.positions: list[SimpleNamespace] = []
         self.orders: list[SimpleNamespace] = []
         self.sent: list[dict] = []
@@ -67,13 +69,18 @@ class _MT5:
     def history_deals_get(self, since: datetime, until: datetime) -> tuple | None:
         return self.deals
 
+    def history_orders_get(self, since: datetime, until: datetime) -> list | None:
+        return list(self.hist_orders)
+
     def order_send(self, req: dict) -> SimpleNamespace:
         self.sent.append(req)
         ticket = 9000 + len(self.sent)
         if req["action"] == self.TRADE_ACTION_PENDING:
             self.orders.append(SimpleNamespace(ticket=ticket, symbol="XAUUSD", type=req["type"],
-                                               magic=req["magic"], price_open=req["price"]))
+                                               magic=req["magic"], price_open=req["price"],
+                                               time_setup=self.tick))
         if req["action"] == self.TRADE_ACTION_REMOVE:
+            self.hist_orders += [o for o in self.orders if o.ticket == req["order"]]
             self.orders = [o for o in self.orders if o.ticket != req["order"]]
         return SimpleNamespace(retcode=10009, order=ticket)
 
@@ -101,7 +108,8 @@ def world(monkeypatch, tmp_path) -> SimpleNamespace:
         monkeypatch.setattr(ff, name, tmp_path / f"{name.lower()}.json")
     acct = tmp_path / "FTMO_LIVE_ACCOUNT.json"
     acct.write_text(json.dumps({"login": FT_LOGIN, "server": FT_SERVER, "trade_mode": 0,
-                                "initial_balance": 100_000.0}), "utf-8")
+                                "initial_balance": 100_000.0, "account_type": "2-step"}),
+                    "utf-8")
     monkeypatch.setattr(ff, "ACCOUNT_FILE", acct)
     marker = tmp_path / "FTMO_FOLLOWER_ARMED"
     marker.write_text("", "utf-8")
@@ -373,3 +381,185 @@ def test_main_refuses_outside_an_interactive_desktop_session(monkeypatch, tmp_pa
     assert ff.main([]) == 1
     ok, why = ff.interactive_session()
     assert not ok and "SSH" in why
+
+
+# ======================================================================== v2: idempotency
+
+def _stopped_out(mt5: _MT5) -> None:
+    """FTMO's order filled and was stopped: the book is flat, the MAGIC order and its deals are
+    on today's history (as MT5 keeps them)."""
+    (o,) = mt5.orders
+    mt5.orders = []
+    mt5.hist_orders.append(SimpleNamespace(ticket=o.ticket, symbol="XAUUSD", magic=ff.MAGIC,
+                                           time_setup=mt5.tick, type=o.type))
+    mt5.deals = (SimpleNamespace(ticket=1, symbol="XAUUSD", magic=ff.MAGIC, time=mt5.tick + 60,
+                                 profit=-900.0, commission=0.0, swap=0.0, fee=0.0),)
+
+
+@pytest.mark.parametrize("damage", ["lost", "torn"])
+def test_a_lost_or_torn_state_after_a_stop_out_never_sends_a_second_order(
+        world, damage: str) -> None:
+    """The audit's probe (v1 must-fix 5): FTMO fills and is stopped out, the state is lost or
+    torn, E8 is still open -> v1 sent a second order. The MAGIC history now decides."""
+    mt5 = _MT5()
+    _pass(mt5)
+    assert len(_entries(mt5)) == 1
+    _stopped_out(mt5)
+    if damage == "lost":
+        Path(ff.STATE).unlink()
+    else:
+        Path(ff.STATE).write_text('{"date": "2026-10-21", "windows": {', "utf-8")
+    doc = _pass(mt5, now=NOW + timedelta(minutes=2))
+    assert len(_entries(mt5)) == 1
+    assert any(s["reason"] == "already_followed" for s in doc["skipped"])
+    if damage == "torn":
+        assert "state_unreadable" in doc
+
+
+def test_the_same_e8_fill_is_never_followed_twice_even_on_a_new_day(world) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    st = json.loads(Path(ff.STATE).read_text("utf-8"))
+    assert str(E8_POS) in st["followed"]
+    # A new server day with an empty FTMO history: only the followed key stops a repeat.
+    st["date"] = "2026-10-20"
+    Path(ff.STATE).write_text(json.dumps(st), "utf-8")
+    mt5.orders = []
+    doc = _pass(mt5, now=NOW + timedelta(minutes=2))
+    assert len(_entries(mt5)) == 1 and any(s["reason"] == "already_followed"
+                                           for s in doc["skipped"])
+
+
+def test_an_unreadable_history_places_nothing_and_bills_it(world, monkeypatch) -> None:
+    mt5 = _MT5()
+    monkeypatch.setattr(mt5, "history_orders_get", lambda since, until: None)
+    _pass(mt5)
+    assert _entries(mt5) == []
+    (row,) = [r for r in _rows() if r.get("reason") == "history_unreadable"]
+    assert row["status"] == "RAIL_BLOCKED" and row["missed_growth_risk_usd"] == 900.0
+
+
+def test_the_follow_is_written_ahead_of_the_send(world, monkeypatch) -> None:
+    mt5 = _MT5()
+    seen: list[dict] = []
+
+    def send(req: dict) -> SimpleNamespace:
+        seen.append(json.loads(Path(ff.STATE).read_text("utf-8")))
+        raise ConnectionError("the reply was lost")
+    monkeypatch.setattr(mt5, "order_send", send)
+    _pass(mt5)
+    assert seen and str(E8_POS) in seen[0]["followed"]
+    assert seen[0]["windows"]["asia"]["status"] == "SENDING"
+
+
+def test_the_state_write_is_atomic_and_retries_a_windows_permission_error(
+        world, monkeypatch) -> None:
+    calls: list[str] = []
+    real = ff.os.replace
+
+    def flaky(src: Any, dst: Any) -> None:
+        calls.append(str(dst))
+        if len(calls) <= 2:
+            raise PermissionError("a reader holds the destination open")
+        real(src, dst)
+    synced: list[int] = []
+    real_fsync = ff.os.fsync
+    monkeypatch.setattr(ff.os, "replace", flaky)
+    monkeypatch.setattr(ff.os, "fsync", lambda fd: (synced.append(fd), real_fsync(fd))[1])
+    monkeypatch.setattr(ff.time, "sleep", lambda s: None)
+    ff._atomic_write(Path(ff.STATE), '{"ok": true}')
+    assert json.loads(Path(ff.STATE).read_text("utf-8")) == {"ok": True}
+    assert len(calls) == 3 and synced
+    assert not list(Path(ff.STATE).parent.glob("*.tmp"))
+
+
+# ======================================================================== v2: account type
+
+def test_an_undeclared_account_type_binds_nothing(world) -> None:
+    doc = json.loads(world.acct.read_text("utf-8"))
+    doc.pop("account_type")
+    world.acct.write_text(json.dumps(doc), "utf-8")
+    mt5 = _MT5()
+    out = _pass(mt5)
+    assert out["status"] == "ACCOUNT_REFUSED" and "account_type" in out["why"]
+    assert mt5.sent == []
+
+
+@pytest.mark.parametrize(("kind", "placed"), [("2-step", True), ("1-step", False)])
+def test_the_daily_limit_is_the_account_types(world, kind: str, placed: bool) -> None:
+    """Today's loss 2,000 + this trade (0.45 lot x (20 + 24.13) pt x 100 = 1,985.85) is under
+    2-Step's 5,000 and over 1-Step's 3,000."""
+    doc = json.loads(world.acct.read_text("utf-8"))
+    doc["account_type"] = kind
+    world.acct.write_text(json.dumps(doc), "utf-8")
+    mt5 = _MT5(equity=98_000.0, balance=98_000.0,
+               deals=(SimpleNamespace(symbol="EURUSD", magic=0, time=TICK - 3600,
+                                      profit=-2000.0, commission=0.0, swap=0.0, fee=0.0),))
+    out = _pass(mt5)
+    assert bool(_entries(mt5)) is placed
+    assert (f"{ff.ACCOUNT_TYPES[kind]:.0%} daily limit") in out["loss_guard"]
+    assert ff.ACCOUNT_TYPES == {"2-step": 0.05, "1-step": 0.03}
+
+
+# ======================================================================== v2: the lot cap
+
+def test_a_narrow_stop_is_capped_and_the_clip_is_billed(world) -> None:
+    rep = _e8_report()
+    rep["state"]["windows"]["asia"]["orders"]["buy_stop"].update({"sl": 4337.0})   # 3-pt stop
+    world.report.write_text(json.dumps(rep), "utf-8")
+    mt5 = _MT5()
+    _pass(mt5)
+    (req,) = _entries(mt5)
+    cap = int(ff.MAX_NOTIONAL_X * 100_000 / (4340.0 * 100.0) / 0.01 + 1e-9) * 0.01
+    assert req["volume"] == pytest.approx(cap) and req["volume"] < 3.0     # uncapped: 3.0 lots
+    (row,) = [r for r in _rows() if r.get("rail") == ff.LOT_CAP_RAIL]
+    assert row["status"] == "RAIL_BLOCKED" and row["lot_uncapped"] == pytest.approx(3.0)
+    assert row["missed_growth_risk_usd"] == pytest.approx((3.0 - cap) * 3.0 * 100.0, abs=0.01)
+
+
+def test_a_declared_max_lot_caps_tighter(world) -> None:
+    doc = json.loads(world.acct.read_text("utf-8"))
+    doc["max_lot"] = 0.2
+    world.acct.write_text(json.dumps(doc), "utf-8")
+    mt5 = _MT5()
+    _pass(mt5)
+    (req,) = _entries(mt5)
+    assert req["volume"] == pytest.approx(0.2)
+
+
+def test_missed_growth_publishes_the_followers_rails(world, monkeypatch) -> None:
+    from research import missed_growth as mg
+    monkeypatch.setattr(mg, "FTMO_INTENTS", Path(ff.INTENTS))
+    mt5 = _MT5()
+    mt5.positions = [SimpleNamespace(ticket=42, symbol="XAUUSD", type=1, magic=0, volume=0.1,
+                                     sl=0.0, tp=0.0, time=TICK)]
+    _pass(mt5)                                                   # opposite_exposure, billed
+    out = mg.published_ftmo_follower_lines()["rails"]
+    line = out["ftmo_follower"]
+    assert line["n"] == 1 and line["by_reason"] == {"opposite_exposure": 1}
+    assert line["undeployed_risk_usd"] == 900.0 and line["n_unpriced"] == 0
+    assert out["ftmo_lot_cap"]["verdict"] == mg.NOT_BINDING
+    Path(ff.INTENTS).write_text("{torn", "utf-8")
+    assert mg.published_ftmo_follower_lines()["unreadable"] == [Path(ff.INTENTS).name]
+
+
+# ======================================================================== v2: flatten, page
+
+def test_an_own_ftmo_fill_against_the_direction_is_flattened_at_once(world) -> None:
+    mt5 = _MT5()
+    mt5.positions = [SimpleNamespace(ticket=55, symbol="XAUUSD", type=1, magic=ff.MAGIC,
+                                     volume=0.45, sl=4320.0, tp=4260.0, time=TICK)]
+    doc = _pass(mt5)
+    (close,) = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_DEAL]
+    assert close["position"] == 55 and close["type"] == mt5.ORDER_TYPE_BUY
+    assert any("against today's direction" in a for a in doc["alerts"])
+
+
+def test_a_missing_hmac_key_pages(world, monkeypatch, tmp_path) -> None:
+    from libs.ops import provenance as p
+    monkeypatch.setenv(p.KEY_ENV, str(tmp_path / "absent.hmac"))
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    assert doc["status"] == "ACCOUNT_REFUSED" and mt5.sent == []
+    assert doc["page"]["sent"] is True
+    assert oco.PAGES and "ftmo" in oco.PAGES[-1][0] and str(FT_LOGIN) not in str(oco.PAGES)
