@@ -31,7 +31,11 @@ Pure stdlib. JSON persistence, because a lifecycle that dies with the process is
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
+import time
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -76,6 +80,45 @@ class Alert:
         return (ref - datetime.fromisoformat(self.first_seen)).total_seconds() / 3600.0
 
 
+#: os.replace retries on PermissionError (Windows: the target is open in another process).
+REPLACE_RETRIES = 20
+#: The lock is taken for at most this long; an older lock file is a crashed writer's and is broken.
+LOCK_WAIT_S = 10.0
+LOCK_STALE_S = 60.0
+
+
+@contextlib.contextmanager
+def _locked(lock: Path) -> Iterator[None]:
+    """An exclusive-create lock file (portable: no fcntl/msvcrt). Waits up to LOCK_WAIT_S, breaks
+    a lock older than LOCK_STALE_S, and after the wait proceeds unlocked rather than lose the
+    alert -- the replace below is still atomic, so the worst case is a lost update, never a torn
+    file."""
+    held = False
+    deadline = time.monotonic() + LOCK_WAIT_S
+    while True:
+        try:
+            fd = os.open(lock, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            os.close(fd)
+            held = True
+            break
+        except FileExistsError:
+            with contextlib.suppress(OSError):
+                if time.time() - lock.stat().st_mtime > LOCK_STALE_S:
+                    lock.unlink()
+                    continue
+            if time.monotonic() > deadline:
+                break
+            time.sleep(0.02)
+        except OSError:
+            break
+    try:
+        yield
+    finally:
+        if held:
+            with contextlib.suppress(OSError):
+                lock.unlink()
+
+
 class AlertLedger:
     """Persistent alert lifecycle. Survives the process, which is the whole point."""
 
@@ -94,14 +137,36 @@ class AlertLedger:
             self.alerts[aid] = Alert(id=aid, **{k: v for k, v in known.items() if k != "id"})
 
     def save(self) -> None:
+        """ATOMIC (v5e): the body goes to a temp file beside the ledger, is fsynced, and
+        os.replace()s the ledger under a lock file -- so a concurrent reader never sees a torn
+        ledger and two writers never interleave bytes. Windows-safe: a PermissionError from
+        os.replace (another process has the ledger open) is retried with a short backoff."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps({
+        body = json.dumps({
             "updated": datetime.now(tz=UTC).isoformat(),
             "alerts": {a.id: asdict(a) for a in self.alerts.values()},
             "note": ("`last_seen` is dedup state and `state` is truth -- they are never the same "
                      "field. Suppressing a repeat makes the pager quieter and does nothing about "
                      "the condition."),
-        }, indent=1), "utf-8")
+        }, indent=1)
+        with _locked(self.path.with_name(self.path.name + ".lock")):
+            tmp = self.path.with_name(f".{self.path.name}.{os.getpid()}.{time.monotonic_ns()}.tmp")
+            try:
+                with open(tmp, "w", encoding="utf-8") as fh:
+                    fh.write(body)
+                    fh.flush()
+                    os.fsync(fh.fileno())
+                for attempt in range(REPLACE_RETRIES):
+                    try:
+                        os.replace(tmp, self.path)
+                        break
+                    except PermissionError:
+                        if attempt == REPLACE_RETRIES - 1:
+                            raise
+                        time.sleep(0.05 * (attempt + 1))
+            finally:
+                with contextlib.suppress(OSError):
+                    tmp.unlink()
 
     # ------------------------------------------------------------------ transitions
 

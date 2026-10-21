@@ -135,3 +135,74 @@ def test_a_corrupt_ledger_starts_empty_rather_than_raising(tmp_path) -> None:
 def test_age_is_measured_from_first_seen(tmp_path) -> None:
     a = Alert(id="x", first_seen=(datetime.now(tz=UTC) - timedelta(hours=5)).isoformat())
     assert 4.9 < a.age_hours() < 5.1
+
+
+# v5e (2026-10-21): save() is atomic -- temp file, fsync, os.replace under a lock -- and retries
+# a Windows PermissionError from os.replace.
+def test_save_is_atomic_and_leaves_no_temp_or_lock(tmp_path) -> None:
+    import json
+    led = _led(tmp_path)
+    led.observe("x", "broken")
+    led.save()
+    assert json.loads((tmp_path / "alerts.json").read_text("utf-8"))["alerts"]["x"]["state"] \
+        == "OPEN"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["alerts.json"]
+
+
+def test_save_retries_a_permission_error_from_replace(tmp_path, monkeypatch) -> None:
+    import os
+
+    from libs.ops import alert_ledger as al
+    real = os.replace
+    calls: list[int] = []
+
+    def flaky(a, b) -> None:
+        calls.append(1)
+        if len(calls) < 3:
+            raise PermissionError("in use (WinError 5)")
+        real(a, b)
+
+    monkeypatch.setattr(al.os, "replace", flaky)
+    monkeypatch.setattr(al.time, "sleep", lambda s: None)
+    led = _led(tmp_path)
+    led.observe("x", "broken")
+    led.save()
+    assert len(calls) == 3 and AlertLedger(tmp_path / "alerts.json").alerts["x"].open
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["alerts.json"]
+
+
+def test_concurrent_saves_never_tear_the_ledger(tmp_path) -> None:
+    import json
+    import threading
+    errors: list[BaseException] = []
+
+    def writer(i: int) -> None:
+        try:
+            for j in range(20):
+                led = _led(tmp_path)
+                led.observe(f"a{i}", f"m{j}")
+                led.save()
+                json.loads((tmp_path / "alerts.json").read_text("utf-8"))
+        except BaseException as exc:   # collected and asserted below
+            errors.append(exc)
+
+    threads = [threading.Thread(target=writer, args=(i,)) for i in range(6)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["alerts.json"]
+
+
+def test_a_stale_lock_is_broken(tmp_path) -> None:
+    import os
+    import time
+    lock = tmp_path / "alerts.json.lock"
+    lock.write_text("")
+    old = time.time() - 3600
+    os.utime(lock, (old, old))
+    led = _led(tmp_path)
+    led.observe("x", "broken")
+    led.save()
+    assert not lock.exists() and (tmp_path / "alerts.json").exists()

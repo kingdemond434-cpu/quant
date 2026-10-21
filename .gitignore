@@ -485,6 +485,7 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+!desks/mt5/reports/LOGIN_FENCE.json
 # Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
 desks/mt5/data/hypotheses/unrunnable_specs.json
 desks/mt5/data/hypotheses/conversion_handoff.json
@@ -493,6 +494,8 @@ desks/mt5/data/hypotheses/conversion_handoff.json
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
 desks/mt5/data/account_positions.json
 desks/mt5/data/account_positions.json.tmp
+# The box's account declarations ("<login>@<server>" keys): box-local, never published (audit v5).
+desks/mt5/data/ACCOUNT_PROFILES.json
 
 # apply_fusion_state.py's backups and temp files (patches/fusion_book_go_live). A backup of
 # FUSION_LIVE_ACCOUNT.json carries the live login, and box-repair stages desks/mt5/data with
