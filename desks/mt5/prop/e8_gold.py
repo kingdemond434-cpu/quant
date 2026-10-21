@@ -163,6 +163,28 @@ def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
     return RISK_FRAC, "policy RISK_FRAC"
 
 
+def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None,
+                   absent: dict[str, str] | None, pinned: dict[str, float] | None
+                   ) -> dict[str, str]:
+    """{window: where its risk fraction came from}. Pure. Precedence matches the merge in `run`:
+    `pinned_zero` (decision_core.PRINCIPAL_ZERO["e8"]) > `cert_book_absent` (an enabled book that
+    does not name the window: 0.0) > `cert_book` > `kelly_survival` (a fresh solve) > `RISK_FRAC`.
+    """
+    out: dict[str, str] = {}
+    for name, _h, _r in GOLD_WINDOWS:
+        if name in (pinned or {}):
+            out[name] = "pinned_zero"
+        elif name in (absent or {}):
+            out[name] = "cert_book_absent"
+        elif name in (cert or {}):
+            out[name] = "cert_book"
+        elif name in (solve or {}):
+            out[name] = "kelly_survival"
+        else:
+            out[name] = "RISK_FRAC"
+    return out
+
+
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
          stops_level: int = 0) -> list[dict]:
     """Windows due NOW: not yet placed today, at or past their signal hour, before the cancel
@@ -816,6 +838,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
     kelly = load_kelly_survival(KELLY_FILE, "e8")
+    _solve = dict(kelly or {})
     # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
     # 2026-10-07). Its gold keys are the gateway's (`gold_asia`); this lane names windows bare.
     _cert_raw = load_cert_book(CERT_BOOK_FILE, "e8")
@@ -837,12 +860,18 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # 1; zuck 2026-10-20 21:52Z, gold asia only): a void cert book used to send london_am and
     # afternoon back to RISK_FRAC or the KELLY_SURVIVAL value.
     from mt5desk.decision_core import PRINCIPAL_ZERO
-    _solved = kelly is not None
-    pinned = cert_gold_windows({k: 0.0 for k in PRINCIPAL_ZERO["e8"]})
+    pinned = cert_gold_windows(dict.fromkeys(PRINCIPAL_ZERO["e8"], 0.0))
     kelly = {**(kelly or {}), **pinned}
+    # WHERE EACH WINDOW'S NUMBER CAME FROM (r6): one label per window, never one for the lane --
+    # "kelly_survival" was printed when the solve was absent and the cert book had sized asia.
+    # VOID CERT BOOK, gold_asia: the fresh survival-constrained solve if it names asia, else
+    # RISK_FRAC (0.005, below the box's certified 0.006). Standing asia aside on a torn file would
+    # throw away the one funded window's growth for a file fault (Rule 1); the solve is itself the
+    # pass-rate/survival-constrained size, and london_am/afternoon stay pinned whatever is void.
+    sources = window_sources(_solve, cert, absent, pinned)
     doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
                 "cert_book_windows": cert or None,
-                "sizing_source": "kelly_survival" if _solved else "policy RISK_FRAC",
+                "sizing_source": sources,
                 "kelly_risk": kelly})
     # THE ONE GUARD DECIDES (2026-10-20). This read the raw `stood_down` flag out of the guard's
     # state file, which only the executor's `assess` call ever rolled to a new server day: on
@@ -951,7 +980,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     placed_this_pass: list[str] = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
-        frac, frac_src = window_risk(name, kelly)
+        frac, _ = window_risk(name, kelly)
+        frac_src = sources.get(name, "RISK_FRAC")
         if name in pinned or name in absent:
             why = (absent[name] if name not in pinned else
                    "principal zero (zuck 2026-10-20 21:52Z: gold asia only; "

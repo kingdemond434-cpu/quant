@@ -1284,6 +1284,9 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "sleeve_set": lambda: dc.roster({}, [])[0],
         "manage_open_positions": lambda st, sleeves: None,
         "release_gate": lambda: (True, "release identity ok (test)"),
+        # The armed-deadman gate (r6) is faked like the release gate; test_fusion_book_r6.py runs
+        # `main` with the REAL reader and no stamp, and pins that nothing is sent.
+        "fusion_deadman_armed": lambda: (True, "fusion deadman LIVE (test)"),
         "regime_hibernate": lambda sleeves: set(),
         "load_sleeves": lambda: [],
         "ledger_rows": lambda: [],

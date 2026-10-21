@@ -467,6 +467,9 @@ def test_every_gold_window_sends_the_book_lot(monkeypatch, tmp_path) -> None:
     # pins two: test_a_cert_book_zero_sends_nothing_on_either_path).
     from mt5desk import kelly_sizing
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", tmp_path / "no_cert_book.json")
+    # ... and with the principal's code pin of london_am/afternoon lifted (r6): this test is the
+    # sizing mechanism; test_fusion_book_r6.py pins that the pin itself holds.
+    monkeypatch.setitem(dc.PRINCIPAL_ZERO, "fusion", dc.PRINCIPAL_ZERO["fusion"] - ZEROED)
     ns = _bracket_ns()
     sleeves = [{"name": f"gold_{w[0]}", "symbol": "XAUUSD", "lot": "auto",
                 "sized_by": "allocator_book", "risk_frac": 0.001} for w in dc.GOLD_WINDOWS]
@@ -535,11 +538,14 @@ def test_a_cert_book_zero_sends_nothing_on_either_path(tmp_path, monkeypatch) ->
     lot, basis = ns["bracket_lane_lot"](_gold_row(GOLD, 0.0), EQUITY, 19.1, None)
     assert lot > 0.0 and basis == "gold_lot: the allocator gave this window no heat"
     assert dc.gold_book_lot(EQUITY, 19.1, None, 0.0)[0] == lot
-    # No readable cert book: nothing is pinned, every window is the revert path's as before.
+    # No readable cert book: the principal's code pin still holds (r6, audit r5 must-fix 1) --
+    # a void book fails CLOSED for the windows it was pinning, never back to the revert floor.
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", tmp_path / "absent.json")
     for name in ZEROED:
-        assert not dc.cert_book_zero(name)
-        assert dc.gold_book_lot(EQUITY, 19.1, None, 0.0, name=name)[0] == lot
+        assert dc.cert_book_zero(name) and dc.principal_zero(name)
+        assert dc.gold_book_lot(EQUITY, 19.1, None, 0.0, name=name)[0] == 0.0
+    assert not dc.cert_book_zero(GOLD)
+    assert dc.gold_book_lot(EQUITY, 19.1, None, 0.0, name=GOLD)[0] == lot
 
 
 def test_the_gateway_roster_appends_the_three_and_marks_the_six(tmp_path, monkeypatch) -> None:

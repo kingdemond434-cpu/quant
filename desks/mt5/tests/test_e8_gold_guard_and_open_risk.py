@@ -113,6 +113,11 @@ def _sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, placed: tuple[s
              guard: dict | None = None) -> Path:
     for name in ("OUT", "INTENTS", "LOG", "KELLY_FILE", "CERT_BOOK_FILE"):
         monkeypatch.setattr(g, name, tmp_path / f"{name.lower()}.json")
+    # These tests are about the guard and open-risk mechanics across all three windows, so the
+    # principal's code pin of london_am/afternoon (decision_core.PRINCIPAL_ZERO["e8"], r6) is
+    # lifted here; test_fusion_book_r6.py pins that the pin itself holds.
+    from mt5desk import decision_core as _dc
+    monkeypatch.setitem(_dc.PRINCIPAL_ZERO, "e8", frozenset())
     gp = tmp_path / "e8_guard_state.json"
     if guard is not None:
         gp.write_text(json.dumps(guard), encoding="utf-8")

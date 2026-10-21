@@ -1222,10 +1222,19 @@ def fusion_deadman_armed(path: Path | None = None, *,
     except (OSError, ValueError) as exc:
         return False, (f"fusion deadman: stamp {p.name} absent or unreadable "
                        f"({type(exc).__name__}); no new Fusion risk until the rail runs armed")
+    refused = (doc.get("armed") or {}).get("refused") if isinstance(doc, dict) and \
+        isinstance(doc.get("armed"), dict) else None
+    if refused:
+        return False, f"fusion deadman: {refused}; no new Fusion risk"
     if not isinstance(doc, dict) or doc.get("mode") != "LIVE":
         mode = doc.get("mode") if isinstance(doc, dict) else None
         return False, (f"fusion deadman: mode {mode!r}, not LIVE -- the rail is not armed "
                        f"(principal marker data/FUSION_DEADMAN_ARMED.json); no new Fusion risk")
+    # A CURRENT-DAY DAILY_LOSS HALT (r6): the rail's latch for the broker day it stamped.
+    if "DAILY_LOSS" in (doc.get("halt_codes") or []) and doc.get("daily_loss_day") \
+            and doc.get("daily_loss_day") == doc.get("broker_day"):
+        return False, (f"fusion deadman: DAILY_LOSS halt set for broker day "
+                       f"{doc.get('broker_day')}; no new Fusion risk until it clears")
     try:
         at = datetime.fromisoformat(str(doc.get("checked_at")))
         if at.tzinfo is None:
@@ -1235,7 +1244,8 @@ def fusion_deadman_armed(path: Path | None = None, *,
     age = ((now or datetime.now(tz=UTC)) - at).total_seconds()
     if not (-60.0 <= age <= FUSION_DEADMAN_MAX_AGE_S):
         return False, (f"fusion deadman: LIVE stamp is {age:.0f}s old (limit "
-                       f"{FUSION_DEADMAN_MAX_AGE_S:.0f}s); the rail has stopped; no new Fusion risk")
+                       f"{FUSION_DEADMAN_MAX_AGE_S:.0f}s); the rail has stopped; "
+                       f"no new Fusion risk")
     return True, f"fusion deadman LIVE, {age:.0f}s old"
 
 
