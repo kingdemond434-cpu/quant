@@ -116,3 +116,30 @@ def test_an_unreadable_or_incomplete_cache_is_a_full_re_solve(tmp_path, bad) -> 
     assert out["cache"]["hits"] == 0
     assert json.dumps(_strip(out), sort_keys=True, default=str) == json.dumps(
         _strip(plain), sort_keys=True, default=str)
+
+
+def test_a_key_that_cannot_be_computed_means_no_cache(tmp_path, monkeypatch) -> None:
+    ev, worlds, cfg, inc = _fixture()
+    cache = tmp_path / "admission_cache.json"
+
+    def boom(*_a, **_k):
+        raise OSError("source unavailable")
+
+    monkeypatch.setattr(pa, "_admission_scan_key", boom)
+    out = _scan(ev, worlds, cfg, inc, cache_path=cache)
+    assert "cache" not in out and not cache.exists()
+    assert json.dumps(_strip(out), sort_keys=True, default=str) == json.dumps(
+        _strip(_scan(ev, worlds, cfg, inc)), sort_keys=True, default=str)
+
+
+def test_a_failed_write_leaves_no_temp_file(tmp_path, monkeypatch) -> None:
+    ev, worlds, cfg, inc = _fixture()
+    cache = tmp_path / "admission_cache.json"
+
+    def refuse(*_a, **_k):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(pa.os, "replace", refuse)
+    out = _scan(ev, worlds, cfg, inc, cache_path=cache)
+    assert "write_error" in out["cache"]
+    assert not list(tmp_path.glob(".admission_cache.json.*.tmp")) and not cache.exists()

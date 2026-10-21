@@ -485,3 +485,7 @@ desks/mt5/data/hypotheses/conversion_handoff.json
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
 desks/mt5/data/account_positions.json
 desks/mt5/data/account_positions.json.tmp
+
+# pf_allocator admission-scan result cache and its atomic-write temp files (2026-10-21)
+desks/mt5/data/pf_allocator_cache/admission_cache.json
+desks/mt5/data/pf_allocator_cache/.admission_cache.json.*.tmp

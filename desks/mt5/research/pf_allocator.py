@@ -35,6 +35,7 @@ run every 15 minutes and move the book twice a day.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import math
@@ -2783,7 +2784,9 @@ def _corr_to_book(cand: np.ndarray, held: dict[str, float],
 
 #: Where the admission scan keeps each candidate's last DETERMINISTIC re-solve (2026-10-21).
 ADMISSION_CACHE = CACHE / "admission_cache.json"
-#: Bump when anything `optimise` computes for a candidate changes outside its inputs' bytes.
+#: Schema of the stored rows, not a sizing input: version 1 = {heat, mean_log_growth, converged,
+#: iterations} as documented in `marginal_admission`. Bump when anything the solver computes
+#: for a candidate changes outside its inputs' bytes.
 ADMISSION_CACHE_VERSION = 1
 
 
@@ -2799,7 +2802,8 @@ def _admission_scan_key(ev: Sequence[SleeveEvidence], worlds: Worlds, cfg: World
     import inspect
 
     from libs.portfolio import robust_elog as _re
-    h = hashlib.sha256(f"admission-v{ADMISSION_CACHE_VERSION}".encode("ascii"))
+    h = hashlib.sha256(f"admission-v{ADMISSION_CACHE_VERSION}|numpy-{np.__version__}"
+                       .encode("ascii"))
     h.update(decision_state_fingerprint(ev, cfg).encode("ascii"))
     for arr in (worlds.r, worlds.crisis, worlds.mu_draws):
         a = np.ascontiguousarray(arr)
@@ -2809,6 +2813,15 @@ def _admission_scan_key(ev: Sequence[SleeveEvidence], worlds: Worlds, cfg: World
                          repr(cap), repr(target)]).encode("utf-8"))
     h.update(hashlib.sha256(inspect.getsource(_re).encode("utf-8")).digest())
     return h.hexdigest()
+
+
+def _admission_scan_key_or_none(ev: Sequence[SleeveEvidence], worlds: Worlds,
+                                 cfg: WorldConfig, cap: float, target: float | None) -> str | None:
+    """`_admission_scan_key`, or None (no cache this pass) when the key cannot be computed."""
+    try:
+        return _admission_scan_key(ev, worlds, cfg, cap, target)
+    except (OSError, TypeError, ValueError):
+        return None
 
 
 def _admission_candidate_key(scan_key: str, name: str, ub: Mapping[str, float],
@@ -2987,8 +3000,10 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     solve_s: list[float] = []
     cache_in = _read_admission_cache(cache_path)
     cache_out: dict[str, Any] = {}
-    scan_key = (_admission_scan_key(ev, worlds, cfg, cap, target)
-                if cache_path is not None else "")
+    scan_key = (_admission_scan_key_or_none(ev, worlds, cfg, cap, target)
+                if cache_path is not None else None)
+    if scan_key is None:
+        cache_path, cache_in = None, {}                     # fail closed: no cache this pass
     n_hits = 0
     for name in cand_names:
         e = by_name[name]
@@ -3010,7 +3025,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
         t_c = time.time()
         ub_c = _ub(allowed_base | {name})
         ckey = (_admission_candidate_key(scan_key, name, ub_c, ws, iterations)
-                if cache_path is not None else "")
+                if scan_key is not None else "")
         hit = cache_in.get(ckey) if ckey else None
         ext: Any = None
         if isinstance(hit, dict):
@@ -3108,14 +3123,16 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
         doc["cache"] = {"hits": n_hits, "stored": len(cache_out),
                         "rule": "replayed only on an exact key over every input; budget-hit "
                                 "solves are never stored"}
+        tmp = cache_path.with_name(f".{cache_path.name}.{os.getpid()}.tmp")
         try:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = cache_path.with_name(f".{cache_path.name}.{os.getpid()}.tmp")
             tmp.write_text(json.dumps({"version": ADMISSION_CACHE_VERSION, "rows": cache_out},
                                       allow_nan=True), encoding="utf-8")
             os.replace(tmp, cache_path)
         except OSError as exc:
             doc["cache"]["write_error"] = f"{type(exc).__name__}: {exc}"
+            with contextlib.suppress(OSError):
+                tmp.unlink(missing_ok=True)
     doc["per_candidate_s"] = (round(float(np.mean(solve_s)), 3) if solve_s else None)
     doc["max_candidate_s"] = (round(float(max(solve_s)), 3) if solve_s else None)
     doc["status"] = "MEASURED"
