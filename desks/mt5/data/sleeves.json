@@ -51485,6 +51485,41 @@
       "retired_by": "live_policy",
       "canonical_identity": "audnzd|clock_transition|asia",
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False_session=ny",
+      "symbol": "EURZAR",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.0,
+        "joined": "joined on 'eurzar|carry|asia'",
+        "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
+      },
+      "status": "STANDBY",
+      "promoted_at": "2026-10-21T15:28:23+00:00",
+      "shadow_exp": 0.07881497024787358,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False_session=ny",
+      "sleeve_id": "6165f1eb6375c94a32ad",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "input_symbol": "EURZAR",
+        "require_quiet": false,
+        "session": "ny",
+        "timeframe": "M5"
+      },
+      "exec": "family_market",
+      "admit_streak": 0,
+      "admit_scan": "2026-10-21T10:27:55.679033+00:00"
     }
   ]
 }
