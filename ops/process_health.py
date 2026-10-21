@@ -29,11 +29,15 @@ speed and "the system cannot find the file specified" means everything.
 """
 from __future__ import annotations
 
+import contextlib
 import csv
 import io
 import json
+import os
+import platform
 import subprocess
 import sys
+import time
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -109,11 +113,112 @@ class SchtasksUnreadable(ValueError):
     """schtasks answered, but not in a shape this parser can read as an inventory."""
 
 
+#: THE OFF-HOT-PATH RETRY'S BUDGETS (v5f). Measured 2026-10-21 04:01:35Z: every one of the 73
+#: tasks read SCHEDULER_UNMEASURED while stall_watch showed 1,654 MB free of 8,186 MB and a
+#: 37,950 MB commit -- the box was paging, and a read that returns in 6 s idle did not return in
+#: 45. The hourly pass keeps its 45 s / 90 s bounds (it must not overrun its own slot); a timeout
+#: hands the read to ONE detached, below-normal-priority child with these longer bounds, which
+#: replaces the UNMEASURED report if it lands. 4x and a bit over 3x the hot-path bounds.
+RETRY_TIMEOUT_S = 180
+RETRY_VERBOSE_TIMEOUT_S = 300
+#: A retry lock older than this is a crashed retry, never a live one (180 + 300 s plus build).
+RETRY_LOCK_STALE_S = 15 * 60
+RETRY_LOCK = ROOT / "desks" / "mt5" / "logs" / "process_health_retry.lock"
+
+#: Set only by the retry child: the bounds `_run_schtasks` uses instead of the hot-path ones.
+_BOUNDS_OVERRIDE: tuple[int, int] | None = None
+#: Every read that hit its bound this pass, with the memory picture at that instant. Cleared at
+#: the top of each `build()`; `_tasks` appends through `_timeout_reason`.
+TIMEOUTS: list[dict[str, Any]] = []
+
+
+def _bound(args: list[str]) -> int:
+    brief, verbose = _BOUNDS_OVERRIDE or (SCHTASKS_TIMEOUT_S, SCHTASKS_VERBOSE_TIMEOUT_S)
+    return verbose if "/v" in args else brief
+
+
+def _host() -> str:
+    try:
+        import socket
+        return socket.gethostname() or platform.node() or "UNMEASURED"
+    except Exception:
+        return platform.node() or "UNMEASURED"
+
+
+def memory_snapshot() -> dict[str, Any]:
+    """Free and total physical memory and the commit charge, from psutil ONLY (never CIM: CIM is
+    what hangs on the trading box), stamped with the HOST it was read on.
+
+    EVERY FIGURE CARRIES ITS HOSTNAME AND THE MACHINE'S TOTAL (coordinator, 2026-10-21): the
+    "8 GB" reading this desk once argued from was the build box, not the 96 GB trading box, and a
+    free-memory figure with no host and no total cannot be told apart from the other machine's.
+
+    The commit charge is exact on Windows (GlobalMemoryStatusEx total minus available page file,
+    read through psutil's own extension); elsewhere it is physical used plus swap used, labelled
+    as an approximation. Any figure psutil cannot give is None with the reason, never a zero.
+    """
+    snap: dict[str, Any] = {"host": _host(), "source": "psutil",
+                            "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+    except Exception as exc:
+        snap.update(total_phys_mb=None, free_phys_mb=None, commit_charge_mb=None,
+                    why=f"psutil unavailable: {type(exc).__name__}")
+        return snap
+    mb = 1024 * 1024
+    try:
+        vm = psutil.virtual_memory()
+        snap["total_phys_mb"] = round(vm.total / mb)
+        snap["free_phys_mb"] = round(vm.available / mb)
+    except Exception as exc:
+        snap.update(total_phys_mb=None, free_phys_mb=None,
+                    why=f"virtual_memory: {type(exc).__name__}")
+        vm = None
+    commit: int | None = None
+    limit: int | None = None
+    how = "UNMEASURED"
+    try:
+        cext = getattr(getattr(psutil, "_psplatform", None), "cext", None)
+        if sys.platform == "win32" and cext is not None and hasattr(cext, "virtual_mem"):
+            raw = cext.virtual_mem()   # (total phys, avail phys, total pagefile, avail pagefile)
+            limit = round(raw[2] / mb)
+            commit = round((raw[2] - raw[3]) / mb)
+            how = "exact: commit limit minus available (GlobalMemoryStatusEx via psutil)"
+        elif vm is not None:
+            sw = psutil.swap_memory()
+            commit = round((vm.total - vm.available + sw.used) / mb)
+            limit = round((vm.total + sw.total) / mb)
+            how = "approx: physical used + swap used"
+    except Exception as exc:
+        how = f"UNMEASURED: {type(exc).__name__}"
+    snap["commit_charge_mb"] = commit
+    snap["commit_limit_mb"] = limit
+    snap["commit_source"] = how
+    return snap
+
+
+def _timeout_reason(label: str, exc: subprocess.TimeoutExpired) -> str:
+    """Record WHICH read timed out, the bound it hit and the memory then; return the sentence."""
+    bound = exc.timeout
+    mem = memory_snapshot()
+    TIMEOUTS.append({"read": label, "bound_s": bound, "memory": mem})
+
+    def _f(v: Any) -> str:
+        return "UNMEASURED" if v is None else f"{v:,} MB"
+
+    return (f"{label} TimeoutExpired: timed out at its {bound:g} s bound on {mem['host']} "
+            f"({_f(mem.get('free_phys_mb'))} free of {_f(mem.get('total_phys_mb'))} physical, "
+            f"commit {_f(mem.get('commit_charge_mb'))})")
+
+
 def _run_schtasks(args: list[str]) -> tuple[int, str, str]:
     """One `schtasks` call, bounded. Raises OSError/SubprocessError for the caller to name."""
-    bound = SCHTASKS_VERBOSE_TIMEOUT_S if "/v" in args else SCHTASKS_TIMEOUT_S
+    kw: dict[str, Any] = {}
+    if _BOUNDS_OVERRIDE is not None and sys.platform == "win32":
+        # The retry's own schtasks child runs below normal too, never at the default class.
+        kw["creationflags"] = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
     proc = subprocess.run(["schtasks", *args], capture_output=True, text=True,
-                          errors="replace", timeout=bound)
+                          errors="replace", timeout=_bound(args), **kw)
     return proc.returncode, proc.stdout or "", proc.stderr or ""
 
 
@@ -235,6 +340,8 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
             errors.append(f"schtasks /fo csv exit {rc}: {err.strip()[:160]}")
     except SchtasksUnreadable as exc:
         errors.append(f"schtasks /fo csv unreadable: {exc}")
+    except subprocess.TimeoutExpired as exc:
+        errors.append(_timeout_reason("schtasks /query /fo csv", exc))
     except (OSError, subprocess.SubprocessError) as exc:
         errors.append(f"schtasks /fo csv {type(exc).__name__}: {exc}")
     if brief is None:
@@ -257,6 +364,8 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
             errors.append(f"schtasks /v exit {rc}: {err.strip()[:160]}")
     except SchtasksUnreadable as exc:
         errors.append(f"schtasks /v unreadable: {exc}")
+    except subprocess.TimeoutExpired as exc:
+        errors.append(_timeout_reason("schtasks /query /fo csv /v", exc))
     except (OSError, subprocess.SubprocessError) as exc:
         errors.append(f"schtasks /v {type(exc).__name__}: {exc}")
 
@@ -361,6 +470,7 @@ def build() -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
+    TIMEOUTS.clear()
     tasks, scheduler_status = _tasks()
 
     for t in tasks:
@@ -522,14 +632,233 @@ def build() -> dict[str, Any]:
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
         "account_key_backup": backup,
+        # WHICH READ TIMED OUT, ITS BOUND, AND THE MEMORY THEN (v5f), each figure stamped with
+        # the host it was read on and that host's total. Empty when every read answered.
+        "scheduler_timeouts": list(TIMEOUTS),
+        "scheduler_retry": {"state": "NOT_NEEDED"} if not TIMEOUTS else {"state": "PENDING"},
         "processes": rows,
     }
 
 
-def main(argv: list[str] | None = None) -> int:
-    doc = build()
+def _rank(doc: dict[str, Any] | None) -> int:
+    """How much of the scheduler a report read: 0 nothing, 1 the inventory, 2 the run history."""
+    if not isinstance(doc, dict):
+        return -1
+    status = str(doc.get("scheduler_status") or "")
+    if status == "OK schtasks" or doc.get("run_history") == "MEASURED":
+        return 2
+    return 1 if status.startswith("OK ") else 0
+
+
+def _read_report() -> dict[str, Any] | None:
+    try:
+        doc = json.loads(OUT.read_text(encoding="utf-8"))
+        return doc if isinstance(doc, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _write_report(doc: dict[str, Any]) -> None:
+    """Temp file then os.replace, retried: a reader holding the file open on Windows makes the
+    replace raise PermissionError, and the retry child must never leave a half-written report."""
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    tmp = OUT.with_name(f".{OUT.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    for attempt in range(10):
+        try:
+            os.replace(tmp, OUT)
+            return
+        except PermissionError:
+            if attempt == 9:
+                tmp.unlink(missing_ok=True)
+                raise
+            time.sleep(0.2)
+
+
+def _retry_lock() -> Path:
+    return ROOT / "desks" / "mt5" / "logs" / "process_health_retry.lock"
+
+
+def _take_retry_lock() -> bool:
+    """ONE retry at a time. A lock older than RETRY_LOCK_STALE_S is a crashed retry and is
+    removed -- the FILE, never the process: nothing here kills or signals anything."""
+    lock = _retry_lock()
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(2):
+        try:
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                if time.time() - lock.stat().st_mtime > RETRY_LOCK_STALE_S:
+                    lock.unlink(missing_ok=True)
+                    continue
+            except OSError:
+                pass
+            return False
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                                 "pid": os.getpid()}))
+        return True
+    return False
+
+
+def _release_retry_lock() -> None:
+    with contextlib.suppress(OSError):
+        _retry_lock().unlink(missing_ok=True)
+
+
+def _spawn_retry(for_at: str) -> subprocess.Popen[bytes]:
+    """Start the retry DETACHED and BELOW NORMAL priority, so it outlives this pass and never
+    competes with mining. The child lowers itself again on start (`_lower_priority`), which is
+    what holds on POSIX and if a job object refuses the creation flag."""
+    cmd = [sys.executable, str(Path(__file__).resolve()), "--retry-scheduler", "--for", for_at]
+    common: dict[str, Any] = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL,
+                              "stderr": subprocess.DEVNULL, "close_fds": True, "cwd": str(ROOT)}
+    if sys.platform == "win32":
+        base = (getattr(subprocess, "DETACHED_PROCESS", 0x8)
+                | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x200)
+                | getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000))
+        try:   # leave the scheduler's job object if it allows it, so the pass ending is no kill
+            return subprocess.Popen(cmd, creationflags=base | 0x01000000, **common)
+        except OSError:
+            return subprocess.Popen(cmd, creationflags=base, **common)
+    return subprocess.Popen(cmd, start_new_session=True, **common)
+
+
+def _lower_priority() -> str:
+    """Lower THIS process's CPU and I/O priority. Touches no other process, ever."""
+    done: list[str] = []
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        me = psutil.Process()
+        if sys.platform == "win32":
+            me.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+            done.append("cpu below_normal")
+            try:
+                me.ionice(psutil.IOPRIO_LOW)
+                done.append("io low")
+            except Exception:
+                pass
+        else:
+            me.nice(max(me.nice(), 15))
+            done.append(f"cpu nice {me.nice()}")
+            try:
+                me.ionice(psutil.IOPRIO_CLASS_IDLE)
+                done.append("io idle")
+            except Exception:
+                pass
+    except Exception as exc:
+        try:
+            os.nice(15)
+            done.append("cpu nice +15")
+        except Exception:
+            done.append(f"UNMEASURED: {type(exc).__name__}")
+    return ", ".join(done)
+
+
+def retry_scheduler(for_at: str = "") -> dict[str, Any]:
+    """THE OFF-HOT-PATH RETRY (v5f): the same read on the longer bounds, at low priority.
+
+    A result that read MORE of the scheduler than the report on disk replaces it, unless a newer
+    pass already measured the run history (that report is better than ours and stays). A retry
+    that reads no more annotates the report it was spawned for -- and only that one -- so the
+    board says the retry ran and why it did not help. The lock is released whatever happens.
+    """
+    global _BOUNDS_OVERRIDE
+    outcome: dict[str, Any] = {"state": "FAILED"}
+    try:
+        priority = _lower_priority()
+        _BOUNDS_OVERRIDE = (RETRY_TIMEOUT_S, RETRY_VERBOSE_TIMEOUT_S)
+        try:
+            doc = build()
+        finally:
+            _BOUNDS_OVERRIDE = None
+        meta = {"at": doc["at"], "bounds_s": [RETRY_TIMEOUT_S, RETRY_VERBOSE_TIMEOUT_S],
+                "priority": priority, "for_report_at": for_at or None,
+                "scheduler_status": doc["scheduler_status"]}
+        current = _read_report()
+        if _rank(current) < 2 and _rank(doc) > _rank(current):
+            doc["scheduler_retry"] = {"state": "REPLACED", **meta,
+                                      "replaced_report_at": (current or {}).get("at")}
+            _write_report(doc)
+            outcome = doc["scheduler_retry"]
+        elif current is not None and for_at and current.get("at") == for_at:
+            current["scheduler_retry"] = {
+                "state": "NO_BETTER", **meta, "timeouts": doc.get("scheduler_timeouts", [])}
+            _write_report(current)
+            outcome = current["scheduler_retry"]
+        else:
+            outcome = {"state": "SUPERSEDED", **meta}
+    except Exception as exc:
+        outcome = {"state": "FAILED", "why": f"{type(exc).__name__}: {exc}"[:200]}
+    finally:
+        _release_retry_lock()
+    return outcome
+
+
+def _backup_state() -> str:
+    """Publish BACKUP_STATE.json (ops/backup_state.py) on this hourly task's clock (v5f).
+
+    Only against the real tree: a caller that moved ROOT (a test's temp box) gets nothing, so a
+    test can never write the real report or reach the real alert channels. NEVER RAISES."""
+    if Path(__file__).resolve().parent.parent != ROOT:
+        return "SKIPPED (ROOT is not this checkout)"
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "backup_state", Path(__file__).resolve().parent / "backup_state.py")
+        assert spec is not None and spec.loader is not None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return str(mod.write()["status"])
+    except Exception as exc:
+        return f"FAILED ({type(exc).__name__})"
+
+
+def _deliver_account_key_alerts() -> str:
+    """The hourly second deliverer of the account-key alert outbox (v5f; MT5-BoxHeartbeat is
+    the 5-minute one). Real tree only, like `_backup_state`. NEVER RAISES."""
+    if Path(__file__).resolve().parent.parent != ROOT:
+        return "SKIPPED (ROOT is not this checkout)"
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops import provenance
+        res = provenance.deliver_pending()
+        return f"{res.get('rows', 0)} row(s), {len(res.get('sent') or [])} send(s)" + (
+            f", {res['error']}" if res.get("error") else "")
+    except Exception as exc:
+        return f"FAILED ({type(exc).__name__})"
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if "--retry-scheduler" in args:
+        for_at = args[args.index("--for") + 1] if "--for" in args[:-1] else ""
+        print(f"process health retry: {retry_scheduler(for_at).get('state')}")
+        return 0
+    doc = build()
+    if doc["scheduler_timeouts"]:
+        # A READ TIMED OUT. Hand it to the detached retry and get off the hot path: this pass
+        # never waits on the longer bound itself. The report is written BEFORE the spawn, so the
+        # retry always finds the report it was spawned for on disk.
+        if _take_retry_lock():
+            doc["scheduler_retry"] = {"state": "SPAWNED",
+                                      "bounds_s": [RETRY_TIMEOUT_S, RETRY_VERBOSE_TIMEOUT_S],
+                                      "priority": "below_normal"}
+            _write_report(doc)
+            try:
+                _spawn_retry(str(doc["at"]))
+            except Exception as exc:
+                _release_retry_lock()
+                doc["scheduler_retry"] = {"state": "SPAWN_FAILED",
+                                          "why": f"{type(exc).__name__}: {exc}"[:200]}
+                _write_report(doc)
+        else:
+            doc["scheduler_retry"] = {"state": "ALREADY_RUNNING"}
+            _write_report(doc)
+    else:
+        _write_report(doc)
     print(f"process health: {doc['n_processes']} process(es), status {doc['status']}, "
           f"{doc['n_needing_attention']} needing attention")
     for r in doc["processes"]:
@@ -537,6 +866,8 @@ def main(argv: list[str] | None = None) -> int:
             age = "" if r["artifact_age_min"] is None else f"{r['artifact_age_min']:.0f}m"
             print(f"  {r['verdict']:<14} {r['name']:<32} {age:>7}  {r['why'][:70]}")
     print(f"-> {OUT}")
+    print(f"backup state: {_backup_state()}")
+    print(f"account key alerts: {_deliver_account_key_alerts()}")
     return 0
 
 
