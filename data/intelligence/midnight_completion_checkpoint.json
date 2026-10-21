@@ -3,18 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-21T05:55:12.933969+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-21T07:46:23.404509+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-21T03:57:14.009281+00:00",
+   "finished_at": "2026-10-21T07:48:44.249175+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -26,19 +21,16 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-21T05:46:46.711672+00:00",
+   "finished_at": "2026-10-21T07:47:12.989456+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/reconcile_external_queue.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-21T05:46:53.452732+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-21T07:48:15.704286+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "forward_clock_fence": {
    "finished_at": "2026-10-21T04:33:36.241963+00:00",
@@ -89,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-21T05:55:12.933969+00:00"
+ "updated_at": "2026-10-21T07:48:44.249175+00:00"
 }
