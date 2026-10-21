@@ -1306,11 +1306,12 @@ def apply_cadence_once(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
 
 def _attempt_module() -> Any:
     """The attempt marker's module, under whichever name this module itself was imported."""
+    import importlib
+
     try:
-        from research import judging_rate_attempt as mod
+        return importlib.import_module("research.judging_rate_attempt")
     except ImportError:
-        from desks.mt5.research import judging_rate_attempt as mod  # type: ignore[no-redef]
-    return mod
+        return importlib.import_module("desks.mt5.research.judging_rate_attempt")
 
 
 def _write_atomic(path: Path, doc: Any) -> None:
@@ -1578,10 +1579,7 @@ def _verdict_counts(now: datetime, path: Path | None = None,
     the rows read and the reason -- a prefix of the ledger is never published as its rate."""
     import time as _time
 
-    try:
-        from research.judging_burndown import classify
-    except ImportError:
-        from desks.mt5.research.judging_burndown import classify  # type: ignore[no-redef]
+    from research.judging_burndown import classify
 
     p = GATE_LEDGER if path is None else path
     if not p.exists():
