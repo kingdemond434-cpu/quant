@@ -151,13 +151,16 @@ def test_a_mixed_history_is_refused_never_voted(tmp_path):
 
 
 def test_usd_quoted_voters_alone_are_one_reading_and_refuse(tmp_path):
-    root = _tree(tmp_path, {"EURUSD": 3, "GBPUSD": 3, "USDJPY": 3, "AUDUSD": 3})
+    root = _tree(tmp_path, {"EURUSD": 3, "GBPUSD": 3, "USDJPY": 3, "AUDUSD": 3},
+                 rows=[(t.isoformat(), "USD") for t in _RELEASES])     # 12 instants, all USD
     block = rel.reading(root)["per_season"]["summer"]
     assert block["offset_h"] is None and "quotes USD" in block["why"]
 
 
 def test_too_few_independent_release_instants_refuse(tmp_path):
-    root = _tree(tmp_path, dict.fromkeys(_VOTERS, 3), rows=_rows(usd=_USD[:5], cad=_CAD))
+    """Four instruments, but the CAD releases fall on the USD instants (as CAD employment does on
+    NFP day): five instants read four times are five instants."""
+    root = _tree(tmp_path, dict.fromkeys(_VOTERS, 3), rows=_rows(usd=_USD[:5], cad=_USD[:5]))
     block = rel.reading(root)["per_season"]["summer"]
     assert block["offset_h"] is None and "independent release instants" in block["why"]
 
