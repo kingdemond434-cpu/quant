@@ -1117,6 +1117,7 @@ def test_a_stale_book_above_the_code_ceiling_places_at_0006_and_bills_the_cut(
         monkeypatch, tmp_path) -> None:
     """r7.1 item 1: E8 gold risk is min(book, E8_CERT_CEILING) whatever the book says; the cut
     is billed `e8_cert_ceiling` (status CAPPED) and missed_growth reads it."""
+    from mt5desk import fusion_rails
     assert dc.E8_CERT_CEILING == 0.006
     src = (_DESK / "mt5desk" / "decision_core.py").read_text("utf-8")
     block = src[src.index("E8 GOLD'S CODE CEILING"):src.index("E8_CERT_CEILING = 0.006")]
@@ -1192,6 +1193,7 @@ def test_an_undeclared_e8_account_refuses_new_e8_gold_risk_with_a_reasoned_row(
     """r7.1 item 3: E8_ACCOUNT.json absent -> no new E8 gold leg on an armed pass, and one
     billed RAIL_BLOCKED `e8_account_undeclared` row per window per day (it used to skip the
     account check)."""
+    from mt5desk import fusion_rails
     import test_fusion_minlot_book as mb
     real = mb._e8_harness
 
